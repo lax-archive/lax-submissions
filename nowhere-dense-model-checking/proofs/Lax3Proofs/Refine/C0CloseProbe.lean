@@ -826,6 +826,160 @@ theorem deadAtomK_narrow_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
   simp only [Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK]
   omega
 
+/-! #### Control 1c — E4c-b: what the copies cost at the member list, and
+why they are still in the program
+
+Wave E4c-b built the two touched-only replacements
+(`Refine.ScatterDeadPass` §5f: `memCopyAt` at `15·mm1 + 6`, `memFillAt`
+at `14·mm1 + 6`, clocked carrier-blind on the executable semantics
+against the landed passes as the growing control) and **could not wire
+either into the atom**. The residual below therefore does not move, and
+the two reasons are compiled next door:
+
+* the mask copy needs `"alv"` zero off the child's alive set, and `"alv"`
+  is a `RamDriverFrames.scratchArrs` entry — `RamDriver.LevelMem` gives
+  its *length* only, the turn's descent, the level's cover phase and the
+  nested driver all scribble on it, and
+  `ScatterDeadPass.alv_touched_only_needs_clean_scratch` runs the pass
+  from the state that actually arrives and exhibits a dead vertex left
+  alive — and `ScatterDeadPass.mask_junk_flips_the_engine` compiles that
+  the leftover is *semantic*: the engine's own flag moves from `1` to
+  `0` when only the off-support mask cells change. Supplying that
+  invariant is the driver-wide clean-scratch discipline, R1.6, and
+  `per_turn_copy_escapes_size_slot` below is why moving the pass to the
+  turn is not a way around it;
+* the distance fill cannot produce `Refine.ScatterBlock.ArenaA`'s
+  seventh clause at all, at any caller discipline: the clause is the
+  *whole* array at the atom's own radius, consecutive atoms of a turn
+  carry different radii, and
+  `ScatterDeadPass.dist_touched_only_refuted` is that gap on data. The
+  clause would have to narrow to the mask's support first, which is the
+  engine's contract (`Refine.BfsBlock.unwind_run` restores the array as
+  a literal list over every `i < n`).
+
+What the wave does deliver to B4 execution is the **arithmetic of the
+post-wiring charge**, modelled below with no landed definition touched:
+`23·n + 12` would become `43·mm1 + 18`, the surviving carrier term would
+be exactly the outside probe's `20·n + 10` — whose narrowing is
+accounting, `ScatterDeadPass.outProbeCostB` — and the cluster reading
+would fit the same `atomCoeff` shape, with `131` moving to `151` and the
+constant to `96`, both still inside `221`. -/
+
+/-- **The per-atom charge with the two copies at the member list.** The
+model of E4c-b's success: `ScatterDeadPass.scatDeadK`'s nine summands
+with the mask copy, its restore and the distance fill replaced by
+`ScatterDeadPass.entryMemCost`, plus the fold's flag assignment. Nothing
+landed is edited — this is `Refine.B4Design`'s house style, one file
+down. -/
+noncomputable def deadAtomKB {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (n mm1 kq mm bw nb t : ℕ) : ℕ :=
+  Lax3Proofs.Refine.ScatterDeadPass.killSumCost kq +
+      Lax3Proofs.Refine.ScatterDeadPass.outProbeCost n +
+      Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β +
+      Lax3Proofs.Refine.ScatterDeadPass.outCntCost +
+      Lax3Proofs.Refine.ScatterDeadPass.atomMemCost mm1 +
+      Lax3Proofs.Refine.ScatterDeadPass.entryMemCost mm1 +
+      Lax3Proofs.Refine.ScatterBlock.scatBlockK mm bw nb t +
+      Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost + 2
+
+/-- **The model in closed form.** Against `deadAtomK_root_eq`'s landed
+`43·n + 23·mm1 + … + 90`: the carrier coefficient falls to the probe's
+`20`, the child's member count carries `66`, and the constant is `96` —
+six more, the extra pass's own head. -/
+theorem deadAtomKB_closed {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm bw nb t : ℕ) :
+    deadAtomKB β n mm1 kq mm bw nb t
+      = (44 * bw + 110 * nb + 140) * t + 20 * n + 66 * mm1 + 65 * mm + 14 * kq +
+        Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 96 := by
+  simp only [deadAtomKB, Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
+    Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
+    Lax3Proofs.Refine.ScatterDeadPass.killSumCost,
+    Lax3Proofs.Refine.ScatterDeadPass.entryMemCost,
+    Lax3Proofs.Refine.ScatterDeadPass.memCopyAtCost,
+    Lax3Proofs.Refine.ScatterDeadPass.memFillAtCost,
+    Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
+  ring
+
+/-- **The trade, exactly.** The landed charge plus the replacement's
+member walks is the modelled charge plus the two copies' carrier walks:
+`23·n + 12` out, `43·mm1 + 18` in, and every other summand identical. -/
+theorem deadAtomKB_trade {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm bw nb t : ℕ) :
+    Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t + (43 * mm1 + 18)
+      = deadAtomKB β n mm1 kq mm bw nb t + (23 * n + 12) := by
+  rw [deadAtomKB_closed, Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK,
+    Lax3Proofs.Refine.ScatterDeadPass.scatDeadK]
+  simp only [Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
+    Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
+    Lax3Proofs.Refine.ScatterDeadPass.killSumCost,
+    Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
+  ring
+
+/-- **The surviving carrier term is the probe's, and nothing else.** At
+fixed member data and ball budget the modelled charge still grows in the
+carrier — this is the refutation E4c-b keeps alive rather than deleting
+— but the coefficient is `20`, the outside probe's, and its narrowing is
+`ScatterDeadPass.outProbeCostB`: accounting, not program text. -/
+theorem deadAtomKB_probe_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (n mm1 kq mm bw nb t : ℕ) : 20 * n + 10 ≤ deadAtomKB β n mm1 kq mm bw nb t := by
+  rw [deadAtomKB_closed]; omega
+
+theorem deadAtomKB_unbounded {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (ksc mm1 kq mm bw nb t : ℕ) :
+    ∃ n : ℕ, ¬ (deadAtomKB β n mm1 kq mm bw nb t ≤ ksc) := by
+  refine ⟨ksc + 1, fun h => ?_⟩
+  have := deadAtomKB_probe_floor β (ksc + 1) mm1 kq mm bw nb t
+  omega
+
+/-- **And hoisting the copies out of the atom does not help.** The
+obvious repair — run the mask copy once per turn instead of once per
+atom, since the atoms of a turn share the child's mask — escapes the
+size-read turn slot just as the per-atom reading escapes the
+coefficient: at a block of weight zero the slot grants `ct + ksc` and
+the copy alone costs `12·n + 6`. The scratch discipline is not
+avoidable by moving the pass; it has to be *established*. -/
+theorem per_turn_copy_escapes_size_slot (ct ksc Kin : ℕ) :
+    ∃ n : ℕ, ¬ (12 * n + 6 + Kin ≤ turnCostSizeA ct ksc 0 Kin) := by
+  refine ⟨ct + ksc + 1, fun h => ?_⟩
+  simp only [Lax3Proofs.Refine.G2CostProbe.turnCostSizeA] at h
+  omega
+
+/-- The per-atom coefficient `Refine.B4Design.atomCoeff` reads, restated
+here — that file is downstream, and this statement must not wait on
+which name survives execution. -/
+def atomCoeffB4 (kq abit t : ℕ) : ℕ := 294 * t + 14 * kq + abit + 221
+
+/-- **The modelled charge still fits the B4 coefficient.** At the
+cluster reading in all four in-scope arguments and a block-scale ball
+budget, `deadAtomKB` is inside `atomCoeff·(s + 1)` — the slope rises
+from `154·t + 131` to `154·t + 151` and the constant from `90` to `96`,
+and both stay under the `221` the coefficient already grants. So E4c-b's
+replacement, once its two blockers move, does not cost B4 a larger
+coefficient. -/
+theorem deadAtomKB_le_atomCoeff {L : ℕ} (β : Lax3.DistFO.DistFO L 1) {m bw nb s kq t : ℕ}
+    (hm : m ≤ s) (hbw : bw ≤ s) (hnb : nb ≤ s) :
+    deadAtomKB β m m kq m bw nb t
+      ≤ atomCoeffB4 kq (Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β) t * (s + 1) := by
+  rw [deadAtomKB_closed]
+  have hball : (44 * bw + 110 * nb + 140) * t ≤ (154 * s + 140) * t :=
+    Nat.mul_le_mul_right _ (by omega)
+  have hslope : (154 * s + 140) * t = 154 * t * s + 140 * t := by ring
+  have hm' : 151 * m ≤ 151 * s := Nat.mul_le_mul_left _ hm
+  have hj : 154 * t * s + 151 * s
+      ≤ (294 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 221) * s := by
+    have h1 : (154 * t + 151) * s
+        ≤ (294 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 221) * s :=
+      Nat.mul_le_mul_right _ (by omega)
+    have h2 : (154 * t + 151) * s = 154 * t * s + 151 * s := by ring
+    omega
+  have hexp : atomCoeffB4 kq (Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β) t * (s + 1)
+      = (294 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 221) * s
+        + (294 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 221) := by
+    simp only [atomCoeffB4]; ring
+  omega
+
 /-- **The narrowed leaf is still unbounded.** At *fixed* member data,
 ball budget and probe bound — the state E4c is trying to reach — the
 per-atom charge still grows without bound in the carrier, because the
@@ -1013,5 +1167,13 @@ family with every constant one step over its ceiling does not. -/
 #print axioms landed_hKd_slot_floor
 #print axioms landed_hKd_load_bearing
 #print axioms landed_base_needs_carrier_Cb
+
+-- wave E4c-b: the modelled post-wiring charge (control 1c)
+#print axioms deadAtomKB_closed
+#print axioms deadAtomKB_trade
+#print axioms per_turn_copy_escapes_size_slot
+#print axioms deadAtomKB_probe_floor
+#print axioms deadAtomKB_unbounded
+#print axioms deadAtomKB_le_atomCoeff
 
 end Lax3Proofs.Refine.C0CloseProbe

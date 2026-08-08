@@ -23,7 +23,12 @@ three, and the proof that it does.
 2. The engine's calling convention: the child mask into `"alv"` and a
    clean `"dist"`. Carrier-charge parity with the landed engine entry
    (`Refine.ArenaSeam.memEntry`) is accepted at this boundary; making
-   the two active-set-driven is E4c's.
+   the two active-set-driven was E4c-b's, and **§5f is its result**:
+   both member-scale replacements are built, specified and clocked
+   there, and neither can be wired in — the mask because nothing pins
+   the scratch array it would have to start from, the distance because
+   `Refine.ScatterBlock.ArenaA` pins the whole array at the atom's own
+   radius. §5c's charge is unchanged for exactly that reason.
 3. `Refine.ScatterBlock.scatBlockCom`, read through
    `Refine.ScatterDeadEngine.scatBlockCnt_specW` — the counter in its
    `∀ e` decision form, which is the only true reading (the naive
@@ -1654,6 +1659,651 @@ theorem ballBudget_carrier {G : SimpleGraph (Fin n)} {ns : ℕ} {O T : ℕ → �
   rw [htel n le_rfl, hcsr.zero, hcsr.last]
   omega
 
+/-! ### §5f Wave E4c-b: the two calling-convention copies, at the member list
+
+`Refine.C0CloseProbe.scatDeadK_narrow_floor` compiles that `23·n + 12`
+of §5c's charge survives every narrowing of the probe bound, the two
+member counts and the ball budget: the mask copy `copyCom (alvName
+(j + 1)) "alv"` and the distance fill `fillCom "dist" (r + 1)` are
+carrier walks in `RamDriver.scatDeadCom`'s own text, so only a program
+change can move them. This section is that program change, built and
+measured — and the two compiled reasons neither half can be wired into
+the atom at this boundary.
+
+**The replacement.** `memFillAt` and `memCopyAt` walk the child's member
+list once and store at the *listed* vertex: `Refine.BlockLeaves`'s
+touched-only template (`blockLoad0` at `15·m₁ + 15·m + 30`), at the one
+list the atom already holds. Their charges are `memFillAtCost mm1 =
+14·mm1 + 6` and `memCopyAtCost mm1 = 15·mm1 + 6` against the landed
+`11·n + 6` and `12·n + 6`: one unit more per cell — the address is
+indirect — and the carrier gone. §5f's `#guard`s clock both on the
+executable semantics at two carrier widths and at zero members, with the
+landed passes at the same slot as the growing negative control.
+
+**What each leaves.** `memFillAt_spec` and `memCopyAt_spec` state the
+touched-only law directly: the listed cells hold the new value, and
+*every other cell holds what it held*. Read at the three uses:
+
+* `alvMemCom_spec` — from an `"alv"` that is **zero off the child's
+  alive set**, the mask copy leaves `σ'.arrs "alv" = arrOf n Alv'`,
+  which is `Refine.ScatterBlock.ArenaA`'s mask clause verbatim, at
+  `15·mm1 + 6`;
+* `alvClrCom_spec` — and the clear puts it back, so the pair is a round
+  trip and the discipline is self-maintaining *inside* the atom phase;
+* `distMemCom_spec` — the fill leaves `r + 1` at every listed vertex,
+  which is where the block search reads and writes (`BfsBlock`'s two
+  guarded slots) — but **not** `ArenaA`'s clause, which is the whole
+  array.
+
+**Blocker 1, the mask: nothing pins the scratch.** `"alv"` is a
+`RamDriverFrames.scratchArrs` entry: `RamDriver.LevelMem` gives its
+*length* and nothing else, and `ScatPre.run`/`ScatterDeadTurn.DeadPre.run`
+are stated so that any pass may scribble on it. At the atom's entry the
+array holds whatever the turn's descent (`RamDriver.descendCom` copies
+`gamName a` into it), the level's cover phase (`coverPhase` copies the
+mask in and `RamCover.coverCom` destroys it) and the nested driver last
+left there. So the touched-only copy's precondition — zero off the alive
+set — is not derivable, and `alv_touched_only_needs_clean_scratch`
+compiles the consequence on data: run from a dirty `"alv"`, the pass
+leaves a mask that is *not* `Alv'`, and the difference is at a vertex the
+block search walks through. The junk is not an accounting artefact, and
+`mask_junk_flips_the_engine` is that on data: at one arena, one member
+list, one radius and one threshold, moving only the mask cells the
+child's alive set does **not** name moves the engine's own flag from `1`
+to `0` — `BfsBlock`'s two mask reads are the search frontier's
+eligibility test, so a junk-alive cell enlarges the ball and swallows a
+pick. Making this precondition available is the driver-wide
+clean-scratch discipline (the cover and order phases active-set-driven,
+R1.6), not the atom's.
+
+**Blocker 2, the distance: the clause is uniform and the radius moves.**
+`ArenaA`'s seventh clause is `σ.arrs "dist" = arrOf n (fun _ => r + 1)`
+— the *whole* array at the atom's **own** radius. Consecutive atoms of a
+turn carry different radii (`σs.r` is a field of each
+`ScatterSentence`), and the engine hands the array back at its own
+sentinel, so every cell that the next atom does not list is stale by
+exactly one radius step. No discipline on the caller repairs that:
+`dist_touched_only_refuted` compiles that the member-scale fill leaves
+`ArenaA`'s clause false however clean the incoming array was. The clause
+would have to be narrowed to the mask's support first — which is the
+*engine's* file, and not a one-line narrowing: `BfsBlock.unwind_run`
+proves the array comes back as the same literal list by an
+`arrOf_congr` over every `i < n`, and `RamBfs.Frontier`'s `cap`/`sound`
+clauses are consumed at dead vertices in `frontier_seed_alive`/`_dead`.
+
+So this wave's result is a **refutation with the replacement in hand**:
+both passes are here, specified and clocked; neither can be wired into
+`scatDeadCom` without moving a landed contract, and §5c's charge
+therefore does not move. `Refine.C0CloseProbe` §4 keeps its constants
+for exactly that reason. -/
+
+section MemberScaleEntry
+
+/-- The touched-only fill: one store of the constant `c` into `a` per
+vertex of the child's member list, and no other cell touched. -/
+def memFillAt (j : ℕ) (a : String) (c : ℕ) : Com :=
+  .seq (.assign "ac" (.lit 0))
+    (.while (.lt (.var "ac") (.var (mnumName (j + 1))))
+      (.seq (.assign "ax" (.get (memName (j + 1)) (.var "ac")))
+        (.seq (.store a (.var "ax") (.lit c))
+          (.assign "ac" (.add (.var "ac") (.lit 1))))))
+
+/-- The touched-only copy: the same walk, reading the source at the
+listed vertex. -/
+def memCopyAt (j : ℕ) (src a : String) : Com :=
+  .seq (.assign "ac" (.lit 0))
+    (.while (.lt (.var "ac") (.var (mnumName (j + 1))))
+      (.seq (.assign "ax" (.get (memName (j + 1)) (.var "ac")))
+        (.seq (.store a (.var "ax") (.get src (.var "ax")))
+          (.assign "ac" (.add (.var "ac") (.lit 1))))))
+
+/-- **The mask copy, touched-only**: the replacement for
+`RamDriver.copyCom (alvName (j + 1)) "alv"`. -/
+def alvMemCom (j : ℕ) : Com := memCopyAt j (alvName (j + 1)) "alv"
+
+/-- **And its restore**: the same walk putting the scratch back to zero,
+so that the pair leaves `"alv"` exactly as it found it. -/
+def alvClrCom (j : ℕ) : Com := memFillAt j "alv" 0
+
+/-- **The distance fill, touched-only**: the replacement for
+`RamDriver.fillCom "dist" (.lit (r + 1))`. -/
+def distMemCom (j r : ℕ) : Com := memFillAt j "dist" (r + 1)
+
+/-- The fill's charge: the child's member count, carrier-free. -/
+def memFillAtCost (mm1 : ℕ) : ℕ := 14 * mm1 + 6
+
+/-- The copy's charge: one unit more per member than the fill's, for the
+indirect read. -/
+def memCopyAtCost (mm1 : ℕ) : ℕ := 15 * mm1 + 6
+
+/-- The two together, as the atom would pay them: the mask set, the mask
+restore and the distance fill, against the landed `23·n + 12`. -/
+def entryMemCost (mm1 : ℕ) : ℕ := memCopyAtCost mm1 + memFillAtCost mm1 + memFillAtCost mm1
+
+theorem entryMemCost_eq (mm1 : ℕ) : entryMemCost mm1 = 43 * mm1 + 18 := by
+  simp only [entryMemCost, memCopyAtCost, memFillAtCost]; omega
+
+/-! #### The write sets -/
+
+theorem warrs_memFillAt (j : ℕ) (a : String) (c : ℕ) : (memFillAt j a c).warrs = [a] := by
+  simp [memFillAt, Com.warrs]
+
+theorem notMem_wvars_memFillAt (j : ℕ) (a : String) (c : ℕ) {y : String}
+    (h₁ : y ≠ "ac") (h₂ : y ≠ "ax") : y ∉ (memFillAt j a c).wvars := by
+  simp [memFillAt, Com.wvars, h₁, h₂]
+
+theorem warrs_memCopyAt (j : ℕ) (src a : String) : (memCopyAt j src a).warrs = [a] := by
+  simp [memCopyAt, Com.warrs]
+
+theorem notMem_wvars_memCopyAt (j : ℕ) (src a : String) {y : String}
+    (h₁ : y ≠ "ac") (h₂ : y ≠ "ax") : y ∉ (memCopyAt j src a).wvars := by
+  simp [memCopyAt, Com.wvars, h₁, h₂]
+
+theorem ac_ne_mnumName (j : ℕ) : ("ac" : String) ≠ mnumName (j + 1) := by
+  simp [mnumName, String.ext_iff]
+
+theorem ax_ne_mnumName (j : ℕ) : ("ax" : String) ≠ mnumName (j + 1) := by
+  simp [mnumName, String.ext_iff]
+
+/-! #### The walks
+
+The invariant is the touched-only law at the read pointer: the members
+already read hold the new value, and every cell the read prefix does not
+name still holds what it held when the pass started. -/
+
+/-- What the touched-only fill carries. -/
+def MemFillInv (n j mm1 : ℕ) (a : String) (c : ℕ) (Mem1 g₀ : ℕ → ℕ) (σ : Env) : Prop :=
+  σ.vars (mnumName (j + 1)) = mm1 ∧ σ.vars "ac" ≤ mm1 ∧
+    σ.arrs (memName (j + 1)) = arrOf n Mem1 ∧
+    ∃ g, σ.arrs a = arrOf n g ∧
+      (∀ p, p < σ.vars "ac" → g (Mem1 p) = c) ∧
+      (∀ v, v < n → (∀ p, p < σ.vars "ac" → Mem1 p ≠ v) → g v = g₀ v)
+
+/-- **The touched-only fill, walked.** The listed cells hold `c`; every
+other cell is untouched. The charge is the child's member count and the
+carrier occurs nowhere in it. -/
+theorem memFillAt_spec {j mm1 c : ℕ} {a : String} {Mem1 g₀ A : ℕ → ℕ}
+    (hB : 1 < B) (hnB : n < B) (hcB : c < B)
+    (hane : a ≠ memName (j + 1)) (hMenum : MemEnum n mm1 Mem1 A) :
+    Spec B (fun σ => σ.vars (mnumName (j + 1)) = mm1 ∧
+        σ.arrs (memName (j + 1)) = arrOf n Mem1 ∧ σ.arrs a = arrOf n g₀)
+      (memFillAt j a c)
+      (fun _ σ' => (∃ g, σ'.arrs a = arrOf n g ∧
+          (∀ p, p < mm1 → g (Mem1 p) = c) ∧
+          (∀ v, v < n → (∀ p, p < mm1 → Mem1 p ≠ v) → g v = g₀ v)) ∧
+        σ'.vars (mnumName (j + 1)) = mm1 ∧
+        σ'.arrs (memName (j + 1)) = arrOf n Mem1)
+      (memFillAtCost mm1) := by
+  obtain ⟨hMlt, -, -, -⟩ := id hMenum
+  have hm1n : mm1 ≤ n := hMenum.card_le
+  have hm1B : mm1 < B := by omega
+  refine Spec.of_exists (fun σ hσ => ?_)
+  obtain ⟨hmm1, hmem1, harr⟩ := hσ
+  set σ₁ := σ.setVar "ac" 0 with hσ₁
+  have hr₁ : Run B (.assign "ac" (.lit 0)) σ σ₁ 2 :=
+    (Run.assign (evalB_lit (by omega))).mono (by simp [Expr.size])
+  -- one member of the list
+  have hstep : ∀ ρ : Env, MemFillInv n j mm1 a c Mem1 g₀ ρ → ρ.vars "ac" < mm1 →
+      ∃ ρ' K', Run B (.seq (.assign "ax" (.get (memName (j + 1)) (.var "ac")))
+          (.seq (.store a (.var "ax") (.lit c))
+            (.assign "ac" (.add (.var "ac") (.lit 1))))) ρ ρ' K' ∧
+        MemFillInv n j mm1 a c Mem1 g₀ ρ' ∧ ρ'.vars "ac" = ρ.vars "ac" + 1 ∧ K' ≤ 10 := by
+    intro ρ hρ hlt
+    obtain ⟨hmm1ρ, hacρ, hmem1ρ, g, hgarr, hset, hkeep⟩ := hρ
+    set ac := ρ.vars "ac" with hac
+    have hvn : Mem1 ac < n := hMlt ac hlt
+    have hacn : ac < n := by omega
+    have hace : (Expr.var "ac").evalB B ρ = some ac := by
+      have h := evalB_var (B := B) (x := "ac") (σ := ρ) (by omega)
+      rwa [← hac] at h
+    have hread : (Expr.get (memName (j + 1)) (.var "ac")).evalB B ρ = some (Mem1 ac) :=
+      evalB_get hace (by rw [hmem1ρ, getElem?_arrOf Mem1 hacn]) (by omega)
+    set ρ₁ := ρ.setVar "ax" (Mem1 ac) with hρ₁
+    have hr'₁ : Run B (.assign "ax" (.get (memName (j + 1)) (.var "ac"))) ρ ρ₁ 3 :=
+      (Run.assign hread).mono (by simp [Expr.size])
+    have hax₁ : ρ₁.vars "ax" = Mem1 ac := by rw [hρ₁, vars_setVar, if_pos rfl]
+    have hac₁ : ρ₁.vars "ac" = ac := by rw [hρ₁, vars_setVar, if_neg (by decide)]
+    have hgarr₁ : ρ₁.arrs a = arrOf n g := by rw [hρ₁, arrs_setVar]; exact hgarr
+    have hmem1₁ : ρ₁.arrs (memName (j + 1)) = arrOf n Mem1 := by
+      rw [hρ₁, arrs_setVar]; exact hmem1ρ
+    have hmm1₁ : ρ₁.vars (mnumName (j + 1)) = mm1 := by
+      rw [hρ₁, vars_setVar, if_neg (Ne.symm (ax_ne_mnumName j))]; exact hmm1ρ
+    -- the store at the listed vertex
+    have haxe : (Expr.var "ax").evalB B ρ₁ = some (Mem1 ac) := by
+      have h := evalB_var (B := B) (x := "ax") (σ := ρ₁) (by rw [hax₁]; omega)
+      rwa [hax₁] at h
+    have hlen₁ : Mem1 ac < (ρ₁.arrs a).length := by rw [hgarr₁, length_arrOf]; exact hvn
+    set ρ₂ := ρ₁.setArr a (Mem1 ac) c with hρ₂
+    have hr'₂ : Run B (.store a (.var "ax") (.lit c)) ρ₁ ρ₂ 3 :=
+      (Run.store haxe (evalB_lit (by omega)) hlen₁).mono (by simp [Expr.size])
+    have hac₂ : ρ₂.vars "ac" = ac := by rw [hρ₂, vars_setArr]; exact hac₁
+    -- the read pointer moves
+    have hace₂ : (Expr.add (Expr.var "ac") (.lit 1)).evalB B ρ₂ = some (ac + 1) := by
+      have h := evalB_bin (evalB_var (B := B) (x := "ac") (σ := ρ₂) (by rw [hac₂]; omega))
+        (evalB_lit (B := B) (show (1 : ℕ) < B by omega))
+        (show Bop.add.apply (ρ₂.vars "ac") 1 < B by rw [Bop.apply_add, hac₂]; omega)
+      rw [Bop.apply_add, hac₂] at h
+      exact h
+    set ρ₃ := ρ₂.setVar "ac" (ac + 1) with hρ₃
+    have hr'₃ : Run B (.assign "ac" (.add (.var "ac") (.lit 1))) ρ₂ ρ₃ 4 :=
+      (Run.assign hace₂).mono (by simp [Expr.size])
+    set gu : ℕ → ℕ := fun k => if k = Mem1 ac then c else g k with hgu
+    have hac₃ : ρ₃.vars "ac" = ac + 1 := by rw [hρ₃, vars_setVar, if_pos rfl]
+    have hmm1₃ : ρ₃.vars (mnumName (j + 1)) = mm1 := by
+      rw [hρ₃, vars_setVar, if_neg (Ne.symm (ac_ne_mnumName j)), hρ₂, vars_setArr]
+      exact hmm1₁
+    have hgarr₃ : ρ₃.arrs a = arrOf n gu := by
+      rw [hρ₃, arrs_setVar, hρ₂, arrs_setArr, if_pos rfl, hgarr₁, set_arrOf]
+    have hmem1₃ : ρ₃.arrs (memName (j + 1)) = arrOf n Mem1 := by
+      rw [hρ₃, arrs_setVar, hρ₂, arrs_setArr, if_neg (Ne.symm hane)]
+      exact hmem1₁
+    refine ⟨ρ₃, 10, ((hr'₁.seq (hr'₂.seq hr'₃))).mono (by omega), ?_, hac₃, le_rfl⟩
+    refine ⟨hmm1₃, by omega, hmem1₃, gu, hgarr₃, ?_, ?_⟩
+    · intro p hp
+      rw [hac₃] at hp
+      by_cases hpe : Mem1 p = Mem1 ac
+      · rw [hgu]; simp only []; rw [hpe, if_pos rfl]
+      · have hpac : p ≠ ac := fun h => hpe (by rw [h])
+        rw [hgu]; simp only []; rw [if_neg hpe]
+        exact hset p (by omega)
+    · intro v hv hnot
+      rw [hac₃] at hnot
+      have hne : Mem1 ac ≠ v := hnot ac (by omega)
+      rw [hgu]; simp only []; rw [if_neg (fun h => hne h.symm)]
+      exact hkeep v hv (fun p hp => hnot p (by omega))
+  have hI₁ : MemFillInv n j mm1 a c Mem1 g₀ σ₁ := by
+    have hac₁ : σ₁.vars "ac" = 0 := by rw [hσ₁, vars_setVar, if_pos rfl]
+    refine ⟨by rw [hσ₁, vars_setVar, if_neg (Ne.symm (ac_ne_mnumName j))]; exact hmm1,
+      by omega, by rw [hσ₁, arrs_setVar]; exact hmem1, g₀,
+      by rw [hσ₁, arrs_setVar]; exact harr, ?_, ?_⟩
+    · intro p hp; rw [hac₁] at hp; omega
+    · intro v _ _; rfl
+  obtain ⟨σ₂, hr₂, hI₂, hac₂⟩ :=
+    (Csr.rowScan_spec B (14 * mm1 + 4) mm1 10 "ac" (mnumName (j + 1))
+      (.seq (.assign "ax" (.get (memName (j + 1)) (.var "ac")))
+        (.seq (.store a (.var "ax") (.lit c))
+          (.assign "ac" (.add (.var "ac") (.lit 1)))))
+      (MemFillInv n j mm1 a c Mem1 g₀) hm1B (fun ρ hρ => ⟨hρ.1, hρ.2.1⟩) hstep
+      (fun _ hρ => hρ)
+      (fun ρ hρ => by
+        have h : (10 + 4) * (mm1 - ρ.vars "ac") ≤ 14 * mm1 := Nat.mul_le_mul le_rfl (by omega)
+        omega)).run hI₁
+  obtain ⟨hmm1₂, -, hmem1₂, g, hgarr₂, hset₂, hkeep₂⟩ := hI₂
+  rw [hac₂] at hset₂ hkeep₂
+  exact ⟨σ₂, _, hr₁.seq hr₂, by rw [memFillAtCost]; omega,
+    ⟨g, hgarr₂, hset₂, hkeep₂⟩, hmm1₂, hmem1₂⟩
+
+/-- What the touched-only copy carries: the fill's law with the source
+array frozen beside it. -/
+def MemCopyInv (n j mm1 : ℕ) (src a : String) (Mem1 F g₀ : ℕ → ℕ) (σ : Env) : Prop :=
+  σ.vars (mnumName (j + 1)) = mm1 ∧ σ.vars "ac" ≤ mm1 ∧
+    σ.arrs (memName (j + 1)) = arrOf n Mem1 ∧ σ.arrs src = arrOf n F ∧
+    ∃ g, σ.arrs a = arrOf n g ∧
+      (∀ p, p < σ.vars "ac" → g (Mem1 p) = F (Mem1 p)) ∧
+      (∀ v, v < n → (∀ p, p < σ.vars "ac" → Mem1 p ≠ v) → g v = g₀ v)
+
+/-- **The touched-only copy, walked.** The listed cells hold the source's
+value; every other cell is untouched. -/
+theorem memCopyAt_spec {j mm1 : ℕ} {src a : String} {Mem1 F g₀ A : ℕ → ℕ}
+    (hB : 1 < B) (hnB : n < B) (hFB : ∀ v, v < n → F v < B)
+    (hane : a ≠ memName (j + 1)) (hsa : src ≠ a) (hMenum : MemEnum n mm1 Mem1 A) :
+    Spec B (fun σ => σ.vars (mnumName (j + 1)) = mm1 ∧
+        σ.arrs (memName (j + 1)) = arrOf n Mem1 ∧ σ.arrs src = arrOf n F ∧
+        σ.arrs a = arrOf n g₀)
+      (memCopyAt j src a)
+      (fun _ σ' => (∃ g, σ'.arrs a = arrOf n g ∧
+          (∀ p, p < mm1 → g (Mem1 p) = F (Mem1 p)) ∧
+          (∀ v, v < n → (∀ p, p < mm1 → Mem1 p ≠ v) → g v = g₀ v)) ∧
+        σ'.vars (mnumName (j + 1)) = mm1 ∧
+        σ'.arrs (memName (j + 1)) = arrOf n Mem1 ∧ σ'.arrs src = arrOf n F)
+      (memCopyAtCost mm1) := by
+  obtain ⟨hMlt, -, -, -⟩ := id hMenum
+  have hm1n : mm1 ≤ n := hMenum.card_le
+  have hm1B : mm1 < B := by omega
+  refine Spec.of_exists (fun σ hσ => ?_)
+  obtain ⟨hmm1, hmem1, hsrc, harr⟩ := hσ
+  set σ₁ := σ.setVar "ac" 0 with hσ₁
+  have hr₁ : Run B (.assign "ac" (.lit 0)) σ σ₁ 2 :=
+    (Run.assign (evalB_lit (by omega))).mono (by simp [Expr.size])
+  have hstep : ∀ ρ : Env, MemCopyInv n j mm1 src a Mem1 F g₀ ρ → ρ.vars "ac" < mm1 →
+      ∃ ρ' K', Run B (.seq (.assign "ax" (.get (memName (j + 1)) (.var "ac")))
+          (.seq (.store a (.var "ax") (.get src (.var "ax")))
+            (.assign "ac" (.add (.var "ac") (.lit 1))))) ρ ρ' K' ∧
+        MemCopyInv n j mm1 src a Mem1 F g₀ ρ' ∧ ρ'.vars "ac" = ρ.vars "ac" + 1 ∧ K' ≤ 11 := by
+    intro ρ hρ hlt
+    obtain ⟨hmm1ρ, hacρ, hmem1ρ, hsrcρ, g, hgarr, hset, hkeep⟩ := hρ
+    set ac := ρ.vars "ac" with hac
+    have hvn : Mem1 ac < n := hMlt ac hlt
+    have hacn : ac < n := by omega
+    have hace : (Expr.var "ac").evalB B ρ = some ac := by
+      have h := evalB_var (B := B) (x := "ac") (σ := ρ) (by omega)
+      rwa [← hac] at h
+    have hread : (Expr.get (memName (j + 1)) (.var "ac")).evalB B ρ = some (Mem1 ac) :=
+      evalB_get hace (by rw [hmem1ρ, getElem?_arrOf Mem1 hacn]) (by omega)
+    set ρ₁ := ρ.setVar "ax" (Mem1 ac) with hρ₁
+    have hr'₁ : Run B (.assign "ax" (.get (memName (j + 1)) (.var "ac"))) ρ ρ₁ 3 :=
+      (Run.assign hread).mono (by simp [Expr.size])
+    have hax₁ : ρ₁.vars "ax" = Mem1 ac := by rw [hρ₁, vars_setVar, if_pos rfl]
+    have hac₁ : ρ₁.vars "ac" = ac := by rw [hρ₁, vars_setVar, if_neg (by decide)]
+    have hgarr₁ : ρ₁.arrs a = arrOf n g := by rw [hρ₁, arrs_setVar]; exact hgarr
+    have hsrc₁ : ρ₁.arrs src = arrOf n F := by rw [hρ₁, arrs_setVar]; exact hsrcρ
+    have hmem1₁ : ρ₁.arrs (memName (j + 1)) = arrOf n Mem1 := by
+      rw [hρ₁, arrs_setVar]; exact hmem1ρ
+    have hmm1₁ : ρ₁.vars (mnumName (j + 1)) = mm1 := by
+      rw [hρ₁, vars_setVar, if_neg (Ne.symm (ax_ne_mnumName j))]; exact hmm1ρ
+    have haxe : (Expr.var "ax").evalB B ρ₁ = some (Mem1 ac) := by
+      have h := evalB_var (B := B) (x := "ax") (σ := ρ₁) (by rw [hax₁]; omega)
+      rwa [hax₁] at h
+    have hvale : (Expr.get src (.var "ax")).evalB B ρ₁ = some (F (Mem1 ac)) :=
+      evalB_get haxe (by rw [hsrc₁, getElem?_arrOf F hvn]) (hFB _ hvn)
+    have hlen₁ : Mem1 ac < (ρ₁.arrs a).length := by rw [hgarr₁, length_arrOf]; exact hvn
+    set ρ₂ := ρ₁.setArr a (Mem1 ac) (F (Mem1 ac)) with hρ₂
+    have hr'₂ : Run B (.store a (.var "ax") (.get src (.var "ax"))) ρ₁ ρ₂ 4 :=
+      (Run.store haxe hvale hlen₁).mono (by simp [Expr.size])
+    have hac₂ : ρ₂.vars "ac" = ac := by rw [hρ₂, vars_setArr]; exact hac₁
+    have hace₂ : (Expr.add (Expr.var "ac") (.lit 1)).evalB B ρ₂ = some (ac + 1) := by
+      have h := evalB_bin (evalB_var (B := B) (x := "ac") (σ := ρ₂) (by rw [hac₂]; omega))
+        (evalB_lit (B := B) (show (1 : ℕ) < B by omega))
+        (show Bop.add.apply (ρ₂.vars "ac") 1 < B by rw [Bop.apply_add, hac₂]; omega)
+      rw [Bop.apply_add, hac₂] at h
+      exact h
+    set ρ₃ := ρ₂.setVar "ac" (ac + 1) with hρ₃
+    have hr'₃ : Run B (.assign "ac" (.add (.var "ac") (.lit 1))) ρ₂ ρ₃ 4 :=
+      (Run.assign hace₂).mono (by simp [Expr.size])
+    set gu : ℕ → ℕ := fun k => if k = Mem1 ac then F (Mem1 ac) else g k with hgu
+    have hac₃ : ρ₃.vars "ac" = ac + 1 := by rw [hρ₃, vars_setVar, if_pos rfl]
+    have hmm1₃ : ρ₃.vars (mnumName (j + 1)) = mm1 := by
+      rw [hρ₃, vars_setVar, if_neg (Ne.symm (ac_ne_mnumName j)), hρ₂, vars_setArr]
+      exact hmm1₁
+    have hgarr₃ : ρ₃.arrs a = arrOf n gu := by
+      rw [hρ₃, arrs_setVar, hρ₂, arrs_setArr, if_pos rfl, hgarr₁, set_arrOf]
+    have hmem1₃ : ρ₃.arrs (memName (j + 1)) = arrOf n Mem1 := by
+      rw [hρ₃, arrs_setVar, hρ₂, arrs_setArr, if_neg (Ne.symm hane)]
+      exact hmem1₁
+    have hsrc₃ : ρ₃.arrs src = arrOf n F := by
+      rw [hρ₃, arrs_setVar, hρ₂, arrs_setArr, if_neg hsa]
+      exact hsrc₁
+    refine ⟨ρ₃, 11, ((hr'₁.seq (hr'₂.seq hr'₃))).mono (by omega), ?_, hac₃, le_rfl⟩
+    refine ⟨hmm1₃, by omega, hmem1₃, hsrc₃, gu, hgarr₃, ?_, ?_⟩
+    · intro p hp
+      rw [hac₃] at hp
+      by_cases hpe : Mem1 p = Mem1 ac
+      · rw [hgu]; simp only []; rw [hpe, if_pos rfl]
+      · have hpac : p ≠ ac := fun h => hpe (by rw [h])
+        rw [hgu]; simp only []; rw [if_neg hpe]
+        exact hset p (by omega)
+    · intro v hv hnot
+      rw [hac₃] at hnot
+      have hne : Mem1 ac ≠ v := hnot ac (by omega)
+      rw [hgu]; simp only []; rw [if_neg (fun h => hne h.symm)]
+      exact hkeep v hv (fun p hp => hnot p (by omega))
+  have hI₁ : MemCopyInv n j mm1 src a Mem1 F g₀ σ₁ := by
+    have hac₁ : σ₁.vars "ac" = 0 := by rw [hσ₁, vars_setVar, if_pos rfl]
+    refine ⟨by rw [hσ₁, vars_setVar, if_neg (Ne.symm (ac_ne_mnumName j))]; exact hmm1,
+      by omega, by rw [hσ₁, arrs_setVar]; exact hmem1,
+      by rw [hσ₁, arrs_setVar]; exact hsrc, g₀,
+      by rw [hσ₁, arrs_setVar]; exact harr, ?_, ?_⟩
+    · intro p hp; rw [hac₁] at hp; omega
+    · intro v _ _; rfl
+  obtain ⟨σ₂, hr₂, hI₂, hac₂⟩ :=
+    (Csr.rowScan_spec B (15 * mm1 + 4) mm1 11 "ac" (mnumName (j + 1))
+      (.seq (.assign "ax" (.get (memName (j + 1)) (.var "ac")))
+        (.seq (.store a (.var "ax") (.get src (.var "ax")))
+          (.assign "ac" (.add (.var "ac") (.lit 1)))))
+      (MemCopyInv n j mm1 src a Mem1 F g₀) hm1B (fun ρ hρ => ⟨hρ.1, hρ.2.1⟩) hstep
+      (fun _ hρ => hρ)
+      (fun ρ hρ => by
+        have h : (11 + 4) * (mm1 - ρ.vars "ac") ≤ 15 * mm1 := Nat.mul_le_mul le_rfl (by omega)
+        omega)).run hI₁
+  obtain ⟨hmm1₂, -, hmem1₂, hsrc₂, g, hgarr₂, hset₂, hkeep₂⟩ := hI₂
+  rw [hac₂] at hset₂ hkeep₂
+  exact ⟨σ₂, _, hr₁.seq hr₂, by rw [memCopyAtCost]; omega,
+    ⟨g, hgarr₂, hset₂, hkeep₂⟩, hmm1₂, hmem1₂, hsrc₂⟩
+
+/-! #### The three uses -/
+
+/-- **The mask copy at the member list produces `ArenaA`'s mask clause**
+— from a scratch array that is zero off the child's alive set, and at
+`15·mm1 + 6` with the carrier nowhere in the charge.
+
+The off-list half is `MemEnum`'s fourth clause read backwards: a vertex
+the list omits is not alive, so the mask's own value there is zero, which
+is what the clean scratch already holds. -/
+theorem alvMemCom_spec {j mm1 : ℕ} {Mem1 Alv' : ℕ → ℕ}
+    (hB : 1 < B) (hnB : n < B) (hAB : ∀ v, v < n → Alv' v < B)
+    (hMenum : MemEnum n mm1 Mem1 Alv') :
+    Spec B (fun σ => σ.vars (mnumName (j + 1)) = mm1 ∧
+        σ.arrs (memName (j + 1)) = arrOf n Mem1 ∧
+        σ.arrs (alvName (j + 1)) = arrOf n Alv' ∧
+        σ.arrs "alv" = arrOf n (fun _ => 0))
+      (alvMemCom j)
+      (fun _ σ' => σ'.arrs "alv" = arrOf n Alv' ∧
+        σ'.vars (mnumName (j + 1)) = mm1 ∧
+        σ'.arrs (memName (j + 1)) = arrOf n Mem1 ∧
+        σ'.arrs (alvName (j + 1)) = arrOf n Alv')
+      (memCopyAtCost mm1) := by
+  refine ((memCopyAt_spec (B := B) (n := n) (j := j) (mm1 := mm1)
+    (src := alvName (j + 1)) (a := "alv") (Mem1 := Mem1) (F := Alv') (g₀ := fun _ => 0)
+    (A := Alv') hB hnB hAB (by simp [memName, String.ext_iff])
+    (by simp [alvName, String.ext_iff]) hMenum).post ?_)
+  rintro σ σ' - ⟨⟨g, hgarr, hset, hkeep⟩, hmm1, hmem1, hsrc⟩
+  refine ⟨?_, hmm1, hmem1, hsrc⟩
+  rw [hgarr]
+  refine arrOf_congr (fun v hv => ?_)
+  by_cases hlist : ∃ p, p < mm1 ∧ Mem1 p = v
+  · obtain ⟨p, hp, rfl⟩ := hlist
+    exact hset p hp
+  · push_neg at hlist
+    rw [hkeep v hv (fun p hp => hlist p hp)]
+    by_contra hne
+    obtain ⟨p, hp, hpv⟩ := hMenum.2.2.2 v hv (fun h => hne h.symm)
+    exact hlist p hp hpv
+
+/-- **…and the restore puts it back.** The same walk at the constant
+zero returns `"alv"` to the clean state the copy consumed, so the pair
+is a round trip: an atom that sets the mask before the engine and clears
+it after leaves the scratch exactly as it found it, at `14·mm1 + 6`. -/
+theorem alvClrCom_spec {j mm1 : ℕ} {Mem1 Alv' : ℕ → ℕ}
+    (hB : 1 < B) (hnB : n < B)
+    (hMenum : MemEnum n mm1 Mem1 Alv') :
+    Spec B (fun σ => σ.vars (mnumName (j + 1)) = mm1 ∧
+        σ.arrs (memName (j + 1)) = arrOf n Mem1 ∧
+        σ.arrs "alv" = arrOf n Alv')
+      (alvClrCom j)
+      (fun _ σ' => σ'.arrs "alv" = arrOf n (fun _ => 0) ∧
+        σ'.vars (mnumName (j + 1)) = mm1 ∧
+        σ'.arrs (memName (j + 1)) = arrOf n Mem1)
+      (memFillAtCost mm1) := by
+  refine ((memFillAt_spec (B := B) (n := n) (j := j) (mm1 := mm1) (c := 0)
+    (a := "alv") (Mem1 := Mem1) (g₀ := Alv') (A := Alv') hB hnB (by omega)
+    (by simp [memName, String.ext_iff]) hMenum).post ?_)
+  rintro σ σ' - ⟨⟨g, hgarr, hset, hkeep⟩, hmm1, hmem1⟩
+  refine ⟨?_, hmm1, hmem1⟩
+  rw [hgarr]
+  refine arrOf_congr (fun v hv => ?_)
+  by_cases hlist : ∃ p, p < mm1 ∧ Mem1 p = v
+  · obtain ⟨p, hp, rfl⟩ := hlist
+    exact hset p hp
+  · push_neg at hlist
+    rw [hkeep v hv (fun p hp => hlist p hp)]
+    by_contra hne
+    obtain ⟨p, hp, hpv⟩ := hMenum.2.2.2 v hv hne
+    exact hlist p hp hpv
+
+/-- **The distance fill at the member list**, at `14·mm1 + 6`: every
+*listed* vertex holds the search's sentinel, and no other cell moves.
+
+That is where `Refine.BfsBlock`'s search reads and writes — its two mask
+reads gate the relaxation, and its unwind walks the queue — but it is
+**not** `Refine.ScatterBlock.ArenaA`'s seventh clause, which pins the
+whole array. `dist_touched_only_refuted` is the gap, on data. -/
+theorem distMemCom_spec {j mm1 r : ℕ} {Mem1 g₀ A : ℕ → ℕ}
+    (hB : 1 < B) (hnB : n < B) (hrB : r + 1 < B)
+    (hMenum : MemEnum n mm1 Mem1 A) :
+    Spec B (fun σ => σ.vars (mnumName (j + 1)) = mm1 ∧
+        σ.arrs (memName (j + 1)) = arrOf n Mem1 ∧ σ.arrs "dist" = arrOf n g₀)
+      (distMemCom j r)
+      (fun _ σ' => (∃ g, σ'.arrs "dist" = arrOf n g ∧
+          (∀ p, p < mm1 → g (Mem1 p) = r + 1) ∧
+          (∀ v, v < n → (∀ p, p < mm1 → Mem1 p ≠ v) → g v = g₀ v)) ∧
+        σ'.vars (mnumName (j + 1)) = mm1 ∧
+        σ'.arrs (memName (j + 1)) = arrOf n Mem1)
+      (memFillAtCost mm1) :=
+  memFillAt_spec (B := B) (n := n) (j := j) (mm1 := mm1) (c := r + 1) (a := "dist")
+    (Mem1 := Mem1) (g₀ := g₀) (A := A) hB hnB hrB (by simp [memName, String.ext_iff]) hMenum
+
+end MemberScaleEntry
+
+/-! ### §5g The replacement measured, and the two blockers on data
+
+The instrument is `TgtWidenProbe.execC` again — the state, and the
+`Lax13Proofs.BigStepB` clock currency for currency. What is checked:
+the clock does not read the carrier, the landed passes at the same slot
+do, and the two preconditions the replacement needs are exactly the two
+the atom's entry state does not supply. -/
+
+section MemberScaleProbes
+
+open Lax3Proofs.TgtWidenProbe (execC pB pF PSt)
+
+/-- A three-member child inside an `n`-cell carrier: the alive vertices
+are `2`, `5` and `7`, the child mask is alive exactly there, and the two
+scratch arrays are clean. -/
+def mwSt (n : ℕ) : PSt :=
+  { vars := [("n", n), (mnumName 1, 3)]
+    arrs := [(memName 1, [2, 5, 7] ++ List.replicate (n - 3) 0),
+             (alvName 1, (((List.replicate n 0).set 2 1).set 5 1).set 7 1),
+             ("alv", List.replicate n 0),
+             ("dist", List.replicate n 0)] }
+
+/-- The same turn with no alive child at all. -/
+def mwSt0 (n : ℕ) : PSt := { mwSt n with vars := [("n", n), (mnumName 1, 0)] }
+
+-- **the mask copy at the member list runs, and moves exactly the three
+-- listed cells**
+#guard (execC pB pF (alvMemCom 0) (mwSt 10)).1.isOk
+#guard (List.range 10).map ((execC pB pF (alvMemCom 0) (mwSt 10)).1.cell "alv") =
+  [0, 0, 1, 0, 0, 1, 0, 1, 0, 0]
+
+-- **the clock is carrier-blind**: the same three members inside a
+-- ten-cell and a two-hundred-cell carrier clock identically
+#guard (execC pB pF (alvMemCom 0) (mwSt 10)).2 = (execC pB pF (alvMemCom 0) (mwSt 200)).2
+#guard (execC pB pF (alvClrCom 0) (mwSt 10)).2 = (execC pB pF (alvClrCom 0) (mwSt 200)).2
+#guard (execC pB pF (distMemCom 0 1) (mwSt 10)).2 =
+  (execC pB pF (distMemCom 0 1) (mwSt 200)).2
+
+-- and it is the charge the specification claims, at three members and
+-- at none: `15·3 + 6` and `14·3 + 6`, `6` when the list is empty
+#guard (execC pB pF (alvMemCom 0) (mwSt 10)).2 = memCopyAtCost 3
+#guard (execC pB pF (distMemCom 0 1) (mwSt 10)).2 = memFillAtCost 3
+#guard (execC pB pF (alvMemCom 0) (mwSt0 10)).2 = memCopyAtCost 0
+#guard (execC pB pF (distMemCom 0 1) (mwSt0 200)).2 = memFillAtCost 0
+
+-- **the negative control**: the landed passes at the same two slots
+-- clock the carrier, and grow with it
+#guard (execC pB pF (copyCom (alvName 1) "alv") (mwSt 10)).2 <
+  (execC pB pF (copyCom (alvName 1) "alv") (mwSt 200)).2
+#guard (execC pB pF (fillCom "dist" (.lit 2)) (mwSt 10)).2 <
+  (execC pB pF (fillCom "dist" (.lit 2)) (mwSt 200)).2
+#guard (execC pB pF (copyCom (alvName 1) "alv") (mwSt 10)).2 = 12 * 10 + 6
+#guard (execC pB pF (fillCom "dist" (.lit 2)) (mwSt 10)).2 = 11 * 10 + 6
+
+/-- The same turn with the mask scratch **dirty** — the state the atom
+actually starts in, since `"alv"` is a `RamDriverFrames.scratchArrs`
+entry that the descent, the cover phase and the nested driver all write
+and no clause of `ScatterDeadTurn.DeadPre` pins. -/
+def mwStDirty (n : ℕ) : PSt :=
+  { mwSt n with
+    arrs := (mwSt n).arrs.map fun p => if p.1 = "alv" then ("alv", List.replicate n 1) else p }
+
+/-- **BLOCKER 1, on data: the touched-only mask copy needs a clean
+scratch.** Run from a dirty `"alv"` the pass leaves the three listed
+cells right and everything else wrong — here vertex `3`, which the child
+mask kills, comes out alive. That is not an accounting defect: `"alv"` is
+the block search's eligibility test (`Refine.BfsBlock`'s two mask reads),
+so a junk-alive cell puts a dead vertex on the frontier and enlarges the
+ball the engine counts.
+
+The landed `RamDriver.copyCom` is immune because it writes every cell;
+the replacement is immune only under an invariant that says the scratch
+is zero off the child's alive set, and `RamDriver.LevelMem` gives the
+array's **length** and nothing else. Supplying that invariant is the
+driver-wide clean-scratch discipline (R1.6), not this wave's. -/
+theorem alv_touched_only_needs_clean_scratch :
+    (execC pB pF (alvMemCom 0) (mwStDirty 10)).1.cell "alv" 2 = 1 ∧
+      (execC pB pF (alvMemCom 0) (mwStDirty 10)).1.cell "alv" 3 = 1 ∧
+      (execC pB pF (copyCom (alvName 1) "alv") (mwStDirty 10)).1.cell "alv" 3 = 0 := by
+  refine ⟨by decide +kernel, by decide +kernel, by decide +kernel⟩
+
+/-- The same turn with `"dist"` clean **at the previous atom's radius** —
+the state the engine's own clean-out leaves, since it restores the array
+at its own sentinel. -/
+def mwStPrev (n : ℕ) : PSt :=
+  { mwSt n with
+    arrs := (mwSt n).arrs.map fun p => if p.1 = "dist" then ("dist", List.replicate n 9) else p }
+
+/-- **BLOCKER 2, on data: the touched-only distance fill cannot produce
+`ArenaA`'s clause.** The clause is `σ.arrs "dist" = arrOf n (fun _ =>
+r + 1)` — the *whole* array at this atom's own radius — and consecutive
+atoms of a turn carry different radii, so the cells the child's list does
+not name are stale by exactly one radius step whatever the caller does.
+Here the fill at `r = 1` leaves `2` at the three listed vertices and the
+previous atom's `9` everywhere else.
+
+Unlike blocker 1 this is not repairable by any discipline on the caller:
+the clause would have to be narrowed to the mask's support, and that is
+the engine's own contract — `Refine.BfsBlock.unwind_run` proves the array
+comes back as the same literal list by an `arrOf_congr` over every
+`i < n`, and `RamBfs.Frontier`'s `cap`/`sound` clauses are consumed at
+*dead* vertices in `frontier_seed_alive`/`frontier_seed_dead`. -/
+theorem dist_touched_only_refuted :
+    (execC pB pF (distMemCom 0 1) (mwStPrev 10)).1.cell "dist" 2 = 2 ∧
+      (execC pB pF (distMemCom 0 1) (mwStPrev 10)).1.cell "dist" 3 = 9 ∧
+      (execC pB pF (fillCom "dist" (.lit 2)) (mwStPrev 10)).1.cell "dist" 3 = 2 := by
+  refine ⟨by decide +kernel, by decide +kernel, by decide +kernel⟩
+
+/-- A four-vertex arena whose only edges are `0—1` and `1—3`: the child
+mask is alive at `0` and `3`, and the vertex between them is dead. The
+member list is `[0, 3]`, the radius is `2` and the threshold is `2`. -/
+def engSt (alv : List ℕ) : PSt :=
+  { vars := [("n", 4), ("mm", 2)]
+    arrs := [("off", [0, 1, 3, 3, 4]), ("tgt", [1, 0, 3, 1]),
+             ("alv", alv), ("mem", [0, 3, 0, 0]),
+             ("dist", [3, 3, 3, 3]), ("q", [0, 0, 0, 0]), ("qd", [0, 0, 0, 0]),
+             ("exc", [0, 0, 0, 0])] }
+
+/-- **BLOCKER 1 is semantic, not cosmetic: the engine's own answer moves
+with the junk.** The same arena, the same member list, the same radius
+and threshold — only the cells of `"alv"` that the child's alive set
+does *not* name are different. At the true mask the walk `0—1—3` is
+broken at the dead middle vertex, so the two members are two picks and
+the flag is `1`; with the junk alive the ball of `0` swallows `3` and
+the flag is `0`.
+
+So the mask copy is not a charge that a better accounting could
+re-attribute: `Refine.ScatterBlock.ArenaA`'s mask clause is what the
+engine's conclusion is *about* (`masked G M`), and every cell of it is
+load-bearing. A touched-only mask write is sound only against an
+invariant that already zeroes the rest. -/
+theorem mask_junk_flips_the_engine :
+    (execC pB pF (scatBlockCom 2 2) (engSt [1, 0, 0, 1])).1.scalar "flag" = 1 ∧
+      (execC pB pF (scatBlockCom 2 2) (engSt [1, 1, 1, 1])).1.scalar "flag" = 0 ∧
+      (execC pB pF (scatBlockCom 2 2) (engSt [1, 0, 0, 1])).1.isOk ∧
+      (execC pB pF (scatBlockCom 2 2) (engSt [1, 1, 1, 1])).1.isOk := by
+  refine ⟨by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel⟩
+
+/-- **The round trip, on data**: mask copy, then restore, and the
+scratch is back where it started. This is the half of the discipline the
+atom phase *can* maintain by itself — what it cannot do is establish the
+clean state the first time. -/
+theorem alv_set_clear_round_trip :
+    (List.range 10).map
+        ((execC pB pF (.seq (alvMemCom 0) (alvClrCom 0)) (mwSt 10)).1.cell "alv") =
+      List.replicate 10 0 := by
+  decide +kernel
+
+end MemberScaleProbes
+
 /-! ### §5e The four driver passes, composed and run
 
 The compiled integration gate: the four passes of `scatDeadCom` that
@@ -1769,5 +2419,17 @@ Classical.choice,
 Quot.sound] -/
 #guard_msgs in
 #print axioms dead_inter_union_batch
+
+-- wave E4c-b: the touched-only replacement, its three readings, and the
+-- two blockers
+#print axioms memFillAt_spec
+#print axioms memCopyAt_spec
+#print axioms alvMemCom_spec
+#print axioms alvClrCom_spec
+#print axioms distMemCom_spec
+#print axioms alv_touched_only_needs_clean_scratch
+#print axioms dist_touched_only_refuted
+#print axioms mask_junk_flips_the_engine
+#print axioms alv_set_clear_round_trip
 
 end Lax3Proofs.Refine.ScatterDeadPass
