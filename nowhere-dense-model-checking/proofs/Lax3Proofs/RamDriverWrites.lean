@@ -1212,7 +1212,7 @@ theorem warrs_scatDeadCom {L : ℕ} (j ti : ℕ) (β : DistFO L 1) (r t : ℕ) (
   rw [scatDeadCom, Com.warrs, Com.warrs, Com.warrs, Com.warrs, Com.warrs, Com.warrs,
     Com.warrs, warrs_killSumCom, warrs_outProbeCom, warrs_outCntCom,
     warrs_atomFlagCom, atomBitCom, Com.warrs, Com.warrs, Com.warrs,
-    RamDriverIO.warrs_fillCom] at ha
+    distMemCom, Refine.ScatterDeadPass.warrs_memFillAt] at ha
   simp only [List.nil_append, List.append_nil, List.mem_append, List.mem_singleton] at ha
   rcases ha with (hemp | hb) | ha | ha | ha
   · exact absurd hemp (by simp [Com.warrs])
@@ -1336,18 +1336,18 @@ open Classical in
 scalars, the engine's nineteen, and the generated evaluator's. -/
 theorem wvars_scatDeadCom {L : ℕ} (j ti : ℕ) (β : DistFO L 1) (r t : ℕ) (hloc : IsLocal β)
     {y : String} (hy : y ∈ (scatDeadCom j ti β r t).wvars) :
-    y ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "i", "os", "flag"] ∨
+    y ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "ac", "ax", "os", "flag"] ∨
       y ∈ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
         "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"] ∨
       RamDriverBot.Ext "bb" y ∨ ∃ q, y = envName q := by
-  by_cases h₁ : y ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "i", "os", "flag"]
+  by_cases h₁ : y ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "ac", "ax", "os", "flag"]
   · exact Or.inl h₁
   by_cases h₂ : y ∈ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
       "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"]
   · exact Or.inr (Or.inl h₂)
   refine Or.inr (Or.inr ?_)
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at h₁
-  obtain ⟨hkc, hke, hof, hoz, hoi, hoc, hmm, hak, hav, hi, hos, hflag⟩ := h₁
+  obtain ⟨hkc, hke, hof, hoz, hoi, hoc, hmm, hak, hav, hac, hax, hos, hflag⟩ := h₁
   rw [scatDeadCom, Com.wvars, Com.wvars, Com.wvars, Com.wvars, Com.wvars, Com.wvars,
     Com.wvars, List.mem_append, List.mem_append, List.mem_append,
     List.mem_append, List.mem_append, List.mem_append, List.mem_append] at hy
@@ -1357,7 +1357,7 @@ theorem wvars_scatDeadCom {L : ℕ} (j ti : ℕ) (β : DistFO L 1) (r t : ℕ) (
   · exact Refine.ScatterDeadPass.wvars_atomBitCom β hloc h
   · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_outCntCom j hoc)
   · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_atomMemCom j ti hmm hak hav)
-  · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_fillCom _ _ hi)
+  · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_memFillAt _ _ _ hac hax)
   · exact absurd h (notMem_wvars_scatBlockComA_of h₂)
   · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_atomFlagCom t hos hflag)
 
@@ -1371,7 +1371,7 @@ theorem wvars_scatterDeadFold {q_top cap mb : ℕ} {φ : Lax3.FirstOrder.FO 0} (
       ∀ y ∈ (foldIdx (fun k σs =>
           Com.seq (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1))) σs.β σs.r σs.t)
             (.assign (flgName j i k) (.var "flag"))) k₀ l).wvars,
-        y ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "i", "os", "flag"] ∨
+        y ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "ac", "ax", "os", "flag"] ∨
           y ∈ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
             "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"] ∨
           RamDriverBot.Ext "bb" y ∨ (∃ q, y = envName q) ∨ ∃ k, y = flgName j i k := by
@@ -1398,7 +1398,7 @@ theorem wvars_scatterDeadPhase {q_top cap mb : ℕ} {φ : Lax3.FirstOrder.FO 0} 
     ∀ (l : List (DistFO (sigL cap mb j) 1)) (i₀ : ℕ),
       (∀ β ∈ l, β ∈ tablesAt q_top cap mb φ j) →
       ∀ y ∈ (foldIdx (fun i β => scatterDeadCom q_top cap mb φ j i β) i₀ l).wvars,
-        y ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "i", "os", "flag"] ∨
+        y ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "ac", "ax", "os", "flag"] ∨
           y ∈ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
             "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"] ∨
           RamDriverBot.Ext "bb" y ∨ (∃ q, y = envName q) ∨ ∃ i k, y = flgName j i k := by
@@ -1445,7 +1445,7 @@ theorem belowVar_notMem_wvars_scatterDeadPhase (q_top cap mb d : ℕ)
     fun β hβ => (tableRank_of_mem_tablesAt (d + 1) β hβ).1
   rcases wvars_scatterDeadPhase d hlocal _ 0 (fun _ hβ => hβ) y hm with
       hc | hc | hc | ⟨q, hq⟩ | ⟨i, k, hq⟩
-  · exact (by decide : ∀ q ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "i",
+  · exact (by decide : ∀ q ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "ac", "ax",
       "os", "flag"], ¬ HasDigit q) y hc (hasDigit_of_belowVar h)
   · exact (by decide : ∀ q ∈ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
       "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"], ¬ HasDigit q) y hc
@@ -1748,7 +1748,7 @@ theorem perDepthVar_notMem_wvars_clusterCom (q_top cap mb d : ℕ) (φ : Lax3.Fi
     rcases wvars_scatterDeadPhase d
         (fun β hβ => (tableRank_of_mem_tablesAt (d + 1) β hβ).1) _ 0 (fun _ hβ => hβ) y hr with
         hc | hc | hc | ⟨q, hq⟩ | ⟨i, k, hq⟩
-    · exact (by decide : ∀ q ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "i",
+    · exact (by decide : ∀ q ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "ac", "ax",
         "os", "flag"], ¬ HasDigit q) y hc hy
     · exact (by decide : ∀ q ∈ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
         "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"], ¬ HasDigit q) y hc hy

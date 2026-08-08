@@ -1,4 +1,5 @@
 import Lax3Proofs.RamDriverWrites
+import Lax3Proofs.Refine.ScatterBlockMask
 
 /-!
 # The dead-aware atom phase, composed — wave R1.8-T3-flip (c1d)
@@ -166,7 +167,7 @@ open Classical in
 /-- **What one dead-aware atom assigns**, off `RamDriverWrites`. -/
 theorem wvars_scatDeadCom {L : ℕ} (j ti : ℕ) (β : DistFO L 1) (r t : ℕ) (hloc : IsLocal β)
     {y : String} (hy : y ∈ (scatDeadCom j ti β r t).wvars) :
-    y ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "i", "os", "flag"] ∨
+    y ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "ac", "ax", "os", "flag"] ∨
       y ∈ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
         "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"] ∨
       RamDriverBot.Ext "bb" y ∨ ∃ q, y = envName q :=
@@ -175,7 +176,7 @@ theorem wvars_scatDeadCom {L : ℕ} (j ti : ℕ) (β : DistFO L 1) (r t : ℕ) (
 /-- The driver's own prefixed names cross the whole atom program. -/
 theorem notMem_wvars_scatDeadCom_append {L : ℕ} {j ti : ℕ} {β : DistFO L 1} {r t : ℕ}
     (hloc : IsLocal β) {p s : String}
-    (h₁ : ∀ q ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "i", "os", "flag"],
+    (h₁ : ∀ q ∈ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "ac", "ax", "os", "flag"],
       q.toList.take p.toList.length ≠ p.toList)
     (h₂ : ∀ q ∈ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
       "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"],
@@ -192,7 +193,7 @@ theorem notMem_wvars_scatDeadCom_append {L : ℕ} {j ti : ℕ} {β : DistFO L 1}
 /-- And so do the three fixed ones the level pins. -/
 theorem notMem_wvars_scatDeadCom_lit {L : ℕ} {j ti : ℕ} {β : DistFO L 1} {r t : ℕ}
     (hloc : IsLocal β) {y : String}
-    (h₁ : y ∉ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "i", "os", "flag"])
+    (h₁ : y ∉ ["kc", "ke", "of", "oz", "oi", "oc", "mm", "ak", "av", "ac", "ax", "os", "flag"])
     (h₂ : y ∉ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
       "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"])
     (h₃ : ¬ RamDriverBot.Ext "bb" y) (h₄ : ∀ q, y ≠ envName q) :
@@ -211,7 +212,7 @@ theorem noWrite_scatDeadCom {L : ℕ} (j ti : ℕ) (β : DistFO L 1) (r t : ℕ)
   refine ⟨RamDriverWrites.noWrite_killSumCom j ti,
     RamDriverWrites.noWrite_outProbeCom j, ?_,
     RamDriverWrites.noWrite_outCntCom j, RamDriverWrites.noWrite_atomMemCom j ti,
-    RamDriverIO.noWrite_fillCom _ _, noWrite_scatBlockComA _ r t,
+    ScatterDeadPass.noWrite_memFillAt j "dist" (r + 1), noWrite_scatBlockComA _ r t,
     RamDriverWrites.noWrite_atomFlagCom t⟩
   exact ⟨⟨trivial, RamDriverBot.noWrite_botCom β "bb"⟩, trivial⟩
 
@@ -360,8 +361,30 @@ holding the landed bound holds this one. The three narrowings are
 indicator and the child mask's containment in it),
 `RamDriver.MemEnum.card_le_arenaSize` into
 `Refine.ArenaBlock.arenaSize_le_ncard` (the child arena is inside the
-cluster), and `ScatterDeadPass.atomMemCom_spec`'s own `mm ≤ mm1`. The
-only carrier reading left in the charge is the distance fill. -/
+cluster), and `ScatterDeadPass.atomMemCom_spec`'s own `mm ≤ mm1`.
+
+**Wave B4-walk-2m-3: the sixth pass is a member walk and the arena is
+the narrowed one.** `RamDriver.distMemCom j σs.r` replaces
+`fillCom "dist"`; the clause it establishes is
+`Refine.ScatterBlock.DistClean n σs.r Alv'` — the sentinel at the
+*mask's support* — and the engine is entered at
+`Refine.ScatterBlockMask.ArenaAtM` through
+`Refine.ScatterBlockMask.scatBlockCntM_specA`, whose four flag and
+counter clauses are `ScatterDeadEngine.scatBlockCnt_specA`'s verbatim
+and whose charge is the same `scatBlockK`. The bridge from the fill to
+the clause is one line, `ScatterBlockMask.distClean_of_cover`, and its
+covering hypothesis is `hmem1E`'s fourth clause — the **child's own**
+`MemEnum`, at the unfiltered list `mm1`. Driving the fill from the
+atom's filtered list at `"mm"` instead would leave alive non-members
+unfilled, which is unsound and not merely unprovable
+(`ScatterBlockMask.member_support_not_mask_support`,
+`Refine.BfsBlockMask.frontier_sound_refuted`); making the enumeration a
+hypothesis is what makes that a build failure.
+
+After this wave **no summand of the charge grows with the carrier**:
+`deadAtomKX_le_blk` in §5 is the compiled statement, and the fill's slot
+is `memFillAtCost mm1 ≤ memFillAtCost X.ncard`, bounded by the same
+`hm1X` the filter walk's slot uses. -/
 theorem scatDead_spec {bw nb : ℕ}
     (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
     (hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0)
@@ -543,20 +566,29 @@ theorem scatDead_spec {bw nb : ℕ}
   -- **pass 6**: a clean distance array, the engine's entry condition.
   -- **Wave E4c-c**: the mask copy that used to stand here is gone — the
   -- engine reads `alvName (j + 1)` where it lies, so there is nothing to
-  -- move and nothing to clean afterwards
+  -- move and nothing to clean afterwards.
+  -- **Wave B4-walk-2m-3**: and the fill that is left is a walk of the CHILD's
+  -- member list, not of the carrier. The list it walks is the unfiltered one at
+  -- `mnumName (j + 1)` — `hmem1E : MemEnum n mm1 Mem1 Alv'` is the hypothesis
+  -- that it enumerates the child's whole alive mask, which is what
+  -- `distClean_of_cover` needs and what the atom's own filtered list at `"mm"`
+  -- would not give (`ScatterBlockMask.member_support_not_mask_support`). Pass 5
+  -- hands both `memName (j + 1)` and `mnumName (j + 1)` on untouched
   have hn₅ : σ₅.vars "n" = n := by
     rw [hfv₅ "n" (by decide) (by decide) (by decide)]; exact hn₄
-  have hdistsz₅ : (σ₅.arrs "dist").length = n := by
+  obtain ⟨g₅, hdist₅⟩ : ∃ g, σ₅.arrs "dist" = arrOf n g := by
     have hlm : LevelMem B n cap mb σ₅ :=
       levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq hr₅)))) hpre.mem
-    exact hlm.1.length (p := ("dist", n)) (by simp)
-  obtain ⟨σ₇, hr₇, g₇, hdist₇, hdistval₇⟩ :=
-    (RamDriverIO.fill_spec (B := B) (n := n) (c := σs.r + 1) (a := "dist")
-      hnB hrB).run ⟨hdistsz₅, hn₅⟩
+    exact hlm.1 ("dist", n) (by simp)
+  obtain ⟨σ₇, hr₇, ⟨g₇, hdist₇, hfill₇, -⟩, -, -⟩ :=
+    (ScatterDeadPass.distMemCom_spec (B := B) (n := n) (j := j) (mm1 := mm1)
+      (r := σs.r) (Mem1 := Mem1) (g₀ := g₅) (A := Alv')
+      h1B hnB hrB hmem1E).run ⟨hmm₅, hmem1A₅, hdist₅⟩
   have hfa₇ : ∀ a : String, a ≠ "dist" → σ₇.arrs a = σ₅.arrs a :=
-    fun a ha => hr₇.frame_arr a (by rw [ScatterDeadPass.warrs_fillCom]; simpa using ha)
-  have hfv₇ : ∀ y : String, y ≠ "i" → σ₇.vars y = σ₅.vars y :=
-    fun y h => hr₇.frame_var y (ScatterDeadPass.notMem_wvars_fillCom _ _ h)
+    fun a ha => hr₇.frame_arr a (by
+      rw [distMemCom, ScatterDeadPass.warrs_memFillAt]; simpa using ha)
+  have hfv₇ : ∀ y : String, y ≠ "ac" → y ≠ "ax" → σ₇.vars y = σ₅.vars y :=
+    fun y h₁ h₂ => hr₇.frame_var y (ScatterDeadPass.notMem_wvars_memFillAt _ _ _ h₁ h₂)
   -- **pass 7**: the active-set engine, at the atom's alive part, reading
   -- its mask out of the child's own array
   have hqsz₇ : (∃ g, σ₇.arrs "q" = arrOf n g) ∧ (∃ g, σ₇.arrs "qd" = arrOf n g) ∧
@@ -566,10 +598,14 @@ theorem scatDead_spec {bw nb : ℕ}
     exact ⟨hlm.1 ("q", n) (by simp), hlm.qdArr, hlm.1 ("exc", n) (by simp)⟩
   have hmaskfree : ScatterBlock.MaskFree (alvName (j + 1)) :=
     ScatterDeadPass.maskFree_alvName (j + 1)
-  have harena₇ : ScatterBlock.ArenaAt (alvName (j + 1)) n Ws mm σs.r O T Alv' Mem σ₇ := by
+  -- **the arena is the NARROWED one** (wave B4-walk-2m-3). Six clauses are the
+  -- landed ones verbatim; the seventh is `ScatterBlock.DistClean n σs.r Alv'`,
+  -- the sentinel at the mask's support, and the member fill establishes exactly
+  -- it — `hcov` below is `MemEnum`'s fourth clause and nothing else
+  have harena₇ : ScatterBlockMask.ArenaAtM (alvName (j + 1)) n Ws mm σs.r O T Alv' Mem σ₇ := by
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, hqsz₇.1, hqsz₇.2.1⟩
-    · rw [hfv₇ "n" (by decide)]; exact hn₅
-    · rw [hfv₇ "mm" (by decide)]; exact hmmv₅
+    · rw [hfv₇ "n" (by decide) (by decide)]; exact hn₅
+    · rw [hfv₇ "mm" (by decide) (by decide)]; exact hmmv₅
     · rw [hfa₇ _ (by decide), hfa₅ _ (by decide), hfa₄,
         hfa₃ "off" (not_ext_bb_of_cons rfl (by decide)), hfa₂, hfa₁]
       exact hturn.1.2.1
@@ -581,9 +617,9 @@ theorem scatDead_spec {bw nb : ℕ}
         hfa₃ _ (not_ext_bb_alvName (j + 1)), hfa₂, hfa₁]
       exact halvA
     · rw [hfa₇ _ (by decide)]; exact hmemA₅
-    · rw [hdist₇]; exact arrOf_congr (fun i hi => hdistval₇ i hi)
-  obtain ⟨σ₈, hr₈, hflag₈, hflag1₈, hcnt₈, hkey₈⟩ :=
-    (ScatterDeadEngine.scatBlockCnt_specA (B := B) (n := n) (ns := ns) (nt := Ws)
+    · exact ScatterBlockMask.distClean_of_cover hdist₇ hmem1E.2.2.2 hfill₇
+  obtain ⟨σ₈, hr₈, hflag₈, hflag1₈, hcnt₈, hkey₈, -⟩ :=
+    (ScatterBlockMask.scatBlockCntM_specA (B := B) (n := n) (ns := ns) (nt := Ws)
       (av := alvName (j + 1)) (mm := mm) (r := σs.r) (t := σs.t) (G := G) (M := Alv')
       (O := O) (T := T) (Mem := Mem)
       (X := ScatterDeadPass.bitSet n Alv' Tb) (bw := bw) (nb := nb)
@@ -599,15 +635,15 @@ theorem scatDead_spec {bw nb : ℕ}
     fun y hy => hr₈.frame_var y (ScatterDeadPass.notMem_wvars_scatBlockComA _ _ _ y hy)
   -- the three dead registers, at the engine's exit
   have hkc₈ : σ₈.vars "kc" = ∑ e ∈ Finset.range kq, Tb (kl e) := by
-    rw [hfv₈ "kc" (by simp), hfv₇ "kc" (by decide),
+    rw [hfv₈ "kc" (by simp), hfv₇ "kc" (by decide) (by decide),
       hfv₅ "kc" (by decide) (by decide) (by decide)]
     exact hkc₄
   have hbb₈ : σ₈.vars "bb" = σ₃.vars "bb" := by
-    rw [hfv₈ "bb" (by simp), hfv₇ "bb" (by decide),
+    rw [hfv₈ "bb" (by simp), hfv₇ "bb" (by decide) (by decide),
       hfv₅ "bb" (by decide) (by decide) (by decide)]
     exact hbb₄
   have hoc₈ : σ₈.vars "oc" = n - mm1 - kq := by
-    rw [hfv₈ "oc" (by simp), hfv₇ "oc" (by decide),
+    rw [hfv₈ "oc" (by simp), hfv₇ "oc" (by decide) (by decide),
       hfv₅ "oc" (by decide) (by decide) (by decide)]
     exact hoc₄
   -- **pass 9**: the verdict
@@ -639,7 +675,7 @@ theorem scatDead_spec {bw nb : ℕ}
       (nb := nb) (nb' := nb) (t := σs.t) (t' := σs.t) (by omega) le_rfl le_rfl le_rfl
     simp only [ScatterDeadPass.scatDeadKX, ScatterDeadPass.killSumCost,
       ScatterDeadPass.atomMemCost, ScatterDeadPass.outCntCost,
-      ScatterDeadPass.atomFlagCost]
+      ScatterDeadPass.memFillAtCost, ScatterDeadPass.atomFlagCost]
     omega
   -- the cursor, and the flags
   · exact hrun.frame_var _ (notMem_wvars_scatDeadCom_lit hloc
@@ -701,8 +737,8 @@ noncomputable def deadAtomK {L : ℕ} (β : DistFO L 1) (n mm1 kq mm bw nb t : �
   ScatterDeadPass.scatDeadK β n mm1 kq mm bw nb t + 2
 
 /-- **The per-atom charge at the turn's cluster** (wave B4-walk-1):
-`ScatterDeadPass.scatDeadKX` and the flag. The one carrier reading left
-in it is the distance fill's, which is program text. -/
+`ScatterDeadPass.scatDeadKX` and the flag. Since wave B4-walk-2m-3 no
+summand of it grows with the carrier — `deadAtomKX_le_blk` below. -/
 noncomputable def deadAtomKX {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) : ℕ :=
   ScatterDeadPass.scatDeadKX β n xb kq bw nb t + 2
 
@@ -724,22 +760,103 @@ theorem deadAtomKX_le_carrier {L : ℕ} (β : DistFO L 1) {n xb kq bw bw' nb nb'
   omega
 
 /-- **The narrowed charge in closed form.** Against
-`Refine.C0CloseProbe.deadAtomK_root_eq`'s `119·n`: the carrier
-coefficient is the distance fill's `11` alone, and the probe's `20`,
-the child's member walk's `23` and the engine's two block walks' `65`
-are read at the cluster `xb` — the `108` of
-`C0CloseProbe.deadAtomKD_root_eq`, moved off the carrier rather than
-deleted. `min` is `outProbeCostB`'s own: the scan reads the vertex after
-the last cluster member, and never more than the carrier. -/
+`Refine.C0CloseProbe.deadAtomK_root_eq`'s `119·n`: **there is no `n`
+term left**. The probe's `20`, the child's member walk's `23`, the
+distance fill's `14` and the engine's two block walks' `65` are all read
+at the cluster `xb` — `102·xb` plus the probe's cap — and the carrier
+survives only inside `min (xb + 1) n`, which is `outProbeCostB`'s own:
+the scan reads the vertex after the last cluster member, and never more
+than the carrier.
+
+That last `min` is why the honest statement of the wave is
+`deadAtomKX_le_blk`/`deadAtomKX_carrier_free` and not "the carrier does
+not occur". -/
 theorem deadAtomKX_closed {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) :
     deadAtomKX β n xb kq bw nb t
-      = (44 * bw + 110 * nb + 140) * t + 11 * n + 20 * min (xb + 1) n + 88 * xb +
+      = (44 * bw + 110 * nb + 140) * t + 20 * min (xb + 1) n + 102 * xb +
         14 * kq + ScatterDeadPass.atomBitCost β + 84 := by
   simp only [deadAtomKX, ScatterDeadPass.scatDeadKX, ScatterDeadPass.killSumCost,
     ScatterDeadPass.outProbeCostB, ScatterDeadPass.atomMemCost,
-    ScatterDeadPass.outCntCost, ScatterDeadPass.atomFlagCost,
+    ScatterDeadPass.outCntCost, ScatterDeadPass.memFillAtCost,
+    ScatterDeadPass.atomFlagCost, ScatterBlock.scatBlockK_eq]
+  ring
+
+/-! #### The acceptance test of the E4c line (wave B4-walk-2m-3)
+
+`deadAtomKX` is what one atom of a turn is charged. The claim the whole
+E4c line has been making is that this number is read at the **block** the
+turn descends into. It is now true, and the two theorems below are the
+statement — see `Refine.ScatterDeadPass` §5c′ for why both are needed and
+neither alone suffices. The negative control is the same charge at the
+retired whole-array fill, which is unbounded in the carrier at every
+fixed block reading. -/
+
+/-- **The per-atom charge at the block reading alone**: `deadAtomKX`'s
+ceiling, with the outside probe's cap taken at its own block bound. The
+carrier does not occur in it. -/
+noncomputable def deadAtomKBlk {L : ℕ} (β : DistFO L 1) (xb kq bw nb t : ℕ) : ℕ :=
+  ScatterDeadPass.scatDeadKBlk β xb kq bw nb t + 2
+
+/-- The ceiling in closed form: `122·xb` where `deadAtomK`'s carrier
+instantiation reads `122·n`, and every other coefficient the same. -/
+theorem deadAtomKBlk_closed {L : ℕ} (β : DistFO L 1) (xb kq bw nb t : ℕ) :
+    deadAtomKBlk β xb kq bw nb t
+      = (44 * bw + 110 * nb + 140) * t + 122 * xb + 14 * kq +
+        ScatterDeadPass.atomBitCost β + 104 := by
+  simp only [deadAtomKBlk, ScatterDeadPass.scatDeadKBlk, ScatterDeadPass.killSumCost,
+    ScatterDeadPass.atomMemCost, ScatterDeadPass.outCntCost,
+    ScatterDeadPass.memFillAtCost, ScatterDeadPass.atomFlagCost,
     ScatterBlock.scatBlockK_eq]
   ring
+
+/-- **THE ACCEPTANCE TEST: the per-atom charge is bounded by a function
+of the block reading alone**, at every carrier. `deadAtomKBlk` mentions
+`xb`, the kill count, the ball's two numbers and the pick count, and
+nothing else — so growing the carrier with all of those fixed cannot
+move the charge past this ceiling. -/
+theorem deadAtomKX_le_blk {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) :
+    deadAtomKX β n xb kq bw nb t ≤ deadAtomKBlk β xb kq bw nb t := by
+  have h := ScatterDeadPass.scatDeadKX_le_blk β n xb kq bw nb t
+  simp only [deadAtomKX, deadAtomKBlk]
+  omega
+
+/-- **…and past the block it stops moving at all.** Above `xb + 1` the
+charge *is* the ceiling, so any two carriers the block's scan bound fits
+into charge the same number on the nose. With `deadAtomKX_mono_carrier`
+this pins the carrier's whole contribution: weakly increasing up to
+`xb + 1`, constant after. -/
+theorem deadAtomKX_carrier_free {L : ℕ} (β : DistFO L 1) {n xb : ℕ} (kq bw nb t : ℕ)
+    (hn : xb + 1 ≤ n) : deadAtomKX β n xb kq bw nb t = deadAtomKBlk β xb kq bw nb t := by
+  simp only [deadAtomKX, deadAtomKBlk, ScatterDeadPass.scatDeadKX_carrier_free β kq bw nb t hn]
+
+/-- The invariance, stated at two carriers. -/
+theorem deadAtomKX_carrier_indep {L : ℕ} (β : DistFO L 1) {n n' xb : ℕ} (kq bw nb t : ℕ)
+    (hn : xb + 1 ≤ n) (hn' : xb + 1 ≤ n') :
+    deadAtomKX β n xb kq bw nb t = deadAtomKX β n' xb kq bw nb t := by
+  rw [deadAtomKX_carrier_free β kq bw nb t hn, deadAtomKX_carrier_free β kq bw nb t hn']
+
+/-- Weakly increasing in the carrier, which is what makes the two above a
+complete description rather than a one-sided bound. -/
+theorem deadAtomKX_mono_carrier {L : ℕ} (β : DistFO L 1) {n n' : ℕ} (xb kq bw nb t : ℕ)
+    (h : n ≤ n') : deadAtomKX β n xb kq bw nb t ≤ deadAtomKX β n' xb kq bw nb t := by
+  have := ScatterDeadPass.scatDeadKX_mono_carrier β xb kq bw nb t h
+  simp only [deadAtomKX]
+  omega
+
+/-- **THE NEGATIVE CONTROL: the fill this wave retired does grow with
+the carrier, at every fixed block reading.** `scatDeadKXwhole` is the
+narrowed charge with `11·n + 6` back in the fill's slot and every other
+summand identical (`ScatterDeadPass.scatDeadKXwhole_trade`); no ceiling
+in `xb`, `kq`, the ball and `t` bounds it. So what
+`deadAtomKX_le_blk` compiles is the fill, and not a property the charge
+had all along. -/
+theorem deadAtomKXwhole_unbounded {L : ℕ} (β : DistFO L 1) (xb kq bw nb t : ℕ)
+    (f : ℕ → ℕ → ℕ → ℕ → ℕ → ℕ) :
+    ∃ n : ℕ, ¬ (ScatterDeadPass.scatDeadKXwhole β n xb kq bw nb t + 2
+      ≤ f xb kq bw nb t) := by
+  obtain ⟨n, hn⟩ :=
+    ScatterDeadPass.scatDeadKXwhole_unbounded β xb kq bw nb t (f xb kq bw nb t)
+  exact ⟨n, fun h => hn (by omega)⟩
 
 /-- **The wave's own finding, compiled: no CONSTANT absorbs the cluster
 reading.** The narrowed charge grows in the cluster, so a bound
@@ -1128,5 +1245,35 @@ Quot.sound] -/
 [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms deadAtomKX_block_unbounded
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.deadAtomKBlk_closed' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms deadAtomKBlk_closed
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.deadAtomKX_le_blk' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms deadAtomKX_le_blk
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.deadAtomKX_carrier_free' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms deadAtomKX_carrier_free
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.deadAtomKX_carrier_indep' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms deadAtomKX_carrier_indep
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.deadAtomKX_mono_carrier' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms deadAtomKX_mono_carrier
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.deadAtomKXwhole_unbounded' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms deadAtomKXwhole_unbounded
 
 end Lax3Proofs.Refine.ScatterDeadTurn

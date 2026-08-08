@@ -1360,7 +1360,17 @@ def DecodeMem (n ns W : ℕ) (σ : Env) : Prop :=
 Four flat passes the driver writes itself, since none of them belongs to
 any of the sub-programs: a fill, a copy, and the two mask operations. All
 four are the kit's array pass with a different cell expression, so their
-walks are one application of `Fill.loop_spec` apiece. -/
+walks are one application of `Fill.loop_spec` apiece.
+
+**Wave B4-walk-2m-3 adds a fifth, and it is not flat**: `memFillAt`
+walks a *member list* instead of the carrier. Its walk is not here —
+that is `Refine.ScatterDeadPass.memFillAt_spec`, built by wave E4c-b —
+but its program text has to be, because `scatDeadCom` runs it and
+`Refine.ScatterDeadPass` imports `RamDriverBot`, hence sits below this
+file. The precedent is R1.8-T3-flip (c1), recorded at `scatDeadCom`:
+a program the driver runs belongs above the driver. Only the two
+definitions move; the charge, the invariant, the walk and the write-set
+lemmas all stay where E4c-b built them. -/
 
 /-- A flat pass over the first `bnd` cells of an array, writing the value
 of `e` into each. -/
@@ -1377,6 +1387,31 @@ def copyUpto (src dst : String) (bnd : Expr) : Com := fillUpto dst bnd (.get src
 driver's calling convention, since every sub-program addresses fixed
 array names. -/
 def copyCom (src dst : String) : Com := copyUpto src dst (.var "n")
+
+/-- **The touched-only fill**: one store of the constant `c` into `a`
+per vertex of the depth-`(j + 1)` member list, and no other cell
+touched. The carrier occurs nowhere in it — neither in the loop bound,
+which is `mnumName (j + 1)`, nor in the addresses, which come out of
+`memName (j + 1)`.
+
+Its charge is `Refine.ScatterDeadPass.memFillAtCost mm1 = 14·mm1 + 6`
+and its walk `Refine.ScatterDeadPass.memFillAt_spec`; both stay in that
+file, and only this text lives here (see the section note above). -/
+def memFillAt (j : ℕ) (a : String) (c : ℕ) : Com :=
+  .seq (.assign "ac" (.lit 0))
+    (.while (.lt (.var "ac") (.var (mnumName (j + 1))))
+      (.seq (.assign "ax" (.get (memName (j + 1)) (.var "ac")))
+        (.seq (.store a (.var "ax") (.lit c))
+          (.assign "ac" (.add (.var "ac") (.lit 1))))))
+
+/-- **The distance fill at the child's member list**: the sentinel
+`r + 1` at every vertex the depth-`(j + 1)` list enumerates, and nowhere
+else. This is what `scatDeadCom` runs in place of the retired
+`fillCom "dist" (.lit (r + 1))`, and what it establishes is
+`Refine.ScatterBlock.DistClean n r M` — the *mask-supported* distance
+clause of `Refine.ScatterBlockMask.ArenaAtM`, not the whole-array clause
+of `Refine.ScatterBlock.ArenaAt`. -/
+def distMemCom (j r : ℕ) : Com := memFillAt j "dist" (r + 1)
 
 /-- The pointwise conjunction of two masks, into a third. -/
 def andCom (a b dst : String) : Com :=
@@ -2469,16 +2504,48 @@ this atom's own radius, since consecutive atoms of a turn carry
 different radii (`ScatterDeadPass.dist_touched_only_refuted`); making
 the sentinel radius-free is the route out and it is not this wave's.
 
-**Wave E4c-d: the radius-free sentinel is built, and the fill still
-stays.** `Refine.BfsBlock` §7 compiles a *capped* scan — the depth cap
-enforced by an explicit `dv < d` guard at the dequeue instead of by the
-sentinel — whose frontier invariant survives at any radius-free sentinel
-(`Refine.BfsBlock.FrontierC`), with the landed invariant an instance of
-it and `Refine.BfsBlock.bfsBlockK` unmoved. That removes the *first*
-blocker: `unwind` would then maintain one sentinel across atoms of
-different radii and the fill would hoist out of the atom.
+**Wave B4-walk-2m-3: the distance fill is a member walk.** The pass at
+this slot is `distMemCom j r` — `memFillAt j "dist" (r + 1)`, above —
+and not the retired `fillCom "dist" (.lit (r + 1))`. What made the swap
+possible is not a cheaper fill (E4c-b had that in hand at
+`14·mm1 + 6`) but a **narrower clause**: waves B4-walk-2m-1/2 re-walked
+the engine at `Refine.ScatterBlockMask.ArenaAtM`, whose distance clause
+is `Refine.ScatterBlock.DistClean n r M` — the sentinel at the *mask's
+support* rather than at every cell — and `distClean_of_cover` gets there
+from a fill driven by any list that covers the mask. The child's
+member list is such a list, and that it is is `MemEnum`'s fourth clause,
+which the atom already holds.
 
-It has nowhere to hoist *to*. `coverPhase` below runs `RamCover.coverCom`
+The list has to be the **unfiltered** one at `mnumName (j + 1)`.
+`atomMemCom` above produces a strictly shorter list (the child's
+members that the atom's row marks), and
+`Refine.ScatterBlockMask.member_support_not_mask_support` compiles that
+driving the fill from *that* one would leave alive non-members
+unfilled — cells the search reads
+(`Refine.BfsBlockMask.frontier_sound_refuted`). So `distMemCom j r` runs
+after `atomMemCom j ti`, which preserves both `memName (j + 1)` and
+`mnumName (j + 1)`, and reads the child's list where it lies.
+
+**The charge is not uniformly smaller.** `14·mm1 + 6` against
+`11·n + 6`: at `mm1 = n` — the root's carrier instantiation, where the
+child's mask marks everything — the new pass costs *more*, and
+`Refine.C0CloseProbe.deadAtomK_root_eq` moves from `119·n` to `122·n`
+accordingly. The win is not a smaller number at the carrier; it is that
+after this wave **no summand of the per-atom charge grows with the
+carrier at all** (`Refine.ScatterDeadPass.scatDeadKX_le_blk`), the
+carrier surviving only as the cap `min (xb + 1) n` in the outside
+probe's pigeonhole bound.
+
+**Wave E4c-d: the radius-free sentinel, and why the fill could not
+simply be hoisted.** `Refine.BfsBlock` §7 compiles a *capped* scan — the
+depth cap enforced by an explicit `dv < d` guard at the dequeue instead
+of by the sentinel — whose frontier invariant survives at any
+radius-free sentinel (`Refine.BfsBlock.FrontierC`), with the landed
+invariant an instance of it and `Refine.BfsBlock.bfsBlockK` unmoved.
+That removed the *first* blocker on the other route, hoisting: `unwind`
+would then maintain one sentinel across atoms of different radii.
+
+It had nowhere to hoist *to*. `coverPhase` below runs `RamCover.coverCom`
 — the landed `RamBfs.bfsCom`, with `initDist` and no unwind — before
 every level's cluster loop, and a level is entered once per cluster of
 the level above, so every scope below the root is a carrier walk per turn
@@ -2491,9 +2558,11 @@ is `rootScatterCom` — is one the atom's precondition cannot see
 (`Refine.ScatterDeadTurn.deadPre_blind_to_tab`), so a root fill reaches
 the atom only as a new conjunct of `RamDriverCluster.ScatterStep`.
 Independently, no numeral fixed before the atom bounds its radius
-(`Refine.C0CloseProbe.no_uniform_sentinel`). The fill's removal is a
-level-interface wave, not a `Refine/Scatter*` one; what it is worth is
-`Refine.C0CloseProbe.deadAtomKD_root_eq`, `119·n → 108·n`.
+(`Refine.C0CloseProbe.no_uniform_sentinel`). Deleting the fill outright
+would still be a level-interface wave, and what *that* would be worth is
+`Refine.C0CloseProbe.deadAtomKD_root_eq`, `119·n → 108·n` — a strictly
+smaller gain than this wave's, which pays `122·n` at the carrier and
+nothing at all beyond the block. The hoist is retired as a route.
 
 **Wave R1.8-T3-flip (c1): where this may be written.**
 `Refine.ScatterBlock.scatBlockCom` is the landed active-set engine, and
@@ -2513,7 +2582,7 @@ noncomputable def scatDeadCom (j ti : ℕ) {L : ℕ} (β : DistFO L 1) (r t : �
       (.seq (atomBitCom (j + 1) β)
         (.seq (outCntCom j)
           (.seq (atomMemCom j ti)
-            (.seq (fillCom "dist" (.lit (r + 1)))
+            (.seq (distMemCom j r)
               (.seq (Refine.ScatterBlock.scatBlockComA (alvName (j + 1)) r t)
                 (atomFlagCom t)))))))
 

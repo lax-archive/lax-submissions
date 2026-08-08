@@ -1490,37 +1490,65 @@ that used to force the block engine's text below the driver — see that
 definition's own docstring. What stays here is its charge and its
 walks. -/
 
+/-- **The distance fill's charge**: the child's member count, and the
+carrier occurs nowhere in it. `RamDriver.memFillAt`'s loop bound is
+`mnumName (j + 1)` and its body pays one unit more per cell than
+`RamDriver.fillCom`'s, for the indirect address — against which the
+carrier is gone.
+
+It is defined here, in the section that sums the program's slots,
+because since wave B4-walk-2m-3 that is what it is: a slot of
+`scatDeadK`. Its walk is §5f's `memFillAt_spec`, and §5f's `#guard`s
+clock it on the executable semantics. -/
+def memFillAtCost (mm1 : ℕ) : ℕ := 14 * mm1 + 6
+
 /-- The program's charge, pass by pass. **Wave E4c-c: the mask copy's
 `12·n + 6` is gone from the sum**, because the pass is gone from the
-program — the engine reads the child's alive array where it lies. Two
-carrier-width summands are left, the distance fill and the outside
-probe, and the fill is the one the atom still owes: the engine's own
-`scatBlockK` contains neither `n` nor `ns`, and the two dead walks are
-charged at the child's member count and the turn's kill count.
+program — the engine reads the child's alive array where it lies.
+
+**Wave B4-walk-2m-3: the distance fill's slot is `memFillAtCost mm1`**,
+not `11·n + 6`. The program runs `RamDriver.distMemCom`, a walk of the
+child's member list, so the slot is read at `mm1` like the filter walk
+beside it. Exactly **one** carrier reading is left in the whole sum,
+`outProbeCost n`, and that one is a pigeonhole *cap*: the narrowed form
+`scatDeadKX` below replaces it by `outProbeCostB n xb`, after which no
+summand grows with `n` (`scatDeadKX_le_blk`).
+
+The trade is not free at every instantiation. At `mm1 = n` the new slot
+is `14·n + 6` against the retired `11·n + 6` and the sum is *larger*;
+`C0CloseProbe.deadAtomK_root_eq`'s `119·n` becomes `122·n`. What the
+wave buys is the argument the coefficient is read at, not the
+coefficient.
 
 **Wave R1.8-T3-flip (c1b): the outside count's slot is corrected**, from
 `2` to `outCntCost = 6`. It was the one summand with no proved leaf
 under it, and `2` is unachievable — `outCntCom_spec` above is the leaf,
-and the pass's expression has five nodes. Nothing else moves: the slot
-is a constant and the whole sum is still carrier-linear. -/
+and the pass's expression has five nodes. -/
 noncomputable def scatDeadK {L : ℕ} (β : DistFO L 1) (n mm1 kq mm bw nb t : ℕ) : ℕ :=
   killSumCost kq + outProbeCost n + atomBitCost β + outCntCost + atomMemCost mm1 +
-    (11 * n + 6) + scatBlockK mm bw nb t + atomFlagCost
+    memFillAtCost mm1 + scatBlockK mm bw nb t + atomFlagCost
 
 /-- **The same charge, read at the turn's cluster** (wave B4-walk-1).
 
-Three of `scatDeadK`'s readings are the walk's to narrow and they narrow
+Four of `scatDeadK`'s readings are the walk's to narrow and they narrow
 to the *same* number: the outside probe's loop bound (`outProbeCostB`,
-built and unwired by E4c-a), the child's member count `mm1`, and the
-atom's own member count `mm` — all three are bounded by the cluster the
-turn descends into, because the child mask marks only cluster vertices
-and the probe stops one step past the last of them. The ball's two
-numbers stay the parameters they already were, so a caller that narrows
-them narrows this charge with no further edit.
+built and unwired by E4c-a), the child's member count `mm1` — which the
+filter walk **and, since wave B4-walk-2m-3, the distance fill** are both
+read at — and the atom's own member count `mm`. All are bounded by the
+cluster the turn descends into, because the child mask marks only
+cluster vertices and the probe stops one step past the last of them. The
+ball's two numbers stay the parameters they already were, so a caller
+that narrows them narrows this charge with no further edit.
 
-What is left of the carrier is the distance fill's `11·n + 6` **alone**.
-That summand is program text (`RamDriver.scatDeadCom`'s
-`fillCom "dist"`) and no accounting reaches it; it is the next wave's.
+**Nothing here grows with the carrier.** `n` survives in exactly one
+place, `outProbeCostB n xb = 20·min (xb + 1) n + 10`, and there it is a
+*cap*: the charge is weakly increasing in `n`, constant once `n` passes
+`xb + 1`, and dominated for every `n` by `scatDeadKBlk`, which does not
+mention `n` at all. That is the whole content of the E4c line and it is
+compiled below (`scatDeadKX_le_blk`, `scatDeadKX_carrier_free`), against
+the negative control `scatDeadKXwhole` — this same charge at the retired
+whole-array fill — which is unbounded in `n` at every fixed block
+reading (`scatDeadKXwhole_unbounded`).
 
 `scatDeadKX_carrier` is the identity at `xb := n` — the landed charge at
 its own carrier instantiation, on the nose — so the hypothesis the walk
@@ -1528,7 +1556,7 @@ now takes is *weaker* than the one it took (`scatDeadKX_le_carrier`) and
 no consumer owes anything new. -/
 noncomputable def scatDeadKX {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) : ℕ :=
   killSumCost kq + outProbeCostB n xb + atomBitCost β + outCntCost + atomMemCost xb +
-    (11 * n + 6) + scatBlockK xb bw nb t + atomFlagCost
+    memFillAtCost xb + scatBlockK xb bw nb t + atomFlagCost
 
 /-- **At the carrier reading the narrowed charge IS the landed one.** -/
 theorem scatDeadKX_carrier {L : ℕ} (β : DistFO L 1) (n kq bw nb t : ℕ) :
@@ -1543,6 +1571,7 @@ theorem scatDeadKX_mono {L : ℕ} (β : DistFO L 1) {n xb xb' kq bw bw' nb nb' t
   have h₂ : atomMemCost xb ≤ atomMemCost xb' := by simp only [atomMemCost]; omega
   have h₃ : scatBlockK xb bw nb t ≤ scatBlockK xb' bw' nb' t :=
     ScatterBlock.scatBlockK_mono hx hb hn le_rfl
+  have h₄ : memFillAtCost xb ≤ memFillAtCost xb' := by simp only [memFillAtCost]; omega
   simp only [scatDeadKX]
   omega
 
@@ -1554,6 +1583,111 @@ theorem scatDeadKX_le_carrier {L : ℕ} (β : DistFO L 1) {n xb kq bw bw' nb nb'
     (hx : xb ≤ n) (hb : bw ≤ bw') (hn : nb ≤ nb') :
     scatDeadKX β n xb kq bw nb t ≤ scatDeadK β n n kq n bw' nb' t :=
   le_trans (scatDeadKX_mono β hx hb hn) (le_of_eq (scatDeadKX_carrier β n kq bw' nb' t))
+
+/-! ### §5c′ Block scale, compiled — what the whole E4c line was for
+
+The claim the line has been making since E4c-a is that the per-atom
+charge is read at the block the turn descends into and not at the
+carrier. Wave B4-walk-1 narrowed the last three accounting readings;
+wave B4-walk-2m-3 removed the last *program* reading. This section is
+the statement that the claim is now true, and it is the wave's
+acceptance test.
+
+`outProbeCostB n xb = 20·min (xb + 1) n + 10` legitimately still names
+`n`, so "the carrier does not occur" is false and "the charge does not
+*grow* with the carrier" is what is true. Two theorems say it, and both
+are needed:
+
+* `scatDeadKX_le_blk` — for **every** `n`, the charge is at most
+  `scatDeadKBlk`, a function of `xb`, `kq`, the ball and `t` alone. This
+  is the block-scale bound. On its own it would still permit growth
+  under the ceiling.
+* `scatDeadKX_carrier_free` — above `xb + 1` the charge does not merely
+  stay under the ceiling, it **is** the ceiling and stops moving:
+  any two carriers past the block agree on the nose. On its own it would
+  say nothing below `xb + 1`.
+
+`scatDeadKX_mono_carrier` fills the gap between them: the charge is
+weakly increasing in `n`, so the two together pin it completely.
+
+The negative control is `scatDeadKXwhole`, the *same* narrowed charge at
+the retired whole-array fill `11·n + 6`. `scatDeadKXwhole_trade` compiles
+that it differs from `scatDeadKX` in that slot and nowhere else, and
+`scatDeadKXwhole_unbounded` that it exceeds every constant at a fixed
+block reading — which is exactly what `scatDeadKX_le_blk` denies of the
+charge the program now pays. -/
+
+/-- **The charge at the block reading alone**: `scatDeadKX` with the
+outside probe's cap taken at its own block bound `xb + 1`. The carrier
+does not occur. -/
+noncomputable def scatDeadKBlk {L : ℕ} (β : DistFO L 1) (xb kq bw nb t : ℕ) : ℕ :=
+  killSumCost kq + (20 * (xb + 1) + 10) + atomBitCost β + outCntCost + atomMemCost xb +
+    memFillAtCost xb + scatBlockK xb bw nb t + atomFlagCost
+
+/-- **THE ACCEPTANCE TEST, half one: the narrowed charge is bounded by a
+function of the block reading alone**, at every carrier. -/
+theorem scatDeadKX_le_blk {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) :
+    scatDeadKX β n xb kq bw nb t ≤ scatDeadKBlk β xb kq bw nb t := by
+  have h : outProbeCostB n xb ≤ 20 * (xb + 1) + 10 := by
+    simp only [outProbeCostB]; omega
+  simp only [scatDeadKX, scatDeadKBlk]
+  omega
+
+/-- **…half two: past the block the carrier stops moving the charge.**
+At any carrier the block's own scan bound fits into, the charge *is*
+the block-scale bound, so two such carriers agree on the nose. -/
+theorem scatDeadKX_carrier_free {L : ℕ} (β : DistFO L 1) {n xb : ℕ} (kq bw nb t : ℕ)
+    (hn : xb + 1 ≤ n) :
+    scatDeadKX β n xb kq bw nb t = scatDeadKBlk β xb kq bw nb t := by
+  have h : outProbeCostB n xb = 20 * (xb + 1) + 10 := by
+    simp only [outProbeCostB, Nat.min_eq_left hn]
+  simp only [scatDeadKX, scatDeadKBlk, h]
+
+/-- The two carriers, stated as the invariance it is. -/
+theorem scatDeadKX_carrier_indep {L : ℕ} (β : DistFO L 1) {n n' xb : ℕ} (kq bw nb t : ℕ)
+    (hn : xb + 1 ≤ n) (hn' : xb + 1 ≤ n') :
+    scatDeadKX β n xb kq bw nb t = scatDeadKX β n' xb kq bw nb t := by
+  rw [scatDeadKX_carrier_free β kq bw nb t hn, scatDeadKX_carrier_free β kq bw nb t hn']
+
+/-- And weakly increasing in the carrier below that, which is what makes
+the two halves above a complete description. -/
+theorem scatDeadKX_mono_carrier {L : ℕ} (β : DistFO L 1) {n n' : ℕ} (xb kq bw nb t : ℕ)
+    (h : n ≤ n') : scatDeadKX β n xb kq bw nb t ≤ scatDeadKX β n' xb kq bw nb t := by
+  have hp : outProbeCostB n xb ≤ outProbeCostB n' xb := by
+    simp only [outProbeCostB]; omega
+  simp only [scatDeadKX]
+  omega
+
+/-- **The negative control**: the narrowed charge at the *retired*
+whole-array fill. Every other slot is the one `scatDeadKX` pays. -/
+noncomputable def scatDeadKXwhole {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) : ℕ :=
+  killSumCost kq + outProbeCostB n xb + atomBitCost β + outCntCost + atomMemCost xb +
+    (11 * n + 6) + scatBlockK xb bw nb t + atomFlagCost
+
+/-- The control differs from the charge in the fill's slot and nowhere
+else — so what the theorems below separate is the fill, not a bookkeeping
+difference. -/
+theorem scatDeadKXwhole_trade {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) :
+    scatDeadKXwhole β n xb kq bw nb t + memFillAtCost xb
+      = scatDeadKX β n xb kq bw nb t + (11 * n + 6) := by
+  simp only [scatDeadKXwhole, scatDeadKX, memFillAtCost]
+  omega
+
+/-- **The control grows with the carrier where the charge does not.** At
+a block reading, a kill count, a ball budget and a pick count all fixed
+before the arena, the retired fill's charge exceeds every constant. The
+contrast with `scatDeadKX_le_blk` is the wave. -/
+theorem scatDeadKXwhole_unbounded {L : ℕ} (β : DistFO L 1) (xb kq bw nb t K : ℕ) :
+    ∃ n : ℕ, ¬ (scatDeadKXwhole β n xb kq bw nb t ≤ K) := by
+  refine ⟨K + 1, fun h => ?_⟩
+  simp only [scatDeadKXwhole] at h
+  omega
+
+/-- And no carrier-free bound exists for it at all, which is the same
+fact stated as the failure of `scatDeadKX_le_blk`'s conclusion. -/
+theorem scatDeadKXwhole_no_blk {L : ℕ} (β : DistFO L 1) (xb kq bw nb t : ℕ)
+    (f : ℕ → ℕ) : ∃ n : ℕ, ¬ (scatDeadKXwhole β n xb kq bw nb t ≤ f xb) :=
+  scatDeadKXwhole_unbounded β xb kq bw nb t (f xb)
 
 /-! ### §5d The seam between the terms and the engine
 
@@ -1748,23 +1882,37 @@ theorem ballBudget_carrier {G : SimpleGraph (Fin n)} {ns : ℕ} {O T : ℕ → �
   omega
 
 /-! ### §5f Wave E4c-b: the two calling-convention copies, at the member
-list — and what E4c-c did with the answer
+list — and what became of each
 
-**Read this section as the record, not as the road.** E4c-b built
-touched-only replacements for both carrier passes of
-`RamDriver.scatDeadCom` and compiled that neither could be wired in.
-E4c-c then took the *other* route for the mask half: not a cheaper copy
-but no copy at all. `RamDriver.scatDeadCom` no longer contains
-`copyCom (alvName (j + 1)) "alv"`; the engine is
+E4c-b built touched-only replacements for both carrier passes of
+`RamDriver.scatDeadCom` and compiled that *at the contracts of the day*
+neither could be wired in. The two halves then went opposite ways.
+
+**The mask half was deleted, not replaced.** E4c-c took the other route:
+not a cheaper copy but no copy at all. `RamDriver.scatDeadCom` no longer
+contains `copyCom (alvName (j + 1)) "alv"`; the engine is
 `Refine.ScatterBlock.scatBlockComA (alvName (j + 1))`, which reads the
 child's alive array where it lies. So `memCopyAt`, `alvMemCom`,
 `alvClrCom` and `entryMemCost` below are **superseded**, and they are
 kept for one reason: the refutations of §5g are stated about them, and
 those refutations are the evidence for why the copy had to be deleted
 rather than re-charged. Deleting the definitions would delete the
-record. `memFillAt`/`distMemCom` are *not* superseded — the distance
-fill is still in the program, and they are still its candidate
-replacement.
+record.
+
+**The distance half was wired in** — wave B4-walk-2m-3.
+`RamDriver.scatDeadCom` runs `RamDriver.distMemCom j r`, and
+`memFillAt_spec` below is its walk in the driver's own composite
+(`Refine.ScatterDeadTurn.scatDead_spec`, pass 6). What unblocked it was
+not this section but the engine's contract: blocker 2 was the
+*whole-array* seventh clause of `Refine.ScatterBlock.ArenaAt`, and waves
+B4-walk-2m-1/2 re-walked the engine at
+`Refine.ScatterBlockMask.ArenaAtM`, whose clause is
+`Refine.ScatterBlock.DistClean n r M` — the sentinel at the mask's
+support. `Refine.ScatterBlockMask.distClean_of_cover` is the one line
+from this section's postcondition to that clause, and its `hcov`
+hypothesis is `MemEnum`'s fourth clause verbatim. The two program
+definitions moved to `RamDriver` for the import order; everything else
+about the fill is still here.
 
 Historically: `Refine.C0CloseProbe.scatDeadK_narrow_floor` compiled that
 `23·n + 12` of §5c's charge survived every narrowing of the probe bound,
@@ -1773,7 +1921,10 @@ the two member counts and the ball budget — the mask copy `copyCom
 are carrier walks in `RamDriver.scatDeadCom`'s own text, so only a
 program change could move them. This section is that program change,
 built and measured, together with the two compiled reasons neither half
-could be *wired in*. The residual now stands at `11·n + 6`.
+could be wired in *at the contracts of the day*. Both have since been:
+the mask copy by deletion (E4c-c), the distance fill by the narrowed
+arena (B4-walk-2m-3). The carrier residual of §5c's charge is now `0`,
+and `scatDeadKX_le_blk` is that in one line.
 
 **The replacement.** `memFillAt` and `memCopyAt` walk the child's member
 list once and store at the *listed* vertex: `Refine.BlockLeaves`'s
@@ -1821,40 +1972,45 @@ pick. Making this precondition available is the driver-wide
 clean-scratch discipline (the cover and order phases active-set-driven,
 R1.6), not the atom's.
 
-**Blocker 2, the distance: the clause is uniform and the radius moves.**
-`ArenaA`'s seventh clause is `σ.arrs "dist" = arrOf n (fun _ => r + 1)`
-— the *whole* array at the atom's **own** radius. Consecutive atoms of a
-turn carry different radii (`σs.r` is a field of each
-`ScatterSentence`), and the engine hands the array back at its own
-sentinel, so every cell that the next atom does not list is stale by
-exactly one radius step. No discipline on the caller repairs that:
-`dist_touched_only_refuted` compiles that the member-scale fill leaves
-`ArenaA`'s clause false however clean the incoming array was. The clause
-would have to be narrowed to the mask's support first — which is the
-*engine's* file, and not a one-line narrowing: `BfsBlock.unwind_run`
-proves the array comes back as the same literal list by an
-`arrOf_congr` over every `i < n`, and `RamBfs.Frontier`'s `cap`/`sound`
-clauses are consumed at dead vertices in `frontier_seed_alive`/`_dead`.
+**Blocker 2, the distance: the clause was uniform and the radius moves
+— and the clause is what gave way.** `ArenaA`'s seventh clause is
+`σ.arrs "dist" = arrOf n (fun _ => r + 1)` — the *whole* array at the
+atom's **own** radius. Consecutive atoms of a turn carry different radii
+(`σs.r` is a field of each `ScatterSentence`), and the engine hands the
+array back at its own sentinel, so every cell that the next atom does
+not list is stale by exactly one radius step. No discipline on the
+caller repairs that: `dist_touched_only_refuted` below compiles that the
+member-scale fill leaves `ArenaA`'s clause false however clean the
+incoming array was, and it is kept as the record of the reading that was
+replaced.
 
-So this wave's result is a **refutation with the replacement in hand**:
-both passes are here, specified and clocked; neither can be wired into
-`scatDeadCom` without moving a landed contract, and §5c's charge
-therefore does not move. `Refine.C0CloseProbe` §4 keeps its constants
-for exactly that reason. -/
+E4c-b's reading of what that cost — "the clause would have to be
+narrowed to the mask's support first, which is the engine's file and not
+a one-line narrowing" — was right about the price and wrong about the
+verdict. `BfsBlock.unwind_run` did prove the array comes back as the
+same literal list by an `arrOf_congr` over every `i < n`, and
+`RamBfs.Frontier`'s `cap`/`sound` clauses are consumed at dead vertices
+in `frontier_seed_alive`/`frontier_seed_dead`; waves B4-walk-2m-1/2 paid
+that price in `Refine.BfsBlockMask` and `Refine.ScatterBlockMask`,
+re-walking engine and pass at `DistClean n r M`. Against **that** clause
+the unlisted cells are dead and unconstrained, `distMemCom_spec`'s
+postcondition suffices, and B4-walk-2m-3 wired the fill in.
+
+So the mask half of this section stands as a refutation and the distance
+half as a replacement that landed two waves later. `Refine.C0CloseProbe`
+§4's constants moved with it. -/
 
 section MemberScaleEntry
 
-/-- The touched-only fill: one store of the constant `c` into `a` per
-vertex of the child's member list, and no other cell touched. -/
-def memFillAt (j : ℕ) (a : String) (c : ℕ) : Com :=
-  .seq (.assign "ac" (.lit 0))
-    (.while (.lt (.var "ac") (.var (mnumName (j + 1))))
-      (.seq (.assign "ax" (.get (memName (j + 1)) (.var "ac")))
-        (.seq (.store a (.var "ax") (.lit c))
-          (.assign "ac" (.add (.var "ac") (.lit 1))))))
+/-! The fill's own text is `RamDriver.memFillAt`, and `distMemCom` with
+it. Wave B4-walk-2m-3 moved the two definitions there — nothing else —
+because `RamDriver.scatDeadCom` runs them and this file is below the
+driver; the section note at `RamDriver`'s plumbing records the move and
+`scatDeadCom`'s docstring the precedent. Everything about them is still
+here: the charge, the invariant, the walk, the write sets. -/
 
-/-- The touched-only copy: the same walk, reading the source at the
-listed vertex. -/
+/-- The touched-only copy: the same walk as `RamDriver.memFillAt`,
+reading the source at the listed vertex. -/
 def memCopyAt (j : ℕ) (src a : String) : Com :=
   .seq (.assign "ac" (.lit 0))
     (.while (.lt (.var "ac") (.var (mnumName (j + 1))))
@@ -1869,13 +2025,6 @@ def alvMemCom (j : ℕ) : Com := memCopyAt j (alvName (j + 1)) "alv"
 /-- **And its restore**: the same walk putting the scratch back to zero,
 so that the pair leaves `"alv"` exactly as it found it. -/
 def alvClrCom (j : ℕ) : Com := memFillAt j "alv" 0
-
-/-- **The distance fill, touched-only**: the replacement for
-`RamDriver.fillCom "dist" (.lit (r + 1))`. -/
-def distMemCom (j r : ℕ) : Com := memFillAt j "dist" (r + 1)
-
-/-- The fill's charge: the child's member count, carrier-free. -/
-def memFillAtCost (mm1 : ℕ) : ℕ := 14 * mm1 + 6
 
 /-- The copy's charge: one unit more per member than the fill's, for the
 indirect read. -/
@@ -1909,6 +2058,12 @@ theorem ac_ne_mnumName (j : ℕ) : ("ac" : String) ≠ mnumName (j + 1) := by
 
 theorem ax_ne_mnumName (j : ℕ) : ("ax" : String) ≠ mnumName (j + 1) := by
   simp [mnumName, String.ext_iff]
+
+/-- **The member fill leaves the tape alone** — the clause
+`RamDriver.scatDeadCom`'s own `NoWrite` needs at the fill's slot since
+wave B4-walk-2m-3. -/
+theorem noWrite_memFillAt (j : ℕ) (a : String) (c : ℕ) : (memFillAt j a c).NoWrite := by
+  simp [memFillAt, Com.NoWrite]
 
 /-! #### The walks
 
@@ -2237,11 +2392,18 @@ theorem alvClrCom_spec {j mm1 : ℕ} {Mem1 Alv' : ℕ → ℕ}
 
 /-- **The distance fill at the member list**, at `14·mm1 + 6`: every
 *listed* vertex holds the search's sentinel, and no other cell moves.
+Since wave B4-walk-2m-3 this is the pass `RamDriver.scatDeadCom`
+actually runs at the sixth slot.
 
 That is where `Refine.BfsBlock`'s search reads and writes — its two mask
-reads gate the relaxation, and its unwind walks the queue — but it is
-**not** `Refine.ScatterBlock.ArenaA`'s seventh clause, which pins the
-whole array. `dist_touched_only_refuted` is the gap, on data. -/
+reads gate the relaxation, and its unwind walks the queue — and it is
+`Refine.ScatterBlock.DistClean n r M`, the seventh clause of
+`Refine.ScatterBlockMask.ArenaAtM`, once the driving list covers the
+mask: `Refine.ScatterBlockMask.distClean_of_cover` applied to this
+postcondition and to `MemEnum`'s fourth clause. It is **not**
+`Refine.ScatterBlock.ArenaAt`'s seventh clause, which pins the whole
+array; `dist_touched_only_refuted` is that gap, on data, and is why the
+engine had to be re-walked first. -/
 theorem distMemCom_spec {j mm1 r : ℕ} {Mem1 g₀ A : ℕ → ℕ}
     (hB : 1 < B) (hnB : n < B) (hrB : r + 1 < B)
     (hMenum : MemEnum n mm1 Mem1 A) :
@@ -2347,20 +2509,29 @@ def mwStPrev (n : ℕ) : PSt :=
   { mwSt n with
     arrs := (mwSt n).arrs.map fun p => if p.1 = "dist" then ("dist", List.replicate n 9) else p }
 
-/-- **BLOCKER 2, on data: the touched-only distance fill cannot produce
-`ArenaA`'s clause.** The clause is `σ.arrs "dist" = arrOf n (fun _ =>
-r + 1)` — the *whole* array at this atom's own radius — and consecutive
-atoms of a turn carry different radii, so the cells the child's list does
-not name are stale by exactly one radius step whatever the caller does.
-Here the fill at `r = 1` leaves `2` at the three listed vertices and the
-previous atom's `9` everywhere else.
+/-- **THE READING THAT WAS REPLACED, on data: the touched-only distance
+fill cannot produce `ArenaA`'s clause.** Kept, not deleted: this is the
+compiled record of the contract wave B4-walk-2m-3 had to move, and it
+still refutes exactly what it always did.
 
-Unlike blocker 1 this is not repairable by any discipline on the caller:
-the clause would have to be narrowed to the mask's support, and that is
+The clause is `σ.arrs "dist" = arrOf n (fun _ => r + 1)` — the *whole*
+array at this atom's own radius — and consecutive atoms of a turn carry
+different radii, so the cells the child's list does not name are stale by
+exactly one radius step whatever the caller does. Here the fill at
+`r = 1` leaves `2` at the three listed vertices and the previous atom's
+`9` everywhere else.
+
+Unlike blocker 1 this was not repairable by any discipline on the
+caller: the clause had to be narrowed to the mask's support, and that is
 the engine's own contract — `Refine.BfsBlock.unwind_run` proves the array
 comes back as the same literal list by an `arrOf_congr` over every
 `i < n`, and `RamBfs.Frontier`'s `cap`/`sound` clauses are consumed at
-*dead* vertices in `frontier_seed_alive`/`frontier_seed_dead`. -/
+*dead* vertices in `frontier_seed_alive`/`frontier_seed_dead`. Waves
+B4-walk-2m-1/2 did narrow it, to `Refine.ScatterBlock.DistClean n r M`,
+and against **that** clause this state is no counterexample at all: cell
+`3` is dead, so nothing is claimed about it. The theorem below therefore
+still holds and no longer bites — which is the precise sense in which
+the fill became wirable. -/
 theorem dist_touched_only_refuted :
     (execC pB pF (distMemCom 0 1) (mwStPrev 10)).1.cell "dist" 2 = 2 ∧
       (execC pB pF (distMemCom 0 1) (mwStPrev 10)).1.cell "dist" 3 = 9 ∧
@@ -2505,6 +2676,40 @@ Quot.sound] -/
 Quot.sound] -/
 #guard_msgs in
 #print axioms scatDeadKX_le_carrier
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKX_le_blk' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms scatDeadKX_le_blk
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKX_carrier_free' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms scatDeadKX_carrier_free
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKX_carrier_indep' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms scatDeadKX_carrier_indep
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKX_mono_carrier' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms scatDeadKX_mono_carrier
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKXwhole_trade' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms scatDeadKXwhole_trade
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKXwhole_unbounded' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms scatDeadKXwhole_unbounded
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.noWrite_memFillAt' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms noWrite_memFillAt
 
 /-- info: 'Lax3Proofs.Refine.ScatterDeadPass.exists_outside_le_ncard' depends on axioms: [propext,
 Classical.choice,
