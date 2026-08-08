@@ -421,33 +421,68 @@ session, per-wave ledgers in the commit messages e5e0f91..10e6dc4):
   landed. The order is now by what the numbers say is binding, not by
   engine family:
 
-  1. **E4c, the scatter half — the only unbounded deficit.** At the root's
-     own instantiation the per-atom charge is `≥ 131·n`
-     (`C0CloseProbe.deadAtomK_carrier_floor`), because
+  1. **E4c, the scatter half — the only unbounded deficit, and the road's
+     live leaf.** At the root's own instantiation the per-atom charge was
+     `≥ 131·n` (`C0CloseProbe.deadAtomK_carrier_floor`), because
      `ScatterDeadPass.ballBudget_carrier` supplies the whole carrier as the
-     ball budget (`bw := ns`, `nb := n`, `mm1 = mm = n`). No constant `ksc`
-     exists (`landed_scatter_leaf_unbounded`), so this is the single
-     obstruction that would kill the road. Runs as **e4c-a** (accounting:
-     `outProbeCost`'s pigeonhole bound, `atomMemCost`'s `mm1`,
-     `scatBlockK`'s `bw`/`nb`/`mm` — the hook left at
-     `ScatterDeadPass.lean:1469-1474`) then **e4c-b** (the program change:
-     touched-only mask copy and distance fill over the child's member list).
+     ball budget (`bw := ns`, `nb := n`, `mm1 = mm = n`), and no constant
+     `ksc` exists (`landed_scatter_leaf_unbounded`) — the single obstruction
+     that would kill the road. **e4c-a** (accounting), **e4c-b/c**
+     (the mask copy deleted at its source), **e4c-d** (design: the capped
+     scan holds, the private array refutes), **b4-design** and
+     **b4-walk-1** (every quantity but one read at the turn's cluster) have
+     landed; what is left of the carrier in the per-atom charge is the
+     distance fill's `11·n + 6` **alone**, which is program text.
+
+     Its removal is **not the hoist** e4c-d §6b priced (private array,
+     `ScatterStep` conjunct, sup sentinel, four driver files). The engine
+     never reads an unmasked distance cell — `RamBfs.scanSlot` tests the
+     mask before reading `dist[w]`, `expandRow`/`unwindSlot` read only at
+     queue entries, which `Frontier.qmem` pins alive — so the whole-array
+     contract clause is stronger than the program needs, and the fill
+     shrinks to a member walk instead of moving. Three waves:
+     **2m-1** (landed: the engine's contract at `DistClean`, the arena
+     seam, both e4c-d obstructions compiled positively — the landed `sound`
+     at a dead vertex is *false*, not merely unprovable), **2m-2** (the
+     active-set pass re-walked at `ArenaAM`, `step_run` at
+     `bfsBlockM_specW`), **2m-3** (the atom swap: `fillCom "dist"` →
+     `ScatterDeadPass.distMemCom`, `11·n + 6` → `memFillAtCost mm1 =
+     14·mm1 + 6`, carrier-free, and the charge chain up to the root's
+     closed form). E4c-d's §7 capped-scan capital is **not consumed** by
+     this route; it was bought for the hoist.
   2. **T4b — build a member-driven base**, not measure the existing one.
      `landed_base_needs_carrier_Cb` refutes every constant `Cb`: the landed
      base is `DeadSweep.baseCost = sweepCost` since T4a and is quantified
-     over every arena weight including `0`, so `Cb ≥ 4·n+6`.
+     over every arena weight including `0`, so `Cb ≥ 4·n+6`. **LANDED**
+     2026-08-08: `hKbase` is the campaign's first gap slot closed, and
+     `g2_plug`'s implication list drops from five carrier dominations to
+     four.
   3. **The `hKd` slot deletion** — cheapest of the three, a statement
      deletion rather than engine work: `(c2b)` took `sweepCom` out of the
-     program but the root still reserves the slot, and
+     program but `RamDriverRoot.levelAt` still reserves the slot
+     (`hKd`, `RamDriverRoot.lean:769`), knowingly vestigial
+     (`:789`, `RamDriverCluster.lean:1630`), and
      `landed_hKd_load_bearing` shows the un-narrowed slot forces `Ω(n²)`.
-     Bundled into e4c-b, which owns the same restating consumers.
+     **STILL OPEN** — it was scheduled into e4c-b, whose Part B dead-ended,
+     so it was never done. It restates the same consumers as b4-iface
+     (`levelAt`, `levelCost_of_sigma`, `driverRoot_decides_sentence(_binj)`,
+     `levelImplements`' Σ summand), so it lands with that wave.
   4. **E3b** (cover composition + the `OrdersBy` contract at members) and
      **E-order** (member-driven order text + walk) — **cost-slack**, four to
      five orders of headroom each (`kc = 150` against a `ka` ceiling of
      `3.95·10⁷`; `68·m + 12` against `7.9·10⁷`). Still required on the
      *walk* side to close `hKc`/`hKo` in the §7 gap ledger, but neither is
-     what the budget is waiting for.
-  5. **B7 re-run** (slot sweep first) → **C0** → **P5**.
+     what the budget is waiting for. `GapsDesign.shared_contract_seam`
+     makes them **one wave, not two**: a single junk-off-the-members
+     condition refutes `RamCover.OrdersBy` and `CoverOut.asg_lt` at once,
+     so any wave restating one contract at the members restates the other.
+  5. **b4-iface** (the size-read `turnCostSize` slot filled with
+     `G2CostProbe.turnCostSizeA`, the `hbnd`/`hcostI`/`hKsc` chain made
+     families of the block reading, `RamDriverRoot.scatterBnd_cluster`
+     deleted, `hKd` with it) → **B7 re-run** (slot sweep first) → **C0** →
+     **P5**. `ScatterDeadTurn.deadAtomKX_block_unbounded` fixes where the
+     block reading may live: strictly below `clusterStepAt`, and nothing
+     block-scale may touch `Ksc`.
 
   **Two corrections to the cost surface's own reading**, both compiled in
   `C0CloseProbe`. `rootBudgetM`'s constant is not `D`-free — `g2M` carries
