@@ -1724,6 +1724,24 @@ Quot.sound] -/
 #guard_msgs in
 #print axioms outProbeCom_spec
 
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.outProbeCom_specB' depends on axioms: [propext,
+Classical.choice,
+Quot.sound] -/
+#guard_msgs in
+#print axioms outProbeCom_specB
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.outside_prefix_bound' depends on axioms: [propext,
+Classical.choice,
+Quot.sound] -/
+#guard_msgs in
+#print axioms outside_prefix_bound
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.exists_outside_le_ncard' depends on axioms: [propext,
+Classical.choice,
+Quot.sound] -/
+#guard_msgs in
+#print axioms exists_outside_le_ncard
+
 /-- info: 'Lax3Proofs.Refine.ScatterDeadPass.atomTerms_iff_scatVal' depends on axioms: [propext,
 Classical.choice,
 Quot.sound] -/
