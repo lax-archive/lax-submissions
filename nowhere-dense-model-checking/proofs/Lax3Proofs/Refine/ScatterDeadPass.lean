@@ -1658,6 +1658,23 @@ theorem scatDeadKX_mono_carrier {L : ℕ} (β : DistFO L 1) {n n' : ℕ} (xb kq 
   simp only [scatDeadKX]
   omega
 
+/-- **The sharper claim is FALSE, and this is why the theorems above take
+the hypothesis they take.** "The narrowed charge does not mention the
+carrier" would be `scatDeadKX_carrier_indep` without `xb + 1 ≤ n`, and
+it fails: at `xb = 1` the probe's cap reads `min 2 0 = 0` at the empty
+carrier and `min 2 2 = 2` at `n = 2`, a difference of `40`. So the
+honest statement of the wave is that nothing *grows* with the carrier
+(`scatDeadKX_le_blk`) and that the carrier stops mattering past the
+block (`scatDeadKX_carrier_free`) — not that it is absent. -/
+theorem scatDeadKX_carrier_indep_refuted {L : ℕ} (β : DistFO L 1) :
+    ¬ (∀ (n n' xb kq bw nb t : ℕ),
+        scatDeadKX β n xb kq bw nb t = scatDeadKX β n' xb kq bw nb t) := by
+  intro h
+  have := h 0 2 1 0 0 0 0
+  simp only [scatDeadKX, outProbeCostB, killSumCost, atomMemCost, outCntCost,
+    memFillAtCost, atomFlagCost, ScatterBlock.scatBlockK_eq] at this
+  omega
+
 /-- **The negative control**: the narrowed charge at the *retired*
 whole-array fill. Every other slot is the one `scatDeadKX` pays. -/
 noncomputable def scatDeadKXwhole {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) : ℕ :=
@@ -2696,6 +2713,11 @@ Quot.sound] -/
 Quot.sound] -/
 #guard_msgs in
 #print axioms scatDeadKX_mono_carrier
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKX_carrier_indep_refuted' depends on axioms:
+[propext, Quot.sound] -/
+#guard_msgs in
+#print axioms scatDeadKX_carrier_indep_refuted
 
 /-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKXwhole_trade' depends on axioms: [propext,
 Quot.sound] -/
