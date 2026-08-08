@@ -132,12 +132,16 @@ LANDED slot still cannot pay.
 Every one of the five sizes carries its own coefficient; this is the
 statement that keeps hazard 4 honest. `C0CloseProbe.deadAtomK_root_eq`
 is the same identity specialised to the root's carrier instantiation
-`n n mb n ns n`, where `43 + 23 + 65` collapses to the `131·n` of that
-file's headline. -/
+`n n mb n ns n`, where `31 + 23 + 65` collapses to the `119·n` of that
+file's headline.
+
+**Wave E4c-c**: the carrier coefficient fell from `43` to `31` and the
+constant from `90` to `84` — the mask copy's `12·n + 6`, deleted from
+`RamDriver.scatDeadCom` rather than re-charged. -/
 theorem deadAtomK_closed {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm bw nb t : ℕ) :
     Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t
-      = (44 * bw + 110 * nb + 140) * t + 43 * n + 23 * mm1 + 65 * mm + 14 * kq +
-        Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 90 := by
+      = (44 * bw + 110 * nb + 140) * t + 31 * n + 23 * mm1 + 65 * mm + 14 * kq +
+        Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 84 := by
   simp only [Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK,
     Lax3Proofs.Refine.ScatterDeadPass.scatDeadK,
     Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
@@ -157,16 +161,18 @@ once models every one of them simultaneously, with no new definition
 and nothing transcribed. -/
 theorem deadAtomK_cluster {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (m kq bw nb t : ℕ) :
     Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β m m kq m bw nb t
-      = (44 * bw + 110 * nb + 140) * t + 131 * m + 14 * kq +
-        Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 90 := by
+      = (44 * bw + 110 * nb + 140) * t + 119 * m + 14 * kq +
+        Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 84 := by
   rw [deadAtomK_closed]; ring
 
-/-- **…and it is still cluster-linear.** The `131` did not move: E4c-b
-buys the *argument* the coefficient is read at, not the coefficient.
-This is the compiled sense in which "beyond the copies the honest
-reading is the turn's cluster". -/
+/-- **…and it is still cluster-linear.** The coefficient did not move
+with the argument: E4c-b buys the *argument* the coefficient is read at,
+not the coefficient. This is the compiled sense in which "beyond the
+copies the honest reading is the turn's cluster". (E4c-c did move the
+coefficient, from `131` to `119`, but by deleting a pass — which is
+program text, not accounting.) -/
 theorem deadAtomK_cluster_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (m kq bw nb t : ℕ) :
-    131 * m ≤ Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β m m kq m bw nb t := by
+    119 * m ≤ Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β m m kq m bw nb t := by
   rw [deadAtomK_cluster]; omega
 
 /-- **No constant survives E4c-b either.** At any fixed kill count, ball
@@ -235,7 +241,7 @@ charge pays one atom, read at the cluster in all four narrowed
 positions, with the ball at whatever budget the wave arranges. The
 level then runs `10¹⁰` turns of it — a turn count the mass side
 condition permits at every block empty — and the root level's bill is
-`131·10²⁰`, against a closed form granting under `7·10¹⁸`.
+`119·10²⁰`, against a closed form granting under `7·10¹⁸`.
 
 So the deficit is **not** the two copies and **not** the coefficient:
 it is that `Ksc` enters the landed slot additively and uniformly. No
@@ -262,12 +268,12 @@ theorem post_copies_blind_slot_refuted {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
   have hfloor := blind_slot_floor (n := 10 ^ 10) (ns := 2 * (10 ^ 10 - 1))
     (ℓ := 3) (D := 8) (turns := 10 ^ 10) (cap := cap) (mb := mb) (q_top := q_top) (φ := φ)
     (Ksc := Ksc) (by omega) (by omega) hKs hKl
-  have hlow : 10 ^ 10 * (131 * 10 ^ 10) ≤ 10 ^ 10 * Ksc 0 := by
+  have hlow : 10 ^ 10 * (119 * 10 ^ 10) ≤ 10 ^ 10 * Ksc 0 := by
     refine Nat.mul_le_mul_left _ ?_
     have := deadAtomK_cluster_floor β (10 ^ 10) kq bw nb t
     omega
   have hup := hcl (10 ^ 10 + 2 * (10 ^ 10 - 1))
-  have hbad : 10 ^ 10 * (131 * 10 ^ 10) ≤
+  have hbad : 10 ^ 10 * (119 * 10 ^ 10) ≤
       (3 * g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead bDeadProbe 0
         ctTurn kscProbe 8 + CbProbe) * (8 + 1) ^ 3 * (10 ^ 10 + 2 * (10 ^ 10 - 1) + 1) :=
     le_trans hlow (le_trans hfloor hup)
@@ -491,13 +497,13 @@ theorem atomK_le_atomCoeff {L : ℕ} (β : Lax3.DistFO.DistFO L 1) {m bw nb s kq
   have hball : (44 * bw + 110 * nb + 140) * t ≤ (154 * s + 140) * t :=
     Nat.mul_le_mul_right _ (by omega)
   have hslope : (154 * s + 140) * t = 154 * t * s + 140 * t := by ring
-  have hm' : 131 * m ≤ 131 * s := Nat.mul_le_mul_left _ hm
-  have hj : 154 * t * s + 131 * s
+  have hm' : 119 * m ≤ 119 * s := Nat.mul_le_mul_left _ hm
+  have hj : 154 * t * s + 119 * s
       ≤ (294 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 221) * s := by
-    have h1 : (154 * t + 131) * s
+    have h1 : (154 * t + 119) * s
         ≤ (294 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 221) * s :=
       Nat.mul_le_mul_right _ (by omega)
-    have h2 : (154 * t + 131) * s = 154 * t * s + 131 * s := by ring
+    have h2 : (154 * t + 119) * s = 154 * t * s + 119 * s := by ring
     omega
   have hexp : atomCoeff kq (Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β) t * (s + 1)
       = (294 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 221) * s
@@ -800,21 +806,22 @@ design gate.
 
 /-- **Control 1 — undersized coefficients fail.** A coefficient below
 the charge's slope in the block weight loses at large blocks, whatever
-the constant term. `154·t + 131` is that slope: `44 + 110` per pick from
-the ball, and `131` from the probe, the two member walks and the two
-copies at the cluster. -/
+the constant term. `154·t + 119` is that slope: `44 + 110` per pick from
+the ball, and `119` from the probe, the two member walks and the
+distance fill at the cluster (wave E4c-c took the mask copy's `12` out
+of it). -/
 theorem undersized_coeff_fails {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (kq t ksc : ℕ)
-    (h : ksc < 154 * t + 131) :
+    (h : ksc < 154 * t + 119) :
     ∃ s : ℕ, ¬ (Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β s s kq s s s t
       ≤ ksc * (s + 1)) := by
   refine ⟨ksc + 1, fun hle => ?_⟩
   rw [deadAtomK_cluster] at hle
   have hd : (44 * (ksc + 1) + 110 * (ksc + 1) + 140) * t
       = 154 * t * (ksc + 1) + 140 * t := by ring
-  have hlow : (ksc + 1) * (ksc + 1) ≤ 154 * t * (ksc + 1) + 131 * (ksc + 1) := by
-    have h1 : (ksc + 1) * (ksc + 1) ≤ (154 * t + 131) * (ksc + 1) :=
+  have hlow : (ksc + 1) * (ksc + 1) ≤ 154 * t * (ksc + 1) + 119 * (ksc + 1) := by
+    have h1 : (ksc + 1) * (ksc + 1) ≤ (154 * t + 119) * (ksc + 1) :=
       Nat.mul_le_mul_right _ (by omega)
-    have h2 : (154 * t + 131) * (ksc + 1) = 154 * t * (ksc + 1) + 131 * (ksc + 1) := by ring
+    have h2 : (154 * t + 119) * (ksc + 1) = 154 * t * (ksc + 1) + 119 * (ksc + 1) := by ring
     omega
   have hhigh : ksc * (ksc + 1 + 1) + 1 = (ksc + 1) * (ksc + 1) := by ring
   omega
@@ -825,7 +832,7 @@ the pick count, the kill batch and the evaluator's fragment, so no
 coefficient is free of the formula. -/
 theorem empty_block_forces_constant {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (kq t ksc : ℕ)
     (h : Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β 0 0 kq 0 0 0 t ≤ ksc * (0 + 1)) :
-    140 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 90 ≤ ksc := by
+    140 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 84 ≤ ksc := by
   rw [deadAtomK_cluster] at h
   omega
 

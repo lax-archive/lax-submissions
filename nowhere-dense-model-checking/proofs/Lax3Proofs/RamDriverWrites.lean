@@ -1190,32 +1190,37 @@ conditions of the turn — that the phase writes no table, and that the
 depth's own arrays and the driver's scalars survive it — can be
 discharged against it.
 
-Six fixed arrays and the generated evaluator's scratch is the whole of
-it. Five of the six are the engine's own calling convention and working
-set (`"alv"`, `"mem"`, `"dist"`, `"exc"`, `"q"`, `"qd"`), which
-`Refine.ScatterDeadPass.warrs_scatBlockCom` settles for the engine and
-which the two copies before it settle for the convention; the scratch is
-`RamDriverBot.Ext "bb"`, exactly as for the kill pass, since the outside
-class's bit is one `botCom` fragment. **No table row is written**, which
-is what a turn's frame needs, and no per-depth name at all — the atom
-program only ever *reads* the depth's arrays. -/
+Five fixed arrays and the generated evaluator's scratch is the whole of
+it — `"mem"`, `"dist"`, `"exc"`, `"q"`, `"qd"`, which
+`Refine.ScatterDeadPass.warrs_scatBlockComA` settles for the engine and
+the atom's filter and the distance fill settle for the rest; the scratch
+is `RamDriverBot.Ext "bb"`, exactly as for the kill pass, since the
+outside class's bit is one `botCom` fragment. **No table row is
+written**, which is what a turn's frame needs, and no per-depth name at
+all — the atom program only ever *reads* the depth's arrays.
+
+**Wave E4c-c.** `"alv"` is kept in the list although nothing writes it
+any more: the mask copy that used to is gone, and the engine reads the
+child's array where it lies. The list is an over-approximation (this
+file's header says so of every one of them), and keeping the extra name
+keeps every consumer's discharge as it stands. -/
 
 /-- **What one dead-aware atom writes.** -/
 theorem warrs_scatDeadCom {L : ℕ} (j ti : ℕ) (β : DistFO L 1) (r t : ℕ) (hloc : IsLocal β)
     {a : String} (ha : a ∈ (scatDeadCom j ti β r t).warrs) :
     a ∈ ["mem", "alv", "dist", "exc", "q", "qd"] ∨ RamDriverBot.Ext "bb" a := by
   rw [scatDeadCom, Com.warrs, Com.warrs, Com.warrs, Com.warrs, Com.warrs, Com.warrs,
-    Com.warrs, Com.warrs, warrs_killSumCom, warrs_outProbeCom, warrs_outCntCom,
+    Com.warrs, warrs_killSumCom, warrs_outProbeCom, warrs_outCntCom,
     warrs_atomFlagCom, atomBitCom, Com.warrs, Com.warrs, Com.warrs,
-    RamDriverIO.copyCom_eq, RamDriverIO.warrs_fillCom, RamDriverIO.warrs_fillCom] at ha
+    RamDriverIO.warrs_fillCom] at ha
   simp only [List.nil_append, List.append_nil, List.mem_append, List.mem_singleton] at ha
-  rcases ha with (hemp | hb) | ha | ha | ha | ha
+  rcases ha with (hemp | hb) | ha | ha | ha
   · exact absurd hemp (by simp [Com.warrs])
   · exact Or.inr (RamDriverBot.warrs_botCom β hloc "bb" a hb)
   · exact Or.inl (by simp [warrs_atomMemCom j ti ha])
   · exact Or.inl (by simp [ha])
-  · exact Or.inl (by simp [ha])
-  · rcases Refine.ScatterDeadPass.warrs_scatBlockCom r t ha with h | h | h | h <;>
+  · rcases Refine.ScatterDeadPass.warrs_scatBlockComA
+      (Refine.ScatterDeadPass.maskFree_alvName (j + 1)) r t ha with h | h | h | h <;>
       exact Or.inl (by simp [h])
 
 /-- **The atom program writes no table row.** The row of the atom's own
@@ -1317,6 +1322,15 @@ theorem notMem_wvars_scatBlockCom_of {r t : ℕ} {y : String}
     y ∉ (Refine.ScatterBlock.scatBlockCom r t).wvars :=
   fun hy => h (wvars_scatBlockCom_sub r t hy)
 
+/-- The same nineteen at the named mask (wave E4c-c): an array renaming
+does not move a scalar, so the engine's scalar set is untouched. -/
+theorem notMem_wvars_scatBlockComA_of {av : String} {r t : ℕ} {y : String}
+    (h : y ∉ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
+      "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"]) :
+    y ∉ (Refine.ScatterBlock.scatBlockComA av r t).wvars := by
+  rw [Refine.ScatterBlock.wvars_scatBlockComA]
+  exact notMem_wvars_scatBlockCom_of h
+
 open Classical in
 /-- **What one dead-aware atom assigns**: the eight driver-side passes'
 scalars, the engine's nineteen, and the generated evaluator's. -/
@@ -1335,18 +1349,16 @@ theorem wvars_scatDeadCom {L : ℕ} (j ti : ℕ) (β : DistFO L 1) (r t : ℕ) (
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at h₁
   obtain ⟨hkc, hke, hof, hoz, hoi, hoc, hmm, hak, hav, hi, hos, hflag⟩ := h₁
   rw [scatDeadCom, Com.wvars, Com.wvars, Com.wvars, Com.wvars, Com.wvars, Com.wvars,
-    Com.wvars, Com.wvars, List.mem_append, List.mem_append, List.mem_append,
-    List.mem_append, List.mem_append, List.mem_append, List.mem_append,
-    List.mem_append] at hy
-  rcases hy with h | h | h | h | h | h | h | h | h
+    Com.wvars, List.mem_append, List.mem_append, List.mem_append,
+    List.mem_append, List.mem_append, List.mem_append, List.mem_append] at hy
+  rcases hy with h | h | h | h | h | h | h | h
   · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_killSumCom j ti hkc hke)
   · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_outProbeCom j hof hoz hoi)
   · exact Refine.ScatterDeadPass.wvars_atomBitCom β hloc h
   · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_outCntCom j hoc)
   · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_atomMemCom j ti hmm hak hav)
-  · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_copyCom _ _ hi)
   · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_fillCom _ _ hi)
-  · exact absurd h (notMem_wvars_scatBlockCom_of h₂)
+  · exact absurd h (notMem_wvars_scatBlockComA_of h₂)
   · exact absurd h (Refine.ScatterDeadPass.notMem_wvars_atomFlagCom t hos hflag)
 
 open Classical in

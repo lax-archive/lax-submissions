@@ -1489,12 +1489,13 @@ that used to force the block engine's text below the driver — see that
 definition's own docstring. What stays here is its charge and its
 walks. -/
 
-/-- The program's charge, pass by pass. Two of the nine summands are
-carrier-width — the mask copy and the distance fill, the engine's own
-calling convention, at the parity `Refine.ArenaSeam.memEntry` is
-accepted at — and so is the probe's; the engine's own `scatBlockK`
-contains neither `n` nor `ns`, and the two new walks are charged at the
-child's member count and the turn's kill count.
+/-- The program's charge, pass by pass. **Wave E4c-c: the mask copy's
+`12·n + 6` is gone from the sum**, because the pass is gone from the
+program — the engine reads the child's alive array where it lies. Two
+carrier-width summands are left, the distance fill and the outside
+probe, and the fill is the one the atom still owes: the engine's own
+`scatBlockK` contains neither `n` nor `ns`, and the two dead walks are
+charged at the child's member count and the turn's kill count.
 
 **Wave R1.8-T3-flip (c1b): the outside count's slot is corrected**, from
 `2` to `outCntCost = 6`. It was the one summand with no proved leaf
@@ -1503,7 +1504,7 @@ and the pass's expression has five nodes. Nothing else moves: the slot
 is a constant and the whole sum is still carrier-linear. -/
 noncomputable def scatDeadK {L : ℕ} (β : DistFO L 1) (n mm1 kq mm bw nb t : ℕ) : ℕ :=
   killSumCost kq + outProbeCost n + atomBitCost β + outCntCost + atomMemCost mm1 +
-    (12 * n + 6) + (11 * n + 6) + scatBlockK mm bw nb t + atomFlagCost
+    (11 * n + 6) + scatBlockK mm bw nb t + atomFlagCost
 
 /-! ### §5d The seam between the terms and the engine
 
@@ -1540,6 +1541,44 @@ theorem notMem_wvars_scatBlockCom (r t : ℕ) (y : String)
       BfsBlock.bfsBlockCom, BfsBlock.unwind, BfsBlock.unwindSlot, seedSrc,
       bfsDrain, expandRow, scanSlot, Fill.put, Csr.loadRow,
       Csr.scan, Queue.drain, Com.wvars]
+
+/-! #### The same two facts at the named mask (wave E4c-c)
+
+`RamDriver.scatDeadCom` runs `ScatterBlock.scatBlockComA`, the engine
+under an array renaming, so the two seam facts have to be read there.
+Neither is re-proved: scalars are untouched by an array renaming
+(`ScatterBlock.renCom_wvars`), and the write set is the landed one
+pushed through the swap, which fixes all four written names precisely
+because `MaskFree` says the mask is none of them. -/
+
+/-- **A per-depth mask array is free for the engine to read in place.**
+`alvName a` begins `alv…`, and none of the seven names the pass holds
+does. -/
+theorem maskFree_alvName (a : ℕ) : ScatterBlock.MaskFree (alvName a) := by
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> simp [alvName, String.ext_iff]
+
+/-- **The renamed engine still writes exactly four arrays**, and the
+mask is none of them — which is what makes reading it in place sound. -/
+theorem warrs_scatBlockComA {av : String} (hav : ScatterBlock.MaskFree av) (r t : ℕ)
+    {a : String} (ha : a ∈ (ScatterBlock.scatBlockComA av r t).warrs) :
+    a = "exc" ∨ a = "dist" ∨ a = "q" ∨ a = "qd" := by
+  obtain ⟨-, -, -, hd, hq, hqd, he⟩ := hav
+  have hpull : ScatterBlock.maskSwap av a ∈ (scatBlockCom r t).warrs :=
+    ScatterBlock.mem_warrs_scatBlockComA ha
+  have hback : a = ScatterBlock.maskSwap av (ScatterBlock.maskSwap av a) :=
+    (ScatterBlock.maskSwap_invol av a).symm
+  rcases warrs_scatBlockCom r t hpull with h | h | h | h <;> rw [hback, h]
+  · exact Or.inl (ScatterBlock.maskSwap_of_ne (by decide) (Ne.symm he))
+  · exact Or.inr (Or.inl (ScatterBlock.maskSwap_of_ne (by decide) (Ne.symm hd)))
+  · exact Or.inr (Or.inr (Or.inl (ScatterBlock.maskSwap_of_ne (by decide) (Ne.symm hq))))
+  · exact Or.inr (Or.inr (Or.inr (ScatterBlock.maskSwap_of_ne (by decide) (Ne.symm hqd))))
+
+/-- And the three dead registers survive the renamed engine too. -/
+theorem notMem_wvars_scatBlockComA (av : String) (r t : ℕ) (y : String)
+    (hy : y ∈ ["kc", "bb", "oc", "n", "mm"]) :
+    y ∉ (ScatterBlock.scatBlockComA av r t).wvars := by
+  rw [ScatterBlock.wvars_scatBlockComA]
+  exact notMem_wvars_scatBlockCom r t y hy
 
 /-- **The other eight passes' write sets** (wave R1.8-T3-flip (c1c)).
 The engine's two facts above say what crosses *it*; the composition of

@@ -2367,22 +2367,30 @@ leaves the three it did not produce alone is
 only `"exc"`, `"dist"`, `"q"` and `"qd"` — no name the driver or the
 atom program holds — is `warrs_scatBlockCom` next to it.
 
-**Wave E4c-b: the two calling-convention passes stay, and why.** The
-mask copy and the distance fill below are the last carrier walks of the
-atom (`Refine.C0CloseProbe.scatDeadK_narrow_floor`'s `23·n + 12`).
-Their touched-only replacements are built and clocked in
-`Refine.ScatterDeadPass` §5f — one store per vertex of the child's
-member list, at `15·mm1 + 6` and `14·mm1 + 6` — and neither can replace
-the pass here. `copyCom` may be dropped only from a state where `"alv"`
-is zero off the child's alive set, and `"alv"` is a
+**Wave E4c-c: the mask copy is gone, at its source.** Until this wave
+the engine's mask name was the literal `"alv"`, so the child's alive
+array `alvName (j + 1)` had to be *copied* there before the engine
+could be entered — `12·n + 6` that computed nothing. E4c-b compiled why
+that copy could not merely be made touched-only: `"alv"` is a
 `RamDriverFrames.scratchArrs` entry that `RamDriver.LevelMem` sizes and
-does not fill: the descent, the cover phase and the nested driver all
-write it (`ScatterDeadPass.alv_touched_only_needs_clean_scratch` runs
-the replacement from the state that actually arrives). `fillCom` cannot
-be dropped at all while `Refine.ScatterBlock.ArenaA`'s seventh clause
-pins the *whole* array at this atom's own radius, since consecutive
-atoms of a turn carry different radii
-(`ScatterDeadPass.dist_touched_only_refuted`).
+does not fill, the descent, the cover phase and the nested driver all
+write it, and junk left alive outside the child's member list flips the
+engine's own answer (`ScatterDeadPass.mask_junk_flips_the_engine`,
+`alv_touched_only_needs_clean_scratch`). So the copy is not made
+cheaper, it is deleted: `Refine.ScatterBlock.scatBlockComA` is the same
+engine reading its mask out of an array the caller names, and the
+caller names `alvName (j + 1)` — the array that already holds exactly
+the mask the copy used to produce. There is no scratch left to leave
+junk in. What the caller owes instead is
+`Refine.ScatterBlock.MaskFree`, that the mask is none of the seven
+names the pass itself holds; a per-depth name satisfies it, and
+`Refine.ScatterDeadPass.maskFree_alvName` is the discharge.
+
+**The distance fill stays.** `fillCom` cannot be dropped while
+`Refine.ScatterBlock.ArenaA`'s seventh clause pins the *whole* array at
+this atom's own radius, since consecutive atoms of a turn carry
+different radii (`ScatterDeadPass.dist_touched_only_refuted`); making
+the sentinel radius-free is the route out and it is not this wave's.
 
 **Wave R1.8-T3-flip (c1): where this may be written.**
 `Refine.ScatterBlock.scatBlockCom` is the landed active-set engine, and
@@ -2402,9 +2410,9 @@ noncomputable def scatDeadCom (j ti : ℕ) {L : ℕ} (β : DistFO L 1) (r t : �
       (.seq (atomBitCom (j + 1) β)
         (.seq (outCntCom j)
           (.seq (atomMemCom j ti)
-            (.seq (copyCom (alvName (j + 1)) "alv")
-              (.seq (fillCom "dist" (.lit (r + 1)))
-                (.seq (Refine.ScatterBlock.scatBlockCom r t) (atomFlagCom t))))))))
+            (.seq (fillCom "dist" (.lit (r + 1)))
+              (.seq (Refine.ScatterBlock.scatBlockComA (alvName (j + 1)) r t)
+                (atomFlagCom t)))))))
 
 open Classical in
 /-- The dead-aware scatter atoms of one tabled formula, decided over the
