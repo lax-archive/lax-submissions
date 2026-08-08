@@ -1441,7 +1441,7 @@ below does.
 text is a function of the formula.** What the brief's "BotEval" means as
 an engine is `RamDriver.baseCom = reprCom ; (per vertex: fold botCom
 over tablesAt)`, walked in `RamDriverBot.lean` and exported as
-`RamDriverBot.baseCost` / `RamDriverCompose.baseImplements`. (Wave
+`RamDriverBot.baseCost` / `RamDriverCompose.baseImplementsD`. (Wave
 R1.8-T4a dropped the `reprCom` half from the pass — see
 `Refine.BaseShed`; the survey's verdict on the remaining half stands
 verbatim, and the `reprCom` bullet below now reads as a statement about

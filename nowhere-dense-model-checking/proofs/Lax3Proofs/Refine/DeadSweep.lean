@@ -45,9 +45,11 @@ is not a `tabName`. So the whole frame is character arithmetic on names.
 # §3 Cost, and what it costs the recursion
 
 `sweepCost` is one carrier-width walk whose turn is the depth's own
-straight line of `botCom` fragments — which since R1.8-T4a is
-`RamDriverBot.baseCost` on the nose (`baseCost_eq`), the base case having
-shed the representative pass. It joins `Ko` and `Kc` as a **phase constant of a
+straight line of `botCom` fragments. From R1.8-T4a until R1.8-T4b it was
+`RamDriverBot.baseCost` on the nose, the base case having shed the
+representative pass and being literally this walk; T4b then gave the base
+a member header, and what is left of the identity is
+`sweepCost_le_baseCost`. It joins `Ko` and `Kc` as a **phase constant of a
 level read at the arena's size**, which is the same debt the ordering
 and cover phases already carry (`RamDriverRoot.levelAt`'s `hKo`/`hKc`
 instantiate size-blind carrier-width constants at every size) and the
@@ -147,13 +149,26 @@ straight line of `botCom` fragments. -/
 noncomputable def sweepCost (q_top cap mb jd n : ℕ) (φ : Lax3.FirstOrder.FO 0) : ℕ :=
   (turnCost q_top cap mb jd φ + 4) * n + 6
 
-/-- **The base case IS the sweep at the bottom depth** (R1.8-T4a). It used
-to be the representative pass followed by the sweep, and `baseCost` used
-to be `reprCost` plus this; the scan is out of the program (`RamDriver.baseCom`),
-so the two costs coincide. The shed itself is `Refine.BaseShed`. -/
-theorem baseCost_eq (q_top cap mb ℓ n : ℕ) (φ : Lax3.FirstOrder.FO 0) :
-    baseCost q_top cap mb ℓ n φ = sweepCost q_top cap mb ℓ n φ :=
-  rfl
+/-- **The two headers, priced against each other** (wave R1.8-T4b).
+
+Between R1.8-T4a and R1.8-T4b this said `baseCost = sweepCost`, by `rfl`
+and at the same size: the base case *was* the sweep, one `Com` under two
+names, and `Refine.GapsDesign` §1.8 flagged that identity as the trap of
+the closing wave — an edit to `RamDriver.sweepCom` would have moved the
+retired pass with it and broken `sweepImplements` below.
+
+The header moved on `RamDriver.baseCom` alone, so what is left of the
+identity is this inequality: read at the *same* size the member walk pays
+three more per turn than the carrier walk, that being the load of the
+member out of the list. It is stated so the direction of the trade is
+compiled and not asserted — the wave bought a smaller size (the arena,
+`RamDriver.MemEnum.card_le_arenaSize`) at three per entry, and it is the
+size that carries the `hKbase` slot
+(`Refine.G2CostProbe.hKbase_paid` against `hKbase_gap_any`). -/
+theorem sweepCost_le_baseCost (q_top cap mb ℓ n : ℕ) (φ : Lax3.FirstOrder.FO 0) :
+    sweepCost q_top cap mb ℓ n φ ≤ baseCost q_top cap mb ℓ n φ := by
+  simp only [sweepCost, baseCost]
+  exact Nat.add_le_add_right (Nat.mul_le_mul_right _ (by omega)) 6
 
 /-- **The sweep, walked.** Every cell of every table of the depth holds
 the truth value of its formula on the edgeless arena. -/

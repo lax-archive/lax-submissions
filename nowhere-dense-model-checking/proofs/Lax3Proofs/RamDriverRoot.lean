@@ -64,7 +64,7 @@ No obligation `Prop` is a hypothesis. The chain, bottom up:
 | `ClusterFrames` | `RamDriverFrames.clusterFrames` |
 | `OrderImplements` | `RamDriverCompose.orderImplements₀` (at `R = 0`) |
 | `CoverImplements` | `RamDriverCompose.coverImplements` |
-| `BaseImplements` | `RamDriverCompose.baseImplements` |
+| `BaseImplementsD` | `RamDriverCompose.baseImplementsD` |
 | `LevelImplements` | `RamDriverCluster.levelImplements` |
 | `DecodeImplements` | `RamDriverIO.decodeImplements` |
 | `SentenceImplements` | `RamDriverIO.sentenceImplements` |
@@ -613,7 +613,7 @@ theorem levelAt
     (hKmono : ∀ j, Monotone (Kl j))
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
       turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
-    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
+    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
     (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
@@ -647,9 +647,14 @@ theorem levelAt
     hQ hℓ
     (fun M Gm C D hbot hDdead hbit => by
       rw [driverAt_bot]
-      exact (((RamDriverCompose.baseImplements hB hpow hbot hbit).pre
-        (fun _ h => ⟨h.1, h.2.1, h.2.2.1⟩)).post
-        (fun _ _ _ hq => ⟨hq.1.onD _, hq.2⟩)).mono (hKbase _))
+      -- **wave R1.8-T4b**: the base pass walks the depth's member list, so its
+      -- charge is read at the arena and the slot below is the M-class one. The
+      -- weight is above the size (`MassWeight.arenaSize_le_arenaWeight`), and
+      -- the budget is monotone, so the walk is paid at `Kl ℓ (arenaWeight …)`.
+      exact (RamDriverCompose.baseImplementsD
+        (le_trans (RamDriverBot.baseCost_mono q_top cap mb ℓ φ
+          (Refine.MassWeight.arenaSize_le_arenaWeight n G M)) (hKbase _))
+        hB hbot hDdead hbit).pre (fun _ h => ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.2⟩))
     (fun j _ M _ _ _d h₁ h₂ h₃ h₄ h₅ =>
       (RamDriverCompose.orderImplements₀ h₁ h₂ h₃ h₄ h₅).mono
         (hKo j (arenaWeight n G M)))
@@ -785,7 +790,7 @@ theorem levelAt_of_sigma
     (hKmono : ∀ j, Monotone (Kl j))
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
       turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
-    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
+    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
     (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
@@ -991,7 +996,7 @@ theorem driverRoot_decides_sentence
     (hKmono : ∀ j, Monotone (Kl j))
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
       turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
-    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
+    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
     (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
@@ -1059,7 +1064,7 @@ theorem driverRoot_decides_sentence_binj
     (hKmono : ∀ j, Monotone (Kl j))
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
       turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
-    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
+    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
     (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)

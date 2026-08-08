@@ -186,7 +186,8 @@ is out of the program (`RamDriver.baseCom`; the shed is
 left is the fold's own per-vertex charge. The base pass's charge is now
 within `12` per member of the dead sweep's (`sweepCoeffA`), which is
 right: since the shed the two passes are the same `Com`
-(`Refine.DeadSweep.baseCost_eq`). -/
+(`Refine.DeadSweep.sweepCost_le_baseCost`; before R1.8-T4b they were the
+same `Com` and the same charge). -/
 noncomputable def baseCoeffA (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) : ℕ :=
   RamDriverBot.turnCost q_top cap mb ℓ φ + 22
 
@@ -658,22 +659,29 @@ E6 re-threaded the driver's Σ interface to the **arena weight**:
 `g2_exists` witness family applied to the REAL `levelAt`, with the
 slots the witness satisfies verbatim consumed silently — `hKmono` and
 the Σ-shaped `hKl`, now READ at weights — and the slots it does NOT
-satisfy left as explicit hypotheses. **Those five hypotheses are the
-compiled gap ledger**: each is a carrier-charged domination the landed
-walks force, each is refuted for §2-form-sized budgets by the theorem
-that follows it, and each names the engine that has to land before it
-can be deleted. The wave gate ("the witness fits the real slots") is
-therefore NOT met, and this section is the honest compiled record of
-exactly how far it is from met.
+satisfy left as explicit hypotheses. **Those hypotheses are the compiled
+gap ledger**: each is a carrier-charged domination the landed walks
+force, each is refuted for §2-form-sized budgets by the theorem that
+follows it, and each names the engine that has to land before it can be
+deleted.
 
-The per-slot verdicts (E6's package survey, 2026-07-31):
+**Wave R1.8-T4b closed the first of the five.** The base row is gone from
+the implication list: `RamDriver.baseCom` walks the depth's member list,
+its charge is read at the arena, and `hKbase_paid` discharges the slot
+inside `g2_plug` from the witness's own base clause at any
+`Cb ≥ sweepCoeffA`. The other four antecedents stand, so the wave gate
+("the witness fits the real slots") is still NOT met, and this section
+is the honest compiled record of exactly how far it is from met.
+
+The per-slot verdicts (E6's package survey, 2026-07-31; base row
+updated by R1.8-T4b, 2026-08-08):
 
 | slot | landed walk | §2 form dischargeable? | missing engine |
 |---|---|---|---|
 | `hKo` | `orderImplements₀` at `orderPhaseCost n ns W` | NO (`hKo_gap`) | member-list order phase (design §3(c); `OrderBridge`'s seam) |
 | `hKc` | `coverImplements` at `coverPhaseCost n ns` | NO (`hKc_gap`) | block-driven centre body + alive-prefix copy + R1.6 member threading (`CoverBlock` F-2/F-3) |
-| `hKd` | `sweepImplements`, loop over the carrier | NO (`hKd_gap`) | member/dead-list sweep (R1.8; caveat: the sweep's WORK is the dead set) |
-| `hKbase` | `baseImplements`, the table fold at the carrier (R1.8-T4a: `reprCom` is gone from the pass — `Refine.BaseShed`) | NO (`hKbase_gap`) | member-list base headers (R1.8-T4b) |
+| `hKd` | `sweepImplements`, loop over the carrier | NO (`hKd_gap`) | member/dead-list sweep (R1.8; caveat: the sweep's WORK is the dead set) — vestigial slot since the flip |
+| `hKbase` | `baseImplementsD`, the table fold at the depth's MEMBER LIST (R1.8-T4b) | **YES** (`hKbase_paid`, at `sweepCoeffA`) | — landed; `hKbase_gap`/`hKbase_gap_any` are now the record of the carrier reading it replaced |
 | `hKs` | `turnCostSize = turnCost` (descend `16·n²`, scatter `Θ(n·t)`) | NO (`hKs_gap`, `hbnd_gap`) | `BlockLeaves` Com-level swap into `descendCom` + `scatBlockCom` into the turn |
 -/
 
@@ -716,19 +724,26 @@ theorem hKd_gap (q_top cap mb jd : ℕ) (φ : Lax3.FirstOrder.FO 0) :
   simp only [Refine.DeadSweep.sweepCost, sweepCoeffA] at h
   nlinarith [Nat.zero_le (RamDriverBot.turnCost q_top cap mb jd φ)]
 
-/-- **`hKbase` gap, compiled**, generically in the formula: the landed
-base pass walks the carrier, so `baseCoeffA · (w + 1)` cannot pay it on
-a light arena.
+/-- **`hKbase` gap, compiled**, generically in the formula: a base pass
+that walks the CARRIER escapes `baseCoeffA · (w + 1)` on a light arena,
+because the charge grows with the carrier and the budget does not.
+
+**R1.8-T4b — this is now the historical record, and the size is what
+carries it.** It says what it always said, and it is still true, but it
+is no longer about the landed pass: the statement reads
+`RamDriverBot.baseCost` at a free size argument and picks a *carrier* for
+it, and since T4b the base pass's size argument is the depth's member
+count. `hKbase_paid` below is the positive statement about the landed
+walk — it is paid at `sweepCoeffA` at every size, including this one's
+witness — and the two together are the wave's whole cost content: not a
+smaller constant (the per-turn charge went UP by three, the member load,
+`Refine.DeadSweep.sweepCost_le_baseCost`) but a smaller *set*.
 
 **R1.8-T4a — the floor moved, the gap did not.** The refutation used to
 ride the representative scan's `reprBodyCost · n`, which guarded dead
 code: that is why the design calls the scan's removal free, and the
 removal (`Refine.BaseShed`) is why both sides of this statement are
-smaller than they were. What is left refuting is the fold's own
-`(turnCost + 4) · n` — real work at every carrier vertex, and the same
-carrier header `hKd_gap` refutes for the dead sweep, which since the
-shed is literally the same `Com` (`Refine.DeadSweep.baseCost_eq`). Only
-the member-list header (design §2.5(b), wave T4b) closes it. -/
+smaller than they were. -/
 theorem hKbase_gap (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) :
     ∃ n : ℕ, ¬ (RamDriverBot.baseCost q_top cap mb ℓ n φ ≤
       baseCoeffA q_top cap mb ℓ φ * (0 + 1)) := by
@@ -739,13 +754,42 @@ theorem hKbase_gap (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) :
 /-- **The `hKbase` gap is not an artifact of the coefficient** — R1.8-T4a
 records it coefficient-free, so that shedding a summand from
 `baseCoeffA` cannot be mistaken for softening the refutation. For ANY
-constant, and every formula and depth, the landed base pass escapes it
-on a light arena: the pass's header is the carrier. -/
+constant, and every formula and depth, a base pass whose header is the
+carrier escapes it on a light arena.
+
+**R1.8-T4b.** This is the sharp form of what the header change had to
+beat, and the reason it could not be beaten by accounting:
+`Refine.GapsDesign.landed_base_escapes_CbM` is this theorem at the
+design's own proposed coefficient. It survives the wave as a statement
+about the carrier reading of `RamDriverBot.baseCost`; what the landed
+pass is charged at is the member count, and `hKbase_paid` is that. -/
 theorem hKbase_gap_any (Cb q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) :
     ∃ n : ℕ, ¬ (RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Cb * (0 + 1)) := by
   refine ⟨Cb + 1, fun h => ?_⟩
   simp only [RamDriverBot.baseCost] at h
   nlinarith [Nat.zero_le (RamDriverBot.turnCost q_top cap mb ℓ φ)]
+
+/-- **`hKbase` PAID** (wave R1.8-T4b) — the positive counterpart of the
+two gap theorems above, and the first slot of the §7 ledger to get one.
+
+The landed base pass walks the depth's member list and is charged at the
+member count (`RamDriverBot.base_spec`, `RamDriverCompose.baseImplementsD`);
+`sweepCoeffA · (w + 1)` pays that at every size, for every formula and
+every depth. So the base clause of the `g2_exists`/`g2M` witness families
+— `∀ w, Cb · (w + 1) ≤ Kl ℓ w` — discharges the real `hKbase` slot of
+`RamDriverRoot.levelAt` at any `Cb` above this coefficient, which is what
+`g2_plug` below now does silently instead of leaving it as an
+implication.
+
+The coefficient is `sweepCoeffA` and not `baseCoeffA`: since R1.8-T4a the
+base pass and the retired dead sweep have one per-turn charge between
+them, and the twelve `baseCoeffA` still carries above it were the
+representative scan's. -/
+theorem hKbase_paid (q_top cap mb ℓ mm : ℕ) (φ : Lax3.FirstOrder.FO 0) :
+    RamDriverBot.baseCost q_top cap mb ℓ mm φ ≤
+      sweepCoeffA q_top cap mb ℓ φ * (mm + 1) := by
+  simp only [RamDriverBot.baseCost, sweepCoeffA]
+  nlinarith [Nat.zero_le (RamDriverBot.turnCost q_top cap mb ℓ φ), Nat.zero_le mm]
 
 /-- **`hKs` gap, compiled.** The real turn cost carries
 `descendCost`'s `16·n²` (the six carrier fills), so no
@@ -775,15 +819,18 @@ theorem hbnd_gap (mm bw nb t : ℕ) :
 open Classical in
 /-- **The E6 plug, honestly.** The `g2_exists` witness family, applied
 to the REAL re-threaded `RamDriverRoot.levelAt`. What the witness
-satisfies verbatim is consumed silently — its `hKmono` and its Σ-shaped
+satisfies verbatim is consumed silently — its `hKmono`, its Σ-shaped
 `hKl` (which since E6 is READ at the arena weight: the conclusion below
-is `Kl j (arenaWeight n G M)`, and `Kmass := D` bounds block-WEIGHT
-sums via `hdeg`). What it does not satisfy is left as the five explicit
-implications: the four carrier phase dominations and the carrier turn
-domination, i.e. exactly the gap ledger above. When the missing engines
-land, each antecedent becomes dischargeable at the witness's own
-budgets and this theorem's implication chain collapses into the full
-plug the wave gate asked for.
+is `Kl j (arenaWeight n G M)`, and `Kmass := D` bounds block-WEIGHT sums
+via `hdeg`), and **since wave R1.8-T4b its base clause**: `hKbase_paid`
+turns `∀ w, Cb · (w + 1) ≤ Kl ℓ w` into the driver's real base slot at
+any `Cb` above `sweepCoeffA`, which is the new hypothesis `hCb`. What it
+does not satisfy is left as the four remaining explicit implications:
+three carrier phase dominations and the carrier turn domination, i.e.
+exactly the gap ledger above. When the missing engines land, each
+antecedent becomes dischargeable at the witness's own budgets and this
+theorem's implication chain collapses into the full plug the wave gate
+asked for.
 
 This typechecks only if the witness's `hKmono`/`hKl` fit `levelAt`'s
 slots verbatim — the B8 sense in which the moved part of the interface
@@ -793,6 +840,9 @@ theorem g2_plug {n : ℕ} {B q_top cap mb ns W ℓ s : ℕ} {N : ℕ → ℕ}
     {Kb : ℕ} {Ki Ksc : ℕ → ℕ}
     (D Cb d D₁ kc kd ct kscM : ℕ)
     (hKscM : ∀ j < ℓ, Ksc j ≤ kscM)
+    -- the base slot's coefficient (wave R1.8-T4b): above it, the witness's own
+    -- base clause IS the driver's base slot, so that row leaves the ledger
+    (hCb : sweepCoeffA q_top cap mb ℓ φ ≤ Cb)
     (hcap : cap = rhoMinus 0 q_top) (hmb : mb = ℓ * (2 * cap + 1))
     (hℓ : ℓ = N (2 * s + 2))
     -- the value bound at the cover-degree parameter `hdeg` bounds (rebase
@@ -826,7 +876,6 @@ theorem g2_plug {n : ℕ} {B q_top cap mb ns W ℓ s : ℕ} {N : ℕ → ℕ}
       ((∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m) →
        (∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m) →
        (∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m) →
-       (∀ m, RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Kl ℓ m) →
        (∀ j < ℓ, ∀ t : ℕ,
          RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t)
            ≤ Ks j t) →
@@ -836,7 +885,13 @@ theorem g2_plug {n : ℕ} {B q_top cap mb ns W ℓ s : ℕ} {N : ℕ → ℕ}
   obtain ⟨Ko, Kc, Kd, Ks, Kl, hKo, hKc, hKd, hbase, hmono, hKsA, hKl, hcl⟩ :=
     g2_exists ℓ D Cb 0 d D₁ kc kd ct kscM Ksc hKscM
   refine ⟨Ko, Kc, Kd, Ks, Kl, hKo, hKc, hKd, hbase, hKsA, hcl, ?_⟩
-  intro hKoR hKcR hKdR hKbaseR hKsR
+  intro hKoR hKcR hKdR hKsR
+  -- **the base slot, discharged** (wave R1.8-T4b): the landed walk is the
+  -- member list's, so `hKbase_paid` puts its charge under `Cb · (m + 1)`, and
+  -- the witness's own base clause carries it from there
+  have hKbaseR : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m := fun m =>
+    le_trans (le_trans (hKbase_paid q_top cap mb ℓ m φ)
+      (Nat.mul_le_mul_right _ hCb)) (hbase m)
   exact RamDriverRoot.levelAt hcap hmb hℓ hB hWB hpow hcsr hQ hbnd hcostI hKscReal
     hmono hKsR hKbaseR hKoR hKcR hKdR (RamDriverRoot.blockInj_slot G cap) hdeg hKl
 

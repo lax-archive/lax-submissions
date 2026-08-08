@@ -19,7 +19,7 @@ Three of the **composition obligations of the driver**, discharged:
   the pass writes only the fixed scratch names and the depth's own
   four, and the level's state speaks about none of them except through
   `LevelMem` and `DepthMem`, which are lengths.
-* `baseImplements` — **the base case**: `RamDriverBot.base_spec`
+* `baseImplementsD` — **the base case**: `RamDriverBot.base_spec`
   translated into the surface, the frame off that file's four syntactic
   lemmas and the postcondition off `masked G M = ⊥`. The locality of the
   tabled formulas is not a hypothesis and does not need to be —
@@ -1069,7 +1069,7 @@ theorem notMem_warrs_baseCom {q_top cap mb ℓ : ℕ} {φ : Lax3.FirstOrder.FO 0
 /-- And the three ways a scalar can. -/
 theorem notMem_wvars_baseCom {q_top cap mb ℓ : ℕ} {φ : Lax3.FirstOrder.FO 0}
     (hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β) {y : String}
-    (h1 : y ∉ ["rp", "z", "seen", "rw", "rv"]) (h2 : ∀ i, y ≠ envName i)
+    (h1 : y ∉ ["z", "mk"]) (h2 : ∀ i, y ≠ envName i)
     (h3 : ¬ RamDriverBot.Ext "bb" y) :
     y ∉ (baseCom q_top cap mb ℓ φ).wvars := fun hy => by
   rcases RamDriverBot.wvars_baseCom hlocal y hy with h | ⟨i, h⟩ | h
@@ -1077,24 +1077,50 @@ theorem notMem_wvars_baseCom {q_top cap mb ℓ : ℕ} {φ : Lax3.FirstOrder.FO 0
   · exact h2 i h
   · exact h3 h
 
-/-- **The base case of the driver, discharged.** -/
-theorem baseImplements {n : ℕ} {B q_top cap mb ns W ℓ : ℕ} {φ : Lax3.FirstOrder.FO 0}
-    {G : SimpleGraph (Fin n)} {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ} :
-    BaseImplements B q_top cap mb ns W ℓ φ G O T M Gm C
-      (RamDriverBot.baseCost q_top cap mb ℓ n φ) := by
-  -- R1.8-T4a: the `2 ^ sigL cap mb ℓ < B` hypothesis of the obligation and
-  -- the `Sized [("rep", …)]` clause of `BaseArrs` are the representative
-  -- scan's, and the scan is out of the program — `base_spec` asks for
-  -- neither, so both go unused here.
-  intro d hB _ hbot hbit
+/-- **The base case of the driver, discharged** (wave R1.8-T4b: at the
+domain form of the obligation, and at the arena's size).
+
+The cost slot is a parameter with one condition: the budget covers the
+depth's charge read at `RamDriver.arenaSize n M`. That is where the whole
+wave lands — the walk itself pays `RamDriverBot.baseCost … mm φ` at the
+member count, `RamDriver.MemEnum.card_le_arenaSize` puts `mm` under the
+arena, and `RamDriverBot.baseCost_mono` closes the gap. Before T4b the
+slot was the constant `baseCost … n φ`, at the carrier, which no
+weight-linear budget dominates (`Refine.G2CostProbe.hKbase_gap_any`).
+
+The domain `D` rides through `RamDriverBot.base_spec`'s own `Dm`: its
+rows come in with the precondition's `RamDriver.TableInvOn`, the walk
+never stores off the member list, and `masked G M = ⊥` is what makes the
+incoming reading (`Sat (masked G M)`) and the walk's (`Sat ⊥`) the same
+question. -/
+theorem baseImplementsD {n : ℕ} {B q_top cap mb ns W ℓ K : ℕ} {φ : Lax3.FirstOrder.FO 0}
+    {G : SimpleGraph (Fin n)} {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ} {D : Set (Fin n)}
+    (hK : RamDriverBot.baseCost q_top cap mb ℓ (arenaSize n M) φ ≤ K) :
+    BaseImplementsD B q_top cap mb ns W ℓ φ G O T M Gm C D K := by
+  -- R1.8-T4a: the `Sized [("rep", …)]` clause of `BaseArrs` is the
+  -- representative scan's and the scan is out of the program, so `base_spec`
+  -- does not ask for it; R1.8-T4b dropped the obligation's own
+  -- `2 ^ sigL cap mb ℓ < B` for the same reason.
+  intro d hB hbot hDdead hbit
   have hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β :=
     fun β hβ => (FormulaTables.tableRank_of_mem_tablesAt ℓ β hβ).1
   refine Spec.of_exists fun σ hσ => ?_
-  obtain ⟨hlev, hts, hbarr⟩ := hσ
+  obtain ⟨hlev, hts, hbarr, htinv⟩ := hσ
+  obtain ⟨Mem, mm, hmarr, hmnum, hmemE, -⟩ :=
+    hlev.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2
+  have hpre : RamDriverBot.BaseTabMem q_top cap mb ℓ n φ C Mem (fun v => v ∈ D)
+      (fun _ => 0) σ := by
+    intro i hi
+    obtain ⟨Tb, hTb, hTbit, hTval⟩ := htinv i hi
+    refine ⟨Tb, hTb, fun v hv => ?_⟩
+    rcases hv with ⟨q, hq, -⟩ | hd
+    · exact absurd hq (Nat.not_lt_zero q)
+    · exact ⟨hTbit v hd, by rw [hTval v hd, hbot]⟩
   obtain ⟨σ', hrun, htab⟩ :=
-    (RamDriverBot.base_spec hB.one_lt hB.n_lt hbit hlocal).run
-      ⟨hlev.1, hlev.2.2.2.2.2.1, hbarr.2 ℓ, fun i hi => hts.get ℓ hi⟩
-  refine ⟨σ', _, hrun, le_rfl,
+    (RamDriverBot.base_spec (Dm := fun v => v ∈ D) hB.one_lt hB.n_lt hbit hlocal hmemE).run
+      ⟨hlev.1, hlev.2.2.2.2.2.1, hbarr.2 ℓ, hmarr, hmnum, hpre⟩
+  refine ⟨σ', _, hrun,
+    le_trans (RamDriverBot.baseCost_mono q_top cap mb ℓ φ hmemE.card_le_arenaSize) hK,
     ⟨levelPre_run hlev hrun
       (notMem_wvars_baseCom hlocal (by decide) (fun i => RamDriverBot.lit_ne_envName
         ⟨_, rfl⟩ (by decide) i) (RamDriverBot.not_ext_of_not_prefix (by decide)))
@@ -1135,8 +1161,15 @@ theorem baseImplements {n : ℕ} {B q_top cap mb ns W ℓ : ℕ} {φ : Lax3.Firs
     hrun.out_eq (RamDriverBot.noWrite_baseCom q_top cap mb ℓ φ)⟩
   intro i hi
   obtain ⟨Tb, hTb, hval⟩ := htab i hi
-  exact ⟨Tb, hTb, fun v hv => (hval ⟨v, hv⟩ hv).1,
-    fun v => by rw [hbot]; exact (hval v v.isLt).2⟩
+  refine ⟨Tb, hTb, fun v hv => (hval v ?_).1, fun v hv => ?_⟩
+  · rcases hv with hal | hd
+    · exact Or.inl hal
+    · exact Or.inr hd
+  · rw [hbot]
+    refine (hval v ?_).2
+    rcases hv with hal | hd
+    · exact Or.inl hal
+    · exact Or.inr hd
 
 
 /-! ### The elimination's rank bound

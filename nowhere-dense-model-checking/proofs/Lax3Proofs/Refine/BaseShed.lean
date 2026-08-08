@@ -20,17 +20,21 @@ that the new constant is *strictly* smaller (`baseCost_lt_old`), and
 that the shed is not a rounding — it is at least `2 ^ sigL cap mb ℓ`
 per carrier vertex (`pow_mul_le_shed`).
 
-# What did NOT change
+# What did NOT change (at R1.8-T4a), and what T4b then changed
 
-The base pass still walks the **carrier**, so the base's charge is still
-carrier-linear and `Refine.G2CostProbe.hKbase_gap` still refutes a
-weight-linear budget for it. What changed is the gap's floor: it used to
-be the scan's `reprBodyCost · n` — a floor guarding dead code, which is
-why the design calls the scan's removal free — and it is now the
-sweep's own `(turnCost + 4) · n`, which is real work at every vertex and
-which only the member-list header (wave T4b, design §2.5(b)) moves.
-`baseCoeffA` sheds its `reprBodyCost` term with the scan; the gap is
-re-proved there at the shed coefficient.
+R1.8-T4a left the base pass walking the **carrier**, so the base's charge
+stayed carrier-linear and `Refine.G2CostProbe.hKbase_gap` still refuted a
+weight-linear budget for it. What T4a changed is the gap's floor: it used
+to be the scan's `reprBodyCost · n` — a floor guarding dead code, which is
+why the design calls the scan's removal free — and it became the sweep's
+own `(turnCost + 4) · n`, real work at every vertex.
+
+**Wave T4b then moved the header**, and with it the size the charge is
+read at: `RamDriverBot.baseCost` is now the depth's member walk, at the
+arena. The constants below are the pre-T4b ones and are stated at
+`shedBaseCost`, this file's own name for them; nothing here tracks the
+live charge, because this file is a ledger of what T4a removed and not a
+statement about the current pass.
 
 Nothing about `RamDriver.reprCom`, `RamDriverBot.repr_spec` or
 `RamDriverBot.reprCost` is deleted: they stay compiled as the machine
@@ -52,15 +56,29 @@ a statement and not a memory. -/
 noncomputable def oldBaseCost (q_top cap mb ℓ n : ℕ) (φ : Lax3.FirstOrder.FO 0) : ℕ :=
   reprCost ℓ (sigL cap mb ℓ) n + ((turnCost q_top cap mb ℓ φ + 4) * n + 6)
 
+/-- **The base cost as it stood after R1.8-T4a and before R1.8-T4b**: the
+depth's sweep at the carrier, which is what this file's ledger is about.
+
+Until wave T4b this was `RamDriverBot.baseCost` itself. That constant has
+since moved twice over — its size argument is the depth's *member count*
+and its per-turn charge is three higher (the member load) — so the shed's
+statements are pinned here, at the constant they were made about, rather
+than tracking a name whose meaning has changed. What T4b did to the
+carrier reading is `Refine.DeadSweep.sweepCost_le_baseCost`; that it is
+the reading no budget of the G2 interface could pay is
+`Refine.G2CostProbe.hKbase_gap_any`, which is why the header moved. -/
+noncomputable def shedBaseCost (q_top cap mb ℓ n : ℕ) (φ : Lax3.FirstOrder.FO 0) : ℕ :=
+  (turnCost q_top cap mb ℓ φ + 4) * n + 6
+
 /-- The old cost is the scan's plus the new one — the shed is a summand,
 not a re-derivation. -/
 theorem oldBaseCost_eq :
     oldBaseCost q_top cap mb ℓ n φ =
-      reprCost ℓ (sigL cap mb ℓ) n + baseCost q_top cap mb ℓ n φ := rfl
+      reprCost ℓ (sigL cap mb ℓ) n + shedBaseCost q_top cap mb ℓ n φ := rfl
 
 /-- **What the base pass shed**: the representative scan's cost, exactly. -/
 theorem shed_eq_reprCost :
-    oldBaseCost q_top cap mb ℓ n φ - baseCost q_top cap mb ℓ n φ =
+    oldBaseCost q_top cap mb ℓ n φ - shedBaseCost q_top cap mb ℓ n φ =
       reprCost ℓ (sigL cap mb ℓ) n := by
   rw [oldBaseCost_eq]; omega
 
@@ -73,7 +91,7 @@ theorem reprCost_pos : 0 < reprCost ℓ (sigL cap mb ℓ) n := by
 /-- **The shed is strict**: the base pass costs strictly less than it
 did, at every carrier size and every formula. -/
 theorem baseCost_lt_old :
-    baseCost q_top cap mb ℓ n φ < oldBaseCost q_top cap mb ℓ n φ := by
+    shedBaseCost q_top cap mb ℓ n φ < oldBaseCost q_top cap mb ℓ n φ := by
   have h : 0 < reprCost ℓ (sigL cap mb ℓ) n := reprCost_pos
   rw [oldBaseCost_eq]
   omega
@@ -84,7 +102,7 @@ recorded rows, so the summand removed dominates `2 ^ sigL cap mb ℓ · n`.
 This is the sense in which the `exU` case was expensive dead code. -/
 theorem pow_mul_le_shed :
     2 ^ sigL cap mb ℓ * n ≤
-      oldBaseCost q_top cap mb ℓ n φ - baseCost q_top cap mb ℓ n φ := by
+      oldBaseCost q_top cap mb ℓ n φ - shedBaseCost q_top cap mb ℓ n φ := by
   rw [shed_eq_reprCost, reprCost, reprBodyCost]
   refine le_trans (Nat.mul_le_mul_right n ?_) (Nat.le_add_right _ 8)
   calc 2 ^ sigL cap mb ℓ
@@ -145,7 +163,7 @@ private def ob (jd L K n : ℕ) : ℕ := reprCost jd L n + nb K n
 -- **Negative control.** The shed is not the whole cost: the sweep half
 -- survives untouched, and it is still carrier-linear — doubling the
 -- carrier doubles it exactly, which is why
--- `Refine.G2CostProbe.hKbase_gap` survives the shed (the header is wave
+-- `Refine.G2CostProbe.hKbase_gap` survived the shed (the header was wave
 -- T4b's, not this one's).
 #guard nb 10 200 - nb 10 100 = nb 10 100 - nb 10 0
 #guard ¬ (nb 10 100 ≤ 10 * (0 + 1))
