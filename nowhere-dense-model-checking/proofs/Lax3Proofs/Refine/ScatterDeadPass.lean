@@ -20,15 +20,16 @@ three, and the proof that it does.
 
 1. `RamDriver.atomMemCom` — the child's member list filtered by the
    atom's table row into the engine's `"mem"`/`"mm"`. §2.
-2. The engine's calling convention: the child mask into `"alv"` and a
-   clean `"dist"`. Carrier-charge parity with the landed engine entry
-   (`Refine.ArenaSeam.memEntry`) is accepted at this boundary; making
-   the two active-set-driven was E4c-b's, and **§5f is its result**:
-   both member-scale replacements are built, specified and clocked
-   there, and neither can be wired in — the mask because nothing pins
-   the scratch array it would have to start from, the distance because
-   `Refine.ScatterBlock.ArenaA` pins the whole array at the atom's own
-   radius. §5c's charge is unchanged for exactly that reason.
+2. The engine's entry condition: a clean `"dist"`. Carrier-charge
+   parity with the landed engine entry (`Refine.ArenaSeam.memEntry`) is
+   accepted at this boundary. **The mask copy that used to stand beside
+   it is gone** (wave E4c-c): the engine reads the child's alive array
+   where it lies, so there is nothing to move and no scratch to clean,
+   and §5c's charge is `12·n + 6` lighter. Making the *distance* fill
+   active-set-driven was E4c-b's, and §5f is its result — the
+   member-scale replacement is built, specified and clocked there and
+   cannot be wired in, because `Refine.ScatterBlock.ArenaA` pins the
+   whole array at the atom's own radius.
 3. `Refine.ScatterBlock.scatBlockCom`, read through
    `Refine.ScatterDeadEngine.scatBlockCnt_specW` — the counter in its
    `∀ e` decision form, which is the only true reading (the naive
@@ -1489,12 +1490,13 @@ that used to force the block engine's text below the driver — see that
 definition's own docstring. What stays here is its charge and its
 walks. -/
 
-/-- The program's charge, pass by pass. Two of the nine summands are
-carrier-width — the mask copy and the distance fill, the engine's own
-calling convention, at the parity `Refine.ArenaSeam.memEntry` is
-accepted at — and so is the probe's; the engine's own `scatBlockK`
-contains neither `n` nor `ns`, and the two new walks are charged at the
-child's member count and the turn's kill count.
+/-- The program's charge, pass by pass. **Wave E4c-c: the mask copy's
+`12·n + 6` is gone from the sum**, because the pass is gone from the
+program — the engine reads the child's alive array where it lies. Two
+carrier-width summands are left, the distance fill and the outside
+probe, and the fill is the one the atom still owes: the engine's own
+`scatBlockK` contains neither `n` nor `ns`, and the two dead walks are
+charged at the child's member count and the turn's kill count.
 
 **Wave R1.8-T3-flip (c1b): the outside count's slot is corrected**, from
 `2` to `outCntCost = 6`. It was the one summand with no proved leaf
@@ -1503,7 +1505,7 @@ and the pass's expression has five nodes. Nothing else moves: the slot
 is a constant and the whole sum is still carrier-linear. -/
 noncomputable def scatDeadK {L : ℕ} (β : DistFO L 1) (n mm1 kq mm bw nb t : ℕ) : ℕ :=
   killSumCost kq + outProbeCost n + atomBitCost β + outCntCost + atomMemCost mm1 +
-    (12 * n + 6) + (11 * n + 6) + scatBlockK mm bw nb t + atomFlagCost
+    (11 * n + 6) + scatBlockK mm bw nb t + atomFlagCost
 
 /-! ### §5d The seam between the terms and the engine
 
@@ -1540,6 +1542,44 @@ theorem notMem_wvars_scatBlockCom (r t : ℕ) (y : String)
       BfsBlock.bfsBlockCom, BfsBlock.unwind, BfsBlock.unwindSlot, seedSrc,
       bfsDrain, expandRow, scanSlot, Fill.put, Csr.loadRow,
       Csr.scan, Queue.drain, Com.wvars]
+
+/-! #### The same two facts at the named mask (wave E4c-c)
+
+`RamDriver.scatDeadCom` runs `ScatterBlock.scatBlockComA`, the engine
+under an array renaming, so the two seam facts have to be read there.
+Neither is re-proved: scalars are untouched by an array renaming
+(`ScatterBlock.renCom_wvars`), and the write set is the landed one
+pushed through the swap, which fixes all four written names precisely
+because `MaskFree` says the mask is none of them. -/
+
+/-- **A per-depth mask array is free for the engine to read in place.**
+`alvName a` begins `alv…`, and none of the seven names the pass holds
+does. -/
+theorem maskFree_alvName (a : ℕ) : ScatterBlock.MaskFree (alvName a) := by
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> simp [alvName, String.ext_iff]
+
+/-- **The renamed engine still writes exactly four arrays**, and the
+mask is none of them — which is what makes reading it in place sound. -/
+theorem warrs_scatBlockComA {av : String} (hav : ScatterBlock.MaskFree av) (r t : ℕ)
+    {a : String} (ha : a ∈ (ScatterBlock.scatBlockComA av r t).warrs) :
+    a = "exc" ∨ a = "dist" ∨ a = "q" ∨ a = "qd" := by
+  obtain ⟨-, -, -, hd, hq, hqd, he⟩ := hav
+  have hpull : ScatterBlock.maskSwap av a ∈ (scatBlockCom r t).warrs :=
+    ScatterBlock.mem_warrs_scatBlockComA ha
+  have hback : a = ScatterBlock.maskSwap av (ScatterBlock.maskSwap av a) :=
+    (ScatterBlock.maskSwap_invol av a).symm
+  rcases warrs_scatBlockCom r t hpull with h | h | h | h <;> rw [hback, h]
+  · exact Or.inl (ScatterBlock.maskSwap_of_ne (by decide) (Ne.symm he))
+  · exact Or.inr (Or.inl (ScatterBlock.maskSwap_of_ne (by decide) (Ne.symm hd)))
+  · exact Or.inr (Or.inr (Or.inl (ScatterBlock.maskSwap_of_ne (by decide) (Ne.symm hq))))
+  · exact Or.inr (Or.inr (Or.inr (ScatterBlock.maskSwap_of_ne (by decide) (Ne.symm hqd))))
+
+/-- And the three dead registers survive the renamed engine too. -/
+theorem notMem_wvars_scatBlockComA (av : String) (r t : ℕ) (y : String)
+    (hy : y ∈ ["kc", "bb", "oc", "n", "mm"]) :
+    y ∉ (ScatterBlock.scatBlockComA av r t).wvars := by
+  rw [ScatterBlock.wvars_scatBlockComA]
+  exact notMem_wvars_scatBlockCom r t y hy
 
 /-- **The other eight passes' write sets** (wave R1.8-T3-flip (c1c)).
 The engine's two facts above say what crosses *it*; the composition of
@@ -1659,16 +1699,33 @@ theorem ballBudget_carrier {G : SimpleGraph (Fin n)} {ns : ℕ} {O T : ℕ → �
   rw [htel n le_rfl, hcsr.zero, hcsr.last]
   omega
 
-/-! ### §5f Wave E4c-b: the two calling-convention copies, at the member list
+/-! ### §5f Wave E4c-b: the two calling-convention copies, at the member
+list — and what E4c-c did with the answer
 
-`Refine.C0CloseProbe.scatDeadK_narrow_floor` compiles that `23·n + 12`
-of §5c's charge survives every narrowing of the probe bound, the two
-member counts and the ball budget: the mask copy `copyCom (alvName
-(j + 1)) "alv"` and the distance fill `fillCom "dist" (r + 1)` are
-carrier walks in `RamDriver.scatDeadCom`'s own text, so only a program
-change can move them. This section is that program change, built and
-measured — and the two compiled reasons neither half can be wired into
-the atom at this boundary.
+**Read this section as the record, not as the road.** E4c-b built
+touched-only replacements for both carrier passes of
+`RamDriver.scatDeadCom` and compiled that neither could be wired in.
+E4c-c then took the *other* route for the mask half: not a cheaper copy
+but no copy at all. `RamDriver.scatDeadCom` no longer contains
+`copyCom (alvName (j + 1)) "alv"`; the engine is
+`Refine.ScatterBlock.scatBlockComA (alvName (j + 1))`, which reads the
+child's alive array where it lies. So `memCopyAt`, `alvMemCom`,
+`alvClrCom` and `entryMemCost` below are **superseded**, and they are
+kept for one reason: the refutations of §5g are stated about them, and
+those refutations are the evidence for why the copy had to be deleted
+rather than re-charged. Deleting the definitions would delete the
+record. `memFillAt`/`distMemCom` are *not* superseded — the distance
+fill is still in the program, and they are still its candidate
+replacement.
+
+Historically: `Refine.C0CloseProbe.scatDeadK_narrow_floor` compiled that
+`23·n + 12` of §5c's charge survived every narrowing of the probe bound,
+the two member counts and the ball budget — the mask copy `copyCom
+(alvName (j + 1)) "alv"` and the distance fill `fillCom "dist" (r + 1)`
+are carrier walks in `RamDriver.scatDeadCom`'s own text, so only a
+program change could move them. This section is that program change,
+built and measured, together with the two compiled reasons neither half
+could be *wired in*. The residual now stands at `11·n + 6`.
 
 **The replacement.** `memFillAt` and `memCopyAt` walk the child's member
 list once and store at the *listed* vertex: `Refine.BlockLeaves`'s

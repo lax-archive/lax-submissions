@@ -421,4 +421,302 @@ theorem notMem_clearMem_warrs (a : String)
     (ha : a ∈ ["off", "tgt", "alv", "mem", "dist", "q", "qd"]) : a ∉ clearMem.warrs := by
   fin_cases ha <;> simp [clearMem, clearSlot, Csr.scan, Com.warrs]
 
+/-! ### §5 The mask array, made a parameter — by renaming, not by rewriting
+
+**Why a renaming and not a parameter.** The engine reads its mask in
+exactly two places, and neither of them is in this family of files:
+`RamBfs.seedSrc` asks `alv[src] > 0` before enqueueing the source, and
+`RamBfs.scanSlot` asks `alv[w] > 0` before relaxing a target. Both are
+landed program text with a whole correctness walk over them
+(`seedSrc_run`, `expandRow_run`, `Queue.drain`), so turning the literal
+`"alv"` into a parameter *there* would re-open that walk. What is
+offered here instead is a transport: the engine is run on the program
+with every array name pushed through an involution `f`, in the
+environment with every array name pulled back through the same `f`, and
+the two cancel. Nothing about the search is re-proved — `renCom_spec`
+below carries any `Spec` across, cost included, because the renaming
+does not change a single `Expr.size`.
+
+The involution used downstream is `maskSwap av`, which exchanges `"alv"`
+with `av` and fixes everything else. Applied to the engine — which never
+mentions `av` — the result is literally "the engine, reading its mask
+out of `av`", and `RamDriver.scatDeadCom` may then point it straight at
+the child's own alive array instead of copying that array into `"alv"`
+first.
+
+An involution rather than a bijection is not a convenience: `Env`
+renaming is a *pullback* (`renEnv f σ` reads array `a` as `σ.arrs (f a)`)
+while `Com` renaming is a *pushforward*, so the two cancel only when `f`
+is its own inverse. Injectivity alone would give the store case, but not
+the reconstruction of the final environment. -/
+
+/-- Rename the arrays an expression reads. -/
+def renExpr (f : String → String) : Expr → Expr
+  | .lit v => .lit v
+  | .var x => .var x
+  | .get a i => .get (f a) (renExpr f i)
+  | .bin op e g => .bin op (renExpr f e) (renExpr f g)
+
+/-- Rename the arrays a condition reads. -/
+def renCond (f : String → String) : Cond → Cond
+  | .eq e g => .eq (renExpr f e) (renExpr f g)
+  | .lt e g => .lt (renExpr f e) (renExpr f g)
+
+/-- Rename every array a command mentions, read or written. Scalars,
+control flow and the tapes are untouched. -/
+def renCom (f : String → String) : Com → Com
+  | .skip => .skip
+  | .assign x e => .assign x (renExpr f e)
+  | .store a i e => .store (f a) (renExpr f i) (renExpr f e)
+  | .seq c d => .seq (renCom f c) (renCom f d)
+  | .ite b c d => .ite (renCond f b) (renCom f c) (renCom f d)
+  | .while b c => .while (renCond f b) (renCom f c)
+  | .read x => .read x
+  | .write e => .write (renExpr f e)
+
+/-- The environment that answers a question about array `a` with what
+`σ` says about `f a`. -/
+def renEnv (f : String → String) (σ : Env) : Env :=
+  { σ with arrs := fun a => σ.arrs (f a) }
+
+@[simp] theorem renEnv_arrs (f : String → String) (σ : Env) (a : String) :
+    (renEnv f σ).arrs a = σ.arrs (f a) := rfl
+
+@[simp] theorem renEnv_vars (f : String → String) (σ : Env) (x : String) :
+    (renEnv f σ).vars x = σ.vars x := rfl
+
+@[simp] theorem renEnv_out (f : String → String) (σ : Env) : (renEnv f σ).out = σ.out := rfl
+
+@[simp] theorem renEnv_inp (f : String → String) (σ : Env) : (renEnv f σ).inp = σ.inp := rfl
+
+/-- **The renaming is free.** Every node of the syntax tree survives, so
+the evaluation cost — which is what the whole cost model is read off —
+is the one the landed proof charged. -/
+@[simp] theorem renExpr_size (f : String → String) (e : Expr) :
+    (renExpr f e).size = e.size := by
+  induction e with
+  | lit v => rfl
+  | var x => rfl
+  | get a i ih => simp [renExpr, Expr.size, ih]
+  | bin op e g ihe ihg => simp [renExpr, Expr.size, ihe, ihg]
+
+@[simp] theorem renCond_size (f : String → String) (b : Cond) :
+    (renCond f b).size = b.size := by
+  cases b <;> simp [renCond, Cond.size]
+
+/-- **The two renamings cancel.** Reading the renamed expression in `σ`
+is reading the original in the pulled-back environment. -/
+theorem renExpr_evalB {B : ℕ} (f : String → String) (e : Expr) (σ : Env) :
+    (renExpr f e).evalB B σ = e.evalB B (renEnv f σ) := by
+  induction e generalizing σ with
+  | lit v => rfl
+  | var x => rfl
+  | get a i ih => simp [renExpr, Expr.evalB, ih]
+  | bin op e g ihe ihg => simp [renExpr, Expr.evalB, ihe, ihg]
+
+theorem renCond_evalB {B : ℕ} (f : String → String) (b : Cond) (σ : Env) :
+    (renCond f b).evalB B σ = b.evalB B (renEnv f σ) := by
+  cases b <;> simp [renCond, Cond.evalB, renExpr_evalB]
+
+theorem renEnv_involutive {f : String → String} (hf : ∀ z, f (f z) = z) (σ : Env) :
+    renEnv f (renEnv f σ) = σ := by
+  cases σ
+  simp only [renEnv, Env.mk.injEq, true_and, and_true]
+  funext a
+  rw [hf]
+
+theorem renEnv_setVar (f : String → String) (σ : Env) (x : String) (v : ℕ) :
+    renEnv f (σ.setVar x v) = (renEnv f σ).setVar x v := rfl
+
+theorem renEnv_setArr {f : String → String} (hf : ∀ z, f (f z) = z) (σ : Env)
+    (a : String) (k v : ℕ) :
+    renEnv f (σ.setArr a k v) = (renEnv f σ).setArr (f a) k v := by
+  simp only [renEnv, Env.setArr]
+  congr 1
+  funext b
+  by_cases hb : f b = a
+  · have hb' : b = f a := by rw [← hb, hf]
+    rw [if_pos hb, if_pos hb', hf]
+  · have hb' : b ≠ f a := fun h => hb (by rw [h, hf])
+    rw [if_neg hb, if_neg hb']
+
+/-- **The transport.** A run of `c` is a run of the renamed `c` in the
+pulled-back environment, *at the same cost*. The induction is over the
+derivation and every case is the corresponding cancellation lemma
+above. -/
+theorem renCom_bigStepB {B : ℕ} {f : String → String} (hf : ∀ z, f (f z) = z)
+    {c : Com} {σ σ' : Env} {k : ℕ} (h : BigStepB B c σ σ' k) :
+    BigStepB B (renCom f c) (renEnv f σ) (renEnv f σ') k := by
+  induction h with
+  | skip => rw [renCom]; exact BigStepB.skip
+  | @assign σ₀ x e v he =>
+      rw [renCom, renEnv_setVar]
+      have he' : (renExpr f e).evalB B (renEnv f σ₀) = some v := by
+        rw [renExpr_evalB, renEnv_involutive hf]; exact he
+      simpa only [renExpr_size] using BigStepB.assign (B := B) (x := x) he'
+  | @store σ₀ a i e kk v hi he hk =>
+      rw [renCom, renEnv_setArr hf]
+      have hi' : (renExpr f i).evalB B (renEnv f σ₀) = some kk := by
+        rw [renExpr_evalB, renEnv_involutive hf]; exact hi
+      have he' : (renExpr f e).evalB B (renEnv f σ₀) = some v := by
+        rw [renExpr_evalB, renEnv_involutive hf]; exact he
+      have hk' : kk < ((renEnv f σ₀).arrs (f a)).length := by rw [renEnv_arrs, hf]; exact hk
+      simpa only [renExpr_size] using BigStepB.store (B := B) hi' he' hk'
+  | seq _ _ ih ih' => rw [renCom]; exact BigStepB.seq ih ih'
+  | @ite_true b c d σ₀ σ₁ kk hb _ ih =>
+      rw [renCom]
+      have hb' : (renCond f b).evalB B (renEnv f σ₀) = some true := by
+        rw [renCond_evalB, renEnv_involutive hf]; exact hb
+      simpa only [renCond_size] using BigStepB.ite_true hb' ih
+  | @ite_false b c d σ₀ σ₁ kk hb _ ih =>
+      rw [renCom]
+      have hb' : (renCond f b).evalB B (renEnv f σ₀) = some false := by
+        rw [renCond_evalB, renEnv_involutive hf]; exact hb
+      simpa only [renCond_size] using BigStepB.ite_false hb' ih
+  | @while_true b c σ₀ σ₁ σ₂ kk kk' hb _ _ ih ih' =>
+      rw [renCom] at ih' ⊢
+      have hb' : (renCond f b).evalB B (renEnv f σ₀) = some true := by
+        rw [renCond_evalB, renEnv_involutive hf]; exact hb
+      simpa only [renCond_size] using BigStepB.while_true hb' ih ih'
+  | @while_false b c σ₀ hb =>
+      rw [renCom]
+      have hb' : (renCond f b).evalB B (renEnv f σ₀) = some false := by
+        rw [renCond_evalB, renEnv_involutive hf]; exact hb
+      simpa only [renCond_size] using BigStepB.while_false (c := renCom f c) hb'
+  | @read σ₀ x v rest h => rw [renCom]; exact BigStepB.read (B := B) (x := x) h
+  | @write σ₀ e v he =>
+      rw [renCom]
+      have he' : (renExpr f e).evalB B (renEnv f σ₀) = some v := by
+        rw [renExpr_evalB, renEnv_involutive hf]; exact he
+      simpa only [renExpr_size] using BigStepB.write (B := B) he'
+
+theorem renCom_run {B : ℕ} {f : String → String} (hf : ∀ z, f (f z) = z)
+    {c : Com} {σ σ' : Env} {K : ℕ} (h : Run B c σ σ' K) :
+    Run B (renCom f c) (renEnv f σ) (renEnv f σ') K := by
+  obtain ⟨k, hk, hbs⟩ := h
+  exact ⟨k, hk, renCom_bigStepB hf hbs⟩
+
+/-- **The transport at the interface.** Any landed `Spec` becomes a
+`Spec` for the renamed program, with pre- and postcondition read in the
+pulled-back environment and the charge unchanged. -/
+theorem renCom_spec {B : ℕ} {f : String → String} (hf : ∀ z, f (f z) = z)
+    {P : Env → Prop} {Q : Env → Env → Prop} {c : Com} {K : ℕ} (h : Spec B P c Q K) :
+    Spec B (fun σ => P (renEnv f σ)) (renCom f c)
+      (fun σ σ' => Q (renEnv f σ) (renEnv f σ')) K := by
+  intro σ hσ
+  obtain ⟨τ, hrun, hq⟩ := h _ hσ
+  refine ⟨renEnv f τ, ?_, ?_⟩
+  · have := renCom_run (f := f) hf hrun
+    rwa [renEnv_involutive hf] at this
+  · show Q (renEnv f σ) (renEnv f (renEnv f τ))
+    rwa [renEnv_involutive hf]
+
+/-! #### The frames of a renamed program -/
+
+@[simp] theorem renCom_wvars (f : String → String) (c : Com) :
+    (renCom f c).wvars = c.wvars := by
+  induction c with
+  | skip => rfl
+  | assign x e => rfl
+  | store a i e => rfl
+  | seq c d ihc ihd => simp [renCom, Com.wvars, ihc, ihd]
+  | ite b c d ihc ihd => simp [renCom, Com.wvars, ihc, ihd]
+  | «while» b c ih => simp [renCom, Com.wvars, ih]
+  | read x => rfl
+  | write e => rfl
+
+theorem renCom_warrs (f : String → String) (c : Com) :
+    (renCom f c).warrs = c.warrs.map f := by
+  induction c with
+  | skip => rfl
+  | assign x e => rfl
+  | store a i e => rfl
+  | seq c d ihc ihd => simp [renCom, Com.warrs, ihc, ihd]
+  | ite b c d ihc ihd => simp [renCom, Com.warrs, ihc, ihd]
+  | «while» b c ih => simp [renCom, Com.warrs, ih]
+  | read x => rfl
+  | write e => rfl
+
+/-- **What the renamed program may write**, in the form a frame
+condition consumes: `a` is written only if the *pulled-back* name is
+written by the original. -/
+theorem mem_renCom_warrs {f : String → String} (hf : ∀ z, f (f z) = z) (c : Com)
+    {a : String} (ha : a ∈ (renCom f c).warrs) : f a ∈ c.warrs := by
+  rw [renCom_warrs, List.mem_map] at ha
+  obtain ⟨b, hb, rfl⟩ := ha
+  rwa [hf]
+
+theorem renCom_noWrite (f : String → String) : ∀ {c : Com}, c.NoWrite → (renCom f c).NoWrite
+  | .skip, _ => by rw [renCom, Com.NoWrite]; trivial
+  | .assign _ _, _ => by rw [renCom, Com.NoWrite]; trivial
+  | .store _ _ _, _ => by rw [renCom, Com.NoWrite]; trivial
+  | .read _, _ => by rw [renCom, Com.NoWrite]; trivial
+  | .write _, h => by rw [Com.NoWrite] at h; exact absurd h id
+  | .seq c d, h => by
+      rw [Com.NoWrite] at h
+      rw [renCom, Com.NoWrite]
+      exact ⟨renCom_noWrite f h.1, renCom_noWrite f h.2⟩
+  | .ite b c d, h => by
+      rw [Com.NoWrite] at h
+      rw [renCom, Com.NoWrite]
+      exact ⟨renCom_noWrite f h.1, renCom_noWrite f h.2⟩
+  | .while b c, h => by
+      rw [Com.NoWrite] at h
+      rw [renCom, Com.NoWrite]
+      exact renCom_noWrite f h
+
+/-! #### The involution the engine is renamed along -/
+
+/-- Exchange `"alv"` with `av`, fix everything else. -/
+def maskSwap (av : String) : String → String :=
+  fun z => if z = "alv" then av else if z = av then "alv" else z
+
+/-- **The swap is its own inverse**, which is what makes the two
+renamings cancel. -/
+theorem maskSwap_invol (av : String) (z : String) : maskSwap av (maskSwap av z) = z := by
+  unfold maskSwap
+  by_cases h : z = "alv"
+  · subst h
+    by_cases hav : av = "alv" <;> simp [hav]
+  · by_cases hz : z = av <;> simp [h, hz]
+
+@[simp] theorem maskSwap_alv (av : String) : maskSwap av "alv" = av := by simp [maskSwap]
+
+theorem maskSwap_of_ne {av a : String} (h₁ : a ≠ "alv") (h₂ : a ≠ av) :
+    maskSwap av a = a := by simp [maskSwap, h₁, h₂]
+
+/-! ### §6 The engine at a named mask array
+
+**The names the engine holds, and why the hypothesis is real.** The
+active-set pass writes `"exc"`, `"dist"`, `"q"` and `"qd"`
+(`Refine.ScatterDeadPass.warrs_scatBlockCom`) and reads `"off"`, `"tgt"`
+and `"mem"` beside its mask. A mask array that is none of those seven
+can be read *where it lies*: nothing the engine does disturbs it, and
+nothing it reads is disturbed by pointing the mask elsewhere. Any of the
+seven would alias — the caller's mask would be the engine's own scratch
+— so the specification below carries the hypothesis rather than leaning
+on the one instantiation that happens to satisfy it. -/
+
+/-- **A mask array the engine may read in place**: none of the seven
+names the pass itself holds. -/
+def MaskFree (av : String) : Prop :=
+  av ≠ "off" ∧ av ≠ "tgt" ∧ av ≠ "mem" ∧ av ≠ "dist" ∧ av ≠ "q" ∧ av ≠ "qd" ∧ av ≠ "exc"
+
+/-- **The active-set pass, reading its mask out of `av`.** The landed
+program with `"alv"` exchanged for `av`, and nothing else moved. Because
+it is a renaming and not a rewrite, `renCom_spec` carries the landed
+walk across whole: no clause of the search, the mark or the scan is
+re-proved, and the charge is the same numeral. -/
+def scatBlockComA (av : String) (r t : ℕ) : Com := renCom (maskSwap av) (scatBlockCom r t)
+
+theorem wvars_scatBlockComA (av : String) (r t : ℕ) :
+    (scatBlockComA av r t).wvars = (scatBlockCom r t).wvars := renCom_wvars _ _
+
+theorem mem_warrs_scatBlockComA {av : String} {r t : ℕ} {a : String}
+    (ha : a ∈ (scatBlockComA av r t).warrs) : maskSwap av a ∈ (scatBlockCom r t).warrs :=
+  mem_renCom_warrs (maskSwap_invol av) _ ha
+
+theorem noWrite_scatBlockComA {av : String} {r t : ℕ} (h : (scatBlockCom r t).NoWrite) :
+    (scatBlockComA av r t).NoWrite := renCom_noWrite _ h
+
 end Lax3Proofs.Refine.ScatterBlock

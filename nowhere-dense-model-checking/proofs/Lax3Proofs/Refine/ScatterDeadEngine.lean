@@ -172,6 +172,47 @@ theorem scatBlockCnt_specW {B : ℕ} (hcsr : CsrGraph G ns O T) (hnB : n < B) (h
     simp only [clearMemK] at this
     omega
 
+/-! ### §2b The same export, at a mask array the caller names
+
+**Wave E4c-c: the calling-convention copy dies here.** Until this wave
+the driver had to move the child's alive array into `"alv"` before it
+could enter the engine, because the engine's mask name was a literal —
+a `12·n + 6` carrier walk that computed nothing, and whose scratch
+destination could not be cleaned without a driver-wide discipline
+(`Refine.ScatterDeadPass.mask_junk_flips_the_engine` is what running it
+dirty costs). The engine below reads its mask out of whatever array the
+caller names, so there is no copy and no scratch to leave junk in.
+
+Nothing about the engine is re-proved: `ScatterBlock.scatBlockComA` is
+the landed program under an array renaming and
+`ScatterBlock.renCom_spec` carries `scatBlockCnt_specW` across whole,
+charge included. What the caller owes instead is
+`ScatterBlock.MaskFree av` — that the mask is none of the seven names
+the pass itself holds. That is a genuine precondition of reading in
+place, not an artefact: at `av = "dist"` the engine's own sentinel fill
+would erase the mask. -/
+
+/-- **The active-set pass with its counter, at a named mask array.**
+`scatBlockCnt_specW`'s hypotheses, postcondition and charge, with the
+mask read out of `av` instead of `"alv"`. -/
+theorem scatBlockCnt_specA {B : ℕ} {av : String} (hav : MaskFree av)
+    (hcsr : CsrGraph G ns O T) (hnB : n < B) (hnsB : ns < B)
+    (hnt : ns ≤ nt) (hrB : r + 1 < B) (htB : t < B) (hMB : ∀ z < n, M z < B)
+    (hml : MemList n mm Mem X) {bw nb : ℕ} (hbud : BallBudget n r G M O bw nb) :
+    Spec B
+      (fun σ => ArenaAt av n nt mm r O T M Mem σ ∧ (∃ g, σ.arrs "exc" = arrOf n g))
+      (scatBlockComA av r t)
+      (fun _ σ' => (σ'.vars "flag" = 1 ↔ t ≤ (greedySet (masked G M) r X).ncard) ∧
+        σ'.vars "flag" ≤ 1 ∧ σ'.vars "cnt" ≤ t ∧
+        ∀ e : ℕ, (t ≤ σ'.vars "cnt" + e ↔ t ≤ (greedySet (masked G M) r X).ncard + e))
+      (scatBlockK mm bw nb t) := by
+  intro σ hσ
+  obtain ⟨τ, hrun, hq⟩ :=
+    renCom_spec (f := maskSwap av) (maskSwap_invol av)
+      (scatBlockCnt_specW hcsr hnB hnsB hnt hrB htB hMB hml hbud) σ
+      ⟨(arenaA_renEnv hav).2 hσ.1, hσ.2.imp fun _ hg => (exc_renEnv hav).2 hg⟩
+  exact ⟨τ, hrun, hq⟩
+
 /-! ### §3 The atom's answer, assembled
 
 The lynchpin of flag F-1: the engine's counter at the atom's *alive*
@@ -208,6 +249,12 @@ Classical.choice,
 Quot.sound] -/
 #guard_msgs in
 #print axioms scatBlockCnt_specW
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadEngine.scatBlockCnt_specA' depends on axioms: [propext,
+Classical.choice,
+Quot.sound] -/
+#guard_msgs in
+#print axioms scatBlockCnt_specA
 
 /-- info: 'Lax3Proofs.Refine.ScatterDeadEngine.scatVal_of_cnt' depends on axioms: [propext,
 Classical.choice,

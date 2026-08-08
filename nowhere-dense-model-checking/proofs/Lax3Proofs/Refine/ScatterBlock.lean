@@ -551,6 +551,77 @@ theorem scatBlock_specW {B : ℕ} (hcsr : CsrGraph G ns O T) (hnB : n < B) (hnsB
     simp only [clearMemK] at this
     omega
 
+/-! ### §6b The arena at a named mask array
+
+The seventh clause of `ArenaA` is the only one that names the mask, and
+`ArenaAt` is that clause moved to a parameter. Everything else is
+`ArenaA` character for character — which is what makes the bridge below
+one `simp` and not a second walk.
+
+**What the bridge says.** `renEnv (maskSwap av) σ` is the environment
+that answers "what is in `alv`?" with `σ`'s `av`, and answers every
+other array question with `σ`'s own — provided the name asked about is
+neither `"alv"` nor `av`, which for the six other arrays of the arena is
+exactly `MaskFree av`. So the landed arena *at the pulled-back
+environment* is the parameterised arena at the real one, and
+`renCom_spec` turns the landed engine into an engine that reads `av`. -/
+
+/-- **The arena, at a named mask array.** `ArenaA`'s seventh clause with
+`"alv"` replaced by `av`; every other clause is verbatim. -/
+def ArenaAt (av : String) (n nt mm r : ℕ) (O T M Mem : ℕ → ℕ) (σ : Env) : Prop :=
+  σ.vars "n" = n ∧ σ.vars "mm" = mm ∧
+    σ.arrs "off" = arrOf (n + 1) O ∧ σ.arrs "tgt" = arrOf nt T ∧
+    σ.arrs av = arrOf n M ∧ σ.arrs "mem" = arrOf n Mem ∧
+    σ.arrs "dist" = arrOf n (fun _ => r + 1) ∧
+    (∃ g, σ.arrs "q" = arrOf n g) ∧ (∃ g, σ.arrs "qd" = arrOf n g)
+
+/-- At the engine's own mask name the two arenas are the same
+statement. -/
+theorem arenaAt_alv {σ : Env} : ArenaAt "alv" n nt mm r O T M Mem σ ↔
+    ArenaA n nt mm r O T M Mem σ := Iff.rfl
+
+/-- **The bridge.** The landed arena, read in the pulled-back
+environment, is the parameterised arena. -/
+theorem arenaA_renEnv {av : String} (hav : MaskFree av) {σ : Env} :
+    ArenaA n nt mm r O T M Mem (renEnv (maskSwap av) σ) ↔
+      ArenaAt av n nt mm r O T M Mem σ := by
+  obtain ⟨h₁, h₂, h₃, h₄, h₅, h₆, -⟩ := hav
+  simp only [ArenaA, ArenaAt, renEnv_vars, renEnv_arrs, maskSwap_alv,
+    maskSwap_of_ne (by decide : ("off" : String) ≠ "alv") (Ne.symm h₁),
+    maskSwap_of_ne (by decide : ("tgt" : String) ≠ "alv") (Ne.symm h₂),
+    maskSwap_of_ne (by decide : ("mem" : String) ≠ "alv") (Ne.symm h₃),
+    maskSwap_of_ne (by decide : ("dist" : String) ≠ "alv") (Ne.symm h₄),
+    maskSwap_of_ne (by decide : ("q" : String) ≠ "alv") (Ne.symm h₅),
+    maskSwap_of_ne (by decide : ("qd" : String) ≠ "alv") (Ne.symm h₆)]
+
+/-- The exclusion array is not the mask, so its length clause crosses
+the renaming untouched. -/
+theorem exc_renEnv {av : String} (hav : MaskFree av) {σ : Env} {g : ℕ → ℕ} :
+    (renEnv (maskSwap av) σ).arrs "exc" = arrOf n g ↔ σ.arrs "exc" = arrOf n g := by
+  rw [renEnv_arrs, maskSwap_of_ne (by decide : ("exc" : String) ≠ "alv") (Ne.symm hav.2.2.2.2.2.2)]
+
+/-- **The active-set pass, at a mask array the caller names.** Same
+hypotheses, same postcondition and same charge as `scatBlock_specW`;
+only the array the mask is read out of moves. The proof is the
+renaming transport applied to `scatBlock_specW` — no clause of the
+engine is re-walked. -/
+theorem scatBlock_specA {B : ℕ} {av : String} (hav : MaskFree av)
+    (hcsr : CsrGraph G ns O T) (hnB : n < B) (hnsB : ns < B)
+    (hnt : ns ≤ nt) (hrB : r + 1 < B) (htB : t < B) (hMB : ∀ z < n, M z < B)
+    (hml : MemList n mm Mem X) {bw nb : ℕ} (hbud : BallBudget n r G M O bw nb) :
+    Spec B
+      (fun σ => ArenaAt av n nt mm r O T M Mem σ ∧ (∃ g, σ.arrs "exc" = arrOf n g))
+      (scatBlockComA av r t)
+      (fun _ σ' => (σ'.vars "flag" = 1 ↔ t ≤ (greedySet (masked G M) r X).ncard) ∧
+        σ'.vars "flag" ≤ 1)
+      (scatBlockK mm bw nb t) := by
+  intro σ hσ
+  obtain ⟨τ, hrun, hq⟩ :=
+    renCom_spec (f := maskSwap av) (maskSwap_invol av)
+      (scatBlock_specW hcsr hnB hnsB hnt hrB htB hMB hml hbud) σ
+      ⟨(arenaA_renEnv hav).2 hσ.1, hσ.2.imp fun _ hg => (exc_renEnv hav).2 hg⟩
+  exact ⟨τ, hrun, hq⟩
+
 /-- **The active-set pass at the pinned target array** — the frozen
 export, which is the widened walk at `nt = ns`. Nothing is re-walked. -/
 theorem scatBlock_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hnB : n < B) (hnsB : ns < B)

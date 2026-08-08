@@ -3,7 +3,7 @@ import Lax3Proofs.RamDriverWrites
 /-!
 # The dead-aware atom phase, composed — wave R1.8-T3-flip (c1d)
 
-The nine passes of `RamDriver.scatDeadCom` run in sequence, folded over
+The eight passes of `RamDriver.scatDeadCom` run in sequence, folded over
 one formula's scatter atoms and then over a depth's table. This is the
 last machine step of the R1.8 flip: everything below it is landed
 capital, and what is added here is the composition — the frame chain
@@ -90,6 +90,19 @@ theorem noWrite_scatBlockCom (r t : ℕ) : (scatBlockCom r t).NoWrite := by
     BfsBlock.bfsBlockCom, BfsBlock.unwind, BfsBlock.unwindSlot, seedSrc,
     bfsDrain, expandRow, scanSlot, Csr.scan, Com.NoWrite]
 
+/-- Both facts survive the mask renaming, because an array renaming
+moves neither a scalar nor a `write` (wave E4c-c). -/
+theorem notMem_wvars_scatBlockComA_of {av : String} {r t : ℕ} {y : String}
+    (h : y ∉ ["cnt", "mj", "mv", "sj", "src", "tail", "head", "sc", "v",
+      "dv", "dn", "j", "jend", "w", "ri", "u", "du", "mw", "flag"]) :
+    y ∉ (ScatterBlock.scatBlockComA av r t).wvars := by
+  rw [ScatterBlock.wvars_scatBlockComA]
+  exact notMem_wvars_scatBlockCom_of h
+
+theorem noWrite_scatBlockComA (av : String) (r t : ℕ) :
+    (ScatterBlock.scatBlockComA av r t).NoWrite :=
+  ScatterBlock.noWrite_scatBlockComA (noWrite_scatBlockCom r t)
+
 /-! ### §1b The evaluator's scratch is none of the driver's names
 
 `RamDriverBot.Ext "bb"` names begin `bb`; the driver's four `b`-initial
@@ -144,9 +157,9 @@ theorem not_ext_bb_flgName (a b c : ℕ) : ¬ RamDriverBot.Ext "bb" (flgName a b
 
 /-! ### §2 The scalars of the whole atom program
 
-Six of the driver's names have to cross all nine passes: the carrier,
+Six of the driver's names have to cross all eight passes: the carrier,
 the slot count, the live width, the connector and the cursor families,
-and the depth's kill count. Each is settled pass by pass off the nine
+and the depth's kill count. Each is settled pass by pass off the
 `wvars` lemmas of `Refine.ScatterDeadPass` §5d. -/
 
 open Classical in
@@ -191,14 +204,14 @@ theorem notMem_wvars_scatDeadCom_lit {L : ℕ} {j ti : ℕ} {β : DistFO L 1} {r
   · exact h₃ h
   · exact h₄ q hq
 
-/-- **The atom program leaves the tape alone.** Nine `NoWrite`s. -/
+/-- **The atom program leaves the tape alone.** Eight `NoWrite`s (wave
+E4c-c: the mask copy's is gone with the pass). -/
 theorem noWrite_scatDeadCom {L : ℕ} (j ti : ℕ) (β : DistFO L 1) (r t : ℕ) :
     (scatDeadCom j ti β r t).NoWrite := by
   refine ⟨RamDriverWrites.noWrite_killSumCom j ti,
     RamDriverWrites.noWrite_outProbeCom j, ?_,
     RamDriverWrites.noWrite_outCntCom j, RamDriverWrites.noWrite_atomMemCom j ti,
-    (by rw [RamDriverIO.copyCom_eq]; exact RamDriverIO.noWrite_fillCom _ _),
-    RamDriverIO.noWrite_fillCom _ _, noWrite_scatBlockCom r t,
+    RamDriverIO.noWrite_fillCom _ _, noWrite_scatBlockComA _ r t,
     RamDriverWrites.noWrite_atomFlagCom t⟩
   exact ⟨⟨trivial, RamDriverBot.noWrite_botCom β "bb"⟩, trivial⟩
 
@@ -311,7 +324,7 @@ theorem DeadPre.run_flag {i k : ℕ} {σ σ' : Env} {K : ℕ}
 
 /-! ### §4 One atom, walked
 
-The nine passes in sequence. What crosses each seam is stated by
+The eight passes in sequence. What crosses each seam is stated by
 `Refine.ScatterDeadPass` §5d, and the reading of the four registers at
 the end is `atomTerms_iff_scatVal_of_clusterData` — whose three threads
 are all in scope here: `hXalive` and `hbud` are
@@ -328,9 +341,9 @@ theorem notMem_of_underscore {y : String} (hy : '_' ∈ y.toList) {l : List Stri
 open Classical in
 /-- **One dead-aware scatter atom, discharged.** The kill walk, the
 outside probe and its bit, the outside count, the atom's filtered member
-list, the engine's calling convention, the active-set engine and the
-verdict — and the flag they leave is the atom's greedy value in the
-cluster step's arena.
+list, the clean distance array, the active-set engine reading its mask
+out of the child's own alive array, and the verdict — and the flag they
+leave is the atom's greedy value in the cluster step's arena.
 
 The atom's row is read at the child's member list and at the turn's kill
 list only; no clause about a row outside `alive ∪ kills` enters, which
@@ -500,80 +513,74 @@ theorem scatDead_spec {bw nb : ℕ}
     fun a ha => hr₅.frame_arr a (by rw [ScatterDeadPass.warrs_atomMemCom]; simpa using ha)
   have hfv₅ : ∀ y : String, y ≠ "mm" → y ≠ "ak" → y ≠ "av" → σ₅.vars y = σ₄.vars y :=
     fun y h₁ h₂ h₃ => hr₅.frame_var y (ScatterDeadPass.notMem_wvars_atomMemCom _ _ h₁ h₂ h₃)
-  -- **pass 6**: the child's mask, into the name the engine reads
+  -- **pass 6**: a clean distance array, the engine's entry condition.
+  -- **Wave E4c-c**: the mask copy that used to stand here is gone — the
+  -- engine reads `alvName (j + 1)` where it lies, so there is nothing to
+  -- move and nothing to clean afterwards
   have hn₅ : σ₅.vars "n" = n := by
     rw [hfv₅ "n" (by decide) (by decide) (by decide)]; exact hn₄
-  have halvsz₅ : (σ₅.arrs "alv").length = n := by
+  have hdistsz₅ : (σ₅.arrs "dist").length = n := by
     have hlm : LevelMem B n cap mb σ₅ :=
       levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq hr₅)))) hpre.mem
-    exact hlm.1.length (p := ("alv", n)) (by simp)
-  obtain ⟨σ₆, hr₆, hn₆, halvA₆, halv₆⟩ :=
-    (RamDriverIO.copy_spec (B := B) (n := n) (src := alvName (j + 1)) (dst := "alv")
-      (RamDriverFrames.alvName_ne_alv (j + 1)) Alv' hnB hAlvB).run
-      ⟨hn₅,
-        by rw [hfa₅ _ (by simp [alvName, String.ext_iff]), hfa₄,
-          hfa₃ _ (not_ext_bb_alvName (j + 1)), hfa₂, hfa₁]; exact halvA,
-        halvsz₅⟩
-  have hfa₆ : ∀ a : String, a ≠ "alv" → σ₆.arrs a = σ₅.arrs a :=
-    fun a ha => hr₆.frame_arr a (by rw [ScatterDeadPass.warrs_copyCom]; simpa using ha)
-  have hfv₆ : ∀ y : String, y ≠ "i" → σ₆.vars y = σ₅.vars y :=
-    fun y h => hr₆.frame_var y (ScatterDeadPass.notMem_wvars_copyCom _ _ h)
-  -- **pass 7**: a clean distance array, the engine's other entry condition
-  have hdistsz₆ : (σ₆.arrs "dist").length = n := by
-    have hlm : LevelMem B n cap mb σ₆ :=
-      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq hr₆))))) hpre.mem
     exact hlm.1.length (p := ("dist", n)) (by simp)
   obtain ⟨σ₇, hr₇, g₇, hdist₇, hdistval₇⟩ :=
     (RamDriverIO.fill_spec (B := B) (n := n) (c := σs.r + 1) (a := "dist")
-      hnB hrB).run ⟨hdistsz₆, hn₆⟩
-  have hfa₇ : ∀ a : String, a ≠ "dist" → σ₇.arrs a = σ₆.arrs a :=
+      hnB hrB).run ⟨hdistsz₅, hn₅⟩
+  have hfa₇ : ∀ a : String, a ≠ "dist" → σ₇.arrs a = σ₅.arrs a :=
     fun a ha => hr₇.frame_arr a (by rw [ScatterDeadPass.warrs_fillCom]; simpa using ha)
-  have hfv₇ : ∀ y : String, y ≠ "i" → σ₇.vars y = σ₆.vars y :=
+  have hfv₇ : ∀ y : String, y ≠ "i" → σ₇.vars y = σ₅.vars y :=
     fun y h => hr₇.frame_var y (ScatterDeadPass.notMem_wvars_fillCom _ _ h)
-  -- **pass 8**: the active-set engine, at the atom's alive part
+  -- **pass 7**: the active-set engine, at the atom's alive part, reading
+  -- its mask out of the child's own array
   have hqsz₇ : (∃ g, σ₇.arrs "q" = arrOf n g) ∧ (∃ g, σ₇.arrs "qd" = arrOf n g) ∧
       (∃ g, σ₇.arrs "exc" = arrOf n g) := by
     have hlm : LevelMem B n cap mb σ₇ :=
-      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq (hr₆.seq hr₇)))))) hpre.mem
+      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq hr₇))))) hpre.mem
     exact ⟨hlm.1 ("q", n) (by simp), hlm.qdArr, hlm.1 ("exc", n) (by simp)⟩
-  have harena₇ : ArenaA n Ws mm σs.r O T Alv' Mem σ₇ := by
+  have hmaskfree : ScatterBlock.MaskFree (alvName (j + 1)) :=
+    ScatterDeadPass.maskFree_alvName (j + 1)
+  have harena₇ : ScatterBlock.ArenaAt (alvName (j + 1)) n Ws mm σs.r O T Alv' Mem σ₇ := by
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, hqsz₇.1, hqsz₇.2.1⟩
-    · rw [hfv₇ "n" (by decide)]; exact hn₆
-    · rw [hfv₇ "mm" (by decide), hfv₆ "mm" (by decide)]; exact hmmv₅
-    · rw [hfa₇ _ (by decide), hfa₆ _ (by decide), hfa₅ _ (by decide), hfa₄,
+    · rw [hfv₇ "n" (by decide)]; exact hn₅
+    · rw [hfv₇ "mm" (by decide)]; exact hmmv₅
+    · rw [hfa₇ _ (by decide), hfa₅ _ (by decide), hfa₄,
         hfa₃ "off" (not_ext_bb_of_cons rfl (by decide)), hfa₂, hfa₁]
       exact hturn.1.2.1
-    · rw [hfa₇ _ (by decide), hfa₆ _ (by decide), hfa₅ _ (by decide), hfa₄,
+    · rw [hfa₇ _ (by decide), hfa₅ _ (by decide), hfa₄,
         hfa₃ "tgt" (not_ext_bb_of_cons rfl (by decide)), hfa₂, hfa₁]
       exact hturn.1.2.2.1
-    · rw [hfa₇ _ (by decide)]; exact halv₆
-    · rw [hfa₇ _ (by decide), hfa₆ _ (by decide)]; exact hmemA₅
+    · rw [hfa₇ _ (by simp [alvName, String.ext_iff]),
+        hfa₅ _ (by simp [alvName, String.ext_iff]), hfa₄,
+        hfa₃ _ (not_ext_bb_alvName (j + 1)), hfa₂, hfa₁]
+      exact halvA
+    · rw [hfa₇ _ (by decide)]; exact hmemA₅
     · rw [hdist₇]; exact arrOf_congr (fun i hi => hdistval₇ i hi)
   obtain ⟨σ₈, hr₈, hflag₈, hflag1₈, hcnt₈, hkey₈⟩ :=
-    (ScatterDeadEngine.scatBlockCnt_specW (B := B) (n := n) (ns := ns) (nt := Ws)
-      (mm := mm) (r := σs.r) (t := σs.t) (G := G) (M := Alv') (O := O) (T := T) (Mem := Mem)
+    (ScatterDeadEngine.scatBlockCnt_specA (B := B) (n := n) (ns := ns) (nt := Ws)
+      (av := alvName (j + 1)) (mm := mm) (r := σs.r) (t := σs.t) (G := G) (M := Alv')
+      (O := O) (T := T) (Mem := Mem)
       (X := ScatterDeadPass.bitSet n Alv' Tb) (bw := bw) (nb := nb)
-      hcsr hnB hnsB hpre.nsW hrB (by omega) hAlvB hml₅ (hbud σs.r)).run
+      hmaskfree hcsr hnB hnsB hpre.nsW hrB (by omega) hAlvB hml₅ (hbud σs.r)).run
       ⟨harena₇, hqsz₇.2.2⟩
   have hfa₈ : ∀ a : String, a ≠ "exc" → a ≠ "dist" → a ≠ "q" → a ≠ "qd" →
       σ₈.arrs a = σ₇.arrs a := by
     intro a h₁ h₂ h₃ h₄
     refine hr₈.frame_arr a (fun hm => ?_)
-    rcases ScatterDeadPass.warrs_scatBlockCom _ _ hm with h | h | h | h
+    rcases ScatterDeadPass.warrs_scatBlockComA hmaskfree _ _ hm with h | h | h | h
     exacts [h₁ h, h₂ h, h₃ h, h₄ h]
   have hfv₈ : ∀ y ∈ ["kc", "bb", "oc", "n", "mm"], σ₈.vars y = σ₇.vars y :=
-    fun y hy => hr₈.frame_var y (ScatterDeadPass.notMem_wvars_scatBlockCom _ _ y hy)
+    fun y hy => hr₈.frame_var y (ScatterDeadPass.notMem_wvars_scatBlockComA _ _ _ y hy)
   -- the three dead registers, at the engine's exit
   have hkc₈ : σ₈.vars "kc" = ∑ e ∈ Finset.range kq, Tb (kl e) := by
-    rw [hfv₈ "kc" (by simp), hfv₇ "kc" (by decide), hfv₆ "kc" (by decide),
+    rw [hfv₈ "kc" (by simp), hfv₇ "kc" (by decide),
       hfv₅ "kc" (by decide) (by decide) (by decide)]
     exact hkc₄
   have hbb₈ : σ₈.vars "bb" = σ₃.vars "bb" := by
-    rw [hfv₈ "bb" (by simp), hfv₇ "bb" (by decide), hfv₆ "bb" (by decide),
+    rw [hfv₈ "bb" (by simp), hfv₇ "bb" (by decide),
       hfv₅ "bb" (by decide) (by decide) (by decide)]
     exact hbb₄
   have hoc₈ : σ₈.vars "oc" = n - mm1 - kq := by
-    rw [hfv₈ "oc" (by simp), hfv₇ "oc" (by decide), hfv₆ "oc" (by decide),
+    rw [hfv₈ "oc" (by simp), hfv₇ "oc" (by decide),
       hfv₅ "oc" (by decide) (by decide) (by decide)]
     exact hoc₄
   -- **pass 9**: the verdict
@@ -596,7 +603,7 @@ theorem scatDead_spec {bw nb : ℕ}
   -- the whole run
   have hrun : Run B (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1)))
       σs.β σs.r σs.t) σ σ₉ _ :=
-    hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq (hr₆.seq (hr₇.seq (hr₈.seq hr₉)))))))
+    hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq (hr₇.seq (hr₈.seq hr₉))))))
   refine ⟨σ₉, _, hrun, ?_, hσ.run_scatDead hloc hrun,
     hrun.out_eq (noWrite_scatDeadCom _ _ _ _ _), ?_, ?_, hfl1₉, ?_⟩
   -- the charge
@@ -662,7 +669,7 @@ over a depth's table — the three-step shape the retired
 `RamDriver.scatterCom`, at the same flag names and with the same
 postcondition. -/
 
-/-- The per-atom charge: the nine passes and the flag. -/
+/-- The per-atom charge: the eight passes and the flag. -/
 noncomputable def deadAtomK {L : ℕ} (β : DistFO L 1) (n mm1 kq mm bw nb t : ℕ) : ℕ :=
   ScatterDeadPass.scatDeadK β n mm1 kq mm bw nb t + 2
 
