@@ -5039,3 +5039,88 @@ defect of this road.
 row), producer `RamDriverRoot.tabName_notMem_warrs_phases`, discharged
 at `levelAt` and `levelAtR` — that is what supplies the dead half at
 loop entry now that the sweep is gone.
+
+**c0-close — THE CLOSE RUN AT MEASURED CONSTANTS, AND THE CEILING PER
+PHASE** (merge `31ef2cc`, 3589 jobs, one new file
+`Refine/C0CloseProbe.lean`, 893 lines, nothing landed edited).
+
+Jan's directive, 2026-08-08: *the work stands and falls with the final
+model-checking result; integrate new approaches for plausibility and
+compatibility as early as possible, to not waste time building things we
+don't need.* This wave is that gate, run for the first time end to end.
+`G2ExistsRevalidation` §3 had only ever compiled the M-class close at
+**borrowed** constants — `g2M 68 12 68 12 68 12 0 200 (10^4) 8` plugs
+the order phase's measured numbers into the cover and dead slots and
+reads the turn at the pre-R1.8 `200`.
+
+**The close does NOT hold at the landed constants, and §4 names three
+reasons, all compiled.** (i) `ksc`, the per-atom scatter charge, is
+**not a constant at all**: `clusterStepAt` instantiates the ball budget
+at `ScatterDeadPass.ballBudget_carrier` (`bw := ns`, `nb := n`,
+`mm1 = mm = n`), five summands of `scatDeadK` go carrier-width, and
+`scatDeadK_carrier_floor`/`deadAtomK_carrier_floor` give `131·n` before
+any pick is charged — argument-position identical to the root's own
+`hbnd` (`RamDriverRoot.lean:466`). `landed_scatter_leaf_unbounded`: no
+constant survives. `ksc_ge_atom` carries it up `hbnd → hcostI → hKsc`.
+(ii) `landed_base_needs_carrier_Cb` — the landed base is
+`DeadSweep.baseCost = sweepCost` since T4a, quantified over every arena
+weight including `0`, so `Cb ≥ 4n+6`: T4b must *build* a member-driven
+base, not measure the existing one. (iii) `landed_hKd_load_bearing` —
+the un-narrowed slot forces `Ω(n²)` and is incompatible with the closed
+form at `n = 10^10`; the program stopped running `sweepCom` at (c2b), so
+this one is a statement deletion, not engine work.
+
+**Why nobody saw it: every landed guard is at ε = 1, and a quadratic
+cost fits an `n²` budget.** `#guard gateOne (famOne (131·10^9 + 96))`
+passes. The ε = 1/2 and ε = 1/4 gates fail at the same reading and pass
+at a constant. That differential is the wave's core finding, and it is
+why the borrowed-constant guards were not evidence.
+
+**Three corrections to landed readings, each a place a false green was
+available.** `rootBudgetM`'s constant is **not** `D`-free — `g2M`
+carries `(ct+ksc+3)·(D+1)` and the cover slot `162·D` — so §3 cannot be
+read as an instance of `mclass_c0_shape` at a growing
+`D = ⌈c·w^{ε/ℓ}⌉`; `rootBudgetM_le_cstar` absorbs it and the honest
+exponent budget is **ℓ+1**, i.e. the cover degree is read at
+`⌈c·w^{ε/(ℓ+1)}⌉` (statement-level, no cost consequence). The cover
+phase does **not** fit the M-class slot at the natural `(a,b)` split
+(`cover_measured_pair_insufficient`: 490 against a slot demanding 328 at
+`ka=0, D=1, w=mlen=1`, all three mass hypotheses satisfied) — the slot
+pair is forced to `(kcov, kcov)`; §1's sum split is a budget, not a
+slot. And hazard 1 resolves affirmatively but **not by absorption**:
+`bexpK_not_memberForm` refutes every member-linear `a·m+b` for the
+`30·d` term, while `descendLeaves_sum_le_mass` shows the turn slot's
+*weight* reading pays it, because `blockWeight = blockSize + blockDegSum`
+and `∑ bs c ≤ D·(w+1)` is `mass_of_alive_compaction_weight`'s second
+conjunct. Folding `30·d` into `a` would have been false.
+
+**The ceiling, at the binding ε = 1/2 gate** (`c = 10^7`, `n = 10^8`,
+star carrier), each pinned in both directions:
+
+| constant | wave | measured/landed | ceiling |
+|---|---|---|---|
+| `aOrd` | E-order | **68** | 79 093 857 |
+| `R` | E-order | opaque | 988 672 |
+| `ka` | E3b | opaque (`kc = 150`) | 39 546 914 |
+| `bd` | dead residue | 12 | 79 093 801 |
+| `ctTurn` | E4c descend | **443** (`ctKL`, not 200/284) | 8 788 641 |
+| **`ksc`** | **E4c scatter** | **≥ 131·n + 96** | **8 798 198 — unbounded deficit** |
+| `Cb` | T4b | none, and refuted | 237 291 369 |
+
+**Hazard 5 (ℓ) resolved.** ℓ does not collapse the ceiling *provided `D`
+moves with it*. Held at `D = 8` the ε = 1 gate dies between ℓ = 12 and
+ℓ = 15 — so the landed `(ℓ, D) = (3, 8)` pairing is not evidence at
+realistic ℓ. Held at the C0 pairing `D ≈ ⌈w^{1/(ℓ+1)}⌉` it passes at
+ℓ = 3, 5, 10, 20 (`D` = 1443, 79, 9, 3). At ℓ = 3 the degree headroom
+runs from `D = 8` to between 1024 and 4096.
+
+**The road, re-ranked by the numbers.** Load-bearing: E4c's **scatter**
+half (the only unbounded deficit — narrowing `bw`/`nb` from the carrier
+to the ball), T4b (build a member-driven base), the `hKd` slot deletion
+(cheapest — statement only). Slack, with four to five orders of
+headroom: E4c's descend half (`ct = 443` vs 8.8·10^6), E3b cover
+(`kc = 150`, any `ka` under 3.95·10^7), E-order (`68·m + 12` vs
+7.9·10^7 — the most slack of all; the order phase is nowhere near
+binding). `G2CostProbe` §7's gap ledger is unchanged: this file's
+question is the arithmetic one, not whether any landed walk meets a
+slot.
