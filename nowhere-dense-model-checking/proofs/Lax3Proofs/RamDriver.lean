@@ -2392,6 +2392,32 @@ this atom's own radius, since consecutive atoms of a turn carry
 different radii (`ScatterDeadPass.dist_touched_only_refuted`); making
 the sentinel radius-free is the route out and it is not this wave's.
 
+**Wave E4c-d: the radius-free sentinel is built, and the fill still
+stays.** `Refine.BfsBlock` §7 compiles a *capped* scan — the depth cap
+enforced by an explicit `dv < d` guard at the dequeue instead of by the
+sentinel — whose frontier invariant survives at any radius-free sentinel
+(`Refine.BfsBlock.FrontierC`), with the landed invariant an instance of
+it and `Refine.BfsBlock.bfsBlockK` unmoved. That removes the *first*
+blocker: `unwind` would then maintain one sentinel across atoms of
+different radii and the fill would hoist out of the atom.
+
+It has nowhere to hoist *to*. `coverPhase` below runs `RamCover.coverCom`
+— the landed `RamBfs.bfsCom`, with `initDist` and no unwind — before
+every level's cluster loop, and a level is entered once per cluster of
+the level above, so every scope below the root is a carrier walk per turn
+one level up (`Refine.C0CloseProbe.level_hoist_escapes_size_slot`). The
+root needs a *private* array, and both branches of that are closed:
+a name outside `RamDriverFrames.scratchArrs` breaks the atom's own frame
+(`Refine.ScatterDeadTurn.private_array_escapes_deadPre_frame`), and the
+one scratch name free inside the recursion — `"tab"`, whose only writer
+is `rootScatterCom` — is one the atom's precondition cannot see
+(`Refine.ScatterDeadTurn.deadPre_blind_to_tab`), so a root fill reaches
+the atom only as a new conjunct of `RamDriverCluster.ScatterStep`.
+Independently, no numeral fixed before the atom bounds its radius
+(`Refine.C0CloseProbe.no_uniform_sentinel`). The fill's removal is a
+level-interface wave, not a `Refine/Scatter*` one; what it is worth is
+`Refine.C0CloseProbe.deadAtomKD_root_eq`, `119·n → 108·n`.
+
 **Wave R1.8-T3-flip (c1): where this may be written.**
 `Refine.ScatterBlock.scatBlockCom` is the landed active-set engine, and
 until this wave its file sat *below* this one in the import order, so

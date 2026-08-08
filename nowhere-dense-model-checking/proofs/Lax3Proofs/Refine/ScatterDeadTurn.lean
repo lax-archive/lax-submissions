@@ -891,6 +891,122 @@ theorem scatterDeadStep {bw nb Kb Ki K : ℕ}
   exact ⟨σ', _, hrun, hK, hpre'.1.1, hpre'.1.2.1, hpre'.1.2.2.1, hpre'.1.2.2.2.2.2,
     hout, hc, fun i hi σs hσs => by simpa using hval i hi σs hσs⟩
 
+/-! ### §6b Why the distance fill cannot be hoisted to the root
+(wave E4c-d, Phase 1 (b) — the dead end, recorded)
+
+`Refine.BfsBlock` §7 compiles the *first* half of the route E4c-c left
+open: a capped scan re-proves the frontier invariant at a radius-free
+sentinel, at the same `bfsBlockK`. With that in hand the per-atom
+`RamDriver.fillCom "dist" (r + 1)` no longer has to run per **atom** —
+`BfsBlock.unwind` maintains a radius-free sentinel across atoms of
+different radii, which `ScatterDeadPass.dist_touched_only_refuted`
+refuted only for the radius-*dependent* one.
+
+It still cannot be hoisted to the **root**, and this section is why.
+Hoisting it anywhere below the root buys nothing of the right order:
+`RamDriver.coverPhase` runs `RamCover.coverCom` — the landed
+`RamBfs.bfsCom`, with `initDist` and no unwind — before every level's
+cluster loop, so `"dist"` is clobbered once per level, and a level is
+entered once per cluster of the level above. The proposal was therefore
+to give the engine a **private** array, which the cover phase does not
+touch, and fill it once at `RamDriver.driverRoot`.
+
+### The dichotomy
+
+The private array is a name, and the name is either one of the seven
+`RamDriverFrames.scratchArrs` entries or it is not. Both branches are
+closed, and the two theorems below are the branches.
+
+* **Not a scratch name.** Then the engine's own write set escapes
+  `DeadPre.run`'s array hypothesis, and the atom's precondition cannot
+  be carried across the atom program at all
+  (`private_array_escapes_deadPre_frame`). Repairing that means editing
+  `RamDriverFrames.scratchArrs` and every `RamDriverCluster` /
+  `RamDriverCompose` / `RamDriverRoot` frame discharge that reads it.
+* **A scratch name.** Exactly one of the seven is free inside the
+  recursion — `"tab"`, whose only writer is `RamDriver.rootScatterCom`,
+  which runs *after* `driverAt 0`; and `RamDriver.LevelMem` already
+  sizes it at `n`, so the memory clause hazard has a producer. But then
+  `DeadPre` — which is precisely what `scatterDeadStep` destructures out
+  of `RamDriverCluster.ScatterStep`'s precondition — is **blind to its
+  contents**: `deadPre_blind_to_tab` below runs an arbitrary refill of
+  `"tab"` past the atom's whole precondition and it survives unchanged.
+  A root fill therefore reaches the atom only as a **new conjunct of
+  `ScatterStep`'s precondition**, which is a change to a landed
+  interface in `RamDriverCluster` and a weakening of `scatterDeadStep`.
+
+So the fill's hoist is not a `Refine/Bfs*` or `Refine/Scatter*` wave: it
+is a level-interface wave, and it has to move `RamDriverCluster`,
+`RamDriverCompose`, `RamDriverRoot` and `RamDriverDescend` with it.
+
+### And the sentinel numeral does not exist yet either
+
+Independently of the interface: one array holding one sentinel serves
+every atom only if that sentinel exceeds every atom's radius, and the
+fill writes a **literal** fixed when the program is built.
+`Lax3.ScatterSentences.ScatterSentence.r` is an unconstrained `ℕ` field
+and the package's only fact about it is the word bound `σs.r + 1 < B`,
+threaded as a hypothesis from `RamDriverRoot`.
+`C0CloseProbe.no_uniform_sentinel` compiles that no numeral fixed before
+the sentence bounds it, so the hoist also needs a construction-time
+`sup` over the atom enumeration at every depth — a new parameter of the
+root program and of every level interface, which is the same wave
+again. -/
+
+/-- **A private array outside the scratch list breaks the atom's own
+frame.** `DeadPre.run` — the theorem that carries the atom's
+precondition across every call the atom makes — tests the write set
+against `RamDriverFrames.scratchArrs` and the evaluator's `bb` prefix.
+An engine writing a fresh private distance array fails that test, so the
+atom's precondition cannot cross the atom. -/
+theorem private_array_escapes_deadPre_frame {a : String}
+    (hs : a ∉ scratchArrs) (hb : ¬ BbExt a) (e : Expr) :
+    ¬ (∀ b ∈ (RamDriver.fillCom a e).warrs, b ∈ scratchArrs ∨ BbExt b) := by
+  intro h
+  rcases h a (by rw [RamDriverIO.warrs_fillCom]; simp) with h' | h'
+  · exact hs h'
+  · exact hb h'
+
+/-- **And the one scratch name that is free is one the precondition
+cannot see.** `"tab"` is written nowhere inside `RamDriver.driverAt` —
+its only writer is the root's own `rootScatterCom`, which runs after the
+driver — and `RamDriver.LevelMem` sizes it at `n`. It is therefore the
+only candidate for a private distance array that needs no edit to
+`RamDriverFrames.scratchArrs`.
+
+It is also useless as one: `DeadPre`, the atom phase's whole
+precondition, **survives an arbitrary refill of it**. So no root
+initialization of `"tab"` is visible to the atom, and the sentinel
+clause the capped engine needs would have to be added to
+`RamDriverCluster.ScatterStep`'s precondition — a landed interface this
+wave does not own and may not weaken. -/
+theorem deadPre_blind_to_tab {c : Com} {σ σ' : Env} {K : ℕ} {e : Expr}
+    (h : DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m X W w
+      Alv' Gam' C' σ)
+    (hc : c = RamDriver.fillCom "tab" e) (hrun : Run B c σ σ' K) :
+    DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m X W w
+      Alv' Gam' C' σ' := by
+  subst hc
+  refine h.run hrun (fun b hb => ?_) (fun hkl => ?_) (fun y hy => ?_)
+    (fun a => ?_) ?_ (fun a => ?_) ?_
+  · rw [RamDriverIO.warrs_fillCom] at hb
+    simp only [List.mem_singleton] at hb
+    exact Or.inl (by rw [hb]; simp [scratchArrs])
+  · rw [RamDriverIO.warrs_fillCom] at hkl
+    simp only [List.mem_singleton] at hkl
+    exact absurd hkl.symm (by simp [klName, String.ext_iff])
+  · rw [RamDriverIO.wvars_fillCom]
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+    rcases hy with rfl | rfl | rfl <;> decide
+  · rw [RamDriverIO.wvars_fillCom]
+    exact RamDriverIO.notMem_of_append (p := "ctr") (s := toString a) (by decide)
+  · rw [RamDriverIO.wvars_fillCom]
+    exact RamDriverIO.notMem_of_append (p := "xq") (s := toString j) (by decide)
+  · rw [RamDriverIO.wvars_fillCom]
+    exact RamDriverIO.notMem_of_append (p := "mm") (s := toString a) (by decide)
+  · rw [RamDriverIO.wvars_fillCom]
+    exact RamDriverIO.notMem_of_append (p := "kq") (s := toString j) (by decide)
+
 /-! ### §7 Axioms -/
 
 /-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.scatDead_spec' depends on axioms: [propext,

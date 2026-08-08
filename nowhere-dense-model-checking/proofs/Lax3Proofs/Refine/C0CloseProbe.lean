@@ -1067,6 +1067,148 @@ theorem narrow_leaf_refutes_constant_ksc {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
   have hchain := ksc_ge_atom (Kb := Kb) (Ki := Ki) (Ksc := Ksc) hla hlt hcostI hKsc
   omega
 
+/-! #### Control 1d — E4c-d: the fill-free charge, and the two prices of
+reaching it
+
+Wave E4c-d took the route control 1c named. Its first half **holds**:
+`Refine.BfsBlock` §7 compiles a capped scan whose frontier invariant
+survives at a radius-free sentinel (`BfsBlock.FrontierC.relax`,
+`FrontierC.complete`), with the landed invariant an instance of it
+(`frontierC_of_frontier`), the weakening of the expansion clause forced
+on data (`capped_exp_is_forced`) and the guard paid out of the ball
+potential's own slack (`capped_turn_pays`) — so `BfsBlock.bfsBlockK`
+keeps its numerals.
+
+Its second half **does not**. What that half was worth is `deadAtomKD`
+below: the landed per-atom charge with the distance fill gone, and
+nothing else moved. The carrier coefficient falls from `119` to `108` at
+the root reading, which is the probe's `20` plus the member-position
+reads' `88` — the two terms whose narrowing is accounting and
+cluster-scale arguments respectively, neither of them program text.
+
+Two prices are recorded here. The **root budget** price is small and
+real: the one-time fill rides the root's `W`-slot and moves its
+coefficient from the measured `87` to `93` (`rootFill_le_weight`,
+`kdecRoot` above being the `87`). The **sentinel** price is what closes
+the route: no numeral fixed before the atom bounds its radius
+(`no_uniform_sentinel`), and hoisting anywhere below the root escapes
+the turn's size slot exactly as the retired mask copy did
+(`level_hoist_escapes_size_slot`). The interface half of the refutation
+is `Refine.ScatterDeadTurn` §6b. -/
+
+/-- **The per-atom charge with the distance fill gone.**
+`ScatterDeadPass.scatDeadK`'s eight summands minus `11·n + 6`, plus the
+fold's flag assignment. This is what E4c-d's Phase 2 would have
+delivered; `deadAtomKD_trade` is the statement that nothing else moves. -/
+noncomputable def deadAtomKD {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (n mm1 kq mm bw nb t : ℕ) : ℕ :=
+  Lax3Proofs.Refine.ScatterDeadPass.killSumCost kq +
+      Lax3Proofs.Refine.ScatterDeadPass.outProbeCost n +
+      Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β +
+      Lax3Proofs.Refine.ScatterDeadPass.outCntCost +
+      Lax3Proofs.Refine.ScatterDeadPass.atomMemCost mm1 +
+      Lax3Proofs.Refine.ScatterBlock.scatBlockK mm bw nb t +
+      Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost + 2
+
+/-- **The fill-free charge in closed form.** Against
+`B4Design.deadAtomK_closed`'s `31·n + … + 84`: the carrier coefficient
+falls to the outside probe's `20` and the constant to `78`, and every
+member, kill and ball term is identical. -/
+theorem deadAtomKD_closed {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm bw nb t : ℕ) :
+    deadAtomKD β n mm1 kq mm bw nb t
+      = (44 * bw + 110 * nb + 140) * t + 20 * n + 23 * mm1 + 65 * mm + 14 * kq +
+        Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 78 := by
+  simp only [deadAtomKD, Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
+    Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
+    Lax3Proofs.Refine.ScatterDeadPass.killSumCost,
+    Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
+  ring
+
+/-- **The trade, exactly**: `11·n + 6` out and nothing in. -/
+theorem deadAtomKD_trade {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm bw nb t : ℕ) :
+    Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t
+      = deadAtomKD β n mm1 kq mm bw nb t + (11 * n + 6) := by
+  rw [deadAtomKD_closed, Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK,
+    Lax3Proofs.Refine.ScatterDeadPass.scatDeadK]
+  simp only [Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
+    Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
+    Lax3Proofs.Refine.ScatterDeadPass.killSumCost,
+    Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
+  ring
+
+/-- **The number the campaign wanted**, at the root's own
+instantiation: `deadAtomK_root_eq`'s `119·n` becomes `108·n` and its
+`84` becomes `78`. The `108` is the probe's `20` plus the member-position
+reads' `88`, and neither is program text. -/
+theorem deadAtomKD_root_eq {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mb ns t : ℕ) :
+    deadAtomKD β n n mb n ns n t
+      = (44 * ns + 110 * n + 140) * t + 108 * n + 14 * mb +
+        Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 78 := by
+  rw [deadAtomKD_closed]; ring
+
+/-- **And the probe's floor survives it**, which is the point of doing
+the fill at all: what is left of the carrier in the per-atom charge is
+the outside probe's `20·n`, whose narrowing is accounting
+(`ScatterDeadPass.outProbeCostB`), and the member reads', which narrow
+when the walk supplies cluster-scale arguments. -/
+theorem deadAtomKD_probe_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (n mm1 kq mm bw nb t : ℕ) : 20 * n + 10 ≤ deadAtomKD β n mm1 kq mm bw nb t := by
+  rw [deadAtomKD_closed]; omega
+
+/-- **The root fill fits the root's budget, at a larger coefficient.**
+A one-time `RamDriver.fillCom` of the private distance array rides the
+root's `W`-slot beside the decode and the dedup; the composed term is
+`87·n + 62·ns + 93`, which is weight-linear at `93` and not at the
+measured `87`. So even the half of the route that works has a price in a
+landed numeral — `kdecRoot`, and with it `G2ExistsRevalidation`'s
+`decodeDLCost_le_weight` and `rootD_close`'s `87`. -/
+theorem rootFill_le_weight (n ns : ℕ) :
+    11 * n + 6 + Lax3Proofs.Refine.DriverRootD.decodeDLCost n ns ≤ 93 * (n + ns + 1) := by
+  simp only [Lax3Proofs.Refine.DriverRootD.decodeDLCost, RamDriverIO.decodeCost,
+    Lax3Proofs.RamDriverDedup.dedupCost]
+  omega
+
+-- `93` is not slack: `92` loses at the empty word and `86` loses on the carrier,
+-- exactly as `87`/`86` do for the fill-free term
+#guard ¬ (11 * 0 + 6 + Lax3Proofs.Refine.DriverRootD.decodeDLCost 0 0 ≤ 92 * (0 + 0 + 1))
+#guard ¬ (11 * (10 ^ 6) + 6 + Lax3Proofs.Refine.DriverRootD.decodeDLCost (10 ^ 6) 0
+  ≤ 86 * (10 ^ 6 + 0 + 1))
+
+/-- **THE E4c-d FINDING, compiled: there is no sentinel numeral.** One
+private distance array holding one sentinel serves every atom only if
+that sentinel exceeds every atom's radius, and the fill writes a literal
+fixed when the program is built. But
+`Lax3.ScatterSentences.ScatterSentence.r` is an unconstrained field, so
+for every candidate numeral there is a scatter sentence — over the very
+same one-variable formula — whose radius reaches it. The package's only
+fact about a radius is the word bound `σs.r + 1 < B`, threaded as a
+hypothesis from `RamDriverRoot` and not a numeral at all.
+
+So the hoist needs a construction-time `sup` over the atom enumeration
+of every depth, carried as a new parameter of the root program and of
+every level interface. That is the same wave `ScatterDeadTurn` §6b
+prices, and it is not a `Refine/Scatter*` wave. -/
+theorem no_uniform_sentinel {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (S : ℕ) :
+    ∃ σs : Lax3.ScatterSentences.ScatterSentence L, ¬ (σs.r < S) :=
+  ⟨⟨S, β, 0⟩, by show ¬ (S < S); omega⟩
+
+/-- **And hoisting the fill below the root escapes the turn's size slot**
+— the same arithmetic as `per_turn_copy_escapes_size_slot`, at the fill's
+own `11·n + 6`. A hoist to the *level* is no better than one to the
+turn: `RamDriver.driverAt (j + 1)` is entered once per cluster of depth
+`j`, so a carrier walk per level-entry is a carrier walk per turn one
+level up. The root is the only scope that pays, which is what makes the
+interface obstruction decisive rather than merely inconvenient. -/
+theorem level_hoist_escapes_size_slot (ct ksc Kin : ℕ) :
+    ∃ n : ℕ, ¬ (11 * n + 6 + Kin ≤ turnCostSizeA ct ksc 0 Kin) := by
+  refine ⟨ct + ksc + 1, fun h => ?_⟩
+  simp only [Lax3Proofs.Refine.G2CostProbe.turnCostSizeA] at h
+  omega
+
 /-! #### Control 2 — a carrier-bearing phase form breaks the close -/
 
 /-- A phase cost of the carrier-bearing shape `a·m + c·n`: linear in the
@@ -1233,5 +1375,14 @@ family with every constant one step over its ceiling does not. -/
 #print axioms deadAtomKB_unbounded
 #print axioms deadAtomKB_le_atomCoeff
 #print axioms deadAtomK_le_atomCoeff
+
+-- wave E4c-d: the fill-free charge and the two prices of reaching it (control 1d)
+#print axioms deadAtomKD_closed
+#print axioms deadAtomKD_trade
+#print axioms deadAtomKD_root_eq
+#print axioms deadAtomKD_probe_floor
+#print axioms rootFill_le_weight
+#print axioms no_uniform_sentinel
+#print axioms level_hoist_escapes_size_slot
 
 end Lax3Proofs.Refine.C0CloseProbe
