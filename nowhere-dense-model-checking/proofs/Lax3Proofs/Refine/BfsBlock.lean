@@ -609,7 +609,9 @@ outright by making the "unvisited" sentinel radius-**independent**. Then
 `unwind` would maintain it across atoms of different radii, and the fill
 would hoist out of the atom instead of merely becoming touched-only.
 
-**It cannot be done from this package, and the reason is structural.**
+**It cannot be done to the landed program, and the reason is
+structural** (wave E4c-d built the *forked* program that can — §7 below;
+read this section as the record of why a fork was necessary).
 The sentinel *is* the depth cap. `RamBfs.scanSlot` relaxes on the single
 test `dn < dist[w]`, and that one test does three jobs: it rejects an
 already-discovered vertex, it rejects one discovered at this level, and
@@ -622,12 +624,13 @@ reachable component rather than the ball — which is the one property
 this engine exists to have (`bfsBlockK` names no `n` and no `ns`).
 
 Restoring the cap needs an explicit `dn ≤ d` guard, i.e. **new control
-flow inside `RamBfs.scanSlot`** — landed program text with
-`seedSrc_run`, `expandRow_run`, `Queue.drain_run` and the whole
-`Frontier` invariant over it. The array renaming that let E4c-c delete
-the mask copy (`ScatterBlock.renCom_spec`) permutes array *names*; it
-cannot introduce a test. So Part B is a `RamBfs` wave, not a
-`Refine/Bfs*` one.
+flow** — and `RamBfs` is frozen, since `RamCover` and the ordering phase
+read the same walk. The array renaming that let E4c-c delete the mask
+copy (`ScatterBlock.renCom_spec`) permutes array *names*; it cannot
+introduce a test. So Part B is a *fork*, which is §7 below: the guard
+sits at the dequeue rather than in `scanSlot`, so the landed slot and
+its whole relaxation walk are reused verbatim, and only the frontier
+invariant is re-proved.
 
 **And the second half would not pay even if the first were done.** With
 a radius-free sentinel the fill hoists only as far as a state that
@@ -664,7 +667,441 @@ edges — `MassWeight.turn_size_refuted`'s shape for this engine. -/
 theorem bfsBlockK_size_refuted (ct : ℕ) : ∃ s ds : ℕ, ¬ (bfsBlockK ds s ≤ ct * (s + 1)) :=
   ⟨1, 2 * ct + 1, by simp only [bfsBlockK]; omega⟩
 
+/-! ### The capped scan, and what a radius-free sentinel costs
+(wave E4c-d, Phase 1 (a) — the design, compiled)
+
+E4c-c's dead end above is the *unguarded* engine's. This section
+answers the question the campaign put next: **can the search be capped
+by control flow instead of by the sentinel, so that the sentinel may go
+radius-free?**
+
+The answer is yes, and the whole of it is a *weakening of one clause of
+the frontier invariant*, which is what §7a compiles.
+
+### What the guard is, and where it goes
+
+The cheapest place for the guard is the *dequeue*, not the slot: a
+vertex at depth `d` relaxes nothing anyway, so the whole row may be
+skipped rather than scanned and discarded. `expandRowC d` is
+`RamBfs.expandRow` with the row load and the row scan moved inside
+`if dv < d`, and it is the only program text this route adds — the slot
+`RamBfs.scanSlot` is used verbatim, so the two straight-line reads, the
+three relaxation paths and the block-scan combinator are all the landed
+ones.
+
+### The one clause that has to give
+
+With a radius-free sentinel `S > d` an undiscovered cell holds `S`, and
+`RamBfs.Frontier.exp` — *everything before `head` has had its whole
+block looked at, its neighbours ending at most one level below it* —
+becomes **false** at the depth-`d` vertices, whose rows are now skipped.
+It is false and it cannot be repaired: `capped_exp_is_forced` below
+exhibits a state satisfying every other clause at which the landed `exp`
+fails outright.
+
+So `exp` is guarded by `D (Q i) < d`, and the question is whether the
+exit argument survives that. It does, and for a reason that is not an
+accident of the proof: `Frontier.complete`'s induction consumes `exp`
+only at a vertex the induction hypothesis has already placed at distance
+at most `k`, with `k + 1 ≤ d` — so it never asks about a depth-`d`
+vertex in the first place. `FrontierC.complete` is the landed induction
+with that observation supplied to the guard.
+
+Every other clause is the landed one, with `cap` restated as the
+disjunction `D w ≤ d ∨ D w = S` — which at `S = d + 1` is exactly
+`D w ≤ d + 1`, so `frontierC_of_frontier` reads the landed invariant as
+an instance of this one and the fork is a genuine generalisation rather
+than a different statement.
+
+### And the charge does not move
+
+The guard is `1 + Cond.size = 4` extra nodes on the scanning branch and
+replaces the whole row load and scan on the other. The landed turn's
+bound is `44·rowLen + 30` against a release of `40` per retired vertex,
+so there are ten nodes of slack; `capped_turn_pays` is the potential
+step at `44·scanned + 34`, `scanned` being `rowLen` on the guard's true
+branch and `0` on its false branch. **`bfsBlockK` keeps its numerals**:
+no `n`, no `ns`, and not a larger constant either. -/
+
+section Capped
+
+variable {S : ℕ}
+
+/-! #### §7a The frontier invariant of a capped search -/
+
+/-- **The frontier invariant at a radius-free sentinel.**
+`RamBfs.Frontier` with two changes and no others:
+
+* `cap` is the disjunction — a cell is a real distance at most `d`, or
+  it is the sentinel `S`. At `S = d + 1` this is the landed `D w ≤ d + 1`
+  (`frontierC_of_frontier`);
+* `exp` is guarded by `D (Q i) < d`, because a depth-`d` vertex's row is
+  no longer scanned. `capped_exp_is_forced` is the proof that the guard
+  is not a convenience. -/
+structure FrontierC {n : ℕ} (G : SimpleGraph (Fin n)) (M : ℕ → ℕ) (d s S : ℕ)
+    (D Q : ℕ → ℕ) (head tail : ℕ) : Prop where
+  /-- A cell is a distance below the cap, or the sentinel. -/
+  cap : ∀ w < n, D w ≤ d ∨ D w = S
+  /-- The source is at distance zero, alive or not. -/
+  src : D s = 0
+  /-- A written distance is achieved by a walk of the arena. -/
+  sound : ∀ w < n, D w ≤ d → WD G M (D w) s w
+  /-- The queue is a segment. -/
+  hd : head ≤ tail
+  /-- It holds vertices. -/
+  tl : tail ≤ n
+  /-- Everything on it is a discovered live vertex. -/
+  qmem : ∀ i < tail, Q i < n ∧ D (Q i) ≤ d ∧ M (Q i) ≠ 0
+  /-- Every discovered live vertex is on it. -/
+  qall : ∀ w < n, M w ≠ 0 → D w ≤ d → ∃ i < tail, Q i = w
+  /-- Nothing is on it twice. -/
+  qinj : ∀ i < tail, ∀ j < tail, Q i = Q j → i = j
+  /-- It is sorted by distance. -/
+  qmono : ∀ i j, i ≤ j → j < tail → D (Q i) ≤ D (Q j)
+  /-- It spans at most one level beyond whatever is still pending. -/
+  qcap : ∀ i < tail, ∀ j, head ≤ j → j < tail → D (Q i) ≤ D (Q j) + 1
+  /-- **Guarded expansion.** Everything before `head` *that the guard let
+  through* has had its whole block looked at. A vertex at depth exactly
+  `d` is dequeued and skipped, and claims nothing. -/
+  exp : ∀ i < head, D (Q i) < d → ∀ w, MAdj G M (Q i) w → D w ≤ D (Q i) + 1
+
+namespace FrontierC
+
+/-- **The landed invariant is this one at `S = d + 1`.** Both changes are
+weakenings, so nothing about the uncapped engine is lost: `cap`'s
+disjunction is `D w ≤ d + 1` there, and dropping `exp`'s guard only
+throws a hypothesis away. -/
+theorem _root_.Lax3Proofs.Refine.BfsBlock.frontierC_of_frontier
+    (hF : Frontier G M d s D Q head tail) : FrontierC G M d s (d + 1) D Q head tail where
+  cap w hw := by have := hF.cap w hw; omega
+  src := hF.src
+  sound := hF.sound
+  hd := hF.hd
+  tl := hF.tl
+  qmem := hF.qmem
+  qall := hF.qall
+  qinj := hF.qinj
+  qmono := hF.qmono
+  qcap := hF.qcap
+  exp i hi _ w hw := hF.exp i hi w hw
+
+/-- **There is room for one more**, verbatim from the landed proof: it
+reads `qmem` and `qinj` only, and neither moved. -/
+theorem tail_lt (hF : FrontierC G M d s S D Q head tail) {w : ℕ} (hw : w < n)
+    (hnot : ∀ i < tail, Q i ≠ w) : tail < n := by
+  have hsub : (Finset.range tail).image Q ⊆ (Finset.range n).erase w := by
+    intro z hz
+    obtain ⟨i, hi, rfl⟩ := Finset.mem_image.1 hz
+    have hi' := Finset.mem_range.1 hi
+    exact Finset.mem_erase.2 ⟨hnot i hi', Finset.mem_range.2 (hF.qmem i hi').1⟩
+  have hcard : ((Finset.range tail).image Q).card = tail := by
+    rw [Finset.card_image_of_injOn (fun i hi j hj hq =>
+      hF.qinj i (Finset.mem_range.1 hi) j (Finset.mem_range.1 hj) hq)]
+    exact Finset.card_range tail
+  have := Finset.card_le_card hsub
+  rw [hcard, Finset.card_erase_of_mem (Finset.mem_range.2 hw), Finset.card_range] at this
+  omega
+
+/-- **The one change the arrays ever undergo, capped.** The landed
+`RamBfs.Frontier.relax` with one hypothesis moved: `D (Q head) + 1 ≤ d`
+was *derived* there from the sentinel bound `D w ≤ d + 1`, and here it
+is supplied by the guard — which is the whole of the trade. Every clause
+is discharged exactly as it was, `cap`'s new disjunction taking its left
+branch at the written cell. -/
+theorem relax (hF : FrontierC G M d s S D Q head tail) (hht : head < tail)
+    {w : ℕ} (hadj : MAdj G M (Q head) w) (hlt : D (Q head) + 1 < D w)
+    (hd1 : D (Q head) + 1 ≤ d) :
+    FrontierC G M d s S (upd D w (D (Q head) + 1)) (upd Q tail w) head (tail + 1) := by
+  obtain ⟨hvn, hdv, hmv⟩ := hF.qmem head hht
+  have hw : w < n := hadj.lt_right
+  have hmw : M w ≠ 0 := hadj.alive_right
+  -- nothing on the queue can be `w`: `qcap` bounds it by the head's distance plus one
+  have hnq : ∀ i < tail, Q i ≠ w := by
+    intro i hi hqi
+    have := hF.qcap i hi head le_rfl hht
+    rw [hqi] at this
+    omega
+  have htn : tail < n := hF.tail_lt hw hnq
+  have hwv : w ≠ Q head := by
+    intro hwe; rw [hwe] at hlt; omega
+  have hws : s ≠ w := by
+    intro hse; rw [← hse, hF.src] at hlt; omega
+  refine ⟨fun z hz => ?_, ?_, fun z hz hzd => ?_, by omega, by omega, fun i hi => ?_,
+    fun z hz hmz hzd => ?_, fun i hi j hj hij => ?_, fun i j hij hj => ?_,
+    fun i hi j hj₁ hj₂ => ?_, fun i hi hdi z hz => ?_⟩
+  · by_cases hzw : z = w
+    · rw [hzw, upd_self]; exact Or.inl hd1
+    · rw [upd_of_ne _ hzw]; exact hF.cap z hz
+  · rw [upd_of_ne _ hws]; exact hF.src
+  · by_cases hzw : z = w
+    · subst hzw
+      rw [upd_self]
+      exact (hF.sound _ hvn hdv).step hadj
+    · rw [upd_of_ne _ hzw] at hzd ⊢; exact hF.sound z hz hzd
+  · by_cases hit : i = tail
+    · rw [hit, upd_self, upd_self]; exact ⟨hw, by omega, hmw⟩
+    · have hi' : i < tail := by omega
+      rw [upd_of_ne _ hit, upd_of_ne _ (hnq i hi')]
+      exact hF.qmem i hi'
+  · by_cases hzw : z = w
+    · exact ⟨tail, by omega, by rw [upd_self, hzw]⟩
+    · rw [upd_of_ne _ hzw] at hzd
+      obtain ⟨i, hi, rfl⟩ := hF.qall z hz hmz hzd
+      exact ⟨i, by omega, upd_of_ne _ (by omega)⟩
+  · by_cases hit : i = tail <;> by_cases hjt : j = tail
+    · omega
+    · rw [hit, upd_self, upd_of_ne _ hjt] at hij
+      exact absurd hij.symm (hnq j (by omega))
+    · rw [hjt, upd_self, upd_of_ne _ hit] at hij
+      exact absurd hij (hnq i (by omega))
+    · rw [upd_of_ne _ hit, upd_of_ne _ hjt] at hij
+      exact hF.qinj i (by omega) j (by omega) hij
+  · by_cases hjt : j = tail
+    · rw [hjt, upd_self, upd_self]
+      by_cases hit : i = tail
+      · rw [hit, upd_self, upd_self]
+      · rw [upd_of_ne _ hit, upd_of_ne _ (hnq i (by omega))]
+        have := hF.qcap i (by omega) head le_rfl hht
+        omega
+    · rw [upd_of_ne _ hjt, upd_of_ne _ (hnq j (by omega))]
+      have hit : i ≠ tail := by omega
+      rw [upd_of_ne _ hit, upd_of_ne _ (hnq i (by omega))]
+      exact hF.qmono i j hij (by omega)
+  · by_cases hjt : j = tail
+    · rw [hjt, upd_self, upd_self]
+      by_cases hit : i = tail
+      · rw [hit, upd_self, upd_self]; omega
+      · rw [upd_of_ne _ hit, upd_of_ne _ (hnq i (by omega))]
+        have := hF.qcap i (by omega) head le_rfl hht
+        omega
+    · have hj' : j < tail := by omega
+      have hdvj : D (Q head) ≤ D (Q j) := hF.qmono head j hj₁ hj'
+      rw [upd_of_ne _ hjt, upd_of_ne _ (hnq j hj')]
+      by_cases hit : i = tail
+      · rw [hit, upd_self, upd_self]; omega
+      · rw [upd_of_ne _ hit, upd_of_ne _ (hnq i (by omega))]
+        exact hF.qcap i (by omega) j hj₁ hj'
+  · -- the guarded expansion clause: the guard is what the landed proof's
+    -- appeal to `exp` now needs, and the goal carries it
+    have hit : i ≠ tail := by omega
+    rw [upd_of_ne _ hit] at hz hdi ⊢
+    rw [upd_of_ne _ (hnq i (by omega))] at hdi ⊢
+    by_cases hzw : z = w
+    · exfalso
+      have h₁ := hF.exp i hi hdi w (by rw [← hzw]; exact hz)
+      have h₂ := hF.qmono i head (by omega) hht
+      omega
+    · rw [upd_of_ne _ hzw]; exact hF.exp i hi hdi z hz
+
+/-- **The exit argument, capped.** The landed induction, unchanged in
+shape: the last edge of a walk of length `k + 1` runs from a vertex the
+induction hypothesis has placed at distance at most `k`, and `k < d`
+because `k + 1 ≤ d` — so the guard is discharged by arithmetic the
+induction already had. **This is the theorem the whole route turns on**:
+a depth-`d` vertex's row is never needed by completeness. -/
+theorem complete (hF : FrontierC G M d s S D Q tail tail) :
+    ∀ k, k ≤ d → ∀ w, WD G M k s w → D w ≤ k := by
+  intro k
+  induction k with
+  | zero =>
+      intro _ w hwd
+      rw [← hwd.eq_of_zero, hF.src]
+  | succ k ih =>
+      intro hk w hwd
+      rcases hwd.tail with hshort | ⟨c, hc, hcw⟩
+      · have := ih (by omega) w hshort; omega
+      · have hcd : D c ≤ k := ih (by omega) c hc
+        obtain ⟨i, hi, hQi⟩ := hF.qall c hc.lt_right hcw.alive_left (by omega)
+        have hstep := hF.exp i hi (by rw [hQi]; omega) w (by rw [hQi]; exact hcw)
+        rw [hQi] at hstep
+        omega
+
+/-- **What a capped search computes**, at the landed threshold form. -/
+theorem dist_le_iff (hF : FrontierC G M d s S D Q tail tail) {w : ℕ} (hw : w < n) {k : ℕ}
+    (hk : k ≤ d) : D w ≤ k ↔ WD G M k s w :=
+  ⟨fun h => (hF.sound w hw (by omega)).mono h, hF.complete k hk w⟩
+
+end FrontierC
+
+/-! #### §7b The two seeds, at a radius-free sentinel
+
+`RamBfs.frontier_seed_alive` and `_dead` read the fill's value only
+through `¬ (S ≤ d)`, which is what makes an undiscovered cell
+undiscovered. So both go through at any `S > d`, and the radius-free
+sentinel enters the proof exactly here and nowhere else. -/
+
+/-- A live source goes on the queue. -/
+theorem frontierC_seed_alive (G : SimpleGraph (Fin n)) (M : ℕ → ℕ) (d S : ℕ) (hdS : d < S)
+    (hs : s < n) (hms : M s ≠ 0) {g Q : ℕ → ℕ} (hg : ∀ j < n, g j = S) (hQ : Q 0 = s) :
+    FrontierC G M d s S (upd g s 0) Q 0 1 := by
+  have hval : ∀ z, z < n → z ≠ s → upd g s 0 z = S := fun z hz hzs => by
+    rw [upd_of_ne _ hzs]; exact hg z hz
+  refine ⟨fun z hz => ?_, upd_self .., fun z hz hzd => ?_, by omega, by omega, fun i hi => ?_,
+    fun z hz hmz hzd => ?_, fun i hi j hj hij => by omega, fun i j hij hj => ?_,
+    fun i hi j hj₁ hj₂ => ?_, fun i hi => absurd hi (by omega)⟩
+  · by_cases hzs : z = s
+    · rw [hzs, upd_self]; exact Or.inl (by omega)
+    · exact Or.inr (hval z hz hzs)
+  · have hzs : z = s := by by_contra hne; rw [hval z hz hne] at hzd; omega
+    subst hzs
+    rw [upd_self]
+    exact WD.refl G M 0 hs
+  · have hi0 : i = 0 := by omega
+    rw [hi0, hQ, upd_self]
+    exact ⟨hs, by omega, hms⟩
+  · have hzs : z = s := by by_contra hne; rw [hval z hz hne] at hzd; omega
+    exact ⟨0, by omega, by rw [hQ, hzs]⟩
+  · have : i = 0 ∧ j = 0 := by omega
+    rw [this.1, this.2]
+  · have : i = 0 ∧ j = 0 := by omega
+    rw [this.1, this.2]; omega
+
+/-- A dead source does not. -/
+theorem frontierC_seed_dead (G : SimpleGraph (Fin n)) (M : ℕ → ℕ) (d S : ℕ) (hdS : d < S)
+    (hs : s < n) (hms : M s = 0) {g Q : ℕ → ℕ} (hg : ∀ j < n, g j = S) :
+    FrontierC G M d s S (upd g s 0) Q 0 0 := by
+  have hval : ∀ z, z < n → z ≠ s → upd g s 0 z = S := fun z hz hzs => by
+    rw [upd_of_ne _ hzs]; exact hg z hz
+  refine ⟨fun z hz => ?_, upd_self .., fun z hz hzd => ?_, by omega, by omega,
+    fun i hi => absurd hi (by omega), fun z hz hmz hzd => ?_,
+    fun i hi j hj hij => absurd hi (by omega), fun i j hij hj => absurd hj (by omega),
+    fun i hi j hj₁ hj₂ => absurd hj₂ (by omega), fun i hi => absurd hi (by omega)⟩
+  · by_cases hzs : z = s
+    · rw [hzs, upd_self]; exact Or.inl (by omega)
+    · exact Or.inr (hval z hz hzs)
+  · have hzs : z = s := by by_contra hne; rw [hval z hz hne] at hzd; omega
+    subst hzs
+    rw [upd_self]
+    exact WD.refl G M 0 hs
+  · exfalso
+    have hzs : z = s := by by_contra hne; rw [hval z hz hne] at hzd; omega
+    rw [hzs] at hmz; exact hmz hms
+
+/-! #### §7c The guard is forced, on data
+
+The weakening of `exp` is not a proof convenience. Here is the state a
+capped search at cap `d = 0` leaves on the single edge `0—1`, with the
+radius-free sentinel `5`: the source is expanded, its row is skipped
+because its distance is not below the cap, and the neighbour keeps the
+sentinel. Every clause of `FrontierC` holds; the **landed** `exp` — the
+same clause without its guard — fails at the only expanded vertex. -/
+
+/-- The one-edge arena, all alive. -/
+private def capMask : ℕ → ℕ := fun _ => 1
+
+/-- The distances a capped search at `d = 0` leaves: the source at zero,
+its neighbour still at the sentinel. -/
+private def capDist : ℕ → ℕ := fun z => if z = 0 then 0 else 5
+
+/-- The queue: the source alone. -/
+private def capQ : ℕ → ℕ := fun _ => 0
+
+private theorem capMAdj : MAdj (⊤ : SimpleGraph (Fin 2)) capMask 0 1 :=
+  madj_of_adj (by omega) (by omega) (by decide) (by decide) (by decide)
+
+/-- **The capped invariant holds** of the state a capped search leaves at
+cap zero. -/
+theorem capped_frontier_holds :
+    FrontierC (⊤ : SimpleGraph (Fin 2)) capMask 0 0 5 capDist capQ 1 1 := by
+  refine ⟨fun w hw => ?_, rfl, fun w hw hwd => ?_, le_rfl, by omega, fun i hi => ?_,
+    fun w hw hmw hwd => ?_, fun i hi j hj hij => by omega, fun i j hij hj => le_rfl,
+    fun i hi j hj₁ hj₂ => by omega, fun i hi hdi => absurd hdi (by omega)⟩
+  · interval_cases w <;> simp [capDist]
+  · have hw0 : w = 0 := by
+      by_contra hne
+      interval_cases w <;> simp_all [capDist]
+    subst hw0
+    exact WD.refl _ _ _ (by omega)
+  · have hi0 : i = 0 := by omega
+    subst hi0
+    exact ⟨by simp [capQ], by simp [capDist, capQ], by simp [capMask]⟩
+  · have hw0 : w = 0 := by
+      by_contra hne
+      interval_cases w <;> simp_all [capDist]
+    exact ⟨0, by omega, by simp [capQ, hw0]⟩
+
+/-- **And the landed clause fails at it.** `RamBfs.Frontier.exp` reads
+`∀ i < head, ∀ w, MAdj (Q i) w → D w ≤ D (Q i) + 1`; at `i = 0` the
+source's neighbour is at the sentinel `5`, not at `1`. So the guard on
+`FrontierC.exp` is forced by the program and not chosen by the proof —
+which is the compiled form of "the sentinel *is* the cap"
+(`radius_free_sentinel_breaks_cap`) at the level of the invariant. -/
+theorem capped_exp_is_forced :
+    ¬ (∀ i < 1, ∀ w, MAdj (⊤ : SimpleGraph (Fin 2)) capMask (capQ i) w →
+        capDist w ≤ capDist (capQ i) + 1) := by
+  intro h
+  have := h 0 (by omega) 1 (by simpa [capQ] using capMAdj)
+  simp [capDist, capQ] at this
+
+/-! #### §7d The program, and the charge
+
+`expandRowC d` is `RamBfs.expandRow` with the row load and the row scan
+under `if dv < d`. Nothing else of the search moves: the slot is
+`RamBfs.scanSlot` verbatim, so the relaxation test — and with it every
+range and word obligation of `scanSlot_run` — is the landed one. -/
+
+/-- **One turn of a capped search**: dequeue, and scan the block only
+when the vertex's own distance is strictly below the cap. -/
+def expandRowC (d : ℕ) : Com :=
+  .seq (.assign "v" (.get "q" (.var "head")))
+    (.seq (.assign "dv" (.get "dist" (.var "v")))
+      (.seq (.assign "dn" (.add (.var "dv") (.lit 1)))
+        (.seq (.ite (.lt (.var "dv") (.lit d))
+                (.seq (Csr.loadRow "off" "v" "j" "jend") (Csr.scan "j" "jend" scanSlot))
+                .skip)
+          (.assign "head" (.add (.var "head") (.lit 1))))))
+
+/-- **The capped search**: the same queue drain, at the capped turn. -/
+def bfsDrainC (d : ℕ) : Com := Queue.drain "head" "tail" (expandRowC d)
+
+/-- **The capped block engine**: the landed seed, the capped drain, the
+landed unwind. Only the middle limb differs from `bfsBlockCom`. -/
+def bfsBlockComC (d : ℕ) : Com := .seq seedSrc (.seq (bfsDrainC d) (unwind d))
+
+/-- The guard writes nothing and reads two cells: **four nodes** on the
+scanning branch, by the cost model's own arithmetic (`1 + Cond.size`). -/
+theorem guard_size (d : ℕ) : (Cond.lt (Expr.var "dv") (Expr.lit d)).size = 3 := rfl
+
+/-- The capped turn touches exactly the names the landed turn does, so
+every frame of the block engine is the landed `simp`. -/
+theorem wvars_expandRowC (d : ℕ) : (expandRowC d).wvars = (expandRow).wvars := by
+  simp [expandRowC, expandRow, Csr.loadRow, Csr.scan, Com.wvars]
+
+theorem warrs_expandRowC (d : ℕ) : (expandRowC d).warrs = (expandRow).warrs := by
+  simp [expandRowC, expandRow, Csr.loadRow, Csr.scan, Com.warrs]
+
+/-- **A capped turn still pays for itself out of the ball potential.**
+This is `drain_ball`'s per-turn step, as arithmetic and with the guard's
+branches unified: `scanned` is the block just scanned on the guard's
+true branch and `0` on its false branch, and `sc` moves by exactly that.
+The bound `44·scanned + 34` is the landed `44·rowLen + 30` plus the
+guard's four nodes on the scanning branch, and is far above the
+skipping branch's nineteen.
+
+Since the step goes through, the potential is the landed `BallPot` and
+`bfsBlockK` keeps its numerals — **no `n`, no `ns`, and no larger
+constant.** -/
+theorem capped_turn_pays {bw nb sc sc' hd0 tl0 tl1 scanned K : ℕ}
+    (hsc' : sc' = sc + scanned) (hscb : sc' ≤ bw) (hsc : sc ≤ bw)
+    (htl1 : tl1 ≤ nb) (htl0 : tl0 ≤ nb) (hhd : hd0 + 1 ≤ tl1) (hht : hd0 < tl0)
+    (hK : K ≤ 44 * scanned + 34) :
+    K + (44 * (bw - sc') + 40 * (nb - tl1) + 40 * (tl1 - (hd0 + 1)))
+      ≤ 44 * (bw - sc) + 40 * (nb - tl0) + 40 * (tl0 - hd0) := by
+  omega
+
+/-- **And six nodes of the ten are still unspent**: the release per
+retired vertex is forty, so a guard of up to ten nodes would have fitted
+where four were needed. -/
+theorem capped_turn_slack {scanned K : ℕ} (hK : K ≤ 44 * scanned + 34) :
+    K + 6 ≤ 44 * scanned + 40 := by omega
+
+end Capped
+
 #print axioms bfsBlock_spec
 #print axioms bfsBlock_specW
+#print axioms FrontierC.relax
+#print axioms FrontierC.complete
+#print axioms frontierC_of_frontier
+#print axioms capped_exp_is_forced
 
 end Lax3Proofs.Refine.BfsBlock
