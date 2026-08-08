@@ -5124,3 +5124,78 @@ headroom: E4c's descend half (`ct = 443` vs 8.8·10^6), E3b cover
 binding). `G2CostProbe` §7's gap ledger is unchanged: this file's
 question is the arithmetic one, not whether any landed walk meets a
 slot.
+
+**e4c-a — the outside probe narrowed, and the compiled ceiling on what
+accounting alone can reach** (merge `8d0b705`, 3589 jobs, two files:
+`Refine/ScatterDeadPass.lean`, `Refine/C0CloseProbe.lean`).
+
+Brief: narrow the scatter leaf's three carrier-width summands in the
+accounting only — `outProbeCost`'s pigeonhole bound, `atomMemCost`'s
+`mm1`, and `scatBlockK`'s `bw`/`nb`/`mm`. **One landed; two dead-ended,
+and the dead end is the finding.**
+
+**(1) landed, and it is accounting, not a program change.**
+`outProbeCom_specB` charges the **same program text** against
+`outProbeCostB n xb = 20·min (xb+1) n + 10`. `ProbeInv` gains the exit
+clause `of ≠ 0 → oi = n` — true of the walk all along, never stated —
+and the hypothesis `hstop` (every hit-free prefix is short).
+`outProbeCostB_carrier : outProbeCostB n n = outProbeCost n` on the
+nose, so `outProbeCom_spec` is the same theorem at `xb := n` and nothing
+above the file moves. The pigeonhole is **restated upstream**
+(`exists_outside_le_ncard`, `outside_prefix_bound`) rather than imported
+— `DeadRowProbe` is downstream of the driver, the road's third
+import-order defect, and the landed `TableInvOn`/`DeadRowDomain` pattern
+was followed. Negative control: `outProbeCostB_at_xb_refuted` — the `+1`
+is load-bearing, the scan must read the vertex after the last member.
+
+**(3) does not thread, and it takes (2) with it.**
+`clusterStepImplements`'s `hbud` is
+`∀ (M' : ℕ → ℕ) (r : ℕ), BallBudget n r G M' O bw nb` — quantified over
+**all** masks, because `Alv'` is existential from the descent. The same
+hypothesis character-for-character is `RamDriverFrames.clusterFrames:775`,
+and both apply the scatter step with exactly two antecedents. So
+conditioning `hbud` on cluster-containment needs `RamDriverFrames.lean`,
+and `clusterFramesAt` must produce `ClusterFrames` at the *same* budget
+`Ks j (wB Xoff Xmem k)` that `clusterStepAt` produces
+`ClusterStepImplements` at (`levelImplements:1849`, `spec_conj`) — so a
+carrier-charged frames path re-imports the carrier charge. The same wall
+blocks the two member counts: cluster-containment is only in scope
+inside `clusterStepImplements`/`clusterFrames`.
+
+**The lever, recorded and not taken.** `spec_conj (h : Spec … K)
+(h' : Spec … K') : Spec … K` **discards the second cost**, so
+`levelImplements`'s `hframe` budget is dead weight and could be
+decoupled from `hstep`'s — which is what would let the frames path stay
+carrier-charged while the step path narrows. Multi-file
+(`levelImplements`, `levelAt`, the root, `DriverRootD` ×6, `SlotSweep`,
+`BridgeCrossing`, `BridgeSeamProbe`, `G2CostProbe`) plus a new root
+hypothesis, and it only pays together with B4 — a wave, not a
+correction.
+
+**The residual, compiled.** `deadAtomK_root_eq`:
+`deadAtomK β n n mb n ns n t = (44·ns + 110·n + 140)·t + 131·n + 14·mb +
+atomBitCost β + 90`. It **did not move**, so
+`landed_scatter_leaf_unbounded` is kept at `131·n` with a corrected
+docstring rather than restated at a number that would be false. What
+landed instead is the ceiling: `scatter_leaf_accounting_ceiling` (the
+three in-scope summands are exactly `108·n + 18` — probe 20, filter 23,
+engine member walks 65) and `scatDeadK_narrow_floor`/
+`deadAtomK_narrow_floor` (**`23·n + 12` survives every choice** of probe
+bound, both member counts and ball budget — the mask copy and the
+distance fill, program text).
+
+**THE ATTRIBUTION CORRECTION, and it reshapes the road.**
+`narrow_leaf_refutes_constant_ksc`: even at fixed narrowed arguments no
+constant `ksc` satisfies the `hbnd`/`hcostI`/`hKsc` chain. **So `hKsc`
+is not E4c's deliverable and the scatter leaf cannot be made a constant
+at all** — beyond the two copies the honest reading is the turn's
+**cluster**. That lands on a slot which already exists and is
+deliberately empty: `RamDriverRoot.turnCostSize` **discards its size
+argument** (`:440`, docstring `:444` — "The size slot is free until B4
+fills it"), while the proposed `G2CostProbe.turnCostSizeA ct ksc s Kin =
+(ct + ksc)·(s + 1) + Kin` already reads it. So C0CloseProbe's
+`ksc ≤ 8 798 198` is a ceiling on a **coefficient**, not on a total
+charge. Next wave **b4-design** compiles whether the size-read interface
+closes, what `s` must be (block size or block weight — the ball term is
+the question), whether the frames decoupling is needed for the close or
+only for the walk, and the coefficient ceiling.
