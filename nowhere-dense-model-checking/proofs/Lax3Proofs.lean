@@ -124,3 +124,4 @@ import Lax3Proofs.Refine.ScatterDeadPass
 import Lax3Proofs.Refine.ScatterDeadTurn
 import Lax3Proofs.Refine.DeadRowSigma
 import Lax3Proofs.Refine.C0CloseProbe
+import Lax3Proofs.Refine.B4Design
