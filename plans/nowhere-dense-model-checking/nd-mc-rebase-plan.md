@@ -413,14 +413,54 @@ session, per-wave ledgers in the commit messages e5e0f91..10e6dc4):
   residue), **E-order** (no-escape theorem: any empty-arena carrier
   charge breaks the closed form; NO member list exists in driver state
   — R1.6 unbuilt).
-- **OPEN — the compiled residue** (enumerated in `Refine/G2CostProbe.lean`
-  §7 + `Refine/OrderBlockProbe.lean` header, **retargeted 2026-08-02 by the
-  seam probe**): E-mem (member-list threading) → member-driven engine
-  interiors per family → E-order re-run (`g2_plug` shrinks) → E3b (cover
-  composition + compactCom-before-coverSave reorder) → E4c (descendCom
-  swap, `qd` layout, alive-mask hoist per cluster) → R1.8 (dead-sweep
-  discipline: charge a vertex's death-row write to the turn that killed it —
-  its block contains it) → B7 re-run (slot sweep first) → P5.
+- **OPEN — the compiled residue**, enumerated in `Refine/G2CostProbe.lean`
+  §7 and **ordered by measured cost since 2026-08-08** by
+  `Refine/C0CloseProbe.lean`, which ran the M-class close at each phase's
+  own measured constant and back-solved a coefficient ceiling per phase.
+  E-mem (member-list threading) and R1.8 (dead-sweep discipline) have
+  landed. The order is now by what the numbers say is binding, not by
+  engine family:
+
+  1. **E4c, the scatter half — the only unbounded deficit.** At the root's
+     own instantiation the per-atom charge is `≥ 131·n`
+     (`C0CloseProbe.deadAtomK_carrier_floor`), because
+     `ScatterDeadPass.ballBudget_carrier` supplies the whole carrier as the
+     ball budget (`bw := ns`, `nb := n`, `mm1 = mm = n`). No constant `ksc`
+     exists (`landed_scatter_leaf_unbounded`), so this is the single
+     obstruction that would kill the road. Runs as **e4c-a** (accounting:
+     `outProbeCost`'s pigeonhole bound, `atomMemCost`'s `mm1`,
+     `scatBlockK`'s `bw`/`nb`/`mm` — the hook left at
+     `ScatterDeadPass.lean:1469-1474`) then **e4c-b** (the program change:
+     touched-only mask copy and distance fill over the child's member list).
+  2. **T4b — build a member-driven base**, not measure the existing one.
+     `landed_base_needs_carrier_Cb` refutes every constant `Cb`: the landed
+     base is `DeadSweep.baseCost = sweepCost` since T4a and is quantified
+     over every arena weight including `0`, so `Cb ≥ 4·n+6`.
+  3. **The `hKd` slot deletion** — cheapest of the three, a statement
+     deletion rather than engine work: `(c2b)` took `sweepCom` out of the
+     program but the root still reserves the slot, and
+     `landed_hKd_load_bearing` shows the un-narrowed slot forces `Ω(n²)`.
+     Bundled into e4c-b, which owns the same restating consumers.
+  4. **E3b** (cover composition + the `OrdersBy` contract at members) and
+     **E-order** (member-driven order text + walk) — **cost-slack**, four to
+     five orders of headroom each (`kc = 150` against a `ka` ceiling of
+     `3.95·10⁷`; `68·m + 12` against `7.9·10⁷`). Still required on the
+     *walk* side to close `hKc`/`hKo` in the §7 gap ledger, but neither is
+     what the budget is waiting for.
+  5. **B7 re-run** (slot sweep first) → **C0** → **P5**.
+
+  **Two corrections to the cost surface's own reading**, both compiled in
+  `C0CloseProbe`. `rootBudgetM`'s constant is not `D`-free — `g2M` carries
+  `(ct+ksc+3)·(D+1)` and the cover slot `162·D` — so the honest exponent
+  budget is `ℓ+1` and the cover degree is read at `⌈c·w^{ε/(ℓ+1)}⌉`
+  (`rootBudgetM_le_cstar`). And the cover phase does not fit the M-class
+  slot at the natural `(a,b)` split (`cover_measured_pair_insufficient`);
+  its slot pair is forced to `(kcov, kcov)`.
+
+  **Guards must be read at ε < 1.** Every pre-2026-08-08 gate was at
+  ε = 1, where a quadratic cost fits an `n²` budget — which is exactly why
+  the carrier-charged scatter leaf survived every earlier check. The
+  binding gate is ε = 1/2.
 
   **E-mem stays a cost repair.** A supervisor retarget on 2026-08-02 briefly
   made it a prerequisite for existence as well; that was wrong and the
