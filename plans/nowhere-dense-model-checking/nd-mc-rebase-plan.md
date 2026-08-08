@@ -464,6 +464,23 @@ session, per-wave ledgers in the commit messages e5e0f91..10e6dc4):
      14·mm1 + 6`, carrier-free, and the charge chain up to the root's
      closed form). E4c-d's §7 capped-scan capital is **not consumed** by
      this route; it was bought for the hoist.
+
+     **CLOSED on the carrier axis, 2026-08-08.** All three landed.
+     `RamDriverRoot.deadAtomK_turn_closed` carries **no carrier term**:
+     `(44·bw + 110·nb + 140)·t + 20·min(xb+1,n) + 102·xb + 14·kq + abit +
+     84`. The acceptance is a **pair**, because neither half alone is
+     honest — `deadAtomKX_le_blk` bounds the charge at every `n` by
+     `deadAtomKBlk`, a function of the block reading alone, and
+     `deadAtomKX_carrier_free` makes it *equal* to that ceiling past
+     `xb + 1`; the sharper "mentions no `n`" claim is compiled **false**
+     (`scatDeadKX_carrier_indep_refuted`), the outside probe's cap
+     `min (xb+1) n` being a legitimate carrier reading. Declared
+     weakening: the charge is **larger at the carrier**, `119·n → 122·n`,
+     for the member walk's indirect address. What remains of this leaf is
+     the constant-vs-family problem — `deadAtomKX_block_unbounded` still
+     holds, so `scatterBnd_cluster` still bridges back to the carrier —
+     and that is item 5's `b4-iface`, now the only thing between the
+     scatter leaf and its slot.
   1b. **E4c, the descend half — the `BlockLeaves` Com-level swap, and it
      was missing from this list until 2026-08-08.** `hKs` is one slot with
      **two** unlanded halves, and only the scatter one was on the road.
