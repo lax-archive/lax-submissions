@@ -20,15 +20,16 @@ three, and the proof that it does.
 
 1. `RamDriver.atomMemCom` — the child's member list filtered by the
    atom's table row into the engine's `"mem"`/`"mm"`. §2.
-2. The engine's calling convention: the child mask into `"alv"` and a
-   clean `"dist"`. Carrier-charge parity with the landed engine entry
-   (`Refine.ArenaSeam.memEntry`) is accepted at this boundary; making
-   the two active-set-driven was E4c-b's, and **§5f is its result**:
-   both member-scale replacements are built, specified and clocked
-   there, and neither can be wired in — the mask because nothing pins
-   the scratch array it would have to start from, the distance because
-   `Refine.ScatterBlock.ArenaA` pins the whole array at the atom's own
-   radius. §5c's charge is unchanged for exactly that reason.
+2. The engine's entry condition: a clean `"dist"`. Carrier-charge
+   parity with the landed engine entry (`Refine.ArenaSeam.memEntry`) is
+   accepted at this boundary. **The mask copy that used to stand beside
+   it is gone** (wave E4c-c): the engine reads the child's alive array
+   where it lies, so there is nothing to move and no scratch to clean,
+   and §5c's charge is `12·n + 6` lighter. Making the *distance* fill
+   active-set-driven was E4c-b's, and §5f is its result — the
+   member-scale replacement is built, specified and clocked there and
+   cannot be wired in, because `Refine.ScatterBlock.ArenaA` pins the
+   whole array at the atom's own radius.
 3. `Refine.ScatterBlock.scatBlockCom`, read through
    `Refine.ScatterDeadEngine.scatBlockCnt_specW` — the counter in its
    `∀ e` decision form, which is the only true reading (the naive
@@ -1698,16 +1699,33 @@ theorem ballBudget_carrier {G : SimpleGraph (Fin n)} {ns : ℕ} {O T : ℕ → �
   rw [htel n le_rfl, hcsr.zero, hcsr.last]
   omega
 
-/-! ### §5f Wave E4c-b: the two calling-convention copies, at the member list
+/-! ### §5f Wave E4c-b: the two calling-convention copies, at the member
+list — and what E4c-c did with the answer
 
-`Refine.C0CloseProbe.scatDeadK_narrow_floor` compiles that `23·n + 12`
-of §5c's charge survives every narrowing of the probe bound, the two
-member counts and the ball budget: the mask copy `copyCom (alvName
-(j + 1)) "alv"` and the distance fill `fillCom "dist" (r + 1)` are
-carrier walks in `RamDriver.scatDeadCom`'s own text, so only a program
-change can move them. This section is that program change, built and
-measured — and the two compiled reasons neither half can be wired into
-the atom at this boundary.
+**Read this section as the record, not as the road.** E4c-b built
+touched-only replacements for both carrier passes of
+`RamDriver.scatDeadCom` and compiled that neither could be wired in.
+E4c-c then took the *other* route for the mask half: not a cheaper copy
+but no copy at all. `RamDriver.scatDeadCom` no longer contains
+`copyCom (alvName (j + 1)) "alv"`; the engine is
+`Refine.ScatterBlock.scatBlockComA (alvName (j + 1))`, which reads the
+child's alive array where it lies. So `memCopyAt`, `alvMemCom`,
+`alvClrCom` and `entryMemCost` below are **superseded**, and they are
+kept for one reason: the refutations of §5g are stated about them, and
+those refutations are the evidence for why the copy had to be deleted
+rather than re-charged. Deleting the definitions would delete the
+record. `memFillAt`/`distMemCom` are *not* superseded — the distance
+fill is still in the program, and they are still its candidate
+replacement.
+
+Historically: `Refine.C0CloseProbe.scatDeadK_narrow_floor` compiled that
+`23·n + 12` of §5c's charge survived every narrowing of the probe bound,
+the two member counts and the ball budget — the mask copy `copyCom
+(alvName (j + 1)) "alv"` and the distance fill `fillCom "dist" (r + 1)`
+are carrier walks in `RamDriver.scatDeadCom`'s own text, so only a
+program change could move them. This section is that program change,
+built and measured, together with the two compiled reasons neither half
+could be *wired in*. The residual now stands at `11·n + 6`.
 
 **The replacement.** `memFillAt` and `memCopyAt` walk the child's member
 list once and store at the *listed* vertex: `Refine.BlockLeaves`'s

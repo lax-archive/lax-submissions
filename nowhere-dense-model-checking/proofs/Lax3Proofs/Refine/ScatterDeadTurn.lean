@@ -3,7 +3,7 @@ import Lax3Proofs.RamDriverWrites
 /-!
 # The dead-aware atom phase, composed — wave R1.8-T3-flip (c1d)
 
-The nine passes of `RamDriver.scatDeadCom` run in sequence, folded over
+The eight passes of `RamDriver.scatDeadCom` run in sequence, folded over
 one formula's scatter atoms and then over a depth's table. This is the
 last machine step of the R1.8 flip: everything below it is landed
 capital, and what is added here is the composition — the frame chain
@@ -157,9 +157,9 @@ theorem not_ext_bb_flgName (a b c : ℕ) : ¬ RamDriverBot.Ext "bb" (flgName a b
 
 /-! ### §2 The scalars of the whole atom program
 
-Six of the driver's names have to cross all nine passes: the carrier,
+Six of the driver's names have to cross all eight passes: the carrier,
 the slot count, the live width, the connector and the cursor families,
-and the depth's kill count. Each is settled pass by pass off the nine
+and the depth's kill count. Each is settled pass by pass off the
 `wvars` lemmas of `Refine.ScatterDeadPass` §5d. -/
 
 open Classical in
@@ -324,7 +324,7 @@ theorem DeadPre.run_flag {i k : ℕ} {σ σ' : Env} {K : ℕ}
 
 /-! ### §4 One atom, walked
 
-The nine passes in sequence. What crosses each seam is stated by
+The eight passes in sequence. What crosses each seam is stated by
 `Refine.ScatterDeadPass` §5d, and the reading of the four registers at
 the end is `atomTerms_iff_scatVal_of_clusterData` — whose three threads
 are all in scope here: `hXalive` and `hbud` are
@@ -341,9 +341,9 @@ theorem notMem_of_underscore {y : String} (hy : '_' ∈ y.toList) {l : List Stri
 open Classical in
 /-- **One dead-aware scatter atom, discharged.** The kill walk, the
 outside probe and its bit, the outside count, the atom's filtered member
-list, the engine's calling convention, the active-set engine and the
-verdict — and the flag they leave is the atom's greedy value in the
-cluster step's arena.
+list, the clean distance array, the active-set engine reading its mask
+out of the child's own alive array, and the verdict — and the flag they
+leave is the atom's greedy value in the cluster step's arena.
 
 The atom's row is read at the child's member list and at the turn's kill
 list only; no clause about a row outside `alive ∪ kills` enters, which
@@ -535,7 +535,7 @@ theorem scatDead_spec {bw nb : ℕ}
   have hqsz₇ : (∃ g, σ₇.arrs "q" = arrOf n g) ∧ (∃ g, σ₇.arrs "qd" = arrOf n g) ∧
       (∃ g, σ₇.arrs "exc" = arrOf n g) := by
     have hlm : LevelMem B n cap mb σ₇ :=
-      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq hr₇)))))  hpre.mem
+      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq hr₇))))) hpre.mem
     exact ⟨hlm.1 ("q", n) (by simp), hlm.qdArr, hlm.1 ("exc", n) (by simp)⟩
   have hmaskfree : ScatterBlock.MaskFree (alvName (j + 1)) :=
     ScatterDeadPass.maskFree_alvName (j + 1)
@@ -669,7 +669,7 @@ over a depth's table — the three-step shape the retired
 `RamDriver.scatterCom`, at the same flag names and with the same
 postcondition. -/
 
-/-- The per-atom charge: the nine passes and the flag. -/
+/-- The per-atom charge: the eight passes and the flag. -/
 noncomputable def deadAtomK {L : ℕ} (β : DistFO L 1) (n mm1 kq mm bw nb t : ℕ) : ℕ :=
   ScatterDeadPass.scatDeadK β n mm1 kq mm bw nb t + 2
 

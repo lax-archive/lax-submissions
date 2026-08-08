@@ -599,6 +599,57 @@ which is `MassWeight.blockSize + blockRowSum`, which is
 `slotWeight n (csrW n O)`, which is the `blockWeight` the cover's
 per-centre obligation is stated in. -/
 
+/-! ### Why the sentinel is not radius-free, and what it would take
+(wave E4c-c, Part B — the dead end, recorded)
+
+E4c-c asked whether the atom's remaining carrier pass — the per-atom
+`fillCom "dist" (r + 1)` in `RamDriver.scatDeadCom` — could be removed
+outright by making the "unvisited" sentinel radius-**independent**. Then
+`ScatterBlock.ArenaA`'s seventh clause would stop naming the radius,
+`unwind` would maintain it across atoms of different radii, and the fill
+would hoist out of the atom instead of merely becoming touched-only.
+
+**It cannot be done from this package, and the reason is structural.**
+The sentinel *is* the depth cap. `RamBfs.scanSlot` relaxes on the single
+test `dn < dist[w]`, and that one test does three jobs: it rejects an
+already-discovered vertex, it rejects one discovered at this level, and
+it caps the search — a vertex reached at depth `d` offers `d + 1`, which
+does not beat the sentinel `d + 1` that an undiscovered vertex holds.
+`radius_free_sentinel_breaks_cap` below is that mechanism as
+arithmetic: at any radius-free sentinel `S > d + 1` the same offer
+*passes*, so the search runs past the cap and its cost becomes the whole
+reachable component rather than the ball — which is the one property
+this engine exists to have (`bfsBlockK` names no `n` and no `ns`).
+
+Restoring the cap needs an explicit `dn ≤ d` guard, i.e. **new control
+flow inside `RamBfs.scanSlot`** — landed program text with
+`seedSrc_run`, `expandRow_run`, `Queue.drain_run` and the whole
+`Frontier` invariant over it. The array renaming that let E4c-c delete
+the mask copy (`ScatterBlock.renCom_spec`) permutes array *names*; it
+cannot introduce a test. So Part B is a `RamBfs` wave, not a
+`Refine/Bfs*` one.
+
+**And the second half would not pay even if the first were done.** With
+a radius-free sentinel the fill hoists only as far as a state that
+maintains it, and `RamDriver.coverPhase` — which runs at *every* level,
+before that level's cluster loop — calls `RamCover.coverCom`, whose
+search is the landed `RamBfs.bfsCom` with its own `initDist` and no
+unwind: it leaves `"dist"` holding an arbitrary array
+(`RamCover`'s postcondition is `∃ g, σ.arrs "dist" = arrOf n g`). So the
+single initialization reaches level entry at best, never the root, and
+is carrier-charged once per level. That is the trade
+`Refine.C0CloseProbe`'s level-interface material exists to refuse: one
+floor swapped for another. A wave that wants the fill gone has to take
+the cover phase's search with it. -/
+
+/-- **The sentinel is the cap.** A vertex reached at depth `d` offers
+`d + 1`. Against the radius-dependent sentinel `d + 1` the offer fails
+and the search stops; against any radius-free sentinel `S` above it the
+offer succeeds and the search does not. This is the whole of why
+`ScatterBlock.ArenaA`'s distance clause names the atom's own radius. -/
+theorem radius_free_sentinel_breaks_cap (d S : ℕ) (hS : d + 1 < S) :
+    ¬ (d + 1 < d + 1) ∧ (d + 1 < S) := ⟨by omega, hS⟩
+
 /-- **The block engine is weight-linear at coefficient `80`.** This is
 the ball-charged replacement for `G2CostProbe.bfsQCost_le_weight`, whose
 `65 * (n + ns + 1)` reads the *carrier*. -/

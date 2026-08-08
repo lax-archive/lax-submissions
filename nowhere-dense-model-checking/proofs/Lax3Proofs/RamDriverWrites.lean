@@ -1184,7 +1184,7 @@ theorem noWrite_atomFlagCom (t : ℕ) : (atomFlagCom t).NoWrite := by
 
 **Wave R1.8-T3-flip (c1).** The composite `RamDriver.scatDeadCom` and
 the phase `RamDriver.scatterDeadCom` that replaces the fold of
-`scatterCom` in the turn, as write sets. The nine passes' own facts are
+`scatterCom` in the turn, as write sets. The eight passes' own facts are
 above; what is added here is their union, read once so that the frame
 conditions of the turn — that the phase writes no table, and that the
 depth's own arrays and the driver's scalars survive it — can be

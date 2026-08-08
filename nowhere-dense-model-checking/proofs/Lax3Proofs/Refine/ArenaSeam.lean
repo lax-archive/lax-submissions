@@ -139,10 +139,20 @@ theorem memEntry_run {B n j mm : ℕ} {Mem M : ℕ → ℕ} {σ : Env}
 
 /-! ### §4 The whole arena, from a level
 
-The other entry copies are the ones `ArenaA` already assumed and this
-wave does not touch — the mask into `"alv"`, a clean `"dist"`, the two
-queue arrays. What is new is that the member conjuncts are no longer
-assumed: they come out of `LevelPre`. -/
+The other entry conditions are the ones `ArenaA` already assumed and
+this wave does not touch — the mask, a clean `"dist"`, the two queue
+arrays. What is new is that the member conjuncts are no longer assumed:
+they come out of `LevelPre`.
+
+**Wave E4c-c: the mask is no longer an entry *copy*.** This file's
+`halv` still names `"alv"`, because `ArenaA` does; but the driver's own
+atom (`RamDriver.scatDeadCom`) runs
+`Refine.ScatterBlock.scatBlockComA (alvName (j + 1))` at
+`Refine.ScatterBlock.ArenaAt`, whose mask clause is the depth's own
+array and whose producer is `RamDriverCluster.ClusterData`'s mask
+conjunct directly — no copy, and no scratch to leave junk in. The
+statements below are the `"alv"` instance of the same seam, kept because
+`scatBlock_of_levelPre` is stated at the landed engine. -/
 
 /-- **The re-stated arena, discharged driver-side.** From a level state
 and the engine's own scratch, the member copy leaves an `ArenaA` at the

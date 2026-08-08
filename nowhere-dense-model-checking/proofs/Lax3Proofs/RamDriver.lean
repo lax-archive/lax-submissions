@@ -2288,7 +2288,7 @@ to the carrier's end — so its runtime is the index of the first
 out-of-cluster vertex, at most the cluster's size plus one by the
 pigeonhole `Refine.DeadRowProbe.exists_outside_in_prefix`. The *proved*
 charge below is nevertheless carrier-width, the same parity the atom
-program's mask copy and distance fill are accepted at this boundary;
+program's distance fill is accepted at this boundary;
 reading the runtime bound off the pigeonhole is E4c's, not this
 wave's. -/
 def outProbeCom (j : ℕ) : Com :=
@@ -2354,9 +2354,9 @@ def atomFlagCom (t : ℕ) : Com :=
 
 /-- **The dead-aware atom program** (design §6 (b)): the kill walk, the
 outside probe and its bit, the outside count, the filtered member list,
-the block engine's calling convention, the active-set engine, and the
-verdict. This is what replaces one call of `RamScatter.scatterCom` in
-the turn.
+the block engine's clean distance array, the active-set engine at the
+child's own mask, and the verdict. This is what replaces one call of
+`RamScatter.scatterCom` in the turn.
 
 The three dead terms are computed **before** the engine, so nothing
 about the depth's own arrays has to cross the engine's own writes:
