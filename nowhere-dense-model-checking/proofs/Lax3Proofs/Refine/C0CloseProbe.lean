@@ -1312,22 +1312,30 @@ theorem landed_hKd_load_bearing {q_top cap mb : ℕ} {φ : Lax3.FirstOrder.FO 0}
     le_trans hfloor hup
   exact absurd hbad (by decide +kernel)
 
-/-! #### Control 4 — the base is a hole AND a refutation (T4b) -/
+/-! #### Control 4 — the base was a hole AND a refutation (T4b, closed) -/
 
-/-- **No constant `Cb` meets the landed base slot.** `hKbase` reads the
-CARRIER (`RamDriverBot.baseCost = sweepCost` since R1.8-T4a) and is
-quantified over every arena weight, including `0`. So a base budget
-`Cb·(w+1)` — which is `Cb` at the empty arena — has to exceed `4·n + 6`.
-T4b is therefore not merely unstarted: the slot it has to replace is
-refutable as it stands. -/
+/-- **No constant `Cb` meets a CARRIER-read base slot.** The pre-T4b
+`hKbase` read the carrier (`RamDriverBot.baseCost = sweepCost` then, one
+`Com` under two names) and was quantified over every arena weight,
+including `0`. So a base budget `Cb·(w+1)` — which is `Cb` at the empty
+arena — had to exceed `4·n + 6`, and `no_constant_Cb` below says no
+constant survives that, since `n` is chosen after it.
+
+**Wave R1.8-T4b closed this.** The statement is kept exactly as it was
+— it is what the header change had to beat, and it is still true of the
+hypothesis it names — but that hypothesis is no longer the driver's:
+`RamDriverRoot.levelAt`'s `hKbase` now reads the base charge at the size
+it is quoted at, `RamDriver.baseCom` walks the depth's member list, and
+`Refine.G2CostProbe.hKbase_paid` discharges the slot at
+`sweepCoeffA`. The floor below is therefore about the *retired* reading,
+and the sweep it is measured against (`sweepCost_floor`) is the vestigial
+`hKd` slot's, not the base's — which is why the two now have to be named
+separately. -/
 theorem landed_base_needs_carrier_Cb {q_top cap mb ℓ n Cb : ℕ} {φ : Lax3.FirstOrder.FO 0}
     {Kl : ℕ → ℕ → ℕ}
-    (hKbase : ∀ m, Lax3Proofs.RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
+    (hKbase : ∀ m, Lax3Proofs.Refine.DeadSweep.sweepCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
     (hle : Kl ℓ 0 ≤ Cb) : 4 * n + 6 ≤ Cb := by
   have h1 := sweepCost_floor q_top cap mb ℓ n φ
-  have h2 : Lax3Proofs.RamDriverBot.baseCost q_top cap mb ℓ n φ
-      = Lax3Proofs.Refine.DeadSweep.sweepCost q_top cap mb ℓ n φ :=
-    Lax3Proofs.Refine.DeadSweep.baseCost_eq q_top cap mb ℓ n φ
   have h3 := hKbase 0
   omega
 

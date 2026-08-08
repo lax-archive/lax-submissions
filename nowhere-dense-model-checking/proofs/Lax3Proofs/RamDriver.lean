@@ -1021,6 +1021,54 @@ theorem arenaSize_le (n : ℕ) (M : ℕ → ℕ) : arenaSize n M ≤ n := by
     (Set.finite_univ)
   simpa [arenaSize] using h
 
+/-- **A member list is no longer than the arena** (wave R1.8-T4b).
+`MemEnum`'s second clause makes `k ↦ Mem k` strictly increasing, hence
+injective, and its third clause lands it in the alive set, so the list
+injects into that set and `mm ≤ arenaSize n M`.
+
+This is what makes the member header a *cost* and not only a program
+delta: `MemEnum.card_le` above bounds the list by the **carrier**, which
+is useless to the Σ interface, and every M-class budget of the driver is
+read at the arena. The argument is
+`Refine.ArenaBlock.cnum_le_arenaSize`'s with the `ord` composition
+deleted — the member list is already a list of vertices — and it is
+stated here, beside `arenaSize`, because `RamDriverBot.base_spec` needs
+it and every `Refine` file that has it is downstream of the walk
+(`Refine.GapsDesign.memEnum_card_le_arenaSize` is where the design
+compiled it). -/
+theorem MemEnum.card_le_arenaSize {n mm : ℕ} {Mem M : ℕ → ℕ}
+    (h : MemEnum n mm Mem M) : mm ≤ arenaSize n M := by
+  classical
+  rcases Nat.eq_zero_or_pos mm with rfl | hpos
+  · exact Nat.zero_le _
+  have hn : 0 < n := lt_of_le_of_lt (Nat.zero_le _) (h.1 0 hpos)
+  set f : ℕ → Fin n := fun k => ⟨Mem k % n, Nat.mod_lt _ hn⟩ with hf
+  have hfval : ∀ k, k < mm → ((f k : Fin n) : ℕ) = Mem k :=
+    fun k hk => Nat.mod_eq_of_lt (h.1 k hk)
+  have hmaps : ∀ k ∈ Finset.range mm,
+      f k ∈ ({v : Fin n | M (v : ℕ) ≠ 0} : Set (Fin n)).toFinset := by
+    intro k hk
+    have hkc := Finset.mem_range.mp hk
+    simp only [Set.mem_toFinset, Set.mem_setOf_eq]
+    rw [hfval k hkc]
+    exact h.2.2.1 k hkc
+  have hinj : ∀ k ∈ Finset.range mm, ∀ k' ∈ Finset.range mm, f k = f k' → k = k' := by
+    intro k hk k' hk' he
+    have hkc := Finset.mem_range.mp hk
+    have hkc' := Finset.mem_range.mp hk'
+    have hme : Mem k = Mem k' := by rw [← hfval k hkc, ← hfval k' hkc', he]
+    rcases Nat.lt_trichotomy k k' with hl | hq | hg
+    · exact absurd hme (Nat.ne_of_lt (h.2.1 k k' hl hkc'))
+    · exact hq
+    · exact absurd hme.symm (Nat.ne_of_lt (h.2.1 k' k hg hkc))
+  have hcard := Finset.card_le_card_of_injOn f hmaps
+    (fun k hk k' hk' he => hinj k (Finset.mem_coe.mp hk) k' (Finset.mem_coe.mp hk') he)
+  rw [Finset.card_range] at hcard
+  have hcards : ({v : Fin n | M (v : ℕ) ≠ 0} : Set (Fin n)).toFinset.card
+      = arenaSize n M := by
+    rw [arenaSize, Set.ncard_eq_toFinset_card']
+  omega
+
 /-- **What the compaction scan leaves.** `cps` lists, in strictly
 increasing order, exactly the `cnum` positions below `n` whose block is
 nonempty **and whose centre the mask leaves alive**.
@@ -1706,20 +1754,49 @@ noncomputable def sweepCom (q_top cap mb jd : ℕ) (φ : Lax3.FirstOrder.FO 0) :
             (tablesAt q_top cap mb φ jd))
           (.assign "z" (.add (.var "z") (.lit 1))))))
 
-/-- **The base case.** Walk the vertices, evaluating every formula of the
-depth's table at each.
+open Classical in
+/-- **The base case.** Walk the depth's **member list**, evaluating every
+formula of the depth's table at each listed vertex.
+
+**Wave R1.8-T4b: the header is the member list.** The turn is the sweep's
+turn — the same straight line of `botCom` fragments, storing at the same
+`"z"`, so `RamDriverBot.base_block_spec` is its block verbatim — but the
+loop is bounded by `mnumName ℓ` and reads its vertex out of `memName ℓ`
+instead of counting the carrier. Three consequences, in the order they
+matter:
+
+* the charge is `(RamDriverBot.turnCost + 7) · mm + 6` at the depth's
+  *member count* (`RamDriverBot.baseCost`), which the `hKbase` slot of
+  the G2 interface pays at `Refine.G2CostProbe.sweepCoeffA`
+  (`Refine.G2CostProbe.hKbase_paid`). The carrier header this replaced
+  could not be paid by any weight-linear budget at all
+  (`Refine.G2CostProbe.hKbase_gap_any`);
+* what the pass writes is the *alive* rows and nothing else, so its
+  obligation is `BaseImplementsD` — the domain form — and not
+  `BaseImplements`. The domain `D` the caller pre-wrote survives because
+  every listed member is alive (`MemEnum`'s third clause) and `D` is
+  dead, so the walk never stores there;
+* `sweepCom` is **not** this program any more. The two were the same term
+  from R1.8-T4a until this wave (`Refine.GapsDesign` §1.8 flagged that as
+  a trap, since `Refine.DeadSweep.sweepImplements` rides the sweep's own
+  text); the sweep keeps its carrier header, its compiled discharge and
+  its vestigial `hKd` slot untouched.
 
 **R1.8-T4a.** The pass used to open with `reprCom`, the representative
 scan, whose only consumer is the `exU` case of `botCom` — a case no
 tabled formula generates (`reprCom`'s own docstring; the walk carries
 `IsLocal` and discharges `exU` by `SyntaxLemmas.isLocal_exU`). The scan
-is dropped: the base case *is* the depth's sweep, the base's budget
-sheds `RamDriverBot.reprCost` — a carrier scan with a
-`2 ^ sigL cap mb ℓ`-wide inner loop — and the base pass no longer needs
-the `"rep"` table to exist at all (`RamDriverBot.base_spec`'s
-precondition is the sweep's). -/
+is dropped, and the base pass no longer needs the `"rep"` table to exist
+at all (`RamDriverBot.base_spec`'s precondition does not mention it). -/
 noncomputable def baseCom (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) : Com :=
-  sweepCom q_top cap mb ℓ φ
+  .seq (.assign "mk" (.lit 0))
+    (.while (.lt (.var "mk") (.var (mnumName ℓ)))
+      (.seq (.assign "z" (.get (memName ℓ) (.var "mk")))
+        (.seq (.assign (envName 0) (.var "z"))
+          (.seq (foldIdx (fun i β =>
+              .seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) 0
+              (tablesAt q_top cap mb φ ℓ))
+            (.assign "mk" (.add (.var "mk") (.lit 1)))))))
 
 /-! ### The ordering pass
 
@@ -3894,6 +3971,45 @@ def BaseImplements (q_top cap mb ns W ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0)
       (baseCom q_top cap mb ℓ φ)
       (fun σ σ' => LevelPost B q_top cap mb φ G ns W O T ℓ M Gm C σ σ' ∧ σ'.out = σ.out) K
 
+/-- **The base case, on a domain** (wave R1.8-T4b). `BaseImplements` with
+three changes and no others:
+
+* the post is `LevelPostD … D` — the rows the pass writes are the
+  *alive* ones, its walk being the depth's member list, plus the
+  caller's pre-written `D`;
+* the pre gains `TableInvOn … D`, the clause that carries `D` across the
+  pass. The member walk cannot destroy those rows because it never
+  writes off the alive set and `D` is dead
+  (`MemEnum`'s third clause against `LevelImplementsD`'s first
+  hypothesis), so the clause goes in and comes out;
+* the hypothesis `2 ^ sigL cap mb ℓ < B` is dropped. It was the
+  representative scan's counter bound, and R1.8-T4a's shed made it
+  unused in the discharge already; a weaker precondition is the honest
+  statement.
+
+The `masked G M = ⊥` hypothesis stays: it is what the bottom of the
+recursion supplies (`eq_bot_of_playOk_full`) and what makes the depth's
+`botCom` fragments compute the right truth values.
+
+`BaseImplements` above is the pre-T4b carrier-wide form. The
+member-driven `baseCom` does **not** inhabit it — it writes no dead
+vertex's row, so `LevelPost`'s `TableInv` fails at every mask that kills
+something — and the design's `Refine.GapsDesign.baseImplementsD_of_baseImplements`
+is the compiled record that the retyping was a *weakening*, which is
+what let the contract move land one wave before the header. -/
+def BaseImplementsD (q_top cap mb ns W ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (G : SimpleGraph (Fin n)) (O T : ℕ → ℕ) (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
+    (D : Set (Fin n)) (K : ℕ) : Prop :=
+  ∀ {d : ℕ}, WordBoundK B n d ns cap mb → masked G M = ⊥ →
+  (∀ v : Fin n, v ∈ D → M (v : ℕ) = 0) →
+  (∀ c < sigL cap mb ℓ, ∀ v < n, C c v ≤ 1) →
+    Spec B (fun σ => LevelPre B n cap mb ns W O T ℓ M Gm C σ ∧
+        TablesSized q_top cap mb φ n σ ∧ BaseArrs B q_top cap mb ℓ φ σ ∧
+        TableInvOn q_top cap mb φ G ℓ M C D σ)
+      (baseCom q_top cap mb ℓ φ)
+      (fun σ σ' => LevelPostD B q_top cap mb φ G ns W O T ℓ M Gm C D σ σ' ∧
+        σ'.out = σ.out) K
+
 open Classical in
 /-- **The sentence readback.** That `sentenceCom` writes the one bit the
 whole program produces.
@@ -3963,12 +4079,20 @@ def LevelImplementsD (q_top cap mb R ℓ W ns j : ℕ) (φ : Lax3.FirstOrder.FO 
     (driverAt q_top cap mb R ℓ φ j)
     (fun σ σ' => LevelPostD B q_top cap mb φ G ns W O T j M Gm C D σ σ' ∧ σ'.out = σ.out) K
 
-/-- **The carrier-wide level obligation**, which since wave
-R1.8-T3-flip (c2b) only the *bottom* of the recursion satisfies:
-`RamDriver.baseCom` writes every vertex's row, so it owes nothing to a
-domain. It is what `RamDriverCluster.levelImplements` takes as its
-`hbase`, and `RamDriverCompose.baseImplements` is unchanged by the
-flip. -/
+/-- **The carrier-wide level obligation**, which between wave
+R1.8-T3-flip (c2b) and wave R1.8-T4b only the *bottom* of the recursion
+satisfied: the carrier-walking `baseCom` wrote every vertex's row, so it
+owed nothing to a domain, and this was what
+`RamDriverCluster.levelImplements` took as its `hbase`.
+
+**Nothing satisfies it since T4b.** The base pass walks the depth's
+member list, so it writes the alive rows and no others, and its
+obligation is `BaseImplementsD` at the level's `LevelImplementsD`. This
+form is kept as the record of what the header change gave up — and it
+gave up nothing the recursion asked for, which is
+`Refine.GapsDesign.levelImplementsD_bot`: the bottom case of
+`levelImplements` closes from the domain form with `Spec.pre` and
+nothing else. -/
 def LevelImplementsFull (q_top cap mb R ℓ W ns j : ℕ) (φ : Lax3.FirstOrder.FO 0)
     (G : SimpleGraph (Fin n)) (O T : ℕ → ℕ) (M Gm : ℕ → ℕ)
     (C : ℕ → ℕ → ℕ) (K : ℕ) : Prop :=

@@ -817,7 +817,7 @@ theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ} {Ki Ksc : ℕ → ℕ} {
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
       Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t)
         ≤ Ks j t)
-    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
+    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCostR n ns W R ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
     (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
@@ -843,10 +843,16 @@ theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ} {Ki Ksc : ℕ → ℕ} {
     (fun A₀ ord π => RamDriverOrder.coverTurnImplements B n ns G A₀ O T ord π cap)
     hptr hexit
     hQ hℓ
-    (fun M Gm C hbot hbit => by
+    (fun M Gm C D hbot hDdead hbit => by
       rw [driverAt_bot]
-      exact ((RamDriverCompose.baseImplements hB hpow hbot hbit).pre
-        (fun _ h => ⟨h.1, h.2.1, h.2.2.1⟩)).mono (hKbase _))
+      -- **wave R1.8-T4b**: the base pass walks the depth's member list, so its
+      -- charge is read at the arena and the slot below is the M-class one. The
+      -- weight is above the size (`MassWeight.arenaSize_le_arenaWeight`), and
+      -- the budget is monotone, so the walk is paid at `Kl ℓ (arenaWeight …)`.
+      exact (RamDriverCompose.baseImplementsD
+        (le_trans (RamDriverBot.baseCost_mono q_top cap mb ℓ φ
+          (Refine.MassWeight.arenaSize_le_arenaWeight n G M)) (hKbase _))
+        hB hbot hDdead hbit).pre (fun _ h => ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.2⟩))
     (fun j hj M Gm C _d h₁ h₂ h₃ h₄ h₅ =>
       ((horder j hj M Gm C) h₁ h₂ h₃ h₄ h₅).mono
         (hKo j (arenaWeight n G M)))
@@ -1077,7 +1083,7 @@ theorem driverRootD_decides_sentence
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
       Lax3Proofs.RamDriverRoot.turnCostSize n (dedupNs x) cap mb q_top j φ (Ksc j) t
         (Kl (j + 1) t) ≤ Ks j t)
-    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
+    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n (dedupNs x) W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n (dedupNs x) ≤ Kc j m)
     (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
@@ -1152,7 +1158,7 @@ theorem driverRootD_decides_sentenceR
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
       Lax3Proofs.RamDriverRoot.turnCostSize n (dedupNs x) cap mb q_top j φ (Ksc j) t
         (Kl (j + 1) t) ≤ Ks j t)
-    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
+    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCostR n (dedupNs x) W R ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n (dedupNs x) ≤ Kc j m)
     (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
@@ -1224,7 +1230,7 @@ theorem driverRootD_decides_sentence_pre
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
       Lax3Proofs.RamDriverRoot.turnCostSize n (dedupNs x) cap mb q_top j φ (Ksc j) t
         (Kl (j + 1) t) ≤ Ks j t)
-    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
+    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n (dedupNs x) W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n (dedupNs x) ≤ Kc j m)
     (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)

@@ -1498,6 +1498,26 @@ theorem lit_ne_envName {q : String} {c : Char} (hq : ∃ t, q.toList = c :: t)
     (hc : c ≠ 'e') (i : ℕ) : q ≠ envName i :=
   ne_of_head_ne hq (head_envName i) hc
 
+/-! The two member names begin with `'m'` (rebase E-mem), which is all the
+base pass's own frame needs: the member header *reads* them and writes
+only the depth's tables and the names below its output, neither of which
+starts there. `RamDriverCompose` restates these four for the obligation's
+frame, where the same character arithmetic is asked of the whole pass. -/
+
+theorem head_memName (a : ℕ) : ∃ t, (memName a).toList = 'm' :: t :=
+  ⟨_, by rw [memName, String.toList_append]; rfl⟩
+
+theorem head_mnumName (a : ℕ) : ∃ t, (mnumName a).toList = 'm' :: t :=
+  ⟨_, by rw [mnumName, String.toList_append]; rfl⟩
+
+theorem not_ext_bb_memName (a : ℕ) : ¬ Ext "bb" (memName a) := fun h =>
+  not_ext_b_of_cons (y := memName a) (by rw [memName, String.toList_append]; rfl)
+    (by decide) ((ext_of_prefix (by decide : "b".toList <+: "bb".toList)).trans h)
+
+theorem not_ext_bb_mnumName (a : ℕ) : ¬ Ext "bb" (mnumName a) := fun h =>
+  not_ext_b_of_cons (y := mnumName a) (by rw [mnumName, String.toList_append]; rfl)
+    (by decide) ((ext_of_prefix (by decide : "b".toList <+: "bb".toList)).trans h)
+
 /-- The cells of one table of the bottom depth, up to a per-formula
 bound. -/
 def BaseTabOk (q_top cap mb ℓ n : ℕ) (φ : Lax3.FirstOrder.FO 0) (C : ℕ → ℕ → ℕ)
@@ -1507,6 +1527,56 @@ def BaseTabOk (q_top cap mb ℓ n : ℕ) (φ : Lax3.FirstOrder.FO 0) (C : ℕ �
     ∀ v : Fin n, (v : ℕ) < bd i → Tb (v : ℕ) ≤ 1 ∧
       (Tb (v : ℕ) ≠ 0 ↔ Sat (⊥ : SimpleGraph (Fin n)) (colRead n C (sigL cap mb ℓ)) (fun _ => v)
         (tablesAt q_top cap mb φ ℓ)[i])
+
+/-- **The cells of one table of the depth, at a prefix of a LIST of
+vertices together with a set the walk does not touch** (wave R1.8-T4b).
+`BaseTabOk` above is this at the identity list and the empty set
+(`baseTabOk_of_baseTabMem_id`), which is what a carrier walk visits; the
+base pass visits the depth's member list, and its invariant is this at
+that list.
+
+Two generalizations of `BaseTabOk`, and each buys one half of the wave.
+
+* The bound `bd` is a *list index* and not a vertex. That is what makes
+  the arithmetic of the block — "the tables below `p` are right one entry
+  further than the tables above it" — character for character the carrier
+  walk's, so one block walk serves both headers.
+* `Dm` is a set of cells that are *already* right and that the walk
+  neither has to visit nor may destroy. It rides for free: the only cell
+  a turn writes is its own member, and the bit it writes there is the
+  right one, so a `Dm` cell is either untouched or freshly correct and no
+  disjointness hypothesis is needed anywhere. This is what carries the
+  caller's pre-written domain (`RamDriver.BaseImplementsD`'s `D`, whose
+  rows are correct on the edgeless arena because `D` is dead —
+  `Refine.DeadRow.sat_bot_of_dead`) across the base pass. -/
+def BaseTabMem (q_top cap mb ℓ n : ℕ) (φ : Lax3.FirstOrder.FO 0) (C : ℕ → ℕ → ℕ)
+    (Mem : ℕ → ℕ) (Dm : Fin n → Prop) (bd : ℕ → ℕ) (σ : Env) : Prop :=
+  ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ ℓ).length), ∃ Tb : ℕ → ℕ,
+    σ.arrs (tabName ℓ i) = arrOf n Tb ∧
+    ∀ v : Fin n, ((∃ q, q < bd i ∧ Mem q = (v : ℕ)) ∨ Dm v) → Tb (v : ℕ) ≤ 1 ∧
+      (Tb (v : ℕ) ≠ 0 ↔ Sat (⊥ : SimpleGraph (Fin n)) (colRead n C (sigL cap mb ℓ)) (fun _ => v)
+        (tablesAt q_top cap mb φ ℓ)[i])
+
+/-- **A carrier prefix is the identity list's prefix.** The bridge that
+lets one block walk serve both headers. -/
+theorem baseTabMem_id_of_baseTabOk {q_top cap mb ℓ n : ℕ} {φ : Lax3.FirstOrder.FO 0}
+    {C : ℕ → ℕ → ℕ} {bd : ℕ → ℕ} {σ : Env}
+    (h : BaseTabOk q_top cap mb ℓ n φ C bd σ) :
+    BaseTabMem q_top cap mb ℓ n φ C id (fun _ => False) bd σ := by
+  intro i hi
+  obtain ⟨Tb, harr, hval⟩ := h i hi
+  refine ⟨Tb, harr, fun v hv => ?_⟩
+  rcases hv with ⟨q, hq, hqv⟩ | hd
+  · exact hval v (hqv ▸ hq)
+  · exact absurd hd not_false
+
+theorem baseTabOk_of_baseTabMem_id {q_top cap mb ℓ n : ℕ} {φ : Lax3.FirstOrder.FO 0}
+    {C : ℕ → ℕ → ℕ} {bd : ℕ → ℕ} {σ : Env}
+    (h : BaseTabMem q_top cap mb ℓ n φ C id (fun _ => False) bd σ) :
+    BaseTabOk q_top cap mb ℓ n φ C bd σ := by
+  intro i hi
+  obtain ⟨Tb, harr, hval⟩ := h i hi
+  exact ⟨Tb, harr, fun v hv => hval v (Or.inl ⟨(v : ℕ), hv, rfl⟩)⟩
 
 /-- Everything the base pass reads and never writes, together with what
 it has written so far. -/
@@ -1524,23 +1594,35 @@ theorem one_le_blockCost {L : ℕ} (l : List (DistFO L 1)) : 1 ≤ blockCost l :
   | nil => rw [blockCost]
   | cons β l ih => rw [blockCost]; omega
 
-/-- **One vertex of the base pass**: a straight line of fragments, one
-per tabled formula, each followed by the store of its bit. -/
-theorem base_block_spec {B n q_top cap mb ℓ : ℕ} {C : ℕ → ℕ → ℕ} {φ : Lax3.FirstOrder.FO 0}
+/-- **One vertex of the base pass, at a list entry** (wave R1.8-T4b): a
+straight line of fragments, one per tabled formula, each followed by the
+store of its bit — with the vertex `Mem k₀` the walk's *list* names and
+the invariant read at the list's own prefix (`BaseTabMem`).
+
+This is the landed carrier block (`base_block_spec` below, which is this
+at `Mem := id`) generalized in one direction only: the counter is an
+index into `Mem` rather than a vertex. Nothing in the program text moves
+— the store is still `.var "z"`, and `"z"` still holds the vertex — which
+is why the two headers of wave T4b share one block walk. -/
+theorem base_block_mem_spec {B n q_top cap mb ℓ : ℕ} {C : ℕ → ℕ → ℕ}
+    {φ : Lax3.FirstOrder.FO 0}
     (hB : 1 < B) (hn : n < B) (hbit : ∀ c < sigL cap mb ℓ, ∀ v < n, C c v ≤ 1)
-    (hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β) {z₀ : ℕ} (hz₀ : z₀ < n) :
+    (hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β) (Mem : ℕ → ℕ)
+    (Dm : Fin n → Prop) {k₀ : ℕ} (hz₀ : Mem k₀ < n) :
     ∀ (l : List (DistFO (sigL cap mb ℓ) 1)) (p : ℕ), l = (tablesAt q_top cap mb φ ℓ).drop p →
       Spec B
-        (fun σ => BaseBase B n q_top cap mb ℓ C φ σ ∧ σ.vars "z" = z₀ ∧
-          σ.vars (envName 0) = z₀ ∧
-          BaseTabOk q_top cap mb ℓ n φ C (fun i => if i < p then z₀ + 1 else z₀) σ)
+        (fun σ => BaseBase B n q_top cap mb ℓ C φ σ ∧ σ.vars "z" = Mem k₀ ∧
+          σ.vars (envName 0) = Mem k₀ ∧
+          BaseTabMem q_top cap mb ℓ n φ C Mem Dm (fun i => if i < p then k₀ + 1 else k₀) σ)
         (foldIdx (fun i β => .seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb")))
           p l)
-        (fun _ σ' => BaseBase B n q_top cap mb ℓ C φ σ' ∧ σ'.vars "z" = z₀ ∧
-          σ'.vars (envName 0) = z₀ ∧
-          BaseTabOk q_top cap mb ℓ n φ C (fun i => if i < p + l.length then z₀ + 1 else z₀) σ')
+        (fun _ σ' => BaseBase B n q_top cap mb ℓ C φ σ' ∧ σ'.vars "z" = Mem k₀ ∧
+          σ'.vars (envName 0) = Mem k₀ ∧
+          BaseTabMem q_top cap mb ℓ n φ C Mem Dm
+            (fun i => if i < p + l.length then k₀ + 1 else k₀) σ')
         (blockCost l) := by
   have hEbb : Ext "b" "bb" := ext_of_prefix (by decide)
+  set z₀ := Mem k₀ with hz₀def
   intro l
   induction l with
   | nil =>
@@ -1582,7 +1664,8 @@ theorem base_block_spec {B n q_top cap mb ℓ : ℕ} {C : ℕ → ℕ → ℕ} {
     have hcol₁ : BotEnv n (sigL cap mb ℓ) ℓ C σ₁ := fun c hc => by
       rw [hfa₁ (colName ℓ c) (not_ext_of_fresh hEbb (not_ext_b_colName ℓ c))]
       exact hcol c hc
-    have htab₁ : BaseTabOk q_top cap mb ℓ n φ C (fun i => if i < p then z₀ + 1 else z₀) σ₁ := by
+    have htab₁ : BaseTabMem q_top cap mb ℓ n φ C Mem Dm
+        (fun i => if i < p then k₀ + 1 else k₀) σ₁ := by
       intro i hi
       obtain ⟨Tb, hTb, hTbval⟩ := htab i hi
       refine ⟨Tb, ?_, hTbval⟩
@@ -1596,7 +1679,8 @@ theorem base_block_spec {B n q_top cap mb ℓ : ℕ} {C : ℕ → ℕ → ℕ} {
     set σ₂ := σ₁.setArr (tabName ℓ p) z₀ (σ₁.vars "bb") with hσ₂def
     have hlen₂ : ∀ a, (σ₂.arrs a).length = (σ₁.arrs a).length := fun a => by
       rw [hσ₂def]; exact length_arrs_setArr ..
-    have htab₂ : BaseTabOk q_top cap mb ℓ n φ C (fun i => if i < p + 1 then z₀ + 1 else z₀) σ₂ := by
+    have htab₂ : BaseTabMem q_top cap mb ℓ n φ C Mem Dm
+        (fun i => if i < p + 1 then k₀ + 1 else k₀) σ₂ := by
       intro i hi
       by_cases hip : i = p
       · subst hip
@@ -1605,30 +1689,45 @@ theorem base_block_spec {B n q_top cap mb ℓ : ℕ} {C : ℕ → ℕ → ℕ} {
         · intro v hv
           dsimp only
           by_cases hvz : (v : ℕ) = z₀
-          · refine ⟨by rw [if_pos hvz]; exact hb1, ?_⟩
+          · -- the cell just written, whichever domain claims it
+            refine ⟨by rw [if_pos hvz]; exact hb1, ?_⟩
             rw [if_pos hvz, hbiff1]
             have hveq : v = (⟨z₀, hz₀⟩ : Fin n) := Fin.ext hvz
             rw [hveq]
           · rw [if_neg hvz]
             refine hTpval v ?_
-            show (v : ℕ) < (if i < i then z₀ + 1 else z₀)
-            replace hv : (v : ℕ) < (if i < i + 1 then z₀ + 1 else z₀) := hv
-            rw [if_neg (lt_irrefl _)]
-            rw [if_pos (by omega : i < i + 1)] at hv
-            omega
+            -- the entry just written is `Mem k₀`, and `v` is not it, so `v` was
+            -- already listed strictly below `k₀` — or it is a `Dm` cell, which
+            -- the store did not reach
+            rcases hv with ⟨q, hq, hqv⟩ | hd
+            · replace hq : q < (if i < i + 1 then k₀ + 1 else k₀) := hq
+              rw [if_pos (by omega : i < i + 1)] at hq
+              refine Or.inl ⟨q, ?_, hqv⟩
+              show q < (if i < i then k₀ + 1 else k₀)
+              rw [if_neg (lt_irrefl _)]
+              rcases Nat.lt_or_ge q k₀ with h | h
+              · exact h
+              · exfalso
+                have hqk : q = k₀ := by omega
+                subst hqk
+                exact hvz (hz₀def.trans hqv).symm
+            · exact Or.inr hd
       · obtain ⟨Tb, hTb, hTbval⟩ := htab₁ i hi
         refine ⟨Tb, by rw [hσ₂def, arrs_setArr, if_neg (tabName_ne_of_ne ℓ hip)]; exact hTb, ?_⟩
         intro v hv
         refine hTbval v ?_
-        show (v : ℕ) < (if i < p then z₀ + 1 else z₀)
-        replace hv : (v : ℕ) < (if i < p + 1 then z₀ + 1 else z₀) := hv
-        by_cases hlt : i < p
-        · rw [if_pos hlt]
-          rw [if_pos (by omega : i < p + 1)] at hv
-          exact hv
-        · rw [if_neg hlt]
-          rw [if_neg (by omega : ¬ i < p + 1)] at hv
-          exact hv
+        rcases hv with ⟨q, hq, hqv⟩ | hd
+        · replace hq : q < (if i < p + 1 then k₀ + 1 else k₀) := hq
+          refine Or.inl ⟨q, ?_, hqv⟩
+          show q < (if i < p then k₀ + 1 else k₀)
+          by_cases hlt : i < p
+          · rw [if_pos hlt]
+            rw [if_pos (by omega : i < p + 1)] at hq
+            exact hq
+          · rw [if_neg hlt]
+            rw [if_neg (by omega : ¬ i < p + 1)] at hq
+            exact hq
+        · exact Or.inr hd
     -- the rest of the block
     obtain ⟨σ₃, hrun₃, hbase₃, hz₃, hev₃, htab₃⟩ :=
       (ih (p + 1) hltail).run (σ := σ₂)
@@ -1646,9 +1745,35 @@ theorem base_block_spec {B n q_top cap mb ℓ : ℕ} {C : ℕ → ℕ → ℕ} {
     · intro i hi
       obtain ⟨Tb, hTb, hTbval⟩ := htab₃ i hi
       refine ⟨Tb, hTb, fun v hv => hTbval v ?_⟩
-      show (v : ℕ) < (if i < p + 1 + l.length then z₀ + 1 else z₀)
-      replace hv : (v : ℕ) < (if i < p + (l.length + 1) then z₀ + 1 else z₀) := hv
-      rwa [show p + 1 + l.length = p + (l.length + 1) from by omega]
+      rcases hv with ⟨q, hq, hqv⟩ | hd
+      · replace hq : q < (if i < p + (l.length + 1) then k₀ + 1 else k₀) := hq
+        refine Or.inl ⟨q, ?_, hqv⟩
+        show q < (if i < p + 1 + l.length then k₀ + 1 else k₀)
+        rwa [show p + 1 + l.length = p + (l.length + 1) from by omega]
+      · exact Or.inr hd
+
+/-- **One vertex of the base pass**: a straight line of fragments, one per
+tabled formula, each followed by the store of its bit. The carrier
+header's block, which is the list block at the identity list. -/
+theorem base_block_spec {B n q_top cap mb ℓ : ℕ} {C : ℕ → ℕ → ℕ} {φ : Lax3.FirstOrder.FO 0}
+    (hB : 1 < B) (hn : n < B) (hbit : ∀ c < sigL cap mb ℓ, ∀ v < n, C c v ≤ 1)
+    (hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β) {z₀ : ℕ} (hz₀ : z₀ < n) :
+    ∀ (l : List (DistFO (sigL cap mb ℓ) 1)) (p : ℕ), l = (tablesAt q_top cap mb φ ℓ).drop p →
+      Spec B
+        (fun σ => BaseBase B n q_top cap mb ℓ C φ σ ∧ σ.vars "z" = z₀ ∧
+          σ.vars (envName 0) = z₀ ∧
+          BaseTabOk q_top cap mb ℓ n φ C (fun i => if i < p then z₀ + 1 else z₀) σ)
+        (foldIdx (fun i β => .seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb")))
+          p l)
+        (fun _ σ' => BaseBase B n q_top cap mb ℓ C φ σ' ∧ σ'.vars "z" = z₀ ∧
+          σ'.vars (envName 0) = z₀ ∧
+          BaseTabOk q_top cap mb ℓ n φ C (fun i => if i < p + l.length then z₀ + 1 else z₀) σ')
+        (blockCost l) := by
+  intro l p hl
+  refine ((base_block_mem_spec hB hn hbit hlocal id (fun _ => False) (k₀ := z₀) hz₀
+    l p hl).pre
+    (fun σ hσ => ⟨hσ.1, hσ.2.1, hσ.2.2.1, baseTabMem_id_of_baseTabOk hσ.2.2.2⟩)).post ?_
+  exact fun _ _ _ hq => ⟨hq.1, hq.2.1, hq.2.2.1, baseTabOk_of_baseTabMem_id hq.2.2.2⟩
 
 /-- The invariant of the base pass: the tables are right at every vertex
 the counter has passed. -/
@@ -1661,17 +1786,42 @@ def BaseInv (B n q_top cap mb ℓ : ℕ) (C : ℕ → ℕ → ℕ) (φ : Lax3.Fi
 noncomputable def turnCost (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) : ℕ :=
   blockCost (tablesAt q_top cap mb φ ℓ) + 6
 
-/-- The cost of the base pass: one carrier walk whose turn is the depth's
-own straight line of `botCom` fragments.
+/-- **The cost of the base pass**: one walk of the depth's **member
+list**, whose turn is the depth's own straight line of `botCom`
+fragments plus the load of the member.
+
+The size argument is the member count `mm` — the depth's *arena*, not the
+carrier (`RamDriver.MemEnum.card_le_arenaSize` is what turns the one into
+the other, and `base_spec` charges the walk at it). That is the whole
+content of wave R1.8-T4b on the cost side: `Refine.G2CostProbe.sweepCoeffA`
+pays this at every arena weight (`Refine.G2CostProbe.hKbase_paid`), and no
+constant at all paid the carrier reading
+(`Refine.G2CostProbe.hKbase_gap_any`).
+
+**Where the `7` comes from.** The turn is the sweep's turn — `turnCost`,
+i.e. `blockCost + 6` — plus `3` for `.assign "z" (.get (memName ℓ) …)`,
+the one instruction the member header adds; `Spec.forRangeZero` then adds
+its own `4` per turn and `6` for the initialisation. So the member walk
+pays three more per *member* than the carrier walk paid per *vertex*
+(`Refine.DeadSweep.sweepCost_le_baseCost`), and reads a set that is the
+arena instead of the carrier. `Refine.GapsDesign.baseCostM` proposed the
+same shape at `+4`, i.e. with the member load free; the load is not free,
+and the slot pays either way.
 
 **R1.8-T4a.** The summand `reprCost ℓ (sigL cap mb ℓ) n` is gone with the
 representative scan — a second carrier walk with a `2 ^ sigL cap mb ℓ`
-inner loop, paid for a case no tabled formula generates. What is left is
-literally the depth's sweep (`Refine.DeadSweep.sweepCost`, equal by
-`Refine.DeadSweep.baseCost_eq`); the shed is
-`Refine.BaseShed.baseCost_lt_old`. -/
-noncomputable def baseCost (q_top cap mb ℓ n : ℕ) (φ : Lax3.FirstOrder.FO 0) : ℕ :=
-  (turnCost q_top cap mb ℓ φ + 4) * n + 6
+inner loop, paid for a case no tabled formula generates. The ledger of
+that shed is `Refine.BaseShed`, stated at the pre-T4b constant it is
+about. -/
+noncomputable def baseCost (q_top cap mb ℓ mm : ℕ) (φ : Lax3.FirstOrder.FO 0) : ℕ :=
+  (turnCost q_top cap mb ℓ φ + 7) * mm + 6
+
+/-- The charge is monotone in the size it is read at, which is how a walk
+of `mm` members is paid out of a budget quoted at the arena. -/
+theorem baseCost_mono (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) {m m' : ℕ}
+    (h : m ≤ m') : baseCost q_top cap mb ℓ m φ ≤ baseCost q_top cap mb ℓ m' φ := by
+  simp only [baseCost]
+  exact Nat.add_le_add_right (Nat.mul_le_mul_left _ h) 6
 
 /-- **One vertex of the base pass.** -/
 theorem base_turn_spec {B n q_top cap mb ℓ : ℕ} {C : ℕ → ℕ → ℕ} {φ : Lax3.FirstOrder.FO 0}
@@ -1744,52 +1894,275 @@ theorem wvars_reprCom (jd L : ℕ) : (reprCom jd L).wvars =
     ["rp", "z", "seen", "rw", "rv", "seen", "rw", "rp", "z"] := by
   simp [reprCom, Com.wvars]
 
-/-- **The base pass, walked.** After it, every table of the bottom depth
-holds, at every vertex, the truth value of its formula on the edgeless
-arena.
+/-! #### What the base pass writes
 
-**R1.8-T4a.** Two hypotheses of the old statement were the
+The two frame lemmas of the block, stated before the member header because
+the member walk's loop reads two names the block runs through — the list
+and its count — and needs them preserved across it. -/
+
+theorem warrs_baseFold {L : ℕ} (ℓ : ℕ) : ∀ (l : List (DistFO L 1)) (p : ℕ),
+    (∀ β ∈ l, IsLocal β) → ∀ a ∈ (foldIdx (fun i β =>
+      Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) p l).warrs,
+      (∃ i, a = tabName ℓ i) ∨ Ext "bb" a := by
+  intro l
+  induction l with
+  | nil => intro p _ a ha; exact absurd ha List.not_mem_nil
+  | cons β l ih =>
+    intro p hloc a ha
+    have he : (foldIdx (fun i β =>
+        Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) p (β :: l))
+        = .seq (.seq (botCom ℓ β "bb") (.store (tabName ℓ p) (.var "z") (.var "bb")))
+            (foldIdx (fun i β =>
+              Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb")))
+              (p + 1) l) := rfl
+    rw [he, Com.warrs, Com.warrs] at ha
+    rcases List.mem_append.mp ha with h | h
+    · rcases List.mem_append.mp h with h' | h'
+      · exact Or.inr (warrs_botCom β (hloc β List.mem_cons_self) "bb" a h')
+      · rw [Com.warrs, List.mem_singleton] at h'
+        exact Or.inl ⟨p, h'⟩
+    · exact ih (p + 1) (fun γ hγ => hloc γ (List.mem_cons_of_mem _ hγ)) a h
+
+theorem wvars_baseFold {L : ℕ} (ℓ : ℕ) : ∀ (l : List (DistFO L 1)) (p : ℕ),
+    (∀ β ∈ l, IsLocal β) → ∀ y ∈ (foldIdx (fun i β =>
+      Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) p l).wvars,
+      Ext "bb" y ∨ ∃ i, 1 ≤ i ∧ y = envName i := by
+  intro l
+  induction l with
+  | nil => intro p _ y hy; exact absurd hy List.not_mem_nil
+  | cons β l ih =>
+    intro p hloc y hy
+    have he : (foldIdx (fun i β =>
+        Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) p (β :: l))
+        = .seq (.seq (botCom ℓ β "bb") (.store (tabName ℓ p) (.var "z") (.var "bb")))
+            (foldIdx (fun i β =>
+              Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb")))
+              (p + 1) l) := rfl
+    rw [he, Com.wvars, Com.wvars] at hy
+    rcases List.mem_append.mp hy with h | h
+    · rcases List.mem_append.mp h with h' | h'
+      · exact wvars_botCom β (hloc β List.mem_cons_self) "bb" y h'
+      · exact absurd h' (by rw [Com.wvars]; simp)
+    · exact ih (p + 1) (fun γ hγ => hloc γ (List.mem_cons_of_mem _ hγ)) y h
+
+/-! #### The member header (wave R1.8-T4b)
+
+The base pass's loop. Everything below the loop header is the carrier
+walk's: the turn calls `base_block_mem_spec` — the same block at the same
+`"z"` — and the invariant is the same tables read at a prefix of a list,
+that list now being the depth's member list rather than the identity. -/
+
+/-- **The invariant of the base pass**: the tables are right at every
+member the cursor has passed, and the member list and its count are where
+`RamDriver.LevelPre`'s sixteenth clause put them.
+
+The list rides as a parameter rather than existentially: the walk opens
+`LevelPre`'s `∃` once, at `base_spec`, and the loop is uniform in what it
+finds (`Refine.MemThreadProbe.memList_unique` is why any two openings
+agree). -/
+def BaseMemInv (B n q_top cap mb ℓ mm : ℕ) (C : ℕ → ℕ → ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (Mem : ℕ → ℕ) (Dm : Fin n → Prop) (σ : Env) : Prop :=
+  BaseBase B n q_top cap mb ℓ C φ σ ∧ σ.arrs (memName ℓ) = arrOf n Mem ∧
+    σ.vars (mnumName ℓ) = mm ∧ σ.vars "mk" ≤ mm ∧
+    BaseTabMem q_top cap mb ℓ n φ C Mem Dm (fun _ => σ.vars "mk") σ
+
+/-- **One member of the base pass**: load the member, put it in the
+evaluator's environment slot, run the block, bump the cursor. Three more
+than the carrier turn (`turnCost`), which is the member load. -/
+theorem base_mem_turn_spec {B n q_top cap mb ℓ mm : ℕ} {C : ℕ → ℕ → ℕ}
+    {φ : Lax3.FirstOrder.FO 0} {Mem : ℕ → ℕ} {Dm : Fin n → Prop}
+    (hB : 1 < B) (hn : n < B) (hbit : ∀ c < sigL cap mb ℓ, ∀ v < n, C c v ≤ 1)
+    (hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β)
+    (hmlt : ∀ k, k < mm → Mem k < n) (hmmn : mm ≤ n) (hmmB : mm < B) :
+    Spec B (fun σ => BaseMemInv B n q_top cap mb ℓ mm C φ Mem Dm σ ∧ σ.vars "mk" < mm)
+      (.seq (.assign "z" (.get (memName ℓ) (.var "mk")))
+        (.seq (.assign (envName 0) (.var "z"))
+          (.seq (foldIdx (fun i β =>
+              .seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) 0
+              (tablesAt q_top cap mb φ ℓ))
+            (.assign "mk" (.add (.var "mk") (.lit 1))))))
+      (fun σ σ' => BaseMemInv B n q_top cap mb ℓ mm C φ Mem Dm σ' ∧
+        σ'.vars "mk" = σ.vars "mk" + 1)
+      (turnCost q_top cap mb ℓ φ + 3) := by
+  refine Spec.of_exists fun σ hσ => ?_
+  obtain ⟨⟨⟨hvn, hcol, hmem⟩, hmarr, hmnum, hkle, htab⟩, hklt⟩ := hσ
+  set k₀ := σ.vars "mk" with hk₀def
+  have hz₀ : Mem k₀ < n := hmlt _ hklt
+  -- the three names of the loop, against the block's write set
+  have hmnne : mnumName ℓ ≠ "z" := ne_of_head_ne (head_mnumName ℓ) ⟨_, rfl⟩ (by decide)
+  have hmknne : mnumName ℓ ≠ "mk" := by simp [mnumName, String.ext_iff]
+  have hmknot : "mk" ∉ (foldIdx (fun i β =>
+      Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) 0
+      (tablesAt q_top cap mb φ ℓ)).wvars := by
+    intro h
+    rcases wvars_baseFold ℓ _ 0 hlocal "mk" h with h' | ⟨i, -, h'⟩
+    · exact not_ext_of_not_prefix (by decide) h'
+    · exact lit_ne_envName (q := "mk") ⟨_, rfl⟩ (by decide) i h'
+  have hmnnot : mnumName ℓ ∉ (foldIdx (fun i β =>
+      Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) 0
+      (tablesAt q_top cap mb φ ℓ)).wvars := by
+    intro h
+    rcases wvars_baseFold ℓ _ 0 hlocal (mnumName ℓ) h with h' | ⟨i, -, h'⟩
+    · exact not_ext_bb_mnumName ℓ h'
+    · exact lit_ne_envName (head_mnumName ℓ) (by decide) i h'
+  have hmemnot : memName ℓ ∉ (foldIdx (fun i β =>
+      Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) 0
+      (tablesAt q_top cap mb φ ℓ)).warrs := by
+    intro h
+    rcases warrs_baseFold ℓ _ 0 hlocal (memName ℓ) h with ⟨i, h'⟩ | h'
+    · exact ne_of_head_ne (head_memName ℓ) (head_tabName ℓ i) (by decide) h'
+    · exact not_ext_bb_memName ℓ h'
+  -- the member load
+  have hread : (Expr.get (memName ℓ) (.var "mk")).evalB B σ = some (Mem k₀) :=
+    evalB_get (evalB_var (show σ.vars "mk" < B by omega))
+      (by rw [hmarr]; exact getElem?_arrOf Mem (by omega)) (by omega)
+  have hld := Run.assign (B := B) (x := "z") (σ := σ) hread
+  set σ₀ := σ.setVar "z" (Mem k₀) with hσ₀def
+  have hk₀ : σ₀.vars "mk" = k₀ := by rw [hσ₀def, vars_setVar, if_neg (by decide)]
+  have hzz : σ₀.vars "z" = Mem k₀ := by rw [hσ₀def, vars_setVar, if_pos rfl]
+  -- the environment slot
+  have hev := Run.assign (B := B) (x := envName 0) (σ := σ₀)
+    (evalB_var (x := "z") (by rw [hzz]; omega))
+  rw [hzz] at hev
+  set σ₁ := σ₀.setVar (envName 0) (Mem k₀) with hσ₁def
+  have hz₁ : σ₁.vars "z" = Mem k₀ := by
+    rw [hσ₁def, vars_setVar, if_neg (lit_ne_envName ⟨_, rfl⟩ (by decide) 0), hzz]
+  have hev₁ : σ₁.vars (envName 0) = Mem k₀ := by
+    rw [hσ₁def, vars_setVar, if_pos rfl]
+  have hk₁ : σ₁.vars "mk" = k₀ := by
+    rw [hσ₁def, vars_setVar, if_neg (lit_ne_envName ⟨_, rfl⟩ (by decide) 0), hk₀]
+  have hvn₁ : σ₁.vars "n" = n := by
+    rw [hσ₁def, vars_setVar, if_neg (lit_ne_envName ⟨_, rfl⟩ (by decide) 0),
+      hσ₀def, vars_setVar, if_neg (by decide)]
+    exact hvn
+  have hmnum₁ : σ₁.vars (mnumName ℓ) = mm := by
+    rw [hσ₁def, vars_setVar, if_neg (lit_ne_envName (head_mnumName ℓ) (by decide) 0),
+      hσ₀def, vars_setVar, if_neg hmnne]
+    exact hmnum
+  have harr₁ : ∀ a, σ₁.arrs a = σ.arrs a := fun a => by
+    rw [hσ₁def, arrs_setVar, hσ₀def, arrs_setVar]
+  have hcol₁ : BotEnv n (sigL cap mb ℓ) ℓ C σ₁ := fun c hc => by
+    rw [harr₁]; exact hcol c hc
+  have hmem₁ : BaseMem B q_top cap mb ℓ φ σ₁ :=
+    fun i hi => botMem_of_length (fun a => by rw [harr₁]) _ "bb" (hmem i hi)
+  have htab₁ : BaseTabMem q_top cap mb ℓ n φ C Mem Dm
+      (fun i => if i < 0 then k₀ + 1 else k₀) σ₁ := by
+    intro i hi
+    obtain ⟨Tb, hTb, hTbval⟩ := htab i hi
+    refine ⟨Tb, by rw [harr₁]; exact hTb, fun v hv => hTbval v ?_⟩
+    rcases hv with ⟨q, hq, hqv⟩ | hd
+    · replace hq : q < (if i < 0 then k₀ + 1 else k₀) := hq
+      rw [if_neg (by omega)] at hq
+      exact Or.inl ⟨q, hq, hqv⟩
+    · exact Or.inr hd
+  -- the block
+  obtain ⟨σ₂, hrun₂, ⟨hvn₂, hcol₂, hmem₂⟩, hz₂, -, htab₂⟩ :=
+    (base_block_mem_spec hB hn hbit hlocal Mem Dm hz₀ (tablesAt q_top cap mb φ ℓ) 0
+      (by rw [List.drop_zero])).run (σ := σ₁)
+      ⟨⟨hvn₁, hcol₁, hmem₁⟩, hz₁, hev₁, htab₁⟩
+  -- what the block leaves of the loop's own three names
+  have hfrk : σ₂.vars "mk" = k₀ := by
+    rw [hrun₂.frame_var "mk" hmknot, hk₁]
+  have hfrn : σ₂.vars (mnumName ℓ) = mm := by
+    rw [hrun₂.frame_var _ hmnnot, hmnum₁]
+  have hfrm : σ₂.arrs (memName ℓ) = arrOf n Mem := by
+    rw [hrun₂.frame_arr _ hmemnot, harr₁]; exact hmarr
+  -- the cursor
+  have hstep : (Expr.add (.var "mk") (.lit 1)).evalB B σ₂ = some (k₀ + 1) := by
+    have h := evalB_bin (B := B) (op := .add) (σ := σ₂)
+      (evalB_var (x := "mk") (by rw [hfrk]; omega)) (evalB_lit (show 1 < B by omega))
+      (by simp only [Bop.apply_add, hfrk]; omega)
+    simpa [hfrk] using h
+  have hcnt := Run.assign (B := B) (x := "mk") (σ := σ₂) hstep
+  refine ⟨σ₂.setVar "mk" (k₀ + 1), _, hld.seq (hev.seq (hrun₂.seq hcnt)), ?_,
+    ⟨⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩, ?_⟩
+  · rw [turnCost]
+    simp only [size_var, size_lit, size_bin, size_get]
+    omega
+  · rw [vars_setVar, if_neg (by decide)]; exact hvn₂
+  · intro c hc; rw [arrs_setVar]; exact hcol₂ c hc
+  · exact fun i hi => botMem_of_length (fun a => by rw [arrs_setVar]) _ "bb" (hmem₂ i hi)
+  · rw [arrs_setVar]; exact hfrm
+  · rw [vars_setVar, if_neg hmknne]; exact hfrn
+  · rw [vars_setVar, if_pos rfl]; omega
+  · intro i hi
+    obtain ⟨Tb, hTb, hTbval⟩ := htab₂ i hi
+    refine ⟨Tb, by rw [arrs_setVar]; exact hTb, fun v hv => hTbval v ?_⟩
+    rcases hv with ⟨q, hq, hqv⟩ | hd
+    · rw [vars_setVar, if_pos rfl] at hq
+      refine Or.inl ⟨q, ?_, hqv⟩
+      show q < (if i < 0 + (tablesAt q_top cap mb φ ℓ).length then k₀ + 1 else k₀)
+      rw [if_pos (by omega : i < 0 + (tablesAt q_top cap mb φ ℓ).length)]
+      omega
+    · exact Or.inr hd
+  · rw [vars_setVar, if_pos rfl]
+
+/-- **The base pass, walked.** After it, every table of the bottom depth
+holds, at every **alive** vertex, the truth value of its formula on the
+edgeless arena — and the walk is charged at the number of them.
+
+**Wave R1.8-T4b.** Three changes. The walk is the depth's member list, so
+the charge is `baseCost … mm φ` at the *arena's* size and no longer at the
+carrier; the answer is quantified over the alive vertices, since the pass
+writes no other row; and the precondition gains the member list itself
+(`RamDriver.MemEnum`, which the caller has out of
+`RamDriver.LevelPre`'s sixteenth clause) with its own bound `mm < B`.
+
+**R1.8-T4a.** Two hypotheses of the pre-T4a statement were the
 representative scan's alone and are gone with it: `2 ^ sigL cap mb ℓ < B`
 (the scan's counter had to fit a word) and *the `"rep"` table is sized*
-(the scan's store had to have a cell). The base pass now asks for
-exactly what the depth's sweep asks for, and answers exactly what it
-answers. -/
-theorem base_spec {B n q_top cap mb ℓ : ℕ} {C : ℕ → ℕ → ℕ} {φ : Lax3.FirstOrder.FO 0}
+(the scan's store had to have a cell). -/
+theorem base_spec {B n q_top cap mb ℓ mm : ℕ} {C : ℕ → ℕ → ℕ} {M Mem : ℕ → ℕ}
+    {φ : Lax3.FirstOrder.FO 0} {Dm : Fin n → Prop}
     (hB : 1 < B) (hn : n < B)
     (hbit : ∀ c < sigL cap mb ℓ, ∀ v < n, C c v ≤ 1)
-    (hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β) :
+    (hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β)
+    (hmemE : MemEnum n mm Mem M) :
     Spec B
       (fun σ => σ.vars "n" = n ∧ BotEnv n (sigL cap mb ℓ) ℓ C σ ∧
         BaseMem B q_top cap mb ℓ φ σ ∧
-        ∀ (i : ℕ), i < (tablesAt q_top cap mb φ ℓ).length →
-          ∃ Tb : ℕ → ℕ, σ.arrs (tabName ℓ i) = arrOf n Tb)
+        σ.arrs (memName ℓ) = arrOf n Mem ∧ σ.vars (mnumName ℓ) = mm ∧
+        BaseTabMem q_top cap mb ℓ n φ C Mem Dm (fun _ => 0) σ)
       (baseCom q_top cap mb ℓ φ)
-      (fun _ σ' => BaseTabOk q_top cap mb ℓ n φ C (fun _ => n) σ')
-      (baseCost q_top cap mb ℓ n φ) := by
+      (fun _ σ' => ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ ℓ).length), ∃ Tb : ℕ → ℕ,
+        σ'.arrs (tabName ℓ i) = arrOf n Tb ∧
+        ∀ v : Fin n, (M (v : ℕ) ≠ 0 ∨ Dm v) → Tb (v : ℕ) ≤ 1 ∧
+          (Tb (v : ℕ) ≠ 0 ↔ Sat (⊥ : SimpleGraph (Fin n)) (colRead n C (sigL cap mb ℓ))
+            (fun _ => v) (tablesAt q_top cap mb φ ℓ)[i]))
+      (baseCost q_top cap mb ℓ mm φ) := by
   refine Spec.of_exists fun σ hσ => ?_
-  obtain ⟨hvn, hcol, hmem, htabs⟩ := hσ
-  have hstart : BaseTabOk q_top cap mb ℓ n φ C (fun _ => (σ.setVar "z" 0).vars "z")
-      (σ.setVar "z" 0) := by
+  obtain ⟨hvn, hcol, hmem, hmarr, hmnum, htabs⟩ := hσ
+  have hmmB : mm < B := lt_of_le_of_lt hmemE.card_le hn
+  have hstart : BaseMemInv B n q_top cap mb ℓ mm C φ Mem Dm (σ.setVar "mk" 0) := by
+    refine ⟨⟨by rw [vars_setVar, if_neg (by decide)]; exact hvn,
+      fun c hc => by rw [arrs_setVar]; exact hcol c hc,
+      fun i hi => botMem_of_length (fun a => by rw [arrs_setVar]) _ "bb" (hmem i hi)⟩,
+      by rw [arrs_setVar]; exact hmarr,
+      by rw [vars_setVar, if_neg (by simp [mnumName, String.ext_iff])]; exact hmnum,
+      by rw [vars_setVar, if_pos rfl]; omega, ?_⟩
     intro i hi
-    obtain ⟨Tb, hTb⟩ := htabs i hi
-    refine ⟨Tb, by rw [arrs_setVar]; exact hTb, fun v hv => ?_⟩
-    exfalso
-    replace hv : (v : ℕ) < (σ.setVar "z" 0).vars "z" := hv
-    rw [vars_setVar, if_pos rfl] at hv
-    omega
-  -- the walk of the carrier
-  obtain ⟨σ₂, hrun₂, ⟨-, -, htab₂⟩, hz₂⟩ :=
-    (Spec.forRangeZero (B := B) "z" "n" (BaseInv B n q_top cap mb ℓ C φ) n
-      (turnCost q_top cap mb ℓ φ) hn (fun τ hτ => hτ.2.1) (fun τ hτ => hτ.1.1)
-      (base_turn_spec hB hn hbit hlocal)).run (σ := σ)
-      ⟨⟨by rw [vars_setVar, if_neg (by decide)]; exact hvn,
-        fun c hc => by rw [arrs_setVar]; exact hcol c hc,
-        fun i hi => botMem_of_length (fun a => by rw [arrs_setVar]) _ "bb" (hmem i hi)⟩,
-        by rw [vars_setVar, if_pos rfl]; omega, hstart⟩
+    obtain ⟨Tb, hTb, hTbval⟩ := htabs i hi
+    refine ⟨Tb, by rw [arrs_setVar]; exact hTb, fun v hv => hTbval v ?_⟩
+    rcases hv with ⟨q, hq, hqv⟩ | hd
+    · replace hq : q < (σ.setVar "mk" 0).vars "mk" := hq
+      rw [vars_setVar, if_pos rfl] at hq
+      exact absurd hq (by omega)
+    · exact Or.inr hd
+  -- the walk of the member list
+  obtain ⟨σ₂, hrun₂, ⟨-, -, -, -, htab₂⟩, hk₂⟩ :=
+    (Spec.forRangeZero (B := B) "mk" (mnumName ℓ)
+      (BaseMemInv B n q_top cap mb ℓ mm C φ Mem Dm) mm
+      (turnCost q_top cap mb ℓ φ + 3) hmmB (fun τ hτ => hτ.2.2.2.1)
+      (fun τ hτ => hτ.2.2.1)
+      (base_mem_turn_spec hB hn hbit hlocal hmemE.1 hmemE.card_le hmmB)).run (σ := σ) hstart
   refine ⟨σ₂, _, hrun₂, by rw [baseCost], ?_⟩
   intro i hi
   obtain ⟨Tb, hTb, hTbval⟩ := htab₂ i hi
-  exact ⟨Tb, hTb, fun v hv => hTbval v (by rw [hz₂]; exact v.isLt)⟩
+  refine ⟨Tb, hTb, fun v hv => hTbval v ?_⟩
+  rcases hv with hal | hd
+  · obtain ⟨q, hq, hqv⟩ := hmemE.2.2.2 (v : ℕ) v.isLt hal
+    exact Or.inl ⟨q, by rw [hk₂]; exact hq, hqv⟩
+  · exact Or.inr hd
 
 /-! ### The obligation
 
@@ -1892,69 +2265,25 @@ theorem noWrite_reprCom (jd L : ℕ) : (reprCom jd L).NoWrite := by
 
 theorem noWrite_baseCom (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) :
     (baseCom q_top cap mb ℓ φ).NoWrite :=
-  ⟨trivial, trivial, noWrite_baseFold ℓ _ 0, trivial⟩
-
-/-! #### What the base pass writes -/
-
-theorem warrs_baseFold {L : ℕ} (ℓ : ℕ) : ∀ (l : List (DistFO L 1)) (p : ℕ),
-    (∀ β ∈ l, IsLocal β) → ∀ a ∈ (foldIdx (fun i β =>
-      Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) p l).warrs,
-      (∃ i, a = tabName ℓ i) ∨ Ext "bb" a := by
-  intro l
-  induction l with
-  | nil => intro p _ a ha; exact absurd ha List.not_mem_nil
-  | cons β l ih =>
-    intro p hloc a ha
-    have he : (foldIdx (fun i β =>
-        Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) p (β :: l))
-        = .seq (.seq (botCom ℓ β "bb") (.store (tabName ℓ p) (.var "z") (.var "bb")))
-            (foldIdx (fun i β =>
-              Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb")))
-              (p + 1) l) := rfl
-    rw [he, Com.warrs, Com.warrs] at ha
-    rcases List.mem_append.mp ha with h | h
-    · rcases List.mem_append.mp h with h' | h'
-      · exact Or.inr (warrs_botCom β (hloc β List.mem_cons_self) "bb" a h')
-      · rw [Com.warrs, List.mem_singleton] at h'
-        exact Or.inl ⟨p, h'⟩
-    · exact ih (p + 1) (fun γ hγ => hloc γ (List.mem_cons_of_mem _ hγ)) a h
-
-theorem wvars_baseFold {L : ℕ} (ℓ : ℕ) : ∀ (l : List (DistFO L 1)) (p : ℕ),
-    (∀ β ∈ l, IsLocal β) → ∀ y ∈ (foldIdx (fun i β =>
-      Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) p l).wvars,
-      Ext "bb" y ∨ ∃ i, 1 ≤ i ∧ y = envName i := by
-  intro l
-  induction l with
-  | nil => intro p _ y hy; exact absurd hy List.not_mem_nil
-  | cons β l ih =>
-    intro p hloc y hy
-    have he : (foldIdx (fun i β =>
-        Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) p (β :: l))
-        = .seq (.seq (botCom ℓ β "bb") (.store (tabName ℓ p) (.var "z") (.var "bb")))
-            (foldIdx (fun i β =>
-              Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb")))
-              (p + 1) l) := rfl
-    rw [he, Com.wvars, Com.wvars] at hy
-    rcases List.mem_append.mp hy with h | h
-    · rcases List.mem_append.mp h with h' | h'
-      · exact wvars_botCom β (hloc β List.mem_cons_self) "bb" y h'
-      · exact absurd h' (by rw [Com.wvars]; simp)
-    · exact ih (p + 1) (fun γ hγ => hloc γ (List.mem_cons_of_mem _ hγ)) y h
+  ⟨trivial, trivial, trivial, noWrite_baseFold ℓ _ 0, trivial⟩
 
 /-- **What the base pass stores into.** The `"rep"` alternative is
 vacuous since R1.8-T4a — `rep_notMem_warrs_baseCom` below is the sharp
 statement — and is kept only because the obligation's frame consumes
-this shape at nine call sites (`RamDriverCompose.notMem_warrs_baseCom`);
-the member-header wave restates both. -/
+this shape at nine call sites (`RamDriverCompose.notMem_warrs_baseCom`).
+
+Wave R1.8-T4b changed the pass's *reads* — the member list and its count
+— and no array it writes: what the member header stores into is what the
+carrier header stored into. -/
 theorem warrs_baseCom {q_top cap mb ℓ : ℕ} {φ : Lax3.FirstOrder.FO 0}
     (hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β) :
     ∀ a ∈ (baseCom q_top cap mb ℓ φ).warrs,
       a = "rep" ∨ (∃ i, a = tabName ℓ i) ∨ Ext "bb" a := by
   intro a ha
   rw [show (baseCom q_top cap mb ℓ φ).warrs =
-    [] ++ ([] ++ ((foldIdx (fun i β =>
+    [] ++ ([] ++ ([] ++ ((foldIdx (fun i β =>
       Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) 0
-      (tablesAt q_top cap mb φ ℓ)).warrs ++ [])) from rfl] at ha
+      (tablesAt q_top cap mb φ ℓ)).warrs ++ []))) from rfl] at ha
   simp only [List.append_nil, List.nil_append] at ha
   exact Or.inr (warrs_baseFold ℓ _ 0 hlocal a ha)
 
@@ -1968,25 +2297,33 @@ theorem rep_notMem_warrs_baseCom {q_top cap mb ℓ : ℕ} {φ : Lax3.FirstOrder.
     "rep" ∉ (baseCom q_top cap mb ℓ φ).warrs := by
   intro ha
   rw [show (baseCom q_top cap mb ℓ φ).warrs =
-    [] ++ ([] ++ ((foldIdx (fun i β =>
+    [] ++ ([] ++ ([] ++ ((foldIdx (fun i β =>
       Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) 0
-      (tablesAt q_top cap mb φ ℓ)).warrs ++ [])) from rfl] at ha
+      (tablesAt q_top cap mb φ ℓ)).warrs ++ []))) from rfl] at ha
   simp only [List.append_nil, List.nil_append] at ha
   rcases warrs_baseFold ℓ _ 0 hlocal "rep" ha with ⟨i, hi⟩ | hi
   · exact RamDriverBase.lit_ne_tabName (q := "rep") (by decide) ℓ i hi
   · exact not_ext_of_not_prefix (by decide) hi
 
+/-- **What the base pass assigns.** Two scalars of its own — the list
+cursor `"mk"` and the vertex `"z"` it loads out of the list — the
+evaluator's environment slots, and the evaluator's own scratch.
+
+Wave R1.8-T4b: `"mk"` replaces the representative scan's four dead names
+(`"rp"`, `"seen"`, `"rw"`, `"rv"`), which left the write set with the
+scan itself at R1.8-T4a and were carried here vacuously until now. -/
 theorem wvars_baseCom {q_top cap mb ℓ : ℕ} {φ : Lax3.FirstOrder.FO 0}
     (hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β) :
     ∀ y ∈ (baseCom q_top cap mb ℓ φ).wvars,
-      y ∈ ["rp", "z", "seen", "rw", "rv"] ∨ (∃ i, y = envName i) ∨ Ext "bb" y := by
+      y ∈ ["z", "mk"] ∨ (∃ i, y = envName i) ∨ Ext "bb" y := by
   intro y hy
   rw [show (baseCom q_top cap mb ℓ φ).wvars =
-    ["z"] ++ ([envName 0] ++ ((foldIdx (fun i β =>
+    ["mk"] ++ (["z"] ++ ([envName 0] ++ ((foldIdx (fun i β =>
       Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) 0
-      (tablesAt q_top cap mb φ ℓ)).wvars ++ ["z"])) from rfl] at hy
+      (tablesAt q_top cap mb φ ℓ)).wvars ++ ["mk"]))) from rfl] at hy
   simp only [List.mem_append, List.mem_singleton] at hy
-  rcases hy with h | h | h | h
+  rcases hy with h | h | h | h | h
+  · exact Or.inl (by simp [h])
   · exact Or.inl (by simp [h])
   · exact Or.inr (Or.inl ⟨0, h⟩)
   · rcases wvars_baseFold ℓ _ 0 hlocal y h with h' | ⟨i, -, h'⟩
@@ -2001,17 +2338,9 @@ theorem rp_notMem_wvars_baseCom {q_top cap mb ℓ : ℕ} {φ : Lax3.FirstOrder.F
     (hlocal : ∀ β ∈ tablesAt q_top cap mb φ ℓ, IsLocal β) :
     "rp" ∉ (baseCom q_top cap mb ℓ φ).wvars := by
   intro hy
-  rw [show (baseCom q_top cap mb ℓ φ).wvars =
-    ["z"] ++ ([envName 0] ++ ((foldIdx (fun i β =>
-      Com.seq (botCom ℓ β "bb") (.store (tabName ℓ i) (.var "z") (.var "bb"))) 0
-      (tablesAt q_top cap mb φ ℓ)).wvars ++ ["z"])) from rfl] at hy
-  simp only [List.mem_append, List.mem_singleton] at hy
-  rcases hy with h | h | h | h
+  rcases wvars_baseCom hlocal "rp" hy with h | ⟨i, h⟩ | h
   · exact absurd h (by decide)
-  · exact lit_ne_envName (q := "rp") ⟨_, rfl⟩ (by decide) 0 h
-  · rcases wvars_baseFold ℓ _ 0 hlocal "rp" h with h' | ⟨i, -, h'⟩
-    · exact not_ext_of_not_prefix (by decide) h'
-    · exact lit_ne_envName (q := "rp") ⟨_, rfl⟩ (by decide) i h'
-  · exact absurd h (by decide)
+  · exact lit_ne_envName (q := "rp") ⟨_, rfl⟩ (by decide) i h
+  · exact not_ext_of_not_prefix (by decide) h
 
 end Lax3Proofs.RamDriverBot

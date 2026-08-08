@@ -135,15 +135,24 @@ as a *special case* and not as the statement. This is
 `C0CloseProbe.deadAtomK_root_eq` / `B4Design.deadAtomK_closed`'s
 discipline applied to the phase costs. -/
 
-/-- **The landed base charge, closed.** ONE size occurs — the carrier
-`n` — at a coefficient determined by the formula alone
-(`RamDriverBot.blockCost` of the depth's table list, a quantity of `φ`
-fixed before `n`). There is no member count, no slot count and no
-width: nothing else to re-attribute, which is why no accounting wave
-can move this slot. -/
-theorem baseCost_closed (q_top cap mb ℓ n : ℕ) (φ : Lax3.FirstOrder.FO 0) :
-    Lax3Proofs.RamDriverBot.baseCost q_top cap mb ℓ n φ
-      = (Lax3Proofs.RamDriverBot.blockCost (tablesAt q_top cap mb φ ℓ) + 10) * n + 6 := by
+/-- **The base charge, closed.** ONE size occurs, at a coefficient
+determined by the formula alone (`RamDriverBot.blockCost` of the depth's
+table list, a quantity of `φ` fixed before any size). There is no slot
+count and no width: nothing to re-attribute, which is why no accounting
+wave could move this slot.
+
+**Wave R1.8-T4b executed this row, and what moved is the size.** When
+this file was written the single size was the *carrier* and the
+coefficient was `blockCost + 10`; the closing wave gave
+`RamDriver.baseCom` a member header, so the size is now the depth's
+member count and the coefficient is `blockCost + 13` — three more per
+entry, the load of the member out of the list, which the proposal of
+§1.2 below assumed away (`baseCostM_le_baseCost`). The pre-T4b constant
+is `Refine.BaseShed.shedBaseCost`, and that the trade was worth making is
+`Refine.G2CostProbe.hKbase_paid` against `hKbase_gap_any`. -/
+theorem baseCost_closed (q_top cap mb ℓ mm : ℕ) (φ : Lax3.FirstOrder.FO 0) :
+    Lax3Proofs.RamDriverBot.baseCost q_top cap mb ℓ mm φ
+      = (Lax3Proofs.RamDriverBot.blockCost (tablesAt q_top cap mb φ ℓ) + 13) * mm + 6 := by
   simp only [Lax3Proofs.RamDriverBot.baseCost, Lax3Proofs.RamDriverBot.turnCost]
 
 /-- **The landed cover charge, closed.** Four sizes with four distinct
@@ -313,19 +322,32 @@ must have, and the landed charge does not. -/
 theorem baseCostM_empty (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) :
     baseCostM q_top cap mb ℓ 0 φ = 6 := by simp only [baseCostM]; omega
 
-/-- **The landed charge at the same reading is `Ω(n)`** — the contrast,
-in one line: the two costs agree at `mm = n` and diverge everywhere
-else, which is exactly what "the header moved" means. -/
-theorem baseCost_eq_baseCostM_at_carrier (q_top cap mb ℓ n : ℕ) (φ : Lax3.FirstOrder.FO 0) :
-    Lax3Proofs.RamDriverBot.baseCost q_top cap mb ℓ n φ = baseCostM q_top cap mb ℓ n φ := rfl
+/-- **What the proposal got wrong, exactly** (wave R1.8-T4b). This used
+to say that the two charges *agree* at `mm = n` and diverge everywhere
+else, which was the design's way of saying that only the header moves.
+The header did move — but not for free: the landed walk loads its vertex
+out of the list, three per entry, and the proposal above priced that at
+zero. So the proposal is a strict under-estimate at every nonempty arena,
+and the wave's cost content is entirely in the SIZE and not at all in the
+constant.
+
+The slot pays either way (`Refine.G2CostProbe.hKbase_paid` at
+`sweepCoeffA`, which is §1.3's `CbM`), so this is a correction to the
+design's arithmetic and not to its verdict. -/
+theorem baseCostM_le_baseCost (q_top cap mb ℓ mm : ℕ) (φ : Lax3.FirstOrder.FO 0) :
+    baseCostM q_top cap mb ℓ mm φ + 3 * mm
+      = Lax3Proofs.RamDriverBot.baseCost q_top cap mb ℓ mm φ := by
+  simp only [baseCostM, Lax3Proofs.RamDriverBot.baseCost]
+  ring
 
 /-! #### §1.3 The coefficient -/
 
 /-- **PROPOSED** base coefficient for the `hKbase` slot. It is
 `G2CostProbe.sweepCoeffA` on the nose (`CbM_eq_sweepCoeffA`), which is
 right and not a coincidence: since R1.8-T4a `RamDriver.baseCom` *is*
-`RamDriver.sweepCom` (`DeadSweep.baseCost_eq`), so the base pass and the
-retired dead sweep have one coefficient between them. -/
+`RamDriver.sweepCom`, so the base pass and the retired dead sweep have one
+coefficient between them. (Wave R1.8-T4b split the two programs; the
+coefficient survived the split — `Refine.G2CostProbe.hKbase_paid`.) -/
 noncomputable def CbM (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) : ℕ :=
   Lax3Proofs.RamDriverBot.turnCost q_top cap mb ℓ φ + 10
 
@@ -405,7 +427,7 @@ So the semantic delta of wave T4b is: **one hypothesis retyped in
   across the pass (the walk does not touch it, §1.1's
   `member_notMem_deadDomain`);
 * the hypothesis `2 ^ sigL cap mb ℓ < B` is dropped — R1.8-T4a's shed
-  made it unused in `RamDriverCompose.baseImplements` already, and a
+  made it unused in the base case's discharge already, and a
   weaker precondition is the honest statement.
 
 The `masked G M = ⊥` hypothesis stays: it is what the bottom of the
@@ -543,25 +565,83 @@ private def nbM (K mm : ℕ) : ℕ := (K + 4) * mm + 6
 #guard nbM 10 1000000 = 14000006
 #guard 34 * 100000 < 14000006
 
+/-- **The charge wave R1.8-T4b actually landed** at per-turn charge `K`
+over `mm` members: the proposal above plus the member load, three per
+entry (`baseCostM_le_baseCost`). -/
+private def nbL (K mm : ℕ) : ℕ := (K + 7) * mm + 6
+
+-- the landed charge, both directions
+#guard nbL 10 100 = 1706
+#guard ¬ (nbL 10 100 = 1705)
+#guard ¬ (nbL 10 100 = 1707)
+
+-- the proposal under-counts by exactly the member load, at every arena
+#guard nbL 10 100 - nbM 10 100 = 3 * 100
+#guard nbL 10 1000000 - nbM 10 1000000 = 3 * 1000000
+
+-- the empty-arena reading is still the constant, so the fit is unaffected
+#guard nbL 10 0 = 6
+#guard nbL 10000 0 = 6
+
+-- the proposed coefficient still pays the landed charge …
+#guard nbL 10 100 ≤ (10 + 10) * (100 + 1)
+#guard nbL 10 1000000 ≤ (10 + 10) * (1000000 + 1)
+-- … and it is not slack: the load ate three of the ten, and `16` fails
+#guard ¬ (nbL 10 100 ≤ 16 * (100 + 1))
+#guard ¬ (nbL 10 1000000 ≤ 16 * (1000000 + 1))
+-- the proposal, by contrast, would have been paid by `16`
+#guard nbM 10 1000000 ≤ 16 * (1000000 + 1)
+
 end BaseFalsification
 
 /-! #### §1.8 The one trap in the program-text half -/
 
-/-- **`baseCom` and the retired `sweepCom` are the same term**, by `rfl`
-— which is R1.8-T4a's shed, and which is also a trap for wave T4b: a
-member header written into `RamDriver.sweepCom` moves the *retired* dead
-sweep with it and breaks `Refine.DeadSweep.sweepImplements`, kept in the
-tree as the record of what the flip removed.
+/-- **The two headers, side by side** — wave R1.8-T4b, the trap sprung
+and survived.
 
-So the program-text half must give `RamDriver.baseCom` its **own** body —
-one new `Com` in `RamDriver.lean`, beside the untouched `sweepCom` — and
-the visible signal that the edit landed on the right declaration is that
-`Refine.DeadSweep.baseCost_eq` stops being provable by `rfl`. That is a
-one-line consequence for the closing wave, and it is exactly the kind of
-coupling the scatter road discovered one wave too late four times. -/
-theorem baseCom_is_sweepCom (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) :
+Until T4b this said `baseCom = sweepCom`, by `rfl`: R1.8-T4a's shed had
+left the base case *as* the depth's sweep, one `Com` under two names.
+That was the trap this subsection existed to flag — a member header
+written into `RamDriver.sweepCom` would have moved the *retired* dead
+sweep with it and broken `Refine.DeadSweep.sweepImplements`, kept in the
+tree as the record of what the flip removed. The closing wave gave
+`RamDriver.baseCom` its own body and left `sweepCom` alone, which is why
+the two `rfl`s below are now different programs.
+
+**The signal was not the one this file predicted.** §1.8 said the visible
+consequence would be `Refine.DeadSweep.baseCost_eq` losing its `rfl`.
+What actually lost its `rfl` first is *this* theorem: the costs are
+functions of a size argument, and they parted company only because the
+member turn costs three more, not because the header moved. Had the
+member load been free — as §1.2 assumed — `baseCost_eq` would have gone
+on holding by `rfl` while the two programs were already different, and
+the trap would have been invisible on the cost side. It is now
+`Refine.DeadSweep.sweepCost_le_baseCost`. -/
+theorem baseCom_header_is_the_member_list (q_top cap mb ℓ : ℕ)
+    (φ : Lax3.FirstOrder.FO 0) :
     Lax3Proofs.RamDriver.baseCom q_top cap mb ℓ φ
-      = Lax3Proofs.RamDriver.sweepCom q_top cap mb ℓ φ := rfl
+      = .seq (.assign "mk" (.lit 0))
+          (.while (.lt (.var "mk") (.var (Lax3Proofs.RamDriver.mnumName ℓ)))
+            (.seq (.assign "z"
+                (.get (Lax3Proofs.RamDriver.memName ℓ) (.var "mk")))
+              (.seq (.assign (Lax3Proofs.RamDriver.envName 0) (.var "z"))
+                (.seq (Lax3Proofs.RamDriver.foldIdx (fun i β =>
+                    .seq (Lax3Proofs.RamDriver.botCom ℓ β "bb")
+                      (.store (Lax3Proofs.RamDriver.tabName ℓ i) (.var "z") (.var "bb"))) 0
+                    (tablesAt q_top cap mb φ ℓ))
+                  (.assign "mk" (.add (.var "mk") (.lit 1))))))) := rfl
+
+theorem sweepCom_header_is_the_carrier (q_top cap mb ℓ : ℕ)
+    (φ : Lax3.FirstOrder.FO 0) :
+    Lax3Proofs.RamDriver.sweepCom q_top cap mb ℓ φ
+      = .seq (.assign "z" (.lit 0))
+          (.while (.lt (.var "z") (.var "n"))
+            (.seq (.assign (Lax3Proofs.RamDriver.envName 0) (.var "z"))
+              (.seq (Lax3Proofs.RamDriver.foldIdx (fun i β =>
+                  .seq (Lax3Proofs.RamDriver.botCom ℓ β "bb")
+                    (.store (Lax3Proofs.RamDriver.tabName ℓ i) (.var "z") (.var "bb"))) 0
+                  (tablesAt q_top cap mb φ ℓ))
+                (.assign "z" (.add (.var "z") (.lit 1)))))) := rfl
 
 /-! ### §2 `hKc` — the cover phase
 
@@ -997,7 +1077,7 @@ end ThreeSlots
 #print axioms all_three_read_the_carrier
 #print axioms baseCostM_eq_phaseM
 #print axioms baseCostM_empty
-#print axioms baseCost_eq_baseCostM_at_carrier
+#print axioms baseCostM_le_baseCost
 #print axioms CbM_eq_sweepCoeffA
 #print axioms CbM_le_baseCoeffA
 #print axioms order_target_empty
@@ -1012,7 +1092,8 @@ end ThreeSlots
 #print axioms levelImplementsD_bot_of_landed
 #print axioms landed_base_escapes_CbM
 #print axioms memberBase_cannot_meet_full
-#print axioms baseCom_is_sweepCom
+#print axioms baseCom_header_is_the_member_list
+#print axioms sweepCom_header_is_the_carrier
 #print axioms kcov_is_phaseBudgetM
 #print axioms coverPhaseB_fits_M_slot
 #print axioms landed_copy_hmm_forces_carrier
