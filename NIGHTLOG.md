@@ -5199,3 +5199,84 @@ charge. Next wave **b4-design** compiles whether the size-read interface
 closes, what `s` must be (block size or block weight — the ball term is
 the question), whether the frames decoupling is needed for the close or
 only for the walk, and the coefficient ceiling.
+
+**b4-design — THE SIZE-READ TURN SLOT CLOSES, conditionally; and the
+landed slot is refuted structurally** (merge `c54cc4f`, 3590 jobs, new
+`Refine/B4Design.lean` 912 lines, 30 principals kernel-three, 25
+`#guard`s, nothing landed edited).
+
+**§1, the headline refutation, and it is not about constants.**
+`deadAtomK_closed` separates the five sizes the per-atom charge reads —
+`43·n + 23·mm1 + 65·mm + (44·bw + 110·nb + 140)·t`; the root's `131·n`
+is `43+23+65` collapsing because all four in-scope positions are
+instantiated at the carrier. Read at the **cluster** in all four — the
+best case E4c-b can produce — it is still `131·(cluster)`. And
+`landed_turnCostSize_ge_Ksc` compiles that the landed slot pays `Ksc`
+**in full at every `s`**, because `Ksc` is an additive summand of
+`turnCost`. So `blind_slot_floor` gives `turns · Ksc 0 ≤ Kl 0 (n+ns)`
+and `post_copies_blind_slot_refuted` closes it — `131·10²⁰` against a
+closed form granting under `7·10¹⁸`, with the landed Σ-shaped `hKl`
+verbatim and the mass condition satisfied at *empty* blocks, so the
+floor is not an artefact of a large one. **No accounting wave and no
+re-measurement fixes this while `turnCostSize` discards its size
+argument.**
+
+**The close, and its three conditions.** `b4_size_slot_exists` — the
+`CostRecurrence` witness satisfies the size-read slot, the landed
+Σ-shaped `hKl` verbatim, a new per-turn payment clause, and closes to
+the same `(D+1)^ℓ` shape and root text; `b4_c0_close_real` carries it to
+`n^{1+ε}`. Conditional on: (a) E4c-b removing the two copies, (b) `s`
+being the block **weight**, (c) a **block-scale ball budget**, which the
+landed `hbud` cannot supply.
+
+**`s` is the weight, and the tie is exact.** `size_reading_refuted`
+kills the size reading on data (a one-member block owning `2·ksc+1`
+arena slots; the pick's ball term alone is `44·(2·ksc+1)+140` against a
+grant of `2·ksc`) — the scatter twin of `MassWeight.turn_size_refuted`.
+And `ball_budget_numbers_are_block_weight`: **`BallBudget`'s two numbers
+ARE `blockRowSum` and `blockSize`, and they sum to `blockWeight`** (new
+`blockRowSum_eq_blockDegSum` off the landed `rowLen_eq_vdeg`). **The
+side condition does not change** — E6's
+`MassWeight.mass_of_alive_compaction_weight` already delivers the weight
+version (`mass_side_condition_at_weight`), and `size_slot_sum_le_mass`
+checks the *sum* over a level's turns, `∑ ksc·(bs c + 1) ≤
+ksc·(D+1)·(w+1)`, not merely the pointwise fit.
+
+**The ball term fits under `bw ≤ s ∧ nb ≤ s`**, at
+`atomCoeff kq abit t = 294·t + 14·kq + abit + 221` — all three inputs
+formula-determined (`atomK_le_atomCoeff`). It does **not** fit at the
+landed budget: `carrier_bud_refutes_size_coefficient` refutes every
+coefficient at `ballBudget_carrier`'s own `bw := ns, nb := n`, even on a
+zero-edge carrier.
+
+**The frames decoupling is WALK-side only.** `close_is_bud_free` — the
+close never mentions `BallBudget`; what needs narrowing is the
+hypothesis that feeds it. `frames_cost_is_dead_weight` compiles the
+lever (`spec_conj` drops the second cost, so `levelImplements`'s
+`hframe` budget is dead weight), and `clusterBallBudget_of_landed`
+compiles that the narrowed `ClusterBallBudget` is **strictly weaker**
+than the landed hypothesis — so the edit is **additive**. It owns
+`RamDriverCluster.clusterStepImplements` (`hbud` :1249),
+`RamDriverFrames.clusterFrames` (`hbud` :775 — keeps
+`ballBudget_carrier`), `RamDriverCluster.levelImplements` (`hframe`
+:1711; the weld is the `spec_conj` at :1849), plus
+`RamDriverRoot.clusterStepAt`/`clusterFramesAt` and `levelAt`'s
+`hbnd`/`hcostI`/`hKsc` chain.
+
+**The ceiling `8 798 198` survives unmoved** and is a ceiling on the
+**coefficient**: `g2M` never mentioned the landed size-blind turn cost,
+so filling the slot moves no number (`b4Fam_eq_measured` is `rfl`).
+C0CloseProbe's `DEFICIT ×1489` was not wrong — it compared against a
+*total*, and the landed chain genuinely feeds a total into a coefficient
+slot. What B4 changes is what the walk supplies.
+**Supervisor correction folded in at the boundary**: §4's per-gate
+formula budgets (ε = 1/2 → 7 424 atoms at one table, 86 balanced) are
+**scaling diagnostics, not a bound on the formula** — C0 quantifies
+`∃ p c T` after `∀ φ ε`, so a bigger formula is paid for by a bigger
+`c`, and `b4_c0_close_real` carries `c` universally with `kscN` absorbed
+into `cstarM`. The table now says so, since a successor wave could
+otherwise read the row as a limit.
+
+**Road: e4c-b (the two copies, program change — in flight) → B4-exec
+(frames decoupling + ball narrowing + size-read chain + the `hKd`
+deletion) → T4b → E3b/E-order → B7 → C0 → P5.**
