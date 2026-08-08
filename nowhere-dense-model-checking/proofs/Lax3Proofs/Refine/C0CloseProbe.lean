@@ -29,10 +29,19 @@ carrier as the ball budget (`bw := ns`, `nb := n`); §4 compiles that it
 is then bounded below by `131·n`, so **no constant `ksc` exists**, and
 the ε = 1/2 and ε = 1/4 gates of §2 fail at it while they pass at a
 constant. §2's close is therefore stated with the constant-`ksc`
-hypothesis `hKsc` **named**, and that hypothesis is exactly E4c's
-deliverable. The ε = 1 gate passes even at the carrier-charged reading —
-a quadratic cost is inside an `n^2` budget — which is why the landed
-guards, all at ε = 1, could not see this.
+hypothesis `hKsc` **named**. The ε = 1 gate passes even at the
+carrier-charged reading — a quadratic cost is inside an `n^2` budget —
+which is why the landed guards, all at ε = 1, could not see this.
+
+**Wave E4c-a corrected the attribution of that hypothesis.** `hKsc` is
+*not* E4c's deliverable. Control 1b splits the `131·n` into the part an
+accounting wave can re-charge (`108·n + 18`) and the part that is
+program text (`23·n + 12`, the two calling-convention copies), and
+`narrow_leaf_refutes_constant_ksc` compiles that no narrowing of the
+probe bound, the member counts or the ball budget produces a constant
+`ksc` while those copies stand. Beyond them the honest reading is the
+turn's **cluster**, not a constant, so the close needs the turn's size
+slot read as well — `turnCostSize` discards it today.
 
 ## The four sections
 
@@ -84,7 +93,7 @@ open Lax3Proofs.Refine.G2CostProbe (turnCostSizeA)
 | descend | — | `200` at the block WEIGHT | `G2CostProbe.blockLeaves_le_weight` |
 | turn | `ctTurn` | `KillListPass.ctKL` = `443` | `200 + 84 + klc`, R1.8 |
 | dead | `aDead`, `bd` | `0`, **opaque** | R1.8 took the sweep out; landed reading `12` |
-| scatter | `ksc` | **opaque, and refuted at the landed reading** | §4 |
+| scatter | `ksc` | **opaque, and refuted at the landed reading AND at every narrowing of it** | §4, control 1/1b |
 | base | `Cb` | **opaque — T4b unstarted, and refuted at the landed reading** | §4 |
 | root decode | `kdecRoot` | `87` | `G2ExistsRevalidation.decodeDLCost_le_weight` |
 -/
@@ -716,9 +725,15 @@ ball budget.** `hbnd` forces `Kb` above the per-atom charge, `hcostI`
 forces `Ki ≥ Kb·(#atoms) + 1` and `hKsc` forces `Ksc j ≥ Ki·(#tables) + 1`;
 with either list nonempty the chain gives `Ksc j ≥ deadAtomK`, which is
 `Ω(n)`. So `c0_close_at_measured`'s `hKsc` — a bound by a constant
-chosen before `n` — is unsatisfiable at what is landed. Narrowing
-`bw`/`nb` from the carrier to the ball is E4c's job and has not
-happened. -/
+chosen before `n` — is unsatisfiable at what is landed.
+
+**Wave E4c-a: the residual did not move, and that is the result.** The
+statement below is at the landed reading `n n mb n ns n` and stays at
+`131·n`, because none of the three narrowings E4c-a was asked for can be
+*expressed* at this instantiation: `hbnd` fixes `Kb` before the turn's
+cluster exists, so a cluster-scale charge has nowhere to be written.
+Control 1b is the compiled ceiling and `narrow_leaf_refutes_constant_ksc`
+the refutation that survives every narrowing. -/
 theorem landed_scatter_leaf_unbounded {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
     (ksc mb ns t : ℕ) :
     ∃ n : ℕ, ¬ (Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n n mb n ns n t ≤ ksc) := by
@@ -734,6 +749,111 @@ theorem ksc_ge_atom {Kb Ki Ksc la lt : ℕ} (hla : 1 ≤ la) (hlt : 1 ≤ lt)
     (hcostI : Kb * la + 1 ≤ Ki) (hKsc : Ki * lt + 1 ≤ Ksc) : Kb ≤ Ksc := by
   have h1 : Kb ≤ Kb * la := Nat.le_mul_of_pos_right _ (by omega)
   have h2 : Ki ≤ Ki * lt := Nat.le_mul_of_pos_right _ (by omega)
+  omega
+
+/-! #### Control 1b — the accounting ceiling, and what is left under it (E4c-a)
+
+Wave E4c-a asked how much of the `131·n` above comes off **without
+touching program text**. The answer is read off the closed form below.
+`deadAtomK`'s five carrier summands split into two classes:
+
+| summand | coefficient | class |
+|---|---|---|
+| `outProbeCost n` — the outside probe's scan | `20` | accounting: the scan stops at the first out-of-cluster vertex, and `Refine.ScatterDeadPass.outProbeCom_specB` charges the same program text at `min (xb + 1) n` |
+| `atomMemCost n` — the atom's member filter | `23` | accounting: the walk is over the child's member list, whose length is the *cluster's*, not the carrier's |
+| `scatBlockK`'s `65·mm` — the engine's two member walks | `65` | accounting: `mm` is the filtered list's length |
+| `12·n + 6` — the mask copy | `12` | **program text** |
+| `11·n + 6` — the distance fill | `11` | **program text** |
+
+So the accounting ceiling is `108·n + 18`, and the residual any
+accounting wave leaves behind is `23·n + 12` — the two
+calling-convention copies, which are `RamDriver.scatDeadCom`'s own text
+and cannot be re-charged, only rewritten over the member list.
+
+`narrow_leaf_refutes_constant_ksc` compiles the consequence: **even a
+perfect accounting wave does not produce §2's constant `ksc`.** And the
+narrowing that the accounting ceiling *does* reach is the cluster's
+size, not a constant — the reading `RamDriverRoot.clusterStepAt` grants
+is uniform in the turn's cluster (`hbnd` fixes `Kb` before `X` exists),
+so a cluster-scale charge cannot be stated there at all. Cashing it
+needs the turn's **size slot** — `RamDriverRoot.turnCostSize` discards
+its size argument today (`turnCostSize_size_blind`, `SlotSweep` control
+4) while `G2CostProbe.turnCostSizeA` reads it — which is B4's, not
+E4c's. -/
+
+/-- **The landed per-atom charge in closed form**, at the root's own
+instantiation. Two of its terms are opaque and neither reads the
+carrier: `killSumCost mb` is the batch width, a formula constant, and
+`atomBitCost β` is the generated evaluator's fragment. -/
+theorem deadAtomK_root_eq {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mb ns t : ℕ) :
+    Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n n mb n ns n t
+      = (44 * ns + 110 * n + 140) * t + 131 * n + 14 * mb +
+        Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 90 := by
+  simp only [Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK,
+    Lax3Proofs.Refine.ScatterDeadPass.scatDeadK,
+    Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
+    Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
+    Lax3Proofs.Refine.ScatterDeadPass.killSumCost,
+    Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
+  ring
+
+/-- **The accounting ceiling**: the three in-scope summands are exactly
+`108·n + 18` of the `131·n` floor. -/
+theorem scatter_leaf_accounting_ceiling (n : ℕ) :
+    Lax3Proofs.Refine.ScatterDeadPass.outProbeCost n +
+        Lax3Proofs.Refine.ScatterDeadPass.atomMemCost n + 65 * n = 108 * n + 18 := by
+  simp only [Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomMemCost]
+  omega
+
+/-- **The residual, at any narrowing whatsoever.** The mask copy and the
+distance fill are carrier walks in `RamDriver.scatDeadCom`'s text, so
+`23·n + 12` survives every choice of the probe bound, the two member
+counts and the ball budget. This is the compiled statement of which
+`n`-terms remain when E4c is done. -/
+theorem scatDeadK_narrow_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (n mm1 kq mm bw nb t : ℕ) :
+    23 * n + 12 ≤ Lax3Proofs.Refine.ScatterDeadPass.scatDeadK β n mm1 kq mm bw nb t := by
+  simp only [Lax3Proofs.Refine.ScatterDeadPass.scatDeadK]
+  omega
+
+theorem deadAtomK_narrow_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (n mm1 kq mm bw nb t : ℕ) :
+    23 * n + 12 ≤ Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t := by
+  have h := scatDeadK_narrow_floor β n mm1 kq mm bw nb t
+  simp only [Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK]
+  omega
+
+/-- **The narrowed leaf is still unbounded.** At *fixed* member data,
+ball budget and probe bound — the state E4c is trying to reach — the
+per-atom charge still grows without bound in the carrier, because the
+two copies do. -/
+theorem narrow_scatter_leaf_unbounded {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (ksc mm1 kq mm bw nb t : ℕ) :
+    ∃ n : ℕ, ¬ (Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t ≤ ksc) := by
+  refine ⟨ksc + 1, fun h => ?_⟩
+  have := deadAtomK_narrow_floor β (ksc + 1) mm1 kq mm bw nb t
+  omega
+
+/-- **THE E4c-a FINDING, compiled: accounting alone cannot produce §2's
+`hKsc`.** Take the `hbnd`/`hcostI`/`hKsc` chain at *any* narrowing of the
+four in-scope arguments — the probe bound, the two member counts and the
+ball budget, all chosen before the carrier — and there is still a
+carrier at which no constant `ksc` bounds the scatter phase. So E4c's
+deliverable is **not** reachable by re-charging the landed walks: the
+mask copy and the distance fill have to be rewritten over the member
+list (program text, the next wave), and the reading that remains after
+that is the *cluster's*, which only the turn's size slot can cash. -/
+theorem narrow_leaf_refutes_constant_ksc {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (ksc mm1 kq mm bw nb t : ℕ) :
+    ∃ n : ℕ, ∀ Kb Ki Ksc la lt : ℕ, 1 ≤ la → 1 ≤ lt →
+      Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t ≤ Kb →
+      Kb * la + 1 ≤ Ki → Ki * lt + 1 ≤ Ksc → ¬ (Ksc ≤ ksc) := by
+  refine ⟨ksc + 1, fun Kb Ki Ksc la lt hla hlt hKb hcostI hKsc hle => ?_⟩
+  have hfloor := deadAtomK_narrow_floor β (ksc + 1) mm1 kq mm bw nb t
+  have hchain := ksc_ge_atom (Kb := Kb) (Ki := Ki) (Ksc := Ksc) hla hlt hcostI hKsc
   omega
 
 /-! #### Control 2 — a carrier-bearing phase form breaks the close -/
@@ -885,6 +1005,10 @@ family with every constant one step over its ceiling does not. -/
 #print axioms scatDeadK_carrier_floor
 #print axioms deadAtomK_carrier_floor
 #print axioms landed_scatter_leaf_unbounded
+#print axioms deadAtomK_root_eq
+#print axioms scatDeadK_narrow_floor
+#print axioms narrow_scatter_leaf_unbounded
+#print axioms narrow_leaf_refutes_constant_ksc
 #print axioms carrier_phase_load_bearing
 #print axioms landed_hKd_slot_floor
 #print axioms landed_hKd_load_bearing

@@ -794,32 +794,126 @@ class is empty. Both are exactly the two branches
 `Refine.ScatterDeadFold.outside_ncard_of_probe` and
 `outside_ncard_of_empty` consume. -/
 
-/-- The probe's charge. The scan's *runtime* is the index of the first
-out-of-cluster vertex — at most the cluster's size plus one by
-`Refine.DeadRowProbe.exists_outside_in_prefix` — but the bound proved
-here is the carrier's, the same parity the atom program's mask copy and
-distance fill are accepted at at this boundary. Reading the pigeonhole
-bound off is E4c's. -/
+/-- The probe's charge at the **carrier** reading: one turn per vertex.
+This is `outProbeCostB n n`, and it is the number the composition still
+instantiates. -/
 def outProbeCost (n : ℕ) : ℕ := 20 * n + 10
+
+/-- **The probe's charge at the pigeonhole bound** (wave E4c-a). The
+scan stops at the first vertex that is dead *and* out of the cluster,
+and `outside_prefix_bound` below says every hit-free prefix is shorter
+than the cluster: so the runtime is at most `min (xb + 1) n` turns once
+`xb` bounds the cluster's size, not `n` of them. The `+ 1` is not slack
+— the scan has to read the vertex *after* the last cluster member to
+know it has left the cluster — and `outProbeCostB_at_xb_refuted` below
+compiles that.
+
+`min … n` keeps the carrier reading exact rather than merely implied:
+`outProbeCostB n n = outProbeCost n` on the nose
+(`outProbeCostB_carrier`), so the narrowing costs the composition
+nothing at the instantiation it has today. -/
+def outProbeCostB (n xb : ℕ) : ℕ := 20 * min (xb + 1) n + 10
+
+/-- The carrier reading is the pigeonhole one at `xb := n`. -/
+theorem outProbeCostB_carrier (n : ℕ) : outProbeCostB n n = outProbeCost n := by
+  simp only [outProbeCostB, outProbeCost]; omega
+
+theorem outProbeCostB_mono {n xb xb' : ℕ} (h : xb ≤ xb') :
+    outProbeCostB n xb ≤ outProbeCostB n xb' := by
+  simp only [outProbeCostB]; omega
+
+theorem outProbeCostB_le_carrier (n xb : ℕ) : outProbeCostB n xb ≤ outProbeCost n := by
+  simp only [outProbeCostB, outProbeCost]; omega
+
+/-! The pigeonhole, restated here rather than imported. The landed
+statement is `Refine.DeadRowProbe.exists_outside_in_prefix`, and that
+file is **downstream** of this one — `DeadRowProbe` imports `DeadSweep`,
+which imports the driver, which imports this file. This is the road's
+third import-order defect and it is handled the landed way
+(`RamDriver.TableInvOn` vs `Refine.DeadRowProbe.TableInvOn`): the
+predicate is restated upstream and the identification is recorded
+downstream. Here the restated object is a *theorem*, not a definition,
+so there is nothing to record by `rfl`; the two proofs are the same
+counting argument and `Refine.DeadRowProbe.exists_outside_in_prefix` is
+the one every set-side consumer quotes. -/
+
+/-- **Among the first `X.ncard + 1` vertices one is outside `X`.** -/
+theorem exists_outside_le_ncard {n : ℕ} (X : Set (Fin n)) (hlt : X.ncard < n) :
+    ∃ z : Fin n, (z : ℕ) ≤ X.ncard ∧ z ∉ X := by
+  by_contra hcon
+  have hall : ∀ z : Fin n, (z : ℕ) ≤ X.ncard → z ∈ X := by
+    intro z hz
+    by_contra hzX
+    exact hcon ⟨z, hz, hzX⟩
+  set f : Fin (X.ncard + 1) → Fin n :=
+    fun i => ⟨(i : ℕ), lt_of_lt_of_le i.isLt (Nat.succ_le_of_lt hlt)⟩ with hf
+  have hinj : Function.Injective f := fun a b hab => by
+    simpa [hf, Fin.ext_iff] using hab
+  have hsub : Set.range f ⊆ X := by
+    rintro z ⟨i, rfl⟩
+    exact hall _ (Nat.le_of_lt_succ i.isLt)
+  have hr : (Set.range f).ncard = X.ncard + 1 := by
+    rw [← Set.image_univ, Set.ncard_image_of_injective _ hinj, Set.ncard_univ,
+      Nat.card_eq_fintype_card, Fintype.card_fin]
+  have := Set.ncard_le_ncard hsub X.toFinite
+  omega
+
+/-- **The probe's loop bound, off the cluster's size.** A prefix of the
+carrier that the probe walks without stopping is a prefix of vertices
+that are in the cluster — the mask's own pointwise clause says an alive
+vertex is one — so it is no longer than the cluster.
+
+This is the hypothesis `outProbeCom_specB` takes, produced at the only
+data a caller has: the cluster as a set and the child mask's
+containment in it. -/
+theorem outside_prefix_bound {n : ℕ} {X : Set (Fin n)} {Alv' Xa : ℕ → ℕ}
+    (hXaS : ∀ v : Fin n, Xa (v : ℕ) ≠ 0 ↔ v ∈ X)
+    (hsub : ∀ v : Fin n, Alv' (v : ℕ) ≠ 0 → v ∈ X)
+    (m : ℕ) (hm : m ≤ n) (hfree : ∀ z, z < m → ¬ (Alv' z = 0 ∧ Xa z = 0)) :
+    m ≤ X.ncard := by
+  by_contra hcon
+  have hltn : X.ncard < n := by omega
+  obtain ⟨z, hzle, hzX⟩ := exists_outside_le_ncard X hltn
+  have hXa0 : Xa (z : ℕ) = 0 := by
+    by_contra hc
+    exact hzX ((hXaS z).1 hc)
+  have hAlv0 : Alv' (z : ℕ) = 0 := by
+    by_contra hc
+    exact hzX (hsub z hc)
+  exact hfree (z : ℕ) (by omega) ⟨hAlv0, hXa0⟩
 
 /-- What the probe carries: the two arrays it reads, the counter, and
 the verdict — either nothing below the counter is dead-and-outside, or
-the register holds a vertex that is. -/
+the register holds a vertex that is.
+
+**Wave E4c-a: the exit clause.** `of ≠ 0 → oi = n` was true of the walk
+all along and never stated. The pigeonhole charge needs it: the variant
+is measured against the cluster's size, so a state that has already
+found its witness must be past the guard rather than merely flagged. -/
 def ProbeInv (n j : ℕ) (Alv' Xa : ℕ → ℕ) (σ : Env) : Prop :=
   σ.vars "n" = n ∧ σ.arrs (alvName (j + 1)) = arrOf n Alv' ∧
     σ.arrs (cluName j) = arrOf n Xa ∧ σ.vars "oi" ≤ n ∧ σ.vars "of" ≤ 1 ∧
     (σ.vars "of" = 0 → ∀ z, z < σ.vars "oi" → ¬ (Alv' z = 0 ∧ Xa z = 0)) ∧
-    (σ.vars "of" ≠ 0 → σ.vars "oz" < n ∧ Alv' (σ.vars "oz") = 0 ∧ Xa (σ.vars "oz") = 0)
+    (σ.vars "of" ≠ 0 → σ.vars "oz" < n ∧ Alv' (σ.vars "oz") = 0 ∧ Xa (σ.vars "oz") = 0) ∧
+    (σ.vars "of" ≠ 0 → σ.vars "oi" = n)
 
-/-- **The outside probe, walked.**
+/-- **The outside probe, walked at the pigeonhole bound** (wave E4c-a).
+
+The program is **unchanged** — this is the same `outProbeCom j` the
+carrier walk ran, charged against a variant that counts down from the
+cluster's size instead of the carrier's. The one thing it needs is
+`hstop`: that a hit-free prefix is short, which is
+`outside_prefix_bound` at the turn's own cluster. So narrowing the
+probe is accounting and not a program change.
 
 **Wave R1.8-T3-flip (c1d): the found flag is a bit.** The clause was in
 `ProbeInv` all along and dropped at the interface; the composition needs
 it, because the bit pass reads `"of"` in a guard and `evalB_var`'s
-obligation is a word bound. Nothing else moves. -/
-theorem outProbeCom_spec {j : ℕ} {Alv' Xa : ℕ → ℕ}
+obligation is a word bound. -/
+theorem outProbeCom_specB {j xb : ℕ} {Alv' Xa : ℕ → ℕ}
     (hB : 1 < B) (hnB : n < B)
-    (hAB : ∀ k, k < n → Alv' k < B) (hXB : ∀ k, k < n → Xa k < B) :
+    (hAB : ∀ k, k < n → Alv' k < B) (hXB : ∀ k, k < n → Xa k < B)
+    (hstop : ∀ m, m ≤ n → (∀ z, z < m → ¬ (Alv' z = 0 ∧ Xa z = 0)) → m ≤ xb) :
     Spec B (fun σ => σ.vars "n" = n ∧ σ.arrs (alvName (j + 1)) = arrOf n Alv' ∧
         σ.arrs (cluName j) = arrOf n Xa)
       (outProbeCom j)
@@ -828,7 +922,7 @@ theorem outProbeCom_spec {j : ℕ} {Alv' Xa : ℕ → ℕ}
         (σ'.vars "of" = 0 → ∀ z, z < n → ¬ (Alv' z = 0 ∧ Xa z = 0)) ∧
         (σ'.vars "of" ≠ 0 → σ'.vars "oz" < n ∧ Alv' (σ'.vars "oz") = 0 ∧
           Xa (σ'.vars "oz") = 0))
-      (outProbeCost n) := by
+      (outProbeCostB n xb) := by
   refine Spec.of_exists (fun σ hσ => ?_)
   obtain ⟨hn, halv, hclu⟩ := hσ
   set σ₁ := σ.setVar "of" 0 with hσ₁
@@ -840,25 +934,23 @@ theorem outProbeCom_spec {j : ℕ} {Alv' Xa : ℕ → ℕ}
   set σ₃ := σ₂.setVar "oi" 0 with hσ₃
   have hr₃ : Run B (.assign "oi" (.lit 0)) σ₂ σ₃ 2 :=
     (Run.assign (evalB_lit (by omega))).mono (by simp [Expr.size])
+  have hof₃ : σ₃.vars "of" = 0 := by
+    rw [hσ₃, vars_setVar, if_neg (by decide), hσ₂, vars_setVar, if_neg (by decide),
+      hσ₁, vars_setVar, if_pos rfl]
   have hI₃ : ProbeInv n j Alv' Xa σ₃ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
     · rw [hσ₃, vars_setVar, if_neg (by decide), hσ₂, vars_setVar, if_neg (by decide),
         hσ₁, vars_setVar, if_neg (by decide)]
       exact hn
     · rw [hσ₃, arrs_setVar, hσ₂, arrs_setVar, hσ₁, arrs_setVar]; exact halv
     · rw [hσ₃, arrs_setVar, hσ₂, arrs_setVar, hσ₁, arrs_setVar]; exact hclu
     · rw [hσ₃, vars_setVar, if_pos rfl]; omega
-    · rw [hσ₃, vars_setVar, if_neg (by decide), hσ₂, vars_setVar, if_neg (by decide),
-        hσ₁, vars_setVar, if_pos rfl]
-      omega
+    · rw [hof₃]; omega
     · intro _ z hz
       rw [hσ₃, vars_setVar, if_pos rfl] at hz
       omega
-    · intro hne
-      exfalso
-      rw [hσ₃, vars_setVar, if_neg (by decide), hσ₂, vars_setVar, if_neg (by decide),
-        hσ₁, vars_setVar, if_pos rfl] at hne
-      exact hne rfl
+    · intro hne; exact absurd hof₃ hne
+    · intro hne; exact absurd hof₃ hne
   -- the loop
   have hbody : Spec B (fun ρ => ProbeInv n j Alv' Xa ρ ∧
         (Cond.lt (.var "oi") (.var "n")).evalB B ρ = some true)
@@ -869,12 +961,22 @@ theorem outProbeCom_spec {j : ℕ} {Alv' Xa : ℕ → ℕ}
           (.seq (.assign "of" (.lit 1))
             (.seq (.assign "oz" (.var "oi"))
               (.assign "oi" (.var "n"))))))
-      (fun ρ ρ' => ProbeInv n j Alv' Xa ρ' ∧ n - ρ'.vars "oi" < n - ρ.vars "oi") 16 := by
+      (fun ρ ρ' => ProbeInv n j Alv' Xa ρ' ∧
+        min (xb + 1) n - ρ'.vars "oi" < min (xb + 1) n - ρ.vars "oi") 16 := by
     refine Spec.of_exists (fun ρ hρ => ?_)
-    obtain ⟨⟨hnρ, halvρ, hcluρ, hoiρ, hofρ, hno, hyes⟩, htrue⟩ := hρ
+    obtain ⟨⟨hnρ, halvρ, hcluρ, hoiρ, hofρ, hno, hyes, hdone⟩, htrue⟩ := hρ
     have hoilt : ρ.vars "oi" < n := by
       have := lt_of_condLt_true htrue
       omega
+    -- **the walk has not stopped yet**, so the flag is clear and the counter is
+    -- inside the cluster — which is what makes the variant the cluster's and not
+    -- the carrier's
+    have hof0 : ρ.vars "of" = 0 := by
+      by_contra hc
+      have := hdone hc
+      omega
+    have hoixb : ρ.vars "oi" ≤ xb := hstop _ hoiρ (hno hof0)
+    have hmlt : ρ.vars "oi" < min (xb + 1) n := by omega
     set oi := ρ.vars "oi" with hoi
     have hoie : (Expr.var "oi").evalB B ρ = some oi := by
       have h := evalB_var (B := B) (x := "oi") (σ := ρ) (by omega)
@@ -900,15 +1002,17 @@ theorem outProbeCom_spec {j : ℕ} {Alv' Xa : ℕ → ℕ}
         (evalB_get hoie (by rw [hcluρ, getElem?_arrOf Xa hoilt]) (hXB _ hoilt))
     -- the three branches
     have hbumped : ∀ τ : Env, τ = ρ.setVar "oi" (oi + 1) → ¬ (Alv' oi = 0 ∧ Xa oi = 0) →
-        ProbeInv n j Alv' Xa τ ∧ n - τ.vars "oi" < n - oi := by
+        ProbeInv n j Alv' Xa τ ∧ min (xb + 1) n - τ.vars "oi" < min (xb + 1) n - oi := by
       intro τ hτ hnot
       have hoiτ : τ.vars "oi" = oi + 1 := by rw [hτ, vars_setVar, if_pos rfl]
-      refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, by omega⟩
+      have hofτ : τ.vars "of" = 0 := by
+        rw [hτ, vars_setVar, if_neg (by decide)]; exact hof0
+      refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, by rw [hoiτ]; omega⟩
       · rw [hτ, vars_setVar, if_neg (by decide)]; exact hnρ
       · rw [hτ, arrs_setVar]; exact halvρ
       · rw [hτ, arrs_setVar]; exact hcluρ
       · omega
-      · rw [hτ, vars_setVar, if_neg (by decide)]; exact hofρ
+      · rw [hofτ]; omega
       · intro hof z hz
         rw [hτ, vars_setVar, if_neg (by decide)] at hof
         rw [hoiτ] at hz
@@ -916,10 +1020,8 @@ theorem outProbeCom_spec {j : ℕ} {Alv' Xa : ℕ → ℕ}
         · exact hno hof z h
         · have : z = oi := by omega
           rw [this]; exact hnot
-      · intro hof
-        rw [hτ, vars_setVar, if_neg (by decide)] at hof
-        rw [hτ, vars_setVar, if_neg (by decide)]
-        exact hyes hof
+      · intro hof; exact absurd hofτ hof
+      · intro hof; exact absurd hofτ hof
     by_cases hA : 0 < Alv' oi
     · obtain ⟨τ, hrτ, hτ⟩ := hbump ρ rfl
       exact ⟨τ, 16, (Run.ite_true (by rw [hcondA]; simp [hA]) hrτ).mono
@@ -952,7 +1054,7 @@ theorem outProbeCom_spec {j : ℕ} {Alv' Xa : ℕ → ℕ}
         refine ⟨ρ₃, 16, (Run.ite_false (by rw [hcondA]; simp [hA])
           (Run.ite_false (by rw [hcondX]; simp [hX])
             (hr'₁.seq (hr'₂.seq hr'₃)))).mono (by simp [Expr.size, Cond.size]), le_rfl, ?_, ?_⟩
-        · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+        · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
           · rw [hρ₃, vars_setVar, if_neg (by decide)]; exact hn₂
           · rw [hρ₃, arrs_setVar, hρ₂, arrs_setVar, hρ₁, arrs_setVar]; exact halvρ
           · rw [hρ₃, arrs_setVar, hρ₂, arrs_setVar, hρ₁, arrs_setVar]; exact hcluρ
@@ -967,29 +1069,88 @@ theorem outProbeCom_spec {j : ℕ} {Alv' Xa : ℕ → ℕ}
           · intro _
             rw [hρ₃, vars_setVar, if_neg (by decide), hρ₂, vars_setVar, if_pos rfl]
             exact ⟨hoilt, by omega, by omega⟩
+          · intro _
+            rw [hρ₃, vars_setVar, if_pos rfl]
         · rw [hρ₃, vars_setVar, if_pos rfl]
           omega
   obtain ⟨σ₄, hr₄, hI₄, hfalse⟩ :=
-    (Spec.while_count (B := B) (P := ProbeInv n j Alv' Xa) (K := 20 * n + 4)
-      (ProbeInv n j Alv' Xa) (fun τ => n - τ.vars "oi") 16
+    (Spec.while_count (B := B) (P := ProbeInv n j Alv' Xa) (K := 20 * min (xb + 1) n + 4)
+      (ProbeInv n j Alv' Xa) (fun τ => min (xb + 1) n - τ.vars "oi") 16
       (fun τ hτ => by
         refine ⟨decide (τ.vars "oi" < τ.vars "n"), ?_⟩
         refine evalB_condLt (evalB_var (by have := hτ.2.2.2.1; omega)) ?_
         exact evalB_var (by rw [hτ.1]; omega))
       hbody (fun _ hτ => hτ)
-      (fun τ hτ => by
-        have h : (1 + 3 + 16) * (n - τ.vars "oi") ≤ 20 * n :=
+      (fun τ _ => by
+        have h : (1 + 3 + 16) * (min (xb + 1) n - τ.vars "oi") ≤ 20 * min (xb + 1) n :=
           Nat.mul_le_mul le_rfl (by omega)
         simp only [size_condLt, size_var]
         omega)).run hI₃
-  obtain ⟨hn₄, halv₄, hclu₄, hoi₄, hof₄, hno₄, hyes₄⟩ := hI₄
+  obtain ⟨hn₄, halv₄, hclu₄, hoi₄, hof₄, hno₄, hyes₄, -⟩ := hI₄
   have hoin : σ₄.vars "oi" = n := by
     have h := le_of_condLt_false hfalse
     rw [hn₄] at h
     omega
   rw [hoin] at hno₄
-  exact ⟨σ₄, _, hr₁.seq (hr₂.seq (hr₃.seq hr₄)), by rw [outProbeCost]; omega,
+  exact ⟨σ₄, _, hr₁.seq (hr₂.seq (hr₃.seq hr₄)), by rw [outProbeCostB]; omega,
     hn₄, halv₄, hclu₄, hof₄, hno₄, hyes₄⟩
+
+/-- **The outside probe at the carrier reading**, which is what the
+composition still instantiates: `outProbeCom_specB` at `xb := n`, where
+the loop bound is the trivial `m ≤ n` and the charge collapses to the
+landed `20·n + 10` on the nose (`outProbeCostB_carrier`). Nothing above
+this line moves; what E4c-a bought is the `xb` above it. -/
+theorem outProbeCom_spec {j : ℕ} {Alv' Xa : ℕ → ℕ}
+    (hB : 1 < B) (hnB : n < B)
+    (hAB : ∀ k, k < n → Alv' k < B) (hXB : ∀ k, k < n → Xa k < B) :
+    Spec B (fun σ => σ.vars "n" = n ∧ σ.arrs (alvName (j + 1)) = arrOf n Alv' ∧
+        σ.arrs (cluName j) = arrOf n Xa)
+      (outProbeCom j)
+      (fun _ σ' => σ'.vars "n" = n ∧ σ'.arrs (alvName (j + 1)) = arrOf n Alv' ∧
+        σ'.arrs (cluName j) = arrOf n Xa ∧ σ'.vars "of" ≤ 1 ∧
+        (σ'.vars "of" = 0 → ∀ z, z < n → ¬ (Alv' z = 0 ∧ Xa z = 0)) ∧
+        (σ'.vars "of" ≠ 0 → σ'.vars "oz" < n ∧ Alv' (σ'.vars "oz") = 0 ∧
+          Xa (σ'.vars "oz") = 0))
+      (outProbeCost n) :=
+  (outProbeCom_specB (xb := n) hB hnB hAB hXB (fun _ hm _ => hm)).mono
+    (le_of_eq (outProbeCostB_carrier n))
+
+/-! ### §4b What the pigeonhole charge buys, and what it does not
+
+The probe's slot is the first of `Refine.C0CloseProbe` §4's five
+carrier summands to come off by accounting alone. Two compiled
+statements say exactly how much: at a **fixed** cluster the narrow
+charge is a constant while the carrier one is unbounded, and the `+ 1`
+in `min (xb + 1) n` is not slack that could have been shaved. -/
+
+#guard outProbeCostB 4096 3 = 90
+#guard outProbeCost 4096 = 81930
+
+/-- **The carrier term dies at the probe.** At a fixed cluster size no
+numeral bounds the landed probe charge in terms of the narrow one —
+the honest form of "the `Θ(n)` per atom is gone from this slot", in
+`Refine.ScatterBlock.scatBlockK_carrier_free_vs_scatK`'s shape. -/
+theorem outProbeCostB_carrier_free (xb c : ℕ) :
+    ∃ n, c * outProbeCostB n xb < outProbeCost n := by
+  refine ⟨c * (20 * (xb + 1) + 10) + 1, ?_⟩
+  have h : outProbeCostB (c * (20 * (xb + 1) + 10) + 1) xb ≤ 20 * (xb + 1) + 10 := by
+    simp only [outProbeCostB]; omega
+  have h₂ : c * outProbeCostB (c * (20 * (xb + 1) + 10) + 1) xb
+      ≤ c * (20 * (xb + 1) + 10) := Nat.mul_le_mul_left _ h
+  simp only [outProbeCost]
+  omega
+
+/-- **And the `+ 1` is load-bearing.** A cluster of `xb` vertices sitting
+at the front of the carrier is left only at index `xb`, so the scan runs
+`xb + 1` turns; a charge of `20·xb + 10` would be claiming to read a cell
+it never looked at. This is the negative control the campaign's probe
+discipline asks for beside every narrowing. -/
+theorem outProbeCostB_at_xb_refuted :
+    ¬ (∀ n xb : ℕ, outProbeCostB n xb ≤ 20 * xb + 10) := by
+  intro h
+  have := h 4 1
+  simp only [outProbeCostB] at this
+  omega
 
 /-- The outside count's charge: one assignment over an expression of
 five nodes. **Wave R1.8-T3-flip (c1b) corrected this slot**: `scatDeadK`
@@ -1562,6 +1723,24 @@ Classical.choice,
 Quot.sound] -/
 #guard_msgs in
 #print axioms outProbeCom_spec
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.outProbeCom_specB' depends on axioms: [propext,
+Classical.choice,
+Quot.sound] -/
+#guard_msgs in
+#print axioms outProbeCom_specB
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.outside_prefix_bound' depends on axioms: [propext,
+Classical.choice,
+Quot.sound] -/
+#guard_msgs in
+#print axioms outside_prefix_bound
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.exists_outside_le_ncard' depends on axioms: [propext,
+Classical.choice,
+Quot.sound] -/
+#guard_msgs in
+#print axioms exists_outside_le_ncard
 
 /-- info: 'Lax3Proofs.Refine.ScatterDeadPass.atomTerms_iff_scatVal' depends on axioms: [propext,
 Classical.choice,
