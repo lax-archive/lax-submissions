@@ -126,3 +126,5 @@ import Lax3Proofs.Refine.DeadRowSigma
 import Lax3Proofs.Refine.C0CloseProbe
 import Lax3Proofs.Refine.B4Design
 import Lax3Proofs.Refine.GapsDesign
+import Lax3Proofs.Refine.BfsBlockMask
+import Lax3Proofs.Refine.ScatterBlockMask
