@@ -5677,3 +5677,82 @@ and kept as documented history; supervisor-verified out of the live chain
 `levelImplementsD_bot_of_landed` vacuous — they are why phase A could
 land green on its own, so they stay as the record.
 `RamDriverWrites.lean` did **not** need to move.
+
+**b4-walk-1 — the walk supplies block-scale arguments; `119·n → 11·n` in
+the turn's reading. The ROOT'S OBLIGATION IS UNCHANGED** (merge, 3591
+jobs, five files, every touched principal kernel-three).
+
+`RamDriverRoot.deadAtomK_turn_closed`, at exactly the arguments
+`clusterStepAt` now supplies (`bRS = blockRowSum O Xoff Xmem k`,
+`bS = blockSize Xoff k`, `|X| = X.ncard`):
+`(44·min(bRS,ns) + 110·min(bS,n) + 140)·t + 11·n + 20·min(|X|+1,n) +
+88·|X| + 14·mb + abit + 84`. The `108` that left the carrier is the
+probe's `20` plus the member walks' `88 = 23 + 65` — exactly
+`deadAtomKD_root_eq`'s number, **moved rather than deleted**. What is
+left carrier-charged is the distance fill's `11·n`, program text, which
+is b4-walk-2's.
+
+**All five quantities reached block scale inside the walk**: `bw`/`nb`
+(`RamDriverRoot.ballBudget_cluster`, witness = the block's member slots),
+the probe bound (`outProbeCom_specB` wired at `xb := X.ncard` through
+`outside_prefix_bound`), `mm1` (`MemEnum.card_le_arenaSize` →
+`ArenaBlock.arenaSize_le_ncard`), `mm` (`atomMemCom_spec`'s `mm ≤ mm1`).
+
+**Read this wave honestly: it is a precondition, not a reduction.** The
+root's constant `Kb` did **not** move — `driverRoot_decides_sentence`'s
+`hbnd` still reads `deadAtomK σs.β n n mb n ns n σs.t ≤ Kb`, the carrier
+instantiation, at all four sites, and the new
+`RamDriverRoot.scatterBnd_cluster` *bridges* it to the block requirement
+by monotonicity (`|X| ≤ n`, `bw ≤ ns`, `nb ≤ n`). So the root's stated
+charge is exactly what it was. What the wave bought is that the walk can
+now **accept** a block-scale budget; making `Kb`/`Ki`/`Ksc` families of
+the block reading is what deletes `scatterBnd_cluster`, and that is
+b4-iface's first move — a genuine interface change, not a weakening.
+
+**Structural finding that would have blown up mid-b4-iface.**
+`ScatterDeadTurn.deadAtomKX_block_unbounded`: **no constant `Kb` absorbs
+a block-QUANTIFIED reading.** `clusterStepAt`'s `hbnd` therefore cannot
+move to the block shape — `X`, `Xoff`, `Xmem`, `k` are bound inside
+`clusterStepImplements`, so a block-scale `hbnd` there would have to be
+`∀ block`, and `levelAt`, which supplies it with no `CoverOut` in hand,
+could satisfy that only at the sup. **The block reading must live
+strictly below `clusterStepAt`, and nothing block-scale may touch
+`Ksc`** — which is hazard 1 of the packet, resolved by stopping one
+declaration lower than the design predicted.
+
+**Two corrections to `B4Design` §5.** `ClusterBallBudget` **under-specifies
+the hypothesis**: mask support alone does not yield a block-scale budget,
+because the witness needs `CoverOut` (and `k < n`) to relate the cluster
+to the block — so `hbud` gains **three** antecedents mirroring `hwAB`,
+not one. `clusterBallBudget_of_landed` stays true but is not the shape
+execution needs. And `ballBudget_cluster` states its two numbers as
+`min` with the carrier's (`min bRS ns`, `min bS n`), so one witness both
+narrows and keeps the carrier bound the still-carrier-charged `Kb`
+needs — with no block injectivity anywhere.
+
+**Three weakenings, each declared and compiled.** (i)
+`scatDead_spec`/`scatterDeadStep` move `scatDeadK β n n mb n bw nb t ≤ Kb`
+to `scatDeadKX β n X.ncard mb bw nb t ≤ Kb`, with `scatDeadKX_carrier`
+(equality at `xb := n`) and `scatDeadKX_le_carrier`/`deadAtomKX_le_carrier`
+showing the landed hypothesis implies the new one; exactly one line of
+each statement changed. (ii) `clusterStepImplements`'s `hbud` gains its
+three antecedents, so it is weaker, and `ballBudget_carrier` still
+discharges it — `clusterFramesAt` exhibits that. (iii)
+`levelImplements`'s `hframe` takes its own family `Ksf`, with
+`Ksf := Ks` the landed statement and what `levelAt` still passes.
+**The frames decoupling is capital, not yet load-bearing**: both paths
+still derive their budget from the same carrier `Ksc`, so it binds only
+once b4-iface shrinks the step's.
+
+Byte-identical by extraction and diff: `ScatterStep`,
+`LevelPost`/`LevelPostD` (`RamDriver.lean` untouched), `levelAt`,
+`driverRoot_decides_sentence(_binj)`, `turnCost`/`turnCostSize`, and the
+statements of `clusterStepAt`/`clusterFramesAt` and their R-round twins
+(only proof terms moved).
+
+**Flagged for a successor, not a defect**: `scatDeadKX` reads the probe
+bound, `mm1` and `mm` off a single parameter `xb` (all three are bounded
+by the turn's cluster, and the three bounds are proved separately), so
+`deadAtomKX_closed` shows the two member walks merged as `88`. Splitting
+`xb` into three — with `mm1` at `arenaSize n Alv'`, strictly under
+`X.ncard` — is mechanical if the five are wanted visibly apart.
