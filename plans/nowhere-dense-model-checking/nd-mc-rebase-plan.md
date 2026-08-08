@@ -419,7 +419,21 @@ session, per-wave ledgers in the commit messages e5e0f91..10e6dc4):
   own measured constant and back-solved a coefficient ceiling per phase.
   E-mem (member-list threading) and R1.8 (dead-sweep discipline) have
   landed. The order is now by what the numbers say is binding, not by
-  engine family:
+  engine family.
+
+  **The one-line shape of what is left (added 2026-08-08).** The G2 leg
+  built a block-driven engine for **every** carrier-charged phase and the
+  campaign has been *wiring them one at a time*. `Refine/ScatterBlock*` was
+  wired at R1.8-T3-flip (c1) and its cost closed over the E4c/b4 waves.
+  Three remain landed-but-unwired, each named as the missing engine in its
+  own `G2CostProbe` §7 ledger row: **`Refine/BlockLeaves.lean`** for the
+  descent (`hKs`), **`Refine/CoverBlock.lean`** for the cover (`hKc`,
+  referenced today only by `ArenaSeam` and `BfsBlockCost`), and the
+  member-driven order text for `hKo`. Read the residue that way and the
+  numbered list below is the wiring order plus the interface tidy-ups;
+  "landed but unwired capital (BlockLeaves, BfsQTrail, aliveMass)" was
+  already the 2026-07-31 wrap's phrase for it, and only `aliveMass` has
+  since been consumed.
 
   1. **E4c, the scatter half — the only unbounded deficit, and the road's
      live leaf.** At the root's own instantiation the per-atom charge was
@@ -470,6 +484,21 @@ session, per-wave ledgers in the commit messages e5e0f91..10e6dc4):
      Unlike the scatter leaf this is **not a deficit** — a constant exists
      and is measured — but `hKs` cannot close without it, so B7/C0 would
      otherwise be reached with a quadratic term still in the turn.
+
+     **Size it honestly: this is an engine wave, not a swap.** The `24·n²`
+     is the smaller half. `RamDriverDescend.ballCost n ns cap =
+     ((24·ns + 44)·n + 6)·(2·cap) + 11·n + 12` is `O(n·ns·cap)` per turn,
+     and `batchCost = ancestorCost n ns cap · j + 26·n + 16` is the same
+     shape per earlier round — the descent computes the turn's cluster by
+     walking the **carrier** once per expansion round. The block-driven
+     replacement is `BlockLeaves`' `bexpPass` (`50·m + 30·d + 4`) run
+     `2·cap` times, which fits `ctBlockLeaves = 200·(s + ds + 1)` because
+     `cap` is a formula parameter — so the target is coherent, and the work
+     is re-walking `ballCom_spec` and `batchCom_spec` at block scale.
+     Budget it like the scatter leaf, not like `hKd`. The status "landed
+     but unwired capital (BlockLeaves, BfsQTrail, aliveMass)" was recorded
+     in the 2026-07-31 wrap as part of the G2 leg; the engines landed and
+     the wiring was never scheduled.
   2. **T4b — build a member-driven base**, not measure the existing one.
      `landed_base_needs_carrier_Cb` refutes every constant `Cb`: the landed
      base is `DeadSweep.baseCost = sweepCost` since T4a and is quantified
