@@ -867,10 +867,10 @@ constant to `96`, both still inside `221`. -/
 
 /-- **The per-atom charge with the two copies at the member list.** The
 model of E4c-b's success: `ScatterDeadPass.scatDeadK`'s nine summands
-with the mask copy, its restore and the distance fill replaced by
-`ScatterDeadPass.entryMemCost`, plus the fold's flag assignment. Nothing
-landed is edited — this is `Refine.B4Design`'s house style, one file
-down. -/
+with the two carrier copies replaced by `ScatterDeadPass.entryMemCost`
+— the touched-only mask copy, its restore, and the touched-only distance
+fill — plus the fold's flag assignment. Nothing landed is edited; this
+is `Refine.B4Design`'s house style, one file down. -/
 noncomputable def deadAtomKB {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
     (n mm1 kq mm bw nb t : ℕ) : ℕ :=
   Lax3Proofs.Refine.ScatterDeadPass.killSumCost kq +
