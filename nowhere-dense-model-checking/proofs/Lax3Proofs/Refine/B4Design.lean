@@ -623,7 +623,21 @@ on each. The binding gate is ε = 1/2 — ε = 1/4 is looser only because
 | ε = 1 | `128 620 920 448` | `358 637` |
 | ε = 1/2 | `7 424` | `86` |
 | ε = 1/4 | `56 423` | `237` |
--/
+
+**These are diagnostics of how the constant scales, NOT a bound on the
+formula, and no successor wave should read them as one.** C0
+(`Lax3.ModelChecking.exists_almostLinearTime_program_modelChecking`)
+quantifies `∃ p c T` **after** `∀ φ ε`, so the constant may depend on
+both: a formula with more atoms is paid for by a larger `c`, not by a
+failure to close. Each row above holds `c` fixed at the instance
+family's own value — which is also the whole of why ε = 1/4 looks looser
+than ε = 1/2 — and reads off how much formula that particular `c` buys.
+The closing theorem `b4_c0_close_real` carries `c` universally and
+absorbs `kscN` into `cstarM`, which is where the dependence actually
+lives. What these numbers are good for is comparing *currencies*: the
+last two `#guard`s put the chain's coefficient at the probe's formula
+inside the ceiling and the landed carrier-charged total outside it, on
+one screen. -/
 
 -- **ε = 1**
 #guard gateOne (b4Fam (kscChain cAProbe 128620920448 1))
