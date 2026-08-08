@@ -5602,3 +5602,78 @@ it discards the warm-store overrides, cold-builds the archive-pinned
 dependency proofs and clones a `.lake/packages` tree). And briefs state
 the obligation only — eleven mechanism prescriptions on this road have
 been overridden by the source, twice this session.
+
+**T4b — `hKbase` IS CLOSED. The campaign's first gap slot with a positive
+counterpart** (merge, 3591 jobs, 39 principals kernel-three, two commits
+— the contract landed green on its own before the header, as instructed).
+
+`RamDriverBot.baseCost q_top cap mb ℓ mm φ = (turnCost … + 7)·mm + 6`,
+read at the depth's **member count** rather than the carrier;
+`RamDriver.MemEnum.card_le_arenaSize` (restated upstream in
+`RamDriver.lean` where the walk can reach it — hazard 2 again) puts `mm`
+under `arenaSize` and `MassWeight.arenaSize_le_arenaWeight` under the
+weight. **The fit is `Refine.G2CostProbe.hKbase_paid`**:
+`baseCost … mm φ ≤ sweepCoeffA · (mm + 1)` for every formula, depth and
+size — and it is **consumed for real**, not merely stated:
+`g2_plug`'s implication list drops from **five carrier dominations to
+four**, the base antecedent discharged internally from the witness's own
+base clause under a new `hCb : sweepCoeffA ≤ Cb`.
+
+**One token moved at the root, and it is the right one.**
+`driverRoot_decides_sentence` is byte-identical in program, pre, post,
+cost and every hypothesis except `hKbase`, whose size argument goes
+`baseCost … ℓ n φ → baseCost … ℓ m φ`. That token **is** the slot the gap
+theorems refuted; it cannot be avoided and still close the gap, and it
+**strengthens** the theorem — the old form demanded a carrier-sized
+constant at every `m` including `m = 0`, the new one demands `6 ≤ Kl ℓ 0`.
+`LevelPost`/`LevelPostD` unchanged. The contract cost exactly what the
+design compiled: one hypothesis retyped
+(`LevelImplementsFull → LevelImplementsD … D`) and one `.onD`.
+
+**The three refutations, handled rather than orphaned.** `hKbase_gap` and
+`hKbase_gap_any` are **still true** and kept with corrected docstrings —
+they read `baseCost` at a free size and pick a carrier for it, which is
+now the historical record of the reading the header replaced, paired with
+`hKbase_paid`. `C0CloseProbe.landed_base_needs_carrier_Cb` is **restated
+at `DeadSweep.sweepCost`**, the reading it was actually about (it reached
+a sweep floor through `baseCost_eq`); base and sweep must now be named
+separately. §7's ledger row flips to YES.
+
+**Four findings the design had wrong or missing, all compiled.**
+(1) `GapsDesign.baseCostM` priced the member turn at the carrier turn's
+`turnCost + 4`, "parametric in the loop variable" — but the member walk
+must *load* its vertex (`.assign "z" (.get (memName ℓ) (.var "mk"))`,
+three in the IMP+ cost model), so the landed charge is `turnCost + 3` per
+turn and `(turnCost+7)·mm+6` for the walk (`baseCostM_le_baseCost`:
+`baseCostM + 3·mm = baseCost`). The verdict survives — `sweepCoeffA` had
+ten of slack per entry and the load ate three.
+(2) **The trap was real but its predicted signal was wrong, and the
+correct reading is sharper.** §1.8 expected `DeadSweep.baseCost_eq` to
+stop being `rfl`; what broke first was `baseCom_is_sweepCom`. Had the
+member load been *free*, the two costs would have stayed `rfl`-equal
+while the two programs were already different — **the trap would have
+been invisible on the cost side.** Restated as
+`baseCom_header_is_the_member_list`/`sweepCom_header_is_the_carrier`
+(two `rfl`s naming the two loop headers) plus
+`DeadSweep.sweepCost_le_baseCost`.
+(3) **The design missed an obligation**: the `D` rows must survive the
+walk, and `base_spec`'s post says nothing about cells the walk does not
+visit while no frame lemma helps (the tables *are* written). Fixed
+**inside** the walk: `BaseTabMem` carries a second domain `Dm` beside the
+visited prefix, and it needs **no disjointness hypothesis** — the only
+cell a turn writes is its own member and the bit written there is
+correct, so a `Dm` cell is either untouched or freshly correct.
+(4) Route: **one block walk, two headers.** `base_block_mem_spec`
+generalizes the landed block from a *carrier prefix* to a prefix of a
+*list*, and the landed `base_block_spec` is that at `Mem := id`, restated
+byte-identical — so `base_turn_spec`, `Refine/DeadSweep.lean` and
+`Refine/KillPass.lean` are untouched and no second 120-line block proof
+was written.
+
+`RamDriver.BaseImplements` (the carrier-wide Prop) is now **uninhabited**
+and kept as documented history; supervisor-verified out of the live chain
+(definition and docstrings only). That makes
+`GapsDesign.baseImplementsD_of_baseImplements` and
+`levelImplementsD_bot_of_landed` vacuous — they are why phase A could
+land green on its own, so they stay as the record.
+`RamDriverWrites.lean` did **not** need to move.
