@@ -1697,8 +1697,8 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
       ∃ S Bd : Set (Fin n), S.ncard ≤ s ∧ Bd ⊆ Pt \ S ∧ 2 * s + 2 ≤ Bd.ncard ∧
         DistIndependent (deleteVerts G S) (2 * cap) Bd)
     (hℓ : ℓ = N (2 * s + 2))
-    (hbase : ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ), masked G M = ⊥ →
-      LevelImplementsFull B q_top cap mb R ℓ W ns ℓ φ G O T M Gm C (Kl ℓ (wA M)))
+    (hbase : ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ) (D : Set (Fin n)), masked G M = ⊥ →
+      LevelImplementsD B q_top cap mb R ℓ W ns ℓ φ G O T M Gm C D (Kl ℓ (wA M)))
     (horder : ∀ (j : ℕ), j < ℓ → ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ),
       OrderImplements B n R W cap mb ns j G O T M Gm C P (Ko j (wA M)))
     (hcover : ∀ (j : ℕ), j < ℓ → ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
@@ -1746,12 +1746,13 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
       -- the budget is spent, so the play cannot have got this far: the arena is edgeless
       have hbot : masked G M = ⊥ :=
         eq_bot_of_playOk_full hQ (by rw [← hℓ]; exact playOk_of_playRec hσ.2.2.2.1)
-      -- **the bottom still writes every row** (wave R1.8-T3-flip (c2b)): the base
-      -- pass walks the carrier, so it owes nothing to a domain and its
-      -- carrier-wide postcondition restricts to `alive ∪ D` for free
-      obtain ⟨σ', hrun, hpost, hout⟩ :=
-        hbase M Gm C hbot hbit σ ⟨hσ.1, hσ.2.1, hσ.2.2.1, hσ.2.2.2.1⟩
-      exact ⟨σ', hrun, hpost.onD _, hout⟩
+      -- **the bottom owes `alive ∪ D` and is handed `D`** (wave R1.8-T4b): the
+      -- base pass walks the depth's member list, so the domain clause of this
+      -- obligation's own precondition (`hσ.2.2.2.2`) is what carries `D` across
+      -- it — the walk never writes there, `D` being dead. Before T4b the pass
+      -- walked the carrier, discarded that clause, and its carrier-wide
+      -- postcondition was read down with `LevelPost.onD`.
+      exact hbase M Gm C D hbot hDdead hbit σ hσ
     | succ f ih =>
       intro j hf hj M Gm C D hDdead hbit
       have hjl : j < ℓ := by omega

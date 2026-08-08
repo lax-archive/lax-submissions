@@ -3894,6 +3894,45 @@ def BaseImplements (q_top cap mb ns W ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0)
       (baseCom q_top cap mb ℓ φ)
       (fun σ σ' => LevelPost B q_top cap mb φ G ns W O T ℓ M Gm C σ σ' ∧ σ'.out = σ.out) K
 
+/-- **The base case, on a domain** (wave R1.8-T4b). `BaseImplements` with
+three changes and no others:
+
+* the post is `LevelPostD … D` — the rows the pass writes are the
+  *alive* ones, its walk being the depth's member list, plus the
+  caller's pre-written `D`;
+* the pre gains `TableInvOn … D`, the clause that carries `D` across the
+  pass. The member walk cannot destroy those rows because it never
+  writes off the alive set and `D` is dead
+  (`MemEnum`'s third clause against `LevelImplementsD`'s first
+  hypothesis), so the clause goes in and comes out;
+* the hypothesis `2 ^ sigL cap mb ℓ < B` is dropped. It was the
+  representative scan's counter bound, and R1.8-T4a's shed made it
+  unused in the discharge already; a weaker precondition is the honest
+  statement.
+
+The `masked G M = ⊥` hypothesis stays: it is what the bottom of the
+recursion supplies (`eq_bot_of_playOk_full`) and what makes the depth's
+`botCom` fragments compute the right truth values.
+
+`BaseImplements` above is the pre-T4b carrier-wide form. The
+member-driven `baseCom` does **not** inhabit it — it writes no dead
+vertex's row, so `LevelPost`'s `TableInv` fails at every mask that kills
+something — and the design's `Refine.GapsDesign.baseImplementsD_of_baseImplements`
+is the compiled record that the retyping was a *weakening*, which is
+what let the contract move land one wave before the header. -/
+def BaseImplementsD (q_top cap mb ns W ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (G : SimpleGraph (Fin n)) (O T : ℕ → ℕ) (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
+    (D : Set (Fin n)) (K : ℕ) : Prop :=
+  ∀ {d : ℕ}, WordBoundK B n d ns cap mb → masked G M = ⊥ →
+  (∀ v : Fin n, v ∈ D → M (v : ℕ) = 0) →
+  (∀ c < sigL cap mb ℓ, ∀ v < n, C c v ≤ 1) →
+    Spec B (fun σ => LevelPre B n cap mb ns W O T ℓ M Gm C σ ∧
+        TablesSized q_top cap mb φ n σ ∧ BaseArrs B q_top cap mb ℓ φ σ ∧
+        TableInvOn q_top cap mb φ G ℓ M C D σ)
+      (baseCom q_top cap mb ℓ φ)
+      (fun σ σ' => LevelPostD B q_top cap mb φ G ns W O T ℓ M Gm C D σ σ' ∧
+        σ'.out = σ.out) K
+
 open Classical in
 /-- **The sentence readback.** That `sentenceCom` writes the one bit the
 whole program produces.
@@ -3963,12 +4002,20 @@ def LevelImplementsD (q_top cap mb R ℓ W ns j : ℕ) (φ : Lax3.FirstOrder.FO 
     (driverAt q_top cap mb R ℓ φ j)
     (fun σ σ' => LevelPostD B q_top cap mb φ G ns W O T j M Gm C D σ σ' ∧ σ'.out = σ.out) K
 
-/-- **The carrier-wide level obligation**, which since wave
-R1.8-T3-flip (c2b) only the *bottom* of the recursion satisfies:
-`RamDriver.baseCom` writes every vertex's row, so it owes nothing to a
-domain. It is what `RamDriverCluster.levelImplements` takes as its
-`hbase`, and `RamDriverCompose.baseImplements` is unchanged by the
-flip. -/
+/-- **The carrier-wide level obligation**, which between wave
+R1.8-T3-flip (c2b) and wave R1.8-T4b only the *bottom* of the recursion
+satisfied: the carrier-walking `baseCom` wrote every vertex's row, so it
+owed nothing to a domain, and this was what
+`RamDriverCluster.levelImplements` took as its `hbase`.
+
+**Nothing satisfies it since T4b.** The base pass walks the depth's
+member list, so it writes the alive rows and no others, and its
+obligation is `BaseImplementsD` at the level's `LevelImplementsD`. This
+form is kept as the record of what the header change gave up — and it
+gave up nothing the recursion asked for, which is
+`Refine.GapsDesign.levelImplementsD_bot`: the bottom case of
+`levelImplements` closes from the domain form with `Spec.pre` and
+nothing else. -/
 def LevelImplementsFull (q_top cap mb R ℓ W ns j : ℕ) (φ : Lax3.FirstOrder.FO 0)
     (G : SimpleGraph (Fin n)) (O T : ℕ → ℕ) (M Gm : ℕ → ℕ)
     (C : ℕ → ℕ → ℕ) (K : ℕ) : Prop :=

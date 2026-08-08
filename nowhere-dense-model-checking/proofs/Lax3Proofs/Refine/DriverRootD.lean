@@ -843,10 +843,11 @@ theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ} {Ki Ksc : ℕ → ℕ} {
     (fun A₀ ord π => RamDriverOrder.coverTurnImplements B n ns G A₀ O T ord π cap)
     hptr hexit
     hQ hℓ
-    (fun M Gm C hbot hbit => by
+    (fun M Gm C D hbot hDdead hbit => by
       rw [driverAt_bot]
-      exact ((RamDriverCompose.baseImplements hB hpow hbot hbit).pre
-        (fun _ h => ⟨h.1, h.2.1, h.2.2.1⟩)).mono (hKbase _))
+      exact (((RamDriverCompose.baseImplements hB hpow hbot hbit).pre
+        (fun _ h => ⟨h.1, h.2.1, h.2.2.1⟩)).post
+        (fun _ _ _ hq => ⟨hq.1.onD _, hq.2⟩)).mono (hKbase _))
     (fun j hj M Gm C _d h₁ h₂ h₃ h₄ h₅ =>
       ((horder j hj M Gm C) h₁ h₂ h₃ h₄ h₅).mono
         (hKo j (arenaWeight n G M)))

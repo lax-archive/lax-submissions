@@ -645,10 +645,11 @@ theorem levelAt
     (fun M π _ hordby => Refine.ArenaPointer.ptrWords_of_mass hordby (hdeg M π) hB.arena)
     (fun M π _ hordby => Refine.ArenaPointer.massWords_of_mass hordby (hdeg M π) hB)
     hQ hℓ
-    (fun M Gm C hbot hbit => by
+    (fun M Gm C D hbot hDdead hbit => by
       rw [driverAt_bot]
-      exact ((RamDriverCompose.baseImplements hB hpow hbot hbit).pre
-        (fun _ h => ⟨h.1, h.2.1, h.2.2.1⟩)).mono (hKbase _))
+      exact (((RamDriverCompose.baseImplements hB hpow hbot hbit).pre
+        (fun _ h => ⟨h.1, h.2.1, h.2.2.1⟩)).post
+        (fun _ _ _ hq => ⟨hq.1.onD _, hq.2⟩)).mono (hKbase _))
     (fun j _ M _ _ _d h₁ h₂ h₃ h₄ h₅ =>
       (RamDriverCompose.orderImplements₀ h₁ h₂ h₃ h₄ h₅).mono
         (hKo j (arenaWeight n G M)))
