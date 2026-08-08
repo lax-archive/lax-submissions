@@ -712,6 +712,152 @@ theorem scatBlockM_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hnB : n < B) (hnsB
       (scatBlockK mm bw nb t) :=
   scatBlockM_specW hcsr hnB hnsB le_rfl hrB htB hMB hml hbud
 
+/-! ### §8a The variant the driver actually calls
+
+**`ScatterBlock.scatBlock_specA` has no live consumer.** The driver's
+`RamDriver.scatDeadCom` runs `scatBlockComA (alvName (j + 1)) r t`, and
+the theorem `ScatterDeadTurn.scatDead_spec` points at it is
+`ScatterDeadEngine.scatBlockCnt_specA` — the same program and the same
+charge, with the counter kept in the postcondition (`cnt ≤ t` and the
+`∀ e` decision clause the dead fold consumes). So the three exports of §8
+narrow the pass, but the *driver's* pass is this one, and the successor
+needs it narrowed too.
+
+It costs almost nothing on top of §7: `ScatterDeadEngine`'s proof is the
+prologue of `scatBlockM_specW` verbatim followed by `loop_spec`, and the
+two counter clauses are read straight off the exit `ProgressA` — which
+`loopM_spec` returns unchanged. So the narrowing goes through with the
+same two distance lines and nothing else.
+
+`ScatterDeadEngine.lean` is frozen this wave, so these sit here beside
+it, exactly as §8 sits beside `ScatterBlock`. -/
+
+/-- **The active-set pass with its counter, at the mask's support.**
+`ScatterDeadEngine.scatBlockCnt_specW` with `ArenaAM` for `ArenaA`, all
+four landed postcondition clauses verbatim, the clean-out added, and the
+charge `scatBlockK mm bw nb t` unmoved. -/
+theorem scatBlockCntM_specW {B : ℕ} (hcsr : CsrGraph G ns O T) (hnB : n < B)
+    (hnsB : ns < B) (hnt : ns ≤ nt) (hrB : r + 1 < B) (htB : t < B)
+    (hMB : ∀ z < n, M z < B) (hml : MemList n mm Mem X) {bw nb : ℕ}
+    (hbud : BallBudget n r G M O bw nb) :
+    Spec B
+      (fun σ => ArenaAM n nt mm r O T M Mem σ ∧ (∃ g, σ.arrs "exc" = arrOf n g))
+      (scatBlockCom r t)
+      (fun _ σ' => (σ'.vars "flag" = 1 ↔ t ≤ (greedySet (masked G M) r X).ncard) ∧
+        σ'.vars "flag" ≤ 1 ∧ σ'.vars "cnt" ≤ t ∧
+        (∀ e : ℕ, (t ≤ σ'.vars "cnt" + e ↔
+          t ≤ (greedySet (masked G M) r X).ncard + e)) ∧ DistClean n r M σ')
+      (scatBlockK mm bw nb t) := by
+  have hmmn : mm ≤ n := hml.card_le
+  refine Spec.of_exists fun σ hσ => ?_
+  obtain ⟨hA, g, hexc⟩ := hσ
+  obtain ⟨hn, hmmv, hoff, htgt, halv, hmem, hdist, hqex, hqdex⟩ := id hA
+  obtain ⟨τ₁, hτ₁⟩ : ∃ τ, τ = σ.setVar "cnt" 0 := ⟨_, rfl⟩
+  have run₁ : Run B (.assign "cnt" (.lit 0)) σ τ₁ 2 := by
+    rw [hτ₁]; exact (Run.assign (v := 0) (evalB_lit (by omega))).mono (by simp [Expr.size])
+  have hv₁ : ∀ y, y ≠ "cnt" → τ₁.vars y = σ.vars y := by
+    intro y hy; rw [hτ₁]; simp [hy]
+  have ha₁ : τ₁.arrs = σ.arrs := by rw [hτ₁]; simp
+  have hcnt₁ : τ₁.vars "cnt" = 0 := by rw [hτ₁]; simp
+  obtain ⟨τ₂, K₂, run₂, hK₂, hmem₂, E, hexc₂, hclear, -⟩ :=
+    clearMem_run (n := n) (mm := mm) (B := B) (Mem := Mem) (X := X)
+      hnB (by omega) hml (by rw [hv₁ "n" (by decide)]; exact hn)
+      (by rw [hv₁ "mm" (by decide)]; exact hmmv)
+      (by rw [ha₁]; exact hmem) (by rw [ha₁]; exact hexc)
+  have hcnt₂ : τ₂.vars "cnt" = 0 := by
+    rw [run₂.frame_var "cnt" (notMem_clearMem_wvars "cnt" (by simp)), hcnt₁]
+  have harr₂ : ∀ a, a ∈ ["off", "tgt", "alv", "dist", "q", "qd"] → τ₂.arrs a = σ.arrs a := by
+    intro a ha
+    rw [run₂.frame_arr a (notMem_clearMem_warrs a (by fin_cases ha <;> simp)), ha₁]
+  have hA₂ : ArenaAM n nt mm r O T M Mem τ₂ := by
+    obtain ⟨g₆, hq⟩ := hqex
+    obtain ⟨g₇, hqd⟩ := hqdex
+    refine ⟨?_, ?_, by rw [harr₂ "off" (by simp)]; exact hoff,
+      by rw [harr₂ "tgt" (by simp)]; exact htgt,
+      by rw [harr₂ "alv" (by simp)]; exact halv, hmem₂,
+      distClean_of_arrs_eq hdist (harr₂ "dist" (by simp)),
+      ⟨g₆, by rw [harr₂ "q" (by simp)]; exact hq⟩,
+      ⟨g₇, by rw [harr₂ "qd" (by simp)]; exact hqd⟩⟩
+    · rw [run₂.frame_var "n" (notMem_clearMem_wvars "n" (by simp)),
+        hv₁ "n" (by decide), hn]
+    · rw [run₂.frame_var "mm" (notMem_clearMem_wvars "mm" (by simp)),
+        hv₁ "mm" (by decide), hmmv]
+  have hI₂ : ScatBlockInvM n nt mm r t G M O T Mem X (τ₂.setVar "sj" 0) := by
+    refine ⟨hA₂.setVar (by decide) (by decide), by simp, ?_⟩
+    refine progressA_start hml ?_
+    rcases Nat.eq_zero_or_pos t with rfl | ht
+    · exact Or.inl ⟨by simp [hcnt₂], by omega⟩
+    · refine Or.inr ⟨by simp [hcnt₂]; omega, by simp [hcnt₂, selBelow_zero], E,
+        by simp [hexc₂], fun w hw => by rw [hclear w hw]; omega,
+        fun w hw => by rw [hclear w hw]; simp⟩
+  obtain ⟨τ₃, run₃, hA₃, hP₃, hsj₃⟩ :=
+    (loopM_spec hcsr hnB hnsB hnt hrB htB hMB hml hbud).run (σ := τ₂) hI₂
+  have hcl₃ : DistClean n r M τ₃ := bfs_pre_of_arenaAM hA₃
+  -- the counter clauses, off the exit disjunction — unchanged by the narrowing
+  have hcntt : τ₃.vars "cnt" ≤ t := hP₃.cnt_le
+  have hcntB : τ₃.vars "cnt" < B := by omega
+  have hkey : ∀ e : ℕ, (t ≤ τ₃.vars "cnt" + e ↔
+      t ≤ (greedySet (masked G M) r X).ncard + e) := by
+    intro e
+    rcases hP₃ with ⟨hc, hle⟩ | ⟨-, hsel, -⟩
+    · exact ⟨fun _ => by omega, fun _ => by omega⟩
+    · rw [selBelow_all] at hsel
+      rw [hsel]
+  have hcv : (Cond.lt (Expr.var "cnt") (.lit t)).evalB B τ₃
+      = some (decide (τ₃.vars "cnt" < t)) := evalB_condLt (evalB_var hcntB) (evalB_lit htB)
+  by_cases hlt : τ₃.vars "cnt" < t
+  · have hns : ¬ t ≤ (greedySet (masked G M) r X).ncard := by
+      rcases hP₃ with ⟨h, -⟩ | ⟨-, h, -⟩
+      · omega
+      · rw [selBelow_all] at h; omega
+    refine ⟨τ₃.setVar "flag" 0, _,
+      run₁.seq (run₂.seq (run₃.seq (Run.ite_true (by rw [hcv]; simp [hlt])
+        (Run.assign (v := 0) (evalB_lit (by omega)))))),
+      ?_, by simp [hns], by simp, by simpa using hcntt, by simpa using hkey,
+      distClean_of_arrs_eq hcl₃ rfl⟩
+    simp only [scatBlockK, clearMemK, scanMemK, Cond.size, Expr.size]
+    have : K₂ ≤ clearMemK mm := hK₂
+    simp only [clearMemK] at this
+    omega
+  · have hyes : t ≤ (greedySet (masked G M) r X).ncard := by
+      rcases hP₃ with ⟨-, h⟩ | ⟨h, -⟩
+      · exact h
+      · omega
+    refine ⟨τ₃.setVar "flag" 1, _,
+      run₁.seq (run₂.seq (run₃.seq (Run.ite_false (by rw [hcv]; simp [hlt])
+        (Run.assign (v := 1) (evalB_lit (by omega)))))),
+      ?_, by simp [hyes], by simp, by simpa using hcntt, by simpa using hkey,
+      distClean_of_arrs_eq hcl₃ rfl⟩
+    simp only [scatBlockK, clearMemK, scanMemK, Cond.size, Expr.size]
+    have : K₂ ≤ clearMemK mm := hK₂
+    simp only [clearMemK] at this
+    omega
+
+/-- **The driver's pass, narrowed** — `ScatterDeadEngine.scatBlockCnt_specA`
+at `ArenaAtM`, with the clean-out. This is the theorem the successor
+wave points `ScatterDeadTurn.scatDead_spec` at once
+`RamDriver.scatDeadCom` swaps `fillCom "dist"` for
+`ScatterDeadPass.distMemCom`. Same `renCom` route, same charge. -/
+theorem scatBlockCntM_specA {B : ℕ} {av : String} (hav : MaskFree av)
+    (hcsr : CsrGraph G ns O T) (hnB : n < B) (hnsB : ns < B)
+    (hnt : ns ≤ nt) (hrB : r + 1 < B) (htB : t < B) (hMB : ∀ z < n, M z < B)
+    (hml : MemList n mm Mem X) {bw nb : ℕ} (hbud : BallBudget n r G M O bw nb) :
+    Spec B
+      (fun σ => ArenaAtM av n nt mm r O T M Mem σ ∧ (∃ g, σ.arrs "exc" = arrOf n g))
+      (scatBlockComA av r t)
+      (fun _ σ' => (σ'.vars "flag" = 1 ↔ t ≤ (greedySet (masked G M) r X).ncard) ∧
+        σ'.vars "flag" ≤ 1 ∧ σ'.vars "cnt" ≤ t ∧
+        (∀ e : ℕ, (t ≤ σ'.vars "cnt" + e ↔
+          t ≤ (greedySet (masked G M) r X).ncard + e)) ∧ DistClean n r M σ')
+      (scatBlockK mm bw nb t) := by
+  intro σ hσ
+  obtain ⟨τ, hrun, hq⟩ :=
+    renCom_spec (f := maskSwap av) (maskSwap_invol av)
+      (scatBlockCntM_specW hcsr hnB hnsB hnt hrB htB hMB hml hbud) σ
+      ⟨(arenaAM_renEnv hav).2 hσ.1, hσ.2.imp fun _ hg => (exc_renEnv hav).2 hg⟩
+  exact ⟨τ, hrun, hq.1, hq.2.1, hq.2.2.1, hq.2.2.2.1,
+    (distClean_renEnv hav).1 hq.2.2.2.2⟩
+
 /-! ### §8b Nothing was lost
 
 The re-walk is only honest if the landed export comes back out of it.
@@ -741,6 +887,28 @@ theorem scatBlock_specW_of_M {B : ℕ} (hcsr : CsrGraph G ns O T) (hnB : n < B)
     scatBlockM_specW hcsr hnB hnsB hnt hrB htB hMB hml hbud σ
       ⟨arenaAM_of_arenaA hσ.1, hσ.2⟩
   exact ⟨τ, hrun, hq.1, hq.2.1⟩
+
+/-- **`ScatterDeadEngine.scatBlockCnt_specA`, recovered** — the driver's
+own pass, the landed statement verbatim, out of the narrowed one. This
+is the gate that matters most: it is the theorem
+`ScatterDeadTurn.scatDead_spec` consumes today. -/
+theorem scatBlockCnt_specA_of_M {B : ℕ} {av : String} (hav : MaskFree av)
+    (hcsr : CsrGraph G ns O T) (hnB : n < B) (hnsB : ns < B)
+    (hnt : ns ≤ nt) (hrB : r + 1 < B) (htB : t < B) (hMB : ∀ z < n, M z < B)
+    (hml : MemList n mm Mem X) {bw nb : ℕ} (hbud : BallBudget n r G M O bw nb) :
+    Spec B
+      (fun σ => ArenaAt av n nt mm r O T M Mem σ ∧ (∃ g, σ.arrs "exc" = arrOf n g))
+      (scatBlockComA av r t)
+      (fun _ σ' => (σ'.vars "flag" = 1 ↔ t ≤ (greedySet (masked G M) r X).ncard) ∧
+        σ'.vars "flag" ≤ 1 ∧ σ'.vars "cnt" ≤ t ∧
+        ∀ e : ℕ, (t ≤ σ'.vars "cnt" + e ↔
+          t ≤ (greedySet (masked G M) r X).ncard + e))
+      (scatBlockK mm bw nb t) := by
+  intro σ hσ
+  obtain ⟨τ, hrun, hq⟩ :=
+    scatBlockCntM_specA hav hcsr hnB hnsB hnt hrB htB hMB hml hbud σ
+      ⟨arenaAtM_of_arenaAt hσ.1, hσ.2⟩
+  exact ⟨τ, hrun, hq.1, hq.2.1, hq.2.2.1, hq.2.2.2.1⟩
 
 /-- **`ScatterBlock.scatBlock_specA`, recovered**, at the caller-named
 mask. -/
@@ -918,6 +1086,18 @@ theorem distClean_of_cover {σ : Env} {mm1 : ℕ} {Mem1 D₀ : ℕ → ℕ}
 /-- info: 'Lax3Proofs.Refine.ScatterBlockMask.scatBlockM_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms scatBlockM_spec
+
+/-- info: 'Lax3Proofs.Refine.ScatterBlockMask.scatBlockCntM_specW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms scatBlockCntM_specW
+
+/-- info: 'Lax3Proofs.Refine.ScatterBlockMask.scatBlockCntM_specA' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms scatBlockCntM_specA
+
+/-- info: 'Lax3Proofs.Refine.ScatterBlockMask.scatBlockCnt_specA_of_M' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms scatBlockCnt_specA_of_M
 
 /-- info: 'Lax3Proofs.Refine.ScatterBlockMask.scatBlock_specW_of_M' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
