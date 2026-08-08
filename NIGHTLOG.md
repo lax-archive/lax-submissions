@@ -5974,3 +5974,79 @@ biting at that point — it refutes the touched-only fill against the
 *whole-array* clause, and against `DistClean` the unlisted cells are dead
 and unconstrained, which is the wave's whole point. It is kept and
 re-headed, not deleted.
+
+**b4-walk-2m-3 — THE SCATTER LEAF'S CARRIER PROBLEM IS CLOSED. The
+atom's distance fill is a member walk** (merge `cd2457a`, 3593 jobs,
+eight files, `RamDriverRoot.deadAtomK_turn_closed` now carries **no
+carrier term at all**).
+
+`RamDriver.scatDeadCom` runs `distMemCom j r` in place of
+`fillCom "dist" (.lit (r + 1))`. Import order forced exactly two
+definitions up into `RamDriver.lean` beside `fillCom`/`copyCom` —
+`memFillAt` and `distMemCom` — with their charge, invariant, walk and
+write-set lemmas all left in `ScatterDeadPass`, the minimum the driver
+needs to name a program it runs. `scatDead_spec` enters the engine at
+`ScatterBlockMask.ArenaAtM` through `scatBlockCntM_specA`, and the fill
+reaches the arena's distance clause by
+`distClean_of_cover hdist₇ hmem1E.2.2.2 hfill₇`. **The covering
+hypothesis is the CHILD's `MemEnum n mm1 Mem1 Alv'` at the unfiltered
+list**, so the unsound member-scoped narrowing is a type error rather
+than a comment.
+
+**The closed forms.** At the turn's cluster
+(`ScatterDeadTurn.deadAtomKX_closed`):
+`(44·bw + 110·nb + 140)·t + 20·min(xb+1,n) + 102·xb + 14·kq + abit + 84`
+— the `11·n` is gone and the member walks are `102 = 23 + 14 + 65`, the
+child's list, the fill at the same list, and the engine's. At the carrier
+(`deadAtomK_root_eq`): `122·n`, **up from `119·n`**.
+
+**The acceptance is a pair, and the worker was right to refuse a single
+statement.** `deadAtomKX_le_blk`: for **every** `n` the charge is at most
+`deadAtomKBlk β xb kq bw nb t = (44·bw + 110·nb + 140)·t + 122·xb +
+14·kq + abit + 104`, which names only the block reading. And
+`deadAtomKX_carrier_free`: past `xb + 1` the charge **is** that ceiling,
+so any two carriers the block's scan bound fits into charge the same
+number on the nose. The sharper claim — that the charge does not mention
+`n` at all — is **false**, and `scatDeadKX_carrier_indep_refuted`
+compiles it: the outside probe's cap `min (xb+1) n` is a legitimate
+reading of the carrier. That is why the theorems carry `xb + 1 ≤ n`.
+Negative control: `scatDeadKXwhole_unbounded` — the same charge with
+`11·n + 6` back in the slot exceeds every constant at a fixed block
+reading — tied to the landed form by `scatDeadKXwhole_trade`, plus
+executable `#guard`s clocking `distMemCom` identical at `n = 10` and
+`n = 200` where `fillCom "dist"` grows.
+
+**Two landed statements became FALSE and were restated, not deleted.**
+`C0CloseProbe.scatDeadK_narrow_floor`/`deadAtomK_narrow_floor` move from
+`11·n + 6 ≤ …` to `20·n + 10 ≤ …` (the probe's own reading, now the only
+carrier term left in the *unnarrowed* `scatDeadK`), and `deadAtomKB_trade`
+is restated against a new `deadAtomKW` that preserves the `119·n`
+headline as a compiled record. `deadAtomKB_eq_landed` compiles that
+E4c-c's model *is* the landed charge. `dist_touched_only_refuted` kept
+and re-headed — against `DistClean` it no longer bites, which is the
+wave's whole point.
+
+**Three weakenings, declared.** (1) **The charge is larger at the
+carrier**: `119·n → 122·n`, three per vertex for the indirect address at
+`mm1 = n`; `B4Design`'s slope moves `154·t + 119 → 154·t + 122`, inside
+the granted `221`, and every consumer threads the bound as a hypothesis
+so nothing needs re-discharging. The win is entirely that the summand is
+now read at the block. (2) `RamDriverWrites.lean` had to move — it was in
+neither the scope list nor the frozen list, and `wvars_scatDeadCom`'s
+scalar list changes `"i" → "ac", "ax"`, forced by the program text. It is
+the only interface in the wave that is not byte-identical. (3)
+`ScatterDeadTurn` gained an import of `Refine.ScatterBlockMask`.
+
+Byte-identical by extraction and diff, supervisor-verified independently
+on two of them: `ScatterStep`, `driverRoot_decides_sentence(_binj)`,
+`levelAt`, `clusterStepAt`, `LevelPost`/`LevelPostD`, and the six
+principal scatter specs.
+
+**What remains of the scatter leaf: its constant-vs-family problem,
+untouched.** `deadAtomKX_block_unbounded` still holds, so a constant `Kb`
+at `RamDriverRoot.levelAt` remains unsatisfiable and
+`scatterBnd_cluster` still bridges the block reading back to the carrier.
+Making `Kb`/`Ki`/`Ksc` families of the block reading — `B4Design` §4's
+coefficient form, which moves `levelAt` and `driverRoot_decides_sentence`
+— is **b4-iface**, and it is now the only thing between the scatter leaf
+and its slot.
