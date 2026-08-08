@@ -1507,6 +1507,54 @@ noncomputable def scatDeadK {L : ℕ} (β : DistFO L 1) (n mm1 kq mm bw nb t : �
   killSumCost kq + outProbeCost n + atomBitCost β + outCntCost + atomMemCost mm1 +
     (11 * n + 6) + scatBlockK mm bw nb t + atomFlagCost
 
+/-- **The same charge, read at the turn's cluster** (wave B4-walk-1).
+
+Three of `scatDeadK`'s readings are the walk's to narrow and they narrow
+to the *same* number: the outside probe's loop bound (`outProbeCostB`,
+built and unwired by E4c-a), the child's member count `mm1`, and the
+atom's own member count `mm` — all three are bounded by the cluster the
+turn descends into, because the child mask marks only cluster vertices
+and the probe stops one step past the last of them. The ball's two
+numbers stay the parameters they already were, so a caller that narrows
+them narrows this charge with no further edit.
+
+What is left of the carrier is the distance fill's `11·n + 6` **alone**.
+That summand is program text (`RamDriver.scatDeadCom`'s
+`fillCom "dist"`) and no accounting reaches it; it is the next wave's.
+
+`scatDeadKX_carrier` is the identity at `xb := n` — the landed charge at
+its own carrier instantiation, on the nose — so the hypothesis the walk
+now takes is *weaker* than the one it took (`scatDeadKX_le_carrier`) and
+no consumer owes anything new. -/
+noncomputable def scatDeadKX {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) : ℕ :=
+  killSumCost kq + outProbeCostB n xb + atomBitCost β + outCntCost + atomMemCost xb +
+    (11 * n + 6) + scatBlockK xb bw nb t + atomFlagCost
+
+/-- **At the carrier reading the narrowed charge IS the landed one.** -/
+theorem scatDeadKX_carrier {L : ℕ} (β : DistFO L 1) (n kq bw nb t : ℕ) :
+    scatDeadKX β n n kq bw nb t = scatDeadK β n n kq n bw nb t := by
+  simp only [scatDeadKX, scatDeadK, outProbeCostB_carrier]
+
+/-- Monotone in the cluster reading and in the ball's two numbers. -/
+theorem scatDeadKX_mono {L : ℕ} (β : DistFO L 1) {n xb xb' kq bw bw' nb nb' t : ℕ}
+    (hx : xb ≤ xb') (hb : bw ≤ bw') (hn : nb ≤ nb') :
+    scatDeadKX β n xb kq bw nb t ≤ scatDeadKX β n xb' kq bw' nb' t := by
+  have h₁ : outProbeCostB n xb ≤ outProbeCostB n xb' := outProbeCostB_mono hx
+  have h₂ : atomMemCost xb ≤ atomMemCost xb' := by simp only [atomMemCost]; omega
+  have h₃ : scatBlockK xb bw nb t ≤ scatBlockK xb' bw' nb' t :=
+    ScatterBlock.scatBlockK_mono hx hb hn le_rfl
+  simp only [scatDeadKX]
+  omega
+
+/-- **THE WEAKENING, compiled.** A cluster reading under the carrier, at
+a ball budget under the carrier's, charges no more than the landed
+carrier instantiation — so every caller holding the landed bound holds
+the narrowed one, and narrowing the walk asks nothing new of anybody. -/
+theorem scatDeadKX_le_carrier {L : ℕ} (β : DistFO L 1) {n xb kq bw bw' nb nb' t : ℕ}
+    (hx : xb ≤ n) (hb : bw ≤ bw') (hn : nb ≤ nb') :
+    scatDeadKX β n xb kq bw nb t ≤ scatDeadK β n n kq n bw' nb' t :=
+  le_trans (scatDeadKX_mono β hx hb hn) (le_of_eq (scatDeadKX_carrier β n kq bw' nb' t))
+
 /-! ### §5d The seam between the terms and the engine
 
 The one thing the order of §5c has to buy is that the engine leaves the
@@ -2442,6 +2490,21 @@ Classical.choice,
 Quot.sound] -/
 #guard_msgs in
 #print axioms outside_prefix_bound
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKX_carrier' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms scatDeadKX_carrier
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKX_mono' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms scatDeadKX_mono
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadPass.scatDeadKX_le_carrier' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms scatDeadKX_le_carrier
 
 /-- info: 'Lax3Proofs.Refine.ScatterDeadPass.exists_outside_le_ncard' depends on axioms: [propext,
 Classical.choice,

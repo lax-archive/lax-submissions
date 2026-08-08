@@ -680,7 +680,9 @@ theorem clusterStepAtR (hfr : RFrames q_top cap mb R ℓ φ)
       (blockWeight n G Xoff Xmem k) (Kin (blockWeight n G Xoff Xmem k)) ≤ Ks) :
     ClusterStepImplements B q_top cap mb ns W ℓ j φ G O T M Gm C π ord Xoff Xmem asg mm k
       (arenaWeight n G) (driverAt q_top cap mb R ℓ φ (j + 1)) Kin Ks :=
-  RamDriverCluster.clusterStepImplements hcap
+  RamDriverCluster.clusterStepImplements
+    (bw := min (Lax3Proofs.Refine.MassWeight.blockRowSum O Xoff Xmem k) ns)
+    (nb := min (Lax3Proofs.Refine.MassMath.blockSize Xoff k) n) hcap
     (RamDriverDescend.descendStep hmb hjl le_rfl)
     (fun _ _ _ _ => RamDriverDescend.enumStep hB le_rfl)
     (fun _ _ _ _ _ => RamDriverDescend.colourStep le_rfl)
@@ -694,9 +696,13 @@ theorem clusterStepAtR (hfr : RFrames q_top cap mb R ℓ φ)
       (hfr j).2.2.1 (hfr j).2.2.2.1
       (fun _ ha => (hfr j).2.2.2.2.2.2.2.2.1 _ ha)
       (hfr j).2.2.2.2.2.2.2.2.2)
-    (fun _ _ _ _ _ _ =>
-      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB hbnd hcostI hKsc)
-    (Refine.ScatterDeadPass.ballBudget_carrier hcsr)
+    (fun X _ _ _ _ _ =>
+      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB
+        (Lax3Proofs.RamDriverRoot.scatterBnd_cluster X
+          (Nat.min_le_right _ _) (Nat.min_le_right _ _) hbnd)
+        hcostI hKsc)
+    (fun _ hkn hout hsub r =>
+      Lax3Proofs.RamDriverRoot.ballBudget_cluster hcsr hout hkn hsub r)
     (fun _ _ _ _ _ _ => RamDriverBase.readbackStep hB.one_lt hB.n_lt le_rfl)
     hmono
     (fun _ hkn hout hsub =>
@@ -740,8 +746,9 @@ theorem clusterFramesAtR (hfr : RFrames q_top cap mb R ℓ φ)
     (hfr j).2.2.1 (hfr j).2.2.2.1
     (fun _ ha => (hfr j).2.2.2.2.2.2.2.2.1 _ ha)
     (hfr j).2.2.2.2.2.2.2.2.2
-    (fun _ _ _ _ _ _ =>
-      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB hbnd hcostI hKsc)
+    (fun X _ _ _ _ _ =>
+      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB
+        (Lax3Proofs.RamDriverRoot.scatterBnd_cluster X le_rfl le_rfl hbnd) hcostI hKsc)
     (fun i => RamDriverWrites.tabName_notMem_warrs_scatterDeadPhase j j i
       (fun β hβ => (tableRank_of_mem_tablesAt (j + 1) β hβ).1) _ 0 (fun _ hβ => hβ))
     (Refine.ScatterDeadPass.ballBudget_carrier hcsr)

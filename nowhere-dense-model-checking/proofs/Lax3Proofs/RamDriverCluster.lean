@@ -976,11 +976,12 @@ about the *turn's data* and neither is about a state.
 * `hbud` — a slot weight and a size for every ball of the child arena —
   is `Refine.ScatterBlock.scatBlock_specW`'s `hbud`, quantified over the
   radius because the radius is the atom's. It is a *parameter pair*
-  `(bw, nb)` and not a fixed reading so that E4c can narrow it without
-  re-threading anything: today the discharge is the carrier one,
-  `(ns, n)` at `A := Finset.range n`, which follows from
-  `RamBfs.CsrGraph` alone and is supplied in
-  `RamDriverRoot.clusterStepAt`.
+  `(bw, nb)` and not a fixed reading so that the budget can be narrowed
+  without re-threading anything. **Wave B4-walk-1** narrowed it: the
+  discharge is `RamDriverRoot.ballBudget_cluster` at the turn's own
+  block, `(blockRowSum, blockSize)`, and the carrier witness
+  `Refine.ScatterDeadPass.ballBudget_carrier` at `(ns, n)` is what the
+  frames path still uses.
 
 **Wave R1.8-T3-flip (c1d): the phase IS the dead-aware one.** The
 command below is the fold of `RamDriver.scatterDeadCom`, not of the
@@ -1246,7 +1247,10 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
     (hscat : ∀ X W w Alv' Gam' C',
       ScatterStep B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asgf mm X W w
         Alv' Gam' C' bw nb Ks)
-    (hbud : ∀ (M' : ℕ → ℕ) (r : ℕ), Refine.ScatterBlock.BallBudget n r G M' O bw nb)
+    (hbud : ∀ M' : ℕ → ℕ, k < n →
+      RamCover.CoverOut G M π ord cap mm Xoff Xmem asgf →
+      (∀ v : Fin n, M' (v : ℕ) ≠ 0 → v ∈ clusterAt G M π ord cap k) →
+      ∀ r : ℕ, Refine.ScatterBlock.BallBudget n r G M' O bw nb)
     (hread : ∀ X W w Alv' Gam' C',
       ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asgf mm X W w
         Alv' Gam' C' Kr)
@@ -1342,7 +1346,8 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
   have hbarr₄ : BaseArrs B q_top cap mb ℓ φ σ₄ := hbarrₗ.run hr₄
   -- the scatter atoms
   obtain ⟨σ₅, hr₅, hturn₅, hdat₅, hcolarr₅, htab₅, hout₅, hc₅, hflag₅⟩ :=
-    (hscat X W w Alv' Gam' C' hXalive (hbud Alv')).run (σ := σ₄)
+    (hscat X W w Alv' Gam' C' hXalive
+        (hbud Alv' hkn hheld.2.2.2.2.2.2.2.2 hsub₁)).run (σ := σ₄)
       ⟨hturn₄, hdat₄, hcolarr₄, hcolbit₃, hcolread₃, htab₄, hkllist₄, hbarr₄⟩
   have htsz₅ : TablesSized q_top cap mb φ n σ₅ := htsz₄.run hr₅
   have hc₅₀ : σ₅.vars (curName j) = σ.vars (curName j) := by
@@ -1628,6 +1633,18 @@ neither is about the program:
   interface above — and with it `RamDriverRoot.driverRoot_decides_sentence`'s
   hypothesis list — is unchanged.
 
+**Wave B4-walk-1: the frame's budget is its own.** `hframe` is stated at
+a cost family `Ksf` of its own instead of at `hstep`'s `Ks`. The two are
+merged by `spec_conj`, which keeps the **first** specification's budget
+and drops the second's, so the frames path's number never reaches the
+conclusion — `Refine.B4Design.frames_cost_is_dead_weight` is that fact
+compiled, at an arbitrary margin. The generalisation is a weakening:
+`Ksf := Ks` is the landed statement, and it is what
+`RamDriverRoot.levelAt` still passes. What it buys is that the step path
+may run its scatter charge at a *block-scale* ball budget while the
+frames path keeps the carrier one, without the level's turn cost having
+to dominate both.
+
 **Wave R1.8-T3-flip (c2b): the pre-written domain, and no sweep.** The
 statement runs over a set `D` of vertices whose rows the caller has
 already written, and it establishes `alive ∪ D`. `hsweep` is gone; what
@@ -1685,7 +1702,7 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
     {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
     {P : Equiv.Perm (Fin n) → (ℕ → ℕ) → Prop}
     {wA : (ℕ → ℕ) → ℕ} {wB : (ℕ → ℕ) → (ℕ → ℕ) → ℕ → ℕ}
-    {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ} {Kmass : ℕ}
+    {Ko Kc Kd Ks Ksf Kl : ℕ → ℕ → ℕ} {Kmass : ℕ}
     {d : ℕ} (hB : WordBoundK B n d ns cap mb) (hWB : n + W + 1 < B)
     (hcsr : RamElim.CsrSimple G ns O T)
     (helim : ElimAvail B n) (haug : AugAvail B n) (hcovav : CoverAvail B cap ns G O T)
@@ -1711,7 +1728,7 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
     (hframe : ∀ (j : ℕ), j < ℓ → ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
         (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm k : ℕ),
       ClusterFrames B q_top cap mb ns W ℓ j φ G O T M Gm C π ord Xoff Xmem asg mm k
-        wA (driverAt q_top cap mb R ℓ φ (j + 1)) (Kl (j + 1)) (Ks j (wB Xoff Xmem k)))
+        wA (driverAt q_top cap mb R ℓ φ (j + 1)) (Kl (j + 1)) (Ksf j (wB Xoff Xmem k)))
     (hloopfr : ∀ (j : ℕ), j < ℓ →
       cpsName j ∉ (clusterCom q_top cap mb φ j
           (driverAt q_top cap mb R ℓ φ (j + 1))).warrs ∧

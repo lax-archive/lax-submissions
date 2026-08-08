@@ -347,7 +347,21 @@ leave is the atom's greedy value in the cluster step's arena.
 
 The atom's row is read at the child's member list and at the turn's kill
 list only; no clause about a row outside `alive ∪ kills` enters, which
-is the whole content of the R1.8 domain change. -/
+is the whole content of the R1.8 domain change.
+
+**Wave B4-walk-1: the charge is read at the turn's CLUSTER.** The
+hypothesis is `ScatterDeadPass.scatDeadKX` at `X.ncard` — the probe's
+loop bound, the child's member count and the atom's own member count all
+under the cluster the descent produced — in place of the carrier
+instantiation `scatDeadK β n n mb n bw nb`. It is a **weakening**
+(`ScatterDeadPass.scatDeadKX_le_carrier` at `X.ncard ≤ n`): every caller
+holding the landed bound holds this one. The three narrowings are
+`ScatterDeadPass.outside_prefix_bound` (the pigeonhole, at the cluster
+indicator and the child mask's containment in it),
+`RamDriver.MemEnum.card_le_arenaSize` into
+`Refine.ArenaBlock.arenaSize_le_ncard` (the child arena is inside the
+cluster), and `ScatterDeadPass.atomMemCom_spec`'s own `mm ≤ mm1`. The
+only carrier reading left in the charge is the distance fill. -/
 theorem scatDead_spec {bw nb : ℕ}
     (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
     (hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0)
@@ -355,7 +369,7 @@ theorem scatDead_spec {bw nb : ℕ}
     {σs : ScatterSentence (sigL cap mb (j + 1))}
     (hβ : σs.β ∈ tablesAt q_top cap mb φ (j + 1)) (hloc : IsLocal σs.β)
     (hrB : σs.r + 1 < B) (htB : σs.t + n + mb < B)
-    {Kb : ℕ} (hKb : ScatterDeadPass.scatDeadK σs.β n n mb n bw nb σs.t ≤ Kb) :
+    {Kb : ℕ} (hKb : ScatterDeadPass.scatDeadKX σs.β n X.ncard mb bw nb σs.t ≤ Kb) :
     Spec B (DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m
         X W w Alv' Gam' C')
       (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1))) σs.β σs.r σs.t)
@@ -383,6 +397,15 @@ theorem scatDead_spec {bw nb : ℕ}
   obtain ⟨Tb, hTbA, hTb1, hTbS⟩ := htab _ hp
   have hn : σ.vars "n" = n := hpre.n_eq
   have hm1n : mm1 ≤ n := hmem1E.card_le
+  -- **the three cluster readings** (wave B4-walk-1). The child mask marks only
+  -- vertices of the turn's cluster — `BatchData`'s pointwise clause — so the
+  -- child's member list is no longer than the cluster and the probe's hit-free
+  -- prefix is inside it. Neither fact leaves this proof: `X` is existential
+  -- above, exactly as `hXalive` is.
+  have hsubX : ∀ v : Fin n, Alv' (v : ℕ) ≠ 0 → v ∈ X := fun v hv => ((hmaskpt v).1 hv).2.1
+  have hXaSiff : ∀ v : Fin n, Xa (v : ℕ) ≠ 0 ↔ v ∈ X := fun v => by rw [← hXaS]; exact Iff.rfl
+  have hm1X : mm1 ≤ X.ncard :=
+    le_trans hmem1E.card_le_arenaSize (ArenaBlock.arenaSize_le_ncard hsubX)
   -- the atom's set, as the child's table row decides it
   set S := ScatterDeadFold.satSet G (masked G M) Alv' (colRead n C (sigL cap mb j)) X w σs.β
     with hSdef
@@ -412,10 +435,14 @@ theorem scatDead_spec {bw nb : ℕ}
     fun a => hr₁.frame_arr a (by rw [ScatterDeadPass.warrs_killSumCom]; simp)
   have hfv₁ : ∀ y : String, y ≠ "kc" → y ≠ "ke" → σ₁.vars y = σ.vars y :=
     fun y h₁ h₂ => hr₁.frame_var y (ScatterDeadPass.notMem_wvars_killSumCom _ _ h₁ h₂)
-  -- **pass 2**: the first dead vertex outside the cluster
+  -- **pass 2**: the first dead vertex outside the cluster, at the pigeonhole
+  -- bound (wave B4-walk-1 wires `outProbeCom_specB`, which E4c-a built and left
+  -- unwired for want of the two set facts above)
   obtain ⟨σ₂, hr₂, hn₂, halv₂, hclu₂, hof₂, hno₂, hyes₂⟩ :=
-    (ScatterDeadPass.outProbeCom_spec (B := B) (n := n) (j := j) (Alv' := Alv') (Xa := Xa)
-      h1B hnB hAlvB (fun k hk => lt_of_le_of_lt (hXaB k hk) h1B)).run
+    (ScatterDeadPass.outProbeCom_specB (B := B) (n := n) (j := j) (xb := X.ncard)
+      (Alv' := Alv') (Xa := Xa)
+      h1B hnB hAlvB (fun k hk => lt_of_le_of_lt (hXaB k hk) h1B)
+      (fun m hm hfree => ScatterDeadPass.outside_prefix_bound hXaSiff hsubX m hm hfree)).run
       ⟨by rw [hfv₁ "n" (by decide) (by decide)]; exact hn,
         by rw [hfa₁]; exact halvA, by rw [hfa₁]; exact hXaA⟩
   have hfa₂ : ∀ a : String, σ₂.arrs a = σ₁.arrs a :=
@@ -606,13 +633,13 @@ theorem scatDead_spec {bw nb : ℕ}
     hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq (hr₇.seq (hr₈.seq hr₉))))))
   refine ⟨σ₉, _, hrun, ?_, hσ.run_scatDead hloc hrun,
     hrun.out_eq (noWrite_scatDeadCom _ _ _ _ _), ?_, ?_, hfl1₉, ?_⟩
-  -- the charge
+  -- the charge, at the cluster (wave B4-walk-1)
   · refine le_trans ?_ hKb
-    have hsb := ScatterBlock.scatBlockK_mono (mm := mm) (mm' := n) (bw := bw) (bw' := bw)
+    have hsb := ScatterBlock.scatBlockK_mono (mm := mm) (mm' := X.ncard) (bw := bw) (bw' := bw)
       (nb := nb) (nb' := nb) (t := σs.t) (t' := σs.t) (by omega) le_rfl le_rfl le_rfl
-    simp only [ScatterDeadPass.scatDeadK, ScatterDeadPass.killSumCost,
-      ScatterDeadPass.atomMemCost, ScatterDeadPass.outProbeCost,
-      ScatterDeadPass.outCntCost, ScatterDeadPass.atomFlagCost]
+    simp only [ScatterDeadPass.scatDeadKX, ScatterDeadPass.killSumCost,
+      ScatterDeadPass.atomMemCost, ScatterDeadPass.outCntCost,
+      ScatterDeadPass.atomFlagCost]
     omega
   -- the cursor, and the flags
   · exact hrun.frame_var _ (notMem_wvars_scatDeadCom_lit hloc
@@ -673,6 +700,67 @@ postcondition. -/
 noncomputable def deadAtomK {L : ℕ} (β : DistFO L 1) (n mm1 kq mm bw nb t : ℕ) : ℕ :=
   ScatterDeadPass.scatDeadK β n mm1 kq mm bw nb t + 2
 
+/-- **The per-atom charge at the turn's cluster** (wave B4-walk-1):
+`ScatterDeadPass.scatDeadKX` and the flag. The one carrier reading left
+in it is the distance fill's, which is program text. -/
+noncomputable def deadAtomKX {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) : ℕ :=
+  ScatterDeadPass.scatDeadKX β n xb kq bw nb t + 2
+
+/-- **At the carrier reading the narrowed per-atom charge IS the landed
+one.** -/
+theorem deadAtomKX_carrier {L : ℕ} (β : DistFO L 1) (n kq bw nb t : ℕ) :
+    deadAtomKX β n n kq bw nb t = deadAtomK β n n kq n bw nb t := by
+  simp only [deadAtomKX, deadAtomK, ScatterDeadPass.scatDeadKX_carrier]
+
+/-- **THE WEAKENING at the per-atom charge.** Any caller holding the
+landed carrier bound holds the cluster-scale one, at any ball budget
+under the carrier's. This is the hypothesis-level statement that wave
+B4-walk-1 asks nothing new of `RamDriverRoot`. -/
+theorem deadAtomKX_le_carrier {L : ℕ} (β : DistFO L 1) {n xb kq bw bw' nb nb' t : ℕ}
+    (hx : xb ≤ n) (hb : bw ≤ bw') (hn : nb ≤ nb') :
+    deadAtomKX β n xb kq bw nb t ≤ deadAtomK β n n kq n bw' nb' t := by
+  have h := ScatterDeadPass.scatDeadKX_le_carrier β (kq := kq) (t := t) hx hb hn
+  simp only [deadAtomKX, deadAtomK]
+  omega
+
+/-- **The narrowed charge in closed form.** Against
+`Refine.C0CloseProbe.deadAtomK_root_eq`'s `119·n`: the carrier
+coefficient is the distance fill's `11` alone, and the probe's `20`,
+the child's member walk's `23` and the engine's two block walks' `65`
+are read at the cluster `xb` — the `108` of
+`C0CloseProbe.deadAtomKD_root_eq`, moved off the carrier rather than
+deleted. `min` is `outProbeCostB`'s own: the scan reads the vertex after
+the last cluster member, and never more than the carrier. -/
+theorem deadAtomKX_closed {L : ℕ} (β : DistFO L 1) (n xb kq bw nb t : ℕ) :
+    deadAtomKX β n xb kq bw nb t
+      = (44 * bw + 110 * nb + 140) * t + 11 * n + 20 * min (xb + 1) n + 88 * xb +
+        14 * kq + ScatterDeadPass.atomBitCost β + 84 := by
+  simp only [deadAtomKX, ScatterDeadPass.scatDeadKX, ScatterDeadPass.killSumCost,
+    ScatterDeadPass.outProbeCostB, ScatterDeadPass.atomMemCost,
+    ScatterDeadPass.outCntCost, ScatterDeadPass.atomFlagCost,
+    ScatterBlock.scatBlockK_eq]
+  ring
+
+/-- **The wave's own finding, compiled: no CONSTANT absorbs the cluster
+reading.** The narrowed charge grows in the cluster, so a bound
+quantified over every block — which is the only shape the *root* can
+state, since the blocks are produced inside
+`RamDriverCluster.clusterStepImplements` — is unsatisfiable at a
+constant `Kb`. This is why wave B4-walk-1 stops at
+`RamDriverRoot.clusterStepAt`: below it the walk reads the block, and
+above it the reading cannot be cashed until `Kb`, `Ki` and `Ksc` become
+families of the block, which is the coefficient restatement of
+`Refine.B4Design` §4 and moves `RamDriverRoot.levelAt` and
+`driverRoot_decides_sentence` with it.
+
+It is `Refine.C0CloseProbe.narrow_scatter_leaf_unbounded`'s mechanism
+at the narrowed charge and in the narrowed argument. -/
+theorem deadAtomKX_block_unbounded {L : ℕ} (β : DistFO L 1) (n kq bw nb t Kb : ℕ) :
+    ∃ xb : ℕ, ¬ (deadAtomKX β n xb kq bw nb t ≤ Kb) := by
+  refine ⟨Kb + 1, fun h => ?_⟩
+  rw [deadAtomKX_closed] at h
+  omega
+
 open Classical in
 /-- **One atom and its flag.** -/
 theorem atomDead_spec {bw nb : ℕ}
@@ -682,7 +770,7 @@ theorem atomDead_spec {bw nb : ℕ}
     (i k : ℕ) {σs : ScatterSentence (sigL cap mb (j + 1))}
     (hβ : σs.β ∈ tablesAt q_top cap mb φ (j + 1)) (hloc : IsLocal σs.β)
     (hrB : σs.r + 1 < B) (htB : σs.t + n + mb < B)
-    {Kb : ℕ} (hKb : deadAtomK σs.β n n mb n bw nb σs.t ≤ Kb) :
+    {Kb : ℕ} (hKb : deadAtomKX σs.β n X.ncard mb bw nb σs.t ≤ Kb) :
     Spec B (DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m
         X W w Alv' Gam' C')
       (.seq (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1))) σs.β σs.r σs.t)
@@ -710,7 +798,7 @@ theorem atomDead_spec {bw nb : ℕ}
     Run.assign (evalB_var hflagB)
   refine ⟨_, _, hrτ.seq r₂, ?_, hdead.run_flag r₂, ?_, ?_, ?_, ?_, ?_⟩
   · refine le_trans ?_ hKb
-    rw [deadAtomK]
+    rw [deadAtomKX]
     simp only [Expr.size]
     omega
   · rw [out_setVar]; exact hout
@@ -732,7 +820,7 @@ theorem atomsDead_spec {bw nb : ℕ}
     (i : ℕ) {Kb : ℕ} :
     ∀ (l : List (ScatterSentence (sigL cap mb (j + 1)))) (k₀ : ℕ),
       (∀ σs ∈ l, σs.β ∈ tablesAt q_top cap mb φ (j + 1) ∧ σs.r + 1 < B ∧
-        σs.t + n + mb < B ∧ deadAtomK σs.β n n mb n bw nb σs.t ≤ Kb) →
+        σs.t + n + mb < B ∧ deadAtomKX σs.β n X.ncard mb bw nb σs.t ≤ Kb) →
       Spec B (DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m
           X W w Alv' Gam' C')
         (foldIdx (fun k σs =>
@@ -797,7 +885,7 @@ theorem blocksDead_spec {bw nb : ℕ}
       (∀ β ∈ l, β ∈ tablesAt q_top cap mb φ j) →
       (∀ β ∈ l, ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
         σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          deadAtomK σs.β n n mb n bw nb σs.t ≤ Kb) →
+          deadAtomKX σs.β n X.ncard mb bw nb σs.t ≤ Kb) →
       (∀ β ∈ l, Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki) →
       Spec B (DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m
           X W w Alv' Gam' C')
@@ -875,7 +963,7 @@ landed fold left, and it is worth the same thing. -/
 theorem scatterDeadStep {bw nb Kb Ki K : ℕ}
     (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
     (hbnd : ∀ β ∈ tablesAt q_top cap mb φ j, ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-      σs.r + 1 < B ∧ σs.t + n + mb < B ∧ deadAtomK σs.β n n mb n bw nb σs.t ≤ Kb)
+      σs.r + 1 < B ∧ σs.t + n + mb < B ∧ deadAtomKX σs.β n X.ncard mb bw nb σs.t ≤ Kb)
     (hcost : ∀ β ∈ tablesAt q_top cap mb φ j,
       Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki)
     (hK : Ki * (tablesAt q_top cap mb φ j).length + 1 ≤ K) :
@@ -1020,5 +1108,25 @@ Classical.choice,
 Quot.sound] -/
 #guard_msgs in
 #print axioms scatterDeadStep
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.deadAtomKX_carrier' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms deadAtomKX_carrier
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.deadAtomKX_le_carrier' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms deadAtomKX_le_carrier
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.deadAtomKX_closed' depends on axioms: [propext,
+Quot.sound] -/
+#guard_msgs in
+#print axioms deadAtomKX_closed
+
+/-- info: 'Lax3Proofs.Refine.ScatterDeadTurn.deadAtomKX_block_unbounded' depends on axioms:
+[propext, Quot.sound] -/
+#guard_msgs in
+#print axioms deadAtomKX_block_unbounded
 
 end Lax3Proofs.Refine.ScatterDeadTurn
