@@ -5418,3 +5418,93 @@ and the ordering phase depend on it), and **privatizing `"dist"`** with
 e4c-c's own `renCom` transport so the cover phase's clobbering is
 irrelevant and the single initialization hoists to the root. Design
 phase first, with an honest stop if either refutes.
+
+**e4c-d — Phase 1 only, verdict split: the capped scan HOLDS, the
+private array REFUTES three ways** (merge `0d317ec`, additions only, no
+program text changed anywhere; the six principal statements
+`scatDead_spec`/`atomDead_spec`/`atomsDead_spec`/`blocksDead_spec`/
+`scatterDeadStep`/`RamDriverCluster.ScatterStep` byte-identical by
+extraction and diff, 200 lines).
+
+**(a) The capped block scan holds.** The guard goes at the **dequeue**,
+not the slot — a depth-`d` vertex relaxes nothing anyway, so its row is
+skipped rather than scanned and discarded — which means
+`RamBfs.scanSlot` is **reused verbatim** and only the frontier invariant
+is re-proved. `FrontierC` is `RamBfs.Frontier` with exactly two clauses
+moved: `cap : ∀ w < n, D w ≤ d ∨ D w = S` (at `S = d+1` this *is* the
+landed clause, so `frontierC_of_frontier` reads the landed invariant as
+an instance — a generalisation, not a different statement) and
+`exp : ∀ i < head, D (Q i) < d → …`. `FrontierC.relax` goes through with
+the guard **supplying** the bound the landed proof *derived* from the
+sentinel — that hypothesis move is the whole trade — and
+`FrontierC.complete` for a non-accidental reason: its induction consumes
+`exp` only at a vertex already placed at distance `≤ k` with
+`k + 1 ≤ d`, so a depth-`d` row is never needed. The weakening is
+**forced, on data**: `capped_exp_is_forced` exhibits the state a cap-0
+search leaves on the single edge `0—1` at sentinel `5`, where every
+`FrontierC` clause holds and the landed unguarded `exp` fails outright.
+**`bfsBlockK` is unmoved** at `44·bw + 80·nb + 60` — the guard costs 4
+nodes on the scanning branch and *replaces* 19 on the other
+(`capped_turn_pays`; `capped_turn_slack` records six of ten spare nodes
+still unspent).
+
+**(b) The private dist array refutes, three independent ways.**
+`deadPre_blind_to_tab` is the sharpest single fact of the wave: `"tab"`
+is the one `scratchArrs` name free inside the recursion (its only writer
+`rootScatterCom` runs *after* `driverAt 0`) and `LevelMem` already sizes
+it at `n` — so hazard 1's producer does exist — and yet the atom's whole
+precondition `DeadPre` **survives an arbitrary refill of it**. A root
+fill therefore reaches the atom only as a **new conjunct of
+`ScatterStep`'s precondition**. Independently: `no_uniform_sentinel` —
+no numeral fixed before the sentence bounds every `ScatterSentence.r`
+(the package's only fact about that field is `σs.r + 1 < B`, a
+hypothesis threaded from the root); and `level_hoist_escapes_size_slot`
+— `coverPhase` clobbers `"dist"` before every level's cluster loop and
+`driverAt (j+1)` is entered once per cluster, so a carrier walk per
+level-entry is a carrier walk per turn one level up, priced exactly as
+`per_turn_copy_escapes_size_slot` priced the retired mask copy.
+
+**What it was worth, and the consolidation it forces.**
+`deadAtomKD_root_eq` prices Phase 2 at `119·n → 108·n` (`84 → 78`), with
+`deadAtomKD_trade` pinning that nothing else moves; the surviving `108`
+is the probe's `20` (accounting) plus the member reads' `88`
+(`23·mm1 + 65·mm`), neither program text. And `rootFill_le_weight`
+prices the root fill at coefficient **93, not the measured 87** — so
+even the working half moves `kdecRoot`,
+`G2ExistsRevalidation.decodeDLCost_le_weight` and `rootD_close`'s `87`.
+
+**So the fill's removal is a level-interface wave**, touching
+`RamDriverCluster`/`RamDriverCompose`/`RamDriverRoot`/`RamDriverDescend`
+— exactly B4-exec's files. The road is therefore re-decomposed into
+three waves instead of two, split where the files split:
+**b4-walk-1** (frames decoupling + `ClusterBallBudget` + `outProbeCostB`
+at the narrowed bound — pure narrowing, no new program text, kills
+`88·n + 20·n`), **b4-walk-2** (the sup sentinel over the atom
+enumeration + the root fill as a `ScatterStep` conjunct + the `run_vcg`
+transcription against `FrontierC` — which is what makes e4c-d's capped
+scan live rather than dead capital, and removes the last `11·n`), then
+**b4-iface** (size-read `turnCostSize`, the `hbnd`/`hcostI`/`hKsc` chain,
+the `hKd` deletion), which cannot discharge until the first two land.
+
+**Supervisor error worth recording.** The packet ordered the two design
+questions (a) then (b). (b) was the likelier refutation — it already had
+a compiled prior blocker in the cover phase's clobbering — so testing it
+first would have made (a)'s 451 lines unnecessary at that point. **In a
+multi-blocker design probe, test the blocker with the strongest prior
+refutation first.** (a) is not wasted — the sup-sentinel route needs it —
+but it was bought before it was known to be needed.
+
+**Housekeeping.** The wave's `lax build --only proofs` discards the
+warm-store overrides and cold-builds the archive-pinned dependency proof
+packages, provisioning a `.lake/packages` tree and rewriting manifests;
+starved by a concurrent worktree build it reached ~1 job/10 min. Killed
+at the boundary and the worktree removed, which is the correct cleanup.
+Its namespace audit was verified independently by inspection (one
+`_root_` escape, landing inside `Lax3Proofs.Refine.BfsBlock`; no
+concept-namespace dot-extension; no `simp`/`rw` of a concept
+definition). **Rule for successors: `lax build` is a landing-boundary
+gate run from the main checkout, not a per-wave gate run in a seeded
+worktree.** Noted separately: `monadic-dependence-neighborhood-complexity`
+and `twin-width-mixed-minor-number` each carry `.lake/packages` trees in
+both packages — pre-existing, unrelated to this campaign, and reclaimable
+disk.
