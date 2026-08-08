@@ -5280,3 +5280,62 @@ otherwise read the row as a limit.
 **Road: e4c-b (the two copies, program change — in flight) → B4-exec
 (frames decoupling + ball narrowing + size-read chain + the `hKd`
 deletion) → T4b → E3b/E-order → B7 → C0 → P5.**
+
+**e4c-b — a refutation with the replacement in hand** (merge `392a43d`,
+3590 jobs, additive: 842 insertions, one deletion and it is a docstring
+line). Both touched-only passes built, specified and **clocked**
+(`memCopyAtCost mm1 = 15·mm1 + 6`, `memFillAtCost mm1 = 14·mm1 + 6`,
+executable clock equal at carrier 10 and 200, against the landed
+`copyCom`/`fillCom` growing) — and **neither can be wired in**. Program
+text unchanged; `scatDeadK`, `deadAtomK`, `scatDead_spec`, `ScatterStep`,
+`scatterDeadStep` byte-identical; `B4Design` rebuilds unchanged, which is
+the check that no landed arithmetic moved.
+
+**Two blockers, now compiled rather than asserted.**
+(i) `mask_junk_flips_the_engine` — the mask leftover is **semantic, not
+accounting**: one arena, one member list, one radius, one threshold, and
+moving only the mask cells the alive set does not name takes the
+engine's own flag from `1` to `0` (a junk-alive vertex bridges `0—1—3`
+and swallows a pick). `"alv"` is a `scratchArrs` entry — `LevelMem`
+gives its length only, `DeadPre.run` licenses arbitrary writes, and the
+descent, the level's `coverPhase` (`RamCover.coverCom` destroys it) and
+the nested driver all write it. The atom can *maintain* cleanliness
+(`alv_set_clear_round_trip`) but not *establish* it.
+(ii) `dist_touched_only_refuted` — `ArenaA`'s dist clause pins the
+**whole** array at the atom's own radius, and consecutive atoms of a
+turn carry different radii, so every cell the child's list omits is
+stale by one radius step whatever the caller does.
+(iii) `per_turn_copy_escapes_size_slot` — hoisting the copy to the turn
+does not help: at a block of weight zero the size-read slot grants
+`ct + ksc` and one carrier copy costs `12·n + 6`.
+
+**Capital that survives however the copies die**: `deadAtomKB` (the
+modelled post-wiring charge) with the exact trade
+`deadAtomK + (43·mm1 + 18) = deadAtomKB + (23·n + 12)`, and
+`deadAtomKB_le_atomCoeff` — the charge fits `atomCoeff` under
+`bw ≤ s ∧ nb ≤ s` at slope `154·t + 151` and constant `96`, both inside
+the `221` already granted. **B4-exec's coefficient does not have to
+move.**
+
+**Supervisor finding, and the reason the next wave is not R1.6.** The
+wave's stated route out was R1.6, the driver-wide clean-scratch
+discipline. But the program text says the two passes exist to satisfy a
+**fixed array-name calling convention**, not to compute anything
+(`RamDriver.lean:2388-2389`): the mask copy's *source*
+`alvName (j + 1)` is already exactly `arrOf n Alv'` — that is what the
+copy's own spec proves — and the engine hardcodes the literal `"alv"` at
+22 sites. Parameterize the engine family by the mask array name and the
+copy disappears **with zero semantic change**, taking the junk with it,
+since there is no scratch left to leave junk in;
+`warrs_scatBlockCom` already compiles that the engine writes only
+`"exc"`/`"dist"`/`"q"`/`"qd"`, so it never touches the mask. Symmetrically
+the fill exists only because the BFS's unvisited sentinel is `r + 1`,
+i.e. **radius-dependent**, while `BfsBlock.unwind` already restores the
+array after each search — make the sentinel radius-free and the
+per-atom fill disappears entirely rather than becoming touched-only.
+**Wave e4c-c dispatched on that route**, Part A (mask) landing green
+before Part B (sentinel) starts, with the standing instruction that if
+B's single initialization can only reach level entry it is
+carrier-charged per level and re-imports the very floor
+`C0Probe.level_interface_floor` exists to kill — in which case stop and
+report rather than trade one floor for another.
