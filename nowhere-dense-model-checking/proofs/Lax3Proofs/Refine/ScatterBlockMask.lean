@@ -218,11 +218,12 @@ theorem arenaAM_zero_dist {σ : Env} (h : σ.arrs "dist" = arrOf 0 (fun _ => 0))
 
 /-! ### §5 The pass, re-walked at the narrowed arena
 
-§1–§4 settled the arena; what follows is `ScatterBlock`'s pass carried
-across it — the turn (`stepM_run`), the scan (`loopM_spec`) and the three
-exports. The landed walks are copied and **exactly the distance lines
-move**; every other line, every cost numeral and every `flag` clause is
-the landed one.
+**This section closes the header's "What is still open".** §1–§4 settled
+the arena and named the pass-level spec as the next leaf; what follows is
+`ScatterBlock`'s pass carried across it — the turn (`stepM_run`), the
+scan (`loopM_spec`) and the three exports. The landed walks are copied
+and **exactly the distance lines move**; every other line, every cost
+numeral and every `flag` clause is the landed one.
 
 **Why so little moves.** The narrowed clause names one array, so it is a
 frame wherever that array is not written, and the two walks of the pass
