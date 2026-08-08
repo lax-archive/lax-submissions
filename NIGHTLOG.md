@@ -5756,3 +5756,109 @@ by the turn's cluster, and the three bounds are proved separately), so
 `deadAtomKX_closed` shows the two member walks merged as `88`. Splitting
 `xb` into three — with `mm1` at `arenaSize n Alv'`, strictly under
 `X.ncard` — is mechanical if the five are wanted visibly apart.
+
+**b4-walk-2m-1 — THE FILL IS NOT HOISTED, IT IS SHRUNK. The engine's
+distance contract now speaks only of the mask's support** (merge
+`eb04b6a`, 3593 jobs, two new files `Refine/BfsBlockMask.lean` (1286) +
+`Refine/ScatterBlockMask.lean` (219), additions only — every landed
+statement byte-identical by extraction and diff, fifteen principals
+kernel-three).
+
+**The route the campaign had recorded was the expensive one.** e4c-d §6b
+priced killing the atom's `fillCom "dist"` as a level-interface wave: a
+private array (because `coverPhase` clobbers `"dist"` at every level
+entry), a new conjunct on `RamDriverCluster.ScatterStep`'s precondition
+(because `DeadPre` is blind to `"tab"`), a construction-time `sup`
+sentinel over the atom enumeration, and four driver files. The wave was
+dispatched on exactly that and **redirected ten minutes in**, on the
+program text: `RamBfs.scanSlot` tests the mask **first**
+(`.ite (.lt (.lit 0) (.get "alv" (.var "w"))) …`) and only then reads
+`dist[w]`; `expandRow` and `unwindSlot` read `dist` only at queue
+entries, which `Frontier.qmem` pins alive; the one unmasked cell the
+engine touches is the source's, which `Frontier.src` pins by name. **The
+engine never reads an unmasked cell, so the contract should not speak
+about one** — and then the fill does not need to go anywhere, it needs to
+get smaller.
+
+The verdict was already in the campaign's own record, unpriced:
+`ScatterDeadPass.dist_touched_only_refuted`'s docstring refutes the
+touched-only fill *against the whole-array clause* and says in as many
+words that "the clause would have to be narrowed to the mask's support,
+and that is the engine's own contract". §6b asked *where the fill can
+go*; the question that pays is *what the contract has to say*.
+
+**Both named obstructions resolve positively, compiled at one state** —
+and that state is what a real search leaves when the source is alive and
+every neighbour of it is dead.
+
+* **The unwind's exit** holds: the trail clause
+  `∀ j, ri ≤ j → j < tf → D' (Q j) = D (Q j)` names no mask at all, so
+  queue injectivity carries it across the narrowing untouched. What moves
+  is the exit — the array is no longer a known literal list — and
+  `cleanOn_not_literal` compiles that there is nothing stronger to aim
+  at.
+* **The seeds at dead vertices** hold, and harder than expected in the
+  campaign's favour. `frontier_sound_refuted`: once the array is only
+  mask-clean, the landed `sound` at a dead vertex is not merely
+  unavailable, it is **false** — an unmasked cell may hold junk *below*
+  the cap, and `sound` then demands a walk the arena cannot make. The
+  narrowing is forced by the data exactly as `capped_exp_is_forced`
+  forces §7's guard. Consequence: `bfsBlock_specW`'s `hdisc0`, the one
+  place `sound` was consumed at a dead vertex, does not narrow — it
+  **disappears**, being mask-scoped `qall` alone, which already carried
+  the guard.
+
+**What landed.** `FrontierM` is the landed `Frontier` with exactly `cap`
+and `sound` mask-guarded and every other clause untouched (`qall` already
+carried `M w ≠ 0`, which is the evidence the rest could).
+`bfsBlockM_specW` runs the **landed program** `bfsBlockCom d` — no
+program text changed anywhere in this wave — with `DistClean n d M` as
+both entry and exit distance clause, the landed correctness postcondition
+verbatim (the queue names exactly `M v ≠ 0 ∧ WD G M d s v`, injectivity,
+the `qd` threshold reading), at the landed `bfsBlockK bw nb = 44·bw +
+80·nb + 60`. Slot 44, turn `44·rowLen + 30`, unwind 34/entry, seed 20 —
+**every numeral unmoved**. `ArenaAM`/`ArenaAtM` narrow `ArenaA`'s seventh
+clause and leave the other six alone; `DistClean` carries **no tail
+conjunct** (a clause off the support would be the carrier walk this line
+of work exists to delete). The pass/engine boundary is one proposition in
+both directions (`bfs_pre_of_arenaAM`, `arenaAM_of_bfs_post`), and the
+`maskSwap` transport goes through with `"dist"` `MaskFree`, so the
+successor's renaming route is not blocked.
+
+**Three weakenings, declared.** (i) The engine no longer returns the
+array it was given — the exit is `DistClean`, not a literal list — so
+`bfsBlockM_specW` and `bfsBlock_specW` are **incomparable** Specs
+(weaker pre, weaker post) and both directions are stated rather than a
+refinement claimed. (ii) A dead source's cell **is** changed: the unwind
+writes `d+1` into `dist[src]` unconditionally, and mask-scoped the entry
+said nothing about that cell — "clean in, clean out" is now clean-out on
+the support, plus the source. (iii) `dist_le_iff` gained `M w ≠ 0`, free
+at every consumer since all read through the queue.
+
+**Not done, and named:** the pass-level spec. `scatBlock_specW`/`_specA`
+at `ArenaAM` needs `step_run` (205 lines) re-walked at `bfsBlockM_specW`
+with `DistClean` framed across `markBall`'s writes. Dispatched as
+**b4-walk-2m-2**; the atom swap (`fillCom "dist"` →
+`ScatterDeadPass.distMemCom`, `11·n + 6` → `memFillAtCost mm1 =
+14·mm1 + 6`, carrier-free) is **2m-3** after it.
+
+**What this route does NOT buy**: atoms at different radii still each
+need their own sentinel, so there is no cross-radius chaining theorem
+here and none is needed. E4c-d's §7 capped-scan capital (`FrontierC`,
+`bfsBlockComC`, `capped_turn_pays`) stays landed and is **not consumed**
+by this route — it was bought for the hoist and the hoist is not
+happening.
+
+**The supervisor lesson, stated plainly**: read what the program *reads*
+before designing a hoist. A contract clause that is stronger than the
+program needs looks exactly like a program cost, and four waves priced
+the removal of one.
+
+**Two measurements that correct earlier notes.** The `.lake/packages`
+trees e4c-d flagged as reclaimable disk are **54 MB**, not a meaningful
+reclaim; the real consumers are `~/.elan` (34 GB of toolchains) and
+`~/.lax/warm` (7.4 GB), neither of which is this campaign's to prune. And
+a seeded worktree costs **1.4 GB** against 6.0 GB free on a 99%-full
+disk, on 4 cores — so waves run **one at a time** and the worktree is
+removed at the landing boundary, which is now a hard constraint and not a
+preference.
