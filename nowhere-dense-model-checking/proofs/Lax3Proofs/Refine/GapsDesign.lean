@@ -445,6 +445,23 @@ theorem baseImplementsD_of_baseImplements {B q_top cap mb ns W ℓ K : ℕ}
   refine ((h hB hpow hbot hbit).pre (fun _ hσ => ⟨hσ.1, hσ.2.1, hσ.2.2.1⟩)).post ?_
   exact fun _ _ _ hq => ⟨hq.1.onD _, hq.2⟩
 
+/-- **The retyped slot reproduces today's discharge.** §1.5 composed with
+the weakening: the landed `RamDriverCompose.baseImplements` still closes
+the bottom of the recursion *through the retyped `hbase`*, at the same
+budget and at every pre-written domain.
+
+So the contract move can land in one wave and the member header in the
+next, with the package green in between — no flag day. That property is
+the main reason this file calls `hKbase` the cheapest of the three. -/
+theorem levelImplementsD_bot_of_landed {B q_top cap mb R ℓ W ns d K : ℕ}
+    {φ : Lax3.FirstOrder.FO 0} {n : ℕ} {G : SimpleGraph (Fin n)} {O T M Gm : ℕ → ℕ}
+    {C : ℕ → ℕ → ℕ} {D : Set (Fin n)}
+    (hB : Lax3Proofs.RamDriver.WordBoundK B n d ns cap mb)
+    (hpow : 2 ^ sigL cap mb ℓ < B) (hbot : masked G M = ⊥)
+    (h : Lax3Proofs.RamDriver.BaseImplements B q_top cap mb ns W ℓ φ G O T M Gm C K) :
+    Lax3Proofs.RamDriver.LevelImplementsD B q_top cap mb R ℓ W ns ℓ φ G O T M Gm C D K :=
+  levelImplementsD_bot hB hbot (baseImplementsD_of_baseImplements hpow h)
+
 /-! #### §1.6 The negative controls -/
 
 /-- **Control (cost): accounting cannot.** The landed base charge
@@ -601,7 +618,7 @@ theorem coverCost_quadratic_floor (n ns : ℕ) :
 
 /-- …so no weight-read coefficient pays the pass either, at the light
 arena. The negative control for §2.4(b): two program deltas — the outer
-loop off the compacted list (`CoverBlock.centreLoom`'s shape, landed as
+loop off the compacted list (`CoverBlock.centreLoopCom`'s shape, landed as
 `centreLoop_spec`) and the body off the ball engine
 (`BfsBlockCost.centreObligation_of_ballCost`, landed and unwired). -/
 theorem coverCost_no_weight_coeff (k : ℕ) :
@@ -954,6 +971,7 @@ end ThreeSlots
 #print axioms base_fits_the_close
 #print axioms levelImplementsD_bot
 #print axioms baseImplementsD_of_baseImplements
+#print axioms levelImplementsD_bot_of_landed
 #print axioms landed_base_escapes_CbM
 #print axioms memberBase_cannot_meet_full
 #print axioms kcov_is_phaseBudgetM
