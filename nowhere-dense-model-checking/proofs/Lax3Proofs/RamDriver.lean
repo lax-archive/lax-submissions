@@ -2367,6 +2367,23 @@ leaves the three it did not produce alone is
 only `"exc"`, `"dist"`, `"q"` and `"qd"` — no name the driver or the
 atom program holds — is `warrs_scatBlockCom` next to it.
 
+**Wave E4c-b: the two calling-convention passes stay, and why.** The
+mask copy and the distance fill below are the last carrier walks of the
+atom (`Refine.C0CloseProbe.scatDeadK_narrow_floor`'s `23·n + 12`).
+Their touched-only replacements are built and clocked in
+`Refine.ScatterDeadPass` §5f — one store per vertex of the child's
+member list, at `15·mm1 + 6` and `14·mm1 + 6` — and neither can replace
+the pass here. `copyCom` may be dropped only from a state where `"alv"`
+is zero off the child's alive set, and `"alv"` is a
+`RamDriverFrames.scratchArrs` entry that `RamDriver.LevelMem` sizes and
+does not fill: the descent, the cover phase and the nested driver all
+write it (`ScatterDeadPass.alv_touched_only_needs_clean_scratch` runs
+the replacement from the state that actually arrives). `fillCom` cannot
+be dropped at all while `Refine.ScatterBlock.ArenaA`'s seventh clause
+pins the *whole* array at this atom's own radius, since consecutive
+atoms of a turn carry different radii
+(`ScatterDeadPass.dist_touched_only_refuted`).
+
 **Wave R1.8-T3-flip (c1): where this may be written.**
 `Refine.ScatterBlock.scatBlockCom` is the landed active-set engine, and
 until this wave its file sat *below* this one in the import order, so
