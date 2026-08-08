@@ -6050,3 +6050,61 @@ Making `Kb`/`Ki`/`Ksc` families of the block reading — `B4Design` §4's
 coefficient form, which moves `levelAt` and `driverRoot_decides_sentence`
 — is **b4-iface**, and it is now the only thing between the scatter leaf
 and its slot.
+
+**Session wrap 2026-08-08 (Jan: run-to-completion with authority to adapt
+the plan, then "wrap up at next convenience").** Main `55eab9b →
+d6f7672`, 20 commits, `lake build` green at **3593 jobs** replayed in the
+main checkout after every landing, working tree clean, no worktrees left.
+Three proof waves landed (2m-1, 2m-2, 2m-3), each reviewed on the branch
+diff and rebuilt in main before the next was dispatched.
+
+**What was bought: the scatter leaf's carrier problem, closed.**
+`RamDriverRoot.deadAtomK_turn_closed` carries no carrier term, and the
+block ceiling is compiled in both directions. That was the road's only
+*unbounded* deficit — `C0CloseProbe` had it at `≥ 131·n` with no constant
+`ksc` existing at all — so the item that could have killed the campaign
+is now an interface question (`b4-iface`) rather than a mathematical one.
+
+**What was learned, and it is the session's real product.** The recorded
+route for that leaf was a four-driver-file hoist. The route taken was to
+narrow a contract clause, and it changed no program text in two of the
+three waves. **The rule is now a memory: read what the program actually
+reads before designing a hoist — a precondition stronger than the program
+needs is indistinguishable, from the cost side, from a genuine program
+cost, and far cheaper to fix.** The campaign's own refutation docstring
+had named the cheaper route and never priced it.
+
+**Two supervisor errors, both caught by workers and both recorded.** The
+2m-2 packet named three exports the driver does not call (the walk goes
+through a counter-keeping sibling in `ScatterDeadEngine`); narrowing only
+the advertised exports would have left the driver unserved. And the
+original 2m packet ordered a two-blocker design probe with the likelier
+refutation second — the same error e4c-d recorded a day earlier.
+
+**One road defect found by review, not by a wave.** `hKs` has **two**
+unlanded halves and only the scatter one was scheduled: `BlockLeaves`'
+block-driven descent passes are built, measured and referenced by no
+driver file, while `descendCost`'s `24·n²` — and `ballCost`'s
+`O(n·ns·cap)` — are live in `descendStep`. The measured-cost re-ordering
+of the morning could not have caught it, because **the ceiling table asks
+whether a constant is small enough, not whether it is the driver's**. The
+same review reframed the whole residue: it is three landed-but-unwired
+engines (`BlockLeaves`, `CoverBlock`, the order text), one per remaining
+gap slot, plus the interface tidy-ups.
+
+**Where a successor starts: `b4-iface`** — `Kb`/`Ki`/`Ksc` as families of
+the block reading, which deletes `scatterBnd_cluster` and takes the
+`hKd` slot with it (`hKd` was scheduled into e4c-b, whose Part B
+dead-ended, and never happened). Then `E4c-descend`, then `hKc`+`hKo` as
+one wave. `ScatterDeadTurn.deadAtomKX_block_unbounded` constrains the
+first: the block reading must live strictly below `clusterStepAt`, and
+nothing block-scale may touch `Ksc`.
+
+**Operational, measured this session and now binding.** A seeded worktree
+costs **1.4 GB** against ~6 GB free on a 99%-full disk, and the machine
+has **4 cores** — so waves run **one at a time** and the worktree is
+removed at the landing boundary. The `.lake/packages` trees flagged as
+reclaimable are 54 MB, not a meaningful reclaim; the real consumers are
+`~/.elan` (34 GB) and `~/.lax/warm` (7.4 GB), neither this campaign's to
+prune. `lax build` stays a landing-boundary gate run from the main
+checkout, never a per-wave gate in a worktree.
