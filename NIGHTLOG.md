@@ -5918,3 +5918,59 @@ is a third instance of it rather than the redesign the campaign feared.
 Flagged, not decided: it needs the design pass gaps-design scoped, and
 `RamDriverBase.lean:876`'s `hasgB : ∀ v < n, asg v < B` is a genuine
 carrier-wide consumer that would move to a `WordBoundK`-style value clause.
+
+**b4-walk-2m-2 — the active-set pass re-walked at the mask's support**
+(merge `8212777`, 3593 jobs, one file, **903 insertions and zero
+deletions**, `Refine/ScatterBlockMask.lean`; no import line needed, the
+module entered the build closure in 2m-1).
+
+`stepM_run`, `loopM_spec`, and `scatBlockM_specW`/`_specA`/`_spec` at
+`ArenaAM`/`ArenaAtM`, byte-verified by extraction and diff against
+`main`: on each of the five the only differing lines are the name,
+`ArenaA → ArenaAM`, and the added exit clause. Hypotheses, program,
+`flag` clauses and charge are character-identical.
+`scatBlockK mm bw nb t = pickBlockK bw nb · t + clearMemK mm + scanMemK mm
++ 6` with `pickBlockK = bfsBlockK + markBallK + 60` — **every numeral
+unmoved**.
+
+**Why it was cheap, and the reason is structural**: `markBall` and
+`clearMem` both list `"dist"` in their `warrs` frame lemmas, so carrying
+`DistClean` across a pick is a **frame, not an argument** — all distance
+reasoning stays inside `bfsBlockM_specW`, whose entry clause *is* the
+arena's clause. Only two lines of the walk moved.
+
+**The supervisor's packet named the wrong exports, and the worker caught
+it.** `RamDriver.scatDeadCom` runs `scatBlockComA`, but the walk that
+serves it is `ScatterDeadTurn.scatDead_spec` pointing at
+`ScatterDeadEngine.scatBlockCnt_specA` — a sibling re-run that keeps the
+counter. Narrowing only the three exports the brief named would have left
+the driver unserved. `scatBlockCntM_specW`/`_specA` were added beside
+them at a cost of two lines over `loopM_spec`, `ScatterDeadEngine.lean`
+untouched. **Rule for successors: name the export the driver actually
+calls, not the one the file advertises** — a re-run sibling is invisible
+from the export list.
+
+**Weakenings, declared.** `ArenaAM` is strictly weaker than `ArenaA`
+(`arenaAM_strict`, concrete `Env`). The exit is a `DistClean` and its
+witness **changes at every pick** — the engine returns a new `D₀`, not
+the one it was handed; nothing in `ScatBlockInvM` or `ProgressA` needs
+witness stability, so the loop is sound, but "clean in, clean out" does
+not hold cell-for-cell. Nothing landed was weakened:
+`scatBlock_specW_of_M`, `scatBlock_specA_of_M`, `scatBlockCnt_specA_of_M`
+compile the landed statements back out of the narrowed ones.
+
+**Three negative controls, all concrete-`Env`**: `arenaAM_strict`;
+`post_flag_gives_no_distClean` (the landed postcondition constrains a
+scalar and no array, which is why the clean-out had to be *stated*); and
+`member_support_not_mask_support` — an array clean on the members is not
+clean on the mask, so the narrowing available is the mask's and only the
+mask's.
+
+**And the successor's bridge is one line**, compiled in a scratch module
+and then deleted: `MemEnum`'s fourth clause is character-for-character
+`distClean_of_cover`'s `hcov`, and `memFillAt_spec`'s postcondition
+supplies the rest. `ScatterDeadPass.dist_touched_only_refuted` stops
+biting at that point — it refutes the touched-only fill against the
+*whole-array* clause, and against `DistClean` the unlisted cells are dead
+and unconstrained, which is the wave's whole point. It is kept and
+re-headed, not deleted.
