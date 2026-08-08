@@ -5339,3 +5339,82 @@ B's single initialization can only reach level entry it is
 carrier-charged per level and re-imports the very floor
 `C0Probe.level_interface_floor` exists to kill — in which case stop and
 report rather than trade one floor for another.
+
+**e4c-c — THE MASK COPY IS GONE, and the leaf's floor moves for the
+first time** (merge `bbb9fae`, 3590 jobs, `lax build --only proofs` OK —
+only the 8 pre-existing warnings, no namespace violations).
+
+**`131·n → 119·n`.** `deadAtomK_root_eq` now reads
+`(44·ns + 110·n + 140)·t + 119·n + 14·mb + abit + 84`, and the
+program-text residual is `11·n + 6` — the distance fill alone. Four
+waves on this leaf had narrowed the blocker without moving the number;
+this one moved it.
+
+**The route was not the one the brief proposed, and the worker was
+right — eleventh time on this road.** The brief said parameterize the
+engine family by the mask name at the 22 literal `"alv"` sites. Those
+are all *spec*-level: the engine's two actual mask reads are program
+text in `RamBfs.seedSrc` (`alv[src] > 0` before enqueueing) and
+`RamBfs.scanSlot` (`alv[w] > 0` before relaxing), landed material with
+`seedSrc_run`, `expandRow_run`, `Queue.drain_run` and the whole
+`Frontier` invariant over them. Instead: an **array-renaming transport**
+— `renExpr`/`renCond`/`renCom` (pushforward on text), `renEnv`
+(pullback on the environment), and `renCom_spec`, which carries **any**
+`Spec` across at the **same charge**, because renaming preserves every
+`Expr.size`. The two cancel only for an involution, so the parameter is
+`maskSwap av` (`maskSwap_invol`), and
+`scatBlockComA av r t := renCom (maskSwap av) (scatBlockCom r t)`.
+**Not one clause of the search, mark or scan is re-proved, and
+`RamBfs.lean` is untouched.** `scatDeadCom` now runs
+`scatBlockComA (alvName (j+1))` with the copy deleted, and the mask
+clause is discharged straight from `ClusterData`'s
+`halvA : σ.arrs (alvName (j+1)) = arrOf n Alv'` — a producer that
+already existed, which is the supervisor check made before dispatch.
+
+`MaskFree av` (distinct from the seven names the pass holds) is carried
+by `scatBlock_specA`/`scatBlockCnt_specA`/`warrs_scatBlockComA`, never
+assumed from the instantiation, and discharged by `maskFree_alvName`.
+It is a **real** precondition: at `av = "dist"` the engine's own
+sentinel fill would erase the mask. Postconditions byte-identical by
+extraction and diff; `RamDriverCluster.lean` untouched.
+
+**`deadAtomK_le_atomCoeff` now holds for the LANDED charge**, not a
+model: under `m ≤ s ∧ bw ≤ s ∧ nb ≤ s` it fits
+`atomCoeff kq abit t · (s+1)` at slope `154·t + 119`, constant `84`,
+both inside the `221` already granted. **B4's coefficient still does not
+move.** New capital besides: `bfsBlockK_le_weight` — the block engine is
+weight-linear at coefficient `80`, the ball-charged replacement for
+`G2CostProbe.bfsQCost_le_weight`'s carrier reading.
+
+**Part B refuted, structurally, with both blockers compiled.**
+(i) `radius_free_sentinel_breaks_cap` — **the sentinel IS the depth
+cap**: `RamBfs.scanSlot` relaxes on the single test `dn < dist[w]`,
+which rejects an already-discovered vertex, rejects one discovered at
+this level, AND caps (a vertex at depth `d` offers `d+1`, which does not
+beat the sentinel `d+1`). At any radius-free `S > d+1` the offer passes,
+the search runs past the cap, and its cost becomes the whole reachable
+component — destroying the one property `bfsBlockK` has. Restoring the
+cap needs an explicit `dn ≤ d` guard, i.e. new control flow; a renaming
+permutes names and cannot introduce a test.
+(ii) Hazard 5's bad case is **realized**: `RamDriver.coverPhase` runs at
+every level before its cluster loop and calls `RamCover.coverCom`, whose
+search is the landed `RamBfs.bfsCom` (`initDist`, no unwind), leaving
+`"dist"` arbitrary. So the one initialization lands at **level entry,
+never the root** — carrier-charged per level, one floor traded for
+another. Said, and stopped, per the packet.
+
+**Deviation accepted.** The packet asked both to delete §5f's
+touched-only passes and to keep every compiled refutation; those
+conflict, since `alv_touched_only_needs_clean_scratch` and
+`alv_set_clear_round_trip` are stated *about* those passes. The worker
+kept the definitions and re-headed §5f as the superseded record. That is
+the right resolution — deleting them deletes the evidence for why the
+copy had to be removed rather than re-charged.
+
+**Wave e4c-d dispatched on the two blockers**, each with a candidate
+route: a **block-private capped scan** carrying an explicit `dn ≤ d`
+guard (forked into the block files — `RamBfs.lean` FROZEN, `RamCover`
+and the ordering phase depend on it), and **privatizing `"dist"`** with
+e4c-c's own `renCom` transport so the cover phase's clobbering is
+irrelevant and the single initialization hoists to the root. Design
+phase first, with an honest stop if either refutes.
