@@ -858,6 +858,47 @@ theorem post_flag_gives_no_distClean :
   rw [hEq, e₀] at e₁
   omega
 
+/-! ### §10 The shape the successor fills
+
+`RamDriver.scatDeadCom` still pays `fillCom "dist" (.lit (r + 1))` —
+`11 n + 6`, the last carrier-sized summand in the per-atom charge — and
+the successor wave replaces it with a member-driven fill. What that fill
+has to establish is exactly `DistClean n r M σ`, the proposition
+`ArenaAM` carries and `scatBlockM_specW` consumes; the two lemmas below
+are the one line that gets it there.
+
+They are stated so that **the hypothesis names the hazard**. `hcov` asks
+that the driving list cover the *mask's* support, and
+`member_support_not_mask_support` is the compiled reason it cannot be the
+pass's own member list: `ScatterDeadPass.atomMemCom_spec` filters the
+child's `MemEnum n mm1 Mem1 A` down to `mm ≤ mm1` entries for
+`bitSet n A Tb`, and the search reads the distance cells of the alive
+non-members it drops. So the fill must be driven by the **unfiltered**
+`mm1`-list, which enumerates the mask — and `hcov` is unprovable for the
+filtered one, which is what makes the mistake a build failure rather than
+an unsoundness. -/
+
+/-- **A fill driven by a list covering the mask's support is clean on
+it.** -/
+theorem cleanOn_of_cover {mm1 : ℕ} {Mem1 D₀ : ℕ → ℕ}
+    (hcov : ∀ z, z < n → M z ≠ 0 → ∃ k, k < mm1 ∧ Mem1 k = z)
+    (hfill : ∀ k, k < mm1 → D₀ (Mem1 k) = r + 1) : CleanOn n r M D₀ := by
+  intro z hz hm
+  obtain ⟨k, hk, rfl⟩ := hcov z hz hm
+  exact hfill k hk
+
+/-- The same, packaged at the state — this is what the successor hands
+`scatBlockM_specA` in place of the whole-array fill. -/
+theorem distClean_of_cover {σ : Env} {mm1 : ℕ} {Mem1 D₀ : ℕ → ℕ}
+    (harr : σ.arrs "dist" = arrOf n D₀)
+    (hcov : ∀ z, z < n → M z ≠ 0 → ∃ k, k < mm1 ∧ Mem1 k = z)
+    (hfill : ∀ k, k < mm1 → D₀ (Mem1 k) = r + 1) : DistClean n r M σ :=
+  ⟨D₀, harr, cleanOn_of_cover hcov hfill⟩
+
+/-- info: 'Lax3Proofs.Refine.ScatterBlockMask.distClean_of_cover' does not depend on any axioms -/
+#guard_msgs in
+#print axioms distClean_of_cover
+
 /-- info: 'Lax3Proofs.Refine.ScatterBlockMask.stepM_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms stepM_run
