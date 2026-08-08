@@ -5862,3 +5862,59 @@ a seeded worktree costs **1.4 GB** against 6.0 GB free on a 99%-full
 disk, on 4 cores — so waves run **one at a time** and the worktree is
 removed at the landing boundary, which is now a hard constraint and not a
 preference.
+
+**Supervisor review finding, 2026-08-08 — `hKs` has TWO unlanded halves
+and only one was on the road.** Read while wave 2m-2 ran; nothing was
+edited but this record and the plan's residue list.
+
+`G2CostProbe` §7's `hKs` row names its missing engine as "`BlockLeaves`
+Com-level swap into `descendCom` **+** `scatBlockCom` into the turn". The
+second half landed at R1.8-T3-flip (c1) — `clusterCom` runs the
+dead-aware atom phase — and the whole road since has been about that
+half's cost (e4c-*, b4-design, b4-walk-*). **The first half never
+landed.** `RamDriverDescend.descendCost = 24·(n·n) + 98·n + 61 +
+ballCost + batchCost` is live in `descendStep`, a **quadratic carrier**
+charge and the largest single term in `turnCost`, while
+`Refine/BlockLeaves.lean` (wave B4c) holds the block-driven replacements
+for exactly those passes — `15·m₁ + 15·m + 30`, `25·m + 4`, `29·m + 4`,
+`50·m + 30·d + 4`, its header stating "No cost function below takes
+`n`" — and **no driver file references it**. The only consumers are the
+cost probes (`MassWeight`'s bridge, `G2CostProbe`, `C0CloseProbe`,
+`B4Design`).
+
+So the engine exists, its constant is measured
+(`C0CloseProbe.ctTurn = KillListPass.ctKL`, `443` against a ceiling of
+`8 788 641` — ×10⁴ of margin), and what is missing is only the swap. It
+is **not a deficit** in C0CloseProbe's sense — a constant exists, unlike
+`ksc` — which is exactly why the measured-cost re-ordering of 2026-08-08
+did not surface it: that pass ranked the road by which constant was
+*above its ceiling*, and an unlanded engine whose measured constant is
+comfortably under its ceiling ranks as done. **The ceiling table answers
+"is the number small enough", not "is the number the driver's".**
+
+Consequence for the road: `hKs` cannot close without it, and the six-wave
+road out of gaps-design would have reached B7/C0 with a quadratic term
+still in the turn. Scheduled as **E4c-descend**, after the scatter leaf's
+2m-3 and before `hKc`+`hKo` — it touches `RamDriverDescend.lean` +
+`Refine/BlockLeaves.lean`, disjoint from both.
+
+**Second reconnaissance, on the road's flagged risk (`hKc`'s semantic
+blocker), read-only and NOT a verdict.** `RamDriverCluster.levelImplements`'
+partition step is **already split by aliveness** (`:1826`, "the partition,
+split (rebase B8, re-read at the domain)"): the alive branch `hasgcps`
+consumes `CoverOut.asg_lt` only under `M v ≠ 0`, and the dead branch
+`hdeadne` argues separately that no turn is a dead vertex's. So narrowing
+`asg_lt` to the mask's support serves that consumer unchanged — the same
+move as wave 2m-1. **But the dead branch is where the work is**: it runs
+`ArenaBlock.dead_vertex_has_no_alive_turn`, which consumes the *other*
+clause `CoverOut.asg_cover` **at a dead vertex**, so a member-scale cover
+leaving junk in `asg` there cannot supply it, and junk might coincide with
+a listed centre. The visible route is to make the **readback** member-driven
+too — `RamDriver.readbackCom` is a `while z < n` carrier loop testing
+`asg[z] = cur` — so that `asg` is never read off the members and the
+partition is over members from both sides. That is the same "read what the
+program reads" move again, and it says the `hKc`+`hKo` wave's semantic half
+is a third instance of it rather than the redesign the campaign feared.
+Flagged, not decided: it needs the design pass gaps-design scoped, and
+`RamDriverBase.lean:876`'s `hasgB : ∀ v < n, asg v < B` is a genuine
+carrier-wide consumer that would move to a `WordBoundK`-style value clause.

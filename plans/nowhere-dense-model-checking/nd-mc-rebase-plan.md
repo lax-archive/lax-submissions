@@ -450,6 +450,26 @@ session, per-wave ledgers in the commit messages e5e0f91..10e6dc4):
      14·mm1 + 6`, carrier-free, and the charge chain up to the root's
      closed form). E4c-d's §7 capped-scan capital is **not consumed** by
      this route; it was bought for the hoist.
+  1b. **E4c, the descend half — the `BlockLeaves` Com-level swap, and it
+     was missing from this list until 2026-08-08.** `hKs` is one slot with
+     **two** unlanded halves, and only the scatter one was on the road.
+     `RamDriverDescend.descendCost = 24·(n·n) + 98·n + 61 + ballCost +
+     batchCost` is live in `descendStep` — a **quadratic carrier** charge,
+     the largest single term in `turnCost` — while `Refine/BlockLeaves.lean`
+     (wave B4c) already holds the block-driven replacements for exactly
+     those passes at `15·m₁ + 15·m + 30`, `25·m + 4`, `29·m + 4`,
+     `50·m + 30·d + 4`, none of which mentions `n`. **They are referenced
+     by no driver file** — only by the cost probes (`MassWeight`,
+     `G2CostProbe`, `C0CloseProbe`, `B4Design`). So the engine exists,
+     its constant is measured (`C0CloseProbe.ctTurn = KillListPass.ctKL`,
+     `443` against a ceiling of `8 788 641`, ×10⁴ of margin), and what is
+     missing is the swap into the driver's descent — `G2CostProbe` §7's
+     `hKs` row says so in as many words ("`BlockLeaves` Com-level swap into
+     `descendCom` + `scatBlockCom` into the turn"), and the second half of
+     that row landed at R1.8-T3-flip (c1) while the first never did.
+     Unlike the scatter leaf this is **not a deficit** — a constant exists
+     and is measured — but `hKs` cannot close without it, so B7/C0 would
+     otherwise be reached with a quadratic term still in the turn.
   2. **T4b — build a member-driven base**, not measure the existing one.
      `landed_base_needs_carrier_Cb` refutes every constant `Cb`: the landed
      base is `DeadSweep.baseCost = sweepCost` since T4a and is quantified
