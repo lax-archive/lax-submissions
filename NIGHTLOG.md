@@ -5508,3 +5508,97 @@ worktree.** Noted separately: `monadic-dependence-neighborhood-complexity`
 and `twin-width-mixed-minor-number` each carry `.lake/packages` trees in
 both packages — pre-existing, unrelated to this campaign, and reclaimable
 disk.
+
+**gaps-design — ONE design pass over the three non-scatter gap slots, and
+it merged two of them** (merge `0288eb4`, 3591 jobs, new
+`Refine/GapsDesign.lean` 1037 lines, 44 `#print axioms` all kernel-three,
+negative controls and both-direction `#guard`s on every proposed shape,
+nothing landed edited).
+
+Dispatched as the correction to a supervisor error: the scatter leaf took
+four execution waves because each blocker surfaced only when the previous
+cleared. This wave pays that cost once, up front, for `hKo`, `hKc` and
+`hKbase`, answering the same four questions for each — landed closed
+form, target shape, blocker **classified** (accounting / program text /
+semantic), and what the closing wave must own including import-order
+forcing.
+
+**THE HEADLINE — `shared_contract_seam`.** One junk-off-the-members
+condition at one position refutes `RamCover.OrdersBy` **and**
+`RamCover.CoverOut.asg_lt` at once. So `hKo`'s one surviving coupling and
+`hKc`'s semantic blocker are **not two leaves to sequence — they are one
+obligation with two cost slots**, and any wave restating one contract at
+the members must restate the other in the same breath. `hKc` and `hKo`
+therefore **cannot be separate execution waves**.
+`OrderEngineProbe` §6 sequenced E2 → E3 → E6 on the grounds that "E2 is
+coupled to E3 through the ordering contract"; this theorem is that
+coupling, compiled, and it says the coupling is **symmetric**. Not
+vacuous either: `shared_seam_instance` shows the refuting condition is
+exactly what `RamCover.initAsg` writes and what a member-scale pass would
+leave.
+
+**`hKbase` — cheapest, and genuinely cheap.** Landed
+`baseCost = (blockCost (tablesAt … ℓ) + 10)·n + 6` (`baseCost_closed`) —
+one size, the carrier, at a formula-determined coefficient, so accounting
+is dead (`landed_base_escapes_CbM`). Target fits **end to end**
+(`base_fits_the_close`) at `Cb = turnCost + 10`, which is
+`G2CostProbe.sweepCoeffA` **by `rfl`** (`CbM_eq_sweepCoeffA`) — because
+`baseCom` and the retired sweep are the same `Com`. The bridge it needed
+did not exist in the package (`MemEnum.card_le` gives only `mm ≤ n`) and
+is now landed: `memEnum_card_le_arenaWeight`. **The semantic half is not
+what `DeadSweep` §4b's refutation suggested**: R1.8 already built the
+weaker contract and `levelImplements`' bottom case already holds the
+incoming `TableInvOn … D` and discards it, so `levelImplementsD_bot`
+compiles that retyping `hbase` at `LevelImplementsD` is **sufficient** —
+`Spec.pre` and nothing else — and `baseImplementsD_of_baseImplements` /
+`levelImplementsD_bot_of_landed` compile that it is a **weakening**, no
+flag day. Trap found: `baseCom_is_sweepCom` is `rfl`, so editing
+`sweepCom` in place breaks `DeadSweep.sweepImplements`.
+
+**`hKo` — the blocker is reclassified and largely discharged.**
+`OrderEngineProbe`'s floor that "survives even a FREE interior" dies:
+`elimShareLaw_exceeds_budget` (the landed `159·n + 276` breaks the budget
+at its own instance) against `elimCompact_inside_budget` (the E2 charge
+is inside it and mentions **no `n` at all**), plus
+`elimCompact_le_weight`/`symCompact_le_weight`. Of the seven coupling
+rows, **six are removed rather than repaired** by compaction; the seventh
+is the shared seam above. One residue named and scoped out:
+`augCompact_no_weight_coeff` (the round reads `W`), irrelevant to the C0
+close at `R = 0` (`aug_out_of_scope_at_R_zero`).
+
+**`hKc` — riskiest on the road, and not for arithmetic reasons.** Landed
+`coverPhaseCost n ns = 112·n² + 50·n·ns + 281·n + 156`
+(`coverPhaseCost_closed`), and `ns` never occurs alone — every slot term
+is multiplied by a carrier term. The target fits at the interface
+(`kcov_is_phaseBudgetM`, `coverPhaseB_fits_M_slot`). Three blockers in
+**forced order**: (a) accounting that does not finish —
+`landed_copy_hmm_forces_carrier` compiles that E3a's export's third
+hypothesis `m ≤ D·(w+1)` is a **carrier** bound in disguise, since
+`n ≤ m` at every level, leaving a `12·n + 6` floor
+(`landed_copy_no_weight_coeff`); (b) program text twice —
+`coverCost_quadratic_floor`/`coverCost_no_weight_coeff`, the `while c < n`
+centre loop and the carrier-charged body, with the ball engine landed and
+unwired; (c) semantic — `CoverOut.asg_lt`, the shared seam. Clearing (c)
+reopens `levelImplements`' partition step, whose argument lives inside an
+induction and is stated nowhere separately.
+
+**Two honest gaps, both marked NOT COMPILED.** `ElimTailPinned` —
+`elimCompact_spec`'s conclusion carries **no tail clause** while
+`symCompact_spec` and `augCompact_spec` both do, and that clause is
+exactly what turns the zero-seam from *repaired* into *removed*; the
+generic machinery is already in `ElimCompact` §3, so it is a **statement
+gap**, not missing mathematics. And `MemberOrderContract`, with the
+weakening compiled both ways.
+
+**Road, six waves instead of eight**: **T4b** (dispatched — the first gap
+slot the campaign would close) → **b4-walk-1** → **b4-walk-2** →
+**`hKc`+`hKo` as one wave** → **b4-iface** → **B7 → C0 → P5**. T4b and
+b4-walk-1 both touch `levelImplements`, so they are sequential.
+
+**Process rules now folded into packets rather than re-paid.** `lax build`
+is a landing-boundary gate the supervisor runs from the main checkout, not
+a per-wave gate in a seeded worktree (two waves paid ~an hour each for it;
+it discards the warm-store overrides, cold-builds the archive-pinned
+dependency proofs and clones a `.lake/packages` tree). And briefs state
+the obligation only — eleven mechanism prescriptions on this road have
+been overridden by the source, twice this session.
