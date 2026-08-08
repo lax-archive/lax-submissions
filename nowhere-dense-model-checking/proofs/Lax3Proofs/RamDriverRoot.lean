@@ -385,6 +385,92 @@ theorem killListStep :
 
 end KillList
 
+/-! ### The ball budget of a turn, at its own block (wave B4-walk-1)
+
+`Refine.ScatterDeadPass.ballBudget_carrier` grants every ball the whole
+carrier — `(ns, n)` at the witness `Finset.range n` — because a
+mask-specific witness could not be threaded through
+`RamDriverCluster.clusterStepImplements` at all while `hbud` was
+quantified over *every* mask. It no longer is: the step's `hbud` asks
+only for masks supported inside the turn's cluster, which is exactly the
+descent's own §5.3 clause, and at such a mask the natural witness is the
+block the cover pass emitted for this centre.
+
+The two numbers that come out are `Refine.MassWeight.blockRowSum` and
+`Refine.MassMath.blockSize` — the two currencies of
+`Refine.MassWeight.blockWeight`
+(`Refine.B4Design.ball_budget_numbers_are_block_weight`), so the ball
+term of the scatter charge is now read at the same block weight the
+turn's descend leaves are read at. Neither number needs block
+injectivity: an image is never larger, or heavier, than its source. -/
+
+section BallBudget
+
+variable {n : ℕ}
+
+/-- **Every ball of a cluster-supported arena fits in the turn's own
+block.** The witness is the block's member slots; `CoverOut.block` makes
+them onto the cluster, and `hsub` puts the arena's live vertices there.
+`BallBudget` asks for the ball's *live* vertices only, which is what
+makes the cluster enough.
+
+The two numbers are stated as the **minimum** of the block's reading and
+the carrier's, because the one witness pays both at once: its slot
+weight is under the block's `blockRowSum` (an image is no heavier than
+its source) and under `ns` (distinct vertices tile the target array),
+and its size is under `blockSize` and under `n`. So this lemma both
+*narrows* the budget — `min ≤ blockRowSum ≤ blockWeight` — and keeps the
+carrier bound the landed atom charge is still stated at, with no block
+injectivity anywhere. -/
+theorem ballBudget_cluster {G : SimpleGraph (Fin n)} {ns : ℕ}
+    {M O T ord Xoff Xmem asg : ℕ → ℕ} {π : Equiv.Perm (Fin n)} {cap mm k : ℕ}
+    (hcsr : CsrGraph G ns O T)
+    (hout : RamCover.CoverOut G M π ord cap mm Xoff Xmem asg) (hk : k < n)
+    {M' : ℕ → ℕ}
+    (hsub : ∀ v : Fin n, M' (v : ℕ) ≠ 0 → v ∈ Refine.MassMath.clusterAt G M π ord cap k)
+    (r : ℕ) :
+    Refine.ScatterBlock.BallBudget n r G M' O
+      (min (Refine.MassWeight.blockRowSum O Xoff Xmem k) ns) (min (blockSize Xoff k) n) := by
+  classical
+  have hlt : ∀ p ∈ Finset.Ico (Xoff k) (Xoff (k + 1)), Xmem p < n := by
+    intro p hp
+    rw [Finset.mem_Ico] at hp
+    exact Refine.MassWeight.mem_lt_of_coverOut hout hk hp.1 hp.2
+  have himg : ∀ v ∈ (Finset.Ico (Xoff k) (Xoff (k + 1))).image Xmem, v < n := by
+    intro v hv
+    obtain ⟨p, hp, rfl⟩ := Finset.mem_image.mp hv
+    exact hlt p hp
+  intro s _
+  refine ⟨(Finset.Ico (Xoff k) (Xoff (k + 1))).image Xmem, ?_, le_min ?_ ?_, le_min ?_ ?_⟩
+  · intro v hv hM' _
+    obtain ⟨p, hp₁, hp₂, hp₃⟩ := (hout.block k hk v).mpr (hsub ⟨v, hv⟩ hM')
+    exact Finset.mem_image.mpr ⟨p, Finset.mem_Ico.mpr ⟨hp₁, hp₂⟩, hp₃⟩
+  · rw [Refine.MassWeight.blockRowSum,
+      ← Finset.sum_fiberwise_of_maps_to (g := Xmem)
+        (fun p hp => Finset.mem_image_of_mem Xmem hp) (fun p => Csr.rowLen O (Xmem p))]
+    refine Finset.sum_le_sum fun v hv => ?_
+    obtain ⟨p, hp, hgp⟩ := Finset.mem_image.mp hv
+    calc Csr.rowLen O v = Csr.rowLen O (Xmem p) := by rw [hgp]
+      _ ≤ ∑ q ∈ (Finset.Ico (Xoff k) (Xoff (k + 1))).filter (fun q => Xmem q = v),
+            Csr.rowLen O (Xmem q) :=
+          Finset.single_le_sum (f := fun q => Csr.rowLen O (Xmem q))
+            (fun _ _ => Nat.zero_le _) (Finset.mem_filter.mpr ⟨hp, hgp⟩)
+  · exact hcsr.sum_rowLen_le himg
+  · refine le_trans Finset.card_image_le ?_
+    rw [Nat.card_Ico, blockSize]
+  · refine le_trans (Finset.card_le_card (fun v hv => Finset.mem_range.mpr (himg v hv))) ?_
+    rw [Finset.card_range]
+
+/-- **A cluster's own size is under the carrier too** — the reading the
+atom's charge is narrowed at, since the turn's `X` is inside the
+cluster. -/
+theorem ncard_le_carrier (S : Set (Fin n)) : S.ncard ≤ n := by
+  classical
+  have h := Set.ncard_le_ncard (Set.subset_univ S) (Set.finite_univ (α := Fin n))
+  simpa [Set.ncard_univ] using h
+
+end BallBudget
+
 /-! ### One turn of the centre loop, and its frame
 
 The two obligations `RamDriverCluster.levelImplements` takes at every
@@ -446,6 +532,65 @@ theorem turnCostSize_eq (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
     (Ksc s Kin : ℕ) :
     turnCostSize n ns cap mb q_top j φ Ksc s Kin = turnCost n ns cap mb q_top j φ Ksc Kin := rfl
 
+/-- **From the carrier reading of the atom charge to the cluster
+reading** (wave B4-walk-1).
+
+`Refine.ScatterDeadTurn.scatterDeadStep` now charges its atoms at the
+turn's own cluster — `X.ncard` for the outside probe's loop bound and
+for both member counts — and at whatever ball budget the step was given.
+This is the one place the *carrier* still enters that charge: the level
+hands down a single constant `Kb`, so the cluster reading is bridged to
+the carrier one by `Refine.ScatterDeadTurn.deadAtomKX_le_carrier`, at
+`X.ncard ≤ n` and at a ball budget under `(ns, n)`.
+
+**This bridge is what `b4-iface` deletes.** The narrowing cannot reach
+`Kb` while `Kb` is a constant: `X` and the block are produced inside
+`RamDriverCluster.clusterStepImplements`, so a block-scale hypothesis at
+this theorem's own `hbnd` would have to be quantified over every block,
+and a constant bound on that quantifier is the sup again. Making `Kb`,
+`Ki` and `Ksc` families of the block reading — the coefficient form of
+`Refine.B4Design` §4 — is what turns the reading below into a smaller
+number, and it moves `levelAt` and `driverRoot_decides_sentence` with
+it. -/
+theorem scatterBnd_cluster (X : Set (Fin n)) {bw nb : ℕ} (hbw : bw ≤ ns) (hnb : nb ≤ n)
+    (hbnd : ∀ β ∈ tablesAt q_top cap mb φ j,
+      ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
+          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n ns n σs.t ≤ Kb) :
+    ∀ β ∈ tablesAt q_top cap mb φ j,
+      ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
+          Refine.ScatterDeadTurn.deadAtomKX σs.β n X.ncard mb bw nb σs.t ≤ Kb :=
+  fun β hβ σs hσs =>
+    ⟨(hbnd β hβ σs hσs).1, (hbnd β hβ σs hσs).2.1,
+      le_trans (Refine.ScatterDeadTurn.deadAtomKX_le_carrier σs.β
+        (ncard_le_carrier X) hbw hnb) (hbnd β hβ σs hσs).2.2⟩
+
+/-- **THE HEADLINE of wave B4-walk-1: the per-atom charge a turn now runs
+at, in closed form**, at exactly the arguments `clusterStepAt` supplies.
+
+Against `Refine.C0CloseProbe.deadAtomK_root_eq`'s
+`(44·ns + 110·n + 140)·t + 119·n + 14·mb + abit + 84`:
+
+* the ball's two numbers are the turn's **block** — its slot weight and
+  its size, each capped at the carrier's reading of the same currency
+  (`ballBudget_cluster`);
+* the outside probe's scan is the turn's **cluster**, one step past its
+  last member (`ScatterDeadPass.outProbeCostB`);
+* the two member walks — the child's list `mm1` and the engine's `mm` —
+  are the cluster's `88`, which is `23 + 65`;
+* and `119·n` is `11·n`: the distance fill, alone. That summand is
+  `RamDriver.scatDeadCom`'s own text and no accounting reaches it. -/
+theorem deadAtomK_turn_closed {L : ℕ} (β : DistFO L 1) (X : Set (Fin n)) (kq t : ℕ)
+    (O Xoff Xmem : ℕ → ℕ) (k : ℕ) :
+    Refine.ScatterDeadTurn.deadAtomKX β n X.ncard kq
+        (min (Refine.MassWeight.blockRowSum O Xoff Xmem k) ns) (min (blockSize Xoff k) n) t
+      = (44 * min (Refine.MassWeight.blockRowSum O Xoff Xmem k) ns +
+            110 * min (blockSize Xoff k) n + 140) * t +
+          11 * n + 20 * min (X.ncard + 1) n + 88 * X.ncard + 14 * kq +
+          Refine.ScatterDeadPass.atomBitCost β + 84 :=
+  Refine.ScatterDeadTurn.deadAtomKX_closed β n X.ncard kq _ _ t
+
 open Classical in
 /-- **One turn of the centre loop, at the nested driver.**
 
@@ -472,7 +617,9 @@ theorem clusterStepAt
       (Kin (blockWeight n G Xoff Xmem k)) ≤ Ks) :
     ClusterStepImplements B q_top cap mb ns W ℓ j φ G O T M Gm C π ord Xoff Xmem asg mm k
       (arenaWeight n G) (driverAt q_top cap mb 0 ℓ φ (j + 1)) Kin Ks :=
-  RamDriverCluster.clusterStepImplements hcap
+  RamDriverCluster.clusterStepImplements
+    (bw := min (Refine.MassWeight.blockRowSum O Xoff Xmem k) ns)
+    (nb := min (blockSize Xoff k) n) hcap
     (RamDriverDescend.descendStep hmb hjl le_rfl)
     (fun _ _ _ _ => RamDriverDescend.enumStep hB le_rfl)
     (fun _ _ _ _ _ => RamDriverDescend.colourStep le_rfl)
@@ -486,9 +633,11 @@ theorem clusterStepAt
       xpName_notMem_wvars_driverAt curName_notMem_wvars_driverAt
       (fun _ ha => mnumName_notMem_wvars_driverAt ha)
       kkName_notMem_wvars_driverAt)
-    (fun _ _ _ _ _ _ =>
-      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB hbnd hcostI hKsc)
-    (Refine.ScatterDeadPass.ballBudget_carrier hcsr)
+    (fun X _ _ _ _ _ =>
+      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB
+        (scatterBnd_cluster X (Nat.min_le_right _ _) (Nat.min_le_right _ _) hbnd)
+        hcostI hKsc)
+    (fun _ hkn hout hsub r => ballBudget_cluster hcsr hout hkn hsub r)
     (fun _ _ _ _ _ _ => RamDriverBase.readbackStep hB.one_lt hB.n_lt le_rfl)
     hmono
     (fun _ hkn hout hsub =>
@@ -531,8 +680,9 @@ theorem clusterFramesAt
     xpName_notMem_wvars_driverAt curName_notMem_wvars_driverAt
     (fun _ ha => mnumName_notMem_wvars_driverAt ha)
     kkName_notMem_wvars_driverAt
-    (fun _ _ _ _ _ _ =>
-      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB hbnd hcostI hKsc)
+    (fun X _ _ _ _ _ =>
+      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB
+        (scatterBnd_cluster X le_rfl le_rfl hbnd) hcostI hKsc)
     (fun i => RamDriverWrites.tabName_notMem_warrs_scatterDeadPhase j j i
       (fun β hβ => (tableRank_of_mem_tablesAt (j + 1) β hβ).1) _ 0 (fun _ hβ => hβ))
     (Refine.ScatterDeadPass.ballBudget_carrier hcsr)
