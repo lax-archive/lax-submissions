@@ -570,24 +570,30 @@ theorem scatterBnd_cluster (X : Set (Fin n)) {bw nb : ℕ} (hbw : bw ≤ ns) (hn
 at, in closed form**, at exactly the arguments `clusterStepAt` supplies.
 
 Against `Refine.C0CloseProbe.deadAtomK_root_eq`'s
-`(44·ns + 110·n + 140)·t + 119·n + 14·mb + abit + 84`:
+`(44·ns + 110·n + 140)·t + 122·n + 14·mb + abit + 84`:
 
 * the ball's two numbers are the turn's **block** — its slot weight and
   its size, each capped at the carrier's reading of the same currency
   (`ballBudget_cluster`);
 * the outside probe's scan is the turn's **cluster**, one step past its
   last member (`ScatterDeadPass.outProbeCostB`);
-* the two member walks — the child's list `mm1` and the engine's `mm` —
-  are the cluster's `88`, which is `23 + 65`;
-* and `119·n` is `11·n`: the distance fill, alone. That summand is
-  `RamDriver.scatDeadCom`'s own text and no accounting reaches it. -/
+* the three member walks — the child's list `mm1`, the distance fill at
+  the same list, and the engine's `mm` — are the cluster's `102`, which
+  is `23 + 14 + 65`;
+* and there is **no carrier term left**. Wave B4-walk-2m-3 made the
+  distance fill a member walk (`RamDriver.distMemCom`), so `n` survives
+  only inside the probe's cap `min (X.ncard + 1) n`, under which the
+  charge is bounded by
+  `Refine.ScatterDeadTurn.deadAtomKBlk` — a function of the block
+  reading alone (`deadAtomKX_le_blk`) — and constant once `n` passes
+  `X.ncard + 1` (`deadAtomKX_carrier_free`). -/
 theorem deadAtomK_turn_closed {L : ℕ} (β : DistFO L 1) (X : Set (Fin n)) (kq t : ℕ)
     (O Xoff Xmem : ℕ → ℕ) (k : ℕ) :
     Refine.ScatterDeadTurn.deadAtomKX β n X.ncard kq
         (min (Refine.MassWeight.blockRowSum O Xoff Xmem k) ns) (min (blockSize Xoff k) n) t
       = (44 * min (Refine.MassWeight.blockRowSum O Xoff Xmem k) ns +
             110 * min (blockSize Xoff k) n + 140) * t +
-          11 * n + 20 * min (X.ncard + 1) n + 88 * X.ncard + 14 * kq +
+          20 * min (X.ncard + 1) n + 102 * X.ncard + 14 * kq +
           Refine.ScatterDeadPass.atomBitCost β + 84 :=
   Refine.ScatterDeadTurn.deadAtomKX_closed β n X.ncard kq _ _ t
 

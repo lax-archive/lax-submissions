@@ -697,20 +697,31 @@ theorem nested_slot_floor {F n ns ℓ D ct : ℕ} {Ksc : ℕ → ℕ}
 `RamDriverRoot.clusterStepAt` instantiates the atom's ball budget with
 `Refine.ScatterDeadPass.ballBudget_carrier`, which supplies the WHOLE
 carrier: `bw := ns`, `nb := n`, and `mm1 = mm = n`. Four summands of
-`ScatterDeadPass.scatDeadK` are then carrier-width — the outside probe,
+`ScatterDeadPass.scatDeadK` are then read at `n` — the outside probe,
 the atom's member filter, the distance fill and the engine's own member
-scan — for `119·n` before any pick is charged.
+scan — for `122·n` before any pick is charged.
 
 **Wave E4c-c: the floor fell from `131·n` to `119·n`**, and the twelve
 that came off is the mask copy, deleted from `RamDriver.scatDeadCom`
 rather than re-charged: the engine reads the child's alive array where
-it lies (`Refine.ScatterBlock.scatBlockComA`). -/
+it lies (`Refine.ScatterBlock.scatBlockComA`).
 
-/-- **The landed per-atom charge is at least `119·n`.** -/
+**Wave B4-walk-2m-3: the floor ROSE, from `119·n` to `122·n`, and that
+is the wave working.** The distance fill is now a member walk
+(`RamDriver.distMemCom`) charged `14·mm1 + 6` instead of `11·n + 6`, and
+this control instantiates `mm1 := n`. Three units per vertex is what the
+indirect address costs *at the reading where the child's mask marks
+everything*. What the wave buys is not visible here at all — it is
+visible at the narrowed charge, where the fill's slot follows `mm1` down
+to the cluster and `ScatterDeadPass.scatDeadKX_le_blk` holds. The
+retired charge is kept as `deadAtomKW` below, with its `119·n`. -/
+
+/-- **The landed per-atom charge is at least `122·n`.** -/
 theorem scatDeadK_carrier_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mb ns t : ℕ) :
-    119 * n ≤ Lax3Proofs.Refine.ScatterDeadPass.scatDeadK β n n mb n ns n t := by
+    122 * n ≤ Lax3Proofs.Refine.ScatterDeadPass.scatDeadK β n n mb n ns n t := by
   simp only [Lax3Proofs.Refine.ScatterDeadPass.scatDeadK,
     Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.memFillAtCost,
     Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
     Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
     Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
@@ -720,7 +731,7 @@ theorem scatDeadK_carrier_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mb ns
 
 /-- …and so is the atom the driver actually charges. -/
 theorem deadAtomK_carrier_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mb ns t : ℕ) :
-    119 * n ≤ Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n n mb n ns n t := by
+    122 * n ≤ Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n n mb n ns n t := by
   have h := scatDeadK_carrier_floor β n mb ns t
   simp only [Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK]
   omega
@@ -769,18 +780,26 @@ form below. `deadAtomK`'s four carrier summands split into two classes:
 | `outProbeCost n` — the outside probe's scan | `20` | accounting: the scan stops at the first out-of-cluster vertex, and `Refine.ScatterDeadPass.outProbeCom_specB` charges the same program text at `min (xb + 1) n` |
 | `atomMemCost n` — the atom's member filter | `23` | accounting: the walk is over the child's member list, whose length is the *cluster's*, not the carrier's |
 | `scatBlockK`'s `65·mm` — the engine's two member walks | `65` | accounting: `mm` is the filtered list's length |
-| `11·n + 6` — the distance fill | `11` | **program text** |
+| `memFillAtCost n` — the distance fill | `14` | accounting **since wave B4-walk-2m-3**: the fill is `RamDriver.memFillAt` over the same child list, so its argument is `mm1` and follows it down |
 
-So the accounting ceiling is `108·n + 18`, and the residual any
-accounting wave leaves behind is `11·n + 6` — the distance fill, which
-is `RamDriver.scatDeadCom`'s own text and cannot be re-charged, only
-rewritten over the member list or removed by a radius-free sentinel.
+So the accounting ceiling is the whole charge, `122·n + 24`
+(`scatter_leaf_accounting_ceiling`), and the residual any accounting
+wave leaves behind is **nothing**.
 
 **Wave E4c-c: the mask copy left this table.** It stood here at
 coefficient `12`, class *program text*, and it is gone from the program
 — the engine reads the child's alive array where it lies. The row is
-not re-classified, it is deleted, and the residual falls from
+not re-classified, it is deleted, and the residual fell from
 `23·n + 12` to `11·n + 6`.
+
+**Wave B4-walk-2m-3: the fill's row changed class.** It stood here at
+coefficient `11`, class *program text*, and the program text was
+rewritten: `RamDriver.scatDeadCom` runs `distMemCom` over the child's
+member list. So the row is not deleted, it is re-classified — at
+coefficient `14`, three more per cell for the indirect address — and the
+residual falls from `11·n + 6` to `0`. That the residual is really gone
+is `ScatterDeadPass.scatDeadKX_le_blk`, and that it was really there is
+`ScatterDeadPass.scatDeadKXwhole_unbounded`.
 
 `narrow_leaf_refutes_constant_ksc` compiles the consequence: **even a
 perfect accounting wave does not produce §2's constant `ksc`.** And the
@@ -799,11 +818,12 @@ carrier: `killSumCost mb` is the batch width, a formula constant, and
 `atomBitCost β` is the generated evaluator's fragment. -/
 theorem deadAtomK_root_eq {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mb ns t : ℕ) :
     Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n n mb n ns n t
-      = (44 * ns + 110 * n + 140) * t + 119 * n + 14 * mb +
+      = (44 * ns + 110 * n + 140) * t + 122 * n + 14 * mb +
         Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 84 := by
   simp only [Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK,
     Lax3Proofs.Refine.ScatterDeadPass.scatDeadK,
     Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.memFillAtCost,
     Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
     Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
     Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
@@ -811,32 +831,45 @@ theorem deadAtomK_root_eq {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mb ns t : �
     Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
   ring
 
-/-- **The accounting ceiling**: the three in-scope summands are exactly
-`108·n + 18` of the `131·n` floor. -/
+/-- **The accounting ceiling**: since wave B4-walk-2m-3 all four in-scope
+summands are accounting, and they are the whole carrier reading of the
+charge — `122·n + 24` of the `122·n` floor. There is no fifth summand
+and no residual. -/
 theorem scatter_leaf_accounting_ceiling (n : ℕ) :
     Lax3Proofs.Refine.ScatterDeadPass.outProbeCost n +
-        Lax3Proofs.Refine.ScatterDeadPass.atomMemCost n + 65 * n = 108 * n + 18 := by
+        Lax3Proofs.Refine.ScatterDeadPass.atomMemCost n +
+        Lax3Proofs.Refine.ScatterDeadPass.memFillAtCost n + 65 * n = 122 * n + 24 := by
   simp only [Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.memFillAtCost,
     Lax3Proofs.Refine.ScatterDeadPass.atomMemCost]
   omega
 
-/-- **The residual, at any narrowing whatsoever.** The distance fill is
-a carrier walk in `RamDriver.scatDeadCom`'s text, so `11·n + 6` survives
-every choice of the probe bound, the two member counts and the ball
-budget. This is the compiled statement of which `n`-terms remain when
-E4c is done.
+/-- **The residual, at any narrowing whatsoever.** What survives every
+choice of the two member counts, the kill count and the ball budget is
+the **outside probe's** `20·n + 10` and nothing else — the compiled
+statement of which `n`-terms remain in the unnarrowed `scatDeadK`.
 
-**Wave E4c-c**: the mask copy's `12·n + 6` is no longer part of this
-residual, because it is no longer part of the program. -/
+**Wave E4c-c**: the mask copy's `12·n + 6` left this residual, because
+it left the program. **Wave B4-walk-2m-3**: the distance fill's
+`11·n + 6` left it too, rewritten as `14·mm1 + 6` over the child's
+member list — so the residual fell from `11·n + 6` to the probe's alone.
+
+And the probe's is *accounting*: `ScatterDeadPass.outProbeCostB` charges
+the same program text at `min (xb + 1) n`, which wave B4-walk-1 wired
+into the walk. So at the narrowed charge `ScatterDeadPass.scatDeadKX`
+even this floor is capped, and
+`ScatterDeadPass.scatDeadKX_le_blk` compiles that nothing at all grows
+with the carrier there. -/
 theorem scatDeadK_narrow_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
     (n mm1 kq mm bw nb t : ℕ) :
-    11 * n + 6 ≤ Lax3Proofs.Refine.ScatterDeadPass.scatDeadK β n mm1 kq mm bw nb t := by
-  simp only [Lax3Proofs.Refine.ScatterDeadPass.scatDeadK]
+    20 * n + 10 ≤ Lax3Proofs.Refine.ScatterDeadPass.scatDeadK β n mm1 kq mm bw nb t := by
+  simp only [Lax3Proofs.Refine.ScatterDeadPass.scatDeadK,
+    Lax3Proofs.Refine.ScatterDeadPass.outProbeCost]
   omega
 
 theorem deadAtomK_narrow_floor {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
     (n mm1 kq mm bw nb t : ℕ) :
-    11 * n + 6 ≤ Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t := by
+    20 * n + 10 ≤ Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t := by
   have h := scatDeadK_narrow_floor β n mm1 kq mm bw nb t
   simp only [Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK]
   omega
@@ -864,21 +897,24 @@ them: not a cheaper copy but no copy.
   of an array the caller names, and the caller names `alvName (j + 1)`.
   The two refutations are kept above — they are the record of why the
   copy could not merely be made cheaper.
-* **The distance fill stays**, and its blocker is untouched: it cannot
-  produce `Refine.ScatterBlock.ArenaA`'s seventh clause at any caller
-  discipline, because the clause is the *whole* array at the atom's own
-  radius and consecutive atoms of a turn carry different radii
-  (`ScatterDeadPass.dist_touched_only_refuted`). The route out is a
-  radius-free sentinel, which makes the clause radius-free and lets
-  `Refine.BfsBlock.unwind_run` maintain it across atoms; that is not
-  this wave's.
+* **The distance fill stayed, for two waves.** Its blocker was that it
+  cannot produce `Refine.ScatterBlock.ArenaA`'s seventh clause at any
+  caller discipline, because the clause is the *whole* array at the
+  atom's own radius and consecutive atoms of a turn carry different
+  radii (`ScatterDeadPass.dist_touched_only_refuted`). E4c-c named two
+  routes out and took neither: a radius-free sentinel (E4c-d, refuted at
+  the interface — see control 1d) and narrowing the clause itself.
+  **Waves B4-walk-2m-1/2 took the second**, re-walking engine and pass at
+  `Refine.ScatterBlockMask.ArenaAtM`, whose distance clause is
+  `Refine.ScatterBlock.DistClean n r M` — the sentinel at the mask's
+  support, against which the unlisted cells are dead and unconstrained.
+  **Wave B4-walk-2m-3 then wired the fill in.**
 
-So the residual is now the fill alone, `11·n + 6`, and the surviving
-carrier term beside it is exactly the outside probe's `20·n + 10` —
-whose narrowing is accounting, `ScatterDeadPass.outProbeCostB`. The
-model below is what the fill would cost at the member list, and
-`deadAtomK_le_atomCoeff` is the fact E4c-c actually delivers: the
-**landed** charge, as it now stands, is inside the B4 coefficient. -/
+So the residual is now **empty**. The model below is what the fill was
+predicted to cost at the member list, `deadAtomKB_eq_landed` compiles
+that the prediction was exact — the model *is* the landed charge — and
+`deadAtomK_le_atomCoeff` is that the landed charge is inside the B4
+coefficient at its new slope `154·t + 122`. -/
 
 /-- **The per-atom charge with the distance fill at the member list.**
 `ScatterDeadPass.scatDeadK`'s eight summands with the one remaining
@@ -913,21 +949,80 @@ theorem deadAtomKB_closed {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm b
     Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
   ring
 
-/-- **The trade, exactly.** The landed charge plus the replacement's
-member walk is the modelled charge plus the fill's carrier walk:
-`11·n + 6` out, `14·mm1 + 6` in, and every other summand identical. -/
-theorem deadAtomKB_trade {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm bw nb t : ℕ) :
-    Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t + (14 * mm1 + 6)
-      = deadAtomKB β n mm1 kq mm bw nb t + (11 * n + 6) := by
-  rw [deadAtomKB_closed, Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK,
-    Lax3Proofs.Refine.ScatterDeadPass.scatDeadK]
-  simp only [Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+/-- **THE MODEL LANDED, on the nose.** Wave B4-walk-2m-3 wired
+`RamDriver.distMemCom` into `RamDriver.scatDeadCom`, so the charge
+modelled here — `scatDeadK`'s summands with the fill read at the child's
+member count — is not a model any more: it **is**
+`ScatterDeadTurn.deadAtomK`, summand for summand and numeral for
+numeral. The definition is kept because it is what E4c-c predicted and
+this equation is the evidence that the prediction was exact; a model
+that had drifted from the landed charge could not compile here. -/
+theorem deadAtomKB_eq_landed {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm bw nb t : ℕ) :
+    deadAtomKB β n mm1 kq mm bw nb t
+      = Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t := by
+  rw [Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK,
+    Lax3Proofs.Refine.ScatterDeadPass.scatDeadK, deadAtomKB]
+
+/-- **The charge wave B4-walk-2m-3 retired**: `ScatterDeadPass.scatDeadK`'s
+summands with the whole-array fill `11·n + 6` in the sixth slot, as
+`RamDriver.scatDeadCom` paid it up to that wave. Kept as the record: the
+`119·n` headline of this file's controls is `deadAtomKW_root_eq` below,
+and the trade against the landed charge is stated in terms of it. -/
+noncomputable def deadAtomKW {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (n mm1 kq mm bw nb t : ℕ) : ℕ :=
+  Lax3Proofs.Refine.ScatterDeadPass.killSumCost kq +
+      Lax3Proofs.Refine.ScatterDeadPass.outProbeCost n +
+      Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β +
+      Lax3Proofs.Refine.ScatterDeadPass.outCntCost +
+      Lax3Proofs.Refine.ScatterDeadPass.atomMemCost mm1 +
+      (11 * n + 6) +
+      Lax3Proofs.Refine.ScatterBlock.scatBlockK mm bw nb t +
+      Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost + 2
+
+/-- **The retired charge at the root's own instantiation** — the `119·n`
+that stood in `deadAtomK_root_eq` before wave B4-walk-2m-3, preserved so
+that the `122·n` there can be read against it. The wave costs `3·n` at
+the carrier and removes the carrier everywhere else. -/
+theorem deadAtomKW_root_eq {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mb ns t : ℕ) :
+    deadAtomKW β n n mb n ns n t
+      = (44 * ns + 110 * n + 140) * t + 119 * n + 14 * mb +
+        Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 84 := by
+  simp only [deadAtomKW, Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
     Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
     Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
     Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
     Lax3Proofs.Refine.ScatterDeadPass.killSumCost,
     Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
   ring
+
+/-- **The trade, exactly.** The landed charge plus the retired fill's
+carrier walk is the retired charge plus the member walk: `11·n + 6` out,
+`14·mm1 + 6` in, and every other summand identical. -/
+theorem deadAtomKB_trade {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm bw nb t : ℕ) :
+    deadAtomKB β n mm1 kq mm bw nb t + (11 * n + 6)
+      = deadAtomKW β n mm1 kq mm bw nb t + (14 * mm1 + 6) := by
+  rw [deadAtomKB_closed]
+  simp only [deadAtomKW, Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
+    Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
+    Lax3Proofs.Refine.ScatterDeadPass.killSumCost,
+    Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
+  ring
+
+/-- **The negative control at the unnarrowed reading**: the retired
+charge grows in the carrier at every fixed member count, kill count,
+ball budget and pick count. The landed charge does too *here* — the
+outside probe's `20·n` is unnarrowed in `scatDeadK` — which is why the
+wave's own acceptance test is stated at the narrowed charge, where the
+probe's slot is the capped `ScatterDeadPass.outProbeCostB` and
+`ScatterDeadPass.scatDeadKX_le_blk` holds. -/
+theorem deadAtomKW_unbounded {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (ksc mm1 kq mm bw nb t : ℕ) :
+    ∃ n : ℕ, ¬ (deadAtomKW β n mm1 kq mm bw nb t ≤ ksc) := by
+  refine ⟨ksc + 1, fun h => ?_⟩
+  simp only [deadAtomKW, Lax3Proofs.Refine.ScatterDeadPass.outProbeCost] at h
+  omega
 
 /-- **The surviving carrier term is the probe's, and nothing else.** At
 fixed member data and ball budget the modelled charge still grows in the
@@ -1008,11 +1103,12 @@ theorem deadAtomK_le_atomCoeff {L : ℕ} (β : Lax3.DistFO.DistFO L 1) {m bw nb 
     Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β m m kq m bw nb t
       ≤ atomCoeffB4 kq (Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β) t * (s + 1) := by
   have hclosed : Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β m m kq m bw nb t
-      = (44 * bw + 110 * nb + 140) * t + 119 * m + 14 * kq +
+      = (44 * bw + 110 * nb + 140) * t + 122 * m + 14 * kq +
         Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 84 := by
     simp only [Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK,
       Lax3Proofs.Refine.ScatterDeadPass.scatDeadK,
       Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+      Lax3Proofs.Refine.ScatterDeadPass.memFillAtCost,
       Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
       Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
       Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
@@ -1023,13 +1119,13 @@ theorem deadAtomK_le_atomCoeff {L : ℕ} (β : Lax3.DistFO.DistFO L 1) {m bw nb 
   have hball : (44 * bw + 110 * nb + 140) * t ≤ (154 * s + 140) * t :=
     Nat.mul_le_mul_right _ (by omega)
   have hslope : (154 * s + 140) * t = 154 * t * s + 140 * t := by ring
-  have hm' : 119 * m ≤ 119 * s := Nat.mul_le_mul_left _ hm
-  have hj : 154 * t * s + 119 * s
+  have hm' : 122 * m ≤ 122 * s := Nat.mul_le_mul_left _ hm
+  have hj : 154 * t * s + 122 * s
       ≤ (294 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 221) * s := by
-    have h1 : (154 * t + 119) * s
+    have h1 : (154 * t + 122) * s
         ≤ (294 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 221) * s :=
       Nat.mul_le_mul_right _ (by omega)
-    have h2 : (154 * t + 119) * s = 154 * t * s + 119 * s := by ring
+    have h2 : (154 * t + 122) * s = 154 * t * s + 122 * s := by ring
     omega
   have hexp : atomCoeffB4 kq (Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β) t * (s + 1)
       = (294 * t + 14 * kq + Lax3Proofs.Refine.ScatterDeadPass.atomBitCost β + 221) * s
@@ -1079,12 +1175,20 @@ on data (`capped_exp_is_forced`) and the guard paid out of the ball
 potential's own slack (`capped_turn_pays`) — so `BfsBlock.bfsBlockK`
 keeps its numerals.
 
-Its second half **does not**. What that half was worth is `deadAtomKD`
-below: the landed per-atom charge with the distance fill gone, and
-nothing else moved. The carrier coefficient falls from `119` to `108` at
-the root reading, which is the probe's `20` plus the member-position
-reads' `88` — the two terms whose narrowing is accounting and
-cluster-scale arguments respectively, neither of them program text.
+Its second half **does not**, and wave B4-walk-2m-3 has since made the
+route moot. What that half was worth is `deadAtomKD` below: the per-atom
+charge with the distance fill gone and nothing else moved. Against the
+**retired** charge `deadAtomKW` the carrier coefficient falls from `119`
+to `108` at the root reading, which is the probe's `20` plus the
+member-position reads' `88`.
+
+Against the charge that is actually landed the comparison is different
+and worse for the route: `deadAtomKD_trade` states the gap as
+`ScatterDeadPass.memFillAtCost mm1 = 14·mm1 + 6`, read at the child's
+member count. Deleting the fill would now buy a *member-scale* summand,
+not a carrier-scale one — less than the wave that overtook it, at the
+price of an interface change this file's own refutations price. The
+route is retired.
 
 Two prices are recorded here. The **root budget** price is small and
 real: the one-time fill rides the root's `W`-slot and moves its
@@ -1126,13 +1230,35 @@ theorem deadAtomKD_closed {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm b
     Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
   ring
 
-/-- **The trade, exactly**: `11·n + 6` out and nothing in. -/
+/-- **The trade, exactly**: the fill's slot out and nothing in. Stated
+against the **landed** charge, whose sixth slot is
+`ScatterDeadPass.memFillAtCost mm1` since wave B4-walk-2m-3 — so what
+deleting the fill would still be worth is `14·mm1 + 6`, read at the
+child's member count and not at the carrier. That is why E4c-d's route
+is retired rather than merely blocked: it now buys less than the wave
+that overtook it. -/
 theorem deadAtomKD_trade {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (n mm1 kq mm bw nb t : ℕ) :
     Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β n mm1 kq mm bw nb t
-      = deadAtomKD β n mm1 kq mm bw nb t + (11 * n + 6) := by
+      = deadAtomKD β n mm1 kq mm bw nb t +
+        Lax3Proofs.Refine.ScatterDeadPass.memFillAtCost mm1 := by
   rw [deadAtomKD_closed, Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK,
     Lax3Proofs.Refine.ScatterDeadPass.scatDeadK]
   simp only [Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
+    Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
+    Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
+    Lax3Proofs.Refine.ScatterDeadPass.killSumCost,
+    Lax3Proofs.Refine.ScatterDeadPass.memFillAtCost,
+    Lax3Proofs.Refine.ScatterBlock.scatBlockK_eq]
+  ring
+
+/-- **And the trade against the retired charge**, which is the one
+E4c-d's arithmetic was stated at: `11·n + 6` out and nothing in. -/
+theorem deadAtomKD_trade_retired {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+    (n mm1 kq mm bw nb t : ℕ) :
+    deadAtomKW β n mm1 kq mm bw nb t = deadAtomKD β n mm1 kq mm bw nb t + (11 * n + 6) := by
+  rw [deadAtomKD_closed]
+  simp only [deadAtomKW, Lax3Proofs.Refine.ScatterDeadPass.outProbeCost,
     Lax3Proofs.Refine.ScatterDeadPass.atomMemCost,
     Lax3Proofs.Refine.ScatterDeadPass.outCntCost,
     Lax3Proofs.Refine.ScatterDeadPass.atomFlagCost,
@@ -1375,8 +1501,12 @@ family with every constant one step over its ceiling does not. -/
 #print axioms landed_hKd_load_bearing
 #print axioms landed_base_needs_carrier_Cb
 
--- wave E4c-b: the modelled post-wiring charge (control 1c)
+-- wave E4c-b: the modelled post-wiring charge (control 1c), and wave
+-- B4-walk-2m-3, at which the model became the landed charge
 #print axioms deadAtomKB_closed
+#print axioms deadAtomKB_eq_landed
+#print axioms deadAtomKW_root_eq
+#print axioms deadAtomKW_unbounded
 #print axioms deadAtomKB_trade
 #print axioms per_turn_copy_escapes_size_slot
 #print axioms deadAtomKB_probe_floor
@@ -1387,6 +1517,7 @@ family with every constant one step over its ceiling does not. -/
 -- wave E4c-d: the fill-free charge and the two prices of reaching it (control 1d)
 #print axioms deadAtomKD_closed
 #print axioms deadAtomKD_trade
+#print axioms deadAtomKD_trade_retired
 #print axioms deadAtomKD_root_eq
 #print axioms deadAtomKD_probe_floor
 #print axioms rootFill_le_weight

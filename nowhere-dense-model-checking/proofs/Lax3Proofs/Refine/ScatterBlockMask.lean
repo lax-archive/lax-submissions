@@ -79,10 +79,11 @@ def ArenaAtM (av : String) (n nt mm r : ℕ) (O T M Mem : ℕ → ℕ) (σ : Env
     (∃ g, σ.arrs "q" = arrOf n g) ∧ (∃ g, σ.arrs "qd" = arrOf n g)
 
 /-- **The bridge.** The landed arena is an instance of the narrowed one,
-so every landed caller — including the atom that still runs
-`fillCom "dist" (r + 1)` — is served by the narrowed form unchanged.
-This is the theorem the successor wave points `RamDriver.scatDeadCom` at
-when it swaps the fill for `ScatterDeadPass.distMemCom`. -/
+so every landed caller is served by the narrowed form unchanged. Wave
+B4-walk-2m-3 no longer needs it at the *atom* — `ScatterDeadTurn`
+builds `ArenaAtM` directly out of `distClean_of_cover` — and it is what
+keeps every other consumer of `ArenaAt` working against the narrowed
+passes. -/
 theorem arenaAM_of_arenaA {σ : Env} (h : ArenaA n nt mm r O T M Mem σ) :
     ArenaAM n nt mm r O T M Mem σ :=
   ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2.1, h.2.2.2.2.2.1,
@@ -834,10 +835,11 @@ theorem scatBlockCntM_specW {B : ℕ} (hcsr : CsrGraph G ns O T) (hnB : n < B)
     omega
 
 /-- **The driver's pass, narrowed** — `ScatterDeadEngine.scatBlockCnt_specA`
-at `ArenaAtM`, with the clean-out. This is the theorem the successor
-wave points `ScatterDeadTurn.scatDead_spec` at once
-`RamDriver.scatDeadCom` swaps `fillCom "dist"` for
-`ScatterDeadPass.distMemCom`. Same `renCom` route, same charge. -/
+at `ArenaAtM`, with the clean-out. Since wave B4-walk-2m-3 this is the
+theorem `ScatterDeadTurn.scatDead_spec` consumes:
+`RamDriver.scatDeadCom` runs `RamDriver.distMemCom` at the sixth slot,
+so what the atom can establish is `DistClean` and not the whole-array
+clause. Same `renCom` route, same charge. -/
 theorem scatBlockCntM_specA {B : ℕ} {av : String} (hav : MaskFree av)
     (hcsr : CsrGraph G ns O T) (hnB : n < B) (hnsB : ns < B)
     (hnt : ns ≤ nt) (hrB : r + 1 < B) (htB : t < B) (hMB : ∀ z < n, M z < B)
@@ -1026,14 +1028,16 @@ theorem post_flag_gives_no_distClean :
   rw [hEq, e₀] at e₁
   omega
 
-/-! ### §10 The shape the successor fills
+/-! ### §10 The bridge the member-driven fill crosses
 
-`RamDriver.scatDeadCom` still pays `fillCom "dist" (.lit (r + 1))` —
+`RamDriver.scatDeadCom` paid `fillCom "dist" (.lit (r + 1))` —
 `11 n + 6`, the last carrier-sized summand in the per-atom charge — and
-the successor wave replaces it with a member-driven fill. What that fill
-has to establish is exactly `DistClean n r M σ`, the proposition
-`ArenaAM` carries and `scatBlockM_specW` consumes; the two lemmas below
-are the one line that gets it there.
+wave B4-walk-2m-3 replaced it with `RamDriver.distMemCom`, a
+member-driven fill. What that fill has to establish is exactly
+`DistClean n r M σ`, the proposition `ArenaAM` carries and
+`scatBlockM_specW` consumes; the two lemmas below are the one line that
+gets it there, and `ScatterDeadTurn.scatDead_spec` is where the line is
+used.
 
 They are stated so that **the hypothesis names the hazard**. `hcov` asks
 that the driving list cover the *mask's* support, and
@@ -1044,7 +1048,14 @@ child's `MemEnum n mm1 Mem1 A` down to `mm ≤ mm1` entries for
 non-members it drops. So the fill must be driven by the **unfiltered**
 `mm1`-list, which enumerates the mask — and `hcov` is unprovable for the
 filtered one, which is what makes the mistake a build failure rather than
-an unsoundness. -/
+an unsoundness.
+
+That is how it is discharged at the one live call site:
+`ScatterDeadTurn.scatDead_spec` passes `hmem1E.2.2.2`, the fourth clause
+of the **child's** `RamDriver.MemEnum n mm1 Mem1 Alv'`, which
+`RamDriverCluster.ClusterData` carries and `atomMemCom_spec` preserves
+across the filter. The atom's own `MemList` at `"mm"` is never offered
+to it. -/
 
 /-- **A fill driven by a list covering the mask's support is clean on
 it.** -/
