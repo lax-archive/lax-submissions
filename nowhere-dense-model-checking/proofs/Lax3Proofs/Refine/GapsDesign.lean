@@ -37,9 +37,29 @@ shape carries a negative control.
 
 | slot | landed closed form | target fits? | blocker | class | driver-file edit? |
 |---|---|---|---|---|---|
-| `hKbase` | `(blockCost + 10)·n + 6`, one size (`n`) | **YES**, §1.4/§1.6 | member walk owes only `alive ∪ D`; `levelImplements`' `hbase` is typed at `LevelImplementsFull` | program text **+** semantic (one hypothesis) | **yes** — `RamDriver.sweepCom`, `RamDriverCluster.levelImplements` |
+| `hKbase` | `(blockCost + 10)·n + 6`, one size (`n`) | **YES**, §1.4/§1.6 | member walk owes only `alive ∪ D`; `levelImplements`' `hbase` is typed at `LevelImplementsFull` | program text **+** semantic (one hypothesis) | **yes** — a new body for `RamDriver.baseCom` (§1.8), `RamDriverCluster.levelImplements` |
 | `hKc` | `112·n² + 50·n·ns + 281·n + 156` | **YES** as `kcov·(w+1)`, §2.3 — but its third hypothesis is unproducible, §2.4 | copy at the runtime pointer is still `≥ 12·n + 6`; `coverCost`'s `100·n²`; the carrier-wide `asg` | accounting **then** program text ×2 **then** semantic | **yes** — `RamCover.coverCom`, `RamDriver.coverSave`, `RamDriverCompose.coverImplements` |
 | `hKo` | `1600·n + 1350·ns + 60·W + 650` | **YES**, measured `68·m + 12` (`rfl`) | the E2 engines kill the §1 floor and eleven couplings; **one** survives: `OrdersBy`'s carrier-wide contract | semantic, and it is `hKc`'s | **yes** — `RamDriver.orderCom`, `RamCover.OrdersBy`'s consumers |
+
+## Cheapest and riskiest, in one line
+
+**Cheapest: `hKbase`.** Its target fit is compiled end to end
+(`base_fits_the_close`), its semantic move is one hypothesis and is a
+*weakening* (`baseImplementsD_of_baseImplements`,
+`levelImplementsD_bot_of_landed` — so the two halves land in separate
+waves with the package green in between), its program delta is one loop
+header on one `Com`, and the only missing mathematics was the
+member→weight bridge, which is §1.1 and is now landed.
+
+**Riskiest: `hKc`.** Not because its arithmetic is worse — `hKo`'s is —
+but because it is the slot that *carries* the shared contract. Its three
+blockers must be cleared in a forced order (accounting, then two program
+deltas, then the contract), the third is `hKo`'s too (§4), and clearing
+it means reopening `RamDriverCluster.levelImplements`' partition step,
+whose argument lives inside an induction and is stated nowhere separately
+(§5, `MemberOrderContract`). `hKo` is *second* riskiest and it is
+strictly downstream: everything of `hKo` except the contract is already
+landed capital.
 
 ## The finding this wave exists to produce
 
@@ -525,6 +545,24 @@ private def nbM (K mm : ℕ) : ℕ := (K + 4) * mm + 6
 
 end BaseFalsification
 
+/-! #### §1.8 The one trap in the program-text half -/
+
+/-- **`baseCom` and the retired `sweepCom` are the same term**, by `rfl`
+— which is R1.8-T4a's shed, and which is also a trap for wave T4b: a
+member header written into `RamDriver.sweepCom` moves the *retired* dead
+sweep with it and breaks `Refine.DeadSweep.sweepImplements`, kept in the
+tree as the record of what the flip removed.
+
+So the program-text half must give `RamDriver.baseCom` its **own** body —
+one new `Com` in `RamDriver.lean`, beside the untouched `sweepCom` — and
+the visible signal that the edit landed on the right declaration is that
+`Refine.DeadSweep.baseCost_eq` stops being provable by `rfl`. That is a
+one-line consequence for the closing wave, and it is exactly the kind of
+coupling the scatter road discovered one wave too late four times. -/
+theorem baseCom_is_sweepCom (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) :
+    Lax3Proofs.RamDriver.baseCom q_top cap mb ℓ φ
+      = Lax3Proofs.RamDriver.sweepCom q_top cap mb ℓ φ := rfl
+
 /-! ### §2 `hKc` — the cover phase
 
 `Refine.CoverBlock` (wave E3a) landed the leaf side: the Σ-shaped centre
@@ -974,6 +1012,7 @@ end ThreeSlots
 #print axioms levelImplementsD_bot_of_landed
 #print axioms landed_base_escapes_CbM
 #print axioms memberBase_cannot_meet_full
+#print axioms baseCom_is_sweepCom
 #print axioms kcov_is_phaseBudgetM
 #print axioms coverPhaseB_fits_M_slot
 #print axioms landed_copy_hmm_forces_carrier
