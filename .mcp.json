@@ -2,8 +2,8 @@
   "mcpServers": {
     "lean-lsp": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["lean-lsp-mcp@0.28.1"]
+      "command": "bash",
+      "args": ["-c", "PATH=\"$HOME/.elan/bin:$PATH\" exec uvx lean-lsp-mcp@0.28.1"]
     }
   }
 }
