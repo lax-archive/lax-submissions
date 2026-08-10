@@ -1127,8 +1127,8 @@ theorem blockMapCom_spec {B n m : ℕ} {idx bnd dst : String} {e : Expr}
     (hIdx : ∀ q, q < m → Idx q < n)
     (hpd : "p" ≠ bnd) (hcwd : "cw" ≠ bnd) (hdi : dst ≠ idx)
     (hdf : ∀ p ∈ l, p.1 ≠ dst)
-    (he : ∀ (σ : Env) q, q < m → σ.vars "cw" = Idx q → BlockFrozen l σ →
-      e.evalB B σ = some (F (Idx q))) :
+    (he : ∀ (σ : Env) q, q < m → σ.vars "p" = q → σ.vars "cw" = Idx q →
+      BlockMapInv n m idx bnd dst Idx F g₀ l σ → e.evalB B σ = some (F (Idx q))) :
     Spec B
       (fun σ => σ.vars bnd = m ∧ σ.arrs idx = arrOf n Idx ∧
         σ.arrs dst = arrOf n g₀ ∧ BlockFrozen l σ)
@@ -1175,7 +1175,10 @@ theorem blockMapCom_spec {B n m : ℕ} {idx bnd dst : String} {e : Expr}
     have hfr₁ : BlockFrozen l ρ₁ := by
       intro a ha; rw [hρ₁, arrs_setVar]; exact hfrρ a ha
     have hgarr₁ : ρ₁.arrs dst = arrOf n g := by rw [hρ₁, arrs_setVar]; exact hgarr
-    have hval : e.evalB B ρ₁ = some (F (Idx p)) := he ρ₁ p hlt hcw₁ hfr₁
+    have hI₁ : BlockMapInv n m idx bnd dst Idx F g₀ l ρ₁ :=
+      ⟨hbnd₁, by rw [hp₁]; exact hpρ, hidx₁, hfr₁, g, hgarr₁,
+        by simpa [hp₁] using hset, by simpa [hp₁] using hkeep⟩
+    have hval : e.evalB B ρ₁ = some (F (Idx p)) := he ρ₁ p hlt hp₁ hcw₁ hI₁
     have hcwe : (Expr.var "cw").evalB B ρ₁ = some (Idx p) := by
       have h := evalB_var (B := B) (x := "cw") (σ := ρ₁) (by rw [hcw₁]; exact hmemB)
       rwa [hcw₁] at h
@@ -1293,7 +1296,8 @@ theorem blockAndCom_spec {B n m : ℕ} {idx bnd a b dst : String}
         · exact Ne.symm hda
         · exact Ne.symm hdb)
     (by
-      intro σ q hq hcw hfr
+      intro σ q hq hp hcw hI
+      have hfr := hI.2.2.2.1
       have ha := hfr (a, n, A) (by simp)
       have hb := hfr (b, n, C) (by simp)
       have hecw : (Expr.var "cw").evalB B σ = some (Idx q) := by
@@ -1336,7 +1340,8 @@ theorem blockSubCom_spec {B n m : ℕ} {idx bnd a b dst : String}
         · exact Ne.symm hda
         · exact Ne.symm hdb)
     (by
-      intro σ q hq hcw hfr
+      intro σ q hq hp hcw hI
+      have hfr := hI.2.2.2.1
       have ha := hfr (a, n, A) (by simp)
       have hb := hfr (b, n, C) (by simp)
       have hecw : (Expr.var "cw").evalB B σ = some (Idx q) := by
@@ -1350,6 +1355,111 @@ theorem blockSubCom_spec {B n m : ℕ} {idx bnd a b dst : String}
           (by change 1 - C (Idx q) < B; omega))
         (by change A (Idx q) * (1 - C (Idx q)) < B; exact hACB q hq))
   simpa [blockSubCom, blockSubCost, blockMapCom, Expr.size, BlockFrozen] using h
+
+/-- The in-place conjunction uses the same executable text.  Its first
+source is the destination itself. -/
+def blockAndSelfCom (idx bnd b dst : String) : Lax13Proofs.Imp.Com :=
+  blockAndCom idx bnd dst b dst
+
+/-- The in-place difference, likewise. -/
+def blockSubSelfCom (idx bnd b dst : String) : Lax13Proofs.Imp.Com :=
+  blockSubCom idx bnd dst b dst
+
+/-- The executable in-place conjunction.  Injectivity of the member
+prefix says the cell about to be read has not been written by an
+earlier slot; this is exactly B4c/D-c. -/
+theorem blockAndSelfCom_spec {B n m : ℕ} {idx bnd b dst : String}
+    {Idx A C : ℕ → ℕ}
+    (h1B : 1 < B) (hnB : n < B) (hmn : m ≤ n) (hIdx : ∀ q, q < m → Idx q < n)
+    (hinj : ∀ q q', q < m → q' < m → Idx q = Idx q' → q = q')
+    (hAB : ∀ v, v < n → A v < B) (hCB : ∀ v, v < n → C v < B)
+    (hACB : ∀ q, q < m → A (Idx q) * C (Idx q) < B)
+    (hpd : "p" ≠ bnd) (hcwd : "cw" ≠ bnd) (hdi : dst ≠ idx) (hdb : dst ≠ b) :
+    Spec B
+      (fun σ => σ.vars bnd = m ∧ σ.arrs idx = arrOf n Idx ∧
+        σ.arrs dst = arrOf n A ∧ σ.arrs b = arrOf n C)
+      (blockAndSelfCom idx bnd b dst)
+      (fun _ σ' =>
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ q, q < m → g (Idx q) = A (Idx q) * C (Idx q)) ∧
+          (∀ v, v < n → (∀ q, q < m → Idx q ≠ v) → g v = A v)) ∧
+        σ'.vars "p" = m ∧ σ'.vars bnd = m ∧
+        σ'.arrs idx = arrOf n Idx ∧ σ'.arrs b = arrOf n C)
+      (blockAndCost m) := by
+  have h := blockMapCom_spec (B := B) (n := n) (m := m) (idx := idx) (bnd := bnd)
+    (dst := dst) (e := .mul (.get dst (.var "cw")) (.get b (.var "cw")))
+    (Idx := Idx) (F := fun v => A v * C v) (g₀ := A) (l := [(b, n, C)])
+    h1B hnB hmn hIdx hpd hcwd hdi
+    (by rintro x hx; rcases List.mem_singleton.mp hx with rfl; exact Ne.symm hdb)
+    (by
+      intro σ q hq hp hcw hI
+      obtain ⟨-, -, -, hfr, g, hgarr, -, hkeep⟩ := hI
+      have hb := hfr (b, n, C) (by simp)
+      have hcur : g (Idx q) = A (Idx q) := by
+        refine hkeep (Idx q) (hIdx q hq) ?_
+        intro q' hq' heq
+        have hq'q : q' < q := by rwa [hp] at hq'
+        have hsame := hinj q' q (by omega) hq heq
+        omega
+      have hecw : (Expr.var "cw").evalB B σ = some (Idx q) := by
+        have he := evalB_var (B := B) (x := "cw") (σ := σ) (by
+          rw [hcw]; exact lt_trans (hIdx q hq) hnB)
+        rwa [hcw] at he
+      exact evalB_bin
+        (evalB_get hecw (by rw [hgarr, getElem?_arrOf g (hIdx q hq), hcur])
+          (hAB _ (hIdx q hq)))
+        (evalB_get hecw (by rw [hb, getElem?_arrOf C (hIdx q hq)]) (hCB _ (hIdx q hq)))
+        (by change A (Idx q) * C (Idx q) < B; exact hACB q hq))
+  simpa [blockAndSelfCom, blockAndCom, blockAndCost, blockMapCom, Expr.size, BlockFrozen] using h
+
+/-- The executable in-place difference, with the same injectivity
+obligation. -/
+theorem blockSubSelfCom_spec {B n m : ℕ} {idx bnd b dst : String}
+    {Idx A C : ℕ → ℕ}
+    (h1B : 1 < B) (hnB : n < B) (hmn : m ≤ n) (hIdx : ∀ q, q < m → Idx q < n)
+    (hinj : ∀ q q', q < m → q' < m → Idx q = Idx q' → q = q')
+    (hAB : ∀ v, v < n → A v < B) (hCB : ∀ v, v < n → C v < B)
+    (hACB : ∀ q, q < m → A (Idx q) * (1 - C (Idx q)) < B)
+    (hpd : "p" ≠ bnd) (hcwd : "cw" ≠ bnd) (hdi : dst ≠ idx) (hdb : dst ≠ b) :
+    Spec B
+      (fun σ => σ.vars bnd = m ∧ σ.arrs idx = arrOf n Idx ∧
+        σ.arrs dst = arrOf n A ∧ σ.arrs b = arrOf n C)
+      (blockSubSelfCom idx bnd b dst)
+      (fun _ σ' =>
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ q, q < m → g (Idx q) = A (Idx q) * (1 - C (Idx q))) ∧
+          (∀ v, v < n → (∀ q, q < m → Idx q ≠ v) → g v = A v)) ∧
+        σ'.vars "p" = m ∧ σ'.vars bnd = m ∧
+        σ'.arrs idx = arrOf n Idx ∧ σ'.arrs b = arrOf n C)
+      (blockSubCost m) := by
+  have h := blockMapCom_spec (B := B) (n := n) (m := m) (idx := idx) (bnd := bnd)
+    (dst := dst)
+    (e := .mul (.get dst (.var "cw")) (.sub (.lit 1) (.get b (.var "cw"))))
+    (Idx := Idx) (F := fun v => A v * (1 - C v)) (g₀ := A) (l := [(b, n, C)])
+    h1B hnB hmn hIdx hpd hcwd hdi
+    (by rintro x hx; rcases List.mem_singleton.mp hx with rfl; exact Ne.symm hdb)
+    (by
+      intro σ q hq hp hcw hI
+      obtain ⟨-, -, -, hfr, g, hgarr, -, hkeep⟩ := hI
+      have hb := hfr (b, n, C) (by simp)
+      have hcur : g (Idx q) = A (Idx q) := by
+        refine hkeep (Idx q) (hIdx q hq) ?_
+        intro q' hq' heq
+        have hq'q : q' < q := by rwa [hp] at hq'
+        have hsame := hinj q' q (by omega) hq heq
+        omega
+      have hecw : (Expr.var "cw").evalB B σ = some (Idx q) := by
+        have he := evalB_var (B := B) (x := "cw") (σ := σ) (by
+          rw [hcw]; exact lt_trans (hIdx q hq) hnB)
+        rwa [hcw] at he
+      exact evalB_bin
+        (evalB_get hecw (by rw [hgarr, getElem?_arrOf g (hIdx q hq), hcur])
+          (hAB _ (hIdx q hq)))
+        (evalB_bin (evalB_lit h1B)
+          (evalB_get hecw (by rw [hb, getElem?_arrOf C (hIdx q hq)]) (hCB _ (hIdx q hq)))
+          (by change 1 - C (Idx q) < B; omega))
+        (by change A (Idx q) * (1 - C (Idx q)) < B; exact hACB q hq))
+  simpa [blockSubSelfCom, blockSubCom, blockSubCost, blockMapCom, Expr.size, BlockFrozen] using h
 
 end ImpMask
 
