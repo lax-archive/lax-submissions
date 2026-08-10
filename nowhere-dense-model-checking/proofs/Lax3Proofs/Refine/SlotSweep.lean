@@ -478,7 +478,7 @@ nor about `hKbase` (#21). -/
 section Floor
 
 variable {n q_top cap mb ns W ℓ Kmass Kdec Ksent : ℕ} {φ : Lax3.FirstOrder.FO 0}
-  {Ksc : ℕ → ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Ksc Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
 
 /-- **The descent's carrier charge, isolated.** One line, and it is the
 whole mechanism of the cubic: a turn pays `16 * n²` before it has looked
@@ -498,11 +498,11 @@ theorem turn_carrier (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0) (Ks
 is quadratic in the carrier. -/
 theorem hKs_carrier (hℓ : 1 ≤ ℓ)
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t) :
+      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j t) t (Kl (j + 1) t) ≤ Ks j t) :
     16 * (n * n) ≤ Ks 0 0 := by
   have h := hKs 0 (by omega) 0
   rw [RamDriverRoot.turnCostSize_eq] at h
-  exact le_trans (turn_carrier n ns cap mb q_top 0 φ (Ksc 0) (Kl 1 0)) h
+  exact le_trans (turn_carrier n ns cap mb q_top 0 φ (Ksc 0 0) (Kl 1 0)) h
 
 /-- **#27's contribution — the multiplier.** The root level runs `n`
 turns, each paying its turn budget; the mass side condition is free at
@@ -532,7 +532,7 @@ is what `C0Probe.level_interface_floor_cubic` needed the ordering phase's
 width pin for and did not need. -/
 theorem level_cost_floor_cubic (hℓ : 1 ≤ ℓ)
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
+      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j t) t (Kl (j + 1) t) ≤ Ks j t)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
       Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
@@ -549,7 +549,7 @@ empty arena, and `hKs` carries the nested budget additively, so each
 phase cost is paid once per turn as well. -/
 theorem level_cost_floor_sharp (hℓ : 2 ≤ ℓ)
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
+      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j t) t (Kl (j + 1) t) ≤ Ks j t)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
@@ -597,7 +597,8 @@ says its cost `Kdec + (Kl 0 (n + ns) + Ksent)` is at least `128 · n³`.
 
 `hKmono` is what carries the floor from `Kl 0 n` to `Kl 0 (n + ns)`, so
 the weight re-read of rebase E6 does not evade it. -/
-theorem driverRoot_decides_sentence_floored {B s Kb Kb₀ : ℕ} {N Ki : ℕ → ℕ}
+theorem driverRoot_decides_sentence_floored {B s Kb₀ : ℕ} {Kb N : ℕ → ℕ}
+    {Ki : ℕ → ℕ → ℕ}
     {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ} {x : List ℕ}
     (hℓ2 : 2 ≤ ℓ)
     (hx : EncodesGraph x n G) (hns : ns = 2 * edgeCount x)
@@ -613,14 +614,15 @@ theorem driverRoot_decides_sentence_floored {B s Kb Kb₀ : ℕ} {N Ki : ℕ →
         DistIndependent (deleteVerts G S) (2 * cap) Bd)
     (hbnd : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n ns n σs.t ≤ Kb)
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
+          Refine.ScatterDeadTurn.deadAtomKBlk σs.β z mb z z σs.t ≤ Kb z)
     (hcostI : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
-      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j)
-    (hKsc : ∀ j < ℓ, Ki j * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j)
+      ∀ z, Kb z * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j z)
+    (hKsc : ∀ j < ℓ, ∀ z,
+      Ki j z * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j z)
     (hKmono : ∀ j, Monotone (Kl j))
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
+      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j t) t (Kl (j + 1) t) ≤ Ks j t)
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
@@ -739,7 +741,7 @@ width path deleted entirely. -/
 section Distinction
 
 variable {n q_top cap mb ns W ℓ Kmass : ℕ} {φ : Lax3.FirstOrder.FO 0}
-  {Ksc : ℕ → ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Ksc Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
 
 /-- The space statement, cited at its landed name. -/
 theorem width_is_bounded {L : Layout} {B w : ℕ} (hfit : L.FitsWords B w)
@@ -754,7 +756,7 @@ restatement carries no `W` binder either, and is proved by that theorem
 applied unchanged. -/
 theorem floor_has_no_width (hℓ : 1 ≤ ℓ)
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
+      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j t) t (Kl (j + 1) t) ≤ Ks j t)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
       Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))

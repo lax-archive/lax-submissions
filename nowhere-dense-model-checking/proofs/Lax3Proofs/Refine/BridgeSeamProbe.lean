@@ -104,7 +104,8 @@ section Plug
 
 variable {n : ℕ} {B q_top cap mb ns W ℓ s Kmass : ℕ} {N : ℕ → ℕ}
   {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ} {x : List ℕ}
-  {Kb Kb₀ Ki₀ Kdec Ksent : ℕ} {Ki Ksc : ℕ → ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Kb : ℕ → ℕ} {Kb₀ Ki₀ Kdec Ksent : ℕ} {Ki Ksc : ℕ → ℕ → ℕ}
+  {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
 
 open Classical in
 /-- **The plug check.** `RootPre` is the precondition the landed root
@@ -125,14 +126,15 @@ theorem driverRoot_decides_sentence_pre
         DistIndependent (deleteVerts G S) (2 * cap) Bd)
     (hbnd : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n ns n σs.t ≤ Kb)
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
+          Refine.ScatterDeadTurn.deadAtomKBlk σs.β z mb z z σs.t ≤ Kb z)
     (hcostI : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
-      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j)
-    (hKsc : ∀ j < ℓ, Ki j * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j)
+      ∀ z, Kb z * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j z)
+    (hKsc : ∀ j < ℓ, ∀ z,
+      Ki j z * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j z)
     (hKmono : ∀ j, Monotone (Kl j))
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
+      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j t) t (Kl (j + 1) t) ≤ Ks j t)
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
