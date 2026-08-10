@@ -1601,6 +1601,193 @@ theorem coverClearCom_supported_spec {B w m c j : ℕ} {g₀ : ℕ → ℕ}
   simpa [coverClearCom, Refine.BlockLeaves.blockClearRangeCom,
     Refine.BlockLeaves.BlockFrozen, Expr.size] using h
 
+/-- Copy a supported source over the current cover block.  Supported
+entry storage turns the sparse write into the same whole-carrier copy
+equation as `copyCom`, while retaining support for the next block pass. -/
+theorem coverCopyCom_supported_spec {B w m c j : ℕ} {A g₀ : ℕ → ℕ}
+    {src : String} (hc : c < n) (hmB : m < B) (hB : 1 < B) (hnB : n < B)
+    (hmem : ∀ q, Xoff c ≤ q → q < Xoff (c + 1) → Xmem q < n)
+    (hAB : ∀ v, v < n → A v < B)
+    (hdx : dst ≠ xofName j) (hdi : dst ≠ xmmName j) (hds : dst ≠ src) :
+    Spec B
+      (fun σ => CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.arrs dst = arrOf n g₀ ∧
+        σ.arrs src = arrOf n A ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem A ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g₀)
+      (coverCopyCom j src dst)
+      (fun _ σ' =>
+        CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ' ∧
+        σ'.vars (curName j) = c ∧
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ v, v < n → g v = A v) ∧
+          BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g) ∧
+        σ'.arrs src = arrOf n A)
+      (15 * blockSize Xoff c + 12) := by
+  have hbase := coverMapCom_supported_spec (n := n) (Xoff := Xoff) (Xmem := Xmem)
+    (dst := dst) (B := B) (w := w) (m := m) (c := c) (j := j)
+    (x := .get src (.var "cw")) (F := A) (g₀ := g₀) (l := [(src, n, A)])
+    hc hmB hB hnB hdx hdi
+    (by rintro a ha; rcases List.mem_singleton.mp ha with rfl; exact Ne.symm hds)
+    (by
+      intro σ q hq₀ hqe _ hcw hI
+      obtain ⟨-, -, -, -, hfr, -⟩ := hI
+      have hsrc := hfr (src, n, A) (by simp)
+      have hecw : (Expr.var "cw").evalB B σ = some (Xmem q) := by
+        have he := evalB_var (B := B) (x := "cw") (σ := σ) (by
+          rw [hcw]
+          exact lt_trans (hmem q hq₀ hqe) hnB)
+        rwa [hcw] at he
+      exact evalB_get hecw
+        (by rw [hsrc, getElem?_arrOf A (hmem q hq₀ hqe)])
+        (hAB _ (hmem q hq₀ hqe)))
+  have h := hbase.pre (P' := fun σ =>
+      CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.arrs dst = arrOf n g₀ ∧
+        σ.arrs src = arrOf n A ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem A ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g₀) (by
+    rintro σ ⟨hcov, hcur, hdst, hsrc, hAsup, hg₀sup⟩
+    exact ⟨hcov, hcur, hdst, (by
+      intro x hx
+      rcases List.mem_singleton.mp hx with rfl
+      exact hsrc), hAsup, hg₀sup⟩)
+  simpa [coverCopyCom, Refine.BlockLeaves.blockCopyRangeCom,
+    Refine.BlockLeaves.BlockFrozen, Expr.size] using h
+
+/-- Conjoin two frozen arrays over the current cover block.  Support of
+the left factor is enough to support the product. -/
+theorem coverAndCom_supported_spec {B w m c j : ℕ} {A C g₀ : ℕ → ℕ}
+    {a b : String} (hc : c < n) (hmB : m < B) (hB : 1 < B) (hnB : n < B)
+    (hmem : ∀ q, Xoff c ≤ q → q < Xoff (c + 1) → Xmem q < n)
+    (hAB : ∀ v, v < n → A v < B) (hCB : ∀ v, v < n → C v < B)
+    (hACB : ∀ q, Xoff c ≤ q → q < Xoff (c + 1) → A (Xmem q) * C (Xmem q) < B)
+    (hdx : dst ≠ xofName j) (hdi : dst ≠ xmmName j)
+    (hda : dst ≠ a) (hdb : dst ≠ b) :
+    Spec B
+      (fun σ => CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.arrs dst = arrOf n g₀ ∧
+        σ.arrs a = arrOf n A ∧ σ.arrs b = arrOf n C ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem A ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g₀)
+      (coverAndCom j a b dst)
+      (fun _ σ' =>
+        CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ' ∧
+        σ'.vars (curName j) = c ∧
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ v, v < n → g v = A v * C v) ∧
+          BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g) ∧
+        σ'.arrs a = arrOf n A ∧ σ'.arrs b = arrOf n C)
+      (18 * blockSize Xoff c + 12) := by
+  have hbase := coverMapCom_supported_spec (n := n) (Xoff := Xoff) (Xmem := Xmem)
+    (dst := dst) (B := B) (w := w) (m := m) (c := c) (j := j)
+    (x := .mul (.get a (.var "cw")) (.get b (.var "cw")))
+    (F := fun v => A v * C v) (g₀ := g₀) (l := [(a, n, A), (b, n, C)])
+    hc hmB hB hnB hdx hdi
+    (by
+      rintro x hx
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+      rcases hx with rfl | rfl
+      · exact Ne.symm hda
+      · exact Ne.symm hdb)
+    (by
+      intro σ q hq₀ hqe _ hcw hI
+      obtain ⟨-, -, -, -, hfr, -⟩ := hI
+      have ha := hfr (a, n, A) (by simp)
+      have hb := hfr (b, n, C) (by simp)
+      have hq : Xmem q < n := hmem q hq₀ hqe
+      have hecw : (Expr.var "cw").evalB B σ = some (Xmem q) := by
+        have he := evalB_var (B := B) (x := "cw") (σ := σ) (by
+          rw [hcw]; exact lt_trans hq hnB)
+        rwa [hcw] at he
+      exact evalB_bin
+        (evalB_get hecw (by rw [ha, getElem?_arrOf A hq]) (hAB _ hq))
+        (evalB_get hecw (by rw [hb, getElem?_arrOf C hq]) (hCB _ hq))
+        (hACB q hq₀ hqe))
+  have h := hbase.pre (P' := fun σ =>
+      CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.arrs dst = arrOf n g₀ ∧
+        σ.arrs a = arrOf n A ∧ σ.arrs b = arrOf n C ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem A ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g₀) (by
+    rintro σ ⟨hcov, hcur, hdst, ha, hb, hAsup, hg₀sup⟩
+    exact ⟨hcov, hcur, hdst, (by
+      intro x hx
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+      rcases hx with rfl | rfl
+      · exact ha
+      · exact hb), blockSupported_mul_left (C := C) hAsup, hg₀sup⟩)
+  simpa [coverAndCom, Refine.BlockLeaves.blockAndRangeCom,
+    Refine.BlockLeaves.BlockFrozen, Expr.size] using h
+
+/-- Subtract a frozen mask over the current cover block.  Support of the
+left factor survives the pointwise subtraction. -/
+theorem coverSubCom_supported_spec {B w m c j : ℕ} {A C g₀ : ℕ → ℕ}
+    {a b : String} (hc : c < n) (hmB : m < B) (hB : 1 < B) (hnB : n < B)
+    (hmem : ∀ q, Xoff c ≤ q → q < Xoff (c + 1) → Xmem q < n)
+    (hAB : ∀ v, v < n → A v < B) (hCB : ∀ v, v < n → C v < B)
+    (hACB : ∀ q, Xoff c ≤ q → q < Xoff (c + 1) →
+      A (Xmem q) * (1 - C (Xmem q)) < B)
+    (hdx : dst ≠ xofName j) (hdi : dst ≠ xmmName j)
+    (hda : dst ≠ a) (hdb : dst ≠ b) :
+    Spec B
+      (fun σ => CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.arrs dst = arrOf n g₀ ∧
+        σ.arrs a = arrOf n A ∧ σ.arrs b = arrOf n C ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem A ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g₀)
+      (coverSubCom j a b dst)
+      (fun _ σ' =>
+        CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ' ∧
+        σ'.vars (curName j) = c ∧
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ v, v < n → g v = A v * (1 - C v)) ∧
+          BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g) ∧
+        σ'.arrs a = arrOf n A ∧ σ'.arrs b = arrOf n C)
+      (20 * blockSize Xoff c + 12) := by
+  have hbase := coverMapCom_supported_spec (n := n) (Xoff := Xoff) (Xmem := Xmem)
+    (dst := dst) (B := B) (w := w) (m := m) (c := c) (j := j)
+    (x := .mul (.get a (.var "cw")) (.sub (.lit 1) (.get b (.var "cw"))))
+    (F := fun v => A v * (1 - C v)) (g₀ := g₀)
+    (l := [(a, n, A), (b, n, C)]) hc hmB hB hnB hdx hdi
+    (by
+      rintro x hx
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+      rcases hx with rfl | rfl
+      · exact Ne.symm hda
+      · exact Ne.symm hdb)
+    (by
+      intro σ q hq₀ hqe _ hcw hI
+      obtain ⟨-, -, -, -, hfr, -⟩ := hI
+      have ha := hfr (a, n, A) (by simp)
+      have hb := hfr (b, n, C) (by simp)
+      have hq : Xmem q < n := hmem q hq₀ hqe
+      have hecw : (Expr.var "cw").evalB B σ = some (Xmem q) := by
+        have he := evalB_var (B := B) (x := "cw") (σ := σ) (by
+          rw [hcw]; exact lt_trans hq hnB)
+        rwa [hcw] at he
+      exact evalB_bin
+        (evalB_get hecw (by rw [ha, getElem?_arrOf A hq]) (hAB _ hq))
+        (evalB_bin (evalB_lit hB)
+          (evalB_get hecw (by rw [hb, getElem?_arrOf C hq]) (hCB _ hq))
+          (by change 1 - C (Xmem q) < B; omega))
+        (hACB q hq₀ hqe))
+  have h := hbase.pre (P' := fun σ =>
+      CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.arrs dst = arrOf n g₀ ∧
+        σ.arrs a = arrOf n A ∧ σ.arrs b = arrOf n C ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem A ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g₀) (by
+    rintro σ ⟨hcov, hcur, hdst, ha, hb, hAsup, hg₀sup⟩
+    exact ⟨hcov, hcur, hdst, (by
+      intro x hx
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+      rcases hx with rfl | rfl
+      · exact ha
+      · exact hb), blockSupported_sub_left (C := C) hAsup, hg₀sup⟩)
+  simpa [coverSubCom, Refine.BlockLeaves.blockSubRangeCom,
+    Refine.BlockLeaves.BlockFrozen, Expr.size] using h
+
 /-- The executable expansion's two-currency charge fits the one
 block-weight slot used by the almost-linear recurrence. -/
 theorem expandBlockCost_le_weight (hcsr : RamElim.CsrSimple G ns O T)
