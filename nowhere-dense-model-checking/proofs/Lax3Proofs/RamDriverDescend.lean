@@ -1111,6 +1111,57 @@ theorem ExpandBlockInv.done
   exact ⟨A, hA, fun q hq hq' => hset q hq (by rw [hp]; exact hq'),
     fun v hv hn => hkeep v hv (fun q hq hq' => hn q hq (by rw [← hp]; exact hq'))⟩
 
+/-- A cell function is supported by the slots of one block when every
+carrier cell not named by the block is zero.  This is the sparse analogue
+of the carrier-wide zero fill used by `expandCom`: a block expansion may
+leave unvisited cells alone precisely because those cells already contain
+zero. -/
+def BlockSupported (n p₀ e : ℕ) (Idx F : ℕ → ℕ) : Prop :=
+  ∀ v, v < n → (∀ q, p₀ ≤ q → q < e → Idx q ≠ v) → F v = 0
+
+@[simp] theorem blockSupported_zero (n p₀ e : ℕ) (Idx : ℕ → ℕ) :
+    BlockSupported n p₀ e Idx (fun _ => 0) := by
+  intro _ _ _
+  rfl
+
+/-- Expansion preserves block support.  Off the block both the arena mask
+and the source are zero; the dead-vertex equation therefore leaves zero. -/
+theorem blockSupported_expandVal
+    (hM : BlockSupported n p₀ e Idx Msk)
+    (hS : BlockSupported n p₀ e Idx Src) :
+    BlockSupported n p₀ e Idx (expandVal G Msk Src) := by
+  intro v hv hout
+  rw [expandVal_of_dead (hM v hv hout), hS v hv hout]
+
+/-- At loop exit, supported entry storage upgrades the sparse-write
+contract to the same carrier-wide pointwise equation exported by
+`expandCom_spec`. -/
+theorem ExpandBlockInv.done_eq
+    (h : ExpandBlockInv n ns nt w p₀ e G O T Idx Msk Src A₀ idx msk src dst σ)
+    (hp : σ.vars "p" = e)
+    (hA₀ : BlockSupported n p₀ e Idx A₀)
+    (hM : BlockSupported n p₀ e Idx Msk)
+    (hS : BlockSupported n p₀ e Idx Src) :
+    ∃ A, σ.arrs dst = arrOf n A ∧
+      (∀ v, v < n → A v = expandVal G Msk Src v) ∧
+      BlockSupported n p₀ e Idx A := by
+  obtain ⟨A, hA, hset, hkeep⟩ := h.done hp
+  have hExp := blockSupported_expandVal (G := G) hM hS
+  have hval : ∀ v, v < n → A v = expandVal G Msk Src v := by
+    intro v hv
+    by_cases hin : ∃ q, p₀ ≤ q ∧ q < e ∧ Idx q = v
+    · obtain ⟨q, hq₀, hqe, hqv⟩ := hin
+      rw [← hqv]
+      exact hset q hq₀ hqe
+    · have hout : ∀ q, p₀ ≤ q → q < e → Idx q ≠ v := by
+        intro q hq₀ hqe hqv
+        exact hin ⟨q, hq₀, hqe, hqv⟩
+      rw [hkeep v hv hout, hA₀ v hv hout, hExp v hv hout]
+  refine ⟨A, hA, hval, ?_⟩
+  intro v hv hout
+  rw [hval v hv]
+  exact hExp v hv hout
+
 /-- One turn of the block outer loop: read its arbitrary member, run
 the already-walked row engine there, then advance the slot pointer. -/
 theorem expandBlockBody_spec {B w p₀ e q : ℕ} (hcsr : CsrGraph G ns O T)
@@ -1323,6 +1374,58 @@ theorem expandBlockCom_spec {B w m c j : ℕ} (hcsr : CsrGraph G ns O T)
     hr₁.seq hr₂, ?_, hI₂, hp₂⟩
   simp only [blockSize, Refine.MassWeight.blockRowSum, expandRowSum]
   omega
+
+/-- The compositional form of `expandBlockCom_spec`.  If the mask, source,
+and entry destination are supported by the current cover block, the sparse
+pass agrees with `expandVal` on the whole carrier.  The cover row and its
+current centre are framed explicitly so another block pass can follow. -/
+theorem expandBlockCom_supported_spec {B w m c j : ℕ} (hcsr : CsrGraph G ns O T)
+    (hc : c < n) (hmB : m < B)
+    (hB : 1 < B) (hnB : n < B) (hnsB : ns < B)
+    (hMB : ∀ k, k < n → Msk k < B) (hSB : ∀ k, k < n → Src k < B)
+    (hdx : dst ≠ xofName j) (hdi : dst ≠ xmmName j)
+    (hdm : dst ≠ msk) (hds : dst ≠ src)
+    (hdo : dst ≠ "off") (hdt : dst ≠ "tgt") :
+    Spec B
+      (fun σ => CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.vars "n" = n ∧
+        σ.arrs "off" = arrOf (n + 1) O ∧ σ.arrs "tgt" = arrOf nt T ∧ ns ≤ nt ∧
+        σ.arrs msk = arrOf n Msk ∧ σ.arrs src = arrOf n Src ∧
+        σ.arrs dst = arrOf n A₀ ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem Msk ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem Src ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem A₀)
+      (expandBlockCom j msk src dst)
+      (fun _ σ' => CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ' ∧
+        σ'.vars (curName j) = c ∧ σ'.vars "n" = n ∧
+        σ'.arrs "off" = arrOf (n + 1) O ∧ σ'.arrs "tgt" = arrOf nt T ∧ ns ≤ nt ∧
+        σ'.arrs msk = arrOf n Msk ∧ σ'.arrs src = arrOf n Src ∧
+        ∃ A, σ'.arrs dst = arrOf n A ∧
+          (∀ v, v < n → A v = expandVal G Msk Src v) ∧
+          BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem A)
+      (51 * blockSize Xoff c +
+        24 * Refine.MassWeight.blockRowSum O Xoff Xmem c + 12) := by
+  refine Spec.of_exists (fun σ hσ => ?_)
+  obtain ⟨hcov, hcur, hn, hoff, htgt, hnt, hmsk, hsrc, hdst,
+    hM, hS, hA₀⟩ := hσ
+  obtain ⟨σ', hr, hI, hp⟩ :=
+    (expandBlockCom_spec (A₀ := A₀) hcsr hc hmB hB hnB hnsB hMB hSB
+      hdi hdm hds hdo hdt).run
+      ⟨hcov, hcur, hn, hoff, htgt, hnt, hmsk, hsrc, hdst⟩
+  obtain ⟨A, hA, hval, hsup⟩ := ExpandBlockInv.done_eq hI hp hA₀ hM hS
+  obtain ⟨hpend, hp₀, hpe, hn', hoff', htgt', hnt', hmsk', hsrc', hidx', -⟩ := hI
+  have hxof : σ'.arrs (xofName j) = σ.arrs (xofName j) :=
+    hr.frame_arr (xofName j) (by
+      simpa [expandBlockCom, expandBlockLoop, expandStep, expandSlot, Csr.loadRow,
+        Csr.scan, Com.warrs] using (Ne.symm hdx))
+  have hcov' : CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ' :=
+    hcov.of_eq hxof (by rw [hidx', hcov.tgtArr])
+  have hcur' : σ'.vars (curName j) = c := by
+    rw [hr.frame_var (curName j) (by
+      simp [expandBlockCom, expandBlockLoop, expandStep, expandSlot, Csr.loadRow,
+        Csr.scan, Com.wvars, curName, String.ext_iff]), hcur]
+  exact ⟨σ', _, hr, le_rfl, hcov', hcur', hn', hoff', htgt', hnt', hmsk', hsrc',
+    A, hA, hval, hsup⟩
 
 /-- The executable expansion's two-currency charge fits the one
 block-weight slot used by the almost-linear recurrence. -/
