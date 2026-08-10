@@ -291,6 +291,15 @@ Contents:
    `RamDriverDescend.lean` — the file this phase single-owner-locks. Sequence
    the move before the engine work or eat a merge conflict in 4568 lines.
 
+   **Status 2026-08-10:** complete in `Refine/DriverPrelude.lean`. The actual
+   elaborated closure also required moving the driver-independent primitives
+   `xmmName`, `fillUpto`, `copyUpto`, `hit_eq_expandVal`, `forRangeZero'`, and
+   `fillPrefix_spec`; leaving any one below its former driver made one of the
+   five target closures cyclic. `BlockLeaves`, `CoverBlock`, `MassWeight`,
+   `ArenaBlock`, and `SigmaLoop` now reach zero `RamDriver*` modules in a
+   transitive source-import audit, and the full compose chain builds with one
+   Lake job.
+
 2. **`clusterLoad` at block scale.** `:2564-2568` bounds the block scan by
    `n*n`, syntactically discarding the `CluScan` invariant (`_`), whose third
    component (`:2338`) is `Xoff c ≤ ρ.vars "p"`. There is no counted loop here,

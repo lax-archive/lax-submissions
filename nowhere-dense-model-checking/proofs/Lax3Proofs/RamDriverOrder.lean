@@ -824,59 +824,14 @@ scratch. `Spec.forRangeZero` compares two scalars and so does not
 apply, and `Lax13Proofs.Reasoning.Lib.Fill.loop_spec` and
 `RamDriverCluster.fill_spec` both inherit that shape.
 
-`forRangeZero'` is the kit's counted scan with the bound left as an
-expression the invariant evaluates, and `fillUpto_spec` is the array
-pass on top of it. The context a pass needs — the scalars its bound and
-its cell expression read, and the arrays it reads and does not write —
-enters as one abstract predicate `Q` with the two closure conditions
-that say what the pass writes: the counter `"i"` and the array `a`.
-That is what makes one lemma serve the copies, the fills and the
-re-zeroing tail alike. -/
-
-/-- **The counted scan from zero, at an arbitrary bound.** -/
-theorem forRangeZero' {B : ℕ} {c : Com} (x : String) (bnd : Expr) (I : Env → Prop) (N Kb : ℕ)
-    (hB : 0 < B) (hxB : ∀ σ, I σ → σ.vars x < B) (hbnd : ∀ σ, I σ → bnd.evalB B σ = some N)
-    (hxN : ∀ σ, I σ → σ.vars x ≤ N)
-    (hbody : Spec B (fun σ => I σ ∧ σ.vars x < N) c
-      (fun σ σ' => I σ' ∧ σ'.vars x = σ.vars x + 1) Kb) :
-    Spec B (fun σ => I (σ.setVar x 0))
-      (.seq (.assign x (.lit 0)) (.while (.lt (.var x) bnd) c))
-      (fun _ σ' => I σ' ∧ σ'.vars x = N) ((Kb + bnd.size + 3) * N + bnd.size + 5) := by
-  have hsize : (Cond.lt (Expr.var x) bnd).size = bnd.size + 2 := by
-    simp only [Cond.size, size_var]; omega
-  have hloop : Spec B I (.while (.lt (.var x) bnd) c)
-      (fun _ σ' => I σ' ∧ (Cond.lt (Expr.var x) bnd).evalB B σ' = some false)
-      ((Kb + bnd.size + 3) * N + bnd.size + 3) := by
-    refine Spec.while_potential I (fun σ => (Kb + bnd.size + 3) * (N - σ.vars x))
-      (fun σ hI => ⟨_, evalB_condLt (evalB_var (hxB σ hI)) (hbnd σ hI)⟩) ?_ (fun _ h => h) ?_
-    · intro σ hI hv
-      have hlt : σ.vars x < N := by
-        rw [evalB_condLt (evalB_var (hxB σ hI)) (hbnd σ hI)] at hv
-        simpa using hv
-      obtain ⟨σ', hr, hI', hx'⟩ := hbody σ ⟨hI, hlt⟩
-      refine ⟨σ', Kb, hr, hI', ?_⟩
-      show 1 + (Cond.lt (Expr.var x) bnd).size + Kb + (Kb + bnd.size + 3) * (N - σ'.vars x)
-        ≤ (Kb + bnd.size + 3) * (N - σ.vars x)
-      rw [hsize]
-      have hdrop : N - σ'.vars x + 1 = N - σ.vars x := by rw [hx']; omega
-      refine le_of_eq ?_
-      rw [← hdrop]
-      ring
-    · intro σ hI
-      show (Kb + bnd.size + 3) * (N - σ.vars x) + 1 + (Cond.lt (Expr.var x) bnd).size
-        ≤ (Kb + bnd.size + 3) * N + bnd.size + 3
-      rw [hsize]
-      have : (Kb + bnd.size + 3) * (N - σ.vars x) ≤ (Kb + bnd.size + 3) * N :=
-        Nat.mul_le_mul_left _ (Nat.sub_le _ _)
-      omega
-  refine Spec.of_exists fun σ hσ => ?_
-  obtain ⟨σ', hr, hI', hfalse⟩ := hloop.run (σ := σ.setVar x 0) hσ
-  refine ⟨σ', _, Run.seq (Run.assign (v := 0) (evalB_lit hB)) hr, ?_, hI', ?_⟩
-  · simp only [size_lit]; omega
-  · rw [evalB_condLt (evalB_var (hxB σ' hI')) (hbnd σ' hI')] at hfalse
-    have := hxN σ' hI'
-    simp only [Option.some.injEq, decide_eq_false_iff_not, not_lt] at hfalse
-    omega
+`forRangeZero'`, hoisted into `Refine.DriverPrelude`, is the kit's
+counted scan with the bound left as an expression the invariant
+evaluates, and `fillUpto_spec` is the array pass on top of it. The
+context a pass needs — the scalars its bound and its cell expression
+read, and the arrays it reads and does not write — enters as one
+abstract predicate `Q` with the two closure conditions that say what the
+pass writes: the counter `"i"` and the array `a`. That is what makes one
+lemma serve the copies, the fills and the re-zeroing tail alike. -/
 
 /-- **A flat pass over a prefix of an array, at an arbitrary bound.**
 `Q` is the context the pass runs in: the scalars its bound and its cell

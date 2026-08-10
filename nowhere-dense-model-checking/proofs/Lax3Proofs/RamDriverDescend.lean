@@ -822,16 +822,6 @@ section Expand
 
 variable {ns nt : ℕ} {G : SimpleGraph (Fin n)} {O T Msk Src : ℕ → ℕ} {msk src dst : String}
 
-/-- **A dead vertex is not expanded into.** The step's conditional is
-skipped there and the source's own cell stands, which is what
-`expandVal` says of it: an arena edge needs both of its ends alive. -/
-theorem expandVal_of_dead {z : ℕ} (h : Msk z = 0) : expandVal G Msk Src z = Src z := by
-  classical
-  unfold expandVal
-  rw [if_neg]
-  rintro ⟨y, hy, -⟩
-  exact hy.alive_left h
-
 /-- The block structure of a depth, as the reasoning kit's relation. -/
 theorem csr_of_expandInv {σ : Env} (hcsr : CsrGraph G ns O T)
     (h : ExpandInv n ns nt G O T Msk Src msk src dst σ) :

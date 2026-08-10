@@ -33,14 +33,13 @@ result of `r` of them; `ballOf_zero` and `nbhd_ballOf` are the two
 equations a chain of expansions is proved by, and `ballOf_singleton` is
 the form `Evaluator.isoColoring_slotPd` reads a ball in.
 
-`RamDriver.expandCom`'s own walk is two nested loops, and this file
-carries its mathematics and its two invariants without closing the walk:
-`expandVal` is the cell one step writes, `markSet_expandVal` is that the
-mask it leaves marks exactly `nbhd` of what the source marks,
-`ExpandInv` and `ScanHit` are what the outer and the inner loop carry,
-and `hit_eq_expandVal` is the inner loop's exit reading — that a block
-fully scanned decides the outer loop's cell. What is left is the
-symbolic execution between them.
+`RamDriver.expandCom`'s own walk is two nested loops. The shared
+primitives `expandVal` and `hit_eq_expandVal` live above the driver in
+`Refine.DriverPrelude`; this file supplies the remaining mathematics and
+invariants: `markSet_expandVal` says that the mask left by one step marks
+exactly `nbhd` of what the source marks, and `ExpandInv` and `ScanHit`
+are what the outer and inner loops carry. What is left is the symbolic
+execution between them.
 
 # What enters as a hypothesis, and why
 
@@ -285,17 +284,12 @@ theorem eq_of_arrOf_eq {N : ℕ} {f g : ℕ → ℕ} (h : arrOf N f = arrOf N g)
   have h' : (arrOf N f).getD k 0 = (arrOf N g).getD k 0 := by rw [h]
   rwa [getD_arrOf f hk, getD_arrOf g hk] at h'
 
-/-- The set a mask array marks. -/
-def markSet (n : ℕ) (A : ℕ → ℕ) : Set (Fin n) := {v | A (v : ℕ) ≠ 0}
-
 theorem mem_markSet {A : ℕ → ℕ} {v : Fin n} : v ∈ markSet n A ↔ A (v : ℕ) ≠ 0 := Iff.rfl
 
-/-- **The size of an arena is its mark set, counted.** `RamDriver.arenaSize`
-is stated with the set written out, because the obligation `Prop`s of
-that file read it and `markSet` is defined here; the two are the same
-term. This is the `rfl` `Refine.MassMath.mass_le_of_alive` is stated
-against, so the mass bound instantiates at a driver mask without a
-rewrite. -/
+/-- **The size of an arena is its mark set, counted.** Both definitions
+live in `Refine.DriverPrelude`, and are the same term. This is the `rfl`
+`Refine.MassMath.mass_le_of_alive` is stated against, so the mass bound
+instantiates at a driver mask without a rewrite. -/
 theorem arenaSize_eq_markSet (n : ℕ) (M : ℕ → ℕ) :
     arenaSize n M = (markSet n M).ncard := rfl
 
@@ -378,14 +372,6 @@ theorem ballOf_singleton (A : SimpleGraph (Fin n)) (r : ℕ) (u : Fin n) :
   simp only [ballOf, Set.mem_setOf_eq, Set.mem_singleton_iff]
   exact ⟨fun ⟨y, hy, hw⟩ => hy ▸ hw, fun hw => ⟨u, rfl, hw⟩⟩
 
-open Classical in
-/-- **The cell one expansion step writes.** The source's own cell,
-raised to one when some live neighbour of the vertex is marked — which
-is what `RamDriver.expandStep` computes, the initial `hit := src[z]`
-being why a marked vertex stays marked. -/
-noncomputable def expandVal (G : SimpleGraph (Fin n)) (Msk Src : ℕ → ℕ) (z : ℕ) : ℕ :=
-  if ∃ y : ℕ, MAdj G Msk z y ∧ Src y ≠ 0 then 1 else Src z
-
 /-- The cell it writes is one of the two values it can be, which is the
 whole of the bound a chain of expansions needs. -/
 theorem expandVal_eq_or (G : SimpleGraph (Fin n)) (Msk Src : ℕ → ℕ) (z : ℕ) :
@@ -448,25 +434,6 @@ def ScanHit (n ns nt : ℕ) (G : SimpleGraph (Fin n)) (O T Msk Src : ℕ → ℕ
     σ.vars "jend" = O (z + 1) ∧ O z ≤ σ.vars "j" ∧ σ.vars "j" ≤ O (z + 1) ∧
     σ.vars "hit" =
       (if ∃ p, O z ≤ p ∧ p < σ.vars "j" ∧ Msk (T p) ≠ 0 ∧ Src (T p) ≠ 0 then 1 else Src z)
-
-open Classical in
-/-- **What a full block scan leaves.** With the whole block passed, the
-hit flag is `RamDriver.expandVal`: the slots of the block name exactly
-the neighbours of the vertex, so "some slot passed named a live marked
-vertex" is "some neighbour in the arena is marked". -/
-theorem hit_eq_expandVal {ns z : ℕ} {G : SimpleGraph (Fin n)} {O T Msk Src : ℕ → ℕ}
-    (hcsr : CsrGraph G ns O T) (hzn : z < n) (hmz : Msk z ≠ 0) :
-    (if ∃ p, O z ≤ p ∧ p < O (z + 1) ∧ Msk (T p) ≠ 0 ∧ Src (T p) ≠ 0 then 1 else Src z) =
-      expandVal G Msk Src z := by
-  classical
-  unfold expandVal
-  congr 1
-  refine propext ⟨?_, ?_⟩
-  · rintro ⟨p, h₁, h₂, hm, hs⟩
-    exact ⟨T p, hcsr.madj_of_slot hzn h₁ h₂ hmz hm, hs⟩
-  · rintro ⟨y, hy, hs⟩
-    obtain ⟨p, h₁, h₂, rfl⟩ := hcsr.slot_of_madj hy
-    exact ⟨p, h₁, h₂, hy.alive_right, hs⟩
 
 /-! ### The three answers of the cover, as the turn of the loop reads them
 

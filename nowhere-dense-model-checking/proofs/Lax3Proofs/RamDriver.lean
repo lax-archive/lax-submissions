@@ -7,6 +7,7 @@ import Lax3Proofs.RamCover
 import Lax3Proofs.RamScatter
 import Lax3Proofs.Refine.MassMath
 import Lax3Proofs.Refine.ScatterBlockProg
+import Lax3Proofs.Refine.DriverPrelude
 import Lax3Proofs.SplitterWinRec
 
 /-!
@@ -802,10 +803,6 @@ def ordName (j : ℕ) : String := "od" ++ toString j
 of the cover's `xoff`. -/
 def xofName (j : ℕ) : String := "xf" ++ toString j
 
-/-- The block members of the cluster arena of depth `j`: the level's copy
-of the cover's `xmem`. -/
-def xmmName (j : ℕ) : String := "xm" ++ toString j
-
 /-- The assignment array of depth `j`: the level's copy of the cover's
 `asg`, which the readback compares against the cursor. -/
 def asgName (j : ℕ) : String := "ag" ++ toString j
@@ -999,12 +996,8 @@ clause, `RamDriverCluster`) and the mass mathematics
 mass equation is stated over, so a consumer never has to bridge two
 readings of a block's length. `arenaSize` is `markSet` counted —
 `RamDriverCluster.arenaSize_eq_markSet` is that identity, `rfl`. It is
-stated here rather than there because the obligation `Prop`s of this
-file read it. -/
-
-/-- **The size of an arena**: how many of the carrier's vertices the
-mask leaves alive. This is the size a level's cost is read at. -/
-noncomputable def arenaSize (n : ℕ) (M : ℕ → ℕ) : ℕ := {v : Fin n | M (v : ℕ) ≠ 0}.ncard
+defined in `Refine.DriverPrelude`, above the driver and the block engines
+that share the reading. -/
 
 /-- A mask that kills nothing leaves the whole carrier — the root's
 case, which is why the root's cost is `Kl 0 n`. -/
@@ -1068,50 +1061,6 @@ theorem MemEnum.card_le_arenaSize {n mm : ℕ} {Mem M : ℕ → ℕ}
       = arenaSize n M := by
     rw [arenaSize, Set.ncard_eq_toFinset_card']
   omega
-
-/-- **What the compaction scan leaves.** `cps` lists, in strictly
-increasing order, exactly the `cnum` positions below `n` whose block is
-nonempty **and whose centre the mask leaves alive**.
-
-**Rebase B2, on wave B4's finding; the alive clause landed by B8.** The
-emptiness predicate alone filters nothing — `Refine.MassAlive.block_nonempty`
-— so `le_mass` was an equality with `n` and bought no cost. `alive` is
-the clause the Σ interface needs: `Refine.ArenaBlock.mass_of_alive_compaction`
-turns it, with the cover's own postcondition, into the whole cost supply
-of a level. What it costs is not the walk but the *induction*, and the
-answer is `RamDriver.sweepCom` at the head of the level — see
-`compactCom`. -/
-structure Compacted (n cnum m : ℕ) (M ord Xoff cps : ℕ → ℕ) : Prop where
-  /-- One turn per member of the cluster arena at most. -/
-  le_mass : cnum ≤ m
-  /-- And never more turns than there are positions. -/
-  le_carrier : cnum ≤ n
-  /-- Every listed position is a position. -/
-  lt : ∀ k < cnum, cps k < n
-  /-- The list is strictly increasing. -/
-  mono : ∀ k k' : ℕ, k < k' → k' < cnum → cps k < cps k'
-  /-- Every listed position has a nonempty block. -/
-  nonempty : ∀ k < cnum, Xoff (cps k) < Xoff (cps k + 1)
-  /-- **Every listed centre is alive.** The one clause the Σ-shaped cost
-  interface reads: `Refine.ArenaBlock.cnum_le_arenaSize` counts the turns
-  against the arena through it, and `Refine.MassAlive.aliveMass_le`
-  bounds their blocks. -/
-  alive : ∀ k < cnum, M (ord (cps k)) ≠ 0
-  /-- And every position with a nonempty block and a live centre is
-  listed. A *dead* centre is deliberately not listed: its cluster is its
-  own singleton (`Refine.MassAlive.clusterAt_dead`) and the level's
-  edgeless sweep has already written its row. -/
-  covers : ∀ c < n, Xoff c < Xoff (c + 1) → M (ord c) ≠ 0 → ∃ k < cnum, cps k = c
-
-/-- The list has no repetitions, which is what tells the turns of the
-compacted loop apart. -/
-theorem Compacted.inj {n cnum m : ℕ} {M ord Xoff cps : ℕ → ℕ}
-    (h : Compacted n cnum m M ord Xoff cps) {k k' : ℕ} (hk : k < cnum) (hk' : k' < cnum)
-    (he : cps k = cps k') : k = k' := by
-  rcases Nat.lt_trichotomy k k' with hlt | heq | hgt
-  · exact absurd he (Nat.ne_of_lt (h.mono k k' hlt hk'))
-  · exact heq
-  · exact absurd he.symm (Nat.ne_of_lt (h.mono k' k hgt hk))
 
 /-! ### The play, as the machine records it
 
@@ -1358,9 +1307,12 @@ def DecodeMem (n ns W : ℕ) (σ : Env) : Prop :=
 /-! ### Plumbing
 
 Four flat passes the driver writes itself, since none of them belongs to
-any of the sub-programs: a fill, a copy, and the two mask operations. All
-four are the kit's array pass with a different cell expression, so their
-walks are one application of `Fill.loop_spec` apiece.
+any of the sub-programs: a fill, a copy, and the two mask operations. The
+prefix primitives `fillUpto` and `copyUpto` live in
+`Refine.DriverPrelude`, above both the driver and the block engines; all
+four passes here are the kit's array pass with a different cell
+expression, so their walks are one application of `Fill.loop_spec`
+apiece.
 
 **Wave B4-walk-2m-3 adds a fifth, and it is not flat**: `memFillAt`
 walks a *member list* instead of the carrier. Its walk is not here —
@@ -1372,16 +1324,8 @@ a program the driver runs belongs above the driver. Only the two
 definitions move; the charge, the invariant, the walk and the write-set
 lemmas all stay where E4c-b built them. -/
 
-/-- A flat pass over the first `bnd` cells of an array, writing the value
-of `e` into each. -/
-def fillUpto (a : String) (bnd e : Expr) : Com :=
-  .seq (.assign "i" (.lit 0)) (.while (.lt (.var "i") bnd) (Fill.put a "i" e))
-
 /-- The same over the whole carrier. -/
 def fillCom (a : String) (e : Expr) : Com := fillUpto a (.var "n") e
-
-/-- Copy the first `bnd` cells of one array into another. -/
-def copyUpto (src dst : String) (bnd : Expr) : Com := fillUpto dst bnd (.get src (.var "i"))
 
 /-- Copy one array of the carrier's length into another: the whole of the
 driver's calling convention, since every sub-program addresses fixed
