@@ -690,6 +690,8 @@ theorem belowVar_notMem_wvars_readbackCom (q_top cap mb d : ℕ) (φ : Lax3.Firs
     {y : String} (h : BelowVar d y) : y ∉ (readbackCom q_top cap mb φ d).wvars :=
   RamDriverBase.not_mem_wvars_readbackCom
     (fun hq => (by decide : ¬ HasDigit "z") (hq ▸ hasDigit_of_belowVar h))
+    (fun hq => (by decide : ¬ HasDigit "zend") (hq ▸ hasDigit_of_belowVar h))
+    (fun hq => (by decide : ¬ HasDigit "rv") (hq ▸ hasDigit_of_belowVar h))
 
 /-! ### The descent
 
@@ -1756,7 +1758,9 @@ theorem perDepthVar_notMem_wvars_clusterCom (q_top cap mb d : ℕ) (φ : Lax3.Fi
     · exact hyenv q hq
     · exact hyus (hq ▸ RamDriverFrames.underscore_mem_flgName d i k)
   · exact RamDriverBase.not_mem_wvars_readbackCom
-      (fun hq' => (by decide : ¬ HasDigit "z") (hq' ▸ hy)) hr
+      (fun hq' => (by decide : ¬ HasDigit "z") (hq' ▸ hy))
+      (fun hq' => (by decide : ¬ HasDigit "zend") (hq' ▸ hy))
+      (fun hq' => (by decide : ¬ HasDigit "rv") (hq' ▸ hy)) hr
 
 open Classical in
 theorem cnumName_notMem_wvars_clusterCom (q_top cap mb d : ℕ) (φ : Lax3.FirstOrder.FO 0)

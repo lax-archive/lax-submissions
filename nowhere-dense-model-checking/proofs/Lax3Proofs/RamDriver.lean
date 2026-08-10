@@ -2192,29 +2192,31 @@ noncomputable def bcExpr {α : Type*} (val : α → Expr) : BC α → Expr
 open Classical in
 /-- The valuation of the atoms of the formula at position `i` of depth
 `j`: a local atom is a bit of the depth-`(j + 1)` table at the vertex the
-readback stands on, a scatter atom is the flag the scatter pass left. -/
+readback loaded into `"rv"`, a scatter atom is the flag the scatter pass
+left. -/
 noncomputable def atomExpr (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j i : ℕ)
     (β : DistFO (sigL cap mb j) 1) :
     DistFO (sigL cap mb (j + 1)) 1 ⊕ ScatterSentence (sigL cap mb (j + 1)) → Expr
-  | .inl γ => .get (tabName (j + 1) (posOf γ (tablesAt q_top cap mb φ (j + 1)))) (.var "z")
+  | .inl γ => .get (tabName (j + 1) (posOf γ (tablesAt q_top cap mb φ (j + 1)))) (.var "rv")
   | .inr σ => .var (flgName j i (posOf σ (bcAtomsOf q_top (stepFml cap mb j β)).2))
 
 open Classical in
-/-- **The readback.** Walk the vertices this cluster was assigned and
-write, for every tabled formula, the value of its own boolean
-combination. -/
+/-- **The readback.** Walk the current cluster's block, retain the
+assignment guard, and write, for every assigned vertex and every tabled
+formula, the value of its own boolean combination.  The block walk is
+the interval `[xoff[cur], xoff[cur+1])`; `"z"` is its slot pointer,
+`"zend"` its end, and `"rv"` the vertex loaded from `xmem`. -/
 noncomputable def readbackCom (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j : ℕ) : Com :=
-  .seq (.assign "z" (.lit 0))
-    (.while (.lt (.var "z") (.var "n"))
-      (.seq (.ite (.eq (.get (asgName j) (.var "z")) (.var (curName j)))
-              (foldIdx (fun i β =>
-                  .store (tabName j i) (.var "z")
-                    (if h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧ DRank 1 q' (stepFml cap mb j β) then
-                      bcExpr (atomExpr q_top cap mb φ j i β) (bcOf q_top (stepFml cap mb j β) h)
-                    else .lit 0)) 0
-                (tablesAt q_top cap mb φ j))
-              .skip)
-        (.assign "z" (.add (.var "z") (.lit 1)))))
+  RamAugment.blockScan (xofName j) (xmmName j) (curName j) "z" "zend" "rv"
+    (.ite (.eq (.get (asgName j) (.var "rv")) (.var (curName j)))
+      (foldIdx (fun i β =>
+          .store (tabName j i) (.var "rv")
+            (if h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧ DRank 1 q' (stepFml cap mb j β) then
+              bcExpr (atomExpr q_top cap mb φ j i β)
+                (bcOf q_top (stepFml cap mb j β) h)
+            else .lit 0)) 0
+        (tablesAt q_top cap mb φ j))
+      .skip)
 
 open Classical in
 /-- **The kill pass** (rebase R1.8, design §2.3): the rows of the
@@ -4335,5 +4337,3 @@ theorem driver_correct (hrank : Lax3.FirstOrder.rank φ ≤ q_top)
 end Main
 
 end Lax3Proofs.RamDriver
-
-
