@@ -737,6 +737,17 @@ computes. -/
 def blockRowSum (O Xoff Xmem : ℕ → ℕ) (c : ℕ) : ℕ :=
   ∑ p ∈ Finset.Ico (Xoff c) (Xoff (c + 1)), Csr.rowLen O (Xmem p)
 
+/-- On a simple CSR, the machine row sum of a block is its mathematical
+degree sum. Naming this equality in the mass API lets consumers compare
+both ball-budget currencies directly with `blockWeight`. -/
+theorem blockRowSum_eq_blockDegSum {ns : ℕ} (hcsr : RamElim.CsrSimple G ns O T) {c : ℕ}
+    (hmem : ∀ p, Xoff c ≤ p → p < Xoff (c + 1) → Xmem p < n) :
+    blockRowSum O Xoff Xmem c = blockDegSum n G Xoff Xmem c := by
+  simp only [blockRowSum, blockDegSum]
+  refine Finset.sum_congr rfl fun p hp => ?_
+  rw [Finset.mem_Ico] at hp
+  rw [natW_val _ (hmem p hp.1 hp.2), rowLen_eq_vdeg hcsr (hmem p hp.1 hp.2)]
+
 /-- **The bridge to the block-driven engines.** `BlockLeaves.degSum` is
 `blockRowSum` at the list readings of the two arrays — definitionally,
 so an engine export moves to the counting statements below by `rfl`. -/

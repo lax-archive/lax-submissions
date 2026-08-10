@@ -1244,7 +1244,9 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
     (hfr : InnerAvail B q_top cap mb ns Ws ℓ j φ G O T wA inner Kin → ∀ X W w Alv' Gam' C',
       InnerFrames B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asgf mm X W w
         Alv' Gam' C' inner (Kin (wA Alv')))
-    (hscat : ∀ X W w Alv' Gam' C',
+    (hscat : ∀ X W w Alv' Gam' C', k < n →
+      RamCover.CoverOut G M π ord cap mm Xoff Xmem asgf →
+      (∀ v : Fin n, v ∈ X → v ∈ clusterAt G M π ord cap k) →
       ScatterStep B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asgf mm X W w
         Alv' Gam' C' bw nb Ks)
     (hbud : ∀ M' : ℕ → ℕ, k < n →
@@ -1346,7 +1348,7 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
   have hbarr₄ : BaseArrs B q_top cap mb ℓ φ σ₄ := hbarrₗ.run hr₄
   -- the scatter atoms
   obtain ⟨σ₅, hr₅, hturn₅, hdat₅, hcolarr₅, htab₅, hout₅, hc₅, hflag₅⟩ :=
-    (hscat X W w Alv' Gam' C' hXalive
+    (hscat X W w Alv' Gam' C' hkn hheld.2.2.2.2.2.2.2.2 hXcl₁ hXalive
         (hbud Alv' hkn hheld.2.2.2.2.2.2.2.2 hsub₁)).run (σ := σ₄)
       ⟨hturn₄, hdat₄, hcolarr₄, hcolbit₃, hcolread₃, htab₄, hkllist₄, hbarr₄⟩
   have htsz₅ : TablesSized q_top cap mb φ n σ₅ := htsz₄.run hr₅

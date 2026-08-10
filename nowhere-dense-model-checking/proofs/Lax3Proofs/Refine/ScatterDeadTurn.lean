@@ -809,6 +809,18 @@ theorem deadAtomKBlk_closed {L : ℕ} (β : DistFO L 1) (xb kq bw nb t : ℕ) :
     ScatterBlock.scatBlockK_eq]
   ring
 
+/-- The block-only ceiling is monotone in each part of the block
+reading. This is the transport used at the driver seam: the actual
+cluster, row sum and block size are each bounded by the single weight
+at which the size-indexed budget is read. -/
+theorem deadAtomKBlk_mono {L : ℕ} (β : DistFO L 1) {xb xb' bw bw' nb nb' : ℕ}
+    (kq t : ℕ) (hxb : xb ≤ xb') (hbw : bw ≤ bw') (hnb : nb ≤ nb') :
+    deadAtomKBlk β xb kq bw nb t ≤ deadAtomKBlk β xb' kq bw' nb' t := by
+  rw [deadAtomKBlk_closed, deadAtomKBlk_closed]
+  have hball : 44 * bw + 110 * nb + 140 ≤ 44 * bw' + 110 * nb' + 140 := by omega
+  have hturn := Nat.mul_le_mul_right t hball
+  omega
+
 /-- **THE ACCEPTANCE TEST: the per-atom charge is bounded by a function
 of the block reading alone**, at every carrier. `deadAtomKBlk` mentions
 `xb`, the kill count, the ball's two numbers and the pick count, and
