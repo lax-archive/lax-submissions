@@ -307,6 +307,13 @@ Contents:
    making the cost a function of block size, which propagates into
    `turnCostSize`'s slot. That is why this is the engine wave, not §2.3.
 
+   **Status 2026-08-10:** complete. `clusterLoad_spec` is fixed at an explicit
+   centre and costs `24 * blockSize Xoff c + 11 * n + 26`;
+   `DescendStep` carries that centre, `descendStep` pays the block size from
+   `MassWeight.blockWeight`, and `turnCostSize` now reads the resulting
+   size-indexed descent cost. The obsolete descent-based cubic floor in
+   `SlotSweep` was retired, and the G2 negative control flipped positive.
+
 3. **The four `BlockLeaves` leaves at `Com` + `Spec`**, and the walks re-done
    at block scale: `clusterLoad_spec` (264 lines), `ballCom_spec` (124),
    `ancestorStep_spec` (152), `batchCom_spec` (132), `descendStep` (516),

@@ -206,7 +206,8 @@ theorem landed_turnCostSize_reads_size (n ns cap mb q_top j : ℕ)
     (φ : Lax3.FirstOrder.FO 0) (Ksc Kin : ℕ) :
     Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc 0 Kin <
       Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc 1 Kin := by
-  simp only [Lax3Proofs.RamDriverRoot.turnCostSize, Lax3Proofs.RamDriverBase.rbCost]
+  simp only [Lax3Proofs.RamDriverRoot.turnCostSize,
+    Lax3Proofs.RamDriverDescend.descendCostSize, Lax3Proofs.RamDriverBase.rbCost]
   omega
 
 /-- **The scatter subslot pays `Ksc` in full, whatever `s` is.** The

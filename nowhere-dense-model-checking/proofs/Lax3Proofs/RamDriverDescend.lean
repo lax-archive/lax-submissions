@@ -1,5 +1,6 @@
 import Lax3Proofs.RamDriverCluster
 import Lax3Proofs.RamDriverFrames
+import Lax3Proofs.Refine.MassWeight
 
 /-!
 The passes of one cluster of `Lax3Proofs.RamDriver`, walked: the
@@ -2357,33 +2358,37 @@ are words because the pass's exit pointer is (`hmB`). Under `WordBound`
 that came off the carrier ceiling `n * n < B`; `hm` — the arena's
 **length**, which the offsets index — is a separate clause and is
 unchanged (rebase E-mem/W2). -/
-theorem clusterLoad_spec {d : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m < B)
-    (hout : RamCover.CoverOut G M π ord cap m Xoff Xmem asg) (hm : m ≤ n * n) :
+theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m < B)
+    (hout : RamCover.CoverOut G M π ord cap m Xoff Xmem asg) (hm : m ≤ n * n)
+    (hc : c < n) :
     Spec B (fun σ => σ.vars "n" = n ∧ σ.arrs (xofName j) = arrOf (n + 1) Xoff ∧
         σ.arrs (xmmName j) = arrOf (n * n) Xmem ∧ (∃ g, σ.arrs (cluName j) = arrOf n g) ∧
         (∃ g, σ.arrs (memName (j + 1)) = arrOf n g) ∧
-        σ.vars (curName j) < n)
+        σ.vars (curName j) = c)
       (clusterLoad j)
       (fun σ σ' => ∃ Xa, σ'.arrs (cluName j) = arrOf n Xa ∧ (∀ k, k < n → Xa k ≤ 1) ∧
         markSet n Xa =
           {v : Fin n | RamCover.InCluster (masked G M) π cap (ord (σ.vars (curName j))) (v : ℕ)} ∧
         ∃ (Mm : ℕ → ℕ) (bs : ℕ), σ'.arrs (memName (j + 1)) = arrOf n Mm ∧
           σ'.vars "bq" = bs ∧ MemEnum n bs Mm Xa)
-      (24 * (n * n) + 11 * n + 26) := by
+      (24 * blockSize Xoff c + 11 * n + 26) := by
   refine Spec.of_exists (fun σ hσ => ?_)
-  obtain ⟨hn, hxof, hxmm, hclu, hmem₀, hcur⟩ := hσ
+  obtain ⟨hn, hxof, hxmm, hclu, hmem₀, hcurEq⟩ := hσ
   have h1B := hB.one_lt
   have hnB := hB.n_lt
-  set c := σ.vars (curName j) with hc
+  have hcur : σ.vars (curName j) < n := by rw [hcurEq]; exact hc
   have hoffB : ∀ q, q ≤ n → Xoff q < B := fun q hq =>
     lt_of_le_of_lt (coverOut_off_le hout q hq) hmB
   have hclumem : cluName j ≠ memName (j + 1) := by simp [cluName, memName, String.ext_iff]
   -- the indicator, opened
   obtain ⟨σ₁, hr₁, ⟨⟨g₁, hg₁arr, hg₁val⟩, -, hn₁⟩, hfv₁, hfa₁, -, -⟩ :=
     ((fillCom_spec B n (cluName j) 0 hnB (by omega)).frame).run ⟨hclu, hn⟩
-  have hcur₁ : σ₁.vars (curName j) = c := hfv₁ _ (by
-    rw [RamDriverIO.wvars_fillCom]
-    exact RamDriverIO.notMem_of_append (p := "cu") (s := toString j) (by decide))
+  have hcur₁ : σ₁.vars (curName j) = c := by
+    calc
+      σ₁.vars (curName j) = σ.vars (curName j) := hfv₁ _ (by
+        rw [RamDriverIO.wvars_fillCom]
+        exact RamDriverIO.notMem_of_append (p := "cu") (s := toString j) (by decide))
+      _ = c := hcurEq
   have hxof₁ : σ₁.arrs (xofName j) = arrOf (n + 1) Xoff := by
     rw [hfa₁ _ (by rw [RamDriverIO.warrs_fillCom]; simp [cluName, xofName, String.ext_iff])]
     exact hxof
@@ -2447,7 +2452,7 @@ theorem clusterLoad_spec {d : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m < 
     -- the write pointer is inside the child's array: the row is sorted, so the
     -- `k`-th member is at least `k` (rebase E-mem)
     have hbqle : ρ.vars "bq" ≤ Xmem (ρ.vars "p") := by
-      have h := row_offset_le hout hcur (ρ.vars "p" - Xoff c) (by omega)
+      have h := row_offset_le hout hc (ρ.vars "p" - Xoff c) (by omega)
       rw [show Xoff c + (ρ.vars "p" - Xoff c) = ρ.vars "p" by omega] at h
       omega
     have hbqn : ρ.vars "bq" < n := by omega
@@ -2548,7 +2553,7 @@ theorem clusterLoad_spec {d : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m < 
     obtain ⟨gm₀, hgm₀⟩ := hmem₁
     refine ⟨by rw [hσ₃, arrs_setVar, hσ₂, arrs_setVar, hσ₁', arrs_setVar]; exact hxmm₁,
       by rw [hσ₃, vars_setVar, if_pos rfl],
-      by rw [hpv], by rw [hpv]; exact hout.mono c hcur, by rw [hpv, hbqv]; omega,
+      by rw [hpv], by rw [hpv]; exact hout.mono c hc, by rw [hpv, hbqv]; omega,
       ⟨gm₀, by rw [hσ₃, arrs_setVar, hσ₂, arrs_setVar, hσ₁', arrs_setVar]; exact hgm₀,
         fun k hk => by rw [hpv] at hk; omega⟩,
       g₁, by rw [hσ₃, arrs_setVar, hσ₂, arrs_setVar, hσ₁', arrs_setVar]; exact hg₁arr,
@@ -2560,27 +2565,26 @@ theorem clusterLoad_spec {d : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m < 
       rw [hpv] at hp2
       omega
   obtain ⟨σ₄, hr₄, hI₄, hp₄⟩ :=
-    (Csr.rowScan_spec B (24 * (n * n) + 4) (Xoff (c + 1)) 20 "p" "pend"
+    (Csr.rowScan_spec B (24 * blockSize Xoff c + 4) (Xoff (c + 1)) 20 "p" "pend"
       (.seq (.store (cluName j) (.get (xmmName j) (.var "p")) (.lit 1))
         (.seq (.store (memName (j + 1)) (.var "bq") (.get (xmmName j) (.var "p")))
           (.seq (.assign "bq" (.add (.var "bq") (.lit 1)))
             (.assign "p" (.add (.var "p") (.lit 1))))))
       (CluScan n j Xoff Xmem c) (hoffB (c + 1) (by omega))
       (fun ρ hρ => ⟨hρ.2.1, hρ.2.2.2.1⟩) hstep (fun _ hρ => hρ)
-      (fun ρ _ => by
-        have h1 : Xoff (c + 1) ≤ n * n := le_trans (coverOut_off_le hout (c + 1) (by omega)) hm
-        have h2 : (20 + 4) * (Xoff (c + 1) - ρ.vars "p") ≤ 24 * (n * n) :=
-          Nat.mul_le_mul le_rfl (by omega)
+      (fun ρ hρ => by
+        have hlo := hρ.2.2.1
+        simp only [blockSize]
         omega)).run hI₃
   -- the exit reading
   obtain ⟨-, -, hlo₄, -, hbq₄, ⟨gm, hgmarr, hgmval⟩, g, hgarr, hgbit, hgval⟩ := hI₄
   rw [hp₄] at hgval hbq₄ hgmval
-  have hoffle : Xoff c ≤ Xoff (c + 1) := hout.mono c hcur
+  have hoffle : Xoff c ≤ Xoff (c + 1) := hout.mono c hc
   refine ⟨σ₄, _, hr₁.seq (hr₁'.seq (hrLoad.seq hr₄)), by omega, g, hgarr, hgbit, ?_,
     gm, Xoff (c + 1) - Xoff c, hgmarr, hbq₄, ?_, ?_, ?_, ?_⟩
   · ext v
-    rw [mem_markSet, Set.mem_setOf_eq, hgval (v : ℕ) v.isLt]
-    exact hout.block c hcur (v : ℕ)
+    rw [mem_markSet, Set.mem_setOf_eq, hcurEq, hgval (v : ℕ) v.isLt]
+    exact hout.block c hc (v : ℕ)
   · -- every emitted cell is a vertex
     intro k hk
     rw [hgmval k hk]
@@ -2588,7 +2592,7 @@ theorem clusterLoad_spec {d : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m < 
   · -- and the emission is sorted, because the block row is
     intro i k hik hk
     rw [hgmval i (by omega), hgmval k hk]
-    exact hout.block_mono c hcur _ _ (by omega) (by omega) (by omega)
+    exact hout.block_mono c hc _ _ (by omega) (by omega) (by omega)
   · -- everything emitted is in the cluster
     intro k hk
     have hlt : gm k < n := by
@@ -4043,28 +4047,33 @@ theorem noWrite_descendCom (cap j : ℕ) : (descendCom cap j).NoWrite :=
     by rw [andCom]; exact RamDriverIO.noWrite_fillCom _ _,
     ⟨by rw [subCom]; exact RamDriverIO.noWrite_fillCom _ _, noWrite_memFilterCom (j + 1)⟩⟩
 
-/-- The cost of the descent: the cluster's block scan, the ball's chain,
-the batch phase, six flat passes — and the member filter.
+/-- **The size-indexed descent cost.** The cluster scan is read at the
+turn's block weight `s`; the ball, batch, six flat passes, and member
+filter retain their current carrier/CSR readings.
 
 **Rebase E-mem.** Two addends moved. The block scan carries the member
-emission (`8` per block cell inside a scan already charged at `n²`,
-`16 → 24`), and the filter pass adds `23·bs + 8` at the end, read here at
-`bs ≤ n` (`RamDriver.MemEnum.card_le`): `75 → 98` and `51 → 61`. The
-whole member thread is inside the turn's own descend slot; no new slot
-appears, and the order in `n` is unchanged. -/
-def descendCost (n ns cap j : ℕ) : ℕ :=
-  24 * (n * n) + 98 * n + 61 + ballCost n ns cap + batchCost n ns cap j
+emission (`8` per block cell inside the scan, `16 → 24`), and the
+filter pass adds `23·bs + 8` at the end, read at `bs ≤ n`
+(`RamDriver.MemEnum.card_le`). The whole member thread remains inside
+the turn's descend slot; no new slot appears. -/
+def descendCostSize (n ns cap j s : ℕ) : ℕ :=
+  24 * s + 98 * n + 61 + ballCost n ns cap + batchCost n ns cap j
+
+/-- The carrier reading of the size-indexed descent cost. -/
+def descendCost (n ns cap j : ℕ) : ℕ := descendCostSize n ns cap j n
 
 /-- **The descent, discharged.** -/
-theorem descendStep {B cap mb Ws ℓ j K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ}
+theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ}
     {π : Equiv.Perm (Fin n)} {ord Xoff Xmem asg : ℕ → ℕ} {m : ℕ}
     (hmb : mb = ℓ * (2 * cap + 1)) (hjl : j < ℓ)
-    (hK : descendCost n ns cap j ≤ K) :
-    DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m K := by
+    (hK : descendCostSize n ns cap j
+      (Refine.MassWeight.blockWeight n G Xoff Xmem k) ≤ K) :
+    DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m k K := by
   classical
-  intro hcsr d hB
+  intro hcsr d hB hkn
   refine Spec.of_exists (fun σ hσ => ?_)
-  obtain ⟨⟨hlev, hplay, hheld⟩, hcur⟩ := hσ
+  obtain ⟨⟨hlev, hplay, hheld⟩, hcurEq⟩ := hσ
+  have hcur : σ.vars (curName j) < n := by rw [hcurEq]; exact hkn
   obtain ⟨hn, hoff, htgt, halvj, hgamj, hcolj, hMB, hGmB, hCbit, hmem, hdep, hmvar, hom⟩ := hlev
   obtain ⟨hordA, hxof, hxmm, hasgA, hxp, hmn, hmB, hordlt, hcout⟩ := hheld
   have h1B := hB.one_lt
@@ -4072,6 +4081,7 @@ theorem descendStep {B cap mb Ws ℓ j K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ �
   have hnsB := hB.ns_lt
   obtain ⟨cc, hcc⟩ : ∃ cc, σ.vars (curName j) = cc := ⟨_, rfl⟩
   rw [hcc] at hcur
+  have hcck : cc = k := by rw [← hcurEq, hcc]
   have hordc : ord cc < n := hordlt cc hcur
   -- the depth's connector, as a vertex
   obtain ⟨vc, hvc⟩ : ∃ vc : Fin n, (vc : ℕ) = ord cc := ⟨⟨ord cc, hordc⟩, rfl⟩
@@ -4122,11 +4132,11 @@ theorem descendStep {B cap mb Ws ℓ j K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ �
   have hcur₁ : σ₁.vars (curName j) = cc := by rw [hvars₁ _ hcurne, hcc]
   -- P2: the cluster, materialized
   obtain ⟨σ₂, hr₂, ⟨Xa, hclu₂, hXbit, hXmark, Mm, bs, hmemA₂, hbq₂, hMmE⟩, hfv₂, hfa₂, -, -⟩ :=
-    ((clusterLoad_spec (j := j) hB hmB hcout hmn).frame).run (σ := σ₁)
+    ((clusterLoad_spec (j := j) (c := cc) hB hmB hcout hmn hcur).frame).run (σ := σ₁)
       ⟨by rw [hvars₁ "n" (by simp [ctrName, String.ext_iff]), hn],
         by rw [harrs₁]; exact hxof, by rw [harrs₁]; exact hxmm, by rw [harrs₁]; exact hclu₀,
         by rw [harrs₁]; exact hmem1₀,
-        by rw [hcur₁]; exact hcur⟩
+        hcur₁⟩
   rw [hcur₁] at hXmark
   have hav₂ : ∀ b : String, b ≠ cluName j → b ≠ memName (j + 1) → σ₂.arrs b = σ₁.arrs b :=
     fun b hb hb' => hfa₂ b (by rw [RamDriverFrames.warrs_clusterLoad]; simp [hb, hb'])
@@ -4511,7 +4521,12 @@ theorem descendStep {B cap mb Ws ℓ j K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ �
       (curName_notMem_descendScalars j)], ?_, markSet n Xa, markSet n Wa, Alv', Gam', ?_,
       ⟨vc, hvW, hvX⟩, ?_, ?_, ?_, ⟨⟨Xa, hclu₉, rfl, hXbit⟩, ⟨Wa, hbat₉, rfl, hWaB⟩, ⟨Ra, hres₉, hResEq, hRaB⟩,
         halv₉, hAlvB, hAlvEq, hAlvPt, hgam₉, hGamB', Mem', mm', hmemA₉, hmnum₉, hMemE, hMemB⟩, ?_⟩
-  · simp only [descendCost, ballCost, batchCost] at hK ⊢
+  · have hbsw : blockSize Xoff cc ≤
+        Refine.MassWeight.blockWeight n G Xoff Xmem k := by
+      rw [← hcck]
+      exact Refine.MassWeight.blockSize_le_blockWeight G Xoff Xmem
+        (fun p hp hp' => Refine.MassWeight.mem_lt_of_coverOut hcout hcur hp hp')
+    simp only [descendCostSize, ballCost, batchCost] at hK ⊢
     omega
   · exact exists_arrOf_run hrun (hmem.1.get (p := ("wa", mb)) (by simp))
   · intro v' hv'
@@ -4521,7 +4536,10 @@ theorem descendStep {B cap mb Ws ℓ j K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ �
     exact hcov
   · refine le_trans hWcard ?_
     rw [hmb]
-    calc 1 + j * (2 * cap + 1) ≤ (j + 1) * (2 * cap + 1) := by nlinarith
+    calc
+      1 + j * (2 * cap + 1) ≤ (j + 1) * (2 * cap + 1) := by
+        rw [Nat.add_mul, one_mul]
+        omega
       _ ≤ ℓ * (2 * cap + 1) := Nat.mul_le_mul_right _ (by omega)
   · -- **the descend clause** (§5.3, restated at the inclusion for G2/E6): every
     -- vertex the next depth's arena marks lies in this turn's cluster — its mask is

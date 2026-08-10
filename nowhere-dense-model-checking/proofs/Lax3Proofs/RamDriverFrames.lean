@@ -748,7 +748,7 @@ theorem clusterFrames {ℓ k : ℕ} {wA : (ℕ → ℕ) → ℕ} {wBk : ℕ} {in
     {bw nb : ℕ} {Kd Ke Kc Kk Kkl Ks Kr K : ℕ}
     (hcsr : CsrGraph G ns O T)
     {d : ℕ} (hB : WordBoundK B n d ns cap mb)
-    (hdes : DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m Kd)
+    (hdes : DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m k Kd)
     (henum : ∀ X W Alv' Gam',
       EnumStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m X W Alv' Gam' Ke)
     (hcol : ∀ X W w Alv' Gam',
@@ -794,11 +794,10 @@ theorem clusterFrames {ℓ k : ℕ} {wA : (ℕ → ℕ) → ℕ} {wBk : ℕ} {in
     fun _ _ _ _ _ _ => innerFrames hinner hA hVctr hVxp hVcur hVmm hVkk
   refine Spec.of_exists fun σ hσ => ?_
   obtain ⟨hlev, htsz, hbarr, hplay, hcov, hcn⟩ := hσ
-  have hcnlt : σ.vars (curName j) < n := by rw [hcn]; exact hkn
   have hturn : TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ :=
     ⟨hlev, hplay, hcov⟩
   obtain ⟨σ₁, hr₁, hturn₁, hout₁, hc₁, hwa₁, X, W, Alv', Gam', hball, hWne, hWcard,
-      hsub₁, hXcl₁, hbat₁, hplay₁⟩ := (hdes hcsr hB).run ⟨hturn, hcnlt⟩
+      hsub₁, hXcl₁, hbat₁, hplay₁⟩ := (hdes hcsr hB hkn).run ⟨hturn, hcn⟩
   rw [hcn] at hsub₁ hXcl₁
   have hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0 :=
     fun v hv => Refine.MassAlive.clusterAt_subset_alive halive (hXcl₁ v hv)

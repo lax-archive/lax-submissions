@@ -648,10 +648,11 @@ turned into a number the turn's cost condition may mention, since
 `Alv'` is existentially quantified here. -/
 def DescendStep (B cap mb ns Ws j : ℕ) (G : SimpleGraph (Fin n))
     (O T M Gm : ℕ → ℕ)
-    (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (m K : ℕ) : Prop :=
-  CsrGraph G ns O T → ∀ {d : ℕ}, WordBoundK B n d ns cap mb →
+    (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ)
+    (m k K : ℕ) : Prop :=
+  CsrGraph G ns O T → ∀ {d : ℕ}, WordBoundK B n d ns cap mb → k < n →
   Spec B (fun σ => TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ ∧
-      σ.vars (curName j) < n)
+      σ.vars (curName j) = k)
     (descendCom cap j)
     (fun σ σ' => TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ' ∧
       σ'.out = σ.out ∧ σ'.vars (curName j) = σ.vars (curName j) ∧ (∃ g, σ'.arrs "wa" = arrOf mb g) ∧
@@ -1195,7 +1196,7 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
     {bw nb : ℕ}
     {Kd Ke Kc Kk Kkl Ks Kr K : ℕ}
     (hcap : cap = rhoMinus 0 q_top)
-    (hdes : DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asgf mm Kd)
+    (hdes : DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asgf mm k Kd)
     (henum : ∀ X W Alv' Gam',
       EnumStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asgf mm X W Alv' Gam' Ke)
     (hcol : ∀ X W w Alv' Gam',
@@ -1235,13 +1236,12 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
   intro d hB hcsr hkn halive _ hinner
   refine Spec.of_exists fun σ hσ => ?_
   obtain ⟨hlev, htsz, hbarr, hplay, hheld, hcn⟩ := hσ
-  have hcnlt : σ.vars (curName j) < n := by rw [hcn]; exact hkn
   have hturn : TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asgf mm σ :=
     ⟨hlev, hplay, hheld⟩
   -- the descent: the cluster, the batch, the two masks of the next depth, and the round
   obtain ⟨σ₁, hr₁, hturn₁, hout₁, hc₁, hwa₁, X, W, Alv', Gam', hball, hWne, hWcard,
       hsub₁, hXcl₁, hbat₁, hplay₁⟩ :=
-    (hdes hcsr hB).run ⟨hturn, hcnlt⟩
+    (hdes hcsr hB hkn).run ⟨hturn, hcn⟩
   -- **the descend clause**: the nested arena is inside this turn's cluster, so any
   -- monotone measure of it — a number the turn's cost condition may mention — is
   -- bounded by the turn's own block reading

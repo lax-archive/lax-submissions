@@ -513,15 +513,13 @@ noncomputable def turnCost (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 
             (Kin + (Ksc + RamDriverBase.rbCost q_top cap mb φ j n))))))
 
 /-- **The turn cost, size-indexed** (`integration-design.md` §5.7). The
-slot `s` is the block-weight reading of the turn.  The nested driver's
-budget arrives in `Kin` already read at that size, and the readback now
-uses the same slot: its block walk has one guarded table block per member,
-and `blockSize ≤ blockWeight` pays that local charge here.  The other
-leaves remain at their landed carrier readings until their own engine
-waves tighten them. -/
+slot `s` is the block-weight reading of the turn. The cluster scan, the
+nested driver's budget, and the readback now use that same slot:
+`blockSize ≤ blockWeight` pays both local walks. The remaining descent
+leaves retain their carrier/CSR readings until their engine swaps land. -/
 noncomputable def turnCostSize (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
     (Ksc s Kin : ℕ) : ℕ :=
-  RamDriverDescend.descendCost n ns cap j +
+  RamDriverDescend.descendCostSize n ns cap j s +
     ((23 * n + 12 * mb + 30) +
       (RamDriverDescend.colourCost n ns cap mb (sigL cap mb j) +
         (Refine.KillPass.killCost q_top cap mb (j + 1) φ +

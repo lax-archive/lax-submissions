@@ -410,12 +410,10 @@ theorem level_interface_floor_analogue_refuted :
 Per phase: the landed engine export at a NONEMPTY arena (the root
 arena, `m = n`, `e = ns`, weight `w = n + ns` — the one arena where a
 carrier-cost export is a block cost) fits the proposed budget at that
-weight, with the constants tied. Plus the two compiled NEGATIVE
-findings — the landed `coverPhaseCost` and `descendCost` carry `n²`
-terms that fit NO weight-linear budget; those are program deltas of the
-design doc (the coverSave member copy and the six descend carrier
-fills), not interface slack. And per §4.3, a deliberately undersized
-budget FAILS each check. -/
+weight, with the constants tied. The cover phase still has its compiled
+negative finding. The descent control is now positive: pricing
+`clusterLoad` at its block removed `descendCost`'s pure `n²` term. Per
+§4.3, a deliberately undersized budget still fails each relevant check. -/
 
 /-- **Order phase honest**: the full landed `R`-round phase cost —
 eliminations, symmetrization, `R` rounds of `augCost + relinkCost +
@@ -546,21 +544,19 @@ theorem decodeCost_le_weight (n ns : ℕ) :
   simp only [RamDriverIO.decodeCost]
   omega
 
-/-! #### The two compiled NEGATIVE findings: what does NOT fit
+/-! #### Carrier-scale controls
 
-The landed cover-phase wrapper and the landed descend leaves carry
-carrier-quadratic terms (`12·n²` — the coverSave member copy "charged
-at the whole cluster arena", its own docstring's words — and `16·n²`,
-the six flat fills). No weight-linear budget covers them: they are
-PROGRAM deltas (design doc items E2/E3), and the honesty controls above
-deliberately bound the engine parts only. -/
+The landed cover-phase wrapper still carries a carrier-quadratic term
+(`12·n²` — the coverSave member copy "charged at the whole cluster
+arena"). In contrast, the descent's former quadratic control has flipped:
+its carrier reading is weight-linear after the block-priced cluster load. -/
 
 -- `coverPhaseCost` fails a weight budget even at coefficient `10⁵`
 -- (the honest engine constants above are ≤ 350)
 #guard ¬ (RamDriverCompose.coverPhaseCost (10 ^ 4) (2 * 10 ^ 4) ≤ 10 ^ 5 * (3 * 10 ^ 4 + 1))
 
--- `descendCost` fails a weight budget at coefficient `10³`
-#guard ¬ (RamDriverDescend.descendCost (10 ^ 4) (2 * 10 ^ 4) 1 0 ≤ 10 ^ 3 * (3 * 10 ^ 4 + 1))
+-- `descendCost` now fits the same weight budget that used to refute it
+#guard RamDriverDescend.descendCost (10 ^ 4) (2 * 10 ^ 4) 1 0 ≤ 10 ^ 3 * (3 * 10 ^ 4 + 1)
 
 /-! #### Negative controls (§4.3): undersized budgets FAIL the checks
 
@@ -681,7 +677,7 @@ updated by R1.8-T4b, 2026-08-08):
 | `hKc` | `coverImplements` at `coverPhaseCost n ns` | NO (`hKc_gap`) | block-driven centre body + alive-prefix copy + R1.6 member threading (`CoverBlock` F-2/F-3) |
 | retired `hKd` | no program phase | n/a (`hKd_gap` is historical) | removed from the root and recurrence by `b4-iface` |
 | `hKbase` | `baseImplementsD`, the table fold at the depth's MEMBER LIST (R1.8-T4b) | **YES** (`hKbase_paid`, at `sweepCoeffA`) | — landed; `hKbase_gap`/`hKbase_gap_any` are now the record of the carrier reading it replaced |
-| `hKs` | `turnCostSize` with local readback but carrier-driven descent and additive scatter `Θ(n·t)` | NO (`hKs_gap`, `hbnd_gap`) | `BlockLeaves` Com-level swap into `descendCom` + `scatBlockCom` into the turn |
+| `hKs` | `turnCostSize` with block-priced cluster load but carrier-driven remaining descent passes and additive scatter `Θ(n·t)` | NO (`hKs_gap`, `hbnd_gap`) | remaining `BlockLeaves` Com-level leaves into `descendCom` + `scatBlockCom` into the turn |
 -/
 
 section E6Plug
@@ -790,16 +786,15 @@ theorem hKbase_paid (q_top cap mb ℓ mm : ℕ) (φ : Lax3.FirstOrder.FO 0) :
   simp only [RamDriverBot.baseCost, sweepCoeffA]
   nlinarith [Nat.zero_le (RamDriverBot.turnCost q_top cap mb ℓ φ), Nat.zero_le mm]
 
-/-- **`hKs` gap, compiled.** The real turn cost carries
-`descendCost`'s `16·n²` (the six carrier fills), so no
-`turnCostSizeA`-sized budget pays a turn on a light block inside a
-large carrier. `Refine.BlockLeaves` stops at the NRest/Ir layer — no
-`Com`-level block-driven descend leaves exist to swap in yet. -/
+/-- **`hKs` gap, compiled.** The cluster load now reads the block size,
+but the other descent passes still contribute carrier-linear work even at
+a zero-weight block. Hence no `turnCostSizeA`-sized budget pays the landed
+descent on every light block inside an arbitrarily large carrier. -/
 theorem hKs_gap (ct ksc Kin cap j : ℕ) :
     ∃ n : ℕ,
-      ¬ (RamDriverDescend.descendCost n 0 cap j ≤ turnCostSizeA ct ksc 0 Kin) := by
+      ¬ (RamDriverDescend.descendCostSize n 0 cap j 0 ≤ turnCostSizeA ct ksc 0 Kin) := by
   refine ⟨ct + ksc + Kin + 1, fun h => ?_⟩
-  simp only [RamDriverDescend.descendCost, turnCostSizeA] at h
+  simp only [RamDriverDescend.descendCostSize, turnCostSizeA] at h
   nlinarith [Nat.zero_le (RamDriverDescend.ballCost (ct + ksc + Kin + 1) 0 cap),
     Nat.zero_le (RamDriverDescend.batchCost (ct + ksc + Kin + 1) 0 cap j)]
 
