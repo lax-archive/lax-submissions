@@ -156,18 +156,20 @@ Not one wave. Do not dispatch as one.
 
 ### §2.2 The readback block walk
 
-**Status 2026-08-10: program and local specification landed on the campaign
-branch; root repricing remains.** `readbackCom` now walks
+**Status 2026-08-10: complete on the campaign branch.** `readbackCom` now walks
 `[Xoff cur, Xoff (cur + 1))`, loads each row through `Xmem`, and retains the
 assignment guard.  `RamDriverBase.readback_spec` is block-sized, its invariant
 is indexed by block slots, and the readback's scalar/frame surface now includes
 `z`, `zend`, and `rv`.  The proof no longer asks for a carrier-wide assignment
 bound: `CoverOut.mem_lt` and `CoverOut.asg_lt` discharge the loaded member
-pointwise.  The current `ReadbackStep` bridge deliberately still accepts the
-old `rbCost … n` allowance and weakens the block run into it, so this is a
-green intermediate boundary rather than the advertised payoff.  The next
-sub-wave threads `rbCost` at the block reading through the cluster/root
-contracts and downstream cost probes.
+pointwise. `ReadbackStep` is indexed by the static block centre, and the
+cluster/root contracts now charge `rbCost` at that block's weight; the only
+weakening is the proved `blockSize ≤ blockWeight` bridge. The restated root and
+all downstream probes consume the new family, `turnCostSize_reads_size`
+compiles that the slot is genuinely live, and the 3593-job `proofs` build
+passes. `B4Design`'s surviving negative control is correspondingly narrowed:
+the remaining floor comes from additive `Ksc`, not from readback blindness.
+The next dependency leaf is §2.3.
 
 **Landable now, against the LANDED contract, green in between.** The write set
 only shrinks, and every new obligation follows a fortiori from clauses already

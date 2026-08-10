@@ -704,7 +704,9 @@ theorem clusterStepAtR (hfr : RFrames q_top cap mb R ℓ φ)
         (fun β hβ => hcostI β hβ _) (hKsc _))
     (fun _ hkn hout hsub r =>
       Lax3Proofs.RamDriverRoot.ballBudget_cluster hcsr.csr hout hkn hsub r)
-    (fun _ _ _ _ _ _ => RamDriverBase.readbackStep hB.one_lt hB.n_lt le_rfl)
+    (fun _ _ _ _ _ _ hkn =>
+      RamDriverBase.readbackStep hB.one_lt hB.n_lt hkn
+        (fun hout => Lax3Proofs.RamDriverRoot.rbCost_block_le_weight hout hkn))
     hmono
     (fun _ hkn hout hsub =>
       Refine.MassWeight.arenaWeight_le_blockWeight G hout hkn hsub)
@@ -761,7 +763,9 @@ theorem clusterFramesAtR (hfr : RFrames q_top cap mb R ℓ φ)
     (fun i => RamDriverWrites.tabName_notMem_warrs_scatterDeadPhase j j i
       (fun β hβ => (tableRank_of_mem_tablesAt (j + 1) β hβ).1) _ 0 (fun _ hβ => hβ))
     (Refine.ScatterDeadPass.ballBudget_carrier hcsr)
-    (fun _ _ _ _ _ _ => RamDriverBase.readbackStep hB.one_lt hB.n_lt le_rfl)
+    (fun _ _ _ _ _ _ hkn =>
+      RamDriverBase.readbackStep hB.one_lt hB.n_lt hkn
+        (fun hout => Lax3Proofs.RamDriverRoot.rbCost_block_le_weight hout hkn))
     (fun i => (hfr j).2.2.2.2.1 i)
     hmono
     (fun _ hkn hout hsub =>

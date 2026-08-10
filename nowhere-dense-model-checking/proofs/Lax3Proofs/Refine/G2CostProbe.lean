@@ -191,11 +191,12 @@ same `Com` and the same charge). -/
 noncomputable def baseCoeffA (q_top cap mb ℓ : ℕ) (φ : Lax3.FirstOrder.FO 0) : ℕ :=
   RamDriverBot.turnCost q_top cap mb ℓ φ + 22
 
-/-- **PROPOSED** replacement for `RamDriverRoot.turnCostSize`: the size
-slot is READ (today it is discarded — `turnCostSize_eq` is `rfl` to the
-carrier-width `turnCost`). One turn on a block of weight `s` pays its
-block-driven leaves and its scatter chain at `s`, plus the nested
-driver once. -/
+/-- **PROPOSED** full coefficient form for
+`RamDriverRoot.turnCostSize`. The landed slot now reads `s` for local
+readback, but the other carrier-driven leaves and the scatter total do
+not yet use it. Here one turn on a block of weight `s` pays all its
+block-driven leaves and its scatter chain at `s`, plus the nested driver
+once. -/
 def turnCostSizeA (ct ksc s Kin : ℕ) : ℕ := (ct + ksc) * (s + 1) + Kin
 
 /-! ### §3 The existence probe (the §2.4 gap, closed compiled)
@@ -680,7 +681,7 @@ updated by R1.8-T4b, 2026-08-08):
 | `hKc` | `coverImplements` at `coverPhaseCost n ns` | NO (`hKc_gap`) | block-driven centre body + alive-prefix copy + R1.6 member threading (`CoverBlock` F-2/F-3) |
 | retired `hKd` | no program phase | n/a (`hKd_gap` is historical) | removed from the root and recurrence by `b4-iface` |
 | `hKbase` | `baseImplementsD`, the table fold at the depth's MEMBER LIST (R1.8-T4b) | **YES** (`hKbase_paid`, at `sweepCoeffA`) | — landed; `hKbase_gap`/`hKbase_gap_any` are now the record of the carrier reading it replaced |
-| `hKs` | `turnCostSize = turnCost` (descend `16·n²`, scatter `Θ(n·t)`) | NO (`hKs_gap`, `hbnd_gap`) | `BlockLeaves` Com-level swap into `descendCom` + `scatBlockCom` into the turn |
+| `hKs` | `turnCostSize` with local readback but carrier-driven descent and additive scatter `Θ(n·t)` | NO (`hKs_gap`, `hbnd_gap`) | `BlockLeaves` Com-level swap into `descendCom` + `scatBlockCom` into the turn |
 -/
 
 section E6Plug

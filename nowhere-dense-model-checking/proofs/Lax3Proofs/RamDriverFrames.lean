@@ -773,8 +773,8 @@ theorem clusterFrames {ℓ k : ℕ} {wA : (ℕ → ℕ) → ℕ} {wBk : ℕ} {in
       (foldIdx (fun i β => RamDriver.scatterDeadCom q_top cap mb φ j i β) 0
         (tablesAt q_top cap mb φ j)).warrs)
     (hbud : ∀ (M' : ℕ → ℕ) (r : ℕ), Refine.ScatterBlock.BallBudget n r G M' O bw nb)
-    (hread : ∀ X W w Alv' Gam' C',
-      ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asg m X W w
+    (hread : ∀ X W w Alv' Gam' C', k < n →
+      ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asg m k X W w
         Alv' Gam' C' Kr)
     (hinnerTab : ∀ i, tabName j i ∉ inner.warrs)
     (hmono : Monotone Kin)
@@ -859,9 +859,9 @@ theorem clusterFrames {ℓ k : ℕ} {wA : (ℕ → ℕ) → ℕ} {wBk : ℕ} {in
     have hvX : v ∈ X := hball v (by rw [hv]; exact hc₅₀) (WalkDistance.mem_ball_self _ _ _)
     exact ⟨hXalive v hvX, hvX⟩
   obtain ⟨σ₆, hr₆, hturn₆, hout₆, hc₆, hrb₆⟩ :=
-    (hread X W w Alv' Gam' C').run (σ := σ₅)
+    (hread X W w Alv' Gam' C' hkn).run (σ := σ₅)
       ⟨hturn₅, hdat₅, hcolarr₅, hcolbit₃, hcolread₃, htab₅, htsz₅,
-        by rw [hc₅₀]; exact hcnlt, hvis, hflag₅⟩
+        hc₅₀.trans hcn, hvis, hflag₅⟩
   refine ⟨σ₆, _,
     hr₁.seq (hr₂.seq (hr₃.seq (hrₖ.seq (hrₗ.seq (hr₄.seq (hr₅.seq hr₆)))))), by omega,
     hturn₆.2.2, fun i hi Tb Tb₀ harr harr₀ v hv => ?_⟩

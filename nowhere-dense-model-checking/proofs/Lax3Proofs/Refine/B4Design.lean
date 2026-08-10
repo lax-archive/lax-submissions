@@ -14,12 +14,14 @@ narrowing of the probe bound, the member counts or the ball budget
 yields a constant while those copies stand. Beyond them the honest
 reading is the turn's **cluster**, not a constant.
 
-Which lands on a slot that already exists and is deliberately empty:
-`RamDriverRoot.turnCostSize` takes a size argument `_s` and **discards
-it** (`turnCostSize_eq` is `rfl`), with its own docstring saying the
-slot is free until B4 fills it, while the proposed
+Which lands on a slot that already exists and is now partly occupied:
+`RamDriverRoot.turnCostSize` reads its size argument in the local
+readback charge, but still inserts the scatter total `Ksc` additively.
+Thus the old whole-slot blindness is gone while the scatter-chain floor
+that motivates B4 remains. The proposed
 `G2CostProbe.turnCostSizeA ct ksc s Kin = (ct + ksc)·(s + 1) + Kin`
-reads it and `G2ExistsRevalidation.g2m_exists` already closes at it.
+instead reads `ksc` as a coefficient, and
+`G2ExistsRevalidation.g2m_exists` already closes at it.
 
 This file is the design gate for filling that slot, in the house style
 of `Refine/G2CostProbe.lean`: **nothing landed is edited**. Every
@@ -67,7 +69,7 @@ a quantity of the formula, fixed before the arena. The landed Σ-shaped
 `hKl` also writes `t`, and there it is the level's **turn count**. This
 file keeps the landed argument names in both places rather than
 inventing new ones; every statement below that mentions both spells out
-which is which, and `blind_slot_floor` is stated at `turns` so that no
+which is which, and `additive_scatter_slot_floor` is stated at `turns` so that no
 binder shadows the other.
 
 ## The six sections
@@ -75,9 +77,10 @@ binder shadows the other.
 * **§1** floor-death, extended past the copies. The post-E4c-b charge
   is modelled by reading `deadAtomK` at the cluster in all four in-scope
   arguments at once; it is still `131·(cluster)`, and the LANDED
-  size-blind `turnCostSize` pays `Ksc` in full at every `s`, so a level
+  current `turnCostSize` pays `Ksc` in full at every `s`, so a level
   running `t` turns pays `t · Ksc` and the close dies quadratically.
-  **The death is the slot's shape, not the copies.**
+  **The death is the additive scatter subslot, not the copies or the
+  now-local readback.**
 * **§2** the proposed B4 slot, existence: the size-read form stated
   locally, the `CostRecurrence` witness satisfying it and the landed
   Σ-shaped `hKl` verbatim, plus the new per-turn payment clause, closing
@@ -195,33 +198,37 @@ theorem post_copies_atom_unbounded {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
   have := deadAtomK_cluster_floor β (ksc + 1) kq bw nb t
   omega
 
-/-- **The landed slot is blind, in both directions.** `turnCostSize`
-takes the size argument and does not read it, so the same turn cost is
-charged at every block. -/
-theorem landed_turnCostSize_blind (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
-    (Ksc s s' Kin : ℕ) :
-    Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc s Kin
-      = Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc s' Kin := rfl
+/-- **The landed slot now reads its size.** Moving the block-weight slot
+from zero to one strictly raises the guarded readback allowance. This is
+the local readback repair; it deliberately says nothing about the still
+additive scatter total `Ksc`. -/
+theorem landed_turnCostSize_reads_size (n ns cap mb q_top j : ℕ)
+    (φ : Lax3.FirstOrder.FO 0) (Ksc Kin : ℕ) :
+    Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc 0 Kin <
+      Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc 1 Kin := by
+  simp only [Lax3Proofs.RamDriverRoot.turnCostSize, Lax3Proofs.RamDriverBase.rbCost]
+  omega
 
-/-- **…and it pays `Ksc` in full, whatever `s` is.** The scatter charge
-enters `RamDriverRoot.turnCost` additively (it is the sixth summand),
-and `turnCostSize` is that function with the size argument dropped. So
-the turn slot is bounded below by the level's whole scatter charge at
-*every* block, including the empty one. -/
+/-- **The scatter subslot pays `Ksc` in full, whatever `s` is.** The
+scatter charge still enters `turnCostSize` additively, beside the
+size-sensitive readback. So the turn slot is bounded below by the
+level's whole scatter charge at *every* block, including the empty one. -/
 theorem landed_turnCostSize_ge_Ksc (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
     (Ksc s Kin : ℕ) :
     Ksc + Kin ≤ Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc s Kin := by
-  simp only [Lax3Proofs.RamDriverRoot.turnCostSize, Lax3Proofs.RamDriverRoot.turnCost]
+  simp only [Lax3Proofs.RamDriverRoot.turnCostSize]
   omega
 
-/-- **The blind-slot floor.** A level running `t` turns pays its whole
-scatter charge `t` times, because the size slot cannot tell the turns
-apart. The Σ-shaped `hKl` is the landed one verbatim and is instantiated
-at the *empty* blocks (`bs = 0`), so the mass side condition is
-satisfied with room to spare — the floor is not an artefact of a large
-block. This is `C0CloseProbe.nested_slot_floor`'s mechanism moved from a
-phase slot to the turn's own `Ksc`. -/
-theorem blind_slot_floor {n ns cap mb q_top ℓ D turns : ℕ} {φ : Lax3.FirstOrder.FO 0}
+/-- **The additive-scatter floor.** A level running `t` turns pays its
+whole scatter charge `t` times because `Ksc` is not indexed by the
+turn's size. The Σ-shaped `hKl` is the landed one verbatim and is
+instantiated at the *empty* blocks (`bs = 0`), so the mass side
+condition is satisfied with room to spare — the floor is not an
+artefact of a large block or of the readback charge. This is
+`C0CloseProbe.nested_slot_floor`'s mechanism moved from a phase slot to
+the turn's own `Ksc`. -/
+theorem additive_scatter_slot_floor {n ns cap mb q_top ℓ D turns : ℕ}
+    {φ : Lax3.FirstOrder.FO 0}
     {Ksc : ℕ → ℕ} {Ko Kc Ks Kl : ℕ → ℕ → ℕ}
     (hℓ : 0 < ℓ) (ht : turns ≤ n + ns)
     (hKs : ∀ j < ℓ, ∀ s : ℕ,
@@ -241,8 +248,8 @@ theorem blind_slot_floor {n ns cap mb q_top ℓ D turns : ℕ} {φ : Lax3.FirstO
   calc turns * Ksc 0 ≤ turns * (Ks 0 0 + 11) := Nat.mul_le_mul_left _ (by omega)
     _ ≤ Kl 0 (n + ns) := by omega
 
-/-- **THE §1 REFUTATION: the landed size-blind slot cannot pay a
-cluster-scale charge, even after E4c-b.**
+/-- **THE §1 REFUTATION: the landed additive scatter subslot cannot pay
+a cluster-scale charge, even after E4c-b.**
 
 The hypothesis is the *best case E4c-b can produce*: the level's scatter
 charge pays one atom, read at the cluster in all four narrowed
@@ -252,10 +259,11 @@ condition permits at every block empty — and the root level's bill is
 `122·10²⁰`, against a closed form granting under `7·10¹⁸`.
 
 So the deficit is **not** the two copies and **not** the coefficient:
-it is that `Ksc` enters the landed slot additively and uniformly. No
-accounting wave, and no re-measurement of the leaf, closes this while
-`turnCostSize` discards its size argument. -/
-theorem post_copies_blind_slot_refuted {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+it is that `Ksc` enters the landed slot additively and uniformly. The
+local readback now uses the size argument, but no accounting wave or
+re-measurement of the scatter leaf closes this until the scatter chain
+uses it too. -/
+theorem post_copies_additive_slot_refuted {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
     (kq bw nb t cap mb q_top : ℕ) (φ : Lax3.FirstOrder.FO 0) (Ksc : ℕ → ℕ) :
     ¬ ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
         -- the level's scatter charge pays one post-E4c-b atom at its largest cluster
@@ -273,7 +281,7 @@ theorem post_copies_blind_slot_refuted {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
         (∀ w, Kl 0 w ≤ (3 * g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8)
           0 ctTurn kscProbe 8 + CbProbe) * (8 + 1) ^ 3 * (w + 1)) := by
   rintro ⟨Ko, Kc, Ks, Kl, hatom, hKs, hKl, hcl⟩
-  have hfloor := blind_slot_floor (n := 10 ^ 10) (ns := 2 * (10 ^ 10 - 1))
+  have hfloor := additive_scatter_slot_floor (n := 10 ^ 10) (ns := 2 * (10 ^ 10 - 1))
     (ℓ := 3) (D := 8) (turns := 10 ^ 10) (cap := cap) (mb := mb) (q_top := q_top) (φ := φ)
     (Ksc := Ksc) (by omega) (by omega) hKs hKl
   have hlow : 10 ^ 10 * (122 * 10 ^ 10) ≤ 10 ^ 10 * Ksc 0 := by
@@ -305,8 +313,9 @@ def turnCostSizeB4 (ct ksc s Kin : ℕ) : ℕ := (ct + ksc) * (s + 1) + Kin
 theorem turnCostSizeB4_eq_probe (ct ksc s Kin : ℕ) :
     turnCostSizeB4 ct ksc s Kin = turnCostSizeA ct ksc s Kin := rfl
 
-/-- **The proposed slot reads the size** — the property the landed one
-lacks (`landed_turnCostSize_blind`). -/
+/-- **The proposed slot uses the size for every coefficient.** The
+landed slot now reads it for readback
+(`landed_turnCostSize_reads_size`), but not yet for `Ksc`. -/
 theorem turnCostSizeB4_reads_size : turnCostSizeB4 0 1 0 0 ≠ turnCostSizeB4 0 1 1 0 := by
   decide
 
@@ -580,8 +589,8 @@ actually check.
 def b4Fam (ksc : ℕ) : ℕ := famHalf aOrd kaProbe ctTurn ksc CbProbe ksentProbe 0
 
 /-- **The B4 shape's arithmetic family IS the measured family.** `g2M`
-never mentioned the landed size-blind turn cost, so filling the size
-slot moves no number in the close. -/
+never mentioned the landed additive scatter subslot, so making `Ksc`
+size-relative moves no number in the close. -/
 theorem b4Fam_eq_measured (ksc : ℕ) :
     b4Fam ksc = famHalf aOrd kaProbe ctTurn ksc CbProbe ksentProbe 0 := rfl
 
@@ -843,12 +852,13 @@ theorem empty_block_forces_constant {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (kq 
   rw [deadAtomK_cluster] at h
   omega
 
-/-- **Control 3 — a size-blind charge breaks the close.** This is §1's
-`post_copies_blind_slot_refuted`, restated as the control it is: the
-close of §2 and the LANDED turn slot are not simultaneously satisfiable,
-at any scatter charge that pays one post-E4c-b atom. Filling the size
-slot is therefore load-bearing, not cosmetic. -/
-theorem size_blind_slot_breaks_close {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
+/-- **Control 3 — an additive scatter charge breaks the close.** This is
+§1's `post_copies_additive_slot_refuted`, restated as the control it is:
+the close of §2 and the LANDED turn slot are not simultaneously
+satisfiable at any scatter charge that pays one post-E4c-b atom. Making
+the scatter chain size-relative is therefore load-bearing, not
+cosmetic. -/
+theorem additive_scatter_slot_breaks_close {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
     (kq bw nb t cap mb q_top : ℕ) (φ : Lax3.FirstOrder.FO 0) (Ksc : ℕ → ℕ) :
     ¬ ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
         Lax3Proofs.Refine.ScatterDeadTurn.deadAtomK β (10 ^ 10) (10 ^ 10) kq (10 ^ 10)
@@ -862,7 +872,7 @@ theorem size_blind_slot_breaks_close {L : ℕ} (β : Lax3.DistFO.DistFO L 1)
             ≤ Kl j w) ∧
         (∀ w, Kl 0 w ≤ (3 * g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8)
           0 ctTurn kscProbe 8 + CbProbe) * (8 + 1) ^ 3 * (w + 1)) :=
-  post_copies_blind_slot_refuted β kq bw nb t cap mb q_top φ Ksc
+  post_copies_additive_slot_refuted β kq bw nb t cap mb q_top φ Ksc
 
 /-- **Control 4 — the TOTAL reading is still refuted, at the size slot.**
 `C0CloseProbe.narrow_leaf_refutes_constant_ksc` is consumed at the
@@ -896,10 +906,10 @@ theorem total_reading_still_refuted {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (ksc
 #print axioms deadAtomK_cluster
 #print axioms deadAtomK_cluster_floor
 #print axioms post_copies_atom_unbounded
-#print axioms landed_turnCostSize_blind
+#print axioms landed_turnCostSize_reads_size
 #print axioms landed_turnCostSize_ge_Ksc
-#print axioms blind_slot_floor
-#print axioms post_copies_blind_slot_refuted
+#print axioms additive_scatter_slot_floor
+#print axioms post_copies_additive_slot_refuted
 #print axioms turnCostSizeB4_eq_probe
 #print axioms turnCostSizeB4_reads_size
 #print axioms turn_leaves_and_scatter_paid
@@ -920,7 +930,7 @@ theorem total_reading_still_refuted {L : ℕ} (β : Lax3.DistFO.DistFO L 1) (ksc
 #print axioms frames_cost_is_dead_weight
 #print axioms undersized_coeff_fails
 #print axioms empty_block_forces_constant
-#print axioms size_blind_slot_breaks_close
+#print axioms additive_scatter_slot_breaks_close
 #print axioms total_reading_still_refuted
 
 end Lax3Proofs.Refine.B4Design

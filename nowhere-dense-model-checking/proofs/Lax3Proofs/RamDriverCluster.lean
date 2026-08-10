@@ -1069,7 +1069,7 @@ alive-centre guard, both of which live only inside
 `clusterStepImplements`, where `X` is existential. -/
 def ReadbackStep (B q_top cap mb ns Ws j : ℕ) (φ : Lax3.FirstOrder.FO 0)
     (G : SimpleGraph (Fin n)) (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n))
-    (ord Xoff Xmem asg : ℕ → ℕ) (m : ℕ) (X W : Set (Fin n)) (w : Fin mb → Fin n)
+    (ord Xoff Xmem asg : ℕ → ℕ) (m k : ℕ) (X W : Set (Fin n)) (w : Fin mb → Fin n)
     (Alv' Gam' : ℕ → ℕ) (C' : ℕ → ℕ → ℕ) (K : ℕ) : Prop :=
   Spec B (fun σ => TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ ∧
       ClusterData n mb j B G M X W w Alv' Gam' σ ∧
@@ -1078,7 +1078,7 @@ def ReadbackStep (B q_top cap mb ns Ws j : ℕ) (φ : Lax3.FirstOrder.FO 0)
       colRead n C' (sigL cap mb (j + 1)) =
         stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w ∧
       TableInvOn q_top cap mb φ G (j + 1) Alv' C' (rowDom M Alv' X W) σ ∧
-      TablesSized q_top cap mb φ n σ ∧ σ.vars (curName j) < n ∧
+      TablesSized q_top cap mb φ n σ ∧ σ.vars (curName j) = k ∧
       (∀ v : Fin n, asg (v : ℕ) = σ.vars (curName j) → M (v : ℕ) ≠ 0 ∧ v ∈ X) ∧
       ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
         ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])).2,
@@ -1253,8 +1253,8 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asgf →
       (∀ v : Fin n, M' (v : ℕ) ≠ 0 → v ∈ clusterAt G M π ord cap k) →
       ∀ r : ℕ, Refine.ScatterBlock.BallBudget n r G M' O bw nb)
-    (hread : ∀ X W w Alv' Gam' C',
-      ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asgf mm X W w
+    (hread : ∀ X W w Alv' Gam' C', k < n →
+      ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asgf mm k X W w
         Alv' Gam' C' Kr)
     (hmono : Monotone Kin)
     (hwAB : ∀ Alv' : ℕ → ℕ, k < n →
@@ -1366,9 +1366,9 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
     exact ⟨hXalive v hvX, hvX⟩
   -- the readback
   obtain ⟨σ₆, hr₆, hturn₆, hout₆, hc₆, hrb₆⟩ :=
-    (hread X W w Alv' Gam' C').run (σ := σ₅)
+    (hread X W w Alv' Gam' C' hkn).run (σ := σ₅)
       ⟨hturn₅, hdat₅, hcolarr₅, hcolbit₃, hcolread₃, htab₅, htsz₅,
-        by rw [hc₅₀]; exact hcnlt, hvis, hflag₅⟩
+        hc₅₀.trans hcn, hvis, hflag₅⟩
   have hrun := hr₁.seq (hr₂.seq (hr₃.seq (hrₖ.seq (hrₗ.seq (hr₄.seq (hr₅.seq hr₆))))))
   refine ⟨σ₆, _, hrun, by omega, hturn₆.1, htsz₅.run hr₆, hbarrₗ.run (hr₄.seq (hr₅.seq hr₆)),
     hturn₆.2.1,

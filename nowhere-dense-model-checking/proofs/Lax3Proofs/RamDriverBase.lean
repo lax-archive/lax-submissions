@@ -985,14 +985,17 @@ theorem flgName_ne_rv (j i k : ℕ) : flgName j i k ≠ "rv" := by
 theorem readbackStep {B q_top cap mb ns Ws j : ℕ} {n : ℕ} {φ : Lax3.FirstOrder.FO 0}
     {G : SimpleGraph (Fin n)}
     {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ} {π : Equiv.Perm (Fin n)}
-    {ord Xoff Xmem asg : ℕ → ℕ} {m : ℕ} {X W : Set (Fin n)} {w : Fin mb → Fin n}
+    {ord Xoff Xmem asg : ℕ → ℕ} {m k : ℕ} {X W : Set (Fin n)} {w : Fin mb → Fin n}
     {Alv' Gam' : ℕ → ℕ} {C' : ℕ → ℕ → ℕ} {K : ℕ} (hB : 1 < B) (hn : n < B)
-    (hK : rbCost q_top cap mb φ j n ≤ K) :
-    ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asg m X W w
+    (hkn : k < n)
+    (hK : RamCover.CoverOut G M π ord cap m Xoff Xmem asg →
+      rbCost q_top cap mb φ j (Xoff (k + 1) - Xoff k) ≤ K) :
+    ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asg m k X W w
       Alv' Gam' C' K := by
   classical
   intro σ hσ
-  obtain ⟨hturn, hdata, hcolarr, hcolbit, hcolread, htabinv, htsz, hcn, hvis, hflag⟩ := hσ
+  obtain ⟨hturn, hdata, hcolarr, hcolbit, hcolread, htabinv, htsz, hck, hvis, hflag⟩ := hσ
+  have hcn : σ.vars (curName j) < n := by rw [hck]; exact hkn
   have hcB : σ.vars (curName j) < B := lt_trans hcn hn
   -- the depth's own tables are there, and this names their cells
   set T₀ : ℕ → ℕ → ℕ := fun i v => (σ.arrs (tabName j i)).getD v 0 with hT₀def
@@ -1074,16 +1077,9 @@ theorem readbackStep {B q_top cap mb ns Ws j : ℕ} {n : ℕ} {φ : Lax3.FirstOr
   have hframeV : ∀ x : String, x ≠ "z" → x ≠ "zend" → x ≠ "rv" →
       σ'.vars x = σ.vars x :=
     fun x hxz hxe hxv => hfv x (not_mem_wvars_readbackCom hxz hxe hxv)
-  have hblock : Xoff (σ.vars (curName j) + 1) - Xoff (σ.vars (curName j)) ≤ n := by
-    change Refine.MassMath.blockSize Xoff (σ.vars (curName j)) ≤ n
-    rw [Refine.MassMath.blockSize_eq_ncard hcout hcout.block_inj hcn]
-    have hc := Set.ncard_le_ncard (Set.subset_univ
-      (Refine.MassMath.clusterAt G M π ord cap (σ.vars (curName j))))
-      (Set.finite_univ (α := Fin n))
-    simpa [Set.ncard_univ] using hc
   have hKr : rbCost q_top cap mb φ j
       (Xoff (σ.vars (curName j) + 1) - Xoff (σ.vars (curName j))) ≤ K :=
-    le_trans (rbCost_mono q_top cap mb φ j hblock) hK
+    by simpa [hck] using hK hcout
   refine ⟨σ', hrun.mono hKr, ⟨hbase'.1,
     hplayrec.congr (fun a _ => hframeV (ctrName a)
         (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff])

@@ -513,25 +513,36 @@ noncomputable def turnCost (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 
             (Kin + (Ksc + RamDriverBase.rbCost q_top cap mb φ j n))))))
 
 /-- **The turn cost, size-indexed** (`integration-design.md` §5.7). The
-new slot `s` is the number of members of the block the turn processes,
-and the nested driver's budget arrives in `Kin` already read at that
-size — which is what makes the level's bill a *sum* over its blocks
-instead of `n` copies of the worst turn.
-
-Today's leaves are carrier-driven, so `turnCostSize` ignores the slot
-(`turnCostSize_eq` is that, by `rfl`): the Σ interface is landed **above**
-the leaf costs, and brief B4's block-driven passes fill the slot without
-touching a single consumer of this definition. That separation is the
-point of naming the slot now — the alternative is re-threading every
-obligation a second time when the leaves land. -/
+slot `s` is the block-weight reading of the turn.  The nested driver's
+budget arrives in `Kin` already read at that size, and the readback now
+uses the same slot: its block walk has one guarded table block per member,
+and `blockSize ≤ blockWeight` pays that local charge here.  The other
+leaves remain at their landed carrier readings until their own engine
+waves tighten them. -/
 noncomputable def turnCostSize (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
-    (Ksc _s Kin : ℕ) : ℕ :=
-  turnCost n ns cap mb q_top j φ Ksc Kin
+    (Ksc s Kin : ℕ) : ℕ :=
+  RamDriverDescend.descendCost n ns cap j +
+    ((23 * n + 12 * mb + 30) +
+      (RamDriverDescend.colourCost n ns cap mb (sigL cap mb j) +
+        (Refine.KillPass.killCost q_top cap mb (j + 1) φ +
+          (Refine.KillListPass.killListCost mb +
+            (Kin + (Ksc + RamDriverBase.rbCost q_top cap mb φ j s))))))
 
-/-- The size slot is free until B4 fills it. -/
-theorem turnCostSize_eq (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
-    (Ksc s Kin : ℕ) :
-    turnCostSize n ns cap mb q_top j φ Ksc s Kin = turnCost n ns cap mb q_top j φ Ksc Kin := rfl
+/-- At the carrier reading the size-indexed cost is the former turn cost. -/
+theorem turnCostSize_eq_carrier (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (Ksc Kin : ℕ) :
+    turnCostSize n ns cap mb q_top j φ Ksc n Kin =
+      turnCost n ns cap mb q_top j φ Ksc Kin := rfl
+
+/-- A readback charged at its block size fits the turn's block-weight slot. -/
+theorem rbCost_block_le_weight
+    (hout : RamCover.CoverOut G M π ord cap mm Xoff Xmem asg) (hk : k < n) :
+    RamDriverBase.rbCost q_top cap mb φ j (Xoff (k + 1) - Xoff k) ≤
+      RamDriverBase.rbCost q_top cap mb φ j (blockWeight n G Xoff Xmem k) := by
+  apply RamDriverBase.rbCost_mono
+  change Refine.MassMath.blockSize Xoff k ≤ blockWeight n G Xoff Xmem k
+  exact Refine.MassWeight.blockSize_le_blockWeight G Xoff Xmem
+    (fun p hp hp' => Refine.MassWeight.mem_lt_of_coverOut hout hk hp hp')
 
 /-- **From the abstract block family to the actual cluster reading.**
 
@@ -658,7 +669,8 @@ theorem clusterStepAt
         (scatterBnd_block hcsr hout hkn X hXcl hbnd)
         (fun β hβ => hcostI β hβ _) (hKsc _))
     (fun _ hkn hout hsub r => ballBudget_cluster hcsr.csr hout hkn hsub r)
-    (fun _ _ _ _ _ _ => RamDriverBase.readbackStep hB.one_lt hB.n_lt le_rfl)
+    (fun _ _ _ _ _ _ hkn => RamDriverBase.readbackStep hB.one_lt hB.n_lt hkn
+      (fun hout => rbCost_block_le_weight hout hkn))
     hmono
     (fun _ hkn hout hsub =>
       Refine.MassWeight.arenaWeight_le_blockWeight G hout hkn hsub)
@@ -713,7 +725,8 @@ theorem clusterFramesAt
     (fun i => RamDriverWrites.tabName_notMem_warrs_scatterDeadPhase j j i
       (fun β hβ => (tableRank_of_mem_tablesAt (j + 1) β hβ).1) _ 0 (fun _ hβ => hβ))
     (Refine.ScatterDeadPass.ballBudget_carrier hcsr)
-    (fun _ _ _ _ _ _ => RamDriverBase.readbackStep hB.one_lt hB.n_lt le_rfl)
+    (fun _ _ _ _ _ _ hkn => RamDriverBase.readbackStep hB.one_lt hB.n_lt hkn
+      (fun hout => rbCost_block_le_weight hout hkn))
     (fun i => tabName_notMem_warrs_driverAt i)
     hmono
     (fun _ hkn hout hsub =>
@@ -905,8 +918,10 @@ condition can discharge the new one, and the re-threading costs no
 slack. `Refine.SigmaLoop.sum_const_eq_uniform` is the loop-side half of
 the same statement.
 
-This is what keeps B4, B5 and B7 unblocked while the leaves are still
-carrier-driven: they may supply size-blind costs and lose nothing. -/
+This is what keeps B4, B5 and B7 unblocked while the remaining leaves
+are still carrier-driven: they may supply constant size families and
+lose nothing. The readback leaf already uses the local block-weight
+slot. -/
 theorem uniform_recovers_level {n : ℕ} {Ko Kc Ks Kl : ℕ → ℕ}
     (huni : ∀ j < ℓ, Ko j + (Kc j + ((Ks j + 11) * n + 6)) ≤ Kl j) :
     ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → m ≤ n → ∀ bs : ℕ → ℕ,

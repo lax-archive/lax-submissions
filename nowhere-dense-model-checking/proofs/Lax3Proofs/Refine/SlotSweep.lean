@@ -454,9 +454,10 @@ cubic with `W` occurring nowhere.
 
 * **#20 `hKs`** — `turnCostSize … ≤ Ks j t` at a turn cost whose
   descent charges `16 * n²` for the level's *own* carrier, at every turn,
-  independent of the block the turn processes (`turnCostSize` ignores its
-  size slot `s`; `turnCostSize_eq`). Repair: the descent's block-driven
-  interior (E4c, `descendCom` swap / `qd` layout / alive-mask hoist).
+  independent of the block the turn processes. The readback now reads the
+  size slot, but this descent summand still does not. Repair: the descent's
+  block-driven interior (E4c, `descendCom` swap / `qd` layout /
+  alive-mask hoist).
 * **#22 `hKo`** — `orderPhaseCost n ns W ≤ Ko j m` is **size-blind** in
   `m`: it charges `1600 * n + 1350 * ns + 60 * W + 650` on the *empty*
   arena. Repair: E-mem member lists, then the member-driven order
@@ -501,8 +502,10 @@ theorem hKs_carrier (hℓ : 1 ≤ ℓ)
       RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j t) t (Kl (j + 1) t) ≤ Ks j t) :
     16 * (n * n) ≤ Ks 0 0 := by
   have h := hKs 0 (by omega) 0
-  rw [RamDriverRoot.turnCostSize_eq] at h
-  exact le_trans (turn_carrier n ns cap mb q_top 0 φ (Ksc 0 0) (Kl 1 0)) h
+  refine le_trans ?_ h
+  simp only [RamDriverRoot.turnCostSize]
+  have hd := descend_carrier n ns cap 0
+  omega
 
 /-- **#27's contribution — the multiplier.** The root level runs `n`
 turns, each paying its turn budget; the mass side condition is free at
@@ -568,7 +571,7 @@ theorem level_cost_floor_sharp (hℓ : 2 ≤ ℓ)
   have hks : 16 * (n * n) + Kl 1 0 ≤ Ks 0 0 := by
     have h := hKs 0 (by omega) 0
     simp only [Nat.zero_add] at h
-    rw [RamDriverRoot.turnCostSize_eq, RamDriverRoot.turnCost] at h
+    simp only [RamDriverRoot.turnCostSize] at h
     have hd := descend_carrier n ns cap 0
     omega
   have hcov : 112 * (n * n) ≤ RamDriverCompose.coverPhaseCost n ns := by
@@ -687,15 +690,16 @@ theorem sweepCost_linear (q_top cap mb jd : ℕ) (φ : Lax3.FirstOrder.FO 0) :
     ∃ K : ℕ, ∀ n : ℕ, Refine.DeadSweep.sweepCost q_top cap mb jd n φ = K * n + 6 :=
   ⟨_, fun _ => rfl⟩
 
-/-- **Control 4 — the turn's size slot is ignored, which is why the
-carrier charge cannot be blamed on a large block.** `turnCostSize` is
-`turnCost` at every value of its size argument, so the `16 * n²` of
-`hKs_carrier` is paid by a turn processing an **empty** block. -/
-theorem turnCostSize_size_blind (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
-    (Ksc s s' Kin : ℕ) :
-    RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc s Kin
-      = RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc s' Kin := by
-  rw [RamDriverRoot.turnCostSize_eq, RamDriverRoot.turnCostSize_eq]
+/-- **Control 4 — the readback has filled the turn's size slot.** Moving
+the slot from zero to one strictly raises the turn allowance by one
+guarded readback iteration. The carrier floor above survives because it
+comes from the still-size-blind descent summand, not from the readback. -/
+theorem turnCostSize_reads_size (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (Ksc Kin : ℕ) :
+    RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc 0 Kin <
+      RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc 1 Kin := by
+  simp only [RamDriverRoot.turnCostSize, RamDriverBase.rbCost]
+  omega
 
 end Floor
 

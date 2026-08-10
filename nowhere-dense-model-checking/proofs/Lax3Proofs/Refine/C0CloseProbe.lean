@@ -40,8 +40,9 @@ program text (`23·n + 12`, the two calling-convention copies), and
 `narrow_leaf_refutes_constant_ksc` compiles that no narrowing of the
 probe bound, the member counts or the ball budget produces a constant
 `ksc` while those copies stand. Beyond them the honest reading is the
-turn's **cluster**, not a constant, so the close needs the turn's size
-slot read as well — `turnCostSize` discards it today.
+turn's **cluster**, not a constant. The readback now uses the turn's
+size slot, but the scatter chain still enters that slot as an additive
+total; B4 must make that particular charge size-relative too.
 
 ## The four sections
 
@@ -793,10 +794,11 @@ narrowing that the accounting ceiling *does* reach is the cluster's
 size, not a constant — the reading `RamDriverRoot.clusterStepAt` grants
 is uniform in the turn's cluster (`hbnd` fixes `Kb` before `X` exists),
 so a cluster-scale charge cannot be stated there at all. Cashing it
-needs the turn's **size slot** — `RamDriverRoot.turnCostSize` discards
-its size argument today (`turnCostSize_size_blind`, `SlotSweep` control
-4) while `G2CostProbe.turnCostSizeA` reads it — which is B4's, not
-E4c's. -/
+needs the turn's **size slot**. `RamDriverRoot.turnCostSize` now reads
+that argument for readback (`SlotSweep.turnCostSize_reads_size`), while
+the scatter total is still additive; `G2CostProbe.turnCostSizeA` makes
+the scatter charge a size-relative coefficient. That remaining change
+is B4's, not E4c's. -/
 
 /-- **The landed per-atom charge in closed form**, at the root's own
 instantiation. Two of its terms are opaque and neither reads the
