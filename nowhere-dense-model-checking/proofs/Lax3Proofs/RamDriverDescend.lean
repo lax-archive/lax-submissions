@@ -1427,6 +1427,75 @@ theorem expandBlockCom_supported_spec {B w m c j : ℕ} (hcsr : CsrGraph G ns O 
   exact ⟨σ', _, hr, le_rfl, hcov', hcur', hn', hoff', htgt', hnt', hmsk', hsrc',
     A, hA, hval, hsup⟩
 
+/-! #### Loaded cover maps at the driver boundary -/
+
+/-- Compose the cover row load with the generic executable interval map.
+The result frames the cover itself and exposes the same sparse-write
+contract as the driver-independent loop. -/
+theorem coverMapCom_spec {B w m c j : ℕ} {x : Expr} {F g₀ : ℕ → ℕ}
+    {l : List (String × ℕ × (ℕ → ℕ))} (hc : c < n) (hmB : m < B)
+    (hB : 1 < B) (hnB : n < B) (hdx : dst ≠ xofName j)
+    (hdi : dst ≠ xmmName j) (hdf : ∀ a ∈ l, a.1 ≠ dst)
+    (hx : ∀ (σ : Env) q, Xoff c ≤ q → q < Xoff (c + 1) → σ.vars "p" = q →
+      σ.vars "cw" = Xmem q →
+      Refine.BlockLeaves.BlockMapRangeInv n w (Xoff c) (Xoff (c + 1))
+        (xmmName j) dst Xmem F g₀ l σ → x.evalB B σ = some (F (Xmem q))) :
+    Spec B
+      (fun σ => CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.arrs dst = arrOf n g₀ ∧
+        Refine.BlockLeaves.BlockFrozen l σ)
+      (.seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+        (Refine.BlockLeaves.blockMapRangeCom (xmmName j) dst x))
+      (fun _ σ' =>
+        CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ' ∧
+        σ'.vars (curName j) = c ∧
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ q, Xoff c ≤ q → q < Xoff (c + 1) → g (Xmem q) = F (Xmem q)) ∧
+          (∀ v, v < n →
+            (∀ q, Xoff c ≤ q → q < Xoff (c + 1) → Xmem q ≠ v) → g v = g₀ v)) ∧
+        Refine.BlockLeaves.BlockFrozen l σ')
+      ((13 + x.size) * blockSize Xoff c + 12) := by
+  refine Spec.of_exists (fun σ hσ => ?_)
+  obtain ⟨hcov, hcur, hdst, hfr⟩ := hσ
+  have heM : Xoff (c + 1) ≤ m := hcov.row_le hc
+  have hpE : Xoff c ≤ Xoff (c + 1) := hcov.off_le_succ hc
+  have heB : Xoff (c + 1) < B := lt_of_le_of_lt heM hmB
+  have hew : Xoff (c + 1) ≤ w := le_trans heM hcov.ns_le
+  have hmem : ∀ q, Xoff c ≤ q → q < Xoff (c + 1) → Xmem q < n := by
+    intro q _ hq
+    exact hcov.target (lt_of_lt_of_le hq heM)
+  obtain ⟨σ₁, hr₁, hcov₁, hp₁, he₁, hst₁⟩ :=
+    (CsrWide.loadRow_spec B n m w n (xofName j) (xmmName j) (curName j) "p" "pend"
+      Xoff Xmem (by simp [curName, String.ext_iff]) (by decide)).run
+      ⟨⟨hcov, by omega, hmB⟩, by rw [hcur]; exact hc, by rw [hcur]; omega⟩
+  rw [hcur] at hp₁ he₁
+  have hdst₁ : σ₁.arrs dst = arrOf n g₀ := by rw [hst₁]; simp only [arrs_setVar]; exact hdst
+  have hfr₁ : Refine.BlockLeaves.BlockFrozen l σ₁ := by
+    intro a ha
+    rw [hst₁]
+    simp only [arrs_setVar]
+    exact hfr a ha
+  obtain ⟨σ₂, hr₂, hout₂, hp₂, hpend₂, hidx₂, hfr₂⟩ :=
+    (Refine.BlockLeaves.blockMapRangeCom_spec (B := B) (n := n) (w := w)
+      (p₀ := Xoff c) (e := Xoff (c + 1)) (idx := xmmName j) (dst := dst)
+      (x := x) (Idx := Xmem) (F := F) (g₀ := g₀) (l := l)
+      hB hnB heB hew hpE hmem hdi hdf hx).run
+      ⟨hp₁, he₁, hcov₁.tgtArr, hdst₁, hfr₁⟩
+  have hxof₂ : σ₂.arrs (xofName j) = σ₁.arrs (xofName j) :=
+    hr₂.frame_arr (xofName j) (by
+      simpa [Refine.BlockLeaves.blockMapRangeCom, Com.warrs] using (Ne.symm hdx))
+  have hcov₂ : CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ₂ :=
+    hcov₁.of_eq hxof₂ (by rw [hidx₂, hcov₁.tgtArr])
+  have hcur₂ : σ₂.vars (curName j) = c := by
+    rw [hr₂.frame_var (curName j) (by
+      simp [Refine.BlockLeaves.blockMapRangeCom, Com.wvars, curName, String.ext_iff]),
+      hst₁]
+    exact hcur
+  refine ⟨σ₂, 8 + ((13 + x.size) * (Xoff (c + 1) - Xoff c) + 4),
+    hr₁.seq hr₂, ?_, hcov₂, hcur₂, hout₂, hfr₂⟩
+  simp only [blockSize]
+  omega
+
 /-- The executable expansion's two-currency charge fits the one
 block-weight slot used by the almost-linear recurrence. -/
 theorem expandBlockCost_le_weight (hcsr : RamElim.CsrSimple G ns O T)

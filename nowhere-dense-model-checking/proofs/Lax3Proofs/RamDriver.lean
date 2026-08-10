@@ -6,6 +6,7 @@ import Lax3Proofs.RamBfsPaths
 import Lax3Proofs.RamCover
 import Lax3Proofs.RamScatter
 import Lax3Proofs.Refine.MassMath
+import Lax3Proofs.Refine.BlockLeaves
 import Lax3Proofs.Refine.ScatterBlockProg
 import Lax3Proofs.Refine.DriverPrelude
 import Lax3Proofs.SplitterWinRec
@@ -1364,6 +1365,36 @@ def andCom (a b dst : String) : Com :=
 /-- The first mask with everything the second marks killed. -/
 def subCom (a b dst : String) : Com :=
   fillCom dst (.mul (.get a (.var "i")) (.sub (.lit 1) (.get b (.var "i"))))
+
+/-! ### Cover-block maps
+
+These are the block-local counterparts of `fillCom`, `copyCom`,
+`andCom`, and `subCom`.  The cover row load supplies the interval; the
+driver-independent executable loops live in `Refine.BlockLeaves`. -/
+
+def coverClearCom (j : ℕ) (dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockClearRangeCom (xmmName j) dst)
+
+def coverCopyCom (j : ℕ) (src dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockCopyRangeCom (xmmName j) src dst)
+
+def coverAndCom (j : ℕ) (a b dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockAndRangeCom (xmmName j) a b dst)
+
+def coverSubCom (j : ℕ) (a b dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockSubRangeCom (xmmName j) a b dst)
+
+def coverAndSelfCom (j : ℕ) (b dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockAndSelfRangeCom (xmmName j) b dst)
+
+def coverSubSelfCom (j : ℕ) (b dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockSubSelfRangeCom (xmmName j) b dst)
 
 /-- Sequence a command over a list, giving each entry its position. -/
 def foldIdx {X : Type*} (f : ℕ → X → Com) : ℕ → List X → Com
