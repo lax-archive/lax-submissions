@@ -85,7 +85,7 @@ quantified in `ct`, `ksc`, `Kin`: **no constant closes the turn slot.**
 |---|---|---|
 | `descendCost n ns cap j` | `24n² + 98n + 61 + ballCost + batchCost` | §2.5 |
 | `23·n + 12·mb + 30` | Θ(n) — **no cost-function name, no ledger row** | §2.5 |
-| `colourCost n ns cap mb (sigL …)` | `slotCost·(2(L+1)+mb) + 3` | §2.3, §2.4 |
+| `colourCost n ns cap mb (sigL …)` | `slotCost·(2(L+1)+mb) + 3` | §2.4 |
 | `killCost` | carrier-blind ✓ | — |
 | `killListCost` | carrier-blind ✓ | — |
 | `Kin`, `Ksc` | slots | §2.1 |
@@ -208,6 +208,14 @@ class — brief it explicitly.
 **Size: 1–2 sub-waves** (ESTIMATE), ~700–1000 lines.
 
 ### §2.3 The `expandStep` tightening
+
+**Status 2026-08-10: complete on the campaign branch.** `expandStep_spec` is
+indexed by its static row and charges `24·rowLen z + 40`; the scan proof now
+uses `ScanHit`'s live lower endpoint instead of discarding it with
+`Nat.sub_le`. `expandCom_spec` uses `forRangeZeroSum`, and `sum_rowLen`
+telescopes the row family to the exact bound `24·ns + 44·n + 6`.  The tighter
+formula has propagated through both `slotCost` and `ballCost`, and the full
+3593-job `proofs` build passes.  The next dependency leaf is §2.4.
 
 `expandStep_spec` discharges its scan obligation at `RamDriverDescend.lean:1004-1009`
 by `Nat.sub_le`, throwing away the row's start, with `hρ` bound and unused. The

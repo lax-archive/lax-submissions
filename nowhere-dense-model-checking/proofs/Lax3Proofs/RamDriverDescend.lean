@@ -28,8 +28,12 @@ needs to hand a depth's state on.
 * `expandSlot_step`, `expandStep_spec`, `expandCom_spec`: one step of
   neighbourhood expansion, the inner block scan against
   `Csr.rowScan_spec` with `RamDriverCluster.ScanHit`, the outer pass
-  against `Spec.forRangeZero` with `RamDriverCluster.ExpandInv`, and
-  `RamDriverCluster.hit_eq_expandVal` at the join.
+  against `Refine.SigmaLoop.forRangeZeroSum` with
+  `RamDriverCluster.ExpandInv`, and
+  `RamDriverCluster.hit_eq_expandVal` at the join.  The live scan
+  invariant retains the row's lower endpoint, so the per-row charges
+  telescope to the CSR target length instead of multiplying that length
+  by the carrier size.
 * `chainCom_spec`, the chain of `r` of them: the last name of the
   family marks the `r`-neighbourhood of what the first one marked. The
   induction peels the chain from the *front*, which is what the syntax
@@ -810,7 +814,8 @@ the colouring — and it is the one pass of the driver with a loop inside
 a loop. `RamDriverCluster` carries its mathematics and both of its
 invariants; what is walked here is the symbolic execution between them:
 the inner scan against `Csr.rowScan_spec` with `ScanHit`, the outer pass
-against `Spec.forRangeZero` with `ExpandInv`, and `hit_eq_expandVal` at
+against `Refine.SigmaLoop.forRangeZeroSum` with `ExpandInv`, and
+`hit_eq_expandVal` at
 the join. -/
 
 section Expand
@@ -936,23 +941,25 @@ theorem expandSlot_step {B z : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB
 /-- **One vertex of the expansion.** The source's own cell, raised to
 one when a live neighbour is marked: the block scan decides which, and
 `hit_eq_expandVal` is what a full scan is worth. -/
-theorem expandStep_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB : n < B)
-    (hnsB : ns < B) (hMB : ∀ k, k < n → Msk k < B) (hSB : ∀ k, k < n → Src k < B)
+theorem expandStep_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (z : ℕ) (hz : z < n)
+    (hB : 1 < B) (hnB : n < B) (hnsB : ns < B)
+    (hMB : ∀ k, k < n → Msk k < B) (hSB : ∀ k, k < n → Src k < B)
     (hdm : dst ≠ msk) (hds : dst ≠ src) (hdo : dst ≠ "off") (hdt : dst ≠ "tgt") :
-    Spec B (fun σ => ExpandInv n ns nt G O T Msk Src msk src dst σ ∧ σ.vars "z" < n)
+    Spec B (fun σ => ExpandInv n ns nt G O T Msk Src msk src dst σ ∧ σ.vars "z" = z)
       (expandStep msk src dst)
-      (fun σ σ' => ExpandInv n ns nt G O T Msk Src msk src dst σ' ∧ σ'.vars "z" = σ.vars "z" + 1)
-      (24 * ns + 40) := by
+      (fun _ σ' => ExpandInv n ns nt G O T Msk Src msk src dst σ' ∧ σ'.vars "z" = z + 1)
+      (24 * Csr.rowLen O z + 40) := by
   classical
   refine Spec.of_exists (fun σ hσ => ?_)
-  obtain ⟨hinv, hz⟩ := hσ
+  obtain ⟨hinv, hzσ⟩ := hσ
+  have hzlt : σ.vars "z" < n := by rw [hzσ]; exact hz
   have hzB : σ.vars "z" < B := by omega
-  have hSz : Src (σ.vars "z") < B := hSB _ hz
+  have hSz : Src (σ.vars "z") < B := hSB _ hzlt
   -- hit := src[z]
   have hr₁ : Run B (.assign "hit" (.get src (.var "z"))) σ
       (σ.setVar "hit" (Src (σ.vars "z"))) 3 :=
     (Run.assign (evalB_get (evalB_var hzB)
-      (by rw [hinv.2.2.2.2.2.2, getElem?_arrOf Src hz]) hSz)).mono (by simp)
+      (by rw [hinv.2.2.2.2.2.2, getElem?_arrOf Src hzlt]) hSz)).mono (by simp)
   set σ₁ := σ.setVar "hit" (Src (σ.vars "z")) with hσ₁
   have hz₁ : σ₁.vars "z" = σ.vars "z" := by rw [hσ₁]; simp
   have hhit₁ : σ₁.vars "hit" = Src (σ.vars "z") := by rw [hσ₁]; simp
@@ -962,11 +969,11 @@ theorem expandStep_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB :
       some (decide (0 < Msk (σ.vars "z"))) :=
     evalB_condLt (evalB_lit (by omega))
       (evalB_get (evalB_var (by rw [hz₁]; omega))
-        (by rw [hinv₁.2.2.2.2.2.1, hz₁, getElem?_arrOf Msk hz]) (hMB _ hz))
+        (by rw [hinv₁.2.2.2.2.2.1, hz₁, getElem?_arrOf Msk hzlt]) (hMB _ hzlt))
   -- the conditional: a live vertex scans its block, a dead one does not
   have key : ∃ σ₂ K₂, Run B (.ite (.lt (.lit 0) (.get msk (.var "z")))
         (.seq (Csr.loadRow "off" "z" "j" "jend") (Csr.scan "j" "jend" (expandSlot msk src)))
-        .skip) σ₁ σ₂ K₂ ∧ K₂ ≤ 24 * ns + 17 ∧
+        .skip) σ₁ σ₂ K₂ ∧ K₂ ≤ 24 * Csr.rowLen O z + 17 ∧
       ExpandInv n ns nt G O T Msk Src msk src dst σ₂ ∧ σ₂.vars "z" = σ.vars "z" ∧
       σ₂.vars "hit" = expandVal G Msk Src (σ.vars "z") := by
     by_cases hm : Msk (σ.vars "z") = 0
@@ -976,15 +983,15 @@ theorem expandStep_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB :
         (CsrWide.loadRow_spec B n ns nt n "off" "tgt" "z" "j" "jend" O T
             (by decide) (by decide)).run
           (σ := σ₁) ⟨⟨csr_of_expandInv hcsr hinv₁, by omega, hnsB⟩,
-            by rw [hz₁]; exact hz, by rw [hz₁]; omega⟩
+            by rw [hz₁]; exact hzlt, by rw [hz₁]; omega⟩
       rw [hz₁] at hj₂ hjend₂
       have hzz : σ₂.vars "z" = σ.vars "z" := by rw [hst₂]; simp [hz₁]
       have hhit₂ : σ₂.vars "hit" = Src (σ.vars "z") := by rw [hst₂]; simp [hhit₁]
       have hinv₂ : ExpandInv n ns nt G O T Msk Src msk src dst σ₂ :=
         expandInv_congr hinv₁ (by rw [hst₂]; simp) (by rw [hst₂]; simp)
           (fun a => by rw [hst₂]; simp)
-      have hrow : O (σ.vars "z" + 1) ≤ ns := (csr_of_expandInv hcsr hinv).row_le hz
-      have hlo : O (σ.vars "z") ≤ O (σ.vars "z" + 1) := hcsr.mono _ hz
+      have hrow : O (σ.vars "z" + 1) ≤ ns := (csr_of_expandInv hcsr hinv).row_le hzlt
+      have hlo : O (σ.vars "z") ≤ O (σ.vars "z" + 1) := hcsr.mono _ hzlt
       have hclause : σ₂.vars "hit" =
           (if ∃ p, O (σ.vars "z") ≤ p ∧ p < σ₂.vars "j" ∧ Msk (T p) ≠ 0 ∧ Src (T p) ≠ 0
             then 1 else Src (σ.vars "z")) := by
@@ -995,34 +1002,40 @@ theorem expandStep_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB :
       have hI₂ : ScanHit n ns nt G O T Msk Src msk src dst (σ.vars "z") σ₂ :=
         ⟨hinv₂, hzz, hjend₂, by omega, by omega, hclause⟩
       obtain ⟨σ₃, hr₃, hI₃, hj₃⟩ :=
-        (Csr.rowScan_spec B (24 * ns + 4) (O (σ.vars "z" + 1)) 20 "j" "jend"
+        (Csr.rowScan_spec B (24 * Csr.rowLen O z + 4) (O (σ.vars "z" + 1)) 20 "j" "jend"
           (expandSlot msk src) (P := ScanHit n ns nt G O T Msk Src msk src dst (σ.vars "z"))
           (ScanHit n ns nt G O T Msk Src msk src dst (σ.vars "z")) (by omega)
           (fun ρ hρ => ⟨hρ.2.2.1, hρ.2.2.2.2.1⟩)
-          (fun ρ hρ hjlt => expandSlot_step hcsr hB hnB hnsB hMB hSB hz ρ hρ hjlt)
+          (fun ρ hρ hjlt => expandSlot_step hcsr hB hnB hnsB hMB hSB hzlt ρ hρ hjlt)
           (fun _ hρ => hρ)
           (fun ρ hρ => by
-            have h1 : (20 + 4) * (O (σ.vars "z" + 1) - ρ.vars "j") ≤ 24 * ns := by
-              have := Nat.mul_le_mul_left 24
-                (Nat.sub_le (O (σ.vars "z" + 1)) (ρ.vars "j"))
-              omega
+            have hloρ : O z ≤ ρ.vars "j" := by
+              simpa [hzσ] using hρ.2.2.2.1
+            have hrem : O (σ.vars "z" + 1) - ρ.vars "j" ≤ Csr.rowLen O z := by
+              change O (σ.vars "z" + 1) - ρ.vars "j" ≤ O (z + 1) - O z
+              rw [hzσ]
+              exact Nat.sub_le_sub_left hloρ _
+            have h1 : (20 + 4) * (O (σ.vars "z" + 1) - ρ.vars "j") ≤
+                24 * Csr.rowLen O z := Nat.mul_le_mul_left 24 hrem
             omega)).run hI₂
-      refine ⟨σ₃, 1 + 4 + (8 + (24 * ns + 4)), Run.ite_true (by rw [hcond]; simp; omega)
+      refine ⟨σ₃, 1 + 4 + (8 + (24 * Csr.rowLen O z + 4)),
+        Run.ite_true (by rw [hcond]; simp; omega)
         (hr₂.seq hr₃), by omega, hI₃.1, hI₃.2.1, ?_⟩
-      rw [hI₃.2.2.2.2.2, hj₃, hit_eq_expandVal hcsr hz hm]
+      rw [hI₃.2.2.2.2.2, hj₃, hit_eq_expandVal hcsr hzlt hm]
   obtain ⟨σ₂, K₂, hr₂, hK₂, hinv₂, hzz, hhit₂⟩ := key
   -- the store, and the counter
   have hval : expandVal G Msk Src (σ.vars "z") < B := by
     rcases expandVal_eq_or G Msk Src (σ.vars "z") with h | h
     · rw [h]; omega
     · rw [h]; exact hSz
-  have hdlen : σ₂.vars "z" < (σ₂.arrs dst).length := by rw [hinv₂.1.length, hzz]; exact hz
+  have hdlen : σ₂.vars "z" < (σ₂.arrs dst).length := by rw [hinv₂.1.length, hzz]; exact hzlt
   refine ⟨(σ₂.setArr dst (σ₂.vars "z") (σ₂.vars "hit")).setVar "z" (σ₂.vars "z" + 1),
     3 + (K₂ + (3 + 4)), (hr₁.seq (hr₂.seq
       ((Run.store (evalB_var (by rw [hzz]; omega)) (evalB_var (by rw [hhit₂]; exact hval)) hdlen).seq
         (Run.assign (evalB_bin (evalB_var (by simp [hzz]; omega)) (evalB_lit (by omega))
-          (by simp [hzz]; omega)))))), by omega, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, by simp [hzz]⟩
-  · exact hinv₂.1.step (by rw [hzz]; exact hz) (by rw [hhit₂, hzz])
+          (by simp [hzz]; omega)))))), by omega, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩,
+    by simp [hzz, hzσ]⟩
+  · exact hinv₂.1.step (by rw [hzz]; exact hzlt) (by rw [hhit₂, hzz])
   · simp only [vars_setVar, if_neg (by decide : ¬ ("n" = "z")), vars_setArr]
     exact hinv₂.2.1
   · rw [arrs_setVar, arrs_setArr, if_neg (Ne.symm hdo)]; exact hinv₂.2.2.1
@@ -1047,11 +1060,13 @@ theorem expandCom_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB : 
           ∀ k, k < n → g k = expandVal G Msk Src k) ∧
         σ'.vars "z" = n ∧ σ'.vars "n" = n ∧ σ'.arrs "off" = arrOf (n + 1) O ∧
         σ'.arrs "tgt" = arrOf nt T ∧ σ'.arrs msk = arrOf n Msk ∧ σ'.arrs src = arrOf n Src)
-      ((24 * ns + 44) * n + 6) := by
-  refine ((Spec.forRangeZero (B := B) "z" "n" (ExpandInv n ns nt G O T Msk Src msk src dst) n
-    (24 * ns + 40) hnB (fun τ hτ => hτ.1.le) (fun τ hτ => hτ.2.1)
-    (expandStep_spec hcsr hB hnB hnsB hMB hSB hdm hds hdo hdt)).pre ?_).post ?_ |>.mono
-      (by ring_nf; omega)
+      (24 * ns + 44 * n + 6) := by
+  refine ((Refine.SigmaLoop.forRangeZeroSum (B := B) "z" "n"
+    (ExpandInv n ns nt G O T Msk Src msk src dst) n
+    (fun z => 24 * Csr.rowLen O z + 40) hnB (fun τ hτ => hτ.1.le)
+    (fun τ hτ => hτ.2.1)
+    (fun z hz => expandStep_spec hcsr z hz hB hnB hnsB hMB hSB hdm hds hdo hdt)).pre ?_).post
+      ?_ |>.mono ?_
   · rintro σ ⟨hn, hoff, htgt, hmsk, hsrc, g, hdst⟩
     exact ⟨Fill.below_zero (by rw [arrs_setVar]; exact hdst) (by simp),
       by simpa using hn, by simpa using hoff, by simpa using htgt, hnt, by simpa using hmsk,
@@ -1059,6 +1074,13 @@ theorem expandCom_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB : 
   · rintro σ σ' - ⟨hinv, hz⟩
     exact ⟨hinv.1.done hz, hz, hinv.2.1, hinv.2.2.1, hinv.2.2.2.1, hinv.2.2.2.2.2.1,
       hinv.2.2.2.2.2.2⟩
+  · have hpt : ∀ z ∈ Finset.range n,
+        (24 * Csr.rowLen O z + 40 + 4) = 24 * Csr.rowLen O z + 44 :=
+      fun _ _ => by omega
+    rw [Finset.sum_congr rfl hpt, Finset.sum_add_distrib, ← Finset.mul_sum,
+      hcsr.sum_rowLen le_rfl, hcsr.zero, hcsr.last, Finset.sum_const, Finset.card_range,
+      smul_eq_mul]
+    omega
 
 /-! ### The chain
 
@@ -1125,7 +1147,7 @@ theorem chainCom_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB : n
             markSet n g = ballOf (masked G Msk) r (markSet n Sr)) ∧
           σ'.vars "n" = n ∧ σ'.arrs "off" = arrOf (n + 1) O ∧ σ'.arrs "tgt" = arrOf nt T ∧
           σ'.arrs msk = arrOf n Msk)
-        (((24 * ns + 44) * n + 6) * r + 1) := by
+        ((24 * ns + 44 * n + 6) * r + 1) := by
   intro r
   induction r with
   | zero =>
@@ -1374,7 +1396,7 @@ theorem chainCom_stages {B : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB :
             markSet n g = ballOf (masked G Msk) a (markSet n Sr)) ∧
           σ'.vars "n" = n ∧ σ'.arrs "off" = arrOf (n + 1) O ∧ σ'.arrs "tgt" = arrOf nt T ∧
           σ'.arrs msk = arrOf n Msk)
-        (((24 * ns + 44) * n + 6) * r + 1) := by
+        ((24 * ns + 44 * n + 6) * r + 1) := by
   intro r
   induction r with
   | zero =>
@@ -1679,7 +1701,7 @@ theorem oldCom_spec {d : ℕ} (hB : WordBoundK B n d ns cap mb)
 
 /-- The cost of one member of a slot family: a flat pass, a store, and a
 chain of `cap` expansions. -/
-def slotCost (n ns cap : ℕ) : ℕ := ((24 * ns + 44) * n + 6) * cap + 15 * n + 12
+def slotCost (n ns cap : ℕ) : ℕ := (24 * ns + 44 * n + 6) * cap + 15 * n + 12
 
 /-- **One batch profile.** The singleton of the padded entry, expanded
 `cap` times in the cluster-restricted arena: every stage is the ball of
@@ -2877,7 +2899,7 @@ theorem ballOf_singleton_eq_ball (A : SimpleGraph (Fin n)) (r : ℕ) (u : Fin n)
   exact ⟨withinDist_symm, withinDist_symm⟩
 
 /-- The cost of the ball's chain. -/
-def ballCost (n ns cap : ℕ) : ℕ := ((24 * ns + 44) * n + 6) * (2 * cap) + 11 * n + 12
+def ballCost (n ns cap : ℕ) : ℕ := (24 * ns + 44 * n + 6) * (2 * cap) + 11 * n + 12
 
 /-- **The ball of the round, discharged.** -/
 theorem ballCom_spec {Gm : ℕ → ℕ} {O T : ℕ → ℕ} (hcsr : CsrGraph G ns O T)
