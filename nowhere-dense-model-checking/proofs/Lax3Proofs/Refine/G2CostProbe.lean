@@ -837,7 +837,7 @@ slots verbatim — the B8 sense in which the moved part of the interface
 IS the probe's forms. -/
 theorem g2_plug {n : ℕ} {B q_top cap mb ns W ℓ s : ℕ} {N : ℕ → ℕ}
     {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
-    {Kb : ℕ} {Ki Ksc : ℕ → ℕ}
+    {Ksc : ℕ → ℕ} {KbR : ℕ → ℕ} {KiR KscR : ℕ → ℕ → ℕ}
     (D Cb d D₁ kc kd ct kscM : ℕ)
     (hKscM : ∀ j < ℓ, Ksc j ≤ kscM)
     -- the base slot's coefficient (wave R1.8-T4b): above it, the witness's own
@@ -856,11 +856,12 @@ theorem g2_plug {n : ℕ} {B q_top cap mb ns W ℓ s : ℕ} {N : ℕ → ℕ}
         DistIndependent (deleteVerts G S) (2 * cap) Bd)
     (hbnd : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n ns n σs.t ≤ Kb)
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
+          Refine.ScatterDeadTurn.deadAtomKBlk σs.β z mb z z σs.t ≤ KbR z)
     (hcostI : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
-      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j)
-    (hKscReal : ∀ j < ℓ, Ki j * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j)
+      ∀ z, KbR z * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ KiR j z)
+    (hKscReal : ∀ j < ℓ, ∀ z,
+      KiR j z * (tablesAt q_top cap mb φ j).length + 1 ≤ KscR j z)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (RamBfs.masked G M) π (2 * cap) v).ncard ≤ D) :
     ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
@@ -877,7 +878,7 @@ theorem g2_plug {n : ℕ} {B q_top cap mb ns W ℓ s : ℕ} {N : ℕ → ℕ}
        (∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m) →
        (∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m) →
        (∀ j < ℓ, ∀ t : ℕ,
-         RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t)
+         RamDriverRoot.turnCostSize n ns cap mb q_top j φ (KscR j t) t (Kl (j + 1) t)
            ≤ Ks j t) →
        ∀ j ≤ ℓ, ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ),
          LevelImplements B q_top cap mb 0 ℓ W ns j φ G O T M Gm C
