@@ -821,7 +821,8 @@ the join. -/
 
 section Expand
 
-variable {ns nt : ℕ} {G : SimpleGraph (Fin n)} {O T Msk Src : ℕ → ℕ} {msk src dst : String}
+variable {ns nt w p₀ e z c : ℕ} {G : SimpleGraph (Fin n)}
+  {O T Msk Src A₀ Idx Xoff Xmem : ℕ → ℕ} {msk src dst idx : String} {σ : Env}
 
 /-! The carrier pass below packages its destination as `Fill.Below`,
 which deliberately ties the next row to the carrier counter.  A block
@@ -951,6 +952,387 @@ theorem expandSlotAt_step {B z : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B)
         show ((τ.setVar "hit" 1).setVar "j" (σ.vars "j" + 1)).vars "j" =
             σ.vars "j" + 1 by rw [hτ]; simp]
       rw [if_pos ⟨σ.vars "j", hjlo, by omega, hm, hs⟩]
+
+/-- **One arbitrary vertex of an expansion.**  Unlike
+`expandStep_spec`, this statement does not require the destination to
+be a carrier prefix.  It exposes the single store as an `upd`, which is
+the form a block walk can accumulate in an arbitrary visitation order. -/
+theorem expandStepAt_spec {B z : ℕ} (hcsr : CsrGraph G ns O T) (hz : z < n)
+    (hB : 1 < B) (hnB : n < B) (hnsB : ns < B)
+    (hMB : ∀ k, k < n → Msk k < B) (hSB : ∀ k, k < n → Src k < B)
+    (hdm : dst ≠ msk) (hds : dst ≠ src) (hdo : dst ≠ "off") (hdt : dst ≠ "tgt") :
+    Spec B (ExpandAt n ns nt O T Msk Src A₀ msk src dst z)
+      (expandStep msk src dst)
+      (fun _ σ' => ExpandAt n ns nt O T Msk Src
+        (upd A₀ z (expandVal G Msk Src z)) msk src dst (z + 1) σ')
+      (24 * Csr.rowLen O z + 40) := by
+  classical
+  refine Spec.of_exists (fun σ hinv => ?_)
+  have hzσ : σ.vars "z" = z := hinv.1
+  have hzB : σ.vars "z" < B := by omega
+  have hSz : Src (σ.vars "z") < B := hSB _ (by omega)
+  have hr₁ : Run B (.assign "hit" (.get src (.var "z"))) σ
+      (σ.setVar "hit" (Src (σ.vars "z"))) 3 :=
+    (Run.assign (evalB_get (evalB_var hzB)
+      (by rw [hinv.2.2.2.2.2.2.1, getElem?_arrOf Src (by omega)]) hSz)).mono (by simp)
+  set σ₁ := σ.setVar "hit" (Src (σ.vars "z")) with hσ₁
+  have hz₁ : σ₁.vars "z" = σ.vars "z" := by rw [hσ₁]; simp
+  have hhit₁ : σ₁.vars "hit" = Src (σ.vars "z") := by rw [hσ₁]; simp
+  have hinv₁ : ExpandAt n ns nt O T Msk Src A₀ msk src dst z σ₁ :=
+    expandAt_congr hinv hz₁ (by rw [hσ₁]; simp) (fun a => by rw [hσ₁]; simp)
+  have hcond : (Cond.lt (.lit 0) (.get msk (.var "z"))).evalB B σ₁ =
+      some (decide (0 < Msk (σ.vars "z"))) :=
+    evalB_condLt (evalB_lit (by omega))
+      (evalB_get (evalB_var (by rw [hz₁]; omega))
+        (by rw [hinv₁.2.2.2.2.2.1, hz₁, getElem?_arrOf Msk (by omega)])
+        (hMB _ (by omega)))
+  have key : ∃ σ₂ K₂, Run B (.ite (.lt (.lit 0) (.get msk (.var "z")))
+        (.seq (Csr.loadRow "off" "z" "j" "jend") (Csr.scan "j" "jend" (expandSlot msk src)))
+        .skip) σ₁ σ₂ K₂ ∧ K₂ ≤ 24 * Csr.rowLen O z + 17 ∧
+      ExpandAt n ns nt O T Msk Src A₀ msk src dst z σ₂ ∧
+      σ₂.vars "z" = σ.vars "z" ∧ σ₂.vars "hit" = expandVal G Msk Src (σ.vars "z") := by
+    by_cases hm : Msk (σ.vars "z") = 0
+    · exact ⟨σ₁, 6, Run.ite_false (by rw [hcond, hm]; simp) Run.skip, by omega, hinv₁, hz₁,
+        by rw [hhit₁, expandVal_of_dead hm]⟩
+    · obtain ⟨σ₂, hr₂, hcsr₂, hj₂, hjend₂, hst₂⟩ :=
+        (CsrWide.loadRow_spec B n ns nt n "off" "tgt" "z" "j" "jend" O T
+            (by decide) (by decide)).run
+          (σ := σ₁) ⟨⟨csr_of_expandAt hcsr hinv₁, by omega, hnsB⟩,
+            by rw [hz₁, hzσ]; exact hz, by rw [hz₁, hzσ]; omega⟩
+      rw [hz₁] at hj₂ hjend₂
+      have hzz : σ₂.vars "z" = σ.vars "z" := by rw [hst₂]; simp [hz₁]
+      have hhit₂ : σ₂.vars "hit" = Src (σ.vars "z") := by rw [hst₂]; simp [hhit₁]
+      have hinv₂ : ExpandAt n ns nt O T Msk Src A₀ msk src dst z σ₂ :=
+        expandAt_congr hinv₁ (by rw [hst₂]; simp) (by rw [hst₂]; simp)
+          (fun a => by rw [hst₂]; simp)
+      have hrow : O (σ.vars "z" + 1) ≤ ns :=
+        (csr_of_expandAt hcsr hinv).row_le (by omega)
+      have hlo : O (σ.vars "z") ≤ O (σ.vars "z" + 1) := hcsr.mono _ (by omega)
+      have hclause : σ₂.vars "hit" =
+          (if ∃ p, O (σ.vars "z") ≤ p ∧ p < σ₂.vars "j" ∧ Msk (T p) ≠ 0 ∧ Src (T p) ≠ 0
+            then 1 else Src (σ.vars "z")) := by
+        rw [hhit₂, if_neg]
+        rintro ⟨p, h₁, h₂, -⟩
+        rw [hj₂] at h₂
+        omega
+      have hI₂ : ScanHitAt n ns nt O T Msk Src A₀ msk src dst (σ.vars "z") σ₂ :=
+        ⟨by simpa [hzσ] using hinv₂, hjend₂, by omega, by omega, hclause⟩
+      obtain ⟨σ₃, hr₃, hI₃, hj₃⟩ :=
+        (Csr.rowScan_spec B (24 * Csr.rowLen O z + 4) (O (σ.vars "z" + 1)) 20 "j" "jend"
+          (expandSlot msk src)
+          (P := ScanHitAt n ns nt O T Msk Src A₀ msk src dst (σ.vars "z"))
+          (ScanHitAt n ns nt O T Msk Src A₀ msk src dst (σ.vars "z")) (by omega)
+          (fun ρ hρ => ⟨hρ.2.1, hρ.2.2.2.1⟩)
+          (fun ρ hρ hjlt => expandSlotAt_step hcsr hB hnB hnsB hMB hSB
+            (by omega) ρ hρ hjlt)
+          (fun _ hρ => hρ)
+          (fun ρ hρ => by
+            have hloρ : O z ≤ ρ.vars "j" := by
+              simpa [hzσ] using hρ.2.2.1
+            have hrem : O (σ.vars "z" + 1) - ρ.vars "j" ≤ Csr.rowLen O z := by
+              change O (σ.vars "z" + 1) - ρ.vars "j" ≤ O (z + 1) - O z
+              rw [hzσ]
+              exact Nat.sub_le_sub_left hloρ _
+            have h1 : (20 + 4) * (O (σ.vars "z" + 1) - ρ.vars "j") ≤
+                24 * Csr.rowLen O z := Nat.mul_le_mul_left 24 hrem
+            omega)).run hI₂
+      refine ⟨σ₃, 1 + 4 + (8 + (24 * Csr.rowLen O z + 4)),
+        Run.ite_true (by rw [hcond]; simp; omega) (hr₂.seq hr₃), by omega,
+        by simpa [hzσ] using hI₃.1, hI₃.1.1, ?_⟩
+      rw [hI₃.2.2.2.2, hj₃, hit_eq_expandVal hcsr (by omega) hm]
+  obtain ⟨σ₂, K₂, hr₂, hK₂, hinv₂, hzz, hhit₂⟩ := key
+  obtain ⟨hz₂, hn₂, hoff₂, htgt₂, hnt₂, hmsk₂, hsrc₂, hdst₂⟩ := hinv₂
+  have hval : expandVal G Msk Src (σ.vars "z") < B := by
+    rcases expandVal_eq_or G Msk Src (σ.vars "z") with h | h
+    · rw [h]; omega
+    · rw [h]; exact hSz
+  have hdlen : σ₂.vars "z" < (σ₂.arrs dst).length := by
+    rw [hdst₂, length_arrOf, hzz, hzσ]
+    exact hz
+  refine ⟨(σ₂.setArr dst (σ₂.vars "z") (σ₂.vars "hit")).setVar "z" (σ₂.vars "z" + 1),
+    3 + (K₂ + (3 + 4)), (hr₁.seq (hr₂.seq
+      ((Run.store (evalB_var (by rw [hzz, hzσ]; omega))
+        (evalB_var (by rw [hhit₂]; exact hval)) hdlen).seq
+        (Run.assign (evalB_bin (evalB_var (by simp [hzz, hzσ]; omega))
+          (evalB_lit (by omega)) (by simp [hzz, hzσ]; omega)))))), by omega, ?_⟩
+  refine ⟨by simp [hzz, hzσ], ?_, ?_, ?_, hnt₂, ?_, ?_, ?_⟩
+  · simp only [vars_setVar, if_neg (by decide : ¬ ("n" = "z")), vars_setArr]
+    exact hn₂
+  · rw [arrs_setVar, arrs_setArr, if_neg (Ne.symm hdo)]; exact hoff₂
+  · rw [arrs_setVar, arrs_setArr, if_neg (Ne.symm hdt)]; exact htgt₂
+  · rw [arrs_setVar, arrs_setArr, if_neg (Ne.symm hdm)]; exact hmsk₂
+  · rw [arrs_setVar, arrs_setArr, if_neg (Ne.symm hds)]; exact hsrc₂
+  · rw [arrs_setVar, arrs_setArr, if_pos rfl, hdst₂, set_arrOf_eq_upd,
+      hzz, hhit₂, hzσ]
+
+/-! #### The block outer loop -/
+
+/-- The row mass of the members in slots `[a,b)`.  At the cover arrays
+and a block's two offsets this is definitionally
+`MassWeight.blockRowSum`. -/
+def expandRowSum (O Idx : ℕ → ℕ) (a b : ℕ) : ℕ :=
+  ∑ q ∈ Finset.Ico a b, Csr.rowLen O (Idx q)
+
+@[simp] theorem expandRowSum_self (O Idx : ℕ → ℕ) (a : ℕ) :
+    expandRowSum O Idx a a = 0 := by simp [expandRowSum]
+
+theorem expandRowSum_succ_bot (O Idx : ℕ → ℕ) {a b : ℕ} (h : a < b) :
+    expandRowSum O Idx a b = Csr.rowLen O (Idx a) + expandRowSum O Idx (a + 1) b := by
+  rw [expandRowSum, expandRowSum, Finset.sum_eq_sum_Ico_succ_bot h]
+
+theorem expandRowSum_mono_left (O Idx : ℕ → ℕ) {a a' b : ℕ} (h : a ≤ a') :
+    expandRowSum O Idx a' b ≤ expandRowSum O Idx a b := by
+  simp only [expandRowSum]
+  exact Finset.sum_le_sum_of_subset (Finset.Ico_subset_Ico h le_rfl)
+
+/-- The invariant of the executable block expansion.  It records both
+halves of the sparse-write contract: every member already visited has
+the expansion value, and every cell not visited still has its entry
+value.  Repeated members are harmless because every visit writes the
+same pointwise value. -/
+def ExpandBlockInv (n ns nt w p₀ e : ℕ) (G : SimpleGraph (Fin n))
+    (O T Idx Msk Src A₀ : ℕ → ℕ) (idx msk src dst : String) (σ : Env) : Prop :=
+  σ.vars "pend" = e ∧ p₀ ≤ σ.vars "p" ∧ σ.vars "p" ≤ e ∧ σ.vars "n" = n ∧
+    σ.arrs "off" = arrOf (n + 1) O ∧ σ.arrs "tgt" = arrOf nt T ∧ ns ≤ nt ∧
+    σ.arrs msk = arrOf n Msk ∧ σ.arrs src = arrOf n Src ∧
+    σ.arrs idx = arrOf w Idx ∧
+    ∃ A, σ.arrs dst = arrOf n A ∧
+      (∀ q, p₀ ≤ q → q < σ.vars "p" → A (Idx q) = expandVal G Msk Src (Idx q)) ∧
+      (∀ v, v < n → (∀ q, p₀ ≤ q → q < σ.vars "p" → Idx q ≠ v) → A v = A₀ v)
+
+/-- Read the sparse-write contract at loop exit. -/
+theorem ExpandBlockInv.done
+    (h : ExpandBlockInv n ns nt w p₀ e G O T Idx Msk Src A₀ idx msk src dst σ)
+    (hp : σ.vars "p" = e) :
+    ∃ A, σ.arrs dst = arrOf n A ∧
+      (∀ q, p₀ ≤ q → q < e → A (Idx q) = expandVal G Msk Src (Idx q)) ∧
+      (∀ v, v < n → (∀ q, p₀ ≤ q → q < e → Idx q ≠ v) → A v = A₀ v) := by
+  obtain ⟨-, -, -, -, -, -, -, -, -, -, A, hA, hset, hkeep⟩ := h
+  exact ⟨A, hA, fun q hq hq' => hset q hq (by rw [hp]; exact hq'),
+    fun v hv hn => hkeep v hv (fun q hq hq' => hn q hq (by rw [← hp]; exact hq'))⟩
+
+/-- One turn of the block outer loop: read its arbitrary member, run
+the already-walked row engine there, then advance the slot pointer. -/
+theorem expandBlockBody_spec {B w p₀ e q : ℕ} (hcsr : CsrGraph G ns O T)
+    (hpq₀ : p₀ ≤ q) (hqe : q < e) (heB : e < B) (hew : e ≤ w)
+    (hB : 1 < B) (hnB : n < B) (hnsB : ns < B)
+    (hIdx : ∀ r, p₀ ≤ r → r < e → Idx r < n)
+    (hMB : ∀ k, k < n → Msk k < B) (hSB : ∀ k, k < n → Src k < B)
+    (hdi : dst ≠ idx) (hdm : dst ≠ msk) (hds : dst ≠ src)
+    (hdo : dst ≠ "off") (hdt : dst ≠ "tgt") :
+    Spec B
+      (fun σ => ExpandBlockInv n ns nt w p₀ e G O T Idx Msk Src A₀ idx msk src dst σ ∧
+        σ.vars "p" = q)
+      (.seq (.assign "z" (.get idx (.var "p")))
+        (.seq (expandStep msk src dst) (.assign "p" (.add (.var "p") (.lit 1)))))
+      (fun _ σ' => ExpandBlockInv n ns nt w p₀ e G O T Idx Msk Src A₀
+          idx msk src dst σ' ∧ σ'.vars "p" = q + 1)
+      (24 * Csr.rowLen O (Idx q) + 47) := by
+  classical
+  refine Spec.of_exists (fun σ hσ => ?_)
+  obtain ⟨hI, hpq⟩ := hσ
+  obtain ⟨hpend, hp₀, hpe, hn, hoff, htgt, hnt, hmsk, hsrc, hidx,
+    A, hdst, hdone, hkeep⟩ := hI
+  have hqw : q < w := lt_of_lt_of_le hqe hew
+  have hqn : Idx q < n := hIdx q hpq₀ hqe
+  have hqB : q < B := lt_trans hqe heB
+  have hIdxB : Idx q < B := lt_trans hqn hnB
+  have hread : (Expr.get idx (.var "p")).evalB B σ = some (Idx q) :=
+    evalB_get (evalB_var (B := B) (x := "p") (σ := σ) (by rw [hpq]; exact hqB))
+      (by rw [hidx, hpq, getElem?_arrOf Idx hqw]) hIdxB
+  set σ₁ := σ.setVar "z" (Idx q) with hσ₁
+  have hr₁ : Run B (.assign "z" (.get idx (.var "p"))) σ σ₁ 3 :=
+    (Run.assign hread).mono (by simp [Expr.size])
+  have hAt₁ : ExpandAt n ns nt O T Msk Src A msk src dst (Idx q) σ₁ := by
+    refine ⟨by rw [hσ₁, vars_setVar, if_pos rfl], ?_, ?_, ?_, hnt, ?_, ?_, ?_⟩
+    · rw [hσ₁, vars_setVar, if_neg (by decide)]; exact hn
+    · rw [hσ₁, arrs_setVar]; exact hoff
+    · rw [hσ₁, arrs_setVar]; exact htgt
+    · rw [hσ₁, arrs_setVar]; exact hmsk
+    · rw [hσ₁, arrs_setVar]; exact hsrc
+    · rw [hσ₁, arrs_setVar]; exact hdst
+  obtain ⟨σ₂, hr₂, hAt₂⟩ :=
+    (expandStepAt_spec (G := G) (A₀ := A) hcsr hqn hB hnB hnsB hMB hSB
+      hdm hds hdo hdt).run hAt₁
+  obtain ⟨hz₂, hn₂, hoff₂, htgt₂, hnt₂, hmsk₂, hsrc₂, hdst₂⟩ := hAt₂
+  have hp₂ : σ₂.vars "p" = q := by
+    rw [hr₂.frame_var "p" (by simp [expandStep, expandSlot, Csr.loadRow, Csr.scan,
+      Com.wvars]), hσ₁, vars_setVar, if_neg (by decide), hpq]
+  have hpend₂ : σ₂.vars "pend" = e := by
+    rw [hr₂.frame_var "pend" (by simp [expandStep, expandSlot, Csr.loadRow, Csr.scan,
+      Com.wvars]), hσ₁, vars_setVar, if_neg (by decide)]
+    exact hpend
+  have hidx₂ : σ₂.arrs idx = arrOf w Idx := by
+    rw [hr₂.frame_arr idx (by simpa [expandStep, expandSlot, Csr.loadRow, Csr.scan,
+      Com.warrs] using (Ne.symm hdi)), hσ₁, arrs_setVar]
+    exact hidx
+  have hpEval : (Expr.var "p").evalB B σ₂ = some q := by
+    have h := evalB_var (B := B) (x := "p") (σ := σ₂) (by rw [hp₂]; exact hqB)
+    rwa [hp₂] at h
+  have hinc : (Expr.add (.var "p") (.lit 1)).evalB B σ₂ = some (q + 1) :=
+    evalB_bin hpEval (evalB_lit hB) (by change q + 1 < B; omega)
+  set σ₃ := σ₂.setVar "p" (q + 1) with hσ₃
+  have hr₃ : Run B (.assign "p" (.add (.var "p") (.lit 1))) σ₂ σ₃ 4 :=
+    (Run.assign hinc).mono (by simp [Expr.size])
+  have hp₃ : σ₃.vars "p" = q + 1 := by rw [hσ₃, vars_setVar, if_pos rfl]
+  refine ⟨σ₃, 3 + ((24 * Csr.rowLen O (Idx q) + 40) + 4),
+    hr₁.seq (hr₂.seq hr₃), by omega, ?_, hp₃⟩
+  refine ⟨by rw [hσ₃, vars_setVar, if_neg (by decide)]; exact hpend₂,
+    by rw [hp₃]; omega, by rw [hp₃]; omega,
+    by rw [hσ₃, vars_setVar, if_neg (by decide)]; exact hn₂,
+    by rw [hσ₃, arrs_setVar]; exact hoff₂,
+    by rw [hσ₃, arrs_setVar]; exact htgt₂, hnt₂,
+    by rw [hσ₃, arrs_setVar]; exact hmsk₂,
+    by rw [hσ₃, arrs_setVar]; exact hsrc₂,
+    by rw [hσ₃, arrs_setVar]; exact hidx₂,
+    upd A (Idx q) (expandVal G Msk Src (Idx q)),
+    by rw [hσ₃, arrs_setVar]; exact hdst₂, ?_, ?_⟩
+  · intro r hr₀ hr
+    rw [hp₃] at hr
+    by_cases hsame : Idx r = Idx q
+    · rw [hsame, upd_self]
+    · rw [upd_of_ne _ hsame]
+      apply hdone r hr₀
+      rw [hpq]
+      by_contra hnot
+      have hrq : r = q := by omega
+      exact hsame (by rw [hrq])
+  · intro v hv hnot
+    have hcur : Idx q ≠ v := hnot q hpq₀ (by rw [hp₃]; omega)
+    rw [upd_of_ne _ (Ne.symm hcur)]
+    exact hkeep v hv (fun r hr₀ hr => hnot r hr₀ (by rw [hp₃, hpq] at *; omega))
+
+/-- The block loop itself.  Its potential has one currency for members
+and one for their row slots, so the cost is a sum over precisely the
+visited block. -/
+theorem expandBlockLoop_spec {B w p₀ e : ℕ} (hcsr : CsrGraph G ns O T)
+    (heB : e < B) (hew : e ≤ w)
+    (hB : 1 < B) (hnB : n < B) (hnsB : ns < B)
+    (hIdx : ∀ q, p₀ ≤ q → q < e → Idx q < n)
+    (hMB : ∀ k, k < n → Msk k < B) (hSB : ∀ k, k < n → Src k < B)
+    (hdi : dst ≠ idx) (hdm : dst ≠ msk) (hds : dst ≠ src)
+    (hdo : dst ≠ "off") (hdt : dst ≠ "tgt") :
+    Spec B
+      (fun σ => ExpandBlockInv n ns nt w p₀ e G O T Idx Msk Src A₀
+          idx msk src dst σ ∧ σ.vars "p" = p₀)
+      (expandBlockLoop idx msk src dst)
+      (fun _ σ' => ExpandBlockInv n ns nt w p₀ e G O T Idx Msk Src A₀
+          idx msk src dst σ' ∧ σ'.vars "p" = e)
+      (51 * (e - p₀) + 24 * expandRowSum O Idx p₀ e + 4) := by
+  let I := ExpandBlockInv n ns nt w p₀ e G O T Idx Msk Src A₀ idx msk src dst
+  let Φ : Env → ℕ := fun σ =>
+    51 * (e - σ.vars "p") + 24 * expandRowSum O Idx (σ.vars "p") e
+  refine ((Spec.while_potential (b := .lt (.var "p") (.var "pend"))
+    (c := .seq (.assign "z" (.get idx (.var "p")))
+      (.seq (expandStep msk src dst) (.assign "p" (.add (.var "p") (.lit 1)))))
+    I Φ (fun σ hσ => evalB_condLt_vars (lt_of_le_of_lt hσ.2.2.1 heB)
+      (by rw [hσ.1]; exact heB)) ?_ (fun _ h => h) ?_).pre (fun _ h => h.1)).post ?_
+  · intro σ hI hb
+    have hp₀ : p₀ ≤ σ.vars "p" := hI.2.1
+    have hpe : σ.vars "p" < e := by
+      have hlt := lt_of_condLt_true hb
+      rw [hI.1] at hlt
+      exact hlt
+    obtain ⟨σ', hr, hI', hp'⟩ :=
+      (expandBlockBody_spec (A₀ := A₀) hcsr hp₀ hpe heB hew hB hnB hnsB hIdx
+        hMB hSB hdi hdm hds hdo hdt).run ⟨hI, rfl⟩
+    refine ⟨σ', 24 * Csr.rowLen O (Idx (σ.vars "p")) + 47, hr, hI', ?_⟩
+    change 1 + (Cond.lt (Expr.var "p") (Expr.var "pend")).size +
+        (24 * Csr.rowLen O (Idx (σ.vars "p")) + 47) + Φ σ' ≤ Φ σ
+    simp only [Cond.size, Expr.size, Φ]
+    rw [hp', show e - σ.vars "p" = (e - (σ.vars "p" + 1)) + 1 by omega,
+      expandRowSum_succ_bot O Idx hpe]
+    omega
+  · intro σ hI
+    have hsum : expandRowSum O Idx (σ.vars "p") e ≤ expandRowSum O Idx p₀ e :=
+      expandRowSum_mono_left O Idx (b := e) hI.2.1
+    have hsub : e - σ.vars "p" ≤ e - p₀ := Nat.sub_le_sub_left hI.2.1 e
+    have hmemCost := Nat.mul_le_mul_left 51 hsub
+    have hrowCost := Nat.mul_le_mul_left 24 hsum
+    change Φ σ + 1 + (Cond.lt (Expr.var "p") (Expr.var "pend")).size ≤
+      51 * (e - p₀) + 24 * expandRowSum O Idx p₀ e + 4
+    simp only [Cond.size, Expr.size, Φ]
+    omega
+  · intro σ σ' hpre hpost
+    refine ⟨hpost.1, ?_⟩
+    have hge := le_of_condLt_false hpost.2
+    have hle := hpost.1.2.2.1
+    have heq := hpost.1.1
+    omega
+
+/-- **One cover block, executable.**  `expandBlockCom` first reads the
+two block offsets, then runs `expandBlockLoop`.  The exported charge is
+the block's member count and its own CSR row mass; neither carrier-wide
+quantity occurs. -/
+theorem expandBlockCom_spec {B w m c j : ℕ} (hcsr : CsrGraph G ns O T)
+    (hc : c < n) (hmB : m < B)
+    (hB : 1 < B) (hnB : n < B) (hnsB : ns < B)
+    (hMB : ∀ k, k < n → Msk k < B) (hSB : ∀ k, k < n → Src k < B)
+    (hdi : dst ≠ xmmName j) (hdm : dst ≠ msk) (hds : dst ≠ src)
+    (hdo : dst ≠ "off") (hdt : dst ≠ "tgt") :
+    Spec B
+      (fun σ => CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.vars "n" = n ∧
+        σ.arrs "off" = arrOf (n + 1) O ∧ σ.arrs "tgt" = arrOf nt T ∧ ns ≤ nt ∧
+        σ.arrs msk = arrOf n Msk ∧ σ.arrs src = arrOf n Src ∧
+        σ.arrs dst = arrOf n A₀)
+      (expandBlockCom j msk src dst)
+      (fun _ σ' =>
+        ExpandBlockInv n ns nt w (Xoff c) (Xoff (c + 1)) G O T Xmem Msk Src A₀
+          (xmmName j) msk src dst σ' ∧ σ'.vars "p" = Xoff (c + 1))
+      (51 * blockSize Xoff c +
+        24 * Refine.MassWeight.blockRowSum O Xoff Xmem c + 12) := by
+  classical
+  refine Spec.of_exists (fun σ hσ => ?_)
+  obtain ⟨hcov, hcur, hn, hoff, htgt, hnt, hmsk, hsrc, hdst⟩ := hσ
+  have heM : Xoff (c + 1) ≤ m := hcov.row_le hc
+  have hpE : Xoff c ≤ Xoff (c + 1) := hcov.off_le_succ hc
+  have heB : Xoff (c + 1) < B := lt_of_le_of_lt heM hmB
+  have hew : Xoff (c + 1) ≤ w := le_trans heM hcov.ns_le
+  have hmem : ∀ q, Xoff c ≤ q → q < Xoff (c + 1) → Xmem q < n := by
+    intro q _ hq
+    exact hcov.target (lt_of_lt_of_le hq heM)
+  obtain ⟨σ₁, hr₁, hcov₁, hp₁, he₁, hst₁⟩ :=
+    (CsrWide.loadRow_spec B n m w n (xofName j) (xmmName j) (curName j) "p" "pend"
+      Xoff Xmem (by simp [curName, String.ext_iff]) (by decide)).run
+      ⟨⟨hcov, by omega, hmB⟩, by rw [hcur]; exact hc, by rw [hcur]; omega⟩
+  rw [hcur] at hp₁ he₁
+  have hI₁ : ExpandBlockInv n ns nt w (Xoff c) (Xoff (c + 1))
+      G O T Xmem Msk Src A₀ (xmmName j) msk src dst σ₁ := by
+    refine ⟨he₁, by rw [hp₁], by rw [hp₁]; exact hpE, ?_, ?_, ?_, hnt, ?_, ?_,
+      hcov₁.tgtArr, A₀, ?_, ?_, ?_⟩
+    · rw [hst₁]
+      simp only [vars_setVar, if_neg (by decide : ¬ ("n" = "pend")),
+        if_neg (by decide : ¬ ("n" = "p"))]
+      exact hn
+    · rw [hst₁]; simp only [arrs_setVar]; exact hoff
+    · rw [hst₁]; simp only [arrs_setVar]; exact htgt
+    · rw [hst₁]; simp only [arrs_setVar]; exact hmsk
+    · rw [hst₁]; simp only [arrs_setVar]; exact hsrc
+    · rw [hst₁]; simp only [arrs_setVar]; exact hdst
+    · intro q _ hq
+      rw [hp₁] at hq
+      omega
+    · intro _ _ _
+      rfl
+  obtain ⟨σ₂, hr₂, hI₂, hp₂⟩ :=
+    (expandBlockLoop_spec (A₀ := A₀) hcsr heB hew hB hnB hnsB hmem hMB hSB
+      hdi hdm hds hdo hdt).run ⟨hI₁, hp₁⟩
+  refine ⟨σ₂, 8 +
+      (51 * (Xoff (c + 1) - Xoff c) + 24 * expandRowSum O Xmem (Xoff c) (Xoff (c + 1)) + 4),
+    hr₁.seq hr₂, ?_, hI₂, hp₂⟩
+  simp only [blockSize, Refine.MassWeight.blockRowSum, expandRowSum]
+  omega
+
+/-- The executable expansion's two-currency charge fits the one
+block-weight slot used by the almost-linear recurrence. -/
+theorem expandBlockCost_le_weight (hcsr : RamElim.CsrSimple G ns O T)
+    (hmem : ∀ p, Xoff c ≤ p → p < Xoff (c + 1) → Xmem p < n) :
+    51 * blockSize Xoff c + 24 * Refine.MassWeight.blockRowSum O Xoff Xmem c + 12 ≤
+      200 * (Refine.MassWeight.blockWeight n G Xoff Xmem c + 1) := by
+  rw [Refine.MassWeight.blockRowSum_eq_blockDegSum hcsr hmem,
+    Refine.MassWeight.blockWeight_eq_add_degSum G Xoff Xmem hmem]
+  omega
 
 /-- The block structure of a depth, as the reasoning kit's relation. -/
 theorem csr_of_expandInv {σ : Env} (hcsr : CsrGraph G ns O T)

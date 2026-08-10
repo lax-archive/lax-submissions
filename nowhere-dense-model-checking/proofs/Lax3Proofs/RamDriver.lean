@@ -1410,6 +1410,23 @@ the mask cuts out. -/
 def expandCom (msk src dst : String) : Com :=
   .seq (.assign "z" (.lit 0)) (.while (.lt (.var "z") (.var "n")) (expandStep msk src dst))
 
+/-- The body of an expansion whose outer rows are named by a cover
+block.  The inner CSR scan is still `expandStep`; only the outer carrier
+counter is replaced by the slot pointer `p` and the member read
+`z := idx[p]`. -/
+def expandBlockLoop (idx msk src dst : String) : Com :=
+  .while (.lt (.var "p") (.var "pend"))
+    (.seq (.assign "z" (.get idx (.var "p")))
+      (.seq (expandStep msk src dst)
+        (.assign "p" (.add (.var "p") (.lit 1)))))
+
+/-- One neighbourhood expansion over the current cover block at depth
+`j`.  The row load opens exactly
+`xmmName j[Xoff[cur] .. Xoff[cur+1])`; no carrier scan occurs. -/
+def expandBlockCom (j : ℕ) (msk src dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (expandBlockLoop (xmmName j) msk src dst)
+
 /-- The chain of expansions: `nm a` holds the `a`-neighbourhood of what
 `nm 0` was set to. The names must be pairwise distinct at consecutive
 stages, since a step reads all of its source while it writes its
