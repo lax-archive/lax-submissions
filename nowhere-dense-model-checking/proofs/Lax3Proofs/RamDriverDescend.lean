@@ -1572,6 +1572,35 @@ theorem coverMapCom_supported_spec {B w m c j : ℕ} {x : Expr} {F g₀ : ℕ �
     obtain ⟨hval, hsup⟩ := sparseBlock_eq_of_supported hset hkeep hg₀ hF
     exact ⟨hcov, hcur, ⟨g, hg, hval, hsup⟩, hfr⟩
 
+/-- Clear the current cover block from supported storage.  The result is
+the zero function on the whole carrier, so this is the cleanup operation
+that closes a block-local scratch array's lifecycle. -/
+theorem coverClearCom_supported_spec {B w m c j : ℕ} {g₀ : ℕ → ℕ}
+    (hc : c < n) (hmB : m < B) (hB : 1 < B) (hnB : n < B)
+    (hdx : dst ≠ xofName j) (hdi : dst ≠ xmmName j) :
+    Spec B
+      (fun σ => CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.arrs dst = arrOf n g₀ ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g₀)
+      (coverClearCom j dst)
+      (fun _ σ' =>
+        CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ' ∧
+        σ'.vars (curName j) = c ∧
+        ∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ v, v < n → g v = 0) ∧
+          BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g)
+      (14 * blockSize Xoff c + 12) := by
+  have h := coverMapCom_supported_spec (n := n) (Xoff := Xoff) (Xmem := Xmem)
+    (dst := dst) (B := B) (w := w) (m := m) (c := c) (j := j)
+    (x := .lit 0) (F := fun _ => 0) (g₀ := g₀) (l := [])
+    hc hmB hB hnB hdx hdi
+    (by simp)
+    (by
+      intro σ q _ _ _ _ _
+      exact evalB_lit (by omega))
+  simpa [coverClearCom, Refine.BlockLeaves.blockClearRangeCom,
+    Refine.BlockLeaves.BlockFrozen, Expr.size] using h
+
 /-- The executable expansion's two-currency charge fits the one
 block-weight slot used by the almost-linear recurrence. -/
 theorem expandBlockCost_le_weight (hcsr : RamElim.CsrSimple G ns O T)
