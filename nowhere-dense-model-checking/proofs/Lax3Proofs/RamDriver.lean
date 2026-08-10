@@ -1434,6 +1434,12 @@ destination. -/
 def chainCom (msk : String) (nm : ℕ → String) (r : ℕ) : Com :=
   foldRange (fun a => expandCom msk (nm a) (nm (a + 1))) r
 
+/-- The same expansion chain over the current cover block.  Each stage
+reloads the row because the inner expansion reuses the row-pointer
+scalars; its arrays remain block-supported between stages. -/
+def chainBlockCom (j : ℕ) (msk : String) (nm : ℕ → String) (r : ℕ) : Com :=
+  foldRange (fun a => expandBlockCom j msk (nm a) (nm (a + 1))) r
+
 /-! ### The colour arrays of the next depth
 
 `FormulaTables` pins the packing of the depth-`(j+1)` palette: the

@@ -1708,6 +1708,15 @@ theorem chainCom_succ (msk : String) (nm : ℕ → String) (r : ℕ) :
       .seq (expandCom msk (nm 0) (nm 1)) (chainCom msk (fun a => nm (a + 1)) r) := by
   simp [chainCom, foldRange_succ]
 
+theorem chainBlockCom_zero (j : ℕ) (msk : String) (nm : ℕ → String) :
+    chainBlockCom j msk nm 0 = .skip := rfl
+
+theorem chainBlockCom_succ (j : ℕ) (msk : String) (nm : ℕ → String) (r : ℕ) :
+    chainBlockCom j msk nm (r + 1) =
+      .seq (expandBlockCom j msk (nm 0) (nm 1))
+        (chainBlockCom j msk (fun a => nm (a + 1)) r) := by
+  simp [chainBlockCom, foldRange_succ]
+
 /-- **The radius of a chain that expands first.** The walk peels the
 chain from the *front*, so what its induction produces is `r` units of
 radius around one neighbourhood step; `nbhd_ballOf` is the same
@@ -1784,6 +1793,113 @@ theorem chainCom_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB : n
     refine ⟨σ₂, _, by rw [chainCom_succ]; exact hr₁.seq hr₂, by ring_nf; omega,
       ⟨g', hg'arr, hg'B, ?_⟩, hn₂, hoff₂, htgt₂, hmsk₂⟩
     rw [hg'mark, markSet_congr hgval, markSet_expandVal, ballOf_nbhd]
+
+/-- A supported array crosses a command that does not write its name. -/
+theorem exists_blockSupported_run {B K : ℕ} {cmd : Com} {σ σ' : Env} {a : String}
+    (hr : Run B cmd σ σ' K) (ha : a ∉ cmd.warrs)
+    (h : ∃ F, σ.arrs a = arrOf n F ∧ BlockSupported n p₀ e Idx F) :
+    ∃ F, σ'.arrs a = arrOf n F ∧ BlockSupported n p₀ e Idx F := by
+  obtain ⟨F, hF, hsup⟩ := h
+  exact ⟨F, by rw [hr.frame_arr a ha, hF], hsup⟩
+
+/-- **A radius chain over one cover block.**  This is the compositional
+counterpart of `chainCom_spec`: every destination is supported on entry,
+and `expandBlockCom_supported_spec` proves that the stage both computes the
+same neighbourhood and preserves that support for later stages (including
+the alternating two-array ball chain). -/
+theorem chainBlockCom_spec {B w m c j : ℕ} (hcsr : CsrGraph G ns O T)
+    (hc : c < n) (hmB : m < B) (hB : 1 < B) (hnB : n < B)
+    (hnsB : ns < B) (hnt : ns ≤ nt) (hMB : ∀ k, k < n → Msk k < B) :
+    ∀ (r : ℕ) (nm : ℕ → String) (Sr : ℕ → ℕ),
+      (∀ a, nm a ≠ nm (a + 1)) →
+      (∀ a, nm a ≠ msk) → (∀ a, nm a ≠ xofName j) →
+      (∀ a, nm a ≠ xmmName j) →
+      (∀ a, nm a ≠ "off") → (∀ a, nm a ≠ "tgt") →
+      (∀ k, k < n → Sr k ≤ 1) →
+      BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem Msk →
+      BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem Sr →
+      Spec B
+        (fun σ => CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+          σ.vars (curName j) = c ∧ σ.vars "n" = n ∧
+          σ.arrs "off" = arrOf (n + 1) O ∧ σ.arrs "tgt" = arrOf nt T ∧
+          σ.arrs msk = arrOf n Msk ∧ σ.arrs (nm 0) = arrOf n Sr ∧
+          (∀ a, 0 < a → a ≤ r → ∃ F, σ.arrs (nm a) = arrOf n F ∧
+            BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem F))
+        (chainBlockCom j msk nm r)
+        (fun _ σ' =>
+          (∃ F, σ'.arrs (nm r) = arrOf n F ∧
+            (∀ k, k < n → F k ≤ 1) ∧
+            markSet n F = ballOf (masked G Msk) r (markSet n Sr) ∧
+            BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem F) ∧
+          CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ' ∧
+          σ'.vars (curName j) = c ∧ σ'.vars "n" = n ∧
+          σ'.arrs "off" = arrOf (n + 1) O ∧ σ'.arrs "tgt" = arrOf nt T ∧
+          σ'.arrs msk = arrOf n Msk)
+        ((51 * blockSize Xoff c +
+          24 * Refine.MassWeight.blockRowSum O Xoff Xmem c + 12) * r + 1) := by
+  intro r
+  induction r with
+  | zero =>
+    intro nm Sr _ _ _ _ _ _ hSB hM hS
+    refine Spec.of_exists (fun σ hσ => ?_)
+    obtain ⟨hcov, hcur, hn, hoff, htgt, hmskA, hsrc, -⟩ := hσ
+    exact ⟨σ, 1, by rw [chainBlockCom_zero]; exact Run.skip, by omega,
+      ⟨Sr, hsrc, hSB, by rw [ballOf_zero], hS⟩, hcov, hcur, hn, hoff, htgt, hmskA⟩
+  | succ r ih =>
+    intro nm Sr hne hmk hxo hxm hof htg hSB hM hS
+    refine Spec.of_exists (fun σ hσ => ?_)
+    obtain ⟨hcov, hcur, hn, hoff, htgt, hmskA, hsrc, hmem⟩ := hσ
+    obtain ⟨A₁, hA₁, hA₁sup⟩ := hmem 1 (by omega) (by omega)
+    have hSrB : ∀ k, k < n → Sr k < B :=
+      fun k hk => lt_of_le_of_lt (hSB k hk) hB
+    obtain ⟨σ₁, hr₁, hcov₁, hcur₁, hn₁, hoff₁, htgt₁, hnt₁,
+      hmsk₁, hsrc₁, F, hF, hFval, hFsup⟩ :=
+      (expandBlockCom_supported_spec (A₀ := A₁) (dst := nm 1) (src := nm 0)
+        hcsr hc hmB hB hnB hnsB hMB hSrB (hxo 1) (hxm 1) (hmk 1)
+        (Ne.symm (hne 0)) (hof 1) (htg 1)).run
+        ⟨hcov, hcur, hn, hoff, htgt, hnt, hmskA, hsrc, hA₁, hM, hS, hA₁sup⟩
+    have hFB : ∀ k, k < n → F k ≤ 1 := by
+      intro k hk
+      rw [hFval k hk]
+      rcases expandVal_eq_or G Msk Sr k with h | h
+      · rw [h]
+      · rw [h]
+        exact hSB k hk
+    have hfuture : ∀ a, 0 < a → a ≤ r →
+        ∃ A, σ₁.arrs (nm (a + 1)) = arrOf n A ∧
+          BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem A := by
+      intro a ha har
+      by_cases heq : nm (a + 1) = nm 1
+      · exact ⟨F, by rw [heq]; exact hF, hFsup⟩
+      · apply exists_blockSupported_run hr₁
+        · simpa [expandBlockCom, expandBlockLoop, expandStep, expandSlot, Csr.loadRow,
+            Csr.scan, Com.warrs] using heq
+        · exact hmem (a + 1) (by omega) (by omega)
+    obtain ⟨σ₂, hr₂, ⟨F', hF', hF'B, hF'mark, hF'sup⟩,
+      hcov₂, hcur₂, hn₂, hoff₂, htgt₂, hmsk₂⟩ :=
+      (ih (fun a => nm (a + 1)) F (fun a => hne (a + 1))
+        (fun a => hmk (a + 1)) (fun a => hxo (a + 1)) (fun a => hxm (a + 1))
+        (fun a => hof (a + 1)) (fun a => htg (a + 1)) hFB hM hFsup).run
+        ⟨hcov₁, hcur₁, hn₁, hoff₁, htgt₁, hmsk₁, hF, hfuture⟩
+    refine ⟨σ₂, _, by rw [chainBlockCom_succ]; exact hr₁.seq hr₂, ?_,
+      ⟨F', hF', hF'B, ?_, hF'sup⟩, hcov₂, hcur₂, hn₂, hoff₂, htgt₂,
+      hmsk₂⟩
+    · ring_nf
+      omega
+    · rw [hF'mark, markSet_congr hFval, markSet_expandVal, ballOf_nbhd]
+
+/-- A chain of `r` block expansions spends `r` copies of the block-weight
+slot, plus the fold's terminal skip. -/
+theorem chainBlockCost_le_weight (r : ℕ) (hcsr : RamElim.CsrSimple G ns O T)
+    (hmem : ∀ p, Xoff c ≤ p → p < Xoff (c + 1) → Xmem p < n) :
+    (51 * blockSize Xoff c +
+        24 * Refine.MassWeight.blockRowSum O Xoff Xmem c + 12) * r + 1 ≤
+      200 * r * (Refine.MassWeight.blockWeight n G Xoff Xmem c + 1) + 1 := by
+  calc
+    _ ≤ (200 * (Refine.MassWeight.blockWeight n G Xoff Xmem c + 1)) * r + 1 :=
+      Nat.add_le_add_right
+        (Nat.mul_le_mul_right r (expandBlockCost_le_weight hcsr hmem)) 1
+    _ = _ := by ring
 
 end Expand
 
