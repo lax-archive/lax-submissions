@@ -85,7 +85,7 @@ quantified in `ct`, `ksc`, `Kin`: **no constant closes the turn slot.**
 |---|---|---|
 | `descendCost n ns cap j` | `24n² + 98n + 61 + ballCost + batchCost` | §2.5 |
 | `23·n + 12·mb + 30` | Θ(n) — **no cost-function name, no ledger row** | §2.5 |
-| `colourCost n ns cap mb (sigL …)` | `slotCost·(2(L+1)+mb) + 3` | §2.4 |
+| `colourCost n ns cap mb (sigL …)` | `(15n+6)L+(12n+6)+slotCost·(mb+L+1)+3` | §2.5 |
 | `killCost` | carrier-blind ✓ | — |
 | `killListCost` | carrier-blind ✓ | — |
 | `Kin`, `Ksc` | slots | §2.1 |
@@ -243,6 +243,13 @@ ND-MC already carry the tight bound under one uniform house idiom; no
 **Size: 1 sub-wave** (ESTIMATE).
 
 ### §2.4 The `colourCost` re-association
+
+**Status 2026-08-10: complete on the campaign branch.** `colourCost` now
+retains `oldCom`'s exact flat-pass charge and applies `slotCost` only to the
+batch and colour expansion profiles.  `colourCom_spec` proves the resulting
+bound by normalising the three sequential run costs, with no monotonic
+overcharge.  The targeted `RamDriverDescend` build passes.  The next
+dependency leaf is §2.5.
 
 `oldCom` runs **no expansion** (`RamDriver.lean:1502-1506`; its cost carries no
 `cap` — `RamDriverDescend.lean:1651`) but `colourCost` bills it at

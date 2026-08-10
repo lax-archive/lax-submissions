@@ -2016,8 +2016,10 @@ theorem val_slotPu (d : Fin (sigL cap mb j + 1)) (b : Fin (cap + 1)) :
   · exact (Fin.ext (by simp [Nat.min_eq_left (Nat.lt_succ_iff.mp d.isLt)])).symm
   · exact (Fin.ext (by simp [Nat.min_eq_left (Nat.lt_succ_iff.mp b.isLt)])).symm
 
-/-- The cost of the colouring phase: three folds of one slot apiece. -/
-def colourCost (n ns cap mb L : ℕ) : ℕ := slotCost n ns cap * (2 * (L + 1) + mb) + 3
+/-- The cost of the colouring phase: the flat old-colour pass, followed
+by the two expansion-profile families. -/
+def colourCost (n ns cap mb L : ℕ) : ℕ :=
+  (15 * n + 6) * L + (12 * n + 6) + slotCost n ns cap * (mb + L + 1) + 3
 
 /-- **The colouring of the next depth, discharged.** The arrays of the
 depth-`(j+1)` palette hold `Evaluator.isoColoring` of the
@@ -2096,16 +2098,8 @@ theorem colourCom_spec (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n
         rfl
   refine ⟨σ₃, _, hr₁.seq (hr₂.seq hr₃), ?_, hI₃, ?_, ?_⟩
   · simp only [colourCost]
-    have h1 : (15 * n + 6) * sigL cap mb j ≤ slotCost n ns cap * sigL cap mb j :=
-      Nat.mul_le_mul (by simp only [slotCost]; omega) le_rfl
-    have h2 : slotCost n ns cap * (2 * (sigL cap mb j + 1) + mb) =
-        slotCost n ns cap * sigL cap mb j + slotCost n ns cap +
-          slotCost n ns cap * mb + (slotCost n ns cap * sigL cap mb j + slotCost n ns cap) := by
-      ring
-    have h3 : 12 * n + 6 ≤ slotCost n ns cap := by simp only [slotCost]; omega
-    have h4 : slotCost n ns cap * (sigL cap mb j + 1) =
-        slotCost n ns cap * sigL cap mb j + slotCost n ns cap := by ring
-    omega
+    ring_nf
+    exact le_rfl
   · intro s hs v hv
     obtain ⟨g, h1, h2, -⟩ := key ⟨s, hs⟩
     rw [cellsOf_eq h1 hv]
