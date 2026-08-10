@@ -735,24 +735,22 @@ theorem memPhase_escapes_floor :
 -- empty-arena charge at `phaseClockK 0 = 12` sits far inside the
 -- M-class closed form that same theorem read the bound from.
 #guard (10 ^ 11 + 2 * (10 ^ 11 - 1)) * (phaseClockK 0 + 11) ≤
-  (3 * Lax3Proofs.Refine.G2CostProbe.g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 +
+  (3 * Lax3Proofs.Refine.G2CostProbe.g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 +
     10 ^ 4) * (8 + 1) ^ 3 * ((10 ^ 11 + 2 * (10 ^ 11 - 1)) + 1)
 
 /-- **The interface closes at the measured constants** — the
 arithmetic the thread wave will discharge its slots against, consumed
-from `g2m_exists` (all three phase families at the P4.6 law
+from `g2m_exists` (both live phase families at the P4.6 law
 `68·m + 12`, `R = 0`, the C0 ladder's `ℓ = 3`, `D = 8`, `ct = 200`,
 `ksc = 10⁴`): budgets exist satisfying the M-class phase slots, the
 landed Σ-interface shapes byte for byte, and a weight-linear,
 `(D+1)^ℓ`-geometric root close. -/
 theorem memPhase_interface_closes (Cb : ℕ) :
-    ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
+    ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
       (∀ j w m, m ≤ w →
         Lax3Proofs.Refine.G2ExistsRevalidation.phaseMR 68 12 0 m ≤ Ko j w) ∧
       (∀ j w m, m ≤ w →
         Lax3Proofs.Refine.G2ExistsRevalidation.phaseMR 68 12 0 m ≤ Kc j w) ∧
-      (∀ j w m, m ≤ w →
-        Lax3Proofs.Refine.G2ExistsRevalidation.phaseMR 68 12 0 m ≤ Kd j w) ∧
       (∀ w, Cb * (w + 1) ≤ Kl 3 w) ∧
       (∀ j, Monotone (Kl j)) ∧
       (∀ j < 3, ∀ s : ℕ,
@@ -760,12 +758,12 @@ theorem memPhase_interface_closes (Cb : ℕ) :
           Ks j s) ∧
       (∀ j < 3, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
         (∑ c ∈ Finset.range t, bs c) ≤ 8 * (w + 1) →
-        Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+        Ko j w + (Kc j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
           ≤ Kl j w) ∧
       (∀ w, Kl 0 w ≤
-        (3 * Lax3Proofs.Refine.G2ExistsRevalidation.g2M 68 12 68 12 68 12 0 200 (10 ^ 4) 8 +
+        (3 * Lax3Proofs.Refine.G2ExistsRevalidation.g2M 68 12 68 12 0 200 (10 ^ 4) 8 +
           Cb) * (8 + 1) ^ 3 * (w + 1)) :=
-  Lax3Proofs.Refine.G2ExistsRevalidation.g2m_exists 3 8 Cb 0 68 12 68 12 68 12 200 (10 ^ 4)
+  Lax3Proofs.Refine.G2ExistsRevalidation.g2m_exists 3 8 Cb 0 68 12 68 12 200 (10 ^ 4)
     (fun _ => 10 ^ 4) (fun _ _ => le_rfl)
 
 /-! ## §7 Axioms

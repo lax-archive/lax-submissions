@@ -1629,11 +1629,10 @@ neither is about the program:
 * `hK`, the level's cost side condition in the Σ shape —
   `CostRecurrence.exists_driverCostsSigma` discharges it in one call, up
   to the three-unit shift the compacted loop's `cps` read costs
-  (`RamDriverRoot.levelCost_of_sigma`). Its `Kd` summand is **vestigial**
-  since wave R1.8-T3-flip (c2b): the dead-row sweep it paid for is out of
-  `RamDriver.driverAux`, and the slot is kept only so that the cost
-  interface above — and with it `RamDriverRoot.driverRoot_decides_sentence`'s
-  hypothesis list — is unchanged.
+  (`RamDriverRoot.levelCost_of_sigma`). The old `Kd` summand is gone:
+  wave R1.8-T3-flip (c2b) removed the dead-row sweep it paid for from
+  `RamDriver.driverAux`, so retaining that summand would overstate the
+  program's cost.
 
 **Wave B4-walk-1: the frame's budget is its own.** `hframe` is stated at
 a cost family `Ksf` of its own instead of at `hstep`'s `Ks`. The two are
@@ -1704,7 +1703,7 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
     {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
     {P : Equiv.Perm (Fin n) → (ℕ → ℕ) → Prop}
     {wA : (ℕ → ℕ) → ℕ} {wB : (ℕ → ℕ) → (ℕ → ℕ) → ℕ → ℕ}
-    {Ko Kc Kd Ks Ksf Kl : ℕ → ℕ → ℕ} {Kmass : ℕ}
+    {Ko Kc Ks Ksf Kl : ℕ → ℕ → ℕ} {Kmass : ℕ}
     {d : ℕ} (hB : WordBoundK B n d ns cap mb) (hWB : n + W + 1 < B)
     (hcsr : RamElim.CsrSimple G ns O T)
     (helim : ElimAvail B n) (haug : AugAvail B n) (hcovav : CoverAvail B cap ns G O T)
@@ -1747,7 +1746,7 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
         (∑ k ∈ Finset.range cnum, wB Xoff Xmem (cps k)) ≤ Kmass * (wA M + 1))
     (hK : ∀ (j : ℕ), j < ℓ → ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m) :
     ∀ (j : ℕ), j ≤ ℓ → ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ) (D : Set (Fin n)),
       LevelImplementsD B q_top cap mb R ℓ W ns j φ G O T M Gm C D (Kl j (wA M)) := by
@@ -1993,8 +1992,8 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
       have hsum : (∑ kk ∈ Finset.range cnum, (Ks j (wB Xoff Xmem (cps kk)) + 7 + 4)) =
           ∑ kk ∈ Finset.range cnum, (Ks j (wB Xoff Xmem (cps kk)) + 11) :=
         Finset.sum_congr rfl fun _ _ => by omega
-      have hcost : Ko j (wA M) + (Kc j (wA M) + (Kd j (wA M) +
-            ((∑ kk ∈ Finset.range cnum, (Ks j (wB Xoff Xmem (cps kk)) + 11)) + 6)))
+      have hcost : Ko j (wA M) + (Kc j (wA M) +
+            ((∑ kk ∈ Finset.range cnum, (Ks j (wB Xoff Xmem (cps kk)) + 11)) + 6))
           ≤ Kl j (wA M) :=
         hK j hjl (wA M) cnum hturns (fun c => wB Xoff Xmem (cps c)) hbs
       refine ⟨σ₄, _, hr₁.seq (hr₂.seq hr₄), ?_,

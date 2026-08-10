@@ -56,7 +56,7 @@ named landed theorem; `free` = discharged by choosing the parameter;
 | 21 | `hKbase` | free — defines `Kl ℓ` | note in §A |
 | 22 | `hKo` | **BLOCKED** — size-blind carrier charge | §D |
 | 23 | `hKc` | **BLOCKED** — `12 n²` + `coverCost`'s `100 n²` | §D |
-| 24 | `hKd` | free — defines `Kd` | note in §A |
+| 24 | `hKd` | **RETIRED** — dead sweep absent from the program | §D control 3 |
 | 25 | `hbinj` | producer — `RamDriverRoot.blockInj_slot` | `slot25_hbinj` |
 | 26 | `hdeg` | **BLOCKED** — no constant `Kmass` | §C |
 | 27 | `hKl` | **BLOCKED** — turn sum × #20/#22/#23 | §D |
@@ -64,7 +64,7 @@ named landed theorem; `free` = discharged by choosing the parameter;
 | 29 | `hatoms` | free — finite atom list, `B` large | note in §A |
 | 30 | `hKsent` | free — defines `Ksent` | note in §A |
 
-Twenty-four slots are free or producered. **Six block**, in three
+Twenty-three of the remaining slots are free or producered. **Six block**, in three
 independent groups, and only the first was known when this leaf opened:
 
 * **#6 `hcsr`** — B7 finding 1, repaired by G1 but *not yet at the root*:
@@ -130,7 +130,7 @@ at the expression the slot bounds":
   and `φ` alone; `Kb`/`Kb₀` are the maxima of `RamDriverIO.atomCost n ns`
   over them, and the two `< B` clauses are finitely many constants of the
   parameters, so #12's bound covers them.
-* **#17 `hcostI`, #18 `hKsc`, #21 `hKbase`, #24 `hKd`, #28 `hKdec`,
+* **#17 `hcostI`, #18 `hKsc`, #21 `hKbase`, #28 `hKdec`,
   #30 `hKsent`** — each bounds a closed expression by a free parameter;
   take the parameter to be that expression.
 * **#19 `hKmono`** — `CostRecurrence`'s closed form is monotone in the
@@ -467,18 +467,18 @@ cubic with `W` occurring nowhere.
   `100 * n * n + 50 * n * ns + …` and the phase adds `12 * (n * n)`.
   Repair: E3b (cover composition, `compactCom`-before-`coverSave`).
 * **#27 `hKl`** — the level bill sums `Ks j (bs c)` over `t ≤ m` turns
-  and adds `Ko j m + Kc j m + Kd j m` once. It is the multiplier: it is
+  and adds `Ko j m + Kc j m` once. It is the multiplier: it is
   what turns any per-turn carrier charge into a cubic. It is also the
   slot that is *correct* — the sum over blocks is the shape the mass
   recursion needs — so the repair is in its summands, not in it.
 
-Nothing here is about `hKd` (#24), whose `sweepCost` is linear in `n`,
-nor about `hKbase` (#21). -/
+The former `hKd` slot (#24) has since been retired with the dead sweep;
+none of the floor argument depended on it. Nor does it use `hKbase` (#21). -/
 
 section Floor
 
 variable {n q_top cap mb ns W ℓ Kmass Kdec Ksent : ℕ} {φ : Lax3.FirstOrder.FO 0}
-  {Ksc Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Ksc Ko Kc Ks Kl : ℕ → ℕ → ℕ}
 
 /-- **The descent's carrier charge, isolated.** One line, and it is the
 whole mechanism of the cubic: a turn pays `16 * n²` before it has looked
@@ -510,16 +510,15 @@ the all-empty block profile, so the floor is not about the mass. -/
 theorem hKl_turns (hℓ : 1 ≤ ℓ)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m) :
     n * (Ks 0 0 + 11) ≤ Kl 0 n := by
   have h0 := hKl 0 (by omega) n n le_rfl (fun _ => 0) (by simp)
   simp only [Finset.sum_const, Finset.card_range, smul_eq_mul] at h0
   calc n * (Ks 0 0 + 11)
       ≤ n * (Ks 0 0 + 11) + 6 := Nat.le_add_right _ _
-    _ ≤ Kd 0 n + (n * (Ks 0 0 + 11) + 6) := Nat.le_add_left _ _
-    _ ≤ Kc 0 n + (Kd 0 n + (n * (Ks 0 0 + 11) + 6)) := Nat.le_add_left _ _
-    _ ≤ Ko 0 n + (Kc 0 n + (Kd 0 n + (n * (Ks 0 0 + 11) + 6))) := Nat.le_add_left _ _
+    _ ≤ Kc 0 n + (n * (Ks 0 0 + 11) + 6) := Nat.le_add_left _ _
+    _ ≤ Ko 0 n + (Kc 0 n + (n * (Ks 0 0 + 11) + 6)) := Nat.le_add_left _ _
     _ ≤ Kl 0 n := h0
 
 /-- **The cubic floor, from two slots.** `hKs` (#20) and `hKl` (#27),
@@ -535,7 +534,7 @@ theorem level_cost_floor_cubic (hℓ : 1 ≤ ℓ)
       RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j t) t (Kl (j + 1) t) ≤ Ks j t)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m) :
     16 * (n * n * n) ≤ Kl 0 n := by
   have hs := hKs_carrier hℓ hKs
@@ -554,7 +553,7 @@ theorem level_cost_floor_sharp (hℓ : 2 ≤ ℓ)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m) :
     128 * (n * n * n) ≤ Kl 0 n := by
   -- the nested level pays both size-blind phases on the empty arena
@@ -626,14 +625,13 @@ theorem driverRoot_decides_sentence_floored {B s Kb₀ : ℕ} {Kb N : ℕ → �
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (masked G M) π (2 * cap) v).ncard ≤ Kmass)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (hKdec : RamDriverIO.decodeCost n ns ≤ Kdec)
     (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
@@ -648,7 +646,7 @@ theorem driverRoot_decides_sentence_floored {B s Kb₀ : ℕ} {Kb N : ℕ → �
       (Kdec + (Kl 0 (n + ns) + Ksent)) ∧
     128 * (n * n * n) ≤ Kdec + (Kl 0 (n + ns) + Ksent) := by
   refine ⟨RamDriverRoot.driverRoot_decides_sentence hx hns hO hT hxB hcsr hpad0 hrank hcap
-    hmb hℓ hB hWB hpow hQ hbnd hcostI hKsc hKmono hKs hKbase hKo hKc hKd hbinj hdeg hKl
+    hmb hℓ hB hWB hpow hQ hbnd hcostI hKsc hKmono hKs hKbase hKo hKc hbinj hdeg hKl
     hKdec hatoms hKsent, ?_⟩
   have hfloor := level_cost_floor_sharp hℓ2 hKs hKo hKc hKl
   have hmono : Kl 0 n ≤ Kl 0 (n + ns) := hKmono 0 (Nat.le_add_right n ns)
@@ -681,9 +679,9 @@ theorem hKc_charges_empty_arena
   have : 100 * n * n = 100 * (n * n) := by ring
   omega
 
-/-- **Control 3 — `hKd` is *not* responsible.** The dead-row sweep is
-linear in the carrier, so a floor derivation that used it would be about
-the wrong slot; the sweep's verdict for #24 is "free", and this is why.
+/-- **Control 3 — retiring `hKd` was cost-correct.** The old dead-row sweep
+was linear in the carrier, and no floor derivation above used it. This
+historical cost identity records why removing #24 does not affect that floor.
 -/
 theorem sweepCost_linear (q_top cap mb jd : ℕ) (φ : Lax3.FirstOrder.FO 0) :
     ∃ K : ℕ, ∀ n : ℕ, Refine.DeadSweep.sweepCost q_top cap mb jd n φ = K * n + 6 :=
@@ -741,7 +739,7 @@ width path deleted entirely. -/
 section Distinction
 
 variable {n q_top cap mb ns W ℓ Kmass : ℕ} {φ : Lax3.FirstOrder.FO 0}
-  {Ksc Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Ksc Ko Kc Ks Kl : ℕ → ℕ → ℕ}
 
 /-- The space statement, cited at its landed name. -/
 theorem width_is_bounded {L : Layout} {B w : ℕ} (hfit : L.FitsWords B w)
@@ -759,7 +757,7 @@ theorem floor_has_no_width (hℓ : 1 ≤ ℓ)
       RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j t) t (Kl (j + 1) t) ≤ Ks j t)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m) :
     16 * (n * n * n) ≤ Kl 0 n :=
   level_cost_floor_cubic hℓ hKs hKl

@@ -105,7 +105,7 @@ section Plug
 variable {n : ℕ} {B q_top cap mb ns W ℓ s Kmass : ℕ} {N : ℕ → ℕ}
   {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ} {x : List ℕ}
   {Kb : ℕ → ℕ} {Kb₀ Ki₀ Kdec Ksent : ℕ} {Ki Ksc : ℕ → ℕ → ℕ}
-  {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Ko Kc Ks Kl : ℕ → ℕ → ℕ}
 
 open Classical in
 /-- **The plug check.** `RootPre` is the precondition the landed root
@@ -138,14 +138,13 @@ theorem driverRoot_decides_sentence_pre
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (RamBfs.masked G M) π (2 * cap) v).ncard ≤ Kmass)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (hKdec : RamDriverIO.decodeCost n ns ≤ Kdec)
     (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
@@ -157,7 +156,7 @@ theorem driverRoot_decides_sentence_pre
       (fun _ σ' => σ'.out = [if Lax3.FirstOrder.Sat G Fin.elim0 φ then 1 else 0])
       (Kdec + (Kl 0 (n + ns) + Ksent)) :=
   RamDriverRoot.driverRoot_decides_sentence hx hns hO hT hxB hcsr hpad0 hrank hcap hmb hℓ
-    hB hWB hpow hQ hbnd hcostI hKsc hKmono hKs hKbase hKo hKc hKd hbinj hdeg hKl
+    hB hWB hpow hQ hbnd hcostI hKsc hKmono hKs hKbase hKo hKc hbinj hdeg hKl
     hKdec hatoms hKsent
 
 end Plug

@@ -812,7 +812,7 @@ so no slot-conditional degree can feed them. F-c-3 threaded `P` through
 carries `P π ord` beside `OrdersBy` there (a landed-file wave), the
 readings stay hypotheses here, in the frozen slots' own shape. -/
 theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ → ℕ}
-    {Ki Ksc Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+    {Ki Ksc Ko Kc Ks Kl : ℕ → ℕ → ℕ}
     (hcap : cap = rhoMinus 0 q_top) (hmb : mb = ℓ * (2 * cap + 1)) (hℓ : ℓ = N (2 * s + 2))
     (hB : WordBoundK B n Kmass ns cap mb) (hWB : n + W + 1 < B) (hpow : 2 ^ sigL cap mb ℓ < B)
     (hcsr : RamElim.CsrSimple G ns O T)
@@ -838,12 +838,11 @@ theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ → ℕ}
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCostR n ns W R ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (horder : ∀ j < ℓ, ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ),
       OrderImplements B n R W cap mb ns j G O T M Gm C (DegOrder n G cap Kmass)
@@ -854,7 +853,7 @@ theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ → ℕ}
         (Kl j (arenaWeight n G M)) :=
   -- **wave R1.8-T3-flip (c2b)**: the induction runs over a pre-written domain and
   -- this restatement instantiates it at `∅`, exactly as `RamDriverRoot.levelAt`
-  -- does; the sweep argument is gone and `hKd` is vestigial
+  -- does; the sweep argument and its obsolete cost summand are gone
   fun j hj M Gm C => RamDriverCluster.levelImplements
     (Ksf := fun j t => Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ
       (Ksc j (n + ns)) t (Kl (j + 1) t))
@@ -1058,7 +1057,7 @@ section Main
 
 variable {n : ℕ} {B q_top cap mb ns W ℓ s R Kmass : ℕ} {N : ℕ → ℕ}
   {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)} {x : List ℕ}
-  {Kb : ℕ → ℕ} {Kb₀ Kdec Ksent : ℕ} {Ki Ksc Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Kb : ℕ → ℕ} {Kb₀ Kdec Ksent : ℕ} {Ki Ksc Ko Kc Ks Kl : ℕ → ℕ → ℕ}
 
 open Classical in
 /-- **The restated root at `R = 0`** —
@@ -1108,14 +1107,13 @@ theorem driverRootD_decides_sentence
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n (dedupNs x) W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n (dedupNs x) ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (RamBfs.masked G M) π (2 * cap) v).ncard ≤ Kmass)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (hKdec : decodeCost n ns + dedupCost n ns + 4 ≤ Kdec)
     (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
@@ -1141,7 +1139,7 @@ theorem driverRootD_decides_sentence
   have h := Lax3Proofs.RamDriverRoot.levelAt (ns := dedupNs x) (O := dedupOffset x)
     (T := dedupTarget x) hcap hmb hℓ hBD hWB hpow
     (Lax3Proofs.RamDriverDedup.csrSimple_dedup hx) hQ hbnd hcostI hKsc hKmono hKs hKbase
-    hKo hKc hKd hbinj hdeg hKl 0 (Nat.zero_le ℓ) M Gm C
+    hKo hKc hbinj hdeg hKl 0 (Nat.zero_le ℓ) M Gm C
   rwa [Refine.MassWeight.arenaWeight_root (Lax3Proofs.RamDriverDedup.csrSimple_dedup hx)
     hall] at h
 
@@ -1184,12 +1182,11 @@ theorem driverRootD_decides_sentenceR
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCostR n (dedupNs x) W R ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n (dedupNs x) ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (hKdec : decodeCost n ns + dedupCost n ns + 4 ≤ Kdec)
     (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
@@ -1225,7 +1222,7 @@ theorem driverRootD_decides_sentenceR
   have h := levelAtR (ns := dedupNs x) (O := dedupOffset x)
     (T := dedupTarget x) hcap hmb hℓ hBD hWB hpow
     (Lax3Proofs.RamDriverDedup.csrSimple_dedup hx) hptr hexit hQ hbnd hcostI hKsc hKmono hKs
-    hKbase hKo hKc hKd hbinj hKl horder hfr 0 (Nat.zero_le ℓ) M Gm C
+    hKbase hKo hKc hbinj hKl horder hfr 0 (Nat.zero_le ℓ) M Gm C
   rwa [Refine.MassWeight.arenaWeight_root (Lax3Proofs.RamDriverDedup.csrSimple_dedup hx)
     hall] at h
 
@@ -1257,14 +1254,13 @@ theorem driverRootD_decides_sentence_pre
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n (dedupNs x) W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n (dedupNs x) ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (RamBfs.masked G M) π (2 * cap) v).ncard ≤ Kmass)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (hKdec : decodeCost n ns + dedupCost n ns + 4 ≤ Kdec)
     (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
@@ -1276,7 +1272,7 @@ theorem driverRootD_decides_sentence_pre
       (fun _ σ' => σ'.out = [if Lax3.FirstOrder.Sat G Fin.elim0 φ then 1 else 0])
       (Kdec + (Kl 0 (n + dedupNs x) + Ksent)) :=
   driverRootD_decides_sentence hx hns hxB hrank hcap hmb hℓ hB hWB hnsW hpow hQ hbnd
-    hcostI hKsc hKmono hKs hKbase hKo hKc hKd hbinj hdeg hKl hKdec hatoms hKsent
+    hcostI hKsc hKmono hKs hKbase hKo hKc hbinj hdeg hKl hKdec hatoms hKsent
 
 end Main
 

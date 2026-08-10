@@ -13,7 +13,7 @@ directions** (plan rev 3, G-road; design doc
 `plans/nowhere-dense-model-checking/g2-cost-design.md`).
 
 `C0Probe.level_interface_floor` proved that the LANDED side conditions
-`hKo`/`hKc`/`hKd`/`hKbase` of `RamDriverRoot.driverRoot_decides_sentence`
+`hKo`/`hKc`/`hKbase` of `RamDriverRoot.driverRoot_decides_sentence`
 admit no level budget below `n·(60·W + 1600·n)`, and `60·n³` on the C0
 width path. This file is the design gate for the repair, under the
 standing rule that prose verdicts do not gate work: every proposed form
@@ -208,14 +208,14 @@ satisfies every proposed side condition **verbatim** and closes to
 sentence, prologue/allocation at `W = chainWidthE`) accounted. -/
 
 /-- The per-level constant of the proposed recurrence. -/
-def g2A (d D₁ R kc kd ct ksc D : ℕ) : ℕ :=
-  (2310 + 16840 * R) * bsq d D₁ R + ((kc + kd) + ((ct + ksc + 3) * (D + 1) + 14))
+def g2A (d D₁ R kc ct ksc D : ℕ) : ℕ :=
+  (2310 + 16840 * R) * bsq d D₁ R + (kc + ((ct + ksc + 3) * (D + 1) + 14))
 
 /-- **The existence probe.** For every level count, mass coefficient,
 round budget and per-phase coefficient family there are cost functions
 satisfying, verbatim:
 
-* the four **proposed** phase forms (the new `hKo`/`hKc`/`hKd`/`hKbase`
+* the three **proposed** phase forms (the new `hKo`/`hKc`/`hKbase`
   — arena-charged, so `O(1)` on the empty arena);
 * the landed Σ-interface shapes of `driverRoot_decides_sentence` —
   `hKmono`, `hKs` (at the proposed size-reading turn cost) and `hKl`
@@ -224,30 +224,29 @@ satisfying, verbatim:
 with the root budget geometric in `D + 1` and linear in the weight.
 The witness is `CostRecurrence`'s canonical solution; nothing is
 bespoke. -/
-theorem g2_exists (ℓ D Cb R d D₁ kc kd ct ksc : ℕ) (Ksc : ℕ → ℕ)
+theorem g2_exists (ℓ D Cb R d D₁ kc ct ksc : ℕ) (Ksc : ℕ → ℕ)
     (hKsc : ∀ j < ℓ, Ksc j ≤ ksc) :
-    ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
+    ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
       -- proposed phase forms (the new root slots)
       (∀ j w, orderCostA (bsq d D₁ R) R w ≤ Ko j w) ∧
       (∀ j w, kc * (w + 1) ≤ Kc j w) ∧
-      (∀ j w, kd * (w + 1) ≤ Kd j w) ∧
       (∀ w, Cb * (w + 1) ≤ Kl ℓ w) ∧
       -- landed Σ-interface shapes, verbatim
       (∀ j, Monotone (Kl j)) ∧
       (∀ j < ℓ, ∀ s : ℕ, turnCostSizeA ct (Ksc j) s (Kl (j + 1) s) ≤ Ks j s) ∧
       (∀ j < ℓ, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
         (∑ c ∈ Finset.range t, bs c) ≤ D * (w + 1) →
-        Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+        Ko j w + (Kc j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
           ≤ Kl j w) ∧
       -- the closed form: geometric in `D + 1`, linear in the weight
-      (∀ w, Kl 0 w ≤ (ℓ * g2A d D₁ R kc kd ct ksc D + Cb) * (D + 1) ^ ℓ * (w + 1)) := by
+      (∀ w, Kl 0 w ≤ (ℓ * g2A d D₁ R kc ct ksc D + Cb) * (D + 1) ^ ℓ * (w + 1)) := by
   classical
   obtain ⟨Kl, Kt, hbase, hmono, hKt, hKlS, hKl0, -⟩ :=
     CostRecurrence.exists_driverCostsSigma ℓ D Cb
-      (fun _ => (2310 + 16840 * R) * bsq d D₁ R) (fun _ => kc + kd)
+      (fun _ => (2310 + 16840 * R) * bsq d D₁ R) (fun _ => kc)
       (fun j => ct + Ksc j + 3)
       (fun _ w => orderCostA (bsq d D₁ R) R w)
-      (fun _ w => kc * (w + 1) + kd * (w + 1))
+      (fun _ w => kc * (w + 1))
       (fun j s => (ct + Ksc j) * (s + 1) + 3)
       (fun j s Kin => turnCostSizeA ct (Ksc j) s Kin + 3)
       (fun _ _ => le_rfl)
@@ -255,9 +254,8 @@ theorem g2_exists (ℓ D Cb R d D₁ kc kd ct ksc : ℕ) (Ksc : ℕ → ℕ)
       (fun j s => by nlinarith)
       (fun j s Kin => by simp only [turnCostSizeA]; omega)
   refine ⟨fun _ w => orderCostA (bsq d D₁ R) R w, fun _ w => kc * (w + 1),
-    fun _ w => kd * (w + 1),
     fun j s => turnCostSizeA ct (Ksc j) s (Kl (j + 1) s), Kl,
-    fun _ _ => le_rfl, fun _ _ => le_rfl, fun _ _ => le_rfl, hbase, hmono,
+    fun _ _ => le_rfl, fun _ _ => le_rfl, hbase, hmono,
     fun _ _ _ => le_rfl, ?_, ?_⟩
   · -- the landed `hKl` shape, from the solver's via the +3 turn shift
     exact RamDriverRoot.levelCost_of_sigma
@@ -268,11 +266,11 @@ theorem g2_exists (ℓ D Cb R d D₁ kc kd ct ksc : ℕ) (Ksc : ℕ → ℕ)
     refine Nat.mul_le_mul_right _ ?_
     have hs : (∑ j ∈ Finset.range ℓ,
           CostRecurrence.driverASigma (fun _ => (2310 + 16840 * R) * bsq d D₁ R)
-            (fun _ => kc + kd) (fun j => ct + Ksc j + 3) D j * (D + 1) ^ j) +
+            (fun _ => kc) (fun j => ct + Ksc j + 3) D j * (D + 1) ^ j) +
           Cb * (D + 1) ^ ℓ =
         CostRecurrence.solve
           (CostRecurrence.driverASigma (fun _ => (2310 + 16840 * R) * bsq d D₁ R)
-            (fun _ => kc + kd) (fun j => ct + Ksc j + 3) D)
+            (fun _ => kc) (fun j => ct + Ksc j + 3) D)
           (fun _ => D + 1) Cb ℓ 0 :=
       (CostRecurrence.solve_const _ _ _ _).symm
     rw [hs]
@@ -325,27 +323,27 @@ theorem g2_c0_shape {c ε : ℝ} (hc : 0 ≤ c) (hε : 0 < ε) {ℓ : ℕ} (hℓ
 The instance family of `C0Probe`'s `#guard`s — sparse members,
 `|x| = 3·n + 3`, constants chosen before `n`. Numerals: `R = 1`,
 `d = D₁ = 2` (so `budget = 14`, `bsq = 225`), `D = 8`, `ℓ = 3`,
-`kc = kd = ct = ksc = Cb = 10⁴`, root coefficients
+`kc = ct = ksc = Cb = 10⁴`, root coefficients
 `kdec = 54` (decode honesty below), `ksent = 10⁴`,
 `kpro = 70·bsq` (prologue/allocation at `W = chainWidthE`). The star
 carrier: `ns = 2·(n − 1)`, weight `w = n + ns`. -/
 
 -- the witness's root budget at the numerals, as the closed form of
 -- `g2_exists` + `g2_root_close`
-#guard g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 =
-  (2310 + 16840) * 225 + ((10 ^ 4 + 10 ^ 4) + ((2 * 10 ^ 4 + 3) * 9 + 14))
+#guard g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 =
+  (2310 + 16840) * 225 + (10 ^ 4 + ((2 * 10 ^ 4 + 3) * 9 + 14))
 
 -- **ε = 1** (the guard C0Probe's floor LOST at `c = 10⁹`, `n = 10⁹`):
 -- the witness budget clears the same budget with 8 orders to spare
 #guard
-  ((70 * 225 + 46 + 10 ^ 4 + (3 * g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 + 10 ^ 4))
+  ((70 * 225 + 46 + 10 ^ 4 + (3 * g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 + 10 ^ 4))
       * (8 + 1) ^ 3 * (10 ^ 9 + 2 * (10 ^ 9 - 1) + 1))
     ≤ 10 ^ 9 * (3 * 10 ^ 9 + 4) ^ 2
 
 -- **ε = 1/2** (C0Probe's second guard, squared form): at `n = 10⁸` the
 -- witness budget clears `c·(3n+4)^{3/2}` at `c = 10⁷`
 #guard
-  ((70 * 225 + 46 + 10 ^ 4 + (3 * g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 + 10 ^ 4))
+  ((70 * 225 + 46 + 10 ^ 4 + (3 * g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 + 10 ^ 4))
       * (8 + 1) ^ 3 * (10 ^ 8 + 2 * (10 ^ 8 - 1) + 1)) ^ 2
     ≤ (10 ^ 7) ^ 2 * (3 * 10 ^ 8 + 4) ^ 3
 
@@ -376,34 +374,33 @@ the width slot at the repaired `chainWidthE` — is false: the
 `g2_exists` witness satisfies every proposed side condition with a
 root budget strictly below the floor. -/
 theorem level_interface_floor_analogue_refuted :
-    ¬ (∀ (n ns W ℓ D R d D₁ kc kd ct ksc Cb : ℕ) (Ksc : ℕ → ℕ)
-        (Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ),
+    ¬ (∀ (n ns W ℓ D R d D₁ kc ct ksc Cb : ℕ) (Ksc : ℕ → ℕ)
+        (Ko Kc Ks Kl : ℕ → ℕ → ℕ),
         2 ≤ ℓ → chainWidthE n ns d D₁ R ≤ W →
         (∀ j < ℓ, Ksc j ≤ ksc) →
         (∀ j w, orderCostA (bsq d D₁ R) R w ≤ Ko j w) →
         (∀ j w, kc * (w + 1) ≤ Kc j w) →
-        (∀ j w, kd * (w + 1) ≤ Kd j w) →
         (∀ w, Cb * (w + 1) ≤ Kl ℓ w) →
         (∀ j, Monotone (Kl j)) →
         (∀ j < ℓ, ∀ s : ℕ, turnCostSizeA ct (Ksc j) s (Kl (j + 1) s) ≤ Ks j s) →
         (∀ j < ℓ, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
           (∑ c ∈ Finset.range t, bs c) ≤ D * (w + 1) →
-          Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+          Ko j w + (Kc j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
             ≤ Kl j w) →
-        (∀ w, Kl 0 w ≤ (ℓ * g2A d D₁ R kc kd ct ksc D + Cb) * (D + 1) ^ ℓ * (w + 1)) →
+        (∀ w, Kl 0 w ≤ (ℓ * g2A d D₁ R kc ct ksc D + Cb) * (D + 1) ^ ℓ * (w + 1)) →
         n * (60 * W + 1600 * n) ≤ Kl 0 (n + ns)) := by
   intro h
   -- the witness at the ε = 1 numerals
-  obtain ⟨Ko, Kc, Kd, Ks, Kl, hKo, hKc, hKd, hbase, hmono, hKs, hKl, hcl⟩ :=
-    g2_exists 3 8 (10 ^ 4) 1 2 2 (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4)
+  obtain ⟨Ko, Kc, Ks, Kl, hKo, hKc, hbase, hmono, hKs, hKl, hcl⟩ :=
+    g2_exists 3 8 (10 ^ 4) 1 2 2 (10 ^ 4) (10 ^ 4) (10 ^ 4)
       (fun _ => 10 ^ 4) (fun _ _ => le_rfl)
   have hfloor := h (10 ^ 9) (2 * (10 ^ 9 - 1)) (chainWidthE (10 ^ 9) (2 * (10 ^ 9 - 1)) 2 2 1)
-    3 8 1 2 2 (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4) (fun _ => 10 ^ 4)
-    Ko Kc Kd Ks Kl (by omega) le_rfl (fun _ _ => le_rfl)
-    hKo hKc hKd hbase hmono hKs hKl hcl
+    3 8 1 2 2 (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4) (fun _ => 10 ^ 4)
+    Ko Kc Ks Kl (by omega) le_rfl (fun _ _ => le_rfl)
+    hKo hKc hbase hmono hKs hKl hcl
   have hup := hcl (10 ^ 9 + 2 * (10 ^ 9 - 1))
   have : (10 ^ 9) * (60 * chainWidthE (10 ^ 9) (2 * (10 ^ 9 - 1)) 2 2 1 + 1600 * 10 ^ 9) ≤
-      (3 * g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 + 10 ^ 4) * (8 + 1) ^ 3 *
+      (3 * g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 + 10 ^ 4) * (8 + 1) ^ 3 *
         (10 ^ 9 + 2 * (10 ^ 9 - 1) + 1) := le_trans hfloor hup
   exact absurd this (by decide +kernel)
 
@@ -669,7 +666,8 @@ deleted.
 the implication list: `RamDriver.baseCom` walks the depth's member list,
 its charge is read at the arena, and `hKbase_paid` discharges the slot
 inside `g2_plug` from the witness's own base clause at any
-`Cb ≥ sweepCoeffA`. The other four antecedents stand, so the wave gate
+`Cb ≥ sweepCoeffA`. The other three live antecedents stand; the dead-sweep
+row was retired when its absent phase was removed from the root budget. So the wave gate
 ("the witness fits the real slots") is still NOT met, and this section
 is the honest compiled record of exactly how far it is from met.
 
@@ -680,7 +678,7 @@ updated by R1.8-T4b, 2026-08-08):
 |---|---|---|---|
 | `hKo` | `orderImplements₀` at `orderPhaseCost n ns W` | NO (`hKo_gap`) | member-list order phase (design §3(c); `OrderBridge`'s seam) |
 | `hKc` | `coverImplements` at `coverPhaseCost n ns` | NO (`hKc_gap`) | block-driven centre body + alive-prefix copy + R1.6 member threading (`CoverBlock` F-2/F-3) |
-| `hKd` | `sweepImplements`, loop over the carrier | NO (`hKd_gap`) | member/dead-list sweep (R1.8; caveat: the sweep's WORK is the dead set) — vestigial slot since the flip |
+| retired `hKd` | no program phase | n/a (`hKd_gap` is historical) | removed from the root and recurrence by `b4-iface` |
 | `hKbase` | `baseImplementsD`, the table fold at the depth's MEMBER LIST (R1.8-T4b) | **YES** (`hKbase_paid`, at `sweepCoeffA`) | — landed; `hKbase_gap`/`hKbase_gap_any` are now the record of the carrier reading it replaced |
 | `hKs` | `turnCostSize = turnCost` (descend `16·n²`, scatter `Θ(n·t)`) | NO (`hKs_gap`, `hbnd_gap`) | `BlockLeaves` Com-level swap into `descendCom` + `scatBlockCom` into the turn |
 -/
@@ -713,10 +711,10 @@ theorem hKc_gap (kc ka D : ℕ) :
   simp only [RamDriverCompose.coverPhaseCost] at h
   nlinarith [Nat.zero_le (RamCover.coverCost (CoverBlock.kcov kc ka D + 1) 0)]
 
-/-- **`hKd` gap, compiled**, generically in the formula: the landed
-sweep walks the carrier, so `sweepCoeffA · (w + 1)` cannot pay it on a
-light arena — for every formula and depth there is a carrier size
-refuting it at `w = 0`. -/
+/-- **Historical `hKd` gap, compiled**, generically in the formula. The
+former sweep cost cannot be paid at a light arena. The root no longer has
+this slot because the corresponding sweep is absent from the program; this
+theorem remains only as the negative control that justified retiring it. -/
 theorem hKd_gap (q_top cap mb jd : ℕ) (φ : Lax3.FirstOrder.FO 0) :
     ∃ n : ℕ, ¬ (Refine.DeadSweep.sweepCost q_top cap mb jd n φ ≤
       sweepCoeffA q_top cap mb jd φ * (0 + 1)) := by
@@ -825,8 +823,8 @@ is `Kl j (arenaWeight n G M)`, and `Kmass := D` bounds block-WEIGHT sums
 via `hdeg`), and **since wave R1.8-T4b its base clause**: `hKbase_paid`
 turns `∀ w, Cb · (w + 1) ≤ Kl ℓ w` into the driver's real base slot at
 any `Cb` above `sweepCoeffA`, which is the new hypothesis `hCb`. What it
-does not satisfy is left as the four remaining explicit implications:
-three carrier phase dominations and the carrier turn domination, i.e.
+does not satisfy is left as the three remaining explicit implications:
+the order and cover phase dominations and the carrier turn domination, i.e.
 exactly the gap ledger above. When the missing engines land, each
 antecedent becomes dischargeable at the witness's own budgets and this
 theorem's implication chain collapses into the full plug the wave gate
@@ -838,7 +836,7 @@ IS the probe's forms. -/
 theorem g2_plug {n : ℕ} {B q_top cap mb ns W ℓ s : ℕ} {N : ℕ → ℕ}
     {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
     {Ksc : ℕ → ℕ} {KbR : ℕ → ℕ} {KiR KscR : ℕ → ℕ → ℕ}
-    (D Cb d D₁ kc kd ct kscM : ℕ)
+    (D Cb d D₁ kc ct kscM : ℕ)
     (hKscM : ∀ j < ℓ, Ksc j ≤ kscM)
     -- the base slot's coefficient (wave R1.8-T4b): above it, the witness's own
     -- base clause IS the driver's base slot, so that row leaves the ledger
@@ -864,29 +862,27 @@ theorem g2_plug {n : ℕ} {B q_top cap mb ns W ℓ s : ℕ} {N : ℕ → ℕ}
       KiR j z * (tablesAt q_top cap mb φ j).length + 1 ≤ KscR j z)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (RamBfs.masked G M) π (2 * cap) v).ncard ≤ D) :
-    ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
+    ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
       -- the §2 forms the witness satisfies (the target interface)
       (∀ j w, orderCostA (bsq d D₁ 0) 0 w ≤ Ko j w) ∧
       (∀ j w, kc * (w + 1) ≤ Kc j w) ∧
-      (∀ j w, kd * (w + 1) ≤ Kd j w) ∧
       (∀ w, Cb * (w + 1) ≤ Kl ℓ w) ∧
       (∀ j < ℓ, ∀ t : ℕ, turnCostSizeA ct (Ksc j) t (Kl (j + 1) t) ≤ Ks j t) ∧
-      (∀ w, Kl 0 w ≤ (ℓ * g2A d D₁ 0 kc kd ct kscM D + Cb) * (D + 1) ^ ℓ * (w + 1)) ∧
-      -- THE PLUG: the five carrier dominations are EXACTLY what still
+      (∀ w, Kl 0 w ≤ (ℓ * g2A d D₁ 0 kc ct kscM D + Cb) * (D + 1) ^ ℓ * (w + 1)) ∧
+      -- THE PLUG: the three carrier dominations are EXACTLY what still
       -- separates this family from the re-threaded root
       ((∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m) →
        (∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m) →
-       (∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m) →
        (∀ j < ℓ, ∀ t : ℕ,
          RamDriverRoot.turnCostSize n ns cap mb q_top j φ (KscR j t) t (Kl (j + 1) t)
            ≤ Ks j t) →
        ∀ j ≤ ℓ, ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ),
          LevelImplements B q_top cap mb 0 ℓ W ns j φ G O T M Gm C
            (Kl j (Refine.MassWeight.arenaWeight n G M))) := by
-  obtain ⟨Ko, Kc, Kd, Ks, Kl, hKo, hKc, hKd, hbase, hmono, hKsA, hKl, hcl⟩ :=
-    g2_exists ℓ D Cb 0 d D₁ kc kd ct kscM Ksc hKscM
-  refine ⟨Ko, Kc, Kd, Ks, Kl, hKo, hKc, hKd, hbase, hKsA, hcl, ?_⟩
-  intro hKoR hKcR hKdR hKsR
+  obtain ⟨Ko, Kc, Ks, Kl, hKo, hKc, hbase, hmono, hKsA, hKl, hcl⟩ :=
+    g2_exists ℓ D Cb 0 d D₁ kc ct kscM Ksc hKscM
+  refine ⟨Ko, Kc, Ks, Kl, hKo, hKc, hbase, hKsA, hcl, ?_⟩
+  intro hKoR hKcR hKsR
   -- **the base slot, discharged** (wave R1.8-T4b): the landed walk is the
   -- member list's, so `hKbase_paid` puts its charge under `Cb · (m + 1)`, and
   -- the witness's own base clause carries it from there
@@ -894,7 +890,7 @@ theorem g2_plug {n : ℕ} {B q_top cap mb ns W ℓ s : ℕ} {N : ℕ → ℕ}
     le_trans (le_trans (hKbase_paid q_top cap mb ℓ m φ)
       (Nat.mul_le_mul_right _ hCb)) (hbase m)
   exact RamDriverRoot.levelAt hcap hmb hℓ hB hWB hpow hcsr hQ hbnd hcostI hKscReal
-    hmono hKsR hKbaseR hKoR hKcR hKdR (RamDriverRoot.blockInj_slot G cap) hdeg hKl
+    hmono hKsR hKbaseR hKoR hKcR (RamDriverRoot.blockInj_slot G cap) hdeg hKl
 
 end E6Plug
 

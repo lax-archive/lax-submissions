@@ -41,9 +41,8 @@ namespace Lax3Proofs.Refine.DeadRowProbe
 
 * the order and cover slots at the measured M-class law `68·m + 12`
   (`OrderSigProbeM`, unchanged);
-* the DEAD slot `Kd` at the CONSTANT `12` — the per-level dead-sweep
-  pass is GONE; what remains per level is `O(1)` bookkeeping (the
-  outside count and default bit ride the turn);
+* no dead slot — the per-level dead-sweep pass is gone, and its residual
+  bookkeeping rides the turn rather than a fictitious phase budget;
 * the turn coefficient at the constant this theorem is stated at,
   `200 + 84`: BlockLeaves' measured `200` plus the measured kill-time
   write at the probe's instance (`killClock 2 · 3 = 84` — three kills,
@@ -70,13 +69,11 @@ leaf coefficient plus the whole measured kill write fit the slot's
 #guard 200 + killClock 2 100 3 ≤ 284 * (0 + 1)
 
 theorem deadRow_interface_closes (Cb : ℕ) :
-    ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
+    ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
       (∀ j w m, m ≤ w →
         Lax3Proofs.Refine.G2ExistsRevalidation.phaseMR 68 12 0 m ≤ Ko j w) ∧
       (∀ j w m, m ≤ w →
         Lax3Proofs.Refine.G2ExistsRevalidation.phaseMR 68 12 0 m ≤ Kc j w) ∧
-      (∀ j w m, m ≤ w →
-        Lax3Proofs.Refine.G2ExistsRevalidation.phaseMR 0 12 0 m ≤ Kd j w) ∧
       (∀ w, Cb * (w + 1) ≤ Kl 3 w) ∧
       (∀ j, Monotone (Kl j)) ∧
       (∀ j < 3, ∀ s : ℕ,
@@ -84,12 +81,12 @@ theorem deadRow_interface_closes (Cb : ℕ) :
           Ks j s) ∧
       (∀ j < 3, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
         (∑ c ∈ Finset.range t, bs c) ≤ 8 * (w + 1) →
-        Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+        Ko j w + (Kc j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
           ≤ Kl j w) ∧
       (∀ w, Kl 0 w ≤
-        (3 * Lax3Proofs.Refine.G2ExistsRevalidation.g2M 68 12 68 12 0 12 0 284 (10 ^ 4) 8 +
+        (3 * Lax3Proofs.Refine.G2ExistsRevalidation.g2M 68 12 68 12 0 284 (10 ^ 4) 8 +
           Cb) * (8 + 1) ^ 3 * (w + 1)) :=
-  Lax3Proofs.Refine.G2ExistsRevalidation.g2m_exists 3 8 Cb 0 68 12 68 12 0 12 284 (10 ^ 4)
+  Lax3Proofs.Refine.G2ExistsRevalidation.g2m_exists 3 8 Cb 0 68 12 68 12 284 (10 ^ 4)
     (fun _ => 10 ^ 4) (fun _ _ => le_rfl)
 
 /-! ## §7 Axioms -/

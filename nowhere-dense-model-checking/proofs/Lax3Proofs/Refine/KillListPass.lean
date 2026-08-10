@@ -132,17 +132,15 @@ def ctKL : ℕ := 284 + klc
 
 /-- **The Σ interface closes at the moved constant** —
 `Refine.DeadRowProbe.deadRow_interface_closes` at `ct = ctKL` in place
-of `284`, same slots otherwise: the closure is indifferent to the turn
+of `284`, same live slots otherwise: the closure is indifferent to the turn
 coefficient's value (F-4), so absorbing the kill list moves a number
 and no interface. -/
 theorem killList_interface_closes (Cb : ℕ) :
-    ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
+    ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
       (∀ j w m, m ≤ w →
         Lax3Proofs.Refine.G2ExistsRevalidation.phaseMR 68 12 0 m ≤ Ko j w) ∧
       (∀ j w m, m ≤ w →
         Lax3Proofs.Refine.G2ExistsRevalidation.phaseMR 68 12 0 m ≤ Kc j w) ∧
-      (∀ j w m, m ≤ w →
-        Lax3Proofs.Refine.G2ExistsRevalidation.phaseMR 0 12 0 m ≤ Kd j w) ∧
       (∀ w, Cb * (w + 1) ≤ Kl 3 w) ∧
       (∀ j, Monotone (Kl j)) ∧
       (∀ j < 3, ∀ s : ℕ,
@@ -150,12 +148,12 @@ theorem killList_interface_closes (Cb : ℕ) :
           Ks j s) ∧
       (∀ j < 3, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
         (∑ c ∈ Finset.range t, bs c) ≤ 8 * (w + 1) →
-        Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+        Ko j w + (Kc j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
           ≤ Kl j w) ∧
       (∀ w, Kl 0 w ≤
-        (3 * Lax3Proofs.Refine.G2ExistsRevalidation.g2M 68 12 68 12 0 12 0 ctKL (10 ^ 4) 8 +
+        (3 * Lax3Proofs.Refine.G2ExistsRevalidation.g2M 68 12 68 12 0 ctKL (10 ^ 4) 8 +
           Cb) * (8 + 1) ^ 3 * (w + 1)) :=
-  Lax3Proofs.Refine.G2ExistsRevalidation.g2m_exists 3 8 Cb 0 68 12 68 12 0 12 ctKL (10 ^ 4)
+  Lax3Proofs.Refine.G2ExistsRevalidation.g2m_exists 3 8 Cb 0 68 12 68 12 ctKL (10 ^ 4)
     (fun _ => 10 ^ 4) (fun _ _ => le_rfl)
 
 end Probes

@@ -732,7 +732,7 @@ section Level
 
 variable {n : ℕ} {B q_top cap mb ns W ℓ s Kmass : ℕ} {N : ℕ → ℕ}
   {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
-  {Kb : ℕ → ℕ} {Ki Ksc : ℕ → ℕ → ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Kb : ℕ → ℕ} {Ki Ksc : ℕ → ℕ → ℕ} {Ko Kc Ks Kl : ℕ → ℕ → ℕ}
 
 open Classical in
 /-- **Every level of the driver, discharged**, at `R = 0`.
@@ -744,10 +744,8 @@ before, which the size slot no longer permits. `hKl` is the level
 condition in the Σ shape, which `levelCost_of_sigma` below produces from
 `CostRecurrence.exists_driverCostsSigma`.
 
-**Rebase B8.** The level has a third carrier-width phase, the dead-row
-sweep, with its own size-read parameter `Kd` and side condition `hKd`;
-`Refine.DeadSweep.sweepImplements` is the walk. And `hmass` is **gone**:
-the mass mathematics is no longer threaded as an opaque bundle but
+**Rebase B8.** `hmass` is **gone**: the mass mathematics is no longer
+threaded as an opaque bundle but
 *derived* from the two facts it actually needs — the cover's block
 injectivity `hbinj` and the cover-degree bound `hdeg`.
 
@@ -794,14 +792,13 @@ theorem levelAt
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (RamBfs.masked G M) π (2 * cap) v).ncard ≤ Kmass)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m) :
     ∀ j ≤ ℓ, ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ),
       LevelImplements B q_top cap mb 0 ℓ W ns j φ G O T M Gm C
@@ -813,9 +810,8 @@ theorem levelAt
   --
   -- **Wave R1.8-T3-flip (c2b).** The induction is now over a pre-written domain
   -- and this theorem instantiates it at `∅`, which is what `LevelImplements`
-  -- names: the root writes no dead row and needs none. The sweep argument is
-  -- gone; `hKd` is a vestigial slot, kept so that the hypothesis list — and with
-  -- it `driverRoot_decides_sentence`'s — is unchanged.
+  -- names: the root writes no dead row and needs none. Accordingly there is no
+  -- dead-sweep hypothesis or cost summand.
   fun j hj M Gm C => RamDriverCluster.levelImplements
     (Ksf := fun j t => turnCostSize n ns cap mb q_top j φ (Ksc j (n + ns)) t (Kl (j + 1) t))
     hB hWB hcsr
@@ -881,21 +877,18 @@ turn and it is absorbed **here**, in the thread, not in the solver:
 The solver stays canonical (B6's minimality), and the driver's interface
 stays the one its loop actually produces.
 
-**Rebase B8.** The level has a third carrier-width phase — the dead-row
-sweep — and it is absorbed on the *cover* side of the solver's two-phase
-shape: the solver is applied with `Kc j m + Kd j m` where it expects the
-cover's constant. Nothing about the solver changes; the sweep is a phase
-constant read at the arena's size, exactly like `Ko` and `Kc`, and like
-them it inherits the touched-only debt (R1.6). -/
-theorem levelCost_of_sigma {Ko Kc Kd Ks Kt Kl : ℕ → ℕ → ℕ}
+The dead-sweep summand that used to be folded into the cover side is absent:
+the sweep is no longer in the program, so the solver's native two-phase shape
+is exactly the driver's shape. -/
+theorem levelCost_of_sigma {Ko Kc Ks Kt Kl : ℕ → ℕ → ℕ}
     (hshift : ∀ j s, Ks j s + 3 ≤ Kt j s)
     (hsolve : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ D * (m + 1) →
-      Ko j m + ((Kc j m + Kd j m) + ((∑ c ∈ Finset.range t, (Kt j (bs c) + 8)) + 6))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Kt j (bs c) + 8)) + 6))
         ≤ Kl j m) :
     ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ D * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m := by
   intro j hj m t htm bs hbs
   have hsum : (∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) ≤
@@ -914,13 +907,12 @@ the same statement.
 
 This is what keeps B4, B5 and B7 unblocked while the leaves are still
 carrier-driven: they may supply size-blind costs and lose nothing. -/
-theorem uniform_recovers_level {n : ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ}
-    (huni : ∀ j < ℓ, Ko j + (Kc j + (Kd j + ((Ks j + 11) * n + 6))) ≤ Kl j) :
+theorem uniform_recovers_level {n : ℕ} {Ko Kc Ks Kl : ℕ → ℕ}
+    (huni : ∀ j < ℓ, Ko j + (Kc j + ((Ks j + 11) * n + 6)) ≤ Kl j) :
     ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → m ≤ n → ∀ bs : ℕ → ℕ,
       (fun (j : ℕ) (_ : ℕ) => Ko j) j m +
         ((fun (j : ℕ) (_ : ℕ) => Kc j) j m +
-          ((fun (j : ℕ) (_ : ℕ) => Kd j) j m +
-            ((∑ c ∈ Finset.range t, ((fun (j : ℕ) (_ : ℕ) => Ks j) j (bs c) + 11)) + 6)))
+          ((∑ c ∈ Finset.range t, ((fun (j : ℕ) (_ : ℕ) => Ks j) j (bs c) + 11)) + 6))
         ≤ (fun (j : ℕ) (_ : ℕ) => Kl j) j m := by
   intro j hj m t htm hmn bs
   have hconst : (∑ _c ∈ Finset.range t, (Ks j + 11)) = (Ks j + 11) * t := by
@@ -946,7 +938,7 @@ section Plug
 
 variable {n : ℕ} {B q_top cap mb ns W ℓ s Kmass : ℕ} {N : ℕ → ℕ}
   {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
-  {Kb : ℕ → ℕ} {Ki Ksc : ℕ → ℕ → ℕ} {Ko Kc Kd Ks Kt Kl : ℕ → ℕ → ℕ}
+  {Kb : ℕ → ℕ} {Ki Ksc : ℕ → ℕ → ℕ} {Ko Kc Ks Kt Kl : ℕ → ℕ → ℕ}
 
 open Classical in
 /-- **Every level of the driver, against the solver's own shape.**
@@ -974,7 +966,6 @@ theorem levelAt_of_sigma
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
@@ -982,12 +973,12 @@ theorem levelAt_of_sigma
     (hshift : ∀ j t, Ks j t + 3 ≤ Kt j t)
     (hsolve : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + ((Kc j m + Kd j m) + ((∑ c ∈ Finset.range t, (Kt j (bs c) + 8)) + 6))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Kt j (bs c) + 8)) + 6))
         ≤ Kl j m) :
     ∀ j ≤ ℓ, ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ),
       LevelImplements B q_top cap mb 0 ℓ W ns j φ G O T M Gm C
         (Kl j (arenaWeight n G M)) :=
-  levelAt hcap hmb hℓ hB hWB hpow hcsr hQ hbnd hcostI hKsc hKmono hKs hKbase hKo hKc hKd
+  levelAt hcap hmb hℓ hB hWB hpow hcsr hQ hbnd hcostI hKsc hKmono hKs hKbase hKo hKc
     hbinj hdeg (levelCost_of_sigma hshift hsolve)
 
 end Plug
@@ -1114,7 +1105,7 @@ section Main
 variable {n : ℕ} {B q_top cap mb ns W ℓ s Kmass : ℕ} {N : ℕ → ℕ}
   {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ} {x : List ℕ}
   {Kb : ℕ → ℕ} {Kb₀ Ki₀ Kdec Ksent : ℕ} {Ki Ksc : ℕ → ℕ → ℕ}
-  {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Ko Kc Ks Kl : ℕ → ℕ → ℕ}
 
 open Classical in
 /-- **The RAM driver decides the model-checking answer.**
@@ -1137,8 +1128,8 @@ kills nothing (`Refine.MassWeight.arenaWeight_root`, which needs the
 input word's `CsrSimple` — the clause G1's dedup produces at the C0
 boundary). `hKs`/`hKl` are the §5.7/§5.6 shapes read at weights,
 `hKmono` is new, and — rebase B8 — the mass bundle `hmass` has become
-the two facts it is derived from (`hbinj`, `hdeg`) while the level
-gains its dead-row sweep (`hKd`). The conclusion is untouched.
+the two facts it is derived from (`hbinj`, `hdeg`). The obsolete
+dead-row sweep and its cost slot are absent. The conclusion is untouched.
 
 **Rebase E-mem/W3: the word-bound slot.** `hB` is
 `RamDriver.WordBoundK B n Kmass ns cap mb`, the value bound with the
@@ -1182,14 +1173,13 @@ theorem driverRoot_decides_sentence
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (RamBfs.masked G M) π (2 * cap) v).ncard ≤ Kmass)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (hKdec : RamDriverIO.decodeCost n ns ≤ Kdec)
     (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
@@ -1206,7 +1196,7 @@ theorem driverRoot_decides_sentence
     (RamDriverIO.decodeImplements hx hns hO hT hKdec)
     (fun M Gm C hall => by
       have h := levelAt hcap hmb hℓ hB hWB hpow hcsr hQ hbnd hcostI hKsc hKmono hKs
-        hKbase hKo hKc hKd hbinj hdeg hKl 0 (Nat.zero_le ℓ) M Gm C
+        hKbase hKo hKc hbinj hdeg hKl 0 (Nat.zero_le ℓ) M Gm C
       rwa [Refine.MassWeight.arenaWeight_root hcsr hall] at h)
     (fun _ _ _ => RamDriverIO.sentenceImplements hrank hcsr.csr hatoms hKsent)
 
@@ -1251,12 +1241,11 @@ theorem driverRoot_decides_sentence_binj
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (RamBfs.masked G M) π (2 * cap) v).ncard ≤ Kmass)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (hKdec : RamDriverIO.decodeCost n ns ≤ Kdec)
     (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
@@ -1270,7 +1259,7 @@ theorem driverRoot_decides_sentence_binj
       (fun _ σ' => σ'.out = [if Lax3.FirstOrder.Sat G Fin.elim0 φ then 1 else 0])
       (Kdec + (Kl 0 (n + ns) + Ksent)) :=
   driverRoot_decides_sentence hx hns hO hT hxB hcsr hpad0 hrank hcap hmb hℓ hB hWB hpow hQ
-    hbnd hcostI hKsc hKmono hKs hKbase hKo hKc hKd (blockInj_slot G cap) hdeg hKl
+    hbnd hcostI hKsc hKmono hKs hKbase hKo hKc (blockInj_slot G cap) hdeg hKl
     hKdec hatoms hKsent
 
 end Main

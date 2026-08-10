@@ -122,6 +122,12 @@ Sizes are ESTIMATES calibrated on the measured rate — **~800 net lines and
 
 ### §2.1 `b4-iface` — cash the three landed waves at the root
 
+**Status 2026-08-10: landed on the campaign branch.** `Kb`/`Ki`/`Ksc` are
+block-indexed through the root consumers, the carrier bridge is gone, and the
+retired dead sweep has been removed semantically from both the root program
+budget and the Σ recurrence.  The reduced interface and every downstream
+probe pass the 3593-job `proofs` build.  The next dependency leaf is §2.2.
+
 **First, because the campaign says so and because nothing else is true yet.**
 `NIGHTLOG.md` session wrap: *"Where a successor starts: `b4-iface`."*
 
