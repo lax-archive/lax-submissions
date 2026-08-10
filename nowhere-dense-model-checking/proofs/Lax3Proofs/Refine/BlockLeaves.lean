@@ -1255,6 +1255,430 @@ theorem blockMapCom_spec {B n m : ℕ} {idx bnd dst : String} {e : Expr}
   exact ⟨σ₂, _, hr₁.seq hr₂, by omega,
     ⟨g, hgarr₂, hset₂, hkeep₂⟩, hp₂, hbnd₂, hidx₂, hfr₂⟩
 
+/-! #### A loaded cover interval
+
+The prefix command above is ideal while `clusterLoad`'s emitted row is
+still intact.  Later phases retain the cover's global interval instead.
+`blockMapRangeCom` consumes the already-loaded scalars `p` and `pend`,
+and therefore composes directly after `Csr.loadRow`. -/
+
+/-- An indirect map over the loaded interval `idx[p .. pend)`. -/
+def blockMapRangeCom (idx dst : String) (e : Expr) : Lax13Proofs.Imp.Com :=
+  .while (.lt (.var "p") (.var "pend"))
+    (.seq (.assign "cw" (.get idx (.var "p")))
+      (.seq (.store dst (.var "cw") e)
+        (.assign "p" (.add (.var "p") (.lit 1)))))
+
+/-- Sparse-write invariant for a loaded interval. -/
+def BlockMapRangeInv (n w p₀ e : ℕ) (idx dst : String) (Idx F g₀ : ℕ → ℕ)
+    (l : List (String × ℕ × (ℕ → ℕ))) (σ : Env) : Prop :=
+  σ.vars "pend" = e ∧ p₀ ≤ σ.vars "p" ∧ σ.vars "p" ≤ e ∧
+    σ.arrs idx = arrOf w Idx ∧ BlockFrozen l σ ∧
+    ∃ g, σ.arrs dst = arrOf n g ∧
+      (∀ q, p₀ ≤ q → q < σ.vars "p" → g (Idx q) = F (Idx q)) ∧
+      (∀ v, v < n → (∀ q, p₀ ≤ q → q < σ.vars "p" → Idx q ≠ v) →
+        g v = g₀ v)
+
+/-- The generic executable map over an already-loaded interval. -/
+theorem blockMapRangeCom_spec {B n w p₀ e : ℕ} {idx dst : String} {x : Expr}
+    {Idx F g₀ : ℕ → ℕ} {l : List (String × ℕ × (ℕ → ℕ))}
+    (h1B : 1 < B) (hnB : n < B) (heB : e < B) (hew : e ≤ w)
+    (hp₀e : p₀ ≤ e) (hIdx : ∀ q, p₀ ≤ q → q < e → Idx q < n)
+    (hdi : dst ≠ idx) (hdf : ∀ a ∈ l, a.1 ≠ dst)
+    (hx : ∀ (σ : Env) q, p₀ ≤ q → q < e → σ.vars "p" = q →
+      σ.vars "cw" = Idx q → BlockMapRangeInv n w p₀ e idx dst Idx F g₀ l σ →
+      x.evalB B σ = some (F (Idx q))) :
+    Spec B
+      (fun σ => σ.vars "p" = p₀ ∧ σ.vars "pend" = e ∧
+        σ.arrs idx = arrOf w Idx ∧ σ.arrs dst = arrOf n g₀ ∧ BlockFrozen l σ)
+      (blockMapRangeCom idx dst x)
+      (fun _ σ' =>
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ q, p₀ ≤ q → q < e → g (Idx q) = F (Idx q)) ∧
+          (∀ v, v < n → (∀ q, p₀ ≤ q → q < e → Idx q ≠ v) →
+            g v = g₀ v)) ∧
+        σ'.vars "p" = e ∧ σ'.vars "pend" = e ∧
+        σ'.arrs idx = arrOf w Idx ∧ BlockFrozen l σ')
+      ((13 + x.size) * (e - p₀) + 4) := by
+  let I := BlockMapRangeInv n w p₀ e idx dst Idx F g₀ l
+  have hstep : ∀ ρ : Env, I ρ → ρ.vars "p" < e →
+      ∃ ρ' K', Run B
+          (.seq (.assign "cw" (.get idx (.var "p")))
+            (.seq (.store dst (.var "cw") x)
+              (.assign "p" (.add (.var "p") (.lit 1))))) ρ ρ' K' ∧
+        I ρ' ∧ ρ'.vars "p" = ρ.vars "p" + 1 ∧ K' ≤ 9 + x.size := by
+    intro ρ hρ hlt
+    obtain ⟨hpend, hp₀, hpe, hidx, hfr, g, hgarr, hset, hkeep⟩ := hρ
+    set p := ρ.vars "p" with hp
+    have hpw : p < w := lt_of_lt_of_le hlt hew
+    have hpn : Idx p < n := hIdx p hp₀ hlt
+    have hpB : p < B := lt_trans hlt heB
+    have hmemB : Idx p < B := lt_trans hpn hnB
+    have hpeval : (Expr.var "p").evalB B ρ = some p := by
+      have h := evalB_var (B := B) (x := "p") (σ := ρ) hpB
+      rwa [← hp] at h
+    have hread : (Expr.get idx (.var "p")).evalB B ρ = some (Idx p) :=
+      evalB_get hpeval (by rw [hidx, getElem?_arrOf Idx hpw]) hmemB
+    set ρ₁ := ρ.setVar "cw" (Idx p) with hρ₁
+    have hr₁ : Run B (.assign "cw" (.get idx (.var "p"))) ρ ρ₁ 3 :=
+      (Run.assign hread).mono (by simp [Expr.size])
+    have hcw₁ : ρ₁.vars "cw" = Idx p := by rw [hρ₁, vars_setVar, if_pos rfl]
+    have hp₁ : ρ₁.vars "p" = p := by rw [hρ₁, vars_setVar, if_neg (by decide)]
+    have hpend₁ : ρ₁.vars "pend" = e := by
+      rw [hρ₁, vars_setVar, if_neg (by decide)]; exact hpend
+    have hidx₁ : ρ₁.arrs idx = arrOf w Idx := by rw [hρ₁, arrs_setVar]; exact hidx
+    have hfr₁ : BlockFrozen l ρ₁ := by
+      intro a ha; rw [hρ₁, arrs_setVar]; exact hfr a ha
+    have hgarr₁ : ρ₁.arrs dst = arrOf n g := by rw [hρ₁, arrs_setVar]; exact hgarr
+    have hI₁ : I ρ₁ :=
+      ⟨hpend₁, by rw [hp₁]; exact hp₀, by rw [hp₁]; exact hpe,
+        hidx₁, hfr₁, g, hgarr₁, by simpa [hp₁] using hset,
+        by simpa [hp₁] using hkeep⟩
+    have hval : x.evalB B ρ₁ = some (F (Idx p)) :=
+      hx ρ₁ p hp₀ hlt hp₁ hcw₁ hI₁
+    have hcwe : (Expr.var "cw").evalB B ρ₁ = some (Idx p) := by
+      have h := evalB_var (B := B) (x := "cw") (σ := ρ₁) (by rw [hcw₁]; exact hmemB)
+      rwa [hcw₁] at h
+    have hlen : Idx p < (ρ₁.arrs dst).length := by rw [hgarr₁, length_arrOf]; exact hpn
+    set ρ₂ := ρ₁.setArr dst (Idx p) (F (Idx p)) with hρ₂
+    have hr₂ : Run B (.store dst (.var "cw") x) ρ₁ ρ₂ (2 + x.size) :=
+      (Run.store hcwe hval hlen).mono (by simp [Expr.size])
+    have hp₂ : ρ₂.vars "p" = p := by rw [hρ₂, vars_setArr]; exact hp₁
+    have hpinc : (Expr.add (.var "p") (.lit 1)).evalB B ρ₂ = some (p + 1) :=
+      evalB_bin (evalB_var (by rw [hp₂]; exact hpB)) (evalB_lit h1B)
+        (by simp; omega)
+    set ρ₃ := ρ₂.setVar "p" (p + 1) with hρ₃
+    have hr₃ : Run B (.assign "p" (.add (.var "p") (.lit 1))) ρ₂ ρ₃ 4 :=
+      (Run.assign hpinc).mono (by simp [Expr.size])
+    set gu : ℕ → ℕ := fun v => if v = Idx p then F (Idx p) else g v with hgu
+    have hp₃ : ρ₃.vars "p" = p + 1 := by rw [hρ₃, vars_setVar, if_pos rfl]
+    have hpend₃ : ρ₃.vars "pend" = e := by
+      rw [hρ₃, vars_setVar, if_neg (by decide), hρ₂, vars_setArr]; exact hpend₁
+    have hidx₃ : ρ₃.arrs idx = arrOf w Idx := by
+      rw [hρ₃, arrs_setVar, hρ₂, arrs_setArr, if_neg (Ne.symm hdi)]; exact hidx₁
+    have hfr₃ : BlockFrozen l ρ₃ := by
+      intro a ha
+      rw [hρ₃, arrs_setVar, hρ₂, arrs_setArr, if_neg (hdf a ha)]
+      exact hfr₁ a ha
+    have hgarr₃ : ρ₃.arrs dst = arrOf n gu := by
+      rw [hρ₃, arrs_setVar, hρ₂, arrs_setArr, if_pos rfl, hgarr₁, set_arrOf]
+    refine ⟨ρ₃, 9 + x.size, (hr₁.seq (hr₂.seq hr₃)).mono (by omega), ?_, hp₃,
+      le_rfl⟩
+    refine ⟨hpend₃, by rw [hp₃]; omega, by rw [hp₃]; omega,
+      hidx₃, hfr₃, gu, hgarr₃, ?_, ?_⟩
+    · intro q hq₀ hq
+      rw [hp₃] at hq
+      by_cases hqp : Idx q = Idx p
+      · simp [hgu, hqp]
+      · simp only [hgu]
+        rw [if_neg hqp]
+        apply hset q hq₀
+        by_contra hnot
+        have hqeq : q = p := by omega
+        exact hqp (by rw [hqeq])
+    · intro v hv hnot
+      have hne : Idx p ≠ v := hnot p hp₀ (by rw [hp₃]; omega)
+      simp only [hgu]
+      rw [if_neg (Ne.symm hne)]
+      exact hkeep v hv (fun q hq₀ hq => hnot q hq₀ (by rw [hp₃, hp₁] at *; omega))
+  have hI₀ : ∀ σ, (σ.vars "p" = p₀ ∧ σ.vars "pend" = e ∧
+      σ.arrs idx = arrOf w Idx ∧ σ.arrs dst = arrOf n g₀ ∧ BlockFrozen l σ) → I σ := by
+    rintro σ ⟨hp, hpend, hidx, hdst, hfr⟩
+    exact ⟨hpend, by rw [hp], by rw [hp]; exact hp₀e, hidx, hfr, g₀, hdst,
+      (by intro q _ hq; rw [hp] at hq; omega), fun _ _ _ => rfl⟩
+  refine ((Csr.rowScan_spec B ((13 + x.size) * (e - p₀) + 4) e (9 + x.size)
+    "p" "pend"
+    (.seq (.assign "cw" (.get idx (.var "p")))
+      (.seq (.store dst (.var "cw") x)
+        (.assign "p" (.add (.var "p") (.lit 1))))) I heB
+    (fun ρ hρ => ⟨hρ.1, hρ.2.2.1⟩) hstep (fun _ h => h)
+    (fun ρ hρ => by
+      have hmul : (9 + x.size + 4) * (e - ρ.vars "p") ≤
+          (13 + x.size) * (e - p₀) := by
+        have heq : 9 + x.size + 4 = 13 + x.size := by omega
+        rw [heq]
+        exact Nat.mul_le_mul_left _ (Nat.sub_le_sub_left hρ.2.1 e)
+      omega)).pre hI₀).post (by
+        rintro σ σ' - ⟨hI, hp⟩
+        obtain ⟨hpend, -, -, hidx, hfr, g, hgarr, hset, hkeep⟩ := hI
+        exact ⟨⟨g, hgarr, fun q hq₀ hqe => hset q hq₀ (by rw [hp]; exact hqe),
+          fun v hv hn => hkeep v hv (fun q hq₀ hqe => hn q hq₀ (by rw [← hp]; exact hqe))⟩,
+          hp, hpend, hidx, hfr⟩)
+
+/-- Clear exactly the loaded interval's members. -/
+def blockClearRangeCom (idx dst : String) : Lax13Proofs.Imp.Com :=
+  blockMapRangeCom idx dst (.lit 0)
+
+/-- Copy one array at exactly the loaded interval's members. -/
+def blockCopyRangeCom (idx src dst : String) : Lax13Proofs.Imp.Com :=
+  blockMapRangeCom idx dst (.get src (.var "cw"))
+
+/-- Conjoin two arrays at exactly the loaded interval's members. -/
+def blockAndRangeCom (idx a b dst : String) : Lax13Proofs.Imp.Com :=
+  blockMapRangeCom idx dst (.mul (.get a (.var "cw")) (.get b (.var "cw")))
+
+/-- Subtract the second mask from the first at the loaded members. -/
+def blockSubRangeCom (idx a b dst : String) : Lax13Proofs.Imp.Com :=
+  blockMapRangeCom idx dst
+    (.mul (.get a (.var "cw")) (.sub (.lit 1) (.get b (.var "cw"))))
+
+def blockClearRangeCost (p₀ e : ℕ) : ℕ := 14 * (e - p₀) + 4
+def blockCopyRangeCost (p₀ e : ℕ) : ℕ := 15 * (e - p₀) + 4
+def blockAndRangeCost (p₀ e : ℕ) : ℕ := 18 * (e - p₀) + 4
+def blockSubRangeCost (p₀ e : ℕ) : ℕ := 20 * (e - p₀) + 4
+
+theorem blockClearRangeCom_spec {B n w p₀ e : ℕ} {idx dst : String}
+    {Idx g₀ : ℕ → ℕ} (h1B : 1 < B) (hnB : n < B) (heB : e < B)
+    (hew : e ≤ w) (hp₀e : p₀ ≤ e)
+    (hIdx : ∀ q, p₀ ≤ q → q < e → Idx q < n) (hdi : dst ≠ idx) :
+    Spec B
+      (fun σ => σ.vars "p" = p₀ ∧ σ.vars "pend" = e ∧
+        σ.arrs idx = arrOf w Idx ∧ σ.arrs dst = arrOf n g₀)
+      (blockClearRangeCom idx dst)
+      (fun _ σ' =>
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ q, p₀ ≤ q → q < e → g (Idx q) = 0) ∧
+          (∀ v, v < n → (∀ q, p₀ ≤ q → q < e → Idx q ≠ v) → g v = g₀ v)) ∧
+        σ'.vars "p" = e ∧ σ'.vars "pend" = e ∧ σ'.arrs idx = arrOf w Idx)
+      (blockClearRangeCost p₀ e) := by
+  have h := blockMapRangeCom_spec (B := B) (n := n) (w := w) (p₀ := p₀) (e := e)
+    (idx := idx) (dst := dst) (x := .lit 0) (Idx := Idx) (F := fun _ => 0)
+    (g₀ := g₀) (l := []) h1B hnB heB hew hp₀e hIdx hdi (by simp)
+    (by intro σ q hq₀ hqe hp hcw hI; exact evalB_lit (by omega))
+  simpa [blockClearRangeCom, blockClearRangeCost, Expr.size, BlockFrozen] using h
+
+theorem blockCopyRangeCom_spec {B n w p₀ e : ℕ} {idx src dst : String}
+    {Idx A g₀ : ℕ → ℕ} (h1B : 1 < B) (hnB : n < B) (heB : e < B)
+    (hew : e ≤ w) (hp₀e : p₀ ≤ e)
+    (hIdx : ∀ q, p₀ ≤ q → q < e → Idx q < n)
+    (hAB : ∀ v, v < n → A v < B) (hdi : dst ≠ idx) (hds : dst ≠ src) :
+    Spec B
+      (fun σ => σ.vars "p" = p₀ ∧ σ.vars "pend" = e ∧
+        σ.arrs idx = arrOf w Idx ∧ σ.arrs dst = arrOf n g₀ ∧
+        σ.arrs src = arrOf n A)
+      (blockCopyRangeCom idx src dst)
+      (fun _ σ' =>
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ q, p₀ ≤ q → q < e → g (Idx q) = A (Idx q)) ∧
+          (∀ v, v < n → (∀ q, p₀ ≤ q → q < e → Idx q ≠ v) → g v = g₀ v)) ∧
+        σ'.vars "p" = e ∧ σ'.vars "pend" = e ∧
+        σ'.arrs idx = arrOf w Idx ∧ σ'.arrs src = arrOf n A)
+      (blockCopyRangeCost p₀ e) := by
+  have h := blockMapRangeCom_spec (B := B) (n := n) (w := w) (p₀ := p₀) (e := e)
+    (idx := idx) (dst := dst) (x := .get src (.var "cw")) (Idx := Idx) (F := A)
+    (g₀ := g₀) (l := [(src, n, A)]) h1B hnB heB hew hp₀e hIdx hdi
+    (by rintro a ha; rcases List.mem_singleton.mp ha with rfl; exact Ne.symm hds)
+    (by
+      intro σ q _ _ _ hcw hI
+      obtain ⟨-, -, -, -, hfr, -⟩ := hI
+      have hsrc := hfr (src, n, A) (by simp)
+      have hecw : (Expr.var "cw").evalB B σ = some (Idx q) := by
+        have h := evalB_var (B := B) (x := "cw") (σ := σ) (by
+          rw [hcw]; exact lt_trans (hIdx q (by omega) (by omega)) hnB)
+        rwa [hcw] at h
+      exact evalB_get hecw (by rw [hsrc, getElem?_arrOf A (hIdx q (by omega) (by omega))])
+        (hAB _ (hIdx q (by omega) (by omega))))
+  simpa [blockCopyRangeCom, blockCopyRangeCost, Expr.size, BlockFrozen] using h
+
+theorem blockAndRangeCom_spec {B n w p₀ e : ℕ} {idx a b dst : String}
+    {Idx A C g₀ : ℕ → ℕ} (h1B : 1 < B) (hnB : n < B) (heB : e < B)
+    (hew : e ≤ w) (hp₀e : p₀ ≤ e)
+    (hIdx : ∀ q, p₀ ≤ q → q < e → Idx q < n)
+    (hAB : ∀ v, v < n → A v < B) (hCB : ∀ v, v < n → C v < B)
+    (hACB : ∀ q, p₀ ≤ q → q < e → A (Idx q) * C (Idx q) < B)
+    (hdi : dst ≠ idx) (hda : dst ≠ a) (hdb : dst ≠ b) :
+    Spec B
+      (fun σ => σ.vars "p" = p₀ ∧ σ.vars "pend" = e ∧
+        σ.arrs idx = arrOf w Idx ∧ σ.arrs dst = arrOf n g₀ ∧
+        σ.arrs a = arrOf n A ∧ σ.arrs b = arrOf n C)
+      (blockAndRangeCom idx a b dst)
+      (fun _ σ' =>
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ q, p₀ ≤ q → q < e → g (Idx q) = A (Idx q) * C (Idx q)) ∧
+          (∀ v, v < n → (∀ q, p₀ ≤ q → q < e → Idx q ≠ v) → g v = g₀ v)) ∧
+        σ'.vars "p" = e ∧ σ'.vars "pend" = e ∧ σ'.arrs idx = arrOf w Idx ∧
+        σ'.arrs a = arrOf n A ∧ σ'.arrs b = arrOf n C)
+      (blockAndRangeCost p₀ e) := by
+  have h := blockMapRangeCom_spec (B := B) (n := n) (w := w) (p₀ := p₀) (e := e)
+    (idx := idx) (dst := dst) (x := .mul (.get a (.var "cw")) (.get b (.var "cw")))
+    (Idx := Idx) (F := fun v => A v * C v) (g₀ := g₀)
+    (l := [(a, n, A), (b, n, C)]) h1B hnB heB hew hp₀e hIdx hdi
+    (by rintro x hx; simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+        rcases hx with rfl | rfl
+        · exact Ne.symm hda
+        · exact Ne.symm hdb)
+    (by
+      intro σ q hq₀ hqe _ hcw hI
+      obtain ⟨-, -, -, -, hfr, -⟩ := hI
+      have ha := hfr (a, n, A) (by simp)
+      have hb := hfr (b, n, C) (by simp)
+      have hecw : (Expr.var "cw").evalB B σ = some (Idx q) := by
+        have h := evalB_var (B := B) (x := "cw") (σ := σ) (by
+          rw [hcw]; exact lt_trans (hIdx q hq₀ hqe) hnB)
+        rwa [hcw] at h
+      exact evalB_bin
+        (evalB_get hecw (by rw [ha, getElem?_arrOf A (hIdx q hq₀ hqe)])
+          (hAB _ (hIdx q hq₀ hqe)))
+        (evalB_get hecw (by rw [hb, getElem?_arrOf C (hIdx q hq₀ hqe)])
+          (hCB _ (hIdx q hq₀ hqe)))
+        (hACB q hq₀ hqe))
+  simpa [blockAndRangeCom, blockAndRangeCost, Expr.size, BlockFrozen] using h
+
+theorem blockSubRangeCom_spec {B n w p₀ e : ℕ} {idx a b dst : String}
+    {Idx A C g₀ : ℕ → ℕ} (h1B : 1 < B) (hnB : n < B) (heB : e < B)
+    (hew : e ≤ w) (hp₀e : p₀ ≤ e)
+    (hIdx : ∀ q, p₀ ≤ q → q < e → Idx q < n)
+    (hAB : ∀ v, v < n → A v < B) (hCB : ∀ v, v < n → C v < B)
+    (hACB : ∀ q, p₀ ≤ q → q < e → A (Idx q) * (1 - C (Idx q)) < B)
+    (hdi : dst ≠ idx) (hda : dst ≠ a) (hdb : dst ≠ b) :
+    Spec B
+      (fun σ => σ.vars "p" = p₀ ∧ σ.vars "pend" = e ∧
+        σ.arrs idx = arrOf w Idx ∧ σ.arrs dst = arrOf n g₀ ∧
+        σ.arrs a = arrOf n A ∧ σ.arrs b = arrOf n C)
+      (blockSubRangeCom idx a b dst)
+      (fun _ σ' =>
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ q, p₀ ≤ q → q < e → g (Idx q) = A (Idx q) * (1 - C (Idx q))) ∧
+          (∀ v, v < n → (∀ q, p₀ ≤ q → q < e → Idx q ≠ v) → g v = g₀ v)) ∧
+        σ'.vars "p" = e ∧ σ'.vars "pend" = e ∧ σ'.arrs idx = arrOf w Idx ∧
+        σ'.arrs a = arrOf n A ∧ σ'.arrs b = arrOf n C)
+      (blockSubRangeCost p₀ e) := by
+  have h := blockMapRangeCom_spec (B := B) (n := n) (w := w) (p₀ := p₀) (e := e)
+    (idx := idx) (dst := dst)
+    (x := .mul (.get a (.var "cw")) (.sub (.lit 1) (.get b (.var "cw"))))
+    (Idx := Idx) (F := fun v => A v * (1 - C v)) (g₀ := g₀)
+    (l := [(a, n, A), (b, n, C)]) h1B hnB heB hew hp₀e hIdx hdi
+    (by rintro x hx; simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+        rcases hx with rfl | rfl
+        · exact Ne.symm hda
+        · exact Ne.symm hdb)
+    (by
+      intro σ q hq₀ hqe _ hcw hI
+      obtain ⟨-, -, -, -, hfr, -⟩ := hI
+      have ha := hfr (a, n, A) (by simp)
+      have hb := hfr (b, n, C) (by simp)
+      have hecw : (Expr.var "cw").evalB B σ = some (Idx q) := by
+        have h := evalB_var (B := B) (x := "cw") (σ := σ) (by
+          rw [hcw]; exact lt_trans (hIdx q hq₀ hqe) hnB)
+        rwa [hcw] at h
+      exact evalB_bin
+        (evalB_get hecw (by rw [ha, getElem?_arrOf A (hIdx q hq₀ hqe)])
+          (hAB _ (hIdx q hq₀ hqe)))
+        (evalB_bin (evalB_lit h1B)
+          (evalB_get hecw (by rw [hb, getElem?_arrOf C (hIdx q hq₀ hqe)])
+            (hCB _ (hIdx q hq₀ hqe)))
+          (by change 1 - C (Idx q) < B; omega))
+        (hACB q hq₀ hqe))
+  simpa [blockSubRangeCom, blockSubRangeCost, Expr.size, BlockFrozen] using h
+
+/-- In-place conjunction over the loaded interval. -/
+def blockAndSelfRangeCom (idx b dst : String) : Lax13Proofs.Imp.Com :=
+  blockAndRangeCom idx dst b dst
+
+/-- In-place subtraction over the loaded interval. -/
+def blockSubSelfRangeCom (idx b dst : String) : Lax13Proofs.Imp.Com :=
+  blockSubRangeCom idx dst b dst
+
+theorem blockAndSelfRangeCom_spec {B n w p₀ e : ℕ} {idx b dst : String}
+    {Idx A C : ℕ → ℕ} (h1B : 1 < B) (hnB : n < B) (heB : e < B)
+    (hew : e ≤ w) (hp₀e : p₀ ≤ e)
+    (hIdx : ∀ q, p₀ ≤ q → q < e → Idx q < n)
+    (hinj : ∀ q q', p₀ ≤ q → q < e → p₀ ≤ q' → q' < e →
+      Idx q = Idx q' → q = q')
+    (hAB : ∀ v, v < n → A v < B) (hCB : ∀ v, v < n → C v < B)
+    (hACB : ∀ q, p₀ ≤ q → q < e → A (Idx q) * C (Idx q) < B)
+    (hdi : dst ≠ idx) (hdb : dst ≠ b) :
+    Spec B
+      (fun σ => σ.vars "p" = p₀ ∧ σ.vars "pend" = e ∧
+        σ.arrs idx = arrOf w Idx ∧ σ.arrs dst = arrOf n A ∧ σ.arrs b = arrOf n C)
+      (blockAndSelfRangeCom idx b dst)
+      (fun _ σ' =>
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ q, p₀ ≤ q → q < e → g (Idx q) = A (Idx q) * C (Idx q)) ∧
+          (∀ v, v < n → (∀ q, p₀ ≤ q → q < e → Idx q ≠ v) → g v = A v)) ∧
+        σ'.vars "p" = e ∧ σ'.vars "pend" = e ∧
+        σ'.arrs idx = arrOf w Idx ∧ σ'.arrs b = arrOf n C)
+      (blockAndRangeCost p₀ e) := by
+  have h := blockMapRangeCom_spec (B := B) (n := n) (w := w) (p₀ := p₀) (e := e)
+    (idx := idx) (dst := dst)
+    (x := .mul (.get dst (.var "cw")) (.get b (.var "cw")))
+    (Idx := Idx) (F := fun v => A v * C v) (g₀ := A) (l := [(b, n, C)])
+    h1B hnB heB hew hp₀e hIdx hdi
+    (by rintro x hx; rcases List.mem_singleton.mp hx with rfl; exact Ne.symm hdb)
+    (by
+      intro σ q hq₀ hqe hp hcw hI
+      obtain ⟨-, -, -, -, hfr, g, hgarr, -, hkeep⟩ := hI
+      have hb := hfr (b, n, C) (by simp)
+      have hcur : g (Idx q) = A (Idx q) := by
+        refine hkeep (Idx q) (hIdx q hq₀ hqe) ?_
+        intro q' hq'₀ hq' heq
+        have hq'lt : q' < q := by rwa [hp] at hq'
+        have hsame := hinj q' q hq'₀ (by omega) hq₀ hqe heq
+        omega
+      have hecw : (Expr.var "cw").evalB B σ = some (Idx q) := by
+        have he := evalB_var (B := B) (x := "cw") (σ := σ) (by
+          rw [hcw]; exact lt_trans (hIdx q hq₀ hqe) hnB)
+        rwa [hcw] at he
+      exact evalB_bin
+        (evalB_get hecw (by rw [hgarr, getElem?_arrOf g (hIdx q hq₀ hqe), hcur])
+          (hAB _ (hIdx q hq₀ hqe)))
+        (evalB_get hecw (by rw [hb, getElem?_arrOf C (hIdx q hq₀ hqe)])
+          (hCB _ (hIdx q hq₀ hqe)))
+        (hACB q hq₀ hqe))
+  simpa [blockAndSelfRangeCom, blockAndRangeCom, blockAndRangeCost, Expr.size,
+    BlockFrozen] using h
+
+theorem blockSubSelfRangeCom_spec {B n w p₀ e : ℕ} {idx b dst : String}
+    {Idx A C : ℕ → ℕ} (h1B : 1 < B) (hnB : n < B) (heB : e < B)
+    (hew : e ≤ w) (hp₀e : p₀ ≤ e)
+    (hIdx : ∀ q, p₀ ≤ q → q < e → Idx q < n)
+    (hinj : ∀ q q', p₀ ≤ q → q < e → p₀ ≤ q' → q' < e →
+      Idx q = Idx q' → q = q')
+    (hAB : ∀ v, v < n → A v < B) (hCB : ∀ v, v < n → C v < B)
+    (hACB : ∀ q, p₀ ≤ q → q < e → A (Idx q) * (1 - C (Idx q)) < B)
+    (hdi : dst ≠ idx) (hdb : dst ≠ b) :
+    Spec B
+      (fun σ => σ.vars "p" = p₀ ∧ σ.vars "pend" = e ∧
+        σ.arrs idx = arrOf w Idx ∧ σ.arrs dst = arrOf n A ∧ σ.arrs b = arrOf n C)
+      (blockSubSelfRangeCom idx b dst)
+      (fun _ σ' =>
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ q, p₀ ≤ q → q < e → g (Idx q) = A (Idx q) * (1 - C (Idx q))) ∧
+          (∀ v, v < n → (∀ q, p₀ ≤ q → q < e → Idx q ≠ v) → g v = A v)) ∧
+        σ'.vars "p" = e ∧ σ'.vars "pend" = e ∧
+        σ'.arrs idx = arrOf w Idx ∧ σ'.arrs b = arrOf n C)
+      (blockSubRangeCost p₀ e) := by
+  have h := blockMapRangeCom_spec (B := B) (n := n) (w := w) (p₀ := p₀) (e := e)
+    (idx := idx) (dst := dst)
+    (x := .mul (.get dst (.var "cw")) (.sub (.lit 1) (.get b (.var "cw"))))
+    (Idx := Idx) (F := fun v => A v * (1 - C v)) (g₀ := A) (l := [(b, n, C)])
+    h1B hnB heB hew hp₀e hIdx hdi
+    (by rintro x hx; rcases List.mem_singleton.mp hx with rfl; exact Ne.symm hdb)
+    (by
+      intro σ q hq₀ hqe hp hcw hI
+      obtain ⟨-, -, -, -, hfr, g, hgarr, -, hkeep⟩ := hI
+      have hb := hfr (b, n, C) (by simp)
+      have hcur : g (Idx q) = A (Idx q) := by
+        refine hkeep (Idx q) (hIdx q hq₀ hqe) ?_
+        intro q' hq'₀ hq' heq
+        have hq'lt : q' < q := by rwa [hp] at hq'
+        have hsame := hinj q' q hq'₀ (by omega) hq₀ hqe heq
+        omega
+      have hecw : (Expr.var "cw").evalB B σ = some (Idx q) := by
+        have he := evalB_var (B := B) (x := "cw") (σ := σ) (by
+          rw [hcw]; exact lt_trans (hIdx q hq₀ hqe) hnB)
+        rwa [hcw] at he
+      exact evalB_bin
+        (evalB_get hecw (by rw [hgarr, getElem?_arrOf g (hIdx q hq₀ hqe), hcur])
+          (hAB _ (hIdx q hq₀ hqe)))
+        (evalB_bin (evalB_lit h1B)
+          (evalB_get hecw (by rw [hb, getElem?_arrOf C (hIdx q hq₀ hqe)])
+            (hCB _ (hIdx q hq₀ hqe)))
+          (by change 1 - C (Idx q) < B; omega))
+        (hACB q hq₀ hqe))
+  simpa [blockSubSelfRangeCom, blockSubRangeCom, blockSubRangeCost, Expr.size,
+    BlockFrozen] using h
+
 /-- The executable block-local conjunction. -/
 def blockAndCom (idx bnd a b dst : String) : Lax13Proofs.Imp.Com :=
   blockMapCom idx bnd dst (.mul (.get a (.var "cw")) (.get b (.var "cw")))
