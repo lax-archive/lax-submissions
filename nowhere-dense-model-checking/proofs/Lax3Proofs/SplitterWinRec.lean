@@ -566,6 +566,302 @@ theorem reachedR_length_lt {N : ℕ → ℕ} {s : ℕ}
   by_contra hcon
   exact reachedR_no_survival hQ h (by omega)
 
+/-! ### Monotone recorded positions
+
+The executable driver only needs to retain a subgraph of the arena a
+recorded round leaves.  This is the form compatible with a cover block:
+the work arena may be restricted to the current cluster immediately,
+without materialising the rest of Connector's ball.  All arguments used
+by the quasi-wideness contradiction are monotone under this extra edge
+deletion. -/
+
+/-- Recorded positions in which a round may discard additional edges.
+Each history entry still names the arena in which its connector was
+played; only the position handed to the next round is allowed to lie
+below the round's exact successor. -/
+inductive ReachedSubR (r : ℕ) (G : SimpleGraph (Fin n)) :
+    List (RoundR n) → SimpleGraph (Fin n) → Prop
+  | nil : ReachedSubR r G [] G
+  | step {rounds : List (RoundR n)} {A A' : SimpleGraph (Fin n)}
+      {v : Fin n} {S : Set (Fin n)}
+      (h : ReachedSubR r G rounds A) (hv : ∃ u, A.Adj v u) (hself : v ∈ S)
+      (hwalk : ∀ e ∈ rounds, WithinDist e.arena r e.vtx v →
+        ∃ p : e.arena.Walk e.vtx v, p.length ≤ r ∧ {z | z ∈ p.support} ⊆ S)
+      (hsub : A' ≤ nextArenaR r ⟨v, A, S⟩) :
+      ReachedSubR r G (⟨v, A, S⟩ :: rounds) A'
+
+/-- Invert one monotone recorded round. -/
+theorem reachedSubR_cons {v : Fin n} {A₀ : SimpleGraph (Fin n)} {S : Set (Fin n)}
+    (h : ReachedSubR r G (⟨v, A₀, S⟩ :: rounds) A) :
+    ReachedSubR r G rounds A₀ ∧ (∃ u, A₀.Adj v u) ∧ v ∈ S ∧
+      (∀ e ∈ rounds, WithinDist e.arena r e.vtx v →
+        ∃ p : e.arena.Walk e.vtx v, p.length ≤ r ∧ {z | z ∈ p.support} ⊆ S) ∧
+      A ≤ nextArenaR r ⟨v, A₀, S⟩ := by
+  cases h with
+  | step h hv hself hwalk hsub => exact ⟨h, hv, hself, hwalk, hsub⟩
+
+/-- Every monotone recorded arena remains below the input graph. -/
+theorem reachedSubR_le (h : ReachedSubR r G rounds A) : A ≤ G := by
+  induction h with
+  | nil => exact le_rfl
+  | @step rounds A A' v S _ _ _ _ hsub ih =>
+      exact le_trans hsub (le_trans (nextArenaR_le r ⟨v, A, S⟩) ih)
+
+/-- Every earlier stretch of a monotone play is again such a play. -/
+theorem reachedSubR_suffix (h : ReachedSubR r G rounds A) :
+    ∀ t : List (RoundR n), t <:+ rounds → ∃ B, ReachedSubR r G t B := by
+  induction h with
+  | nil =>
+      intro t ht
+      rw [List.suffix_nil.mp ht]
+      exact ⟨G, ReachedSubR.nil⟩
+  | @step rounds A A' v S hh hv hself hwalk hsub ih =>
+      intro t ht
+      rcases List.suffix_cons_iff.mp ht with rfl | ht'
+      · exact ⟨A', ReachedSubR.step hh hv hself hwalk hsub⟩
+      · exact ih t ht'
+
+/-- Every monotone recorded round contains its connector. -/
+theorem selfSubR (h : ReachedSubR r G rounds A) : ∀ e ∈ rounds, e.vtx ∈ e.gen := by
+  induction h with
+  | nil => intro e he; exact absurd he (by simp)
+  | @step rounds A A' v S hh hv hself hwalk hsub ih =>
+      intro e he
+      rcases List.mem_cons.mp he with rfl | he'
+      · exact hself
+      · exact ih e he'
+
+/-- Additional edge deletion preserves the permanent-isolation lemma. -/
+theorem isolatedSubR (h : ReachedSubR r G rounds A) :
+    ∀ e ∈ rounds, ∀ z ∈ e.gen, ∀ u, ¬ A.Adj z u := by
+  induction h with
+  | nil => intro e he; exact absurd he (by simp)
+  | @step rounds A A' v S hh hv hself hwalk hsub ih =>
+      intro e he z hz u hadj
+      rcases List.mem_cons.mp he with rfl | he'
+      · exact not_mem_batchR_of_nextArenaR_adj (hsub hadj)
+          (mem_batchR hz (mem_ball_of_nextArenaR_adj (hsub hadj)))
+      · exact ih e he' z hz u (nextArenaR_le r ⟨v, A, S⟩ (hsub hadj))
+
+/-- A surviving edge still lies in every earlier round's ball. -/
+theorem mem_ball_of_roundSubR (h : ReachedSubR r G rounds A) :
+    ∀ e ∈ rounds, ∀ z u, A.Adj z u → z ∈ ball e.arena r e.vtx := by
+  induction h with
+  | nil => intro e he; exact absurd he (by simp)
+  | @step rounds A A' v S hh hv hself hwalk hsub ih =>
+      intro e he z u hadj
+      rcases List.mem_cons.mp he with rfl | he'
+      · exact mem_ball_of_nextArenaR_adj (hsub hadj)
+      · exact ih e he' z u (nextArenaR_le r ⟨v, A, S⟩ (hsub hadj))
+
+/-- Connectors remain distinct in every surviving monotone play. -/
+theorem picksSubR_nodup (h : ReachedSubR r G rounds A) :
+    (rounds.map RoundR.vtx).Nodup := by
+  induction h with
+  | nil => simp
+  | @step rounds A A' v S hh hv hself hwalk hsub ih =>
+      rw [List.map_cons, List.nodup_cons]
+      refine ⟨fun hmem => ?_, ih⟩
+      obtain ⟨e, he, hev⟩ := List.mem_map.mp hmem
+      obtain ⟨u, hu⟩ := hv
+      refine isolatedSubR hh e he e.vtx (selfSubR hh e he) u ?_
+      show A.Adj e.vtx u
+      rw [show e.vtx = v from hev]
+      exact hu
+
+/-- Read the arena and walk clause of one monotone history entry. -/
+theorem reachedSubR_entry (h : ReachedSubR r G rounds A) {b : ℕ}
+    (hb : b < rounds.length) :
+    ReachedSubR r G (rounds.drop (b + 1)) (rounds[b]).arena ∧
+      (∃ u, (rounds[b]).arena.Adj (rounds[b]).vtx u) ∧
+      (∀ e ∈ rounds.drop (b + 1), WithinDist e.arena r e.vtx (rounds[b]).vtx →
+        ∃ p : e.arena.Walk e.vtx (rounds[b]).vtx, p.length ≤ r ∧
+          {z | z ∈ p.support} ⊆ (rounds[b]).gen) := by
+  obtain ⟨B, hB⟩ := reachedSubR_suffix h (rounds.drop b) (List.drop_suffix b rounds)
+  rw [List.drop_eq_getElem_cons hb] at hB
+  obtain ⟨h1, h2, -, h4, -⟩ := reachedSubR_cons (v := (rounds[b]).vtx)
+    (A₀ := (rounds[b]).arena) (S := (rounds[b]).gen) hB
+  exact ⟨h1, h2, h4⟩
+
+/-- Each ordered pair of monotone rounds still records a short walk. -/
+theorem pairSubR_walk (h : ReachedSubR r G rounds A) {b a : ℕ}
+    (hb : b < rounds.length) (ha : a < rounds.length) (hba : b < a) :
+    ∃ p : (rounds[a]).arena.Walk (rounds[a]).vtx (rounds[b]).vtx,
+      p.length ≤ r ∧ {z | z ∈ p.support} ⊆ (rounds[b]).gen ∧
+      (rounds[a]).vtx ≠ (rounds[b]).vtx := by
+  obtain ⟨hRb, ⟨u, hu⟩, hwalkb⟩ := reachedSubR_entry h hb
+  have hmem : rounds[a] ∈ rounds.drop (b + 1) := getElem_mem_drop (j := b + 1) ha hba
+  have hball : (rounds[b]).vtx ∈ ball (rounds[a]).arena r (rounds[a]).vtx :=
+    mem_ball_of_roundSubR hRb rounds[a] hmem _ u hu
+  obtain ⟨p, hplen, hpsub⟩ := hwalkb rounds[a] hmem (mem_ball.mp hball)
+  refine ⟨p, hplen, hpsub, fun hEq => ?_⟩
+  refine isolatedSubR hRb rounds[a] hmem (rounds[a]).vtx
+    (selfSubR hRb rounds[a] hmem) u ?_
+  rw [hEq]
+  exact hu
+
+/-- Walks from chronologically separated monotone pairs are disjoint. -/
+theorem pairSubR_disjoint (h : ReachedSubR r G rounds A)
+    {bNew aNew bOld : ℕ} (hbNew : bNew < rounds.length)
+    (haNew : aNew < rounds.length) (hbOld : bOld < rounds.length)
+    (hcross : aNew < bOld) {z : Fin n} (hzOld : z ∈ (rounds[bOld]).gen)
+    {pNew : (rounds[aNew]).arena.Walk (rounds[aNew]).vtx (rounds[bNew]).vtx}
+    (hne : (rounds[aNew]).vtx ≠ (rounds[bNew]).vtx) (hzNew : z ∈ pNew.support) :
+    False := by
+  obtain ⟨hRa, -, -⟩ := reachedSubR_entry h haNew
+  have hiso : ∀ u, ¬ (rounds[aNew]).arena.Adj z u :=
+    isolatedSubR hRa rounds[bOld] (getElem_mem_drop (j := aNew + 1) hbOld hcross) z hzOld
+  have hlen0 : pNew.length ≠ 0 :=
+    fun h0 => hne (SimpleGraph.Walk.eq_of_length_eq_zero h0)
+  obtain ⟨w, hw⟩ := exists_adj_of_mem_support pNew hlen0 hzNew
+  exact hiso w hw
+
+/-- The quasi-wideness contradiction is unchanged for monotone plays. -/
+theorem no_full_survivalSubR {N : ℕ → ℕ} {s : ℕ}
+    (hQ : ∀ P : Set (Fin n), N (2 * s + 2) ≤ P.ncard →
+      ∃ S B : Set (Fin n), S.ncard ≤ s ∧ B ⊆ P \ S ∧ 2 * s + 2 ≤ B.ncard ∧
+        DistIndependent (deleteVerts G S) r B)
+    (h : ReachedSubR r G rounds A) (hlen : rounds.length = N (2 * s + 2)) : False := by
+  classical
+  have hPcard : ({z | z ∈ rounds.map RoundR.vtx} : Set (Fin n)).ncard = rounds.length := by
+    have hcoe : ({z | z ∈ rounds.map RoundR.vtx} : Set (Fin n)) =
+        ((rounds.map RoundR.vtx).toFinset : Set (Fin n)) := by ext z; simp
+    rw [hcoe, Set.ncard_coe_finset, List.toFinset_card_of_nodup (picksSubR_nodup h),
+      List.length_map]
+  obtain ⟨S, B, hS, hBP, hBcard, hInd⟩ := hQ _ (by rw [hPcard, hlen])
+  obtain ⟨bi, ai, hbl, hal, hba, hcross, hbB, haB⟩ :
+      ∃ bi ai : Fin (s + 1) → ℕ,
+        ∃ hbl : ∀ t, bi t < rounds.length, ∃ hal : ∀ t, ai t < rounds.length,
+          (∀ t, bi t < ai t) ∧ (∀ t t' : Fin (s + 1), t < t' → ai t < bi t') ∧
+          (∀ t, (rounds[bi t]'(hbl t)).vtx ∈ B) ∧
+          (∀ t, (rounds[ai t]'(hal t)).vtx ∈ B) := by
+    set I : Finset (Fin rounds.length) :=
+      Finset.univ.filter (fun i => (rounds[(i : ℕ)]'i.isLt).vtx ∈ B) with hI
+    have hsub : B ⊆ (fun i : Fin rounds.length => (rounds[(i : ℕ)]'i.isLt).vtx) ''
+        (I : Set (Fin rounds.length)) := by
+      intro z hz
+      obtain ⟨e, he, hez⟩ := List.mem_map.mp (hBP hz).1
+      obtain ⟨i, hi, hie⟩ := List.mem_iff_getElem.mp he
+      have hzi : (rounds[i]'hi).vtx = z := by rw [hie]; exact hez
+      refine ⟨⟨i, hi⟩, Finset.mem_coe.mpr ?_, hzi⟩
+      rw [hI, Finset.mem_filter]
+      refine ⟨Finset.mem_univ _, ?_⟩
+      show (rounds[i]'hi).vtx ∈ B
+      rw [hzi]
+      exact hz
+    have hIcard : 2 * s + 2 ≤ I.card := by
+      have h1 : B.ncard ≤ ((I : Set (Fin rounds.length))).ncard :=
+        le_trans (Set.ncard_le_ncard hsub (Set.toFinite _))
+          (Set.ncard_image_le (Set.toFinite _))
+      rw [Set.ncard_coe_finset] at h1
+      omega
+    obtain ⟨J, hJI, hJcard⟩ := Finset.exists_subset_card_eq hIcard
+    have hmemB : ∀ k : Fin (2 * s + 2),
+        (rounds[((J.orderEmbOfFin hJcard k : Fin rounds.length) : ℕ)]'
+          (J.orderEmbOfFin hJcard k).isLt).vtx ∈ B := by
+      intro k
+      have hk := hJI (J.orderEmbOfFin_mem hJcard k)
+      rw [hI, Finset.mem_filter] at hk
+      exact hk.2
+    have hmono : ∀ k k' : Fin (2 * s + 2), k < k' →
+        ((J.orderEmbOfFin hJcard k : Fin rounds.length) : ℕ) <
+          ((J.orderEmbOfFin hJcard k' : Fin rounds.length) : ℕ) :=
+      fun k k' hkk' => (J.orderEmbOfFin hJcard).strictMono hkk'
+    refine ⟨fun t => ((J.orderEmbOfFin hJcard ⟨2 * (t : ℕ), by
+                have := t.isLt; omega⟩ : Fin rounds.length) : ℕ),
+            fun t => ((J.orderEmbOfFin hJcard ⟨2 * (t : ℕ) + 1, by
+                have := t.isLt; omega⟩ : Fin rounds.length) : ℕ),
+            fun t => Fin.isLt _, fun t => Fin.isLt _, fun t => ?_, fun t t' htt' => ?_,
+            fun t => hmemB _, fun t => hmemB _⟩
+    · exact hmono _ _ (by simp)
+    · refine hmono _ _ ?_
+      have : (t : ℕ) < (t' : ℕ) := htt'
+      simp only [Fin.mk_lt_mk]
+      omega
+  choose p hplen hpsub hpne using
+    fun t : Fin (s + 1) => pairSubR_walk h (hbl t) (hal t) (hba t)
+  have hdisj : ∀ t t' : Fin (s + 1), t ≠ t' → ∀ z,
+      z ∈ {z | z ∈ (p t).support} → z ∈ {z | z ∈ (p t').support} → False := by
+    intro t t' hne z hz hz'
+    rcases lt_or_gt_of_ne hne with hlt | hlt
+    · exact pairSubR_disjoint h (hbl t) (hal t) (hbl t') (hcross t t' hlt)
+        (hpsub t' hz') (hpne t) hz
+    · exact pairSubR_disjoint h (hbl t') (hal t') (hbl t) (hcross t' t hlt)
+        (hpsub t hz) (hpne t') hz'
+  obtain ⟨t₀, ht₀⟩ := exists_avoiding hS (fun t => {z | z ∈ (p t).support}) hdisj
+  have hAle : (rounds[ai t₀]'(hal t₀)).arena ≤ G :=
+    reachedSubR_le (reachedSubR_entry h (hal t₀)).1
+  have hsupp : ∀ z ∈ (p t₀).support, z ∉ S := fun z hz => ht₀ z hz
+  obtain ⟨q, hq⟩ := exists_walk_deleteVerts_of_le hAle (p t₀) hsupp
+  have hgt := distIndependent_iff.mp hInd (haB t₀) (hbB t₀) (hpne t₀) q
+  have hlt := hplen t₀
+  omega
+
+/-- No monotone play reaches the round bound. -/
+theorem reachedSubR_no_survival {N : ℕ → ℕ} {s : ℕ}
+    (hQ : ∀ P : Set (Fin n), N (2 * s + 2) ≤ P.ncard →
+      ∃ S B : Set (Fin n), S.ncard ≤ s ∧ B ⊆ P \ S ∧ 2 * s + 2 ≤ B.ncard ∧
+        DistIndependent (deleteVerts G S) r B)
+    (h : ReachedSubR r G rounds A) (hlen : N (2 * s + 2) ≤ rounds.length) : False := by
+  obtain ⟨B, hB⟩ := reachedSubR_suffix h
+    (rounds.drop (rounds.length - N (2 * s + 2))) (List.drop_suffix _ _)
+  exact no_full_survivalSubR hQ hB (by rw [List.length_drop]; omega)
+
+/-- The termination measure for monotone recorded positions. -/
+theorem reachedSubR_length_lt {N : ℕ → ℕ} {s : ℕ}
+    (hQ : ∀ P : Set (Fin n), N (2 * s + 2) ≤ P.ncard →
+      ∃ S B : Set (Fin n), S.ncard ≤ s ∧ B ⊆ P \ S ∧ 2 * s + 2 ≤ B.ncard ∧
+        DistIndependent (deleteVerts G S) r B)
+    (h : ReachedSubR r G rounds A) : rounds.length < N (2 * s + 2) := by
+  by_contra hcon
+  exact reachedSubR_no_survival hQ h (by omega)
+
+/-- Extend a monotone play while retaining only an arbitrary set `X`
+inside the round's ball.  The executable batch need contain each recorded
+walk only where `X` survives; the rest of that walk is placed in the
+mathematical generating set and disappears with `Xᶜ`. -/
+theorem reachedSubR_descend {v : Fin n} {X W : Set (Fin n)}
+    {A' : SimpleGraph (Fin n)} (h : ReachedSubR r G rounds A)
+    (hv : ∃ u, A.Adj v u) (hXball : X ⊆ ball A r v)
+    (hself : v ∈ W)
+    (hwalk : ∀ e ∈ rounds, WithinDist e.arena r e.vtx v →
+      ∃ p : e.arena.Walk e.vtx v, p.length ≤ r ∧
+        {z | z ∈ p.support} ∩ X ⊆ W)
+    (hnext : A' ≤ deleteVerts (deleteVerts A Xᶜ) W) :
+    ∃ S : Set (Fin n), ReachedSubR r G (⟨v, A, S⟩ :: rounds) A' := by
+  classical
+  set S : Set (Fin n) := W ∪ {z | ∃ e ∈ rounds,
+    ∃ p : e.arena.Walk e.vtx v, p.length ≤ r ∧
+      ({w | w ∈ p.support} ∩ X ⊆ W) ∧ z ∈ p.support ∧ z ∉ X} with hS
+  have hround : ReachedSubR r G (⟨v, A, S⟩ :: rounds) A' :=
+    ReachedSubR.step h hv (Or.inl hself)
+      (fun e he hwd => by
+        obtain ⟨p, hplen, hpsub⟩ := hwalk e he hwd
+        refine ⟨p, hplen, fun z hz => ?_⟩
+        by_cases hzX : z ∈ X
+        · exact Or.inl (hpsub ⟨hz, hzX⟩)
+        · exact Or.inr ⟨e, he, p, hplen, hpsub, hz, hzX⟩)
+      (le_trans hnext (by
+        intro z w hzw
+        obtain ⟨hzwA, hzW, hwW⟩ := deleteVerts_adj.mp hzw
+        obtain ⟨hA, hzXc, hwXc⟩ := deleteVerts_adj.mp hzwA
+        have hzX : z ∈ X := by simpa using hzXc
+        have hwX : w ∈ X := by simpa using hwXc
+        have hzS : z ∉ S := by
+          intro hz
+          rcases hz with hzW' | ⟨e, he, p, hp, hpsub, hzp, hznX⟩
+          · exact hzW hzW'
+          · exact hznX hzX
+        have hwS : w ∉ S := by
+          intro hw
+          rcases hw with hwW' | ⟨e, he, p, hp, hpsub, hwp, hwnX⟩
+          · exact hwW hwW'
+          · exact hwnX hwX
+        exact deleteVerts_adj.mpr ⟨deleteVerts_adj.mpr
+          ⟨hA, fun hc => hc (hXball hzX), fun hc => hc (hXball hwX)⟩,
+          fun hb => hzS hb.1, fun hb => hwS hb.1⟩))
+  exact ⟨S, hround⟩
+
 end Play
 
 /-! ### The worked example
