@@ -41,7 +41,7 @@ cluster and reading the boolean combinations back.
 
 The recursion bottoms out at `j = ℓ`, where `ℓ` is the round bound of the
 splitter game on the class. That is not a fuel cut-off: by
-`Lax3Proofs.SplitterWinRec.reachedR_length_lt` no play of the recorded
+`Lax3Proofs.SplitterWinRec.reachedSubR_length_lt` no play of the recorded
 game lasts `ℓ` rounds, so the arena at depth `ℓ` is *edgeless*, and
 the base case is the unary-structure evaluation of `Lax3Proofs.BotEval` —
 row lookups, equality tests, and a witness search over the environment
@@ -55,16 +55,13 @@ The driver carries **two** masks per depth. The *work* arena `alv j` is
 the one the tables are about: it is the arena of `Evaluator.stepArena`,
 the cluster restriction followed by the batch isolation. The *game*
 arena `gam j` is the one the splitter strategy is played in: the ball
-restriction followed by the same batch isolation, which is exactly
-`SplitterWinRec.nextArenaR` of the round the descent records. Keeping
-both is what makes the game invariant an equality rather than an
-approximation — the recorded rounds are literally a `ReachedR` play —
-while the work arena, which the cover has cut down further, is a subgraph
-of the game arena and inherits the edgelessness at the bottom. The one
-lemma that connects them is `stepArena_le_nextArena` — the cluster lies
-inside the ball, and the two arenas isolate the same batch — and
-`playRec_succ` is the descent step, whose last hypothesis is what that
-inequality discharges.
+restriction defines the exact round successor, while the executable
+retains only its current cover cluster. The recorded game is therefore
+a monotone `ReachedSubR` play: every stored position is a subgraph of the
+exact successor. The work arena is in turn a subgraph of that retained
+game arena and inherits the edgelessness at the bottom. The lemma
+`stepArena_le_nextArena` proves that the cluster lies inside the
+mathematical ball, and `playRec_succ` records the retained subposition.
 
 # Names
 
@@ -361,13 +358,10 @@ where it meets `W ∩ X`.
 This is the verdict of (c2a). The atom pass needs
 `Refine.DeadRowProbe.stepColoringP_subset`'s `hw : ∀ i, w i ∈ X`, which
 `RamDriverCluster.ClusterData` did not supply, and the lemma says the
-narrowing that supplies it costs the *arena* nothing: the batch as a
-SET — which the game invariant, the child mask and the kill set are all
-stated at — may stay exactly what `batchCom` marked, and only the
-padded ENUMERATION `RamDriver.enumBatch` reads out of it is cut down to
-the cluster. The monotone game invariant now also retains the next game
-position on `X`, so this same identity explains why vertices of the
-batch outside `X` need not be materialised in the successor mask. -/
+narrowing that supplies it costs the *arena* nothing. The executable
+now materialises `W ∩ X` directly; this
+identity is the semantic bridge to the exact splitter round, whose
+definition may still use the full mathematical batch `W`. -/
 theorem deleteVerts_inter_cluster (A : SimpleGraph (Fin n)) (X W : Set (Fin n)) :
     deleteVerts (deleteVerts A Xᶜ) (W ∩ X) = deleteVerts (deleteVerts A Xᶜ) W := by
   ext u v
@@ -391,8 +385,8 @@ theorem stepArenaP_eq_inter (A : SimpleGraph (Fin n)) (X : Set (Fin n)) {mb : �
 driver writes — alive, in the cluster, out of the batch, which is what
 `andCom` followed by `subCom` computes — is the cluster step's arena.
 This is the bridge between the program's three arrays and
-`Evaluator.stepArena`; the game arena's is the same statement with the
-ball's indicator in place of the cluster's. -/
+`Evaluator.stepArena`; the retained game arena uses the same cluster
+indicator over its (possibly larger) parent mask. -/
 theorem masked_step {G : SimpleGraph (Fin n)} (M Xa Wa : ℕ → ℕ) {X W : Set (Fin n)}
     (hX : ∀ v : Fin n, v ∈ X ↔ Xa (v : ℕ) ≠ 0)
     (hW : ∀ v : Fin n, v ∈ W ↔ Wa (v : ℕ) ≠ 0) :
@@ -422,7 +416,7 @@ lies in the ball the round restricts to and the two isolate the same
 batch, so every edge that survives the step survives the round. This is
 the one inequality that lets the driver keep the game invariant as an
 equality while its own arena is cut down further by the cover: it is what
-`playRec_succ`'s last hypothesis is discharged by. -/
+`playRec_succ` uses before retaining the executable successor. -/
 theorem stepArena_le_nextArena {r : ℕ} {A P : SimpleGraph (Fin n)} {v : Fin n}
     {X W : Set (Fin n)} (hAP : A ≤ P) (hX : X ⊆ ball A r v) :
     deleteVerts (deleteVerts A Xᶜ) W ≤ deleteVerts (deleteVerts P (ball P r v)ᶜ) W := by
@@ -1534,8 +1528,9 @@ def colourCom (cap mb j : ℕ) : Com :=
 
 A recorded round isolates the connector itself together with, for every
 earlier connector the round's arena reaches, the support of a short walk
-from it to the new one *taken in the arena that round was played in*, all
-cut down to the ball the round restricts to. The driver has what it needs
+from it to the new one *taken in the arena that round was played in*.
+The executable batch retains only the part of those supports in the
+current cover cluster, which itself lies in the round's ball. The driver has what it needs
 to mark that: the earlier connectors are the scalars `ctr a`, and the
 arenas they were played in are the game masks `gam a`, which is exactly
 why the game masks are kept. The walk is whatever
@@ -1563,7 +1558,7 @@ IMP+ does not. So the two halves are separated here and the walk back is
 run only when the search found the target — `dist[tv] ≤ 2·cap`, the
 sentinel `RamBfs.initDist` writes being `2·cap + 1`.
 
-Skipping it costs nothing. `SplitterWinRec.ReachedR` asks a round for a
+Skipping it costs nothing. `SplitterWinRec.ReachedSubR` asks a round for a
 walk to an earlier connector only *when the round's arena puts the two
 within the cap*, and the guard's false branch is exactly that
 hypothesis' negation: `RamBfs.BfsTree.reach` says a vertex the arena
@@ -1579,9 +1574,9 @@ def ancestorStep (cap j a : ℕ) : Com :=
             (.seq RamBfsPaths.extractPathCom (markPath (batName j)))
             .skip))))
 
-/-- **The batch of the round**: the connector together with a short walk
-from every earlier connector the round's arena reaches, cut down to the
-ball the round restricts to.
+/-- **The executable part of the batch**: the connector together with
+the portion inside the retained cover cluster of one short walk from
+every earlier connector the round's arena reaches.
 
 The last pass reads its own destination, which is what
 `RamDriverDescend.andSelfCom_spec` is for. -/
@@ -1589,7 +1584,7 @@ def batchCom (cap j : ℕ) : Com :=
   .seq (fillCom (batName j) (.lit 0))
     (.seq (.store (batName j) (.var (ctrName j)) (.lit 1))
       (.seq (foldRange (fun a => ancestorStep cap j a) j)
-        (andCom (batName j) (balName j) (batName j))))
+        (andCom (batName j) (cluName j) (batName j))))
 
 /-- The padded enumeration of the batch **inside the cluster**, as an
 array of exactly `mb` entries: the vertices the batch and the cluster
@@ -1599,17 +1594,15 @@ is the centre of the very cluster the turn loaded — so the repetition is
 well defined, and `FormulaTables.range_comp_of_surjective` is why it
 costs the isolation rewrite nothing.
 
-**The cluster guard is wave R1.8-T3-flip (c2a).** The pass used to
-enumerate the whole batch, and the palette built off it then had a
-profile slot centred at an out-of-cluster batch entry — a class the
-child's colour rows could not be blind to, which is what
+**The cluster guard is wave R1.8-T3-flip (c2a).** The palette must not
+have a profile slot centred at an out-of-cluster batch entry — a class
+the child's colour rows could not be blind to, which is what
 `Refine.ScatterDeadPass.outside_class_not_uniform_refuted` compiles and
 what left `Refine.DeadRowProbe.stepColoringP_subset`'s `hw` without a
-producer. Cutting the *enumeration* by the cluster supplies it, and
-costs nothing anywhere else: the batch as a set — the game invariant's
-`W`, the child mask's, the kill set's — is untouched, and the cluster
-step's arena cannot see the difference
-(`RamDriver.deleteVerts_inter_cluster`). -/
+producer. `batchCom` now already cuts its indicator to the cluster;
+this second guard documents and enforces the palette boundary. The
+cluster-step arena cannot distinguish that retained batch from the
+full mathematical batch (`RamDriver.deleteVerts_inter_cluster`). -/
 def enumBatch (bat clu : String) (mb : ℕ) : Com :=
   .seq (.assign "bc" (.lit 0))
     (.seq (.assign "z" (.lit 0))
@@ -2162,17 +2155,16 @@ def memFilterCom (j : ℕ) : Com :=
               .skip)
             (.assign "mk" (.add (.var "mk") (.lit 1)))))))
 
-/-- The state of the next depth: the ball of the round in the game
-arena, the batch, the two masks the cluster step produces — and the
-child's member list, filtered out of the block row the cluster load
-emitted. -/
+/-- The state of the next depth: the cluster-truncated batch, the work
+and game masks retained on that cluster, and the child's member list
+filtered out of the block row the cluster load emitted. The no-op in
+the fourth slot records where the former materialised game-ball pass
+sat; cover geometry now discharges that restriction semantically. -/
 def descendCom (cap j : ℕ) : Com :=
   .seq (.assign (ctrName j) (.get (ordName j) (.var (curName j))))
     (.seq (clusterLoad j)
       (.seq (andCom (alvName j) (cluName j) (resName j))
-        (.seq (.seq (fillCom (balName j) (.lit 0))
-            (.seq (.store (balName j) (.var (ctrName j)) (.lit 1))
-              (chainCom (gamName j) (ballStage j) (2 * cap))))
+        (.seq .skip
           (.seq (batchCom cap j)
             (.seq (subCom (resName j) (batName j) (alvName (j + 1)))
               (.seq (andCom (gamName j) (cluName j) (gamName (j + 1)))
@@ -2968,10 +2960,11 @@ theorem TablesSized.run {B q_top cap mb n : ℕ} {φ : Lax3.FirstOrder.FO 0} {c 
     TablesSized q_top cap mb φ n σ' := fun j => (h j).run hr
 
 /-- **The per-depth arrays of every depth, at the lengths the driver
-addresses them at.** Every one of them is *stored into* by a pass of the
-level of its own depth — `descendCom` writes the cluster indicator, the
-restricted mask, the two halves of the ball's ping-pong, the batch and
-the two masks of the next depth; `colourCom` writes the depth's whole
+addresses or reserves them at.** The active arrays are *stored into* by
+a pass of their own depth — `descendCom` writes the cluster indicator, the
+restricted mask, the batch and the two masks of the next depth (the two
+legacy ball buffers remain reserved but are no longer touched);
+`colourCom` writes the depth's whole
 colour palette; the ordering pass writes the depth's order array and
 `coverSave` the depth's three copies of the cover — and an out-of-range
 store has no derivation in IMP+, so no precondition of a level can do
@@ -3902,18 +3895,17 @@ correct.
 
 It splits along the turn's six passes.
 
-* `descendCom` is nine flat passes and one chain of expansions. Its
-  content is the two mask equations: the work arena of the next depth is
-  `stepArenaP` at the cluster and the batch, and the game arena is
-  the next arena of the round the descent records — the ball and the
-  same batch. The expansion chain that builds the ball is `expandCom`
-  iterated `2·cap` times, whose own content is one step of `WithinDist`.
+* `descendCom` loads the cover cluster, builds its retained batch, and
+  writes the work and game masks of the next depth on that cluster. The
+  mathematical ball is not materialised: `RamCover.inCluster_subset_ball`
+  proves that the retained game mask is a legal subposition of the exact
+  splitter successor.
 * `batchCom` marks the round: the connector, then one call of
   `RamBfsPaths.bfsParCom` per earlier round in *that* round's game mask,
   and a walk back under the guard. `RamBfsPaths.bfsPath_spec` is what the
   two halves together are worth, and what the recorded round asks of them
-  is that the support of the walk they found lies in the batch where the
-  ball keeps it.
+  is that the part of the support inside the retained cluster lies in
+  the executable batch.
 * `enumBatch` is the padding, and `exists_pad_enum` — proved above — is
   what its result is worth.
 * `colourCom` is `Evaluator.isoColoring`'s three slot equations, each an
@@ -3930,10 +3922,9 @@ It splits along the turn's six passes.
 **The game invariant.** The turn is handed `PlayRec` at its own depth
 and the nested driver only at masks that have it one depth down, so the
 turn owes the descent step of the invariant, which is `playRec_succ` — at
-the cluster retained inside the ball built in the *game* arena and the
-batch `batchCom` produced.  The ball still tells the batch which portions
-of the mathematical connector paths survive; `ReachedSubR` permits the
-machine to hand only the cluster-supported subposition to the next depth.
+the cover cluster proved to lie inside the mathematical game ball and
+the cluster-truncated batch `batchCom` produced. `ReachedSubR` permits the
+machine to hand only this supported subposition to the next depth.
 That is why the driver still carries two masks per depth, while
 `descendCom` now cuts both successors by the current cluster.
 

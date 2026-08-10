@@ -4,13 +4,14 @@ import Lax3Proofs.Refine.MassWeight
 
 /-!
 The passes of one cluster of `Lax3Proofs.RamDriver`, walked: the
-padding, and the expansion the two chains of a cluster are built from.
+padding, the retained descent, and the expansion chains used by the
+colouring.
 
 This file is stage three of the driver. It carries the walks of
 `RamDriver.enumBatch` and of `RamDriver.expandCom`/`chainCom` — the
 first is a whole obligation of `Lax3Proofs.RamDriverCluster`, the second
-is what the descent's ball and the colouring's three slot families are
-each an instance of — together with the three transport lemmas a pass
+supplies the colouring's three slot families (and the standalone legacy
+ball specification) — together with the three transport lemmas a pass
 needs to hand a depth's state on.
 
 # What is proved
@@ -41,7 +42,7 @@ needs to hand a depth's state on.
   of `RamDriver.foldRange` gives (`chainCom_succ`), so the radius
   arithmetic it needs is `ballOf_nbhd` and not
   `RamDriverCluster.nbhd_ballOf`. The family of names is a parameter:
-  the ball's chain alternates between two names
+  the standalone ball chain alternates between two names
   (`RamDriver.ballStage`) and the colour chains run through distinct
   ones, and both are instances.
 * `levelPre_congr`, `coverHeld_congr`, `batchData_congr`: the clauses of
@@ -50,10 +51,10 @@ needs to hand a depth's state on.
 
 # The surface repairs, and what is left
 
-`RamDriverCluster.EnumStep` and `RamDriverCluster.ColourStep` are
-**proved** (`enumStep`, `colourStep`). `DescendStep` is still open, and
-what is left of it is symbolic execution again — see "What the batch
-phase now owes" below.
+`RamDriverCluster.EnumStep`, `RamDriverCluster.ColourStep`, and
+`RamDriverCluster.DescendStep` are proved (`enumStep`, `colourStep`, and
+`descendStep`). The batch contract below records the semantic repair
+that made the descent executable.
 
 The clauses the two obligations used to be short of, and where each
 went:
@@ -79,8 +80,8 @@ went:
 3. **The recorded play is in the state.** `RamDriver.PlayRec` is the
    invariant: the connectors `ctrName a` and the game masks `gamName a`
    of every `a < j` are there, hold vertices and words, and — off the
-   dead branch — *are* the rounds of a `ReachedR` play whose position is
-   the depth's own game arena. `RamDriver.playRec_succ` is the descent
+   dead branch — are the rounds of a monotone `ReachedSubR` play whose
+   retained position is the depth's own game arena. `RamDriver.playRec_succ` is the descent
    step and `RamDriver.playOk_of_playRec` the bridge to the old
    invariant. `DescendStep`'s last clause is now `PlayRec` one depth
    down, and `EnumStep`/`ColourStep` carry it across.
@@ -99,7 +100,7 @@ went:
    obligation is prefixed by `CsrGraph G ns O T` and `WordBoundK`,
    exactly as `DescendStep` is.
 
-# What the batch phase now owes
+# The executable batch contract
 
 The obstruction this file used to record was at the *surface*. The game
 `RamDriver.playRec_succ` descended in was parameterized by an oracle: a
@@ -124,21 +125,22 @@ the round **records** the set it isolated, and is asked only for what
 the win argument consumes and what `bfsPath_spec` certifies. So the
 batch phase owes, of the set `W` the batch indicator marks:
 
-* `W ⊆ ball (masked G Gm) (2·cap) v` — the `andCom` with the ball at the
-  end of `RamDriver.batchCom`;
+* `W ⊆ X ⊆ ball (masked G Gm) (2·cap) v` — `batchCom` cuts directly to
+  the retained cover cluster `X`, whose inclusion in the ball is a cover
+  theorem rather than an executable expansion;
 * `v ∈ W` — the store of `1` at `ctrName j` at its start;
 * for every round the state records, `RamDriver.RecordedRound`, whose
   arena puts its connector within `2·cap` of `v`: the support of *some*
   walk of length at most `2·cap` between them in that arena, intersected
-  with the ball, lies in `W` — one turn of the fold, in the branch the
+  with `X`, lies in `W` — one turn of the fold, in the branch the
   guard takes;
-* `(W ∩ X).Nonempty` and `W.ncard ≤ mb` — the connector, which is the
+* `W.Nonempty` and `W.ncard ≤ mb` — the connector, which is the
   centre `clusterLoad` materialized the cluster of and so lies in it
   (`RamCover.self_mem_wreach`, wave R1.8-T3-flip (c2a)), and one buffer
   of at most `2·cap + 1` vertices per earlier round;
 * and the mask equations, which are `RamDriver.masked_step` and
-  `masked_mul` as before, with `RamDriver.stepArena_le_nextArena` for the
-  inequality between the two.
+  `masked_mul` as before, with `RamDriver.stepArena_le_nextArena` showing
+  the retained game position is below the exact splitter successor.
 
 The size bound is the one clause that needs something from outside the
 turn: `1 + j · (2·cap + 1) ≤ mb` holds because `mb = ℓ · (2·cap + 1)` and
@@ -152,7 +154,7 @@ over `j < ℓ`, and `mb`'s value is the driver's standing choice.
 None of the rest is an equation with a set the program did not compute,
 so all of it is symbolic execution over `RamBfsPaths.bfsPar_spec`,
 `extractPath_spec` and the flat passes around them. `andSelfCom_spec`
-below is the last of those; the engines are untouched.
+below discharges the final cut to the cluster.
 
 # One more gap, in the kit — closed
 
@@ -809,9 +811,8 @@ end Enum
 
 /-! ### One step of neighbourhood expansion, walked
 
-`RamDriver.expandCom` is the pass both chains of a cluster are built
-from — the ball of the round in the descent, the three slot families in
-the colouring — and it is the one pass of the driver with a loop inside
+`RamDriver.expandCom` is the pass the three slot families in the
+colouring are built from, and it is the one pass of the driver with a loop inside
 a loop. `RamDriverCluster` carries its mathematics and both of its
 invariants; what is walked here is the symbolic execution between them:
 the inner scan against `Csr.rowScan_spec` with `ScanHit`, the outer pass
@@ -3960,11 +3961,13 @@ theorem memFilter_spec {bs : ℕ} {Mm A : ℕ → ℕ} (hnB : n < B) (hbsn : bs 
     rw [hp2]
     exact lt_trans (hMmlt p hp1) hnB
 
-/-! ### The ball of the round
+/-! ### A standalone materialised game ball
 
-The expansion chain of the descent, run in the *game* mask: `balName j`
-ends holding the `2·cap`-ball of the connector in the game arena, which
-is the set the round's batch is cut down to. -/
+This discharged expansion remains as a reusable specification of the
+former descent pass. It runs in the *game* mask and leaves `balName j`
+holding the `2·cap`-ball of the connector. `descendCom` no longer calls
+it: the executable retains the cover cluster directly, and the cover
+theory proves that cluster is contained in this mathematical ball. -/
 
 /-- The chain's reading of a ball: `ballOf` measures from the member,
 `ball` from the centre, and `WithinDist` is symmetric. -/
@@ -3978,7 +3981,7 @@ theorem ballOf_singleton_eq_ball (A : SimpleGraph (Fin n)) (r : ℕ) (u : Fin n)
 /-- The cost of the ball's chain. -/
 def ballCost (n ns cap : ℕ) : ℕ := (24 * ns + 44 * n + 6) * (2 * cap) + 11 * n + 12
 
-/-- **The ball of the round, discharged.** -/
+/-- **The standalone materialised game ball, discharged.** -/
 theorem ballCom_spec {Gm : ℕ → ℕ} {O T : ℕ → ℕ} (hcsr : CsrGraph G ns O T)
     {d : ℕ} (hB : WordBoundK B n d ns cap mb) (hnt : ns ≤ nt) (hGmB : ∀ k, k < n → Gm k < B)
     {v : Fin n} :
@@ -4178,7 +4181,7 @@ theorem selfFill_spec (N : ℕ) (a : String) (e : Expr) (g₀ F : ℕ → ℕ)
 
 /-- **The mask conjunction, in place**: `RamDriver.andCom` with its first
 source and its destination the same array, which is what the last pass of
-`RamDriver.batchCom` is — the batch cut down to the ball of the round. -/
+`RamDriver.batchCom` is — the batch cut down to the retained cluster. -/
 theorem andSelfCom_spec (N : ℕ) (b dst : String) (ga gb : ℕ → ℕ)
     (hbd : b ≠ dst) (hNB : N < B) (haB : ∀ k, k < N → ga k < B)
     (hbB : ∀ k, k < N → gb k < B) (habB : ∀ k, k < N → ga k * gb k < B) :
@@ -4329,26 +4332,16 @@ theorem bq_notMem_wvars_batchCom (cap j : ℕ) : "bq" ∉ (batchCom cap j).wvars
 but counters. -/
 theorem mem_wvars_descendCom {cap j : ℕ} {y : String} (h : y ∈ (descendCom cap j).wvars) :
     y = ctrName j ∨ y = mnumName (j + 1) ∨ y ∈ descendScalars := by
-  have hchain : ∀ z ∈ (["i", "z", "hit", "w", "j", "jend"] : List String),
-      z ∈ descendScalars := by decide
   simp only [descendCom, Com.wvars, List.mem_append, List.mem_cons, List.not_mem_nil,
-    or_false, false_or, RamDriverIO.wvars_fillCom, wvars_andCom, wvars_subCom,
+    or_false, false_or, wvars_andCom, wvars_subCom,
     RamDriverFrames.wvars_memFilterCom] at h
-  rcases h with rfl | h | (rfl | rfl) | ((rfl | rfl) | h) | h | (rfl | rfl) |
+  rcases h with rfl | h | (rfl | rfl) | h | (rfl | rfl) |
     (rfl | rfl) | (rfl | rfl) | (rfl | rfl | rfl | rfl | rfl)
   · exact Or.inl rfl
   · exact Or.inr (Or.inr (mem_wvars_clusterLoad h))
   · exact Or.inr (Or.inr mem_descendScalars_i)
   · exact Or.inr (Or.inr mem_descendScalars_i)
-  · exact Or.inr (Or.inr mem_descendScalars_i)
-  · exact Or.inr (Or.inr mem_descendScalars_i)
-  · exact Or.inr (Or.inr (hchain y (mem_wvars_chainCom h)))
   · exact Or.inr (Or.inr (mem_wvars_batchCom h))
-  · exact Or.inr (Or.inr mem_descendScalars_i)
-  · exact Or.inr (Or.inr mem_descendScalars_i)
-  · exact Or.inr (Or.inr mem_descendScalars_i)
-  · exact Or.inr (Or.inr mem_descendScalars_i)
-  · exact Or.inr (Or.inr mem_descendScalars_i)
   -- the child's filter: two counters and the child's own member count
   all_goals first
     | exact Or.inr (Or.inl rfl)
@@ -4817,30 +4810,31 @@ theorem batchFold_spec {B cap mb j : ℕ} (hcsr : CsrGraph G ns O T) (hnt : ns �
 /-- The cost of the batch phase. -/
 def batchCost (n ns cap j : ℕ) : ℕ := ancestorCost n ns cap * j + 26 * n + 16
 
-/-- **The batch of the round, discharged.** What the indicator ends
-marking is the connector together with one short walk per earlier round
-the round's own arena reaches, everything cut down to the ball. -/
+/-- **The executable batch of the round, discharged.** What the
+indicator ends marking is the connector together with the part inside
+the retained set of one short walk per earlier round the round's own
+arena reaches. -/
 theorem batchCom_spec {B cap mb j : ℕ} (hcsr : CsrGraph G ns O T) (hnt : ns ≤ nt)
     {d : ℕ} (hB : WordBoundK B n d ns cap mb) {U : ℕ → Fin n} {Gam : ℕ → ℕ → ℕ} {v : Fin n}
-    {Bal : ℕ → ℕ} (hGamB : ∀ a, a < j → ∀ z, z < n → Gam a z < B)
-    (hBalB : ∀ k, k < n → Bal k < B) (hvBal : Bal (v : ℕ) ≠ 0) :
+    {Cut : ℕ → ℕ} (hGamB : ∀ a, a < j → ∀ z, z < n → Gam a z < B)
+    (hCutB : ∀ k, k < n → Cut k < B) (hvCut : Cut (v : ℕ) ≠ 0) :
     Spec B (fun σ => BatchEnv cap nt j O T U Gam v σ ∧
-        (∃ g, σ.arrs (batName j) = arrOf n g) ∧ σ.arrs (balName j) = arrOf n Bal)
+        (∃ g, σ.arrs (batName j) = arrOf n g) ∧ σ.arrs (cluName j) = arrOf n Cut)
       (batchCom cap j)
       (fun _ σ' => BatchEnv cap nt j O T U Gam v σ' ∧
-        σ'.arrs (balName j) = arrOf n Bal ∧
+        σ'.arrs (cluName j) = arrOf n Cut ∧
         ∃ Wa : ℕ → ℕ, σ'.arrs (batName j) = arrOf n Wa ∧ (∀ k, k < n → Wa k < B) ∧
-          markSet n Wa ⊆ markSet n Bal ∧ v ∈ markSet n Wa ∧
+          markSet n Wa ⊆ markSet n Cut ∧ v ∈ markSet n Wa ∧
           (markSet n Wa).ncard ≤ 1 + j * (2 * cap + 1) ∧
           ∀ a, a < j → WithinDist (masked G (Gam a)) (2 * cap) (U a) v →
             ∃ p : (masked G (Gam a)).Walk (U a) v, p.length ≤ 2 * cap ∧
-              {z : Fin n | z ∈ p.support} ∩ markSet n Bal ⊆ markSet n Wa)
+              {z : Fin n | z ∈ p.support} ∩ markSet n Cut ⊆ markSet n Wa)
       (batchCost n ns cap j) := by
   have h1B := hB.one_lt
   have hnB := hB.n_lt
-  have hbalbat : balName j ≠ batName j := by simp [balName, batName, String.ext_iff]
+  have hcutbat : cluName j ≠ batName j := by simp [cluName, batName, String.ext_iff]
   refine Spec.of_exists (fun σ hσ => ?_)
-  obtain ⟨henv, hbat₀, hbal⟩ := hσ
+  obtain ⟨henv, hbat₀, hcut⟩ := hσ
   have hvn : (v : ℕ) < n := v.isLt
   -- the indicator, opened
   obtain ⟨σ₁, hr₁, ⟨g₁, harr₁, hval₁⟩, -, -⟩ :=
@@ -4891,26 +4885,26 @@ theorem batchCom_spec {B cap mb j : ℕ} (hcsr : CsrGraph G ns O T) (hnt : ns �
     (batchFold_spec hcsr hnt hB hGamB j 0 (by omega)).run (σ := σ₂) ⟨henv₂, hmk₂⟩
   rw [hfold] at hr₃
   rw [Nat.zero_add] at hcard₃ hwalk₃
-  have hbal₃ : σ₃.arrs (balName j) = arrOf n Bal := by
+  have hcut₃ : σ₃.arrs (cluName j) = arrOf n Cut := by
     rw [hr₃.frame_arr _ (fun hc => ?_)]
-    · rw [hr₂.frame_arr _ (by simp [Com.warrs, hbalbat]),
-        hr₁.frame_arr _ (by rw [RamDriverIO.warrs_fillCom]; simp [hbalbat])]
-      exact hbal
+    · rw [hr₂.frame_arr _ (by simp [Com.warrs, hcutbat]),
+        hr₁.frame_arr _ (by rw [RamDriverIO.warrs_fillCom]; simp [hcutbat])]
+      exact hcut
     · obtain ⟨b, -, hm⟩ := RamDriverFrames.mem_warrs_foldRange _ _ hc
       rw [warrs_ancestorStep] at hm
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hm
       revert hm
-      simp [balName, batName, String.ext_iff]
-  -- the cut to the ball
-  obtain ⟨σ₄, hr₄, ⟨Wa, hbat₄, hval₄⟩, -, -, hbal₄⟩ :=
-    (andSelfCom_spec (B := B) n (balName j) (batName j) Wf Bal hbalbat hnB
-      (fun k hk => by have := hbit₃ k hk; omega) hBalB
+      simp [cluName, batName, String.ext_iff]
+  -- the cut to the retained cluster
+  obtain ⟨σ₄, hr₄, ⟨Wa, hbat₄, hval₄⟩, -, -, hcut₄⟩ :=
+    (andSelfCom_spec (B := B) n (cluName j) (batName j) Wf Cut hcutbat hnB
+      (fun k hk => by have := hbit₃ k hk; omega) hCutB
       (fun k hk => by
         have h1 := hbit₃ k hk
-        have h2 := hBalB k hk
-        calc Wf k * Bal k ≤ 1 * Bal k := Nat.mul_le_mul_right _ h1
-          _ = Bal k := by ring
-          _ < B := h2)).run (σ := σ₃) ⟨hbat₃, henv₃.1, hbal₃⟩
+        have h2 := hCutB k hk
+        calc Wf k * Cut k ≤ 1 * Cut k := Nat.mul_le_mul_right _ h1
+          _ = Cut k := by ring
+          _ < B := h2)).run (σ := σ₃) ⟨hbat₃, henv₃.1, hcut₃⟩
   have henv₄ : BatchEnv cap nt j O T U Gam v σ₄ :=
     batchEnv_run henv₃ hr₄ (fun y hy => by
         rw [wvars_andCom] at hy
@@ -4918,19 +4912,19 @@ theorem batchCom_spec {B cap mb j : ℕ} (hcsr : CsrGraph G ns O T) (hnt : ns �
         rcases hy with rfl | rfl <;> exact mem_descendScalars_i)
       (fun b hb => Or.inl (by
         rw [RamDriverFrames.warrs_andCom] at hb; exact List.eq_of_mem_singleton hb))
-  have hmarkeq : markSet n Wa = markSet n Wf ∩ markSet n Bal := by
+  have hmarkeq : markSet n Wa = markSet n Wf ∩ markSet n Cut := by
     rw [markSet_congr hval₄, markSet_mul]
-  refine ⟨σ₄, _, hr₁.seq (hr₂.seq (hr₃.seq hr₄)), ?_, henv₄, hbal₄, Wa, hbat₄, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨σ₄, _, hr₁.seq (hr₂.seq (hr₃.seq hr₄)), ?_, henv₄, hcut₄, Wa, hbat₄, ?_, ?_, ?_, ?_, ?_⟩
   · simp only [batchCost]; omega
   · intro k hk
     rw [hval₄ k hk]
     have h1 := hbit₃ k hk
-    have h2 := hBalB k hk
-    calc Wf k * Bal k ≤ 1 * Bal k := Nat.mul_le_mul_right _ h1
-      _ = Bal k := by ring
+    have h2 := hCutB k hk
+    calc Wf k * Cut k ≤ 1 * Cut k := Nat.mul_le_mul_right _ h1
+      _ = Cut k := by ring
       _ < B := h2
   · rw [hmarkeq]; exact Set.inter_subset_right
-  · rw [hmarkeq]; exact ⟨hvf, hvBal⟩
+  · rw [hmarkeq]; exact ⟨hvf, hvCut⟩
   · rw [hmarkeq]
     exact le_trans (Set.ncard_le_ncard Set.inter_subset_left (Set.toFinite _)) hcard₃
   · intro a ha hwd
@@ -5007,18 +5001,12 @@ theorem mem_warrs_descendCom' {cap j : ℕ} {b : String} (h : b ∈ (descendCom 
     b ∈ descendArrs j := by
   simp only [descendCom, Com.warrs, List.mem_append, List.mem_cons, List.not_mem_nil,
     or_false, false_or, RamDriverFrames.warrs_clusterLoad, RamDriverFrames.warrs_andCom,
-    RamDriverFrames.warrs_subCom, RamDriverFrames.warrs_memFilterCom,
-    RamDriverIO.warrs_fillCom] at h
-  rcases h with (rfl | rfl | rfl) | rfl | (rfl | rfl | hc) | hb | rfl | rfl | rfl | rfl
+    RamDriverFrames.warrs_subCom, RamDriverFrames.warrs_memFilterCom] at h
+  rcases h with (rfl | rfl | rfl) | rfl | hb | rfl | rfl | rfl | rfl
   · exact by simp [descendArrs]
   · exact by simp [descendArrs]
   · exact by simp [descendArrs]
   · exact by simp [descendArrs]
-  · exact by simp [descendArrs]
-  · exact by simp [descendArrs]
-  · obtain ⟨b', -, rfl⟩ := RamDriverFrames.mem_warrs_chainCom _ _ _ hc
-    rw [ballStage]
-    split <;> simp [descendArrs]
   · rcases mem_warrs_batchCom hb with rfl | hl
     · simp [descendArrs]
     · simp only [List.mem_cons, List.not_mem_nil, or_false] at hl
@@ -5035,11 +5023,11 @@ end DescendFrame
 
 /-! ### The descent, discharged
 
-The nine passes composed. Six of them are flat and their content is the
-two mask equations `RamDriver.masked_step` and `RamDriver.masked_mul`;
-the seventh is the expansion chain the ball is built by, the eighth the
-batch phase above, and the ninth the in-place difference
-`subSelfCom_spec` was written for.
+The descent passes composed. Their content is the two mask equations
+`RamDriver.masked_step` and `RamDriver.masked_mul`, the cluster-truncated
+batch phase above, and the in-place difference `subSelfCom_spec` was
+written for. The former ball-expansion slot is now a constant-cost
+`skip`; cover geometry supplies its semantic inclusion.
 
 Two facts come from *outside* the turn and are hypotheses of the theorem
 rather than clauses of `RamDriverCluster.DescendStep`, in the manner of
@@ -5130,15 +5118,16 @@ theorem noWrite_memFilterCom (j : ℕ) : (memFilterCom j).NoWrite := by
 
 theorem noWrite_descendCom (cap j : ℕ) : (descendCom cap j).NoWrite :=
   ⟨trivial, noWrite_clusterLoad j, by rw [andCom]; exact RamDriverIO.noWrite_fillCom _ _,
-    ⟨RamDriverIO.noWrite_fillCom _ _, trivial, noWrite_chainCom _ _ _⟩,
+    trivial,
     noWrite_batchCom cap j,
     by rw [subCom]; exact RamDriverIO.noWrite_fillCom _ _,
     by rw [andCom]; exact RamDriverIO.noWrite_fillCom _ _,
     ⟨by rw [subCom]; exact RamDriverIO.noWrite_fillCom _ _, noWrite_memFilterCom (j + 1)⟩⟩
 
 /-- **The size-indexed descent cost.** The cluster scan is read at the
-turn's block weight `s`; the ball, batch, six flat passes, and member
-filter retain their current carrier/CSR readings.
+turn's block weight `s`; the batch, six flat passes, and member filter
+retain their current carrier/CSR readings. The former materialised game
+ball is gone: cover geometry proves the retained cluster is inside it.
 
 **Rebase E-mem.** Two addends moved. The block scan carries the member
 emission (`8` per block cell inside the scan, `16 → 24`), and the
@@ -5146,7 +5135,7 @@ filter pass adds `23·bs + 8` at the end, read at `bs ≤ n`
 (`RamDriver.MemEnum.card_le`). The whole member thread remains inside
 the turn's descend slot; no new slot appears. -/
 def descendCostSize (n ns cap j s : ℕ) : ℕ :=
-  24 * s + 98 * n + 61 + ballCost n ns cap + batchCost n ns cap j
+  24 * s + 98 * n + 62 + batchCost n ns cap j
 
 /-- The carrier reading of the size-indexed descent cost. -/
 def descendCost (n ns cap j : ℕ) : ℕ := descendCostSize n ns cap j n
@@ -5188,9 +5177,6 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   -- the memory the passes address
   have hclu₀ : ∃ g, σ.arrs (cluName j) = arrOf n g := hdep.get (p := (cluName j, n)) j (by simp)
   have hres₀ : ∃ g, σ.arrs (resName j) = arrOf n g := hdep.get (p := (resName j, n)) j (by simp)
-  have hbal₀ : ∃ g, σ.arrs (balName j) = arrOf n g := hdep.get (p := (balName j, n)) j (by simp)
-  have hblt₀ : ∃ g, σ.arrs (balAltName j) = arrOf n g :=
-    hdep.get (p := (balAltName j, n)) j (by simp)
   have hbat₀ : ∃ g, σ.arrs (batName j) = arrOf n g := hdep.get (p := (batName j, n)) j (by simp)
   have halv1₀ : ∃ g, σ.arrs (alvName (j + 1)) = arrOf n g :=
     hdep.get (p := (alvName (j + 1), n)) (j + 1) (by simp)
@@ -5253,62 +5239,35 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   have hvv₃ : ∀ y : String, y ≠ "i" → σ₃.vars y = σ₂.vars y :=
     fun y hy => hfv₃ y (by rw [wvars_andCom]; simp [hy])
   have hRaB : ∀ k, k < n → Ra k < B := fun k hk => by rw [hRaval k hk]; exact hXB k hk
-  -- P4: the ball of the round, in the game arena
-  obtain ⟨σ₄, hr₄, ⟨⟨Bal, hbal₄, hBalbit, hBalmark⟩, hn₄, hoff₄, htgt₄, hgam₄⟩,
-      hfv₄, hfa₄, -, -⟩ :=
-    ((ballCom_spec (j := j) (v := vc) (Gm := Gm) (nt := Ws) hcsr hB hom.1.1
-      hGmB).frame).run (σ := σ₃)
-      ⟨by rw [hvv₃ "n" (by decide), hvv₂ "n" (by decide),
-          hvars₁ "n" (by simp [ctrName, String.ext_iff])]; exact hn,
-        by rw [hav₃ "off" (by simp [resName, String.ext_iff]),
-          hav₂ "off" (by simp [cluName, String.ext_iff]) (by simp [memName, String.ext_iff]),
-          harrs₁]; exact hoff,
-        by rw [hav₃ "tgt" (by simp [resName, String.ext_iff]),
-          hav₂ "tgt" (by simp [cluName, String.ext_iff]) (by simp [memName, String.ext_iff]),
-          harrs₁]; exact htgt,
-        by rw [hav₃ _ (by simp [gamName, resName, String.ext_iff]),
-          hav₂ _ (by simp [gamName, cluName, String.ext_iff])
-          (by simp [gamName, memName, String.ext_iff]), harrs₁]; exact hgamj,
-        by rw [hav₃ _ (by simp [balName, resName, String.ext_iff]),
-          hav₂ _ (by simp [balName, cluName, String.ext_iff])
-          (by simp [balName, memName, String.ext_iff]), harrs₁]; exact hbal₀,
-        by rw [hav₃ _ (by simp [balAltName, resName, String.ext_iff]),
-          hav₂ _ (by simp [balAltName, cluName, String.ext_iff])
-          (by simp [balAltName, memName, String.ext_iff]), harrs₁]; exact hblt₀,
-        by rw [hvv₃ _ (by simp [ctrName, String.ext_iff]), hvv₂ _ hctrs]; exact hctr₁⟩
-  have hballwarr : ∀ b : String, b ∈ ((Com.seq (fillCom (balName j) (.lit 0))
-      (Com.seq (.store (balName j) (.var (ctrName j)) (.lit 1))
-        (chainCom (gamName j) (ballStage j) (2 * cap)))).warrs) →
-      b = balName j ∨ b = balAltName j := by
-    intro b hb
-    simp only [Com.warrs, List.mem_append, List.mem_cons, List.not_mem_nil, or_false,
-      RamDriverIO.warrs_fillCom] at hb
-    rcases hb with rfl | rfl | hc
-    · exact Or.inl rfl
-    · exact Or.inl rfl
-    · obtain ⟨b', -, rfl⟩ := RamDriverFrames.mem_warrs_chainCom _ _ _ hc
-      rw [ballStage]
-      split
-      · exact Or.inl rfl
-      · exact Or.inr rfl
+  -- P4: no game ball is materialised.  The cover geometry proves the
+  -- retained cluster lies in it, and the executable batch is cut directly
+  -- to that cluster.
+  let σ₄ := σ₃
+  have hr₄ : Run B .skip σ₃ σ₄ 1 := Run.skip
   have hav₄ : ∀ b : String, b ≠ balName j → b ≠ balAltName j → σ₄.arrs b = σ₃.arrs b :=
-    fun b h1 h2 => hfa₄ b (fun hc => (hballwarr b hc).elim h1 h2)
+    fun _ _ _ => rfl
   have hvv₄ : ∀ y : String, y ∉ (["i", "z", "hit", "w", "j", "jend"] : List String) →
       σ₄.vars y = σ₃.vars y := by
-    intro y hy
-    refine hfv₄ y (fun hc => hy ?_)
-    simp only [Com.wvars, List.mem_append, List.mem_cons, List.not_mem_nil, or_false,
-      RamDriverIO.wvars_fillCom] at hc
-    rcases hc with (rfl | rfl) | hc'
-    · simp
-    · simp
-    · rcases hc' with h | h
-      · exact absurd h not_false
-      · exact mem_wvars_chainCom h
-  have hBalB : ∀ k, k < n → Bal k < B := fun k hk => by have := hBalbit k hk; omega
-  -- P5: the batch
+    intro _ _
+    rfl
+  -- P5: the cluster-truncated batch
   have henv₄ : BatchEnv cap Ws j O T U Gam vc σ₄ := by
-    refine ⟨hn₄, hoff₄, htgt₄, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · rw [hvv₄ "n" (by decide), hvv₃ "n" (by decide), hvv₂ "n" (by decide),
+        hvars₁ "n" (by simp [ctrName, String.ext_iff])]
+      exact hn
+    · rw [hav₄ "off" (by simp [balName, String.ext_iff])
+          (by simp [balAltName, String.ext_iff]),
+        hav₃ "off" (by simp [resName, String.ext_iff]),
+        hav₂ "off" (by simp [cluName, String.ext_iff]) (by simp [memName, String.ext_iff]),
+        harrs₁]
+      exact hoff
+    · rw [hav₄ "tgt" (by simp [balName, String.ext_iff])
+          (by simp [balAltName, String.ext_iff]),
+        hav₃ "tgt" (by simp [resName, String.ext_iff]),
+        hav₂ "tgt" (by simp [cluName, String.ext_iff]) (by simp [memName, String.ext_iff]),
+        harrs₁]
+      exact htgt
     · exact exists_arrOf_run (hr₁.seq (hr₂.seq (hr₃.seq hr₄))) halvS₀
     · exact exists_arrOf_run (hr₁.seq (hr₂.seq (hr₃.seq hr₄))) hdistS₀
     · exact exists_arrOf_run (hr₁.seq (hr₂.seq (hr₃.seq hr₄))) hqS₀
@@ -5331,19 +5290,25 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
         hav₂ _ (by simp [gamName, cluName, String.ext_iff])
           (by simp [gamName, memName, String.ext_iff]), harrs₁]
       exact (hUG a ha).2.1
-  have hvBal : Bal (vc : ℕ) ≠ 0 := by
-    have : vc ∈ markSet n Bal := by rw [hBalmark]; exact mem_ball_self _ _ _
-    exact this
-  obtain ⟨σ₅, hr₅, henv₅, hbal₅, Wa, hbat₅, hWaB, hWsub, hvW, hWcard, hWwalk⟩ :=
-    (batchCom_spec (nt := Ws) hcsr hom.1.1 hB (U := U) (Gam := Gam) (v := vc) (Bal := Bal)
-      (fun a ha => (hUG a ha).2.2) hBalB hvBal).run (σ := σ₄)
+  have hvX : vc ∈ markSet n Xa := by
+    rw [hXmark]
+    exact ⟨hordc, by rw [hvc]; exact hordc, by
+      simpa only [hvc] using RamCover.self_mem_wreach (masked G M) π (2 * cap)
+        (⟨ord cc, hordc⟩ : Fin n)⟩
+  obtain ⟨σ₅, hr₅, henv₅, -, Wa, hbat₅, hWaB, hWsub, hvW, hWcard, hWwalk⟩ :=
+    (batchCom_spec (nt := Ws) hcsr hom.1.1 hB (U := U) (Gam := Gam) (v := vc) (Cut := Xa)
+      (fun a ha => (hUG a ha).2.2) (fun k hk => by have := hXbit k hk; omega) hvX).run
+      (σ := σ₄)
       ⟨henv₄, by
         rw [hav₄ _ (by simp [batName, balName, String.ext_iff])
             (by simp [batName, balAltName, String.ext_iff]),
           hav₃ _ (by simp [batName, resName, String.ext_iff]),
           hav₂ _ (by simp [batName, cluName, String.ext_iff])
           (by simp [batName, memName, String.ext_iff]), harrs₁]
-        exact hbat₀, hbal₄⟩
+        exact hbat₀, by
+          rw [hav₄ _ (by simp [cluName, balName, String.ext_iff])
+            (by simp [cluName, balAltName, String.ext_iff])]
+          exact hclu₃⟩
   have hav₅ : ∀ b : String, b ≠ batName j →
       b ∉ (["alv", "dist", "q", "par", "path"] : List String) → σ₅.arrs b = σ₄.arrs b :=
     fun b h1 h2 => hr₅.frame_arr b (fun hc => (mem_warrs_batchCom hc).elim h1 h2)
@@ -5355,8 +5320,13 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     exact hres₃
   have hgam₅ : σ₅.arrs (gamName j) = arrOf n Gm := by
     rw [hav₅ _ (by simp [gamName, batName, String.ext_iff])
-      (by simp [gamName, String.ext_iff])]
-    exact hgam₄
+        (by simp [gamName, String.ext_iff]),
+      hav₄ _ (by simp [gamName, balName, String.ext_iff])
+        (by simp [gamName, balAltName, String.ext_iff]),
+      hav₃ _ (by simp [gamName, resName, String.ext_iff]),
+      hav₂ _ (by simp [gamName, cluName, String.ext_iff])
+        (by simp [gamName, memName, String.ext_iff]), harrs₁]
+    exact hgamj
   have hgam1₅ : ∃ g, σ₅.arrs (gamName (j + 1)) = arrOf n g :=
     exists_arrOf_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq hr₅)))) hgam1₀
   have halv1₅ : ∃ g, σ₅.arrs (alvName (j + 1)) = arrOf n g :=
@@ -5533,16 +5503,9 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     rw [masked_congr (M := Gam') (M' := fun a => Gm a * Xa a * (1 - Wa a))
       (fun k hk => by rw [hGamval k hk, hGtval k hk])]
     exact masked_step Gm Xa Wa hXiff hWiff
-  -- **the connector is in its own cluster** (wave R1.8-T3-flip (c2a)): the
-  -- descent reads it out of the ordering at the very position `clusterLoad`
-  -- materialized the cluster of, and `RamCover.self_mem_wreach` is
-  -- unconditional. This is what makes the batch's cluster half nonempty, and so
-  -- the padded enumeration `RamDriver.enumBatch` reads out of it well defined.
-  have hvX : vc ∈ markSet n Xa := by
-    rw [hXmark]
-    exact ⟨hordc, by rw [hvc]; exact hordc, by
-      simpa only [hvc] using RamCover.self_mem_wreach (masked G M) π (2 * cap)
-        (⟨ord cc, hordc⟩ : Fin n)⟩
+  -- **the connector is in its own cluster** (wave R1.8-T3-flip (c2a)); `hvX`
+  -- was established before the batch because it is now also the retained-set
+  -- premise of that executable pass.
   have hXball : markSet n Xa ⊆ ball (masked G M) (2 * cap) vc := by
     rw [hXmark]
     have h := RamCover.inCluster_subset_ball (masked G M) π (r := cap) hordc
@@ -5619,7 +5582,7 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
       rw [← hcck]
       exact Refine.MassWeight.blockSize_le_blockWeight G Xoff Xmem
         (fun p hp hp' => Refine.MassWeight.mem_lt_of_coverOut hcout hcur hp hp')
-    simp only [descendCostSize, ballCost, batchCost] at hK ⊢
+    simp only [descendCostSize, batchCost] at hK ⊢
     omega
   · exact exists_arrOf_run hrun (hmem.1.get (p := ("wa", mb)) (by simp))
   · intro v' hv'
@@ -5684,7 +5647,7 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     subst hUa
     rw [hGeq] at hwd ⊢
     obtain ⟨p, hp, hps⟩ := hWwalk a haj hwd
-    exact ⟨p, hp, fun z hz => hps ⟨hz.1, by rw [hBalmark]; exact hXgameBall hz.2⟩⟩
+    exact ⟨p, hp, hps⟩
 
 end Descend
 

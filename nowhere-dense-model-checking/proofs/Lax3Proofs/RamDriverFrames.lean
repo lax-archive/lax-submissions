@@ -490,10 +490,6 @@ theorem underscore_notMem_warrs_descendCom (cap j : ℕ) :
     rw [cluName]; exact underscore_notMem_prefixed (by decide) j
   have hres : '_' ∉ (resName j).toList := by
     rw [resName]; exact underscore_notMem_prefixed (by decide) j
-  have hbal : '_' ∉ (balName j).toList := by
-    rw [balName]; exact underscore_notMem_prefixed (by decide) j
-  have hblt : '_' ∉ (balAltName j).toList := by
-    rw [balAltName]; exact underscore_notMem_prefixed (by decide) j
   have hbat : '_' ∉ (batName j).toList := by
     rw [batName]; exact underscore_notMem_prefixed (by decide) j
   have halv : ∀ d : ℕ, '_' ∉ (alvName d).toList := fun d => by
@@ -502,10 +498,6 @@ theorem underscore_notMem_warrs_descendCom (cap j : ℕ) :
     rw [gamName]; exact underscore_notMem_prefixed (by decide) d
   have hmem : ∀ d : ℕ, '_' ∉ (memName d).toList := fun d => by
     rw [memName]; exact underscore_notMem_prefixed (by decide) d
-  have hstage : ∀ b : ℕ, '_' ∉ (ballStage j b).toList := by
-    intro b
-    rw [ballStage]
-    split <;> assumption
   have hanc : ∀ a' : ℕ, ∀ a ∈ (ancestorStep cap j a').warrs, '_' ∉ a.toList := by
     intro a' a ha
     simp only [ancestorStep, Com.warrs, List.mem_append, List.nil_append,
@@ -529,15 +521,12 @@ theorem underscore_notMem_warrs_descendCom (cap j : ℕ) :
   intro a ha
   simp only [descendCom, Com.warrs, List.mem_append, List.mem_cons, List.not_mem_nil,
     or_false, false_or, warrs_clusterLoad, warrs_andCom, warrs_subCom,
-    warrs_memFilterCom, RamDriverIO.warrs_fillCom] at ha
-  rcases ha with (rfl | rfl | rfl) | rfl | (rfl | rfl | h) | h | rfl | rfl | rfl | rfl
+    warrs_memFilterCom] at ha
+  rcases ha with (rfl | rfl | rfl) | rfl | h | rfl | rfl | rfl | rfl
   · exact hclu
   · exact hclu
   · exact hmem (j + 1)
   · exact hres
-  · exact hbal
-  · exact hbal
-  · obtain ⟨b, -, rfl⟩ := mem_warrs_chainCom _ _ _ h; exact hstage (b + 1)
   · exact hbatch a h
   · exact halv (j + 1)
   · exact hgam (j + 1)
