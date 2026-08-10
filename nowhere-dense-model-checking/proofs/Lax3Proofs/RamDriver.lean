@@ -451,14 +451,14 @@ arrays. -/
 /-- The driver's game state at a node of depth `j`. -/
 def PlayOk (cap : ℕ) (G : SimpleGraph (Fin n)) (j : ℕ) (A : SimpleGraph (Fin n)) : Prop :=
   A = ⊥ ∨ ∃ (rounds : List (RoundR n)) (P : SimpleGraph (Fin n)),
-    ReachedR (2 * cap) G rounds P ∧ rounds.length = j ∧ A ≤ P
+    ReachedSubR (2 * cap) G rounds P ∧ rounds.length = j ∧ A ≤ P
 
 variable {cap : ℕ} {G : SimpleGraph (Fin n)}
 
 /-- At the root nothing has been played and the work arena is the input
 graph. -/
 theorem playOk_zero (cap : ℕ) (G : SimpleGraph (Fin n)) : PlayOk cap G 0 G :=
-  Or.inr ⟨[], G, ReachedR.nil, rfl, le_rfl⟩
+  Or.inr ⟨[], G, ReachedSubR.nil, rfl, le_rfl⟩
 
 /-- An edgeless arena stays edgeless: every cluster step of it isolates
 inside a graph with no edges. -/
@@ -483,7 +483,7 @@ theorem eq_bot_of_playOk_full {N : ℕ → ℕ} {s : ℕ}
     {A : SimpleGraph (Fin n)} (h : PlayOk cap G (N (2 * s + 2)) A) : A = ⊥ := by
   rcases h with h | ⟨rounds, P, hR, hlen, -⟩
   · exact h
-  · exact absurd (reachedR_length_lt hQ hR) (by rw [hlen]; omega)
+  · exact absurd (reachedSubR_length_lt hQ hR) (by rw [hlen]; omega)
 
 /-! ### The descent, semantically
 
@@ -1085,17 +1085,16 @@ named without the list, which is the form the descent's obligations are
 stated in: everything the descent is asked about an earlier round is
 asked about a connector and a mask the *state* holds.
 
-The play half is an *equality*, not the inequality `PlayOk` carries: the
-game arena of the depth is exactly the position the recorded play
-reaches. That is what makes it descend. `ReachedR.step` only extends a
-play to the arena the new round's own batch leaves, so a driver whose
-game arena were merely a subgraph of it could never record another round;
-and the driver can afford the equality because it keeps a *second* mask
-per depth for exactly this purpose — the game arena is cut by the ball
-and the batch alone, while the work arena is cut further by the cover.
+The current game arena is the position the recorded play reaches, while
+each transition may retain any subgraph of the exact round successor.
+That monotone form is what lets the executable driver cut the position
+to the current cover block immediately: the generating set still records
+the portions of the mathematical connector walks outside the retained
+set, but those vertices need never be materialised by the machine.  The
+work arena remains a subgraph of the retained game arena.
 
 The disjunct `masked G Gm = ⊥` is the dead branch. A connector with no
-incident edge ends the play — `ReachedR` records no round for it,
+incident edge ends the play — `ReachedSubR` records no round for it,
 `nextArenaR_eq_bot_of_isolated` says the arena it leaves is edgeless —
 and every deeper game arena is a subgraph of that one, so the record
 below such a node is the memory half and nothing else.
@@ -1103,7 +1102,7 @@ below such a node is the memory half and nothing else.
 Nothing here is a new obligation on the *program*: `descendCom` already
 writes `ctrName j` and `gamName j` and already re-initializes every
 array of the depth below, and `playRec_succ` is `SplitterWinRec`'s
-`reachedR_descend` at the arrays instead of at an existential. -/
+`reachedSubR_descend` at the arrays instead of at an existential. -/
 
 section PlayRecord
 
@@ -1201,7 +1200,7 @@ depth's own game arena, of which the work arena is a subgraph. -/
 def PlayRec (B : ℕ) (cap : ℕ) (G : SimpleGraph (Fin n)) (j : ℕ)
     (M Gm : ℕ → ℕ) (σ : Env) : Prop :=
   ∃ rounds : List (RoundR n), RecordsPlay B G σ j rounds ∧ masked G M ≤ masked G Gm ∧
-    (masked G Gm = ⊥ ∨ ReachedR (2 * cap) G rounds (masked G Gm))
+    (masked G Gm = ⊥ ∨ ReachedSubR (2 * cap) G rounds (masked G Gm))
 
 /-- **The recorded play implies the game invariant.** `PlayOk`'s rounds
 are this record's, and its arena the depth's own game arena, so every
@@ -1218,7 +1217,7 @@ cut out the input graph. -/
 theorem playRec_zero {B : ℕ} (cap : ℕ) (G : SimpleGraph (Fin n))
     {M Gm : ℕ → ℕ} {σ : Env} (hM : masked G M = G) (hGm : masked G Gm = G) :
     PlayRec B cap G 0 M Gm σ :=
-  ⟨[], rfl, by rw [hM, hGm], Or.inr (by rw [hGm]; exact ReachedR.nil)⟩
+  ⟨[], rfl, by rw [hM, hGm], Or.inr (by rw [hGm]; exact ReachedSubR.nil)⟩
 
 /-- The whole record crosses a pass of the depth's own arrays. -/
 theorem PlayRec.congr {B j : ℕ} {G : SimpleGraph (Fin n)}
@@ -1232,36 +1231,30 @@ theorem PlayRec.congr {B j : ℕ} {G : SimpleGraph (Fin n)}
 /-- **The descent step of the record.** A turn at depth `j` extends it by
 its own connector, its own game mask and the batch it marked.
 
-What the turn owes is exactly what `descendCom` computes, and no more.
-The ball is the ball of the *game* arena — which is why the expansion
-chain runs in `gamName j` and not in `alvName j`. The batch `W` is
-whatever the program marked, asked for four things and not for an
-equation with any other set: it stays inside the ball, it holds the
-connector, it holds — for every earlier round the state records and the
-arena of that round connects to the connector — the part inside the ball
-of the support of *some* short walk between them, and the new game mask
-cuts the game arena by it and by the ball and by nothing else. The new
-work mask is cut further, by the cluster, and is asked only to stay
-inside the new game arena.
+The retained set `X` may be any subset of the connector's game ball.  The
+machine need mark only the portions inside `X` of the earlier connector
+walks; `reachedSubR_descend` puts the omitted portions in the mathematical
+generating set, where deleting `Xᶜ` removes them without a machine pass.
+The next recorded arena may be any subgraph of the arena left by retaining
+`X` and deleting the executable batch `W`, and the next work arena stays
+below it.
 
-The two cases are the two ends of `SplitterWinRec.reachedR_descend`: a
-connector with an incident edge extends the play, the recorded round
-being `W` together with the parts of those supports that ran out of the
-ball; one without ends it, `eq_bot_of_isolated` making the new game arena
-edgeless. -/
+If the connector has an incident edge this extends the monotone play.  If
+it is isolated, every such retained successor is edgeless and the record
+enters its dead branch. -/
 theorem playRec_succ {B j : ℕ} {G : SimpleGraph (Fin n)}
     {M Gm M' Gm' : ℕ → ℕ} {σ σ' : Env} (h : PlayRec B cap G j M Gm σ)
     (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
     (ha : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a))
     {v : Fin n} (hctr : σ'.vars (ctrName j) = (v : ℕ))
     (hgam : σ'.arrs (gamName j) = arrOf n Gm) (hGmB : ∀ z < n, Gm z < B)
-    {W : Set (Fin n)} (hWball : W ⊆ ball (masked G Gm) (2 * cap) v) (hWself : v ∈ W)
+    {X W : Set (Fin n)} (hXball : X ⊆ ball (masked G Gm) (2 * cap) v)
+    (hWself : v ∈ W)
     (hWwalk : ∀ (u : Fin n) (A : SimpleGraph (Fin n)), RecordedRound B G σ j u A →
       WithinDist A (2 * cap) u v →
       ∃ p : A.Walk u v, p.length ≤ 2 * cap ∧
-        {z | z ∈ p.support} ∩ ball (masked G Gm) (2 * cap) v ⊆ W)
-    (hstep : masked G Gm' =
-      deleteVerts (deleteVerts (masked G Gm) (ball (masked G Gm) (2 * cap) v)ᶜ) W)
+        {z | z ∈ p.support} ∩ X ⊆ W)
+    (hstep : masked G Gm' ≤ deleteVerts (deleteVerts (masked G Gm) Xᶜ) W)
     (hle' : masked G M' ≤ masked G Gm') :
     PlayRec B cap G (j + 1) M' Gm' σ' := by
   obtain ⟨rounds, hrec, -, hplay⟩ := h
@@ -1274,12 +1267,22 @@ theorem playRec_succ {B j : ℕ} {G : SimpleGraph (Fin n)}
     · obtain ⟨u, hu⟩ := hadj
       rw [hbot] at hu
       exact absurd hu (by simp)
-    · obtain ⟨S, hS⟩ := reachedR_descend hR hadj hWball hWself
-        (fun e he => hWwalk e.vtx e.arena (hrec.mem e he))
-      exact ⟨⟨v, masked G Gm, S⟩ :: rounds, hrec' S, hle', Or.inr (by rw [hstep]; exact hS)⟩
+    · obtain ⟨S, hS⟩ := reachedSubR_descend (A' := masked G Gm') hR hadj hXball hWself
+        (fun e he => hWwalk e.vtx e.arena (hrec.mem e he)) hstep
+      exact ⟨⟨v, masked G Gm, S⟩ :: rounds, hrec' S, hle', Or.inr hS⟩
   · refine ⟨⟨v, masked G Gm, W⟩ :: rounds, hrec' W, hle', Or.inl ?_⟩
-    rw [hstep]
-    exact eq_bot_of_isolated (fun z hz => hadj ⟨z, hz⟩) W
+    have hviso : ∀ z, ¬ (masked G Gm).Adj v z := fun z hz => hadj ⟨z, hz⟩
+    have hbot : deleteVerts (deleteVerts (masked G Gm) Xᶜ) W = ⊥ := by
+      ext z w
+      simp only [SimpleGraph.bot_adj, iff_false]
+      intro hzw
+      obtain ⟨hzw', -, -⟩ := SplitterBasics.deleteVerts_adj.mp hzw
+      obtain ⟨hA, hzXc, -⟩ := SplitterBasics.deleteVerts_adj.mp hzw'
+      have hzX : z ∈ X := by simpa using hzXc
+      have hzv := eq_of_mem_ball_of_isolated hviso (hXball hzX)
+      exact hviso w (hzv ▸ hA)
+    rw [hbot] at hstep
+    exact le_bot_iff.mp hstep
 
 end PlayRecord
 

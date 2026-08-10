@@ -5660,12 +5660,13 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     intro v hv
     rw [hXmark] at hv
     exact hv
-  · refine playRec_succ ⟨rounds, hrec, hle, hplayR⟩
+  · refine playRec_succ (X := ball (masked G Gm) (2 * cap) vc)
+      ⟨rounds, hrec, hle, hplayR⟩
       (fun a ha => hfv (ctrName a) (ctrName_ne (by omega))
         (by simp [ctrName, mnumName, String.ext_iff]) (ctrName_notMem_descendScalars a))
       (fun a ha => hfa (gamName a) (hngam a (by omega))) hctr₉
       (by rw [hfa _ (hngam j (le_refl j))]; exact hgamj) hGmB
-      (by rw [← hBalmark]; exact hWsub) hvW ?_ hGamEq
+      (fun _ hz => hz) hvW ?_ (by rw [hGamEq])
       (by rw [hAlvEq, hGamEq]; exact stepArena_le_nextArena hle hXball)
     intro u A hround hwd
     obtain ⟨a, haj, hua, Ga', hGa', hGa'B, hAeq⟩ := hround
