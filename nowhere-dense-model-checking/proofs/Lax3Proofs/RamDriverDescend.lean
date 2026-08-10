@@ -2105,11 +2105,9 @@ name of the family marks the `r`-neighbourhood of what the first one
 marked, in the arena the mask cuts out.
 
 A chain that starts at a **bit** array ends at one — one expansion writes
-either `1` or the source's own cell — which is what the driver's mask
-products need of the ball: `RamDriver.descendCom`'s
-`andCom (gamName j) (balName j) (gamName (j + 1))` multiplies the game
-mask by the ball, and a ball whose cells were merely words would put that
-product above the word bound and leave the pass with no run at all. -/
+either `1` or the source's own cell.  The driver's batch truncation
+multiplies its accumulating indicator by the ball, so this bit bound keeps
+that in-place product below the word bound. -/
 theorem chainCom_spec {B : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B) (hnB : n < B)
     (hnsB : ns < B) (hnt : ns ≤ nt) (hMB : ∀ k, k < n → Msk k < B) :
     ∀ (r : ℕ) (nm : ℕ → String) (Sr : ℕ → ℕ), (∀ a, nm a ≠ nm (a + 1)) → (∀ a, nm a ≠ msk) →
@@ -5374,18 +5372,24 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
           _ < B := h1)).frame).run (σ := σ₅) ⟨halv1₅, henv₅.1, hres₅, hbat₅⟩
   have hav₆ : ∀ b : String, b ≠ alvName (j + 1) → σ₆.arrs b = σ₅.arrs b :=
     fun b hb => hfa₆ b (by rw [RamDriverFrames.warrs_subCom]; simp [hb])
-  -- P7: the game mask of the next depth, cut by the ball
-  obtain ⟨σ₇, hr₇, ⟨⟨Gt, hgt₇, hGtval⟩, -, hn₇, hgam₇, hbal₇⟩, hfv₇, hfa₇, -, -⟩ :=
-    ((andCom_spec B n (gamName j) (balName j) (gamName (j + 1)) Gm Bal
-      (fun hc => gamName_ne_succ (le_refl j) hc) (by simp [balName, gamName, String.ext_iff])
-      hnB hGmB hBalB (fun k hk => by
+  -- P7: the game mask of the next depth, retained only on this cover cluster
+  obtain ⟨σ₇, hr₇, ⟨⟨Gt, hgt₇, hGtval⟩, -, hn₇, hgam₇, -⟩, hfv₇, hfa₇, -, -⟩ :=
+    ((andCom_spec B n (gamName j) (cluName j) (gamName (j + 1)) Gm Xa
+      (fun hc => gamName_ne_succ (le_refl j) hc) (by simp [cluName, gamName, String.ext_iff])
+      hnB hGmB (fun k hk => by have := hXbit k hk; omega) (fun k hk => by
         have h1 := hGmB k hk
-        calc Gm k * Bal k ≤ Gm k * 1 := Nat.mul_le_mul_left _ (hBalbit k hk)
+        calc Gm k * Xa k ≤ Gm k * 1 := Nat.mul_le_mul_left _ (hXbit k hk)
           _ = Gm k := by ring
           _ < B := h1)).frame).run (σ := σ₆)
       ⟨by rw [hav₆ _ (by simp [gamName, alvName, String.ext_iff])]; exact hgam1₅, hn₆,
         by rw [hav₆ _ (by simp [gamName, alvName, String.ext_iff])]; exact hgam₅,
-        by rw [hav₆ _ (by simp [balName, alvName, String.ext_iff])]; exact hbal₅⟩
+        by
+          rw [hav₆ _ (by simp [cluName, alvName, String.ext_iff]),
+            hav₅ _ (by simp [cluName, batName, String.ext_iff])
+              (by simp [cluName, String.ext_iff]),
+            hav₄ _ (by simp [cluName, balName, String.ext_iff])
+              (by simp [cluName, balAltName, String.ext_iff])]
+          exact hclu₃⟩
   have hav₇ : ∀ b : String, b ≠ gamName (j + 1) → σ₇.arrs b = σ₆.arrs b :=
     fun b hb => hfa₇ b (by rw [RamDriverFrames.warrs_andCom]; simp [hb])
   -- P8: and by the batch, in place
@@ -5395,7 +5399,7 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
       (fun k hk => by
         rw [hGtval k hk]
         have h1 := hGmB k hk
-        calc Gm k * Bal k ≤ Gm k * 1 := Nat.mul_le_mul_left _ (hBalbit k hk)
+        calc Gm k * Xa k ≤ Gm k * 1 := Nat.mul_le_mul_left _ (hXbit k hk)
           _ = Gm k := by ring
           _ < B := h1)
       hWaB).frame).run (σ := σ₇)
@@ -5497,8 +5501,6 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   -- the sets the descent produced
   have hXiff : ∀ z : Fin n, z ∈ markSet n Xa ↔ Xa (z : ℕ) ≠ 0 := fun _ => Iff.rfl
   have hWiff : ∀ z : Fin n, z ∈ markSet n Wa ↔ Wa (z : ℕ) ≠ 0 := fun _ => Iff.rfl
-  have hBiff : ∀ z : Fin n, z ∈ ball (masked G Gm) (2 * cap) vc ↔ Bal (z : ℕ) ≠ 0 := by
-    intro z; rw [← hBalmark]; exact Iff.rfl
   have hResEq : masked G Ra =
       Lax12.UniformQuasiWideness.deleteVerts (masked G M) (markSet n Xa)ᶜ := by
     rw [masked_congr hRaval]
@@ -5526,11 +5528,11 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
       exact ⟨h1, h2, by by_contra hc; exact h3 hc⟩
   have hGamEq : masked G Gam' =
       Lax12.UniformQuasiWideness.deleteVerts
-        (Lax12.UniformQuasiWideness.deleteVerts (masked G Gm)
-          (ball (masked G Gm) (2 * cap) vc)ᶜ) (markSet n Wa) := by
-    rw [masked_congr (M := Gam') (M' := fun a => Gm a * Bal a * (1 - Wa a))
+        (Lax12.UniformQuasiWideness.deleteVerts (masked G Gm) (markSet n Xa)ᶜ)
+        (markSet n Wa) := by
+    rw [masked_congr (M := Gam') (M' := fun a => Gm a * Xa a * (1 - Wa a))
       (fun k hk => by rw [hGamval k hk, hGtval k hk])]
-    exact masked_step Gm Bal Wa hBiff hWiff
+    exact masked_step Gm Xa Wa hXiff hWiff
   -- **the connector is in its own cluster** (wave R1.8-T3-flip (c2a)): the
   -- descent reads it out of the ordering at the very position `clusterLoad`
   -- materialized the cluster of, and `RamCover.self_mem_wreach` is
@@ -5549,8 +5551,8 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     intro k hk
     rw [hGamval k hk, hGtval k hk]
     have h1 := hGmB k hk
-    calc Gm k * Bal k * (1 - Wa k) ≤ Gm k * 1 * 1 :=
-          Nat.mul_le_mul (Nat.mul_le_mul_left _ (hBalbit k hk)) (by omega)
+    calc Gm k * Xa k * (1 - Wa k) ≤ Gm k * 1 * 1 :=
+          Nat.mul_le_mul (Nat.mul_le_mul_left _ (hXbit k hk)) (by omega)
       _ = Gm k := by ring
       _ < B := h1
   -- the names the depth's own state is held at
@@ -5660,14 +5662,19 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     intro v hv
     rw [hXmark] at hv
     exact hv
-  · refine playRec_succ (X := ball (masked G Gm) (2 * cap) vc)
+  · have hXgameBall : markSet n Xa ⊆ ball (masked G Gm) (2 * cap) vc := by
+      intro z hz
+      exact ball_mono_graph vc hle (hXball hz)
+    refine playRec_succ (X := markSet n Xa)
       ⟨rounds, hrec, hle, hplayR⟩
       (fun a ha => hfv (ctrName a) (ctrName_ne (by omega))
         (by simp [ctrName, mnumName, String.ext_iff]) (ctrName_notMem_descendScalars a))
       (fun a ha => hfa (gamName a) (hngam a (by omega))) hctr₉
       (by rw [hfa _ (hngam j (le_refl j))]; exact hgamj) hGmB
-      (fun _ hz => hz) hvW ?_ (by rw [hGamEq])
-      (by rw [hAlvEq, hGamEq]; exact stepArena_le_nextArena hle hXball)
+      hXgameBall hvW ?_ (by rw [hGamEq])
+      (by
+        rw [hAlvEq, hGamEq]
+        exact Evaluator.deleteVerts_mono_graph (Evaluator.deleteVerts_mono_graph hle))
     intro u A hround hwd
     obtain ⟨a, haj, hua, Ga', hGa', hGa'B, hAeq⟩ := hround
     have hUa : u = U a := Fin.ext (by rw [← hua, (hUG a haj).1])
@@ -5677,7 +5684,7 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     subst hUa
     rw [hGeq] at hwd ⊢
     obtain ⟨p, hp, hps⟩ := hWwalk a haj hwd
-    exact ⟨p, hp, by rw [hBalmark] at hps; exact hps⟩
+    exact ⟨p, hp, fun z hz => hps ⟨hz.1, by rw [hBalmark]; exact hXgameBall hz.2⟩⟩
 
 end Descend
 

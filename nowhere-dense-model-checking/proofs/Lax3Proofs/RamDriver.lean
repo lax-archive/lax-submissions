@@ -365,10 +365,9 @@ narrowing that supplies it costs the *arena* nothing: the batch as a
 SET — which the game invariant, the child mask and the kill set are all
 stated at — may stay exactly what `batchCom` marked, and only the
 padded ENUMERATION `RamDriver.enumBatch` reads out of it is cut down to
-the cluster. Narrowing the batch itself is a different change and not
-this one: `RamDriver.playRec_succ`'s `hstep` cuts the *game* arena,
-which is not cluster-restricted, and there the same intersection is
-visible — `Refine.ScatterDeadPass.game_arena_sees_the_cluster_cut`. -/
+the cluster. The monotone game invariant now also retains the next game
+position on `X`, so this same identity explains why vertices of the
+batch outside `X` need not be materialised in the successor mask. -/
 theorem deleteVerts_inter_cluster (A : SimpleGraph (Fin n)) (X W : Set (Fin n)) :
     deleteVerts (deleteVerts A Xᶜ) (W ∩ X) = deleteVerts (deleteVerts A Xᶜ) W := by
   ext u v
@@ -738,8 +737,9 @@ def cluName (j : ℕ) : String := "clu" ++ toString j
 which the distance profiles are measured. -/
 def resName (j : ℕ) : String := "res" ++ toString j
 
-/-- The indicator of the ball the current round restricts the game arena
-to. -/
+/-- The indicator of the game-ball used to truncate the current round's
+recorded connector paths.  The executable successor itself may retain
+only the current cluster. -/
 def balName (j : ℕ) : String := "bal" ++ toString j
 
 /-- The other half of the ball's ping-pong. `expandCom` reads its source
@@ -2175,7 +2175,7 @@ def descendCom (cap j : ℕ) : Com :=
               (chainCom (gamName j) (ballStage j) (2 * cap))))
           (.seq (batchCom cap j)
             (.seq (subCom (resName j) (batName j) (alvName (j + 1)))
-              (.seq (andCom (gamName j) (balName j) (gamName (j + 1)))
+              (.seq (andCom (gamName j) (cluName j) (gamName (j + 1)))
                 (.seq (subCom (gamName (j + 1)) (batName j) (gamName (j + 1)))
                   (memFilterCom (j + 1)))))))))
 
@@ -3930,12 +3930,12 @@ It splits along the turn's six passes.
 **The game invariant.** The turn is handed `PlayRec` at its own depth
 and the nested driver only at masks that have it one depth down, so the
 turn owes the descent step of the invariant, which is `playRec_succ` — at
-the ball the expansion chain built in the *game* arena and the batch
-`batchCom` produced. That is why the driver carries two masks per depth
-and why `descendCom` writes `gamName (j+1)` from `gamName j`: the
-equality a recorded round needs is exact only if the ball is taken in the
-game arena, and `ballStage`'s parity is what makes the chain end in the
-ball's own array.
+the cluster retained inside the ball built in the *game* arena and the
+batch `batchCom` produced.  The ball still tells the batch which portions
+of the mathematical connector paths survive; `ReachedSubR` permits the
+machine to hand only the cluster-supported subposition to the next depth.
+That is why the driver still carries two masks per depth, while
+`descendCom` now cuts both successors by the current cluster.
 
 **Rebase B2 (§5.2).** The turn is now stated *at its own position*. The
 precondition pins `curName j` to the parameter `k` instead of merely
