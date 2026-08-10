@@ -1124,6 +1124,47 @@ def BlockSupported (n p₀ e : ℕ) (Idx F : ℕ → ℕ) : Prop :=
   intro _ _ _
   rfl
 
+/-- A sparse block write agrees with its intended whole-carrier value
+whenever both the entry array and that intended value vanish off the
+block.  This is the common join used by the flat cover maps and by the
+expansion engine below. -/
+theorem sparseBlock_eq_of_supported
+    {n p₀ e : ℕ} {Idx A A₀ F : ℕ → ℕ}
+    (hset : ∀ q, p₀ ≤ q → q < e → A (Idx q) = F (Idx q))
+    (hkeep : ∀ v, v < n → (∀ q, p₀ ≤ q → q < e → Idx q ≠ v) → A v = A₀ v)
+    (hA₀ : BlockSupported n p₀ e Idx A₀)
+    (hF : BlockSupported n p₀ e Idx F) :
+    (∀ v, v < n → A v = F v) ∧ BlockSupported n p₀ e Idx A := by
+  have hval : ∀ v, v < n → A v = F v := by
+    intro v hv
+    by_cases hin : ∃ q, p₀ ≤ q ∧ q < e ∧ Idx q = v
+    · obtain ⟨q, hq₀, hqe, hqv⟩ := hin
+      rw [← hqv]
+      exact hset q hq₀ hqe
+    · have hout : ∀ q, p₀ ≤ q → q < e → Idx q ≠ v := by
+        intro q hq₀ hqe hqv
+        exact hin ⟨q, hq₀, hqe, hqv⟩
+      rw [hkeep v hv hout, hA₀ v hv hout, hF v hv hout]
+  exact ⟨hval, fun v hv hout => by rw [hval v hv]; exact hF v hv hout⟩
+
+/-- A product is supported as soon as its left factor is. -/
+theorem blockSupported_mul_left
+    {n p₀ e : ℕ} {Idx A C : ℕ → ℕ}
+    (hA : BlockSupported n p₀ e Idx A) :
+    BlockSupported n p₀ e Idx (fun v => A v * C v) := by
+  intro v hv hout
+  change A v * C v = 0
+  rw [hA v hv hout, Nat.zero_mul]
+
+/-- Killing cells of a supported mask preserves its support. -/
+theorem blockSupported_sub_left
+    {n p₀ e : ℕ} {Idx A C : ℕ → ℕ}
+    (hA : BlockSupported n p₀ e Idx A) :
+    BlockSupported n p₀ e Idx (fun v => A v * (1 - C v)) := by
+  intro v hv hout
+  change A v * (1 - C v) = 0
+  rw [hA v hv hout, Nat.zero_mul]
+
 /-- Expansion preserves block support.  Off the block both the arena mask
 and the source are zero; the dead-vertex equation therefore leaves zero. -/
 theorem blockSupported_expandVal
@@ -1495,6 +1536,41 @@ theorem coverMapCom_spec {B w m c j : ℕ} {x : Expr} {F g₀ : ℕ → ℕ}
     hr₁.seq hr₂, ?_, hcov₂, hcur₂, hout₂, hfr₂⟩
   simp only [blockSize]
   omega
+
+/-- The compositional form of `coverMapCom_spec`.  If both the entry
+destination and the value being written are supported by the loaded
+cover block, the sparse contract upgrades to a whole-carrier equation
+and the resulting destination remains supported. -/
+theorem coverMapCom_supported_spec {B w m c j : ℕ} {x : Expr} {F g₀ : ℕ → ℕ}
+    {l : List (String × ℕ × (ℕ → ℕ))} (hc : c < n) (hmB : m < B)
+    (hB : 1 < B) (hnB : n < B) (hdx : dst ≠ xofName j)
+    (hdi : dst ≠ xmmName j) (hdf : ∀ a ∈ l, a.1 ≠ dst)
+    (hx : ∀ (σ : Env) q, Xoff c ≤ q → q < Xoff (c + 1) → σ.vars "p" = q →
+      σ.vars "cw" = Xmem q →
+      Refine.BlockLeaves.BlockMapRangeInv n w (Xoff c) (Xoff (c + 1))
+        (xmmName j) dst Xmem F g₀ l σ → x.evalB B σ = some (F (Xmem q))) :
+    Spec B
+      (fun σ => CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ ∧
+        σ.vars (curName j) = c ∧ σ.arrs dst = arrOf n g₀ ∧
+        Refine.BlockLeaves.BlockFrozen l σ ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem F ∧
+        BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g₀)
+      (.seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+        (Refine.BlockLeaves.blockMapRangeCom (xmmName j) dst x))
+      (fun _ σ' =>
+        CsrWide.CsrW (xofName j) (xmmName j) n m w n Xoff Xmem σ' ∧
+        σ'.vars (curName j) = c ∧
+        (∃ g, σ'.arrs dst = arrOf n g ∧
+          (∀ v, v < n → g v = F v) ∧
+          BlockSupported n (Xoff c) (Xoff (c + 1)) Xmem g) ∧
+        Refine.BlockLeaves.BlockFrozen l σ')
+      ((13 + x.size) * blockSize Xoff c + 12) := by
+  refine (coverMapCom_spec hc hmB hB hnB hdx hdi hdf hx).pre ?_ |>.post ?_
+  · rintro σ ⟨hcov, hcur, hdst, hfr, -, -⟩
+    exact ⟨hcov, hcur, hdst, hfr⟩
+  · rintro σ σ' ⟨-, -, -, -, hF, hg₀⟩ ⟨hcov, hcur, ⟨g, hg, hset, hkeep⟩, hfr⟩
+    obtain ⟨hval, hsup⟩ := sparseBlock_eq_of_supported hset hkeep hg₀ hF
+    exact ⟨hcov, hcur, ⟨g, hg, hval, hsup⟩, hfr⟩
 
 /-- The executable expansion's two-currency charge fits the one
 block-weight slot used by the almost-linear recurrence. -/
