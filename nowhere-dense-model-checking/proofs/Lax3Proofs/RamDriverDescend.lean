@@ -823,6 +823,135 @@ section Expand
 
 variable {ns nt : ℕ} {G : SimpleGraph (Fin n)} {O T Msk Src : ℕ → ℕ} {msk src dst : String}
 
+/-! The carrier pass below packages its destination as `Fill.Below`,
+which deliberately ties the next row to the carrier counter.  A block
+walk visits arbitrary vertices, so its one-row engine needs the same
+read-only context with the destination frozen at an arbitrary entry
+function instead.  `ExpandAt` and `ScanHitAt` are that separation; no
+program text changes at the row boundary. -/
+
+/-- The read-only expansion context at one arbitrary row, together
+with the destination before that row is written. -/
+def ExpandAt (n ns nt : ℕ) (O T Msk Src A₀ : ℕ → ℕ)
+    (msk src dst : String) (z : ℕ) (σ : Env) : Prop :=
+  σ.vars "z" = z ∧ σ.vars "n" = n ∧
+    σ.arrs "off" = arrOf (n + 1) O ∧ σ.arrs "tgt" = arrOf nt T ∧ ns ≤ nt ∧
+    σ.arrs msk = arrOf n Msk ∧ σ.arrs src = arrOf n Src ∧ σ.arrs dst = arrOf n A₀
+
+open Classical in
+/-- The inner CSR scan at an arbitrary outer row. -/
+def ScanHitAt (n ns nt : ℕ)
+    (O T Msk Src A₀ : ℕ → ℕ) (msk src dst : String) (z : ℕ) (σ : Env) : Prop :=
+  ExpandAt n ns nt O T Msk Src A₀ msk src dst z σ ∧
+    σ.vars "jend" = O (z + 1) ∧ O z ≤ σ.vars "j" ∧ σ.vars "j" ≤ O (z + 1) ∧
+    σ.vars "hit" =
+      (if ∃ p, O z ≤ p ∧ p < σ.vars "j" ∧ Msk (T p) ≠ 0 ∧ Src (T p) ≠ 0 then 1 else Src z)
+
+/-- The graph CSR relation read out of an arbitrary-row state. -/
+theorem csr_of_expandAt {σ : Env} (hcsr : CsrGraph G ns O T)
+    (h : ExpandAt n ns nt O T Msk Src A₀ msk src dst z σ) :
+    CsrWide.CsrW "off" "tgt" n ns nt n O T σ :=
+  ⟨h.2.2.1, h.2.2.2.1, fun i hi => hcsr.mono i hi, hcsr.last, h.2.2.2.2.1,
+    fun p hp => hcsr.target_lt p hp⟩
+
+/-- Scalar-only scan work leaves an arbitrary-row state intact. -/
+theorem expandAt_congr {σ σ' : Env}
+    (h : ExpandAt n ns nt O T Msk Src A₀ msk src dst z σ)
+    (hz : σ'.vars "z" = σ.vars "z") (hn : σ'.vars "n" = σ.vars "n")
+    (ha : ∀ a : String, σ'.arrs a = σ.arrs a) :
+    ExpandAt n ns nt O T Msk Src A₀ msk src dst z σ' :=
+  ⟨by rw [hz]; exact h.1, by rw [hn]; exact h.2.1,
+    by rw [ha]; exact h.2.2.1, by rw [ha]; exact h.2.2.2.1, h.2.2.2.2.1,
+    by rw [ha]; exact h.2.2.2.2.2.1, by rw [ha]; exact h.2.2.2.2.2.2.1,
+    by rw [ha]; exact h.2.2.2.2.2.2.2⟩
+
+/-- **One slot of an arbitrary row.**  This is `expandSlot_step` with
+the carrier-prefix component removed; the program and the cost are
+identical. -/
+theorem expandSlotAt_step {B z : ℕ} (hcsr : CsrGraph G ns O T) (hB : 1 < B)
+    (hnB : n < B) (hnsB : ns < B) (hMB : ∀ k, k < n → Msk k < B)
+    (hSB : ∀ k, k < n → Src k < B) (hzn : z < n) (σ : Env)
+    (hI : ScanHitAt n ns nt O T Msk Src A₀ msk src dst z σ)
+    (hj : σ.vars "j" < O (z + 1)) :
+    ∃ σ' K', Run B (expandSlot msk src) σ σ' K' ∧
+      ScanHitAt n ns nt O T Msk Src A₀ msk src dst z σ' ∧
+      σ'.vars "j" = σ.vars "j" + 1 ∧ K' ≤ 20 := by
+  classical
+  obtain ⟨hinv, hjend, hjlo, -, hhit⟩ := hI
+  have hcsrRel := csr_of_expandAt hcsr hinv
+  have hjns : σ.vars "j" < ns := lt_of_lt_of_le hj (hcsrRel.row_le hzn)
+  have hjB : σ.vars "j" < B := by omega
+  have hTn : T (σ.vars "j") < n := hcsr.target_lt _ hjns
+  have hslot : (Expr.get "tgt" (.var "j")).evalB B σ = some (T (σ.vars "j")) :=
+    evalB_get (evalB_var hjB)
+      (by rw [hinv.2.2.2.1, getElem?_arrOf T (lt_of_lt_of_le hjns hinv.2.2.2.2.1)])
+      (by omega)
+  set τ := σ.setVar "w" (T (σ.vars "j")) with hτ
+  have hrw : Run B (.assign "w" (.get "tgt" (.var "j"))) σ τ 3 :=
+    (Run.assign hslot).mono (by simp)
+  have hwv : τ.vars "w" = T (σ.vars "j") := by rw [hτ]; simp
+  have hcmsk : (Cond.lt (.lit 0) (.get msk (.var "w"))).evalB B τ =
+      some (decide (0 < Msk (T (σ.vars "j")))) :=
+    evalB_condLt (evalB_lit (by omega))
+      (evalB_get (evalB_var (by rw [hwv]; omega))
+        (by rw [hτ, arrs_setVar, hinv.2.2.2.2.2.1, hwv,
+          getElem?_arrOf Msk hTn]) (hMB _ hTn))
+  have hcsrc : (Cond.lt (.lit 0) (.get src (.var "w"))).evalB B τ =
+      some (decide (0 < Src (T (σ.vars "j")))) :=
+    evalB_condLt (evalB_lit (by omega))
+      (evalB_get (evalB_var (by rw [hwv]; omega))
+        (by rw [hτ, arrs_setVar, hinv.2.2.2.2.2.2.1, hwv,
+          getElem?_arrOf Src hTn]) (hSB _ hTn))
+  by_cases hm : Msk (T (σ.vars "j")) = 0
+  · refine ⟨τ.setVar "j" (σ.vars "j" + 1), 20,
+      (hrw.seq ((Run.ite_false (by rw [hcmsk, hm]; simp) Run.skip).seq
+        (Run.assign (evalB_bin (evalB_var (by rw [hτ]; simp; omega)) (evalB_lit (by omega))
+          (by simp [hτ]; omega))))).mono (by simp), ?_, by rw [hτ]; simp, le_rfl⟩
+    refine ⟨expandAt_congr hinv (by rw [hτ]; simp) (by rw [hτ]; simp)
+        (fun a => by rw [hτ]; simp),
+      by rw [hτ]; simp [hjend], by rw [hτ]; simp; omega, by rw [hτ]; simp; omega, ?_⟩
+    rw [show (τ.setVar "j" (σ.vars "j" + 1)).vars "hit" = σ.vars "hit" by rw [hτ]; simp,
+      show (τ.setVar "j" (σ.vars "j" + 1)).vars "j" = σ.vars "j" + 1 by rw [hτ]; simp,
+      hhit]
+    congr 1
+    refine propext ⟨fun ⟨p, h₁, h₂, h₃, h₄⟩ => ⟨p, h₁, by omega, h₃, h₄⟩,
+      fun ⟨p, h₁, h₂, h₃, h₄⟩ => ⟨p, h₁, ?_, h₃, h₄⟩⟩
+    rcases Nat.lt_or_ge p (σ.vars "j") with h' | h'
+    · exact h'
+    · exact absurd h₃ (by rw [show p = σ.vars "j" by omega, hm]; simp)
+  · by_cases hs : Src (T (σ.vars "j")) = 0
+    · refine ⟨τ.setVar "j" (σ.vars "j" + 1), 20,
+        (hrw.seq ((Run.ite_true (by rw [hcmsk]; simp; omega)
+          (Run.ite_false (by rw [hcsrc, hs]; simp) Run.skip)).seq
+          (Run.assign (evalB_bin (evalB_var (by rw [hτ]; simp; omega)) (evalB_lit (by omega))
+            (by simp [hτ]; omega))))).mono (by simp), ?_, by rw [hτ]; simp, le_rfl⟩
+      refine ⟨expandAt_congr hinv (by rw [hτ]; simp) (by rw [hτ]; simp)
+          (fun a => by rw [hτ]; simp),
+        by rw [hτ]; simp [hjend], by rw [hτ]; simp; omega, by rw [hτ]; simp; omega, ?_⟩
+      rw [show (τ.setVar "j" (σ.vars "j" + 1)).vars "hit" = σ.vars "hit" by rw [hτ]; simp,
+        show (τ.setVar "j" (σ.vars "j" + 1)).vars "j" = σ.vars "j" + 1 by rw [hτ]; simp,
+        hhit]
+      congr 1
+      refine propext ⟨fun ⟨p, h₁, h₂, h₃, h₄⟩ => ⟨p, h₁, by omega, h₃, h₄⟩,
+        fun ⟨p, h₁, h₂, h₃, h₄⟩ => ⟨p, h₁, ?_, h₃, h₄⟩⟩
+      rcases Nat.lt_or_ge p (σ.vars "j") with h' | h'
+      · exact h'
+      · exact absurd h₄ (by rw [show p = σ.vars "j" by omega, hs]; simp)
+    · refine ⟨(τ.setVar "hit" 1).setVar "j" (σ.vars "j" + 1), 20,
+        (hrw.seq ((Run.ite_true (by rw [hcmsk]; simp; omega)
+          (Run.ite_true (by rw [hcsrc]; simp; omega)
+            (Run.assign (evalB_lit (by omega))))).seq
+          (Run.assign (evalB_bin (evalB_var (by rw [hτ]; simp; omega)) (evalB_lit (by omega))
+            (by simp [hτ]; omega))))).mono (by simp), ?_, by rw [hτ]; simp, le_rfl⟩
+      refine ⟨expandAt_congr hinv (by rw [hτ]; simp) (by rw [hτ]; simp)
+          (fun a => by rw [hτ]; simp),
+        by rw [hτ]; simp [hjend], by rw [hτ]; simp; omega, by rw [hτ]; simp; omega, ?_⟩
+      rw [show ((τ.setVar "hit" 1).setVar "j" (σ.vars "j" + 1)).vars "hit" = 1 by
+          rw [hτ]; simp,
+        show ((τ.setVar "hit" 1).setVar "j" (σ.vars "j" + 1)).vars "j" =
+            σ.vars "j" + 1 by rw [hτ]; simp]
+      rw [if_pos ⟨σ.vars "j", hjlo, by omega, hm, hs⟩]
+
 /-- The block structure of a depth, as the reasoning kit's relation. -/
 theorem csr_of_expandInv {σ : Env} (hcsr : CsrGraph G ns O T)
     (h : ExpandInv n ns nt G O T Msk Src msk src dst σ) :
