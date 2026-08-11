@@ -142,6 +142,7 @@ import Lax3Proofs.Refine.CoverActiveTurn
 import Lax3Proofs.Refine.CoverActiveLoop
 import Lax3Proofs.Refine.CoverActiveRadixMath
 import Lax3Proofs.Refine.CoverActiveRadixPass
+import Lax3Proofs.Refine.CoverActiveRadixLoop
 import Lax3Proofs.Refine.BfsBlockPar
 import Lax3Proofs.Refine.BfsBlockParMask
 import Lax3Proofs.Refine.DriverCache
