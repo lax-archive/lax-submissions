@@ -1663,6 +1663,16 @@ def cacheBfsCom (cap j : ℕ) : Com :=
   Refine.ScatterBlock.renCom (cacheSwap j)
     (Refine.BfsBlockPar.bfsBlockParCom (2 * cap))
 
+/-- Prepare and build the cache for one round.  The cluster load has
+already emitted its raw block into the child's member buffer and left its
+length in `"bq"`; the touched-only fill therefore cleans exactly that block
+before the parent search runs on the retained mask. -/
+def cacheRoundCom (cap j : ℕ) : Com :=
+  .seq (.assign "src" (.var (ctrName j)))
+    (.seq (.assign (mnumName (j + 1)) (.var "bq"))
+      (.seq (memFillAt j (pdsName j) (2 * cap + 1))
+        (cacheBfsCom cap j)))
+
 /-- One fixed-count parent step: mark the current vertex, read its parent,
 and advance the loop counter. -/
 def markParentStep (j a : ℕ) : Com :=

@@ -2,6 +2,7 @@ import Lax3Proofs.RamDriverCluster
 import Lax3Proofs.RamDriverFrames
 import Lax3Proofs.Refine.DriverCache
 import Lax3Proofs.Refine.MassWeight
+import Lax3Proofs.Refine.ScatterDeadPass
 
 /-!
 The passes of one cluster of `Lax3Proofs.RamDriver`, walked: the
@@ -3698,6 +3699,117 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
     refine ⟨q - Xoff c, by omega, ?_⟩
     rw [hgmval (q - Xoff c) (by omega), show Xoff c + (q - Xoff c) = q by omega]
     exact hq3
+
+/-! ### One retained parent cache -/
+
+/-- The charge of preparing the raw block's distance cells and running
+the block-priced parent search. -/
+def cacheRoundCost (mm bw nb : ℕ) : ℕ :=
+  Refine.ScatterDeadPass.memFillAtCost mm +
+    Refine.BfsBlockPar.bfsBlockParK bw nb + 4
+
+/-- **One round's retained parent cache, discharged.** The member list
+may enumerate a superset `X` of the retained mask `R`; cleaning that list
+is enough because the block engine's distance contract is restricted to
+the live support of `R`. -/
+theorem cacheRoundCom_specW {d s mm bw nb : ℕ} {O T R X Mem : ℕ → ℕ}
+    (hcsr : CsrGraph G ns O T) (hnt : ns ≤ nt)
+    (hB : WordBoundK B n d ns cap mb) (hs : s < n) (hsR : R s ≠ 0)
+    (hMem : MemEnum n mm Mem X)
+    (hRX : ∀ z, z < n → R z ≠ 0 → X z ≠ 0)
+    (hRB : ∀ z, z < n → R z < B) {A : Finset ℕ}
+    (hA : ∀ v, v < n → R v ≠ 0 → WD G R (2 * cap) s v → v ∈ A)
+    (hbw : ∑ v ∈ A, Csr.rowLen O v ≤ bw)
+    (hnb : A.card ≤ nb) :
+    Spec B (fun σ => σ.vars "n" = n ∧ σ.vars (ctrName j) = s ∧
+        σ.vars "bq" = mm ∧ σ.arrs (memName (j + 1)) = arrOf n Mem ∧
+        σ.arrs "off" = arrOf (n + 1) O ∧ σ.arrs "tgt" = arrOf nt T ∧
+        σ.arrs (resName j) = arrOf n R ∧
+        (∃ g, σ.arrs (pdsName j) = arrOf n g) ∧
+        (∃ g, σ.arrs "q" = arrOf n g) ∧ (∃ g, σ.arrs "qd" = arrOf n g) ∧
+        (∃ g, σ.arrs (parName j) = arrOf n g))
+      (cacheRoundCom cap j)
+      (fun _ σ' => DistCleanAt (pdsName j) n (2 * cap) R σ' ∧
+        ∃ D P, σ'.arrs (parName j) = arrOf n P ∧
+          RamBfsPaths.ParTree G R (2 * cap) s D P)
+      (cacheRoundCost mm bw nb) := by
+  have hnB := hB.n_lt
+  have hnsB := hB.ns_lt
+  have h1B := hB.one_lt
+  have hdB : 2 * cap + 1 < B := by have := hB.1; omega
+  have hmmB : mm < B := lt_of_le_of_lt hMem.card_le hnB
+  refine Spec.of_exists (fun σ hσ => ?_)
+  obtain ⟨hn, hctr, hbq, hmem, hoff, htgt, hres, ⟨D₀, hpds⟩,
+    hq, hqd, hpar⟩ := hσ
+  -- install the source
+  have evsrc : (Expr.var (ctrName j)).evalB B σ = some s := by
+    have h := evalB_var (B := B) (x := ctrName j) (σ := σ) (by rw [hctr]; omega)
+    rwa [hctr] at h
+  set σ₁ := σ.setVar "src" s with hσ₁
+  have hr₁ : Run B (.assign "src" (.var (ctrName j))) σ σ₁ 2 :=
+    (Run.assign evsrc).mono (by simp [Expr.size])
+  -- expose the raw block length as the temporary member count
+  have hbq₁ : σ₁.vars "bq" = mm := by
+    rw [hσ₁, vars_setVar, if_neg (by decide), hbq]
+  have evbq : (Expr.var "bq").evalB B σ₁ = some mm := by
+    have h := evalB_var (B := B) (x := "bq") (σ := σ₁) (by rw [hbq₁]; exact hmmB)
+    rwa [hbq₁] at h
+  set σ₂ := σ₁.setVar (mnumName (j + 1)) mm with hσ₂
+  have hr₂ : Run B (.assign (mnumName (j + 1)) (.var "bq")) σ₁ σ₂ 2 :=
+    (Run.assign evbq).mono (by simp [Expr.size])
+  have hmm₂ : σ₂.vars (mnumName (j + 1)) = mm := by rw [hσ₂]; simp
+  have hmem₂ : σ₂.arrs (memName (j + 1)) = arrOf n Mem := by
+    rw [hσ₂, arrs_setVar, hσ₁, arrs_setVar]
+    exact hmem
+  have hpds₂ : σ₂.arrs (pdsName j) = arrOf n D₀ := by
+    rw [hσ₂, arrs_setVar, hσ₁, arrs_setVar]
+    exact hpds
+  -- clean only the emitted block
+  obtain ⟨σ₃, hr₃, ⟨D₁, hpds₃, hfill, -⟩, -, -⟩ :=
+    (Refine.ScatterDeadPass.memFillAt_spec (B := B) (n := n) (j := j) (mm1 := mm)
+      (c := 2 * cap + 1) (a := pdsName j) (Mem1 := Mem) (g₀ := D₀) (A := X)
+      h1B hnB hdB (by simp [pdsName, balAltName, memName, String.ext_iff]) hMem).run
+      (σ := σ₂) ⟨hmm₂, hmem₂, hpds₂⟩
+  have hclean₃ : DistCleanAt (pdsName j) n (2 * cap) R σ₃ := by
+    refine ⟨D₁, hpds₃, ?_⟩
+    intro z hz hRz
+    obtain ⟨k, hk, hMemz⟩ := hMem.2.2.2 z hz (hRX z hz hRz)
+    rw [← hMemz]
+    exact hfill k hk
+  have hfa₃ : ∀ a : String, a ≠ pdsName j → σ₃.arrs a = σ₂.arrs a := by
+    intro a ha
+    exact hr₃.frame_arr a (by
+      rw [Refine.ScatterDeadPass.warrs_memFillAt]
+      simp [ha])
+  have hfv₃ : ∀ y : String, y ≠ "ac" → y ≠ "ax" → σ₃.vars y = σ₂.vars y := by
+    intro y hya hyx
+    exact hr₃.frame_var y
+      (Refine.ScatterDeadPass.notMem_wvars_memFillAt j (pdsName j) (2 * cap + 1) hya hyx)
+  have hn₃ : σ₃.vars "n" = n := by
+    rw [hfv₃ "n" (by decide) (by decide), hσ₂, vars_setVar,
+      if_neg (by simp [mnumName, String.ext_iff]), hσ₁, vars_setVar,
+      if_neg (by decide)]
+    exact hn
+  have hsrc₃ : σ₃.vars "src" = s := by
+    rw [hfv₃ "src" (by decide) (by decide), hσ₂, vars_setVar,
+      if_neg (by simp [mnumName, String.ext_iff]), hσ₁, vars_setVar, if_pos rfl]
+  have harr₃ : ∀ a : String, a ≠ pdsName j → σ₃.arrs a = σ.arrs a := by
+    intro a ha
+    rw [hfa₃ a ha, hσ₂, arrs_setVar, hσ₁, arrs_setVar]
+  -- run the retained parent engine
+  obtain ⟨σ₄, hr₄, hclean₄, D, P, hpar₄, htree⟩ :=
+    (cacheBfsCom_specW (j := j) hcsr hs hsR hnB hnsB hnt hdB hRB hA hbw hnb).run
+      (σ := σ₃) ⟨hn₃, hsrc₃,
+        by rw [harr₃ "off" (by simp [pdsName, balAltName, String.ext_iff])]; exact hoff,
+        by rw [harr₃ "tgt" (by simp [pdsName, balAltName, String.ext_iff])]; exact htgt,
+        by rw [harr₃ _ (by simp [resName, pdsName, balAltName, String.ext_iff])]; exact hres,
+        hclean₃,
+        by rw [harr₃ "q" (by simp [pdsName, balAltName, String.ext_iff])]; exact hq,
+        by rw [harr₃ "qd" (by simp [pdsName, balAltName, String.ext_iff])]; exact hqd,
+        by rw [harr₃ _ (by simp [parName, balName, pdsName, balAltName, String.ext_iff])]; exact hpar⟩
+  refine ⟨σ₄, _, hr₁.seq (hr₂.seq (hr₃.seq hr₄)), ?_, hclean₄, D, P, hpar₄, htree⟩
+  simp only [cacheRoundCost]
+  omega
 
 /-! ### The child's member list (rebase E-mem)
 
