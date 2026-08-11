@@ -137,6 +137,7 @@ import Lax3Proofs.Refine.C0CloseProbe
 import Lax3Proofs.Refine.B4Design
 import Lax3Proofs.Refine.GapsDesign
 import Lax3Proofs.Refine.BfsBlockMask
+import Lax3Proofs.Refine.CoverActiveBlock
 import Lax3Proofs.Refine.BfsBlockPar
 import Lax3Proofs.Refine.BfsBlockParMask
 import Lax3Proofs.Refine.DriverCache
