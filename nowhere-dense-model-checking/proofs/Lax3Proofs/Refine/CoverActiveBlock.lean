@@ -232,15 +232,15 @@ def QueueEmitInv (n na tail q c r xp₀ : ℕ) (Q QD Xm₀ asg₀ : ℕ → ℕ)
 
 /-- Every intermediate assignment value is either its entering word or the
 current centre index. -/
-theorem queueCell_lt (hcB : c < B) (hasgB : ∀ w < n, asg w < B)
-    (hw : w < n) : queueCell asg q c r k Q QD w < B := by
+theorem queueCell_lt (hcB : c < B) (hasgB : asg w < B) :
+    queueCell asg q c r k Q QD w < B := by
   classical
   simp only [queueCell]
   split
-  · exact hasgB w hw
+  · exact hasgB
   · split
     · exact hcB
-    · exact hasgB w hw
+    · exact hasgB
 
 /-- One touched queue entry, walked.  The thirty-tick bound is independent
 of the carrier and includes both conditional levels. -/
@@ -249,7 +249,7 @@ theorem emitQueueSlot_spec {B n na tail q c r xp₀ : ℕ} {Q QD Xm₀ asg₀ : 
     (hqB : q < B) (hcq : c < q) (hrB : r + 1 < B)
     (hxpna : xp₀ + tail ≤ na) (hxpB : xp₀ + tail < B)
     (hQlt : ∀ i < tail, Q i < n) (hQDB : ∀ i < tail, QD i < B)
-    (hasgB : ∀ w < n, asg₀ w < B) :
+    (hasgB : ∀ i < tail, asg₀ (Q i) < B) :
     Spec B
       (fun σ => QueueEmitInv n na tail q c r xp₀ Q QD Xm₀ asg₀ σ ∧
         σ.vars "cvk" < tail)
@@ -272,7 +272,7 @@ theorem emitQueueSlot_spec {B n na tail q c r xp₀ : ℕ} {Q QD Xm₀ asg₀ : 
   have hxpi : σ.vars "xp" < na := by rw [hxpval]; omega
   have hxpword : σ.vars "xp" < B := by rw [hxpval]; omega
   have hcurB : queueCell asg₀ q c r kk Q QD (Q kk) < B :=
-    queueCell_lt (lt_trans hcq hqB) hasgB hQn
+    queueCell_lt (lt_trans hcq hqB) (hasgB kk hk)
   -- `cvu := q[cvk]`.
   have e₁ : (Expr.get "q" (.var "cvk")).evalB B σ = some (Q kk) :=
     evalB_get (evalB_var hkB) (by rw [hq, getElem?_arrOf Q hkN]) hQB
@@ -453,7 +453,7 @@ theorem emitQueueCom_spec {B n na tail q c r xp₀ : ℕ} {Q QD Xm₀ asg₀ : �
     (hqB : q < B) (hcq : c < q) (hrB : r + 1 < B)
     (hxpna : xp₀ + tail ≤ na) (hxpB : xp₀ + tail < B)
     (hQlt : ∀ i < tail, Q i < n) (hQDB : ∀ i < tail, QD i < B)
-    (hasgB : ∀ w < n, asg₀ w < B) :
+    (hasgB : ∀ i < tail, asg₀ (Q i) < B) :
     Spec B
       (fun σ => QueueEmitInv n na tail q c r xp₀ Q QD Xm₀ asg₀ (σ.setVar "cvk" 0))
       (emitQueueCom r)
