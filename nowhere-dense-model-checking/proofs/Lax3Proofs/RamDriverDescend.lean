@@ -4851,6 +4851,31 @@ theorem cachedRounds_markParents_run {B K cap j a : ℕ} {M : ℕ → ℕ} {σ �
       rw [warrs_markParentsCom]
       simp [parName, balName, batName, String.ext_iff])]
 
+/-- The retained cache crosses any batch-local pass: such a pass writes
+only the batch indicator and unprefixed descent counters. -/
+theorem cachedRounds_batch_run {B K cap j : ℕ} {M : ℕ → ℕ} {c : Com} {σ σ' : Env}
+    (h : CachedRounds cap G j M σ) (hrun : Run B c σ σ' K)
+    (hv : ∀ y : String, y ∈ c.wvars → y ∈ descendScalars)
+    (ha : ∀ b : String, b ∈ c.warrs → b = batName j) :
+    CachedRounds cap G j M σ' := by
+  refine h.congr ?_ ?_ ?_ ?_
+  · intro a ha'
+    rw [hrun.frame_var (ctrName a) (fun hc => by
+      have hm := hv _ hc
+      exact RamDriverIO.notMem_of_append (p := "ctr") (s := toString a) (by decide) hm)]
+  · intro a ha'
+    rw [hrun.frame_arr (resName a) (fun hc => by
+      have hm := ha _ hc
+      simp [resName, batName, String.ext_iff] at hm)]
+  · intro a ha'
+    rw [hrun.frame_arr (gamName a) (fun hc => by
+      have hm := ha _ hc
+      simp [gamName, batName, String.ext_iff] at hm)]
+  · intro a ha'
+    rw [hrun.frame_arr (parName a) (fun hc => by
+      have hm := ha _ hc
+      simp [parName, balName, batName, String.ext_iff] at hm)]
+
 /-- **The fold now consumes retained trees.** Every turn adds at most one
 capped parent chain and obtains its walk by mapping the cached tree's
 walk into the game mask recorded for that round. -/
@@ -4945,6 +4970,150 @@ theorem batchCachedFold_spec {B cap mb j : ℕ} {d : ℕ}
       refine ⟨σ₂, _, hrun, by ring_nf; omega, henv₂, hcache₂, ?_⟩
       have hre : s + 1 + r = s + (r + 1) := by omega
       rwa [hre] at hmk₂
+
+/-- The cached batch phase replaces one graph search per earlier round
+by one fixed-length parent-chain walk. -/
+def batchCachedCost (n cap j : ℕ) : ℕ := markParentsK cap * j + 26 * n + 16
+
+/-- **The executable cached batch, discharged.** Retained parent trees
+supply the same short walks as the search-based batch while crossing all
+cache records unchanged. -/
+theorem batchCachedCom_spec {B cap mb j : ℕ} {d : ℕ}
+    (hB : WordBoundK B n d ns cap mb) {U : ℕ → Fin n} {Gam : ℕ → ℕ → ℕ}
+    {M Cut : ℕ → ℕ} {v : Fin n} (hMv : M (v : ℕ) ≠ 0)
+    (hCutB : ∀ k, k < n → Cut k < B) (hvCut : Cut (v : ℕ) ≠ 0) :
+    Spec B (fun σ => BatchEnv cap nt j O T U Gam v σ ∧
+        CachedRounds cap G j M σ ∧ (∃ g, σ.arrs (batName j) = arrOf n g) ∧
+        σ.arrs (cluName j) = arrOf n Cut)
+      (batchCachedCom cap j)
+      (fun _ σ' => BatchEnv cap nt j O T U Gam v σ' ∧
+        CachedRounds cap G j M σ' ∧ σ'.arrs (cluName j) = arrOf n Cut ∧
+        ∃ Wa : ℕ → ℕ, σ'.arrs (batName j) = arrOf n Wa ∧ (∀ k, k < n → Wa k < B) ∧
+          markSet n Wa ⊆ markSet n Cut ∧ v ∈ markSet n Wa ∧
+          (markSet n Wa).ncard ≤ 1 + j * (2 * cap + 1) ∧
+          ∀ a, a < j → WithinDist (masked G (Gam a)) (2 * cap) (U a) v →
+            ∃ p : (masked G (Gam a)).Walk (U a) v, p.length ≤ 2 * cap ∧
+              {z : Fin n | z ∈ p.support} ∩ markSet n Cut ⊆ markSet n Wa)
+      (batchCachedCost n cap j) := by
+  have h1B := hB.one_lt
+  have hnB := hB.n_lt
+  have hcutbat : cluName j ≠ batName j := by simp [cluName, batName, String.ext_iff]
+  refine Spec.of_exists (fun σ hσ => ?_)
+  obtain ⟨henv, hcache, hbat₀, hcut⟩ := hσ
+  have hvn : (v : ℕ) < n := v.isLt
+  -- the indicator, opened
+  obtain ⟨σ₁, hr₁, ⟨g₁, harr₁, hval₁⟩, -, -⟩ :=
+    (fillCom_spec B n (batName j) 0 hnB (by omega)).run ⟨hbat₀, henv.1⟩
+  have henv₁ : BatchEnv cap nt j O T U Gam v σ₁ :=
+    batchEnv_run henv hr₁ (fun y hy => by
+        rw [RamDriverIO.wvars_fillCom] at hy
+        simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+        rcases hy with rfl | rfl <;> exact mem_descendScalars_i)
+      (fun b hb => Or.inl (by
+        rw [RamDriverIO.warrs_fillCom] at hb; exact List.eq_of_mem_singleton hb))
+  have hcache₁ : CachedRounds cap G j M σ₁ :=
+    cachedRounds_batch_run hcache hr₁ (fun y hy => by
+        rw [RamDriverIO.wvars_fillCom] at hy
+        simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+        rcases hy with rfl | rfl <;> exact mem_descendScalars_i)
+      (fun b hb => by
+        rw [RamDriverIO.warrs_fillCom] at hb
+        exact List.eq_of_mem_singleton hb)
+  -- the connector, stored
+  have hctr₁ : σ₁.vars (ctrName j) = (v : ℕ) := henv₁.2.2.2.2.2.2.2.2.1
+  have hlen₁ : (v : ℕ) < (σ₁.arrs (batName j)).length := by rw [harr₁, length_arrOf]; exact hvn
+  have hev : (Expr.var (ctrName j)).evalB B σ₁ = some (v : ℕ) := by
+    have h := evalB_var (B := B) (x := ctrName j) (σ := σ₁) (by rw [hctr₁]; omega)
+    rwa [hctr₁] at h
+  set σ₂ := σ₁.setArr (batName j) (v : ℕ) 1 with hσ₂
+  have hr₂ : Run B (.store (batName j) (.var (ctrName j)) (.lit 1)) σ₁ σ₂ 3 :=
+    (Run.store hev (evalB_lit (by omega)) hlen₁).mono (by simp [Expr.size])
+  have harr₂ : σ₂.arrs (batName j) = arrOf n (upd g₁ (v : ℕ) 1) := by
+    rw [hσ₂]; simp [harr₁, set_arrOf_eq_upd]
+  have hzero : markSet n g₁ = ∅ := by
+    ext z
+    simp only [mem_markSet, Set.mem_empty_iff_false, iff_false, not_not]
+    exact hval₁ _ z.isLt
+  have hmark₂ : markSet n (upd g₁ (v : ℕ) 1) = {v} := by
+    rw [markSet_upd_one g₁ hvn, hzero, Set.empty_union]
+  have henv₂ : BatchEnv cap nt j O T U Gam v σ₂ :=
+    batchEnv_run henv₁ hr₂ (fun y hy => by simp only [Com.wvars] at hy; exact absurd hy (by simp))
+      (fun b hb => Or.inl (by simp only [Com.warrs] at hb; exact List.eq_of_mem_singleton hb))
+  have hcache₂ : CachedRounds cap G j M σ₂ :=
+    cachedRounds_batch_run hcache₁ hr₂
+      (fun y hy => by simp only [Com.wvars] at hy; exact absurd hy (by simp))
+      (fun b hb => by simp only [Com.warrs] at hb; exact List.eq_of_mem_singleton hb)
+  have hmk₂ : BatchMark cap j G U Gam v 0 σ₂ := by
+    refine ⟨upd g₁ (v : ℕ) 1, harr₂, ?_, by rw [hmark₂]; exact rfl, ?_, fun a ha => absurd ha
+      (by omega)⟩
+    · intro k hk
+      by_cases hke : k = (v : ℕ)
+      · rw [hke, upd_self]
+      · rw [upd_of_ne _ hke, hval₁ k hk]; omega
+    · rw [hmark₂, Set.ncard_singleton]; omega
+  -- the cached fold over the earlier rounds
+  have hfold : (foldRange (fun b => markParentsCom cap j (0 + b)) j) =
+      foldRange (fun a => markParentsCom cap j a) j := by
+    congr 1
+    funext b
+    congr 1
+    omega
+  obtain ⟨σ₃, hr₃, henv₃, hcache₃, Wf, hbat₃, hbit₃, hvf, hcard₃, hwalk₃⟩ :=
+    (batchCachedFold_spec hB hMv j 0 (by omega)).run (σ := σ₂) ⟨henv₂, hcache₂, hmk₂⟩
+  rw [hfold] at hr₃
+  rw [Nat.zero_add] at hcard₃ hwalk₃
+  have hcut₃ : σ₃.arrs (cluName j) = arrOf n Cut := by
+    rw [hr₃.frame_arr _ (fun hc => ?_)]
+    · rw [hr₂.frame_arr _ (by simp [Com.warrs, hcutbat]),
+        hr₁.frame_arr _ (by rw [RamDriverIO.warrs_fillCom]; simp [hcutbat])]
+      exact hcut
+    · obtain ⟨b, -, hm⟩ := RamDriverFrames.mem_warrs_foldRange _ _ hc
+      rw [warrs_markParentsCom] at hm
+      exact hcutbat (List.eq_of_mem_singleton hm)
+  -- the cut to the retained cluster
+  obtain ⟨σ₄, hr₄, ⟨Wa, hbat₄, hval₄⟩, -, -, hcut₄⟩ :=
+    (andSelfCom_spec (B := B) n (cluName j) (batName j) Wf Cut hcutbat hnB
+      (fun k hk => by have := hbit₃ k hk; omega) hCutB
+      (fun k hk => by
+        have h1 := hbit₃ k hk
+        have h2 := hCutB k hk
+        calc Wf k * Cut k ≤ 1 * Cut k := Nat.mul_le_mul_right _ h1
+          _ = Cut k := by ring
+          _ < B := h2)).run (σ := σ₃) ⟨hbat₃, henv₃.1, hcut₃⟩
+  have henv₄ : BatchEnv cap nt j O T U Gam v σ₄ :=
+    batchEnv_run henv₃ hr₄ (fun y hy => by
+        rw [wvars_andCom] at hy
+        simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+        rcases hy with rfl | rfl <;> exact mem_descendScalars_i)
+      (fun b hb => Or.inl (by
+        rw [RamDriverFrames.warrs_andCom] at hb; exact List.eq_of_mem_singleton hb))
+  have hcache₄ : CachedRounds cap G j M σ₄ :=
+    cachedRounds_batch_run hcache₃ hr₄ (fun y hy => by
+        rw [wvars_andCom] at hy
+        simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+        rcases hy with rfl | rfl <;> exact mem_descendScalars_i)
+      (fun b hb => by
+        rw [RamDriverFrames.warrs_andCom] at hb
+        exact List.eq_of_mem_singleton hb)
+  have hmarkeq : markSet n Wa = markSet n Wf ∩ markSet n Cut := by
+    rw [markSet_congr hval₄, markSet_mul]
+  refine ⟨σ₄, _, hr₁.seq (hr₂.seq (hr₃.seq hr₄)), ?_, henv₄, hcache₄, hcut₄, Wa,
+    hbat₄, ?_, ?_, ?_, ?_, ?_⟩
+  · simp only [batchCachedCost]; omega
+  · intro k hk
+    rw [hval₄ k hk]
+    have h1 := hbit₃ k hk
+    have h2 := hCutB k hk
+    calc Wf k * Cut k ≤ 1 * Cut k := Nat.mul_le_mul_right _ h1
+      _ = Cut k := by ring
+      _ < B := h2
+  · rw [hmarkeq]; exact Set.inter_subset_right
+  · rw [hmarkeq]; exact ⟨hvf, hvCut⟩
+  · rw [hmarkeq]
+    exact le_trans (Set.ncard_le_ncard Set.inter_subset_left (Set.toFinite _)) hcard₃
+  · intro a ha hwd
+    obtain ⟨p, hp, hps⟩ := hwalk₃ a ha hwd
+    exact ⟨p, hp, by rw [hmarkeq]; exact Set.inter_subset_inter_left _ hps⟩
 
 /-- The cost of the batch phase. -/
 def batchCost (n ns cap j : ℕ) : ℕ := ancestorCost n ns cap * j + 26 * n + 16
