@@ -32,6 +32,7 @@ import Lax3Proofs.RamCoverMember
 import Lax3Proofs.RamDriverMember
 import Lax3Proofs.RamDriverClusterMember
 import Lax3Proofs.RamDriverMemberPhases
+import Lax3Proofs.RamDriverMemberRoot
 import Lax3Proofs.Refine.DriverPrelude
 import Lax3Proofs.RamAugment
 import Lax3Proofs.FormulaTables

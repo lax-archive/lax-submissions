@@ -380,7 +380,7 @@ theorem clusterStepImplementsA
       RamCover.CoverOutA G M π centre cap q mm Xoff Xmem asg →
       (∀ v : Fin n, M' (v : ℕ) ≠ 0 → v ∈ clusterAt G M π centre cap k) →
       ∀ r : ℕ, Refine.ScatterBlock.BallBudget n r G M' O bw nb)
-    (hread : ∀ X W w Alv' Gam' C', k < q →
+    (hread : ∀ X W w Alv' Gam' C', k < q → M (centre k) ≠ 0 →
       ReadbackStepA B q q_top cap mb ns Ws j φ G O T M Gm C π centre
         Xoff Xmem asg mm k X W w Alv' Gam' C' Kr)
     (hmono : Monotone Kin)
@@ -462,7 +462,7 @@ theorem clusterStepImplementsA
     intro v hal hv
     exact hball v hal (by rw [hv]; exact hc₅₀) (mem_ball_self _ _ _)
   obtain ⟨σ₆, hr₆, hturn₆, hout₆, hc₆, hrb₆⟩ :=
-    (hread X W w Alv' Gam' C' hkn).run (σ := σ₅)
+    (hread X W w Alv' Gam' C' hkn halive).run (σ := σ₅)
       ⟨hturn₅, hdat₅, hcolarr₅, hcolbit₃, hcolread₃, htab₅, htsz₅,
         hc₅₀.trans hcn, hvis, hflag₅⟩
   have hrun := hr₁.seq (hr₂.seq (hr₃.seq (hrₖ.seq (hrₗ.seq (hr₄.seq (hr₅.seq hr₆))))))
@@ -527,7 +527,7 @@ theorem clusterFramesA
         (tablesAt q_top cap mb φ j)).warrs)
     (hbud : ∀ (M' : ℕ → ℕ) (r : ℕ),
       Refine.ScatterBlock.BallBudget n r G M' O bw nb)
-    (hread : ∀ X W w Alv' Gam' C', k < q →
+    (hread : ∀ X W w Alv' Gam' C', k < q → M (centre k) ≠ 0 →
       ReadbackStepA B q q_top cap mb ns Ws j φ G O T M Gm C π centre
         Xoff Xmem asg mm k X W w Alv' Gam' C' Kr)
     (hinnerTab : ∀ i, tabName j i ∉ inner.warrs)
@@ -611,7 +611,7 @@ theorem clusterFramesA
     intro v hal hv
     exact hball v hal (by rw [hv]; exact hc₅₀) (mem_ball_self _ _ _)
   obtain ⟨σ₆, hr₆, hturn₆, hout₆, hc₆, hrb₆⟩ :=
-    (hread X W w Alv' Gam' C' hkn).run (σ := σ₅)
+    (hread X W w Alv' Gam' C' hkn halive).run (σ := σ₅)
       ⟨hturn₅, hdat₅, hcolarr₅, hcolbit₃, hcolread₃, htab₅, htsz₅,
         hc₅₀.trans hcn, hvis, hflag₅⟩
   refine ⟨σ₆, _,
