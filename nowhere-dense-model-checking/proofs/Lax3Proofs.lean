@@ -76,6 +76,7 @@ import Lax3Proofs.Refine.ElimCompactCsr
 import Lax3Proofs.Refine.ElimCompactSpec
 import Lax3Proofs.Refine.ReachedBridge
 import Lax3Proofs.Refine.CoverActiveBridge
+import Lax3Proofs.Refine.CoverActiveSynth
 import Lax3Proofs.Refine.ClusterSynth
 import Lax3Proofs.Refine.ExpandSynth
 import Lax3Proofs.Refine.SigmaLoop
