@@ -1084,8 +1084,12 @@ theorem readbackStep {B q_top cap mb ns Ws j : ℕ} {n : ℕ} {φ : Lax3.FirstOr
     hplayrec.congr (fun a _ => hframeV (ctrName a)
         (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff])
         (by simp [ctrName, String.ext_iff]))
+      (fun a _ => hframeA (resName a) (fun i => Ne.symm (by
+        simp [tabName, resName, String.ext_iff])))
       (fun a _ => hframeA (gamName a) (fun i => Ne.symm (by
-        simp [tabName, gamName, String.ext_iff]))),
+        simp [tabName, gamName, String.ext_iff])))
+      (fun a _ => hframeA (parName a) (fun i => Ne.symm (by
+        simp [tabName, parName, balName, String.ext_iff]))),
     ?_, ?_, ?_, hbase'.2.2.2.1, ?_, hmn, hmB, hordlt, hcout⟩,
     hbase'.2.2.2.2.2.2.1, hbase'.2.2.2.2.1, ?_⟩
   · rw [hframeA (ordName j) (fun i => Ne.symm (by

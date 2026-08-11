@@ -685,7 +685,7 @@ theorem clusterStepAtR (hfr : RFrames q_top cap mb R ℓ φ)
   RamDriverCluster.clusterStepImplements
     (bw := min (Lax3Proofs.Refine.MassWeight.blockRowSum O Xoff Xmem k) ns)
     (nb := min (Lax3Proofs.Refine.MassMath.blockSize Xoff k) n) hcap
-    (RamDriverDescend.descendStep hmb hjl le_rfl)
+    (RamDriverDescend.descendStep hcsr hmb hjl le_rfl)
     (fun _ _ _ _ => RamDriverDescend.enumStep hB le_rfl)
     (fun _ _ _ _ _ => RamDriverDescend.colourStep le_rfl)
     (RamDriverFrames.wa_notMem_warrs_colourCom cap mb j)
@@ -717,7 +717,7 @@ open Classical in
 /-- `RamDriverRoot.clusterFramesAt` at round `R`, off the residual. -/
 theorem clusterFramesAtR (hfr : RFrames q_top cap mb R ℓ φ)
     (hmb : mb = ℓ * (2 * cap + 1)) (hjl : j < ℓ)
-    (hB : WordBoundK B n Kmass ns cap mb) (hcsr : CsrGraph G ns O T)
+    (hB : WordBoundK B n Kmass ns cap mb) (hcsr : RamElim.CsrSimple G ns O T)
     (hbnd : ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
         σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
@@ -731,8 +731,8 @@ theorem clusterFramesAtR (hfr : RFrames q_top cap mb R ℓ φ)
       (driverAt q_top cap mb R ℓ φ (j + 1)) Kin
         (Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc (n + ns))
           (blockWeight n G Xoff Xmem k) (Kin (blockWeight n G Xoff Xmem k))) :=
-  RamDriverFrames.clusterFrames hcsr hB
-    (RamDriverDescend.descendStep hmb hjl le_rfl)
+  RamDriverFrames.clusterFrames hcsr.csr hB
+    (RamDriverDescend.descendStep hcsr hmb hjl le_rfl)
     (fun _ _ _ _ => RamDriverDescend.enumStep hB le_rfl)
     (fun _ _ _ _ _ => RamDriverDescend.colourStep le_rfl)
     (fun _ _ _ _ _ _ => Refine.KillPass.killStep)
@@ -750,7 +750,7 @@ theorem clusterFramesAtR (hfr : RFrames q_top cap mb R ℓ φ)
     (fun _ ha => (hfr j).2.2.2.2.2.2.2.2.1 _ ha)
     (hfr j).2.2.2.2.2.2.2.2.2
     (fun X _ _ _ _ _ =>
-      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB
+      Refine.ScatterDeadTurn.scatterDeadStep hcsr.csr hB
         (fun β hβ σs hσs =>
           ⟨(hbnd β hβ σs hσs).1, (hbnd β hβ σs hσs).2.1,
             le_trans (Refine.ScatterDeadTurn.deadAtomKX_le_blk σs.β _ _ _ _ _ _)
@@ -762,7 +762,7 @@ theorem clusterFramesAtR (hfr : RFrames q_top cap mb R ℓ φ)
         (fun β hβ => hcostI β hβ _) (hKsc _))
     (fun i => RamDriverWrites.tabName_notMem_warrs_scatterDeadPhase j j i
       (fun β hβ => (tableRank_of_mem_tablesAt (j + 1) β hβ).1) _ 0 (fun _ hβ => hβ))
-    (Refine.ScatterDeadPass.ballBudget_carrier hcsr)
+    (Refine.ScatterDeadPass.ballBudget_carrier hcsr.csr)
     (fun _ _ _ _ _ _ hkn =>
       RamDriverBase.readbackStep hB.one_lt hB.n_lt hkn
         (fun hout => Lax3Proofs.RamDriverRoot.rbCost_block_le_weight hout hkn))
@@ -886,7 +886,7 @@ theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ → ℕ}
       clusterStepAtR hfr hcap hmb hj hB hcsr (hbnd j hj) (hcostI j hj) (hKsc j hj)
         (hKmono (j + 1)) (hKs j hj _))
     (fun j hj _ _ _ _ _ _ _ _ _ _ =>
-      clusterFramesAtR hfr hmb hj hB hcsr.csr (hbnd j hj) (hcostI j hj) (hKsc j hj)
+      clusterFramesAtR hfr hmb hj hB hcsr (hbnd j hj) (hcostI j hj) (hKsc j hj)
         (hKmono (j + 1)))
     (fun _ _ => loopFramesR hfr)
     (fun jd i => RamDriverRoot.tabName_notMem_warrs_phases jd i)

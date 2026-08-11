@@ -121,12 +121,12 @@ variable {q_top cap mb ℓ W j : ℕ} {φ : Lax3.FirstOrder.FO 0}
 theorem turnFrozen_notMem_warrs_driverAt {a : String} (h : RamDriverFrames.TurnFrozen j a) :
     a ∉ (driverAt q_top cap mb 0 ℓ φ (j + 1)).warrs := by
   refine RamDriverWrites.belowArr_notMem_warrs_driverAt ?_
-  rcases h with hm | ⟨c, rfl⟩ | ⟨b, hb, rfl⟩
+  rcases h with hm | ⟨c, rfl⟩ | ⟨b, hb, hname⟩
   · simp only [List.mem_cons, List.not_mem_nil, or_false] at hm
     rcases hm with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
       exact ⟨j, Nat.lt_succ_self j, by tauto⟩
   · exact ⟨j, Nat.lt_succ_self j, by tauto⟩
-  · exact ⟨b, by omega, by tauto⟩
+  · rcases hname with rfl | rfl | rfl <;> exact ⟨b, by omega, by tauto⟩
 
 theorem ctrName_notMem_wvars_driverAt {a : ℕ} (h : a ≤ j) :
     ctrName a ∉ (driverAt q_top cap mb 0 ℓ φ (j + 1)).wvars :=
@@ -300,6 +300,10 @@ theorem killListStep :
     harr _ (by simp [alvName, klName, String.ext_iff])
   have harrGam : ∀ b : ℕ, σ'.arrs (gamName b) = σ.arrs (gamName b) := fun b =>
     harr _ (by simp [gamName, klName, String.ext_iff])
+  have harrRes : ∀ b : ℕ, σ'.arrs (resName b) = σ.arrs (resName b) := fun b =>
+    harr _ (by simp [resName, klName, String.ext_iff])
+  have harrPar : ∀ b : ℕ, σ'.arrs (parName b) = σ.arrs (parName b) := fun b =>
+    harr _ (by simp [parName, balName, klName, String.ext_iff])
   have harrCol : ∀ b q : ℕ, σ'.arrs (colName b q) = σ.arrs (colName b q) := fun b q =>
     harr _ (by simp [colName, klName, String.ext_iff])
   have harrMem : ∀ b : ℕ, σ'.arrs (memName b) = σ.arrs (memName b) := fun b =>
@@ -338,7 +342,7 @@ theorem killListStep :
       (fun a _ => hvar (ctrName a) (by simp [ctrName, kkName, String.ext_iff])
         (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff])
         (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff]))
-      (fun a _ => harrGam a)
+      (fun a _ => harrRes a) (fun a _ => harrGam a) (fun a _ => harrPar a)
   · -- the cover's answers
     exact Refine.KillPass.coverHeld_congr hturn.2.2
       (harr (ordName j) (by simp [ordName, klName, String.ext_iff]))
@@ -360,7 +364,7 @@ theorem killListStep :
       (fun a _ => hvar (ctrName a) (by simp [ctrName, kkName, String.ext_iff])
         (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff])
         (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff]))
-      (fun a _ => harrGam a)
+      (fun a _ => harrRes a) (fun a _ => harrGam a) (fun a _ => harrPar a)
   · exact hrun.out_eq (RamDriverWrites.noWrite_killListCom mb j)
   · exact hvar (curName j) (by simp [curName, kkName, String.ext_iff])
       (by simp [curName, String.ext_iff]) (by simp [curName, String.ext_iff])
@@ -649,7 +653,7 @@ theorem clusterStepAt
   RamDriverCluster.clusterStepImplements
     (bw := min (Refine.MassWeight.blockRowSum O Xoff Xmem k) ns)
     (nb := min (blockSize Xoff k) n) hcap
-    (RamDriverDescend.descendStep hmb hjl le_rfl)
+    (RamDriverDescend.descendStep hcsr hmb hjl le_rfl)
     (fun _ _ _ _ => RamDriverDescend.enumStep hB le_rfl)
     (fun _ _ _ _ _ => RamDriverDescend.colourStep le_rfl)
     (RamDriverFrames.wa_notMem_warrs_colourCom cap mb j)
@@ -678,7 +682,7 @@ open Classical in
 /-- **What one turn leaves alone, at the nested driver.** -/
 theorem clusterFramesAt
     (hmb : mb = ℓ * (2 * cap + 1)) (hjl : j < ℓ)
-    (hB : WordBoundK B n Kmass ns cap mb) (hcsr : CsrGraph G ns O T)
+    (hB : WordBoundK B n Kmass ns cap mb) (hcsr : RamElim.CsrSimple G ns O T)
     (hbnd : ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
         σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
@@ -692,8 +696,8 @@ theorem clusterFramesAt
       (driverAt q_top cap mb 0 ℓ φ (j + 1)) Kin
         (turnCostSize n ns cap mb q_top j φ (Ksc (n + ns))
           (blockWeight n G Xoff Xmem k) (Kin (blockWeight n G Xoff Xmem k))) :=
-  RamDriverFrames.clusterFrames hcsr hB
-    (RamDriverDescend.descendStep hmb hjl le_rfl)
+  RamDriverFrames.clusterFrames hcsr.csr hB
+    (RamDriverDescend.descendStep hcsr hmb hjl le_rfl)
     (fun _ _ _ _ => RamDriverDescend.enumStep hB le_rfl)
     (fun _ _ _ _ _ => RamDriverDescend.colourStep le_rfl)
     (fun _ _ _ _ _ _ => Refine.KillPass.killStep)
@@ -711,7 +715,7 @@ theorem clusterFramesAt
     (fun _ ha => mnumName_notMem_wvars_driverAt ha)
     kkName_notMem_wvars_driverAt
     (fun X _ _ _ _ _ =>
-      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB
+      Refine.ScatterDeadTurn.scatterDeadStep hcsr.csr hB
         (fun β hβ σs hσs =>
           ⟨(hbnd β hβ σs hσs).1, (hbnd β hβ σs hσs).2.1,
             le_trans (Refine.ScatterDeadTurn.deadAtomKX_le_blk σs.β _ _ _ _ _ _)
@@ -722,7 +726,7 @@ theorem clusterFramesAt
         (fun β hβ => hcostI β hβ _) (hKsc _))
     (fun i => RamDriverWrites.tabName_notMem_warrs_scatterDeadPhase j j i
       (fun β hβ => (tableRank_of_mem_tablesAt (j + 1) β hβ).1) _ 0 (fun _ hβ => hβ))
-    (Refine.ScatterDeadPass.ballBudget_carrier hcsr)
+    (Refine.ScatterDeadPass.ballBudget_carrier hcsr.csr)
     (fun _ _ _ _ _ _ hkn => RamDriverBase.readbackStep hB.one_lt hB.n_lt hkn
       (fun hout => rbCost_block_le_weight hout hkn))
     (fun i => tabName_notMem_warrs_driverAt i)
@@ -851,7 +855,7 @@ theorem levelAt
       clusterStepAt hcap hmb hj hB hcsr (hbnd j hj) (hcostI j hj) (hKsc j hj)
         (hKmono (j + 1)) (hKs j hj _))
     (fun j hj _ _ _ _ _ _ _ _ _ _ =>
-      clusterFramesAt hmb hj hB hcsr.csr (hbnd j hj) (hcostI j hj) (hKsc j hj)
+      clusterFramesAt hmb hj hB hcsr (hbnd j hj) (hcostI j hj) (hKsc j hj)
         (hKmono (j + 1)))
     (fun _ _ => loopFrames)
     (fun jd i => tabName_notMem_warrs_phases jd i)

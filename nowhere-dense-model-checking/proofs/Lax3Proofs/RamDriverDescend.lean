@@ -760,7 +760,9 @@ theorem enumStepW {B cap mb ns Ws j K : ℕ} {G : SimpleGraph (Fin n)}
     hplayrec.congr
       (fun a _ => hvv (ctrName a) (by simp [ctrName, String.ext_iff])
         (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff]))
-      (fun a _ => hav (gamName a) (by simp [gamName, String.ext_iff])),
+      (fun a _ => hav (resName a) (by simp [resName, String.ext_iff]))
+      (fun a _ => hav (gamName a) (by simp [gamName, String.ext_iff]))
+      (fun a _ => hav (parName a) (by simp [parName, balName, String.ext_iff])),
     coverHeld_congr hheld (hav _ (by simp [ordName, String.ext_iff]))
       (hav _ (by simp [xofName, String.ext_iff]))
       (hav _ (by simp [xmmName, String.ext_iff]))
@@ -770,7 +772,9 @@ theorem enumStepW {B cap mb ns Ws j K : ℕ} {G : SimpleGraph (Fin n)}
     hplay'.congr
       (fun a _ => hvv (ctrName a) (by simp [ctrName, String.ext_iff])
         (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff]))
-      (fun a _ => hav (gamName a) (by simp [gamName, String.ext_iff])),
+      (fun a _ => hav (resName a) (by simp [resName, String.ext_iff]))
+      (fun a _ => hav (gamName a) (by simp [gamName, String.ext_iff]))
+      (fun a _ => hav (parName a) (by simp [parName, balName, String.ext_iff])),
     hout (noWrite_enumBatch _ _ _),
     hvv _ (by simp [curName, String.ext_iff]) (by simp [curName, String.ext_iff])
       (by simp [curName, String.ext_iff]),
@@ -3343,6 +3347,10 @@ theorem colourStep {K : ℕ}
     hvv _ (RamDriverIO.notMem_of_append (p := "ctr") (s := toString a) (by decide))
   have hgama : ∀ a : ℕ, σ'.arrs (gamName a) = σ.arrs (gamName a) := fun a =>
     hav _ (fun s => Ne.symm (colName_ne_gamName _ _ _))
+  have hresa : ∀ a : ℕ, σ'.arrs (resName a) = σ.arrs (resName a) := fun a =>
+    hav _ (fun s => Ne.symm (colName_ne_resName _ _ _))
+  have hpara : ∀ a : ℕ, σ'.arrs (parName a) = σ.arrs (parName a) := fun a =>
+    hav _ (fun s => Ne.symm (by simpa [parName] using colName_ne_balName (j + 1) s a))
   have hturn' : TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ' := by
     refine ⟨levelPre_congr hlev hr (hvv "n" (by decide)) (hvv "m" (by decide))
         (hvv "lw" (by decide))
@@ -3353,7 +3361,8 @@ theorem colourStep {K : ℕ}
         (fun a ha => hav a ?_)
         (hav _ (fun s => Ne.symm (colName_ne_memName _ _ _)))
         (hvv _ (RamDriverIO.notMem_of_append (p := "mm") (s := toString j) (by decide))),
-      hplayj.congr (fun a _ => hctr a) (fun a _ => hgama a),
+      hplayj.congr (fun a _ => hctr a) (fun a _ => hresa a)
+        (fun a _ => hgama a) (fun a _ => hpara a),
       coverHeld_congr hheld (hav _ (fun s => Ne.symm (colName_ne_ordName _ _ _)))
         (hav _ (fun s => Ne.symm (colName_ne_xofName _ _ _)))
         (hav _ (fun s => Ne.symm (colName_ne_xmmName _ _ _)))
@@ -3371,7 +3380,8 @@ theorem colourStep {K : ℕ}
         (hav _ (fun s => Ne.symm (colName_ne_memName _ _ _)))
         (hvv _ (RamDriverIO.notMem_of_append (p := "mm") (s := toString (j + 1)) (by decide))),
       hrange⟩,
-    hplay1.congr (fun a _ => hctr a) (fun a _ => hgama a),
+    hplay1.congr (fun a _ => hctr a) (fun a _ => hresa a)
+      (fun a _ => hgama a) (fun a _ => hpara a),
     hout (noWrite_colourCom cap mb j),
     hvv _ (RamDriverIO.notMem_of_append (p := "cu") (s := toString j) (by decide)),
     fun s => cellsOf σ' (colName (j + 1) s), fun c hc => ?_, hbit', ?_⟩
@@ -3463,7 +3473,7 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
         markSet n Xa =
           {v : Fin n | RamCover.InCluster (masked G M) π cap (ord (σ.vars (curName j))) (v : ℕ)} ∧
         ∃ (Mm : ℕ → ℕ) (bs : ℕ), σ'.arrs (memName (j + 1)) = arrOf n Mm ∧
-          σ'.vars "bq" = bs ∧ MemEnum n bs Mm Xa)
+          σ'.vars "bq" = bs ∧ bs = blockSize Xoff c ∧ MemEnum n bs Mm Xa)
       (24 * blockSize Xoff c + 11 * n + 26) := by
   refine Spec.of_exists (fun σ hσ => ?_)
   obtain ⟨hn, hxof, hxmm, hclu, hmem₀, hcurEq⟩ := hσ
@@ -3674,7 +3684,7 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
   rw [hp₄] at hgval hbq₄ hgmval
   have hoffle : Xoff c ≤ Xoff (c + 1) := hout.mono c hc
   refine ⟨σ₄, _, hr₁.seq (hr₁'.seq (hrLoad.seq hr₄)), by omega, g, hgarr, hgbit, ?_,
-    gm, Xoff (c + 1) - Xoff c, hgmarr, hbq₄, ?_, ?_, ?_, ?_⟩
+    gm, Xoff (c + 1) - Xoff c, hgmarr, hbq₄, rfl, ?_, ?_, ?_, ?_⟩
   · ext v
     rw [mem_markSet, Set.mem_setOf_eq, hcurEq, hgval (v : ℕ) v.isLt]
     exact hout.block c hc (v : ℕ)
@@ -3701,6 +3711,21 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
     exact hq3
 
 /-! ### One retained parent cache -/
+
+/-- A walk whose whole support survives a mask can be read in that
+masked graph.  This is the reverse direction of `Walk.mapLe`, specialized
+to the induced masks used by the retained cache. -/
+theorem walk_masked_of_support {M R : ℕ → ℕ} {u v : Fin n}
+    (p : (masked G M).Walk u v) (hR : ∀ z ∈ p.support, R (z : ℕ) ≠ 0) :
+    ∃ q : (masked G R).Walk u v, q.length = p.length := by
+  induction p with
+  | nil => exact ⟨.nil, rfl⟩
+  | @cons a b c hab p ih =>
+      obtain ⟨q, hq⟩ := ih (fun z hz => hR z (by simp [hz]))
+      refine ⟨.cons (RamBfs.masked_adj.mpr ⟨(RamBfs.masked_adj.mp hab).1, ?_, ?_⟩) q, ?_⟩
+      · exact hR a (by simp)
+      · exact hR b (by simp)
+      · simp [hq]
 
 /-- The charge of preparing the raw block's distance cells and running
 the block-priced parent search. -/
@@ -4379,7 +4404,8 @@ the search's queue and relaxation scalars, and the extraction's
 `cur`/`pl`/`plen`; `pc`/`pi` are the cached parent pointer and counter. -/
 def descendScalars : List String :=
   ["i", "p", "pend", "z", "hit", "j", "jend", "w", "src", "tv", "tail", "head",
-    "sc", "v", "dv", "dn", "cur", "pl", "plen", "pc", "pi", "bq", "mk", "mv"]
+    "sc", "v", "dv", "dn", "cur", "pl", "plen", "pc", "pi", "bq", "mk", "mv",
+    "ac", "ax", "ri", "u", "du"]
 
 theorem wvars_andCom (a b dst : String) : (andCom a b dst).wvars = ["i", "i"] :=
   RamDriverIO.wvars_fillCom _ _
@@ -4413,6 +4439,55 @@ theorem bq_notMem_wvars_markParentsCom (cap j a : ℕ) :
     "bq" ∉ (markParentsCom cap j a).wvars := by
   rw [wvars_markParentsCom]
   decide
+
+theorem wvars_cacheBfsCom (cap j : ℕ) :
+    (cacheBfsCom cap j).wvars = (Refine.BfsBlockPar.bfsBlockParCom 0).wvars := by
+  rw [cacheBfsCom, Refine.ScatterBlock.renCom_wvars]
+  rfl
+
+theorem mem_wvars_cacheBfsCom_zero :
+    ∀ y ∈ (Refine.BfsBlockPar.bfsBlockParCom 0).wvars, y ∈ descendScalars := by decide
+
+theorem mem_wvars_cacheBfsCom {cap j : ℕ} {y : String}
+    (h : y ∈ (cacheBfsCom cap j).wvars) : y ∈ descendScalars :=
+  mem_wvars_cacheBfsCom_zero y (by rwa [wvars_cacheBfsCom] at h)
+
+theorem bq_notMem_wvars_cacheBfsCom (cap j : ℕ) :
+    "bq" ∉ (cacheBfsCom cap j).wvars := by
+  rw [wvars_cacheBfsCom]
+  decide
+
+theorem mem_wvars_memFillAt {j c : ℕ} {a y : String}
+    (h : y ∈ (memFillAt j a c).wvars) : y = "ac" ∨ y = "ax" := by
+  simp [memFillAt, Com.wvars] at h
+  tauto
+
+theorem bq_notMem_wvars_memFillAt (j : ℕ) (a : String) (c : ℕ) :
+    "bq" ∉ (memFillAt j a c).wvars := by
+  intro h
+  rcases mem_wvars_memFillAt h with h | h <;> exact absurd h (by decide)
+
+theorem mem_wvars_cacheRoundCom {cap j : ℕ} {y : String}
+    (h : y ∈ (cacheRoundCom cap j).wvars) :
+    y = mnumName (j + 1) ∨ y ∈ descendScalars := by
+  simp only [cacheRoundCom, Com.wvars, List.mem_append, List.mem_cons, List.not_mem_nil,
+    or_false, false_or] at h
+  rcases h with rfl | rfl | hm | hb
+  · exact Or.inr (by decide)
+  · exact Or.inl rfl
+  · rcases mem_wvars_memFillAt hm with rfl | rfl <;> exact Or.inr (by decide)
+  · exact Or.inr (mem_wvars_cacheBfsCom hb)
+
+theorem bq_notMem_wvars_cacheRoundCom (cap j : ℕ) :
+    "bq" ∉ (cacheRoundCom cap j).wvars := by
+  intro h
+  simp only [cacheRoundCom, Com.wvars, List.mem_append, List.mem_cons, List.not_mem_nil,
+    or_false, false_or] at h
+  rcases h with h | h | hm | hb
+  · exact absurd h (by decide)
+  · exact absurd h (by simp [mnumName, String.ext_iff])
+  · exact bq_notMem_wvars_memFillAt j (pdsName j) (2 * cap + 1) hm
+  · exact bq_notMem_wvars_cacheBfsCom cap j hb
 
 theorem wvars_clusterLoad (j : ℕ) : (clusterLoad j).wvars = (clusterLoad 0).wvars := rfl
 
@@ -4457,6 +4532,31 @@ theorem bq_notMem_wvars_batchCom (cap j : ℕ) : "bq" ∉ (batchCom cap j).wvars
   · exact absurd h (by decide)
   · exact absurd h (by decide)
 
+theorem mem_wvars_batchCachedCom {cap j : ℕ} {y : String}
+    (h : y ∈ (batchCachedCom cap j).wvars) : y ∈ descendScalars := by
+  simp only [batchCachedCom, Com.wvars, List.mem_append, List.not_mem_nil, false_or,
+    or_false, RamDriverIO.wvars_fillCom, wvars_andCom, List.mem_cons] at h
+  rcases h with (rfl | rfl) | h | (rfl | rfl)
+  · exact mem_descendScalars_i
+  · exact mem_descendScalars_i
+  · obtain ⟨b, -, hm⟩ := mem_wvars_foldRange _ _ h
+    exact mem_wvars_markParentsCom hm
+  · exact mem_descendScalars_i
+  · exact mem_descendScalars_i
+
+theorem bq_notMem_wvars_batchCachedCom (cap j : ℕ) :
+    "bq" ∉ (batchCachedCom cap j).wvars := by
+  intro h
+  simp only [batchCachedCom, Com.wvars, List.mem_append, List.not_mem_nil, false_or,
+    or_false, RamDriverIO.wvars_fillCom, wvars_andCom, List.mem_cons] at h
+  rcases h with (h | h) | h | (h | h)
+  · exact absurd h (by decide)
+  · exact absurd h (by decide)
+  · obtain ⟨b, -, hm⟩ := mem_wvars_foldRange _ _ h
+    exact bq_notMem_wvars_markParentsCom cap j b hm
+  · exact absurd h (by decide)
+  · exact absurd h (by decide)
+
 /-- **What the descent assigns**: the depth's own connector and nothing
 but counters. -/
 theorem mem_wvars_descendCom {cap j : ℕ} {y : String} (h : y ∈ (descendCom cap j).wvars) :
@@ -4464,13 +4564,16 @@ theorem mem_wvars_descendCom {cap j : ℕ} {y : String} (h : y ∈ (descendCom c
   simp only [descendCom, Com.wvars, List.mem_append, List.mem_cons, List.not_mem_nil,
     or_false, false_or, wvars_andCom, wvars_subCom,
     RamDriverFrames.wvars_memFilterCom] at h
-  rcases h with rfl | h | (rfl | rfl) | h | (rfl | rfl) |
+  rcases h with rfl | hcl | (rfl | rfl) | hc | hb | (rfl | rfl) |
     (rfl | rfl) | (rfl | rfl) | (rfl | rfl | rfl | rfl | rfl)
   · exact Or.inl rfl
-  · exact Or.inr (Or.inr (mem_wvars_clusterLoad h))
+  · exact Or.inr (Or.inr (mem_wvars_clusterLoad hcl))
   · exact Or.inr (Or.inr mem_descendScalars_i)
   · exact Or.inr (Or.inr mem_descendScalars_i)
-  · exact Or.inr (Or.inr (mem_wvars_batchCom h))
+  · rcases mem_wvars_cacheRoundCom hc with rfl | hs
+    · exact Or.inr (Or.inl rfl)
+    · exact Or.inr (Or.inr hs)
+  · exact Or.inr (Or.inr (mem_wvars_batchCachedCom hb))
   -- the child's filter: two counters and the child's own member count
   all_goals first
     | exact Or.inr (Or.inl rfl)
@@ -5024,11 +5127,10 @@ theorem batchCachedFold_spec {B cap mb j : ℕ} {d : ℕ}
       have hGaEq : ∀ z, z < n → Ga z = Gam s z := by
         intro z hz
         apply eq_of_arrOf_eq (N := n) (by rw [← hgama, ← hgam s hsj]) hz
+      have hGaMask : masked G Ga = masked G (Gam s) := masked_congr hGaEq
       have hle : masked G R ≤ masked G (Gam s) := by
-        intro x y hxy
-        rw [masked_adj] at hxy ⊢
-        exact ⟨hxy.1, by rw [← hGaEq _ x.isLt]; exact hRG _ x.isLt hxy.2.1,
-          by rw [← hGaEq _ y.isLt]; exact hRG _ y.isLt hxy.2.2⟩
+        rw [← hGaMask]
+        exact hRG
       obtain ⟨σ₁, hr₁, Wa', hbat₁, hbit₁, hmark₁, hcard₁, p, hp, hpsup⟩ :=
         (markParentsCom_spec (j := j) (a := s) hT (U s).isLt v.isLt hdt hnB hdB h1B
           hbit).run (σ := σ) ⟨hctrj, hpara, hbat⟩
@@ -5412,25 +5514,68 @@ theorem mem_warrs_batchCom {cap j : ℕ} {b : String} (h : b ∈ (batchCom cap j
     exact mem_warrs_ancestorStep' hm
   · exact Or.inl rfl
 
-/-- The twelve arrays the descent writes. -/
+theorem mem_warrs_bfsBlockParCom_zero :
+    ∀ b ∈ (Refine.BfsBlockPar.bfsBlockParCom 0).warrs,
+      b ∈ (["dist", "par", "q", "qd"] : List String) := by decide
+
+theorem mem_warrs_cacheBfsCom {cap j : ℕ} {b : String}
+    (h : b ∈ (cacheBfsCom cap j).warrs) :
+    b = balAltName j ∨ b = balName j ∨ b = "q" ∨ b = "qd" := by
+  rw [cacheBfsCom, Refine.ScatterBlock.renCom_warrs, List.mem_map] at h
+  obtain ⟨a, ha, rfl⟩ := h
+  rw [RamDriverFrames.warrs_bfsBlockParCom] at ha
+  have hm := mem_warrs_bfsBlockParCom_zero a ha
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hm
+  rcases hm with rfl | rfl | rfl | rfl
+  · exact Or.inl (by
+      simp [cacheSwap, resName, pdsName, parName, balName, balAltName, String.ext_iff])
+  · exact Or.inr (Or.inl (by
+      simp [cacheSwap, resName, pdsName, parName, balName, balAltName, String.ext_iff]))
+  · exact Or.inr (Or.inr (Or.inl (by
+      simp [cacheSwap, resName, pdsName, parName, balName, balAltName, String.ext_iff])))
+  · exact Or.inr (Or.inr (Or.inr (by
+      simp [cacheSwap, resName, pdsName, parName, balName, balAltName, String.ext_iff])))
+
+theorem mem_warrs_cacheRoundCom {cap j : ℕ} {b : String}
+    (h : b ∈ (cacheRoundCom cap j).warrs) :
+    b = balAltName j ∨ b = balName j ∨ b = "q" ∨ b = "qd" := by
+  have h' : b = pdsName j ∨ b ∈ (cacheBfsCom cap j).warrs := by
+    simpa [cacheRoundCom, Com.warrs, RamDriverFrames.warrs_memFillAt_cacheframe] using h
+  rcases h' with rfl | h'
+  · exact Or.inl (by simp [pdsName])
+  · exact mem_warrs_cacheBfsCom h'
+
+theorem mem_warrs_batchCachedCom {cap j : ℕ} {b : String}
+    (h : b ∈ (batchCachedCom cap j).warrs) : b = batName j := by
+  simp only [batchCachedCom, Com.warrs, List.mem_append, List.mem_cons, List.not_mem_nil,
+    or_false, RamDriverIO.warrs_fillCom, RamDriverFrames.warrs_andCom] at h
+  rcases h with rfl | rfl | hf | rfl
+  · rfl
+  · rfl
+  · obtain ⟨a, -, hm⟩ := RamDriverFrames.mem_warrs_foldRange _ _ hf
+    rw [warrs_markParentsCom] at hm
+    exact List.eq_of_mem_singleton hm
+  · rfl
+
+/-- The arrays the descent writes. -/
 def descendArrs (j : ℕ) : List String :=
   [cluName j, resName j, balName j, balAltName j, batName j, alvName (j + 1), gamName (j + 1),
-    memName (j + 1), "alv", "dist", "q", "par", "path"]
+    memName (j + 1), "alv", "dist", "q", "qd", "par", "path"]
 
 theorem mem_warrs_descendCom' {cap j : ℕ} {b : String} (h : b ∈ (descendCom cap j).warrs) :
     b ∈ descendArrs j := by
   simp only [descendCom, Com.warrs, List.mem_append, List.mem_cons, List.not_mem_nil,
     or_false, false_or, RamDriverFrames.warrs_clusterLoad, RamDriverFrames.warrs_andCom,
     RamDriverFrames.warrs_subCom, RamDriverFrames.warrs_memFilterCom] at h
-  rcases h with (rfl | rfl | rfl) | rfl | hb | rfl | rfl | rfl | rfl
+  rcases h with (rfl | rfl | rfl) | rfl | hc | hb | rfl | rfl | rfl | rfl
   · exact by simp [descendArrs]
   · exact by simp [descendArrs]
   · exact by simp [descendArrs]
   · exact by simp [descendArrs]
-  · rcases mem_warrs_batchCom hb with rfl | hl
-    · simp [descendArrs]
-    · simp only [List.mem_cons, List.not_mem_nil, or_false] at hl
-      rcases hl with rfl | rfl | rfl | rfl | rfl <;> simp [descendArrs]
+  · rcases mem_warrs_cacheRoundCom hc with rfl | rfl | rfl | rfl <;>
+      simp [descendArrs]
+  · rw [mem_warrs_batchCachedCom hb]
+    simp [descendArrs]
   · exact by simp [descendArrs]
   · exact by simp [descendArrs]
   · exact by simp [descendArrs]
@@ -5468,6 +5613,35 @@ theorem ctrName_ne {a b : ℕ} (h : a ≠ b) : ctrName a ≠ ctrName b := fun hc
 theorem ctrName_notMem_descendScalars (a : ℕ) : ctrName a ∉ descendScalars :=
   RamDriverIO.notMem_of_append (p := "ctr") (s := toString a) (by decide)
 
+/-- Building the current cache leaves every strictly earlier cache
+untouched: its only depth-indexed destination is the current parent
+array. -/
+theorem cachedRounds_cacheRound_run {B K cap j : ℕ} {M : ℕ → ℕ} {σ σ' : Env}
+    (h : CachedRounds cap G j M σ) (hrun : Run B (cacheRoundCom cap j) σ σ' K) :
+    CachedRounds cap G j M σ' := by
+  refine h.congr ?_ ?_ ?_ ?_
+  · intro a ha
+    rw [hrun.frame_var (ctrName a) (fun hc => by
+      rcases mem_wvars_cacheRoundCom hc with hm | hm
+      · simpa [ctrName, mnumName, String.ext_iff] using hm
+      · exact (ctrName_notMem_descendScalars a) hm)]
+  · intro a ha
+    rw [hrun.frame_arr (resName a) (fun hc => by
+      rcases mem_warrs_cacheRoundCom hc with hm | hm | hm | hm <;>
+        simpa [resName, balName, balAltName, String.ext_iff] using hm)]
+  · intro a ha
+    rw [hrun.frame_arr (gamName a) (fun hc => by
+      rcases mem_warrs_cacheRoundCom hc with hm | hm | hm | hm <;>
+        simpa [gamName, balName, balAltName, String.ext_iff] using hm)]
+  · intro a ha
+    rw [hrun.frame_arr (parName a) (fun hc => by
+      rcases mem_warrs_cacheRoundCom hc with hm | hm | hm | hm
+      · simpa [parName, balName, balAltName, String.ext_iff] using hm
+      · have : a = j := prefixed_inj (p := "bal") (by simpa only [parName, balName] using hm)
+        omega
+      · simpa [parName, balName, String.ext_iff] using hm
+      · simpa [parName, balName, String.ext_iff] using hm)]
+
 /-- **A letter does not occur in a decimal representation**, which is
 `RamDriverBase.underscore_not_mem_toDigits` at any character no digit
 is. -/
@@ -5491,6 +5665,11 @@ theorem notMem_toDigits {c : Char} (hc : ∀ d, d < 10 → Nat.digitChar d ≠ c
 theorem toList_toString (a : ℕ) : (toString a).toList = Nat.toDigits 10 a := by
   rw [Nat.toString_eq_repr, RamDriverBase.repr_eq_ofList]
   simp
+
+theorem decimalDigits_inj {a b : ℕ} (h : Nat.toDigits 10 a = Nat.toDigits 10 b) : a = b := by
+  apply RamDriverBase.toString_inj
+  apply String.toList_inj.mp
+  simpa only [toList_toString] using h
 
 /-- The centre cursor is not the extraction's own cursor: the driver's
 name is `cu` followed by a numeral, and `cur` is `cu` followed by a
@@ -5526,6 +5705,37 @@ theorem noWrite_batchCom (cap j : ℕ) : (batchCom cap j).NoWrite :=
     noWrite_foldr (fun a => noWrite_ancestorStep cap j a) _,
     by rw [andCom]; exact RamDriverIO.noWrite_fillCom _ _⟩
 
+theorem noWrite_bfsBlockParCom (d : ℕ) :
+    (Refine.BfsBlockPar.bfsBlockParCom d).NoWrite := by
+  have he : (Refine.BfsBlockPar.bfsBlockParCom d).NoWrite =
+      (Refine.BfsBlockPar.bfsBlockParCom 0).NoWrite := rfl
+  rw [he]
+  decide
+
+theorem noWrite_cacheBfsCom (cap j : ℕ) : (cacheBfsCom cap j).NoWrite := by
+  rw [cacheBfsCom]
+  exact Refine.ScatterBlock.renCom_noWrite _ (noWrite_bfsBlockParCom (2 * cap))
+
+theorem noWrite_memFillAt (j : ℕ) (a : String) (c : ℕ) :
+    (memFillAt j a c).NoWrite := by
+  have he : (memFillAt j a c).NoWrite = (memFillAt 0 "a" 0).NoWrite := rfl
+  rw [he]
+  decide
+
+theorem noWrite_cacheRoundCom (cap j : ℕ) : (cacheRoundCom cap j).NoWrite :=
+  ⟨trivial, trivial, noWrite_memFillAt j (pdsName j) (2 * cap + 1),
+    noWrite_cacheBfsCom cap j⟩
+
+theorem noWrite_markParentsCom (cap j a : ℕ) : (markParentsCom cap j a).NoWrite := by
+  have he : (markParentsCom cap j a).NoWrite = (markParentsCom 0 0 0).NoWrite := rfl
+  rw [he]
+  decide
+
+theorem noWrite_batchCachedCom (cap j : ℕ) : (batchCachedCom cap j).NoWrite :=
+  ⟨RamDriverIO.noWrite_fillCom _ _, trivial,
+    noWrite_foldr (fun a => noWrite_markParentsCom cap j a) _,
+    by rw [andCom]; exact RamDriverIO.noWrite_fillCom _ _⟩
+
 theorem noWrite_clusterLoad (j : ℕ) : (clusterLoad j).NoWrite := by
   have he : (clusterLoad j).NoWrite = (clusterLoad 0).NoWrite := rfl
   rw [he]
@@ -5538,16 +5748,17 @@ theorem noWrite_memFilterCom (j : ℕ) : (memFilterCom j).NoWrite := by
 
 theorem noWrite_descendCom (cap j : ℕ) : (descendCom cap j).NoWrite :=
   ⟨trivial, noWrite_clusterLoad j, by rw [andCom]; exact RamDriverIO.noWrite_fillCom _ _,
-    trivial,
-    noWrite_batchCom cap j,
+    noWrite_cacheRoundCom cap j,
+    noWrite_batchCachedCom cap j,
     by rw [subCom]; exact RamDriverIO.noWrite_fillCom _ _,
     by rw [andCom]; exact RamDriverIO.noWrite_fillCom _ _,
     ⟨by rw [subCom]; exact RamDriverIO.noWrite_fillCom _ _, noWrite_memFilterCom (j + 1)⟩⟩
 
-/-- **The size-indexed descent cost.** The cluster scan is read at the
-turn's block weight `s`; the batch, six flat passes, and member filter
-retain their current carrier/CSR readings. The former materialised game
-ball is gone: cover geometry proves the retained cluster is inside it.
+/-- **The size-indexed descent cost.** The cluster scan, the retained
+parent search, and the member filter are all read at the turn's block
+weight `s`.  The cached batch replaces `j` graph searches by `j`
+fixed-length parent walks, so its only round-dependent term is
+`markParentsK cap * j`.
 
 **Rebase E-mem.** Two addends moved. The block scan carries the member
 emission (`8` per block cell inside the scan, `16 → 24`), and the
@@ -5555,7 +5766,7 @@ filter pass adds `23·bs + 8` at the end, read at `bs ≤ n`
 (`RamDriver.MemEnum.card_le`). The whole member thread remains inside
 the turn's descend slot; no new slot appears. -/
 def descendCostSize (n ns cap j s : ℕ) : ℕ :=
-  24 * s + 98 * n + 62 + batchCost n ns cap j
+  193 * s + 75 * n + 135 + batchCachedCost n cap j
 
 /-- The carrier reading of the size-indexed descent cost. -/
 def descendCost (n ns cap j : ℕ) : ℕ := descendCostSize n ns cap j n
@@ -5563,12 +5774,13 @@ def descendCost (n ns cap j : ℕ) : ℕ := descendCostSize n ns cap j n
 /-- **The descent, discharged.** -/
 theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ}
     {π : Equiv.Perm (Fin n)} {ord Xoff Xmem asg : ℕ → ℕ} {m : ℕ}
+    (hcsrS : RamElim.CsrSimple G ns O T)
     (hmb : mb = ℓ * (2 * cap + 1)) (hjl : j < ℓ)
     (hK : descendCostSize n ns cap j
       (Refine.MassWeight.blockWeight n G Xoff Xmem k) ≤ K) :
     DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m k K := by
   classical
-  intro hcsr d hB hkn
+  intro hcsr d hB hkn halive
   refine Spec.of_exists (fun σ hσ => ?_)
   obtain ⟨⟨hlev, hplay, hheld⟩, hcurEq⟩ := hσ
   have hcur : σ.vars (curName j) < n := by rw [hcurEq]; exact hkn
@@ -5584,7 +5796,8 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   -- the depth's connector, as a vertex
   obtain ⟨vc, hvc⟩ : ∃ vc : Fin n, (vc : ℕ) = ord cc := ⟨⟨ord cc, hordc⟩, rfl⟩
   -- the rounds the state records, as two total functions
-  obtain ⟨rounds, hrec, hle, hplayR⟩ := hplay
+  obtain ⟨rounds, hrec, hle, hplayR, hcached⟩ := hplay
+  have hplay₀ : PlayRec B cap G j M Gm σ := ⟨rounds, hrec, hle, hplayR, hcached⟩
   have hex : ∀ a : ℕ, ∃ (u : Fin n) (Ga : ℕ → ℕ), a < j →
       σ.vars (ctrName a) = (u : ℕ) ∧ σ.arrs (gamName a) = arrOf n Ga ∧
         ∀ z, z < n → Ga z < B := by
@@ -5607,9 +5820,14 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   have halvS₀ : ∃ g, σ.arrs "alv" = arrOf n g := hmem.1.get (p := ("alv", n)) (by simp)
   have hdistS₀ : ∃ g, σ.arrs "dist" = arrOf n g := hmem.1.get (p := ("dist", n)) (by simp)
   have hqS₀ : ∃ g, σ.arrs "q" = arrOf n g := hmem.1.get (p := ("q", n)) (by simp)
+  have hqdS₀ : ∃ g, σ.arrs "qd" = arrOf n g := hmem.1.get (p := ("qd", n)) (by simp)
   have hparS₀ : ∃ g, σ.arrs "par" = arrOf n g := hmem.1.get (p := ("par", n)) (by simp)
   have hpathS₀ : ∃ g, σ.arrs "path" = arrOf (2 * cap + 1) g :=
     hmem.1.get (p := ("path", 2 * cap + 1)) (by simp)
+  have hpds₀ : ∃ g, σ.arrs (pdsName j) = arrOf n g :=
+    hdep.get (p := (pdsName j, n)) j (by simp [pdsName])
+  have hparj₀ : ∃ g, σ.arrs (parName j) = arrOf n g :=
+    hdep.get (p := (parName j, n)) j (by simp [parName])
   -- P1: the connector is read out of the ordering
   have hev₁ : (Expr.get (ordName j) (.var (curName j))).evalB B σ = some (ord cc) := by
     have hc0 : (Expr.var (curName j)).evalB B σ = some cc := by
@@ -5626,7 +5844,8 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   have hcurne : curName j ≠ ctrName j := by simp [curName, ctrName, String.ext_iff]
   have hcur₁ : σ₁.vars (curName j) = cc := by rw [hvars₁ _ hcurne, hcc]
   -- P2: the cluster, materialized
-  obtain ⟨σ₂, hr₂, ⟨Xa, hclu₂, hXbit, hXmark, Mm, bs, hmemA₂, hbq₂, hMmE⟩, hfv₂, hfa₂, -, -⟩ :=
+  obtain ⟨σ₂, hr₂, ⟨Xa, hclu₂, hXbit, hXmark, Mm, bs, hmemA₂, hbq₂, hbsEq, hMmE⟩,
+      hfv₂, hfa₂, -, -⟩ :=
     ((clusterLoad_spec (j := j) (c := cc) hB hmB hcout hmn hcur).frame).run (σ := σ₁)
       ⟨by rw [hvars₁ "n" (by simp [ctrName, String.ext_iff]), hn],
         by rw [harrs₁]; exact hxof, by rw [harrs₁]; exact hxmm, by rw [harrs₁]; exact hclu₀,
@@ -5659,31 +5878,163 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   have hvv₃ : ∀ y : String, y ≠ "i" → σ₃.vars y = σ₂.vars y :=
     fun y hy => hfv₃ y (by rw [wvars_andCom]; simp [hy])
   have hRaB : ∀ k, k < n → Ra k < B := fun k hk => by rw [hRaval k hk]; exact hXB k hk
-  -- P4: no game ball is materialised.  The cover geometry proves the
-  -- retained cluster lies in it, and the executable batch is cut directly
-  -- to that cluster.
-  let σ₄ := σ₃
-  have hr₄ : Run B .skip σ₃ σ₄ 1 := Run.skip
-  have hav₄ : ∀ b : String, b ≠ balName j → b ≠ balAltName j → σ₄.arrs b = σ₃.arrs b :=
-    fun _ _ _ => rfl
-  have hvv₄ : ∀ y : String, y ∉ (["i", "z", "hit", "w", "j", "jend"] : List String) →
-      σ₄.vars y = σ₃.vars y := by
-    intro _ _
-    rfl
-  -- P5: the cluster-truncated batch
+  have hvX : vc ∈ markSet n Xa := by
+    rw [hXmark]
+    exact ⟨hordc, by rw [hvc]; exact hordc, by
+      simpa only [hvc] using RamCover.self_mem_wreach (masked G M) π (2 * cap)
+        (⟨ord cc, hordc⟩ : Fin n)⟩
+  have hMvc : M (ord cc) ≠ 0 := by rw [hcck]; exact halive
+  have hXvc : Xa (ord cc) ≠ 0 := by
+    change Xa (vc : ℕ) ≠ 0 at hvX
+    simpa only [hvc] using hvX
+  have hRvc : Ra (ord cc) ≠ 0 := by
+    rw [hRaval _ hordc]
+    exact Nat.mul_ne_zero hMvc hXvc
+  have hRaX : ∀ z, z < n → Ra z ≠ 0 → Xa z ≠ 0 := by
+    intro z hz hRz hXz
+    rw [hRaval z hz, hXz, Nat.mul_zero] at hRz
+    exact hRz rfl
+  have hRaM : ∀ z, z < n → Ra z ≠ 0 → M z ≠ 0 := by
+    intro z hz hRz hMz
+    rw [hRaval z hz, hMz, Nat.zero_mul] at hRz
+    exact hRz rfl
+  -- Every weak-reachability witness defining the cover cluster has a suffix
+  -- wholly inside that cluster, hence wholly inside the retained mask `Ra`.
+  have hRcov : ∀ z, z < n → Ra z ≠ 0 → WD G Ra (2 * cap) (ord cc) z := by
+    intro z hz hRz
+    have hclz : RamCover.InCluster (masked G M) π cap (ord cc) z := by
+      have hzX := hRaX z hz hRz
+      change (⟨z, hz⟩ : Fin n) ∈ markSet n Xa at hzX
+      rw [hXmark] at hzX
+      exact hzX
+    obtain ⟨p, hp, hps⟩ :=
+      RamCover.exists_walk_support_inCluster (A := masked G M) (π := π) hordc hz hclz
+    have hpR : ∀ y ∈ p.support, Ra (y : ℕ) ≠ 0 := by
+      intro y hy
+      have hycl : y ∈ Refine.MassMath.clusterAt G M π ord cap cc := hps y hy
+      have hyM : M (y : ℕ) ≠ 0 :=
+        Refine.MassAlive.clusterAt_subset_alive hMvc hycl
+      have hyX : Xa (y : ℕ) ≠ 0 := by
+        have hyX' : y ∈ markSet n Xa := by
+          rw [hXmark]
+          exact hps y hy
+        exact hyX'
+      rw [hRaval _ y.isLt]
+      exact Nat.mul_ne_zero hyM hyX
+    obtain ⟨q, hq⟩ := walk_masked_of_support p hpR
+    exact ⟨hordc, hz, q, by rw [hq]; exact hp⟩
+  -- The finite search support is the current cover block.  Its listed rows
+  -- and its cardinality are each paid by this block's graph weight.
+  let I : Finset ℕ := Finset.Ico (Xoff cc) (Xoff (cc + 1))
+  let A : Finset ℕ := I.image Xmem
+  have hA : ∀ v, v < n → Ra v ≠ 0 → WD G Ra (2 * cap) (ord cc) v → v ∈ A := by
+    intro v hv hRv _
+    have hvcl : RamCover.InCluster (masked G M) π cap (ord cc) v := by
+      have hvX := hRaX v hv hRv
+      change (⟨v, hv⟩ : Fin n) ∈ markSet n Xa at hvX
+      rw [hXmark] at hvX
+      exact hvX
+    obtain ⟨p, hp₁, hp₂, hpv⟩ := (hcout.block cc hcur v).mpr hvcl
+    exact Finset.mem_image.mpr ⟨p, Finset.mem_Ico.mpr ⟨hp₁, hp₂⟩, hpv⟩
+  have hginj : Set.InjOn Xmem (I : Set ℕ) := by
+    intro p hp q hq hpq
+    have hp' := Finset.mem_Ico.mp (Finset.mem_coe.mp hp)
+    have hq' := Finset.mem_Ico.mp (Finset.mem_coe.mp hq)
+    exact hcout.block_inj cc hcur p q hp'.1 hp'.2 hq'.1 hq'.2 hpq
+  have hmemlt : ∀ p, Xoff cc ≤ p → p < Xoff (cc + 1) → Xmem p < n :=
+    fun p hp hp' => Refine.MassWeight.mem_lt_of_coverOut hcout hcur hp hp'
+  have hrowA : (∑ v ∈ A, Csr.rowLen O v) =
+      Refine.MassWeight.blockRowSum O Xoff Xmem cc := by
+    simp only [A, I]
+    rw [Refine.MassWeight.blockRowSum,
+      Finset.sum_image (g := Xmem) (f := fun v => Csr.rowLen O v) hginj]
+  have hrowW : Refine.MassWeight.blockRowSum O Xoff Xmem cc ≤
+      Refine.MassWeight.blockWeight n G Xoff Xmem k := by
+    rw [Refine.MassWeight.blockRowSum_eq_blockDegSum hcsrS hmemlt, ← hcck]
+    exact Refine.MassWeight.blockDegSum_le_blockWeight G Xoff Xmem hmemlt
+  have hcardW : A.card ≤ Refine.MassWeight.blockWeight n G Xoff Xmem k := by
+    calc
+      A.card ≤ I.card := Finset.card_image_le
+      _ = Refine.MassMath.blockSize Xoff cc := by simp [I, Refine.MassMath.blockSize]
+      _ ≤ Refine.MassWeight.blockWeight n G Xoff Xmem k := by
+        rw [← hcck]
+        exact Refine.MassWeight.blockSize_le_blockWeight G Xoff Xmem hmemlt
+  have hcached₃ : CachedRounds cap G j M σ₃ := by
+    refine hcached.congr ?_ ?_ ?_ ?_
+    · intro a ha
+      rw [hvv₃ _ (by simp [ctrName, String.ext_iff]),
+        hvv₂ _ (ctrName_notMem_descendScalars a),
+        hvars₁ _ (ctrName_ne (by omega))]
+    · intro a ha
+      rw [hav₃ _ (fun hc => by
+          have : a = j := prefixed_inj (p := "res") (by simpa only [resName] using hc)
+          omega),
+        hav₂ _ (by simp [resName, cluName, String.ext_iff])
+          (by simp [resName, memName, String.ext_iff]), harrs₁]
+    · intro a ha
+      rw [hav₃ _ (by simp [gamName, resName, String.ext_iff]),
+        hav₂ _ (by simp [gamName, cluName, String.ext_iff])
+          (by simp [gamName, memName, String.ext_iff]), harrs₁]
+    · intro a ha
+      rw [hav₃ _ (by simp [parName, balName, resName, String.ext_iff]),
+        hav₂ _ (by simp [parName, balName, cluName, String.ext_iff])
+          (by simp [parName, balName, memName, String.ext_iff]), harrs₁]
+  -- P4: retain the current cluster's capped parent tree.
+  obtain ⟨σ₄, hr₄, -, Dp, Pp, hpar₄, htree₄⟩ :=
+    (cacheRoundCom_specW (j := j) (G := G) (O := O) (T := T) (R := Ra) (X := Xa)
+      (Mem := Mm) hcsr hom.1.1 hB hordc hRvc hMmE hRaX hRaB (A := A) hA
+      (by rw [hrowA]) hcardW).run (σ := σ₃)
+      ⟨hn₃, by
+          rw [hvv₃ _ (by simp [ctrName, String.ext_iff]), hvv₂ _ hctrs]
+          simpa only [hvc] using hctr₁,
+        by rw [hvv₃ "bq" (by decide)]; exact hbq₂,
+        by rw [hav₃ _ (by simp [memName, resName, String.ext_iff])]; exact hmemA₂,
+        by
+          rw [hav₃ "off" (by simp [resName, String.ext_iff]),
+            hav₂ "off" (by simp [cluName, String.ext_iff])
+              (by simp [memName, String.ext_iff]), harrs₁]
+          exact hoff,
+        by
+          rw [hav₃ "tgt" (by simp [resName, String.ext_iff]),
+            hav₂ "tgt" (by simp [cluName, String.ext_iff])
+              (by simp [memName, String.ext_iff]), harrs₁]
+          exact htgt,
+        hres₃,
+        exists_arrOf_run (hr₁.seq (hr₂.seq hr₃)) hpds₀,
+        exists_arrOf_run (hr₁.seq (hr₂.seq hr₃)) hqS₀,
+        exists_arrOf_run (hr₁.seq (hr₂.seq hr₃)) hqdS₀,
+        exists_arrOf_run (hr₁.seq (hr₂.seq hr₃)) hparj₀⟩
+  have hav₄ : ∀ b : String, b ≠ balAltName j → b ≠ balName j → b ≠ "q" → b ≠ "qd" →
+      σ₄.arrs b = σ₃.arrs b := fun b h₁ h₂ h₃ h₄ =>
+    hr₄.frame_arr b (fun hc => by
+      rcases mem_warrs_cacheRoundCom hc with h | h | h | h
+      · exact h₁ h
+      · exact h₂ h
+      · exact h₃ h
+      · exact h₄ h)
+  have hvv₄ : ∀ y : String, y ≠ mnumName (j + 1) → y ∉ descendScalars →
+      σ₄.vars y = σ₃.vars y := fun y h₁ h₂ =>
+    hr₄.frame_var y (fun hc => by
+      rcases mem_wvars_cacheRoundCom hc with h | h
+      · exact h₁ h
+      · exact h₂ h)
+  have hcached₄ : CachedRounds cap G j M σ₄ :=
+    cachedRounds_cacheRound_run hcached₃ hr₄
+  -- P5: mark the earlier cached parent chains and cut them to the cluster.
   have henv₄ : BatchEnv cap Ws j O T U Gam vc σ₄ := by
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-    · rw [hvv₄ "n" (by decide), hvv₃ "n" (by decide), hvv₂ "n" (by decide),
+    · rw [hvv₄ "n" (by simp [mnumName, String.ext_iff]) (by decide),
+        hvv₃ "n" (by decide), hvv₂ "n" (by decide),
         hvars₁ "n" (by simp [ctrName, String.ext_iff])]
       exact hn
-    · rw [hav₄ "off" (by simp [balName, String.ext_iff])
-          (by simp [balAltName, String.ext_iff]),
+    · rw [hav₄ "off" (by simp [balAltName, String.ext_iff])
+          (by simp [balName, String.ext_iff]) (by decide) (by decide),
         hav₃ "off" (by simp [resName, String.ext_iff]),
         hav₂ "off" (by simp [cluName, String.ext_iff]) (by simp [memName, String.ext_iff]),
         harrs₁]
       exact hoff
-    · rw [hav₄ "tgt" (by simp [balName, String.ext_iff])
-          (by simp [balAltName, String.ext_iff]),
+    · rw [hav₄ "tgt" (by simp [balAltName, String.ext_iff])
+          (by simp [balName, String.ext_iff]) (by decide) (by decide),
         hav₃ "tgt" (by simp [resName, String.ext_iff]),
         hav₂ "tgt" (by simp [cluName, String.ext_iff]) (by simp [memName, String.ext_iff]),
         harrs₁]
@@ -5693,56 +6044,55 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     · exact exists_arrOf_run (hr₁.seq (hr₂.seq (hr₃.seq hr₄))) hqS₀
     · exact exists_arrOf_run (hr₁.seq (hr₂.seq (hr₃.seq hr₄))) hparS₀
     · exact exists_arrOf_run (hr₁.seq (hr₂.seq (hr₃.seq hr₄))) hpathS₀
-    · rw [hvv₄ (ctrName j) (by simp [ctrName, String.ext_iff]),
+    · rw [hvv₄ (ctrName j) (by simp [ctrName, mnumName, String.ext_iff]) hctrs,
         hvv₃ (ctrName j) (by simp [ctrName, String.ext_iff]),
         hvv₂ (ctrName j) hctrs]
       exact hctr₁
     · intro a ha
-      rw [hvv₄ (ctrName a) (by simp [ctrName, String.ext_iff]),
+      rw [hvv₄ (ctrName a) (by simp [ctrName, mnumName, String.ext_iff])
+          (ctrName_notMem_descendScalars a),
         hvv₃ (ctrName a) (by simp [ctrName, String.ext_iff]),
         hvv₂ (ctrName a) (ctrName_notMem_descendScalars a),
         hvars₁ (ctrName a) (ctrName_ne (by omega))]
       exact (hUG a ha).1
     · intro a ha
-      rw [hav₄ _ (by simp [gamName, balName, String.ext_iff])
-          (by simp [gamName, balAltName, String.ext_iff]),
+      rw [hav₄ _ (by simp [gamName, balAltName, String.ext_iff])
+          (by simp [gamName, balName, String.ext_iff])
+          (by simp [gamName, String.ext_iff]) (by simp [gamName, String.ext_iff]),
         hav₃ _ (by simp [gamName, resName, String.ext_iff]),
         hav₂ _ (by simp [gamName, cluName, String.ext_iff])
           (by simp [gamName, memName, String.ext_iff]), harrs₁]
       exact (hUG a ha).2.1
-  have hvX : vc ∈ markSet n Xa := by
-    rw [hXmark]
-    exact ⟨hordc, by rw [hvc]; exact hordc, by
-      simpa only [hvc] using RamCover.self_mem_wreach (masked G M) π (2 * cap)
-        (⟨ord cc, hordc⟩ : Fin n)⟩
-  obtain ⟨σ₅, hr₅, henv₅, -, Wa, hbat₅, hWaB, hWsub, hvW, hWcard, hWwalk⟩ :=
-    (batchCom_spec (nt := Ws) hcsr hom.1.1 hB (U := U) (Gam := Gam) (v := vc) (Cut := Xa)
-      (fun a ha => (hUG a ha).2.2) (fun k hk => by have := hXbit k hk; omega) hvX).run
+  have hMvc' : M (vc : ℕ) ≠ 0 := by simpa only [hvc] using hMvc
+  obtain ⟨σ₅, hr₅, henv₅, -, hclu₅, Wa, hbat₅, hWaB, hWsub, hvW, hWcard, hWwalk⟩ :=
+    (batchCachedCom_spec (nt := Ws) (G := G) hB (U := U) (Gam := Gam) (M := M)
+      (v := vc) hMvc' (fun k hk => by have := hXbit k hk; omega) hvX).run
       (σ := σ₄)
-      ⟨henv₄, by
-        rw [hav₄ _ (by simp [batName, balName, String.ext_iff])
-            (by simp [batName, balAltName, String.ext_iff]),
+      ⟨henv₄, hcached₄, by
+        rw [hav₄ _ (by simp [batName, balAltName, String.ext_iff])
+            (by simp [batName, balName, String.ext_iff])
+            (by simp [batName, String.ext_iff]) (by simp [batName, String.ext_iff]),
           hav₃ _ (by simp [batName, resName, String.ext_iff]),
           hav₂ _ (by simp [batName, cluName, String.ext_iff])
           (by simp [batName, memName, String.ext_iff]), harrs₁]
         exact hbat₀, by
-          rw [hav₄ _ (by simp [cluName, balName, String.ext_iff])
-            (by simp [cluName, balAltName, String.ext_iff])]
+          rw [hav₄ _ (by simp [cluName, balAltName, String.ext_iff])
+            (by simp [cluName, balName, String.ext_iff])
+            (by simp [cluName, String.ext_iff]) (by simp [cluName, String.ext_iff])]
           exact hclu₃⟩
-  have hav₅ : ∀ b : String, b ≠ batName j →
-      b ∉ (["alv", "dist", "q", "par", "path"] : List String) → σ₅.arrs b = σ₄.arrs b :=
-    fun b h1 h2 => hr₅.frame_arr b (fun hc => (mem_warrs_batchCom hc).elim h1 h2)
+  have hav₅ : ∀ b : String, b ≠ batName j → σ₅.arrs b = σ₄.arrs b :=
+    fun b hb => hr₅.frame_arr b (fun hc => hb (mem_warrs_batchCachedCom hc))
   have hres₅ : σ₅.arrs (resName j) = arrOf n Ra := by
-    rw [hav₅ _ (by simp [resName, batName, String.ext_iff])
-        (by simp [resName, String.ext_iff]),
-      hav₄ _ (by simp [resName, balName, String.ext_iff])
-        (by simp [resName, balAltName, String.ext_iff])]
+    rw [hav₅ _ (by simp [resName, batName, String.ext_iff]),
+      hav₄ _ (by simp [resName, balAltName, String.ext_iff])
+        (by simp [resName, balName, String.ext_iff])
+        (by simp [resName, String.ext_iff]) (by simp [resName, String.ext_iff])]
     exact hres₃
   have hgam₅ : σ₅.arrs (gamName j) = arrOf n Gm := by
-    rw [hav₅ _ (by simp [gamName, batName, String.ext_iff])
-        (by simp [gamName, String.ext_iff]),
-      hav₄ _ (by simp [gamName, balName, String.ext_iff])
-        (by simp [gamName, balAltName, String.ext_iff]),
+    rw [hav₅ _ (by simp [gamName, batName, String.ext_iff]),
+      hav₄ _ (by simp [gamName, balAltName, String.ext_iff])
+        (by simp [gamName, balName, String.ext_iff])
+        (by simp [gamName, String.ext_iff]) (by simp [gamName, String.ext_iff]),
       hav₃ _ (by simp [gamName, resName, String.ext_iff]),
       hav₂ _ (by simp [gamName, cluName, String.ext_iff])
         (by simp [gamName, memName, String.ext_iff]), harrs₁]
@@ -5774,12 +6124,8 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
       ⟨by rw [hav₆ _ (by simp [gamName, alvName, String.ext_iff])]; exact hgam1₅, hn₆,
         by rw [hav₆ _ (by simp [gamName, alvName, String.ext_iff])]; exact hgam₅,
         by
-          rw [hav₆ _ (by simp [cluName, alvName, String.ext_iff]),
-            hav₅ _ (by simp [cluName, batName, String.ext_iff])
-              (by simp [cluName, String.ext_iff]),
-            hav₄ _ (by simp [cluName, balName, String.ext_iff])
-              (by simp [cluName, balAltName, String.ext_iff])]
-          exact hclu₃⟩
+          rw [hav₆ _ (by simp [cluName, alvName, String.ext_iff])]
+          exact hclu₅⟩
   have hav₇ : ∀ b : String, b ≠ gamName (j + 1) → σ₇.arrs b = σ₆.arrs b :=
     fun b hb => hfa₇ b (by rw [RamDriverFrames.warrs_andCom]; simp [hb])
   -- P8: and by the batch, in place
@@ -5807,17 +6153,17 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     rw [hav₈ _ (by simp [memName, gamName, String.ext_iff]),
       hav₇ _ (by simp [memName, gamName, String.ext_iff]),
       hav₆ _ (by simp [memName, alvName, String.ext_iff]),
-      hav₅ _ (by simp [memName, batName, String.ext_iff])
-        (by simp [memName, String.ext_iff]),
-      hav₄ _ (by simp [memName, balName, String.ext_iff])
-        (by simp [memName, balAltName, String.ext_iff]),
+      hav₅ _ (by simp [memName, batName, String.ext_iff]),
+      hav₄ _ (by simp [memName, balAltName, String.ext_iff])
+        (by simp [memName, balName, String.ext_iff])
+        (by simp [memName, String.ext_iff]) (by simp [memName, String.ext_iff]),
       hav₃ _ (by simp [memName, resName, String.ext_iff])]
     exact hmemA₂
   have hbq₈ : σ₈.vars "bq" = bs := by
     rw [hfv₈ _ (by rw [wvars_subCom]; simp), hfv₇ _ (by rw [wvars_andCom]; simp),
       hfv₆ _ (by rw [wvars_subCom]; simp),
-      hr₅.frame_var "bq" (bq_notMem_wvars_batchCom cap j),
-      hvv₄ _ (by decide), hvv₃ _ (by decide)]
+      hr₅.frame_var "bq" (bq_notMem_wvars_batchCachedCom cap j),
+      hr₄.frame_var "bq" (bq_notMem_wvars_cacheRoundCom cap j), hvv₃ _ (by decide)]
     exact hbq₂
   -- the child is inside the block: its mask is the cluster indicator with two
   -- more masks multiplied in, so the raw row lists every one of its members
@@ -5860,18 +6206,20 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     rw [hav₉ _ (by simp [cluName, memName, String.ext_iff]),
       hav₈ _ (by simp [cluName, gamName, String.ext_iff]),
       hav₇ _ (by simp [cluName, gamName, String.ext_iff]),
-      hav₆ _ (by simp [cluName, alvName, String.ext_iff]),
-      hav₅ _ (by simp [cluName, batName, String.ext_iff])
-        (by simp [cluName, String.ext_iff]),
-      hav₄ _ (by simp [cluName, balName, String.ext_iff])
-        (by simp [cluName, balAltName, String.ext_iff]),
-      hav₃ _ (by simp [cluName, resName, String.ext_iff])]
-    exact hclu₂
+      hav₆ _ (by simp [cluName, alvName, String.ext_iff])]
+    exact hclu₅
   have hres₉ : σ₉.arrs (resName j) = arrOf n Ra := by
     rw [hav₉ _ (by simp [resName, memName, String.ext_iff]),
       hav₈ _ (by simp [resName, gamName, String.ext_iff]),
       hav₇ _ (by simp [resName, gamName, String.ext_iff])]
     exact hres₆
+  have hpar₉ : σ₉.arrs (parName j) = arrOf n Pp := by
+    rw [hav₉ _ (by simp [parName, balName, memName, String.ext_iff]),
+      hav₈ _ (by simp [parName, balName, gamName, String.ext_iff]),
+      hav₇ _ (by simp [parName, balName, gamName, String.ext_iff]),
+      hav₆ _ (by simp [parName, balName, alvName, String.ext_iff]),
+      hav₅ _ (by simp [parName, balName, batName, String.ext_iff])]
+    exact hpar₄
   have halv₉ : σ₉.arrs (alvName (j + 1)) = arrOf n Alv' := by
     rw [hav₉ _ (by simp [alvName, memName, String.ext_iff])]
     exact halv₈
@@ -5955,6 +6303,26 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, gamName_ne_succ ha, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp [alvName, cluName, resName, balName, balAltName, batName, gamName, memName,
         String.ext_iff]
+  have hnres : ∀ a, a < j → resName a ∉ descendArrs j := by
+    intro a ha
+    have hne : resName a ≠ resName j := fun hc => by
+      have : a = j := prefixed_inj (p := "res") (by simpa only [resName] using hc)
+      omega
+    have hned : Nat.toDigits 10 a ≠ Nat.toDigits 10 j := fun hc => by
+      have := decimalDigits_inj hc
+      omega
+    simp [descendArrs, hne, alvName, cluName, resName, balName, balAltName, batName,
+      gamName, memName, String.ext_iff, hned]
+  have hnpar : ∀ a, a < j → parName a ∉ descendArrs j := by
+    intro a ha
+    have hne : balName a ≠ balName j := fun hc => by
+      have := prefixed_inj (p := "bal") hc
+      omega
+    have hned : Nat.toDigits 10 a ≠ Nat.toDigits 10 j := fun hc => by
+      have := decimalDigits_inj hc
+      omega
+    simp [descendArrs, parName, hne, alvName, cluName, resName, balName, balAltName,
+      batName, gamName, memName, String.ext_iff, hned]
   have hzero : ∀ b ∈ (["elm", "bh", "ooff", "noff", "stf", "sta", "std", "ste"] : List String),
       σ₉.arrs b = σ.arrs b := by
     intro b hb
@@ -5977,9 +6345,12 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
         (hfa _ hnmem)
         (hfv _ (by simp [mnumName, ctrName, String.ext_iff]) (mnumName_ne_succ j)
           (RamDriverIO.notMem_of_append (p := "mm") (s := toString j) (by decide))),
-      ⟨rounds, hrec.congr (fun a ha => hfv (ctrName a) (ctrName_ne (by omega))
-        (by simp [ctrName, mnumName, String.ext_iff]) (ctrName_notMem_descendScalars a))
-        (fun a ha => hfa (gamName a) (hngam a (by omega))), hle, hplayR⟩,
+      hplay₀.congr
+        (fun a ha => hfv (ctrName a) (ctrName_ne (by omega))
+          (by simp [ctrName, mnumName, String.ext_iff]) (ctrName_notMem_descendScalars a))
+        (fun a ha => hfa (resName a) (hnres a ha))
+        (fun a ha => hfa (gamName a) (hngam a (by omega)))
+        (fun a ha => hfa (parName a) (hnpar a ha)),
       coverHeld_congr ⟨hordA, hxof, hxmm, hasgA, hxp, hmn, hmB, hordlt, hcout⟩
         (hfa _ (by simp [descendArrs, ordName, cluName, resName, balName, balAltName, batName,
           alvName, gamName, memName, String.ext_iff]))
@@ -6002,7 +6373,9 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
       rw [← hcck]
       exact Refine.MassWeight.blockSize_le_blockWeight G Xoff Xmem
         (fun p hp hp' => Refine.MassWeight.mem_lt_of_coverOut hcout hcur hp hp')
-    simp only [descendCostSize, batchCost] at hK ⊢
+    simp only [descendCostSize, batchCachedCost, cacheRoundCost,
+      Refine.ScatterDeadPass.memFillAtCost, Refine.BfsBlockPar.bfsBlockParK] at hK ⊢
+    rw [hbsEq] at *
     omega
   · exact exists_arrOf_run hrun (hmem.1.get (p := ("wa", mb)) (by simp))
   · intro v' hv'
@@ -6048,12 +6421,28 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   · have hXgameBall : markSet n Xa ⊆ ball (masked G Gm) (2 * cap) vc := by
       intro z hz
       exact ball_mono_graph vc hle (hXball hz)
+    have hRM : masked G Ra ≤ masked G M := by
+      intro x y hxy
+      rw [RamBfs.masked_adj] at hxy ⊢
+      exact ⟨hxy.1, hRaM _ x.isLt hxy.2.1, hRaM _ y.isLt hxy.2.2⟩
+    have hRGm : masked G Ra ≤ masked G Gm := le_trans hRM hle
+    have hAlvM : ∀ z, z < n → Alv' z ≠ 0 → M z ≠ 0 := by
+      intro z hz hAz
+      exact (hAlvPt ⟨z, hz⟩).mp hAz |>.1
+    have hAlvR : ∀ z, z < n → Alv' z ≠ 0 → Ra z ≠ 0 := by
+      intro z hz hAz hRz
+      rw [hAlvval z hz, hRz, Nat.zero_mul] at hAz
+      exact hAz rfl
     refine playRec_succ (X := markSet n Xa)
-      ⟨rounds, hrec, hle, hplayR⟩
+      hplay₀
       (fun a ha => hfv (ctrName a) (ctrName_ne (by omega))
         (by simp [ctrName, mnumName, String.ext_iff]) (ctrName_notMem_descendScalars a))
-      (fun a ha => hfa (gamName a) (hngam a (by omega))) hctr₉
+      (fun a ha => hfa (resName a) (hnres a ha))
+      (fun a ha => hfa (gamName a) (hngam a (by omega)))
+      (fun a ha => hfa (parName a) (hnpar a ha)) hAlvM hctr₉
       (by rw [hfa _ (hngam j (le_refl j))]; exact hgamj) hGmB
+      hres₉ hpar₉ (by simpa only [hvc] using htree₄)
+      (by simpa only [hvc] using hRcov) hRGm hAlvR
       hXgameBall hvW ?_ (by rw [hGamEq])
       (by
         rw [hAlvEq, hGamEq]

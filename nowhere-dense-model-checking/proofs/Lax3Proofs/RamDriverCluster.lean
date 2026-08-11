@@ -651,6 +651,7 @@ def DescendStep (B cap mb ns Ws j : ℕ) (G : SimpleGraph (Fin n))
     (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ)
     (m k K : ℕ) : Prop :=
   CsrGraph G ns O T → ∀ {d : ℕ}, WordBoundK B n d ns cap mb → k < n →
+  M (ord k) ≠ 0 →
   Spec B (fun σ => TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ ∧
       σ.vars (curName j) = k)
     (descendCom cap j)
@@ -1241,7 +1242,7 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
   -- the descent: the cluster, the batch, the two masks of the next depth, and the round
   obtain ⟨σ₁, hr₁, hturn₁, hout₁, hc₁, hwa₁, X, W, Alv', Gam', hball, hWne, hWcard,
       hsub₁, hXcl₁, hbat₁, hplay₁⟩ :=
-    (hdes hcsr hB hkn).run ⟨hturn, hcn⟩
+    (hdes hcsr hB hkn halive).run ⟨hturn, hcn⟩
   -- **the descend clause**: the nested arena is inside this turn's cluster, so any
   -- monotone measure of it — a number the turn's cost condition may mention — is
   -- bounded by the turn's own block reading
@@ -1427,11 +1428,97 @@ theorem baseArrs_setVar_c {q_top ℓ : ℕ} {φ : Lax3.FirstOrder.FO 0}
   ⟨fun p hp => by simpa using h.1 p hp,
     fun jd i hi => botMem_of_length (fun a => by rw [arrs_setVar]) _ "bb" (h.2 jd i hi)⟩
 
+theorem foldRange_const_succ_cacheframe (c : Com) (m : ℕ) :
+    foldRange (fun _ => c) (m + 1) = .seq c (foldRange (fun _ => c) m) := by
+  simp [foldRange, List.range_succ_eq_map, List.foldr_map]
+
+theorem foldRange_zero_cacheframe (f : ℕ → Com) : foldRange f 0 = .skip := rfl
+
+theorem mem_warrs_foldRange_const_cacheframe {c : Com} {m : ℕ} {a : String}
+    (h : a ∈ (foldRange (fun _ => c) m).warrs) : a ∈ c.warrs := by
+  induction m with
+  | zero => simp [foldRange, Com.warrs] at h
+  | succ m ih =>
+      rw [foldRange_const_succ_cacheframe] at h
+      simp only [Com.warrs, List.mem_append] at h
+      exact h.elim id ih
+
+set_option maxRecDepth 8000 in
+theorem mem_warrs_augRoundCom_cacheframe : ∀ a ∈ augRoundCom.warrs,
+    a ∈ ["off", "elm", "bh", "ooff", "ofl", "otg", "stf", "ffl", "tgt", "alv", "deg", "bv",
+      "bn", "rnk", "idg", "ioff", "ifl", "itg", "sta", "std", "ste", "noff", "nfl", "ntg",
+      "doff", "dtg"] := by decide
+
+theorem warrs_orderCom_zero_cacheframe (j : ℕ) : (orderCom 0 j).warrs =
+    ["gof", "gtg", "alv", "deg", "deg", "bv", "bn", "bh", "bh", "elm", "rnk", "idg", "deg",
+      "bv", "bn", "bh", "ioff", "ifl", "ioff", "itg", "ifl", "doff", "dtg",
+      "ooff", "ooff", "ofl", "otg", "ofl", "off", "tgt", "tgt",
+      "alv", "elm", "bh", "deg", "deg", "bv", "bn", "bh", "bh", "elm", "rnk", "idg", "deg",
+      "bv", "bn", "bh", "ioff", "ifl", "ioff", "itg", "ifl", "off", "tgt",
+      ordName j, "elm", "bh", "ooff", "noff", "stf", "sta", "std", "ste"] := rfl
+
+theorem mem_warrs_orderCom_cacheframe {R j : ℕ} {a : String}
+    (h : a ∈ (orderCom R j).warrs) :
+    a ∈ (orderCom 0 j).warrs ∨ a ∈ augRoundCom.warrs := by
+  simp only [orderCom, Com.warrs, List.mem_append, foldRange_zero_cacheframe, List.not_mem_nil,
+    false_or] at h ⊢
+  rcases h with h|h|h|h|h|h|h|h|h|h|h|h|h
+  · exact Or.inl (Or.inl h)
+  · exact Or.inl (Or.inr (Or.inl h))
+  · exact Or.inl (Or.inr (Or.inr (Or.inl h)))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inl h))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h)))))
+  · exact Or.inr (mem_warrs_foldRange_const_cacheframe h)
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h)))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h))))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (Or.inl h)))))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (Or.inl h))))))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (Or.inr (Or.inl h)))))))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (Or.inr (Or.inr h)))))))))))
+
+theorem warrs_coverPhase_cacheframe (cap j : ℕ) : (coverPhase cap j).warrs =
+    ["ord", "alv", "asg", "xoff", "dist", "dist", "q", "dist", "q", "xmem", "asg", "alv",
+      "xoff", xofName j, xmmName j, asgName j, cpsName j] := rfl
+
+theorem resName_notMem_orderCom {R j : ℕ} (a : ℕ) :
+    resName a ∉ (orderCom R j).warrs := by
+  intro h
+  rcases mem_warrs_orderCom_cacheframe h with h | h
+  · rw [warrs_orderCom_zero_cacheframe] at h
+    simp [resName, ordName, String.ext_iff] at h
+  · have hm := mem_warrs_augRoundCom_cacheframe _ h
+    simp [resName, String.ext_iff] at hm
+
+theorem parName_notMem_orderCom {R j : ℕ} (a : ℕ) :
+    parName a ∉ (orderCom R j).warrs := by
+  intro h
+  rcases mem_warrs_orderCom_cacheframe h with h | h
+  · rw [warrs_orderCom_zero_cacheframe] at h
+    simp [parName, balName, ordName, String.ext_iff] at h
+  · have hm := mem_warrs_augRoundCom_cacheframe _ h
+    simp [parName, balName, String.ext_iff] at hm
+
+theorem resName_notMem_coverPhase (cap j a : ℕ) :
+    resName a ∉ (coverPhase cap j).warrs := by
+  rw [warrs_coverPhase_cacheframe]
+  simp [resName, xofName, xmmName, asgName, cpsName, String.ext_iff]
+
+theorem parName_notMem_coverPhase (cap j a : ℕ) :
+    parName a ∉ (coverPhase cap j).warrs := by
+  rw [warrs_coverPhase_cacheframe]
+  simp [parName, balName, xofName, xmmName, asgName, cpsName, String.ext_iff]
+
 /-- Nor the recorded play, whose scalars are the earlier connectors. -/
 theorem playRec_setVar {G : SimpleGraph (Fin n)}
     (h : PlayRec B cap G j M Gm σ) (x : String) (hx : ∀ a : ℕ, x ≠ ctrName a) (k : ℕ) :
     PlayRec B cap G j M Gm (σ.setVar x k) :=
   h.congr (fun a _ => by rw [vars_setVar, if_neg (Ne.symm (hx a))])
+    (fun a _ => by rw [arrs_setVar]) (fun a _ => by rw [arrs_setVar])
     (fun a _ => by rw [arrs_setVar])
 
 theorem playRec_setVar_c {G : SimpleGraph (Fin n)}
@@ -1760,7 +1847,10 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
       have htsz₁ : TablesSized q_top cap mb φ n σ₁ := hσ.2.1.run hr₁
       have hbarr₁ : BaseArrs B q_top cap mb ℓ φ σ₁ := hσ.2.2.1.run hr₁
       have hplay₁ : PlayRec B cap G j M Gm σ₁ :=
-        hσ.2.2.2.1.congr (fun a _ => hctr₁ a) (fun a _ => hgam₁ a)
+        hσ.2.2.2.1.congr (fun a _ => hctr₁ a)
+          (fun a _ => hr₁.frame_arr _ (resName_notMem_orderCom a))
+          (fun a _ => hgam₁ a)
+          (fun a _ => hr₁.frame_arr _ (parName_notMem_orderCom a))
       -- the cover pass, and the compaction that ends it
       obtain ⟨σ₂, hr₂, hlev₂, hout₂, hctr₂, hgam₂, Xoff, Xmem, asg, cps, mm, cnum,
           hheld₂, hcps₂, hcnum₂, hcomp₂⟩ :=
@@ -1770,7 +1860,10 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
       have htsz₂ : TablesSized q_top cap mb φ n σ₂ := htsz₁.run hr₂
       have hbarr₂ : BaseArrs B q_top cap mb ℓ φ σ₂ := hbarr₁.run hr₂
       have hplay₂ : PlayRec B cap G j M Gm σ₂ :=
-        hplay₁.congr (fun a _ => hctr₂ a) (fun a _ => hgam₂ a)
+        hplay₁.congr (fun a _ => hctr₂ a)
+          (fun a _ => hr₂.frame_arr _ (resName_notMem_coverPhase cap j a))
+          (fun a _ => hgam₂ a)
+          (fun a _ => hr₂.frame_arr _ (parName_notMem_coverPhase cap j a))
       have hcnB : cnum < B := lt_of_le_of_lt hcomp₂.le_carrier hB.n_lt
       -- **no sweep** (wave R1.8-T3-flip (c2b)). What the level owes on the dead
       -- side is `D`, and `D`'s rows were written by the caller: they arrive in the

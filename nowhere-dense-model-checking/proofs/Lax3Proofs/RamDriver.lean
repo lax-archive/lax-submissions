@@ -1212,7 +1212,7 @@ def CachedRounds (cap : ℕ) (G : SimpleGraph (Fin n)) (j : ℕ)
     σ.arrs (gamName a) = arrOf n Ga ∧ σ.arrs (parName a) = arrOf n P ∧
     RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P ∧
     (∀ z, z < n → R z ≠ 0 → RamBfs.WD G R (2 * cap) (u : ℕ) z) ∧
-    (∀ z, z < n → R z ≠ 0 → Ga z ≠ 0) ∧
+    masked G R ≤ masked G Ga ∧
     ∀ z, z < n → M z ≠ 0 → R z ≠ 0
 
 /-- No rounds have been cached at the root. -/
@@ -1260,7 +1260,7 @@ theorem CachedRounds.succ {j : ℕ} {G : SimpleGraph (Fin n)} {M M' : ℕ → �
     (hpar : σ'.arrs (parName j) = arrOf n P)
     (hT : RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P)
     (hcov : ∀ z, z < n → R z ≠ 0 → RamBfs.WD G R (2 * cap) (u : ℕ) z)
-    (hRG : ∀ z, z < n → R z ≠ 0 → Ga z ≠ 0)
+    (hRG : masked G R ≤ masked G Ga)
     (hM'R : ∀ z, z < n → M' z ≠ 0 → R z ≠ 0) :
     CachedRounds cap G (j + 1) M' σ' := by
   intro a ha
@@ -1281,7 +1281,7 @@ theorem CachedRounds.target {j : ℕ} {G : SimpleGraph (Fin n)} {M : ℕ → ℕ
       σ.vars (ctrName a) = (u : ℕ) ∧ σ.arrs (resName a) = arrOf n R ∧
       σ.arrs (gamName a) = arrOf n Ga ∧ σ.arrs (parName a) = arrOf n P ∧
       RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P ∧
-      (∀ z, z < n → R z ≠ 0 → Ga z ≠ 0) ∧ D t ≤ 2 * cap := by
+      masked G R ≤ masked G Ga ∧ D t ≤ 2 * cap := by
   obtain ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG, hMR⟩ := h a ha
   have hwd := hcov t ht (hMR t ht hMt)
   exact ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hRG,
@@ -1293,7 +1293,8 @@ depth's own game arena, of which the work arena is a subgraph. -/
 def PlayRec (B : ℕ) (cap : ℕ) (G : SimpleGraph (Fin n)) (j : ℕ)
     (M Gm : ℕ → ℕ) (σ : Env) : Prop :=
   ∃ rounds : List (RoundR n), RecordsPlay B G σ j rounds ∧ masked G M ≤ masked G Gm ∧
-    (masked G Gm = ⊥ ∨ ReachedSubR (2 * cap) G rounds (masked G Gm))
+    (masked G Gm = ⊥ ∨ ReachedSubR (2 * cap) G rounds (masked G Gm)) ∧
+    CachedRounds cap G j M σ
 
 /-- **The recorded play implies the game invariant.** `PlayOk`'s rounds
 are this record's, and its arena the depth's own game arena, so every
@@ -1301,7 +1302,7 @@ obligation that used to carry `PlayOk` can be handed this instead. -/
 theorem playOk_of_playRec {B j : ℕ} {G : SimpleGraph (Fin n)}
     {M Gm : ℕ → ℕ} {σ : Env} (h : PlayRec B cap G j M Gm σ) :
     PlayOk cap G j (masked G M) := by
-  obtain ⟨rounds, hrec, hle, hbot | hR⟩ := h
+  obtain ⟨rounds, hrec, hle, hbot | hR, -⟩ := h
   · exact Or.inl (le_bot_iff.mp (by rw [← hbot]; exact hle))
   · exact Or.inr ⟨rounds, masked G Gm, hR, hrec.length, hle⟩
 
@@ -1310,16 +1311,19 @@ cut out the input graph. -/
 theorem playRec_zero {B : ℕ} (cap : ℕ) (G : SimpleGraph (Fin n))
     {M Gm : ℕ → ℕ} {σ : Env} (hM : masked G M = G) (hGm : masked G Gm = G) :
     PlayRec B cap G 0 M Gm σ :=
-  ⟨[], rfl, by rw [hM, hGm], Or.inr (by rw [hGm]; exact ReachedSubR.nil)⟩
+  ⟨[], rfl, by rw [hM, hGm], Or.inr (by rw [hGm]; exact ReachedSubR.nil),
+    cachedRounds_zero cap G M σ⟩
 
 /-- The whole record crosses a pass of the depth's own arrays. -/
 theorem PlayRec.congr {B j : ℕ} {G : SimpleGraph (Fin n)}
     {M Gm : ℕ → ℕ} {σ σ' : Env} (h : PlayRec B cap G j M Gm σ)
     (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
-    (ha : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a)) :
+    (hr : ∀ a < j, σ'.arrs (resName a) = σ.arrs (resName a))
+    (ha : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a))
+    (hp : ∀ a < j, σ'.arrs (parName a) = σ.arrs (parName a)) :
     PlayRec B cap G j M Gm σ' := by
-  obtain ⟨rounds, hrec, hle, hplay⟩ := h
-  exact ⟨rounds, hrec.congr hv ha, hle, hplay⟩
+  obtain ⟨rounds, hrec, hle, hplay, hcache⟩ := h
+  exact ⟨rounds, hrec.congr hv ha, hle, hplay, hcache.congr hv hr ha hp⟩
 
 /-- **The descent step of the record.** A turn at depth `j` extends it by
 its own connector, its own game mask and the batch it marked.
@@ -1338,9 +1342,18 @@ enters its dead branch. -/
 theorem playRec_succ {B j : ℕ} {G : SimpleGraph (Fin n)}
     {M Gm M' Gm' : ℕ → ℕ} {σ σ' : Env} (h : PlayRec B cap G j M Gm σ)
     (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
+    (hr : ∀ a < j, σ'.arrs (resName a) = σ.arrs (resName a))
     (ha : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a))
+    (hp : ∀ a < j, σ'.arrs (parName a) = σ.arrs (parName a))
+    (hM'M : ∀ z, z < n → M' z ≠ 0 → M z ≠ 0)
     {v : Fin n} (hctr : σ'.vars (ctrName j) = (v : ℕ))
     (hgam : σ'.arrs (gamName j) = arrOf n Gm) (hGmB : ∀ z < n, Gm z < B)
+    {R D P : ℕ → ℕ} (hres : σ'.arrs (resName j) = arrOf n R)
+    (hpar : σ'.arrs (parName j) = arrOf n P)
+    (hT : RamBfsPaths.ParTree G R (2 * cap) (v : ℕ) D P)
+    (hcov : ∀ z, z < n → R z ≠ 0 → RamBfs.WD G R (2 * cap) (v : ℕ) z)
+    (hRG : masked G R ≤ masked G Gm)
+    (hM'R : ∀ z, z < n → M' z ≠ 0 → R z ≠ 0)
     {X W : Set (Fin n)} (hXball : X ⊆ ball (masked G Gm) (2 * cap) v)
     (hWself : v ∈ W)
     (hWwalk : ∀ (u : Fin n) (A : SimpleGraph (Fin n)), RecordedRound B G σ j u A →
@@ -1350,7 +1363,9 @@ theorem playRec_succ {B j : ℕ} {G : SimpleGraph (Fin n)}
     (hstep : masked G Gm' ≤ deleteVerts (deleteVerts (masked G Gm) Xᶜ) W)
     (hle' : masked G M' ≤ masked G Gm') :
     PlayRec B cap G (j + 1) M' Gm' σ' := by
-  obtain ⟨rounds, hrec, -, hplay⟩ := h
+  obtain ⟨rounds, hrec, -, hplay, hcache⟩ := h
+  have hcache' : CachedRounds cap G (j + 1) M' σ' :=
+    hcache.succ hv hr ha hp hM'M hctr hres hgam hpar hT hcov hRG hM'R
   have hrec' : ∀ S : Set (Fin n),
       RecordsPlay B G σ' (j + 1) (⟨v, masked G Gm, S⟩ :: rounds) := fun S => by
     rw [RecordsPlay]
@@ -1362,8 +1377,8 @@ theorem playRec_succ {B j : ℕ} {G : SimpleGraph (Fin n)}
       exact absurd hu (by simp)
     · obtain ⟨S, hS⟩ := reachedSubR_descend (A' := masked G Gm') hR hadj hXball hWself
         (fun e he => hWwalk e.vtx e.arena (hrec.mem e he)) hstep
-      exact ⟨⟨v, masked G Gm, S⟩ :: rounds, hrec' S, hle', Or.inr hS⟩
-  · refine ⟨⟨v, masked G Gm, W⟩ :: rounds, hrec' W, hle', Or.inl ?_⟩
+      exact ⟨⟨v, masked G Gm, S⟩ :: rounds, hrec' S, hle', Or.inr hS, hcache'⟩
+  · refine ⟨⟨v, masked G Gm, W⟩ :: rounds, hrec' W, hle', Or.inl ?_, hcache'⟩
     have hviso : ∀ z, ¬ (masked G Gm).Adj v z := fun z hz => hadj ⟨z, hz⟩
     have hbot : deleteVerts (deleteVerts (masked G Gm) Xᶜ) W = ⊥ := by
       ext z w
@@ -2309,15 +2324,15 @@ def memFilterCom (j : ℕ) : Com :=
 
 /-- The state of the next depth: the cluster-truncated batch, the work
 and game masks retained on that cluster, and the child's member list
-filtered out of the block row the cluster load emitted. The no-op in
-the fourth slot records where the former materialised game-ball pass
-sat; cover geometry now discharges that restriction semantically. -/
+filtered out of the block row the cluster load emitted.  The fourth
+slot builds the retained parent cache for this round; the batch then
+reuses every cache accumulated so far. -/
 def descendCom (cap j : ℕ) : Com :=
   .seq (.assign (ctrName j) (.get (ordName j) (.var (curName j))))
     (.seq (clusterLoad j)
       (.seq (andCom (alvName j) (cluName j) (resName j))
-        (.seq .skip
-          (.seq (batchCom cap j)
+        (.seq (cacheRoundCom cap j)
+          (.seq (batchCachedCom cap j)
             (.seq (subCom (resName j) (batName j) (alvName (j + 1)))
               (.seq (andCom (gamName j) (cluName j) (gamName (j + 1)))
                 (.seq (subCom (gamName (j + 1)) (batName j) (gamName (j + 1)))

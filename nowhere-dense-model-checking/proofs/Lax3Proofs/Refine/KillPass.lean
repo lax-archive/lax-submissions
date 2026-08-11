@@ -620,6 +620,13 @@ theorem killStep {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.FirstOrder.FO 0}
   have harrGam : ∀ b : ℕ, σ'.arrs (gamName b) = σ.arrs (gamName b) := fun b =>
     harr (gamName b) (fun i => gamName_ne_tabName b (j + 1) i)
       (fun h => not_ext_b_gamName b (RamDriverCompose.ext_b_of_ext_bb h))
+  have harrRes : ∀ b : ℕ, σ'.arrs (resName b) = σ.arrs (resName b) := fun b =>
+    harr (resName b) (fun i => by simp [resName, tabName, String.ext_iff])
+      (by rw [resName]; exact DeadSweep.not_ext_bb_append (p := "res") rfl (by decide) _)
+  have harrPar : ∀ b : ℕ, σ'.arrs (parName b) = σ.arrs (parName b) := fun b =>
+    harr (parName b) (fun i => by simp [parName, balName, tabName, String.ext_iff])
+      (by rw [parName, balName]
+          exact RamDriverWrites.not_ext_bb_append (p := "bal") (by decide) (by decide) _)
   have harrCol : ∀ b q : ℕ, σ'.arrs (colName b q) = σ.arrs (colName b q) := fun b q =>
     harr (colName b q) (fun i => colName_ne_tabName b q (j + 1) i)
       (fun h => not_ext_b_colName b q (RamDriverCompose.ext_b_of_ext_bb h))
@@ -674,7 +681,7 @@ theorem killStep {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.FirstOrder.FO 0}
         (by simp [ctrName, String.ext_iff])
         (hnev (ctrName a) 'c' ⟨_, by rw [ctrName, String.toList_append]; rfl⟩ (by decide))
         (DeadSweep.not_ext_bb_ctrName a))
-      (fun a _ => harrGam a)
+      (fun a _ => harrRes a) (fun a _ => harrGam a) (fun a _ => harrPar a)
   · -- the cover's answers
     exact coverHeld_congr hturn.2.2
       (harr (ordName j) (fun i => by simp [ordName, tabName, String.ext_iff])
@@ -705,7 +712,7 @@ theorem killStep {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.FirstOrder.FO 0}
         (by simp [ctrName, String.ext_iff])
         (hnev (ctrName a) 'c' ⟨_, by rw [ctrName, String.toList_append]; rfl⟩ (by decide))
         (DeadSweep.not_ext_bb_ctrName a))
-      (fun a _ => harrGam a)
+      (fun a _ => harrRes a) (fun a _ => harrGam a) (fun a _ => harrPar a)
   · exact hrun.out_eq (RamDriverWrites.noWrite_killCom q_top cap mb j φ)
   · exact hvar (curName j) (by simp [curName, String.ext_iff])
       (by simp [curName, String.ext_iff])
