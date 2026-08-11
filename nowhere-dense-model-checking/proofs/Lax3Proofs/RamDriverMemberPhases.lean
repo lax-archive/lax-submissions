@@ -1,4 +1,5 @@
 import Lax3Proofs.RamDriverClusterMember
+import Lax3Proofs.RamDriverBase
 import Lax3Proofs.RamDriverDescend
 import Lax3Proofs.RamDriverWrites
 import Lax3Proofs.Refine.KillListWalk
@@ -23,6 +24,7 @@ open Lax3Proofs.RamDriverBot
 open Lax3Proofs.RamDriverCluster
 open Lax3Proofs.RamDriverMember
 open Lax3Proofs.RamDriverClusterMember
+open Lax3Proofs.RamDriverBase
 open Lax3Proofs.RamDriverDescend
 open Lax3Proofs.RamDriverFrames
 open Lax3Proofs.Refine
@@ -999,5 +1001,195 @@ theorem scatterStepA {bw nb Kb Ki K : ℕ}
   exact ⟨σ', _, hrun, hK, hpre'.1.1, hpre'.1.2.1, hpre'.1.2.2.1,
     hpre'.1.2.2.2.2.2, hout, hc,
     fun i hi σs hσs => by simpa using hval i hi σs hσs⟩
+
+/-! ## Readback -/
+
+open Classical in
+/-- The landed readback walk, restricted to the current live block of an
+active cover.  Dead assignment cells are never read and their table rows
+are framed explicitly. -/
+theorem readbackStepA {B q q_top cap mb ns Ws j K : ℕ}
+    {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)}
+    {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ} {π : Equiv.Perm (Fin n)}
+    {centre Xoff Xmem asg : ℕ → ℕ} {m k : ℕ} {X W : Set (Fin n)}
+    {w : Fin mb → Fin n} {Alv' Gam' : ℕ → ℕ} {C' : ℕ → ℕ → ℕ}
+    (hB : 1 < B) (hn : n < B) (hkn : k < q) (hcentre : M (centre k) ≠ 0)
+    (hK : RamCover.CoverOutA G M π centre cap q m Xoff Xmem asg →
+      rbCost q_top cap mb φ j (Xoff (k + 1) - Xoff k) ≤ K) :
+    ReadbackStepA B q q_top cap mb ns Ws j φ G O T M Gm C π centre
+      Xoff Xmem asg m k X W w Alv' Gam' C' K := by
+  intro σ hσ
+  obtain ⟨hturn, hdata, hcolarr, hcolbit, hcolread, htabinv, htsz,
+    hck, hvis, hflag⟩ := hσ
+  obtain ⟨hlevel, hplayrec, hheld⟩ := hturn
+  have hcover := hheld.cover
+  have hcq : σ.vars (curName j) < q := by rw [hck]; exact hkn
+  have hcn : σ.vars (curName j) < n := lt_of_lt_of_le hcq hcover.count_le
+  have hcB : σ.vars (curName j) < B := lt_trans hcn hn
+  have hcentre' : M (centre (σ.vars (curName j))) ≠ 0 := by simpa [hck] using hcentre
+  have hoff_le : ∀ t ≤ q, Xoff t ≤ m := by
+    have key : ∀ d t, t + d = q → Xoff t ≤ Xoff q := by
+      intro d
+      induction d with
+      | zero => intro t ht; rw [show t = q by omega]
+      | succ d ih =>
+          intro t ht
+          exact le_trans (hcover.mono t (by omega)) (ih (t + 1) (by omega))
+    intro t ht
+    rw [← hcover.last]
+    exact key (q - t) t (by omega)
+  have hend : Xoff (σ.vars (curName j) + 1) ≤ m :=
+    hoff_le _ (by omega)
+  have hslotLive : ∀ p, Xoff (σ.vars (curName j)) ≤ p →
+      p < Xoff (σ.vars (curName j) + 1) → M (Xmem p) ≠ 0 := by
+    intro p hp₁ hp₂
+    have hcl : RamCover.InCluster (masked G M) π cap
+        (centre (σ.vars (curName j))) (Xmem p) :=
+      (hcover.block _ hcq _).mp ⟨p, hp₁, hp₂, rfl⟩
+    exact (Refine.MassAlive.inCluster_alive_iff hcl).mpr hcentre'
+  set T₀ : ℕ → ℕ → ℕ := fun i v => (σ.arrs (tabName j i)).getD v 0 with hT₀def
+  have hsz : ∀ (i : ℕ), i < (tablesAt q_top cap mb φ j).length →
+      σ.arrs (tabName j i) = arrOf n (T₀ i) := by
+    intro i hi
+    obtain ⟨g, hg⟩ := htsz.get j hi
+    rw [hg]
+    refine arrOf_congr fun v hv => ?_
+    rw [hT₀def]
+    simp only [hg, getD_arrOf _ hv]
+  have hrow : ∀ p, Xoff (σ.vars (curName j)) ≤ p →
+      p < Xoff (σ.vars (curName j) + 1) → ∀ hp : Xmem p < n,
+      asg (Xmem p) = σ.vars (curName j) →
+        (⟨Xmem p, hp⟩ : Fin n) ∈ rowDom M Alv' X W := by
+    intro p hp₁ hp₂ hp hvcur
+    let v : Fin n := ⟨Xmem p, hp⟩
+    have hMv : M (v : ℕ) ≠ 0 := hslotLive p hp₁ hp₂
+    have hXv : v ∈ X := hvis v hMv hvcur
+    by_cases hal : Alv' (v : ℕ) = 0
+    · refine Or.inr ⟨hMv, hXv, ?_⟩
+      by_contra hWv
+      exact absurd hal ((hdata.1.2.2.2.2.2.2.1 v).2 ⟨hMv, hXv, hWv⟩)
+    · exact Or.inl hal
+  have hatom : ∀ p, Xoff (σ.vars (curName j)) ≤ p →
+      p < Xoff (σ.vars (curName j) + 1) → ∀ hp : Xmem p < n,
+      asg (Xmem p) = σ.vars (curName j) → ∀ (i : ℕ)
+      (hi : i < (tablesAt q_top cap mb φ j).length)
+      (h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧
+        DRank 1 q' (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])),
+      ∀ a ∈ (bcOf q_top (stepFml cap mb j
+        (tablesAt q_top cap mb φ j)[i]) h).atoms,
+        ∃ u ≤ 1, (atomExpr q_top cap mb φ j i
+          (tablesAt q_top cap mb φ j)[i] a).evalB B
+            (σ.setVar "rv" (Xmem p)) = some u ∧
+          (u ≠ 0 ↔ atomVal (stepArenaP (masked G M) X w)
+            (stepColoringP cap (masked G M)
+              (colRead n C (sigL cap mb j)) X w) ⟨Xmem p, hp⟩ a) := by
+    intro p hp₁ hp₂ hp hvcur i hi h a ha
+    let v : Fin n := ⟨Xmem p, hp⟩
+    have hrvv : (σ.setVar "rv" (v : ℕ)).vars "rv" = (v : ℕ) := by
+      rw [vars_setVar, if_pos rfl]
+    cases a with
+    | inl γ =>
+      have hmemγ : γ ∈ tablesAt q_top cap mb φ (j + 1) :=
+        bcLocals_subset_tablesAt_succ (List.getElem_mem hi)
+          ((mem_bcAtomsOf_left h).mpr ha)
+      obtain ⟨hlt, heq⟩ := getElem_posOf hmemγ
+      obtain ⟨Tc, hTc, hTc1, hTcval⟩ := htabinv _ hlt
+      have hvd : v ∈ rowDom M Alv' X W := hrow p hp₁ hp₂ hp hvcur
+      refine ⟨Tc (v : ℕ), hTc1 _ hvd, ?_, ?_⟩
+      · show (Expr.get (tabName (j + 1) (posOf γ
+            (tablesAt q_top cap mb φ (j + 1)))) (.var "rv")).evalB B _ = _
+        refine evalB_get (k := (v : ℕ)) ?_ ?_ (lt_of_le_of_lt (hTc1 _ hvd) hB)
+        · rw [evalB_var (by rw [hrvv]; omega), hrvv]
+        · rw [arrs_setVar, hTc]
+          exact getElem?_arrOf _ v.isLt
+      · rw [hTcval v hvd, heq, masked_alv_eq hdata, hcolread]
+        exact Iff.rfl
+    | inr σs =>
+      have hmem : σs ∈ (bcAtomsOf q_top (stepFml cap mb j
+          (tablesAt q_top cap mb φ j)[i])).2 :=
+        (mem_bcAtomsOf_right h).mpr ha
+      obtain ⟨hf1, hfiff⟩ := hflag i hi σs hmem
+      refine ⟨σ.vars (flgName j i (posOf σs (bcAtomsOf q_top
+        (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])).2)), hf1, ?_, hfiff⟩
+      show (Expr.var (flgName j i _)).evalB B _ = _
+      rw [evalB_var (by
+          rw [vars_setVar, if_neg (flgName_ne_rv _ _ _)]; omega),
+        vars_setVar, if_neg (flgName_ne_rv _ _ _)]
+  obtain ⟨σ', hrun, ⟨hbase', htab'⟩, hfv, hfa, -, -⟩ :=
+    (readback_specCore (ns := ns) (O := O) (T := T) (M := M) (Gm := Gm)
+      (C := C) (Xoff := Xoff) (Xmem := Xmem) (asg := asg)
+      (cc := σ.vars (curName j)) (ou := σ.out) (T₀ := T₀)
+      (val := fun v _ a => atomVal (stepArenaP (masked G M) X w)
+        (stepColoringP cap (masked G M)
+          (colRead n C (sigL cap mb j)) X w) v a)
+      hB hn hcn (hcover.mono _ hcq) hend hheld.alloc hheld.pointer_lt
+      hcover.mem_lt (fun p hp₁ hp₂ => by
+        have hp_m : p < m := lt_of_lt_of_le hp₂ hend
+        have hp_n : Xmem p < n := hcover.mem_lt p hp_m
+        exact lt_trans (hcover.asg_lt _ hp_n (hslotLive p hp₁ hp₂))
+          (lt_of_le_of_lt hcover.count_le hn))).frame.run (σ := σ)
+      ⟨⟨hlevel, hheld.off_arr, hheld.mem_arr, hheld.asg_arr, rfl, hcB, rfl,
+        hatom⟩, hsz⟩
+  have hframeA : ∀ a : String, (∀ i, a ≠ tabName j i) →
+      σ'.arrs a = σ.arrs a :=
+    fun a hane => hfa a (fun hm => by
+      obtain ⟨i, hi⟩ := mem_warrs_readbackCom hm
+      exact hane i hi)
+  have hframeV : ∀ x : String, x ≠ "z" → x ≠ "zend" → x ≠ "rv" →
+      σ'.vars x = σ.vars x :=
+    fun x hxz hxe hxv => hfv x (not_mem_wvars_readbackCom hxz hxe hxv)
+  have hKr : rbCost q_top cap mb φ j
+      (Xoff (σ.vars (curName j) + 1) - Xoff (σ.vars (curName j))) ≤ K := by
+    simpa [hck] using hK hcover
+  refine ⟨σ', hrun.mono hKr,
+    ⟨hbase'.1,
+      hplayrec.congr
+        (fun a _ => hframeV (ctrName a)
+          (by simp [ctrName, String.ext_iff])
+          (by simp [ctrName, String.ext_iff])
+          (by simp [ctrName, String.ext_iff]))
+        (fun a _ => hframeA (resName a) (fun i => Ne.symm (by
+          simp [tabName, resName, String.ext_iff])))
+        (fun a _ => hframeA (gamName a) (fun i => Ne.symm (by
+          simp [tabName, gamName, String.ext_iff])))
+        (fun a _ => hframeA (parName a) (fun i => Ne.symm (by
+          simp [tabName, parName, balName, String.ext_iff]))),
+      hheld.congr
+        (hframeA (ordName j) (fun i => Ne.symm (by
+          simp [tabName, ordName, String.ext_iff])))
+        (hframeA (xofName j) (fun i => Ne.symm (by
+          simp [tabName, xofName, String.ext_iff])))
+        (hframeA (xmmName j) (fun i => Ne.symm (by
+          simp [tabName, xmmName, String.ext_iff])))
+        (hframeA (asgName j) (fun i => Ne.symm (by
+          simp [tabName, asgName, String.ext_iff])))
+        (hframeV (xpName j) (by simp [xpName, String.ext_iff])
+          (by simp [xpName, String.ext_iff])
+          (by simp [xpName, String.ext_iff]))⟩,
+    hbase'.2.2.2.2.2.2.1, hbase'.2.2.2.2.1, ?_⟩
+  intro i hi
+  obtain ⟨Tb, hTb, hTb0, hTbval⟩ := htab' i hi
+  refine ⟨Tb, T₀ i, hTb, hsz i hi, ?_, ?_⟩
+  · intro v hv
+    rcases hv with hv | hv
+    · refine hTb0 v (Or.inr ?_)
+      intro p hp₁ hp₂ hpv
+      have hlive := hslotLive p hp₁ hp₂
+      apply hlive
+      rw [hpv]
+      exact hv
+    · exact hTb0 v (Or.inl hv)
+  · intro v hMv hv
+    have hcl : RamCover.InCluster (masked G M) π cap
+        (centre (σ.vars (curName j))) (v : ℕ) := by
+      have hs := hcover.asg_cover (v : ℕ) v.isLt hMv
+        (WalkDistance.mem_ball_self _ _ _)
+      simpa [hv] using hs
+    obtain ⟨p, hp₁, hp₂, hp₃⟩ := (hcover.block _ hcq (v : ℕ)).mpr hcl
+    obtain ⟨hpn, hrowp⟩ := hTbval p hp₁ hp₂
+    obtain ⟨hbit, hval⟩ := hrowp (by rwa [hp₃])
+    have hpv : (⟨Xmem p, hpn⟩ : Fin n) = v := Fin.ext hp₃
+    refine ⟨by simpa [hp₃] using hbit, ?_⟩
+    simpa [hp₃, hpv] using hval
 
 end Lax3Proofs.RamDriverMemberPhases

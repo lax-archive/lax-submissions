@@ -324,7 +324,9 @@ noncomputable def TabOk (q_top cap mb j : ℕ) {n : ℕ}
     (vl : Fin n → StepAtom cap mb j → Prop) (β : DistFO (sigL cap mb j) 1)
     (nm : String) (T₀ : ℕ → ℕ) (σ : Env) (bnd : ℕ) : Prop :=
   ∃ Tb : ℕ → ℕ, σ.arrs nm = arrOf n Tb ∧
-    (∀ v : Fin n, asg (v : ℕ) ≠ cc → Tb (v : ℕ) = T₀ (v : ℕ)) ∧
+    (∀ v : Fin n, (asg (v : ℕ) ≠ cc ∨
+      ∀ p, Xoff cc ≤ p → p < bnd → Xmem p ≠ (v : ℕ)) →
+        Tb (v : ℕ) = T₀ (v : ℕ)) ∧
     ∀ p, Xoff cc ≤ p → p < bnd → ∃ hp : Xmem p < n,
       asg (Xmem p) = cc →
         Tb (Xmem p) ≤ 1 ∧
@@ -353,14 +355,15 @@ def RbBase (B q_top cap mb ns Ws j : ℕ) {n : ℕ} (φ : Lax3.FirstOrder.FO 0) 
     σ.arrs (xmmName j) = arrOf (n * n) Xmem ∧
     σ.arrs (asgName j) = arrOf n asg ∧
     σ.vars (curName j) = cc ∧ cc < B ∧ σ.out = ou ∧
-    ∀ (v : Fin n), asg (v : ℕ) = cc → ∀ (i : ℕ)
+    ∀ p, Xoff cc ≤ p → p < Xoff (cc + 1) → ∀ hp : Xmem p < n,
+      asg (Xmem p) = cc → ∀ (i : ℕ)
         (hi : i < (tablesAt q_top cap mb φ j).length)
         (h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧
           DRank 1 q' (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])),
         ∀ a ∈ (bcOf q_top (stepFml cap mb j (tablesAt q_top cap mb φ j)[i]) h).atoms,
           ∃ u ≤ 1,
       (atomExpr q_top cap mb φ j i (tablesAt q_top cap mb φ j)[i] a).evalB B
-          (σ.setVar "rv" (v : ℕ)) = some u ∧ (u ≠ 0 ↔ val v i a)
+          (σ.setVar "rv" (Xmem p)) = some u ∧ (u ≠ 0 ↔ val ⟨Xmem p, hp⟩ i a)
 
 /-! #### The frame of one store
 
@@ -466,8 +469,8 @@ theorem rbBase_setArr_tab {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.F
   · rw [arrs_setArr, if_neg (by simp [tabName, xofName, String.ext_iff])]; exact h2
   · rw [arrs_setArr, if_neg (by simp [tabName, xmmName, String.ext_iff])]; exact h3
   · rw [arrs_setArr, if_neg (by simp [tabName, asgName, String.ext_iff])]; exact h4
-  · intro w hw p hp hr a ha
-    obtain ⟨u, hu1, hueval, huiff⟩ := h8 w hw p hp hr a ha
+  · intro z hzlo hzhi hzn hzcc p hp hr a ha
+    obtain ⟨u, hu1, hueval, huiff⟩ := h8 z hzlo hzhi hzn hzcc p hp hr a ha
     refine ⟨u, hu1, ?_, huiff⟩
     rw [setArr_setVar, evalB_atomExpr_setArr]
     exact hueval
@@ -487,10 +490,10 @@ theorem rbBase_setVar_readback {B q_top cap mb ns Ws j : ℕ}
   refine ⟨levelPre_setVar_readback hxn hxm hxlw hxmm h1 k,
     by simpa using h2, by simpa using h3, by simpa using h4, ?_, h6, h7, ?_⟩
   · rw [vars_setVar, if_neg hxcur.symm]; exact h5
-  · intro w hw p hp hr a ha
-    obtain ⟨u, hu1, hueval, huiff⟩ := h8 w hw p hp hr a ha
+  · intro z hzlo hzhi hzn hzcc p hp hr a ha
+    obtain ⟨u, hu1, hueval, huiff⟩ := h8 z hzlo hzhi hzn hzcc p hp hr a ha
     exact ⟨u, hu1, by
-      rw [evalB_atomExpr_setVar_readback a σ k (w : ℕ) hflg]
+      rw [evalB_atomExpr_setVar_readback a σ k (Xmem z) hflg]
       exact hueval, huiff⟩
 
 theorem rbBase_setVar_z {B q_top cap mb ns Ws j : ℕ}
@@ -558,7 +561,8 @@ was. -/
 theorem store_step_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
     {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
     {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ} (hB : 1 < B) (hn : n < B)
-    {z₀ : ℕ} (hz₀ : Xmem z₀ < n) (hcc : asg (Xmem z₀) = cc) (p : ℕ)
+    {z₀ : ℕ} (hzlo : Xoff cc ≤ z₀) (hzhi : z₀ < Xoff (cc + 1))
+    (hz₀ : Xmem z₀ < n) (hcc : asg (Xmem z₀) = cc) (p : ℕ)
     (hp : p < (tablesAt q_top cap mb φ j).length) :
     Spec B
       (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
@@ -586,7 +590,7 @@ theorem store_step_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 
         (u ≠ 0 ↔ val ⟨Xmem z₀, hz₀⟩ p a) := by
     intro h a ha
     obtain ⟨u, hu1, hueval, huiff⟩ :=
-      hbase.2.2.2.2.2.2.2 ⟨Xmem z₀, hz₀⟩ hcc p hp h a ha
+      hbase.2.2.2.2.2.2.2 z₀ hzlo hzhi hz₀ hcc p hp h a ha
     exact ⟨u, hu1, by rwa [setVar_self hrv] at hueval, huiff⟩
   obtain ⟨u, hu1, hueval, huiff⟩ := evalB_rbCell (i := p) hB hval
   -- the array being written is there, at the carrier's length
@@ -604,9 +608,20 @@ theorem store_step_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 
       refine ⟨fun k => if k = Xmem z₀ then u else Tb k, ?_, ?_, ?_⟩
       · rw [arrs_setArr, if_pos rfl, hTb, set_arrOf]
       · intro w hw
+        rw [if_pos (by omega : i < i + 1)] at hw
         dsimp only
-        rw [if_neg (fun hc => hw (by rw [hc]; exact hcc))]
-        exact hTb0 w hw
+        by_cases hwv : (w : ℕ) = Xmem z₀
+        · rw [if_pos hwv]
+          exfalso
+          rcases hw with hw | hw
+          · exact hw (by simpa [hwv] using hcc)
+          · exact hw z₀ hzlo (by omega) hwv.symm
+        · rw [if_neg hwv]
+          refine hTb0 w ?_
+          rw [if_neg (lt_irrefl i)]
+          rcases hw with hw | hw
+          · exact Or.inl hw
+          · exact Or.inr fun q hqlo hqhi => hw q hqlo (by omega)
       · intro q hqlo hqhi
         rw [if_pos (by omega)] at hqhi
         dsimp only
@@ -623,8 +638,14 @@ theorem store_step_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 
           rw [if_neg (lt_irrefl _)]
           omega
     · obtain ⟨Tc, hTc, hTc0, hTcval⟩ := htab i hi
-      refine ⟨Tc, ?_, hTc0, ?_⟩
+      refine ⟨Tc, ?_, ?_, ?_⟩
       · rw [arrs_setArr, if_neg (tabName_ne_of_ne j hip), hTc]
+      · intro v hv
+        refine hTc0 v ?_
+        by_cases hlt : i < p
+        · simpa [hlt, show i < p + 1 by omega] using hv
+        · have hnxt : ¬ i < p + 1 := by omega
+          simpa [hlt, hnxt] using hv
       · intro q hqlo hqhi
         refine hTcval q hqlo ?_
         by_cases hlt : i < p
@@ -641,7 +662,8 @@ stands on. -/
 theorem block_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
     {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
     {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ} (hB : 1 < B) (hn : n < B)
-    {z₀ : ℕ} (hz₀ : Xmem z₀ < n) (hcc : asg (Xmem z₀) = cc) :
+    {z₀ : ℕ} (hzlo : Xoff cc ≤ z₀) (hzhi : z₀ < Xoff (cc + 1))
+    (hz₀ : Xmem z₀ < n) (hcc : asg (Xmem z₀) = cc) :
     ∀ (l : List (DistFO (sigL cap mb j) 1)) (p : ℕ), l = (tablesAt q_top cap mb φ j).drop p →
       Spec B
         (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
@@ -671,7 +693,7 @@ theorem block_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O
     obtain ⟨hβ, hltail⟩ := List.cons.inj hl
     subst hβ
     have hstep := (store_step_spec (ns := ns) (O := O) (T := T) (M := M) (Gm := Gm) (C := C)
-      (ou := ou) (val := val) hB hn hz₀ hcc p hp).seq (ih (p + 1) hltail)
+      (ou := ou) (val := val) hB hn hzlo hzhi hz₀ hcc p hp).seq (ih (p + 1) hltail)
       (fun _ _ _ hQ => hQ) (fun _ _ _ _ _ hQ' => hQ')
     refine hstep.post ?_ |>.mono (le_of_eq ?_)
     · intro σ σ' _ hQ
@@ -735,6 +757,7 @@ theorem ite_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T
     {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
     {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ}
     (hB : 1 < B) (hn : n < B) {z₀ : ℕ}
+    (hzlo : Xoff cc ≤ z₀) (hzhi : z₀ < Xoff (cc + 1))
     (hz₀ : Xmem z₀ < n) (hasgB : asg (Xmem z₀) < B) :
     Spec B
       (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
@@ -775,7 +798,8 @@ theorem ite_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T
       rw [List.drop_zero]
     obtain ⟨σ', hrun, hQ⟩ :=
       (block_spec (ns := ns) (O := O) (T := T) (M := M) (Gm := Gm) (C := C)
-        (ou := ou) (val := val) hB hn hz₀ hasgz (tablesAt q_top cap mb φ j) 0
+        (ou := ou) (val := val) hB hn hzlo hzhi hz₀ hasgz
+        (tablesAt q_top cap mb φ j) 0
         hdrop).run (σ := σ) ⟨hbase, hz, hrv, hpre⟩
     refine ⟨σ', _, hrun, le_rfl, hQ.1, hQ.2.1, hQ.2.2.1, ?_⟩
     intro i hi
@@ -793,7 +817,12 @@ theorem ite_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T
     refine ⟨hbase, hz, hrv, ?_⟩
     intro i hi
     obtain ⟨Tb, hTb, hTb0, hTbval⟩ := htab i hi
-    refine ⟨Tb, hTb, hTb0, ?_⟩
+    refine ⟨Tb, hTb, ?_, ?_⟩
+    · intro v hv
+      refine hTb0 v ?_
+      rcases hv with hv | hv
+      · exact Or.inl hv
+      · exact Or.inr fun p hp hpl => hv p hp (by omega)
     intro q hqlo hqhi
     by_cases hq : q < z₀
     · exact hTbval q hqlo hq
@@ -816,12 +845,15 @@ theorem rbCost_mono (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j : ℕ) :
 At every vertex the cover assigned to the centre being processed, the
 bit of every tabled formula is the value of that formula's own boolean
 combination over the atom valuation the caller supplies. -/
-theorem readback_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
+theorem readback_specCore {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0}
+    {O T M Gm : ℕ → ℕ}
     {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
     {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ}
-    {G : SimpleGraph (Fin n)} {A₀ ord : ℕ → ℕ} {π : Equiv.Perm (Fin n)} {r m : ℕ}
-    (hB : 1 < B) (hn : n < B) (hcc : cc < n)
-    (hout : RamCover.CoverOut G A₀ π ord r m Xoff Xmem asg) (hm : m ≤ n * n) (hmB : m < B) :
+    {m : ℕ} (hB : 1 < B) (hn : n < B) (hcc : cc < n)
+    (hmono : Xoff cc ≤ Xoff (cc + 1)) (hend : Xoff (cc + 1) ≤ m)
+    (hm : m ≤ n * n) (hmB : m < B)
+    (hmem : ∀ p < m, Xmem p < n)
+    (hasgB : ∀ p, Xoff cc ≤ p → p < Xoff (cc + 1) → asg (Xmem p) < B) :
     Spec B
       (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
         ∀ (i : ℕ), i < (tablesAt q_top cap mb φ j).length →
@@ -833,15 +865,6 @@ theorem readback_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0}
             (tabName j i) (T₀ i) σ' (Xoff (cc + 1)))
       (rbCost q_top cap mb φ j (Xoff (cc + 1) - Xoff cc)) := by
   rw [readbackCom_eq, rbCost]
-  have hoff_le : ∀ k ≤ n, Xoff k ≤ m := by
-    have key : ∀ d k, k + d = n → Xoff k ≤ Xoff n := by
-      intro d
-      induction d with
-      | zero => intro k hk; rw [show k = n by omega]
-      | succ d ih => intro k hk; exact le_trans (hout.mono k (by omega)) (ih (k + 1) (by omega))
-    intro k hk
-    rw [← hout.last]
-    exact key (n - k) k (by omega)
   let I := RbInv B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val T₀
   refine Spec.of_exists fun σ hσ => ?_
   obtain ⟨hbase₀, hsized⟩ := hσ
@@ -855,18 +878,18 @@ theorem readback_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0}
     (Kb := 1 + 4 + blockCost q_top cap mb φ j 0 (tablesAt q_top cap mb φ j))
     (v := cc) (off := Xoff) (tgt := Xmem) (I := I) (σ := σ)
     (by simp [curName, String.ext_iff]) (by decide) hB hcc (by omega)
-    hbase₀.2.1 (hout.mono cc hcc)
-    (le_trans (hoff_le (cc + 1) (by omega)) hm)
-    (lt_of_le_of_lt (hoff_le (cc + 1) (by omega)) hmB)
+    hbase₀.2.1 hmono
+    (le_trans hend hm)
+    (lt_of_le_of_lt hend hmB)
     hbase₀.2.2.2.2.1
     (by intro τ hτ; exact hτ.1.2.2.1)
-    (by intro p hp; exact lt_trans (hout.mem_lt p (lt_of_lt_of_le hp (hoff_le _ (by omega)))) hn)
+    (by intro p hp; exact lt_trans (hmem p (lt_of_lt_of_le hp hend)) hn)
     (by intro τ hτ; exact ⟨hτ.2.1, hτ.2.2.2.1⟩)
     (by
       refine ⟨rbBase_setVar_zend (rbBase_setVar_z hbase₀ (Xoff cc)) (Xoff (cc + 1)), ?_, ?_, ?_, ?_⟩
       · simp
       · simp
-      · simp [hout.mono cc hcc]
+      · simpa using hmono
       · intro i hi
         refine ⟨T₀ i, by simpa using hsized i hi, fun _ _ => rfl, ?_⟩
         intro p hp hlt
@@ -875,14 +898,14 @@ theorem readback_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0}
         omega)
     (by
       intro τ hτ hlt
-      obtain ⟨hbase, hend, hlo, hle, htab⟩ := hτ
-      have hp_m : τ.vars "z" < m := lt_of_lt_of_le hlt (hoff_le _ (by omega))
-      have hp_n : Xmem (τ.vars "z") < n := hout.mem_lt _ hp_m
+      obtain ⟨hbase, hzend₀, hlo, hle, htab⟩ := hτ
+      have hp_m : τ.vars "z" < m := lt_of_lt_of_le hlt hend
+      have hp_n : Xmem (τ.vars "z") < n := hmem _ hp_m
       obtain ⟨τ', hrun, hbase', hz', hrv', htab'⟩ :=
         (ite_spec (ns := ns) (O := O) (T := T) (M := M) (Gm := Gm) (C := C)
           (Xoff := Xoff) (Xmem := Xmem) (asg := asg) (cc := cc) (ou := ou)
-          (val := val) (T₀ := T₀) hB hn hp_n
-          (lt_trans (hout.asg_lt _ hp_n) hn)).run (σ :=
+          (val := val) (T₀ := T₀) hB hn hlo hlt hp_n
+          (hasgB _ hlo hlt)).run (σ :=
             τ.setVar "rv" (Xmem (τ.vars "z")))
           ⟨rbBase_setVar_rv hbase _, by simp, by simp, by
             intro i hi
@@ -892,7 +915,7 @@ theorem readback_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0}
           simp [Com.wvars, wvars_readbackFold])
       refine ⟨τ', _, hrun, le_rfl, hz', ?_⟩
       refine ⟨rbBase_setVar_z hbase' (τ.vars "z" + 1), ?_, ?_, ?_, ?_⟩
-      · rw [vars_setVar, if_neg (by decide : "zend" ≠ "z"), hzend, hend]
+      · rw [vars_setVar, if_neg (by decide : "zend" ≠ "z"), hzend, hzend₀]
       · rw [vars_setVar, if_pos rfl]; omega
       · rw [vars_setVar, if_pos rfl]; omega
       · intro i hi
@@ -902,6 +925,44 @@ theorem readback_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0}
   intro i hi
   rw [← hz]
   exact hI.2.2.2.2 i hi
+
+/-- The carrier-cover presentation of `readback_specCore`.  Kept as the
+landed API; the active adapter below uses the operational core directly. -/
+theorem readback_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0}
+    {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ}
+    {cc : ℕ} {ou : List ℕ}
+    {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ}
+    {G : SimpleGraph (Fin n)} {A₀ ord : ℕ → ℕ} {π : Equiv.Perm (Fin n)}
+    {r m : ℕ} (hB : 1 < B) (hn : n < B) (hcc : cc < n)
+    (hout : RamCover.CoverOut G A₀ π ord r m Xoff Xmem asg)
+    (hm : m ≤ n * n) (hmB : m < B) :
+    Spec B
+      (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
+        ∀ (i : ℕ), i < (tablesAt q_top cap mb φ j).length →
+          σ.arrs (tabName j i) = arrOf n (T₀ i))
+      (readbackCom q_top cap mb φ j)
+      (fun _ σ' => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ' ∧
+        ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
+          TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i)
+            (tablesAt q_top cap mb φ j)[i] (tabName j i) (T₀ i) σ'
+            (Xoff (cc + 1)))
+      (rbCost q_top cap mb φ j (Xoff (cc + 1) - Xoff cc)) := by
+  have hoff_le : ∀ k ≤ n, Xoff k ≤ m := by
+    have key : ∀ d k, k + d = n → Xoff k ≤ Xoff n := by
+      intro d
+      induction d with
+      | zero => intro k hk; rw [show k = n by omega]
+      | succ d ih =>
+          intro k hk
+          exact le_trans (hout.mono k (by omega)) (ih (k + 1) (by omega))
+    intro k hk
+    rw [← hout.last]
+    exact key (n - k) k (by omega)
+  exact readback_specCore hB hn hcc (hout.mono cc hcc)
+    (hoff_le (cc + 1) (by omega)) hm hmB hout.mem_lt
+    (fun p _ hp =>
+      have hp_m : p < m := lt_of_lt_of_le hp (hoff_le (cc + 1) (by omega))
+      lt_trans (hout.asg_lt _ (hout.mem_lt p hp_m)) hn)
 
 /-! #### The frame of the whole readback
 
@@ -1069,7 +1130,8 @@ theorem readbackStep {B q_top cap mb ns Ws j : ℕ} {n : ℕ} {φ : Lax3.FirstOr
       (val := fun v _ a => atomVal (stepArenaP (masked G M) X w)
         (stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w) v a)
       hB hn hcn hcout hmn hmB).frame.run (σ := σ)
-      ⟨⟨hlevel, hxoffA, hxmemA, hasgA, rfl, hcB, rfl, hatom⟩, hsz⟩
+      ⟨⟨hlevel, hxoffA, hxmemA, hasgA, rfl, hcB, rfl,
+        fun p _ _ hp hcur => hatom ⟨Xmem p, hp⟩ hcur⟩, hsz⟩
   have hframeA : ∀ a : String, (∀ i, a ≠ tabName j i) → σ'.arrs a = σ.arrs a :=
     fun a hane => hfa a (fun hm => by
       obtain ⟨i, hi⟩ := mem_warrs_readbackCom hm
@@ -1103,7 +1165,8 @@ theorem readbackStep {B q_top cap mb ns Ws j : ℕ} {n : ℕ} {φ : Lax3.FirstOr
     exact hxpA
   · intro i hi
     obtain ⟨Tb, hTb, hTb0, hTbval⟩ := htab' i hi
-    refine ⟨Tb, T₀ i, hTb, hsz i hi, hTb0, fun v hv => ?_⟩
+    refine ⟨Tb, T₀ i, hTb, hsz i hi, fun v hv => hTb0 v (Or.inl hv),
+      fun v hv => ?_⟩
     have hcl : RamCover.InCluster (masked G M) π cap (ord (σ.vars (curName j))) (v : ℕ) := by
       have hs := hcout.asg_cover (v : ℕ) v.isLt (WalkDistance.mem_ball_self _ _ _)
       simpa [hv] using hs
