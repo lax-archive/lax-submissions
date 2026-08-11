@@ -1207,10 +1207,12 @@ mask.  The latter clause is what makes the current connector a discovered
 target in each earlier tree. -/
 def CachedRounds (cap : ℕ) (G : SimpleGraph (Fin n)) (j : ℕ)
     (M : ℕ → ℕ) (σ : Env) : Prop :=
-  ∀ a, a < j → ∃ (u : Fin n) (R D P : ℕ → ℕ),
+  ∀ a, a < j → ∃ (u : Fin n) (R Ga D P : ℕ → ℕ),
     σ.vars (ctrName a) = (u : ℕ) ∧ σ.arrs (resName a) = arrOf n R ∧
-    σ.arrs (parName a) = arrOf n P ∧ RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P ∧
+    σ.arrs (gamName a) = arrOf n Ga ∧ σ.arrs (parName a) = arrOf n P ∧
+    RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P ∧
     (∀ z, z < n → R z ≠ 0 → RamBfs.WD G R (2 * cap) (u : ℕ) z) ∧
+    (∀ z, z < n → R z ≠ 0 → Ga z ≠ 0) ∧
     ∀ z, z < n → M z ≠ 0 → R z ≠ 0
 
 /-- No rounds have been cached at the root. -/
@@ -1225,12 +1227,13 @@ theorem CachedRounds.congr {j : ℕ} {G : SimpleGraph (Fin n)} {M : ℕ → ℕ}
     (h : CachedRounds cap G j M σ)
     (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
     (hr : ∀ a < j, σ'.arrs (resName a) = σ.arrs (resName a))
+    (hg : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a))
     (hp : ∀ a < j, σ'.arrs (parName a) = σ.arrs (parName a)) :
     CachedRounds cap G j M σ' := by
   intro a ha
-  obtain ⟨u, R, D, P, hctr, hres, hpar, hT, hcov, hsub⟩ := h a ha
-  exact ⟨u, R, D, P, by rw [hv a ha]; exact hctr, by rw [hr a ha]; exact hres,
-    by rw [hp a ha]; exact hpar, hT, hcov, hsub⟩
+  obtain ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG, hsub⟩ := h a ha
+  exact ⟨u, R, Ga, D, P, by rw [hv a ha]; exact hctr, by rw [hr a ha]; exact hres,
+    by rw [hg a ha]; exact hgam, by rw [hp a ha]; exact hpar, hT, hcov, hRG, hsub⟩
 
 /-- Shrinking the current work arena preserves every earlier cache. -/
 theorem CachedRounds.mono {j : ℕ} {G : SimpleGraph (Fin n)} {M M' : ℕ → ℕ} {σ : Env}
@@ -1238,8 +1241,8 @@ theorem CachedRounds.mono {j : ℕ} {G : SimpleGraph (Fin n)} {M M' : ℕ → �
     (hsub : ∀ z, z < n → M' z ≠ 0 → M z ≠ 0) :
     CachedRounds cap G j M' σ := by
   intro a ha
-  obtain ⟨u, R, D, P, hctr, hres, hpar, hT, hcov, hMR⟩ := h a ha
-  exact ⟨u, R, D, P, hctr, hres, hpar, hT, hcov,
+  obtain ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG, hMR⟩ := h a ha
+  exact ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG,
     fun z hz hM' => hMR z hz (hsub z hz hM')⟩
 
 /-- Add the cache built by the current round while carrying all earlier
@@ -1248,36 +1251,41 @@ theorem CachedRounds.succ {j : ℕ} {G : SimpleGraph (Fin n)} {M M' : ℕ → �
     (h : CachedRounds cap G j M σ)
     (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
     (hr : ∀ a < j, σ'.arrs (resName a) = σ.arrs (resName a))
+    (hg : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a))
     (hp : ∀ a < j, σ'.arrs (parName a) = σ.arrs (parName a))
     (hM'M : ∀ z, z < n → M' z ≠ 0 → M z ≠ 0)
-    {u : Fin n} {R D P : ℕ → ℕ}
+    {u : Fin n} {R Ga D P : ℕ → ℕ}
     (hctr : σ'.vars (ctrName j) = (u : ℕ)) (hres : σ'.arrs (resName j) = arrOf n R)
+    (hgam : σ'.arrs (gamName j) = arrOf n Ga)
     (hpar : σ'.arrs (parName j) = arrOf n P)
     (hT : RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P)
     (hcov : ∀ z, z < n → R z ≠ 0 → RamBfs.WD G R (2 * cap) (u : ℕ) z)
+    (hRG : ∀ z, z < n → R z ≠ 0 → Ga z ≠ 0)
     (hM'R : ∀ z, z < n → M' z ≠ 0 → R z ≠ 0) :
     CachedRounds cap G (j + 1) M' σ' := by
   intro a ha
   rcases Nat.lt_or_ge a j with haj | haj
-  · obtain ⟨v, S, E, Q, hctr', hres', hpar', hQ, hcov', hMS⟩ := h a haj
-    exact ⟨v, S, E, Q, by rw [hv a haj]; exact hctr', by rw [hr a haj]; exact hres',
-      by rw [hp a haj]; exact hpar', hQ, hcov',
+  · obtain ⟨v, S, Sa, E, Q, hctr', hres', hgam', hpar', hQ, hcov', hSG, hMS⟩ := h a haj
+    exact ⟨v, S, Sa, E, Q, by rw [hv a haj]; exact hctr', by rw [hr a haj]; exact hres',
+      by rw [hg a haj]; exact hgam', by rw [hp a haj]; exact hpar', hQ, hcov', hSG,
       fun z hz hM' => hMS z hz (hM'M z hz hM')⟩
   · have haj' : a = j := by omega
     subst haj'
-    exact ⟨u, R, D, P, hctr, hres, hpar, hT, hcov, hM'R⟩
+    exact ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG, hM'R⟩
 
 /-- A live current target is reached by every earlier cached tree. -/
 theorem CachedRounds.target {j : ℕ} {G : SimpleGraph (Fin n)} {M : ℕ → ℕ} {σ : Env}
     (h : CachedRounds cap G j M σ) {a t : ℕ} (ha : a < j) (ht : t < n)
     (hMt : M t ≠ 0) :
-    ∃ (u : Fin n) (R D P : ℕ → ℕ),
+    ∃ (u : Fin n) (R Ga D P : ℕ → ℕ),
       σ.vars (ctrName a) = (u : ℕ) ∧ σ.arrs (resName a) = arrOf n R ∧
-      σ.arrs (parName a) = arrOf n P ∧ RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P ∧
-      D t ≤ 2 * cap := by
-  obtain ⟨u, R, D, P, hctr, hres, hpar, hT, hcov, hMR⟩ := h a ha
+      σ.arrs (gamName a) = arrOf n Ga ∧ σ.arrs (parName a) = arrOf n P ∧
+      RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P ∧
+      (∀ z, z < n → R z ≠ 0 → Ga z ≠ 0) ∧ D t ≤ 2 * cap := by
+  obtain ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG, hMR⟩ := h a ha
   have hwd := hcov t ht (hMR t ht hMt)
-  exact ⟨u, R, D, P, hctr, hres, hpar, hT, hT.reach (2 * cap) le_rfl t hwd⟩
+  exact ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hRG,
+    hT.reach (2 * cap) le_rfl t hwd⟩
 
 /-- **The recorded play.** The rounds are in the state, and — off the
 dead branch — they are a play of the recorded game whose position is the
