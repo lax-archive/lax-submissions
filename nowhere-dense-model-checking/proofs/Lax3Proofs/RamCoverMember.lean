@@ -88,6 +88,42 @@ structure CoverOutM {n : ℕ} (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ)
       {z : Fin n |
         InCluster (masked G A₀) π r (ord (Pos (asg (Mem k)))) (z : ℕ)}
 
+/-- The consumer-facing active cover.  It forgets how the active centres
+were enumerated and records only the centre function the block-indexed
+driver reads.  Assignments are required exactly on the live vertices of
+`A₀`; no dead carrier cell has to be initialised. -/
+structure CoverOutA {n : ℕ} (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ)
+    (π : Equiv.Perm (Fin n)) (centre : ℕ → ℕ) (r q m : ℕ)
+    (Xoff Xmem asg : ℕ → ℕ) : Prop where
+  /-- The active centre count fits in the carrier allocation. -/
+  count_le : q ≤ n
+  /-- The arena starts at zero. -/
+  zero : Xoff 0 = 0
+  /-- The arena ends after the last active centre. -/
+  last : Xoff q = m
+  /-- Blocks are laid out in active-centre order. -/
+  mono : ∀ k < q, Xoff k ≤ Xoff (k + 1)
+  /-- Every active centre is a vertex. -/
+  centre_lt : ∀ k < q, centre k < n
+  /-- Everything stored in a block is a vertex. -/
+  mem_lt : ∀ p < m, Xmem p < n
+  /-- Block `k` is the cluster of active centre `centre k`. -/
+  block : ∀ k < q, ∀ w,
+    (∃ p, Xoff k ≤ p ∧ p < Xoff (k + 1) ∧ Xmem p = w) ↔
+      InCluster (masked G A₀) π r (centre k) w
+  /-- No active block names a vertex twice. -/
+  block_inj : ∀ k < q, ∀ p p', Xoff k ≤ p → p < Xoff (k + 1) →
+    Xoff k ≤ p' → p' < Xoff (k + 1) → Xmem p = Xmem p' → p = p'
+  /-- Each active block lists its vertices in increasing order. -/
+  block_mono : ∀ k < q, ∀ p p', Xoff k ≤ p → p < p' →
+    p' < Xoff (k + 1) → Xmem p < Xmem p'
+  /-- Every live vertex is assigned an active block index. -/
+  asg_lt : ∀ v < n, A₀ v ≠ 0 → asg v < q
+  /-- The assigned active block contains the live vertex's whole ball. -/
+  asg_cover : ∀ (v : ℕ) (hv : v < n), A₀ v ≠ 0 →
+    ball (masked G A₀) r ⟨v, hv⟩ ⊆
+      {z : Fin n | InCluster (masked G A₀) π r (centre (asg v)) (z : ℕ)}
+
 namespace CoverOutM
 
 variable {n mm r m : ℕ} {G : SimpleGraph (Fin n)} {A₀ Mem Pos ord Xoff Xmem asg : ℕ → ℕ}
@@ -109,7 +145,59 @@ theorem ord_pos_lt (h : CoverOutM G A₀ mm Mem Pos π ord r m Xoff Xmem asg)
   rw [heq]
   exact h.member_lt q hq
 
+/-- Forget the two enumerations and expose the active block interface.
+The only additional input is the member list's completeness for the live
+mask; `RamDriver.MemEnum` supplies it at every driver level. -/
+theorem toActive (h : CoverOutM G A₀ mm Mem Pos π ord r m Xoff Xmem asg)
+    (hord : OrdersByM mm Mem π ord)
+    (hcomplete : ∀ v < n, A₀ v ≠ 0 → ∃ k < mm, Mem k = v) :
+    CoverOutA G A₀ π (fun k => ord (Pos k)) r mm m Xoff Xmem asg := by
+  refine
+    { count_le := h.count_le
+      zero := h.zero
+      last := h.last
+      mono := h.mono
+      centre_lt := fun k hk => h.ord_pos_lt hord hk
+      mem_lt := h.mem_lt
+      block := h.block
+      block_inj := h.block_inj
+      block_mono := h.block_mono
+      asg_lt := ?_
+      asg_cover := ?_ }
+  · intro v hv halive
+    obtain ⟨k, hk, hkv⟩ := hcomplete v hv halive
+    rw [← hkv]
+    exact h.asg_lt k hk
+  · intro v hv halive
+    obtain ⟨k, hk, hkv⟩ := hcomplete v hv halive
+    subst v
+    simpa using h.asg_cover k hk
+
 end CoverOutM
+
+namespace CoverOut
+
+variable {n r m : ℕ} {G : SimpleGraph (Fin n)} {A₀ ord Xoff Xmem asg : ℕ → ℕ}
+  {π : Equiv.Perm (Fin n)}
+
+/-- The landed carrier-wide output, restricted to the live vertices on
+the assignment axis, is an active cover with `n` centres. -/
+theorem toActive (h : CoverOut G A₀ π ord r m Xoff Xmem asg)
+    (hord : OrdersBy n π ord) :
+    CoverOutA G A₀ π ord r n m Xoff Xmem asg :=
+  { count_le := le_rfl
+    zero := h.zero
+    last := h.last
+    mono := h.mono
+    centre_lt := fun _ hk => hord.lt hk
+    mem_lt := h.mem_lt
+    block := h.block
+    block_inj := h.block_inj
+    block_mono := h.block_mono
+    asg_lt := fun v hv _ => h.asg_lt v hv
+    asg_cover := fun v hv _ => h.asg_cover v hv }
+
+end CoverOut
 
 /-- On the identity member list, the member ordering contract is exactly
 the landed carrier-wide contract. -/
