@@ -77,6 +77,7 @@ import Lax3Proofs.Refine.ElimCompactCsr
 import Lax3Proofs.Refine.OrderActiveCompact
 import Lax3Proofs.Refine.OrderActiveWidth
 import Lax3Proofs.Refine.OrderActiveRank
+import Lax3Proofs.Refine.OrderActiveWork
 import Lax3Proofs.Refine.ElimCompactSpec
 import Lax3Proofs.Refine.ReachedBridge
 import Lax3Proofs.Refine.CoverActiveBridge
