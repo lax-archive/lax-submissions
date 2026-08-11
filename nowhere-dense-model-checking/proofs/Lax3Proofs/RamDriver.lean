@@ -1718,6 +1718,16 @@ def batchCom (cap j : ℕ) : Com :=
       (.seq (foldRange (fun a => ancestorStep cap j a) j)
         (andCom (batName j) (cluName j) (batName j))))
 
+/-- **The cached batch phase.** It has the same opening, connector, and
+cluster cut as `batchCom`; each earlier contribution now follows the
+retained parent tree for that round instead of copying its arena and
+running another breadth-first search. -/
+def batchCachedCom (cap j : ℕ) : Com :=
+  .seq (fillCom (batName j) (.lit 0))
+    (.seq (.store (batName j) (.var (ctrName j)) (.lit 1))
+      (.seq (foldRange (fun a => markParentsCom cap j a) j)
+        (andCom (batName j) (cluName j) (batName j))))
+
 /-- The padded enumeration of the batch **inside the cluster**, as an
 array of exactly `mb` entries: the vertices the batch and the cluster
 both mark, in vertex order, then the first entry repeated. The

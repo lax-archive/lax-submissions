@@ -1,5 +1,6 @@
 import Lax3Proofs.RamDriverCluster
 import Lax3Proofs.RamDriverFrames
+import Lax3Proofs.Refine.DriverCache
 import Lax3Proofs.Refine.MassWeight
 
 /-!
@@ -183,6 +184,7 @@ open Lax3Proofs.Horizon Lax3Proofs.SyntaxLemmas Lax3Proofs.WalkDistance
 open Lax3Proofs.FormulaTables Lax3Proofs.SplitterWin Lax3Proofs.SplitterWinRec
 open Lax3Proofs.RamBfs (masked masked_adj CsrGraph MAdj WD)
 open Lax3Proofs.RamDriver Lax3Proofs.RamDriverCluster
+open Lax3Proofs.Refine.DriverCache
 open Lax3Proofs.Refine.MassMath (blockSize)
 open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Reasoning.Lib
 
@@ -4262,10 +4264,10 @@ section Scalars
 /-- The counters of the descent's passes: the flat passes' `i`, the
 block scans' `p`/`pend` and `j`/`jend`, the expansion's `z`/`hit`/`w`,
 the search's queue and relaxation scalars, and the extraction's
-`cur`/`pl`/`plen`. -/
+`cur`/`pl`/`plen`; `pc`/`pi` are the cached parent pointer and counter. -/
 def descendScalars : List String :=
   ["i", "p", "pend", "z", "hit", "j", "jend", "w", "src", "tv", "tail", "head",
-    "sc", "v", "dv", "dn", "cur", "pl", "plen", "bq", "mk", "mv"]
+    "sc", "v", "dv", "dn", "cur", "pl", "plen", "pc", "pi", "bq", "mk", "mv"]
 
 theorem wvars_andCom (a b dst : String) : (andCom a b dst).wvars = ["i", "i"] :=
   RamDriverIO.wvars_fillCom _ _
@@ -4284,6 +4286,21 @@ theorem mem_wvars_ancestorStep_zero :
 theorem mem_wvars_ancestorStep {cap j a : ℕ} {y : String}
     (h : y ∈ (ancestorStep cap j a).wvars) : y ∈ descendScalars :=
   mem_wvars_ancestorStep_zero y (by rwa [wvars_ancestorStep] at h)
+
+theorem wvars_markParentsCom (cap j a : ℕ) :
+    (markParentsCom cap j a).wvars = (markParentsCom 0 0 0).wvars := rfl
+
+theorem mem_wvars_markParentsCom_zero :
+    ∀ y ∈ (markParentsCom 0 0 0).wvars, y ∈ descendScalars := by decide
+
+theorem mem_wvars_markParentsCom {cap j a : ℕ} {y : String}
+    (h : y ∈ (markParentsCom cap j a).wvars) : y ∈ descendScalars :=
+  mem_wvars_markParentsCom_zero y (by rwa [wvars_markParentsCom] at h)
+
+theorem bq_notMem_wvars_markParentsCom (cap j a : ℕ) :
+    "bq" ∉ (markParentsCom cap j a).wvars := by
+  rw [wvars_markParentsCom]
+  decide
 
 theorem wvars_clusterLoad (j : ℕ) : (clusterLoad j).wvars = (clusterLoad 0).wvars := rfl
 
@@ -4806,6 +4823,128 @@ theorem batchFold_spec {B cap mb j : ℕ} (hcsr : CsrGraph G ns O T) (hnt : ns �
     refine ⟨σ₂, _, hrun, by ring_nf; omega, henv₂, ?_⟩
     have hre : s + 1 + r = s + (r + 1) := by omega
     rwa [hre] at hmk₂
+
+/-! #### The cached fold -/
+
+theorem warrs_markParentsCom (cap j a : ℕ) :
+    (markParentsCom cap j a).warrs = [batName j] := rfl
+
+/-- A cached parent walk changes only the batch array and its three local
+scalars, so all retained cache records cross it. -/
+theorem cachedRounds_markParents_run {B K cap j a : ℕ} {M : ℕ → ℕ} {σ σ' : Env}
+    (h : CachedRounds cap G j M σ) (hrun : Run B (markParentsCom cap j a) σ σ' K) :
+    CachedRounds cap G j M σ' := by
+  refine h.congr ?_ ?_ ?_ ?_
+  · intro b hb
+    rw [hrun.frame_var (ctrName b) (by
+      simp [markParentsCom, markParentStep, Com.wvars, ctrName, String.ext_iff])]
+  · intro b hb
+    rw [hrun.frame_arr (resName b) (by
+      rw [warrs_markParentsCom]
+      simp [resName, batName, String.ext_iff])]
+  · intro b hb
+    rw [hrun.frame_arr (gamName b) (by
+      rw [warrs_markParentsCom]
+      simp [gamName, batName, String.ext_iff])]
+  · intro b hb
+    rw [hrun.frame_arr (parName b) (by
+      rw [warrs_markParentsCom]
+      simp [parName, balName, batName, String.ext_iff])]
+
+/-- **The fold now consumes retained trees.** Every turn adds at most one
+capped parent chain and obtains its walk by mapping the cached tree's
+walk into the game mask recorded for that round. -/
+theorem batchCachedFold_spec {B cap mb j : ℕ} {d : ℕ}
+    (hB : WordBoundK B n d ns cap mb) {U : ℕ → Fin n} {Gam : ℕ → ℕ → ℕ}
+    {M : ℕ → ℕ} {v : Fin n} (hMv : M (v : ℕ) ≠ 0) :
+    ∀ (r s : ℕ), s + r ≤ j →
+      Spec B (fun σ => BatchEnv cap nt j O T U Gam v σ ∧
+          CachedRounds cap G j M σ ∧ BatchMark cap j G U Gam v s σ)
+        (foldRange (fun b => markParentsCom cap j (s + b)) r)
+        (fun _ σ' => BatchEnv cap nt j O T U Gam v σ' ∧
+          CachedRounds cap G j M σ' ∧ BatchMark cap j G U Gam v (s + r) σ')
+        (markParentsK cap * r + 1) := by
+  have hnB := hB.n_lt
+  have h1B := hB.one_lt
+  have hdB : 2 * cap + 1 < B := by have := hB.1; omega
+  intro r
+  induction r with
+  | zero =>
+      intro s _
+      exact Spec.of_exists (fun σ hσ => ⟨σ, 1, Run.skip, by omega, hσ.1, hσ.2.1, hσ.2.2⟩)
+  | succ r ih =>
+      intro s hsr
+      have hsj : s < j := by omega
+      refine Spec.of_exists (fun σ hσ => ?_)
+      obtain ⟨henv, hcache, Wa, hbat, hbit, hvW, hcard, hwalk⟩ := hσ
+      obtain ⟨hn, hoff, htgt, halv, hdist, hq, hpar, hpath, hctrj, hctr, hgam⟩ := henv
+      obtain ⟨u, R, Ga, D, P, hctra, hresa, hgama, hpara, hT, hRG, hdt⟩ :=
+        hcache.target hsj v.isLt hMv
+      have hu : u = U s := by
+        apply Fin.ext
+        rw [← hctra, hctr s hsj]
+      subst u
+      have hGaEq : ∀ z, z < n → Ga z = Gam s z := by
+        intro z hz
+        apply eq_of_arrOf_eq (N := n) (by rw [← hgama, ← hgam s hsj]) hz
+      have hle : masked G R ≤ masked G (Gam s) := by
+        intro x y hxy
+        rw [masked_adj] at hxy ⊢
+        exact ⟨hxy.1, by rw [← hGaEq _ x.isLt]; exact hRG _ x.isLt hxy.2.1,
+          by rw [← hGaEq _ y.isLt]; exact hRG _ y.isLt hxy.2.2⟩
+      obtain ⟨σ₁, hr₁, Wa', hbat₁, hbit₁, hmark₁, hcard₁, p, hp, hpsup⟩ :=
+        (markParentsCom_spec (j := j) (a := s) hT (U s).isLt v.isLt hdt hnB hdB h1B
+          hbit).run (σ := σ) ⟨hctrj, hpara, hbat⟩
+      have henv₁ : BatchEnv cap nt j O T U Gam v σ₁ :=
+        batchEnv_run ⟨hn, hoff, htgt, halv, hdist, hq, hpar, hpath, hctrj, hctr, hgam⟩ hr₁
+          (fun _ hy => mem_wvars_markParentsCom hy)
+          (fun b hb => Or.inl (by
+            rw [warrs_markParentsCom] at hb
+            exact List.eq_of_mem_singleton hb))
+      have hcache₁ : CachedRounds cap G j M σ₁ := cachedRounds_markParents_run hcache hr₁
+      let p' : (masked G (Gam s)).Walk (U s) v := p.mapLe hle
+      have hp' : p'.length ≤ 2 * cap := by
+        exact (SimpleGraph.Walk.length_map _ p).le.trans hp
+      have hpsup' : {z : Fin n | z ∈ p'.support} =
+          RamBfsPaths.bufSet n (2 * cap) (RamBfsPaths.parIter P (v : ℕ)) := by
+        rw [show p' = p.mapLe hle by rfl,
+          SimpleGraph.Walk.support_mapLe_eq_support hle p, hpsup]
+      have hsub : markSet n Wa ⊆ markSet n Wa' := by
+        rw [hmark₁]
+        exact Set.subset_union_left
+      have hmk₁ : BatchMark cap j G U Gam v (s + 1) σ₁ := by
+        refine ⟨Wa', hbat₁, hbit₁, hsub hvW, ?_, ?_⟩
+        · rw [hmark₁]
+          calc (markSet n Wa ∪ RamBfsPaths.bufSet n (2 * cap)
+                    (RamBfsPaths.parIter P (v : ℕ))).ncard ≤
+                (markSet n Wa).ncard +
+                  (RamBfsPaths.bufSet n (2 * cap)
+                    (RamBfsPaths.parIter P (v : ℕ))).ncard := Set.ncard_union_le _ _
+            _ ≤ (1 + s * (2 * cap + 1)) + (2 * cap + 1) := Nat.add_le_add hcard hcard₁
+            _ = 1 + (s + 1) * (2 * cap + 1) := by ring
+        · intro a ha hwd
+          rcases Nat.lt_or_ge a s with has | has
+          · obtain ⟨q, hq, hqs⟩ := hwalk a has hwd
+            exact ⟨q, hq, subset_trans hqs hsub⟩
+          · have hae : a = s := by omega
+            subst hae
+            exact ⟨p', hp', by rw [hmark₁, hpsup']; exact Set.subset_union_right⟩
+      have hshift : (fun b => markParentsCom cap j (s + (b + 1))) =
+          (fun b => markParentsCom cap j (s + 1 + b)) := by
+        funext b
+        congr 1
+        omega
+      obtain ⟨σ₂, hr₂, henv₂, hcache₂, hmk₂⟩ :=
+        (ih (s + 1) (by omega)).run (σ := σ₁) ⟨henv₁, hcache₁, hmk₁⟩
+      have hr₂' : Run B (foldRange (fun b => markParentsCom cap j (s + (b + 1))) r) σ₁ σ₂
+          (markParentsK cap * r + 1) := by rw [hshift]; exact hr₂
+      have hrun : Run B (foldRange (fun b => markParentsCom cap j (s + b)) (r + 1)) σ σ₂
+          (markParentsK cap + (markParentsK cap * r + 1)) := by
+        rw [foldRange_succ]
+        exact hr₁.seq hr₂'
+      refine ⟨σ₂, _, hrun, by ring_nf; omega, henv₂, hcache₂, ?_⟩
+      have hre : s + 1 + r = s + (r + 1) := by omega
+      rwa [hre] at hmk₂
 
 /-- The cost of the batch phase. -/
 def batchCost (n ns cap j : ℕ) : ℕ := ancestorCost n ns cap * j + 26 * n + 16
