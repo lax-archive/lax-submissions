@@ -2,6 +2,7 @@ import Lax3Proofs.RamDriverClusterMember
 import Lax3Proofs.RamDriverDescend
 import Lax3Proofs.RamDriverWrites
 import Lax3Proofs.Refine.KillListWalk
+import Lax3Proofs.Refine.ScatterDeadTurn
 
 /-!
 # Executable adapters for active-cover driver phases
@@ -16,14 +17,17 @@ namespace Lax3Proofs.RamDriverMemberPhases
 
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.Locality Lax3.ScatterSentences
 open Lax3Proofs.FormulaTables
+open Lax3Proofs.RamBfs (masked CsrGraph)
 open Lax3Proofs.RamDriver
 open Lax3Proofs.RamDriverBot
 open Lax3Proofs.RamDriverCluster
 open Lax3Proofs.RamDriverMember
 open Lax3Proofs.RamDriverClusterMember
 open Lax3Proofs.RamDriverDescend
+open Lax3Proofs.RamDriverFrames
 open Lax3Proofs.Refine
 open Lax3Proofs.Refine.KillPass
+open Lax3Proofs.Refine.ScatterDeadTurn
 open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Reasoning.Lib
 
 variable {n : ℕ}
@@ -526,5 +530,474 @@ theorem killStepA
     rw [hcell, hbiff]
     exact (DeadRow.sat_bot_of_dead₁ (G := G) hdead
       (hlocal _ (List.getElem_mem hi))).symm
+
+/-! ## Dead-aware scatter fold -/
+
+/-- The state read by the scatter engine, retaining only an active cover. -/
+def ScatPreA (B q q_top cap mb ns Ws j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    {n : ℕ} (G : SimpleGraph (Fin n)) (O T M Gm : ℕ → ℕ)
+    (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n))
+    (centre Xoff Xmem asg : ℕ → ℕ) (m : ℕ) (X W : Set (Fin n))
+    (w : Fin mb → Fin n) (Alv' Gam' : ℕ → ℕ) (C' : ℕ → ℕ → ℕ)
+    (σ : Env) : Prop :=
+  TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre Xoff Xmem asg m σ ∧
+    ClusterData n mb j B G M X W w Alv' Gam' σ ∧
+    (∀ c < sigL cap mb (j + 1), σ.arrs (colName (j + 1) c) = arrOf n (C' c)) ∧
+    (∀ c < sigL cap mb (j + 1), ∀ v < n, C' c v ≤ 1) ∧
+    colRead n C' (sigL cap mb (j + 1)) =
+      stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w ∧
+    TableInvOn q_top cap mb φ G (j + 1) Alv' C' (rowDom M Alv' X W) σ
+
+variable {B q q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.FirstOrder.FO 0}
+  {G : SimpleGraph (Fin n)} {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ}
+  {π : Equiv.Perm (Fin n)} {centre Xoff Xmem asg : ℕ → ℕ} {m : ℕ}
+  {X W : Set (Fin n)} {w : Fin mb → Fin n} {Alv' Gam' : ℕ → ℕ}
+  {C' : ℕ → ℕ → ℕ} {σ : Env}
+
+theorem ScatPreA.n_eq
+    (h : ScatPreA (n := n) B q q_top cap mb ns Ws j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ) : σ.vars "n" = n := h.1.level.1
+
+theorem ScatPreA.off
+    (h : ScatPreA (n := n) B q q_top cap mb ns Ws j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ) : σ.arrs "off" = arrOf (n + 1) O := h.1.level.2.1
+
+theorem ScatPreA.tgt
+    (h : ScatPreA (n := n) B q q_top cap mb ns Ws j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ) : σ.arrs "tgt" = arrOf Ws T := h.1.level.2.2.1
+
+theorem ScatPreA.mem
+    (h : ScatPreA (n := n) B q q_top cap mb ns Ws j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ) : LevelMem B n cap mb σ :=
+  h.1.level.2.2.2.2.2.2.2.2.2.1
+
+theorem ScatPreA.nsW
+    (h : ScatPreA (n := n) B q q_top cap mb ns Ws j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ) : ns ≤ Ws :=
+  h.1.level.2.2.2.2.2.2.2.2.2.2.2.2.1.1
+
+theorem ScatPreA.data
+    (h : ScatPreA (n := n) B q q_top cap mb ns Ws j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ) : ClusterData n mb j B G M X W w Alv' Gam' σ := h.2.1
+
+/-- The active scatter state survives every engine call. -/
+theorem ScatPreA.run {c : Com} {σ σ' : Env} {K : ℕ}
+    (h : ScatPreA (n := n) B q q_top cap mb ns Ws j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ)
+    (hrun : Run B c σ σ' K)
+    (hA : ∀ a ∈ c.warrs, a ∈ scratchArrs ∨ BbExt a)
+    (hV : ∀ y ∈ ["n", "m", "lw"], y ∉ c.wvars)
+    (hVctr : ∀ a : ℕ, ctrName a ∉ c.wvars) (hVxp : xpName j ∉ c.wvars)
+    (hVmm : ∀ a : ℕ, mnumName a ∉ c.wvars) :
+    ScatPreA (n := n) B q q_top cap mb ns Ws j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ' := by
+  have hfa : ∀ a : String, a ∉ scratchArrs → ¬ BbExt a →
+      σ'.arrs a = σ.arrs a :=
+    fun a ha hb => hrun.frame_arr a (fun hm => (hA a hm).elim ha hb)
+  have hfv : ∀ y : String, y ∉ c.wvars → σ'.vars y = σ.vars y :=
+    fun y hy => hrun.frame_var y hy
+  obtain ⟨hturn, hdata, hcolarr, hcolbit, hcolread, htab⟩ := h
+  have hlev' : LevelPre B n cap mb ns Ws O T j M Gm C σ' :=
+    levelPre_congr hturn.level hrun
+      (hfv "n" (hV "n" (by simp))) (hfv "m" (hV "m" (by simp)))
+      (hfv "lw" (hV "lw" (by simp)))
+      (hfa "off" (by decide) not_bbExt_off) (hfa "tgt" (by decide) not_bbExt_tgt)
+      (hfa _ (alvName_notMem_scratchArrs j) (not_bbExt_alvName j))
+      (hfa _ (gamName_notMem_scratchArrs j) (not_bbExt_gamName j))
+      (fun c hc => hfa _ (colName_notMem_scratchArrs j c) (not_bbExt_colName j c))
+      (fun a ha => by
+        simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
+        rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+        · exact hfa _ (by decide) not_bbExt_elm
+        · exact hfa _ (by decide) not_bbExt_bh
+        · exact hfa _ (by decide) not_bbExt_ooff
+        · exact hfa _ (by decide) not_bbExt_noff
+        · exact hfa _ (by decide) not_bbExt_stf
+        · exact hfa _ (by decide) not_bbExt_sta
+        · exact hfa _ (by decide) not_bbExt_std
+        · exact hfa _ (by decide) not_bbExt_ste)
+      (hfa _ (memName_notMem_scratchArrs j) (not_bbExt_memName j))
+      (hfv _ (hVmm j))
+  have hturn' : TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre Xoff Xmem asg m
+      σ' :=
+    { level := hlev'
+      play := hturn.play.congr (fun a _ => hfv _ (hVctr a))
+        (fun a _ => hfa _ (resName_notMem_scratchArrs a) (not_bbExt_resName a))
+        (fun a _ => hfa _ (gamName_notMem_scratchArrs a) (not_bbExt_gamName a))
+        (fun a _ => hfa _ (parName_notMem_scratchArrs a) (not_bbExt_parName a))
+      held := hturn.held.congr
+        (hfa _ (by simp [ordName, scratchArrs, String.ext_iff]) (not_bbExt_ordName j))
+        (hfa _ (by simp [xofName, scratchArrs, String.ext_iff]) (not_bbExt_xofName j))
+        (hfa _ (by simp [xmmName, scratchArrs, String.ext_iff]) (not_bbExt_xmmName j))
+        (hfa _ (by simp [asgName, scratchArrs, String.ext_iff]) (not_bbExt_asgName j))
+        (hfv _ hVxp) }
+  refine ⟨hturn', ⟨?_, hdata.2⟩, ?_, hcolbit, hcolread, ?_⟩
+  · exact RamDriverDescend.batchData_congr hdata.1
+      (hfa _ (cluName_notMem_scratchArrs j) (not_bbExt_cluName j))
+      (hfa _ (batName_notMem_scratchArrs j) (not_bbExt_batName j))
+      (hfa _ (resName_notMem_scratchArrs j) (not_bbExt_resName j))
+      (hfa _ (alvName_notMem_scratchArrs (j + 1)) (not_bbExt_alvName (j + 1)))
+      (hfa _ (gamName_notMem_scratchArrs (j + 1)) (not_bbExt_gamName (j + 1)))
+      (hfa _ (memName_notMem_scratchArrs (j + 1)) (not_bbExt_memName (j + 1)))
+      (hfv _ (hVmm (j + 1)))
+  · intro c hc
+    rw [hfa _ (colName_notMem_scratchArrs (j + 1) c)
+      (not_bbExt_colName (j + 1) c)]
+    exact hcolarr c hc
+  · intro i hi
+    obtain ⟨Tb, hTb, hTb1, hTbS⟩ := htab i hi
+    exact ⟨Tb, by rw [hfa _ (tabName_notMem_scratchArrs (j + 1) i)
+      (not_bbExt_tabName (j + 1) i)]; exact hTb, hTb1, hTbS⟩
+
+/-- The active dead-aware phase precondition. -/
+def DeadPreA (B q q_top cap mb ns Ws ℓ j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    {n : ℕ} (G : SimpleGraph (Fin n)) (O T M Gm : ℕ → ℕ)
+    (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n))
+    (centre Xoff Xmem asg : ℕ → ℕ) (m : ℕ) (X W : Set (Fin n))
+    (w : Fin mb → Fin n) (Alv' Gam' : ℕ → ℕ) (C' : ℕ → ℕ → ℕ)
+    (σ : Env) : Prop :=
+  ScatPreA (n := n) B q q_top cap mb ns Ws j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ ∧
+    KillListAt mb j M X W σ ∧ BaseArrs B q_top cap mb ℓ φ σ
+
+theorem DeadPreA.run {c : Com} {σ σ' : Env} {K : ℕ}
+    (h : DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ)
+    (hrun : Run B c σ σ' K)
+    (hA : ∀ a ∈ c.warrs, a ∈ scratchArrs ∨ BbExt a)
+    (hkl : klName j ∉ c.warrs)
+    (hV : ∀ y ∈ ["n", "m", "lw"], y ∉ c.wvars)
+    (hVctr : ∀ a : ℕ, ctrName a ∉ c.wvars) (hVxp : xpName j ∉ c.wvars)
+    (hVmm : ∀ a : ℕ, mnumName a ∉ c.wvars) (hVkk : kkName j ∉ c.wvars) :
+    DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ' := by
+  obtain ⟨hpre, ⟨kl, kq, hklA, hkkV, hkqmb, hkllt, hklinj, hklsnd, hklcmp⟩,
+    hbarr⟩ := h
+  exact ⟨hpre.run hrun hA hV hVctr hVxp hVmm,
+    ⟨kl, kq, by rw [hrun.frame_arr _ hkl]; exact hklA,
+      by rw [hrun.frame_var _ hVkk]; exact hkkV, hkqmb, hkllt, hklinj, hklsnd,
+      hklcmp⟩, hbarr.run hrun⟩
+
+theorem DeadPreA.run_scatDead {L ti : ℕ} {β : DistFO L 1} {r t : ℕ}
+    {σ σ' : Env} {K : ℕ}
+    (h : DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ)
+    (hloc : IsLocal β) (hrun : Run B (scatDeadCom j ti β r t) σ σ' K) :
+    DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ' := by
+  refine h.run hrun (fun a ha => ?_) (fun ha => ?_) (fun y hy => ?_)
+    (fun a => ?_) ?_ (fun a => ?_) ?_
+  · rcases RamDriverWrites.warrs_scatDeadCom j ti β r t hloc ha with hm | hm
+    · refine Or.inl ?_
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hm
+      rcases hm with rfl | rfl | rfl | rfl | rfl | rfl <;> simp [scratchArrs]
+    · exact Or.inr hm
+  · rcases RamDriverWrites.warrs_scatDeadCom j ti β r t hloc ha with hm | hm
+    · revert hm
+      simp [klName, String.ext_iff]
+    · exact not_ext_bb_klName j hm
+  · simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+    rcases hy with rfl | rfl | rfl
+    · exact notMem_wvars_scatDeadCom_lit hloc (by decide) (by decide)
+        (not_ext_bb_short (by decide)) (fun k => by simp [envName, String.ext_iff])
+    · exact notMem_wvars_scatDeadCom_lit hloc (by decide) (by decide)
+        (not_ext_bb_short (by decide)) (fun k => by simp [envName, String.ext_iff])
+    · exact notMem_wvars_scatDeadCom_lit hloc (by decide) (by decide)
+        (not_ext_bb_of_cons rfl (by decide)) (fun k => by simp [envName, String.ext_iff])
+  · exact notMem_wvars_scatDeadCom_lit hloc
+      (RamDriverIO.notMem_of_append (p := "ctr") (s := toString a) (by decide))
+      (RamDriverIO.notMem_of_append (p := "ctr") (s := toString a) (by decide))
+      (not_ext_bb_ctrName a) (fun k => by simp [ctrName, envName, String.ext_iff])
+  · exact notMem_wvars_scatDeadCom_lit hloc
+      (RamDriverIO.notMem_of_append (p := "xq") (s := toString j) (by decide))
+      (RamDriverIO.notMem_of_append (p := "xq") (s := toString j) (by decide))
+      (not_ext_bb_xpName j) (fun k => by simp [xpName, envName, String.ext_iff])
+  · exact notMem_wvars_scatDeadCom_lit hloc (by simp [mnumName, String.ext_iff])
+      (by simp [mnumName, String.ext_iff]) (ScatterDeadTurn.not_ext_bb_mnumName a)
+      (fun k => by simp [mnumName, envName, String.ext_iff])
+  · exact notMem_wvars_scatDeadCom_lit hloc
+      (RamDriverIO.notMem_of_append (p := "kq") (s := toString j) (by decide))
+      (RamDriverIO.notMem_of_append (p := "kq") (s := toString j) (by decide))
+      (not_ext_bb_kkName j) (fun k => by simp [kkName, envName, String.ext_iff])
+
+theorem DeadPreA.run_flag {i k : ℕ} {σ σ' : Env} {K : ℕ}
+    (h : DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ)
+    (hrun : Run B (.assign (flgName j i k) (.var "flag")) σ σ' K) :
+    DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ' := by
+  have hne : ∀ {p : String}, '_' ∉ p.toList → ∀ a : ℕ,
+      p ++ toString a ∉ (Com.assign (flgName j i k) (.var "flag")).wvars := by
+    intro p hp a hm
+    simp only [Com.wvars, List.mem_cons, List.not_mem_nil, or_false] at hm
+    exact underscore_notMem_prefixed hp a (hm ▸ underscore_mem_flgName j i k)
+  refine h.run hrun (fun a ha => absurd ha (by simp [Com.warrs]))
+    (by simp [Com.warrs]) (fun y hy => ?_) (fun a => hne (by decide) a)
+    (hne (by decide) j) (fun a => hne (by decide) a) (hne (by decide) j)
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+  simp only [Com.wvars, List.mem_cons, List.not_mem_nil, or_false]
+  rcases hy with rfl | rfl | rfl <;>
+    exact flgName_ne_lit j i k (by decide) ∘ Eq.symm
+
+/-- The active precondition exposes the same cover-independent view. -/
+theorem DeadPreA.view
+    (h : DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' σ) :
+    DeadView B q_top cap mb ns Ws ℓ j φ G O T M C X W w Alv' Gam' C' σ := by
+  obtain ⟨hpre, hklist, hbarr⟩ := h
+  exact
+    { n_eq := hpre.n_eq
+      off := hpre.off
+      tgt := hpre.tgt
+      mem := hpre.mem
+      nsW := hpre.nsW
+      data := hpre.data
+      col_arr := hpre.2.2.1
+      col_bit := hpre.2.2.2.1
+      col_read := hpre.2.2.2.2.1
+      table := hpre.2.2.2.2.2
+      kill_list := hklist
+      base_arrs := hbarr }
+
+open Classical in
+/-- One dead-aware scatter atom on the active-cover precondition. -/
+theorem scatDeadSpecA {bw nb : ℕ}
+    (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
+    (hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0)
+    (hbud : ∀ r : ℕ, ScatterBlock.BallBudget n r G Alv' O bw nb)
+    {σs : ScatterSentence (sigL cap mb (j + 1))}
+    (hβ : σs.β ∈ tablesAt q_top cap mb φ (j + 1)) (hloc : IsLocal σs.β)
+    (hrB : σs.r + 1 < B) (htB : σs.t + n + mb < B)
+    {Kb : ℕ} (hKb : ScatterDeadPass.scatDeadKX σs.β n X.ncard mb bw nb σs.t ≤ Kb) :
+    Spec B (DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre
+        Xoff Xmem asg m X W w Alv' Gam' C')
+      (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1))) σs.β σs.r σs.t)
+      (fun σ σ' => DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π
+          centre Xoff Xmem asg m X W w Alv' Gam' C' σ' ∧ σ'.out = σ.out ∧
+        σ'.vars (curName j) = σ.vars (curName j) ∧
+        (∀ i' k', σ'.vars (flgName j i' k') = σ.vars (flgName j i' k')) ∧
+        σ'.vars "flag" ≤ 1 ∧
+        (σ'.vars "flag" ≠ 0 ↔ ScatVal (stepArenaP (masked G M) X w)
+          (stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w) σs))
+      Kb := by
+  refine scatDead_specCore hcsr hB hXalive hbud hβ hloc hrB htB hKb
+    (fun h => h.view) ?_
+  intro σ σ' K h hr
+  exact h.run_scatDead hloc hr
+
+open Classical in
+/-- One active-cover scatter atom and its stored flag. -/
+theorem atomDeadSpecA {bw nb : ℕ}
+    (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
+    (hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0)
+    (hbud : ∀ r : ℕ, ScatterBlock.BallBudget n r G Alv' O bw nb)
+    (i k : ℕ) {σs : ScatterSentence (sigL cap mb (j + 1))}
+    (hβ : σs.β ∈ tablesAt q_top cap mb φ (j + 1)) (hloc : IsLocal σs.β)
+    (hrB : σs.r + 1 < B) (htB : σs.t + n + mb < B)
+    {Kb : ℕ} (hKb : deadAtomKX σs.β n X.ncard mb bw nb σs.t ≤ Kb) :
+    Spec B (DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre
+        Xoff Xmem asg m X W w Alv' Gam' C')
+      (.seq (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1)))
+          σs.β σs.r σs.t)
+        (.assign (flgName j i k) (.var "flag")))
+      (fun σ σ' => DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π
+          centre Xoff Xmem asg m X W w Alv' Gam' C' σ' ∧ σ'.out = σ.out ∧
+        σ'.vars (curName j) = σ.vars (curName j) ∧
+        (∀ i' k', ¬ (i' = i ∧ k' = k) →
+          σ'.vars (flgName j i' k') = σ.vars (flgName j i' k')) ∧
+        σ'.vars (flgName j i k) ≤ 1 ∧
+        (σ'.vars (flgName j i k) ≠ 0 ↔ ScatVal (stepArenaP (masked G M) X w)
+          (stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w) σs))
+      Kb := by
+  classical
+  have hcur : curName j ≠ flgName j i k := fun h =>
+    underscore_notMem_prefixed (p := "cu") (by decide) j
+      (h ▸ (underscore_mem_flgName j i k : '_' ∈ (flgName j i k).toList) :
+        '_' ∈ (curName j).toList)
+  refine Spec.of_exists fun σ hσ => ?_
+  obtain ⟨τ, hrτ, hdead, hout, hcurτ, hflgfr, hfl1, hfliff⟩ :=
+    (scatDeadSpecA hcsr hB hXalive hbud hβ hloc hrB htB (le_refl _)).run hσ
+  have hflagB : τ.vars "flag" < B := lt_of_le_of_lt hfl1 hB.one_lt
+  have r2 : Run B (.assign (flgName j i k) (.var "flag")) τ
+      (τ.setVar (flgName j i k) (τ.vars "flag")) (1 + (Expr.var "flag").size) :=
+    Run.assign (evalB_var hflagB)
+  refine ⟨_, _, hrτ.seq r2, ?_, hdead.run_flag r2, ?_, ?_, ?_, ?_, ?_⟩
+  · refine le_trans ?_ hKb
+    rw [deadAtomKX]
+    simp only [Expr.size]
+    omega
+  · rw [out_setVar]
+    exact hout
+  · rw [vars_setVar, if_neg hcur]
+    exact hcurτ
+  · intro i' k' hik
+    rw [vars_setVar, if_neg (fun hc => hik (by
+      obtain ⟨-, hi, hk⟩ := flgName_inj hc
+      exact ⟨hi, hk⟩))]
+    exact hflgfr i' k'
+  · rw [vars_setVar, if_pos rfl]
+    exact hfl1
+  · rw [vars_setVar, if_pos rfl]
+    exact hfliff
+
+open Classical in
+/-- The active-cover scatter atoms of one tabled formula. -/
+theorem atomsDeadSpecA {bw nb : ℕ}
+    (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
+    (hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0)
+    (hbud : ∀ r : ℕ, ScatterBlock.BallBudget n r G Alv' O bw nb)
+    (i : ℕ) {Kb : ℕ} :
+    ∀ (l : List (ScatterSentence (sigL cap mb (j + 1)))) (k0 : ℕ),
+      (∀ σs ∈ l, σs.β ∈ tablesAt q_top cap mb φ (j + 1) ∧ σs.r + 1 < B ∧
+        σs.t + n + mb < B ∧ deadAtomKX σs.β n X.ncard mb bw nb σs.t ≤ Kb) →
+      Spec B (DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre
+          Xoff Xmem asg m X W w Alv' Gam' C')
+        (foldIdx (fun k σs =>
+            Com.seq (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1)))
+              σs.β σs.r σs.t) (.assign (flgName j i k) (.var "flag"))) k0 l)
+        (fun σ σ' => DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π
+            centre Xoff Xmem asg m X W w Alv' Gam' C' σ' ∧ σ'.out = σ.out ∧
+          σ'.vars (curName j) = σ.vars (curName j) ∧
+          (∀ i' k', (i' ≠ i ∨ ∀ p < l.length, k' ≠ k0 + p) →
+            σ'.vars (flgName j i' k') = σ.vars (flgName j i' k')) ∧
+          ∀ p, ∀ _ : p < l.length,
+            σ'.vars (flgName j i (k0 + p)) ≤ 1 ∧
+            (σ'.vars (flgName j i (k0 + p)) ≠ 0 ↔
+              ScatVal (stepArenaP (masked G M) X w)
+                (stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w) l[p]))
+        (Kb * l.length + 1) := by
+  intro l
+  induction l with
+  | nil =>
+      intro k0 _
+      refine (Spec.skip (B := B) (P := DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G
+        O T M Gm C π centre Xoff Xmem asg m X W w Alv' Gam' C')).post ?_ |>.mono (by simp)
+      rintro σ σ' hσ rfl
+      exact ⟨hσ, rfl, rfl, fun _ _ _ => rfl, fun p hp => absurd hp (by simp)⟩
+  | cons x xs ih =>
+      intro k0 hall
+      obtain ⟨hxβ, hxr, hxt, hxK⟩ := hall x (by simp)
+      refine ((atomDeadSpecA hcsr hB hXalive hbud i k0 hxβ
+        (tableRank_of_mem_tablesAt (j + 1) _ hxβ).1 hxr hxt hxK).seq
+        (ih (k0 + 1) (fun s hs => hall s (by simp [hs]))) (fun _ _ _ hq => hq.1) ?_).mono
+        (by simp [Nat.mul_succ]; omega)
+      rintro σ σ' σ'' - ⟨-, hout', hc', hfl', hle', hval'⟩
+        ⟨hpre'', hout'', hc'', hfl'', hval''⟩
+      refine ⟨hpre'', by rw [hout'', hout'], by rw [hc'', hc'], ?_, ?_⟩
+      · intro i' k' hik
+        rw [hfl'' i' k' ?_, hfl' i' k' ?_]
+        · rcases hik with h | h
+          · exact fun hc => h hc.1
+          · exact fun hc => h 0 (by simp) (by omega)
+        · rcases hik with h | h
+          · exact _root_.Or.inl h
+          · exact _root_.Or.inr fun p hp => by
+              have := h (p + 1) (by simp only [List.length_cons]; omega)
+              omega
+      · intro p hp
+        match p with
+        | 0 =>
+            rw [Nat.add_zero, hfl'' i k0 (_root_.Or.inr fun p _ => by omega)]
+            exact ⟨hle', hval'⟩
+        | r + 1 =>
+            rw [show k0 + (r + 1) = k0 + 1 + r from by omega]
+            simpa using hval'' r (by simpa using hp)
+
+set_option maxHeartbeats 1000000 in
+open Classical in
+/-- The complete active-cover scatter fold over a depth's table. -/
+theorem blocksDeadSpecA {bw nb : ℕ}
+    (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
+    (hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0)
+    (hbud : ∀ r : ℕ, ScatterBlock.BallBudget n r G Alv' O bw nb)
+    {Kb Ki : ℕ} :
+    ∀ (l : List (DistFO (sigL cap mb j) 1)) (i0 : ℕ),
+      (∀ β ∈ l, β ∈ tablesAt q_top cap mb φ j) →
+      (∀ β ∈ l, ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
+          deadAtomKX σs.β n X.ncard mb bw nb σs.t ≤ Kb) →
+      (∀ β ∈ l, Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki) →
+      Spec B (DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre
+          Xoff Xmem asg m X W w Alv' Gam' C')
+        (foldIdx (fun i β => scatterDeadCom q_top cap mb φ j i β) i0 l)
+        (fun σ σ' => DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π
+            centre Xoff Xmem asg m X W w Alv' Gam' C' σ' ∧ σ'.out = σ.out ∧
+          σ'.vars (curName j) = σ.vars (curName j) ∧
+          (∀ i' k', (∀ p < l.length, i' ≠ i0 + p) →
+            σ'.vars (flgName j i' k') = σ.vars (flgName j i' k')) ∧
+          ∀ p, ∀ hp : p < l.length,
+            ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j l[p])).2,
+              σ'.vars (flgName j (i0 + p)
+                  (posOf σs (bcAtomsOf q_top (stepFml cap mb j l[p])).2)) ≤ 1 ∧
+              (σ'.vars (flgName j (i0 + p)
+                  (posOf σs (bcAtomsOf q_top (stepFml cap mb j l[p])).2)) ≠ 0 ↔
+                ScatVal (stepArenaP (masked G M) X w)
+                  (stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w) σs))
+        (Ki * l.length + 1) := by
+  intro l
+  induction l with
+  | nil =>
+      intro i0 _ _ _
+      refine (Spec.skip (B := B) (P := DeadPreA (n := n) B q q_top cap mb ns Ws ℓ j φ G
+        O T M Gm C π centre Xoff Xmem asg m X W w Alv' Gam' C')).post ?_ |>.mono (by simp)
+      rintro σ σ' hσ rfl
+      exact ⟨hσ, rfl, rfl, fun _ _ _ => rfl, fun p hp => absurd hp (by simp)⟩
+  | cons x xs ih =>
+      intro i0 hmem hbnd hcost
+      have hx : x ∈ tablesAt q_top cap mb φ j := hmem x (by simp)
+      refine (((atomsDeadSpecA hcsr hB hXalive hbud i0
+          (bcAtomsOf q_top (stepFml cap mb j x)).2 0
+          (fun s hs => ⟨mem_tablesAt_succ_of_mem_bcAtomsOf_right hx hs,
+            (hbnd x (by simp) s hs).1, (hbnd x (by simp) s hs).2.1,
+            (hbnd x (by simp) s hs).2.2⟩)).mono (hcost x (by simp))).seq
+        (ih (i0 + 1) (fun β hβ => hmem β (by simp [hβ]))
+          (fun β hβ => hbnd β (by simp [hβ])) (fun β hβ => hcost β (by simp [hβ])))
+        (fun _ _ _ hq => hq.1) ?_).mono (by simp [Nat.mul_succ]; omega)
+      rintro σ σ' σ'' - ⟨-, hout', hc', hfl', hval'⟩
+        ⟨hpre'', hout'', hc'', hfl'', hval''⟩
+      refine ⟨hpre'', by rw [hout'', hout'], by rw [hc'', hc'], ?_, ?_⟩
+      · intro i' k' hik
+        rw [hfl'' i' k' (fun p hp => by
+            have := hik (p + 1) (by simp only [List.length_cons]; omega)
+            omega),
+          hfl' i' k' (_root_.Or.inl (by have := hik 0 (by simp); omega))]
+      · intro p hp
+        match p with
+        | 0 =>
+            intro σs hσs
+            simp only [List.getElem_cons_zero] at hσs ⊢
+            obtain ⟨hlt, hget⟩ := getElem_posOf hσs
+            have hb := hval' (posOf σs (bcAtomsOf q_top (stepFml cap mb j x)).2) hlt
+            rw [Nat.zero_add, hget] at hb
+            rw [Nat.add_zero, hfl'' i0 _ (fun p _ => by omega)]
+            exact hb
+        | r + 1 =>
+            intro σs hσs
+            rw [show i0 + (r + 1) = i0 + 1 + r from by omega]
+            exact hval'' r (by simpa using hp) σs (by simpa using hσs)
+
+open Classical in
+/-- The complete landed dead-aware scatter phase at the active interface. -/
+theorem scatterStepA {bw nb Kb Ki K : ℕ}
+    (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
+    (hbnd : ∀ β ∈ tablesAt q_top cap mb φ j,
+      ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
+          deadAtomKX σs.β n X.ncard mb bw nb σs.t ≤ Kb)
+    (hcost : ∀ β ∈ tablesAt q_top cap mb φ j,
+      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki)
+    (hK : Ki * (tablesAt q_top cap mb φ j).length + 1 ≤ K) :
+    ScatterStepA B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' bw nb K := by
+  intro hXalive hbud
+  refine Spec.of_exists fun σ hσ => ?_
+  obtain ⟨hturn, hdata, hcolarr, hcolbit, hcolread, htab, hklist, hbarr⟩ := hσ
+  obtain ⟨σ', hrun, hpre', hout, hc, -, hval⟩ :=
+    (blocksDeadSpecA hcsr hB hXalive hbud (tablesAt q_top cap mb φ j) 0
+      (fun _ hβ => hβ) hbnd hcost).run
+      ⟨⟨hturn, hdata, hcolarr, hcolbit, hcolread, htab⟩, hklist, hbarr⟩
+  exact ⟨σ', _, hrun, hK, hpre'.1.1, hpre'.1.2.1, hpre'.1.2.2.1,
+    hpre'.1.2.2.2.2.2, hout, hc,
+    fun i hi σs hσs => by simpa using hval i hi σs hσs⟩
 
 end Lax3Proofs.RamDriverMemberPhases
