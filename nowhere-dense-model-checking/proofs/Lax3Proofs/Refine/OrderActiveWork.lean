@@ -1,4 +1,5 @@
 import Lax3Proofs.Refine.OrderActiveCompact
+import Lax3Proofs.Refine.OrderActiveWidth
 
 /-!
 # Compacting an active arena into the order phase's resident workspace
@@ -15,13 +16,18 @@ exact live-arena charge are unchanged.
 namespace Lax3Proofs.Refine.OrderActiveWork
 
 open Lax13Proofs.Imp Lax13Proofs.Reasoning
+open Lax3Proofs.Augmentation (Orientation)
 open Lax3Proofs.RamDriver (alvName)
 open Lax3Proofs.RamDriverCluster (markSet)
-open Lax3Proofs.RamElim (CsrSimple)
+open Lax3Proofs.RamElim (CsrSimple InCsr)
+open Lax3Proofs.RamAugment (fratSlots)
 open Lax3Proofs.Refine.ScatterBlock (MemList renCom renEnv renEnv_arrs renEnv_vars
   renEnv_involutive renCom_run)
 open Lax3Proofs.Refine.ElimCompact (compactPass memRowSum)
 open Lax3Proofs.Refine.ElimCompactCsr (cOff CDone compactPass_run)
+open Lax3Proofs.Refine.AugCompact
+open Lax3Proofs.Refine.OrderActiveWidth (augCompactCom_specLive)
+open Lax3Proofs.Refine.SymCompact
 
 variable {n nt mm B : ℕ} {G : SimpleGraph (Fin n)}
 
@@ -163,8 +169,140 @@ theorem compactPassWorkAt_run (j : ℕ) {O T M Mem : ℕ → ℕ}
     rw [renEnv_arrs, hframe (f a) h₁ h₂ h₃, renEnv_arrs]
     exact congrArg σ.arrs (compactWorkSwap_invol j a)
 
+/-! ## The compact engines in the resident graph workspace -/
+
+/-- Exchange the generic engine graph names with the resident compact
+CSR.  Every other array name is fixed. -/
+def engineWorkSwap : String → String := fun z =>
+  if z = "off" then "gof"
+  else if z = "gof" then "off"
+  else if z = "tgt" then "gtg"
+  else if z = "gtg" then "tgt"
+  else z
+
+theorem engineWorkSwap_invol (z : String) : engineWorkSwap (engineWorkSwap z) = z := by
+  by_cases h0 : z = "off"
+  · subst z; simp [engineWorkSwap]
+  by_cases h1 : z = "gof"
+  · subst z; simp [engineWorkSwap]
+  by_cases h2 : z = "tgt"
+  · subst z; simp [engineWorkSwap]
+  by_cases h3 : z = "gtg"
+  · subst z; simp [engineWorkSwap]
+  simp [engineWorkSwap, h0, h1, h2, h3]
+
+@[simp] theorem engineWorkSwap_off : engineWorkSwap "off" = "gof" := by
+  simp [engineWorkSwap]
+
+@[simp] theorem engineWorkSwap_gof : engineWorkSwap "gof" = "off" := by
+  simp [engineWorkSwap]
+
+@[simp] theorem engineWorkSwap_tgt : engineWorkSwap "tgt" = "gtg" := by
+  simp [engineWorkSwap]
+
+@[simp] theorem engineWorkSwap_gtg : engineWorkSwap "gtg" = "tgt" := by
+  simp [engineWorkSwap]
+
+theorem engineWorkSwap_of_ne {a : String} (h0 : a ≠ "off") (h1 : a ≠ "gof")
+    (h2 : a ≠ "tgt") (h3 : a ≠ "gtg") : engineWorkSwap a = a := by
+  simp [engineWorkSwap, h0, h1, h2, h3]
+
+@[simp] theorem engineWorkSwap_mem : engineWorkSwap "mem" = "mem" := by
+  exact engineWorkSwap_of_ne (by decide) (by decide) (by decide) (by decide)
+
+@[simp] theorem engineWorkSwap_alv : engineWorkSwap "alv" = "alv" := by
+  exact engineWorkSwap_of_ne (by decide) (by decide) (by decide) (by decide)
+
+@[simp] theorem engineWorkSwap_ork : engineWorkSwap "ork" = "ork" := by
+  exact engineWorkSwap_of_ne (by decide) (by decide) (by decide) (by decide)
+
+@[simp] theorem engineWorkSwap_noff : engineWorkSwap "noff" = "noff" := by
+  exact engineWorkSwap_of_ne (by decide) (by decide) (by decide) (by decide)
+
+@[simp] theorem engineWorkSwap_ntg : engineWorkSwap "ntg" = "ntg" := by
+  exact engineWorkSwap_of_ne (by decide) (by decide) (by decide) (by decide)
+
+/-- The compact augmentation entry, read with its graph in `gof`/`gtg`. -/
+def AugWorkEntryC (n mm nt W kd : ℕ) (IO IT : ℕ → ℕ) (σ : Env) : Prop :=
+  AugEntryC n mm nt W kd IO IT (renEnv engineWorkSwap σ)
+
+/-- The compact symmetrization entry and answer in the resident workspace. -/
+def SymWorkEntryC (n mm nt W kd : ℕ) (IO IT T₀ : ℕ → ℕ) (σ : Env) : Prop :=
+  SymEntryC n mm nt W kd IO IT T₀ (renEnv engineWorkSwap σ)
+
+def SymWorkPost (mm nt m : ℕ) (D : Orientation mm) (T₀ : ℕ → ℕ) (σ : Env) : Prop :=
+  SymMemPost mm nt m D T₀ (renEnv engineWorkSwap σ)
+
+def augCompactWorkCom : Com := renCom engineWorkSwap augCompactCom
+
+def symCompactWorkCom : Com := renCom engineWorkSwap symCompactCom
+
+/-- One live-width augmentation round in the resident compact graph.
+The level's own `off`/`tgt` arrays are explicit frames of the result. -/
+theorem augCompactWork_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation mm}
+    {Mem IO IT : ℕ → ℕ} {X : Set (Fin n)} {σ : Env}
+    (hml : MemList n mm Mem X) (hin : InCsr D m IO IT) (hd : D.InDegLE d)
+    (hmkd : m ≤ kd) (hkdw : kd ≤ w) (hwW : w ≤ W) (hnt : fratSlots D ≤ nt)
+    (hdb : 2 * (d * d) + d ≤ db) (hwidth : augWidthE mm kd db ≤ w)
+    (hB : mm + w + 1 < B) (hnB : n < B)
+    (hIOB : ∀ i ≤ mm, IO i < B) (hITB : ∀ z < kd, IT z < B)
+    (hmem : σ.arrs "mem" = arrOf n Mem) (hent : AugWorkEntryC n mm nt W kd IO IT σ) :
+    ∃ σ'', Run B augCompactWorkCom σ σ'' (augCompactCost mm kd w + 2) ∧
+      AugMemPost mm W Mem D σ'' ∧
+      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm ∧
+      σ''.vars "n" = n ∧ σ''.arrs "off" = σ.arrs "off" ∧
+      σ''.arrs "tgt" = σ.arrs "tgt" := by
+  obtain ⟨τ, hrun, hpost, htail, hn⟩ :=
+    augCompactCom_specLive hml hin hd hmkd hkdw hwW hnt hdb hwidth hB hnB hIOB hITB
+      (by simpa only [renEnv_arrs, engineWorkSwap_mem] using hmem) hent
+  let σ'' := renEnv engineWorkSwap τ
+  have hrun' : Run B augCompactWorkCom σ σ'' (augCompactCost mm kd w + 2) := by
+    have h := renCom_run (f := engineWorkSwap) engineWorkSwap_invol hrun
+    change Run B (renCom engineWorkSwap augCompactCom) σ (renEnv engineWorkSwap τ)
+      (augCompactCost mm kd w + 2)
+    rw [← renEnv_involutive engineWorkSwap_invol σ]
+    exact h
+  refine ⟨σ'', hrun', ?_, ?_, ?_, ?_, ?_⟩
+  · simpa only [σ'', AugMemPost, renEnv_arrs, renEnv_vars, engineWorkSwap_ork,
+      engineWorkSwap_noff, engineWorkSwap_ntg] using hpost
+  · simpa only [σ'', renEnv_arrs, engineWorkSwap_alv] using htail
+  · simpa only [σ'', renEnv_vars] using hn
+  · exact hrun'.frame_arr "off" (by decide)
+  · exact hrun'.frame_arr "tgt" (by decide)
+
+/-- Symmetrize the final compact orientation into `gof`/`gtg`, restore
+the carrier, and frame the level graph. -/
+theorem symCompactWork_spec {B n mm nt W kd m : ℕ} {D : Orientation mm}
+    {IO IT T₀ : ℕ → ℕ} {σ : Env} (h1 : SymPreps B n mm nt W kd)
+    (hin : InCsr D m IO IT) (hmkd : m ≤ kd) (hkdW : kd ≤ W) (hfit : m + m ≤ nt)
+    (hnB : n < B) (hB2 : m + m < B) (hmmB : mm + 1 < B) (hkdB : kd < B)
+    (hIOB : ∀ i ≤ mm, IO i < B) (hITB : ∀ z < kd, IT z < B)
+    (hent : SymWorkEntryC n mm nt W kd IO IT T₀ σ) :
+    ∃ σ'', Run B symCompactWorkCom σ σ'' (symCompactCost mm kd + 2) ∧
+      SymWorkPost mm nt m D T₀ σ'' ∧
+      (σ''.arrs "gof").drop (mm + 1) = (σ.arrs "gof").drop (mm + 1) ∧
+      σ''.vars "n" = n ∧ σ''.arrs "off" = σ.arrs "off" ∧
+      σ''.arrs "tgt" = σ.arrs "tgt" := by
+  obtain ⟨τ, hrun, hpost, htail, hn⟩ :=
+    symCompactCom_spec h1 hin hmkd hkdW hfit hnB hB2 hmmB hkdB hIOB hITB hent
+  let σ'' := renEnv engineWorkSwap τ
+  have hrun' : Run B symCompactWorkCom σ σ'' (symCompactCost mm kd + 2) := by
+    have h := renCom_run (f := engineWorkSwap) engineWorkSwap_invol hrun
+    change Run B (renCom engineWorkSwap symCompactCom) σ (renEnv engineWorkSwap τ)
+      (symCompactCost mm kd + 2)
+    rw [← renEnv_involutive engineWorkSwap_invol σ]
+    exact h
+  refine ⟨σ'', hrun', ?_, ?_, ?_, ?_, ?_⟩
+  · simpa only [SymWorkPost, σ'', renEnv_involutive engineWorkSwap_invol] using hpost
+  · simpa only [σ'', renEnv_arrs, engineWorkSwap_gof, SymWorkEntryC] using htail
+  · simpa only [σ'', renEnv_vars] using hn
+  · exact hrun'.frame_arr "off" (by decide)
+  · exact hrun'.frame_arr "tgt" (by decide)
+
 /-! ## Axioms -/
 
 #print axioms compactPassWorkAt_run
+#print axioms augCompactWork_specLive
+#print axioms symCompactWork_spec
 
 end Lax3Proofs.Refine.OrderActiveWork

@@ -241,7 +241,10 @@ theorem augCompactCom_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation 
     simpa only [σ''] using h
   refine ⟨σ'', ?_, ?_, ?_, ?_⟩
   · exact hrun.seq hr
-  · simpa only [σ'', AugMemPost, vars_setVar, arrs_setVar, if_neg (by decide)] using hpost
+  · have hkmax : ("kmax" : String) ≠ "n" := by decide
+    have hmn : ("mn" : String) ≠ "n" := by decide
+    simpa only [σ'', AugMemPost, vars_setVar, arrs_setVar, if_neg hkmax,
+      if_neg hmn] using hpost
   · simpa only [σ'', arrs_setVar] using htail
   · simp [σ'']
 
