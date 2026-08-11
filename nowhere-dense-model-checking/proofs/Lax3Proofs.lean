@@ -141,6 +141,7 @@ import Lax3Proofs.Refine.CoverActiveBlock
 import Lax3Proofs.Refine.CoverActiveTurn
 import Lax3Proofs.Refine.CoverActiveLoop
 import Lax3Proofs.Refine.CoverActiveNamed
+import Lax3Proofs.Refine.CoverActiveInit
 import Lax3Proofs.Refine.CoverActiveRadixMath
 import Lax3Proofs.Refine.CoverActiveRadixPass
 import Lax3Proofs.Refine.CoverActiveRadixLoop
