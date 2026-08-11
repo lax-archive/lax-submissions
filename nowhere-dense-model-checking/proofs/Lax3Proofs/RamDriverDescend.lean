@@ -1,4 +1,5 @@
 import Lax3Proofs.RamDriverCluster
+import Lax3Proofs.RamDriverClusterMember
 import Lax3Proofs.RamDriverFrames
 import Lax3Proofs.Refine.DriverCache
 import Lax3Proofs.Refine.MassWeight
@@ -185,6 +186,7 @@ open Lax3Proofs.Horizon Lax3Proofs.SyntaxLemmas Lax3Proofs.WalkDistance
 open Lax3Proofs.FormulaTables Lax3Proofs.SplitterWin Lax3Proofs.SplitterWinRec
 open Lax3Proofs.RamBfs (masked masked_adj CsrGraph MAdj WD)
 open Lax3Proofs.RamDriver Lax3Proofs.RamDriverCluster
+open Lax3Proofs.RamDriverMember Lax3Proofs.RamDriverClusterMember
 open Lax3Proofs.Refine.DriverCache
 open Lax3Proofs.Refine.MassMath (blockSize)
 open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Reasoning.Lib
@@ -3461,9 +3463,14 @@ are words because the pass's exit pointer is (`hmB`). Under `WordBound`
 that came off the carrier ceiling `n * n < B`; `hm` — the arena's
 **length**, which the offsets index — is a separate clause and is
 unchanged (rebase E-mem/W2). -/
-theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m < B)
-    (hout : RamCover.CoverOut G M π ord cap m Xoff Xmem asg) (hm : m ≤ n * n)
-    (hc : c < n) :
+theorem clusterLoad_specCore {d c : ℕ} {cen : ℕ → ℕ}
+    (hB : WordBoundK B n d ns cap mb) (hmB : m < B) (hm : m ≤ n * n)
+    (hc : c < n) (hoff : Xoff c ≤ Xoff (c + 1)) (hend : Xoff (c + 1) ≤ m)
+    (hmem_lt : ∀ p < m, Xmem p < n)
+    (hblock_mono : ∀ p p', Xoff c ≤ p → p < p' → p' < Xoff (c + 1) →
+      Xmem p < Xmem p')
+    (hblock : ∀ w, (∃ p, Xoff c ≤ p ∧ p < Xoff (c + 1) ∧ Xmem p = w) ↔
+      RamCover.InCluster (masked G M) π cap (cen c) w) :
     Spec B (fun σ => σ.vars "n" = n ∧ σ.arrs (xofName j) = arrOf (n + 1) Xoff ∧
         σ.arrs (xmmName j) = arrOf (n * n) Xmem ∧ (∃ g, σ.arrs (cluName j) = arrOf n g) ∧
         (∃ g, σ.arrs (memName (j + 1)) = arrOf n g) ∧
@@ -3471,7 +3478,7 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
       (clusterLoad j)
       (fun σ σ' => ∃ Xa, σ'.arrs (cluName j) = arrOf n Xa ∧ (∀ k, k < n → Xa k ≤ 1) ∧
         markSet n Xa =
-          {v : Fin n | RamCover.InCluster (masked G M) π cap (ord (σ.vars (curName j))) (v : ℕ)} ∧
+          {v : Fin n | RamCover.InCluster (masked G M) π cap (cen (σ.vars (curName j))) (v : ℕ)} ∧
         ∃ (Mm : ℕ → ℕ) (bs : ℕ), σ'.arrs (memName (j + 1)) = arrOf n Mm ∧
           σ'.vars "bq" = bs ∧ bs = blockSize Xoff c ∧ MemEnum n bs Mm Xa)
       (24 * blockSize Xoff c + 11 * n + 26) := by
@@ -3480,8 +3487,8 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
   have h1B := hB.one_lt
   have hnB := hB.n_lt
   have hcur : σ.vars (curName j) < n := by rw [hcurEq]; exact hc
-  have hoffB : ∀ q, q ≤ n → Xoff q < B := fun q hq =>
-    lt_of_le_of_lt (coverOut_off_le hout q hq) hmB
+  have hoffcB : Xoff c < B := lt_of_le_of_lt (le_trans hoff hend) hmB
+  have hoffc1B : Xoff (c + 1) < B := lt_of_le_of_lt hend hmB
   have hclumem : cluName j ≠ memName (j + 1) := by simp [cluName, memName, String.ext_iff]
   -- the indicator, opened
   obtain ⟨σ₁, hr₁, ⟨⟨g₁, hg₁arr, hg₁val⟩, -, hn₁⟩, hfv₁, hfa₁, -, -⟩ :=
@@ -3513,7 +3520,7 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
     rwa [hcv] at h
   have hxof₁' : σ₁'.arrs (xofName j) = arrOf (n + 1) Xoff := by rw [hσ₁', arrs_setVar]; exact hxof₁
   have e₁ : (Expr.get (xofName j) (.var (curName j))).evalB B σ₁' = some (Xoff c) :=
-    evalB_get ev₁ (by rw [hxof₁', getElem?_arrOf Xoff (by omega)]) (hoffB c (by omega))
+    evalB_get ev₁ (by rw [hxof₁', getElem?_arrOf Xoff (by omega)]) hoffcB
   set σ₂ := σ₁'.setVar "p" (Xoff c) with hσ₂
   have hr₂ : Run B (.assign "p" (.get (xofName j) (.var (curName j)))) σ₁' σ₂ 3 :=
     (Run.assign e₁).mono (by simp [Expr.size])
@@ -3529,12 +3536,22 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
   have e₂ : (Expr.get (xofName j) (.add (.var (curName j)) (.lit 1))).evalB B σ₂ =
       some (Xoff (c + 1)) :=
     evalB_get ev₂ (by rw [hσ₂, arrs_setVar, hxof₁', getElem?_arrOf Xoff (by omega)])
-      (hoffB (c + 1) (by omega))
+      hoffc1B
   set σ₃ := σ₂.setVar "pend" (Xoff (c + 1)) with hσ₃
   have hr₃ : Run B (.assign "pend" (.get (xofName j) (.add (.var (curName j)) (.lit 1))))
       σ₂ σ₃ 5 := (Run.assign e₂).mono (by simp [Expr.size])
   have hrLoad : Run B (Csr.loadRow (xofName j) (curName j) "p" "pend") σ₁' σ₃ 8 := hr₂.seq hr₃
   -- one member of the block: the indicator's bit, and the emission
+  have hrow_offset : ∀ k, Xoff c + k < Xoff (c + 1) → k ≤ Xmem (Xoff c + k) := by
+    intro k
+    induction k with
+    | zero => exact fun _ => Nat.zero_le _
+    | succ i ih =>
+      intro hk
+      have h₁ : Xmem (Xoff c + i) < Xmem (Xoff c + (i + 1)) :=
+        hblock_mono _ _ (by omega) (by omega) hk
+      have h₂ := ih (by omega)
+      omega
   have hstep : ∀ ρ : Env, CluScan n j Xoff Xmem c ρ → ρ.vars "p" < Xoff (c + 1) →
       ∃ ρ' K', Run B (.seq (.store (cluName j) (.get (xmmName j) (.var "p")) (.lit 1))
           (.seq (.store (memName (j + 1)) (.var "bq") (.get (xmmName j) (.var "p")))
@@ -3544,18 +3561,18 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
     intro ρ hρ hlt
     obtain ⟨hxmmρ, hpend, hlo, -, hbq, ⟨gm, hgmarr, hgmval⟩, g, hgarr, hgbit, hgval⟩ := hρ
     have hpm : ρ.vars "p" < n * n :=
-      lt_of_lt_of_le hlt (le_trans (coverOut_off_le hout (c + 1) (by omega)) hm)
+      lt_of_lt_of_le hlt (le_trans hend hm)
     -- the scan index is an *address* into the arena, so it is a word because the
     -- pass's exit pointer is, not because the carrier is (rebase E-mem/W2)
     have hpB : ρ.vars "p" + 1 < B := by
-      have := coverOut_off_le hout (c + 1) (by omega)
+      have := hend
       omega
     have hXm : Xmem (ρ.vars "p") < n :=
-      hout.mem_lt _ (lt_of_lt_of_le hlt (coverOut_off_le hout (c + 1) (by omega)))
+      hmem_lt _ (lt_of_lt_of_le hlt hend)
     -- the write pointer is inside the child's array: the row is sorted, so the
     -- `k`-th member is at least `k` (rebase E-mem)
     have hbqle : ρ.vars "bq" ≤ Xmem (ρ.vars "p") := by
-      have h := row_offset_le hout hc (ρ.vars "p" - Xoff c) (by omega)
+      have h := hrow_offset (ρ.vars "p" - Xoff c) (by omega)
       rw [show Xoff c + (ρ.vars "p" - Xoff c) = ρ.vars "p" by omega] at h
       omega
     have hbqn : ρ.vars "bq" < n := by omega
@@ -3656,7 +3673,7 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
     obtain ⟨gm₀, hgm₀⟩ := hmem₁
     refine ⟨by rw [hσ₃, arrs_setVar, hσ₂, arrs_setVar, hσ₁', arrs_setVar]; exact hxmm₁,
       by rw [hσ₃, vars_setVar, if_pos rfl],
-      by rw [hpv], by rw [hpv]; exact hout.mono c hc, by rw [hpv, hbqv]; omega,
+      by rw [hpv], by rw [hpv]; exact hoff, by rw [hpv, hbqv]; omega,
       ⟨gm₀, by rw [hσ₃, arrs_setVar, hσ₂, arrs_setVar, hσ₁', arrs_setVar]; exact hgm₀,
         fun k hk => by rw [hpv] at hk; omega⟩,
       g₁, by rw [hσ₃, arrs_setVar, hσ₂, arrs_setVar, hσ₁', arrs_setVar]; exact hg₁arr,
@@ -3673,7 +3690,7 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
         (.seq (.store (memName (j + 1)) (.var "bq") (.get (xmmName j) (.var "p")))
           (.seq (.assign "bq" (.add (.var "bq") (.lit 1)))
             (.assign "p" (.add (.var "p") (.lit 1))))))
-      (CluScan n j Xoff Xmem c) (hoffB (c + 1) (by omega))
+      (CluScan n j Xoff Xmem c) hoffc1B
       (fun ρ hρ => ⟨hρ.2.1, hρ.2.2.2.1⟩) hstep (fun _ hρ => hρ)
       (fun ρ hρ => by
         have hlo := hρ.2.2.1
@@ -3682,25 +3699,25 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
   -- the exit reading
   obtain ⟨-, -, hlo₄, -, hbq₄, ⟨gm, hgmarr, hgmval⟩, g, hgarr, hgbit, hgval⟩ := hI₄
   rw [hp₄] at hgval hbq₄ hgmval
-  have hoffle : Xoff c ≤ Xoff (c + 1) := hout.mono c hc
+  have hoffle : Xoff c ≤ Xoff (c + 1) := hoff
   refine ⟨σ₄, _, hr₁.seq (hr₁'.seq (hrLoad.seq hr₄)), by omega, g, hgarr, hgbit, ?_,
     gm, Xoff (c + 1) - Xoff c, hgmarr, hbq₄, rfl, ?_, ?_, ?_, ?_⟩
   · ext v
     rw [mem_markSet, Set.mem_setOf_eq, hcurEq, hgval (v : ℕ) v.isLt]
-    exact hout.block c hc (v : ℕ)
+    exact hblock (v : ℕ)
   · -- every emitted cell is a vertex
     intro k hk
     rw [hgmval k hk]
-    exact hout.mem_lt _ (lt_of_lt_of_le (by omega) (coverOut_off_le hout (c + 1) (by omega)))
+    exact hmem_lt _ (lt_of_lt_of_le (by omega) hend)
   · -- and the emission is sorted, because the block row is
     intro i k hik hk
     rw [hgmval i (by omega), hgmval k hk]
-    exact hout.block_mono c hc _ _ (by omega) (by omega) (by omega)
+    exact hblock_mono _ _ (by omega) (by omega) (by omega)
   · -- everything emitted is in the cluster
     intro k hk
     have hlt : gm k < n := by
       rw [hgmval k hk]
-      exact hout.mem_lt _ (lt_of_lt_of_le (by omega) (coverOut_off_le hout (c + 1) (by omega)))
+      exact hmem_lt _ (lt_of_lt_of_le (by omega) hend)
     rw [hgval (gm k) hlt]
     exact ⟨Xoff c + k, by omega, by omega, (hgmval k hk).symm⟩
   · -- and every member of the cluster was emitted
@@ -3709,6 +3726,29 @@ theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m 
     refine ⟨q - Xoff c, by omega, ?_⟩
     rw [hgmval (q - Xoff c) (by omega), show Xoff c + (q - Xoff c) = q by omega]
     exact hq3
+
+/-- The carrier-cover presentation of `clusterLoad_specCore`. -/
+theorem clusterLoad_spec {d c : ℕ} (hB : WordBoundK B n d ns cap mb) (hmB : m < B)
+    (hout : RamCover.CoverOut G M π ord cap m Xoff Xmem asg) (hm : m ≤ n * n)
+    (hc : c < n) :
+    Spec B (fun σ => σ.vars "n" = n ∧ σ.arrs (xofName j) = arrOf (n + 1) Xoff ∧
+        σ.arrs (xmmName j) = arrOf (n * n) Xmem ∧ (∃ g, σ.arrs (cluName j) = arrOf n g) ∧
+        (∃ g, σ.arrs (memName (j + 1)) = arrOf n g) ∧
+        σ.vars (curName j) = c)
+      (clusterLoad j)
+      (fun σ σ' => ∃ Xa, σ'.arrs (cluName j) = arrOf n Xa ∧ (∀ k, k < n → Xa k ≤ 1) ∧
+        markSet n Xa =
+          {v : Fin n | RamCover.InCluster (masked G M) π cap
+            (ord (σ.vars (curName j))) (v : ℕ)} ∧
+        ∃ (Mm : ℕ → ℕ) (bs : ℕ), σ'.arrs (memName (j + 1)) = arrOf n Mm ∧
+          σ'.vars "bq" = bs ∧ bs = blockSize Xoff c ∧ MemEnum n bs Mm Xa)
+      (24 * blockSize Xoff c + 11 * n + 26) := by
+  apply clusterLoad_specCore (cen := ord) hB hmB hm hc
+  · exact hout.mono c hc
+  · exact coverOut_off_le hout (c + 1) (by omega)
+  · exact hout.mem_lt
+  · exact fun p p' hp hpp' hp'end => hout.block_mono c hc p p' hp hpp' hp'end
+  · exact hout.block c hc
 
 /-! ### One retained parent cache -/
 
@@ -5771,30 +5811,43 @@ def descendCostSize (n ns cap j s : ℕ) : ℕ :=
 /-- The carrier reading of the size-indexed descent cost. -/
 def descendCost (n ns cap j : ℕ) : ℕ := descendCostSize n ns cap j n
 
-/-- **The descent, discharged.** -/
-theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ}
-    {π : Equiv.Perm (Fin n)} {ord Xoff Xmem asg : ℕ → ℕ} {m : ℕ}
+/-- **The descent at the active-cover interface, discharged.** -/
+theorem descendStepA {B q cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ}
+    {π : Equiv.Perm (Fin n)} {centre Xoff Xmem asg : ℕ → ℕ} {m : ℕ}
     (hcsrS : RamElim.CsrSimple G ns O T)
     (hmb : mb = ℓ * (2 * cap + 1)) (hjl : j < ℓ)
     (hK : descendCostSize n ns cap j
       (Refine.MassWeight.blockWeight n G Xoff Xmem k) ≤ K) :
-    DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m k K := by
+    DescendStepA B q cap mb ns Ws j G O T M Gm C π centre Xoff Xmem asg m k K := by
   classical
   intro hcsr d hB hkn halive
   refine Spec.of_exists (fun σ hσ => ?_)
   obtain ⟨⟨hlev, hplay, hheld⟩, hcurEq⟩ := hσ
-  have hcur : σ.vars (curName j) < n := by rw [hcurEq]; exact hkn
+  have hcurq : σ.vars (curName j) < q := by rw [hcurEq]; exact hkn
+  have hcur : σ.vars (curName j) < n := lt_of_lt_of_le hcurq hheld.cover.count_le
   obtain ⟨hn, hoff, htgt, halvj, hgamj, hcolj, hMB, hGmB, hCbit, hmem, hdep, hmvar, hom⟩ := hlev
   obtain ⟨hordA, hxof, hxmm, hasgA, hxp, hmn, hmB, hordlt, hcout⟩ := hheld
   have h1B := hB.one_lt
   have hnB := hB.n_lt
   have hnsB := hB.ns_lt
+  have hoffA : ∀ t ≤ q, Xoff t ≤ m := by
+    have key : ∀ d t, t + d = q → Xoff t ≤ Xoff q := by
+      intro e
+      induction e with
+      | zero => intro t ht; rw [show t = q by omega]
+      | succ e ih =>
+        intro t ht
+        exact le_trans (hcout.mono t (by omega)) (ih (t + 1) (by omega))
+    intro t ht
+    rw [← hcout.last]
+    exact key (q - t) t (by omega)
   obtain ⟨cc, hcc⟩ : ∃ cc, σ.vars (curName j) = cc := ⟨_, rfl⟩
-  rw [hcc] at hcur
+  rw [hcc] at hcurq hcur
   have hcck : cc = k := by rw [← hcurEq, hcc]
-  have hordc : ord cc < n := hordlt cc hcur
+  have hordc : centre cc < n := hordlt cc hcurq
   -- the depth's connector, as a vertex
-  obtain ⟨vc, hvc⟩ : ∃ vc : Fin n, (vc : ℕ) = ord cc := ⟨⟨ord cc, hordc⟩, rfl⟩
+  obtain ⟨vc, hvc⟩ : ∃ vc : Fin n, (vc : ℕ) = centre cc :=
+    ⟨⟨centre cc, hordc⟩, rfl⟩
   -- the rounds the state records, as two total functions
   obtain ⟨rounds, hrec, hle, hplayR, hcached⟩ := hplay
   have hplay₀ : PlayRec B cap G j M Gm σ := ⟨rounds, hrec, hle, hplayR, hcached⟩
@@ -5829,12 +5882,12 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   have hparj₀ : ∃ g, σ.arrs (parName j) = arrOf n g :=
     hdep.get (p := (parName j, n)) j (by simp [parName])
   -- P1: the connector is read out of the ordering
-  have hev₁ : (Expr.get (ordName j) (.var (curName j))).evalB B σ = some (ord cc) := by
+  have hev₁ : (Expr.get (ordName j) (.var (curName j))).evalB B σ = some (centre cc) := by
     have hc0 : (Expr.var (curName j)).evalB B σ = some cc := by
       have h := evalB_var (B := B) (x := curName j) (σ := σ) (by rw [hcc]; omega)
       rwa [hcc] at h
-    exact evalB_get hc0 (by rw [hordA, getElem?_arrOf ord hcur]) (by omega)
-  set σ₁ := σ.setVar (ctrName j) (ord cc) with hσ₁
+    exact evalB_get hc0 (by rw [hordA, getElem?_arrOf centre hcur]) (by omega)
+  set σ₁ := σ.setVar (ctrName j) (centre cc) with hσ₁
   have hr₁ : Run B (.assign (ctrName j) (.get (ordName j) (.var (curName j)))) σ σ₁ 3 :=
     (Run.assign hev₁).mono (by simp [Expr.size])
   have harrs₁ : ∀ b : String, σ₁.arrs b = σ.arrs b := fun b => by rw [hσ₁, arrs_setVar]
@@ -5846,7 +5899,11 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   -- P2: the cluster, materialized
   obtain ⟨σ₂, hr₂, ⟨Xa, hclu₂, hXbit, hXmark, Mm, bs, hmemA₂, hbq₂, hbsEq, hMmE⟩,
       hfv₂, hfa₂, -, -⟩ :=
-    ((clusterLoad_spec (j := j) (c := cc) hB hmB hcout hmn hcur).frame).run (σ := σ₁)
+    ((clusterLoad_specCore (j := j) (c := cc) (cen := centre) hB hmB hmn hcur
+      (hcout.mono cc hcurq) (hoffA (cc + 1) (by omega))
+      hcout.mem_lt (fun p p' hp hpp' hp'end =>
+        hcout.block_mono cc hcurq p p' hp hpp' hp'end)
+      (hcout.block cc hcurq)).frame).run (σ := σ₁)
       ⟨by rw [hvars₁ "n" (by simp [ctrName, String.ext_iff]), hn],
         by rw [harrs₁]; exact hxof, by rw [harrs₁]; exact hxmm, by rw [harrs₁]; exact hclu₀,
         by rw [harrs₁]; exact hmem1₀,
@@ -5882,12 +5939,12 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     rw [hXmark]
     exact ⟨hordc, by rw [hvc]; exact hordc, by
       simpa only [hvc] using RamCover.self_mem_wreach (masked G M) π (2 * cap)
-        (⟨ord cc, hordc⟩ : Fin n)⟩
-  have hMvc : M (ord cc) ≠ 0 := by rw [hcck]; exact halive
-  have hXvc : Xa (ord cc) ≠ 0 := by
+        (⟨centre cc, hordc⟩ : Fin n)⟩
+  have hMvc : M (centre cc) ≠ 0 := by rw [hcck]; exact halive
+  have hXvc : Xa (centre cc) ≠ 0 := by
     change Xa (vc : ℕ) ≠ 0 at hvX
     simpa only [hvc] using hvX
-  have hRvc : Ra (ord cc) ≠ 0 := by
+  have hRvc : Ra (centre cc) ≠ 0 := by
     rw [hRaval _ hordc]
     exact Nat.mul_ne_zero hMvc hXvc
   have hRaX : ∀ z, z < n → Ra z ≠ 0 → Xa z ≠ 0 := by
@@ -5900,9 +5957,9 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     exact hRz rfl
   -- Every weak-reachability witness defining the cover cluster has a suffix
   -- wholly inside that cluster, hence wholly inside the retained mask `Ra`.
-  have hRcov : ∀ z, z < n → Ra z ≠ 0 → WD G Ra (2 * cap) (ord cc) z := by
+  have hRcov : ∀ z, z < n → Ra z ≠ 0 → WD G Ra (2 * cap) (centre cc) z := by
     intro z hz hRz
-    have hclz : RamCover.InCluster (masked G M) π cap (ord cc) z := by
+    have hclz : RamCover.InCluster (masked G M) π cap (centre cc) z := by
       have hzX := hRaX z hz hRz
       change (⟨z, hz⟩ : Fin n) ∈ markSet n Xa at hzX
       rw [hXmark] at hzX
@@ -5911,7 +5968,7 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
       RamCover.exists_walk_support_inCluster (A := masked G M) (π := π) hordc hz hclz
     have hpR : ∀ y ∈ p.support, Ra (y : ℕ) ≠ 0 := by
       intro y hy
-      have hycl : y ∈ Refine.MassMath.clusterAt G M π ord cap cc := hps y hy
+      have hycl : y ∈ Refine.MassMath.clusterAt G M π centre cap cc := hps y hy
       have hyM : M (y : ℕ) ≠ 0 :=
         Refine.MassAlive.clusterAt_subset_alive hMvc hycl
       have hyX : Xa (y : ℕ) ≠ 0 := by
@@ -5927,22 +5984,22 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   -- and its cardinality are each paid by this block's graph weight.
   let I : Finset ℕ := Finset.Ico (Xoff cc) (Xoff (cc + 1))
   let A : Finset ℕ := I.image Xmem
-  have hA : ∀ v, v < n → Ra v ≠ 0 → WD G Ra (2 * cap) (ord cc) v → v ∈ A := by
+  have hA : ∀ v, v < n → Ra v ≠ 0 → WD G Ra (2 * cap) (centre cc) v → v ∈ A := by
     intro v hv hRv _
-    have hvcl : RamCover.InCluster (masked G M) π cap (ord cc) v := by
+    have hvcl : RamCover.InCluster (masked G M) π cap (centre cc) v := by
       have hvX := hRaX v hv hRv
       change (⟨v, hv⟩ : Fin n) ∈ markSet n Xa at hvX
       rw [hXmark] at hvX
       exact hvX
-    obtain ⟨p, hp₁, hp₂, hpv⟩ := (hcout.block cc hcur v).mpr hvcl
+    obtain ⟨p, hp₁, hp₂, hpv⟩ := (hcout.block cc hcurq v).mpr hvcl
     exact Finset.mem_image.mpr ⟨p, Finset.mem_Ico.mpr ⟨hp₁, hp₂⟩, hpv⟩
   have hginj : Set.InjOn Xmem (I : Set ℕ) := by
     intro p hp q hq hpq
     have hp' := Finset.mem_Ico.mp (Finset.mem_coe.mp hp)
     have hq' := Finset.mem_Ico.mp (Finset.mem_coe.mp hq)
-    exact hcout.block_inj cc hcur p q hp'.1 hp'.2 hq'.1 hq'.2 hpq
+    exact hcout.block_inj cc hcurq p q hp'.1 hp'.2 hq'.1 hq'.2 hpq
   have hmemlt : ∀ p, Xoff cc ≤ p → p < Xoff (cc + 1) → Xmem p < n :=
-    fun p hp hp' => Refine.MassWeight.mem_lt_of_coverOut hcout hcur hp hp'
+    fun p _ hp' => hcout.mem_lt p (lt_of_lt_of_le hp' (hoffA (cc + 1) (by omega)))
   have hrowA : (∑ v ∈ A, Csr.rowLen O v) =
       Refine.MassWeight.blockRowSum O Xoff Xmem cc := by
     simp only [A, I]
@@ -6277,7 +6334,7 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
   have hXball : markSet n Xa ⊆ ball (masked G M) (2 * cap) vc := by
     rw [hXmark]
     have h := RamCover.inCluster_subset_ball (masked G M) π (r := cap) hordc
-    rwa [show (⟨ord cc, hordc⟩ : Fin n) = vc from Fin.ext hvc.symm] at h
+    rwa [show (⟨centre cc, hordc⟩ : Fin n) = vc from Fin.ext hvc.symm] at h
   have hGamB' : ∀ k, k < n → Gam' k < B := by
     intro k hk
     rw [hGamval k hk, hGtval k hk]
@@ -6331,7 +6388,8 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     rcases hb with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
       simp [descendArrs, cluName, resName, balName, balAltName, batName, alvName, gamName,
         memName, String.ext_iff]
-  have hturn₉ : TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ₉ := by
+  have hturn₉ : TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+      Xoff Xmem asg m σ₉ := by
     refine ⟨levelPre_congr ⟨hn, hoff, htgt, halvj, hgamj, hcolj, hMB, hGmB, hCbit, hmem, hdep,
         hmvar, hom⟩ hrun (hfv "n" (by simp [ctrName, String.ext_iff]) (by simp [mnumName, String.ext_iff]) (by decide))
         (hfv "m" (by simp [ctrName, String.ext_iff]) (by simp [mnumName, String.ext_iff]) (by decide))
@@ -6351,7 +6409,7 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
         (fun a ha => hfa (resName a) (hnres a ha))
         (fun a ha => hfa (gamName a) (hngam a (by omega)))
         (fun a ha => hfa (parName a) (hnpar a ha)),
-      coverHeld_congr ⟨hordA, hxof, hxmm, hasgA, hxp, hmn, hmB, hordlt, hcout⟩
+      CoverHeldAtA.congr ⟨hordA, hxof, hxmm, hasgA, hxp, hmn, hmB, hordlt, hcout⟩
         (hfa _ (by simp [descendArrs, ordName, cluName, resName, balName, balAltName, batName,
           alvName, gamName, memName, String.ext_iff]))
         (hfa _ (by simp [descendArrs, xofName, cluName, resName, balName, balAltName, batName,
@@ -6372,15 +6430,15 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
         Refine.MassWeight.blockWeight n G Xoff Xmem k := by
       rw [← hcck]
       exact Refine.MassWeight.blockSize_le_blockWeight G Xoff Xmem
-        (fun p hp hp' => Refine.MassWeight.mem_lt_of_coverOut hcout hcur hp hp')
+        hmemlt
     simp only [descendCostSize, batchCachedCost, cacheRoundCost,
       Refine.ScatterDeadPass.memFillAtCost, Refine.BfsBlockPar.bfsBlockParK] at hK ⊢
     rw [hbsEq] at *
     omega
   · exact exists_arrOf_run hrun (hmem.1.get (p := ("wa", mb)) (by simp))
-  · intro v' hv'
+  · intro v' hMv hv'
     rw [hXmark]
-    have hcov := hcout.asg_cover (v' : ℕ) v'.isLt
+    have hcov := hcout.asg_cover (v' : ℕ) v'.isLt hMv
     rw [hv', hcc] at hcov
     exact hcov
   · refine le_trans hWcard ?_
@@ -6457,6 +6515,60 @@ theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ 
     rw [hGeq] at hwd ⊢
     obtain ⟨p, hp, hps⟩ := hWwalk a haj hwd
     exact ⟨p, hp, hps⟩
+
+/-- The original carrier-wide interface, recovered from the active theorem at
+`q = n`.  The active postcondition restricts its assignment clause to live
+vertices; carrier totality strengthens it back because a vertex assigned to
+the live current centre lies in that centre's cluster, hence is live. -/
+theorem descendStep {B cap mb Ws ℓ j k K : ℕ} {M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ}
+    {π : Equiv.Perm (Fin n)} {ord Xoff Xmem asg : ℕ → ℕ} {m : ℕ}
+    (hcsrS : RamElim.CsrSimple G ns O T)
+    (hmb : mb = ℓ * (2 * cap + 1)) (hjl : j < ℓ)
+    (hK : descendCostSize n ns cap j
+      (Refine.MassWeight.blockWeight n G Xoff Xmem k) ≤ K) :
+    DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m k K := by
+  classical
+  intro hcsr d hB hkn halive σ hσ
+  obtain ⟨⟨hlev, hplay, hheld⟩, hcurEq⟩ := hσ
+  obtain ⟨hordA, hxof, hxmm, hasgA, hxp, hmn, hmB, hordlt, hcout⟩ := hheld
+  have hcoutA : RamCover.CoverOutA G M π ord cap n m Xoff Xmem asg :=
+    { count_le := le_rfl
+      zero := hcout.zero
+      last := hcout.last
+      mono := hcout.mono
+      centre_lt := hordlt
+      mem_lt := hcout.mem_lt
+      block := hcout.block
+      block_inj := hcout.block_inj
+      block_mono := hcout.block_mono
+      asg_lt := fun v hv _ => hcout.asg_lt v hv
+      asg_cover := fun v hv _ => hcout.asg_cover v hv }
+  have hheldA : CoverHeldAtA B n n j G M π ord cap Xoff Xmem asg m σ :=
+    ⟨hordA, hxof, hxmm, hasgA, hxp, hmn, hmB, hordlt, hcoutA⟩
+  obtain ⟨σ', hr, hturnA, hout, hcur, hwa, X, W, Alv', Gam', hvisA, hne,
+      hcard, hAlv, hXin, hdata, hplay'⟩ :=
+    (descendStepA (q := n) hcsrS hmb hjl hK hcsr hB hkn halive).run
+      ⟨⟨hlev, hplay, hheldA⟩, hcurEq⟩
+  obtain ⟨hlev', hplayBase', hheldA'⟩ := hturnA
+  have hheld' : CoverHeld B n j G M π ord cap Xoff Xmem asg m σ' :=
+    ⟨hheldA'.centre_arr, hheldA'.off_arr, hheldA'.mem_arr, hheldA'.asg_arr,
+      hheldA'.pointer, hmn, hmB, hordlt, hcout⟩
+  have hcentre : M (ord (σ.vars (curName j))) ≠ 0 := by
+    rw [hcurEq]
+    exact halive
+  have hvis : ∀ v : Fin n, asg (v : ℕ) = σ.vars (curName j) →
+      ball (masked G M) cap v ⊆ X := by
+    intro v hv
+    apply hvisA v
+    · have hcov := hcout.asg_cover (v : ℕ) v.isLt
+      rw [hv] at hcov
+      have hcl : RamCover.InCluster (masked G M) π cap
+          (ord (σ.vars (curName j))) (v : ℕ) :=
+        hcov (withinDist_refl (masked G M) cap v)
+      exact (Refine.MassAlive.inCluster_alive_iff hcl).mpr hcentre
+    · exact hv
+  exact ⟨σ', hr, ⟨⟨hlev', hplayBase', hheld'⟩, hout, hcur, hwa,
+    X, W, Alv', Gam', hvis, hne, hcard, hAlv, hXin, hdata, hplay'⟩⟩
 
 end Descend
 
