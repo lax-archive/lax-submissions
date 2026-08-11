@@ -29,6 +29,7 @@ import Lax3Proofs.BotEval
 import Lax3Proofs.SplitterWinRec
 import Lax3Proofs.RamCover
 import Lax3Proofs.RamCoverMember
+import Lax3Proofs.RamCoverActive
 import Lax3Proofs.RamDriverMember
 import Lax3Proofs.RamDriverClusterMember
 import Lax3Proofs.RamDriverMemberPhases
