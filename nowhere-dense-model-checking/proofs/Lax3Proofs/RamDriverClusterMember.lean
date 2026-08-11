@@ -664,7 +664,7 @@ theorem levelImplementsA
     {φ : Lax3.FirstOrder.FO 0}
     {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
     {orderPhase coverPhase : ℕ → Com}
-    {P : ℕ → Equiv.Perm (Fin n) → (ℕ → ℕ) → Prop}
+    {P : (ℕ → ℕ) → ℕ → Equiv.Perm (Fin n) → (ℕ → ℕ) → Prop}
     {wA : (ℕ → ℕ) → ℕ} {wB : (ℕ → ℕ) → (ℕ → ℕ) → ℕ → ℕ}
     {Ko Kc Ks Ksf Kl : ℕ → ℕ → ℕ} {Kmass : ℕ}
     (hnB : n < B)
@@ -707,7 +707,7 @@ theorem levelImplementsA
       tabName jd i ∉ (coverPhase jd).warrs)
     (hmass : ∀ (M : ℕ → ℕ) (q : ℕ) (π : Equiv.Perm (Fin n))
         (centre Xoff Xmem asg cps : ℕ → ℕ) (mm cnum : ℕ),
-      P q π centre → RamCover.CoverOutA G M π centre cap q mm Xoff Xmem asg →
+      P M q π centre → RamCover.CoverOutA G M π centre cap q mm Xoff Xmem asg →
       Compacted q cnum mm M centre Xoff cps →
       cnum ≤ wA M ∧
         (∑ k ∈ Finset.range cnum, wB Xoff Xmem (cps k)) ≤ Kmass * (wA M + 1))

@@ -91,7 +91,7 @@ is the centre list.  `P` retains whatever mathematical witness relates
 that list to the permutation used by the cover-degree argument. -/
 def OrderImplementsA (B n W cap mb ns j : ℕ) (O T M Gm : ℕ → ℕ)
     (C : ℕ → ℕ → ℕ)
-    (P : ℕ → Equiv.Perm (Fin n) → (ℕ → ℕ) → Prop)
+    (P : (ℕ → ℕ) → ℕ → Equiv.Perm (Fin n) → (ℕ → ℕ) → Prop)
     (order : Com) (K : ℕ) : Prop :=
   Spec B (fun σ => LevelPre B n cap mb ns W O T j M Gm C σ)
     order
@@ -103,7 +103,7 @@ def OrderImplementsA (B n W cap mb ns j : ℕ) (O T M Gm : ℕ → ℕ)
       (∀ a : ℕ, σ'.arrs (parName a) = σ.arrs (parName a)) ∧
       ∃ (q : ℕ) (π : Equiv.Perm (Fin n)) (centre : ℕ → ℕ),
         q ≤ n ∧ σ'.arrs (ordName j) = arrOf n centre ∧
-        (∀ k < q, centre k < n) ∧ P q π centre) K
+        (∀ k < q, centre k < n) ∧ P M q π centre) K
 
 /-- The cover phase at the active interface.  It returns blocks indexed
 by `[0,q)` and compacts exactly that prefix for the turn loop. -/
