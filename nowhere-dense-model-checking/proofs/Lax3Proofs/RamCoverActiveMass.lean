@@ -1,4 +1,5 @@
 import Lax3Proofs.RamCoverActive
+import Lax3Proofs.RamDriver
 import Lax3Proofs.Refine.MassWeight
 
 /-!
@@ -33,6 +34,58 @@ structure ActiveOrderP (G : SimpleGraph (Fin n)) (r d : ℕ) (M : ℕ → ℕ)
     (q : ℕ) (π : Equiv.Perm (Fin n)) (centre : ℕ → ℕ) : Prop where
   centres : CentresBy n q M π centre
   degree : ∀ v : Fin n, (wreach (masked G M) π (2 * r) v).ncard ≤ d
+
+/-- The active ordering and the level member list enumerate the same live
+vertices, so their prefix lengths agree.  Their orders may differ: centres
+are sorted by `π`, whereas `MemEnum` is sorted by vertex number. -/
+theorem CentresBy.count_eq_memEnum {mm : ℕ} {Mem : ℕ → ℕ}
+    (hcentres : CentresBy n q M π centre) (hmem : MemEnum n mm Mem M) :
+    q = mm := by
+  classical
+  let toMem : Fin q → Fin mm := fun k =>
+    ⟨(hmem.2.2.2 (centre k) (hcentres.centre_lt k k.isLt)
+        (hcentres.alive k k.isLt)).choose,
+      (hmem.2.2.2 (centre k) (hcentres.centre_lt k k.isLt)
+        (hcentres.alive k k.isLt)).choose_spec.1⟩
+  have toMem_val : ∀ k : Fin q, Mem (toMem k) = centre k := by
+    intro k
+    exact (hmem.2.2.2 (centre k) (hcentres.centre_lt k k.isLt)
+      (hcentres.alive k k.isLt)).choose_spec.2
+  have toMem_inj : Function.Injective toMem := by
+    intro i k hik
+    apply Fin.ext
+    apply hcentres.injective i.isLt k.isLt
+    rw [← toMem_val i, ← toMem_val k, hik]
+  have hqmm : q ≤ mm := by
+    simpa using Fintype.card_le_of_injective toMem toMem_inj
+  let toCentre : Fin mm → Fin q := fun k =>
+    ⟨(hcentres.complete (Mem k) (hmem.1 k k.isLt)
+        (hmem.2.2.1 k k.isLt)).choose,
+      (hcentres.complete (Mem k) (hmem.1 k k.isLt)
+        (hmem.2.2.1 k k.isLt)).choose_spec.1⟩
+  have toCentre_val : ∀ k : Fin mm, centre (toCentre k) = Mem k := by
+    intro k
+    exact (hcentres.complete (Mem k) (hmem.1 k k.isLt)
+      (hmem.2.2.1 k k.isLt)).choose_spec.2
+  have toCentre_inj : Function.Injective toCentre := by
+    intro i k hik
+    apply Fin.ext
+    have hval : Mem i = Mem k := by
+      rw [← toCentre_val i, ← toCentre_val k, hik]
+    rcases lt_trichotomy (i : ℕ) (k : ℕ) with hlt | heq | hgt
+    · have := hmem.2.1 (i : ℕ) (k : ℕ) hlt k.isLt
+      omega
+    · exact heq
+    · have := hmem.2.1 (k : ℕ) (i : ℕ) hgt i.isLt
+      omega
+  have hmmq : mm ≤ q := by
+    simpa using Fintype.card_le_of_injective toCentre toCentre_inj
+  omega
+
+theorem ActiveOrderP.count_eq_memEnum {mm : ℕ} {Mem : ℕ → ℕ}
+    (horder : ActiveOrderP G r d M q π centre) (hmem : MemEnum n mm Mem M) :
+    q = mm :=
+  CentresBy.count_eq_memEnum horder.centres hmem
 
 /-! ## A weighted double count with a separate centre type -/
 

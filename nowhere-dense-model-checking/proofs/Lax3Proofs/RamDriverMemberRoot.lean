@@ -399,8 +399,9 @@ theorem levelAtA
         (Ko j (arenaWeight n G M)))
     (hcover : ∀ j < ℓ, ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
         (q : ℕ) (π : Equiv.Perm (Fin n)) (centre : ℕ → ℕ),
-      CoverImplementsA B n q cap mb ns W j G O T M Gm C π centre (coverPhase j)
-        (Kc j (arenaWeight n G M)))
+      RamCoverActiveMass.ActiveOrderP G cap Kmass M q π centre →
+        CoverImplementsA B n q cap mb ns W j G O T M Gm C π centre (coverPhase j)
+          (Kc j (arenaWeight n G M)))
     (hinner : ∀ j < ℓ, InnerWriteFramesA j
       (driverAtA q_top cap mb ℓ φ orderPhase coverPhase (j + 1)))
     (hloopfr : ∀ j < ℓ,

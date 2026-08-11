@@ -680,8 +680,9 @@ theorem levelImplementsA
       OrderImplementsA B n W cap mb ns j O T M Gm C P (orderPhase j) (Ko j (wA M)))
     (hcover : ∀ (j : ℕ), j < ℓ → ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
         (q : ℕ) (π : Equiv.Perm (Fin n)) (centre : ℕ → ℕ),
-      CoverImplementsA B n q cap mb ns W j G O T M Gm C π centre (coverPhase j)
-        (Kc j (wA M)))
+      P M q π centre →
+        CoverImplementsA B n q cap mb ns W j G O T M Gm C π centre (coverPhase j)
+          (Kc j (wA M)))
     (hstep : ∀ (j : ℕ), j < ℓ → ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
         (q : ℕ) (π : Equiv.Perm (Fin n)) (centre Xoff Xmem asg : ℕ → ℕ)
         (mm k : ℕ),
@@ -764,7 +765,7 @@ theorem levelImplementsA
       obtain ⟨σ₂, hr₂, hlev₂, hout₂, hctr₂, hres₂, hgam₂, hpar₂,
           Xoff, Xmem, asg, cps, mm, cnum,
           hheld₂, hcps₂, hcnum₂, hcomp₂⟩ :=
-        (hcover j hjl M Gm C q π centre).run ⟨hlev₁, hcentre₁, hcentrelt⟩
+        (hcover j hjl M Gm C q π centre hP).run ⟨hlev₁, hcentre₁, hcentrelt⟩
       have htsz₂ : TablesSized q_top cap mb φ n σ₂ := htsz₁.run hr₂
       have hbarr₂ : BaseArrs B q_top cap mb ℓ φ σ₂ := hbarr₁.run hr₂
       have hplay₂ : PlayRec B cap G j M Gm σ₂ :=
