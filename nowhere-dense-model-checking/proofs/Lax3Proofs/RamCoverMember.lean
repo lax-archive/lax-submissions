@@ -88,6 +88,33 @@ structure CoverOutM {n : ℕ} (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ)
       {z : Fin n |
         InCluster (masked G A₀) π r (ord (Pos (asg (Mem k)))) (z : ℕ)}
 
+/-- The output of an active cover construction before its block arenas are
+put in increasing order.  Breadth-first search naturally emits every
+cluster once, but in discovery order.  Every semantic cover clause is
+already available at that point; only the representation clause consumed
+by the recursive member thread is absent.
+
+Keeping this intermediate surface separate prevents the cover search from
+silently assuming a sorting property that its queue does not provide. -/
+structure RawCoverOutA {n : ℕ} (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ)
+    (π : Equiv.Perm (Fin n)) (centre : ℕ → ℕ) (r q m : ℕ)
+    (Xoff Xmem asg : ℕ → ℕ) : Prop where
+  count_le : q ≤ n
+  zero : Xoff 0 = 0
+  last : Xoff q = m
+  mono : ∀ k < q, Xoff k ≤ Xoff (k + 1)
+  centre_lt : ∀ k < q, centre k < n
+  mem_lt : ∀ p < m, Xmem p < n
+  block : ∀ k < q, ∀ w,
+    (∃ p, Xoff k ≤ p ∧ p < Xoff (k + 1) ∧ Xmem p = w) ↔
+      InCluster (masked G A₀) π r (centre k) w
+  block_inj : ∀ k < q, ∀ p p', Xoff k ≤ p → p < Xoff (k + 1) →
+    Xoff k ≤ p' → p' < Xoff (k + 1) → Xmem p = Xmem p' → p = p'
+  asg_lt : ∀ v < n, A₀ v ≠ 0 → asg v < q
+  asg_cover : ∀ (v : ℕ) (hv : v < n), A₀ v ≠ 0 →
+    ball (masked G A₀) r ⟨v, hv⟩ ⊆
+      {z : Fin n | InCluster (masked G A₀) π r (centre (asg v)) (z : ℕ)}
+
 /-- The consumer-facing active cover.  It forgets how the active centres
 were enumerated and records only the centre function the block-indexed
 driver reads.  Assignments are required exactly on the live vertices of
@@ -123,6 +150,63 @@ structure CoverOutA {n : ℕ} (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ)
   asg_cover : ∀ (v : ℕ) (hv : v < n), A₀ v ≠ 0 →
     ball (masked G A₀) r ⟨v, hv⟩ ⊆
       {z : Fin n | InCluster (masked G A₀) π r (centre (asg v)) (z : ℕ)}
+
+namespace RawCoverOutA
+
+variable {n r q m : ℕ} {G : SimpleGraph (Fin n)} {A₀ centre Xoff Xmem Xmem' asg : ℕ → ℕ}
+  {π : Equiv.Perm (Fin n)}
+
+/-- The exact contract of the final block sorter.  It may rearrange each
+half-open block, but must preserve its membership and return a strictly
+increasing vertex sequence.  Those two facts turn the raw BFS output into
+the consumer-facing active cover; injectivity of the sorted blocks follows
+from strict increase and need not be assumed from the sorter. -/
+theorem sorted (h : RawCoverOutA G A₀ π centre r q m Xoff Xmem asg)
+    (hmem : ∀ p < m, Xmem' p < n)
+    (hblock : ∀ k < q, ∀ w,
+      (∃ p, Xoff k ≤ p ∧ p < Xoff (k + 1) ∧ Xmem' p = w) ↔
+        (∃ p, Xoff k ≤ p ∧ p < Xoff (k + 1) ∧ Xmem p = w))
+    (hmono : ∀ k < q, ∀ p p', Xoff k ≤ p → p < p' →
+      p' < Xoff (k + 1) → Xmem' p < Xmem' p') :
+    CoverOutA G A₀ π centre r q m Xoff Xmem' asg := by
+  refine
+    { count_le := h.count_le
+      zero := h.zero
+      last := h.last
+      mono := h.mono
+      centre_lt := h.centre_lt
+      mem_lt := hmem
+      block := ?_
+      block_inj := ?_
+      block_mono := hmono
+      asg_lt := h.asg_lt
+      asg_cover := h.asg_cover }
+  · intro k hk w
+    rw [hblock k hk w, h.block k hk w]
+  · intro k hk p p' hp hp_end hp' hp'_end heq
+    by_cases hpp : p < p'
+    · have hlt := hmono k hk p p' hp hpp hp'_end
+      omega
+    · by_cases hpp' : p' < p
+      · have hlt := hmono k hk p' p hp' hpp' hp_end
+        omega
+      · omega
+
+/-- A sorted active cover can always be viewed at the raw boundary. -/
+theorem of_sorted (h : CoverOutA G A₀ π centre r q m Xoff Xmem asg) :
+    RawCoverOutA G A₀ π centre r q m Xoff Xmem asg :=
+  { count_le := h.count_le
+    zero := h.zero
+    last := h.last
+    mono := h.mono
+    centre_lt := h.centre_lt
+    mem_lt := h.mem_lt
+    block := h.block
+    block_inj := h.block_inj
+    asg_lt := h.asg_lt
+    asg_cover := h.asg_cover }
+
+end RawCoverOutA
 
 namespace CoverOutM
 
