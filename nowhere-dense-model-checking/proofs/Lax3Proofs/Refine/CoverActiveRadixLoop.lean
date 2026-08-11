@@ -215,7 +215,7 @@ def CoverRadixInv (n q xp bits : ℕ) (Xoff Xmem asg : ℕ → ℕ)
 
 theorem radixCoverTurn_spec {B bits : ℕ}
     (hraw : RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
-    (hB : 1 < B) (hnB : n < B) (hnnB : n * n < B) (hbitsB : bits < B)
+    (hB : 1 < B) (hnB : n < B) (hxpB : xp < B) (hbitsB : bits < B)
     {k : ℕ} (hk : k < q) :
     Spec B
       (fun σ => CoverRadixInv n q xp bits Xoff Xmem asg σ ∧ σ.vars "rsc" = k)
@@ -239,8 +239,8 @@ theorem radixCoverTurn_spec {B bits : ℕ}
   have hhim : lo + m = hi := add_blockSize hraw hk
   have hhiXp : hi ≤ xp := rawOff_le hraw (by omega)
   have hxpnn : xp ≤ n * n := raw_arena_le hraw
-  have hloB : lo < B := lt_of_le_of_lt (le_trans hlohi (le_trans hhiXp hxpnn)) hnnB
-  have hhiB : hi < B := lt_of_le_of_lt (le_trans hhiXp hxpnn) hnnB
+  have hloB : lo < B := lt_of_le_of_lt (le_trans hlohi hhiXp) hxpB
+  have hhiB : hi < B := lt_of_le_of_lt hhiXp hxpB
   have hmN : m ≤ n := raw_blockSize_le hraw hk
   have hmB : m < B := lt_of_le_of_lt hmN hnB
   have ersc : (Expr.var "rsc").evalB B σ = some k := by
@@ -397,7 +397,7 @@ theorem radixCoverTurn_spec {B bits : ℕ}
 cover into the exact sorted consumer contract. -/
 theorem radixCoverBody_spec {B bits : ℕ} {Q₀ : ℕ → ℕ}
     (hraw : RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
-    (hB : 1 < B) (hnB : n < B) (hnnB : n * n < B) (hbitsB : bits < B)
+    (hB : 1 < B) (hnB : n < B) (hxpB : xp < B) (hbitsB : bits < B)
     (hpow : n ≤ 2 ^ bits) :
     Spec B
       (fun σ => σ.vars "rsbits" = bits ∧ σ.vars "qn" = q ∧
@@ -419,7 +419,7 @@ theorem radixCoverBody_spec {B bits : ℕ} {Q₀ : ℕ → ℕ}
       radixCoverTurn (fun _ τ' => I τ' ∧ τ'.vars "rsc" = k + 1)
       (radixCoverTurnCost bits Xoff k) := by
     intro k hk
-    exact radixCoverTurn_spec hraw hB hnB hnnB hbitsB hk
+    exact radixCoverTurn_spec hraw hB hnB hxpB hbitsB hk
   have hloop := Lax3Proofs.Refine.SigmaLoop.forRangeZeroSum
     (B := B) "rsc" "qn" I q (radixCoverTurnCost bits Xoff) hqB
     (fun _ h => h.1) (fun _ h => h.2.1) hbody
@@ -475,7 +475,7 @@ theorem radixCoverBody_spec {B bits : ℕ} {Q₀ : ℕ → ℕ}
 that genuinely have a static width. -/
 theorem radixCoverCom_spec {B bits : ℕ} {Q₀ : ℕ → ℕ}
     (hraw : RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
-    (hB : 1 < B) (hnB : n < B) (hnnB : n * n < B) (hbitsB : bits < B)
+    (hB : 1 < B) (hnB : n < B) (hxpB : xp < B) (hbitsB : bits < B)
     (hpow : n ≤ 2 ^ bits) :
     Spec B
       (fun σ => σ.vars "qn" = q ∧
@@ -495,7 +495,7 @@ theorem radixCoverCom_spec {B bits : ℕ} {Q₀ : ℕ → ℕ}
   have rb : Run B (.assign "rsbits" (.lit bits)) σ σb 2 :=
     Run.assign (evalB_lit hbitsB)
   obtain ⟨σ', rbody, hpost⟩ :=
-    (radixCoverBody_spec (Q₀ := Q₀) hraw hB hnB hnnB hbitsB hpow).run (σ := σb)
+    (radixCoverBody_spec (Q₀ := Q₀) hraw hB hnB hxpB hbitsB hpow).run (σ := σb)
       ⟨by simp [σb], by simp [σb, hqn], by simp [σb, hxoff],
         by simp [σb, hxmem], by simp [σb, hasg], by simp [σb, hq]⟩
   exact ⟨σ', by simpa [radixCoverCom, radixCoverCost] using rb.seq rbody, hpost⟩
@@ -506,7 +506,8 @@ literal in `radixCoverUniformCom` depends on `n`, which is the quantifier
 order required at the final C0 boundary. -/
 theorem radixCoverUniformCom_spec {B : ℕ} {Q₀ : ℕ → ℕ}
     (hraw : RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
-    (hB : 1 < B) (hnB : n < B) (hnnB : n * n < B) :
+    (hB : 1 < B) (hnB : n < B) (hxpB : xp < B)
+    (hdouble : ∀ p < n, p + p < B) :
     Spec B
       (fun σ => σ.vars "n" = n ∧ σ.vars "qn" = q ∧
         σ.arrs "xoff" = arrOf (n + 1) Xoff ∧
@@ -522,7 +523,7 @@ theorem radixCoverUniformCom_spec {B : ℕ} {Q₀ : ℕ → ℕ}
   intro σ hσ
   obtain ⟨hn, hqn, hxoff, hxmem, hasg, hq⟩ := hσ
   obtain ⟨σw, rw, ⟨hnw, hbits, _hpowv⟩, hfv, hfa, -, -⟩ :=
-    ((radixWidthCom_spec hB hnB hnnB).frame).run (σ := σ) hn
+    ((radixWidthCom_double_spec hB hnB hdouble).frame).run (σ := σ) hn
   have hbitsB : Nat.clog 2 n < B :=
     lt_of_le_of_lt (clog_two_le_self n) hnB
   have hpow : n ≤ 2 ^ Nat.clog 2 n := Nat.le_pow_clog (by omega) n
@@ -542,7 +543,7 @@ theorem radixCoverUniformCom_spec {B : ℕ} {Q₀ : ℕ → ℕ}
     rw [hfa "q" (by simp [radixWidthCom, radixWidthTurn, Com.warrs])]
     exact hq
   obtain ⟨σ', rbody, hpost⟩ :=
-    (radixCoverBody_spec (Q₀ := Q₀) hraw hB hnB hnnB hbitsB hpow).run (σ := σw)
+    (radixCoverBody_spec (Q₀ := Q₀) hraw hB hnB hxpB hbitsB hpow).run (σ := σw)
       ⟨hbits, hqnw, hxoffw, hxmemw, hasgw, hqw⟩
   exact ⟨σ', by
     simpa [radixCoverUniformCom, radixCoverUniformCost] using rw.seq rbody, hpost⟩

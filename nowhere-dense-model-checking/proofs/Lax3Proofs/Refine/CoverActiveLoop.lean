@@ -53,6 +53,15 @@ def RawLoopState {n : ℕ} (B ns nt q r : ℕ) (G : SimpleGraph (Fin n))
   ∃ c xp Xoff Xmem asg M,
     RawTurnState B ns nt q r c xp G A₀ π centre O T Xoff Xmem asg M σ
 
+/-- The active loop invariant with the degree-priced arena prefix exposed.
+After `c` centres, at most `c * K` member cells have been emitted. -/
+def RawLoopStateK {n : ℕ} (B ns nt q r K : ℕ) (G : SimpleGraph (Fin n))
+    (A₀ : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (centre O T : ℕ → ℕ)
+    (σ : Env) : Prop :=
+  ∃ c xp Xoff Xmem asg M,
+    RawTurnState B ns nt q r c xp G A₀ π centre O T Xoff Xmem asg M σ ∧
+      xp ≤ c * K
+
 /-! ## Loop theorem -/
 
 variable {B n ns nt q r : ℕ} {G : SimpleGraph (Fin n)}
@@ -130,9 +139,107 @@ theorem activeLoop_rawOut_spec
       obtain ⟨xp, Xoff, Xmem, asg, M, hS⟩ := h
       exact ⟨xp, Xoff, Xmem, asg, M, hS, hS.raw.out hcentres⟩)
 
+/-! ## Degree-priced loop -/
+
+variable {Kball : ℕ}
+
+/-- The active loop under the almost-linear arena reading.  The only value
+bound needed by a turn is the current used prefix plus one physical block;
+the per-ball cardinality bound maintains that prefix at `c * Kball`. -/
+theorem activeLoopK_spec
+    (hcentres : CentresBy n q A₀ π centre)
+    (hcsr : CsrGraph G ns O T)
+    (hnB : n < B) (hnsB : ns < B) (hnt : ns ≤ nt)
+    (hqB : q < B) (hrB : 2 * r + 1 < B)
+    (harenaB : n * Kball + n < B)
+    (hbud : ActiveBallBudget q r G A₀ centre O bw nb)
+    (hnbK : ∀ k < q, nb k ≤ Kball) :
+    Spec B
+      (fun σ => RawLoopStateK B ns nt q r Kball G A₀ π centre O T
+        (σ.setVar "c" 0))
+      (activeLoopCom r)
+      (fun _ σ' => ∃ xp Xoff Xmem asg M,
+        RawTurnState B ns nt q r q xp G A₀ π centre O T Xoff Xmem asg M σ' ∧
+          xp ≤ q * Kball)
+      (activeLoopK q bw nb) := by
+  let I : Env → Prop := RawLoopStateK B ns nt q r Kball G A₀ π centre O T
+  have hxN : ∀ σ, I σ → σ.vars "c" ≤ q := by
+    intro σ hσ
+    obtain ⟨c, xp, Xoff, Xmem, asg, M, hS, _⟩ := hσ
+    rw [hS.centre_var]
+    exact hS.raw.pos_le
+  have hqn : ∀ σ, I σ → σ.vars "qn" = q := by
+    intro σ hσ
+    obtain ⟨c, xp, Xoff, Xmem, asg, M, hS, _⟩ := hσ
+    exact hS.q_var
+  have hbody : CentreImplementsB B "c" (activeTurnCom r) I q 150
+      (fun k => bw k + nb k) := by
+    intro k hk
+    refine Spec.of_exists fun σ hσ => ?_
+    obtain ⟨⟨c, xp, Xoff, Xmem, asg, M, hS, hxpK⟩, hck⟩ := hσ
+    have hceq : c = k := by rw [hS.centre_var] at hck; omega
+    subst c
+    obtain ⟨A, hA, hbw, hnb⟩ := hbud k hk M hS.raw.mask
+    have hkN : k ≤ n := le_trans hk.le (le_trans hcentres.count_le le_rfl)
+    have hptrB : xp + n < B := by
+      calc
+        xp + n ≤ k * Kball + n := Nat.add_le_add_right hxpK n
+        _ ≤ n * Kball + n :=
+          Nat.add_le_add_right (Nat.mul_le_mul_right Kball hkN) n
+        _ < B := harenaB
+    obtain ⟨σ', hrun, tail, Q, QD, Xmem', htail, hS'⟩ :=
+      (activeTurn_ptr_spec (B := B) (G := G) (A₀ := A₀) (π := π)
+        (centre := centre) (O := O) (T := T) (Xoff := Xoff) (Xmem := Xmem)
+        (asg := asg) (M := M) hcentres hcsr hnB hnsB hnt hqB hrB
+        hA hbw hnb).run (σ := σ) ⟨hS, hk, hptrB⟩
+    have htailK : tail ≤ Kball := le_trans htail (hnbK k hk)
+    have hxpK' : xp + tail ≤ (k + 1) * Kball := by
+      calc
+        xp + tail ≤ k * Kball + Kball := Nat.add_le_add hxpK htailK
+        _ = (k + 1) * Kball := by simp [Nat.add_mul]
+    refine ⟨σ', activeTurnK (bw k) (nb k), hrun, ?_, ?_⟩
+    · exact activeTurnK_le_weight (bw k) (nb k)
+    · refine ⟨?_, hS'.centre_var⟩
+      exact ⟨k + 1, xp + tail, upd Xoff (k + 1) (xp + tail), Xmem',
+        queueCell asg q k r tail Q QD, upd M (centre k) 0, hS', hxpK'⟩
+  have hloop := centreLoop_spec "c" "qn" q 150 (fun k => bw k + nb k)
+    hqB hxN hqn hbody
+  simpa only [activeLoopCom, activeLoopK] using hloop.post (by
+    intro _ σ' _ hpost
+    obtain ⟨⟨c, xp, Xoff, Xmem, asg, M, hS, hxpK⟩, hcq⟩ := hpost
+    have hceq : c = q := by rw [hS.centre_var] at hcq; omega
+    subst c
+    exact ⟨xp, Xoff, Xmem, asg, M, hS, hxpK⟩)
+
+/-- At degree-priced loop exit, export both the raw cover and the sharp
+pointer bound used by the sorter and retained-cover tail. -/
+theorem activeLoopK_rawOut_spec
+    (hcentres : CentresBy n q A₀ π centre)
+    (hcsr : CsrGraph G ns O T)
+    (hnB : n < B) (hnsB : ns < B) (hnt : ns ≤ nt)
+    (hqB : q < B) (hrB : 2 * r + 1 < B)
+    (harenaB : n * Kball + n < B)
+    (hbud : ActiveBallBudget q r G A₀ centre O bw nb)
+    (hnbK : ∀ k < q, nb k ≤ Kball) :
+    Spec B
+      (fun σ => RawLoopStateK B ns nt q r Kball G A₀ π centre O T
+        (σ.setVar "c" 0))
+      (activeLoopCom r)
+      (fun _ σ' => ∃ xp Xoff Xmem asg M,
+        RawTurnState B ns nt q r q xp G A₀ π centre O T Xoff Xmem asg M σ' ∧
+        xp ≤ q * Kball ∧
+        Lax3Proofs.RamCover.RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
+      (activeLoopK q bw nb) :=
+  (activeLoopK_spec hcentres hcsr hnB hnsB hnt hqB hrB harenaB hbud hnbK).post
+    (fun _ _ _ h => by
+      obtain ⟨xp, Xoff, Xmem, asg, M, hS, hxpK⟩ := h
+      exact ⟨xp, Xoff, Xmem, asg, M, hS, hxpK, hS.raw.out hcentres⟩)
+
 /-! ## Axiom audit -/
 
 #print axioms activeLoop_spec
 #print axioms activeLoop_rawOut_spec
+#print axioms activeLoopK_spec
+#print axioms activeLoopK_rawOut_spec
 
 end Lax3Proofs.Refine.CoverActiveLoop

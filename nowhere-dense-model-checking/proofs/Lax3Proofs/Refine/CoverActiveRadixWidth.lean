@@ -46,8 +46,8 @@ theorem clog_two_le_self (n : ℕ) : Nat.clog 2 n ≤ n := by
 
 /-! ## One doubling turn -/
 
-theorem radixWidthTurn_spec {B n : ℕ} (hB : 1 < B) (hnB : n < B)
-    (hnnB : n * n < B) :
+theorem radixWidthTurn_double_spec {B n : ℕ} (hB : 1 < B) (hnB : n < B)
+    (hdouble : ∀ p < n, p + p < B) :
     Spec B
       (fun σ => RadixWidthInv B n σ ∧ σ.vars "rspow" < n)
       radixWidthTurn
@@ -63,9 +63,7 @@ theorem radixWidthTurn_spec {B n : ℕ} (hB : 1 < B) (hnB : n < B)
     rw [hp]
     exact Nat.one_le_pow _ _ (by omega)
   have hn2 : 2 ≤ n := by omega
-  have hp2B : p + p < B := by
-    have hle : p + p ≤ n * n := by nlinarith
-    exact lt_of_le_of_lt hle hnnB
+  have hp2B : p + p < B := hdouble p hpn
   have ep : (Expr.var "rspow").evalB B σ = some p :=
     evalB_var (by simpa [p] using hpB)
   have epp : (Expr.add (.var "rspow") (.var "rspow")).evalB B σ =
@@ -110,8 +108,8 @@ theorem radixWidthTurn_spec {B n : ℕ} (hB : 1 < B) (hnB : n < B)
 
 /-! ## Complete runtime width computation -/
 
-theorem radixWidthCom_spec {B n : ℕ} (hB : 1 < B) (hnB : n < B)
-    (hnnB : n * n < B) :
+theorem radixWidthCom_double_spec {B n : ℕ} (hB : 1 < B) (hnB : n < B)
+    (hdouble : ∀ p < n, p + p < B) :
     Spec B
       (fun σ => σ.vars "n" = n)
       radixWidthCom
@@ -135,7 +133,7 @@ theorem radixWidthCom_spec {B n : ℕ} (hB : 1 < B) (hnB : n < B)
         rw [hI.1] at h
         exact h
       obtain ⟨σ', hr, hI', hb'⟩ :=
-        (radixWidthTurn_spec hB hnB hnnB).run ⟨hI, htrue⟩
+        (radixWidthTurn_double_spec hB hnB hdouble).run ⟨hI, htrue⟩
       refine ⟨σ', 8, hr, hI', ?_⟩
       show 1 + (Cond.lt (.var "rspow") (.var "n")).size + 8 +
           12 * (C - σ'.vars "rsbits") ≤ 12 * (C - σ.vars "rsbits")
@@ -177,8 +175,44 @@ theorem radixWidthCom_spec {B n : ℕ} (hB : 1 < B) (hnB : n < B)
     · simpa [C] using hbits
     · rw [hI'.2.1, hbits]
 
+/-! ## Carrier-square compatibility -/
+
+/-- The old square word bound implies every doubling performed below `n`
+is a word, including the degenerate carriers. -/
+theorem doubleWords_of_square {B n : ℕ} (hB : 1 < B) (hnnB : n * n < B) :
+    ∀ p < n, p + p < B := by
+  intro p hp
+  rcases Nat.eq_zero_or_pos p with rfl | hp0
+  · omega
+  · have hn2 : 2 ≤ n := by omega
+    have hle : p + p ≤ n * n := by nlinarith
+    exact lt_of_le_of_lt hle hnnB
+
+theorem radixWidthTurn_spec {B n : ℕ} (hB : 1 < B) (hnB : n < B)
+    (hnnB : n * n < B) :
+    Spec B
+      (fun σ => RadixWidthInv B n σ ∧ σ.vars "rspow" < n)
+      radixWidthTurn
+      (fun σ σ' => RadixWidthInv B n σ' ∧
+        σ'.vars "rsbits" = σ.vars "rsbits" + 1)
+      8 :=
+  radixWidthTurn_double_spec hB hnB (doubleWords_of_square hB hnnB)
+
+theorem radixWidthCom_spec {B n : ℕ} (hB : 1 < B) (hnB : n < B)
+    (hnnB : n * n < B) :
+    Spec B
+      (fun σ => σ.vars "n" = n)
+      radixWidthCom
+      (fun _ σ' => σ'.vars "n" = n ∧
+        σ'.vars "rsbits" = Nat.clog 2 n ∧
+        σ'.vars "rspow" = 2 ^ Nat.clog 2 n)
+      (radixWidthCost n) :=
+  radixWidthCom_double_spec hB hnB (doubleWords_of_square hB hnnB)
+
 /-! ## Axiom audit -/
 
+#print axioms radixWidthTurn_double_spec
+#print axioms radixWidthCom_double_spec
 #print axioms radixWidthTurn_spec
 #print axioms radixWidthCom_spec
 

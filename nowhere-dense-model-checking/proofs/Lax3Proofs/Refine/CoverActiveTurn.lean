@@ -125,16 +125,17 @@ variable {π : Equiv.Perm (Fin n)} {A : Finset ℕ}
 
 /-- A block BFS followed by the touched queue emitter advances the raw cover
 invariant at a charge depending only on this ball. -/
-theorem activeTurn_spec
+theorem activeTurn_ptr_spec
     (hcentres : CentresBy n q A₀ π centre)
     (hcsr : CsrGraph G ns O T)
-    (hnB : n < B) (hnsB : ns < B) (hnt : ns ≤ nt) (hnnB : n * n < B)
+    (hnB : n < B) (hnsB : ns < B) (hnt : ns ≤ nt)
     (hqB : q < B) (hrB : 2 * r + 1 < B)
     (hA : ∀ v, v < n → M v ≠ 0 → WD G M (2 * r) (centre c) v → v ∈ A)
     (hbw : ∑ v ∈ A, Csr.rowLen O v ≤ bw)
     (hnb : A.card ≤ nb) :
     Spec B
-      (fun σ => RawTurnState B ns nt q r c xp G A₀ π centre O T Xoff Xmem asg M σ ∧ c < q)
+      (fun σ => RawTurnState B ns nt q r c xp G A₀ π centre O T Xoff Xmem asg M σ ∧
+        c < q ∧ xp + n < B)
       (activeTurnCom r)
       (fun _ σ' => ∃ tail Q QD Xmem', tail ≤ nb ∧
         RawTurnState B ns nt q r (c + 1) (xp + tail) G A₀ π centre O T
@@ -143,7 +144,7 @@ theorem activeTurn_spec
       (activeTurnK bw nb) := by
   classical
   refine Spec.of_exists fun σ hσ => ?_
-  obtain ⟨hS, hc⟩ := hσ
+  obtain ⟨hS, hc, hptrB⟩ := hσ
   obtain ⟨hraw, hn, hqn, hcvar, hxp, hord, hoff, htgt, halv, hxoff, hxmem,
     hasg, hdist, ⟨Q₀, hq₀⟩, ⟨QD₀, hqd₀⟩, hMB⟩ := hS
   have hcN : c < n := lt_of_lt_of_le hc hcentres.count_le
@@ -226,7 +227,8 @@ theorem activeTurn_spec
       xp + tail ≤ c * n + n := Nat.add_le_add hraw.ptr_le htailn'
       _ = (c + 1) * n := by simp [Nat.add_mul]
       _ ≤ n * n := hmul
-  have hroomB : xp + tail < B := lt_of_le_of_lt hroom hnnB
+  have hroomB : xp + tail < B :=
+    lt_of_le_of_lt (Nat.add_le_add_left htailn' xp) hptrB
   have hQDB : ∀ i < tail, QD i < B := by
     intro i hi
     have hqi : Q i < n := hQn i (by simpa [tail] using hi)
@@ -386,9 +388,39 @@ theorem activeTurn_spec
   simp only [activeTurnK]
   omega
 
+/-- Compatibility surface for the historical carrier-square value bound.
+The executable turn itself only needs the sharper running-pointer fact
+exported by `activeTurn_ptr_spec`. -/
+theorem activeTurn_spec
+    (hcentres : CentresBy n q A₀ π centre)
+    (hcsr : CsrGraph G ns O T)
+    (hnB : n < B) (hnsB : ns < B) (hnt : ns ≤ nt) (hnnB : n * n < B)
+    (hqB : q < B) (hrB : 2 * r + 1 < B)
+    (hA : ∀ v, v < n → M v ≠ 0 → WD G M (2 * r) (centre c) v → v ∈ A)
+    (hbw : ∑ v ∈ A, Csr.rowLen O v ≤ bw)
+    (hnb : A.card ≤ nb) :
+    Spec B
+      (fun σ => RawTurnState B ns nt q r c xp G A₀ π centre O T Xoff Xmem asg M σ ∧ c < q)
+      (activeTurnCom r)
+      (fun _ σ' => ∃ tail Q QD Xmem', tail ≤ nb ∧
+        RawTurnState B ns nt q r (c + 1) (xp + tail) G A₀ π centre O T
+          (upd Xoff (c + 1) (xp + tail)) Xmem'
+          (queueCell asg q c r tail Q QD) (upd M (centre c) 0) σ')
+      (activeTurnK bw nb) :=
+  (activeTurn_ptr_spec hcentres hcsr hnB hnsB hnt hqB hrB hA hbw hnb).pre
+    (fun _ h => by
+      refine ⟨h.1, h.2, ?_⟩
+      have hcN : c < n := lt_of_lt_of_le h.2 hcentres.count_le
+      calc
+        xp + n ≤ c * n + n := Nat.add_le_add_right h.1.raw.ptr_le n
+        _ = (c + 1) * n := by simp [Nat.add_mul]
+        _ ≤ n * n := Nat.mul_le_mul_right n (by omega)
+        _ < B := hnnB)
+
 /-! ## Axiom audit -/
 
 #print axioms activeTurnK_le_weight
+#print axioms activeTurn_ptr_spec
 #print axioms activeTurn_spec
 
 end Lax3Proofs.Refine.CoverActiveTurn

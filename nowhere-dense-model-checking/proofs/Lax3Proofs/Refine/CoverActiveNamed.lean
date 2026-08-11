@@ -106,9 +106,34 @@ theorem activeLoopAt_rawOut_spec
   renCom_spec (activeCoverSwap_invol j)
     (activeLoop_rawOut_spec hcentres hcsr hnB hnsB hnt hnnB hqB hrB hbud)
 
+/-- The degree-priced loop transported to the driver-owned mask and order
+arrays.  Its sharp exit-pointer bound survives the renaming unchanged. -/
+theorem activeLoopAtK_rawOut_spec {Kball : ℕ}
+    (hcentres : Lax3Proofs.RamCoverActive.CentresBy n q A₀ π centre)
+    (hcsr : CsrGraph G ns O T)
+    (hnB : n < B) (hnsB : ns < B) (hnt : ns ≤ nt)
+    (hqB : q < B) (hrB : 2 * r + 1 < B)
+    (harenaB : n * Kball + n < B)
+    (hbud : ActiveBallBudget q r G A₀ centre O bw nb)
+    (hnbK : ∀ k < q, nb k ≤ Kball) :
+    Spec B
+      (fun σ => RawLoopStateK B ns nt q r Kball G A₀ π centre O T
+        ((renEnv (activeCoverSwap j) σ).setVar "c" 0))
+      (activeLoopAtCom j r)
+      (fun _ σ' => ∃ xp Xoff Xmem asg M,
+        RawTurnState B ns nt q r q xp G A₀ π centre O T Xoff Xmem asg M
+          (renEnv (activeCoverSwap j) σ') ∧
+        xp ≤ q * Kball ∧
+        Lax3Proofs.RamCover.RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
+      (activeLoopK q bw nb) :=
+  renCom_spec (activeCoverSwap_invol j)
+    (activeLoopK_rawOut_spec hcentres hcsr hnB hnsB hnt hqB hrB harenaB
+      hbud hnbK)
+
 /-! ## Axiom audit -/
 
 #print axioms activeCoverSwap_invol
 #print axioms activeLoopAt_rawOut_spec
+#print axioms activeLoopAtK_rawOut_spec
 
 end Lax3Proofs.Refine.CoverActiveNamed

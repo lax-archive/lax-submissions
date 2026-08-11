@@ -100,9 +100,9 @@ variable {B ns nt j : ℕ} {O T : ℕ → ℕ}
 retained-cover and compacted-list contracts consumed by the driver. -/
 theorem activeCompact_spec
     (hcentres : CentresBy n q A₀ π centre)
-    (hqB : q < B) (hnnB : n * n < B) :
+    (hqB : q < B) :
     Spec B
-      (fun σ => ActiveCoreAtOut q r j G A₀ π centre σ ∧
+      (fun σ => ActiveCoreAtOut B q r j G A₀ π centre σ ∧
         ∃ cps₀, σ.arrs (cpsName j) = arrOf n cps₀)
       (activeCompactCom j)
       (fun _ σ' => σ'.vars "n" = n ∧ σ'.vars "qn" = q ∧
@@ -113,12 +113,12 @@ theorem activeCompact_spec
           σ'.vars (cnumName j) = q ∧
           Compacted q q m A₀ centre Xoff cps)
       (activeCompactCost q) := by
-  let Q : Env → Prop := ActiveCoreAtOut q r j G A₀ π centre
+  let Q : Env → Prop := ActiveCoreAtOut B q r j G A₀ π centre
   have hQfr : ∀ σ σ', Q σ →
       (∀ y, y ≠ "i" → σ'.vars y = σ.vars y) →
       (∀ b, b ≠ cpsName j → σ'.arrs b = σ.arrs b) → Q σ' := by
     intro σ σ' hQ hfv hfa
-    obtain ⟨xp, Xoff, Xmem, asg, hxp, hxoff, hxmem, hasg, hcover⟩ := hQ.cover
+    obtain ⟨xp, Xoff, Xmem, asg, hxp, hxoff, hxmem, hasg, hcover, hxpB⟩ := hQ.cover
     refine
       { n_var := by rw [hfv "n" (by decide)]; exact hQ.n_var
         q_var := by rw [hfv "qn" (by decide)]; exact hQ.q_var
@@ -136,7 +136,7 @@ theorem activeCompact_spec
           rw [hfa (xmmName j) (by simp [xmmName, cpsName, String.ext_iff])]
           exact hxmem, by
           rw [hfa (asgName j) (by simp [asgName, cpsName, String.ext_iff])]
-          exact hasg, hcover⟩ }
+          exact hasg, hcover, hxpB⟩ }
   have hbnd : ∀ σ, Q σ → (Expr.var "qn").evalB B σ = some q := by
     intro σ hQ
     simpa [hQ.q_var] using
@@ -151,10 +151,10 @@ theorem activeCompact_spec
     (Lax3Proofs.RamDriverCompose.fillPrefix_spec q n (cpsName j)
       (.var "qn") (.var "i") (fun k => k) Q (by omega) hqB hcentres.count_le
       hQfr hbnd hcell).run (σ := σ) ⟨⟨cps₀, hcps₀⟩, hcore⟩
-  obtain ⟨xp, Xoff, Xmem, asg, hxp₁, hxoff₁, hxmem₁, hasg₁, hcover⟩ := hcore₁.cover
+  obtain ⟨xp, Xoff, Xmem, asg, hxp₁, hxoff₁, hxmem₁, hasg₁, hcover, hxpB⟩ :=
+    hcore₁.cover
   have halloc : xp ≤ n * n :=
     raw_arena_le (RawCoverOutA.of_sorted hcover)
-  have hxpB : xp < B := lt_of_le_of_lt halloc hnnB
   let σ₂ := σ₁.setVar (xpName j) xp
   have rxp : Run B (.assign (xpName j) (.var "xp")) σ₁ σ₂ 2 := by
     apply Run.assign
@@ -167,7 +167,7 @@ theorem activeCompact_spec
     apply Run.assign
     simpa [hqn₂] using
       (evalB_var (B := B) (σ := σ₂) (x := "qn") (by rw [hqn₂]; exact hqB))
-  have hcore₃ : ActiveCoreAtOut q r j G A₀ π centre σ₃ := by
+  have hcore₃ : ActiveCoreAtOut B q r j G A₀ π centre σ₃ := by
     refine
       { n_var := by
           simp [σ₃, σ₂, xpName, cnumName, String.ext_iff, hcore₁.n_var]
@@ -178,7 +178,7 @@ theorem activeCompact_spec
         cover := ⟨xp, Xoff, Xmem, asg, by
           simp [σ₃, σ₂, xpName, cnumName, String.ext_iff, hxp₁], by
           simp [σ₃, σ₂, hxoff₁], by simp [σ₃, σ₂, hxmem₁], by
-          simp [σ₃, σ₂, hasg₁], hcover⟩ }
+          simp [σ₃, σ₂, hasg₁], hcover, hxpB⟩ }
   refine ⟨σ₃, ?_, hcore₃.n_var, hcore₃.q_var, hcore₃.zero_mask, ?_⟩
   · have hr := rfill.seq (rxp.seq rcnum)
     simpa [activeCompactCom, activeCompactCost] using hr
