@@ -19,7 +19,7 @@ open Lax12.ColoringNumbers (wreach)
 open Lax3Proofs.RamCover
 open Lax3Proofs.RamCoverActive
 open Lax3Proofs.RamBfs (masked)
-open Lax3Proofs.RamDriver (ordName xofName xmmName asgName)
+open Lax3Proofs.RamDriver (arenaSize ordName xofName xmmName asgName)
 open Lax3Proofs.Refine.CoverActiveInit
 open Lax3Proofs.Refine.CoverActiveNamed
 open Lax3Proofs.Refine.CoverActiveLoop
@@ -280,6 +280,7 @@ theorem activeCoreScratchK_spec {Kball : ℕ}
     (hdeg : ∀ v : Fin n, (wreach (masked G A₀) π (2 * r) v).ncard ≤ Kball)
     (hcost : ∀ xp Xoff Xmem asg,
       RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg →
+      xp ≤ Kball * arenaSize n A₀ →
       activeInitCost q +
         (activeLoopK q bw nb + radixCoverUniformCost n q Xoff) ≤ K) :
     Spec B
@@ -310,6 +311,8 @@ theorem activeCoreScratchK_spec {Kball : ℕ}
       xp ≤ n * Kball := hxpK
       _ ≤ n * Kball + n := Nat.le_add_right _ _
       _ < B := harenaB
+  have hxpActive : xp ≤ Kball * arenaSize n A₀ :=
+    Lax3Proofs.RamCoverActiveMass.rawPointer_le_active hcentres hstate.raw hdeg
   obtain ⟨Q₀, hQ₀⟩ := hstate.queue_arr
   have hn₂ : σ₂.vars "n" = n := by simpa using hstate.n_var
   have hqn₂ : σ₂.vars "qn" = q := by simpa using hstate.q_var
@@ -341,7 +344,8 @@ theorem activeCoreScratchK_spec {Kball : ℕ}
     ((radixCoverUniformCom_spec hraw (by omega) hnB hxpB hdouble).frame).run
       (σ := σ₂) ⟨hn₂, hqn₂, hxoff₂, hxmem₂, hasg₂, hQ₂⟩
   refine ⟨σ₃, ?_, ?_⟩
-  · exact (rinit.seq (rloop.seq rsort)).mono (hcost xp Xoff Xmem asg hraw)
+  · exact (rinit.seq (rloop.seq rsort)).mono
+      (hcost xp Xoff Xmem asg hraw hxpActive)
   · refine
       { n_var := by rw [hfv "n" radixCoverUniform_preserves_n]; exact hn₂
         q_var := by rw [hfv "qn" radixCoverUniform_preserves_qn]; exact hqn₂
@@ -407,6 +411,7 @@ theorem activeCoreAtK_spec {Kball : ℕ}
     (hdeg : ∀ v : Fin n, (wreach (masked G A₀) π (2 * r) v).ncard ≤ Kball)
     (hcost : ∀ xp Xoff Xmem asg,
       RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg →
+      xp ≤ Kball * arenaSize n A₀ →
       activeInitCost q +
         (activeLoopK q bw nb + radixCoverUniformCost n q Xoff) ≤ K) :
     Spec B

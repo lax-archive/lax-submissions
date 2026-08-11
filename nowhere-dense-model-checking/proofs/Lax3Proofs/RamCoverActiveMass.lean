@@ -205,12 +205,12 @@ private theorem centreFin_injective (h : CentresBy n q M π centre) :
   apply Fin.ext
   exact h.injective i.isLt k.isLt (congrArg Fin.val hik)
 
-/-- The sum of all active block weights has the cover-degree bound. -/
-theorem activeMassW_le (f : Fin n → ℕ)
+/-- The mathematical active clusters have the cover-degree bound before any
+machine representation of those clusters is chosen. -/
+theorem activeClusterMassW_le (f : Fin n → ℕ)
     (hcentres : CentresBy n q M π centre)
-    (hout : CoverOutA G M π centre r q m Xoff Xmem asg)
     (hk : ∀ v : Fin n, (wreach (masked G M) π (2 * r) v).ncard ≤ d) :
-    (∑ k ∈ range q, slotWeight n f Xoff Xmem k) ≤
+    (∑ k ∈ range q, wsum f (clusterAt G M π centre r k)) ≤
       d * (wsum f {v : Fin n | M (v : ℕ) ≠ 0} + 1) := by
   classical
   let cf : Fin q → Fin n := centreFin hcentres
@@ -236,15 +236,27 @@ theorem activeMassW_le (f : Fin n → ℕ)
   have hmass : ∑ k : Fin q, wsum f (X k) ≤ d * wsum f S :=
     sum_wsum_le_mul_active f X S d hsub hfib
   calc
-    (∑ k ∈ range q, slotWeight n f Xoff Xmem k) =
-        ∑ k : Fin q, slotWeight n f Xoff Xmem (k : ℕ) :=
+    (∑ k ∈ range q, wsum f (clusterAt G M π centre r k)) =
+        ∑ k : Fin q, wsum f (X k) :=
       (Fin.sum_univ_eq_sum_range
-        (fun k => slotWeight n f Xoff Xmem k) q).symm
-    _ = ∑ k : Fin q, wsum f (X k) := by
-      refine Finset.sum_congr rfl fun k _ => ?_
-      exact slotWeight_eq_wsum_clusterAtA f hout k.isLt
+        (fun k => wsum f (clusterAt G M π centre r k)) q).symm
     _ ≤ d * wsum f S := hmass
     _ ≤ d * (wsum f S + 1) := Nat.mul_le_mul_left _ (by omega)
+
+/-- The sum of all active block weights has the cover-degree bound. -/
+theorem activeMassW_le (f : Fin n → ℕ)
+    (hcentres : CentresBy n q M π centre)
+    (hout : CoverOutA G M π centre r q m Xoff Xmem asg)
+    (hk : ∀ v : Fin n, (wreach (masked G M) π (2 * r) v).ncard ≤ d) :
+    (∑ k ∈ range q, slotWeight n f Xoff Xmem k) ≤
+      d * (wsum f {v : Fin n | M (v : ℕ) ≠ 0} + 1) := by
+  calc
+    (∑ k ∈ range q, slotWeight n f Xoff Xmem k) =
+        ∑ k ∈ range q, wsum f (clusterAt G M π centre r k) := by
+      refine Finset.sum_congr rfl fun k hkq => ?_
+      exact slotWeight_eq_wsum_clusterAtA f hout (mem_range.mp hkq)
+    _ ≤ d * (wsum f {v : Fin n | M (v : ℕ) ≠ 0} + 1) :=
+      activeClusterMassW_le f hcentres hk
 
 /-! ## Partial raw covers
 
@@ -314,13 +326,13 @@ theorem rawSlotWeight_eq_wsum_clusterAtA (f : Fin n → ℕ)
   exact congrArg f (Fin.ext (hgval p hp).symm)
 
 /-- Every prefix pointer of the raw active construction is bounded by the
-carrier times the weak-reach degree.  No per-cluster cardinality hypothesis
-is needed (or generally true). -/
-theorem rawPointer_le_degree
+live arena size times the weak-reach degree.  No per-cluster cardinality
+hypothesis is needed (or generally true). -/
+theorem rawPointer_le_active
     (hcentres : CentresBy n q A₀ π centre)
     (h : RawCoverInvA G A₀ π centre q r c m Xoff Xmem asg Mcur)
     (hk : ∀ v : Fin n, (wreach (masked G A₀) π (2 * r) v).ncard ≤ d) :
-    m ≤ n * d := by
+    m ≤ d * arenaSize n A₀ := by
   classical
   let cf : Fin c → Fin n := fun k =>
     ⟨centre k, hcentres.centre_lt k (lt_of_lt_of_le k.isLt h.pos_le)⟩
@@ -331,6 +343,11 @@ theorem rawPointer_le_degree
       (lt_of_lt_of_le k.isLt h.pos_le) (congrArg Fin.val hik)
   let X : Fin c → Set (Fin n) :=
     fun k => clusterAt G A₀ π centre r (k : ℕ)
+  let S : Set (Fin n) := {v : Fin n | A₀ (v : ℕ) ≠ 0}
+  have hsub : ∀ k : Fin c, X k ⊆ S := by
+    intro k z hz
+    exact (Lax3Proofs.Refine.MassAlive.inCluster_alive_iff hz).mpr
+      (hcentres.alive k (lt_of_lt_of_le k.isLt h.pos_le))
   have hfib : ∀ w : Fin n, {k : Fin c | w ∈ X k}.ncard ≤ d := by
     intro w
     let I : Set (Fin c) := {k : Fin c | w ∈ X k}
@@ -344,9 +361,8 @@ theorem rawPointer_le_degree
         Set.ncard_le_ncard himg (Set.toFinite _)
       _ ≤ d := hk w
   have hmass : ∑ k : Fin c, wsum (fun _ : Fin n => 1) (X k) ≤
-      d * wsum (fun _ : Fin n => 1) (Set.univ : Set (Fin n)) :=
-    sum_wsum_le_mul_active (fun _ : Fin n => 1) X Set.univ d
-      (fun _ => Set.subset_univ _) hfib
+      d * wsum (fun _ : Fin n => 1) S :=
+    sum_wsum_le_mul_active (fun _ : Fin n => 1) X S d hsub hfib
   calc
     m = ∑ k ∈ range c, blockSize Xoff k := by
       rw [raw_sum_blockSize h c le_rfl, h.ptr]
@@ -369,8 +385,21 @@ theorem rawPointer_le_degree
           have hpI := Finset.mem_Ico.mp hp
           rw [natW_val _ (h.mem_lt p (lt_of_lt_of_le hpI.2 hoff))]
         _ = Xoff ((k : ℕ) + 1) - Xoff (k : ℕ) := by simp
-    _ ≤ d * wsum (fun _ : Fin n => 1) (Set.univ : Set (Fin n)) := hmass
-    _ = n * d := by rw [wsum_univ]; simp [Nat.mul_comm]
+    _ ≤ d * wsum (fun _ : Fin n => 1) S := hmass
+    _ = d * arenaSize n A₀ := by
+      rw [wsum, arenaSize, Set.ncard_eq_toFinset_card']
+      simp [S]
+
+/-- The carrier-sized reading retained for the machine word bound. -/
+theorem rawPointer_le_degree
+    (hcentres : CentresBy n q A₀ π centre)
+    (h : RawCoverInvA G A₀ π centre q r c m Xoff Xmem asg Mcur)
+    (hk : ∀ v : Fin n, (wreach (masked G A₀) π (2 * r) v).ncard ≤ d) :
+    m ≤ n * d := by
+  calc
+    m ≤ d * arenaSize n A₀ := rawPointer_le_active hcentres h hk
+    _ ≤ d * n := Nat.mul_le_mul_left d (arenaSize_le n A₀)
+    _ = n * d := Nat.mul_comm _ _
 
 /-! ## The compacted turn list -/
 
@@ -434,6 +463,7 @@ theorem mass_of_active_order (H : SimpleGraph (Fin n))
   mass_of_active_compaction_weight H horder.centres hout horder.degree hcomp
 
 #print axioms rawSlotWeight_eq_wsum_clusterAtA
+#print axioms rawPointer_le_active
 #print axioms rawPointer_le_degree
 #print axioms mass_of_active_order
 
