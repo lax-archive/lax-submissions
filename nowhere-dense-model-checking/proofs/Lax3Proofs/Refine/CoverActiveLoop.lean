@@ -1,5 +1,6 @@
 import Lax3Proofs.Refine.CoverActiveTurn
 import Lax3Proofs.Refine.CoverBlock
+import Lax3Proofs.RamCoverActiveMass
 
 /-!
 # The block-priced active-cover loop
@@ -13,7 +14,8 @@ namespace Lax3Proofs.Refine.CoverActiveLoop
 
 open Lax3.ColoredGraphs
 open Lax11.GraphEncoding
-open Lax3Proofs.RamBfs (CsrGraph WD)
+open Lax12.ColoringNumbers (wreach)
+open Lax3Proofs.RamBfs (CsrGraph WD masked)
 open Lax3Proofs.RamCoverActive
 open Lax3Proofs.Refine.BfsBlock
 open Lax3Proofs.Refine.CoverActiveBlock
@@ -54,13 +56,14 @@ def RawLoopState {n : ℕ} (B ns nt q r : ℕ) (G : SimpleGraph (Fin n))
     RawTurnState B ns nt q r c xp G A₀ π centre O T Xoff Xmem asg M σ
 
 /-- The active loop invariant with the degree-priced arena prefix exposed.
-After `c` centres, at most `c * K` member cells have been emitted. -/
+Every processed prefix has at most `n * K` member cells in total.  This is
+the global weak-reach double count; no individual block is assumed small. -/
 def RawLoopStateK {n : ℕ} (B ns nt q r K : ℕ) (G : SimpleGraph (Fin n))
     (A₀ : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (centre O T : ℕ → ℕ)
     (σ : Env) : Prop :=
   ∃ c xp Xoff Xmem asg M,
     RawTurnState B ns nt q r c xp G A₀ π centre O T Xoff Xmem asg M σ ∧
-      xp ≤ c * K
+      xp ≤ n * K
 
 /-! ## Loop theorem -/
 
@@ -145,7 +148,7 @@ variable {Kball : ℕ}
 
 /-- The active loop under the almost-linear arena reading.  The only value
 bound needed by a turn is the current used prefix plus one physical block;
-the per-ball cardinality bound maintains that prefix at `c * Kball`. -/
+the global weak-reach double count maintains that prefix at `n * Kball`. -/
 theorem activeLoopK_spec
     (hcentres : CentresBy n q A₀ π centre)
     (hcsr : CsrGraph G ns O T)
@@ -153,14 +156,14 @@ theorem activeLoopK_spec
     (hqB : q < B) (hrB : 2 * r + 1 < B)
     (harenaB : n * Kball + n < B)
     (hbud : ActiveBallBudget q r G A₀ centre O bw nb)
-    (hnbK : ∀ k < q, nb k ≤ Kball) :
+    (hdeg : ∀ v : Fin n, (wreach (masked G A₀) π (2 * r) v).ncard ≤ Kball) :
     Spec B
       (fun σ => RawLoopStateK B ns nt q r Kball G A₀ π centre O T
         (σ.setVar "c" 0))
       (activeLoopCom r)
       (fun _ σ' => ∃ xp Xoff Xmem asg M,
         RawTurnState B ns nt q r q xp G A₀ π centre O T Xoff Xmem asg M σ' ∧
-          xp ≤ q * Kball)
+          xp ≤ n * Kball)
       (activeLoopK q bw nb) := by
   let I : Env → Prop := RawLoopStateK B ns nt q r Kball G A₀ π centre O T
   have hxN : ∀ σ, I σ → σ.vars "c" ≤ q := by
@@ -180,23 +183,18 @@ theorem activeLoopK_spec
     have hceq : c = k := by rw [hS.centre_var] at hck; omega
     subst c
     obtain ⟨A, hA, hbw, hnb⟩ := hbud k hk M hS.raw.mask
-    have hkN : k ≤ n := le_trans hk.le (le_trans hcentres.count_le le_rfl)
     have hptrB : xp + n < B := by
       calc
-        xp + n ≤ k * Kball + n := Nat.add_le_add_right hxpK n
-        _ ≤ n * Kball + n :=
-          Nat.add_le_add_right (Nat.mul_le_mul_right Kball hkN) n
+        xp + n ≤ n * Kball + n := Nat.add_le_add_right hxpK n
         _ < B := harenaB
     obtain ⟨σ', hrun, tail, Q, QD, Xmem', htail, hS'⟩ :=
       (activeTurn_ptr_spec (B := B) (G := G) (A₀ := A₀) (π := π)
         (centre := centre) (O := O) (T := T) (Xoff := Xoff) (Xmem := Xmem)
         (asg := asg) (M := M) hcentres hcsr hnB hnsB hnt hqB hrB
         hA hbw hnb).run (σ := σ) ⟨hS, hk, hptrB⟩
-    have htailK : tail ≤ Kball := le_trans htail (hnbK k hk)
-    have hxpK' : xp + tail ≤ (k + 1) * Kball := by
-      calc
-        xp + tail ≤ k * Kball + Kball := Nat.add_le_add hxpK htailK
-        _ = (k + 1) * Kball := by simp [Nat.add_mul]
+    have hxpK' : xp + tail ≤ n * Kball :=
+      Lax3Proofs.RamCoverActiveMass.rawPointer_le_degree
+        hcentres hS'.raw hdeg
     refine ⟨σ', activeTurnK (bw k) (nb k), hrun, ?_, ?_⟩
     · exact activeTurnK_le_weight (bw k) (nb k)
     · refine ⟨?_, hS'.centre_var⟩
@@ -220,17 +218,17 @@ theorem activeLoopK_rawOut_spec
     (hqB : q < B) (hrB : 2 * r + 1 < B)
     (harenaB : n * Kball + n < B)
     (hbud : ActiveBallBudget q r G A₀ centre O bw nb)
-    (hnbK : ∀ k < q, nb k ≤ Kball) :
+    (hdeg : ∀ v : Fin n, (wreach (masked G A₀) π (2 * r) v).ncard ≤ Kball) :
     Spec B
       (fun σ => RawLoopStateK B ns nt q r Kball G A₀ π centre O T
         (σ.setVar "c" 0))
       (activeLoopCom r)
       (fun _ σ' => ∃ xp Xoff Xmem asg M,
         RawTurnState B ns nt q r q xp G A₀ π centre O T Xoff Xmem asg M σ' ∧
-        xp ≤ q * Kball ∧
+        xp ≤ n * Kball ∧
         Lax3Proofs.RamCover.RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
       (activeLoopK q bw nb) :=
-  (activeLoopK_spec hcentres hcsr hnB hnsB hnt hqB hrB harenaB hbud hnbK).post
+  (activeLoopK_spec hcentres hcsr hnB hnsB hnt hqB hrB harenaB hbud hdeg).post
     (fun _ _ _ h => by
       obtain ⟨xp, Xoff, Xmem, asg, M, hS, hxpK⟩ := h
       exact ⟨xp, Xoff, Xmem, asg, M, hS, hxpK, hS.raw.out hcentres⟩)

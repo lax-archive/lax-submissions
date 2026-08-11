@@ -19,7 +19,8 @@ namespace Lax3Proofs.Refine.CoverActiveNamed
 
 open Lax3.ColoredGraphs
 open Lax11.GraphEncoding
-open Lax3Proofs.RamBfs (CsrGraph)
+open Lax12.ColoringNumbers (wreach)
+open Lax3Proofs.RamBfs (CsrGraph masked)
 open Lax3Proofs.RamDriver (ordName)
 open Lax3Proofs.Refine.CoverActiveLoop
 open Lax3Proofs.Refine.CoverActiveTurn
@@ -115,7 +116,7 @@ theorem activeLoopAtK_rawOut_spec {Kball : ℕ}
     (hqB : q < B) (hrB : 2 * r + 1 < B)
     (harenaB : n * Kball + n < B)
     (hbud : ActiveBallBudget q r G A₀ centre O bw nb)
-    (hnbK : ∀ k < q, nb k ≤ Kball) :
+    (hdeg : ∀ v : Fin n, (wreach (masked G A₀) π (2 * r) v).ncard ≤ Kball) :
     Spec B
       (fun σ => RawLoopStateK B ns nt q r Kball G A₀ π centre O T
         ((renEnv (activeCoverSwap j) σ).setVar "c" 0))
@@ -123,12 +124,12 @@ theorem activeLoopAtK_rawOut_spec {Kball : ℕ}
       (fun _ σ' => ∃ xp Xoff Xmem asg M,
         RawTurnState B ns nt q r q xp G A₀ π centre O T Xoff Xmem asg M
           (renEnv (activeCoverSwap j) σ') ∧
-        xp ≤ q * Kball ∧
+        xp ≤ n * Kball ∧
         Lax3Proofs.RamCover.RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
       (activeLoopK q bw nb) :=
   renCom_spec (activeCoverSwap_invol j)
     (activeLoopK_rawOut_spec hcentres hcsr hnB hnsB hnt hqB hrB harenaB
-      hbud hnbK)
+      hbud hdeg)
 
 /-! ## Axiom audit -/
 

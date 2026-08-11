@@ -15,8 +15,10 @@ will discharge that premise.
 namespace Lax3Proofs.Refine.CoverActiveCore
 
 open Lax3.ColoredGraphs
+open Lax12.ColoringNumbers (wreach)
 open Lax3Proofs.RamCover
 open Lax3Proofs.RamCoverActive
+open Lax3Proofs.RamBfs (masked)
 open Lax3Proofs.RamDriver (ordName xofName xmmName asgName)
 open Lax3Proofs.Refine.CoverActiveInit
 open Lax3Proofs.Refine.CoverActiveNamed
@@ -275,7 +277,7 @@ theorem activeCoreScratchK_spec {Kball : ℕ}
     (harenaB : n * Kball + n < B)
     (hdouble : ∀ p < n, p + p < B)
     (hbud : ActiveBallBudget q r G A₀ centre O bw nb)
-    (hnbK : ∀ k < q, nb k ≤ Kball)
+    (hdeg : ∀ v : Fin n, (wreach (masked G A₀) π (2 * r) v).ncard ≤ Kball)
     (hcost : ∀ xp Xoff Xmem asg,
       RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg →
       activeInitCost q +
@@ -302,11 +304,10 @@ theorem activeCoreScratchK_spec {Kball : ℕ}
     simp [hc₀, hxp₀]
   obtain ⟨σ₂, rloop, xp, Xoff, Xmem, asg, M, hstate, hxpK, hraw⟩ :=
     (activeLoopAtK_rawOut_spec hcentres hcsr hnB hnsB hnt hqB hrB harenaB
-      hbud hnbK).run (σ := σ₁) hinitK
+      hbud hdeg).run (σ := σ₁) hinitK
   have hxpB : xp < B := by
     calc
-      xp ≤ q * Kball := hxpK
-      _ ≤ n * Kball := Nat.mul_le_mul_right Kball hcentres.count_le
+      xp ≤ n * Kball := hxpK
       _ ≤ n * Kball + n := Nat.le_add_right _ _
       _ < B := harenaB
   obtain ⟨Q₀, hQ₀⟩ := hstate.queue_arr
@@ -403,7 +404,7 @@ theorem activeCoreAtK_spec {Kball : ℕ}
     (harenaB : n * Kball + n < B)
     (hdouble : ∀ p < n, p + p < B)
     (hbud : ActiveBallBudget q r G A₀ centre O bw nb)
-    (hnbK : ∀ k < q, nb k ≤ Kball)
+    (hdeg : ∀ v : Fin n, (wreach (masked G A₀) π (2 * r) v).ncard ≤ Kball)
     (hcost : ∀ xp Xoff Xmem asg,
       RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg →
       activeInitCost q +
@@ -413,7 +414,7 @@ theorem activeCoreAtK_spec {Kball : ℕ}
       (activeCoreAtCom j r)
       (fun _ σ' => ActiveCoreAtOut B q r j G A₀ π centre σ') K := by
   have hcore := activeCoreScratchK_spec (j := j) hcentres hcsr hnB hnsB hnt hqB
-    hrB harenaB hdouble hbud hnbK hcost
+    hrB harenaB hdouble hbud hdeg hcost
   have htransport := Lax3Proofs.Refine.ScatterBlock.renCom_spec
     (activeOutputSwap_invol j) hcore
   intro σ hpre
