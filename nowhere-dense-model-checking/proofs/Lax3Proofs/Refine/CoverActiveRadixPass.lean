@@ -848,6 +848,80 @@ theorem copyBackCom_spec {B n na lo m b : ℕ} {X Q : ℕ → ℕ}
   · simp
   · simp [hxmem]
 
+/-! ## One executable radix pass -/
+
+def radixPassCom : Com := .seq stableScatterCom copyBackCom
+
+def radixPassCost (m : ℕ) : ℕ :=
+  stableScatterCost m + ((copyBackSlotK + 4) * m + 6)
+
+/-- The pass replaces exactly one block by its mathematical stable
+radix pass and leaves the rest of the arena untouched.  The scratch
+array remains allocated for the next bit. -/
+def RadixPassOut (n na lo m b : ℕ) (X : ℕ → ℕ) (σ : Env) : Prop :=
+  σ.vars "rslo" = lo ∧ σ.vars "rsn" = m ∧ σ.vars "rsb" = b ∧
+  ∃ X' Q : ℕ → ℕ,
+    σ.arrs "xmem" = arrOf na X' ∧ σ.arrs "q" = arrOf n Q ∧
+    segment lo m X' = radixPass b (segment lo m X) ∧
+    ∀ p, p < lo ∨ lo + m ≤ p → X' p = X p
+
+theorem stableScratch_words {B lo m b : ℕ} {X Q : ℕ → ℕ}
+    (hXB : ∀ i < m, X (lo + i) < B)
+    (hQ : ∀ j, (hj : j < m) →
+      Q j = (radixPass b (segment lo m X))[j]'(by
+        rw [(radixPass_perm b (segment lo m X)).length_eq, segment_length]
+        exact hj)) :
+    ∀ j < m, Q j < B := by
+  intro j hj
+  rw [hQ j hj]
+  have hjr : j < (radixPass b (segment lo m X)).length := by
+    rw [(radixPass_perm b (segment lo m X)).length_eq, segment_length]
+    exact hj
+  have hmemr := List.getElem_mem hjr
+  have hmemx : (radixPass b (segment lo m X))[j] ∈ segment lo m X :=
+    (radixPass_perm b (segment lo m X)).mem_iff.mp hmemr
+  obtain ⟨i, hi, heq⟩ := mem_segment_iff.mp hmemx
+  rw [← heq]
+  exact hXB i hi
+
+theorem radixPassCom_spec {B n na lo m b : ℕ} {X Q₀ : ℕ → ℕ}
+    (hB : 1 < B) (hnB : n < B) (hmn : m ≤ n) (hbB : b < B)
+    (hfit : lo + m ≤ na) (hword : lo + m < B)
+    (hXB : ∀ i < m, X (lo + i) < B) :
+    Spec B
+      (fun σ => σ.vars "rslo" = lo ∧ σ.vars "rsn" = m ∧
+        σ.vars "rsb" = b ∧ σ.arrs "xmem" = arrOf na X ∧
+        σ.arrs "q" = arrOf n Q₀)
+      radixPassCom
+      (fun _ σ' => RadixPassOut n na lo m b X σ')
+      (radixPassCost m) := by
+  intro σ hσ
+  obtain ⟨σs, rs, hsout⟩ :=
+    (stableScatterCom_spec (X := X) (Q₀ := Q₀) hB hnB hmn hbB hfit hword hXB).run
+      (σ := σ) hσ
+  obtain ⟨hslo, hslen, hsbit, hsxmem, Q, hsq, hQcell⟩ := hsout
+  have hQB : ∀ j < m, Q j < B := stableScratch_words hXB hQcell
+  obtain ⟨σc, rc, hIc, hri⟩ :=
+    (copyBackCom_spec (X := X) (Q := Q) hnB hmn hfit hword hQB).run
+      (σ := σs) ⟨hslo, hslen, hsbit, hsq, hsxmem⟩
+  obtain ⟨hclo, hclen, hcbit, hcq, -, hcxmem⟩ := hIc
+  let X' := pastePrefix lo m X Q
+  have hxmem' : σc.arrs "xmem" = arrOf na X' := by
+    rw [hcxmem, hri]
+  have hseg : segment lo m X' = radixPass b (segment lo m X) := by
+    apply List.ext_getElem
+    · rw [(radixPass_perm b (segment lo m X)).length_eq]
+      simp
+    · intro j hj₁ hj₂
+      have hjm : j < m := by simpa using hj₁
+      rw [segment_getElem lo m X' j hj₁,
+        show X' (lo + j) = Q j from by simp [X', hjm]]
+      exact hQcell j hjm
+  refine ⟨σc, ?_, ⟨hclo, hclen, hcbit, X', Q, hxmem', hcq, hseg, ?_⟩⟩
+  · simpa [radixPassCom, radixPassCost] using (rs.seq rc)
+  · intro p hp
+    exact pastePrefix_outside hp
+
 /-! ## Axiom audit -/
 
 #print axioms countZeroSlot_spec
@@ -857,5 +931,6 @@ theorem copyBackCom_spec {B n na lo m b : ℕ} {X Q : ℕ → ℕ}
 #print axioms stableScatterCom_spec
 #print axioms copyBackSlot_spec
 #print axioms copyBackCom_spec
+#print axioms radixPassCom_spec
 
 end Lax3Proofs.Refine.CoverActiveRadixPass
