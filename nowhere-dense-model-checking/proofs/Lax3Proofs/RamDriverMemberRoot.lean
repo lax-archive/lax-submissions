@@ -1,5 +1,6 @@
 import Lax3Proofs.RamDriverRoot
 import Lax3Proofs.RamDriverMemberPhases
+import Lax3Proofs.RamCoverActiveMass
 
 /-!
 # Active-cover root integration
@@ -12,7 +13,8 @@ contracts only require the live centre prefix and live assignment cells.
 namespace Lax3Proofs.RamDriverMemberRoot
 
 open Finset
-open Lax3.ColoredGraphs Lax3.DistFO Lax3.Locality Lax3.ScatterSentences
+open Lax3.ColoredGraphs Lax3.DistFO Lax3.Locality Lax3.ScatterSentences Lax3.SplitterGame
+open Lax12.UniformQuasiWideness
 open Lax3Proofs.FormulaTables
 open Lax3Proofs.RamBfs (masked CsrGraph)
 open Lax3Proofs.RamCover
@@ -350,5 +352,102 @@ theorem clusterFramesAtA
     hinner.tab hmono
     (fun _ hk hout hsub => arenaWeight_le_blockWeightA G hout hk hsub)
     le_rfl
+
+/-! ## The active level
+
+The two outer phases remain parameters here because their active-set
+executables are the next engine boundary.  Everything below those phases is
+now concrete: the base case, all seven cluster subphases, the recursive
+descent, and the weighted active-cover mass argument. -/
+
+section Level
+
+variable {B q_top cap mb ns W ℓ s Kmass : ℕ} {N : ℕ → ℕ}
+  {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
+  {Kb : ℕ → ℕ} {Ki Ksc : ℕ → ℕ → ℕ}
+  {Ko Kc Ks Kl : ℕ → ℕ → ℕ}
+  {orderPhase coverPhase : ℕ → Com}
+
+open Classical in
+/-- Every active level, with the concrete cluster engine and active-cover
+mass theorem plugged in.  The remaining semantic hypotheses are precisely
+the active ordering and active cover phase contracts. -/
+theorem levelAtA
+    (hcap : cap = rhoMinus 0 q_top) (hmb : mb = ℓ * (2 * cap + 1))
+    (hℓ : ℓ = N (2 * s + 2))
+    (hB : WordBoundK B n Kmass ns cap mb)
+    (hcsr : RamElim.CsrSimple G ns O T)
+    (hQ : ∀ Pt : Set (Fin n), N (2 * s + 2) ≤ Pt.ncard →
+      ∃ S Bd : Set (Fin n), S.ncard ≤ s ∧ Bd ⊆ Pt \ S ∧ 2 * s + 2 ≤ Bd.ncard ∧
+        DistIndependent (deleteVerts G S) (2 * cap) Bd)
+    (hbnd : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
+      ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
+          Refine.ScatterDeadTurn.deadAtomKBlk σs.β z mb z z σs.t ≤ Kb z)
+    (hcostI : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
+      ∀ z, Kb z * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j z)
+    (hKsc : ∀ j < ℓ, ∀ z,
+      Ki j z * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j z)
+    (hKmono : ∀ j, Monotone (Kl j))
+    (hKs : ∀ j < ℓ, ∀ t : ℕ,
+      RamDriverRoot.turnCostSize n ns cap mb q_top j φ
+        (Ksc j t) t (Kl (j + 1) t) ≤ Ks j t)
+    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
+    (horder : ∀ j < ℓ, ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ),
+      OrderImplementsA B n W cap mb ns j O T M Gm C
+        (RamCoverActiveMass.ActiveOrderP G cap Kmass) (orderPhase j)
+        (Ko j (arenaWeight n G M)))
+    (hcover : ∀ j < ℓ, ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
+        (q : ℕ) (π : Equiv.Perm (Fin n)) (centre : ℕ → ℕ),
+      CoverImplementsA B n q cap mb ns W j G O T M Gm C π centre (coverPhase j)
+        (Kc j (arenaWeight n G M)))
+    (hinner : ∀ j < ℓ, InnerWriteFramesA j
+      (driverAtA q_top cap mb ℓ φ orderPhase coverPhase (j + 1)))
+    (hloopfr : ∀ j < ℓ,
+      cpsName j ∉ (clusterCom q_top cap mb φ j
+          (driverAtA q_top cap mb ℓ φ orderPhase coverPhase (j + 1))).warrs ∧
+        cnumName j ∉ (clusterCom q_top cap mb φ j
+          (driverAtA q_top cap mb ℓ φ orderPhase coverPhase (j + 1))).wvars ∧
+        cixName j ∉ (clusterCom q_top cap mb φ j
+          (driverAtA q_top cap mb ℓ φ orderPhase coverPhase (j + 1))).wvars)
+    (hphfr : ∀ jd i : ℕ, tabName jd i ∉ (orderPhase jd).warrs ∧
+      tabName jd i ∉ (coverPhase jd).warrs)
+    (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
+      (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
+        ≤ Kl j m) :
+    ∀ j ≤ ℓ, ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ) (D : Set (Fin n)),
+      LevelImplementsDA B q_top cap mb ℓ W ns j φ G O T M Gm C D
+        orderPhase coverPhase (Kl j (arenaWeight n G M)) :=
+  RamDriverClusterMember.levelImplementsA
+    (Ksf := fun j t => RamDriverRoot.turnCostSize n ns cap mb q_top j φ
+      (Ksc j (n + ns)) t (Kl (j + 1) t))
+    hB.n_lt hQ hℓ
+    (fun M Gm C D hbot hDdead hbit => by
+      rw [driverAtA_bot]
+      exact (RamDriverCompose.baseImplementsD
+        (le_trans (RamDriverBot.baseCost_mono q_top cap mb ℓ φ
+          (Refine.MassWeight.arenaSize_le_arenaWeight n G M)) (hKbase _))
+        hB hbot hDdead hbit).pre
+          (fun _ h => ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.2⟩))
+    horder hcover
+    (fun j hj M Gm C q π centre Xoff Xmem asg mm k =>
+      clusterStepAtA (M := M) (Gm := Gm) (C := C) (q := q) (π := π)
+        (centre := centre) (Xoff := Xoff) (Xmem := Xmem) (asg := asg) (mm := mm) (k := k)
+        hcap hmb hj hB hcsr (hbnd j hj) (hcostI j hj) (hKsc j hj)
+        (hKmono (j + 1)) (hinner j hj) (hKs j hj _))
+    (fun j hj M Gm C q π centre Xoff Xmem asg mm k =>
+      clusterFramesAtA (M := M) (Gm := Gm) (C := C) (q := q) (π := π)
+        (centre := centre) (Xoff := Xoff) (Xmem := Xmem) (asg := asg) (mm := mm) (k := k)
+        hmb hj hB hcsr (hbnd j hj) (hcostI j hj) (hKsc j hj)
+        (hKmono (j + 1)) (hinner j hj))
+    hloopfr hphfr
+    (fun _ _ _ _ _ _ _ _ _ _ hord hout hcomp =>
+      RamCoverActiveMass.mass_of_active_order G hord hout hcomp)
+    hKl
+
+#print axioms levelAtA
+
+end Level
 
 end Lax3Proofs.RamDriverMemberRoot
