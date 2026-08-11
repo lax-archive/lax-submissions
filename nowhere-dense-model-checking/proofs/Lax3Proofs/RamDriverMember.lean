@@ -58,6 +58,26 @@ theorem CoverHeldAtA.ofCarrier {B n j cap m : ℕ} {G : SimpleGraph (Fin n)}
     centre_lt := h.2.2.2.2.2.2.2.1
     cover := h.2.2.2.2.2.2.2.2.toActive hord }
 
+/-- Frame the five machine locations of an active retained cover. -/
+theorem CoverHeldAtA.congr {B n q j cap m : ℕ} {G : SimpleGraph (Fin n)}
+    {M centre Xoff Xmem asg : ℕ → ℕ} {π : Equiv.Perm (Fin n)} {σ σ' : Env}
+    (h : CoverHeldAtA B n q j G M π centre cap Xoff Xmem asg m σ)
+    (hcentre : σ'.arrs (ordName j) = σ.arrs (ordName j))
+    (hxoff : σ'.arrs (xofName j) = σ.arrs (xofName j))
+    (hxmem : σ'.arrs (xmmName j) = σ.arrs (xmmName j))
+    (hasg : σ'.arrs (asgName j) = σ.arrs (asgName j))
+    (hxp : σ'.vars (xpName j) = σ.vars (xpName j)) :
+    CoverHeldAtA B n q j G M π centre cap Xoff Xmem asg m σ' :=
+  { centre_arr := by rw [hcentre]; exact h.centre_arr
+    off_arr := by rw [hxoff]; exact h.off_arr
+    mem_arr := by rw [hxmem]; exact h.mem_arr
+    asg_arr := by rw [hasg]; exact h.asg_arr
+    pointer := by rw [hxp]; exact h.pointer
+    alloc := h.alloc
+    pointer_lt := h.pointer_lt
+    centre_lt := h.centre_lt
+    cover := h.cover }
+
 /-- Everything a turn reads at one active cover. -/
 structure TurnPreA (B n q cap mb ns Ws j : ℕ) (G : SimpleGraph (Fin n))
     (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n))
