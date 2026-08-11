@@ -708,6 +708,146 @@ theorem stableScatterCom_spec {B n na lo m b : ℕ} {X Q₀ : ℕ → ℕ}
     have h := hregions j hj'
     simpa [hradix, xs] using h
 
+/-! ## Copying the scratch prefix back into the block -/
+
+/-- Replace the first `k` cells of the segment at `lo` by the first
+`k` cells of `Q`, leaving every other arena cell unchanged. -/
+def pastePrefix (lo k : ℕ) (X Q : ℕ → ℕ) (p : ℕ) : ℕ :=
+  if lo ≤ p ∧ p < lo + k then Q (p - lo) else X p
+
+@[simp] theorem pastePrefix_zero (lo : ℕ) (X Q : ℕ → ℕ) :
+    pastePrefix lo 0 X Q = X := by
+  funext p
+  simp [pastePrefix]
+
+@[simp] theorem pastePrefix_at {lo k j : ℕ} {X Q : ℕ → ℕ} (hj : j < k) :
+    pastePrefix lo k X Q (lo + j) = Q j := by
+  simp [pastePrefix, hj]
+
+theorem pastePrefix_outside {lo k p : ℕ} {X Q : ℕ → ℕ}
+    (hp : p < lo ∨ lo + k ≤ p) : pastePrefix lo k X Q p = X p := by
+  simp only [pastePrefix]
+  split <;> omega
+
+/-- A store at the next segment cell extends the pasted prefix by one. -/
+theorem upd_pastePrefix_current (lo k : ℕ) (X Q : ℕ → ℕ) :
+    upd (pastePrefix lo k X Q) (lo + k) (Q k) =
+      pastePrefix lo (k + 1) X Q := by
+  funext p
+  rw [upd_apply]
+  by_cases hp : p = lo + k
+  · subst p
+    simp [pastePrefix]
+  · by_cases hold : lo ≤ p ∧ p < lo + k
+    · have hnew : lo ≤ p ∧ p < lo + (k + 1) := by omega
+      simp [pastePrefix, hp, hold, hnew]
+    · have hnew : ¬(lo ≤ p ∧ p < lo + (k + 1)) := by
+        intro h
+        omega
+      simp [pastePrefix, hp, hold, hnew]
+
+/-- One cell copied from the scratch prefix back to the block segment. -/
+def copyBackSlot : Com :=
+  .seq (.assign "rsv" (.get "q" (.var "rsi")))
+    (.seq (.store "xmem" (.add (.var "rslo") (.var "rsi")) (.var "rsv"))
+      (.assign "rsi" (.add (.var "rsi") (.lit 1))))
+
+def copyBackCom : Com :=
+  .seq (.assign "rsi" (.lit 0))
+    (.while (.lt (.var "rsi") (.var "rsn")) copyBackSlot)
+
+def CopyBackInv (n na lo m b : ℕ) (X Q : ℕ → ℕ) (σ : Env) : Prop :=
+  σ.vars "rslo" = lo ∧ σ.vars "rsn" = m ∧ σ.vars "rsb" = b ∧
+  σ.arrs "q" = arrOf n Q ∧ σ.vars "rsi" ≤ m ∧
+  σ.arrs "xmem" = arrOf na (pastePrefix lo (σ.vars "rsi") X Q)
+
+def copyBackSlotK : ℕ := 32
+
+theorem copyBackSlot_spec {B n na lo m b : ℕ} {X Q : ℕ → ℕ}
+    (hnB : n < B) (hmn : m ≤ n) (hfit : lo + m ≤ na)
+    (hword : lo + m < B) (hQB : ∀ i < m, Q i < B) :
+    Spec B
+      (fun σ => CopyBackInv n na lo m b X Q σ ∧ σ.vars "rsi" < m)
+      copyBackSlot
+      (fun σ σ' => CopyBackInv n na lo m b X Q σ' ∧
+        σ'.vars "rsi" = σ.vars "rsi" + 1)
+      copyBackSlotK := by
+  refine Spec.of_exists fun σ hσ => ?_
+  obtain ⟨⟨hlo, hlen, hbit, hq, hile, hxmem⟩, hi⟩ := hσ
+  let k := σ.vars "rsi"
+  have hk : k < m := hi
+  have hkB : k < B := by omega
+  have hkn : k < n := lt_of_lt_of_le hk hmn
+  have hidxna : lo + k < na := by omega
+  have hidxB : lo + k < B := by omega
+  have hqB : Q k < B := hQB k hk
+  have eqread : (Expr.get "q" (.var "rsi")).evalB B σ = some (Q k) := by
+    apply evalB_get
+    · exact evalB_var hkB
+    · rw [hq, show σ.vars "rsi" = k from rfl, getElem?_arrOf Q hkn]
+    · exact hqB
+  have r₁ := Run.assign (x := "rsv") eqread
+  let σ₁ := σ.setVar "rsv" (Q k)
+  have eidx : (Expr.add (.var "rslo") (.var "rsi")).evalB B σ₁ = some (lo + k) := by
+    have elo : (Expr.var "rslo").evalB B σ₁ = some lo := by
+      simpa [σ₁, hlo] using
+        (evalB_var (B := B) (x := "rslo") (σ := σ₁) (by simp [σ₁, hlo]; omega))
+    have eki : (Expr.var "rsi").evalB B σ₁ = some k := by
+      simpa [σ₁, k] using
+        (evalB_var (B := B) (x := "rsi") (σ := σ₁) (by simp [σ₁, k, hkB]))
+    simpa only [Bop.apply_add] using evalB_bin (op := .add) elo eki hidxB
+  have evalv : (Expr.var "rsv").evalB B σ₁ = some (Q k) :=
+    evalB_var (by simp [σ₁, hqB])
+  have r₂ := Run.store (a := "xmem") eidx evalv (by
+    simp [σ₁, hxmem, hidxna])
+  let σ₂ := σ₁.setArr "xmem" (lo + k) (Q k)
+  have einc : (Expr.add (.var "rsi") (.lit 1)).evalB B σ₂ = some (k + 1) := by
+    apply evalB_bin (op := .add)
+    · apply evalB_var
+      simp [σ₂, σ₁, k, hkB]
+    · exact evalB_lit (by omega)
+    · simp only [Bop.apply_add]
+      omega
+  have r₃ := Run.assign (x := "rsi") einc
+  let σ₃ := σ₂.setVar "rsi" (k + 1)
+  refine ⟨σ₃, _, r₁.seq (r₂.seq r₃), ?_, ?_, by simp [σ₃, k]⟩
+  · norm_num [copyBackSlotK, Expr.size]
+  · refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+    · simp [σ₃, σ₂, σ₁, hlo]
+    · simp [σ₃, σ₂, σ₁, hlen]
+    · simp [σ₃, σ₂, σ₁, hbit]
+    · simp [σ₃, σ₂, σ₁, hq]
+    · simp [σ₃]
+      omega
+    · rw [arrs_setVar, arrs_setArr, if_pos rfl, arrs_setVar, hxmem,
+        set_arrOf_eq_upd, upd_pastePrefix_current]
+      simp [σ₃, k]
+
+theorem copyBackCom_spec {B n na lo m b : ℕ} {X Q : ℕ → ℕ}
+    (hnB : n < B) (hmn : m ≤ n) (hfit : lo + m ≤ na)
+    (hword : lo + m < B) (hQB : ∀ i < m, Q i < B) :
+    Spec B
+      (fun σ => σ.vars "rslo" = lo ∧ σ.vars "rsn" = m ∧
+        σ.vars "rsb" = b ∧ σ.arrs "q" = arrOf n Q ∧
+        σ.arrs "xmem" = arrOf na X)
+      copyBackCom
+      (fun _ σ' => CopyBackInv n na lo m b X Q σ' ∧ σ'.vars "rsi" = m)
+      ((copyBackSlotK + 4) * m + 6) := by
+  have hmB : m < B := lt_of_le_of_lt hmn hnB
+  have hscan := Spec.forRangeZero (B := B) "rsi" "rsn"
+    (CopyBackInv n na lo m b X Q) m copyBackSlotK hmB
+    (fun _ h => h.2.2.2.2.1) (fun _ h => h.2.1)
+    (copyBackSlot_spec hnB hmn hfit hword hQB)
+  refine hscan.pre ?_
+  rintro σ ⟨hlo, hlen, hbit, hq, hxmem⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+  · simp [hlo]
+  · simp [hlen]
+  · simp [hbit]
+  · simp [hq]
+  · simp
+  · simp [hxmem]
+
 /-! ## Axiom audit -/
 
 #print axioms countZeroSlot_spec
@@ -715,5 +855,7 @@ theorem stableScatterCom_spec {B n na lo m b : ℕ} {X Q₀ : ℕ → ℕ}
 #print axioms selectDigitSlot_spec
 #print axioms selectDigitCom_spec
 #print axioms stableScatterCom_spec
+#print axioms copyBackSlot_spec
+#print axioms copyBackCom_spec
 
 end Lax3Proofs.Refine.CoverActiveRadixPass
