@@ -15,15 +15,382 @@ open Lax3.ColoredGraphs Lax3.DistFO Lax3.Locality Lax3.ScatterSentences
 open Lax3.SplitterGame
 open Lax12.UniformQuasiWideness
 open Lax3Proofs.FormulaTables Lax3Proofs.WalkDistance
-open Lax3Proofs.RamBfs (masked)
+open Lax3Proofs.RamBfs (masked CsrGraph)
 open Lax3Proofs.RamDriver
 open Lax3Proofs.RamDriverCluster
 open Lax3Proofs.RamDriverMember
+open Lax3Proofs.Refine.MassMath (clusterAt)
 open Lax13Proofs.Imp Lax13Proofs.Reasoning
 
 variable {B n q cap mb ns W j : ℕ} {G : SimpleGraph (Fin n)}
 variable {O T M Gm centre Xoff Xmem asg : ℕ → ℕ} {π : Equiv.Perm (Fin n)}
 variable {C : ℕ → ℕ → ℕ} {m : ℕ} {σ : Env}
+
+/-! ## Active-cover contracts for the seven turn phases
+
+The landed phase contracts carry `TurnPre`, whose cover is defined on
+every carrier position and whose assignment is meaningful at every
+vertex.  The executable walks only need the active blocks.  These
+parallel contracts carry `TurnPreA`; assignment-dependent conclusions
+are consequently restricted to live vertices, while dead cells are
+explicitly framed.
+-/
+
+/-- The descent at an active centre. -/
+def DescendStepA (B q cap mb ns Ws j : ℕ) (G : SimpleGraph (Fin n))
+    (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n))
+    (centre Xoff Xmem asg : ℕ → ℕ) (m k K : ℕ) : Prop :=
+  CsrGraph G ns O T → ∀ {d : ℕ}, WordBoundK B n d ns cap mb → k < q →
+  M (centre k) ≠ 0 →
+  Spec B (fun σ => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+      Xoff Xmem asg m σ ∧ σ.vars (curName j) = k)
+    (descendCom cap j)
+    (fun σ σ' => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+        Xoff Xmem asg m σ' ∧
+      σ'.out = σ.out ∧ σ'.vars (curName j) = σ.vars (curName j) ∧
+      (∃ g, σ'.arrs "wa" = arrOf mb g) ∧
+      ∃ (X W : Set (Fin n)) (Alv' Gam' : ℕ → ℕ),
+        (∀ v : Fin n, M (v : ℕ) ≠ 0 →
+          asg (v : ℕ) = σ.vars (curName j) → ball (masked G M) cap v ⊆ X) ∧
+        (W ∩ X).Nonempty ∧ W.ncard ≤ mb ∧
+        (∀ v : Fin n, Alv' (v : ℕ) ≠ 0 →
+          v ∈ clusterAt G M π centre cap (σ.vars (curName j))) ∧
+        (∀ v : Fin n, v ∈ X →
+          v ∈ clusterAt G M π centre cap (σ.vars (curName j))) ∧
+        BatchData n j B G M X W Alv' Gam' σ' ∧
+        PlayRec B cap G (j + 1) Alv' Gam' σ') K
+
+/-- Padding the batch preserves an active cover. -/
+def EnumStepA (B q cap mb ns Ws j : ℕ) (G : SimpleGraph (Fin n))
+    (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n))
+    (centre Xoff Xmem asg : ℕ → ℕ) (m : ℕ) (X W : Set (Fin n))
+    (Alv' Gam' : ℕ → ℕ) (K : ℕ) : Prop :=
+  Spec B (fun σ => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+      Xoff Xmem asg m σ ∧ BatchData n j B G M X W Alv' Gam' σ ∧
+      PlayRec B cap G (j + 1) Alv' Gam' σ ∧ (W ∩ X).Nonempty ∧
+      W.ncard ≤ mb ∧ ∃ g, σ.arrs "wa" = arrOf mb g)
+    (enumBatch (batName j) (cluName j) mb)
+    (fun σ σ' => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+        Xoff Xmem asg m σ' ∧ PlayRec B cap G (j + 1) Alv' Gam' σ' ∧
+      σ'.out = σ.out ∧ σ'.vars (curName j) = σ.vars (curName j) ∧
+      ∃ w : Fin mb → Fin n, ClusterData n mb j B G M X W w Alv' Gam' σ' ∧
+        ClusterWa mb w σ') K
+
+/-- Constructing the child colouring preserves an active cover. -/
+def ColourStepA (B q cap mb ns Ws j : ℕ) (G : SimpleGraph (Fin n))
+    (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n))
+    (centre Xoff Xmem asg : ℕ → ℕ) (m : ℕ) (X W : Set (Fin n))
+    (w : Fin mb → Fin n) (Alv' Gam' : ℕ → ℕ) (K : ℕ) : Prop :=
+  CsrGraph G ns O T → ∀ {d : ℕ}, WordBoundK B n d ns cap mb →
+  Spec B (fun σ => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+      Xoff Xmem asg m σ ∧ ClusterData n mb j B G M X W w Alv' Gam' σ ∧
+      ClusterWa mb w σ ∧ PlayRec B cap G (j + 1) Alv' Gam' σ)
+    (colourCom cap mb j)
+    (fun σ σ' => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+        Xoff Xmem asg m σ' ∧ ClusterData n mb j B G M X W w Alv' Gam' σ' ∧
+      PlayRec B cap G (j + 1) Alv' Gam' σ' ∧ σ'.out = σ.out ∧
+      σ'.vars (curName j) = σ.vars (curName j) ∧
+      ∃ C' : ℕ → ℕ → ℕ,
+        (∀ c < sigL cap mb (j + 1),
+          σ'.arrs (colName (j + 1) c) = arrOf n (C' c)) ∧
+        (∀ c < sigL cap mb (j + 1), ∀ v < n, C' c v ≤ 1) ∧
+        colRead n C' (sigL cap mb (j + 1)) =
+          stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w) K
+
+/-- Writing the killed child rows preserves an active cover. -/
+def KillStepA (B q q_top cap mb ns Ws ℓ j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (G : SimpleGraph (Fin n)) (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
+    (π : Equiv.Perm (Fin n)) (centre Xoff Xmem asg : ℕ → ℕ) (m : ℕ)
+    (X W : Set (Fin n)) (w : Fin mb → Fin n) (Alv' Gam' : ℕ → ℕ)
+    (C' : ℕ → ℕ → ℕ) (K : ℕ) : Prop :=
+  ∀ {d : ℕ}, WordBoundK B n d ns cap mb →
+  Spec B (fun σ => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+      Xoff Xmem asg m σ ∧ ClusterData n mb j B G M X W w Alv' Gam' σ ∧
+      ClusterWa mb w σ ∧
+      (∀ c < sigL cap mb (j + 1), σ.arrs (colName (j + 1) c) = arrOf n (C' c)) ∧
+      (∀ c < sigL cap mb (j + 1), ∀ v < n, C' c v ≤ 1) ∧
+      colRead n C' (sigL cap mb (j + 1)) =
+        stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w ∧
+      PlayRec B cap G (j + 1) Alv' Gam' σ ∧ TablesSized q_top cap mb φ n σ ∧
+      BaseArrs B q_top cap mb ℓ φ σ)
+    (killCom q_top cap mb j φ)
+    (fun σ σ' => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+        Xoff Xmem asg m σ' ∧ ClusterData n mb j B G M X W w Alv' Gam' σ' ∧
+      (∀ c < sigL cap mb (j + 1),
+        σ'.arrs (colName (j + 1) c) = arrOf n (C' c)) ∧
+      PlayRec B cap G (j + 1) Alv' Gam' σ' ∧ σ'.out = σ.out ∧
+      σ'.vars (curName j) = σ.vars (curName j) ∧
+      KillRowsAt q_top cap mb j φ G M Alv' X W C' σ') K
+
+/-- Enumerating the kill set preserves an active cover. -/
+def KillListStepA (B q q_top cap mb ns Ws j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (G : SimpleGraph (Fin n)) (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
+    (π : Equiv.Perm (Fin n)) (centre Xoff Xmem asg : ℕ → ℕ) (m : ℕ)
+    (X W : Set (Fin n)) (w : Fin mb → Fin n) (Alv' Gam' : ℕ → ℕ)
+    (C' : ℕ → ℕ → ℕ) (K : ℕ) : Prop :=
+  ∀ {d : ℕ}, WordBoundK B n d ns cap mb →
+  Spec B (fun σ => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+      Xoff Xmem asg m σ ∧ ClusterData n mb j B G M X W w Alv' Gam' σ ∧
+      ClusterWa mb w σ ∧
+      (∀ c < sigL cap mb (j + 1), σ.arrs (colName (j + 1) c) = arrOf n (C' c)) ∧
+      PlayRec B cap G (j + 1) Alv' Gam' σ ∧ TablesSized q_top cap mb φ n σ ∧
+      KillRowsAt q_top cap mb j φ G M Alv' X W C' σ)
+    (killListCom mb j)
+    (fun σ σ' => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+        Xoff Xmem asg m σ' ∧ ClusterData n mb j B G M X W w Alv' Gam' σ' ∧
+      (∀ c < sigL cap mb (j + 1),
+        σ'.arrs (colName (j + 1) c) = arrOf n (C' c)) ∧
+      PlayRec B cap G (j + 1) Alv' Gam' σ' ∧ σ'.out = σ.out ∧
+      σ'.vars (curName j) = σ.vars (curName j) ∧
+      KillRowsAt q_top cap mb j φ G M Alv' X W C' σ' ∧
+      KillListAt mb j M X W σ') K
+
+/-- The scatter-atom fold with an active cover carried through it. -/
+def ScatterStepA (B q q_top cap mb ns Ws ℓ j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (G : SimpleGraph (Fin n)) (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
+    (π : Equiv.Perm (Fin n)) (centre Xoff Xmem asg : ℕ → ℕ) (m : ℕ)
+    (X W : Set (Fin n)) (w : Fin mb → Fin n) (Alv' Gam' : ℕ → ℕ)
+    (C' : ℕ → ℕ → ℕ) (bw nb K : ℕ) : Prop :=
+  (∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0) →
+  (∀ r : ℕ, Refine.ScatterBlock.BallBudget n r G Alv' O bw nb) →
+  Spec B (fun σ => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+      Xoff Xmem asg m σ ∧ ClusterData n mb j B G M X W w Alv' Gam' σ ∧
+      (∀ c < sigL cap mb (j + 1), σ.arrs (colName (j + 1) c) = arrOf n (C' c)) ∧
+      (∀ c < sigL cap mb (j + 1), ∀ v < n, C' c v ≤ 1) ∧
+      colRead n C' (sigL cap mb (j + 1)) =
+        stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w ∧
+      TableInvOn q_top cap mb φ G (j + 1) Alv' C' (rowDom M Alv' X W) σ ∧
+      KillListAt mb j M X W σ ∧ BaseArrs B q_top cap mb ℓ φ σ)
+    (foldIdx (fun i β => scatterDeadCom q_top cap mb φ j i β) 0
+      (tablesAt q_top cap mb φ j))
+    (fun σ σ' => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+        Xoff Xmem asg m σ' ∧ ClusterData n mb j B G M X W w Alv' Gam' σ' ∧
+      (∀ c < sigL cap mb (j + 1),
+        σ'.arrs (colName (j + 1) c) = arrOf n (C' c)) ∧
+      TableInvOn q_top cap mb φ G (j + 1) Alv' C' (rowDom M Alv' X W) σ' ∧
+      σ'.out = σ.out ∧ σ'.vars (curName j) = σ.vars (curName j) ∧
+      ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
+        ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j
+            (tablesAt q_top cap mb φ j)[i])).2,
+          σ'.vars (flgName j i (posOf σs (bcAtomsOf q_top
+            (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])).2)) ≤ 1 ∧
+          (σ'.vars (flgName j i (posOf σs (bcAtomsOf q_top
+            (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])).2)) ≠ 0 ↔
+            ScatVal (stepArenaP (masked G M) X w)
+              (stepColoringP cap (masked G M)
+                (colRead n C (sigL cap mb j)) X w) σs)) K
+
+/-- Read back only the live vertices assigned to an active centre. -/
+def ReadbackStepA (B q q_top cap mb ns Ws j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (G : SimpleGraph (Fin n)) (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
+    (π : Equiv.Perm (Fin n)) (centre Xoff Xmem asg : ℕ → ℕ) (m k : ℕ)
+    (X W : Set (Fin n)) (w : Fin mb → Fin n) (Alv' Gam' : ℕ → ℕ)
+    (C' : ℕ → ℕ → ℕ) (K : ℕ) : Prop :=
+  Spec B (fun σ => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+      Xoff Xmem asg m σ ∧ ClusterData n mb j B G M X W w Alv' Gam' σ ∧
+      (∀ c < sigL cap mb (j + 1), σ.arrs (colName (j + 1) c) = arrOf n (C' c)) ∧
+      (∀ c < sigL cap mb (j + 1), ∀ v < n, C' c v ≤ 1) ∧
+      colRead n C' (sigL cap mb (j + 1)) =
+        stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w ∧
+      TableInvOn q_top cap mb φ G (j + 1) Alv' C' (rowDom M Alv' X W) σ ∧
+      TablesSized q_top cap mb φ n σ ∧ σ.vars (curName j) = k ∧
+      (∀ v : Fin n, M (v : ℕ) ≠ 0 →
+        asg (v : ℕ) = σ.vars (curName j) → v ∈ X) ∧
+      ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
+        ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j
+            (tablesAt q_top cap mb φ j)[i])).2,
+          σ.vars (flgName j i (posOf σs (bcAtomsOf q_top
+            (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])).2)) ≤ 1 ∧
+          (σ.vars (flgName j i (posOf σs (bcAtomsOf q_top
+            (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])).2)) ≠ 0 ↔
+            ScatVal (stepArenaP (masked G M) X w)
+              (stepColoringP cap (masked G M)
+                (colRead n C (sigL cap mb j)) X w) σs))
+    (readbackCom q_top cap mb φ j)
+    (fun σ σ' => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+        Xoff Xmem asg m σ' ∧ σ'.out = σ.out ∧
+      σ'.vars (curName j) = σ.vars (curName j) ∧
+      ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
+        ∃ Tb Tb₀ : ℕ → ℕ, σ'.arrs (tabName j i) = arrOf n Tb ∧
+          σ.arrs (tabName j i) = arrOf n Tb₀ ∧
+          (∀ v : Fin n, M (v : ℕ) = 0 ∨
+            asg (v : ℕ) ≠ σ.vars (curName j) → Tb (v : ℕ) = Tb₀ (v : ℕ)) ∧
+          ∀ v : Fin n, M (v : ℕ) ≠ 0 →
+            asg (v : ℕ) = σ.vars (curName j) →
+            Tb (v : ℕ) ≤ 1 ∧
+            (Tb (v : ℕ) ≠ 0 ↔
+              ∃ h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧
+                  DRank 1 q' (stepFml cap mb j (tablesAt q_top cap mb φ j)[i]),
+                (bcOf q_top (stepFml cap mb j
+                  (tablesAt q_top cap mb φ j)[i]) h).eval
+                  (atomVal (stepArenaP (masked G M) X w)
+                    (stepColoringP cap (masked G M)
+                      (colRead n C (sigL cap mb j)) X w) v))) K
+
+/-- The nested active driver leaves the enclosing active cover intact. -/
+def InnerFramesA (B q q_top cap mb ns Ws ℓ j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (G : SimpleGraph (Fin n)) (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
+    (π : Equiv.Perm (Fin n)) (centre Xoff Xmem asg : ℕ → ℕ) (m : ℕ)
+    (X W : Set (Fin n)) (w : Fin mb → Fin n) (Alv' Gam' : ℕ → ℕ)
+    (C' : ℕ → ℕ → ℕ) (inner : Com) (Kin : ℕ) : Prop :=
+  Spec B (fun σ => LevelPre B n cap mb ns Ws O T (j + 1) Alv' Gam' C' σ ∧
+      TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre Xoff Xmem asg m σ ∧
+      ClusterData n mb j B G M X W w Alv' Gam' σ ∧
+      TablesSized q_top cap mb φ n σ ∧ BaseArrs B q_top cap mb ℓ φ σ ∧
+      PlayRec B cap G (j + 1) Alv' Gam' σ ∧ KillListAt mb j M X W σ ∧
+      TableInvOn q_top cap mb φ G (j + 1) Alv' C' (killSet M X W) σ)
+    inner
+    (fun σ σ' => TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+        Xoff Xmem asg m σ' ∧ ClusterData n mb j B G M X W w Alv' Gam' σ' ∧
+      (∀ c < sigL cap mb (j + 1),
+        σ'.arrs (colName (j + 1) c) = arrOf n (C' c)) ∧
+      σ'.vars (curName j) = σ.vars (curName j) ∧ KillListAt mb j M X W σ') Kin
+
+open Classical in
+/-- The seven active-cover phases compose to one active cluster turn. -/
+theorem clusterStepImplementsA
+    {B q q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.FirstOrder.FO 0}
+    {G : SimpleGraph (Fin n)} {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ}
+    {π : Equiv.Perm (Fin n)} {centre Xoff Xmem asg : ℕ → ℕ} {mm k : ℕ}
+    {wA : (ℕ → ℕ) → ℕ} {wBk : ℕ} {inner : Com} {Kin : ℕ → ℕ}
+    {bw nb Kd Ke Kc Kk Kkl Ks Kr K : ℕ}
+    (hcap : cap = rhoMinus 0 q_top)
+    (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
+    (hdes : DescendStepA B q cap mb ns Ws j G O T M Gm C π centre
+      Xoff Xmem asg mm k Kd)
+    (henum : ∀ X W Alv' Gam',
+      EnumStepA B q cap mb ns Ws j G O T M Gm C π centre Xoff Xmem asg mm
+        X W Alv' Gam' Ke)
+    (hcol : ∀ X W w Alv' Gam',
+      ColourStepA B q cap mb ns Ws j G O T M Gm C π centre Xoff Xmem asg mm
+        X W w Alv' Gam' Kc)
+    (hwafr : "wa" ∉ (colourCom cap mb j).warrs)
+    (hkill : ∀ X W w Alv' Gam' C',
+      KillStepA B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre
+        Xoff Xmem asg mm X W w Alv' Gam' C' Kk)
+    (hwakfr : "wa" ∉ (killCom q_top cap mb j φ).warrs)
+    (hklist : ∀ X W w Alv' Gam' C',
+      KillListStepA B q q_top cap mb ns Ws j φ G O T M Gm C π centre
+        Xoff Xmem asg mm X W w Alv' Gam' C' Kkl)
+    (hfr : InnerAvail B q_top cap mb ns Ws ℓ j φ G O T wA inner Kin →
+      ∀ X W w Alv' Gam' C',
+        InnerFramesA B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre
+          Xoff Xmem asg mm X W w Alv' Gam' C' inner (Kin (wA Alv')))
+    (hscat : ∀ X W w Alv' Gam' C', k < q →
+      RamCover.CoverOutA G M π centre cap q mm Xoff Xmem asg →
+      (∀ v : Fin n, v ∈ X → v ∈ clusterAt G M π centre cap k) →
+      ScatterStepA B q q_top cap mb ns Ws ℓ j φ G O T M Gm C π centre
+        Xoff Xmem asg mm X W w Alv' Gam' C' bw nb Ks)
+    (hbud : ∀ M' : ℕ → ℕ, k < q →
+      RamCover.CoverOutA G M π centre cap q mm Xoff Xmem asg →
+      (∀ v : Fin n, M' (v : ℕ) ≠ 0 → v ∈ clusterAt G M π centre cap k) →
+      ∀ r : ℕ, Refine.ScatterBlock.BallBudget n r G M' O bw nb)
+    (hread : ∀ X W w Alv' Gam' C', k < q →
+      ReadbackStepA B q q_top cap mb ns Ws j φ G O T M Gm C π centre
+        Xoff Xmem asg mm k X W w Alv' Gam' C' Kr)
+    (hmono : Monotone Kin)
+    (hwAB : ∀ Alv' : ℕ → ℕ, k < q →
+      RamCover.CoverOutA G M π centre cap q mm Xoff Xmem asg →
+      (∀ v : Fin n, Alv' (v : ℕ) ≠ 0 → v ∈ clusterAt G M π centre cap k) →
+      wA Alv' ≤ wBk)
+    (hK : Kd + (Ke + (Kc + (Kk + (Kkl + (Kin wBk + (Ks + Kr)))))) ≤ K) :
+    ClusterStepImplementsA B q_top cap mb ns Ws ℓ j φ G O T M Gm C q π centre
+      Xoff Xmem asg mm k wA inner Kin K := by
+  classical
+  intro hkn halive _ hinner
+  refine Spec.of_exists fun σ hσ => ?_
+  obtain ⟨hlev, htsz, hbarr, hplay, hheld, hcn⟩ := hσ
+  have hturn : TurnPreA B n q cap mb ns Ws j G O T M Gm C π centre
+      Xoff Xmem asg mm σ := ⟨hlev, hplay, hheld⟩
+  obtain ⟨σ₁, hr₁, hturn₁, hout₁, hc₁, hwa₁, X, W, Alv', Gam', hball,
+      hWne, hWcard, hsub₁, hXcl₁, hbat₁, hplay₁⟩ :=
+    (hdes hcsr hB hkn halive).run ⟨hturn, hcn⟩
+  rw [hcn] at hsub₁ hXcl₁
+  have hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0 :=
+    fun v hv => Refine.MassAlive.clusterAt_subset_alive halive (hXcl₁ v hv)
+  have hinsize : Kin (wA Alv') ≤ Kin wBk :=
+    hmono (hwAB Alv' hkn hheld.cover hsub₁)
+  obtain ⟨σ₂, hr₂, hturn₂, hplay₂, hout₂, hc₂, w, hdat₂, hwa₂⟩ :=
+    (henum X W Alv' Gam').run ⟨hturn₁, hbat₁, hplay₁, hWne, hWcard, hwa₁⟩
+  obtain ⟨σ₃, hr₃, hturn₃, hdat₃, hplay₃, hout₃, hc₃, C', hcolarr₃,
+      hcolbit₃, hcolread₃⟩ :=
+    (hcol X W w Alv' Gam' hcsr hB).run ⟨hturn₂, hdat₂, hwa₂, hplay₂⟩
+  have htsz₃ : TablesSized q_top cap mb φ n σ₃ := (htsz.run hr₁).run hr₂ |>.run hr₃
+  have hbarr₃ : BaseArrs B q_top cap mb ℓ φ σ₃ := ((hbarr.run hr₁).run hr₂).run hr₃
+  have hwa₃ : ClusterWa mb w σ₃ := by
+    show σ₃.arrs "wa" = _
+    rw [hr₃.frame_arr "wa" hwafr]
+    exact hwa₂
+  obtain ⟨σₖ, hrₖ, hturnₖ, hdatₖ, hcolarrₖ, hplayₖ, houtₖ, hcₖ, hkillₖ⟩ :=
+    (hkill X W w Alv' Gam' C' hB).run (σ := σ₃)
+      ⟨hturn₃, hdat₃, hwa₃, hcolarr₃, hcolbit₃, hcolread₃, hplay₃, htsz₃, hbarr₃⟩
+  have htszₖ : TablesSized q_top cap mb φ n σₖ := htsz₃.run hrₖ
+  have hbarrₖ : BaseArrs B q_top cap mb ℓ φ σₖ := hbarr₃.run hrₖ
+  have hwaₖ : ClusterWa mb w σₖ := by
+    show σₖ.arrs "wa" = _
+    rw [hrₖ.frame_arr "wa" hwakfr]
+    exact hwa₃
+  obtain ⟨σₗ, hrₗ, hturnₗ, hdatₗ, hcolarrₗ, hplayₗ, houtₗ, hcₗ, hkillₗ,
+      hkllistₗ⟩ :=
+    (hklist X W w Alv' Gam' C' hB).run (σ := σₖ)
+      ⟨hturnₖ, hdatₖ, hwaₖ, hcolarrₖ, hplayₖ, htszₖ, hkillₖ⟩
+  have hlevin : LevelPre B n cap mb ns Ws O T (j + 1) Alv' Gam' C' σₗ := by
+    obtain ⟨hn₃, hoff₃, htgt₃, -, -, -, -, -, -, hmem₃, hdep₃, hm₃, hom₃,
+      hpad₃, hwrd₃, -⟩ := hturnₗ.level
+    obtain ⟨-, -, -, halv₃, hAlvB, -, -, hgam₃, hGamB, hmemin₃⟩ := hdatₗ.1
+    exact ⟨hn₃, hoff₃, htgt₃, halv₃, hgam₃, hcolarrₗ,
+      fun z hz => hAlvB z hz, fun z hz => hGamB z hz, hcolbit₃,
+      hmem₃, hdep₃, hm₃, hom₃, hpad₃, hwrd₃, hmemin₃⟩
+  have htszₗ : TablesSized q_top cap mb φ n σₗ := htszₖ.run hrₗ
+  have hbarrₗ : BaseArrs B q_top cap mb ℓ φ σₗ := hbarrₖ.run hrₗ
+  have hDdead : ∀ v : Fin n, v ∈ killSet M X W → Alv' (v : ℕ) = 0 :=
+    fun v hv => killSet_dead hdatₗ.1.2.2.2.2.2.2.1 hv
+  obtain ⟨σ₄, hr₄, ⟨⟨-, -, htab₄⟩, hout₄⟩, hturn₄, hdat₄, hcolarr₄,
+      hc₄, hkllist₄⟩ :=
+    (spec_conj ((hinner Alv' Gam' C' (killSet M X W) hDdead hcolbit₃).pre
+        (fun _ h => ⟨h.1, h.2.2.2.1, h.2.2.2.2.1, h.2.2.2.2.2.1,
+          h.2.2.2.2.2.2.2⟩))
+      (hfr hinner X W w Alv' Gam' C')).run (σ := σₗ)
+      ⟨hlevin, hturnₗ, hdatₗ, htszₗ, hbarrₗ, hplayₗ, hkllistₗ,
+        hkillₗ.tableInvOn htszₗ⟩
+  have htsz₄ : TablesSized q_top cap mb φ n σ₄ := htszₗ.run hr₄
+  have hbarr₄ : BaseArrs B q_top cap mb ℓ φ σ₄ := hbarrₗ.run hr₄
+  obtain ⟨σ₅, hr₅, hturn₅, hdat₅, hcolarr₅, htab₅, hout₅, hc₅, hflag₅⟩ :=
+    (hscat X W w Alv' Gam' C' hkn hheld.cover hXcl₁ hXalive
+      (hbud Alv' hkn hheld.cover hsub₁)).run (σ := σ₄)
+      ⟨hturn₄, hdat₄, hcolarr₄, hcolbit₃, hcolread₃, htab₄, hkllist₄, hbarr₄⟩
+  have htsz₅ : TablesSized q_top cap mb φ n σ₅ := htsz₄.run hr₅
+  have hc₅₀ : σ₅.vars (curName j) = σ.vars (curName j) := by
+    rw [hc₅, hc₄, hcₗ, hcₖ, hc₃, hc₂, hc₁]
+  have hvis : ∀ v : Fin n, M (v : ℕ) ≠ 0 →
+      asg (v : ℕ) = σ₅.vars (curName j) → v ∈ X := by
+    intro v hal hv
+    exact hball v hal (by rw [hv]; exact hc₅₀) (mem_ball_self _ _ _)
+  obtain ⟨σ₆, hr₆, hturn₆, hout₆, hc₆, hrb₆⟩ :=
+    (hread X W w Alv' Gam' C' hkn).run (σ := σ₅)
+      ⟨hturn₅, hdat₅, hcolarr₅, hcolbit₃, hcolread₃, htab₅, htsz₅,
+        hc₅₀.trans hcn, hvis, hflag₅⟩
+  have hrun := hr₁.seq (hr₂.seq (hr₃.seq (hrₖ.seq (hrₗ.seq (hr₄.seq (hr₅.seq hr₆))))))
+  refine ⟨σ₆, _, hrun, by omega, hturn₆.level, htsz₅.run hr₆,
+    hbarrₗ.run (hr₄.seq (hr₅.seq hr₆)), hturn₆.play,
+    by rw [hout₆, hout₅, hout₄, houtₗ, houtₖ, hout₃, hout₂, hout₁],
+    by rw [hc₆, hc₅, hc₄, hcₗ, hcₖ, hc₃, hc₂, hc₁], fun i hi => ?_⟩
+  obtain ⟨Tb, Tb₀, harr, -, -, hval⟩ := hrb₆ i hi
+  refine ⟨Tb, harr, fun v hal hasgv => ?_⟩
+  have hasg₅ : asg (v : ℕ) = σ₅.vars (curName j) := by
+    rw [hc₅₀]
+    exact hasgv
+  obtain ⟨hbit, hval'⟩ := hval v hal hasg₅
+  refine ⟨hbit, ?_⟩
+  rw [hval']
+  have hβ : TableRank q_top (tablesAt q_top cap mb φ j)[i] :=
+    tableRank_of_mem_tablesAt j _ (List.getElem_mem hi)
+  have hballv : ball (masked G M) cap v ⊆ X := hball v hal (by
+    rw [hasg₅]
+    exact hc₅₀)
+  have hglue := sat_iff_eval_step (mb := mb) (j := j) hcap (A := masked G M)
+    (col := colRead n C (sigL cap mb j)) w v hβ hballv
+  exact ⟨fun h => hglue.mpr h.2, fun hs => ⟨hasRank_stepFml hβ, hglue.mp hs⟩⟩
 
 /-- Updating an unrelated scalar preserves the active cover. -/
 theorem coverHeld_setVar
@@ -274,7 +641,7 @@ theorem levelImplementsA
           obtain ⟨Tb', harr', hcorr'⟩ := htab' i hi
           have hTb : Tb (v : ℕ) = Tb' (v : ℕ) :=
             eq_of_arrOf_eq (harr.symm.trans harr') v.isLt
-          rcases hv with hdv | ⟨k, hk, hkv⟩
+          rcases hv with hdv | ⟨hal, k, hk, hkv⟩
           · obtain ⟨Tb₀, harr₀⟩ := htszτ.get j hi
             have hdead : M (v : ℕ) = 0 := hDdead v hdv
             have hsame := hfr' i hi Tb' Tb₀ harr'
@@ -289,10 +656,10 @@ theorem levelImplementsA
               have hsame := hfr' i hi Tb' Tb₀ harr'
                 (by rw [hτ₁, arrs_setVar]; exact harr₀) v (Or.inr hne)
               rw [hTb, hsame]
-              exact htabτ i hi Tb₀ harr₀ v (Or.inr ⟨k, hlt, hkv⟩)
+              exact htabτ i hi Tb₀ harr₀ v (Or.inr ⟨hal, k, hlt, hkv⟩)
             · have hkeq : k = τ.vars (cixName j) := by omega
               rw [hTb]
-              exact hcorr' v (by rw [hcur₁, hkv, hkeq])
+              exact hcorr' v hal (by rw [hcur₁, hkv, hkeq])
         · rw [vars_setVar, if_pos rfl]; omega
       obtain ⟨σ₄, hr₄, hI₄, hcn₄⟩ :=
         (Refine.SigmaLoop.forRangeZeroSum (cixName j) (cnumName j)
@@ -308,7 +675,7 @@ theorem levelImplementsA
             by simp, by simp, by
               intro i hi Tb harr v hv
               rw [arrs_setVar] at harr
-              rcases hv with hdv | ⟨k, hk, -⟩
+              rcases hv with hdv | ⟨-, k, hk, -⟩
               · exact hdead₂ i hi Tb harr v hdv
               · rw [vars_setVar, if_pos rfl] at hk; omega⟩
       have htabinv : TableInvOn q_top cap mb φ G j M C
@@ -322,7 +689,7 @@ theorem levelImplementsA
           rintro v (hal | hdv)
           · obtain ⟨k, hk, hkv⟩ := hasgcps (v : ℕ) v.isLt hal
             exact hI₄.2.2.2.2.2.2.2.2.2 i hi Tb harr v
-              (Or.inr ⟨k, by rw [hcn₄]; exact hk, hkv⟩)
+              (Or.inr ⟨hal, k, by rw [hcn₄]; exact hk, hkv⟩)
           · exact hI₄.2.2.2.2.2.2.2.2.2 i hi Tb harr v (Or.inl hdv)
         exact ⟨Tb, harr, fun v hv => (hrow v hv).1, fun v hv => (hrow v hv).2⟩
       obtain ⟨hturns, hbs⟩ := hmass M q π centre Xoff Xmem asg cps mm cnum

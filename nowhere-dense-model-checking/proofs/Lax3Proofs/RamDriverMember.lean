@@ -133,7 +133,7 @@ def ClusterStepImplementsA {n : ℕ} (B q_top cap mb ns W ℓ j : ℕ)
       σ'.vars (curName j) = σ.vars (curName j) ∧
       ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length), ∃ Tb : ℕ → ℕ,
         σ'.arrs (tabName j i) = arrOf n Tb ∧
-        ∀ v : Fin n, asg (v : ℕ) = σ.vars (curName j) →
+        ∀ v : Fin n, M (v : ℕ) ≠ 0 → asg (v : ℕ) = σ.vars (curName j) →
           Tb (v : ℕ) ≤ 1 ∧
           (Tb (v : ℕ) ≠ 0 ↔
             Sat (masked G M) (colRead n C (sigL cap mb j)) (fun _ => v)
@@ -182,7 +182,8 @@ def LevelInvA {n : ℕ} (B q_top cap mb ns W ℓ j : ℕ) (φ : Lax3.FirstOrder.
     σ.out = outs ∧ σ.vars (cixName j) ≤ cnum ∧
     ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length) (Tb : ℕ → ℕ),
       σ.arrs (tabName j i) = arrOf n Tb →
-      ∀ v : Fin n, (v ∈ D ∨ ∃ k < σ.vars (cixName j), asg (v : ℕ) = cps k) →
+      ∀ v : Fin n, (v ∈ D ∨ (M (v : ℕ) ≠ 0 ∧
+          ∃ k < σ.vars (cixName j), asg (v : ℕ) = cps k)) →
         Tb (v : ℕ) ≤ 1 ∧
         (Tb (v : ℕ) ≠ 0 ↔
           Sat (masked G M) (colRead n C (sigL cap mb j)) (fun _ => v)
