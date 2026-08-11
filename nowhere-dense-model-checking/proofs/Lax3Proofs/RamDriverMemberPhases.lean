@@ -1,5 +1,7 @@
 import Lax3Proofs.RamDriverClusterMember
 import Lax3Proofs.RamDriverDescend
+import Lax3Proofs.RamDriverWrites
+import Lax3Proofs.Refine.KillListWalk
 
 /-!
 # Executable adapters for active-cover driver phases
@@ -234,5 +236,128 @@ theorem colourStepA
   · obtain ⟨g, hg⟩ := hpre'.2.2.2.2.2.2.2 c hc
     exact arrOf_cellsOf hg
   · rw [heq', stepColoringP, hRam, hXs]
+
+/-! ## Kill-list enumeration -/
+
+/-- The landed kill-list walk, with the active cover merely framed. -/
+theorem killListStepA
+    {B q q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0}
+    {G : SimpleGraph (Fin n)} {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ}
+    {π : Equiv.Perm (Fin n)} {centre Xoff Xmem asg : ℕ → ℕ} {m : ℕ}
+    {X W : Set (Fin n)} {w : Fin mb → Fin n} {Alv' Gam' : ℕ → ℕ}
+    {C' : ℕ → ℕ → ℕ} :
+    KillListStepA B q q_top cap mb ns Ws j φ G O T M Gm C π centre Xoff Xmem asg m
+      X W w Alv' Gam' C' (Refine.KillListPass.killListCost mb) := by
+  intro d hB
+  refine Spec.of_exists fun σ hσ => ?_
+  obtain ⟨hturn, hdat, hwa, hcolarr, hplay, htsz, hkrows⟩ := hσ
+  obtain ⟨Xa, hXa, hXaS, hXaB⟩ := hdat.1.1
+  have hdep : DepthMem n cap mb σ :=
+    hturn.level.2.2.2.2.2.2.2.2.2.2.1
+  obtain ⟨σ', hrun, hlist⟩ :=
+    (Refine.KillListPass.killListCom_spec (M := M) (Xa := Xa) (w := w) (j := j)
+        hB.one_lt hB.n_lt hB.mb_lt
+        (fun z hz => hturn.level.2.2.2.2.2.2.1 z hz) hXaB).run (σ := σ)
+      ⟨Refine.KillPass.clusterWa_eq hwa, hturn.level.2.2.2.1, hXa, hdep.kl j⟩
+  have harr : ∀ a : String, a ≠ klName j → σ'.arrs a = σ.arrs a :=
+    fun a ha => hrun.frame_arr a (RamDriverWrites.notMem_warrs_killListCom ha)
+  have hvar : ∀ y : String, y ≠ kkName j → y ≠ "kk" → y ≠ "kv" → y ≠ "kf" →
+      y ≠ "kt" → σ'.vars y = σ.vars y :=
+    fun y h1 h2 h3 h4 h5 =>
+      hrun.frame_var y (RamDriverWrites.notMem_wvars_killListCom h1 h2 h3 h4 h5)
+  have harrDepth : ∀ b : ℕ, σ'.arrs (alvName b) = σ.arrs (alvName b) := fun b =>
+    harr _ (by simp [alvName, klName, String.ext_iff])
+  have harrGam : ∀ b : ℕ, σ'.arrs (gamName b) = σ.arrs (gamName b) := fun b =>
+    harr _ (by simp [gamName, klName, String.ext_iff])
+  have harrRes : ∀ b : ℕ, σ'.arrs (resName b) = σ.arrs (resName b) := fun b =>
+    harr _ (by simp [resName, klName, String.ext_iff])
+  have harrPar : ∀ b : ℕ, σ'.arrs (parName b) = σ.arrs (parName b) := fun b =>
+    harr _ (by simp [parName, balName, klName, String.ext_iff])
+  have harrCol : ∀ b c : ℕ, σ'.arrs (colName b c) = σ.arrs (colName b c) := fun b c =>
+    harr _ (by simp [colName, klName, String.ext_iff])
+  have harrMem : ∀ b : ℕ, σ'.arrs (memName b) = σ.arrs (memName b) := fun b =>
+    harr _ (by simp [memName, klName, String.ext_iff])
+  have hvarMm : ∀ b : ℕ, σ'.vars (mnumName b) = σ.vars (mnumName b) := fun b =>
+    hvar _ (by simp [mnumName, kkName, String.ext_iff])
+      (by simp [mnumName, String.ext_iff]) (by simp [mnumName, String.ext_iff])
+      (by simp [mnumName, String.ext_iff]) (by simp [mnumName, String.ext_iff])
+  have hlev' : LevelPre B n cap mb ns Ws O T j M Gm C σ' :=
+    RamDriverCompose.levelPre_run hturn.level hrun
+      (RamDriverWrites.notMem_wvars_killListCom (by simp [kkName, String.ext_iff])
+        (by decide) (by decide) (by decide) (by decide))
+      (RamDriverWrites.notMem_wvars_killListCom (by simp [kkName, String.ext_iff])
+        (by decide) (by decide) (by decide) (by decide))
+      (RamDriverWrites.notMem_wvars_killListCom (by simp [kkName, String.ext_iff])
+        (by decide) (by decide) (by decide) (by decide))
+      (RamDriverWrites.notMem_warrs_killListCom (by simp [klName, String.ext_iff]))
+      (RamDriverWrites.notMem_warrs_killListCom (by simp [klName, String.ext_iff]))
+      (RamDriverWrites.notMem_warrs_killListCom
+        (by simp [alvName, klName, String.ext_iff]))
+      (RamDriverWrites.notMem_warrs_killListCom
+        (by simp [gamName, klName, String.ext_iff]))
+      (fun _ => RamDriverWrites.notMem_warrs_killListCom
+        (by simp [colName, klName, String.ext_iff]))
+      (fun a ha => by
+        simp only [RamDriverCompose.zeroArrs, List.mem_cons, List.not_mem_nil, or_false] at ha
+        rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+          exact RamDriverWrites.notMem_warrs_killListCom
+            (by simp [klName, String.ext_iff]))
+      (RamDriverWrites.notMem_warrs_killListCom
+        (by simp [memName, klName, String.ext_iff]))
+      (RamDriverWrites.notMem_wvars_killListCom
+        (by simp [mnumName, kkName, String.ext_iff])
+        (by simp [mnumName, String.ext_iff]) (by simp [mnumName, String.ext_iff])
+        (by simp [mnumName, String.ext_iff]) (by simp [mnumName, String.ext_iff]))
+  refine ⟨σ', _, hrun, le_rfl, ⟨hlev', ?_, ?_⟩, ⟨?_, hdat.2⟩, fun c hc => ?_,
+    ?_, ?_, ?_, ?_, ?_⟩
+  · exact hturn.play.congr
+      (fun a _ => hvar (ctrName a) (by simp [ctrName, kkName, String.ext_iff])
+        (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff])
+        (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff]))
+      (fun a _ => harrRes a) (fun a _ => harrGam a) (fun a _ => harrPar a)
+  · exact hturn.held.congr
+      (harr (ordName j) (by simp [ordName, klName, String.ext_iff]))
+      (harr (xofName j) (by simp [xofName, klName, String.ext_iff]))
+      (harr (xmmName j) (by simp [xmmName, klName, String.ext_iff]))
+      (harr (asgName j) (by simp [asgName, klName, String.ext_iff]))
+      (hvar (xpName j) (by simp [xpName, kkName, String.ext_iff])
+        (by simp [xpName, String.ext_iff]) (by simp [xpName, String.ext_iff])
+        (by simp [xpName, String.ext_iff]) (by simp [xpName, String.ext_iff]))
+  · exact Refine.KillPass.batchData_congr hdat.1
+      (harr (cluName j) (by simp [cluName, klName, String.ext_iff]))
+      (harr (batName j) (by simp [batName, klName, String.ext_iff]))
+      (harr (resName j) (by simp [resName, klName, String.ext_iff]))
+      (harrDepth (j + 1)) (harrGam (j + 1)) (harrMem (j + 1)) (hvarMm (j + 1))
+  · rw [harrCol (j + 1) c]
+    exact hcolarr c hc
+  · exact hplay.congr
+      (fun a _ => hvar (ctrName a) (by simp [ctrName, kkName, String.ext_iff])
+        (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff])
+        (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff]))
+      (fun a _ => harrRes a) (fun a _ => harrGam a) (fun a _ => harrPar a)
+  · exact hrun.out_eq (RamDriverWrites.noWrite_killListCom mb j)
+  · exact hvar (curName j) (by simp [curName, kkName, String.ext_iff])
+      (by simp [curName, String.ext_iff]) (by simp [curName, String.ext_iff])
+      (by simp [curName, String.ext_iff]) (by simp [curName, String.ext_iff])
+  · intro i hi Tb hTb
+    exact hkrows i hi Tb (by rw [← harr (tabName (j + 1) i)
+      (by simp [tabName, klName, String.ext_iff])]; exact hTb)
+  · obtain ⟨kl, kq, hkl, hkq, hqle, hkln, hinj, hsound, hcomp⟩ := hlist
+    refine ⟨kl, kq, hkl, hkq, hqle, hkln, hinj, fun e he => ?_, fun v hMv hvX hvW => ?_⟩
+    · obtain ⟨hM, hXv, p, hp⟩ := hsound e he
+      refine ⟨w p, hp, by rw [hp]; exact hM, ?_, ?_⟩
+      · rw [← hXaS]
+        show Xa (w p : ℕ) ≠ 0
+        rw [hp]
+        exact hXv
+      · exact hdat.mem_batch p
+    · obtain ⟨p, hp⟩ : ∃ p : Fin mb, w p = v := by
+        have : v ∈ Set.range w := by
+          rw [hdat.2]
+          exact ⟨hvW, hvX⟩
+        exact this
+      obtain ⟨e, he, hee⟩ := hcomp p (by rw [hp]; exact hMv)
+        (by rw [hp]; rw [← hXaS] at hvX; exact hvX)
+      exact ⟨e, he, by rw [hee, hp]⟩
 
 end Lax3Proofs.RamDriverMemberPhases
