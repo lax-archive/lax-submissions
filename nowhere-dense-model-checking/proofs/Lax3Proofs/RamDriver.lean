@@ -1197,6 +1197,88 @@ theorem RecordsPlay.congr {B : ℕ} {G : SimpleGraph (Fin n)} {σ σ' : Env} :
         ⟨Ga, by rw [ha b (by omega)]; exact hga, hgaB, hea⟩,
         hrest.congr (fun a haa => hv a (by omega)) (fun a haa => ha a (by omega))⟩
 
+/-! ### Retained parent-tree caches -/
+
+/-- **The parent caches of all earlier rounds.** At depth `j`, round `a`
+retains its connector, its cluster-restricted work mask, and a capped
+parent tree rooted at that connector.  The tree covers its whole retained
+mask, while the current work arena is contained in every earlier retained
+mask.  The latter clause is what makes the current connector a discovered
+target in each earlier tree. -/
+def CachedRounds (cap : ℕ) (G : SimpleGraph (Fin n)) (j : ℕ)
+    (M : ℕ → ℕ) (σ : Env) : Prop :=
+  ∀ a, a < j → ∃ (u : Fin n) (R D P : ℕ → ℕ),
+    σ.vars (ctrName a) = (u : ℕ) ∧ σ.arrs (resName a) = arrOf n R ∧
+    σ.arrs (parName a) = arrOf n P ∧ RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P ∧
+    (∀ z, z < n → R z ≠ 0 → RamBfs.WD G R (2 * cap) (u : ℕ) z) ∧
+    ∀ z, z < n → M z ≠ 0 → R z ≠ 0
+
+/-- No rounds have been cached at the root. -/
+theorem cachedRounds_zero (cap : ℕ) (G : SimpleGraph (Fin n)) (M : ℕ → ℕ) (σ : Env) :
+    CachedRounds cap G 0 M σ := by
+  intro a ha
+  omega
+
+/-- The retained caches cross a pass that frames their connector, mask,
+and parent arrays. -/
+theorem CachedRounds.congr {j : ℕ} {G : SimpleGraph (Fin n)} {M : ℕ → ℕ} {σ σ' : Env}
+    (h : CachedRounds cap G j M σ)
+    (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
+    (hr : ∀ a < j, σ'.arrs (resName a) = σ.arrs (resName a))
+    (hp : ∀ a < j, σ'.arrs (parName a) = σ.arrs (parName a)) :
+    CachedRounds cap G j M σ' := by
+  intro a ha
+  obtain ⟨u, R, D, P, hctr, hres, hpar, hT, hcov, hsub⟩ := h a ha
+  exact ⟨u, R, D, P, by rw [hv a ha]; exact hctr, by rw [hr a ha]; exact hres,
+    by rw [hp a ha]; exact hpar, hT, hcov, hsub⟩
+
+/-- Shrinking the current work arena preserves every earlier cache. -/
+theorem CachedRounds.mono {j : ℕ} {G : SimpleGraph (Fin n)} {M M' : ℕ → ℕ} {σ : Env}
+    (h : CachedRounds cap G j M σ)
+    (hsub : ∀ z, z < n → M' z ≠ 0 → M z ≠ 0) :
+    CachedRounds cap G j M' σ := by
+  intro a ha
+  obtain ⟨u, R, D, P, hctr, hres, hpar, hT, hcov, hMR⟩ := h a ha
+  exact ⟨u, R, D, P, hctr, hres, hpar, hT, hcov,
+    fun z hz hM' => hMR z hz (hsub z hz hM')⟩
+
+/-- Add the cache built by the current round while carrying all earlier
+caches across the round's writes. -/
+theorem CachedRounds.succ {j : ℕ} {G : SimpleGraph (Fin n)} {M M' : ℕ → ℕ} {σ σ' : Env}
+    (h : CachedRounds cap G j M σ)
+    (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
+    (hr : ∀ a < j, σ'.arrs (resName a) = σ.arrs (resName a))
+    (hp : ∀ a < j, σ'.arrs (parName a) = σ.arrs (parName a))
+    (hM'M : ∀ z, z < n → M' z ≠ 0 → M z ≠ 0)
+    {u : Fin n} {R D P : ℕ → ℕ}
+    (hctr : σ'.vars (ctrName j) = (u : ℕ)) (hres : σ'.arrs (resName j) = arrOf n R)
+    (hpar : σ'.arrs (parName j) = arrOf n P)
+    (hT : RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P)
+    (hcov : ∀ z, z < n → R z ≠ 0 → RamBfs.WD G R (2 * cap) (u : ℕ) z)
+    (hM'R : ∀ z, z < n → M' z ≠ 0 → R z ≠ 0) :
+    CachedRounds cap G (j + 1) M' σ' := by
+  intro a ha
+  rcases Nat.lt_or_ge a j with haj | haj
+  · obtain ⟨v, S, E, Q, hctr', hres', hpar', hQ, hcov', hMS⟩ := h a haj
+    exact ⟨v, S, E, Q, by rw [hv a haj]; exact hctr', by rw [hr a haj]; exact hres',
+      by rw [hp a haj]; exact hpar', hQ, hcov',
+      fun z hz hM' => hMS z hz (hM'M z hz hM')⟩
+  · have haj' : a = j := by omega
+    subst haj'
+    exact ⟨u, R, D, P, hctr, hres, hpar, hT, hcov, hM'R⟩
+
+/-- A live current target is reached by every earlier cached tree. -/
+theorem CachedRounds.target {j : ℕ} {G : SimpleGraph (Fin n)} {M : ℕ → ℕ} {σ : Env}
+    (h : CachedRounds cap G j M σ) {a t : ℕ} (ha : a < j) (ht : t < n)
+    (hMt : M t ≠ 0) :
+    ∃ (u : Fin n) (R D P : ℕ → ℕ),
+      σ.vars (ctrName a) = (u : ℕ) ∧ σ.arrs (resName a) = arrOf n R ∧
+      σ.arrs (parName a) = arrOf n P ∧ RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P ∧
+      D t ≤ 2 * cap := by
+  obtain ⟨u, R, D, P, hctr, hres, hpar, hT, hcov, hMR⟩ := h a ha
+  have hwd := hcov t ht (hMR t ht hMt)
+  exact ⟨u, R, D, P, hctr, hres, hpar, hT, hT.reach (2 * cap) le_rfl t hwd⟩
+
 /-- **The recorded play.** The rounds are in the state, and — off the
 dead branch — they are a play of the recorded game whose position is the
 depth's own game arena, of which the work arena is a subgraph. -/
