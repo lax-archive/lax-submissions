@@ -47,7 +47,7 @@ theorem activeTurnK_le_weight (bw nb : ℕ) :
 /-- The state shared by consecutive active turns.  In particular, distance
 is clean only on the progressive mask, and assignment values are constrained
 only semantically on the original live arena. -/
-structure RawTurnState {n : ℕ} (B ns q r c xp : ℕ)
+structure RawTurnState {n : ℕ} (B ns nt q r c xp : ℕ)
     (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ) (π : Equiv.Perm (Fin n))
     (centre O T Xoff Xmem asg M : ℕ → ℕ) (σ : Env) : Prop where
   raw : RawCoverInvA G A₀ π centre q r c xp Xoff Xmem asg M
@@ -57,7 +57,7 @@ structure RawTurnState {n : ℕ} (B ns q r c xp : ℕ)
   pointer_var : σ.vars "xp" = xp
   centre_arr : σ.arrs "ord" = arrOf n centre
   off_arr : σ.arrs "off" = arrOf (n + 1) O
-  target_arr : σ.arrs "tgt" = arrOf ns T
+  target_arr : σ.arrs "tgt" = arrOf nt T
   mask_arr : σ.arrs "alv" = arrOf n M
   xoff_arr : σ.arrs "xoff" = arrOf (n + 1) Xoff
   xmem_arr : σ.arrs "xmem" = arrOf (n * n) Xmem
@@ -119,7 +119,7 @@ theorem cleanOn_upd_zero {n d s : ℕ} {M D : ℕ → ℕ}
 
 /-! ## The composed turn -/
 
-variable {B n ns q r c xp bw nb : ℕ} {G : SimpleGraph (Fin n)}
+variable {B n ns nt q r c xp bw nb : ℕ} {G : SimpleGraph (Fin n)}
 variable {A₀ centre O T Xoff Xmem asg M : ℕ → ℕ}
 variable {π : Equiv.Perm (Fin n)} {A : Finset ℕ}
 
@@ -128,16 +128,16 @@ invariant at a charge depending only on this ball. -/
 theorem activeTurn_spec
     (hcentres : CentresBy n q A₀ π centre)
     (hcsr : CsrGraph G ns O T)
-    (hnB : n < B) (hnsB : ns < B) (hnnB : n * n < B)
+    (hnB : n < B) (hnsB : ns < B) (hnt : ns ≤ nt) (hnnB : n * n < B)
     (hqB : q < B) (hrB : 2 * r + 1 < B)
     (hA : ∀ v, v < n → M v ≠ 0 → WD G M (2 * r) (centre c) v → v ∈ A)
     (hbw : ∑ v ∈ A, Csr.rowLen O v ≤ bw)
     (hnb : A.card ≤ nb) :
     Spec B
-      (fun σ => RawTurnState B ns q r c xp G A₀ π centre O T Xoff Xmem asg M σ ∧ c < q)
+      (fun σ => RawTurnState B ns nt q r c xp G A₀ π centre O T Xoff Xmem asg M σ ∧ c < q)
       (activeTurnCom r)
       (fun _ σ' => ∃ tail Q QD Xmem', tail ≤ nb ∧
-        RawTurnState B ns q r (c + 1) (xp + tail) G A₀ π centre O T
+        RawTurnState B ns nt q r (c + 1) (xp + tail) G A₀ π centre O T
           (upd Xoff (c + 1) (xp + tail)) Xmem'
           (queueCell asg q c r tail Q QD) (upd M (centre c) 0) σ')
       (activeTurnK bw nb) := by
@@ -165,7 +165,7 @@ theorem activeTurn_spec
     exact (Run.assign esrc).mono (by simp [Expr.size])
   have hpreBfs :
       σ₁.vars "n" = n ∧ σ₁.vars "src" = centre c ∧
-        σ₁.arrs "off" = arrOf (n + 1) O ∧ σ₁.arrs "tgt" = arrOf ns T ∧
+        σ₁.arrs "off" = arrOf (n + 1) O ∧ σ₁.arrs "tgt" = arrOf nt T ∧
         σ₁.arrs "alv" = arrOf n M ∧ DistClean n (2 * r) M σ₁ ∧
         (∃ g, σ₁.arrs "q" = arrOf n g) ∧ (∃ g, σ₁.arrs "qd" = arrOf n g) := by
     refine ⟨by simp [σ₁, hn], by simp [σ₁], by simpa [σ₁] using hoff,
@@ -174,7 +174,7 @@ theorem activeTurn_spec
     simpa [σ₁] using hdist
   obtain ⟨σ₂, run₂, hdist₂, Q, QD, hq₂, hqd₂, htailn, htailnb,
       hQn, hseg, hQinj, hQD⟩ :=
-    (bfsBlockM_spec (d := 2 * r) (s := centre c) hcsr hsN hnB hnsB hrB hMB
+    (bfsBlockM_specW (d := 2 * r) (s := centre c) hcsr hsN hnB hnsB hnt hrB hMB
       hA hbw hnb).run (σ := σ₁) hpreBfs
   let tail := σ₂.vars "tail"
   have htail : σ₂.vars "tail" = tail := rfl
@@ -200,7 +200,7 @@ theorem activeTurn_spec
   have hoff₂ : σ₂.arrs "off" = arrOf (n + 1) O := by
     rw [run₂.frame_arr "off" (notMem_bfsTurn_warrs r "off" (by simp))]
     simpa [σ₁] using hoff
-  have htgt₂ : σ₂.arrs "tgt" = arrOf ns T := by
+  have htgt₂ : σ₂.arrs "tgt" = arrOf nt T := by
     rw [run₂.frame_arr "tgt" (notMem_bfsTurn_warrs r "tgt" (by simp))]
     simpa [σ₁] using htgt
   have halv₂ : σ₂.arrs "alv" = arrOf n M := by
@@ -282,7 +282,7 @@ theorem activeTurn_spec
   have hoff₃ : σ₃.arrs "off" = arrOf (n + 1) O := by
     rw [run₃.frame_arr "off" (notMem_emitQueue_warrs r "off" (by simp))]
     exact hoff₂
-  have htgt₃ : σ₃.arrs "tgt" = arrOf ns T := by
+  have htgt₃ : σ₃.arrs "tgt" = arrOf nt T := by
     rw [run₃.frame_arr "tgt" (notMem_emitQueue_warrs r "tgt" (by simp))]
     exact htgt₂
   have halv₃ : σ₃.arrs "alv" = arrOf n M := by
@@ -359,7 +359,7 @@ theorem activeTurn_spec
       σ₆.arrs "dist" = σ₃.arrs "dist" := by simp [σ₆, σ₅, σ₄]
       _ = σ₂.arrs "dist" := hdistArr₃
       _ = arrOf n D := hDarr
-  have hstate₆ : RawTurnState B ns q r (c + 1) (xp + tail) G A₀ π centre O T
+  have hstate₆ : RawTurnState B ns nt q r (c + 1) (xp + tail) G A₀ π centre O T
       (upd Xoff (c + 1) (xp + tail)) Xmem'
       (queueCell asg q c r tail Q QD) (upd M (centre c) 0) σ₆ := by
     refine ⟨hraw₆, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, hdist₆,

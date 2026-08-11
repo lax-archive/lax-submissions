@@ -47,15 +47,15 @@ def ActiveBallBudget {n : ℕ} (q r : ℕ) (G : SimpleGraph (Fin n))
 /-- Existential closure of the mutable mathematical arrays.  Machine state
 still pins the current counter and pointer, so consecutive turns compose
 without weakening either fact. -/
-def RawLoopState {n : ℕ} (B ns q r : ℕ) (G : SimpleGraph (Fin n))
+def RawLoopState {n : ℕ} (B ns nt q r : ℕ) (G : SimpleGraph (Fin n))
     (A₀ : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (centre O T : ℕ → ℕ)
     (σ : Env) : Prop :=
   ∃ c xp Xoff Xmem asg M,
-    RawTurnState B ns q r c xp G A₀ π centre O T Xoff Xmem asg M σ
+    RawTurnState B ns nt q r c xp G A₀ π centre O T Xoff Xmem asg M σ
 
 /-! ## Loop theorem -/
 
-variable {B n ns q r : ℕ} {G : SimpleGraph (Fin n)}
+variable {B n ns nt q r : ℕ} {G : SimpleGraph (Fin n)}
 variable {A₀ centre O T : ℕ → ℕ} {π : Equiv.Perm (Fin n)}
 variable {bw nb : ℕ → ℕ}
 
@@ -64,16 +64,16 @@ budgets. -/
 theorem activeLoop_spec
     (hcentres : CentresBy n q A₀ π centre)
     (hcsr : CsrGraph G ns O T)
-    (hnB : n < B) (hnsB : ns < B) (hnnB : n * n < B)
+    (hnB : n < B) (hnsB : ns < B) (hnt : ns ≤ nt) (hnnB : n * n < B)
     (hqB : q < B) (hrB : 2 * r + 1 < B)
     (hbud : ActiveBallBudget q r G A₀ centre O bw nb) :
     Spec B
-      (fun σ => RawLoopState B ns q r G A₀ π centre O T (σ.setVar "c" 0))
+      (fun σ => RawLoopState B ns nt q r G A₀ π centre O T (σ.setVar "c" 0))
       (activeLoopCom r)
       (fun _ σ' => ∃ xp Xoff Xmem asg M,
-        RawTurnState B ns q r q xp G A₀ π centre O T Xoff Xmem asg M σ')
+        RawTurnState B ns nt q r q xp G A₀ π centre O T Xoff Xmem asg M σ')
       (activeLoopK q bw nb) := by
-  let I : Env → Prop := RawLoopState B ns q r G A₀ π centre O T
+  let I : Env → Prop := RawLoopState B ns nt q r G A₀ π centre O T
   have hxN : ∀ σ, I σ → σ.vars "c" ≤ q := by
     intro σ hσ
     obtain ⟨c, xp, Xoff, Xmem, asg, M, hS⟩ := hσ
@@ -94,7 +94,7 @@ theorem activeLoop_spec
     obtain ⟨σ', hrun, tail, Q, QD, Xmem', htail, hS'⟩ :=
       (activeTurn_spec (B := B) (G := G) (A₀ := A₀) (π := π)
         (centre := centre) (O := O) (T := T) (Xoff := Xoff) (Xmem := Xmem)
-        (asg := asg) (M := M) hcentres hcsr hnB hnsB hnnB hqB hrB
+        (asg := asg) (M := M) hcentres hcsr hnB hnsB hnt hnnB hqB hrB
         hA hbw hnb).run (σ := σ) ⟨hS, hk⟩
     refine ⟨σ', activeTurnK (bw k) (nb k), hrun, ?_, ?_⟩
     · exact activeTurnK_le_weight (bw k) (nb k)
@@ -115,17 +115,17 @@ available; only the per-block ordering representation is absent. -/
 theorem activeLoop_rawOut_spec
     (hcentres : CentresBy n q A₀ π centre)
     (hcsr : CsrGraph G ns O T)
-    (hnB : n < B) (hnsB : ns < B) (hnnB : n * n < B)
+    (hnB : n < B) (hnsB : ns < B) (hnt : ns ≤ nt) (hnnB : n * n < B)
     (hqB : q < B) (hrB : 2 * r + 1 < B)
     (hbud : ActiveBallBudget q r G A₀ centre O bw nb) :
     Spec B
-      (fun σ => RawLoopState B ns q r G A₀ π centre O T (σ.setVar "c" 0))
+      (fun σ => RawLoopState B ns nt q r G A₀ π centre O T (σ.setVar "c" 0))
       (activeLoopCom r)
       (fun _ σ' => ∃ xp Xoff Xmem asg M,
-        RawTurnState B ns q r q xp G A₀ π centre O T Xoff Xmem asg M σ' ∧
+        RawTurnState B ns nt q r q xp G A₀ π centre O T Xoff Xmem asg M σ' ∧
         Lax3Proofs.RamCover.RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
       (activeLoopK q bw nb) :=
-  (activeLoop_spec hcentres hcsr hnB hnsB hnnB hqB hrB hbud).post
+  (activeLoop_spec hcentres hcsr hnB hnsB hnt hnnB hqB hrB hbud).post
     (fun _ _ _ h => by
       obtain ⟨xp, Xoff, Xmem, asg, M, hS⟩ := h
       exact ⟨xp, Xoff, Xmem, asg, M, hS, hS.raw.out hcentres⟩)
