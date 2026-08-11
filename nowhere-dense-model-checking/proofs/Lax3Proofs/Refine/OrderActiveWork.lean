@@ -23,8 +23,11 @@ open Lax3Proofs.RamElim (CsrSimple InCsr)
 open Lax3Proofs.RamAugment (fratSlots)
 open Lax3Proofs.Refine.ScatterBlock (MemList renCom renEnv renEnv_arrs renEnv_vars
   renEnv_involutive renCom_run)
-open Lax3Proofs.Refine.ElimCompact (compactPass memRowSum)
-open Lax3Proofs.Refine.ElimCompactCsr (cOff CDone compactPass_run)
+open Lax3Proofs.Refine.ElimCompact (compactPass memRowSum cutArrs padArrs tailOf
+  cutArrs_arrs cutArrs_vars padArrs_arrs padArrs_vars run_of_run_cutArrs run_length
+  getD_padArrs take_arrOf)
+open Lax3Proofs.Refine.ElimCompactCsr (cOff cOff_mono cOff_le_memRowSum memRowSum_le
+  CDone compactPass_run)
 open Lax3Proofs.Refine.AugCompact
 open Lax3Proofs.Refine.OrderActiveWidth (augCompactCom_specLive)
 open Lax3Proofs.Refine.SymCompact
@@ -169,6 +172,139 @@ theorem compactPassWorkAt_run (j : ℕ) {O T M Mem : ℕ → ℕ}
     rw [renEnv_arrs, hframe (f a) h₁ h₂ h₃, renEnv_arrs]
     exact congrArg σ.arrs (compactWorkSwap_invol j a)
 
+/-! ### The widened level target array -/
+
+/-- The compacting pass sees only the occupied target prefix.  Its other
+arrays are cut at exactly their physical lengths, so padding the run puts
+back only the untouched target tail. -/
+def compactWorkLen (j n ns : ℕ) : String → ℕ := fun a =>
+  if a = "off" ∨ a = "gof" then n + 1
+  else if a = "tgt" ∨ a = "gtg" then ns
+  else if a = "mem" ∨ a = "ffl" ∨ a = alvName j then n
+  else 0
+
+@[simp] theorem compactWorkLen_off (j n ns : ℕ) :
+    compactWorkLen j n ns "off" = n + 1 := by simp [compactWorkLen]
+
+@[simp] theorem compactWorkLen_gof (j n ns : ℕ) :
+    compactWorkLen j n ns "gof" = n + 1 := by simp [compactWorkLen]
+
+@[simp] theorem compactWorkLen_tgt (j n ns : ℕ) :
+    compactWorkLen j n ns "tgt" = ns := by simp [compactWorkLen]
+
+@[simp] theorem compactWorkLen_gtg (j n ns : ℕ) :
+    compactWorkLen j n ns "gtg" = ns := by simp [compactWorkLen]
+
+@[simp] theorem compactWorkLen_mem (j n ns : ℕ) :
+    compactWorkLen j n ns "mem" = n := by
+  simp [compactWorkLen]
+
+@[simp] theorem compactWorkLen_ffl (j n ns : ℕ) :
+    compactWorkLen j n ns "ffl" = n := by
+  simp [compactWorkLen]
+
+@[simp] theorem compactWorkLen_alvName (j n ns : ℕ) :
+    compactWorkLen j n ns (alvName j) = n := by
+  simp [compactWorkLen, alvName, String.ext_iff]
+
+/-- The resident compaction at the level's widened target allocation.
+Only the occupied prefix `[0,ns)` is read or written; the physical
+`[ns,W)` tail of `gtg` is retained. -/
+theorem compactPassWorkAtWide_run (j : ℕ) {ns W : ℕ} {O T M Mem : ℕ → ℕ}
+    (hcsr : CsrSimple G ns O T) (hml : MemList n mm Mem (markSet n M))
+    (hB : mm + ns + 1 < B) (hnB : n < B) (hMB : ∀ v < n, M v < B)
+    (hnsW : ns ≤ W) { σ : Env}
+    (hmm : σ.vars "mm" = mm) (hmem : σ.arrs "mem" = arrOf n Mem)
+    (hoff : σ.arrs "off" = arrOf (n + 1) O) (htgt : σ.arrs "tgt" = arrOf W T)
+    (halv : σ.arrs (alvName j) = arrOf n M) (hffl : ∃ g, σ.arrs "ffl" = arrOf n g)
+    (hgof : ∃ g, σ.arrs "gof" = arrOf (n + 1) g)
+    (hgtg : ∃ g, σ.arrs "gtg" = arrOf W g) :
+    ∃ (σ' : Env) (Kix KOf KT : ℕ → ℕ),
+      Run B (compactPassWorkAt j) σ σ' (40 * mm + 24 * memRowSum mm O Mem + 17) ∧
+      (∀ k, k < mm → Kix (Mem k) = k) ∧
+      σ'.vars "mm" = mm ∧
+      σ'.vars "ks" = cOff O T M Mem Kix mm ∧
+      σ'.arrs "gof" = arrOf (n + 1) KOf ∧
+      (∀ i ≤ mm, KOf i = cOff O T M Mem Kix i) ∧
+      σ'.arrs "gtg" = arrOf W KT ∧
+      CDone O T M Mem Kix KT mm ∧
+      (∀ a, a ≠ "ffl" → a ≠ "gof" → a ≠ "gtg" → σ'.arrs a = σ.arrs a) := by
+  classical
+  let len := compactWorkLen j n ns
+  obtain ⟨τ, Kix, KOf, KT₀, hrun, hKix, hmm', hks, hgof', hKOf, hgtg',
+      hdone, hframe⟩ :=
+    compactPassWorkAt_run (G := G) (B := B) j hcsr hml hB hnB hMB
+      (hmm := by simpa only [cutArrs_vars] using hmm)
+      (hmem := by rw [cutArrs_arrs, show len "mem" = n by simp [len], hmem,
+        take_arrOf le_rfl])
+      (hoff := by rw [cutArrs_arrs, show len "off" = n + 1 by simp [len], hoff,
+        take_arrOf le_rfl])
+      (htgt := by rw [cutArrs_arrs, show len "tgt" = ns by simp [len], htgt,
+        take_arrOf hnsW])
+      (halv := by rw [cutArrs_arrs, show len (alvName j) = n by simp [len], halv,
+        take_arrOf le_rfl])
+      (hffl := by obtain ⟨g, hg⟩ := hffl
+                  exact ⟨g, by rw [cutArrs_arrs, show len "ffl" = n by simp [len], hg,
+                    take_arrOf le_rfl]⟩)
+      (hgof := by obtain ⟨g, hg⟩ := hgof
+                  exact ⟨g, by rw [cutArrs_arrs, show len "gof" = n + 1 by simp [len], hg,
+                    take_arrOf le_rfl]⟩)
+      (hgtg := by obtain ⟨g, hg⟩ := hgtg
+                  exact ⟨g, by rw [cutArrs_arrs, show len "gtg" = ns by simp [len], hg,
+                    take_arrOf hnsW]⟩)
+      (σ := cutArrs σ len)
+  let σ' := padArrs τ (tailOf σ len)
+  have hrun' : Run B (compactPassWorkAt j) σ σ'
+      (40 * mm + 24 * memRowSum mm O Mem + 17) := by
+    exact run_of_run_cutArrs len hrun
+  have hgofTail : (σ.arrs "gof").drop (len "gof") = [] := by
+    obtain ⟨g, hg⟩ := hgof
+    rw [show len "gof" = n + 1 by simp [len], hg]
+    exact List.drop_eq_nil_of_le (by simp [arrOf])
+  have hgofWide : σ'.arrs "gof" = arrOf (n + 1) KOf := by
+    change (padArrs τ (tailOf σ len)).arrs "gof" = arrOf (n + 1) KOf
+    rw [padArrs_arrs, tailOf, hgofTail, List.append_nil, hgof']
+  have hgtgLen : (σ'.arrs "gtg").length = W := by
+    rw [run_length hrun' "gtg"]
+    obtain ⟨g, hg⟩ := hgtg
+    rw [hg, length_arrOf]
+  obtain ⟨KT, hKTarr⟩ := Lax3Proofs.RamDriver.exists_arrOf hgtgLen
+  have hKT : ∀ z < ns, KT z = KT₀ z := by
+    intro z hz
+    have hp := getD_padArrs (τ := τ) (tl := tailOf σ len) (a := "gtg")
+      (i := z) (by rw [hgtg', length_arrOf]; exact hz)
+    have hp' : (σ'.arrs "gtg").getD z 0 = (τ.arrs "gtg").getD z 0 := by
+      simpa only [σ'] using hp
+    rw [hKTarr, getD_arrOf KT (lt_of_lt_of_le hz hnsW), hgtg',
+      getD_arrOf KT₀ hz] at hp'
+    exact hp'
+  have hcsns : cOff O T M Mem Kix mm ≤ ns :=
+    (cOff_le_memRowSum hcsr hml hKix).trans (memRowSum_le hcsr hml)
+  have hdone' : CDone O T M Mem Kix KT mm := by
+    intro z hz
+    obtain ⟨hsound, hcomplete⟩ := hdone z hz
+    refine ⟨?_, ?_⟩
+    · intro p hp₁ hp₂
+      rw [hKT p (lt_of_lt_of_le hp₂
+        ((cOff_mono (O := O) (T := T) (M := M) (Mem := Mem) (Kix := Kix)
+          (show z + 1 ≤ mm by omega)).trans hcsns))]
+      exact hsound p hp₁ hp₂
+    · intro v hv
+      obtain ⟨p, hp₁, hp₂, hpv⟩ := hcomplete v hv
+      refine ⟨p, hp₁, hp₂, ?_⟩
+      rw [hKT p (lt_of_lt_of_le hp₂
+        ((cOff_mono (O := O) (T := T) (M := M) (Mem := Mem) (Kix := Kix)
+          (show z + 1 ≤ mm by omega)).trans hcsns))]
+      exact hpv
+  refine ⟨σ', Kix, KOf, KT, hrun', hKix, ?_, ?_, hgofWide, hKOf, hKTarr,
+    hdone', ?_⟩
+  · simpa only [σ', padArrs_vars] using hmm'
+  · simpa only [σ', padArrs_vars] using hks
+  · intro a ha₁ ha₂ ha₃
+    change (padArrs τ (tailOf σ len)).arrs a = σ.arrs a
+    rw [padArrs_arrs, hframe a ha₁ ha₂ ha₃, cutArrs_arrs, tailOf,
+      List.take_append_drop]
+
 /-! ## The compact engines in the resident graph workspace -/
 
 /-- Exchange the generic engine graph names with the resident compact
@@ -302,6 +438,7 @@ theorem symCompactWork_spec {B n mm nt W kd m : ℕ} {D : Orientation mm}
 /-! ## Axioms -/
 
 #print axioms compactPassWorkAt_run
+#print axioms compactPassWorkAtWide_run
 #print axioms augCompactWork_specLive
 #print axioms symCompactWork_spec
 
