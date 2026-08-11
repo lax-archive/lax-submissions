@@ -1167,7 +1167,8 @@ theorem augCompact_spec {B n mm nt W kd d m : ℕ} {D : Orientation mm} {Mem IO 
     (hent : AugEntryC n mm nt W kd IO IT σ) :
     ∃ σ'', Run B augCompactCore σ σ'' (augCompactCost mm kd W) ∧
       AugMemPost mm W Mem D σ'' ∧
-      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm := by
+      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm ∧
+      σ''.vars "kn" = n := by
   classical
   obtain ⟨hn0, hmm0, hkd0, -, -, harrs0⟩ := hent
   -- the carrier install
@@ -1180,12 +1181,18 @@ theorem augCompact_spec {B n mm nt W kd d m : ℕ} {D : Orientation mm} {Mem IO 
   obtain ⟨σ2, DT, r2, hmm2, hDT, hpre2, hmem2, hork2⟩ :=
     h1 IO IT σ1 (by omega) (by omega) hIOB hITB
       (by simp [hσ1]) (by simp [hσ1, hmm0]) (by simp [hσ1, hkd0]) hmn hkdW harrs1
+  have hkn2 : σ2.vars "kn" = n := by
+    rw [r2.frame_var "kn" (by decide)]
+    simp [hσ1]
   have hin' : InCsr D m IO DT :=
     Lax3Proofs.RamDriverAugment.inCsr_congr_prefix hin fun j hj => hDT j (by omega)
   -- the round, at the arena's carrier
   obtain ⟨τ, r3, hpost, hrnkLt, htl⟩ :=
     augCompact_engine (d := d) hin' hd hnt (hmkd.trans hkdW) hroom hB hpre2
   set σ3 : Env := padArrs τ (tailOf σ2 (augClen mm nt W)) with hσ3
+  have hkn3 : σ3.vars "kn" = n := by
+    rw [hσ3, r3.frame_var "kn" (by decide)]
+    exact hkn2
   obtain ⟨R, NO, NT, k, m', D', hrnk, hk, hnoff, hntg, hmn', hmW, hstep, hcsr, hlow,
     hgr, hbud⟩ := hpost
   -- the round's answers, read on the padded store
@@ -1225,7 +1232,7 @@ theorem augCompact_spec {B n mm nt W kd d m : ℕ} {D : Orientation mm} {Mem IO 
     h2 R σ3 hmm3 hmem3 hmlt hrnkP hork3 hsm hnB hRB hρlen
   refine ⟨σ4, (r1.seq (r2.seq (r3.seq r4))).mono ?_,
     ⟨R, NO, NT, k, m', D', horkS, ?_, ?_, ?_, ?_, hmW, hstep, hcsr, hlow, hgr, hbud,
-      fun d' hd' => arcs_le_compact hcsr hd'⟩, ?_⟩
+      fun d' hd' => arcs_le_compact hcsr hd'⟩, ?_, ?_⟩
   · rw [augCompactCost, augPrepCost, scatterCost]; omega
   · rw [← hk]; exact r4.frame_var "kmax" (by decide)
   · intro i hi; rw [r4.frame_arr "noff" (by decide)]; exact hnoffP i hi
@@ -1243,6 +1250,8 @@ theorem augCompact_spec {B n mm nt W kd d m : ℕ} {D : Orientation mm} {Mem IO 
         (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
         (by decide)), harr1 "alv"]
     rw [r4.frame_arr "alv" (by decide), h, halv2]
+  · rw [r4.frame_var "kn" (by decide)]
+    exact hkn3
 
 /-! ## §10 Axioms -/
 

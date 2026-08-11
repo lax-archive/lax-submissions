@@ -68,7 +68,8 @@ theorem augCompact_specE {B n mm nt W kd d db m : ℕ} {D : Orientation mm}
     (hmem : σ.arrs "mem" = arrOf n Mem) (hent : AugEntryC n mm nt W kd IO IT σ) :
     ∃ σ'', Run B augCompactCore σ σ'' (augCompactCost mm kd W) ∧
       AugMemPost mm W Mem D σ'' ∧
-      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm :=
+      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm ∧
+      σ''.vars "kn" = n :=
   augCompact_spec h1 Lax3Proofs.Refine.ElimCompactWalks.scatterBacksW hin hd hmkd hkdW hnt
     (augRoom_of_augWidthE hin hd hdb hW) hB hnB hmn hIOB hITB hmem
     (fun j hj => hml.lt j hj) (fun i j hij hj => hml.smono i j hij hj) hent
@@ -87,7 +88,8 @@ theorem augCompact_specW {B n mm nt W kd d m : ℕ} {D : Orientation mm}
     (hmem : σ.arrs "mem" = arrOf n Mem) (hent : AugEntryC n mm nt W kd IO IT σ) :
     ∃ σ'', Run B augCompactCore σ σ'' (augCompactCost mm kd W) ∧
       AugMemPost mm W Mem D σ'' ∧
-      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm :=
+      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm ∧
+      σ''.vars "kn" = n :=
   augCompact_spec h1 Lax3Proofs.Refine.ElimCompactWalks.scatterBacksW hin hd hmkd hkdW hnt
     (augRoom_of_augWidth hin hd hW) hB hnB hmn hIOB hITB hmem
     (fun j hj => hml.lt j hj) (fun i j hij hj => hml.smono i j hij hj) hent

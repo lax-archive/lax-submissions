@@ -80,7 +80,7 @@ open Lax3Proofs.Augmentation (Orientation)
 open Lax3Proofs.RamDriverCluster (markSet)
 open Lax3Proofs.TgtWidenProbe (PSt PRes exec execC pB pF augSt aug5doff aug5dtg)
 open Lax3Proofs.Refine.ScatterBlock (MemList)
-open Lax3Proofs.Refine.ElimCompact (padArrs cutArrs tailOf padArrs_arrs cutArrs_arrs
+open Lax3Proofs.Refine.ElimCompact (padArrs cutArrs tailOf padArrs_arrs padArrs_vars cutArrs_arrs
   run_of_run_cutArrs tail_preserved take_arrOf memGraph getD_padArrs)
 
 /-! ## §1 The program
@@ -732,7 +732,8 @@ theorem symCompact_spec {B n mm nt W kd m : ℕ} {D : Orientation mm} {IO IT T�
     (hent : SymEntryC n mm nt W kd IO IT T₀ σ) :
     ∃ σ'', Run B symCompactCore σ σ'' (symCompactCost mm kd) ∧
       SymMemPost mm nt m D T₀ σ'' ∧
-      (σ''.arrs "off").drop (mm + 1) = (σ.arrs "off").drop (mm + 1) := by
+      (σ''.arrs "off").drop (mm + 1) = (σ.arrs "off").drop (mm + 1) ∧
+      σ''.vars "kn" = n := by
   classical
   have hmn : mm ≤ n := hent.2.2.2.1
   obtain ⟨σ1, DT, r1, hn1, hmm1, hdtg1, hDT, hdoff1, hooff1, hofl1, hotg1, hoffE1, htgt1⟩ :=
@@ -741,7 +742,7 @@ theorem symCompact_spec {B n mm nt W kd m : ℕ} {D : Orientation mm} {IO IT T�
   have hin' : InCsr D m IO DT :=
     Lax3Proofs.RamDriverAugment.inCsr_congr_prefix hin fun j hj => hDT j (by omega)
   -- the carrier install
-  obtain ⟨σ2, r2, hpre2, -, -, harr2⟩ :=
+  obtain ⟨σ2, r2, hpre2, hkn2, -, harr2⟩ :=
     symSetCarrier_spec (B := B) (n := n) (mm := mm) (nt := nt) (W := W) (DO := IO) (DT := DT)
       (T₀ := T₀) hnB hn1 hmm1 hmn hdoff1 hdtg1 hooff1 hofl1 hotg1 hoffE1 htgt1
   -- the pass, at the arena's carrier
@@ -753,7 +754,7 @@ theorem symCompact_spec {B n mm nt W kd m : ℕ} {D : Orientation mm} {IO IT T�
   have hge : 200 ≤ Lax3Proofs.RamDriverAugment.symCost mm kd := by
     simp only [Lax3Proofs.RamDriverAugment.symCost]; omega
   refine ⟨padArrs τ (tailOf σ2 (symClen mm nt W)), (r1.seq (r2.seq r3)).mono ?_,
-    ⟨O, T, ?_, ?_, hcsr, htail⟩, ?_⟩
+    ⟨O, T, ?_, ?_, hcsr, htail⟩, ?_, ?_⟩
   · rw [symCompactCost]; omega
   · intro i hi
     rw [getD_padArrs (by rw [hoff']; simpa [arrOf] using Nat.lt_succ_of_le hi), hoff',
@@ -771,6 +772,37 @@ theorem symCompact_spec {B n mm nt W kd m : ℕ} {D : Orientation mm} {IO IT T�
     have h := htl "off" hlen
     rw [symClen_off] at h
     rw [h, harr2 "off", hoffσ1]
+  · have h := (r3.frame_var "kn" (by decide)).trans hkn2
+    simpa only [padArrs_vars] using h
+
+/-- The compact symmetrization with the saved carrier restored.  Its CSR
+answer is identical to `symCompact_spec`; the extra two ticks make the
+next compact engine call start again from the ambient carrier. -/
+theorem symCompactCom_spec {B n mm nt W kd m : ℕ} {D : Orientation mm}
+    {IO IT T₀ : ℕ → ℕ} {σ : Env} (h1 : SymPreps B n mm nt W kd)
+    (hin : InCsr D m IO IT) (hmkd : m ≤ kd) (hkdW : kd ≤ W) (hfit : m + m ≤ nt)
+    (hnB : n < B) (hB2 : m + m < B) (hmmB : mm + 1 < B) (hkdB : kd < B)
+    (hIOB : ∀ i ≤ mm, IO i < B) (hITB : ∀ j < kd, IT j < B)
+    (hent : SymEntryC n mm nt W kd IO IT T₀ σ) :
+    ∃ σ'', Run B symCompactCom σ σ'' (symCompactCost mm kd + 2) ∧
+      SymMemPost mm nt m D T₀ σ'' ∧
+      (σ''.arrs "off").drop (mm + 1) = (σ.arrs "off").drop (mm + 1) ∧
+      σ''.vars "n" = n := by
+  obtain ⟨τ, hrun, hpost, htail, hkn⟩ :=
+    symCompact_spec h1 hin hmkd hkdW hfit hnB hB2 hmmB hkdB hIOB hITB hent
+  let σ'' := τ.setVar "n" n
+  have hr : Run B (.assign "n" (.var "kn")) τ σ'' 2 := by
+    have h := Run.assign (B := B) (σ := τ) (x := "n") (e := .var "kn")
+      (evalB_var (by rw [hkn]; omega))
+    rw [hkn] at h
+    simpa only [σ''] using h
+  refine ⟨σ'', ?_, ?_, ?_, ?_⟩
+  · exact hrun.seq hr
+  · simpa only [σ'', SymMemPost, arrs_setVar] using hpost
+  · simpa only [σ'', arrs_setVar] using htail
+  · simp [σ'']
+
+#print axioms symCompactCom_spec
 
 /-! ## §8 What this family did *not* need
 

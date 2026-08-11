@@ -21,7 +21,7 @@ open Lax3Proofs.RamAugment (fratSlots)
 open Lax3Proofs.RamElim (InCsr)
 open Lax3Proofs.Refine.ScatterBlock (MemList)
 open Lax3Proofs.Refine.ElimCompact (cutArrs padArrs tailOf cutArrs_arrs cutArrs_vars
-  padArrs_arrs run_of_run_cutArrs run_length take_arrOf getD_padArrs)
+  padArrs_arrs padArrs_vars run_of_run_cutArrs run_length take_arrOf getD_padArrs)
 open Lax3Proofs.Refine.AugCompact
 open Lax3Proofs.Refine.AugCompactScatter (augCompact_specE)
 
@@ -137,7 +137,8 @@ theorem augCompact_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation mm}
     (hmem : σ.arrs "mem" = arrOf n Mem) (hent : AugEntryC n mm nt W kd IO IT σ) :
     ∃ σ'', Run B augCompactCore σ σ'' (augCompactCost mm kd w) ∧
       AugMemPost mm W Mem D σ'' ∧
-      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm := by
+      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm ∧
+      σ''.vars "kn" = n := by
   classical
   let len := augWClen n nt w
   have hentView : AugEntryC n mm nt w kd IO IT (cutArrs σ len) := by
@@ -150,7 +151,7 @@ theorem augCompact_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation mm}
     ⟨em, hem⟩, ⟨rk, hrk⟩, ⟨id, hid⟩, ⟨bh, hbh⟩, ⟨bv, hbv⟩,
     ⟨bn, hbn⟩, ⟨ifl, hifl⟩, ⟨no, hno⟩, ⟨nf, hnf⟩, ⟨nt₀, hnt₀⟩,
     ⟨sf, hsf⟩, ⟨sa, hsa⟩, ⟨sd, hsd⟩, ⟨se, hse⟩, ⟨ork₀, hork₀⟩⟩ := hent
-  obtain ⟨τ, hrun, hpost, halvt⟩ :=
+  obtain ⟨τ, hrun, hpost, halvt, hkn⟩ :=
     augCompact_specE
       (Lax3Proofs.Refine.CompactPreps.augPreps B n mm nt w kd) hml hin hd hmkd hkdw hnt
       hdb hwidth hB hnB hmn hIOB hITB hmemView hentView
@@ -209,13 +210,45 @@ theorem augCompact_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation mm}
     exact List.drop_eq_nil_of_le (by simp [arrOf])
   have halvView : (cutArrs σ len).arrs "alv" = σ.arrs "alv" := by
     rw [cutArrs_arrs, hlenAlv, hal, take_arrOf le_rfl]
-  refine ⟨σ'', hrun', hpost', ?_⟩
+  refine ⟨σ'', hrun', hpost', ?_, ?_⟩
   change ((padArrs τ (tailOf σ len)).arrs "alv").drop mm = (σ.arrs "alv").drop mm
   rw [padArrs_arrs, htailAlv, List.append_nil, halvt, halvView]
+  · simpa only [σ'', padArrs_vars] using hkn
+
+/-- The live-width round with the saved carrier restored.  This is the
+form consumed by a multi-round active phase: each following round again
+sees the ambient carrier in `n`, while the executable and semantic answer
+of the compact core are unchanged. -/
+theorem augCompactCom_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation mm}
+    {Mem IO IT : ℕ → ℕ} {X : Set (Fin n)} {σ : Env}
+    (hml : MemList n mm Mem X) (hin : InCsr D m IO IT) (hd : D.InDegLE d)
+    (hmkd : m ≤ kd) (hkdw : kd ≤ w) (hwW : w ≤ W) (hnt : fratSlots D ≤ nt)
+    (hdb : 2 * (d * d) + d ≤ db) (hwidth : augWidthE mm kd db ≤ w)
+    (hB : mm + w + 1 < B) (hnB : n < B)
+    (hIOB : ∀ i ≤ mm, IO i < B) (hITB : ∀ j < kd, IT j < B)
+    (hmem : σ.arrs "mem" = arrOf n Mem) (hent : AugEntryC n mm nt W kd IO IT σ) :
+    ∃ σ'', Run B augCompactCom σ σ'' (augCompactCost mm kd w + 2) ∧
+      AugMemPost mm W Mem D σ'' ∧
+      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm ∧
+      σ''.vars "n" = n := by
+  obtain ⟨τ, hrun, hpost, htail, hkn⟩ :=
+    augCompact_specLive hml hin hd hmkd hkdw hwW hnt hdb hwidth hB hnB hIOB hITB hmem hent
+  let σ'' := τ.setVar "n" n
+  have hr : Run B (.assign "n" (.var "kn")) τ σ'' 2 := by
+    have h := Run.assign (B := B) (σ := τ) (x := "n") (e := .var "kn")
+      (evalB_var (by rw [hkn]; omega))
+    rw [hkn] at h
+    simpa only [σ''] using h
+  refine ⟨σ'', ?_, ?_, ?_, ?_⟩
+  · exact hrun.seq hr
+  · simpa only [σ'', AugMemPost, vars_setVar, arrs_setVar, if_neg (by decide)] using hpost
+  · simpa only [σ'', arrs_setVar] using htail
+  · simp [σ'']
 
 /-! ## Axioms -/
 
 #print axioms augEntryC_cutWidth
 #print axioms augCompact_specLive
+#print axioms augCompactCom_specLive
 
 end Lax3Proofs.Refine.OrderActiveWidth
