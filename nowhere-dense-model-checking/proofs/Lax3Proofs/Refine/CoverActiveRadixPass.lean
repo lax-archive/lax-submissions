@@ -922,6 +922,143 @@ theorem radixPassCom_spec {B n na lo m b : ℕ} {X Q₀ : ℕ → ℕ}
   · intro p hp
     exact pastePrefix_outside hp
 
+/-! ## Iterating all bit positions of one block -/
+
+/-- One round performs the stable pass at the current bit and advances
+the bit counter. -/
+def radixRoundCom : Com :=
+  .seq radixPassCom
+    (.assign "rsb" (.add (.var "rsb") (.lit 1)))
+
+/-- Sort the selected block through the number of rounds stored in
+`rsbits`. -/
+def radixBlockCom : Com :=
+  .seq (.assign "rsb" (.lit 0))
+    (.while (.lt (.var "rsb") (.var "rsbits")) radixRoundCom)
+
+def radixBlockCost (bits m : ℕ) : ℕ :=
+  (radixPassCost m + 8) * bits + 6
+
+/-- Exact loop invariant: after `rsb` turns, the selected segment is
+the mathematical `radixRounds rsb` result. -/
+def RadixRoundsInv (n na lo m bits : ℕ) (X : ℕ → ℕ) (σ : Env) : Prop :=
+  σ.vars "rslo" = lo ∧ σ.vars "rsn" = m ∧
+  σ.vars "rsbits" = bits ∧ σ.vars "rsb" ≤ bits ∧
+  ∃ X' Q : ℕ → ℕ,
+    σ.arrs "xmem" = arrOf na X' ∧ σ.arrs "q" = arrOf n Q ∧
+    segment lo m X' = radixRounds (σ.vars "rsb") (segment lo m X) ∧
+    ∀ p, p < lo ∨ lo + m ≤ p → X' p = X p
+
+def RadixBlockOut (n na lo m bits : ℕ) (X : ℕ → ℕ) (σ : Env) : Prop :=
+  σ.vars "rslo" = lo ∧ σ.vars "rsn" = m ∧
+  σ.vars "rsbits" = bits ∧ σ.vars "rsb" = bits ∧
+  ∃ X' Q : ℕ → ℕ,
+    σ.arrs "xmem" = arrOf na X' ∧ σ.arrs "q" = arrOf n Q ∧
+    segment lo m X' = radixRounds bits (segment lo m X) ∧
+    ∀ p, p < lo ∨ lo + m ≤ p → X' p = X p
+
+theorem radixRounds_segment_words {B lo m b : ℕ} {X X' : ℕ → ℕ}
+    (hXB : ∀ i < m, X (lo + i) < B)
+    (hseg : segment lo m X' = radixRounds b (segment lo m X)) :
+    ∀ i < m, X' (lo + i) < B := by
+  intro i hi
+  have hmem' : X' (lo + i) ∈ segment lo m X' :=
+    mem_segment_iff.mpr ⟨i, hi, rfl⟩
+  rw [hseg] at hmem'
+  have hmem : X' (lo + i) ∈ segment lo m X :=
+    (radixRounds_perm b (segment lo m X)).mem_iff.mp hmem'
+  obtain ⟨j, hj, heq⟩ := mem_segment_iff.mp hmem
+  rw [← heq]
+  exact hXB j hj
+
+theorem radixRoundCom_spec {B n na lo m bits : ℕ} {X : ℕ → ℕ}
+    (hB : 1 < B) (hnB : n < B) (hmn : m ≤ n) (hbitsB : bits < B)
+    (hfit : lo + m ≤ na) (hword : lo + m < B)
+    (hXB : ∀ i < m, X (lo + i) < B) :
+    Spec B
+      (fun σ => RadixRoundsInv n na lo m bits X σ ∧ σ.vars "rsb" < bits)
+      radixRoundCom
+      (fun σ σ' => RadixRoundsInv n na lo m bits X σ' ∧
+        σ'.vars "rsb" = σ.vars "rsb" + 1)
+      (radixPassCost m + 4) := by
+  intro σ hσ
+  obtain ⟨⟨hlo, hlen, hbits, hble, Xc, Q, hxmem, hq, hseg, hout⟩, hblt⟩ := hσ
+  let b := σ.vars "rsb"
+  have hbB : b < B := lt_trans hblt hbitsB
+  have hXcB : ∀ i < m, Xc (lo + i) < B :=
+    radixRounds_segment_words hXB hseg
+  obtain ⟨σp, rp, hp⟩ :=
+    (radixPassCom_spec (X := Xc) (Q₀ := Q) hB hnB hmn hbB hfit hword hXcB).run
+      (show σ.vars "rslo" = lo ∧ σ.vars "rsn" = m ∧
+          σ.vars "rsb" = b ∧ σ.arrs "xmem" = arrOf na Xc ∧
+          σ.arrs "q" = arrOf n Q from ⟨hlo, hlen, rfl, hxmem, hq⟩)
+  obtain ⟨hplo, hplen, hpbit, Xn, Qn, hpxmem, hpq, hpass, hpout⟩ := hp
+  have hpbits : σp.vars "rsbits" = bits := by
+    rw [rp.frame_var "rsbits" (by
+      simp [radixPassCom, stableScatterCom, selectDigitCom, selectDigitSlot,
+        copyBackCom, copyBackSlot, Com.wvars])]
+    exact hbits
+  have einc : (Expr.add (.var "rsb") (.lit 1)).evalB B σp = some (b + 1) := by
+    apply evalB_bin (op := .add)
+    · have hbBp : σp.vars "rsb" < B := by rw [hpbit]; exact hbB
+      simpa only [hpbit] using (evalB_var hbBp)
+    · exact evalB_lit hB
+    · simp only [Bop.apply_add]
+      omega
+  let σ' := σp.setVar "rsb" (b + 1)
+  have rinc : Run B (.assign "rsb" (.add (.var "rsb") (.lit 1))) σp σ' 4 :=
+    Run.assign einc
+  refine ⟨σ', ?_, ?_, ?_⟩
+  · simpa [radixRoundCom] using rp.seq rinc
+  · refine ⟨?_, ?_, ?_, ?_, Xn, Qn, ?_, ?_, ?_, ?_⟩
+    · simp [σ', hplo]
+    · simp [σ', hplen]
+    · simp [σ', hpbits]
+    · simp [σ', b]
+      omega
+    · simp [σ', hpxmem]
+    · simp [σ', hpq]
+    · have hrsb : σ'.vars "rsb" = b + 1 := by simp [σ']
+      rw [hrsb, radixRounds, ← hseg]
+      exact hpass
+    · intro p hpout'
+      exact (hpout p hpout').trans (hout p hpout')
+  · simp [σ', b]
+
+/-- A complete executable stable radix sort of one selected block. -/
+theorem radixBlockCom_spec {B n na lo m bits : ℕ} {X Q₀ : ℕ → ℕ}
+    (hB : 1 < B) (hnB : n < B) (hmn : m ≤ n) (hbitsB : bits < B)
+    (hfit : lo + m ≤ na) (hword : lo + m < B)
+    (hXB : ∀ i < m, X (lo + i) < B) :
+    Spec B
+      (fun σ => σ.vars "rslo" = lo ∧ σ.vars "rsn" = m ∧
+        σ.vars "rsbits" = bits ∧ σ.arrs "xmem" = arrOf na X ∧
+        σ.arrs "q" = arrOf n Q₀)
+      radixBlockCom
+      (fun _ σ' => RadixBlockOut n na lo m bits X σ')
+      (radixBlockCost bits m) := by
+  have hbody := radixRoundCom_spec (X := X) hB hnB hmn hbitsB hfit hword hXB
+  have hloop := Spec.forRangeZero (B := B) "rsb" "rsbits"
+    (RadixRoundsInv n na lo m bits X) bits (radixPassCost m + 4) hbitsB
+    (fun _ h => h.2.2.2.1) (fun _ h => h.2.2.1) hbody
+  simpa only [radixBlockCom, radixBlockCost] using hloop.conseq
+    (fun σ hσ => by
+      obtain ⟨hlo, hlen, hbits, hxmem, hq⟩ := hσ
+      refine ⟨?_, ?_, ?_, ?_, X, Q₀, ?_, ?_, ?_, ?_⟩
+      · simp [hlo]
+      · simp [hlen]
+      · simp [hbits]
+      · simp
+      · simp [hxmem]
+      · simp [hq]
+      · simp [radixRounds]
+      · intro p hp
+        rfl)
+    (fun _ σ' _ hpost => by
+      obtain ⟨⟨hlo, hlen, hbits, -, X', Q, hxmem, hq, hseg, hout⟩, hrb⟩ := hpost
+      exact ⟨hlo, hlen, hbits, hrb, X', Q, hxmem, hq, by simpa [hrb] using hseg, hout⟩)
+    le_rfl
+
 /-! ## Axiom audit -/
 
 #print axioms countZeroSlot_spec
@@ -932,5 +1069,7 @@ theorem radixPassCom_spec {B n na lo m b : ℕ} {X Q₀ : ℕ → ℕ}
 #print axioms copyBackSlot_spec
 #print axioms copyBackCom_spec
 #print axioms radixPassCom_spec
+#print axioms radixRoundCom_spec
+#print axioms radixBlockCom_spec
 
 end Lax3Proofs.Refine.CoverActiveRadixPass
