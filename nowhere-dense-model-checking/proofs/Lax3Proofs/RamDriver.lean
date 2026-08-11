@@ -7,6 +7,7 @@ import Lax3Proofs.RamCover
 import Lax3Proofs.RamScatter
 import Lax3Proofs.Refine.MassMath
 import Lax3Proofs.Refine.BlockLeaves
+import Lax3Proofs.Refine.BfsBlockPar
 import Lax3Proofs.Refine.ScatterBlockProg
 import Lax3Proofs.Refine.DriverPrelude
 import Lax3Proofs.SplitterWinRec
@@ -745,6 +746,14 @@ the ball it is supposed to build. The chain therefore alternates between
 two names, and — the radius being `2 · cap`, an even number — ends where
 it started. -/
 def balAltName (j : ℕ) : String := "blt" ++ toString j
+
+/-- The retained parent tree at depth `j`.  The former game-ball buffer is
+reused: the executable no longer materialises that ball. -/
+def parName (j : ℕ) : String := balName j
+
+/-- Distance scratch for the cached parent search at depth `j`.  The former
+ball ping-pong buffer is likewise free after the semantic ball elimination. -/
+def pdsName (j : ℕ) : String := balAltName j
 
 /-- The indicator of the batch the splitter strategy isolates at depth
 `j`. -/
@@ -1546,6 +1555,39 @@ def markPath (bat : String) : Com :=
       (.while (.lt (.var "i") (.var "plen"))
         (.seq (.store bat (.get "path" (.var "i")) (.lit 1))
           (.assign "i" (.add (.var "i") (.lit 1))))))
+
+/-! #### Cached parent trees -/
+
+/-- Exchange the three fixed arrays of the block parent engine with the
+three per-depth arrays that retain one cluster's cache.  All six names are
+pairwise distinct by their prefixes, so this permutation is an involution. -/
+def cacheSwap (j : ℕ) : String → String := fun z =>
+  if z = "alv" then resName j else if z = resName j then "alv"
+  else if z = "dist" then pdsName j else if z = pdsName j then "dist"
+  else if z = "par" then parName j else if z = parName j then "par" else z
+
+/-- Build the parent tree for the current retained cluster in place.  The
+queue arrays remain shared scratch; mask, distance scratch, and parents are
+renamed onto their per-depth storage. -/
+def cacheBfsCom (cap j : ℕ) : Com :=
+  Refine.ScatterBlock.renCom (cacheSwap j)
+    (Refine.BfsBlockPar.bfsBlockParCom (2 * cap))
+
+/-- One fixed-count parent step: mark the current vertex, read its parent,
+and advance the loop counter. -/
+def markParentStep (j a : ℕ) : Com :=
+  .seq (.store (batName j) (.var "pc") (.lit 1))
+    (.seq (.assign "pc" (.get (parName a) (.var "pc")))
+      (.assign "pi" (.add (.var "pi") (.lit 1))))
+
+/-- Mark `2·cap + 1` successive vertices of an earlier cached parent chain.
+Once the root is reached its self-parent is marked repeatedly, so a fixed
+loop is sufficient and no materialised distance array is needed. -/
+def markParentsCom (cap j a : ℕ) : Com :=
+  .seq (.assign "pc" (.var (ctrName j)))
+    (.seq (.assign "plen" (.lit (2 * cap + 1)))
+      (.seq (.assign "pi" (.lit 0))
+        (.while (.lt (.var "pi") (.var "plen")) (markParentStep j a))))
 
 /-- One earlier round's contribution: the path from its connector to the
 current one, searched in the arena that round was played in.

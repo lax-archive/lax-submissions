@@ -130,4 +130,5 @@ import Lax3Proofs.Refine.GapsDesign
 import Lax3Proofs.Refine.BfsBlockMask
 import Lax3Proofs.Refine.BfsBlockPar
 import Lax3Proofs.Refine.BfsBlockParMask
+import Lax3Proofs.Refine.DriverCache
 import Lax3Proofs.Refine.ScatterBlockMask
