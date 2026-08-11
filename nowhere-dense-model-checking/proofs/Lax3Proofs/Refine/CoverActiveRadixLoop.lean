@@ -1,4 +1,5 @@
 import Lax3Proofs.Refine.CoverActiveRadixPass
+import Lax3Proofs.Refine.CoverActiveRadixWidth
 import Lax3Proofs.Refine.CoverActiveLoop
 import Lax3Proofs.Refine.SigmaLoop
 import Lax3Proofs.Refine.MassMath
@@ -19,6 +20,7 @@ open Lax3Proofs.RamCover
 open Lax3Proofs.Refine.MassMath (blockSize)
 open Lax3Proofs.Refine.CoverActiveRadixMath
 open Lax3Proofs.Refine.CoverActiveRadixPass
+open Lax3Proofs.Refine.CoverActiveRadixWidth
 open Lax13Proofs.Imp Lax13Proofs.Reasoning
 
 /-! ## Offset and segment lemmas -/
@@ -138,17 +140,62 @@ def radixCoverTurn : Com :=
         (.seq radixBlockCom
           (.assign "rsc" (.add (.var "rsc") (.lit 1))))))
 
-/-- Set the common bit count once, then sort every active block. -/
+/-- Sort every active block using the runtime value already in `rsbits`. -/
+def radixCoverBody : Com :=
+  .seq (.assign "rsc" (.lit 0))
+    (.while (.lt (.var "rsc") (.var "qn")) radixCoverTurn)
+
+/-- The parameterized testing surface: install a literal width, then run
+the common outer body.  The final C0 program uses `radixCoverUniformCom`
+below instead, because its width must be derived from runtime `n`. -/
 def radixCoverCom (bits : ℕ) : Com :=
-  .seq (.assign "rsbits" (.lit bits))
-    (.seq (.assign "rsc" (.lit 0))
-      (.while (.lt (.var "rsc") (.var "qn")) radixCoverTurn))
+  .seq (.assign "rsbits" (.lit bits)) radixCoverBody
+
+/-- The uniform sorter: compute `Nat.clog 2 n` from runtime `n`, then
+sort all blocks.  Its program text is independent of `n`. -/
+def radixCoverUniformCom : Com :=
+  .seq radixWidthCom radixCoverBody
 
 def radixCoverTurnCost (bits : ℕ) (Xoff : ℕ → ℕ) (k : ℕ) : ℕ :=
   radixBlockCost bits (blockSize Xoff k) + 16
 
+def radixCoverBodyCost (bits q : ℕ) (Xoff : ℕ → ℕ) : ℕ :=
+  (∑ k ∈ range q, (radixCoverTurnCost bits Xoff k + 4)) + 6
+
 def radixCoverCost (bits q : ℕ) (Xoff : ℕ → ℕ) : ℕ :=
-  2 + ((∑ k ∈ range q, (radixCoverTurnCost bits Xoff k + 4)) + 6)
+  2 + radixCoverBodyCost bits q Xoff
+
+def radixCoverUniformCost (n q : ℕ) (Xoff : ℕ → ℕ) : ℕ :=
+  radixWidthCost n + radixCoverBodyCost (Nat.clog 2 n) q Xoff
+
+/-- The outer sort charge depends on the raw arena only through its used
+prefix `xp`; no hidden carrier scan remains in the loop sum. -/
+theorem radixCoverBodyCost_eq
+    (hraw : RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg) (bits : ℕ) :
+    radixCoverBodyCost bits q Xoff =
+      236 * bits * xp + (28 * bits + 26) * q + 6 := by
+  have hturn : ∀ k,
+      radixCoverTurnCost bits Xoff k + 4 =
+        236 * bits * blockSize Xoff k + (28 * bits + 26) := by
+    intro k
+    simp only [radixCoverTurnCost, radixBlockCost, radixPassCost,
+      stableScatterCost, selectDigitCost, selectDigitSlotK, copyBackSlotK]
+    ring
+  simp_rw [radixCoverBodyCost, hturn, sum_add_distrib]
+  rw [← Finset.mul_sum]
+  rw [raw_sum_blockSize hraw q le_rfl, hraw.last]
+  simp
+  ring
+
+/-- Closed cost of the genuinely uniform sorter. -/
+theorem radixCoverUniformCost_eq
+    (hraw : RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg) :
+    radixCoverUniformCost n q Xoff =
+      236 * Nat.clog 2 n * xp + (28 * Nat.clog 2 n + 26) * q +
+        12 * Nat.clog 2 n + 14 := by
+  rw [radixCoverUniformCost, radixCoverBodyCost_eq hraw]
+  simp only [radixWidthCost]
+  ring
 
 /-- Processed blocks have their exact radix result; the unprocessed suffix
 is still byte-for-byte the entering arena. -/
@@ -346,29 +393,26 @@ theorem radixCoverTurn_spec {B bits : ℕ}
 
 /-! ## Complete arena sort -/
 
-/-- The outer loop turns the raw active cover into the exact sorted
-consumer contract. -/
-theorem radixCoverCom_spec {B bits : ℕ} {Q₀ : ℕ → ℕ}
+/-- With `rsbits` already installed, the outer body turns the raw active
+cover into the exact sorted consumer contract. -/
+theorem radixCoverBody_spec {B bits : ℕ} {Q₀ : ℕ → ℕ}
     (hraw : RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
     (hB : 1 < B) (hnB : n < B) (hnnB : n * n < B) (hbitsB : bits < B)
     (hpow : n ≤ 2 ^ bits) :
     Spec B
-      (fun σ => σ.vars "qn" = q ∧
+      (fun σ => σ.vars "rsbits" = bits ∧ σ.vars "qn" = q ∧
         σ.arrs "xoff" = arrOf (n + 1) Xoff ∧
         σ.arrs "xmem" = arrOf (n * n) Xmem ∧
         σ.arrs "asg" = arrOf n asg ∧ σ.arrs "q" = arrOf n Q₀)
-      (radixCoverCom bits)
+      radixCoverBody
       (fun _ σ' => ∃ Xmem' Q : ℕ → ℕ,
         σ'.arrs "xoff" = arrOf (n + 1) Xoff ∧
         σ'.arrs "xmem" = arrOf (n * n) Xmem' ∧
         σ'.arrs "asg" = arrOf n asg ∧ σ'.arrs "q" = arrOf n Q ∧
         CoverOutA G A₀ π centre r q xp Xoff Xmem' asg)
-      (radixCoverCost bits q Xoff) := by
+      (radixCoverBodyCost bits q Xoff) := by
   intro σ hσ
-  obtain ⟨hqn, hxoff, hxmem, hasg, hq⟩ := hσ
-  let σb := σ.setVar "rsbits" bits
-  have rb : Run B (.assign "rsbits" (.lit bits)) σ σb 2 :=
-    Run.assign (evalB_lit hbitsB)
+  obtain ⟨hbits, hqn, hxoff, hxmem, hasg, hq⟩ := hσ
   let I := CoverRadixInv n q xp bits Xoff Xmem asg
   have hqB : q < B := lt_of_le_of_lt hraw.count_le hnB
   have hbody : ∀ k, k < q → Spec B (fun τ => I τ ∧ τ.vars "rsc" = k)
@@ -379,15 +423,15 @@ theorem radixCoverCom_spec {B bits : ℕ} {Q₀ : ℕ → ℕ}
   have hloop := Lax3Proofs.Refine.SigmaLoop.forRangeZeroSum
     (B := B) "rsc" "qn" I q (radixCoverTurnCost bits Xoff) hqB
     (fun _ h => h.1) (fun _ h => h.2.1) hbody
-  have hI₀ : I (σb.setVar "rsc" 0) := by
-    refine ⟨by simp, by simp [σb, hqn], by simp [σb],
-      by simp [σb, hxoff], by simp [σb, hasg], Xmem, Q₀,
-      by simp [σb, hxmem], by simp [σb, hq], hraw.mem_lt, ?_, ?_⟩
+  have hI₀ : I (σ.setVar "rsc" 0) := by
+    refine ⟨by simp, by simp [hqn], by simp [hbits],
+      by simp [hxoff], by simp [hasg], Xmem, Q₀,
+      by simp [hxmem], by simp [hq], hraw.mem_lt, ?_, ?_⟩
     · intro k hk
       simp at hk
     · intro p hp hp'
       rfl
-  obtain ⟨σ', rloop, hI', hrsc⟩ := hloop.run (show I (σb.setVar "rsc" 0) from hI₀)
+  obtain ⟨σ', rloop, hI', hrsc⟩ := hloop.run (show I (σ.setVar "rsc" 0) from hI₀)
   obtain ⟨-, -, -, hxoff', hasg', Xmem', Q, hxmem', hq', hmem', hdone', -⟩ := hI'
   have hdone : ∀ k < q,
       segment (Xoff k) (blockSize Xoff k) Xmem' =
@@ -425,11 +469,89 @@ theorem radixCoverCom_spec {B bits : ℕ} {Q₀ : ℕ → ℕ}
   have hsorted : CoverOutA G A₀ π centre r q xp Xoff Xmem' asg :=
     hraw.sorted hmem' hblock hmono
   refine ⟨σ', ?_, Xmem', Q, hxoff', hxmem', hasg', hq', hsorted⟩
-  simpa [radixCoverCom, radixCoverCost] using rb.seq rloop
+  simpa [radixCoverBody, radixCoverBodyCost] using rloop
+
+/-- The parameterized surface remains available for tests and callers
+that genuinely have a static width. -/
+theorem radixCoverCom_spec {B bits : ℕ} {Q₀ : ℕ → ℕ}
+    (hraw : RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
+    (hB : 1 < B) (hnB : n < B) (hnnB : n * n < B) (hbitsB : bits < B)
+    (hpow : n ≤ 2 ^ bits) :
+    Spec B
+      (fun σ => σ.vars "qn" = q ∧
+        σ.arrs "xoff" = arrOf (n + 1) Xoff ∧
+        σ.arrs "xmem" = arrOf (n * n) Xmem ∧
+        σ.arrs "asg" = arrOf n asg ∧ σ.arrs "q" = arrOf n Q₀)
+      (radixCoverCom bits)
+      (fun _ σ' => ∃ Xmem' Q : ℕ → ℕ,
+        σ'.arrs "xoff" = arrOf (n + 1) Xoff ∧
+        σ'.arrs "xmem" = arrOf (n * n) Xmem' ∧
+        σ'.arrs "asg" = arrOf n asg ∧ σ'.arrs "q" = arrOf n Q ∧
+        CoverOutA G A₀ π centre r q xp Xoff Xmem' asg)
+      (radixCoverCost bits q Xoff) := by
+  intro σ hσ
+  obtain ⟨hqn, hxoff, hxmem, hasg, hq⟩ := hσ
+  let σb := σ.setVar "rsbits" bits
+  have rb : Run B (.assign "rsbits" (.lit bits)) σ σb 2 :=
+    Run.assign (evalB_lit hbitsB)
+  obtain ⟨σ', rbody, hpost⟩ :=
+    (radixCoverBody_spec (Q₀ := Q₀) hraw hB hnB hnnB hbitsB hpow).run (σ := σb)
+      ⟨by simp [σb], by simp [σb, hqn], by simp [σb, hxoff],
+        by simp [σb, hxmem], by simp [σb, hasg], by simp [σb, hq]⟩
+  exact ⟨σ', by simpa [radixCoverCom, radixCoverCost] using rb.seq rbody, hpost⟩
+
+/-- **The uniform active-cover sorter.**  The program reads runtime `n`,
+computes the least sufficient radix width, and sorts every block.  No
+literal in `radixCoverUniformCom` depends on `n`, which is the quantifier
+order required at the final C0 boundary. -/
+theorem radixCoverUniformCom_spec {B : ℕ} {Q₀ : ℕ → ℕ}
+    (hraw : RawCoverOutA G A₀ π centre r q xp Xoff Xmem asg)
+    (hB : 1 < B) (hnB : n < B) (hnnB : n * n < B) :
+    Spec B
+      (fun σ => σ.vars "n" = n ∧ σ.vars "qn" = q ∧
+        σ.arrs "xoff" = arrOf (n + 1) Xoff ∧
+        σ.arrs "xmem" = arrOf (n * n) Xmem ∧
+        σ.arrs "asg" = arrOf n asg ∧ σ.arrs "q" = arrOf n Q₀)
+      radixCoverUniformCom
+      (fun _ σ' => ∃ Xmem' Q : ℕ → ℕ,
+        σ'.arrs "xoff" = arrOf (n + 1) Xoff ∧
+        σ'.arrs "xmem" = arrOf (n * n) Xmem' ∧
+        σ'.arrs "asg" = arrOf n asg ∧ σ'.arrs "q" = arrOf n Q ∧
+        CoverOutA G A₀ π centre r q xp Xoff Xmem' asg)
+      (radixCoverUniformCost n q Xoff) := by
+  intro σ hσ
+  obtain ⟨hn, hqn, hxoff, hxmem, hasg, hq⟩ := hσ
+  obtain ⟨σw, rw, ⟨hnw, hbits, _hpowv⟩, hfv, hfa, -, -⟩ :=
+    ((radixWidthCom_spec hB hnB hnnB).frame).run (σ := σ) hn
+  have hbitsB : Nat.clog 2 n < B :=
+    lt_of_le_of_lt (clog_two_le_self n) hnB
+  have hpow : n ≤ 2 ^ Nat.clog 2 n := Nat.le_pow_clog (by omega) n
+  have hqnw : σw.vars "qn" = q := by
+    rw [hfv "qn" (by simp [radixWidthCom, radixWidthTurn, Com.wvars])]
+    exact hqn
+  have hxoffw : σw.arrs "xoff" = arrOf (n + 1) Xoff := by
+    rw [hfa "xoff" (by simp [radixWidthCom, radixWidthTurn, Com.warrs])]
+    exact hxoff
+  have hxmemw : σw.arrs "xmem" = arrOf (n * n) Xmem := by
+    rw [hfa "xmem" (by simp [radixWidthCom, radixWidthTurn, Com.warrs])]
+    exact hxmem
+  have hasgw : σw.arrs "asg" = arrOf n asg := by
+    rw [hfa "asg" (by simp [radixWidthCom, radixWidthTurn, Com.warrs])]
+    exact hasg
+  have hqw : σw.arrs "q" = arrOf n Q₀ := by
+    rw [hfa "q" (by simp [radixWidthCom, radixWidthTurn, Com.warrs])]
+    exact hq
+  obtain ⟨σ', rbody, hpost⟩ :=
+    (radixCoverBody_spec (Q₀ := Q₀) hraw hB hnB hnnB hbitsB hpow).run (σ := σw)
+      ⟨hbits, hqnw, hxoffw, hxmemw, hasgw, hqw⟩
+  exact ⟨σ', by
+    simpa [radixCoverUniformCom, radixCoverUniformCost] using rw.seq rbody, hpost⟩
 
 /-! ## Axiom audit -/
 
 #print axioms radixCoverTurn_spec
+#print axioms radixCoverBody_spec
 #print axioms radixCoverCom_spec
+#print axioms radixCoverUniformCom_spec
 
 end Lax3Proofs.Refine.CoverActiveRadixLoop
