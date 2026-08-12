@@ -469,6 +469,17 @@ dependent leaf is to radix-sort that one row and compose the cluster body
 before advancing to the next centre.  The old `n*D` arena and offset table
 must not reappear in that contract.
 
+`Refine/CoverActiveStreamSort.lean` now closes that radix-sort leaf.
+`activeStreamSortCom` sorts exactly `Xmem[0..tail)` in place through the
+existing verified radix block, and `RawStreamRowA.of_radix` proves that the
+result is the same cluster row in strict numeric order.  Its executable
+contract needs only `tail ≤ n < B` plus an `n`-covering radix width; it frames
+the progressive cover state and introduces neither an offset table nor an
+accumulated row address.  The narrow 3467-job build passes, and both public
+theorems use only the project's standard `propext`/choice/quotient axioms.
+The next dependent leaf is the immediate streamed-row enumeration/cluster
+consumer, followed by the centre increment and enclosing fused loop.
+
 ---
 
 ## §3 Schedule, honestly
