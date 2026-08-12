@@ -2,6 +2,7 @@ import Lax3Proofs.Refine.OrderActiveFinal
 import Lax3Proofs.Refine.ArenaSeam
 import Lax3Proofs.Refine.MemThreadGate
 import Lax3Proofs.RamDriverCompose
+import Lax3Proofs.RamDriverMember
 
 /-!
 # The compact active ordering at the driver interface
@@ -18,9 +19,12 @@ namespace Lax3Proofs.Refine.OrderActiveDriver
 open Lax13Proofs.Imp Lax13Proofs.Reasoning
 open Lax3Proofs.RamDriver
 open Lax3Proofs.RamDriverCompose
+open Lax3Proofs.RamDriverMember (OrderImplementsA)
 open Lax3Proofs.Refine.ScatterBlock (MemList renCom renEnv renEnv_arrs
-  renEnv_vars renEnv_involutive renCom_run)
-open Lax3Proofs.Refine.ArenaSeam (memEntry memEntry_run)
+  renEnv_vars renEnv_involutive renCom_run mem_renCom_warrs renCom_wvars
+  renCom_noWrite)
+open Lax3Proofs.Refine.ArenaSeam (memEntry memEntry_run notMem_memEntry_warrs
+  notMem_memEntry_wvars)
 open Lax3Proofs.Refine.ElimCompact (memGraph memRowSum)
 open Lax3Proofs.Refine.OrderActiveChain
 open Lax3Proofs.Refine.OrderActiveRun
@@ -533,9 +537,426 @@ theorem activeOrderCore_spec {B n mm ns W w j R d D₁ : ℕ}
 def activeOrderPhase (j R : ℕ) : Com :=
   .seq (memEntry j) (.seq (activeOrderCore j R) activeOrderZeroCom)
 
+/-- A carrier-independent reading of the active ordering charge.  The
+only graph-dependent arguments are the live vertex count and the sum of
+the live input rows. -/
+def activeOrderPhaseCost (mm rs w R : ℕ) : ℕ :=
+  1929 * mm + 624 * rs + 1400 * w + 1008 +
+    R * (9114 * mm + 8112 * w + 9232)
+
+private theorem activeOrderPhaseCost_exact (mm rs w R : ℕ) :
+    Lax3Proofs.Refine.CoverBlock.memCopyK mm + 2 +
+        (activeOrderCoreCost mm rs w R + activeOrderZeroCost mm) =
+      activeOrderPhaseCost mm rs w R := by
+  simp only [Lax3Proofs.Refine.CoverBlock.memCopyK, activeOrderCoreCost,
+    compactActiveChainCost,
+    Lax3Proofs.Refine.OrderActiveInit.compactElimFoldInitCost,
+    Lax3Proofs.Refine.OrderActiveInit.elimFoldInitCost,
+    Lax3Proofs.Refine.OrderActiveElim.elimWorkCost,
+    Lax3Proofs.Refine.OrderActiveElim.elimWorkPrepCost,
+    Lax3Proofs.RamElim.elimCost, Lax3Proofs.Refine.ElimCompact.scatterCost,
+    activeRoundCost, Lax3Proofs.Refine.AugCompact.augCompactCost_eq,
+    Lax3Proofs.Refine.OrderActiveRound.roundRelinkCost, activeFinishCost,
+    Lax3Proofs.Refine.SymCompact.symCompactCost_eq, activeOrderZeroCost,
+    activeOrderPhaseCost]
+  ring
+
+private theorem activeOrderPhaseCost_mono {mm n rs ns w R : ℕ}
+    (hmn : mm ≤ n) (hrs : rs ≤ ns) :
+    activeOrderPhaseCost mm rs w R ≤ activeOrderPhaseCost n ns w R := by
+  simp only [activeOrderPhaseCost]
+  apply Nat.add_le_add
+  · omega
+  · exact Nat.mul_le_mul_left R (by omega)
+
+/-! ## The driver frame -/
+
+private def activeInitArrs : List String :=
+  ["ffl", "gof", "gtg", "alv", "elm", "bh", "deg", "bv", "bn", "rnk",
+    "idg", "ioff", "ifl", "itg", "ork"]
+
+private def activeRoundArrs : List String :=
+  ["doff", "dtg", "ooff", "gof", "noff", "bh", "elm", "stf", "sta",
+    "std", "ste", "ofl", "otg", "ffl", "gtg", "alv", "deg", "bv", "bn",
+    "rnk", "idg", "ioff", "ifl", "itg", "nfl", "ntg", "ork"]
+
+private def activeFinishArrs (j : ℕ) : List String :=
+  ["doff", "dtg", "ooff", "ofl", "otg", "gof", "gtg", "alv", "elm", "bh",
+    "deg", "bv", "bn", "rnk", "idg", "ioff", "ifl", "itg", "ork", ordName j]
+
+private def activeInitVars : List String :=
+  ["km", "ku", "ks", "kj", "ke", "kw", "i", "kn", "n", "c", "j", "jend",
+    "u", "sp", "ls", "d", "mind", "cnt", "kmax", "sc", "p", "w", "s", "kd"]
+
+private def activeRoundVars : List String :=
+  ["kn", "n", "i", "j", "jend", "u", "c", "w", "q", "qe", "mf", "sp", "ls",
+    "d", "mind", "cnt", "kmax", "sc", "p", "s", "mn", "km", "ku", "kd"]
+
+private def activeFinishVars : List String :=
+  ["i", "kn", "n", "j", "jend", "u", "sy", "c", "sp", "ls", "d", "mind",
+    "cnt", "kmax", "sc", "p", "w", "s", "km", "ku", "z"]
+
+private theorem activeInit_arrs (j : ℕ) :
+    (Lax3Proofs.Refine.OrderActiveInit.compactElimFoldInitCom j).warrs.eraseDups =
+      activeInitArrs := by
+  rfl
+
+private theorem activeRound_arrs : activeRoundCom.warrs.eraseDups = activeRoundArrs := by
+  rfl
+
+private theorem activeFinish_arrs (j : ℕ) :
+    (activeFinishCom j).warrs.eraseDups = activeFinishArrs j := by
+  rfl
+
+private theorem activeInit_vars (j : ℕ) :
+    (Lax3Proofs.Refine.OrderActiveInit.compactElimFoldInitCom j).wvars.eraseDups =
+      activeInitVars := by
+  rfl
+
+set_option maxRecDepth 100000 in
+private theorem activeRound_vars : activeRoundCom.wvars.eraseDups = activeRoundVars := by
+  rfl
+
+private theorem activeFinish_vars (j : ℕ) :
+    (activeFinishCom j).wvars.eraseDups = activeFinishVars := by
+  rfl
+
+private theorem activeZero_arrs : activeOrderZeroCom.warrs.eraseDups = activeZeroNames := by
+  rfl
+
+private theorem activeZero_vars : activeOrderZeroCom.wvars.eraseDups = ["i"] := by
+  rfl
+
+private theorem notMem_of_eraseDups_eq {a : String} {xs ys : List String}
+    (h : xs.eraseDups = ys) (ha : a ∉ ys) : a ∉ xs := by
+  intro hx
+  apply ha
+  rw [← h]
+  simpa using hx
+
+private theorem activeOrderCore_notMem_warrs {j R : ℕ} {a : String}
+    (hinit : orderScratchSwap a ∉ activeInitArrs)
+    (hround : orderScratchSwap a ∉ activeRoundArrs)
+    (hfinish : orderScratchSwap a ∉ activeFinishArrs j) :
+    a ∉ (activeOrderCore j R).warrs := by
+  intro ha
+  have h := mem_renCom_warrs orderScratchSwap_invol _ ha
+  change orderScratchSwap a ∈
+    (Com.seq (compactActiveChainCom j R) (activeFinishCom j)).warrs at h
+  rw [Com.warrs, List.mem_append] at h
+  rcases h with hchain | hfinish'
+  · change orderScratchSwap a ∈
+      (Com.seq (Lax3Proofs.Refine.OrderActiveInit.compactElimFoldInitCom j)
+        (activeRoundsCom R)).warrs at hchain
+    rw [Com.warrs, List.mem_append] at hchain
+    rcases hchain with hinit' | hround'
+    · exact (notMem_of_eraseDups_eq (activeInit_arrs j) hinit) hinit'
+    · exact (notMem_of_eraseDups_eq activeRound_arrs hround)
+        (mem_warrs_foldRange_const hround')
+  · exact (notMem_of_eraseDups_eq (activeFinish_arrs j) hfinish) hfinish'
+
+private theorem activeOrderCore_notMem_wvars {j R : ℕ} {a : String}
+    (hinit : a ∉ activeInitVars) (hround : a ∉ activeRoundVars)
+    (hfinish : a ∉ activeFinishVars) : a ∉ (activeOrderCore j R).wvars := by
+  rw [activeOrderCore, renCom_wvars]
+  intro h
+  change a ∈ (Com.seq (compactActiveChainCom j R) (activeFinishCom j)).wvars at h
+  rw [Com.wvars, List.mem_append] at h
+  rcases h with hchain | hfinish'
+  · change a ∈
+      (Com.seq (Lax3Proofs.Refine.OrderActiveInit.compactElimFoldInitCom j)
+        (activeRoundsCom R)).wvars at hchain
+    rw [Com.wvars, List.mem_append] at hchain
+    rcases hchain with hinit' | hround'
+    · exact (notMem_of_eraseDups_eq (activeInit_vars j) hinit) hinit'
+    · exact (notMem_of_eraseDups_eq activeRound_vars hround)
+        (mem_wvars_foldRange_const hround')
+  · exact (notMem_of_eraseDups_eq (activeFinish_vars j) hfinish) hfinish'
+
+/-- Any array fresh for the three compact pieces and the cleanup is a
+frame of the complete active ordering phase. -/
+theorem notMem_activeOrderPhase_warrs {j R : ℕ} {a : String}
+    (hmem : a ≠ "mem")
+    (hinit : orderScratchSwap a ∉ activeInitArrs)
+    (hround : orderScratchSwap a ∉ activeRoundArrs)
+    (hfinish : orderScratchSwap a ∉ activeFinishArrs j)
+    (hzero : a ∉ activeZeroNames) : a ∉ (activeOrderPhase j R).warrs := by
+  intro h
+  change a ∈ (Com.seq (memEntry j)
+    (Com.seq (activeOrderCore j R) activeOrderZeroCom)).warrs at h
+  simp only [Com.warrs, List.mem_append] at h
+  rcases h with hentry | hcore | hzero'
+  · exact notMem_memEntry_warrs j hmem hentry
+  · exact activeOrderCore_notMem_warrs hinit hround hfinish hcore
+  · exact notMem_of_eraseDups_eq activeZero_arrs hzero hzero'
+
+/-- Any scalar fresh for the member entry and the compact pieces is a
+frame of the complete active ordering phase. -/
+theorem notMem_activeOrderPhase_wvars {j R : ℕ} {a : String}
+    (hmm : a ≠ "mm") (hi : a ≠ "i")
+    (hinit : a ∉ activeInitVars) (hround : a ∉ activeRoundVars)
+    (hfinish : a ∉ activeFinishVars) : a ∉ (activeOrderPhase j R).wvars := by
+  intro h
+  change a ∈ (Com.seq (memEntry j)
+    (Com.seq (activeOrderCore j R) activeOrderZeroCom)).wvars at h
+  simp only [Com.wvars, List.mem_append] at h
+  rcases h with hentry | hcore | hzero
+  · exact notMem_memEntry_wvars j hmm hi hentry
+  · exact activeOrderCore_notMem_wvars hinit hround hfinish hcore
+  · exact notMem_of_eraseDups_eq activeZero_vars (by simpa using hi) hzero
+
+theorem off_notMem_activeOrderPhase (j R : ℕ) :
+    "off" ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, ordName, String.ext_iff]
+
+theorem tgt_notMem_activeOrderPhase (j R : ℕ) :
+    "tgt" ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, ordName, String.ext_iff]
+
+theorem alvName_notMem_activeOrderPhase (j R a : ℕ) :
+    alvName a ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, alvName, ordName, String.ext_iff]
+
+theorem gamName_notMem_activeOrderPhase (j R a : ℕ) :
+    gamName a ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, gamName, ordName, String.ext_iff]
+
+theorem colName_notMem_activeOrderPhase (j R a c : ℕ) :
+    colName a c ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, colName, ordName, String.ext_iff]
+
+theorem memName_notMem_activeOrderPhase (j R a : ℕ) :
+    memName a ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, memName, ordName, String.ext_iff]
+
+theorem resName_notMem_activeOrderPhase (j R a : ℕ) :
+    resName a ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, resName, ordName, String.ext_iff]
+
+theorem parName_notMem_activeOrderPhase (j R a : ℕ) :
+    parName a ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, parName, balName, ordName, String.ext_iff]
+
+theorem tabName_notMem_activeOrderPhase (j R a i : ℕ) :
+    tabName a i ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, tabName, ordName, String.ext_iff]
+
+theorem m_notMem_activeOrderPhase (j R : ℕ) :
+    "m" ∉ (activeOrderPhase j R).wvars := by
+  apply notMem_activeOrderPhase_wvars <;>
+    simp [activeInitVars, activeRoundVars, activeFinishVars]
+
+theorem lw_notMem_activeOrderPhase (j R : ℕ) :
+    "lw" ∉ (activeOrderPhase j R).wvars := by
+  apply notMem_activeOrderPhase_wvars <;>
+    simp [activeInitVars, activeRoundVars, activeFinishVars]
+
+theorem ctrName_notMem_activeOrderPhase (j R a : ℕ) :
+    ctrName a ∉ (activeOrderPhase j R).wvars := by
+  apply notMem_activeOrderPhase_wvars <;>
+    simp [activeInitVars, activeRoundVars, activeFinishVars, ctrName, String.ext_iff]
+
+theorem mnumName_notMem_activeOrderPhase (j R a : ℕ) :
+    mnumName a ∉ (activeOrderPhase j R).wvars := by
+  apply notMem_activeOrderPhase_wvars <;>
+    simp [activeInitVars, activeRoundVars, activeFinishVars, mnumName, String.ext_iff]
+
+/-- The ordering phase never emits on the program's output tape. -/
+theorem activeOrderPhase_noWrite (j R : ℕ) : (activeOrderPhase j R).NoWrite := by
+  refine ⟨of_decide_eq_true rfl, ?_⟩
+  refine ⟨?_, of_decide_eq_true rfl⟩
+  apply renCom_noWrite
+  refine ⟨?_, of_decide_eq_true rfl⟩
+  refine ⟨of_decide_eq_true rfl, ?_⟩
+  exact noWrite_foldRange_const (of_decide_eq_true rfl) R
+
+/-! ## The restored driver state -/
+
+/-- Reassemble the driver's level invariant after the active phase.  The
+core restores `n`, the cleanup supplies the eight zero clauses, and all
+other semantic cells cross by the exact syntax frame above. -/
+private theorem levelPre_of_activeOrderPhase
+    {B n cap mb ns W j R K : ℕ} {O T M Gm : ℕ → ℕ}
+    {C : ℕ → ℕ → ℕ} {sigma sigma' : Env}
+    (h : LevelPre B n cap mb ns W O T j M Gm C sigma)
+    (hr : Run B (activeOrderPhase j R) sigma sigma' K)
+    (hn : sigma'.vars "n" = n)
+    (zelm : ∀ v ∈ sigma'.arrs "elm", v = 0)
+    (zbh : ∀ v ∈ sigma'.arrs "bh", v = 0)
+    (zooff : ∀ v ∈ sigma'.arrs "ooff", v = 0)
+    (znoff : ∀ v ∈ sigma'.arrs "noff", v = 0)
+    (zstf : ∀ v ∈ sigma'.arrs "stf", v = 0)
+    (zsta : ∀ v ∈ sigma'.arrs "sta", v = 0)
+    (zstd : ∀ v ∈ sigma'.arrs "std", v = 0)
+    (zste : ∀ v ∈ sigma'.arrs "ste", v = 0) :
+    LevelPre B n cap mb ns W O T j M Gm C sigma' := by
+  obtain ⟨-, hoff, htgt, halv, hgam, hcol, hMB, hGmB, hCbit, hLM, hDM,
+    hm, hOM, hpad, hTB, Mem, mm, hmem, hmm, henum, hMemB⟩ := h
+  obtain ⟨hnsW, hlw, hsz, -, -, -, -, -, -, -, -, hitg, hntg⟩ := hOM
+  refine ⟨hn,
+    by rw [hr.frame_arr "off" (off_notMem_activeOrderPhase j R)]; exact hoff,
+    by rw [hr.frame_arr "tgt" (tgt_notMem_activeOrderPhase j R)]; exact htgt,
+    by rw [hr.frame_arr _ (alvName_notMem_activeOrderPhase j R j)]; exact halv,
+    by rw [hr.frame_arr _ (gamName_notMem_activeOrderPhase j R j)]; exact hgam,
+    ?_, hMB, hGmB, hCbit, levelMem_run hr hLM, hDM.run hr,
+    by rw [hr.frame_var "m" (m_notMem_activeOrderPhase j R)]; exact hm,
+    ⟨hnsW,
+      by rw [hr.frame_var "lw" (lw_notMem_activeOrderPhase j R)]; exact hlw,
+      hsz.run hr, zelm, zbh, zooff, znoff, zstf, zsta, zstd, zste,
+      run_mem_arrs_lt hr "itg" hitg, run_mem_arrs_lt hr "ntg" hntg⟩,
+    hpad, hTB, Mem, mm,
+    by rw [hr.frame_arr _ (memName_notMem_activeOrderPhase j R j)]; exact hmem,
+    by rw [hr.frame_var _ (mnumName_notMem_activeOrderPhase j R j)]; exact hmm,
+    henum, hMemB⟩
+  intro c hc
+  rw [hr.frame_arr _ (colName_notMem_activeOrderPhase j R j c)]
+  exact hcol c hc
+
+/-! ## The active ordering contract -/
+
+/-- The complete member-driven ordering phase at the driver's active
+interface.  The graph-class mathematics is isolated in the four
+functional hypotheses: degeneracy, augmentation density, resident width,
+and the weak-reachability consequence of the returned chain data. -/
+theorem activeOrderPhase_spec
+    {B n cap mb ns W w j R d D₁ Kmass : ℕ}
+    {G : SimpleGraph (Fin n)} {O T M Gm : ℕ → ℕ}
+    {C : ℕ → ℕ → ℕ}
+    (hcsr : Lax3Proofs.RamElim.CsrSimple G ns O T)
+    (hBns : n + ns + 1 < B) (hBw : n + w + 1 < B) (hwW : w ≤ W)
+    (hd : ∀ {mm : ℕ} {Mem : ℕ → ℕ}
+        (hml : MemList n mm Mem (Lax3Proofs.RamDriverCluster.markSet n M)),
+      Lax3Proofs.Augmentation.LowDegreeVertices (memGraph G M hml) d)
+    (hdens : ∀ {mm : ℕ} {Mem : ℕ → ℕ}
+        (hml : MemList n mm Mem (Lax3Proofs.RamDriverCluster.markSet n M))
+        (D : ℕ → Lax3Proofs.Augmentation.Orientation mm) (i : ℕ), i ≤ R →
+      Lax3Proofs.Augmentation.IsAugChain (memGraph G M hml) D i →
+      (∀ l < i, Lax3Proofs.Augmentation.GreedyFratRound (D l) (D (l + 1))) →
+      Lax3Proofs.Augmentation.AugmentedDepthOneDensity D i D₁)
+    (hwidth : ∀ {mm : ℕ} {Mem : ℕ → ℕ},
+      MemList n mm Mem (Lax3Proofs.RamDriverCluster.markSet n M) →
+      activeChainWidthE mm (memRowSum mm O Mem) d D₁ R ≤ w)
+    (hKmass : 1 ≤ Kmass)
+    (hdegree : ∀ {mm : ℕ} {Mem : ℕ → ℕ}
+        (hml : MemList n mm Mem (Lax3Proofs.RamDriverCluster.markSet n M))
+        {D : ℕ → Lax3Proofs.Augmentation.Orientation mm}
+        {d₀ k : ℕ} {pi : Equiv.Perm (Fin mm)},
+      Lax3Proofs.CoverDegree.AugChainData (memGraph G M hml) D pi R d₀ k →
+      ∀ v : Fin mm,
+        (Lax12.ColoringNumbers.wreach (memGraph G M hml) pi (2 * cap) v).ncard ≤ Kmass) :
+    OrderImplementsA B n W cap mb ns j O T M Gm C
+      (Lax3Proofs.RamCoverActiveMass.ActiveOrderP G cap Kmass)
+      (activeOrderPhase j R) (activeOrderPhaseCost n ns w R) := by
+  refine Spec.of_exists fun sigma hlev => ?_
+  have hlev₀ := hlev
+  obtain ⟨Mem₀, mm, hmem₀, hmm₀, hml₀, hMemB, hmn⟩ :=
+    ArenaSeam.memList_of_levelPre hlev₀
+  obtain ⟨hn, hoff, htgt, halv, -, -, hMB, -, -, hLM, hDM, -, hOM, -, -, -⟩ := hlev
+  have hnB : n < B := by omega
+  obtain ⟨sigma₁, K₁, Mem, r₁, hK₁, hmm₁, hmem₁, hml⟩ :=
+    memEntry_run (by omega) hnB hmem₀ hmm₀ hml₀ hMemB hLM.memArr
+  have hn₁ : sigma₁.vars "n" = n := by
+    rw [r₁.frame_var "n" (notMem_memEntry_wvars j (by decide) (by decide))]
+    exact hn
+  have hoff₁ : sigma₁.arrs "off" = arrOf (n + 1) O := by
+    rw [r₁.frame_arr "off" (notMem_memEntry_warrs j (by decide))]
+    exact hoff
+  have htgt₁ : sigma₁.arrs "tgt" = arrOf W T := by
+    rw [r₁.frame_arr "tgt" (notMem_memEntry_warrs j (by decide))]
+    exact htgt
+  have halv₁ : sigma₁.arrs (alvName j) = arrOf n M := by
+    rw [r₁.frame_arr _ (notMem_memEntry_warrs j (by
+      simp [alvName, String.ext_iff]))]
+    exact halv
+  have hDM₁ := hDM.run r₁
+  have hord₁ : ∃ g, sigma₁.arrs (ordName j) = arrOf n g :=
+    hDM₁.get j (p := (ordName j, n)) (by simp)
+  have hzEntry : ∀ a ∈ zeroArrs, a ∉ (memEntry j).warrs := by
+    intro a ha
+    apply notMem_memEntry_warrs j
+    intro hamem
+    subst a
+    simp [zeroArrs] at ha
+  have hOM₁ : OrderMem B n ns W sigma₁ :=
+    orderMem_run hOM r₁
+      (notMem_memEntry_wvars j (by decide) (by decide)) hzEntry
+  have hLM₁ : LevelMem B n cap mb sigma₁ := levelMem_run r₁ hLM
+  have htail₁ : ActiveZeroTail mm sigma sigma₁ :=
+    ActiveZeroTail.of_frame fun a ha =>
+      r₁.frame_arr a (notMem_memEntry_warrs j (by
+        intro hamem
+        subst a
+        simp [activeZeroNames] at ha))
+  obtain ⟨sigma₂, m, D, d₀, k, pi, centre, r₂, hmw, hord₂, hcentres,
+      hdata, hn₂, hmm₂, hmem₂, htail₂⟩ :=
+    activeOrderCore_spec hcsr hml hBns (by omega) hnB hMB hOM.1 hwW
+      (hd hml) (hdens hml) (hwidth hml) hn₁ hmm₁ hmem₁ hoff₁ htgt₁
+      halv₁ hord₁ (activeOrderSized_of_levelMem hLM₁ hOM₁)
+  have hzeroSized₂ : ActiveZeroSized n sigma₂ :=
+    (activeZeroSized_of_orderMem hOM).run (r₁.seq r₂)
+  obtain ⟨sigma₃, r₃, -, -, zelm, zbh, zooff, znoff, zstf, zsta, zstd, zste⟩ :=
+    activeOrderZero_spec (by omega) hmn hOM hmm₂ hzeroSized₂
+      (ActiveZeroTail.trans htail₁ htail₂)
+  have hn₃ : sigma₃.vars "n" = n := by
+    rw [r₃.frame_var "n"
+      (notMem_of_eraseDups_eq activeZero_vars (by decide))]
+    exact hn₂
+  have hord₃ : sigma₃.arrs (ordName j) = arrOf n centre := by
+    rw [r₃.frame_arr _ (notMem_of_eraseDups_eq activeZero_arrs (by
+      simp [activeZeroNames, ordName, String.ext_iff]))]
+    exact hord₂
+  have rAll : Run B (activeOrderPhase j R) sigma sigma₃
+      (K₁ + (activeOrderCoreCost mm (memRowSum mm O Mem) w R +
+        activeOrderZeroCost mm)) := r₁.seq (r₂.seq r₃)
+  have hrs : memRowSum mm O Mem ≤ ns :=
+    Lax3Proofs.Refine.ElimCompactCsr.memRowSum_le hcsr hml
+  have hcost : K₁ + (activeOrderCoreCost mm (memRowSum mm O Mem) w R +
+        activeOrderZeroCost mm) ≤ activeOrderPhaseCost n ns w R := by
+    calc
+      K₁ + (activeOrderCoreCost mm (memRowSum mm O Mem) w R +
+          activeOrderZeroCost mm) ≤
+          (Lax3Proofs.Refine.CoverBlock.memCopyK mm + 2) +
+            (activeOrderCoreCost mm (memRowSum mm O Mem) w R +
+              activeOrderZeroCost mm) := Nat.add_le_add_right hK₁ _
+      _ = activeOrderPhaseCost mm (memRowSum mm O Mem) w R :=
+        activeOrderPhaseCost_exact mm (memRowSum mm O Mem) w R
+      _ ≤ activeOrderPhaseCost n ns w R := activeOrderPhaseCost_mono hmn hrs
+  refine ⟨sigma₃, _, rAll, hcost, ?_⟩
+  refine ⟨levelPre_of_activeOrderPhase hlev₀ rAll hn₃ zelm zbh zooff znoff zstf zsta zstd
+      zste,
+    rAll.out_eq (activeOrderPhase_noWrite j R),
+    (fun a => rAll.frame_var _ (ctrName_notMem_activeOrderPhase j R a)),
+    (fun a => rAll.frame_arr _ (resName_notMem_activeOrderPhase j R a)),
+    (fun a => rAll.frame_arr _ (gamName_notMem_activeOrderPhase j R a)),
+    (fun a => rAll.frame_arr _ (parName_notMem_activeOrderPhase j R a)), ?_⟩
+  refine ⟨mm, Lax3Proofs.Refine.OrderActiveMath.activePerm hml pi, centre,
+    hmn, hord₃, hcentres.centre_lt, ?_⟩
+  exact ⟨hcentres,
+    Lax3Proofs.Refine.OrderActiveMath.active_degree_of_compact hml pi hKmass
+      (hdegree hml hdata)⟩
+
 /-! ## Axioms -/
 
 #print axioms activeOrderZero_spec
 #print axioms activeOrderCore_spec
+#print axioms activeOrderPhase_spec
 
 end Lax3Proofs.Refine.OrderActiveDriver
