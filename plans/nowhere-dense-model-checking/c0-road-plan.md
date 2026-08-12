@@ -457,10 +457,17 @@ that a claim made at the current prefix already has the full ball-cover
 property, so the corresponding cluster can be processed before later centres.
 The narrow 3458-job build passes and the four new public lemmas use only the
 project's standard `propext`/choice/quotient axioms.  This closes the semantic
-half of the cover repair.  The next dependent leaf is executable: reset the
-row pointer to zero per centre, emit and radix-sort that one row, then compose
-the cluster body before advancing to the next centre.  The old `n*D` arena and
-offset table must not reappear in that contract.
+half of the cover repair.
+
+`Refine/CoverActiveStreamTurn.lean` now closes the first executable half as
+well.  `activeStreamTurnCom` resets `xp` to zero on every centre, emits into an
+`arrOf n` row, updates the stable assignment, and kills the centre while
+leaving scalar `c` available to the immediate consumer.  Its verified
+`activeStreamTurn_spec` assumes only `n < B` for row addressing: there is no
+`xp+n < B`, `n*n < B`, `xoff`, or accumulated-pointer premise.  The remaining
+dependent leaf is to radix-sort that one row and compose the cluster body
+before advancing to the next centre.  The old `n*D` arena and offset table
+must not reappear in that contract.
 
 ---
 
