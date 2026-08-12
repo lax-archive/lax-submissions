@@ -1,5 +1,6 @@
 import Lax3Proofs.Refine.OrderActiveWork
 import Lax3Proofs.Refine.ElimCompactWalks
+import Lax3Proofs.Refine.OrderActiveTail
 
 /-!
 # Compact elimination in the active order workspace
@@ -20,6 +21,7 @@ open Lax3Proofs.Refine.ElimCompact (ElimPreC ElimMemPost clen padArrs tailOf
   padArrs_arrs padArrs_vars getD_padArrs memGraph masked_of_all_alive scatterCom scatterCost
   run_length)
 open Lax3Proofs.Refine.OrderActiveWork
+open Lax3Proofs.Refine.OrderActiveTail
 
 /-- Initialize precisely the three live prefixes read by elimination,
 then save the ambient carrier and install the compact one. -/
@@ -51,7 +53,8 @@ theorem elimWorkPrep_spec {B n mm W : ℕ} {O T : ℕ → ℕ} {σ : Env}
     ∃ σ', Run B elimWorkPrep σ σ' (elimWorkPrepCost mm) ∧
       ElimPreC mm n W W O T (fun _ => 1) (renEnv engineWorkSwap σ') ∧
       σ'.vars "kn" = n ∧ σ'.vars "mm" = mm ∧
-      σ'.arrs "off" = σ.arrs "off" ∧ σ'.arrs "tgt" = σ.arrs "tgt" := by
+      σ'.arrs "off" = σ.arrs "off" ∧ σ'.arrs "tgt" = σ.arrs "tgt" ∧
+      ActiveZeroTail mm σ σ' := by
   classical
   have hp₁ := Lax3Proofs.RamDriverOrder.fillKeep_spec (B := B) mm n "alv"
     (.var "mm") (.lit 1) (fun _ => 1) (fun τ => τ.vars "mm" = mm)
@@ -66,7 +69,7 @@ theorem elimWorkPrep_spec {B n mm W : ℕ} {O T : ℕ → ℕ} {σ : Env}
     (fun τ τ' hQ hv _ => by rw [← hQ]; exact hv "mm" (by decide))
     (fun τ hQ => by rw [← hQ]; exact evalB_var (by rw [hQ]; omega))
     (fun _ _ _ => evalB_lit (by omega))
-  obtain ⟨σ₂, r₂, ⟨E₂, hE₂, hE₂lo, -⟩, -, hmm₂⟩ :=
+  obtain ⟨σ₂, r₂, ⟨E₂, hE₂, hE₂lo, hE₂tail⟩, -, hmm₂⟩ :=
     hp₂ σ₁ ⟨(by
       obtain ⟨g, hg⟩ := helm
       exact ⟨g, by rw [r₁.frame_arr "elm" (by decide), hg]⟩), hmm₁⟩
@@ -80,7 +83,7 @@ theorem elimWorkPrep_spec {B n mm W : ℕ} {O T : ℕ → ℕ} {σ : Env}
         (by rw [Bop.apply_add, hQ]; omega)
       rwa [Bop.apply_add, hQ] at h)
     (fun _ _ _ => evalB_lit (by omega))
-  obtain ⟨σ₃, r₃, ⟨H₃, hH₃, hH₃lo, -⟩, -, hmm₃⟩ :=
+  obtain ⟨σ₃, r₃, ⟨H₃, hH₃, hH₃lo, hH₃tail⟩, -, hmm₃⟩ :=
     hp₃ σ₂ ⟨(by
       obtain ⟨g, hg⟩ := hbh
       exact ⟨g, by rw [r₂.frame_arr "bh" (by decide),
@@ -118,11 +121,26 @@ theorem elimWorkPrep_spec {B n mm W : ℕ} {O T : ℕ → ℕ} {σ : Env}
   have hBh : σ'.arrs "bh" = arrOf (n + 1) H₃ := by
     change σ₃.arrs "bh" = arrOf (n + 1) H₃
     exact hH₃
+  have hElmTail : (σ'.arrs "elm").drop mm = (σ.arrs "elm").drop mm := by
+    obtain ⟨E₀, hE₀⟩ := helm
+    rw [hElm, hE₀]
+    apply drop_arrOf_congr hmn
+    intro k hmk hkn
+    rw [hE₂tail k hmk hkn, r₁.frame_arr "elm" (by decide), hE₀,
+      getD_arrOf E₀ hkn]
+  have hBhTail : (σ'.arrs "bh").drop (mm + 1) =
+      (σ.arrs "bh").drop (mm + 1) := by
+    obtain ⟨H₀, hH₀⟩ := hbh
+    rw [hBh, hH₀]
+    apply drop_arrOf_congr (by omega)
+    intro k hmk hkn
+    rw [hH₃tail k hmk hkn, r₂.frame_arr "bh" (by decide),
+      r₁.frame_arr "bh" (by decide), hH₀, getD_arrOf H₀ hkn]
   have hfixed {a : String} {k : ℕ} (h : ∃ g, σ.arrs a = arrOf k g)
       (ha : a ∉ elimWorkPrep.warrs) : ∃ g, σ'.arrs a = arrOf k g := by
     obtain ⟨g, hg⟩ := h
     exact ⟨g, by rw [hframe a ha, hg]⟩
-  refine ⟨σ', rAll, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨σ', rAll, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · refine ⟨?_, hmn, ⟨O, ?_, fun _ _ => rfl⟩, ?_, ⟨A₁, ?_, hA₁lo⟩,
       ?_, ⟨E₂, ?_, hE₂lo⟩, ?_, ?_,
       ⟨H₃, ?_, fun i hi => by simpa using hH₃lo i (by omega)⟩, ?_, ?_, ?_, ?_, ?_⟩
@@ -146,6 +164,17 @@ theorem elimWorkPrep_spec {B n mm W : ℕ} {O T : ℕ → ℕ} {σ : Env}
   · simp [σ', hmm₃]
   · exact hframe "off" (by decide)
   · exact hframe "tgt" (by decide)
+  · intro a ha
+    simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact hElmTail
+    · exact hBhTail
+    · rw [hframe "ooff" (by decide)]
+    · rw [hframe "noff" (by decide)]
+    · rw [hframe "stf" (by decide)]
+    · rw [hframe "sta" (by decide)]
+    · rw [hframe "std" (by decide)]
+    · rw [hframe "ste" (by decide)]
 
 /-! ## The resident elimination call -/
 
@@ -201,15 +230,16 @@ theorem elimWork_spec {B n mm ns W : ℕ} {G : SimpleGraph (Fin n)}
       ElimMemPost G M Mem hml ns W σ' ∧
       ElimOrderData (memGraph G M hml) n σ' ∧
       σ'.vars "n" = n ∧ σ'.vars "mm" = mm ∧
-      σ'.arrs "off" = σ.arrs "off" ∧ σ'.arrs "tgt" = σ.arrs "tgt" := by
+      σ'.arrs "off" = σ.arrs "off" ∧ σ'.arrs "tgt" = σ.arrs "tgt" ∧
+      ActiveZeroTail mm σ σ' := by
   classical
   have hmn : mm ≤ n :=
     Lax3Proofs.Refine.ElimCompactWalks.card_le_of_smono
       (fun i j hij hj => hml.smono i j hij hj) (fun j hj => hml.lt j hj)
-  obtain ⟨σ₁, r₁, hpre, hkn₁, hmm₁, -, -⟩ :=
+  obtain ⟨σ₁, r₁, hpre, hkn₁, hmm₁, -, -, htail₁⟩ :=
     elimWorkPrep_spec hnB (by omega) hmn hn hmm hgof hgtg halv hdeg helm hrnk hidg hbh hbv
       hbn hioff hifl hitg
-  obtain ⟨τ, r₂, hpost, hrnkLt⟩ :=
+  obtain ⟨τ, r₂, hpost, hrnkLt, htail₂raw⟩ :=
     Lax3Proofs.Refine.ElimCompact.elimCompact_engine hcsr hB
       (fun _ _ => show (1 : ℕ) < B by omega) hW hW hpre
   let ρ : Env := padArrs τ (tailOf (renEnv engineWorkSwap σ₁) (clen mm W W))
@@ -222,6 +252,34 @@ theorem elimWork_spec {B n mm ns W : ℕ} {G : SimpleGraph (Fin n)}
     dsimp [σ₂, ρ]
     rw [renEnv_involutive engineWorkSwap_invol σ₁] at h
     exact h
+  have htail₂ : ActiveZeroTail mm σ₁ σ₂ := by
+    intro a ha
+    simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · have hlen : clen mm W W "elm" ≤
+          ((renEnv engineWorkSwap σ₁).arrs "elm").length := by
+        simp only [Lax3Proofs.Refine.ElimCompact.clen_elm, renEnv_arrs]
+        simp [engineWorkSwap]
+        rw [run_length r₁ "elm"]
+        obtain ⟨g, hg⟩ := helm
+        rw [hg, length_arrOf]
+        exact hmn
+      simpa [σ₂, ρ, renEnv_arrs, engineWorkSwap] using htail₂raw "elm" hlen
+    · have hlen : clen mm W W "bh" ≤
+          ((renEnv engineWorkSwap σ₁).arrs "bh").length := by
+        simp only [Lax3Proofs.Refine.ElimCompact.clen_bh, renEnv_arrs]
+        simp [engineWorkSwap]
+        rw [run_length r₁ "bh"]
+        obtain ⟨g, hg⟩ := hbh
+        rw [hg, length_arrOf]
+        omega
+      simpa [σ₂, ρ, renEnv_arrs, engineWorkSwap] using htail₂raw "bh" hlen
+    · rw [r₂'.frame_arr "ooff" (by decide)]
+    · rw [r₂'.frame_arr "noff" (by decide)]
+    · rw [r₂'.frame_arr "stf" (by decide)]
+    · rw [r₂'.frame_arr "sta" (by decide)]
+    · rw [r₂'.frame_arr "std" (by decide)]
+    · rw [r₂'.frame_arr "ste" (by decide)]
   obtain ⟨R, IO, IT, k, m, E, hrnkτ, hkτ, hioffτ, hitgτ, hm, hinj, horients,
     hindeg, hinN, htoG, hbd, hbdE, hdegE, hlow, hinc⟩ := hpost
   rw [masked_of_all_alive (memGraph G M hml) (M' := fun _ => 1)
@@ -324,7 +382,22 @@ theorem elimWork_spec {B n mm ns W : ℕ} {G : SimpleGraph (Fin n)}
       (fun i : Fin mm => R' (i : ℕ)) k := by
     rw [hRfun]
     exact hbd
-  refine ⟨σ₄, rAll, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  have htail₃ : ActiveZeroTail mm σ₂ σ₄ := by
+    intro a ha
+    simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    all_goals simp only [σ₄, arrs_setVar]
+    · rw [r₃.frame_arr "elm" (by decide)]
+    · rw [r₃.frame_arr "bh" (by decide)]
+    · rw [r₃.frame_arr "ooff" (by decide)]
+    · rw [r₃.frame_arr "noff" (by decide)]
+    · rw [r₃.frame_arr "stf" (by decide)]
+    · rw [r₃.frame_arr "sta" (by decide)]
+    · rw [r₃.frame_arr "std" (by decide)]
+    · rw [r₃.frame_arr "ste" (by decide)]
+  have htailAll : ActiveZeroTail mm σ σ₄ :=
+    ActiveZeroTail.trans (ActiveZeroTail.trans htail₁ htail₂) htail₃
+  refine ⟨σ₄, rAll, ?_, ?_, ?_, ?_, ?_, ?_, htailAll⟩
   · refine ⟨R, IO, IT, k, m, E, ?_, ?_, ?_, ?_, hm, hinj, horients, hindeg, hinN,
       htoG, hbd, hbdE, hdegE, hlow, hinc⟩
     · intro j hj

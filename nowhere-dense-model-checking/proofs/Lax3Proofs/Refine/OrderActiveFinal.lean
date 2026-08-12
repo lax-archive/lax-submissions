@@ -33,6 +33,7 @@ open Lax3Proofs.Refine.OrderActiveElim (ElimOrderData elimWorkCom elimWorkCost
   elimWork_spec)
 open Lax3Proofs.Refine.OrderActiveRank (memberOrdCom memberOrdCom_spec)
 open Lax3Proofs.Refine.OrderActiveMath (activePerm activeCentre centresBy_activeCentre)
+open Lax3Proofs.Refine.OrderActiveTail
 
 /-- The resident size invariant and live in-CSR prefixes give precisely the
 entry surface of compact symmetrization. -/
@@ -164,7 +165,8 @@ theorem activeFinish_spec {B n mm cs W w d D₁ d₀ R j : ℕ}
       ActiveOrderSized n W σ' ∧
       σ'.vars "n" = n ∧ σ'.vars "mm" = mm ∧
       σ'.arrs "mem" = arrOf n Mem ∧
-      σ'.arrs "off" = σ.arrs "off" ∧ σ'.arrs "tgt" = σ.arrs "tgt" := by
+      σ'.arrs "off" = σ.arrs "off" ∧ σ'.arrs "tgt" = σ.arrs "tgt" ∧
+      ActiveZeroTail mm σ σ' := by
   classical
   obtain ⟨hn, hmm, hmem, hsz, D, m, IO, IT, hchain, hgreedy, hD₀, hin,
     hmw, hkd, hio, hit⟩ := hI
@@ -193,7 +195,7 @@ theorem activeFinish_spec {B n mm cs W w d D₁ d₀ R j : ℕ}
   obtain ⟨hIOB, hITB⟩ := prep_bounds_of_inCsr hin hmB hmmB
   obtain ⟨T₀, hent⟩ :=
     symWorkEntry_of_sized hn hmm hkd hmn (hmw.trans hwW) hsz hio hit
-  obtain ⟨σs, rs, hsym, -, hns, hoffS, htgtS⟩ :=
+  obtain ⟨σs, rs, hsym, -, htailS, hns, hoffS, htgtS⟩ :=
     symCompactWork_spec (symPreps B n mm W W m) hin le_rfl (hmw.trans hwW)
       hfitW hnB hsymB (by omega) hmB hIOB hITB hent
   have hszs : ActiveOrderSized n W σs := hsz.run rs
@@ -223,7 +225,7 @@ theorem activeFinish_spec {B n mm cs W w d D₁ d₀ R j : ℕ}
   have hcsrLift : CsrSimple (memGraph Gup M hml) (m + m) SOf ST := by
     rw [hlift]
     exact hcsrS'
-  obtain ⟨σe, re, -, hdata, hnE, hmmE, hoffE, htgtE⟩ :=
+  obtain ⟨σe, re, -, hdata, hnE, hmmE, hoffE, htgtE, htailE⟩ :=
     elimWork_spec (G := Gup) hml hcsrLift (by omega) hnB hfitW hnS hmmS
       hSOf hST' hmemS
       (getS "ork" n (by simp [activeOrderLayout]))
@@ -269,8 +271,17 @@ theorem activeFinish_spec {B n mm cs W w d D₁ d₀ R j : ℕ}
     centresBy_congr_prefix (centresBy_activeCentre hml πm) hcentre
   have rAll : Run B (activeFinishCom j) σ σo (activeFinishCost mm m) := by
     simpa only [activeFinishCom, activeFinishCost] using rs.seq (re.seq ro)
+  have htailO : ActiveZeroTail mm σe σo := by
+    apply ActiveZeroTail.of_frame
+    intro a ha
+    apply ro.frame_arr a
+    simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+      simp [memberOrdCom, Com.warrs, ordName, String.ext_iff]
+  have htailAll : ActiveZeroTail mm σ σo :=
+    ActiveZeroTail.trans (ActiveZeroTail.trans htailS htailE) htailO
   refine ⟨σo, m, D, k, πm, centre, rAll, hmw, hordO, hcentres, hdataOut,
-    hsz.run rAll, ?_, ?_, ?_, ?_, ?_⟩
+    hsz.run rAll, ?_, ?_, ?_, ?_, ?_, htailAll⟩
   · rw [ro.frame_var "n" (by simp [memberOrdCom, Com.wvars]), hnE]
   · rw [ro.frame_var "mm" (by simp [memberOrdCom, Com.wvars]), hmmE]
   · rw [ro.frame_arr "mem" (by

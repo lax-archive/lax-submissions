@@ -24,6 +24,27 @@ open Lax3Proofs.Refine.ElimCompact (cutArrs padArrs tailOf cutArrs_arrs cutArrs_
   padArrs_arrs padArrs_vars run_of_run_cutArrs run_length take_arrOf getD_padArrs)
 open Lax3Proofs.Refine.AugCompact
 open Lax3Proofs.Refine.AugCompactScatter (augCompact_specE)
+open Lax3Proofs.Refine.OrderActiveTail
+
+/-- A compact-prefix tail guarantee survives the outer live-width view.
+The first tail is the part of the physical array that remains inside the
+view; `tailOf` supplies the rest. -/
+private theorem activeZeroTail_padWidth {B K mm : ℕ} {c : Com} {σ τ : Env}
+    {len : String → ℕ}
+    (hrun : Run B c (cutArrs σ len) τ K)
+    (htail : ActiveZeroTail mm (cutArrs σ len) τ)
+    (hsched : ∀ a ∈ activeZeroNames, activeZeroLen mm a ≤ len a)
+    (hphys : ∀ a ∈ activeZeroNames, activeZeroLen mm a ≤ (σ.arrs a).length) :
+    ActiveZeroTail mm σ (padArrs τ (tailOf σ len)) := by
+  intro a ha
+  have hkτ : activeZeroLen mm a ≤ (τ.arrs a).length := by
+    rw [run_length hrun a, cutArrs_arrs, List.length_take]
+    exact le_min (hsched a ha) (hphys a ha)
+  rw [padArrs_arrs, List.drop_append_of_le_length hkτ, htail a ha,
+    cutArrs_arrs, List.drop_take, tailOf]
+  simpa only [Nat.add_sub_of_le (hsched a ha)] using
+    (List.drop_take_append_drop (σ.arrs a) (activeZeroLen mm a)
+      (len a - activeZeroLen mm a))
 
 /-- The outer live-width view. augClen at carrier n has exactly the
 required physical lengths for every engine array; the two driver-owned
@@ -138,7 +159,7 @@ theorem augCompact_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation mm}
     ∃ σ'', Run B augCompactCore σ σ'' (augCompactCost mm kd w) ∧
       AugMemPost mm W Mem D σ'' ∧
       (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm ∧
-      σ''.vars "kn" = n := by
+      ActiveZeroTail mm σ σ'' ∧ σ''.vars "kn" = n := by
   classical
   let len := augWClen n nt w
   have hentView : AugEntryC n mm nt w kd IO IT (cutArrs σ len) := by
@@ -151,7 +172,7 @@ theorem augCompact_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation mm}
     ⟨em, hem⟩, ⟨rk, hrk⟩, ⟨id, hid⟩, ⟨bh, hbh⟩, ⟨bv, hbv⟩,
     ⟨bn, hbn⟩, ⟨ifl, hifl⟩, ⟨no, hno⟩, ⟨nf, hnf⟩, ⟨nt₀, hnt₀⟩,
     ⟨sf, hsf⟩, ⟨sa, hsa⟩, ⟨sd, hsd⟩, ⟨se, hse⟩, ⟨ork₀, hork₀⟩⟩ := hent
-  obtain ⟨τ, hrun, hpost, halvt, hkn⟩ :=
+  obtain ⟨τ, hrun, hpost, halvt, hzeroTail, hkn⟩ :=
     augCompact_specE
       (Lax3Proofs.Refine.CompactPreps.augPreps B n mm nt w kd) hml hin hd hmkd hkdw hnt
       hdb hwidth hB hnB hmn hIOB hITB hmemView hentView
@@ -205,12 +226,33 @@ theorem augCompact_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation mm}
       hmw.trans hwW, hstep, hcsr', hlow, hgreedy, hdegree, harcs⟩
     · simpa only [σ''] using hk
     · simpa only [σ''] using hmn'
+  have hzeroSched : ∀ a ∈ activeZeroNames, activeZeroLen mm a ≤ len a := by
+    intro a ha
+    simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+      simp [len, augWClen, augClen, activeZeroLen] <;> omega
+  have hzeroPhys : ∀ a ∈ activeZeroNames,
+      activeZeroLen mm a ≤ (σ.arrs a).length := by
+    intro a ha
+    simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · rw [activeZeroLen_elm, hem, length_arrOf]; exact hmn
+    · rw [activeZeroLen_bh, hbh, length_arrOf]; omega
+    · rw [activeZeroLen_ooff, hoo, length_arrOf]; omega
+    · rw [activeZeroLen_noff, hno, length_arrOf]; omega
+    · rw [activeZeroLen_stf, hsf, length_arrOf]; exact hmn
+    · rw [activeZeroLen_sta, hsa, length_arrOf]; exact hmn
+    · rw [activeZeroLen_std, hsd, length_arrOf]; exact hmn
+    · rw [activeZeroLen_ste, hse, length_arrOf]; exact hmn
+  have hzeroTail' : ActiveZeroTail mm σ σ'' := by
+    simpa only [σ''] using
+      activeZeroTail_padWidth hrun hzeroTail hzeroSched hzeroPhys
   have htailAlv : tailOf σ len "alv" = [] := by
     rw [tailOf, hlenAlv, hal]
     exact List.drop_eq_nil_of_le (by simp [arrOf])
   have halvView : (cutArrs σ len).arrs "alv" = σ.arrs "alv" := by
     rw [cutArrs_arrs, hlenAlv, hal, take_arrOf le_rfl]
-  refine ⟨σ'', hrun', hpost', ?_, ?_⟩
+  refine ⟨σ'', hrun', hpost', ?_, hzeroTail', ?_⟩
   change ((padArrs τ (tailOf σ len)).arrs "alv").drop mm = (σ.arrs "alv").drop mm
   rw [padArrs_arrs, htailAlv, List.append_nil, halvt, halvView]
   · simpa only [σ'', padArrs_vars] using hkn
@@ -230,8 +272,8 @@ theorem augCompactCom_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation 
     ∃ σ'', Run B augCompactCom σ σ'' (augCompactCost mm kd w + 2) ∧
       AugMemPost mm W Mem D σ'' ∧
       (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm ∧
-      σ''.vars "n" = n := by
-  obtain ⟨τ, hrun, hpost, htail, hkn⟩ :=
+      ActiveZeroTail mm σ σ'' ∧ σ''.vars "n" = n := by
+  obtain ⟨τ, hrun, hpost, htail, hzeroTail, hkn⟩ :=
     augCompact_specLive hml hin hd hmkd hkdw hwW hnt hdb hwidth hB hnB hIOB hITB hmem hent
   let σ'' := τ.setVar "n" n
   have hr : Run B (.assign "n" (.var "kn")) τ σ'' 2 := by
@@ -239,13 +281,14 @@ theorem augCompactCom_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation 
       (evalB_var (by rw [hkn]; omega))
     rw [hkn] at h
     simpa only [σ''] using h
-  refine ⟨σ'', ?_, ?_, ?_, ?_⟩
+  refine ⟨σ'', ?_, ?_, ?_, ?_, ?_⟩
   · exact hrun.seq hr
   · have hkmax : ("kmax" : String) ≠ "n" := by decide
     have hmn : ("mn" : String) ≠ "n" := by decide
     simpa only [σ'', AugMemPost, vars_setVar, arrs_setVar, if_neg hkmax,
       if_neg hmn] using hpost
   · simpa only [σ'', arrs_setVar] using htail
+  · simpa only [σ'', ActiveZeroTail, arrs_setVar] using hzeroTail
   · simp [σ'']
 
 /-! ## Axioms -/

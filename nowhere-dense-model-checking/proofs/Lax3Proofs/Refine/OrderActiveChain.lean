@@ -22,6 +22,7 @@ open Lax3Proofs.Refine.AugCompact (AugEntryC AugArrsC AugMemPost augCompactCost
 open Lax3Proofs.Refine.OrderActiveWork (engineWorkSwap AugWorkEntryC
   augCompactWorkCom augCompactWork_specLive)
 open Lax3Proofs.Refine.OrderActiveRound
+open Lax3Proofs.Refine.OrderActiveTail
 
 /-- Every array used by a compact round, at its physical resident length.
 The level graph itself stays in `off`/`tgt`; the engine's conceptual graph
@@ -167,7 +168,8 @@ theorem activeFold_step {B n mm cs W w d D₁ d₀ R : ℕ}
     (hcap : activeChainWidthE mm cs d D₁ R ≤ w) :
     ∀ i σ, i < R → ActiveFoldInv n mm W w d₀ H Mem i σ →
       ∃ σ', Run B activeRoundCom σ σ' (activeRoundCost mm w) ∧
-        ActiveFoldInv n mm W w d₀ H Mem (i + 1) σ' := by
+        ActiveFoldInv n mm W w d₀ H Mem (i + 1) σ' ∧
+        ActiveZeroTail mm σ σ' := by
   classical
   intro i σ hiR hI
   obtain ⟨hn, hmm, hmem, hsz, D, m, IO, IT, hchain, hgreedy, hD₀, hin, hmw,
@@ -207,7 +209,7 @@ theorem activeFold_step {B n mm cs W w d D₁ d₀ R : ℕ}
     Lax3Proofs.Refine.SymCompact.prep_bounds_of_inCsr hin hmB hmmB
   have hent : AugWorkEntryC n mm W W m IO IT σ :=
     augWorkEntry_of_sized hn hmm hkd hmn (hmw.trans hwW) hsz hio hit
-  obtain ⟨σa, ra, hpost, -, hna, -, -⟩ :=
+  obtain ⟨σa, ra, hpost, -, htailA, hna, -, -⟩ :=
     augCompactWork_specLive hml hin hbi le_rfl hmw hwW hfrat hdb hwidth hB hnB
       hIOB hITB hmem hent
   obtain ⟨Rk, NO, NT, k, m', D', hork, hk, hnoff, hntg, hmn', hm'W,
@@ -284,11 +286,22 @@ theorem activeFold_step {B n mm cs W w d D₁ d₀ R : ℕ}
   have hitB' : ∀ z, z < m' → (σb.arrs "itg").getD z 0 = NT z := by
     intro z hz
     rw [hITg, getD_arrOf ITg (lt_of_lt_of_le hz (hm'w.trans hwW)), hITgP z hz]
-  refine ⟨σb, (ra.seq rb).mono ?_, hnb, hmmBv, hmemb, hszaB,
-    Dnew, m', NO, NT, hchainN, hgreedyN, hD₀N, ?_, hm'w, hkdB, hioB', hitB'⟩
+  have htailB : ActiveZeroTail mm σa σb := by
+    apply ActiveZeroTail.of_frame
+    intro a ha
+    apply hframeB a
+    · intro h
+      subst a
+      simpa [activeZeroNames] using ha
+    · intro h
+      subst a
+      simpa [activeZeroNames] using ha
+  have htailAll : ActiveZeroTail mm σ σb := ActiveZeroTail.trans htailA htailB
+  refine ⟨σb, (ra.seq rb).mono ?_, ?_, htailAll⟩
   · simp only [activeRoundCost, augCompactCost_eq, roundRelinkCost]
     omega
-  · simpa only [Dnew, if_pos rfl] using hin'
+  · exact ⟨hnb, hmmBv, hmemb, hszaB, Dnew, m', NO, NT, hchainN, hgreedyN,
+      hD₀N, (by simpa only [Dnew, if_pos rfl] using hin'), hm'w, hkdB, hioB', hitB'⟩
 
 /-- The complete compact augmentation loop.  The command is syntactically
 constant across rounds; the stage index lives only in `ActiveFoldInv`. -/
@@ -309,11 +322,21 @@ theorem activeFold_run {B n mm cs W w d D₁ d₀ R : ℕ}
     { σ : Env } (hI : ActiveFoldInv n mm W w d₀ H Mem 0 σ) :
     ∃ σ', Run B (activeRoundsCom R) σ σ'
         (R * activeRoundCost mm w + 1) ∧
-      ActiveFoldInv n mm W w d₀ H Mem R σ' := by
-  simpa only [activeRoundsCom, Nat.zero_add] using
-    (Lax3Proofs.RamDriverCompose.fold_run_aux
-      (activeFold_step hml hmn hwW hB hnB hd₀d hdens hcap)
-      R 0 (by omega) σ hI)
+      ActiveFoldInv n mm W w d₀ H Mem R σ' ∧
+      ActiveZeroTail mm σ σ' := by
+  let I : ℕ → Env → Prop := fun i τ =>
+    ActiveFoldInv n mm W w d₀ H Mem i τ ∧ ActiveZeroTail mm σ τ
+  have hstep : ∀ i τ, i < R → I i τ →
+      ∃ τ', Run B activeRoundCom τ τ' (activeRoundCost mm w) ∧ I (i + 1) τ' := by
+    intro i τ hi hIτ
+    obtain ⟨τ', hr, hnext, htail⟩ :=
+      activeFold_step hml hmn hwW hB hnB hd₀d hdens hcap i τ hi hIτ.1
+    exact ⟨τ', hr, hnext, ActiveZeroTail.trans hIτ.2 htail⟩
+  obtain ⟨σ', hr, hIR, htail⟩ :=
+    Lax3Proofs.RamDriverCompose.fold_run_aux hstep R 0 (by omega) σ
+      ⟨hI, ActiveZeroTail.refl mm σ⟩
+  exact ⟨σ', by simpa only [activeRoundsCom, Nat.zero_add] using hr,
+    by simpa only [Nat.zero_add] using hIR, htail⟩
 
 /-! ## Axioms -/
 

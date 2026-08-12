@@ -22,6 +22,7 @@ open Lax3Proofs.Refine.ElimCompactCsr (cOff CDone cOff_le_memRowSum memRowSum_le
   csrSimple_of_done)
 open Lax3Proofs.Refine.OrderActiveWork (compactPassWorkAt compactPassWorkAtWide_run)
 open Lax3Proofs.Refine.OrderActiveChain
+open Lax3Proofs.Refine.OrderActiveTail
 
 /-- Read the live orientation slot count from the last compact offset. -/
 def installLiveCountCom : Com :=
@@ -65,7 +66,8 @@ theorem activeFold_init {B n mm W w d₀ m : ℕ} {H : SimpleGraph (Fin mm)}
     (hio : ∀ z, z ≤ mm → (σ.arrs "ioff").getD z 0 = IO z)
     (hitg : σ.arrs "itg" = arrOf W IT) :
     ∃ σ', Run B installLiveCountCom σ σ' 3 ∧
-      ActiveFoldInv n mm W w d₀ H Mem 0 σ' := by
+      ActiveFoldInv n mm W w d₀ H Mem 0 σ' ∧
+      ActiveZeroTail mm σ σ' := by
   let σ' := σ.setVar "kd" m
   have r : Run B installLiveCountCom σ σ' 3 :=
     installLiveCount_run hmn hmmB hmB hmm hsz hio hin
@@ -77,7 +79,7 @@ theorem activeFold_init {B n mm W w d₀ m : ℕ} {H : SimpleGraph (Fin mm)}
   have hgreedy : ∀ l < 0, GreedyFratRound (Ds l) (Ds (l + 1)) := by
     intro l hl
     omega
-  refine ⟨σ', r, ?_⟩
+  refine ⟨σ', r, ?_, ?_⟩
   refine ⟨?_, ?_, ?_, hsz.run r, Ds, m, IO, IT, hchain, hgreedy, ?_, ?_, hmw,
     ?_, ?_, ?_⟩
   · simpa only [σ', vars_setVar, if_neg (by decide : ¬ ("n" = "kd"))] using hn
@@ -91,6 +93,8 @@ theorem activeFold_init {B n mm W w d₀ m : ℕ} {H : SimpleGraph (Fin mm)}
   · intro z hz
     simp only [σ', arrs_setVar, hitg]
     rw [getD_arrOf IT (lt_of_lt_of_le hz (hmw.trans hwW))]
+  · intro a ha
+    rfl
 
 /-- Every compact elimination postcondition initializes the fold.  Its
 degeneracy witness becomes the initial in-degree bound. -/
@@ -104,13 +108,14 @@ theorem activeFold_init_of_elimPost {B n mm ns W w : ℕ}
     (hpost : ElimMemPost G M Mem hml ns W σ) :
     ∃ σ' k, Run B installLiveCountCom σ σ' 3 ∧
       ActiveFoldInv n mm W w k (memGraph G M hml) Mem 0 σ' ∧
-      (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') := by
+      (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') ∧
+      ActiveZeroTail mm σ σ' := by
   obtain ⟨R, IO, IT, k, m, E, -, -, hio, hitg, hmns, -, horients, hindeg,
     -, -, -, -, -, hmin, hin⟩ := hpost
-  obtain ⟨σ', r, hI⟩ := activeFold_init hmn hwW hmmB
+  obtain ⟨σ', r, hI, htail⟩ := activeFold_init hmn hwW hmmB
     (lt_of_le_of_lt (hmns.trans hnsw) hwB) hn hmm hmem hsz horients hindeg hin
     (hmns.trans hnsw) hio hitg
-  exact ⟨σ', k, r, hI, hmin⟩
+  exact ⟨σ', k, r, hI, hmin, htail⟩
 
 /-! ## The first resident elimination followed by fold initialization -/
 
@@ -134,10 +139,11 @@ theorem elimFoldInit_spec {B n mm ns W w : ℕ} {G : SimpleGraph (Fin n)}
     (hmem : σ.arrs "mem" = arrOf n Mem) (hsz : ActiveOrderSized n W σ) :
     ∃ σ' k, Run B elimFoldInitCom σ σ' (elimFoldInitCost mm ns) ∧
       ActiveFoldInv n mm W w k (memGraph G M hml) Mem 0 σ' ∧
-      (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') := by
+      (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') ∧
+      ActiveZeroTail mm σ σ' := by
   have get (a : String) (k : ℕ) (ha : (a, k) ∈ activeOrderLayout n W) :
       ∃ g, σ.arrs a = arrOf k g := hsz.get ha
-  obtain ⟨σ₁, r₁, hpost, -, hn₁, hmm₁, -, -⟩ :=
+  obtain ⟨σ₁, r₁, hpost, -, hn₁, hmm₁, -, -, htail₁⟩ :=
     elimWork_spec hml hcsr hB hnB (hnsw.trans hwW) hn hmm hgof hgtg hmem
       (get "ork" n (by simp [activeOrderLayout]))
       (get "alv" n (by simp [activeOrderLayout]))
@@ -156,9 +162,10 @@ theorem elimFoldInit_spec {B n mm ns W w : ℕ} {G : SimpleGraph (Fin n)}
       (fun i j hij hj => hml.smono i j hij hj) (fun j hj => hml.lt j hj)
   have hmem₁ : σ₁.arrs "mem" = arrOf n Mem := by
     rw [r₁.frame_arr "mem" (by decide), hmem]
-  obtain ⟨σ₂, k, r₂, hI, hmin⟩ := activeFold_init_of_elimPost hmn hnsw hwW
+  obtain ⟨σ₂, k, r₂, hI, hmin, htail₂⟩ :=
+    activeFold_init_of_elimPost hmn hnsw hwW
     (by omega) hwB hn₁ hmm₁ hmem₁ (hsz.run r₁) hpost
-  refine ⟨σ₂, k, ?_, hI, hmin⟩
+  refine ⟨σ₂, k, ?_, hI, hmin, ActiveZeroTail.trans htail₁ htail₂⟩
   simpa only [elimFoldInitCom, elimFoldInitCost] using r₁.seq r₂
 
 /-! ## Compact the resident member graph, then initialize -/
@@ -212,7 +219,8 @@ theorem compactElimFoldInit_spec {B n mm ns W w j : ℕ}
         (compactElimFoldInitCost mm (memRowSum mm O Mem) cs) ∧
       cs ≤ memRowSum mm O Mem ∧ cs ≤ ns ∧
       ActiveFoldInv n mm W w k (memGraph G M hml) Mem 0 σ' ∧
-      (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') := by
+      (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') ∧
+      ActiveZeroTail mm σ σ' := by
   have get (a : String) (k : ℕ) (ha : (a, k) ∈ activeOrderLayout n W) :
       ∃ g, σ.arrs a = arrOf k g := hsz.get ha
   obtain ⟨σ₁, Kix, KOf, KT, r₁, hKix, hmm₁, hks₁, hgof₁, hKOf,
@@ -239,10 +247,24 @@ theorem compactElimFoldInit_spec {B n mm ns W w j : ℕ}
     exact hn
   have hmem₁ : σ₁.arrs "mem" = arrOf n Mem := by
     rw [hframe "mem" (by decide) (by decide) (by decide), hmem]
-  obtain ⟨σ₂, k, r₂, hI, hmin⟩ :=
+  obtain ⟨σ₂, k, r₂, hI, hmin, htail₂⟩ :=
     elimFoldInit_spec hml hcsr₁ (by omega) hnB (hcsrs.trans hrsw) hwW hwB
       hn₁ hmm₁ hgof₁ hgtg₁ hmem₁ (hsz.run r₁)
-  refine ⟨σ₂, k, cs, ?_, hcsrs, hcsns, hI, hmin⟩
+  have htail₁ : ActiveZeroTail mm σ σ₁ := by
+    apply ActiveZeroTail.of_frame
+    intro a ha
+    apply hframe a
+    · intro h
+      subst a
+      simpa [activeZeroNames] using ha
+    · intro h
+      subst a
+      simpa [activeZeroNames] using ha
+    · intro h
+      subst a
+      simpa [activeZeroNames] using ha
+  refine ⟨σ₂, k, cs, ?_, hcsrs, hcsns, hI, hmin,
+    ActiveZeroTail.trans htail₁ htail₂⟩
   simpa only [compactElimFoldInitCom, compactElimFoldInitCost] using r₁.seq r₂
 
 /-! ## Axioms -/

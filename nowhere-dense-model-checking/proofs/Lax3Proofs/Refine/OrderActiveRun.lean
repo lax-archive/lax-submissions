@@ -19,6 +19,7 @@ open Lax3Proofs.Refine.ScatterBlock (MemList)
 open Lax3Proofs.Refine.ElimCompact (memGraph memRowSum)
 open Lax3Proofs.Refine.OrderActiveChain
 open Lax3Proofs.Refine.OrderActiveInit
+open Lax3Proofs.Refine.OrderActiveTail
 
 def compactActiveChainCom (j R : ℕ) : Com :=
   .seq (compactElimFoldInitCom j) (activeRoundsCom R)
@@ -53,22 +54,24 @@ theorem compactActiveChain_spec {B n mm ns W w j R d D₁ : ℕ}
         (compactActiveChainCost mm (memRowSum mm O Mem) cs w R) ∧
       cs ≤ memRowSum mm O Mem ∧ cs ≤ ns ∧
       ActiveFoldInv n mm W w k (memGraph G M hml) Mem R σ' ∧
-      (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') := by
+      (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') ∧
+      ActiveZeroTail mm σ σ' := by
   have hmn : mm ≤ n :=
     Lax3Proofs.Refine.ElimCompactWalks.card_le_of_smono
       (fun i j hij hj => hml.smono i j hij hj) (fun i hi => hml.lt i hi)
   have hrsw : memRowSum mm O Mem ≤ w := by
     simp only [activeChainWidthE] at hcap
     omega
-  obtain ⟨σ₁, k, cs, r₁, hcsrs, hcsns, hI, hmin⟩ :=
+  obtain ⟨σ₁, k, cs, r₁, hcsrs, hcsns, hI, hmin, htail₁⟩ :=
     compactElimFoldInit_spec hcsr hml (by omega) hnB hMB hnsW hrsw hwW
       (by omega) hn hmm hmem hoff htgt halv hsz
   have hcapcs : activeChainWidthE mm cs d D₁ R ≤ w := by
     simp only [activeChainWidthE] at hcap ⊢
     omega
-  obtain ⟨σ₂, r₂, hIR⟩ :=
+  obtain ⟨σ₂, r₂, hIR, htail₂⟩ :=
     activeFold_run hml hmn hwW hBW hnB (hmin d hd) hdens hcapcs hI
-  refine ⟨σ₂, k, cs, ?_, hcsrs, hcsns, hIR, hmin⟩
+  refine ⟨σ₂, k, cs, ?_, hcsrs, hcsns, hIR, hmin,
+    ActiveZeroTail.trans htail₁ htail₂⟩
   simpa only [compactActiveChainCom, compactActiveChainCost] using r₁.seq r₂
 
 /-! ## Axioms -/

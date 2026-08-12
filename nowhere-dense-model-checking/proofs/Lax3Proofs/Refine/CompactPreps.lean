@@ -59,6 +59,7 @@ open Lax3Proofs.Refine.SymCompact (symPrepCom symPrepCost SymPreps sSt
   notMem_symPrepCom_warrs notMem_symPrepCom_wvars)
 open Lax3Proofs.Refine.AugCompact (augPrepCom augPrepCost AugPreps aSt
   notMem_augPrepCom_warrs notMem_augPrepCom_wvars)
+open Lax3Proofs.Refine.OrderActiveTail
 
 /-! ## §0 Refute before prove
 
@@ -305,7 +306,7 @@ theorem symPreps (B n mm nt W kd : ℕ) : SymPreps B n mm nt W kd := by
     copyItg_spec B n W mm kd W IOg ITg "dtg" (by decide) (by decide) hkB hkW hkW hITgB
       τ₁ ⟨⟨t₀, by rw [r₁.frame_arr "dtg" (notMem_copy_warrs (by decide)), ht₀]⟩, hQ₁⟩
   -- **the counting sort's accumulator**, zeroed over the compact prefix
-  obtain ⟨τ₃, r₃, ⟨O₃, hO₃, hO₃lo, -⟩, -, hQ₃⟩ :=
+  obtain ⟨τ₃, r₃, ⟨O₃, hO₃, hO₃lo, hO₃tail⟩, -, hQ₃⟩ :=
     zeroM1_spec B n W mm kd (n + 1) IOg ITg "ooff" (by decide) (by decide) hmB (by omega)
       τ₂ ⟨⟨o₀, by rw [((r₁.seq r₂).frame_arr "ooff"
         (by simp [copyUpto, fillUpto, Fill.put, Com.warrs])), ho₀]⟩, hQ₂⟩
@@ -318,9 +319,28 @@ theorem symPreps (B n mm nt W kd : ℕ) : SymPreps B n mm nt W kd := by
     (r₂.seq r₃).frame_arr "doff" (by simp [copyUpto, fillUpto, Fill.put, Com.warrs])
   have hdtg₃ : τ₃.arrs "dtg" = τ₂.arrs "dtg" :=
     r₃.frame_arr "dtg" (notMem_fill_warrs (by decide))
+  have hooffTail : (τ₃.arrs "ooff").drop (mm + 1) =
+      (σ.arrs "ooff").drop (mm + 1) := by
+    rw [hO₃, ho₀]
+    apply drop_arrOf_congr (by omega)
+    intro k hmk hkn
+    rw [hO₃tail k hmk hkn, (r₁.seq r₂).frame_arr "ooff"
+      (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), ho₀, getD_arrOf o₀ hkn]
+  have hzeroTail : ActiveZeroTail mm σ τ₃ := by
+    intro a ha
+    simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · rw [fA "elm" (by decide) (by decide) (by decide)]
+    · rw [fA "bh" (by decide) (by decide) (by decide)]
+    · exact hooffTail
+    · rw [fA "noff" (by decide) (by decide) (by decide)]
+    · rw [fA "stf" (by decide) (by decide) (by decide)]
+    · rw [fA "sta" (by decide) (by decide) (by decide)]
+    · rw [fA "std" (by decide) (by decide) (by decide)]
+    · rw [fA "ste" (by decide) (by decide) (by decide)]
   refine ⟨τ₃, D₂, rAll.mono (by rw [symPrepCost]; omega), ?_, hQ₃.1, ?_,
     fun j hj => by rw [hD₂lo j hj, hITg j hj], ⟨D₁, ?_, ?_⟩, ⟨O₃, hO₃, ?_⟩,
-    ⟨fl₀, ?_⟩, ⟨ot₀, ?_⟩, ⟨of₀, ?_⟩, ?_⟩
+    ⟨fl₀, ?_⟩, ⟨ot₀, ?_⟩, ⟨of₀, ?_⟩, ?_, hzeroTail⟩
   · rw [rAll.frame_var "n" (notMem_symPrepCom_wvars (by decide)), hn]
   · rw [hdtg₃, hD₂]
   · rw [hdoff₃, hD₁]
@@ -359,7 +379,7 @@ theorem augPreps (B n mm nt W kd : ℕ) : AugPreps B n mm nt W kd := by
   -- the prefix runs, so that each precondition is one rewrite
   have p₂ := r₁.seq r₂
   -- **the four `mm+1`-bounded zeroes**
-  obtain ⟨τ₃, r₃, ⟨Z₃, hZ₃, hZ₃lo, -⟩, -, hQ₃⟩ :=
+  obtain ⟨τ₃, r₃, ⟨Z₃, hZ₃, hZ₃lo, hZ₃tail⟩, -, hQ₃⟩ :=
     zeroM1_spec B n W mm kd (n + 1) IOg ITg "ooff" (by decide) (by decide) hmB (by omega)
       τ₂ ⟨⟨oo₀, by rw [p₂.frame_arr "ooff"
         (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hoo₀]⟩, hQ₂⟩
@@ -369,38 +389,38 @@ theorem augPreps (B n mm nt W kd : ℕ) : AugPreps B n mm nt W kd := by
       τ₃ ⟨⟨of₀, by rw [p₃.frame_arr "off"
         (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hof₀]⟩, hQ₃⟩
   have p₄ := p₃.seq r₄
-  obtain ⟨τ₅, r₅, ⟨Z₅, hZ₅, hZ₅lo, -⟩, -, hQ₅⟩ :=
+  obtain ⟨τ₅, r₅, ⟨Z₅, hZ₅, hZ₅lo, hZ₅tail⟩, -, hQ₅⟩ :=
     zeroM1_spec B n W mm kd (n + 1) IOg ITg "noff" (by decide) (by decide) hmB (by omega)
       τ₄ ⟨⟨no₀, by rw [p₄.frame_arr "noff"
         (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hno₀]⟩, hQ₄⟩
   have p₅ := p₄.seq r₅
-  obtain ⟨τ₆, r₆, ⟨Z₆, hZ₆, hZ₆lo, -⟩, -, hQ₆⟩ :=
+  obtain ⟨τ₆, r₆, ⟨Z₆, hZ₆, hZ₆lo, hZ₆tail⟩, -, hQ₆⟩ :=
     zeroM1_spec B n W mm kd (n + 1) IOg ITg "bh" (by decide) (by decide) hmB (by omega)
       τ₅ ⟨⟨bh₀, by rw [p₅.frame_arr "bh"
         (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hbh₀]⟩, hQ₅⟩
   have p₆ := p₅.seq r₆
   -- **the five `mm`-bounded zeroes**
-  obtain ⟨τ₇, r₇, ⟨Z₇, hZ₇, hZ₇lo, -⟩, -, hQ₇⟩ :=
+  obtain ⟨τ₇, r₇, ⟨Z₇, hZ₇, hZ₇lo, hZ₇tail⟩, -, hQ₇⟩ :=
     zeroM_spec B n W mm kd n IOg ITg "elm" (by decide) (by decide) hmB hmn
       τ₆ ⟨⟨el₀, by rw [p₆.frame_arr "elm"
         (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hel₀]⟩, hQ₆⟩
   have p₇ := p₆.seq r₇
-  obtain ⟨τ₈, r₈, ⟨Z₈, hZ₈, hZ₈lo, -⟩, -, hQ₈⟩ :=
+  obtain ⟨τ₈, r₈, ⟨Z₈, hZ₈, hZ₈lo, hZ₈tail⟩, -, hQ₈⟩ :=
     zeroM_spec B n W mm kd n IOg ITg "stf" (by decide) (by decide) hmB hmn
       τ₇ ⟨⟨sf₀, by rw [p₇.frame_arr "stf"
         (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hsf₀]⟩, hQ₇⟩
   have p₈ := p₇.seq r₈
-  obtain ⟨τ₉, r₉, ⟨Z₉, hZ₉, hZ₉lo, -⟩, -, hQ₉⟩ :=
+  obtain ⟨τ₉, r₉, ⟨Z₉, hZ₉, hZ₉lo, hZ₉tail⟩, -, hQ₉⟩ :=
     zeroM_spec B n W mm kd n IOg ITg "sta" (by decide) (by decide) hmB hmn
       τ₈ ⟨⟨sa₀, by rw [p₈.frame_arr "sta"
         (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hsa₀]⟩, hQ₈⟩
   have p₉ := p₈.seq r₉
-  obtain ⟨τ₁₀, r₁₀, ⟨Z₁₀, hZ₁₀, hZ₁₀lo, -⟩, -, hQ₁₀⟩ :=
+  obtain ⟨τ₁₀, r₁₀, ⟨Z₁₀, hZ₁₀, hZ₁₀lo, hZ₁₀tail⟩, -, hQ₁₀⟩ :=
     zeroM_spec B n W mm kd n IOg ITg "std" (by decide) (by decide) hmB hmn
       τ₉ ⟨⟨sd₀, by rw [p₉.frame_arr "std"
         (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hsd₀]⟩, hQ₉⟩
   have p₁₀ := p₉.seq r₁₀
-  obtain ⟨τ₁₁, r₁₁, ⟨Z₁₁, hZ₁₁, hZ₁₁lo, -⟩, -, hQ₁₁⟩ :=
+  obtain ⟨τ₁₁, r₁₁, ⟨Z₁₁, hZ₁₁, hZ₁₁lo, hZ₁₁tail⟩, -, hQ₁₁⟩ :=
     zeroM_spec B n W mm kd n IOg ITg "ste" (by decide) (by decide) hmB hmn
       τ₁₀ ⟨⟨se₀, by rw [p₁₀.frame_arr "ste"
         (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hse₀]⟩, hQ₁₀⟩
@@ -445,13 +465,76 @@ theorem augPreps (B n mm nt W kd : ℕ) : AugPreps B n mm nt W kd := by
     t₉.frame_arr "sta" (by simp [fillUpto, Fill.put, Com.warrs])
   have hstd : τ₁₁.arrs "std" = τ₁₀.arrs "std" :=
     t₁₀.frame_arr "std" (notMem_fill_warrs (by decide))
+  have hooffTail : (τ₁₁.arrs "ooff").drop (mm + 1) =
+      (σ.arrs "ooff").drop (mm + 1) := by
+    rw [hooff, hZ₃, hoo₀]
+    apply drop_arrOf_congr (by omega)
+    intro k hmk hkn
+    rw [hZ₃tail k hmk hkn, p₂.frame_arr "ooff"
+      (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hoo₀, getD_arrOf oo₀ hkn]
+  have hnoffTail : (τ₁₁.arrs "noff").drop (mm + 1) =
+      (σ.arrs "noff").drop (mm + 1) := by
+    rw [hnoff, hZ₅, hno₀]
+    apply drop_arrOf_congr (by omega)
+    intro k hmk hkn
+    rw [hZ₅tail k hmk hkn, p₄.frame_arr "noff"
+      (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hno₀, getD_arrOf no₀ hkn]
+  have hbhTail : (τ₁₁.arrs "bh").drop (mm + 1) =
+      (σ.arrs "bh").drop (mm + 1) := by
+    rw [hbh, hZ₆, hbh₀]
+    apply drop_arrOf_congr (by omega)
+    intro k hmk hkn
+    rw [hZ₆tail k hmk hkn, p₅.frame_arr "bh"
+      (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hbh₀, getD_arrOf bh₀ hkn]
+  have helmTail : (τ₁₁.arrs "elm").drop mm = (σ.arrs "elm").drop mm := by
+    rw [helm, hZ₇, hel₀]
+    apply drop_arrOf_congr hmn
+    intro k hmk hkn
+    rw [hZ₇tail k hmk hkn, p₆.frame_arr "elm"
+      (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hel₀, getD_arrOf el₀ hkn]
+  have hstfTail : (τ₁₁.arrs "stf").drop mm = (σ.arrs "stf").drop mm := by
+    rw [hstf, hZ₈, hsf₀]
+    apply drop_arrOf_congr hmn
+    intro k hmk hkn
+    rw [hZ₈tail k hmk hkn, p₇.frame_arr "stf"
+      (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hsf₀, getD_arrOf sf₀ hkn]
+  have hstaTail : (τ₁₁.arrs "sta").drop mm = (σ.arrs "sta").drop mm := by
+    rw [hsta, hZ₉, hsa₀]
+    apply drop_arrOf_congr hmn
+    intro k hmk hkn
+    rw [hZ₉tail k hmk hkn, p₈.frame_arr "sta"
+      (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hsa₀, getD_arrOf sa₀ hkn]
+  have hstdTail : (τ₁₁.arrs "std").drop mm = (σ.arrs "std").drop mm := by
+    rw [hstd, hZ₁₀, hsd₀]
+    apply drop_arrOf_congr hmn
+    intro k hmk hkn
+    rw [hZ₁₀tail k hmk hkn, p₉.frame_arr "std"
+      (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hsd₀, getD_arrOf sd₀ hkn]
+  have hsteTail : (τ₁₁.arrs "ste").drop mm = (σ.arrs "ste").drop mm := by
+    rw [hZ₁₁, hse₀]
+    apply drop_arrOf_congr hmn
+    intro k hmk hkn
+    rw [hZ₁₁tail k hmk hkn, p₁₀.frame_arr "ste"
+      (by simp [copyUpto, fillUpto, Fill.put, Com.warrs]), hse₀, getD_arrOf se₀ hkn]
+  have hzeroTail : ActiveZeroTail mm σ τ₁₁ := by
+    intro a ha
+    simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact helmTail
+    · exact hbhTail
+    · exact hooffTail
+    · exact hnoffTail
+    · exact hstfTail
+    · exact hstaTail
+    · exact hstdTail
+    · exact hsteTail
   refine ⟨τ₁₁, D₂, rAll.mono (by rw [augPrepCost]; omega), hQ₁₁.1,
     fun j hj => by rw [hD₂lo j hj, hITg j hj],
     ⟨?_, hmn, ⟨D₁, ?_, ?_⟩, ?_, ⟨Z₃, ?_, ?_⟩, ⟨ot₀, ?_⟩, ⟨fl₀, ?_⟩, ⟨Z₄, ?_, ?_⟩,
       ⟨tg₀, ?_⟩, ⟨ff₀, ?_⟩, ⟨al₀, ?_⟩, ⟨dg₀, ?_⟩, ⟨Z₇, ?_, ?_⟩, ⟨rk₀, ?_⟩, ⟨ig₀, ?_⟩,
       ⟨Z₆, ?_, ?_⟩, ⟨bv₀, ?_⟩, ⟨bn₀, ?_⟩, ⟨IOg, ?_⟩, ⟨if₀, ?_⟩, ⟨ITg, ?_⟩, ⟨Z₅, ?_, ?_⟩,
       ⟨nf₀, ?_⟩, ⟨nt₀, ?_⟩, ⟨Z₈, ?_, ?_⟩, ⟨Z₉, ?_, ?_⟩, ⟨Z₁₀, ?_, ?_⟩, ⟨Z₁₁, ?_, ?_⟩⟩,
-    ?_, ⟨ok₀, ?_⟩⟩
+    ?_, ⟨ok₀, ?_⟩, hzeroTail⟩
   · rw [rAll.frame_var "n" (notMem_augPrepCom_wvars (by decide)), hn]
   · rw [hdoff, hD₁]
   · exact fun i hi => by rw [hD₁lo i (by omega), hIOg i hi]

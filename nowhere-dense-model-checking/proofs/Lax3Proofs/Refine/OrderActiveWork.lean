@@ -30,6 +30,7 @@ open Lax3Proofs.Refine.ElimCompactCsr (cOff cOff_mono cOff_le_memRowSum memRowSu
   CDone compactPass_run)
 open Lax3Proofs.Refine.AugCompact
 open Lax3Proofs.Refine.OrderActiveWidth (augCompactCom_specLive)
+open Lax3Proofs.Refine.OrderActiveTail
 open Lax3Proofs.Refine.SymCompact
 
 variable {n nt mm B : ℕ} {G : SimpleGraph (Fin n)}
@@ -358,6 +359,12 @@ theorem engineWorkSwap_of_ne {a : String} (h0 : a ≠ "off") (h1 : a ≠ "gof")
 @[simp] theorem engineWorkSwap_ntg : engineWorkSwap "ntg" = "ntg" := by
   exact engineWorkSwap_of_ne (by decide) (by decide) (by decide) (by decide)
 
+theorem engineWorkSwap_activeZero {a : String} (ha : a ∈ activeZeroNames) :
+    engineWorkSwap a = a := by
+  simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+  rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+    exact engineWorkSwap_of_ne (by decide) (by decide) (by decide) (by decide)
+
 /-- The compact augmentation entry, read with its graph in `gof`/`gtg`. -/
 def AugWorkEntryC (n mm nt W kd : ℕ) (IO IT : ℕ → ℕ) (σ : Env) : Prop :=
   AugEntryC n mm nt W kd IO IT (renEnv engineWorkSwap σ)
@@ -386,9 +393,10 @@ theorem augCompactWork_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation
     ∃ σ'', Run B augCompactWorkCom σ σ'' (augCompactCost mm kd w + 2) ∧
       AugMemPost mm W Mem D σ'' ∧
       (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm ∧
-      σ''.vars "n" = n ∧ σ''.arrs "off" = σ.arrs "off" ∧
+      ActiveZeroTail mm σ σ'' ∧ σ''.vars "n" = n ∧
+      σ''.arrs "off" = σ.arrs "off" ∧
       σ''.arrs "tgt" = σ.arrs "tgt" := by
-  obtain ⟨τ, hrun, hpost, htail, hn⟩ :=
+  obtain ⟨τ, hrun, hpost, htail, hzeroTail, hn⟩ :=
     augCompactCom_specLive hml hin hd hmkd hkdw hwW hnt hdb hwidth hB hnB hIOB hITB
       (by simpa only [renEnv_arrs, engineWorkSwap_mem] using hmem) hent
   let σ'' := renEnv engineWorkSwap τ
@@ -398,10 +406,12 @@ theorem augCompactWork_specLive {B n mm nt W w kd d db m : ℕ} {D : Orientation
       (augCompactCost mm kd w + 2)
     rw [← renEnv_involutive engineWorkSwap_invol σ]
     exact h
-  refine ⟨σ'', hrun', ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨σ'', hrun', ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simpa only [σ'', AugMemPost, renEnv_arrs, renEnv_vars, engineWorkSwap_ork,
       engineWorkSwap_noff, engineWorkSwap_ntg] using hpost
   · simpa only [σ'', renEnv_arrs, engineWorkSwap_alv] using htail
+  · intro a ha
+    simpa only [σ'', renEnv_arrs, engineWorkSwap_activeZero ha] using hzeroTail a ha
   · simpa only [σ'', renEnv_vars] using hn
   · exact hrun'.frame_arr "off" (by decide)
   · exact hrun'.frame_arr "tgt" (by decide)
@@ -417,9 +427,10 @@ theorem symCompactWork_spec {B n mm nt W kd m : ℕ} {D : Orientation mm}
     ∃ σ'', Run B symCompactWorkCom σ σ'' (symCompactCost mm kd + 2) ∧
       SymWorkPost mm nt m D T₀ σ'' ∧
       (σ''.arrs "gof").drop (mm + 1) = (σ.arrs "gof").drop (mm + 1) ∧
-      σ''.vars "n" = n ∧ σ''.arrs "off" = σ.arrs "off" ∧
+      ActiveZeroTail mm σ σ'' ∧ σ''.vars "n" = n ∧
+      σ''.arrs "off" = σ.arrs "off" ∧
       σ''.arrs "tgt" = σ.arrs "tgt" := by
-  obtain ⟨τ, hrun, hpost, htail, hn⟩ :=
+  obtain ⟨τ, hrun, hpost, htail, hzeroTail, hn⟩ :=
     symCompactCom_spec h1 hin hmkd hkdW hfit hnB hB2 hmmB hkdB hIOB hITB hent
   let σ'' := renEnv engineWorkSwap τ
   have hrun' : Run B symCompactWorkCom σ σ'' (symCompactCost mm kd + 2) := by
@@ -428,9 +439,11 @@ theorem symCompactWork_spec {B n mm nt W kd m : ℕ} {D : Orientation mm}
       (symCompactCost mm kd + 2)
     rw [← renEnv_involutive engineWorkSwap_invol σ]
     exact h
-  refine ⟨σ'', hrun', ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨σ'', hrun', ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simpa only [SymWorkPost, σ'', renEnv_involutive engineWorkSwap_invol] using hpost
   · simpa only [σ'', renEnv_arrs, engineWorkSwap_gof, SymWorkEntryC] using htail
+  · intro a ha
+    simpa only [σ'', renEnv_arrs, engineWorkSwap_activeZero ha] using hzeroTail a ha
   · simpa only [σ'', renEnv_vars] using hn
   · exact hrun'.frame_arr "off" (by decide)
   · exact hrun'.frame_arr "tgt" (by decide)
