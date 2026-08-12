@@ -137,7 +137,7 @@ theorem elimFoldInit_spec {B n mm ns W w : ℕ} {G : SimpleGraph (Fin n)}
       (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') := by
   have get (a : String) (k : ℕ) (ha : (a, k) ∈ activeOrderLayout n W) :
       ∃ g, σ.arrs a = arrOf k g := hsz.get ha
-  obtain ⟨σ₁, r₁, hpost, hn₁, hmm₁, -, -⟩ :=
+  obtain ⟨σ₁, r₁, hpost, -, hn₁, hmm₁, -, -⟩ :=
     elimWork_spec hml hcsr hB hnB (hnsw.trans hwW) hn hmm hgof hgtg hmem
       (get "ork" n (by simp [activeOrderLayout]))
       (get "alv" n (by simp [activeOrderLayout]))

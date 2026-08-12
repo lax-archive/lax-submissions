@@ -17,7 +17,8 @@ open Lax3Proofs.RamDriver (fillUpto)
 open Lax3Proofs.Refine.ScatterBlock (MemList renCom renEnv renEnv_arrs renEnv_vars
   renEnv_involutive renCom_run)
 open Lax3Proofs.Refine.ElimCompact (ElimPreC ElimMemPost clen padArrs tailOf
-  padArrs_arrs padArrs_vars getD_padArrs memGraph masked_of_all_alive scatterCom scatterCost)
+  padArrs_arrs padArrs_vars getD_padArrs memGraph masked_of_all_alive scatterCom scatterCost
+  run_length)
 open Lax3Proofs.Refine.OrderActiveWork
 
 /-- Initialize precisely the three live prefixes read by elimination,
@@ -162,6 +163,19 @@ def elimWorkCost (mm ns : ℕ) : ℕ :=
   elimWorkPrepCost mm +
     (Lax3Proofs.RamElim.elimCost mm ns + (scatterCost mm + 2))
 
+/-- The ordering data of a resident compact elimination, with the compact
+rank retained in `rnk`.  `ElimMemPost` intentionally exposes only the
+scattered carrier reading; the final active-order inversion needs this
+strictly stronger, already-proved engine fact. -/
+def ElimOrderData {mm : ℕ} (H : SimpleGraph (Fin mm)) (n : ℕ)
+    (σ : Env) : Prop :=
+  ∃ (R : ℕ → ℕ) (k : ℕ),
+    σ.arrs "rnk" = arrOf n R ∧
+    (∀ v < mm, R v < mm) ∧
+    Function.Injective (fun i : Fin mm => R (i : ℕ)) ∧
+    Lax3Proofs.Augmentation.BackDegLE H (fun i : Fin mm => R (i : ℕ)) k ∧
+    (∀ k', Lax3Proofs.Augmentation.LowDegreeVertices H k' → k ≤ k')
+
 /-- Eliminate a compact member graph in the resident workspace.  The compact
 rank is scattered to `ork[mem j]`, while the compact in-CSR stays in
 `ioff`/`itg` for the augmentation rounds.  The level CSR is an explicit frame
@@ -185,6 +199,7 @@ theorem elimWork_spec {B n mm ns W : ℕ} {G : SimpleGraph (Fin n)}
     (hitg : ∃ g, σ.arrs "itg" = arrOf W g) :
     ∃ σ', Run B elimWorkCom σ σ' (elimWorkCost mm ns) ∧
       ElimMemPost G M Mem hml ns W σ' ∧
+      ElimOrderData (memGraph G M hml) n σ' ∧
       σ'.vars "n" = n ∧ σ'.vars "mm" = mm ∧
       σ'.arrs "off" = σ.arrs "off" ∧ σ'.arrs "tgt" = σ.arrs "tgt" := by
   classical
@@ -219,10 +234,14 @@ theorem elimWork_spec {B n mm ns W : ℕ} {G : SimpleGraph (Fin n)}
       getD_arrOf _ hj]
   have hrnk₂ : ∀ j, j < mm → (σ₂.arrs "rnk").getD j 0 = R j := by
     simpa only [σ₂, renEnv_arrs, engineWorkSwap] using hrnkρ
-  have hRB : ∀ j, j < mm → R j < B := by
+  have hRlt : ∀ j, j < mm → R j < mm := by
     intro j hj
     have h := hrnkLt j hj
     rw [hrnkτ, getD_arrOf _ hj] at h
+    exact h
+  have hRB : ∀ j, j < mm → R j < B := by
+    intro j hj
+    have h := hRlt j hj
     omega
   have hρlen : mm ≤ (σ₂.arrs "rnk").length := by
     dsimp [σ₂]
@@ -277,7 +296,35 @@ theorem elimWork_spec {B n mm ns W : ℕ} {G : SimpleGraph (Fin n)}
   have rAll : Run B elimWorkCom σ σ₄ (elimWorkCost mm ns) := by
     simpa only [elimWorkCom, elimWorkCost, σ₄] using
       (r₁.seq (r₂'.seq (r₃.seq r₄)))
-  refine ⟨σ₄, rAll, ?_, ?_, ?_, ?_, ?_⟩
+  have hrnk₄P : ∀ j, j < mm → (σ₄.arrs "rnk").getD j 0 = R j := by
+    intro j hj
+    simp only [σ₄, arrs_setVar]
+    rw [r₃.frame_arr "rnk" (by decide)]
+    exact hrnk₂ j hj
+  have hrnkLen : (σ₄.arrs "rnk").length = n := by
+    rw [run_length rAll "rnk"]
+    obtain ⟨g, hg⟩ := hrnk
+    rw [hg, length_arrOf]
+  obtain ⟨R', hR'arr⟩ := Lax3Proofs.RamDriver.exists_arrOf hrnkLen
+  have hR'R : ∀ j, j < mm → R' j = R j := by
+    intro j hj
+    have h := hrnk₄P j hj
+    rwa [hR'arr, getD_arrOf R' (lt_of_lt_of_le hj hmn)] at h
+  have hR'lt : ∀ j, j < mm → R' j < mm := by
+    intro j hj
+    rw [hR'R j hj]
+    exact hRlt j hj
+  have hRfun : (fun i : Fin mm => R' (i : ℕ)) = (fun i : Fin mm => R (i : ℕ)) := by
+    funext i
+    exact hR'R i i.isLt
+  have hinj' : Function.Injective (fun i : Fin mm => R' (i : ℕ)) := by
+    rw [hRfun]
+    exact hinj
+  have hbd' : Lax3Proofs.Augmentation.BackDegLE (memGraph G M hml)
+      (fun i : Fin mm => R' (i : ℕ)) k := by
+    rw [hRfun]
+    exact hbd
+  refine ⟨σ₄, rAll, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · refine ⟨R, IO, IT, k, m, E, ?_, ?_, ?_, ?_, hm, hinj, horients, hindeg, hinN,
       htoG, hbd, hbdE, hdegE, hlow, hinc⟩
     · intro j hj
@@ -290,6 +337,7 @@ theorem elimWork_spec {B n mm ns W : ℕ} {G : SimpleGraph (Fin n)}
     · simp only [σ₄, arrs_setVar]
       rw [hitg₃]
       exact hitg₂
+  · exact ⟨R', k, hR'arr, hR'lt, hinj', hbd', hlow⟩
   · simp [σ₄]
   · simp only [σ₄, vars_setVar, if_neg (by decide : ¬ ("mm" = "n"))]
     rw [r₃.frame_var "mm" (by decide), hmm₂]

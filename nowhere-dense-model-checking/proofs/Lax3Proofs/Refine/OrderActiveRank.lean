@@ -42,7 +42,8 @@ theorem memberOrdCom_spec {B n mm : ℕ} {R Mem : ℕ → ℕ} (dst : String)
         σ'.arrs "mem" = arrOf n Mem ∧
         ∃ (πm : Equiv.Perm (Fin mm)) (centre : ℕ → ℕ),
           σ'.arrs dst = arrOf n centre ∧
-          ∀ k < mm, centre k = activeCentre mm Mem πm k)
+          (∀ k < mm, centre k = activeCentre mm Mem πm k) ∧
+          (∀ v : Fin mm, ((πm v : Fin mm) : ℕ) = R (v : ℕ)))
       (13 * mm + 6) := by
   classical
   have hbody : Spec B
@@ -124,14 +125,16 @@ theorem memberOrdCom_spec {B n mm : ℕ} {R Mem : ℕ → ℕ} (dst : String)
     let πm : Equiv.Perm (Fin mm) := rankPerm mm R inv hR hinvLt hRinv hinvR
     have hordInv : OrdersBy mm πm inv :=
       ordersBy_rankPerm mm R inv hR hinvLt hRinv hinvR
-    refine ⟨hmm, hrnk, hmem, πm, g, hord, ?_⟩
-    intro k hk
-    rw [activeCentre_of_lt πm hk]
-    calc
-      g k = g (R (inv k)) := congrArg g (hRinv k hk).symm
-      _ = Mem (inv k) := hinv _ (hinvLt k hk)
-      _ = Mem (((πm.symm ⟨k, hk⟩ : Fin mm) : ℕ)) := by
-        exact congrArg Mem (hordInv.eq_symm hk)
+    refine ⟨hmm, hrnk, hmem, πm, g, hord, ?_, ?_⟩
+    · intro k hk
+      rw [activeCentre_of_lt πm hk]
+      calc
+        g k = g (R (inv k)) := congrArg g (hRinv k hk).symm
+        _ = Mem (inv k) := hinv _ (hinvLt k hk)
+        _ = Mem (((πm.symm ⟨k, hk⟩ : Fin mm) : ℕ)) := by
+          exact congrArg Mem (hordInv.eq_symm hk)
+    · intro v
+      rfl
 
 /-! ## Axioms -/
 
