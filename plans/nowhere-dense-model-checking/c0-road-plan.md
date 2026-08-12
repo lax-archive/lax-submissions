@@ -373,8 +373,12 @@ one monolith.
 **Status 2026-08-12:** the concrete compact order and active cover now instantiate
 the recursive `levelAtA` theorem, including an inductive write-set proof for the
 nested driver and the centre-loop header.  Their costs are charged at the current
-`arenaWeight`.  Boundary D is therefore through the level seam; the active root
-instantiation, root cost rows, and the two `g2_plug` dominations remain.
+`arenaWeight`.  `ActiveRoot.driverRootActive_decides_sentence` now composes the
+deduplicating decode, that concrete recursive driver, and sentence readback; the
+active root has no abstract `hKo` or `hKc` phase slots.  Boundary D is therefore
+through the executable root.  Its remaining boundary is to restate the sigma
+recurrence plug at this root (retiring the two obsolete carrier dominations) and
+close the surviving turn-cost row.
 
 Two technical points the wave-A brief must carry:
 
