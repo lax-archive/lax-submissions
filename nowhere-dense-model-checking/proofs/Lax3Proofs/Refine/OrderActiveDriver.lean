@@ -864,7 +864,7 @@ theorem activeOrderPhase_spec
         (Lax12.ColoringNumbers.wreach (memGraph G M hml) pi (2 * cap) v).ncard ≤ Kmass) :
     OrderImplementsA B n W cap mb ns j O T M Gm C
       (Lax3Proofs.RamCoverActiveMass.ActiveOrderP G cap Kmass)
-      (activeOrderPhase j R) (activeOrderPhaseCost n ns w R) := by
+      (activeOrderPhase j R) (activeOrderPhaseCost w w w R) := by
   refine Spec.of_exists fun sigma hlev => ?_
   have hlev₀ := hlev
   obtain ⟨Mem₀, mm, hmem₀, hmm₀, hml₀, hMemB, hmn⟩ :=
@@ -926,10 +926,19 @@ theorem activeOrderPhase_spec
   have rAll : Run B (activeOrderPhase j R) sigma sigma₃
       (K₁ + (activeOrderCoreCost mm (memRowSum mm O Mem) w R +
         activeOrderZeroCost mm)) := r₁.seq (r₂.seq r₃)
-  have hrs : memRowSum mm O Mem ≤ ns :=
-    Lax3Proofs.Refine.ElimCompactCsr.memRowSum_le hcsr hml
+  have hwidth' := hwidth hml
+  have hsq : 1 ≤ (Lax3Proofs.Augmentation.budget d D₁ R + 1) ^ 2 := by
+    exact Nat.one_le_pow 2 _ (by omega)
+  have hmmw : mm ≤ w := by
+    have hmul := Nat.mul_le_mul_left mm hsq
+    simp only [Nat.mul_one] at hmul
+    simp only [activeChainWidthE] at hwidth'
+    omega
+  have hrsw : memRowSum mm O Mem ≤ w := by
+    simp only [activeChainWidthE] at hwidth'
+    omega
   have hcost : K₁ + (activeOrderCoreCost mm (memRowSum mm O Mem) w R +
-        activeOrderZeroCost mm) ≤ activeOrderPhaseCost n ns w R := by
+        activeOrderZeroCost mm) ≤ activeOrderPhaseCost w w w R := by
     calc
       K₁ + (activeOrderCoreCost mm (memRowSum mm O Mem) w R +
           activeOrderZeroCost mm) ≤
@@ -938,7 +947,7 @@ theorem activeOrderPhase_spec
               activeOrderZeroCost mm) := Nat.add_le_add_right hK₁ _
       _ = activeOrderPhaseCost mm (memRowSum mm O Mem) w R :=
         activeOrderPhaseCost_exact mm (memRowSum mm O Mem) w R
-      _ ≤ activeOrderPhaseCost n ns w R := activeOrderPhaseCost_mono hmn hrs
+      _ ≤ activeOrderPhaseCost w w w R := activeOrderPhaseCost_mono hmmw hrsw
   refine ⟨sigma₃, _, rAll, hcost, ?_⟩
   refine ⟨levelPre_of_activeOrderPhase hlev₀ rAll hn₃ zelm zbh zooff znoff zstf zsta zstd
       zste,
