@@ -483,6 +483,18 @@ theorems use only the project's standard `propext`/choice/quotient axioms.
 The next dependent leaf is the immediate streamed-row enumeration/cluster
 consumer, followed by the centre increment and enclosing fused loop.
 
+`Refine/CoverActiveStreamEnum.lean` now supplies that immediate consumer.
+`enumStreamCom` instantiates the existing verified collector directly on
+`[0,tail)`, pads the result to `mb`, and never loads `Xoff`; its charge is
+`30·tail + 12·mb + 40`.  `enumStreamStepA` proves at the cluster-turn surface
+that the buffer range is exactly `W ∩ X` while framing the sorted row, the
+progressive mask, assignments, graph data, and recursive play state.  Its
+only executed row bound is `tail ≤ n < B`, even when the resident row array is
+larger.  The narrow 3550-job build passes and both public theorems use only
+the project's standard `propext`/choice/quotient axioms.  The next dependent
+leaf is the remainder of the current cluster body on this prefix, then the
+centre increment and fused loop.
+
 ---
 
 ## §3 Schedule, honestly
