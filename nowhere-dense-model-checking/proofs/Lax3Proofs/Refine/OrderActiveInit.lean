@@ -199,7 +199,8 @@ theorem compactElimFoldInit_spec {B n mm ns W w j : ℕ}
     (hcsr : CsrSimple G ns O T)
     (hml : MemList n mm Mem (Lax3Proofs.RamDriverCluster.markSet n M))
     (hB : mm + ns + 1 < B) (hnB : n < B) (hMB : ∀ v < n, M v < B)
-    (hnsw : ns ≤ w) (hwW : w ≤ W) (hwB : w < B)
+    (hnsW : ns ≤ W) (hrsw : memRowSum mm O Mem ≤ w)
+    (hwW : w ≤ W) (hwB : w < B)
     (hn : σ.vars "n" = n) (hmm : σ.vars "mm" = mm)
     (hmem : σ.arrs "mem" = arrOf n Mem)
     (hoff : σ.arrs "off" = arrOf (n + 1) O)
@@ -209,7 +210,7 @@ theorem compactElimFoldInit_spec {B n mm ns W w j : ℕ}
     ∃ σ' k cs,
       Run B (compactElimFoldInitCom j) σ σ'
         (compactElimFoldInitCost mm (memRowSum mm O Mem) cs) ∧
-      cs ≤ ns ∧
+      cs ≤ memRowSum mm O Mem ∧ cs ≤ ns ∧
       ActiveFoldInv n mm W w k (memGraph G M hml) Mem 0 σ' ∧
       (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') := by
   have get (a : String) (k : ℕ) (ha : (a, k) ∈ activeOrderLayout n W) :
@@ -217,13 +218,15 @@ theorem compactElimFoldInit_spec {B n mm ns W w j : ℕ}
   obtain ⟨σ₁, Kix, KOf, KT, r₁, hKix, hmm₁, hks₁, hgof₁, hKOf,
     hgtg₁, hdone, hframe⟩ :=
     compactPassWorkAtWide_run (G := G) (B := B) j hcsr hml hB hnB hMB
-      (hnsw.trans hwW) hmm hmem hoff htgt halv
+      hnsW hmm hmem hoff htgt halv
       (get "ffl" n (by simp [activeOrderLayout]))
       (get "gof" (n + 1) (by simp [activeOrderLayout]))
       (get "gtg" W (by simp [activeOrderLayout]))
   let cs := cOff O T M Mem Kix mm
+  have hcsrs : cs ≤ memRowSum mm O Mem :=
+    cOff_le_memRowSum hcsr hml hKix
   have hcsns : cs ≤ ns := by
-    exact (cOff_le_memRowSum hcsr hml hKix).trans (memRowSum_le hcsr hml)
+    exact hcsrs.trans (memRowSum_le hcsr hml)
   have hcsr₀ : CsrSimple (memGraph G M hml) cs (cOff O T M Mem Kix) KT := by
     exact csrSimple_of_done hcsr hml hKix hdone (fun _ _ => rfl)
   have hcsr₁ : CsrSimple (memGraph G M hml) cs KOf KT := by
@@ -237,9 +240,9 @@ theorem compactElimFoldInit_spec {B n mm ns W w j : ℕ}
   have hmem₁ : σ₁.arrs "mem" = arrOf n Mem := by
     rw [hframe "mem" (by decide) (by decide) (by decide), hmem]
   obtain ⟨σ₂, k, r₂, hI, hmin⟩ :=
-    elimFoldInit_spec hml hcsr₁ (by omega) hnB (hcsns.trans hnsw) hwW hwB
+    elimFoldInit_spec hml hcsr₁ (by omega) hnB (hcsrs.trans hrsw) hwW hwB
       hn₁ hmm₁ hgof₁ hgtg₁ hmem₁ (hsz.run r₁)
-  refine ⟨σ₂, k, cs, ?_, hcsns, hI, hmin⟩
+  refine ⟨σ₂, k, cs, ?_, hcsrs, hcsns, hI, hmin⟩
   simpa only [compactElimFoldInitCom, compactElimFoldInitCost] using r₁.seq r₂
 
 /-! ## Axioms -/
