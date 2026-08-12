@@ -509,6 +509,17 @@ the project's standard `propext`/choice/quotient axioms.  The next dependent
 leaf is the block-mask descent over this emitted member prefix, followed by
 the remaining colour/kill/inner/scatter lifecycle and the fused centre loop.
 
+`Refine/CoverActiveStreamMask.lean` now supplies that first block-mask leaf.
+Its range adapter deliberately separates the resident row allocation `na`
+from the executed prefix `tail`, then proves exact supported clear, conjunction,
+and subtraction maps over the whole carrier.  The concrete retained mask is
+therefore exactly `Ra(v) = M(v) * Xa(v)` after an `18·tail + 8` pass, with no
+carrier scan or hidden `na = n` premise, while the loaded cluster row and its
+member enumeration remain framed.  The narrow 3544-job build passes and the
+public theorems use only the project's standard `propext`/choice/quotient
+axioms.  The next dependent leaf is the cached-batch lifecycle and its
+post-batch child/game masks on this same row.
+
 ---
 
 ## §3 Schedule, honestly
