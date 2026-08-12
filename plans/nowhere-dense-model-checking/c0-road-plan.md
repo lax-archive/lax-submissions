@@ -420,6 +420,16 @@ nothing imports it except `G2ExistsRevalidation`, while the floors and
 `g2_plug` are stated at the *landed* root. That decides whether B7 is a re-run
 or an adoption.
 
+**Status 2026-08-12, active-root continuation:** the root choice is now made
+and the order/cover rows are closed at `Refine/ActiveCost.lean`.  The first
+turn-cost leaf is `Refine/ActiveEnum.lean`: `enumBlockCom_spec` walks only
+`Xmem[Xoff k .. Xoff (k+1))`, and `enumBlockStepA` proves at the active driver
+surface that it returns exactly the former `W ∩ X` padded batch.  Its charge
+is `30·blockSize + 12·mb + 40`; no carrier term occurs.  The contract records
+the load-bearing feeder `X ⊆ clusterAt … k` rather than hiding it in the
+implementation.  The remaining §2.7 work is the other descent/colour leaves,
+the block scatter lifecycle, and their composition into the real turn.
+
 ---
 
 ## §3 Schedule, honestly
