@@ -1,5 +1,6 @@
 import Lax3Proofs.Refine.CoverActiveBudget
 import Lax3Proofs.RamDriverCompose
+import Lax3Proofs.RamDriverWrites
 
 /-!
 # The active-cover phase at the recursive-driver interface
@@ -112,6 +113,51 @@ theorem parName_notMem_activeCoverPhase (j r a : ℕ) :
     parName a ∉ (activeCoverPhase j r).warrs := by
   rw [warrs_activeCoverPhase]
   simp [parName, balName, xofName, xmmName, asgName, cpsName, String.ext_iff]
+
+theorem tabName_notMem_activeCoverPhase (j r a i : ℕ) :
+    tabName a i ∉ (activeCoverPhase j r).warrs := by
+  rw [warrs_activeCoverPhase]
+  simp [tabName, xofName, xmmName, asgName, cpsName, String.ext_iff]
+
+/-- The active cover at depth `j` writes only fixed scratch arrays and
+its own four per-depth outputs. -/
+theorem belowArr_notMem_activeCoverPhase {j r : ℕ} {a : String}
+    (h : Lax3Proofs.RamDriverWrites.BelowArr j a) :
+    a ∉ (activeCoverPhase j r).warrs := by
+  have hd := Lax3Proofs.RamDriverWrites.hasDigit_of_belowArr h
+  rw [warrs_activeCoverPhase]
+  simp only [List.mem_cons, List.not_mem_nil, or_false]
+  rintro (hq | hq | hq | hq | hq | hq | hq | hq | hq | hq | hq | hq |
+    hq | hq | hq | hq | hq | hq | hq)
+  all_goals first
+    | exact (by decide : ¬ Lax3Proofs.RamDriverWrites.HasDigit "elm") (hq ▸ hd)
+    | exact (by decide : ¬ Lax3Proofs.RamDriverWrites.HasDigit "dist") (hq ▸ hd)
+    | exact (by decide : ¬ Lax3Proofs.RamDriverWrites.HasDigit "q") (hq ▸ hd)
+    | exact (by decide : ¬ Lax3Proofs.RamDriverWrites.HasDigit "qd") (hq ▸ hd)
+    | exact Lax3Proofs.RamDriverWrites.belowArr_ne h le_rfl (by tauto) hq
+
+/-- The active cover's only per-depth scalar writes are at its own depth. -/
+theorem belowVar_notMem_activeCoverPhase {j r : ℕ} {y : String}
+    (h : Lax3Proofs.RamDriverWrites.BelowVar j y) :
+    y ∉ (activeCoverPhase j r).wvars := by
+  have hd := Lax3Proofs.RamDriverWrites.hasDigit_of_belowVar h
+  rw [← List.mem_eraseDups, wvars_activeCoverPhase_eraseDups]
+  rw [show
+    ["qn", "xp", "aci", "acs", "acv", "c", "src", "tail", "head", "sc",
+      "v", "dv", "dn", "j", "jend", "w", "ri", "u", "du", "cvk", "cvu",
+      "cvd", "rsbits", "rspow", "rsc", "rslo", "rsnext", "rsn", "rsb",
+      "rsw", "rsi", "rsv", "rsd", "i", xpName j, cnumName j] =
+      ["qn", "xp", "aci", "acs", "acv", "c", "src", "tail", "head", "sc",
+        "v", "dv", "dn", "j", "jend", "w", "ri", "u", "du", "cvk", "cvu",
+        "cvd", "rsbits", "rspow", "rsc", "rslo", "rsnext", "rsn", "rsb",
+        "rsw", "rsi", "rsv", "rsd", "i"] ++ [xpName j, cnumName j] by rfl,
+    List.mem_append]
+  rintro (hm | hm)
+  · exact (Lax3Proofs.RamDriverWrites.notHasDigit_mem (by decide) hm) hd
+  · simp only [List.mem_cons, List.not_mem_nil, or_false] at hm
+    rcases hm with hq | hq
+    · exact Lax3Proofs.RamDriverWrites.belowVar_ne h le_rfl (by tauto) hq
+    · exact Lax3Proofs.RamDriverWrites.belowVar_ne h le_rfl (by tauto) hq
 
 theorem zero_notMem_activeCoverPhase (j r : ℕ) :
     ∀ a ∈ zeroArrs, a ≠ "elm" → a ∉ (activeCoverPhase j r).warrs := by

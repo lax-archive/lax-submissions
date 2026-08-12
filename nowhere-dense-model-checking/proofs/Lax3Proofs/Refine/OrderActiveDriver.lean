@@ -3,6 +3,7 @@ import Lax3Proofs.Refine.ArenaSeam
 import Lax3Proofs.Refine.MemThreadGate
 import Lax3Proofs.RamDriverCompose
 import Lax3Proofs.RamDriverMember
+import Lax3Proofs.RamDriverWrites
 
 /-!
 # The compact active ordering at the driver interface
@@ -778,6 +779,55 @@ theorem mnumName_notMem_activeOrderPhase (j R a : ℕ) :
     mnumName a ∉ (activeOrderPhase j R).wvars := by
   apply notMem_activeOrderPhase_wvars <;>
     simp [activeInitVars, activeRoundVars, activeFinishVars, mnumName, String.ext_iff]
+
+/-- The active ordering at depth `j` writes no array owned by a shallower
+level.  This is the phase-specific premise needed to read the recursive
+active driver syntactically. -/
+theorem belowArr_notMem_activeOrderPhase {j R : ℕ} {a : String}
+    (h : Lax3Proofs.RamDriverWrites.BelowArr j a) :
+    a ∉ (activeOrderPhase j R).warrs := by
+  have hd := Lax3Proofs.RamDriverWrites.hasDigit_of_belowArr h
+  have hork : a ≠ "ork" := fun hq =>
+    (by decide : ¬ Lax3Proofs.RamDriverWrites.HasDigit "ork") (hq ▸ hd)
+  have hord : a ≠ "ord" := fun hq =>
+    (by decide : ¬ Lax3Proofs.RamDriverWrites.HasDigit "ord") (hq ▸ hd)
+  apply notMem_activeOrderPhase_warrs
+  · exact fun hq =>
+      (by decide : ¬ Lax3Proofs.RamDriverWrites.HasDigit "mem") (hq ▸ hd)
+  · rw [orderScratchSwap_of_ne hork hord]
+    exact fun hm =>
+      (Lax3Proofs.RamDriverWrites.notHasDigit_mem (by decide) hm) hd
+  · rw [orderScratchSwap_of_ne hork hord]
+    exact fun hm =>
+      (Lax3Proofs.RamDriverWrites.notHasDigit_mem (by decide) hm) hd
+  · rw [orderScratchSwap_of_ne hork hord]
+    rw [show activeFinishArrs j =
+      ["doff", "dtg", "ooff", "ofl", "otg", "gof", "gtg", "alv", "elm", "bh",
+        "deg", "bv", "bn", "rnk", "idg", "ioff", "ifl", "itg", "ork"] ++
+          [ordName j] by rfl, List.mem_append]
+    rintro (hm | hm)
+    · exact (Lax3Proofs.RamDriverWrites.notHasDigit_mem (by decide) hm) hd
+    · simp only [List.mem_singleton] at hm
+      exact Lax3Proofs.RamDriverWrites.belowArr_ne h le_rfl (by tauto) hm
+  · exact fun hm =>
+      (Lax3Proofs.RamDriverWrites.notHasDigit_mem (by decide) hm) hd
+
+/-- The scalar half of the shallower-level frame for active ordering. -/
+theorem belowVar_notMem_activeOrderPhase {j R : ℕ} {y : String}
+    (h : Lax3Proofs.RamDriverWrites.BelowVar j y) :
+    y ∉ (activeOrderPhase j R).wvars := by
+  have hd := Lax3Proofs.RamDriverWrites.hasDigit_of_belowVar h
+  apply notMem_activeOrderPhase_wvars
+  · exact fun hq =>
+      (by decide : ¬ Lax3Proofs.RamDriverWrites.HasDigit "mm") (hq ▸ hd)
+  · exact fun hq =>
+      (by decide : ¬ Lax3Proofs.RamDriverWrites.HasDigit "i") (hq ▸ hd)
+  · exact fun hm =>
+      (Lax3Proofs.RamDriverWrites.notHasDigit_mem (by decide) hm) hd
+  · exact fun hm =>
+      (Lax3Proofs.RamDriverWrites.notHasDigit_mem (by decide) hm) hd
+  · exact fun hm =>
+      (Lax3Proofs.RamDriverWrites.notHasDigit_mem (by decide) hm) hd
 
 /-- The ordering phase never emits on the program's output tape. -/
 theorem activeOrderPhase_noWrite (j R : ℕ) : (activeOrderPhase j R).NoWrite := by

@@ -370,6 +370,12 @@ The real coupling is one-way and compiled: `RamDriver.CoverImplements`
 **11–17 sub-waves in four independently landable boundaries**, against 17–28 as
 one monolith.
 
+**Status 2026-08-12:** the concrete compact order and active cover now instantiate
+the recursive `levelAtA` theorem, including an inductive write-set proof for the
+nested driver and the centre-loop header.  Their costs are charged at the current
+`arenaWeight`.  Boundary D is therefore through the level seam; the active root
+instantiation, root cost rows, and the two `g2_plug` dominations remain.
+
 Two technical points the wave-A brief must carry:
 
 - **`OrdersByM` is `MemberOrderContract` verbatim** and its bridge is an iff
