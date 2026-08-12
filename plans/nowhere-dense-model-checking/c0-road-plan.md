@@ -495,6 +495,20 @@ the project's standard `propext`/choice/quotient axioms.  The next dependent
 leaf is the remainder of the current cluster body on this prefix, then the
 centre increment and fused loop.
 
+`Refine/CoverActiveStreamLoad.lean` now supplies the descent-side prefix
+adapter.  `streamClusterLoadCom` marks exactly `Xmem[0..tail)` in the current
+cluster array and copies that same strictly increasing row directly into the
+next depth's member enumeration; it reads no offset table and performs no
+carrier-wide clear.  Its charge is `24·tail + 8`, and
+`streamClusterLoadStep` identifies the marked set exactly with the current
+streamed cluster while retaining the sorted stream state.  The entering
+cluster array is deliberately required to be zero: the fused level will
+establish that once, then clear only the row it just consumed between
+centres.  The narrow 3543-job build passes and both public theorems use only
+the project's standard `propext`/choice/quotient axioms.  The next dependent
+leaf is the block-mask descent over this emitted member prefix, followed by
+the remaining colour/kill/inner/scatter lifecycle and the fused centre loop.
+
 ---
 
 ## §3 Schedule, honestly
