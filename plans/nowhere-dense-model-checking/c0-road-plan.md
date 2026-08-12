@@ -460,8 +460,9 @@ project's standard `propext`/choice/quotient axioms.  This closes the semantic
 half of the cover repair.
 
 `Refine/CoverActiveStreamTurn.lean` now closes the first executable half as
-well.  `activeStreamTurnCom` resets `xp` to zero on every centre, emits into an
-`arrOf n` row, updates the stable assignment, and kills the centre while
+well.  `activeStreamTurnCom` resets `xp` to zero on every centre, emits into the
+carrier-sized prefix of any resident allocation, updates the stable assignment,
+and kills the centre while
 leaving scalar `c` available to the immediate consumer.  Its verified
 `activeStreamTurn_spec` assumes only `n < B` for row addressing: there is no
 `xp+n < B`, `n*n < B`, `xoff`, or accumulated-pointer premise.  The remaining
@@ -473,9 +474,11 @@ must not reappear in that contract.
 `activeStreamSortCom` sorts exactly `Xmem[0..tail)` in place through the
 existing verified radix block, and `RawStreamRowA.of_radix` proves that the
 result is the same cluster row in strict numeric order.  Its executable
-contract needs only `tail ≤ n < B` plus an `n`-covering radix width; it frames
-the progressive cover state and introduces neither an offset table nor an
-accumulated row address.  The narrow 3467-job build passes, and both public
+contract needs only `tail ≤ n < B` plus an `n`-covering radix width; the row
+allocation itself may be larger, so the existing depth-owned arena can be
+reused through its carrier-sized prefix.  It frames the progressive cover
+state and introduces neither an offset table nor an accumulated row address.
+The narrow 3467-job build passes, and both public
 theorems use only the project's standard `propext`/choice/quotient axioms.
 The next dependent leaf is the immediate streamed-row enumeration/cluster
 consumer, followed by the centre increment and enclosing fused loop.

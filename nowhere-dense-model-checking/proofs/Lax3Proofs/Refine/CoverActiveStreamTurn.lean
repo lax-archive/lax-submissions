@@ -48,8 +48,9 @@ theorem activeStreamTurnK_le_weight (bw nb : ℕ) :
 /-! ## Machine boundaries -/
 
 /-- State before searching centre `c`.  Only the semantic prefix persists;
-`xmem` is a reusable array of length `n`, with no entering-content contract. -/
-structure StreamTurnState {n : ℕ} (B ns nt q r c : ℕ)
+`xmem` is a reusable array with a carrier-sized prefix and no entering-content
+contract. -/
+structure StreamTurnState {n : ℕ} (B ns nt na q r c : ℕ)
     (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ) (π : Equiv.Perm (Fin n))
     (centre O T Xmem asg M : ℕ → ℕ) (σ : Env) : Prop where
   state : CoverPrefixA G A₀ π centre q r c asg M
@@ -60,7 +61,8 @@ structure StreamTurnState {n : ℕ} (B ns nt q r c : ℕ)
   off_arr : σ.arrs "off" = arrOf (n + 1) O
   target_arr : σ.arrs "tgt" = arrOf nt T
   mask_arr : σ.arrs "alv" = arrOf n M
-  row_arr : σ.arrs "xmem" = arrOf n Xmem
+  row_arr : σ.arrs "xmem" = arrOf na Xmem
+  row_fit : n ≤ na
   asg_arr : σ.arrs "asg" = arrOf n asg
   dist_clean : DistClean n (2 * r) M σ
   queue_arr : ∃ Q, σ.arrs "q" = arrOf n Q
@@ -70,7 +72,7 @@ structure StreamTurnState {n : ℕ} (B ns nt q r c : ℕ)
 /-- State after searching centre `c`, before sorting and consuming its row.
 The scalar `c` still names that row while `row.state` has already advanced to
 the persistent prefix `c+1`. -/
-structure StreamTurnOut {n : ℕ} (B ns nt q r c tail : ℕ)
+structure StreamTurnOut {n : ℕ} (B ns nt na q r c tail : ℕ)
     (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ) (π : Equiv.Perm (Fin n))
     (centre O T Xmem asg M : ℕ → ℕ) (σ : Env) : Prop where
   row : RawStreamRowA G A₀ π centre q r c tail Xmem asg M
@@ -83,14 +85,15 @@ structure StreamTurnOut {n : ℕ} (B ns nt q r c tail : ℕ)
   off_arr : σ.arrs "off" = arrOf (n + 1) O
   target_arr : σ.arrs "tgt" = arrOf nt T
   mask_arr : σ.arrs "alv" = arrOf n M
-  row_arr : σ.arrs "xmem" = arrOf n Xmem
+  row_arr : σ.arrs "xmem" = arrOf na Xmem
+  row_fit : n ≤ na
   asg_arr : σ.arrs "asg" = arrOf n asg
   dist_clean : DistClean n (2 * r) M σ
   queue_arr : ∃ Q, σ.arrs "q" = arrOf n Q
   qdist_arr : ∃ QD, σ.arrs "qd" = arrOf n QD
   mask_bound : ∀ z < n, M z < B
 
-variable {B n ns nt q r c bw nb : ℕ} {G : SimpleGraph (Fin n)}
+variable {B n ns nt na q r c bw nb : ℕ} {G : SimpleGraph (Fin n)}
 variable {A₀ centre O T Xmem asg M : ℕ → ℕ}
 variable {π : Equiv.Perm (Fin n)} {A : Finset ℕ}
 
@@ -105,18 +108,18 @@ theorem activeStreamTurn_spec
     (hbw : ∑ v ∈ A, Csr.rowLen O v ≤ bw)
     (hnb : A.card ≤ nb) :
     Spec B
-      (fun σ => StreamTurnState B ns nt q r c G A₀ π centre O T Xmem asg M σ ∧
+      (fun σ => StreamTurnState B ns nt na q r c G A₀ π centre O T Xmem asg M σ ∧
         c < q)
       (activeStreamTurnCom r)
       (fun _ σ' => ∃ tail Q QD Xmem', tail ≤ nb ∧
-        StreamTurnOut B ns nt q r c tail G A₀ π centre O T Xmem'
+        StreamTurnOut B ns nt na q r c tail G A₀ π centre O T Xmem'
           (queueCell asg q c r tail Q QD) (upd M (centre c) 0) σ')
       (activeStreamTurnK bw nb) := by
   classical
   refine Spec.of_exists fun σ hσ => ?_
   obtain ⟨hS, hc⟩ := hσ
   obtain ⟨hstate, hn, hqn, hcvar, hord, hoff, htgt, halv, hxmem,
-    hasg, hdist, ⟨Q₀, hq₀⟩, ⟨QD₀, hqd₀⟩, hMB⟩ := hS
+    hrowFit, hasg, hdist, ⟨Q₀, hq₀⟩, ⟨QD₀, hqd₀⟩, hMB⟩ := hS
   have hcN : c < n := lt_of_lt_of_le hc hcentres.count_le
   have hcB : c < B := lt_trans hcN hnB
   have hsN : centre c < n := hcentres.centre_lt c hc
@@ -176,7 +179,7 @@ theorem activeStreamTurn_spec
   have hord₂ : σ₂.arrs "ord" = arrOf n centre := by
     rw [run₂.frame_arr "ord" (notMem_bfsTurn_warrs r "ord" (by simp))]
     simpa [σ₁] using hord
-  have hxmem₂ : σ₂.arrs "xmem" = arrOf n Xmem := by
+  have hxmem₂ : σ₂.arrs "xmem" = arrOf na Xmem := by
     rw [run₂.frame_arr "xmem" (notMem_bfsTurn_warrs r "xmem" (by simp))]
     simpa [σ₁] using hxmem
   have hasg₂ : σ₂.arrs "asg" = arrOf n asg := by
@@ -203,7 +206,7 @@ theorem activeStreamTurn_spec
       exact hm ((hstate.mask (Q i) hqi).mpr (Or.inl ha0))
     exact lt_of_le_of_lt (hstate.asg_le (Q i) hqi ha) hqB
   have hpreEmit :
-      QueueEmitInv n n tail q c r 0 Q QD Xmem asg (σx.setVar "cvk" 0) := by
+      QueueEmitInv n na tail q c r 0 Q QD Xmem asg (σx.setVar "cvk" 0) := by
     refine ⟨Xmem, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
     · simpa [σx, tail]
     · simpa [σx] using hqn₂
@@ -221,9 +224,10 @@ theorem activeStreamTurn_spec
   obtain ⟨σ₃, run₃,
       ⟨⟨Xmem', htail₃, hqn₃, hc₃, hq₃, hqd₃, hxmem₃, hasg₃,
         hcvkle₃, hxp₃, hkeep₃, hwrite₃⟩, hcvk₃⟩⟩ :=
-    (emitQueueCom_spec (n := n) (na := n) (tail := tail) (q := q) (c := c)
+    (emitQueueCom_spec (n := n) (na := na) (tail := tail) (q := q) (c := c)
       (r := r) (xp₀ := 0) (Q := Q) (QD := QD) (Xm₀ := Xmem) (asg₀ := asg)
-      hnB htailB htailn' hqB hc hrB' (by simpa using htailn') (by simpa using htailB)
+      hnB htailB htailn' hqB hc hrB' (by simpa using htailn'.trans hrowFit)
+      (by simpa using htailB)
       (fun i hi => hQn i (by simpa [tail] using hi)) hQDB hasgB).run
       (σ := σx) hpreEmit
   have hxp₃' : σ₃.vars "xp" = tail := by rw [hxp₃, hcvk₃]; omega
@@ -288,9 +292,9 @@ theorem activeStreamTurn_spec
       σ₄.arrs "dist" = σ₃.arrs "dist" := by simp [σ₄]
       _ = σ₂.arrs "dist" := hdistArr₃
       _ = arrOf n D := hDarr
-  have hout : StreamTurnOut B ns nt q r c tail G A₀ π centre O T Xmem'
+  have hout : StreamTurnOut B ns nt na q r c tail G A₀ π centre O T Xmem'
       (queueCell asg q c r tail Q QD) (upd M (centre c) 0) σ₄ := by
-    refine ⟨hrow, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, hdist₄,
+    refine ⟨hrow, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, hrowFit, ?_, hdist₄,
       ⟨Q, ?_⟩, ⟨QD, ?_⟩, ?_⟩
     · simp [σ₄, hn₃]
     · simp [σ₄, hqn₃]

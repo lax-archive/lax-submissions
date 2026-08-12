@@ -30,7 +30,7 @@ def activeStreamSortCom : Com :=
 def activeStreamSortK (bits tail : ℕ) : ℕ := radixBlockCost bits tail + 4
 
 /-- The row after sorting, with all persistent cover and graph state framed. -/
-structure StreamSortedOut {n : ℕ} (B ns nt q r c tail bits : ℕ)
+structure StreamSortedOut {n : ℕ} (B ns nt na q r c tail bits : ℕ)
     (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ) (π : Equiv.Perm (Fin n))
     (centre O T Xmem asg M : ℕ → ℕ) (σ : Env) : Prop where
   row : StreamRowA G A₀ π centre q r c tail Xmem asg M
@@ -44,14 +44,15 @@ structure StreamSortedOut {n : ℕ} (B ns nt q r c tail bits : ℕ)
   off_arr : σ.arrs "off" = arrOf (n + 1) O
   target_arr : σ.arrs "tgt" = arrOf nt T
   mask_arr : σ.arrs "alv" = arrOf n M
-  row_arr : σ.arrs "xmem" = arrOf n Xmem
+  row_arr : σ.arrs "xmem" = arrOf na Xmem
+  row_fit : n ≤ na
   asg_arr : σ.arrs "asg" = arrOf n asg
   dist_clean : Lax3Proofs.Refine.BfsBlockMask.DistClean n (2 * r) M σ
   queue_arr : ∃ Q, σ.arrs "q" = arrOf n Q
   qdist_arr : ∃ QD, σ.arrs "qd" = arrOf n QD
   mask_bound : ∀ z < n, M z < B
 
-variable {B n ns nt q r c tail bits : ℕ} {G : SimpleGraph (Fin n)}
+variable {B n ns nt na q r c tail bits : ℕ} {G : SimpleGraph (Fin n)}
 variable {A₀ centre O T Xmem asg M : ℕ → ℕ}
 variable {π : Equiv.Perm (Fin n)}
 
@@ -115,11 +116,11 @@ radix width.  All other active-cover state is framed. -/
 theorem activeStreamSort_spec
     (hB : 1 < B) (hnB : n < B) (hbitsB : bits < B) (hpow : n ≤ 2 ^ bits) :
     Spec B
-      (fun σ => StreamTurnOut B ns nt q r c tail G A₀ π centre O T Xmem asg M σ ∧
+      (fun σ => StreamTurnOut B ns nt na q r c tail G A₀ π centre O T Xmem asg M σ ∧
         σ.vars "rsbits" = bits)
       activeStreamSortCom
       (fun _ σ' => ∃ Xmem',
-        StreamSortedOut B ns nt q r c tail bits G A₀ π centre O T Xmem' asg M σ')
+        StreamSortedOut B ns nt na q r c tail bits G A₀ π centre O T Xmem' asg M σ')
       (activeStreamSortK bits tail) := by
   refine Spec.of_exists fun σ hσ => ?_
   obtain ⟨hout, hbits⟩ := hσ
@@ -136,7 +137,7 @@ theorem activeStreamSort_spec
   have r₁ : Run B (.assign "rsn" (.var "tail")) σ₀ σ₁ 2 :=
     Run.assign etail
   have hpre : σ₁.vars "rslo" = 0 ∧ σ₁.vars "rsn" = tail ∧
-      σ₁.vars "rsbits" = bits ∧ σ₁.arrs "xmem" = arrOf n Xmem ∧
+      σ₁.vars "rsbits" = bits ∧ σ₁.arrs "xmem" = arrOf na Xmem ∧
       σ₁.arrs "q" = arrOf n Q₀ := by
     refine ⟨by simp [σ₁, σ₀], by simp [σ₁], ?_, ?_, ?_⟩
     · simp [σ₁, σ₀, hbits]
@@ -144,7 +145,7 @@ theorem activeStreamSort_spec
     · simp [σ₁, σ₀, hq₀]
   obtain ⟨σ₂, r₂, hb⟩ :=
     (radixBlockCom_spec (X := Xmem) (Q₀ := Q₀) hB hnB hout.row.tail_le hbitsB
-      (by simpa using hout.row.tail_le) (by simpa using htailB)
+      (by simpa using hout.row.tail_le.trans hout.row_fit) (by simpa using htailB)
       (fun i hi => lt_trans (by simpa using hout.row.mem_lt i hi) hnB)).run
         (σ := σ₁) hpre
   obtain ⟨hlo, hlen, hbits₂, -, Xmem', Q', hxmem', hq', hseg, houtside⟩ := hb
@@ -217,9 +218,10 @@ theorem activeStreamSort_spec
         selectDigitCom, selectDigitSlot, copyBackCom, copyBackSlot, Com.warrs])]
     simp [σ₁, σ₀]
   have hsorted :
-      StreamSortedOut B ns nt q r c tail bits G A₀ π centre O T Xmem' asg M σ₂ := by
+      StreamSortedOut B ns nt na q r c tail bits G A₀ π centre O T Xmem' asg M σ₂ := by
     refine ⟨hrow', hn₂, hqn₂, hc₂, hxp₂, htail₂, hbits₂, hord₂, hoff₂,
-      htgt₂, halv₂, hxmem', hasg₂, hdist₂, ⟨Q', hq'⟩, ?_, hout.mask_bound⟩
+      htgt₂, halv₂, hxmem', hout.row_fit, hasg₂, hdist₂, ⟨Q', hq'⟩, ?_,
+      hout.mask_bound⟩
     obtain ⟨QD, hQD⟩ := hout.qdist_arr
     exact ⟨QD, hqd₂.trans hQD⟩
   refine ⟨σ₂, _, r₀.seq (r₁.seq r₂), ?_, Xmem', hsorted⟩
