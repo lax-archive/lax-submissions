@@ -165,3 +165,4 @@ import Lax3Proofs.Refine.BfsBlockPar
 import Lax3Proofs.Refine.BfsBlockParMask
 import Lax3Proofs.Refine.DriverCache
 import Lax3Proofs.Refine.ScatterBlockMask
+import Lax3Proofs.Refine.ActiveCost

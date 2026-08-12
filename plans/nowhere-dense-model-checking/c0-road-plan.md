@@ -370,15 +370,16 @@ The real coupling is one-way and compiled: `RamDriver.CoverImplements`
 **11–17 sub-waves in four independently landable boundaries**, against 17–28 as
 one monolith.
 
-**Status 2026-08-12:** the concrete compact order and active cover now instantiate
-the recursive `levelAtA` theorem, including an inductive write-set proof for the
-nested driver and the centre-loop header.  Their costs are charged at the current
-`arenaWeight`.  `ActiveRoot.driverRootActive_decides_sentence` now composes the
-deduplicating decode, that concrete recursive driver, and sentence readback; the
-active root has no abstract `hKo` or `hKc` phase slots.  Boundary D is therefore
-through the executable root.  Its remaining boundary is to restate the sigma
-recurrence plug at this root (retiring the two obsolete carrier dominations) and
-close the surviving turn-cost row.
+**Status 2026-08-12: complete on the campaign branch.** The concrete compact
+order and active cover instantiate the recursive `levelAtA` theorem, including
+an inductive write-set proof for the nested driver and the centre-loop header.
+Their costs are charged at the current `arenaWeight`.
+`ActiveRoot.driverRootActive_decides_sentence` composes the deduplicating decode,
+that concrete recursive driver, and sentence readback.  The replacement
+`ActiveCost.active_root_g2_plug` instantiates the sigma recurrence at this
+executable root: the abstract `hKo`/`hKc` phase slots and both carrier
+dominations are absent.  Its single remaining implication is precisely the
+turn-cost row owned by §2.7.
 
 Two technical points the wave-A brief must carry:
 
