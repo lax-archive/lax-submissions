@@ -149,6 +149,7 @@ import Lax3Proofs.Refine.B4Design
 import Lax3Proofs.Refine.GapsDesign
 import Lax3Proofs.Refine.BfsBlockMask
 import Lax3Proofs.Refine.CoverActiveBlock
+import Lax3Proofs.Refine.CoverActiveStream
 import Lax3Proofs.Refine.CoverActiveTurn
 import Lax3Proofs.Refine.CoverActiveLoop
 import Lax3Proofs.Refine.CoverActiveNamed

@@ -447,6 +447,21 @@ such fixed-coefficient theorem, so the latter is not assumed.  Turn wiring
 must respect the chosen linear-space splice rather than cementing the
 materialise-all-blocks loop first.
 
+**Status 2026-08-12, streaming-cover semantic splice:**
+`Refine/CoverActiveStream.lean` now removes the accumulated arena from the
+mathematical turn boundary.  `CoverPrefixA` retains exactly the progressive
+mask and stable first-catcher assignment; `RawStreamRowA.stepQueue` consumes
+the already-verified touched BFS trail into one reusable
+`Xmem[0..tail)` row with `tail ≤ n`; and `CoverPrefixA.assigned_cover` proves
+that a claim made at the current prefix already has the full ball-cover
+property, so the corresponding cluster can be processed before later centres.
+The narrow 3458-job build passes and the four new public lemmas use only the
+project's standard `propext`/choice/quotient axioms.  This closes the semantic
+half of the cover repair.  The next dependent leaf is executable: reset the
+row pointer to zero per centre, emit and radix-sort that one row, then compose
+the cluster body before advancing to the next centre.  The old `n*D` arena and
+offset table must not reappear in that contract.
+
 ---
 
 ## §3 Schedule, honestly
