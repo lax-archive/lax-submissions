@@ -430,6 +430,23 @@ the load-bearing feeder `X ⊆ clusterAt … k` rather than hiding it in the
 implementation.  The remaining §2.7 work is the other descent/colour leaves,
 the block scatter lifecycle, and their composition into the real turn.
 
+**Status 2026-08-12, exact C0 width gate:** `Refine/ActiveBridgeWidth.lean`
+now separates logical array length from executed address width and compiles
+the latter obstruction at the headline's own tight empty-graph words.
+`no_wordConst_for_unbounded_degree` proves that no constant chosen before the
+input can discharge the active root's current `WordBoundK B n D …` contract
+for an unbounded degree profile; `no_wordConst_for_superlinear_width` proves
+the analogous statement for a superlinear resident ordering width.  Both
+directions matter: the IMP+ simulation permits a logical `arrOf (n*n)`, so
+that length alone was not a refutation, but the program's actually formed
+`n*D` cover pointer and `activeOrderWidth` indices are.  Consequently the
+remaining road now has a representation boundary before C0: either stream
+the cover/ordering work through linear resident storage, or produce fixed
+pre-input coefficients.  The current nowhere-dense parameter layer has no
+such fixed-coefficient theorem, so the latter is not assumed.  Turn wiring
+must respect the chosen linear-space splice rather than cementing the
+materialise-all-blocks loop first.
+
 ---
 
 ## §3 Schedule, honestly
