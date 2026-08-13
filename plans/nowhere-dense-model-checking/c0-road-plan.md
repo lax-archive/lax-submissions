@@ -520,6 +520,20 @@ public theorems use only the project's standard `propext`/choice/quotient
 axioms.  The next dependent leaf is the cached-batch lifecycle and its
 post-batch child/game masks on this same row.
 
+`Refine/CoverActiveStreamBatch.lean` now closes that cached-batch lifecycle.
+Cached parent chains are cut by the current cluster as they are walked, so the
+batch remains supported by `xmem[0..tail)` throughout instead of requiring a
+later carrier-wide cut.  Two supported row maps then establish the exact
+whole-carrier equations `Alv(v) = M(v) * Xa(v) * (1 - Wa(v))` and
+`Gam(v) = Gm(v) * Xa(v) * (1 - Wa(v))`, and the release pass restores the
+batch array to exact zero for reuse by the next centre.  The full lifecycle
+cost is `(36·cap + 32)·j + 57·tail + 29`; it has no carrier-width term,
+offset-row lookup, accumulated pointer premise, or `na = n` assumption.  The
+narrow 3545-job and aggregate 3648-job builds pass, and the public theorems use
+only the project's standard `propext`/choice/quotient axioms.  The next
+dependent leaf is the streamed colouring consumer, followed by kill/inner/
+scatter composition and the fused centre loop.
+
 ---
 
 ## §3 Schedule, honestly
