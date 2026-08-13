@@ -501,7 +501,10 @@ cluster array and copies that same strictly increasing row directly into the
 next depth's member enumeration; it reads no offset table and performs no
 carrier-wide clear.  Its charge is `24·tail + 8`, and
 `streamClusterLoadStep` identifies the marked set exactly with the current
-streamed cluster while retaining the sorted stream state.  The entering
+streamed cluster while retaining both the sorted stream state and the level's
+ambient arena `A₀` at `alvName j`.  The progressively depleted search mask
+remains the separate scratch array `"alv"`; it is not used as the recursive
+arena.  The entering
 cluster array is deliberately required to be zero: the fused level will
 establish that once, then clear only the row it just consumed between
 centres.  The narrow 3543-job build passes and both public theorems use only
@@ -513,18 +516,20 @@ the remaining colour/kill/inner/scatter lifecycle and the fused centre loop.
 Its range adapter deliberately separates the resident row allocation `na`
 from the executed prefix `tail`, then proves exact supported clear, conjunction,
 and subtraction maps over the whole carrier.  The concrete retained mask is
-therefore exactly `Ra(v) = M(v) * Xa(v)` after an `18·tail + 8` pass, with no
+therefore exactly `Ra(v) = A₀(v) * Xa(v)` after an `18·tail + 8` pass, with no
 carrier scan or hidden `na = n` premise, while the loaded cluster row and its
-member enumeration remain framed.  The narrow 3544-job build passes and the
-public theorems use only the project's standard `propext`/choice/quotient
-axioms.  The next dependent leaf is the cached-batch lifecycle and its
-post-batch child/game masks on this same row.
+member enumeration remain framed.  This corrects the first landed version,
+which incorrectly read the already-depleted progressive mask `M`; that
+version was never pushed to the draft PR.  The narrow 3544-job build passes
+and the public theorems use only the project's standard
+`propext`/choice/quotient axioms.  The next dependent leaf is the cached-batch
+lifecycle and its post-batch child/game masks on this same row.
 
 `Refine/CoverActiveStreamBatch.lean` now closes that cached-batch lifecycle.
 Cached parent chains are cut by the current cluster as they are walked, so the
 batch remains supported by `xmem[0..tail)` throughout instead of requiring a
 later carrier-wide cut.  Two supported row maps then establish the exact
-whole-carrier equations `Alv(v) = M(v) * Xa(v) * (1 - Wa(v))` and
+whole-carrier equations `Alv(v) = A₀(v) * Xa(v) * (1 - Wa(v))` and
 `Gam(v) = Gm(v) * Xa(v) * (1 - Wa(v))`, and the release pass restores the
 batch array to exact zero for reuse by the next centre.  The full lifecycle
 cost is `(36·cap + 32)·j + 57·tail + 29`; it has no carrier-width term,
@@ -541,10 +546,23 @@ and game data remain framed, and the exact cost is `66·tail + 24`; there is no
 carrier scan, offset row, accumulated pointer premise, or hidden `na = n`.
 The narrow 3546-job, aggregate 3649-job, and submission-level `lax build`
 gates pass, and the public theorem uses only the project's standard
-`propext`/choice/quotient axioms.  The next dependent boundary is the exact
-child-output-to-enumeration adapter; streamed colouring remains a separate
-cost-sensitive leaf before kill/inner/scatter composition and the fused
-centre loop.
+`propext`/choice/quotient axioms.
+
+**Status 2026-08-13, ambient repair and enumeration adapter:** the complete
+streamed descent surface now consistently separates the ambient recursive
+arena `A₀` (`alvName j`) from the progressive centre-search mask `M`
+(`"alv"`).  `Refine/CoverActiveStreamChildEnum.lean` discharges the exact
+child-output-to-enumeration adapter at cost `enumStreamCost tail mb`, returning
+ambient-`A₀` `ClusterData` while framing the progressive stream state.  Its
+`PlayRec (j + 1)` premise is explicit: this adapter does **not** construct the
+successor recursion record.  The narrow 3555-job, aggregate 3650-job, and
+submission-level `lax build` gates pass with only the standard
+`propext`/choice/quotient axioms.  The next dependent boundary is therefore
+the genuine streamed descent composition: install the current connector,
+run the row-priced retained-parent cache, open the supported batch, produce
+the child masks and member enumeration, and prove `playRec_succ`.  Streamed
+colouring remains a separate cost-sensitive leaf before kill/inner/scatter
+composition and the fused centre loop.
 
 ---
 
