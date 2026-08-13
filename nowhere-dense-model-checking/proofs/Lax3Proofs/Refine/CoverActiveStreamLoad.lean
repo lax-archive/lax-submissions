@@ -224,11 +224,17 @@ theorem streamClusterLoadCom_spec {B n na tail j : ℕ} {Xmem : ℕ → ℕ}
 /-! ## Driver-facing streamed row -/
 
 /-- The loaded row retains the sorted streamed state and supplies the exact
-cluster indicator and child member enumeration used by descent. -/
+cluster indicator and child member enumeration used by descent.  Here `A₀`
+is the ambient level arena stored at `alvName j`; `M` is the progressively
+depleted cover-search mask stored in the streamed scratch array `"alv"`.
+Keeping both arrays explicit prevents the descent from accidentally using
+the already-depleted search mask as its arena. -/
 structure StreamLoadOut {n : ℕ} (B ns nt na q cap j c tail bits : ℕ)
     (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ) (π : Equiv.Perm (Fin n))
     (centre O T Xmem asg M Xa Mm : ℕ → ℕ) (σ : Env) : Prop where
   sorted : StreamSortedOut B ns nt na q cap c tail bits G A₀ π centre O T Xmem asg M σ
+  ambient_arr : σ.arrs (alvName j) = arrOf n A₀
+  ambient_bound : ∀ k, k < n → A₀ k < B
   cluster_arr : σ.arrs (cluName j) = arrOf n Xa
   cluster_bit : ∀ k, k < n → Xa k ≤ 1
   cluster_set : markSet n Xa = clusterAt G A₀ π centre cap c
@@ -241,10 +247,12 @@ descent, without restoring either a carrier clear or an offset load. -/
 theorem streamClusterLoadStep
     {B n ns nt na q cap j c tail bits : ℕ}
     {G : SimpleGraph (Fin n)} {A₀ O T centre Xmem asg M : ℕ → ℕ}
-    {π : Equiv.Perm (Fin n)} (hB : 1 < B) (hnB : n < B) :
+    {π : Equiv.Perm (Fin n)} (hB : 1 < B) (hnB : n < B)
+    (hA₀B : ∀ k, k < n → A₀ k < B) :
     Spec B
       (fun σ =>
         StreamSortedOut B ns nt na q cap c tail bits G A₀ π centre O T Xmem asg M σ ∧
+        σ.arrs (alvName j) = arrOf n A₀ ∧
         σ.arrs (cluName j) = arrOf n (fun _ => 0) ∧
         ∃ Mm, σ.arrs (memName (j + 1)) = arrOf n Mm)
       (streamClusterLoadCom "xmem" j)
@@ -252,7 +260,7 @@ theorem streamClusterLoadStep
         StreamLoadOut B ns nt na q cap j c tail bits G A₀ π centre O T Xmem asg M Xa Mm σ')
       (streamClusterLoadCost tail) := by
   intro σ hσ
-  obtain ⟨hsorted, hclu, hmemArr⟩ := hσ
+  obtain ⟨hsorted, hambient, hclu, hmemArr⟩ := hσ
   have hidxClu : "xmem" ≠ cluName j := by simp [cluName, String.ext_iff]
   have hidxMem : "xmem" ≠ memName (j + 1) := by simp [memName, String.ext_iff]
   have hcluMem : cluName j ≠ memName (j + 1) := by simp [cluName, memName, String.ext_iff]
@@ -304,7 +312,10 @@ theorem streamClusterLoadStep
     · obtain ⟨QD, hQD⟩ := hsorted.qdist_arr
       exact ⟨QD, (hav "qd" (by simp [cluName, String.ext_iff])
         (by simp [memName, String.ext_iff])).trans hQD⟩
-  refine ⟨σ', hr, Xa, Mm, hsorted', hXa, hXabit, ?_, hMm, hbq, henum⟩
+  refine ⟨σ', hr, Xa, Mm, hsorted',
+    (hav (alvName j) (by simp [alvName, cluName, String.ext_iff])
+      (by simp [alvName, memName, String.ext_iff])).trans hambient,
+    hA₀B, hXa, hXabit, ?_, hMm, hbq, henum⟩
   ext v
   rw [hXaset]
   exact hsorted.row.block (v : ℕ)

@@ -295,7 +295,8 @@ theorem StreamLoadOut.cluster_supported
 
 /-- A product is supported when its right factor is supported.  The landed
 descent helper records the symmetric left-factor form; the streamed retained
-mask is `M * Xa`, so its cluster indicator is the right factor. -/
+mask is `A₀ * Xa`, with the ambient arena on the left and its cluster
+indicator on the right. -/
 theorem blockSupported_mul_right
     {n p₀ e : ℕ} {Idx A C : ℕ → ℕ}
     (hC : BlockSupported n p₀ e Idx C) :
@@ -306,9 +307,11 @@ theorem blockSupported_mul_right
 
 /-! ## First concrete descent mask -/
 
-/-- Restrict the parent work mask to the streamed cluster. -/
+/-- Restrict the ambient level arena at depth `j` to the streamed cluster.
+The raw `"alv"` array belongs to the progressive cover search and is not the
+arena from which the recursive child descends. -/
 def streamRetainCom (j : ℕ) : Com :=
-  streamBlockAndCom "xmem" "alv" (cluName j) (resName j)
+  streamBlockAndCom "xmem" (alvName j) (cluName j) (resName j)
 
 structure StreamRetainOut {n : ℕ} (B ns nt na q cap j c tail bits : ℕ)
     (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ) (π : Equiv.Perm (Fin n))
@@ -316,7 +319,7 @@ structure StreamRetainOut {n : ℕ} (B ns nt na q cap j c tail bits : ℕ)
   loaded : StreamLoadOut B ns nt na q cap j c tail bits G A₀ π centre O T
     Xmem asg M Xa Mm σ
   retained_arr : σ.arrs (resName j) = arrOf n Ra
-  retained_val : ∀ v, v < n → Ra v = M v * Xa v
+  retained_val : ∀ v, v < n → Ra v = A₀ v * Xa v
   retained_bound : ∀ v, v < n → Ra v < B
   retained_supported : BlockSupported n 0 tail Xmem Ra
 
@@ -343,29 +346,29 @@ theorem streamRetainStep
   have hXaB : ∀ v, v < n → Xa v < B := by
     intro v hv
     exact lt_of_le_of_lt (hload.cluster_bit v hv) hB
-  have hprodB : ∀ p, p < tail → M (Xmem p) * Xa (Xmem p) < B := by
+  have hprodB : ∀ p, p < tail → A₀ (Xmem p) * Xa (Xmem p) < B := by
     intro p hp
     have hpN := hload.sorted.row.mem_lt p hp
     calc
-      M (Xmem p) * Xa (Xmem p) ≤ M (Xmem p) * 1 :=
+      A₀ (Xmem p) * Xa (Xmem p) ≤ A₀ (Xmem p) * 1 :=
         Nat.mul_le_mul_left _ (hload.cluster_bit _ hpN)
-      _ = M (Xmem p) := by ring
-      _ < B := hload.sorted.mask_bound _ hpN
-  have hresSup : BlockSupported n 0 tail Xmem (fun v => M v * Xa v) :=
+      _ = A₀ (Xmem p) := by ring
+      _ < B := hload.ambient_bound _ hpN
+  have hresSup : BlockSupported n 0 tail Xmem (fun v => A₀ v * Xa v) :=
     blockSupported_mul_right
       (Lax3Proofs.Refine.CoverActiveStreamMask.StreamLoadOut.cluster_supported hload)
-  obtain ⟨σ', hr, ⟨⟨Ra, hRa, hRaval, hRasup⟩, htail', hrow', halv', hclu'⟩,
+  obtain ⟨σ', hr, ⟨⟨Ra, hRa, hRaval, hRasup⟩, htail', hrow', hambient', hclu'⟩,
       hfv, hfa, -, -⟩ :=
     ((streamBlockAndCom_supported_spec (B := B) (n := n) (na := na)
-      (tail := tail) (idx := "xmem") (a := "alv") (b := cluName j)
-      (dst := resName j) (Idx := Xmem) (A := M) (C := Xa)
+      (tail := tail) (idx := "xmem") (a := alvName j) (b := cluName j)
+      (dst := resName j) (Idx := Xmem) (A := A₀) (C := Xa)
       (g₀ := fun _ => 0) hB hnB htail hfit hload.sorted.row.mem_lt
-      hload.sorted.mask_bound hXaB hprodB
+      hload.ambient_bound hXaB hprodB
       (by simp [resName, String.ext_iff])
-      (by simp [resName, String.ext_iff])
+      (by simp [resName, alvName, String.ext_iff])
       (by simp [cluName, resName, String.ext_iff])).frame).run
       ⟨hload.sorted.tail_var, hload.sorted.row_arr, hres₀,
-        ⟨hload.sorted.mask_arr, hload.cluster_arr⟩, hresSup,
+        ⟨hload.ambient_arr, hload.cluster_arr⟩, hresSup,
         blockSupported_zero n 0 tail Xmem⟩
   have hav : ∀ a : String, a ≠ resName j → σ'.arrs a = σ.arrs a := by
     intro a ha
@@ -391,7 +394,8 @@ theorem streamRetainStep
       (hav "ord" (by simp [resName, String.ext_iff])).trans hload.sorted.centre_arr,
       (hav "off" (by simp [resName, String.ext_iff])).trans hload.sorted.off_arr,
       (hav "tgt" (by simp [resName, String.ext_iff])).trans hload.sorted.target_arr,
-      halv', hrow', hload.sorted.row_fit,
+      (hav "alv" (by simp [resName, String.ext_iff])).trans hload.sorted.mask_arr,
+      hrow', hload.sorted.row_fit,
       (hav "asg" (by simp [resName, String.ext_iff])).trans hload.sorted.asg_arr,
       ?_, ?_, ?_, hload.sorted.mask_bound⟩
     · apply Lax3Proofs.Refine.CoverActiveTurn.distClean_of_arrs_eq
@@ -404,7 +408,8 @@ theorem streamRetainStep
   have hload' :
       StreamLoadOut B ns nt na q cap j c tail bits G A₀ π centre O T
         Xmem asg M Xa Mm σ' := by
-    refine ⟨hsorted', hclu', hload.cluster_bit, hload.cluster_set,
+    refine ⟨hsorted', hambient', hload.ambient_bound,
+      hclu', hload.cluster_bit, hload.cluster_set,
       (hav (memName (j + 1)) (by
         simp [memName, resName, String.ext_iff])).trans hload.member_arr,
       (hvv "bq" (by decide) (by decide) (by decide)).trans hload.member_count,
@@ -413,9 +418,9 @@ theorem streamRetainStep
     intro v hv
     rw [hRaval v hv]
     calc
-      M v * Xa v ≤ M v * 1 := Nat.mul_le_mul_left _ (hload.cluster_bit v hv)
-      _ = M v := by ring
-      _ < B := hload.sorted.mask_bound v hv
+      A₀ v * Xa v ≤ A₀ v * 1 := Nat.mul_le_mul_left _ (hload.cluster_bit v hv)
+      _ = A₀ v := by ring
+      _ < B := hload.ambient_bound v hv
   exact ⟨σ', _, hr, le_rfl, Ra, hload', hRa, hRaval, hRaB, hRasup⟩
 
 theorem noWrite_streamBlockMapCom (idx dst : String) (x : Expr) :

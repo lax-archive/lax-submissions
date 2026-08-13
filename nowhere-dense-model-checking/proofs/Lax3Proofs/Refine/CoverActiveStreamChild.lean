@@ -43,14 +43,16 @@ theorem streamChildFilterCost_eq (tail : ℕ) :
 
 /-- Driver-facing state after the streamed child masks and member filter.
 `masks` retains the exact sparse arrays and their row support; `batch` is the
-ordinary descent interface, now with an exact child member enumeration. -/
+ordinary descent interface over the ambient arena `A₀`, now with an exact
+child member enumeration.  The separate `M` parameter remains the
+progressively depleted cover-search mask carried by `sorted`. -/
 structure StreamChildOut {n : ℕ} (B ns nt na q cap j c tail bits : ℕ)
     (G : SimpleGraph (Fin n)) (A₀ : ℕ → ℕ) (π : Equiv.Perm (Fin n))
     (centre O T Xmem asg M Xa Mm Ra Wa Gm Alv Gam Mem : ℕ → ℕ)
     (mm : ℕ) (σ : Env) : Prop where
   sorted : StreamSortedOut B ns nt na q cap c tail bits G A₀ π centre O T
     Xmem asg M σ
-  masks : StreamChildGameOut B na tail j G Xmem M Xa Ra Wa Gm Alv Gam σ
+  masks : StreamChildGameOut B na tail j G Xmem A₀ Xa Ra Wa Gm Alv Gam σ
   cluster_set : markSet n Xa = clusterAt G A₀ π centre cap c
   cluster_members : MemEnum n tail Mm Xa
   row_scan_count : σ.vars "bq" = tail
@@ -59,8 +61,8 @@ structure StreamChildOut {n : ℕ} (B ns nt na q cap j c tail bits : ℕ)
   child_member_enum : MemEnum n mm Mem Alv
   child_member_bound : ∀ z, z < mm → Mem z < B
   retained_graph : masked G Ra =
-    Lax12.UniformQuasiWideness.deleteVerts (masked G M) (markSet n Xa)ᶜ
-  batch : BatchData n j B G M (markSet n Xa) (markSet n Wa) Alv Gam σ
+    Lax12.UniformQuasiWideness.deleteVerts (masked G A₀) (markSet n Xa)ᶜ
+  batch : BatchData n j B G A₀ (markSet n Xa) (markSet n Wa) Alv Gam σ
 
 /-! ## Small frame facts -/
 
@@ -146,7 +148,7 @@ theorem streamChildFilterStep
       rw [RamDriverFrames.wvars_memFilterCom]
       simp [hmk, hmm, hmv])
   have hmasks₂ :
-      StreamChildGameOut B na tail j G Xmem M Xa Ra Wa Gm Alv Gam σ₂ := by
+      StreamChildGameOut B na tail j G Xmem A₀ Xa Ra Wa Gm Alv Gam σ₂ := by
     exact {
       tail_var := (hvv₂ "tail" (by decide)
         (by simp [mnumName, String.ext_iff]) (by decide)).trans hmasks₁.tail_var
@@ -241,11 +243,11 @@ theorem streamChildFilterStep
       simp [mnumName, String.ext_iff]) (by decide)]
     exact hbq₁
   have hResEq : masked G Ra =
-      Lax12.UniformQuasiWideness.deleteVerts (masked G M) (markSet n Xa)ᶜ := by
+      Lax12.UniformQuasiWideness.deleteVerts (masked G A₀) (markSet n Xa)ᶜ := by
     rw [masked_congr hret.retained_val]
-    exact masked_mul M Xa (fun _ => Iff.rfl)
+    exact masked_mul A₀ Xa (fun _ => Iff.rfl)
   have hbatch₂ :
-      BatchData n j B G M (markSet n Xa) (markSet n Wa) Alv Gam σ₂ := by
+      BatchData n j B G A₀ (markSet n Xa) (markSet n Wa) Alv Gam σ₂ := by
     exact ⟨⟨Xa, hmasks₂.cluster_arr, rfl, hret.loaded.cluster_bit⟩,
       ⟨Wa, hmasks₂.batch_arr, rfl, hWaB⟩,
       ⟨Ra, hmasks₂.retained_arr, hResEq, hret.retained_bound⟩,

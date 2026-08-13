@@ -659,11 +659,14 @@ def streamChildGameCom (j : ℕ) : Com :=
 def streamChildGameCost (tail : ℕ) : ℕ := 43 * tail + 16
 
 /-- The data exported immediately after the two streamed post-batch masks.
-Both value clauses are carrier-wide, rather than merely equations at the row
-positions; support is retained explicitly for subsequent sparse consumers. -/
+`A₀` is the ambient level arena from which the child descends; the progressive
+cover-search mask is only framed by the upstream sorted state.  The parent
+game mask remains `Gm`.  Both value clauses are carrier-wide, rather than
+merely equations at the row positions; support is retained explicitly for
+subsequent sparse consumers. -/
 structure StreamChildGameOut {n : ℕ} (B na tail j : ℕ)
     (G : SimpleGraph (Fin n))
-    (Xmem M Xa Ra Wa Gm Alv Gam : ℕ → ℕ) (sigma : Env) : Prop where
+    (Xmem A₀ Xa Ra Wa Gm Alv Gam : ℕ → ℕ) (sigma : Env) : Prop where
   tail_var : sigma.vars "tail" = tail
   row_arr : sigma.arrs "xmem" = arrOf na Xmem
   retained_arr : sigma.arrs (resName j) = arrOf n Ra
@@ -677,10 +680,10 @@ structure StreamChildGameOut {n : ℕ} (B na tail j : ℕ)
   child_supported : BlockSupported n 0 tail Xmem Alv
   child_graph : masked G Alv =
     Lax12.UniformQuasiWideness.deleteVerts
-      (Lax12.UniformQuasiWideness.deleteVerts (masked G M) (markSet n Xa)ᶜ)
+      (Lax12.UniformQuasiWideness.deleteVerts (masked G A₀) (markSet n Xa)ᶜ)
       (markSet n Wa)
   child_point : ∀ v : Fin n, Alv (v : ℕ) ≠ 0 ↔
-    (M (v : ℕ) ≠ 0 ∧ v ∈ markSet n Xa ∧ v ∉ markSet n Wa)
+    (A₀ (v : ℕ) ≠ 0 ∧ v ∈ markSet n Xa ∧ v ∉ markSet n Wa)
   game_arr : sigma.arrs (gamName (j + 1)) = arrOf n Gam
   game_val : ∀ v, v < n → Gam v = Gm v * Xa v * (1 - Wa v)
   game_bound : ∀ v, v < n → Gam v < B
@@ -695,10 +698,10 @@ is precisely the carrier equation exported by `streamRetainStep`; no equality
 between the resident allocation `na` and the carrier `n` is used. -/
 theorem streamChildGameCom_spec
     {B n na tail j : ℕ} {G : SimpleGraph (Fin n)}
-    {Xmem M Xa Ra Wa Gm : ℕ → ℕ}
+    {Xmem A₀ Xa Ra Wa Gm : ℕ → ℕ}
     (h1B : 1 < B) (hnB : n < B) (htail : tail ≤ n) (hfit : tail ≤ na)
     (hIdx : ∀ q, q < tail → Xmem q < n)
-    (hRaval : ∀ v, v < n → Ra v = M v * Xa v)
+    (hRaval : ∀ v, v < n → Ra v = A₀ v * Xa v)
     (hRaB : ∀ v, v < n → Ra v < B)
     (hXbit : ∀ v, v < n → Xa v ≤ 1)
     (hWaB : ∀ v, v < n → Wa v < B)
@@ -717,7 +720,7 @@ theorem streamChildGameCom_spec
         sigma.arrs (gamName (j + 1)) = arrOf n (fun _ => 0))
       (streamChildGameCom j)
       (fun _ sigma' => ∃ Alv Gam,
-        StreamChildGameOut B na tail j G Xmem M Xa Ra Wa Gm Alv Gam sigma')
+        StreamChildGameOut B na tail j G Xmem A₀ Xa Ra Wa Gm Alv Gam sigma')
       (streamChildGameCost tail) := by
   have hXaB : ∀ v, v < n → Xa v < B := by
     intro v hv
@@ -830,17 +833,17 @@ theorem streamChildGameCom_spec
       _ < B := hGmB v hv
   have hAlvEq : masked G Alv =
       Lax12.UniformQuasiWideness.deleteVerts
-        (Lax12.UniformQuasiWideness.deleteVerts (masked G M) (markSet n Xa)ᶜ)
+        (Lax12.UniformQuasiWideness.deleteVerts (masked G A₀) (markSet n Xa)ᶜ)
         (markSet n Wa) := by
     rw [masked_congr (M := Alv)
-      (M' := fun a => M a * Xa a * (1 - Wa a))
+      (M' := fun a => A₀ a * Xa a * (1 - Wa a))
       (fun v hv => by rw [hAlvval v hv, hRaval v hv])]
-    exact masked_step M Xa Wa (fun _ => Iff.rfl) (fun _ => Iff.rfl)
+    exact masked_step A₀ Xa Wa (fun _ => Iff.rfl) (fun _ => Iff.rfl)
   have hAlvPt : ∀ v : Fin n, Alv (v : ℕ) ≠ 0 ↔
-      (M (v : ℕ) ≠ 0 ∧ v ∈ markSet n Xa ∧ v ∉ markSet n Wa) := by
+      (A₀ (v : ℕ) ≠ 0 ∧ v ∈ markSet n Xa ∧ v ∉ markSet n Wa) := by
     intro v
     rw [hAlvval (v : ℕ) v.isLt, hRaval (v : ℕ) v.isLt,
-      mask_cell_ne_zero M Xa Wa (v : ℕ)]
+      mask_cell_ne_zero A₀ Xa Wa (v : ℕ)]
     constructor
     · rintro ⟨hM, hX, hW⟩
       exact ⟨hM, hX, fun hc => hc hW⟩
@@ -881,7 +884,7 @@ theorem streamChildGameStep
         sigma.arrs (gamName (j + 1)) = arrOf n (fun _ => 0))
       (streamChildGameCom j)
       (fun _ sigma' => ∃ Alv Gam,
-        StreamChildGameOut B na tail j G Xmem M Xa Ra Wa Gm Alv Gam sigma')
+        StreamChildGameOut B na tail j G Xmem A₀ Xa Ra Wa Gm Alv Gam sigma')
       (streamChildGameCost tail) := by
   refine Spec.of_exists fun sigma hsigma => ?_
   obtain ⟨hret, hbat, hgam, halv, hgam'⟩ := hsigma
