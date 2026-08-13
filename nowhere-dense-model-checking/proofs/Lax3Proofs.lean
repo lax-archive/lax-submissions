@@ -175,3 +175,8 @@ import Lax3Proofs.Refine.ScatterBlockMask
 import Lax3Proofs.Refine.ActiveCost
 import Lax3Proofs.Refine.ActiveBridgeWidth
 import Lax3Proofs.Refine.ActiveEnum
+import Lax3Proofs.Refine.ActiveLevel
+import Lax3Proofs.Refine.ActiveRoot
+import Lax3Proofs.Refine.OrderActiveBudget
+import Lax3Proofs.Refine.OrderActiveDriver
+import Lax3Proofs.Refine.OrderActiveTail
