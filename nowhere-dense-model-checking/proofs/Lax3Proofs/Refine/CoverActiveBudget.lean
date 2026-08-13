@@ -80,6 +80,22 @@ theorem activeClusterFin_card_le_weight (c : ℕ) :
   rw [Finset.card_eq_sum_ones]
   exact Finset.sum_le_sum fun v _ => by simp [csrW]
 
+/-- The natural-number presentation of a streamed cluster has the same
+row-sum budget as its finite-vertex presentation. -/
+theorem activeClusterNat_rows_le_weight (c : ℕ) :
+    (∑ v ∈ activeClusterNat G A₀ π centre r c, Csr.rowLen O v) ≤
+      activeBallWeight n G A₀ π centre O r c := by
+  rw [activeClusterNat_sum_rows]
+  exact activeClusterFin_rows_le_weight c
+
+/-- The natural-number presentation of a streamed cluster also fits in the
+same vertex budget. -/
+theorem activeClusterNat_card_le_weight (c : ℕ) :
+    (activeClusterNat G A₀ π centre r c).card ≤
+      activeBallWeight n G A₀ π centre O r c := by
+  rw [activeClusterNat, Finset.card_image_of_injective _ Fin.val_injective]
+  exact activeClusterFin_card_le_weight c
+
 /-- The fixed mathematical cluster budgets every progressive-mask BFS turn.
 No individual cluster-size bound is asserted. -/
 theorem activeBallBudget
@@ -195,6 +211,8 @@ theorem activeCoverCoreCost_le {ns xp : ℕ} {T Xoff Xmem asg : ℕ → ℕ}
 
 /-! ## Axiom audit -/
 
+#print axioms activeClusterNat_rows_le_weight
+#print axioms activeClusterNat_card_le_weight
 #print axioms activeBallBudget
 #print axioms sum_activeBallWeight_le
 #print axioms activeCoverCoreCost_le
