@@ -156,6 +156,7 @@ import Lax3Proofs.Refine.CoverActiveStreamSort
 import Lax3Proofs.Refine.CoverActiveStreamLoad
 import Lax3Proofs.Refine.CoverActiveStreamMask
 import Lax3Proofs.Refine.CoverActiveStreamBatch
+import Lax3Proofs.Refine.CoverActiveStreamChild
 import Lax3Proofs.Refine.CoverActiveStreamEnum
 import Lax3Proofs.Refine.CoverActiveLoop
 import Lax3Proofs.Refine.CoverActiveNamed
