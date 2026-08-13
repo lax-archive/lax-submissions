@@ -531,8 +531,20 @@ cost is `(36·cap + 32)·j + 57·tail + 29`; it has no carrier-width term,
 offset-row lookup, accumulated pointer premise, or `na = n` assumption.  The
 narrow 3545-job and aggregate 3648-job builds pass, and the public theorems use
 only the project's standard `propext`/choice/quotient axioms.  The next
-dependent leaf is the streamed colouring consumer, followed by kill/inner/
-scatter composition and the fused centre loop.
+dependent leaf is the exact child-member filter.
+
+`Refine/CoverActiveStreamChild.lean` now supplies that filter.  It composes the
+streamed child/game-mask step with the stable member filter at depth `j + 1`,
+retaining the exact whole-carrier child graph and producing an exact
+`MemEnum n mm Mem Alv` for the child.  The row, batch support, parent cluster,
+and game data remain framed, and the exact cost is `66·tail + 24`; there is no
+carrier scan, offset row, accumulated pointer premise, or hidden `na = n`.
+The narrow 3546-job, aggregate 3649-job, and submission-level `lax build`
+gates pass, and the public theorem uses only the project's standard
+`propext`/choice/quotient axioms.  The next dependent boundary is the exact
+child-output-to-enumeration adapter; streamed colouring remains a separate
+cost-sensitive leaf before kill/inner/scatter composition and the fused
+centre loop.
 
 ---
 
