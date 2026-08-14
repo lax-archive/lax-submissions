@@ -21,6 +21,15 @@ open Lax3Proofs.Refine.OrderVirtualProvider
 /-- The function stored by a direct copy of CSR row `w`. -/
 def csrRowFun (O T : ℕ → ℕ) (w p : ℕ) : ℕ := T (O w + p)
 
+/-- The address and carrier facts needed by the executable row copier,
+separated from the semantic meaning of the copied rows.  This lets the same
+verified scan serve both the input graph and later partial row caches. -/
+structure BoundedCsr (n ns : ℕ) (O T : ℕ → ℕ) : Prop where
+  mono : ∀ i < n, O i ≤ O (i + 1)
+  end_le : ∀ i < n, O (i + 1) ≤ ns
+  target_lt : ∀ j < ns, T j < n
+  row_le : ∀ i < n, Csr.rowLen O i ≤ n
+
 /-- A simple CSR row is already an exact duplicate-free virtual row. -/
 theorem csrRowRep {n ns : ℕ} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
     (hcsr : CsrSimple G ns O T) (w : Fin n) :
@@ -83,6 +92,16 @@ theorem csrRowRep {n ns : ℕ} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
       refine ⟨O (w : ℕ) + p, by omega, ?_, hTp⟩
       simp only [Csr.rowLen] at hp
       omega
+
+/-- A simple input CSR has the address bounds required by the generic row
+copier. -/
+theorem boundedCsr_of_simple {n ns : ℕ} {G : SimpleGraph (Fin n)}
+    {O T : ℕ → ℕ} (hcsr : CsrSimple G ns O T) :
+    BoundedCsr n ns O T := by
+  refine ⟨hcsr.csr.mono, fun i hi => hcsr.csr.le_ns (by omega),
+    hcsr.csr.target_lt, ?_⟩
+  intro i hi
+  exact (csrRowRep hcsr ⟨i, hi⟩).tail_le
 
 /-- Persistent input of the base provider.  The row buffer is represented by
 its length because its contents are deliberately overwritten. -/
@@ -152,9 +171,9 @@ structure BaseScanInv (n W nt : ℕ) (o t : String) (O T : ℕ → ℕ)
     ∀ p, p < sigma.vars "vtail" → A p = csrRowFun O T w p
 
 /-- One occupied CSR slot extends the exact copied prefix by one. -/
-theorem baseRowSlot_run {B n ns nt W w : ℕ} {G : SimpleGraph (Fin n)}
+theorem baseRowSlot_run {B n ns nt W w : ℕ}
     {o t : String} {O T E D R ID BH BV BN : ℕ → ℕ} {base sigma : Env}
-    (hcsr : CsrSimple G ns O T) (hnsnt : ns ≤ nt) (hB : n + W + 1 < B)
+    (hsrc : BoundedCsr n ns O T) (hnsnt : ns ≤ nt) (hB : n + W + 1 < B)
     (hnsB : ns < B) (hw : w < n)
     (ho : o ∉ engineArrNames) (ht : t ∉ engineArrNames)
     (hI : BaseScanInv n W nt o t O T w E D R ID BH BV BN base sigma)
@@ -164,18 +183,17 @@ theorem baseRowSlot_run {B n ns nt W w : ℕ} {G : SimpleGraph (Fin n)}
       sigma'.vars "j" = sigma.vars "j" + 1 ∧ K ≤ 20 := by
   classical
   obtain ⟨hmem, heng, hstable, hjend, hjlo, hjhi, htail, A, hA, hprefix⟩ := hI
-  have hendns : O (w + 1) ≤ ns := hcsr.csr.le_ns (by omega)
+  have hendns : O (w + 1) ≤ ns := hsrc.end_le w hw
   have hjns : sigma.vars "j" < ns := lt_of_lt_of_le hjlt hendns
   have hjnt : sigma.vars "j" < nt := lt_of_lt_of_le hjns hnsnt
   have hjB : sigma.vars "j" < B := lt_trans hjns hnsB
-  have hTn : T (sigma.vars "j") < n := hcsr.csr.target_lt _ hjns
+  have hTn : T (sigma.vars "j") < n := hsrc.target_lt _ hjns
   have hTB : T (sigma.vars "j") < B := by omega
-  have hrow := csrRowRep hcsr ⟨w, hw⟩
   have htailLt : sigma.vars "vtail" < Csr.rowLen O w := by
     simp only [Csr.rowLen]
     omega
   have htailN : sigma.vars "vtail" < n :=
-    lt_of_lt_of_le htailLt hrow.tail_le
+    lt_of_lt_of_le htailLt (hsrc.row_le w hw)
   have htailB : sigma.vars "vtail" < B := by omega
   have htail1B : sigma.vars "vtail" + 1 < B := by omega
   have hj1B : sigma.vars "j" + 1 < B := by omega
@@ -264,9 +282,9 @@ theorem baseRowSlot_run {B n ns nt W w : ℕ} {G : SimpleGraph (Fin n)}
         exact hprefix p (by omega)
 
 /-- Copy the complete requested row into the reusable carrier buffer. -/
-theorem baseScan_spec {B n ns nt W w : ℕ} {G : SimpleGraph (Fin n)}
+theorem baseScan_spec {B n ns nt W w : ℕ}
     {o t : String} {O T E D R ID BH BV BN : ℕ → ℕ} {base : Env}
-    (hcsr : CsrSimple G ns O T) (hnsnt : ns ≤ nt) (hB : n + W + 1 < B)
+    (hsrc : BoundedCsr n ns O T) (hnsnt : ns ≤ nt) (hB : n + W + 1 < B)
     (hnsB : ns < B) (hw : w < n)
     (ho : o ∉ engineArrNames) (ht : t ∉ engineArrNames) :
     Spec B
@@ -276,14 +294,14 @@ theorem baseScan_spec {B n ns nt W w : ℕ} {G : SimpleGraph (Fin n)}
       (fun _ sigma' => BaseScanInv n W nt o t O T w E D R ID BH BV BN base sigma' ∧
         sigma'.vars "j" = O (w + 1))
       (24 * Csr.rowLen O w + 4) := by
-  have hend : O (w + 1) ≤ ns := hcsr.csr.le_ns (by omega)
+  have hend : O (w + 1) ≤ ns := hsrc.end_le w hw
   refine Csr.rowScan_spec B (24 * Csr.rowLen O w + 4) (O (w + 1)) 20
     "j" "jend" (baseRowSlot t)
     (BaseScanInv n W nt o t O T w E D R ID BH BV BN base)
     (by omega) (fun sigma hI => ⟨hI.jend_eq, hI.j_hi⟩)
     (fun sigma hI hlt => ?_) (fun _ h => h.1) (fun sigma h => ?_)
   · obtain ⟨sigma', K, hr, hI', hj, hK⟩ :=
-      baseRowSlot_run hcsr hnsnt hB hnsB hw ho ht hI hlt
+      baseRowSlot_run hsrc hnsnt hB hnsB hw ho ht hI hlt
     exact ⟨sigma', K, hr, hI', hj, hK⟩
   · rw [h.2]
     simp only [Csr.rowLen]
@@ -301,6 +319,7 @@ theorem baseProvidesRows {B n ns nt W : ℕ} {G : SimpleGraph (Fin n)}
     ProvidesRows B n W G (BaseCsrMem n nt o t O T)
       (baseProvide o t) (baseProvideCost O) := by
   classical
+  have hsrc : BoundedCsr n ns O T := boundedCsr_of_simple hcsr
   intro w E D R ID BH BV BN
   refine Spec.of_exists fun sigma hpre => ?_
   obtain ⟨hmem, heng, hw⟩ := hpre
@@ -366,7 +385,7 @@ theorem baseProvidesRows {B n ns nt W : ℕ} {G : SimpleGraph (Fin n)}
     · intro p hp
       simp [hsigma2, sigma1] at hp
   obtain ⟨sigma3, r3, hI3, hj3⟩ :=
-    (baseScan_spec (base := sigma) hcsr hnsnt hB hnsB w.isLt ho ht).run
+    (baseScan_spec (base := sigma) hsrc hnsnt hB hnsB w.isLt ho ht).run
       ⟨hI2, hj2'⟩
   obtain ⟨hmem3, heng3, hstable3, -, -, -, htail3, A, hA, hprefix⟩ := hI3
   have htail : sigma3.vars "vtail" = Csr.rowLen O (w : ℕ) := by
@@ -387,6 +406,7 @@ theorem baseProvidesRows {B n ns nt W : ℕ} {G : SimpleGraph (Fin n)}
 /-! ## Axiom audit -/
 
 #print axioms csrRowRep
+#print axioms boundedCsr_of_simple
 #print axioms baseRowSlot_run
 #print axioms baseScan_spec
 #print axioms baseProvidesRows
