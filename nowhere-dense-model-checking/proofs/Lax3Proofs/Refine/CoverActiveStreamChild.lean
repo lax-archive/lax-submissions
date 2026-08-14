@@ -52,8 +52,12 @@ structure StreamChildOut {n : ℕ} (B ns nt na q cap j c tail bits : ℕ)
     (mm : ℕ) (σ : Env) : Prop where
   sorted : StreamSortedOut B ns nt na q cap c tail bits G A₀ π centre O T
     Xmem asg M σ
+  ambient_arr : σ.arrs (alvName j) = arrOf n A₀
+  ambient_bound : ∀ v, v < n → A₀ v < B
   masks : StreamChildGameOut B na tail j G Xmem A₀ Xa Ra Wa Gm Alv Gam σ
   cluster_set : markSet n Xa = clusterAt G A₀ π centre cap c
+  cluster_bit : ∀ v, v < n → Xa v ≤ 1
+  cluster_supported : BlockSupported n 0 tail Xmem Xa
   cluster_members : MemEnum n tail Mm Xa
   row_scan_count : σ.vars "bq" = tail
   child_member_arr : σ.arrs (memName (j + 1)) = arrOf n Mem
@@ -62,6 +66,8 @@ structure StreamChildOut {n : ℕ} (B ns nt na q cap j c tail bits : ℕ)
   child_member_bound : ∀ z, z < mm → Mem z < B
   retained_graph : masked G Ra =
     Lax12.UniformQuasiWideness.deleteVerts (masked G A₀) (markSet n Xa)ᶜ
+  retained_bound : ∀ v, v < n → Ra v < B
+  retained_supported : BlockSupported n 0 tail Xmem Ra
   batch : BatchData n j B G A₀ (markSet n Xa) (markSet n Wa) Alv Gam σ
 
 /-! ## Small frame facts -/
@@ -255,9 +261,17 @@ theorem streamChildFilterStep
       hmasks₂.child_point, hmasks₂.game_arr, hmasks₂.game_bound,
       Mem, mm, hmem₂, hmm₂, hMemE, hMemB⟩
   refine ⟨σ₂, streamChildFilterCost tail, hrun, ?_,
-    Alv, Gam, Mem, mm, hsorted₂, hmasks₂, hret.loaded.cluster_set,
+    Alv, Gam, Mem, mm, hsorted₂,
+    (hav (alvName j) (alvName_ne_succ j)
+      (by simp [alvName, gamName, String.ext_iff])
+      (by simp [alvName, memName, String.ext_iff])).trans
+        hret.loaded.ambient_arr,
+    hret.loaded.ambient_bound, hmasks₂, hret.loaded.cluster_set,
+    hret.loaded.cluster_bit,
+    Lax3Proofs.Refine.CoverActiveStreamMask.StreamLoadOut.cluster_supported
+      hret.loaded,
     hret.loaded.member_enum, hbq₂, hmem₂, hmm₂, hMemE, hMemB,
-    hResEq, hbatch₂⟩
+    hResEq, hret.retained_bound, hret.retained_supported, hbatch₂⟩
   exact le_rfl
 
 #print axioms streamChildFilterStep

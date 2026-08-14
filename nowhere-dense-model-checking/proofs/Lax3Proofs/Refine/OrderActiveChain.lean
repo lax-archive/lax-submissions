@@ -126,12 +126,52 @@ theorem augWorkEntry_of_sized {n mm W kd : ℕ} {IO IT : ℕ → ℕ} {σ : Env}
 /-! ## The chain invariant and its honest resident width -/
 
 /-- Room for the round's temporary augmentation graph, the current
-orientation, and the original compact graph.  The extra
-`mm · budget ... R` term is load-bearing: an augmented orientation may
-contain more arcs than the input graph, so the input slot count alone cannot
-serve as the second summand of `augWidthE` after the first round. -/
+orientation, and the original compact graph.  At round zero there is no
+augmentation call and the initial orientation symmetrizes inside the compact
+input row mass.  After the first round the extra `mm · budget ... R` term is
+load-bearing: an augmented orientation may contain more arcs than the input
+graph. -/
 def activeChainWidthE (mm cs d D₁ R : ℕ) : ℕ :=
-  mm * (budget d D₁ R + 1) ^ 2 + mm * budget d D₁ R + cs + 1
+  if R = 0 then mm + cs + 1
+  else mm * (budget d D₁ R + 1) ^ 2 + mm * budget d D₁ R + cs + 1
+
+@[simp] theorem activeChainWidthE_zero (mm cs d D₁ : ℕ) :
+    activeChainWidthE mm cs d D₁ 0 = mm + cs + 1 := by
+  simp [activeChainWidthE]
+
+theorem activeChainWidthE_of_pos {mm cs d D₁ R : ℕ} (hR : 0 < R) :
+    activeChainWidthE mm cs d D₁ R =
+      mm * (budget d D₁ R + 1) ^ 2 + mm * budget d D₁ R + cs + 1 := by
+  simp [activeChainWidthE, Nat.ne_of_gt hR]
+
+theorem cs_le_activeChainWidthE (mm cs d D₁ R : ℕ) :
+    cs ≤ activeChainWidthE mm cs d D₁ R := by
+  by_cases hR : R = 0
+  · subst R
+    simp only [activeChainWidthE_zero]
+    omega
+  · simp only [activeChainWidthE, if_neg hR]
+    omega
+
+theorem mm_le_activeChainWidthE (mm cs d D₁ R : ℕ) :
+    mm ≤ activeChainWidthE mm cs d D₁ R := by
+  by_cases hR : R = 0
+  · subst R
+    simp only [activeChainWidthE_zero]
+    omega
+  · simp only [activeChainWidthE, if_neg hR]
+    have hp : 1 ≤ (budget d D₁ R + 1) ^ 2 :=
+      Nat.one_le_pow 2 _ (by omega)
+    nlinarith
+
+theorem activeChainWidthE_mono_cs {mm cs cs' d D₁ R : ℕ} (hcs : cs ≤ cs') :
+    activeChainWidthE mm cs d D₁ R ≤ activeChainWidthE mm cs' d D₁ R := by
+  by_cases hR : R = 0
+  · subst R
+    simp only [activeChainWidthE_zero]
+    omega
+  · simp only [activeChainWidthE, if_neg hR]
+    omega
 
 /-- One compact augmentation followed by the resident live-prefix relink. -/
 def activeRoundCom : Com := .seq augCompactWorkCom roundRelinkCom
@@ -151,6 +191,7 @@ def ActiveFoldInv (n mm W w d₀ : ℕ) (H : SimpleGraph (Fin mm))
     IsAugChain H D i ∧
     (∀ l < i, GreedyFratRound (D l) (D (l + 1))) ∧
     (D 0).InDegLE d₀ ∧ InCsr (D i) m IO IT ∧ m ≤ w ∧
+    (i = 0 → m + m ≤ w) ∧
     σ.vars "kd" = m ∧
     (∀ z, z ≤ mm → (σ.arrs "ioff").getD z 0 = IO z) ∧
     (∀ z, z < m → (σ.arrs "itg").getD z 0 = IT z)
@@ -173,7 +214,8 @@ theorem activeFold_step {B n mm cs W w d D₁ d₀ R : ℕ}
   classical
   intro i σ hiR hI
   obtain ⟨hn, hmm, hmem, hsz, D, m, IO, IT, hchain, hgreedy, hD₀, hin, hmw,
-    hkd, hio, hit⟩ := hI
+    hfit₀, hkd, hio, hit⟩ := hI
+  have hRpos : 0 < R := by omega
   set bi := budget d D₁ i with hbiDef
   have hbi : (D i).InDegLE bi :=
     Lax3Proofs.Augmentation.greedy_chain_inDegLE hchain
@@ -192,14 +234,15 @@ theorem activeFold_step {B n mm cs W w d D₁ d₀ R : ℕ}
     hmArc.trans (Nat.mul_le_mul_left mm hbiR)
   have hwidth : augWidthE mm m (budget d D₁ (i + 1)) ≤ w := by
     have hc := hcap
-    simp only [augWidthE, activeChainWidthE] at hc ⊢
+    rw [activeChainWidthE_of_pos hRpos] at hc
+    simp only [augWidthE]
     omega
   have hsq : mm * (bi * bi) ≤ mm * (budget d D₁ R + 1) ^ 2 :=
     Nat.mul_le_mul_left mm (by nlinarith)
   have hfrat : Lax3Proofs.RamAugment.fratSlots (D i) ≤ W := by
     have h₁ := Lax3Proofs.RamAugment.fratSlots_le hbi
     have hc := hcap
-    simp only [activeChainWidthE] at hc
+    rw [activeChainWidthE_of_pos hRpos] at hc
     exact (h₁.trans (hsq.trans (by omega))).trans hwW
   have hdb : 2 * (bi * bi) + bi ≤ budget d D₁ (i + 1) := by
     simpa only [hbiDef] using Lax3Proofs.TgtCoupling.two_sq_add_le_budget_succ d D₁ i
@@ -249,7 +292,7 @@ theorem activeFold_step {B n mm cs W w d D₁ d₀ R : ℕ}
     have h₂ : mm * budget d D₁ (i + 1) ≤ mm * budget d D₁ R :=
       Nat.mul_le_mul_left mm hnextR
     have hc := hcap
-    simp only [activeChainWidthE] at hc
+    rw [activeChainWidthE_of_pos hRpos] at hc
     omega
   have hsza : ActiveOrderSized n W σa := hsz.run ra
   obtain ⟨NOg, hNOg⟩ := hsza.get (p := ("noff", n + 1)) (by simp [activeOrderLayout])
@@ -301,7 +344,8 @@ theorem activeFold_step {B n mm cs W w d D₁ d₀ R : ℕ}
   · simp only [activeRoundCost, augCompactCost_eq, roundRelinkCost]
     omega
   · exact ⟨hnb, hmmBv, hmemb, hszaB, Dnew, m', NO, NT, hchainN, hgreedyN,
-      hD₀N, (by simpa only [Dnew, if_pos rfl] using hin'), hm'w, hkdB, hioB', hitB'⟩
+      hD₀N, (by simpa only [Dnew, if_pos rfl] using hin'), hm'w, (by omega),
+      hkdB, hioB', hitB'⟩
 
 /-- The complete compact augmentation loop.  The command is syntactically
 constant across rounds; the stage index lives only in `ActiveFoldInv`. -/

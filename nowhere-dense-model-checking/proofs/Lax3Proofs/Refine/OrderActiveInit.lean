@@ -62,7 +62,7 @@ theorem activeFold_init {B n mm W w d₀ m : ℕ} {H : SimpleGraph (Fin mm)}
     (hn : σ.vars "n" = n) (hmm : σ.vars "mm" = mm)
     (hmem : σ.arrs "mem" = arrOf n Mem) (hsz : ActiveOrderSized n W σ)
     (horients : D.Orients H) (hindeg : D.InDegLE d₀)
-    (hin : InCsr D m IO IT) (hmw : m ≤ w)
+    (hin : InCsr D m IO IT) (hmw : m ≤ w) (hfit₀ : m + m ≤ w)
     (hio : ∀ z, z ≤ mm → (σ.arrs "ioff").getD z 0 = IO z)
     (hitg : σ.arrs "itg" = arrOf W IT) :
     ∃ σ', Run B installLiveCountCom σ σ' 3 ∧
@@ -81,7 +81,7 @@ theorem activeFold_init {B n mm W w d₀ m : ℕ} {H : SimpleGraph (Fin mm)}
     omega
   refine ⟨σ', r, ?_, ?_⟩
   refine ⟨?_, ?_, ?_, hsz.run r, Ds, m, IO, IT, hchain, hgreedy, ?_, ?_, hmw,
-    ?_, ?_, ?_⟩
+    (fun _ => hfit₀), ?_, ?_, ?_⟩
   · simpa only [σ', vars_setVar, if_neg (by decide : ¬ ("n" = "kd"))] using hn
   · simpa only [σ', vars_setVar, if_neg (by decide : ¬ ("mm" = "kd"))] using hmm
   · simpa only [σ', arrs_setVar] using hmem
@@ -100,7 +100,8 @@ theorem activeFold_init {B n mm W w d₀ m : ℕ} {H : SimpleGraph (Fin mm)}
 degeneracy witness becomes the initial in-degree bound. -/
 theorem activeFold_init_of_elimPost {B n mm ns W w : ℕ}
     {G : SimpleGraph (Fin n)} {M Mem : ℕ → ℕ}
-    {X : Set (Fin n)} {hml : MemList n mm Mem X} { σ : Env }
+    {X : Set (Fin n)} {hml : MemList n mm Mem X} {O T : ℕ → ℕ} {σ : Env}
+    (hcsr : CsrSimple (memGraph G M hml) ns O T)
     (hmn : mm ≤ n) (hnsw : ns ≤ w) (hwW : w ≤ W)
     (hmmB : mm < B) (hwB : w < B)
     (hn : σ.vars "n" = n) (hmm : σ.vars "mm" = mm)
@@ -111,10 +112,14 @@ theorem activeFold_init_of_elimPost {B n mm ns W w : ℕ}
       (∀ k', LowDegreeVertices (memGraph G M hml) k' → k ≤ k') ∧
       ActiveZeroTail mm σ σ' := by
   obtain ⟨R, IO, IT, k, m, E, -, -, hio, hitg, hmns, -, horients, hindeg,
-    -, -, -, -, -, hmin, hin⟩ := hpost
+    -, htoGraph, -, -, -, hmin, hin⟩ := hpost
+  have hfitNs : m + m ≤ ns :=
+    Lax3Proofs.RamDriverAugment.two_mul_arcs_le hcsr hin (fun u v h => by
+      rwa [htoGraph] at h)
+  have hfitW : m + m ≤ w := hfitNs.trans hnsw
   obtain ⟨σ', r, hI, htail⟩ := activeFold_init hmn hwW hmmB
     (lt_of_le_of_lt (hmns.trans hnsw) hwB) hn hmm hmem hsz horients hindeg hin
-    (hmns.trans hnsw) hio hitg
+    (hmns.trans hnsw) hfitW hio hitg
   exact ⟨σ', k, r, hI, hmin, htail⟩
 
 /-! ## The first resident elimination followed by fold initialization -/
@@ -163,7 +168,7 @@ theorem elimFoldInit_spec {B n mm ns W w : ℕ} {G : SimpleGraph (Fin n)}
   have hmem₁ : σ₁.arrs "mem" = arrOf n Mem := by
     rw [r₁.frame_arr "mem" (by decide), hmem]
   obtain ⟨σ₂, k, r₂, hI, hmin, htail₂⟩ :=
-    activeFold_init_of_elimPost hmn hnsw hwW
+    activeFold_init_of_elimPost hcsr hmn hnsw hwW
     (by omega) hwB hn₁ hmm₁ hmem₁ (hsz.run r₁) hpost
   refine ⟨σ₂, k, ?_, hI, hmin, ActiveZeroTail.trans htail₁ htail₂⟩
   simpa only [elimFoldInitCom, elimFoldInitCost] using r₁.seq r₂

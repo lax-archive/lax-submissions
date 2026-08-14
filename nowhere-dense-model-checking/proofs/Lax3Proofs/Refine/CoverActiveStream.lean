@@ -193,6 +193,40 @@ theorem assigned_cover (hcentres : CentresBy n q A₀ π centre)
     exact hrank
   · exact (inCluster_iff hu z.isLt).mpr (by simpa using hz)
 
+/-- An assignment made before the current centre is immutable.  This is the
+semantic frame used by the streamed table loop: both prefix states identify
+the assignment as the least catching centre, so their indices agree. -/
+theorem assignment_eq_of_lt
+    (h₀ : CoverPrefixA G A₀ π centre q r c asg M)
+    {asg' M' : ℕ → ℕ}
+    (h₁ : CoverPrefixA G A₀ π centre q r (c + 1) asg' M')
+    (v : ℕ) (hv : v < n) (halive : A₀ v ≠ 0)
+    (hnew : asg' v < c) :
+    asg v = asg' v := by
+  have hnewq : asg' v < q := lt_of_lt_of_le hnew h₀.pos_le
+  obtain ⟨-, hcat₁, hmin₁⟩ := h₁.asg_set v hv halive hnewq
+  rcases lt_or_eq_of_le (h₀.asg_le v hv halive) with hold | hold
+  · obtain ⟨-, hcat₀, hmin₀⟩ := h₀.asg_set v hv halive hold
+    exact Nat.le_antisymm (hmin₀ _ hnewq hcat₁) (hmin₁ _ hold hcat₀)
+  · have hlate := h₀.asg_unset v hv halive hold _ hnewq hcat₁
+    omega
+
+/-- Once all centres have been streamed, every live vertex has acquired a
+real (non-sentinel) first-catcher assignment. -/
+theorem asg_lt_at_end
+    (hcentres : CentresBy n q A₀ π centre)
+    (h : CoverPrefixA G A₀ π centre q r q asg M)
+    (v : ℕ) (hv : v < n) (halive : A₀ v ≠ 0) :
+    asg v < q := by
+  rcases lt_or_eq_of_le (h.asg_le v hv halive) with hlt | heq
+  · exact hlt
+  · obtain ⟨i, hi, hic⟩ := hcentres.complete v hv halive
+    have hcat : Catches (masked G A₀) π r (centre i) v := by
+      rw [hic]
+      exact catches_self (masked G A₀) π r hv
+    have := h.asg_unset v hv halive heq i hi hcat
+    omega
+
 end CoverPrefixA
 
 /-! ## One reusable row -/

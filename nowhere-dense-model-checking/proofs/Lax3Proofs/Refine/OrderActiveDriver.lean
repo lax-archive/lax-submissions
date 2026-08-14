@@ -501,8 +501,7 @@ theorem activeOrderCore_spec {B n mm ns W w j R d D₁ : ℕ}
       (halv := by simpa only [renEnv_arrs, f, orderScratchSwap_alvName] using halv)
       (hsz := hsz) (σ := renEnv f σ)
   have hcapcs : activeChainWidthE mm cs d D₁ R ≤ w := by
-    simp only [activeChainWidthE] at hcap ⊢
-    omega
+    exact (activeChainWidthE_mono_cs hcsrs).trans hcap
   have hord₀ : ∃ g, (renEnv f σ).arrs (ordName j) = arrOf n g := by
     simpa only [renEnv_arrs, f, orderScratchSwap_ordName] using hord
   have hord₁ : ∃ g, τ₁.arrs (ordName j) = arrOf n g :=
@@ -760,6 +759,30 @@ theorem tabName_notMem_activeOrderPhase (j R a i : ℕ) :
     simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
       orderScratchSwap, tabName, ordName, String.ext_iff]
 
+theorem cpsName_notMem_activeOrderPhase (j R a : ℕ) :
+    cpsName a ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, cpsName, ordName, String.ext_iff]
+
+theorem pdsName_notMem_activeOrderPhase (j R a : ℕ) :
+    pdsName a ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, pdsName, balAltName, ordName, String.ext_iff]
+
+theorem cluName_notMem_activeOrderPhase (j R a : ℕ) :
+    cluName a ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, cluName, ordName, String.ext_iff]
+
+theorem batName_notMem_activeOrderPhase (j R a : ℕ) :
+    batName a ∉ (activeOrderPhase j R).warrs := by
+  apply notMem_activeOrderPhase_warrs <;>
+    simp [activeInitArrs, activeRoundArrs, activeFinishArrs, activeZeroNames,
+      orderScratchSwap, batName, ordName, String.ext_iff]
+
 theorem m_notMem_activeOrderPhase (j R : ℕ) :
     "m" ∉ (activeOrderPhase j R).wvars := by
   apply notMem_activeOrderPhase_wvars <;>
@@ -767,6 +790,11 @@ theorem m_notMem_activeOrderPhase (j R : ℕ) :
 
 theorem lw_notMem_activeOrderPhase (j R : ℕ) :
     "lw" ∉ (activeOrderPhase j R).wvars := by
+  apply notMem_activeOrderPhase_wvars <;>
+    simp [activeInitVars, activeRoundVars, activeFinishVars]
+
+theorem rsbits_notMem_activeOrderPhase (j R : ℕ) :
+    "rsbits" ∉ (activeOrderPhase j R).wvars := by
   apply notMem_activeOrderPhase_wvars <;>
     simp [activeInitVars, activeRoundVars, activeFinishVars]
 
@@ -977,16 +1005,10 @@ theorem activeOrderPhase_spec
       (K₁ + (activeOrderCoreCost mm (memRowSum mm O Mem) w R +
         activeOrderZeroCost mm)) := r₁.seq (r₂.seq r₃)
   have hwidth' := hwidth hml
-  have hsq : 1 ≤ (Lax3Proofs.Augmentation.budget d D₁ R + 1) ^ 2 := by
-    exact Nat.one_le_pow 2 _ (by omega)
   have hmmw : mm ≤ w := by
-    have hmul := Nat.mul_le_mul_left mm hsq
-    simp only [Nat.mul_one] at hmul
-    simp only [activeChainWidthE] at hwidth'
-    omega
+    exact (mm_le_activeChainWidthE mm (memRowSum mm O Mem) d D₁ R).trans hwidth'
   have hrsw : memRowSum mm O Mem ≤ w := by
-    simp only [activeChainWidthE] at hwidth'
-    omega
+    exact (cs_le_activeChainWidthE mm (memRowSum mm O Mem) d D₁ R).trans hwidth'
   have hcost : K₁ + (activeOrderCoreCost mm (memRowSum mm O Mem) w R +
         activeOrderZeroCost mm) ≤ activeOrderPhaseCost w w w R := by
     calc

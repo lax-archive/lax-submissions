@@ -113,6 +113,10 @@ theorem hasDigit_parName (b : ℕ) : HasDigit (parName b) := by
   rw [parName, balName]
   exact hasDigit_append_right _ (hasDigit_toString b)
 
+theorem hasDigit_pdsName (b : ℕ) : HasDigit (pdsName b) := by
+  rw [pdsName, balAltName]
+  exact hasDigit_append_right _ (hasDigit_toString b)
+
 theorem hasDigit_batName (b : ℕ) : HasDigit (batName b) :=
   hasDigit_append_right _ (hasDigit_toString b)
 
@@ -189,6 +193,9 @@ theorem resName_inj {b b' : ℕ} (h : resName b = resName b') : b = b' :=
 theorem parName_inj {b b' : ℕ} (h : parName b = parName b') : b = b' := by
   exact append_toString_inj (p := "bal") (by simpa [parName, balName] using h)
 
+theorem pdsName_inj {b b' : ℕ} (h : pdsName b = pdsName b') : b = b' := by
+  exact append_toString_inj (p := "blt") (by simpa [pdsName, balAltName] using h)
+
 theorem batName_inj {b b' : ℕ} (h : batName b = batName b') : b = b' :=
   append_toString_inj (p := "bat") h
 
@@ -262,8 +269,8 @@ direction (a name of a depth below is not the list of a depth at or
 above) and now needs its own depth bound, exactly like `belowArr_ne`. -/
 def BelowArr (d : ℕ) (a : String) : Prop :=
   ∃ b < d, a = alvName b ∨ a = gamName b ∨ a = cluName b ∨ a = resName b ∨
-    a = parName b ∨ a = batName b ∨ a = ordName b ∨ a = xofName b ∨ a = xmmName b ∨ a = asgName b ∨
-    a = cpsName b ∨ a = memName b ∨ a = klName b ∨
+    a = parName b ∨ a = pdsName b ∨ a = batName b ∨ a = ordName b ∨ a = xofName b ∨
+    a = xmmName b ∨ a = asgName b ∨ a = cpsName b ∨ a = memName b ∨ a = klName b ∨
     (∃ c, a = colName b c) ∨ (∃ i, a = tabName b i)
 
 /-- **A per-depth scalar of a depth below `d`.** -/
@@ -282,10 +289,11 @@ theorem BelowVar.mono {d d' : ℕ} {y : String} (h : BelowVar d y) (hd : d ≤ d
 theorem hasDigit_of_belowArr {d : ℕ} {a : String} (h : BelowArr d a) : HasDigit a := by
   obtain ⟨b, -, hc⟩ := h
   rcases hc with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-    ⟨c, rfl⟩ | ⟨i, rfl⟩
+    rfl | ⟨c, rfl⟩ | ⟨i, rfl⟩
   exacts [hasDigit_alvName b, hasDigit_gamName b, hasDigit_cluName b, hasDigit_resName b,
-    hasDigit_parName b, hasDigit_batName b, hasDigit_ordName b, hasDigit_xofName b, hasDigit_xmmName b,
-    hasDigit_asgName b, hasDigit_cpsName b, hasDigit_memName b, hasDigit_klName b,
+    hasDigit_parName b, hasDigit_pdsName b, hasDigit_batName b, hasDigit_ordName b,
+    hasDigit_xofName b, hasDigit_xmmName b, hasDigit_asgName b, hasDigit_cpsName b,
+    hasDigit_memName b, hasDigit_klName b,
     hasDigit_colName b c, hasDigit_tabName b i]
 
 theorem hasDigit_of_belowVar {d : ℕ} {y : String} (h : BelowVar d y) : HasDigit y := by
@@ -309,7 +317,7 @@ theorem belowArr_ne {d : ℕ} {a : String} (h : BelowArr d a) {b' : ℕ} (hb : d
   obtain ⟨b, hbd, hc⟩ := h
   have hbb : b ≠ b' := by omega
   rcases hc with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-      ⟨c, rfl⟩ | ⟨i, rfl⟩ <;>
+      rfl | ⟨c, rfl⟩ | ⟨i, rfl⟩ <;>
     rcases h' with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
       ⟨c', rfl⟩ | ⟨i', rfl⟩ <;>
     first
@@ -318,6 +326,7 @@ theorem belowArr_ne {d : ℕ} {a : String} (h : BelowArr d a) {b' : ℕ} (hb : d
       | (intro hq; exact hbb (cluName_inj hq))
       | (intro hq; exact hbb (resName_inj hq))
       | (intro hq; exact hbb (parName_inj hq))
+      | (intro hq; exact hbb (pdsName_inj hq))
       | (intro hq; exact hbb (batName_inj hq))
       | (intro hq; exact hbb (ordName_inj hq))
       | (intro hq; exact hbb (xofName_inj hq))
@@ -326,7 +335,7 @@ theorem belowArr_ne {d : ℕ} {a : String} (h : BelowArr d a) {b' : ℕ} (hb : d
       | (intro hq; exact hbb (cpsName_inj hq))
       | (intro hq; exact hbb (colName_inj hq).1)
       | (intro hq; exact hbb (RamDriverBase.tabName_inj hq).1)
-      | simp [alvName, gamName, cluName, resName, parName, balName, balAltName, batName, ordName,
+      | simp [alvName, gamName, cluName, resName, parName, pdsName, balName, balAltName, batName, ordName,
           xofName, xmmName, asgName, cpsName, memName, klName, colName, tabName,
           String.ext_iff]
 
@@ -338,9 +347,9 @@ theorem belowArr_ne_memName {d : ℕ} {a : String} (h : BelowArr d a) {b' : ℕ}
   obtain ⟨b, hbd, hc⟩ := h
   have hbb : b ≠ b' := by omega
   rcases hc with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-      ⟨c, rfl⟩ | ⟨i, rfl⟩
+      rfl | ⟨c, rfl⟩ | ⟨i, rfl⟩
   all_goals first | exact fun hq => hbb (memName_inj hq) | simp
-    [alvName, gamName, cluName, resName, parName, balName, batName, ordName, xofName, xmmName,
+    [alvName, gamName, cluName, resName, parName, pdsName, balName, balAltName, batName, ordName, xofName, xmmName,
     asgName, cpsName, colName, tabName, memName, klName, String.ext_iff]
 
 theorem belowVar_ne {d : ℕ} {y : String} (h : BelowVar d y) {b' : ℕ} (hb : d ≤ b')
@@ -399,12 +408,13 @@ theorem not_ext_bb_of_belowArr {d : ℕ} {a : String} (h : BelowArr d a) :
     ¬ RamDriverBot.Ext "bb" a := by
   obtain ⟨b, -, hc⟩ := h
   rcases hc with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-    ⟨c, rfl⟩ | ⟨i, rfl⟩
+    rfl | ⟨c, rfl⟩ | ⟨i, rfl⟩
   exacts [by rw [alvName]; exact not_ext_bb_append (by decide) (by decide) _,
     by rw [gamName]; exact not_ext_bb_append (by decide) (by decide) _,
     by rw [cluName]; exact not_ext_bb_append (by decide) (by decide) _,
     by rw [resName]; exact not_ext_bb_append (by decide) (by decide) _,
     by rw [parName, balName]; exact not_ext_bb_append (by decide) (by decide) _,
+    by rw [pdsName, balAltName]; exact not_ext_bb_append (by decide) (by decide) _,
     by rw [batName]; exact not_ext_bb_append (by decide) (by decide) _,
     by rw [ordName]; exact not_ext_bb_append (by decide) (by decide) _,
     by rw [xofName]; exact not_ext_bb_append (by decide) (by decide) _,
@@ -1493,9 +1503,9 @@ theorem belowArr_ne_klName {d : ℕ} {a : String} (h : BelowArr d a) {b' : ℕ} 
   obtain ⟨b, hbd, hc⟩ := h
   have hbb : b ≠ b' := by omega
   rcases hc with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-      ⟨c, rfl⟩ | ⟨i, rfl⟩
+      rfl | ⟨c, rfl⟩ | ⟨i, rfl⟩
   all_goals first | exact fun hq => hbb (klName_inj hq) | simp
-    [alvName, gamName, cluName, resName, parName, balName, batName, ordName, xofName, xmmName,
+    [alvName, gamName, cluName, resName, parName, pdsName, balName, balAltName, batName, ordName, xofName, xmmName,
     asgName, cpsName, memName, colName, tabName, klName, String.ext_iff]
 
 /-- **Nor is any scalar of a depth below the kill count of any depth.** -/

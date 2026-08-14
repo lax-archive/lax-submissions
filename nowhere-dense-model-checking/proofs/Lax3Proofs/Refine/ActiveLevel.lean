@@ -326,7 +326,7 @@ theorem levelAtActive
   · intro jd hj M Gm C
     apply activeOrderPhase_weight_spec (R := R) (d := d) (D₁ := D₁)
       (Kmass := Kmass) hcsr hBns
-    · exact lt_of_le_of_lt (Nat.add_lt_add_right
+    · exact lt_of_le_of_lt (Nat.add_le_add_right
         (Nat.add_le_add_left
           (activeOrderWidth_mono
             (Lax3Proofs.Refine.MassWeight.arenaWeight_le_root hcsr M)) n) 1) hwidthB

@@ -70,6 +70,7 @@ structure StreamPlayOut {n : ℕ} (B ns nt na q cap mb j c tail bits : ℕ)
     (mm : ℕ) (σ : Env) : Prop where
   child : StreamChildOut B ns nt na q cap j c tail bits G A₀ π centre O T
     Xmem asg M Xa Mm Ra Wa Gm Alv Gam Mem mm σ
+  parent_play : PlayRec B cap G j A₀ Gm σ
   play : PlayRec B cap G (j + 1) Alv Gam σ
   batch_nonempty : (markSet n Wa ∩ markSet n Xa).Nonempty
   batch_card : (markSet n Wa).ncard ≤ mb
@@ -720,6 +721,10 @@ theorem streamPlayStep
     · rw [hchild₆.masks.child_graph, hchild₆.masks.game_graph]
       exact Evaluator.deleteVerts_mono_graph
         (Evaluator.deleteVerts_mono_graph hle)
+  have hparentPlay₆ : PlayRec B cap G j A₀ Gm σ₆ :=
+    Lax3Proofs.RamDriver.PlayRec.congr
+      (⟨rounds, hrec, hle, hplayR, hcached⟩ : PlayRec B cap G j A₀ Gm σ)
+      hvOld hrOld haOld hpOld
   have hnonempty : (markSet n Wa ∩ markSet n Xa).Nonempty :=
     ⟨v, hvW, hvX⟩
   have hcard : (markSet n Wa).ncard ≤ mb := by
@@ -739,7 +744,7 @@ theorem streamPlayStep
   refine ⟨σ₆, _, hrun, ?_, Xa, Mm, Ra, Wa, Alv, Gam, Mem, mm, ?_⟩
   · simp [streamPlayCost, bw]
     omega
-  · exact ⟨hchild₆, hplay₆, hnonempty, hcard,
+  · exact ⟨hchild₆, hparentPlay₆, hplay₆, hnonempty, hcard,
       exists_arrOf_run hrun hwa₀⟩
 
 #print axioms streamPlayStep

@@ -60,14 +60,12 @@ theorem compactActiveChain_spec {B n mm ns W w j R d D₁ : ℕ}
     Lax3Proofs.Refine.ElimCompactWalks.card_le_of_smono
       (fun i j hij hj => hml.smono i j hij hj) (fun i hi => hml.lt i hi)
   have hrsw : memRowSum mm O Mem ≤ w := by
-    simp only [activeChainWidthE] at hcap
-    omega
+    exact (cs_le_activeChainWidthE mm (memRowSum mm O Mem) d D₁ R).trans hcap
   obtain ⟨σ₁, k, cs, r₁, hcsrs, hcsns, hI, hmin, htail₁⟩ :=
     compactElimFoldInit_spec hcsr hml (by omega) hnB hMB hnsW hrsw hwW
       (by omega) hn hmm hmem hoff htgt halv hsz
   have hcapcs : activeChainWidthE mm cs d D₁ R ≤ w := by
-    simp only [activeChainWidthE] at hcap ⊢
-    omega
+    exact (activeChainWidthE_mono_cs hcsrs).trans hcap
   obtain ⟨σ₂, r₂, hIR, htail₂⟩ :=
     activeFold_run hml hmn hwW hBW hnB (hmin d hd) hdens hcapcs hI
   refine ⟨σ₂, k, cs, ?_, hcsrs, hcsns, hIR, hmin,

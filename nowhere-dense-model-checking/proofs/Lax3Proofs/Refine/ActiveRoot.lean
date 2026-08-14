@@ -228,7 +228,7 @@ theorem driverRootActive_decides_sentence
       hx.offset_last hx.offset_mono
   have hBD : WordBoundK B n Kmass (dedupNs x) cap mb := wordBoundK_anti hnsle hB
   have hwidthB' : n + activeOrderWidth d D₁ R (n + dedupNs x) + 1 < B :=
-    lt_of_le_of_lt (Nat.add_lt_add_right
+    lt_of_le_of_lt (Nat.add_le_add_right
       (Nat.add_le_add_left (activeOrderWidth_mono
         (Nat.add_le_add_left hnsle n)) n) 1) hwidthB
   have hwidthW' : activeOrderWidth d D₁ R (n + dedupNs x) ≤ W :=

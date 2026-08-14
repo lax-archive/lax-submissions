@@ -19,10 +19,13 @@ open Lax3Proofs.Refine.ElimCompact (memGraph memRowSum)
 open Lax3Proofs.Refine.OrderActiveChain (activeChainWidthE)
 open Lax3Proofs.Refine.OrderActiveDriver
 
-/-- The formula-dependent coefficient of the resident live width. -/
+/-- The resident live-width coefficient.  With no augmentation rounds the
+compact input itself supplies all target storage, so the coefficient is one
+and is independent of the graph's degeneracy bound. -/
 def activeOrderWidthCoeff (d D₁ R : ℕ) : ℕ :=
-  (Lax3Proofs.Augmentation.budget d D₁ R + 1) ^ 2 +
-    Lax3Proofs.Augmentation.budget d D₁ R + 1
+  if R = 0 then 1 else
+    (Lax3Proofs.Augmentation.budget d D₁ R + 1) ^ 2 +
+      Lax3Proofs.Augmentation.budget d D₁ R + 1
 
 /-- A resident width sufficient for every compact ordering call in an
 arena of weight `a`. -/
@@ -76,6 +79,9 @@ theorem activeChainWidthE_le_weight {n mm ns d D₁ R : ℕ}
       activeOrderWidth d D₁ R
         (Lax3Proofs.Refine.MassWeight.arenaWeight n G M) := by
   rw [← memberWeight_eq_arenaWeight hcsr hml]
+  by_cases hR : R = 0
+  · subst R
+    simp [activeOrderWidth, activeOrderWidthCoeff]
   let b := Lax3Proofs.Augmentation.budget d D₁ R
   let p := (b + 1) ^ 2
   have hmm : mm ≤ mm + memRowSum mm O Mem + 1 := by omega
@@ -90,7 +96,8 @@ theorem activeChainWidthE_le_weight {n mm ns d D₁ R : ℕ}
       1 * (mm + memRowSum mm O Mem + 1) := by
     rw [one_mul]
     exact hrs
-  simp only [activeChainWidthE, activeOrderWidth, activeOrderWidthCoeff]
+  simp only [activeChainWidthE, activeOrderWidth, activeOrderWidthCoeff,
+    if_neg hR]
   calc
     mm * (Lax3Proofs.Augmentation.budget d D₁ R + 1) ^ 2 +
           mm * Lax3Proofs.Augmentation.budget d D₁ R +

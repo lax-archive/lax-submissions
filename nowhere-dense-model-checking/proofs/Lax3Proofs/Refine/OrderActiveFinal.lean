@@ -169,7 +169,7 @@ theorem activeFinish_spec {B n mm cs W w d D₁ d₀ R j : ℕ}
       ActiveZeroTail mm σ σ' := by
   classical
   obtain ⟨hn, hmm, hmem, hsz, D, m, IO, IT, hchain, hgreedy, hD₀, hin,
-    hmw, hkd, hio, hit⟩ := hI
+    hmw, hfit₀, hkd, hio, hit⟩ := hI
   have hDR : (D R).InDegLE (budget d D₁ R) :=
     Lax3Proofs.Augmentation.greedy_chain_inDegLE hchain
       (hdens D R le_rfl hchain hgreedy) hgreedy
@@ -184,10 +184,14 @@ theorem activeFinish_spec {B n mm cs W w d D₁ d₀ R j : ℕ}
       _ ≤ 2 * (mm * budget d D₁ R) := Nat.mul_le_mul_left 2 hmArc
       _ = mm * (2 * budget d D₁ R) := by ring
       _ ≤ mm * (budget d D₁ R + 1) ^ 2 := Nat.mul_le_mul_left mm htwo
-  have hbaseWidth : mm * (budget d D₁ R + 1) ^ 2 ≤ w := by
-    simp only [activeChainWidthE] at hcap
-    omega
-  have hfitw : m + m ≤ w := hsymSlots.trans hbaseWidth
+  have hfitw : m + m ≤ w := by
+    by_cases hR : R = 0
+    · exact hfit₀ hR
+    · have hRpos : 0 < R := Nat.pos_of_ne_zero hR
+      have hbaseWidth : mm * (budget d D₁ R + 1) ^ 2 ≤ w := by
+        rw [activeChainWidthE_of_pos hRpos] at hcap
+        omega
+      exact hsymSlots.trans hbaseWidth
   have hfitW : m + m ≤ W := hfitw.trans hwW
   have hmB : m < B := lt_of_le_of_lt hmw (by omega)
   have hmmB : mm < B := by omega
