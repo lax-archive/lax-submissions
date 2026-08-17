@@ -1,0 +1,71 @@
+arXiv:math/0508324v2 (Nešetřil–Ossona de Mendez, "Grad and Classes with
+Bounded Expansion II. Algorithmic Aspects"; EJC 2008) LaTeX source, fetched
+2026-08-17. Single-file e-print: `BEII.tex` carries its own
+`thebibliography`, so there is no `.bbl` and no arXiv `00README.json`.
+
+**License, as for `../gks/`: not CC-BY.** The arXiv abstract page carries
+`licenses/assumed-1991-2003`, arXiv's assumed non-exclusive distribution
+license for older submissions. It is checked in on the same reasoning Jan
+accepted for the GKS source on 2026-08-17 — an audit that has to check a
+citation against absence rather than against text gets the wrong answer —
+**but Jan has not confirmed this one specifically. Flag at the next
+boundary.**
+
+## Why it is here
+
+This is the paper `plans/nowhere-dense-model-checking/algorithm-v2.md` §8
+step 0b is blocked on, and it is blocked on it by name. GKS's cover
+theorem (`../gks/nowheredense.tex:1255-1263`) rests on three stages, and
+its only superlinear stage is `thm:computingorientation` (tex:1342-1352),
+whose entire content is the bracket
+
+    [Nešetřil–Ossona de Mendez 2005, Corollary 4.2, Theorem 4.3]
+
+with no proof, no round count and no per-round cost. Rev 4 of
+algorithm-v2.md records the cover's `O(N^{1+δ})` *time* bound as the
+design's load-bearing unproved claim and the one thing that "cannot be
+formalized from any document this project holds". This is that document.
+
+The citation resolves exactly: §4 is the fourth `\section`, so its
+environments number 4.1, 4.2, 4.3.
+
+## Map, by line in `BEII.tex`
+
+   108  Introduction
+   173  The grad of a graph and classes with bounded expansion
+   386  Basics
+   503  §4 Transitive fraternal augmentations of graphs in LINEAR TIME
+        530    Lemma 4.1   — special case of Lemma 6.1 of [POMNI]; the
+                             density bound ∇_r(H) ≤ P_{2r+1}(md(G)+1, ∇_{2r+1}(G))
+        545    Corollary 4.2 — the A(r,i)/B(i) recursion bounding ∇_r(G_i)
+                             and md(G_i) along the augmentation chain
+        570    §4.2 the one-step algorithm, in pseudocode:
+                 transitivity arcs   O(md(G)²·n), ≤ md(G)²·n added
+                 fraternity edges    O(md(G)²·n), |L| ≤ md(G)²·n/2
+                 simplify L, orient it at low indegree, merge  O(md(G)²·n)
+                 and the indegree recurrence md(G_{i+1}) ≤ md(G_i)² + 2∇_0(G_i),
+                 i.e. F(x,y) = x² + 2y  (stated at :570-571)
+        679    Theorem 4.3 — for a class of BOUNDED EXPANSION and fixed c,
+                             computes G_1 ⊆ … ⊆ G_c in time O(n)
+   690  Distances — O(1) capped-distance queries after linear preprocessing
+   716  p-centered colorings and tree-decomposition
+   791  Application to subgraph isomorphism
+   836  Local decidability problems
+   948  Vertex separators
+
+## The one thing to read before pricing §8 step 0b
+
+Theorem 4.3 is stated for classes of **bounded expansion**, in time
+**O(n)**. GKS's `thm:computingorientation` is stated for **nowhere dense**
+classes, with `Δ⁻ ≤ n^ε`, in time `f(r,ε)·n^{1+ε}`. Those are not the same
+statement, so the import is not the one-line citation GKS's bracket makes
+it look like.
+
+What the paper *does* supply is precisely what Rev 4 recorded as missing
+everywhere: the algorithm itself, its round count (`c`, fixed in advance)
+and its per-round cost (`O(md²·n)`, with `md` controlled along the chain by
+Corollary 4.2 and the recurrence at :570). The nowhere-dense
+instantiation — where `md` is not constant but `n^{ε'}` and the per-round
+cost is therefore `n^{1+2ε'}` — is stated in neither paper, and the
+low-indegree orientation step is where it has to be checked. That
+adaptation, not the algorithm, is the actual content of step 0b.
