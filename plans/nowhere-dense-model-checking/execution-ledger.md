@@ -13,7 +13,7 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 | leaf | what it closes | status | wave | commit | note |
 |---|---|---|---|---|---|
-| E0 | cover time bound stated as an assumption; §8/§9 rewrite | ready | — | — | unblocked 2026-08-17: `references/nodm05/` is the NOdM paper GKS defer to |
+| E0 | cover time bound stated as an assumption; §8/§9 rewrite | ready | — | — | unblocked 2026-08-17: `references/nodm05/` + `nodm05i/` are the two NOdM papers GKS defer to; the chain now bottoms out in a proof |
 | E1 | cover clusters are path-closed (§5) | ready | — | — | priced at ~10 lines, untested |
 | E2 | `ctr` and the π-min identity (§4) | ready | — | — | priced at ~6 lines, untested |
 | E3 | the edge half of (★) (§7) | ready | — | — | no counterpart in the surviving layer |
@@ -48,10 +48,13 @@ Two things changed on the day the ledger opened, and both shrink the plan:
 
 - **§8 step 0b is not blocked.** GKS's bracket resolves to arXiv math/0508324v2,
   now at `references/nodm05/`. It supplies the round count and per-round cost
-  Rev 4 recorded as absent everywhere. What it does *not* supply is the
-  nowhere-dense instantiation — its Theorem 4.3 is a **bounded expansion**
-  statement in time **O(n)** — and that adaptation, not the paper, is E0's
-  content.
+  Rev 4 recorded as absent everywhere. Its own Lemma 4.1 defers once more, to
+  Lemma 6.1 of part I — arXiv math/0508323v1, now at `references/nodm05i/`,
+  where it is proved in full. So the deferral chain is four links long, one
+  longer than Rev 4 thought, and it **terminates in a proof**. What none of the
+  four papers supplies is the nowhere-dense instantiation — part II's Theorem
+  4.3 is a **bounded expansion** statement in time **O(n)** — and that
+  adaptation, not the import, is E0's content.
 - **§7 stops being tightened.** Jan's call: take the slack. `δ = ε/(ℓ+2)` and a
   freely chosen base constant `K`, in place of Rev 4's `ε/(ℓ+1)` and the forced
   `(2c)^{L+1}` shape that manufactured the `c ≥ 6` side condition. The headline

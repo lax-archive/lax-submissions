@@ -79,6 +79,15 @@ Rev 4 declared this blocked on an external paper. **It is no longer blocked** �
 *[Nešetřil–Ossona de Mendez 2005, Corollary 4.2, Theorem 4.3]* resolves onto
 its §4 exactly. Read `references/nodm05/README` first; it maps the file.
 
+**And the chain now terminates.** Part II's Lemma 4.1 is itself only a
+citation — *"special case of Lemma 6.1 of [POMNI]"* — so the deferral went one
+level deeper than Rev 4 knew. `[POMNI]` is part **I**, now at
+`references/nodm05i/`, where Lemma 6.1 is **proved in full** (`BEI.tex:1064`,
+the ball-family argument), with Corollary 6.2 bounding `md(G_i)` along the
+chain. Nothing below it is deferred. The leaf must not repeat the mistake that
+produced this whole situation: open each link and read the statement, rather
+than recording that a citation exists.
+
 What the leaf must produce:
 
 1. A named hypothesis in the proofs layer — a structure or a `Prop`-valued

@@ -1,0 +1,62 @@
+arXiv:math/0508323v1 (Nešetřil–Ossona de Mendez, "Grad and Classes with
+Bounded Expansion I. Decompositions"; EJC 2008) LaTeX source, fetched
+2026-08-17. Single-file e-print: `BEI.tex` carries its own
+`thebibliography`, so there is no `.bbl` and no arXiv `00README.json`.
+
+Licence: arXiv's assumed non-exclusive licence, not CC-BY, as for `../gks/`
+and `../nodm05/`. **Checked in on Jan's explicit permission, 2026-08-17**
+("you are allowed to put all required texts into this repo").
+
+## Why it is here — the third link of the chain
+
+`../nodm05/` is part **II**, the paper GKS defer their only superlinear
+cover stage to. Its own §4 rests in turn on this one: part II's Lemma 4.1
+is quoted there as *"Special case of Lemma 6.1 of [POMNI]"*
+(`../nodm05/BEII.tex:530`), and `[POMNI]` is this paper
+(`BEII.tex:1116-1119`, as KAM-DIMATIA tech report 2005-739). So the full
+chain under `algorithm-v2.md` §8 step 0b is
+
+    gks tex:1255  cover theorem
+      → gks tex:1342  thm:computingorientation  [cites NOdM II 4.2, 4.3]
+        → nodm05  BEII.tex:679  Theorem 4.3     [the O(n) algorithm]
+          → nodm05  BEII.tex:530  Lemma 4.1     [cites POMNI 6.1]
+            → HERE  BEI.tex:1064  Lemma 6.1     [proved in full]
+
+and it terminates here. Nothing further is deferred.
+
+## Map, by line in `BEI.tex`
+
+   105  Introduction
+   340  §2 Low tree-width coloring
+   362  §3 Low tree-depth coloring and p-centered colorings
+   538  §4 The grad of a graph and classes with bounded expansion
+   711  §5 Grad stability over lexicographic product
+  1040  §6 Transitive fraternal augmentation
+        1064   **Lemma 6.1** — the density-stability bound, WITH ITS PROOF:
+                 ∇^c_r(H) ≤ ∇^{c(md(G)+1)}_{2r+1}(G)
+                          ≤ P_{2r+1}(c(md(G)+1), ∇_{2r+1}(G))
+                 for H any 1-transitive fraternal augmentation of G.
+                 The proof is the ball-family argument: expand each ball
+                 V_i by its in-neighbours, giving a ball of G of radius
+                 ≤ 2r+1 and complexity ≤ c(md(G)+1).
+        1093   Corollary 6.2 — polynomials Q_i with
+                 md(G_i) ≤ Q_i(md(G), ∇_{2^{i+1}-1}(G)); and the bounded
+                 expansion corollary md(G_i) ≤ g(i)
+  1111  §7 Back to p-centered colorings
+  1225  §8 Conclusion
+
+## What this changes for E0
+
+The *mathematics* of the augmentation chain terminates in a proved lemma,
+not in another citation — and the surviving Lean layer already carries this
+half (`Lax3Proofs/Augmentation.lean`, `AugmentedDensity.lean`,
+`CoverDegree.lean`). What neither paper states, and what E0 therefore owes,
+is unchanged by having this text: the **nowhere-dense instantiation** of
+part II's Theorem 4.3, whose statement is about classes of **bounded
+expansion** in time **O(n)** while GKS cite it for **nowhere dense** with
+`Δ⁻ ≤ n^ε` in `f(r,ε)·n^{1+ε}`.
+
+Having part I is still worth the disk: it is the difference between "the
+chain bottoms out in a proof" and "the chain bottoms out somewhere we have
+not looked", and four audits of this campaign have now shown that the
+second answer is the one that produces wrong plans.

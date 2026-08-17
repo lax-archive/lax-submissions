@@ -5,11 +5,15 @@ Bounded Expansion II. Algorithmic Aspects"; EJC 2008) LaTeX source, fetched
 
 **License, as for `../gks/`: not CC-BY.** The arXiv abstract page carries
 `licenses/assumed-1991-2003`, arXiv's assumed non-exclusive distribution
-license for older submissions. It is checked in on the same reasoning Jan
-accepted for the GKS source on 2026-08-17 — an audit that has to check a
-citation against absence rather than against text gets the wrong answer —
-**but Jan has not confirmed this one specifically. Flag at the next
-boundary.**
+license for older submissions. **Checked in on Jan's explicit permission,
+2026-08-17** ("you are allowed to put all required texts into this repo"),
+on the reasoning he accepted for the GKS source the same day: an audit that
+has to check a citation against absence rather than against text gets the
+wrong answer.
+
+**Part I is at `../nodm05i/`** and this paper's §4 rests on it — Lemma 4.1
+below is quoted as a special case of Lemma 6.1 of `[POMNI]`, which is that
+paper. The chain terminates there, in a proof.
 
 ## Why it is here
 
