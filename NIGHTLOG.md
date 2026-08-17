@@ -6218,7 +6218,8 @@ supervisor loop `.claude/commands/ndmc.md` reads both, dispatches waves of
 `Agent` subagents, gates with `.claude/leaf-gate.sh`, lands, records, and
 repeats without asking at ordinary boundaries. **No workflows in the execution
 path** — Jan's instruction: they need his permission on every call, and this
-loop must not need him. Wave 1 is E1/E2/E3.
+loop must not need him. Wave 1 is E0/E1/E2/E3; eight of the thirteen leaves
+are dispatchable on day one.
 
 **Jan closed the design.** "I think we converged to minor plan details only
 that are best left to the individual workers." Agreed, with one exception that

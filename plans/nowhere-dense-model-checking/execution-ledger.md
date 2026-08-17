@@ -35,9 +35,10 @@ was done.
 
 ### 2026-08-17 — the ledger opens
 
-Nothing landed yet. Wave 1 (E1, E2, E3) is the intended first dispatch: three
-small, disjoint cover-layer satellites, chosen because they are the cheapest
-way to test whether this document's line-count estimates mean anything.
+Nothing landed yet. **Wave 1 (`w1`) is E0, E1, E2, E3** — three small, disjoint
+cover-layer satellites plus the one document leaf. Chosen because they are the
+cheapest way to test whether the design's line-count estimates mean anything,
+and because they land both of E4's dependencies, so wave 2 opens fully.
 
 Four adversarial audits (29 + 9 agents) preceded this file. Their standing
 result: the abstract core — §5's recursion, §7's shape, D2–D4, and both of Rev
