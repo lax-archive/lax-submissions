@@ -85,7 +85,7 @@ quantified in `ct`, `ksc`, `Kin`: **no constant closes the turn slot.**
 |---|---|---|
 | `descendCost n ns cap j` | `24n² + 98n + 61 + ballCost + batchCost` | §2.5 |
 | `23·n + 12·mb + 30` | Θ(n) — **no cost-function name, no ledger row** | §2.5 |
-| `colourCost n ns cap mb (sigL …)` | `slotCost·(2(L+1)+mb) + 3` | §2.3, §2.4 |
+| `colourCost n ns cap mb (sigL …)` | `(15n+6)L+(12n+6)+slotCost·(mb+L+1)+3` | §2.5 |
 | `killCost` | carrier-blind ✓ | — |
 | `killListCost` | carrier-blind ✓ | — |
 | `Kin`, `Ksc` | slots | §2.1 |
@@ -122,6 +122,12 @@ Sizes are ESTIMATES calibrated on the measured rate — **~800 net lines and
 
 ### §2.1 `b4-iface` — cash the three landed waves at the root
 
+**Status 2026-08-10: landed on the campaign branch.** `Kb`/`Ki`/`Ksc` are
+block-indexed through the root consumers, the carrier bridge is gone, and the
+retired dead sweep has been removed semantically from both the root program
+budget and the Σ recurrence.  The reduced interface and every downstream
+probe pass the 3593-job `proofs` build.  The next dependency leaf is §2.2.
+
 **First, because the campaign says so and because nothing else is true yet.**
 `NIGHTLOG.md` session wrap: *"Where a successor starts: `b4-iface`."*
 
@@ -149,6 +155,21 @@ root pair; the `DriverRootD` mirror; the probe files; the two bridge files.
 Not one wave. Do not dispatch as one.
 
 ### §2.2 The readback block walk
+
+**Status 2026-08-10: complete on the campaign branch.** `readbackCom` now walks
+`[Xoff cur, Xoff (cur + 1))`, loads each row through `Xmem`, and retains the
+assignment guard.  `RamDriverBase.readback_spec` is block-sized, its invariant
+is indexed by block slots, and the readback's scalar/frame surface now includes
+`z`, `zend`, and `rv`.  The proof no longer asks for a carrier-wide assignment
+bound: `CoverOut.mem_lt` and `CoverOut.asg_lt` discharge the loaded member
+pointwise. `ReadbackStep` is indexed by the static block centre, and the
+cluster/root contracts now charge `rbCost` at that block's weight; the only
+weakening is the proved `blockSize ≤ blockWeight` bridge. The restated root and
+all downstream probes consume the new family, `turnCostSize_reads_size`
+compiles that the slot is genuinely live, and the 3593-job `proofs` build
+passes. `B4Design`'s surviving negative control is correspondingly narrowed:
+the remaining floor comes from additive `Ksc`, not from readback blindness.
+The next dependency leaf is §2.3.
 
 **Landable now, against the LANDED contract, green in between.** The write set
 only shrinks, and every new obligation follows a fortiori from clauses already
@@ -188,6 +209,14 @@ class — brief it explicitly.
 
 ### §2.3 The `expandStep` tightening
 
+**Status 2026-08-10: complete on the campaign branch.** `expandStep_spec` is
+indexed by its static row and charges `24·rowLen z + 40`; the scan proof now
+uses `ScanHit`'s live lower endpoint instead of discarding it with
+`Nat.sub_le`. `expandCom_spec` uses `forRangeZeroSum`, and `sum_rowLen`
+telescopes the row family to the exact bound `24·ns + 44·n + 6`.  The tighter
+formula has propagated through both `slotCost` and `ballCost`, and the full
+3593-job `proofs` build passes.  The next dependency leaf is §2.4.
+
 `expandStep_spec` discharges its scan obligation at `RamDriverDescend.lean:1004-1009`
 by `Nat.sub_le`, throwing away the row's start, with `hρ` bound and unused. The
 tight fact is `ScanHit`'s fourth component (`RamDriverCluster.lean:448`,
@@ -214,6 +243,13 @@ ND-MC already carry the tight bound under one uniform house idiom; no
 **Size: 1 sub-wave** (ESTIMATE).
 
 ### §2.4 The `colourCost` re-association
+
+**Status 2026-08-10: complete on the campaign branch.** `colourCost` now
+retains `oldCom`'s exact flat-pass charge and applies `slotCost` only to the
+batch and colour expansion profiles.  `colourCom_spec` proves the resulting
+bound by normalising the three sequential run costs, with no monotonic
+overcharge.  The targeted `RamDriverDescend` build passes.  The next
+dependency leaf is §2.5.
 
 `oldCom` runs **no expansion** (`RamDriver.lean:1502-1506`; its cost carries no
 `cap` — `RamDriverDescend.lean:1651`) but `colourCost` bills it at
@@ -255,12 +291,28 @@ Contents:
    `RamDriverDescend.lean` — the file this phase single-owner-locks. Sequence
    the move before the engine work or eat a merge conflict in 4568 lines.
 
+   **Status 2026-08-10:** complete in `Refine/DriverPrelude.lean`. The actual
+   elaborated closure also required moving the driver-independent primitives
+   `xmmName`, `fillUpto`, `copyUpto`, `hit_eq_expandVal`, `forRangeZero'`, and
+   `fillPrefix_spec`; leaving any one below its former driver made one of the
+   five target closures cyclic. `BlockLeaves`, `CoverBlock`, `MassWeight`,
+   `ArenaBlock`, and `SigmaLoop` now reach zero `RamDriver*` modules in a
+   transitive source-import audit, and the full compose chain builds with one
+   Lake job.
+
 2. **`clusterLoad` at block scale.** `:2564-2568` bounds the block scan by
    `n*n`, syntactically discarding the `CluScan` invariant (`_`), whose third
    component (`:2338`) is `Xoff c ≤ ρ.vars "p"`. There is no counted loop here,
    so `forRangeZeroSum` does not apply: making the charge block-driven means
    making the cost a function of block size, which propagates into
    `turnCostSize`'s slot. That is why this is the engine wave, not §2.3.
+
+   **Status 2026-08-10:** complete. `clusterLoad_spec` is fixed at an explicit
+   centre and costs `24 * blockSize Xoff c + 11 * n + 26`;
+   `DescendStep` carries that centre, `descendStep` pays the block size from
+   `MassWeight.blockWeight`, and `turnCostSize` now reads the resulting
+   size-indexed descent cost. The obsolete descent-based cubic floor in
+   `SlotSweep` was retired, and the G2 negative control flipped positive.
 
 3. **The four `BlockLeaves` leaves at `Com` + `Spec`**, and the walks re-done
    at block scale: `clusterLoad_spec` (264 lines), `ballCom_spec` (124),
@@ -318,6 +370,17 @@ The real coupling is one-way and compiled: `RamDriver.CoverImplements`
 **11–17 sub-waves in four independently landable boundaries**, against 17–28 as
 one monolith.
 
+**Status 2026-08-12: complete on the campaign branch.** The concrete compact
+order and active cover instantiate the recursive `levelAtA` theorem, including
+an inductive write-set proof for the nested driver and the centre-loop header.
+Their costs are charged at the current `arenaWeight`.
+`ActiveRoot.driverRootActive_decides_sentence` composes the deduplicating decode,
+that concrete recursive driver, and sentence readback.  The replacement
+`ActiveCost.active_root_g2_plug` instantiates the sigma recurrence at this
+executable root: the abstract `hKo`/`hKc` phase slots and both carrier
+dominations are absent.  Its single remaining implication is precisely the
+turn-cost row owned by §2.7.
+
 Two technical points the wave-A brief must carry:
 
 - **`OrdersByM` is `MemberOrderContract` verbatim** and its bridge is an iff
@@ -356,6 +419,150 @@ entirely by wave A.
 nothing imports it except `G2ExistsRevalidation`, while the floors and
 `g2_plug` are stated at the *landed* root. That decides whether B7 is a re-run
 or an adoption.
+
+**Status 2026-08-12, active-root continuation:** the root choice is now made
+and the order/cover rows are closed at `Refine/ActiveCost.lean`.  The first
+turn-cost leaf is `Refine/ActiveEnum.lean`: `enumBlockCom_spec` walks only
+`Xmem[Xoff k .. Xoff (k+1))`, and `enumBlockStepA` proves at the active driver
+surface that it returns exactly the former `W ∩ X` padded batch.  Its charge
+is `30·blockSize + 12·mb + 40`; no carrier term occurs.  The contract records
+the load-bearing feeder `X ⊆ clusterAt … k` rather than hiding it in the
+implementation.  The remaining §2.7 work is the other descent/colour leaves,
+the block scatter lifecycle, and their composition into the real turn.
+
+**Status 2026-08-12, exact C0 width gate:** `Refine/ActiveBridgeWidth.lean`
+now separates logical array length from executed address width and compiles
+the latter obstruction at the headline's own tight empty-graph words.
+`no_wordConst_for_unbounded_degree` proves that no constant chosen before the
+input can discharge the active root's current `WordBoundK B n D …` contract
+for an unbounded degree profile; `no_wordConst_for_superlinear_width` proves
+the analogous statement for a superlinear resident ordering width.  Both
+directions matter: the IMP+ simulation permits a logical `arrOf (n*n)`, so
+that length alone was not a refutation, but the program's actually formed
+`n*D` cover pointer and `activeOrderWidth` indices are.  Consequently the
+remaining road now has a representation boundary before C0: either stream
+the cover/ordering work through linear resident storage, or produce fixed
+pre-input coefficients.  The current nowhere-dense parameter layer has no
+such fixed-coefficient theorem, so the latter is not assumed.  Turn wiring
+must respect the chosen linear-space splice rather than cementing the
+materialise-all-blocks loop first.
+
+**Status 2026-08-12, streaming-cover semantic splice:**
+`Refine/CoverActiveStream.lean` now removes the accumulated arena from the
+mathematical turn boundary.  `CoverPrefixA` retains exactly the progressive
+mask and stable first-catcher assignment; `RawStreamRowA.stepQueue` consumes
+the already-verified touched BFS trail into one reusable
+`Xmem[0..tail)` row with `tail ≤ n`; and `CoverPrefixA.assigned_cover` proves
+that a claim made at the current prefix already has the full ball-cover
+property, so the corresponding cluster can be processed before later centres.
+The narrow 3458-job build passes and the four new public lemmas use only the
+project's standard `propext`/choice/quotient axioms.  This closes the semantic
+half of the cover repair.
+
+`Refine/CoverActiveStreamTurn.lean` now closes the first executable half as
+well.  `activeStreamTurnCom` resets `xp` to zero on every centre, emits into the
+carrier-sized prefix of any resident allocation, updates the stable assignment,
+and kills the centre while
+leaving scalar `c` available to the immediate consumer.  Its verified
+`activeStreamTurn_spec` assumes only `n < B` for row addressing: there is no
+`xp+n < B`, `n*n < B`, `xoff`, or accumulated-pointer premise.  The remaining
+dependent leaf is to radix-sort that one row and compose the cluster body
+before advancing to the next centre.  The old `n*D` arena and offset table
+must not reappear in that contract.
+
+`Refine/CoverActiveStreamSort.lean` now closes that radix-sort leaf.
+`activeStreamSortCom` sorts exactly `Xmem[0..tail)` in place through the
+existing verified radix block, and `RawStreamRowA.of_radix` proves that the
+result is the same cluster row in strict numeric order.  Its executable
+contract needs only `tail ≤ n < B` plus an `n`-covering radix width; the row
+allocation itself may be larger, so the existing depth-owned arena can be
+reused through its carrier-sized prefix.  It frames the progressive cover
+state and introduces neither an offset table nor an accumulated row address.
+The narrow 3467-job build passes, and both public
+theorems use only the project's standard `propext`/choice/quotient axioms.
+The next dependent leaf is the immediate streamed-row enumeration/cluster
+consumer, followed by the centre increment and enclosing fused loop.
+
+`Refine/CoverActiveStreamEnum.lean` now supplies that immediate consumer.
+`enumStreamCom` instantiates the existing verified collector directly on
+`[0,tail)`, pads the result to `mb`, and never loads `Xoff`; its charge is
+`30·tail + 12·mb + 40`.  `enumStreamStepA` proves at the cluster-turn surface
+that the buffer range is exactly `W ∩ X` while framing the sorted row, the
+progressive mask, assignments, graph data, and recursive play state.  Its
+only executed row bound is `tail ≤ n < B`, even when the resident row array is
+larger.  The narrow 3550-job build passes and both public theorems use only
+the project's standard `propext`/choice/quotient axioms.  The next dependent
+leaf is the remainder of the current cluster body on this prefix, then the
+centre increment and fused loop.
+
+`Refine/CoverActiveStreamLoad.lean` now supplies the descent-side prefix
+adapter.  `streamClusterLoadCom` marks exactly `Xmem[0..tail)` in the current
+cluster array and copies that same strictly increasing row directly into the
+next depth's member enumeration; it reads no offset table and performs no
+carrier-wide clear.  Its charge is `24·tail + 8`, and
+`streamClusterLoadStep` identifies the marked set exactly with the current
+streamed cluster while retaining both the sorted stream state and the level's
+ambient arena `A₀` at `alvName j`.  The progressively depleted search mask
+remains the separate scratch array `"alv"`; it is not used as the recursive
+arena.  The entering
+cluster array is deliberately required to be zero: the fused level will
+establish that once, then clear only the row it just consumed between
+centres.  The narrow 3543-job build passes and both public theorems use only
+the project's standard `propext`/choice/quotient axioms.  The next dependent
+leaf is the block-mask descent over this emitted member prefix, followed by
+the remaining colour/kill/inner/scatter lifecycle and the fused centre loop.
+
+`Refine/CoverActiveStreamMask.lean` now supplies that first block-mask leaf.
+Its range adapter deliberately separates the resident row allocation `na`
+from the executed prefix `tail`, then proves exact supported clear, conjunction,
+and subtraction maps over the whole carrier.  The concrete retained mask is
+therefore exactly `Ra(v) = A₀(v) * Xa(v)` after an `18·tail + 8` pass, with no
+carrier scan or hidden `na = n` premise, while the loaded cluster row and its
+member enumeration remain framed.  This corrects the first landed version,
+which incorrectly read the already-depleted progressive mask `M`; that
+version was never pushed to the draft PR.  The narrow 3544-job build passes
+and the public theorems use only the project's standard
+`propext`/choice/quotient axioms.  The next dependent leaf is the cached-batch
+lifecycle and its post-batch child/game masks on this same row.
+
+`Refine/CoverActiveStreamBatch.lean` now closes that cached-batch lifecycle.
+Cached parent chains are cut by the current cluster as they are walked, so the
+batch remains supported by `xmem[0..tail)` throughout instead of requiring a
+later carrier-wide cut.  Two supported row maps then establish the exact
+whole-carrier equations `Alv(v) = A₀(v) * Xa(v) * (1 - Wa(v))` and
+`Gam(v) = Gm(v) * Xa(v) * (1 - Wa(v))`, and the release pass restores the
+batch array to exact zero for reuse by the next centre.  The full lifecycle
+cost is `(36·cap + 32)·j + 57·tail + 29`; it has no carrier-width term,
+offset-row lookup, accumulated pointer premise, or `na = n` assumption.  The
+narrow 3545-job and aggregate 3648-job builds pass, and the public theorems use
+only the project's standard `propext`/choice/quotient axioms.  The next
+dependent leaf is the exact child-member filter.
+
+`Refine/CoverActiveStreamChild.lean` now supplies that filter.  It composes the
+streamed child/game-mask step with the stable member filter at depth `j + 1`,
+retaining the exact whole-carrier child graph and producing an exact
+`MemEnum n mm Mem Alv` for the child.  The row, batch support, parent cluster,
+and game data remain framed, and the exact cost is `66·tail + 24`; there is no
+carrier scan, offset row, accumulated pointer premise, or hidden `na = n`.
+The narrow 3546-job, aggregate 3649-job, and submission-level `lax build`
+gates pass, and the public theorem uses only the project's standard
+`propext`/choice/quotient axioms.
+
+**Status 2026-08-13, ambient repair and enumeration adapter:** the complete
+streamed descent surface now consistently separates the ambient recursive
+arena `A₀` (`alvName j`) from the progressive centre-search mask `M`
+(`"alv"`).  `Refine/CoverActiveStreamChildEnum.lean` discharges the exact
+child-output-to-enumeration adapter at cost `enumStreamCost tail mb`, returning
+ambient-`A₀` `ClusterData` while framing the progressive stream state.  Its
+`PlayRec (j + 1)` premise is explicit: this adapter does **not** construct the
+successor recursion record.  The narrow 3555-job, aggregate 3650-job, and
+submission-level `lax build` gates pass with only the standard
+`propext`/choice/quotient axioms.  The next dependent boundary is therefore
+the genuine streamed descent composition: install the current connector,
+run the row-priced retained-parent cache, open the supported batch, produce
+the child masks and member enumeration, and prove `playRec_succ`.  Streamed
+colouring remains a separate cost-sensitive leaf before kill/inner/scatter
+composition and the fused centre loop.
 
 ---
 

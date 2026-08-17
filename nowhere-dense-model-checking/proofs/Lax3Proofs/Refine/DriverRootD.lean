@@ -659,7 +659,8 @@ theorem degOrder_of_orderP_alive {n cap Kmass R : ℕ} {G : SimpleGraph (Fin n)}
 
 variable {n : ℕ} {B q_top cap mb ns W ℓ R j Kmass : ℕ} {φ : Lax3.FirstOrder.FO 0}
   {G : SimpleGraph (Fin n)} {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ} {π : Equiv.Perm (Fin n)}
-  {ord Xoff Xmem asg : ℕ → ℕ} {mm k : ℕ} {Kb Ki Ksc Ks : ℕ} {Kin : ℕ → ℕ}
+  {ord Xoff Xmem asg : ℕ → ℕ} {mm k : ℕ} {Kb Ki Ksc : ℕ → ℕ} {Ks : ℕ}
+  {Kin : ℕ → ℕ}
 
 open Lax3Proofs.Refine.MassWeight (arenaWeight blockWeight) in
 open Classical in
@@ -667,23 +668,24 @@ open Classical in
 and the write-set facts read off the `RFrames` residual. -/
 theorem clusterStepAtR (hfr : RFrames q_top cap mb R ℓ φ)
     (hcap : cap = rhoMinus 0 q_top) (hmb : mb = ℓ * (2 * cap + 1)) (hjl : j < ℓ)
-    (hB : WordBoundK B n Kmass ns cap mb) (hcsr : CsrGraph G ns O T)
+    (hB : WordBoundK B n Kmass ns cap mb) (hcsr : RamElim.CsrSimple G ns O T)
     (hbnd : ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n ns n σs.t ≤ Kb)
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
+          Refine.ScatterDeadTurn.deadAtomKBlk σs.β z mb z z σs.t ≤ Kb z)
     (hcostI : ∀ β ∈ tablesAt q_top cap mb φ j,
-      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki)
-    (hKsc : Ki * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc)
+      ∀ z, Kb z * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki z)
+    (hKsc : ∀ z, Ki z * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc z)
     (hmono : Monotone Kin)
-    (hK : Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc
+    (hK : Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ
+      (Ksc (blockWeight n G Xoff Xmem k))
       (blockWeight n G Xoff Xmem k) (Kin (blockWeight n G Xoff Xmem k)) ≤ Ks) :
     ClusterStepImplements B q_top cap mb ns W ℓ j φ G O T M Gm C π ord Xoff Xmem asg mm k
       (arenaWeight n G) (driverAt q_top cap mb R ℓ φ (j + 1)) Kin Ks :=
   RamDriverCluster.clusterStepImplements
     (bw := min (Lax3Proofs.Refine.MassWeight.blockRowSum O Xoff Xmem k) ns)
     (nb := min (Lax3Proofs.Refine.MassMath.blockSize Xoff k) n) hcap
-    (RamDriverDescend.descendStep hmb hjl le_rfl)
+    (RamDriverDescend.descendStep hcsr hmb hjl le_rfl)
     (fun _ _ _ _ => RamDriverDescend.enumStep hB le_rfl)
     (fun _ _ _ _ _ => RamDriverDescend.colourStep le_rfl)
     (RamDriverFrames.wa_notMem_warrs_colourCom cap mb j)
@@ -696,14 +698,15 @@ theorem clusterStepAtR (hfr : RFrames q_top cap mb R ℓ φ)
       (hfr j).2.2.1 (hfr j).2.2.2.1
       (fun _ ha => (hfr j).2.2.2.2.2.2.2.2.1 _ ha)
       (hfr j).2.2.2.2.2.2.2.2.2)
-    (fun X _ _ _ _ _ =>
-      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB
-        (Lax3Proofs.RamDriverRoot.scatterBnd_cluster X
-          (Nat.min_le_right _ _) (Nat.min_le_right _ _) hbnd)
-        hcostI hKsc)
+    (fun X _ _ _ _ _ hkn hout hXcl =>
+      Refine.ScatterDeadTurn.scatterDeadStep hcsr.csr hB
+        (Lax3Proofs.RamDriverRoot.scatterBnd_block hcsr hout hkn X hXcl hbnd)
+        (fun β hβ => hcostI β hβ _) (hKsc _))
     (fun _ hkn hout hsub r =>
-      Lax3Proofs.RamDriverRoot.ballBudget_cluster hcsr hout hkn hsub r)
-    (fun _ _ _ _ _ _ => RamDriverBase.readbackStep hB.one_lt hB.n_lt le_rfl)
+      Lax3Proofs.RamDriverRoot.ballBudget_cluster hcsr.csr hout hkn hsub r)
+    (fun _ _ _ _ _ _ hkn =>
+      RamDriverBase.readbackStep hB.one_lt hB.n_lt hkn
+        (fun hout => Lax3Proofs.RamDriverRoot.rbCost_block_le_weight hout hkn))
     hmono
     (fun _ hkn hout hsub =>
       Refine.MassWeight.arenaWeight_le_blockWeight G hout hkn hsub)
@@ -714,22 +717,22 @@ open Classical in
 /-- `RamDriverRoot.clusterFramesAt` at round `R`, off the residual. -/
 theorem clusterFramesAtR (hfr : RFrames q_top cap mb R ℓ φ)
     (hmb : mb = ℓ * (2 * cap + 1)) (hjl : j < ℓ)
-    (hB : WordBoundK B n Kmass ns cap mb) (hcsr : CsrGraph G ns O T)
+    (hB : WordBoundK B n Kmass ns cap mb) (hcsr : RamElim.CsrSimple G ns O T)
     (hbnd : ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n ns n σs.t ≤ Kb)
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
+          Refine.ScatterDeadTurn.deadAtomKBlk σs.β z mb z z σs.t ≤ Kb z)
     (hcostI : ∀ β ∈ tablesAt q_top cap mb φ j,
-      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki)
-    (hKsc : Ki * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc)
-    (hmono : Monotone Kin)
-    (hK : Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc
-      (blockWeight n G Xoff Xmem k) (Kin (blockWeight n G Xoff Xmem k)) ≤ Ks) :
+      ∀ z, Kb z * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki z)
+    (hKsc : ∀ z, Ki z * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc z)
+    (hmono : Monotone Kin) :
     RamDriverCluster.ClusterFrames B q_top cap mb ns W ℓ j φ G O T M Gm C π ord
       Xoff Xmem asg mm k (arenaWeight n G)
-      (driverAt q_top cap mb R ℓ φ (j + 1)) Kin Ks :=
-  RamDriverFrames.clusterFrames hcsr hB
-    (RamDriverDescend.descendStep hmb hjl le_rfl)
+      (driverAt q_top cap mb R ℓ φ (j + 1)) Kin
+        (Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc (n + ns))
+          (blockWeight n G Xoff Xmem k) (Kin (blockWeight n G Xoff Xmem k))) :=
+  RamDriverFrames.clusterFrames hcsr.csr hB
+    (RamDriverDescend.descendStep hcsr hmb hjl le_rfl)
     (fun _ _ _ _ => RamDriverDescend.enumStep hB le_rfl)
     (fun _ _ _ _ _ => RamDriverDescend.colourStep le_rfl)
     (fun _ _ _ _ _ _ => Refine.KillPass.killStep)
@@ -747,17 +750,27 @@ theorem clusterFramesAtR (hfr : RFrames q_top cap mb R ℓ φ)
     (fun _ ha => (hfr j).2.2.2.2.2.2.2.2.1 _ ha)
     (hfr j).2.2.2.2.2.2.2.2.2
     (fun X _ _ _ _ _ =>
-      Refine.ScatterDeadTurn.scatterDeadStep hcsr hB
-        (Lax3Proofs.RamDriverRoot.scatterBnd_cluster X le_rfl le_rfl hbnd) hcostI hKsc)
+      Refine.ScatterDeadTurn.scatterDeadStep hcsr.csr hB
+        (fun β hβ σs hσs =>
+          ⟨(hbnd β hβ σs hσs).1, (hbnd β hβ σs hσs).2.1,
+            le_trans (Refine.ScatterDeadTurn.deadAtomKX_le_blk σs.β _ _ _ _ _ _)
+              (le_trans (Refine.ScatterDeadTurn.deadAtomKBlk_mono σs.β mb σs.t
+                (le_trans (Lax3Proofs.RamDriverRoot.ncard_le_carrier X)
+                  (Nat.le_add_right n ns))
+                (Nat.le_add_left ns n) (Nat.le_add_right n ns))
+                ((hbnd β hβ σs hσs).2.2 _))⟩)
+        (fun β hβ => hcostI β hβ _) (hKsc _))
     (fun i => RamDriverWrites.tabName_notMem_warrs_scatterDeadPhase j j i
       (fun β hβ => (tableRank_of_mem_tablesAt (j + 1) β hβ).1) _ 0 (fun _ hβ => hβ))
-    (Refine.ScatterDeadPass.ballBudget_carrier hcsr)
-    (fun _ _ _ _ _ _ => RamDriverBase.readbackStep hB.one_lt hB.n_lt le_rfl)
+    (Refine.ScatterDeadPass.ballBudget_carrier hcsr.csr)
+    (fun _ _ _ _ _ _ hkn =>
+      RamDriverBase.readbackStep hB.one_lt hB.n_lt hkn
+        (fun hout => Lax3Proofs.RamDriverRoot.rbCost_block_le_weight hout hkn))
     (fun i => (hfr j).2.2.2.2.1 i)
     hmono
     (fun _ hkn hout hsub =>
       Refine.MassWeight.arenaWeight_le_blockWeight G hout hkn hsub)
-    hK
+    le_rfl
 
 open Classical in
 /-- `RamDriverRoot.loopFrames` at round `R`, off the residual. -/
@@ -802,7 +815,8 @@ so no slot-conditional degree can feed them. F-c-3 threaded `P` through
 `hmass` and not through W2's two pointer slots; until the cluster file
 carries `P π ord` beside `OrdersBy` there (a landed-file wave), the
 readings stay hypotheses here, in the frozen slots' own shape. -/
-theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ} {Ki Ksc : ℕ → ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ → ℕ}
+    {Ki Ksc Ko Kc Ks Kl : ℕ → ℕ → ℕ}
     (hcap : cap = rhoMinus 0 q_top) (hmb : mb = ℓ * (2 * cap + 1)) (hℓ : ℓ = N (2 * s + 2))
     (hB : WordBoundK B n Kmass ns cap mb) (hWB : n + W + 1 < B) (hpow : 2 ^ sigL cap mb ℓ < B)
     (hcsr : RamElim.CsrSimple G ns O T)
@@ -815,24 +829,24 @@ theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ} {Ki Ksc : ℕ → ℕ} {
         DistIndependent (deleteVerts G S) (2 * cap) Bd)
     (hbnd : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n ns n σs.t ≤ Kb)
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
+          Refine.ScatterDeadTurn.deadAtomKBlk σs.β z mb z z σs.t ≤ Kb z)
     (hcostI : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
-      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j)
-    (hKsc : ∀ j < ℓ, Ki j * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j)
+      ∀ z, Kb z * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j z)
+    (hKsc : ∀ j < ℓ, ∀ z,
+      Ki j z * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j z)
     (hKmono : ∀ j, Monotone (Kl j))
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t)
+      Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j t) t (Kl (j + 1) t)
         ≤ Ks j t)
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCostR n ns W R ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (horder : ∀ j < ℓ, ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ),
       OrderImplements B n R W cap mb ns j G O T M Gm C (DegOrder n G cap Kmass)
@@ -843,8 +857,11 @@ theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ} {Ki Ksc : ℕ → ℕ} {
         (Kl j (arenaWeight n G M)) :=
   -- **wave R1.8-T3-flip (c2b)**: the induction runs over a pre-written domain and
   -- this restatement instantiates it at `∅`, exactly as `RamDriverRoot.levelAt`
-  -- does; the sweep argument is gone and `hKd` is vestigial
-  fun j hj M Gm C => RamDriverCluster.levelImplements hB hWB hcsr
+  -- does; the sweep argument and its obsolete cost summand are gone
+  fun j hj M Gm C => RamDriverCluster.levelImplements
+    (Ksf := fun j t => Lax3Proofs.RamDriverRoot.turnCostSize n ns cap mb q_top j φ
+      (Ksc j (n + ns)) t (Kl (j + 1) t))
+    hB hWB hcsr
     (fun _ _ _ _ _ _ => RamElim.implements)
     (fun _ _ _ _ _ _ _ => RamDriverAugment.implements)
     (fun A₀ ord π => RamDriverOrder.coverTurnImplements B n ns G A₀ O T ord π cap)
@@ -866,11 +883,11 @@ theorem levelAtR {N : ℕ → ℕ} {s : ℕ} {Kb : ℕ} {Ki Ksc : ℕ → ℕ} {
     (fun j _ M _ _ _ _ _d h₁ h₂ h₃ h₄ h₅ h₆ =>
       (RamDriverCompose.coverImplements h₁ h₂ h₃ h₄ h₅ h₆).mono (hKc j (arenaWeight n G M)))
     (fun j hj _ _ _ _ _ _ _ _ _ _ =>
-      clusterStepAtR hfr hcap hmb hj hB hcsr.csr (hbnd j hj) (hcostI j hj) (hKsc j hj)
+      clusterStepAtR hfr hcap hmb hj hB hcsr (hbnd j hj) (hcostI j hj) (hKsc j hj)
         (hKmono (j + 1)) (hKs j hj _))
     (fun j hj _ _ _ _ _ _ _ _ _ _ =>
-      clusterFramesAtR hfr hmb hj hB hcsr.csr (hbnd j hj) (hcostI j hj) (hKsc j hj)
-        (hKmono (j + 1)) (hKs j hj _))
+      clusterFramesAtR hfr hmb hj hB hcsr (hbnd j hj) (hcostI j hj) (hKsc j hj)
+        (hKmono (j + 1)))
     (fun _ _ => loopFramesR hfr)
     (fun jd i => RamDriverRoot.tabName_notMem_warrs_phases jd i)
     (fun M π ord Xoff Xmem asg cps mm cnum hordby hP hout hcomp =>
@@ -1044,7 +1061,7 @@ section Main
 
 variable {n : ℕ} {B q_top cap mb ns W ℓ s R Kmass : ℕ} {N : ℕ → ℕ}
   {φ : Lax3.FirstOrder.FO 0} {G : SimpleGraph (Fin n)} {x : List ℕ}
-  {Kb Kb₀ Kdec Ksent : ℕ} {Ki Ksc : ℕ → ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Kb : ℕ → ℕ} {Kb₀ Kdec Ksent : ℕ} {Ki Ksc Ko Kc Ks Kl : ℕ → ℕ → ℕ}
 
 open Classical in
 /-- **The restated root at `R = 0`** —
@@ -1081,26 +1098,26 @@ theorem driverRootD_decides_sentence
     -- the value bounds and the costs, at the compacted count
     (hbnd : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n (dedupNs x) n σs.t ≤ Kb)
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
+          Refine.ScatterDeadTurn.deadAtomKBlk σs.β z mb z z σs.t ≤ Kb z)
     (hcostI : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
-      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j)
-    (hKsc : ∀ j < ℓ, Ki j * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j)
+      ∀ z, Kb z * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j z)
+    (hKsc : ∀ j < ℓ, ∀ z,
+      Ki j z * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j z)
     (hKmono : ∀ j, Monotone (Kl j))
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      Lax3Proofs.RamDriverRoot.turnCostSize n (dedupNs x) cap mb q_top j φ (Ksc j) t
+      Lax3Proofs.RamDriverRoot.turnCostSize n (dedupNs x) cap mb q_top j φ (Ksc j t) t
         (Kl (j + 1) t) ≤ Ks j t)
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n (dedupNs x) W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n (dedupNs x) ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (RamBfs.masked G M) π (2 * cap) v).ncard ≤ Kmass)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (hKdec : decodeCost n ns + dedupCost n ns + 4 ≤ Kdec)
     (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
@@ -1126,7 +1143,7 @@ theorem driverRootD_decides_sentence
   have h := Lax3Proofs.RamDriverRoot.levelAt (ns := dedupNs x) (O := dedupOffset x)
     (T := dedupTarget x) hcap hmb hℓ hBD hWB hpow
     (Lax3Proofs.RamDriverDedup.csrSimple_dedup hx) hQ hbnd hcostI hKsc hKmono hKs hKbase
-    hKo hKc hKd hbinj hdeg hKl 0 (Nat.zero_le ℓ) M Gm C
+    hKo hKc hbinj hdeg hKl 0 (Nat.zero_le ℓ) M Gm C
   rwa [Refine.MassWeight.arenaWeight_root (Lax3Proofs.RamDriverDedup.csrSimple_dedup hx)
     hall] at h
 
@@ -1156,24 +1173,24 @@ theorem driverRootD_decides_sentenceR
     -- the value bounds and the costs, at the compacted count
     (hbnd : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n (dedupNs x) n σs.t ≤ Kb)
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
+          Refine.ScatterDeadTurn.deadAtomKBlk σs.β z mb z z σs.t ≤ Kb z)
     (hcostI : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
-      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j)
-    (hKsc : ∀ j < ℓ, Ki j * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j)
+      ∀ z, Kb z * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j z)
+    (hKsc : ∀ j < ℓ, ∀ z,
+      Ki j z * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j z)
     (hKmono : ∀ j, Monotone (Kl j))
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      Lax3Proofs.RamDriverRoot.turnCostSize n (dedupNs x) cap mb q_top j φ (Ksc j) t
+      Lax3Proofs.RamDriverRoot.turnCostSize n (dedupNs x) cap mb q_top j φ (Ksc j t) t
         (Kl (j + 1) t) ≤ Ks j t)
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCostR n (dedupNs x) W R ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n (dedupNs x) ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (hKdec : decodeCost n ns + dedupCost n ns + 4 ≤ Kdec)
     (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
@@ -1209,7 +1226,7 @@ theorem driverRootD_decides_sentenceR
   have h := levelAtR (ns := dedupNs x) (O := dedupOffset x)
     (T := dedupTarget x) hcap hmb hℓ hBD hWB hpow
     (Lax3Proofs.RamDriverDedup.csrSimple_dedup hx) hptr hexit hQ hbnd hcostI hKsc hKmono hKs
-    hKbase hKo hKc hKd hbinj hKl horder hfr 0 (Nat.zero_le ℓ) M Gm C
+    hKbase hKo hKc hbinj hKl horder hfr 0 (Nat.zero_le ℓ) M Gm C
   rwa [Refine.MassWeight.arenaWeight_root (Lax3Proofs.RamDriverDedup.csrSimple_dedup hx)
     hall] at h
 
@@ -1228,26 +1245,26 @@ theorem driverRootD_decides_sentence_pre
         DistIndependent (deleteVerts G S) (2 * cap) Bd)
     (hbnd : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
       ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n (dedupNs x) n σs.t ≤ Kb)
+        σs.r + 1 < B ∧ σs.t + n + mb < B ∧ ∀ z,
+          Refine.ScatterDeadTurn.deadAtomKBlk σs.β z mb z z σs.t ≤ Kb z)
     (hcostI : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
-      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j)
-    (hKsc : ∀ j < ℓ, Ki j * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j)
+      ∀ z, Kb z * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j z)
+    (hKsc : ∀ j < ℓ, ∀ z,
+      Ki j z * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j z)
     (hKmono : ∀ j, Monotone (Kl j))
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      Lax3Proofs.RamDriverRoot.turnCostSize n (dedupNs x) cap mb q_top j φ (Ksc j) t
+      Lax3Proofs.RamDriverRoot.turnCostSize n (dedupNs x) cap mb q_top j φ (Ksc j t) t
         (Kl (j + 1) t) ≤ Ks j t)
     (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
     (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n (dedupNs x) W ≤ Ko j m)
     (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n (dedupNs x) ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
     (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
     (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
       (Lax12.ColoringNumbers.wreach (RamBfs.masked G M) π (2 * cap) v).ncard ≤ Kmass)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m)
     (hKdec : decodeCost n ns + dedupCost n ns + 4 ≤ Kdec)
     (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
@@ -1259,7 +1276,7 @@ theorem driverRootD_decides_sentence_pre
       (fun _ σ' => σ'.out = [if Lax3.FirstOrder.Sat G Fin.elim0 φ then 1 else 0])
       (Kdec + (Kl 0 (n + dedupNs x) + Ksent)) :=
   driverRootD_decides_sentence hx hns hxB hrank hcap hmb hℓ hB hWB hnsW hpow hQ hbnd
-    hcostI hKsc hKmono hKs hKbase hKo hKc hKd hbinj hdeg hKl hKdec hatoms hKsent
+    hcostI hKsc hKmono hKs hKbase hKo hKc hbinj hdeg hKl hKdec hatoms hKsent
 
 end Main
 

@@ -33,14 +33,13 @@ result of `r` of them; `ballOf_zero` and `nbhd_ballOf` are the two
 equations a chain of expansions is proved by, and `ballOf_singleton` is
 the form `Evaluator.isoColoring_slotPd` reads a ball in.
 
-`RamDriver.expandCom`'s own walk is two nested loops, and this file
-carries its mathematics and its two invariants without closing the walk:
-`expandVal` is the cell one step writes, `markSet_expandVal` is that the
-mask it leaves marks exactly `nbhd` of what the source marks,
-`ExpandInv` and `ScanHit` are what the outer and the inner loop carry,
-and `hit_eq_expandVal` is the inner loop's exit reading — that a block
-fully scanned decides the outer loop's cell. What is left is the
-symbolic execution between them.
+`RamDriver.expandCom`'s own walk is two nested loops. The shared
+primitives `expandVal` and `hit_eq_expandVal` live above the driver in
+`Refine.DriverPrelude`; this file supplies the remaining mathematics and
+invariants: `markSet_expandVal` says that the mask left by one step marks
+exactly `nbhd` of what the source marks, and `ExpandInv` and `ScanHit`
+are what the outer and inner loops carry. What is left is the symbolic
+execution between them.
 
 # What enters as a hypothesis, and why
 
@@ -285,17 +284,12 @@ theorem eq_of_arrOf_eq {N : ℕ} {f g : ℕ → ℕ} (h : arrOf N f = arrOf N g)
   have h' : (arrOf N f).getD k 0 = (arrOf N g).getD k 0 := by rw [h]
   rwa [getD_arrOf f hk, getD_arrOf g hk] at h'
 
-/-- The set a mask array marks. -/
-def markSet (n : ℕ) (A : ℕ → ℕ) : Set (Fin n) := {v | A (v : ℕ) ≠ 0}
-
 theorem mem_markSet {A : ℕ → ℕ} {v : Fin n} : v ∈ markSet n A ↔ A (v : ℕ) ≠ 0 := Iff.rfl
 
-/-- **The size of an arena is its mark set, counted.** `RamDriver.arenaSize`
-is stated with the set written out, because the obligation `Prop`s of
-that file read it and `markSet` is defined here; the two are the same
-term. This is the `rfl` `Refine.MassMath.mass_le_of_alive` is stated
-against, so the mass bound instantiates at a driver mask without a
-rewrite. -/
+/-- **The size of an arena is its mark set, counted.** Both definitions
+live in `Refine.DriverPrelude`, and are the same term. This is the `rfl`
+`Refine.MassMath.mass_le_of_alive` is stated against, so the mass bound
+instantiates at a driver mask without a rewrite. -/
 theorem arenaSize_eq_markSet (n : ℕ) (M : ℕ → ℕ) :
     arenaSize n M = (markSet n M).ncard := rfl
 
@@ -378,14 +372,6 @@ theorem ballOf_singleton (A : SimpleGraph (Fin n)) (r : ℕ) (u : Fin n) :
   simp only [ballOf, Set.mem_setOf_eq, Set.mem_singleton_iff]
   exact ⟨fun ⟨y, hy, hw⟩ => hy ▸ hw, fun hw => ⟨u, rfl, hw⟩⟩
 
-open Classical in
-/-- **The cell one expansion step writes.** The source's own cell,
-raised to one when some live neighbour of the vertex is marked — which
-is what `RamDriver.expandStep` computes, the initial `hit := src[z]`
-being why a marked vertex stays marked. -/
-noncomputable def expandVal (G : SimpleGraph (Fin n)) (Msk Src : ℕ → ℕ) (z : ℕ) : ℕ :=
-  if ∃ y : ℕ, MAdj G Msk z y ∧ Src y ≠ 0 then 1 else Src z
-
 /-- The cell it writes is one of the two values it can be, which is the
 whole of the bound a chain of expansions needs. -/
 theorem expandVal_eq_or (G : SimpleGraph (Fin n)) (Msk Src : ℕ → ℕ) (z : ℕ) :
@@ -448,25 +434,6 @@ def ScanHit (n ns nt : ℕ) (G : SimpleGraph (Fin n)) (O T Msk Src : ℕ → ℕ
     σ.vars "jend" = O (z + 1) ∧ O z ≤ σ.vars "j" ∧ σ.vars "j" ≤ O (z + 1) ∧
     σ.vars "hit" =
       (if ∃ p, O z ≤ p ∧ p < σ.vars "j" ∧ Msk (T p) ≠ 0 ∧ Src (T p) ≠ 0 then 1 else Src z)
-
-open Classical in
-/-- **What a full block scan leaves.** With the whole block passed, the
-hit flag is `RamDriver.expandVal`: the slots of the block name exactly
-the neighbours of the vertex, so "some slot passed named a live marked
-vertex" is "some neighbour in the arena is marked". -/
-theorem hit_eq_expandVal {ns z : ℕ} {G : SimpleGraph (Fin n)} {O T Msk Src : ℕ → ℕ}
-    (hcsr : CsrGraph G ns O T) (hzn : z < n) (hmz : Msk z ≠ 0) :
-    (if ∃ p, O z ≤ p ∧ p < O (z + 1) ∧ Msk (T p) ≠ 0 ∧ Src (T p) ≠ 0 then 1 else Src z) =
-      expandVal G Msk Src z := by
-  classical
-  unfold expandVal
-  congr 1
-  refine propext ⟨?_, ?_⟩
-  · rintro ⟨p, h₁, h₂, hm, hs⟩
-    exact ⟨T p, hcsr.madj_of_slot hzn h₁ h₂ hmz hm, hs⟩
-  · rintro ⟨y, hy, hs⟩
-    obtain ⟨p, h₁, h₂, rfl⟩ := hcsr.slot_of_madj hy
-    exact ⟨p, h₁, h₂, hy.alive_right, hs⟩
 
 /-! ### The three answers of the cover, as the turn of the loop reads them
 
@@ -681,10 +648,12 @@ turned into a number the turn's cost condition may mention, since
 `Alv'` is existentially quantified here. -/
 def DescendStep (B cap mb ns Ws j : ℕ) (G : SimpleGraph (Fin n))
     (O T M Gm : ℕ → ℕ)
-    (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (m K : ℕ) : Prop :=
-  CsrGraph G ns O T → ∀ {d : ℕ}, WordBoundK B n d ns cap mb →
+    (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ)
+    (m k K : ℕ) : Prop :=
+  CsrGraph G ns O T → ∀ {d : ℕ}, WordBoundK B n d ns cap mb → k < n →
+  M (ord k) ≠ 0 →
   Spec B (fun σ => TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ ∧
-      σ.vars (curName j) < n)
+      σ.vars (curName j) = k)
     (descendCom cap j)
     (fun σ σ' => TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ' ∧
       σ'.out = σ.out ∧ σ'.vars (curName j) = σ.vars (curName j) ∧ (∃ g, σ'.arrs "wa" = arrOf mb g) ∧
@@ -1069,7 +1038,7 @@ alive-centre guard, both of which live only inside
 `clusterStepImplements`, where `X` is existential. -/
 def ReadbackStep (B q_top cap mb ns Ws j : ℕ) (φ : Lax3.FirstOrder.FO 0)
     (G : SimpleGraph (Fin n)) (O T M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ) (π : Equiv.Perm (Fin n))
-    (ord Xoff Xmem asg : ℕ → ℕ) (m : ℕ) (X W : Set (Fin n)) (w : Fin mb → Fin n)
+    (ord Xoff Xmem asg : ℕ → ℕ) (m k : ℕ) (X W : Set (Fin n)) (w : Fin mb → Fin n)
     (Alv' Gam' : ℕ → ℕ) (C' : ℕ → ℕ → ℕ) (K : ℕ) : Prop :=
   Spec B (fun σ => TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ ∧
       ClusterData n mb j B G M X W w Alv' Gam' σ ∧
@@ -1078,7 +1047,7 @@ def ReadbackStep (B q_top cap mb ns Ws j : ℕ) (φ : Lax3.FirstOrder.FO 0)
       colRead n C' (sigL cap mb (j + 1)) =
         stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w ∧
       TableInvOn q_top cap mb φ G (j + 1) Alv' C' (rowDom M Alv' X W) σ ∧
-      TablesSized q_top cap mb φ n σ ∧ σ.vars (curName j) < n ∧
+      TablesSized q_top cap mb φ n σ ∧ σ.vars (curName j) = k ∧
       (∀ v : Fin n, asg (v : ℕ) = σ.vars (curName j) → M (v : ℕ) ≠ 0 ∧ v ∈ X) ∧
       ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
         ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])).2,
@@ -1228,7 +1197,7 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
     {bw nb : ℕ}
     {Kd Ke Kc Kk Kkl Ks Kr K : ℕ}
     (hcap : cap = rhoMinus 0 q_top)
-    (hdes : DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asgf mm Kd)
+    (hdes : DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asgf mm k Kd)
     (henum : ∀ X W Alv' Gam',
       EnumStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asgf mm X W Alv' Gam' Ke)
     (hcol : ∀ X W w Alv' Gam',
@@ -1244,15 +1213,17 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
     (hfr : InnerAvail B q_top cap mb ns Ws ℓ j φ G O T wA inner Kin → ∀ X W w Alv' Gam' C',
       InnerFrames B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asgf mm X W w
         Alv' Gam' C' inner (Kin (wA Alv')))
-    (hscat : ∀ X W w Alv' Gam' C',
+    (hscat : ∀ X W w Alv' Gam' C', k < n →
+      RamCover.CoverOut G M π ord cap mm Xoff Xmem asgf →
+      (∀ v : Fin n, v ∈ X → v ∈ clusterAt G M π ord cap k) →
       ScatterStep B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asgf mm X W w
         Alv' Gam' C' bw nb Ks)
     (hbud : ∀ M' : ℕ → ℕ, k < n →
       RamCover.CoverOut G M π ord cap mm Xoff Xmem asgf →
       (∀ v : Fin n, M' (v : ℕ) ≠ 0 → v ∈ clusterAt G M π ord cap k) →
       ∀ r : ℕ, Refine.ScatterBlock.BallBudget n r G M' O bw nb)
-    (hread : ∀ X W w Alv' Gam' C',
-      ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asgf mm X W w
+    (hread : ∀ X W w Alv' Gam' C', k < n →
+      ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asgf mm k X W w
         Alv' Gam' C' Kr)
     (hmono : Monotone Kin)
     (hwAB : ∀ Alv' : ℕ → ℕ, k < n →
@@ -1266,13 +1237,12 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
   intro d hB hcsr hkn halive _ hinner
   refine Spec.of_exists fun σ hσ => ?_
   obtain ⟨hlev, htsz, hbarr, hplay, hheld, hcn⟩ := hσ
-  have hcnlt : σ.vars (curName j) < n := by rw [hcn]; exact hkn
   have hturn : TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asgf mm σ :=
     ⟨hlev, hplay, hheld⟩
   -- the descent: the cluster, the batch, the two masks of the next depth, and the round
   obtain ⟨σ₁, hr₁, hturn₁, hout₁, hc₁, hwa₁, X, W, Alv', Gam', hball, hWne, hWcard,
       hsub₁, hXcl₁, hbat₁, hplay₁⟩ :=
-    (hdes hcsr hB).run ⟨hturn, hcnlt⟩
+    (hdes hcsr hB hkn halive).run ⟨hturn, hcn⟩
   -- **the descend clause**: the nested arena is inside this turn's cluster, so any
   -- monotone measure of it — a number the turn's cost condition may mention — is
   -- bounded by the turn's own block reading
@@ -1346,7 +1316,7 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
   have hbarr₄ : BaseArrs B q_top cap mb ℓ φ σ₄ := hbarrₗ.run hr₄
   -- the scatter atoms
   obtain ⟨σ₅, hr₅, hturn₅, hdat₅, hcolarr₅, htab₅, hout₅, hc₅, hflag₅⟩ :=
-    (hscat X W w Alv' Gam' C' hXalive
+    (hscat X W w Alv' Gam' C' hkn hheld.2.2.2.2.2.2.2.2 hXcl₁ hXalive
         (hbud Alv' hkn hheld.2.2.2.2.2.2.2.2 hsub₁)).run (σ := σ₄)
       ⟨hturn₄, hdat₄, hcolarr₄, hcolbit₃, hcolread₃, htab₄, hkllist₄, hbarr₄⟩
   have htsz₅ : TablesSized q_top cap mb φ n σ₅ := htsz₄.run hr₅
@@ -1364,9 +1334,9 @@ theorem clusterStepImplements {B q_top cap mb ns Ws ℓ j : ℕ} {φ : Lax3.Firs
     exact ⟨hXalive v hvX, hvX⟩
   -- the readback
   obtain ⟨σ₆, hr₆, hturn₆, hout₆, hc₆, hrb₆⟩ :=
-    (hread X W w Alv' Gam' C').run (σ := σ₅)
+    (hread X W w Alv' Gam' C' hkn).run (σ := σ₅)
       ⟨hturn₅, hdat₅, hcolarr₅, hcolbit₃, hcolread₃, htab₅, htsz₅,
-        by rw [hc₅₀]; exact hcnlt, hvis, hflag₅⟩
+        hc₅₀.trans hcn, hvis, hflag₅⟩
   have hrun := hr₁.seq (hr₂.seq (hr₃.seq (hrₖ.seq (hrₗ.seq (hr₄.seq (hr₅.seq hr₆))))))
   refine ⟨σ₆, _, hrun, by omega, hturn₆.1, htsz₅.run hr₆, hbarrₗ.run (hr₄.seq (hr₅.seq hr₆)),
     hturn₆.2.1,
@@ -1458,11 +1428,97 @@ theorem baseArrs_setVar_c {q_top ℓ : ℕ} {φ : Lax3.FirstOrder.FO 0}
   ⟨fun p hp => by simpa using h.1 p hp,
     fun jd i hi => botMem_of_length (fun a => by rw [arrs_setVar]) _ "bb" (h.2 jd i hi)⟩
 
+theorem foldRange_const_succ_cacheframe (c : Com) (m : ℕ) :
+    foldRange (fun _ => c) (m + 1) = .seq c (foldRange (fun _ => c) m) := by
+  simp [foldRange, List.range_succ_eq_map, List.foldr_map]
+
+theorem foldRange_zero_cacheframe (f : ℕ → Com) : foldRange f 0 = .skip := rfl
+
+theorem mem_warrs_foldRange_const_cacheframe {c : Com} {m : ℕ} {a : String}
+    (h : a ∈ (foldRange (fun _ => c) m).warrs) : a ∈ c.warrs := by
+  induction m with
+  | zero => simp [foldRange, Com.warrs] at h
+  | succ m ih =>
+      rw [foldRange_const_succ_cacheframe] at h
+      simp only [Com.warrs, List.mem_append] at h
+      exact h.elim id ih
+
+set_option maxRecDepth 8000 in
+theorem mem_warrs_augRoundCom_cacheframe : ∀ a ∈ augRoundCom.warrs,
+    a ∈ ["off", "elm", "bh", "ooff", "ofl", "otg", "stf", "ffl", "tgt", "alv", "deg", "bv",
+      "bn", "rnk", "idg", "ioff", "ifl", "itg", "sta", "std", "ste", "noff", "nfl", "ntg",
+      "doff", "dtg"] := by decide
+
+theorem warrs_orderCom_zero_cacheframe (j : ℕ) : (orderCom 0 j).warrs =
+    ["gof", "gtg", "alv", "deg", "deg", "bv", "bn", "bh", "bh", "elm", "rnk", "idg", "deg",
+      "bv", "bn", "bh", "ioff", "ifl", "ioff", "itg", "ifl", "doff", "dtg",
+      "ooff", "ooff", "ofl", "otg", "ofl", "off", "tgt", "tgt",
+      "alv", "elm", "bh", "deg", "deg", "bv", "bn", "bh", "bh", "elm", "rnk", "idg", "deg",
+      "bv", "bn", "bh", "ioff", "ifl", "ioff", "itg", "ifl", "off", "tgt",
+      ordName j, "elm", "bh", "ooff", "noff", "stf", "sta", "std", "ste"] := rfl
+
+theorem mem_warrs_orderCom_cacheframe {R j : ℕ} {a : String}
+    (h : a ∈ (orderCom R j).warrs) :
+    a ∈ (orderCom 0 j).warrs ∨ a ∈ augRoundCom.warrs := by
+  simp only [orderCom, Com.warrs, List.mem_append, foldRange_zero_cacheframe, List.not_mem_nil,
+    false_or] at h ⊢
+  rcases h with h|h|h|h|h|h|h|h|h|h|h|h|h
+  · exact Or.inl (Or.inl h)
+  · exact Or.inl (Or.inr (Or.inl h))
+  · exact Or.inl (Or.inr (Or.inr (Or.inl h)))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inl h))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h)))))
+  · exact Or.inr (mem_warrs_foldRange_const_cacheframe h)
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h)))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h))))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (Or.inl h)))))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (Or.inl h))))))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (Or.inr (Or.inl h)))))))))))
+  · exact Or.inl (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (Or.inr (Or.inr h)))))))))))
+
+theorem warrs_coverPhase_cacheframe (cap j : ℕ) : (coverPhase cap j).warrs =
+    ["ord", "alv", "asg", "xoff", "dist", "dist", "q", "dist", "q", "xmem", "asg", "alv",
+      "xoff", xofName j, xmmName j, asgName j, cpsName j] := rfl
+
+theorem resName_notMem_orderCom {R j : ℕ} (a : ℕ) :
+    resName a ∉ (orderCom R j).warrs := by
+  intro h
+  rcases mem_warrs_orderCom_cacheframe h with h | h
+  · rw [warrs_orderCom_zero_cacheframe] at h
+    simp [resName, ordName, String.ext_iff] at h
+  · have hm := mem_warrs_augRoundCom_cacheframe _ h
+    simp [resName, String.ext_iff] at hm
+
+theorem parName_notMem_orderCom {R j : ℕ} (a : ℕ) :
+    parName a ∉ (orderCom R j).warrs := by
+  intro h
+  rcases mem_warrs_orderCom_cacheframe h with h | h
+  · rw [warrs_orderCom_zero_cacheframe] at h
+    simp [parName, balName, ordName, String.ext_iff] at h
+  · have hm := mem_warrs_augRoundCom_cacheframe _ h
+    simp [parName, balName, String.ext_iff] at hm
+
+theorem resName_notMem_coverPhase (cap j a : ℕ) :
+    resName a ∉ (coverPhase cap j).warrs := by
+  rw [warrs_coverPhase_cacheframe]
+  simp [resName, xofName, xmmName, asgName, cpsName, String.ext_iff]
+
+theorem parName_notMem_coverPhase (cap j a : ℕ) :
+    parName a ∉ (coverPhase cap j).warrs := by
+  rw [warrs_coverPhase_cacheframe]
+  simp [parName, balName, xofName, xmmName, asgName, cpsName, String.ext_iff]
+
 /-- Nor the recorded play, whose scalars are the earlier connectors. -/
 theorem playRec_setVar {G : SimpleGraph (Fin n)}
     (h : PlayRec B cap G j M Gm σ) (x : String) (hx : ∀ a : ℕ, x ≠ ctrName a) (k : ℕ) :
     PlayRec B cap G j M Gm (σ.setVar x k) :=
   h.congr (fun a _ => by rw [vars_setVar, if_neg (Ne.symm (hx a))])
+    (fun a _ => by rw [arrs_setVar]) (fun a _ => by rw [arrs_setVar])
     (fun a _ => by rw [arrs_setVar])
 
 theorem playRec_setVar_c {G : SimpleGraph (Fin n)}
@@ -1627,11 +1683,10 @@ neither is about the program:
 * `hK`, the level's cost side condition in the Σ shape —
   `CostRecurrence.exists_driverCostsSigma` discharges it in one call, up
   to the three-unit shift the compacted loop's `cps` read costs
-  (`RamDriverRoot.levelCost_of_sigma`). Its `Kd` summand is **vestigial**
-  since wave R1.8-T3-flip (c2b): the dead-row sweep it paid for is out of
-  `RamDriver.driverAux`, and the slot is kept only so that the cost
-  interface above — and with it `RamDriverRoot.driverRoot_decides_sentence`'s
-  hypothesis list — is unchanged.
+  (`RamDriverRoot.levelCost_of_sigma`). The old `Kd` summand is gone:
+  wave R1.8-T3-flip (c2b) removed the dead-row sweep it paid for from
+  `RamDriver.driverAux`, so retaining that summand would overstate the
+  program's cost.
 
 **Wave B4-walk-1: the frame's budget is its own.** `hframe` is stated at
 a cost family `Ksf` of its own instead of at `hstep`'s `Ks`. The two are
@@ -1702,7 +1757,7 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
     {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
     {P : Equiv.Perm (Fin n) → (ℕ → ℕ) → Prop}
     {wA : (ℕ → ℕ) → ℕ} {wB : (ℕ → ℕ) → (ℕ → ℕ) → ℕ → ℕ}
-    {Ko Kc Kd Ks Ksf Kl : ℕ → ℕ → ℕ} {Kmass : ℕ}
+    {Ko Kc Ks Ksf Kl : ℕ → ℕ → ℕ} {Kmass : ℕ}
     {d : ℕ} (hB : WordBoundK B n d ns cap mb) (hWB : n + W + 1 < B)
     (hcsr : RamElim.CsrSimple G ns O T)
     (helim : ElimAvail B n) (haug : AugAvail B n) (hcovav : CoverAvail B cap ns G O T)
@@ -1745,7 +1800,7 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
         (∑ k ∈ Finset.range cnum, wB Xoff Xmem (cps k)) ≤ Kmass * (wA M + 1))
     (hK : ∀ (j : ℕ), j < ℓ → ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m) :
     ∀ (j : ℕ), j ≤ ℓ → ∀ (M Gm : ℕ → ℕ) (C : ℕ → ℕ → ℕ) (D : Set (Fin n)),
       LevelImplementsD B q_top cap mb R ℓ W ns j φ G O T M Gm C D (Kl j (wA M)) := by
@@ -1792,7 +1847,10 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
       have htsz₁ : TablesSized q_top cap mb φ n σ₁ := hσ.2.1.run hr₁
       have hbarr₁ : BaseArrs B q_top cap mb ℓ φ σ₁ := hσ.2.2.1.run hr₁
       have hplay₁ : PlayRec B cap G j M Gm σ₁ :=
-        hσ.2.2.2.1.congr (fun a _ => hctr₁ a) (fun a _ => hgam₁ a)
+        hσ.2.2.2.1.congr (fun a _ => hctr₁ a)
+          (fun a _ => hr₁.frame_arr _ (resName_notMem_orderCom a))
+          (fun a _ => hgam₁ a)
+          (fun a _ => hr₁.frame_arr _ (parName_notMem_orderCom a))
       -- the cover pass, and the compaction that ends it
       obtain ⟨σ₂, hr₂, hlev₂, hout₂, hctr₂, hgam₂, Xoff, Xmem, asg, cps, mm, cnum,
           hheld₂, hcps₂, hcnum₂, hcomp₂⟩ :=
@@ -1802,7 +1860,10 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
       have htsz₂ : TablesSized q_top cap mb φ n σ₂ := htsz₁.run hr₂
       have hbarr₂ : BaseArrs B q_top cap mb ℓ φ σ₂ := hbarr₁.run hr₂
       have hplay₂ : PlayRec B cap G j M Gm σ₂ :=
-        hplay₁.congr (fun a _ => hctr₂ a) (fun a _ => hgam₂ a)
+        hplay₁.congr (fun a _ => hctr₂ a)
+          (fun a _ => hr₂.frame_arr _ (resName_notMem_coverPhase cap j a))
+          (fun a _ => hgam₂ a)
+          (fun a _ => hr₂.frame_arr _ (parName_notMem_coverPhase cap j a))
       have hcnB : cnum < B := lt_of_le_of_lt hcomp₂.le_carrier hB.n_lt
       -- **no sweep** (wave R1.8-T3-flip (c2b)). What the level owes on the dead
       -- side is `D`, and `D`'s rows were written by the caller: they arrive in the
@@ -1991,8 +2052,8 @@ theorem levelImplements {B q_top cap mb R ℓ W ns : ℕ} {N : ℕ → ℕ} {s :
       have hsum : (∑ kk ∈ Finset.range cnum, (Ks j (wB Xoff Xmem (cps kk)) + 7 + 4)) =
           ∑ kk ∈ Finset.range cnum, (Ks j (wB Xoff Xmem (cps kk)) + 11) :=
         Finset.sum_congr rfl fun _ _ => by omega
-      have hcost : Ko j (wA M) + (Kc j (wA M) + (Kd j (wA M) +
-            ((∑ kk ∈ Finset.range cnum, (Ks j (wB Xoff Xmem (cps kk)) + 11)) + 6)))
+      have hcost : Ko j (wA M) + (Kc j (wA M) +
+            ((∑ kk ∈ Finset.range cnum, (Ks j (wB Xoff Xmem (cps kk)) + 11)) + 6))
           ≤ Kl j (wA M) :=
         hK j hjl (wA M) cnum hturns (fun c => wB Xoff Xmem (cps c)) hbs
       refine ⟨σ₄, _, hr₁.seq (hr₂.seq hr₄), ?_,

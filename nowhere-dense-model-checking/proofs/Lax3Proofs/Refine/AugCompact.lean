@@ -116,6 +116,7 @@ open Lax3Proofs.Refine.ElimCompact (padArrs cutArrs tailOf padArrs_arrs cutArrs_
   run_of_run_cutArrs tail_preserved take_arrOf memGraph getD_padArrs scatterCom scatterCost
   ScatterBacksW)
 open Lax3Proofs.Refine.SymCompact (symSetCarrier symSetCarrier_run)
+open Lax3Proofs.Refine.OrderActiveTail
 
 /-! ## §1 The program
 
@@ -489,6 +490,31 @@ theorem AugPreC.alv {mm n nt W : ℕ} {DO DT : ℕ → ℕ} {σ : Env}
 theorem AugPreC.ntg {mm n nt W : ℕ} {DO DT : ℕ → ℕ} {σ : Env}
     (h : AugPreC mm n nt W DO DT σ) : ∃ g, σ.arrs "ntg" = arrOf W g :=
   h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.1
+
+/-- Every `OrderMem` zero array is physically long enough for its compact
+prefix. -/
+theorem AugPreC.activeZero_length {mm n nt W : ℕ} {DO DT : ℕ → ℕ} {σ : Env}
+    (h : AugPreC mm n nt W DO DT σ) {a : String} (ha : a ∈ activeZeroNames) :
+    activeZeroLen mm a ≤ (σ.arrs a).length := by
+  obtain ⟨-, hmn, -, -, ⟨o, ho, -⟩, -, -, -, -, -, -, -, ⟨em, hem, -⟩,
+    -, -, ⟨bh, hbh, -⟩, -, -, -, -, -, ⟨no, hno, -⟩, -, -,
+    ⟨sf, hsf, -⟩, ⟨sa, hsa, -⟩, ⟨sd, hsd, -⟩, ⟨se, hse, -⟩⟩ := h
+  simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+  rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · rw [hem, length_arrOf]; exact hmn
+  · rw [activeZeroLen_bh, hbh, length_arrOf]; omega
+  · rw [activeZeroLen_ooff, ho, length_arrOf]; omega
+  · rw [activeZeroLen_noff, hno, length_arrOf]; omega
+  · rw [hsf, length_arrOf]; exact hmn
+  · rw [hsa, length_arrOf]; exact hmn
+  · rw [hsd, length_arrOf]; exact hmn
+  · rw [hse, length_arrOf]; exact hmn
+
+theorem augClen_activeZero {mm nt W : ℕ} {a : String} (ha : a ∈ activeZeroNames) :
+    augClen mm nt W a = activeZeroLen mm a := by
+  simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+  rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+    simp
 
 /-! ## §4 The round at the arena's carrier
 
@@ -1112,7 +1138,8 @@ def AugPreps (B n mm nt W kd : ℕ) : Prop :=
       Run B augPrepCom σ σ' (augPrepCost mm kd) ∧
       σ'.vars "mm" = mm ∧ (∀ j < kd, DT j = IT j) ∧
       AugPreC mm n nt W IO DT σ' ∧
-      σ'.arrs "mem" = σ.arrs "mem" ∧ (∃ g, σ'.arrs "ork" = arrOf n g)
+      σ'.arrs "mem" = σ.arrs "mem" ∧ (∃ g, σ'.arrs "ork" = arrOf n g) ∧
+      ActiveZeroTail mm σ σ'
 
 /-- **Why the member list must be repetition-free.** If two members carry
 the same arena number, the scatter's own conclusion asks one cell to hold
@@ -1167,7 +1194,8 @@ theorem augCompact_spec {B n mm nt W kd d m : ℕ} {D : Orientation mm} {Mem IO 
     (hent : AugEntryC n mm nt W kd IO IT σ) :
     ∃ σ'', Run B augCompactCore σ σ'' (augCompactCost mm kd W) ∧
       AugMemPost mm W Mem D σ'' ∧
-      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm := by
+      (σ''.arrs "alv").drop mm = (σ.arrs "alv").drop mm ∧
+      ActiveZeroTail mm σ σ'' ∧ σ''.vars "kn" = n := by
   classical
   obtain ⟨hn0, hmm0, hkd0, -, -, harrs0⟩ := hent
   -- the carrier install
@@ -1177,15 +1205,21 @@ theorem augCompact_spec {B n mm nt W kd d m : ℕ} {D : Orientation mm} {Mem IO 
   have harrs1 : AugArrsC n mm nt W kd IO IT σ1 := by simpa [hσ1] using harrs0
   have harr1 : ∀ a, σ1.arrs a = σ.arrs a := fun a => rfl
   -- the preparation
-  obtain ⟨σ2, DT, r2, hmm2, hDT, hpre2, hmem2, hork2⟩ :=
+  obtain ⟨σ2, DT, r2, hmm2, hDT, hpre2, hmem2, hork2, htail2⟩ :=
     h1 IO IT σ1 (by omega) (by omega) hIOB hITB
       (by simp [hσ1]) (by simp [hσ1, hmm0]) (by simp [hσ1, hkd0]) hmn hkdW harrs1
+  have hkn2 : σ2.vars "kn" = n := by
+    rw [r2.frame_var "kn" (by decide)]
+    simp [hσ1]
   have hin' : InCsr D m IO DT :=
     Lax3Proofs.RamDriverAugment.inCsr_congr_prefix hin fun j hj => hDT j (by omega)
   -- the round, at the arena's carrier
   obtain ⟨τ, r3, hpost, hrnkLt, htl⟩ :=
     augCompact_engine (d := d) hin' hd hnt (hmkd.trans hkdW) hroom hB hpre2
   set σ3 : Env := padArrs τ (tailOf σ2 (augClen mm nt W)) with hσ3
+  have hkn3 : σ3.vars "kn" = n := by
+    rw [hσ3, r3.frame_var "kn" (by decide)]
+    exact hkn2
   obtain ⟨R, NO, NT, k, m', D', hrnk, hk, hnoff, hntg, hmn', hmW, hstep, hcsr, hlow,
     hgr, hbud⟩ := hpost
   -- the round's answers, read on the padded store
@@ -1223,9 +1257,30 @@ theorem augCompact_spec {B n mm nt W kd d m : ℕ} {D : Orientation mm} {Mem IO 
   -- the scatter
   obtain ⟨σ4, r4, horkS, -, -, -⟩ :=
     h2 R σ3 hmm3 hmem3 hmlt hrnkP hork3 hsm hnB hRB hρlen
+  have htail01 : ActiveZeroTail mm σ σ1 := by
+    apply ActiveZeroTail.of_frame
+    intro a ha
+    exact harr1 a
+  have htail23 : ActiveZeroTail mm σ2 σ3 := by
+    intro a ha
+    have hsched := augClen_activeZero (mm := mm) (nt := nt) (W := W) ha
+    have hlen : augClen mm nt W a ≤ (σ2.arrs a).length := by
+      rw [hsched]
+      exact hpre2.activeZero_length ha
+    have ht := htl a hlen
+    simpa only [hσ3, hsched] using ht
+  have htail34 : ActiveZeroTail mm σ3 σ4 := by
+    apply ActiveZeroTail.of_frame
+    intro a ha
+    exact r4.frame_arr a (by
+      simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+      rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide)
+  have htailAll : ActiveZeroTail mm σ σ4 :=
+    ActiveZeroTail.trans
+      (ActiveZeroTail.trans (ActiveZeroTail.trans htail01 htail2) htail23) htail34
   refine ⟨σ4, (r1.seq (r2.seq (r3.seq r4))).mono ?_,
     ⟨R, NO, NT, k, m', D', horkS, ?_, ?_, ?_, ?_, hmW, hstep, hcsr, hlow, hgr, hbud,
-      fun d' hd' => arcs_le_compact hcsr hd'⟩, ?_⟩
+      fun d' hd' => arcs_le_compact hcsr hd'⟩, ?_, htailAll, ?_⟩
   · rw [augCompactCost, augPrepCost, scatterCost]; omega
   · rw [← hk]; exact r4.frame_var "kmax" (by decide)
   · intro i hi; rw [r4.frame_arr "noff" (by decide)]; exact hnoffP i hi
@@ -1243,6 +1298,8 @@ theorem augCompact_spec {B n mm nt W kd d m : ℕ} {D : Orientation mm} {Mem IO 
         (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
         (by decide)), harr1 "alv"]
     rw [r4.frame_arr "alv" (by decide), h, halv2]
+  · rw [r4.frame_var "kn" (by decide)]
+    exact hkn3
 
 /-! ## §10 Axioms -/
 

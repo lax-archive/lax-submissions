@@ -732,10 +732,14 @@ theorem elimCompact_engine {B mm n ns nt W : ℕ} {H : SimpleGraph (Fin mm)} {O 
     ∃ τ, Run B RamElim.elimCom σ (padArrs τ (tailOf σ (clen mm nt W)))
           (RamElim.elimCost mm ns) ∧
         RamElim.ElimPost H M ns W (cutArrs σ (clen mm nt W)) τ ∧
-        RamElim.RnkLt mm τ := by
+        RamElim.RnkLt mm τ ∧
+        (∀ a, clen mm nt W a ≤ (σ.arrs a).length →
+          ((padArrs τ (tailOf σ (clen mm nt W))).arrs a).drop (clen mm nt W a) =
+            (σ.arrs a).drop (clen mm nt W a)) := by
   obtain ⟨τ, hrun, hpost, hrnk⟩ :=
     RamElim.elim_specWR hcsr hB hMB hW hnt _ (elimPreW_cutArrs hpre)
-  exact ⟨τ, run_of_run_cutArrs _ hrun, hpost, hrnk⟩
+  exact ⟨τ, run_of_run_cutArrs _ hrun, hpost, hrnk,
+    fun a ha => tail_preserved hrun ha⟩
 
 /-! ## §5 The contract at the arena's live vertices
 
@@ -1257,7 +1261,7 @@ theorem elimCompact_spec {B n mm nt W : ℕ} {G : SimpleGraph (Fin n)} {O T M Me
     h1 O T σ hml hcsr hent hB hnB hMB
   -- the engine, at the arena's carrier
   have hBc : mm + cs + 1 < B := by omega
-  obtain ⟨τ, r2, hpost, hrnkLt⟩ :=
+  obtain ⟨τ, r2, hpost, hrnkLt, -⟩ :=
     elimCompact_engine hcsr' hBc (fun _ _ => show (1 : ℕ) < B by omega)
       (hcs.trans hW) hcs hpre
   set σ2 : Env := padArrs τ (tailOf σ1 (clen mm nt W)) with hσ2

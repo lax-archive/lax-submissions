@@ -54,8 +54,9 @@ before — the per-centre budget absorbs the new constant (P1/B-e).
 Three pieces of reusable machinery come with them.
 
 * `levelPre_run` and `orderMem_run` — **a level's state is a frame**.
-* `fillPrefix_spec` and `copyPrefix_spec` — **a flat pass over a prefix
-  of a longer array**.
+* `Refine.DriverPrelude.fillPrefix_spec` and `copyPrefix_spec` — **a
+  flat pass over a prefix of a longer array**, shared with the block
+  cover leaf.
 * `coverOut_off_le` and `coverOut_congr` — **the cover's answer reads
   the member array only below the write pointer**.
 
@@ -168,67 +169,6 @@ open Lax3Proofs.RamElim (CsrSimple ElimPre ElimPreW ElimPost ElimMem elimCom eli
   AfterDeg AfterBuck AfterLoop AfterOff AfterDegW AfterBuckW AfterLoopW AfterOffW)
 open Lax3Proofs.RamDriver
 open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Reasoning.Lib
-
-/-! ### A name and its own prefix
-
-Every per-depth name of the driver is a literal with a decimal numeral
-appended, so it is never the literal itself. The numeral is nonempty
-because `String.toNat?` reads it back, and the empty string reads back
-as `none`. -/
-
-/-- A decimal representation has at least one digit: `Nat.toDigits`'s
-own recursion equation ends in a digit in both branches. -/
-theorem toDigits_ne_nil (j : ℕ) : Nat.toDigits 10 j ≠ [] := by
-  rw [Nat.toDigits_eq_if (by omega)]
-  split <;> simp
-
-/-- A decimal numeral is not the empty string. -/
-@[local simp]
-theorem toString_toList_ne_nil (j : ℕ) : (toString j).toList ≠ [] := by
-  have h0 := toDigits_ne_nil j
-  rw [Nat.toString_eq_repr, RamDriverBase.repr_eq_ofList]
-  simp [h0]
-
-/-- A per-depth name is not the literal it extends. -/
-theorem append_toString_ne (p : String) (j : ℕ) : p ++ toString j ≠ p :=
-  RamDriverBot.append_ne_self (toString_toList_ne_nil j)
-
-/-- **A decimal representation contains only digits.** This is
-`RamDriverBase.underscore_not_mem_toDigits` with the separator replaced
-by any character that is not a digit, which is what a literal name
-sharing a prefix with a per-depth name needs. -/
-theorem notMem_toDigits {c : Char} (hc : ∀ d < 10, Nat.digitChar d ≠ c) :
-    ∀ j : ℕ, c ∉ Nat.toDigits 10 j := by
-  intro j
-  induction j using Nat.strong_induction_on with
-  | _ j ih =>
-    rw [Nat.toDigits_eq_if (by omega)]
-    split
-    · rename_i hlt
-      simp only [List.mem_singleton]
-      exact fun h => hc _ hlt h.symm
-    · rename_i hge
-      have hpos : 0 < j := by omega
-      simp only [List.mem_append, not_or]
-      refine ⟨ih (j / 10) (Nat.div_lt_self hpos (by omega)), ?_⟩
-      simp only [List.mem_singleton]
-      exact fun h => hc _ (Nat.mod_lt _ (by omega)) h.symm
-
-/-- A decimal numeral, as a list of characters. -/
-theorem toList_toString (j : ℕ) : (toString j).toList = Nat.toDigits 10 j := by
-  rw [Nat.toString_eq_repr, RamDriverBase.repr_eq_ofList]
-  simp
-
-/-- **The member array of the cover is not the depth's copy of it.**
-Both begin `xm`, and what follows is `em` in the one and a decimal
-numeral in the other. -/
-theorem xmem_ne_xmmName (j : ℕ) : "xmem" ≠ xmmName j := by
-  intro h
-  rw [xmmName, String.ext_iff] at h
-  have h' : Nat.toDigits 10 j = ['e', 'm'] := by
-    rw [← toList_toString]
-    exact (by simpa using h : ['e', 'm'] = (toString j).toList).symm
-  exact notMem_toDigits (c := 'e') (by decide) j (by rw [h']; simp)
 
 theorem alvName_ne_alv (j : ℕ) : alvName j ≠ "alv" := append_toString_ne "alv" j
 
@@ -386,85 +326,8 @@ parameter, at or above the bound. Nothing else changes: the store's
 range obligation is `i < N ≤ Na`, and the postcondition speaks only
 about the cells below `N` — the tail of the destination is *not* claimed
 to be untouched, and is not, since a shorter earlier copy may have left
-anything there. -/
-
-/-- **A flat pass over a prefix of an array**, the destination longer
-than the bound. -/
-theorem fillPrefix_spec {B : ℕ} (N Na : ℕ) (a : String) (bnd e : Expr) (F : ℕ → ℕ)
-    (Q : Env → Prop) (hB : 0 < B) (hNB : N < B) (hNa : N ≤ Na)
-    (hQfr : ∀ σ σ', Q σ → (∀ y, y ≠ "i" → σ'.vars y = σ.vars y) →
-      (∀ b, b ≠ a → σ'.arrs b = σ.arrs b) → Q σ')
-    (hbnd : ∀ σ, Q σ → bnd.evalB B σ = some N)
-    (he : ∀ σ, Q σ → σ.vars "i" < N → e.evalB B σ = some (F (σ.vars "i"))) :
-    Spec B (fun σ => (∃ g, σ.arrs a = arrOf Na g) ∧ Q σ)
-      (fillUpto a bnd e)
-      (fun _ σ' => (∃ g, σ'.arrs a = arrOf Na g ∧ ∀ k < N, g k = F k) ∧
-        σ'.vars "i" = N ∧ Q σ')
-      ((e.size + bnd.size + 9) * N + bnd.size + 5) := by
-  have hbody : Spec B
-      (fun σ => ((∃ g, σ.arrs a = arrOf Na g ∧ ∀ k < σ.vars "i", g k = F k) ∧
-        σ.vars "i" ≤ N ∧ Q σ) ∧ σ.vars "i" < N)
-      (Fill.put a "i" e)
-      (fun σ σ' => ((∃ g, σ'.arrs a = arrOf Na g ∧ ∀ k < σ'.vars "i", g k = F k) ∧
-        σ'.vars "i" ≤ N ∧ Q σ') ∧ σ'.vars "i" = σ.vars "i" + 1) (6 + e.size) := by
-    refine Spec.of_exists fun σ hσ => ?_
-    obtain ⟨⟨⟨g, harr, hcell⟩, hle, hQ⟩, hlt⟩ := hσ
-    have hval := he σ hQ hlt
-    have h1 : Run B (.store a (.var "i") e) σ
-        (σ.setArr a (σ.vars "i") (F (σ.vars "i"))) (1 + 1 + e.size) := by
-      have h := Run.store (B := B) (σ := σ) (a := a) (i := .var "i") (e := e)
-        (evalB_var (by omega)) hval (by rw [harr, length_arrOf]; omega)
-      simpa using h
-    have h2 : Run B (.assign "i" (.add (.var "i") (.lit 1)))
-        (σ.setArr a (σ.vars "i") (F (σ.vars "i")))
-        ((σ.setArr a (σ.vars "i") (F (σ.vars "i"))).setVar "i" (σ.vars "i" + 1)) (1 + 3) := by
-      have h := Run.assign (B := B) (σ := σ.setArr a (σ.vars "i") (F (σ.vars "i")))
-        (x := "i") (e := .add (.var "i") (.lit 1))
-        (evalB_bin (evalB_var (by rw [vars_setArr]; omega)) (evalB_lit (by omega))
-          (by simp only [Bop.apply_add, vars_setArr]; omega))
-      rw [Bop.apply_add, vars_setArr] at h
-      simpa using h
-    refine ⟨_, _, h1.seq h2, by omega,
-      ⟨⟨upd g (σ.vars "i") (F (σ.vars "i")), ?_, ?_⟩,
-        by rw [vars_setVar, if_pos rfl]; omega, ?_⟩, by simp⟩
-    · rw [arrs_setVar, arrs_setArr, if_pos rfl, harr, set_arrOf_eq_upd]
-    · intro k hk
-      rw [vars_setVar, if_pos rfl] at hk
-      rcases Nat.lt_or_ge k (σ.vars "i") with hklt | hkge
-      · rw [upd_of_ne _ (by omega)]; exact hcell k hklt
-      · have : k = σ.vars "i" := by omega
-        rw [this, upd_self]
-    · exact hQfr σ _ hQ (fun y hy => by rw [vars_setVar, if_neg hy, vars_setArr])
-        (fun b hb => by rw [arrs_setVar, arrs_setArr, if_neg hb])
-  refine (((RamDriverOrder.forRangeZero' "i" bnd
-    (fun σ => (∃ g, σ.arrs a = arrOf Na g ∧ ∀ k < σ.vars "i", g k = F k) ∧
-      σ.vars "i" ≤ N ∧ Q σ) N (6 + e.size) hB
-    (fun _ hσ => lt_of_le_of_lt hσ.2.1 hNB) (fun _ hσ => hbnd _ hσ.2.2)
-    (fun _ hσ => hσ.2.1) hbody).pre ?_).post ?_).mono (le_of_eq (by ring))
-  · rintro σ ⟨⟨g, harr⟩, hQ⟩
-    refine ⟨⟨g, by rw [arrs_setVar]; exact harr, ?_⟩, by simp, ?_⟩
-    · intro k hk; rw [vars_setVar, if_pos rfl] at hk; omega
-    · exact hQfr σ _ hQ (fun y hy => by rw [vars_setVar, if_neg hy]) (fun _ _ => by
-        rw [arrs_setVar])
-  · rintro σ σ' - ⟨⟨⟨g, harr, hcell⟩, -, hQ⟩, hiN⟩
-    exact ⟨⟨g, harr, fun k hk => hcell k (by rw [hiN]; exact hk)⟩, hiN, hQ⟩
-
-/-- **A copy into a prefix of a longer array.** -/
-theorem copyPrefix_spec {B : ℕ} (N Na Ns : ℕ) (src dst : String) (bnd : Expr) (g : ℕ → ℕ)
-    (Q : Env → Prop) (hB : 0 < B) (hNB : N < B) (hNa : N ≤ Na) (hNs : N ≤ Ns)
-    (hQfr : ∀ σ σ', Q σ → (∀ y, y ≠ "i" → σ'.vars y = σ.vars y) →
-      (∀ b, b ≠ dst → σ'.arrs b = σ.arrs b) → Q σ')
-    (hbnd : ∀ σ, Q σ → bnd.evalB B σ = some N)
-    (hsrc : ∀ σ, Q σ → σ.arrs src = arrOf Ns g) (hgB : ∀ k < N, g k < B) :
-    Spec B (fun σ => (∃ h, σ.arrs dst = arrOf Na h) ∧ Q σ)
-      (copyUpto src dst bnd)
-      (fun _ σ' => (∃ h, σ'.arrs dst = arrOf Na h ∧ ∀ k < N, h k = g k) ∧
-        σ'.vars "i" = N ∧ Q σ')
-      ((bnd.size + 11) * N + bnd.size + 5) :=
-  (fillPrefix_spec N Na dst bnd (.get src (.var "i")) g Q hB hNB hNa hQfr hbnd
-    (fun σ hQ hlt => evalB_get (evalB_var (by omega))
-      (by rw [hsrc σ hQ, getElem?_arrOf g (by omega)]) (hgB _ hlt))).mono
-    (le_of_eq (by simp only [size_get, size_var]; ring))
+anything there. The reusable proof is hoisted into
+`Refine.DriverPrelude`; the cover applications remain below. -/
 
 /-! ### Two readings of the cover's answer
 
@@ -822,12 +685,6 @@ theorem compact_spec {B n j : ℕ} {M ord Xoff : ℕ → ℕ}
     exact ⟨hn'', hxof'', cps, hcps,
       ⟨hcX, hcle, fun k hk => (hcpslt k hk).1, hcpsmono, fun k hk => (hcpslt k hk).2.1,
         fun k hk => (hcpslt k hk).2.2, hcov⟩⟩
-
-/-- The cost of the cover phase: the pass, the two copies that set it
-up, the four of `RamDriver.coverSave` — the member copy charged at the
-whole cluster arena — and the compaction scan. -/
-def coverPhaseCost (n ns : ℕ) : ℕ :=
-  RamCover.coverCost n ns + 12 * (n * n) + 81 * n + 56
 
 /-- **The cover phase of a level, discharged.** -/
 theorem coverImplements {n : ℕ} {B cap mb ns W j : ℕ} {G : SimpleGraph (Fin n)}

@@ -339,6 +339,50 @@ one. -/
 theorem notMem_of_underscore {y : String} (hy : '_' ∈ y.toList) {l : List String}
     (hl : ∀ q ∈ l, '_' ∉ q.toList) : y ∉ l := fun hm => hl y hm hy
 
+/-- The machine and semantic data actually read by one dead-aware
+scatter atom.  The retained cover is deliberately absent: the atom
+program only frames it, so both carrier-wide and active-cover callers
+can share the same walk. -/
+structure DeadView (B q_top cap mb ns Ws ℓ j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    {n : ℕ} (G : SimpleGraph (Fin n)) (O T M : ℕ → ℕ) (C : ℕ → ℕ → ℕ)
+    (X W : Set (Fin n)) (w : Fin mb → Fin n) (Alv' Gam' : ℕ → ℕ)
+    (C' : ℕ → ℕ → ℕ) (σ : Env) : Prop where
+  n_eq : σ.vars "n" = n
+  off : σ.arrs "off" = arrOf (n + 1) O
+  tgt : σ.arrs "tgt" = arrOf Ws T
+  mem : LevelMem B n cap mb σ
+  nsW : ns ≤ Ws
+  data : ClusterData n mb j B G M X W w Alv' Gam' σ
+  col_arr : ∀ c < sigL cap mb (j + 1),
+    σ.arrs (colName (j + 1) c) = arrOf n (C' c)
+  col_bit : ∀ c < sigL cap mb (j + 1), ∀ v < n, C' c v ≤ 1
+  col_read : colRead n C' (sigL cap mb (j + 1)) =
+    stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w
+  table : TableInvOn q_top cap mb φ G (j + 1) Alv' C'
+    (RamDriverCluster.rowDom M Alv' X W) σ
+  kill_list : KillListAt mb j M X W σ
+  base_arrs : BaseArrs B q_top cap mb ℓ φ σ
+
+/-- Forget the carrier-wide cover from the landed scatter precondition. -/
+theorem DeadPre.view {σ : Env}
+    (h : DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m
+      X W w Alv' Gam' C' σ) :
+    DeadView B q_top cap mb ns Ws ℓ j φ G O T M C X W w Alv' Gam' C' σ := by
+  obtain ⟨hpre, hklist, hbarr⟩ := h
+  exact
+    { n_eq := hpre.n_eq
+      off := hpre.off
+      tgt := hpre.tgt
+      mem := hpre.mem
+      nsW := hpre.nsW
+      data := hpre.data
+      col_arr := hpre.2.2.1
+      col_bit := hpre.2.2.2.1
+      col_read := hpre.2.2.2.2.1
+      table := hpre.2.2.2.2.2
+      kill_list := hklist
+      base_arrs := hbarr }
+
 open Classical in
 /-- **One dead-aware scatter atom, discharged.** The kill walk, the
 outside probe and its bit, the outside count, the atom's filtered member
@@ -385,19 +429,22 @@ After this wave **no summand of the charge grows with the carrier**:
 `deadAtomKX_le_blk` in §5 is the compiled statement, and the fill's slot
 is `memFillAtCost mm1 ≤ memFillAtCost X.ncard`, bounded by the same
 `hm1X` the filter walk's slot uses. -/
-theorem scatDead_spec {bw nb : ℕ}
+theorem scatDead_specCore {bw nb : ℕ} {P : Env → Prop}
     (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
     (hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0)
     (hbud : ∀ r : ℕ, BallBudget n r G Alv' O bw nb)
     {σs : ScatterSentence (sigL cap mb (j + 1))}
     (hβ : σs.β ∈ tablesAt q_top cap mb φ (j + 1)) (hloc : IsLocal σs.β)
     (hrB : σs.r + 1 < B) (htB : σs.t + n + mb < B)
-    {Kb : ℕ} (hKb : ScatterDeadPass.scatDeadKX σs.β n X.ncard mb bw nb σs.t ≤ Kb) :
-    Spec B (DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m
-        X W w Alv' Gam' C')
+    {Kb : ℕ} (hKb : ScatterDeadPass.scatDeadKX σs.β n X.ncard mb bw nb σs.t ≤ Kb)
+    (hview : ∀ {σ}, P σ →
+      DeadView B q_top cap mb ns Ws ℓ j φ G O T M C X W w Alv' Gam' C' σ)
+    (hframe : ∀ {σ σ' K}, P σ →
+      Run B (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1)))
+        σs.β σs.r σs.t) σ σ' K → P σ') :
+    Spec B P
       (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1))) σs.β σs.r σs.t)
-      (fun σ σ' => DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m
-          X W w Alv' Gam' C' σ' ∧ σ'.out = σ.out ∧
+      (fun σ σ' => P σ' ∧ σ'.out = σ.out ∧
         σ'.vars (curName j) = σ.vars (curName j) ∧
         (∀ i' k', σ'.vars (flgName j i' k') = σ.vars (flgName j i' k')) ∧
         σ'.vars "flag" ≤ 1 ∧
@@ -410,15 +457,14 @@ theorem scatDead_spec {bw nb : ℕ}
   have hnsB : ns < B := hB.ns_lt
   have hmbB : mb < B := hB.mb_lt
   refine Spec.of_exists fun σ hσ => ?_
-  obtain ⟨hpre, hklist, hbarr⟩ := id hσ
-  obtain ⟨hturn, hdata, hcolarr, hcolbit, hcolread, htab⟩ := id hpre
+  obtain ⟨hn, hoff, htgt, hlmem, hnsW, hdata, hcolarr, hcolbit, hcolread, htab,
+    hklist, hbarr⟩ := hview hσ
   obtain ⟨⟨Xa, hXaA, hXaS, hXaB⟩, ⟨Wa, hWaA, hWaS, hWaB⟩, ⟨Ra, hRaA, hRaS, hRaB⟩,
     halvA, hAlvB, hmaskeq, hmaskpt, hgamA, hGamB, Mem1, mm1, hmem1A, hmem1V, hmem1E,
     hmem1B⟩ := id hdata.1
   obtain ⟨kl, kq, hklA, hkkV, hkqmb, hkllt, hklinj, hklsnd, hklcmp⟩ := id hklist
   obtain ⟨hp, hpβ⟩ := getElem_posOf hβ
   obtain ⟨Tb, hTbA, hTb1, hTbS⟩ := htab _ hp
-  have hn : σ.vars "n" = n := hpre.n_eq
   have hm1n : mm1 ≤ n := hmem1E.card_le
   -- **the three cluster readings** (wave B4-walk-1). The child mask marks only
   -- vertices of the turn's cluster — `BatchData`'s pointwise clause — so the
@@ -546,7 +592,7 @@ theorem scatDead_spec {bw nb : ℕ}
   -- **pass 5**: the atom's own member list, out of the child's
   have hmemsz₄ : ∃ g : ℕ → ℕ, σ₄.arrs "mem" = arrOf n g := by
     have hlm : LevelMem B n cap mb σ₄ :=
-      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq hr₄))) hpre.mem
+      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq hr₄))) hlmem
     exact hlm.memArr
   obtain ⟨σ₅, hr₅, Mem, mm, hmemA₅, hmmv₅, hmmle, hml₅, hmem1A₅, hTbA₅, hmm₅⟩ :=
     (ScatterDeadPass.atomMemCom_spec (B := B) (n := n) (j := j)
@@ -578,7 +624,7 @@ theorem scatDead_spec {bw nb : ℕ}
     rw [hfv₅ "n" (by decide) (by decide) (by decide)]; exact hn₄
   obtain ⟨g₅, hdist₅⟩ : ∃ g, σ₅.arrs "dist" = arrOf n g := by
     have hlm : LevelMem B n cap mb σ₅ :=
-      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq hr₅)))) hpre.mem
+      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq hr₅)))) hlmem
     exact hlm.1 ("dist", n) (by simp)
   obtain ⟨σ₇, hr₇, ⟨g₇, hdist₇, hfill₇, -⟩, -, -⟩ :=
     (ScatterDeadPass.distMemCom_spec (B := B) (n := n) (j := j) (mm1 := mm1)
@@ -594,7 +640,7 @@ theorem scatDead_spec {bw nb : ℕ}
   have hqsz₇ : (∃ g, σ₇.arrs "q" = arrOf n g) ∧ (∃ g, σ₇.arrs "qd" = arrOf n g) ∧
       (∃ g, σ₇.arrs "exc" = arrOf n g) := by
     have hlm : LevelMem B n cap mb σ₇ :=
-      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq hr₇))))) hpre.mem
+      levelMem_run (hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq hr₇))))) hlmem
     exact ⟨hlm.1 ("q", n) (by simp), hlm.qdArr, hlm.1 ("exc", n) (by simp)⟩
   have hmaskfree : ScatterBlock.MaskFree (alvName (j + 1)) :=
     ScatterDeadPass.maskFree_alvName (j + 1)
@@ -608,10 +654,10 @@ theorem scatDead_spec {bw nb : ℕ}
     · rw [hfv₇ "mm" (by decide) (by decide)]; exact hmmv₅
     · rw [hfa₇ _ (by decide), hfa₅ _ (by decide), hfa₄,
         hfa₃ "off" (not_ext_bb_of_cons rfl (by decide)), hfa₂, hfa₁]
-      exact hturn.1.2.1
+      exact hoff
     · rw [hfa₇ _ (by decide), hfa₅ _ (by decide), hfa₄,
         hfa₃ "tgt" (not_ext_bb_of_cons rfl (by decide)), hfa₂, hfa₁]
-      exact hturn.1.2.2.1
+      exact htgt
     · rw [hfa₇ _ (by simp [alvName, String.ext_iff]),
         hfa₅ _ (by simp [alvName, String.ext_iff]), hfa₄,
         hfa₃ _ (not_ext_bb_alvName (j + 1)), hfa₂, hfa₁]
@@ -623,7 +669,7 @@ theorem scatDead_spec {bw nb : ℕ}
       (av := alvName (j + 1)) (mm := mm) (r := σs.r) (t := σs.t) (G := G) (M := Alv')
       (O := O) (T := T) (Mem := Mem)
       (X := ScatterDeadPass.bitSet n Alv' Tb) (bw := bw) (nb := nb)
-      hmaskfree hcsr hnB hnsB hpre.nsW hrB (by omega) hAlvB hml₅ (hbud σs.r)).run
+      hmaskfree hcsr hnB hnsB hnsW hrB (by omega) hAlvB hml₅ (hbud σs.r)).run
       ⟨harena₇, hqsz₇.2.2⟩
   have hfa₈ : ∀ a : String, a ≠ "exc" → a ≠ "dist" → a ≠ "q" → a ≠ "qd" →
       σ₈.arrs a = σ₇.arrs a := by
@@ -667,7 +713,7 @@ theorem scatDead_spec {bw nb : ℕ}
   have hrun : Run B (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1)))
       σs.β σs.r σs.t) σ σ₉ _ :=
     hr₁.seq (hr₂.seq (hr₃.seq (hr₄.seq (hr₅.seq (hr₇.seq (hr₈.seq hr₉))))))
-  refine ⟨σ₉, _, hrun, ?_, hσ.run_scatDead hloc hrun,
+  refine ⟨σ₉, _, hrun, ?_, hframe hσ hrun,
     hrun.out_eq (noWrite_scatDeadCom _ _ _ _ _), ?_, ?_, hfl1₉, ?_⟩
   -- the charge, at the cluster (wave B4-walk-1)
   · refine le_trans ?_ hKb
@@ -723,6 +769,32 @@ theorem scatDead_spec {bw nb : ℕ}
       have := hkey₈ e
       rwa [ScatterDeadPass.bitSet_eq_inter
         (fun v hv => hbitS v (RamDriverCluster.mem_rowDom_of_alive hv))] at this
+
+/-- The landed carrier-wide atom contract is the first client of the
+cover-independent core. -/
+theorem scatDead_spec {bw nb : ℕ}
+    (hcsr : CsrGraph G ns O T) {d : ℕ} (hB : WordBoundK B n d ns cap mb)
+    (hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0)
+    (hbud : ∀ r : ℕ, BallBudget n r G Alv' O bw nb)
+    {σs : ScatterSentence (sigL cap mb (j + 1))}
+    (hβ : σs.β ∈ tablesAt q_top cap mb φ (j + 1)) (hloc : IsLocal σs.β)
+    (hrB : σs.r + 1 < B) (htB : σs.t + n + mb < B)
+    {Kb : ℕ} (hKb : ScatterDeadPass.scatDeadKX σs.β n X.ncard mb bw nb σs.t ≤ Kb) :
+    Spec B (DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m
+        X W w Alv' Gam' C')
+      (scatDeadCom j (posOf σs.β (tablesAt q_top cap mb φ (j + 1))) σs.β σs.r σs.t)
+      (fun σ σ' => DeadPre B q_top cap mb ns Ws ℓ j φ G O T M Gm C π ord Xoff Xmem asg m
+          X W w Alv' Gam' C' σ' ∧ σ'.out = σ.out ∧
+        σ'.vars (curName j) = σ.vars (curName j) ∧
+        (∀ i' k', σ'.vars (flgName j i' k') = σ.vars (flgName j i' k')) ∧
+        σ'.vars "flag" ≤ 1 ∧
+        (σ'.vars "flag" ≠ 0 ↔ ScatVal (stepArenaP (masked G M) X w)
+          (stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w) σs))
+      Kb := by
+  refine scatDead_specCore hcsr hB hXalive hbud hβ hloc hrB htB hKb
+    (fun h => h.view) ?_
+  intro σ σ' K h hr
+  exact h.run_scatDead hloc hr
 
 /-! ### §5 The folds
 
@@ -808,6 +880,18 @@ theorem deadAtomKBlk_closed {L : ℕ} (β : DistFO L 1) (xb kq bw nb t : ℕ) :
     ScatterDeadPass.memFillAtCost, ScatterDeadPass.atomFlagCost,
     ScatterBlock.scatBlockK_eq]
   ring
+
+/-- The block-only ceiling is monotone in each part of the block
+reading. This is the transport used at the driver seam: the actual
+cluster, row sum and block size are each bounded by the single weight
+at which the size-indexed budget is read. -/
+theorem deadAtomKBlk_mono {L : ℕ} (β : DistFO L 1) {xb xb' bw bw' nb nb' : ℕ}
+    (kq t : ℕ) (hxb : xb ≤ xb') (hbw : bw ≤ bw') (hnb : nb ≤ nb') :
+    deadAtomKBlk β xb kq bw nb t ≤ deadAtomKBlk β xb' kq bw' nb' t := by
+  rw [deadAtomKBlk_closed, deadAtomKBlk_closed]
+  have hball : 44 * bw + 110 * nb + 140 ≤ 44 * bw' + 110 * nb' + 140 := by omega
+  have hturn := Nat.mul_le_mul_right t hball
+  omega
 
 /-- **THE ACCEPTANCE TEST: the per-atom charge is bounded by a function
 of the block reading alone**, at every carrier. `deadAtomKBlk` mentions

@@ -56,7 +56,7 @@ named landed theorem; `free` = discharged by choosing the parameter;
 | 21 | `hKbase` | free — defines `Kl ℓ` | note in §A |
 | 22 | `hKo` | **BLOCKED** — size-blind carrier charge | §D |
 | 23 | `hKc` | **BLOCKED** — `12 n²` + `coverCost`'s `100 n²` | §D |
-| 24 | `hKd` | free — defines `Kd` | note in §A |
+| 24 | `hKd` | **RETIRED** — dead sweep absent from the program | §D control 3 |
 | 25 | `hbinj` | producer — `RamDriverRoot.blockInj_slot` | `slot25_hbinj` |
 | 26 | `hdeg` | **BLOCKED** — no constant `Kmass` | §C |
 | 27 | `hKl` | **BLOCKED** — turn sum × #20/#22/#23 | §D |
@@ -64,7 +64,7 @@ named landed theorem; `free` = discharged by choosing the parameter;
 | 29 | `hatoms` | free — finite atom list, `B` large | note in §A |
 | 30 | `hKsent` | free — defines `Ksent` | note in §A |
 
-Twenty-four slots are free or producered. **Six block**, in three
+Twenty-three of the remaining slots are free or producered. **Six block**, in three
 independent groups, and only the first was known when this leaf opened:
 
 * **#6 `hcsr`** — B7 finding 1, repaired by G1 but *not yet at the root*:
@@ -130,7 +130,7 @@ at the expression the slot bounds":
   and `φ` alone; `Kb`/`Kb₀` are the maxima of `RamDriverIO.atomCost n ns`
   over them, and the two `< B` clauses are finitely many constants of the
   parameters, so #12's bound covers them.
-* **#17 `hcostI`, #18 `hKsc`, #21 `hKbase`, #24 `hKd`, #28 `hKdec`,
+* **#17 `hcostI`, #18 `hKsc`, #21 `hKbase`, #28 `hKdec`,
   #30 `hKsent`** — each bounds a closed expression by a free parameter;
   take the parameter to be that expression.
 * **#19 `hKmono`** — `CostRecurrence`'s closed form is monotone in the
@@ -432,225 +432,25 @@ theorem no_word_size_through_deg_slot {L : Layout} {B w n Kmass ns cap mb : ℕ}
 
 end Deg
 
-/-! ## §D. Slots #20/#22/#23/#27 — the cost group, and the cubic floor
+/-! ## §D. Retired descent carrier floor; surviving controls
 
-B7 finding 2, alive, and sharper than it was recorded.
+The block-priced `clusterLoad` rewrite removed the pure `n²` summand from
+`RamDriverDescend.descendCost`. Consequently the former theorems
+`descend_carrier`, `turn_carrier`, `hKs_carrier`,
+`level_cost_floor_cubic`, `level_cost_floor_sharp`, and
+`driverRoot_decides_sentence_floored` became false and are deliberately
+retired rather than weakened. The associated C0 comparison and the claimed
+width-independent floor are retired with them.
 
-`C0Probe.level_interface_floor` derived `n * (60 * W + 1600 * n) ≤ Kl 0 n`
-from `hKs`, `hKo` and `hKl`, and `level_interface_floor_cubic` reached
-`60 * n³` only through `hWc : chainWidth n d D₁ R ≤ W`, a hypothesis of
-the *ordering phase* and not of the root. That extra hypothesis is not
-needed. The `n²` is inside the **turn cost itself**:
+The controls below remain true: the order and cover phases are still
+size-blind, the removed dead sweep was carrier-linear, and the turn cost
+really reads its size argument. -/
 
-```lean
-RamDriverDescend.descendCost n ns cap j = 16 * (n * n) + 75 * n + 51 + …
-```
-
-and `RamDriverRoot.turnCost` opens with it. So `hKs` alone charges
-`16 * n²` per turn, `hKl` runs `n` turns at the root, and the product is
-cubic with `W` occurring nowhere.
-
-**Which hypothesis shape is responsible** — the residue's work-list:
-
-* **#20 `hKs`** — `turnCostSize … ≤ Ks j t` at a turn cost whose
-  descent charges `16 * n²` for the level's *own* carrier, at every turn,
-  independent of the block the turn processes (`turnCostSize` ignores its
-  size slot `s`; `turnCostSize_eq`). Repair: the descent's block-driven
-  interior (E4c, `descendCom` swap / `qd` layout / alive-mask hoist).
-* **#22 `hKo`** — `orderPhaseCost n ns W ≤ Ko j m` is **size-blind** in
-  `m`: it charges `1600 * n + 1350 * ns + 60 * W + 650` on the *empty*
-  arena. Repair: E-mem member lists, then the member-driven order
-  interior; E-order's no-escape theorem is the statement that no closed
-  form survives an empty-arena carrier charge.
-* **#23 `hKc`** — `coverPhaseCost n ns ≤ Kc j m`, also size-blind, and
-  quadratic on its own face: `RamCover.coverCost n ns` is
-  `100 * n * n + 50 * n * ns + …` and the phase adds `12 * (n * n)`.
-  Repair: E3b (cover composition, `compactCom`-before-`coverSave`).
-* **#27 `hKl`** — the level bill sums `Ks j (bs c)` over `t ≤ m` turns
-  and adds `Ko j m + Kc j m + Kd j m` once. It is the multiplier: it is
-  what turns any per-turn carrier charge into a cubic. It is also the
-  slot that is *correct* — the sum over blocks is the shape the mass
-  recursion needs — so the repair is in its summands, not in it.
-
-Nothing here is about `hKd` (#24), whose `sweepCost` is linear in `n`,
-nor about `hKbase` (#21). -/
-
-section Floor
+section Controls
 
 variable {n q_top cap mb ns W ℓ Kmass Kdec Ksent : ℕ} {φ : Lax3.FirstOrder.FO 0}
-  {Ksc : ℕ → ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+  {Ksc Ko Kc Ks Kl : ℕ → ℕ → ℕ}
 
-/-- **The descent's carrier charge, isolated.** One line, and it is the
-whole mechanism of the cubic: a turn pays `16 * n²` before it has looked
-at its block. -/
-theorem descend_carrier (n ns cap j : ℕ) :
-    16 * (n * n) ≤ RamDriverDescend.descendCost n ns cap j := by
-  rw [RamDriverDescend.descendCost]; omega
-
-/-- …and a turn pays the descent. -/
-theorem turn_carrier (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0) (Ksc Kin : ℕ) :
-    16 * (n * n) ≤ RamDriverRoot.turnCost n ns cap mb q_top j φ Ksc Kin := by
-  rw [RamDriverRoot.turnCost]
-  have := descend_carrier n ns cap j
-  omega
-
-/-- **#20's contribution.** From `hKs` alone, the root level's turn budget
-is quadratic in the carrier. -/
-theorem hKs_carrier (hℓ : 1 ≤ ℓ)
-    (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t) :
-    16 * (n * n) ≤ Ks 0 0 := by
-  have h := hKs 0 (by omega) 0
-  rw [RamDriverRoot.turnCostSize_eq] at h
-  exact le_trans (turn_carrier n ns cap mb q_top 0 φ (Ksc 0) (Kl 1 0)) h
-
-/-- **#27's contribution — the multiplier.** The root level runs `n`
-turns, each paying its turn budget; the mass side condition is free at
-the all-empty block profile, so the floor is not about the mass. -/
-theorem hKl_turns (hℓ : 1 ≤ ℓ)
-    (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
-      (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
-        ≤ Kl j m) :
-    n * (Ks 0 0 + 11) ≤ Kl 0 n := by
-  have h0 := hKl 0 (by omega) n n le_rfl (fun _ => 0) (by simp)
-  simp only [Finset.sum_const, Finset.card_range, smul_eq_mul] at h0
-  calc n * (Ks 0 0 + 11)
-      ≤ n * (Ks 0 0 + 11) + 6 := Nat.le_add_right _ _
-    _ ≤ Kd 0 n + (n * (Ks 0 0 + 11) + 6) := Nat.le_add_left _ _
-    _ ≤ Kc 0 n + (Kd 0 n + (n * (Ks 0 0 + 11) + 6)) := Nat.le_add_left _ _
-    _ ≤ Ko 0 n + (Kc 0 n + (Kd 0 n + (n * (Ks 0 0 + 11) + 6))) := Nat.le_add_left _ _
-    _ ≤ Kl 0 n := h0
-
-/-- **The cubic floor, from two slots.** `hKs` (#20) and `hKl` (#27),
-byte-identical to the root's, at `ℓ ≥ 1`: the root level's budget is at
-least `16 · n³`.
-
-`W` occurs in neither hypothesis used nor the conclusion, `hKo` and `hKc`
-are not consumed, and there is no `chainWidth`, no `hWc` and no `R`. This
-is what `C0Probe.level_interface_floor_cubic` needed the ordering phase's
-width pin for and did not need. -/
-theorem level_cost_floor_cubic (hℓ : 1 ≤ ℓ)
-    (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
-    (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
-      (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
-        ≤ Kl j m) :
-    16 * (n * n * n) ≤ Kl 0 n := by
-  have hs := hKs_carrier hℓ hKs
-  calc 16 * (n * n * n) = n * (16 * (n * n)) := by ring
-    _ ≤ n * (Ks 0 0 + 11) := Nat.mul_le_mul_left n (by omega)
-    _ ≤ Kl 0 n := hKl_turns hℓ hKl
-
-/-- **The sharper form, with the two size-blind phase slots added.**
-`hKo` (#22) and `hKc` (#23) charge their phases on the *nested* level's
-empty arena, and `hKs` carries the nested budget additively, so each
-phase cost is paid once per turn as well. -/
-theorem level_cost_floor_sharp (hℓ : 2 ≤ ℓ)
-    (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
-    (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
-    (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
-    (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
-      (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
-        ≤ Kl j m) :
-    128 * (n * n * n) ≤ Kl 0 n := by
-  -- the nested level pays both size-blind phases on the empty arena
-  have h10 : RamDriverCompose.orderPhaseCost n ns W + RamDriverCompose.coverPhaseCost n ns
-      ≤ Kl 1 0 := by
-    have h := hKl 1 (by omega) 0 0 le_rfl (fun _ => 0) (by simp)
-    simp only [Finset.range_zero, Finset.sum_empty] at h
-    have := hKo 1 0
-    have := hKc 1 0
-    omega
-  -- a turn pays its own descent and the nested level
-  have hks : 16 * (n * n) + Kl 1 0 ≤ Ks 0 0 := by
-    have h := hKs 0 (by omega) 0
-    simp only [Nat.zero_add] at h
-    rw [RamDriverRoot.turnCostSize_eq, RamDriverRoot.turnCost] at h
-    have hd := descend_carrier n ns cap 0
-    omega
-  have hcov : 112 * (n * n) ≤ RamDriverCompose.coverPhaseCost n ns := by
-    rw [RamDriverCompose.coverPhaseCost, RamCover.coverCost]
-    have : 100 * n * n = 100 * (n * n) := by ring
-    omega
-  calc 128 * (n * n * n) = n * (16 * (n * n) + 112 * (n * n)) := by ring
-    _ ≤ n * (Ks 0 0 + 11) := Nat.mul_le_mul_left n (by omega)
-    _ ≤ Kl 0 n := hKl_turns (by omega) hKl
-
-/-! ### The plug check
-
-The floor above is stated at hypothesis shapes; what says those shapes
-are the root's is this application. The theorem takes
-`RamDriverRoot.driverRoot_decides_sentence`'s hypothesis list verbatim
-(plus `2 ≤ ℓ`, which is data about the class and not a slot) and returns
-the root's own conclusion **together with** the floor on the root's own
-cost expression. It elaborates only if every slot it forwards is the one
-the root has. -/
-
-open Classical in
-/-- **The root, with its own cost floored.** The `Spec` is
-`driverRoot_decides_sentence`'s, unweakened, and the second component
-says its cost `Kdec + (Kl 0 (n + ns) + Ksent)` is at least `128 · n³`.
-
-`hKmono` is what carries the floor from `Kl 0 n` to `Kl 0 (n + ns)`, so
-the weight re-read of rebase E6 does not evade it. -/
-theorem driverRoot_decides_sentence_floored {B s Kb Kb₀ : ℕ} {N Ki : ℕ → ℕ}
-    {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ} {x : List ℕ}
-    (hℓ2 : 2 ≤ ℓ)
-    (hx : EncodesGraph x n G) (hns : ns = 2 * edgeCount x)
-    (hO : ∀ i ≤ n, O i = offset x i) (hT : ∀ i < ns, T i = target x i)
-    (hxB : ∀ v ∈ x, v < B) (hcsr : RamElim.CsrSimple G ns O T)
-    (hpad0 : ∀ z, ns ≤ z → z < W → T z = 0)
-    (hrank : Lax3.FirstOrder.rank φ ≤ q_top) (hcap : cap = rhoMinus 0 q_top)
-    (hmb : mb = ℓ * (2 * cap + 1)) (hℓ : ℓ = N (2 * s + 2))
-    (hB : WordBoundK B n Kmass ns cap mb) (hWB : n + W + 1 < B)
-    (hpow : 2 ^ sigL cap mb ℓ < B)
-    (hQ : ∀ Pt : Set (Fin n), N (2 * s + 2) ≤ Pt.ncard →
-      ∃ S Bd : Set (Fin n), S.ncard ≤ s ∧ Bd ⊆ Pt \ S ∧ 2 * s + 2 ≤ Bd.ncard ∧
-        DistIndependent (deleteVerts G S) (2 * cap) Bd)
-    (hbnd : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
-      ∀ σs ∈ (bcAtomsOf q_top (stepFml cap mb j β)).2,
-        σs.r + 1 < B ∧ σs.t + n + mb < B ∧
-          Refine.ScatterDeadTurn.deadAtomK σs.β n n mb n ns n σs.t ≤ Kb)
-    (hcostI : ∀ j < ℓ, ∀ β ∈ tablesAt q_top cap mb φ j,
-      Kb * (bcAtomsOf q_top (stepFml cap mb j β)).2.length + 1 ≤ Ki j)
-    (hKsc : ∀ j < ℓ, Ki j * (tablesAt q_top cap mb φ j).length + 1 ≤ Ksc j)
-    (hKmono : ∀ j, Monotone (Kl j))
-    (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
-    (hKbase : ∀ m, RamDriverBot.baseCost q_top cap mb ℓ m φ ≤ Kl ℓ m)
-    (hKo : ∀ j m, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j m)
-    (hKc : ∀ j m, RamDriverCompose.coverPhaseCost n ns ≤ Kc j m)
-    (hKd : ∀ j m, Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j m)
-    (hbinj : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (ord Xoff Xmem asg : ℕ → ℕ) (mm : ℕ),
-      RamCover.CoverOut G M π ord cap mm Xoff Xmem asg → Refine.MassMath.BlockInj n Xoff Xmem)
-    (hdeg : ∀ (M : ℕ → ℕ) (π : Equiv.Perm (Fin n)) (v : Fin n),
-      (Lax12.ColoringNumbers.wreach (masked G M) π (2 * cap) v).ncard ≤ Kmass)
-    (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
-      (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
-        ≤ Kl j m)
-    (hKdec : RamDriverIO.decodeCost n ns ≤ Kdec)
-    (hatoms : ∀ s ∈ (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2,
-      s.r + 1 < B ∧ s.t < B ∧ RamDriverIO.atomCost n ns s.t ≤ Kb₀)
-    (hKsent : Kb₀ * (bcAtomsOf₀ q_top (Reduction.toDistFO (L := sigL cap mb 0) φ)).2.length + 1 +
-      (1 + (RamDriverIO.sentenceExpr q_top cap mb φ).size) ≤ Ksent) :
-    Spec B (fun σ => DecodeMem n ns W σ ∧ LevelMem B n cap mb σ ∧ DepthMem n cap mb σ ∧
-        OrderMem B n ns W σ ∧ TablesSized q_top cap mb φ n σ ∧
-        BaseArrs B q_top cap mb ℓ φ σ ∧ σ.inp = x ∧ σ.out = [])
-      (driverRoot q_top cap mb 0 ℓ φ)
-      (fun _ σ' => σ'.out = [if Lax3.FirstOrder.Sat G Fin.elim0 φ then 1 else 0])
-      (Kdec + (Kl 0 (n + ns) + Ksent)) ∧
-    128 * (n * n * n) ≤ Kdec + (Kl 0 (n + ns) + Ksent) := by
-  refine ⟨RamDriverRoot.driverRoot_decides_sentence hx hns hO hT hxB hcsr hpad0 hrank hcap
-    hmb hℓ hB hWB hpow hQ hbnd hcostI hKsc hKmono hKs hKbase hKo hKc hKd hbinj hdeg hKl
-    hKdec hatoms hKsent, ?_⟩
-  have hfloor := level_cost_floor_sharp hℓ2 hKs hKo hKc hKl
-  have hmono : Kl 0 n ≤ Kl 0 (n + ns) := hKmono 0 (Nat.le_add_right n ns)
-  omega
 
 /-! ### The controls
 
@@ -679,90 +479,26 @@ theorem hKc_charges_empty_arena
   have : 100 * n * n = 100 * (n * n) := by ring
   omega
 
-/-- **Control 3 — `hKd` is *not* responsible.** The dead-row sweep is
-linear in the carrier, so a floor derivation that used it would be about
-the wrong slot; the sweep's verdict for #24 is "free", and this is why.
--/
+/-- **Control 3 — retiring `hKd` was cost-correct.** The old dead-row sweep
+was linear in the carrier. This historical identity records the cost of the
+program phase removed with slot #24. -/
 theorem sweepCost_linear (q_top cap mb jd : ℕ) (φ : Lax3.FirstOrder.FO 0) :
     ∃ K : ℕ, ∀ n : ℕ, Refine.DeadSweep.sweepCost q_top cap mb jd n φ = K * n + 6 :=
   ⟨_, fun _ => rfl⟩
 
-/-- **Control 4 — the turn's size slot is ignored, which is why the
-carrier charge cannot be blamed on a large block.** `turnCostSize` is
-`turnCost` at every value of its size argument, so the `16 * n²` of
-`hKs_carrier` is paid by a turn processing an **empty** block. -/
-theorem turnCostSize_size_blind (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
-    (Ksc s s' Kin : ℕ) :
-    RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc s Kin
-      = RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc s' Kin := by
-  rw [RamDriverRoot.turnCostSize_eq, RamDriverRoot.turnCostSize_eq]
+/-- **Control 4 — the readback has filled the turn's size slot.** Moving
+the slot from zero to one strictly raises the turn allowance by one
+guarded readback iteration. -/
+theorem turnCostSize_reads_size (n ns cap mb q_top j : ℕ) (φ : Lax3.FirstOrder.FO 0)
+    (Ksc Kin : ℕ) :
+    RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc 0 Kin <
+      RamDriverRoot.turnCostSize n ns cap mb q_top j φ Ksc 1 Kin := by
+  simp only [RamDriverRoot.turnCostSize, RamDriverDescend.descendCostSize,
+    RamDriverBase.rbCost]
+  omega
 
-end Floor
+end Controls
 
-/-! ### The floor against C0's budget
-
-C0 asks for `(T x : ℝ) ≤ c * (|x| + 1) ^ (1 + ε)` at every `ε > 0`, with
-`c` chosen before the instance. On a word encoding a graph,
-`|x| = 3 + n + ns`, so at the edgeless member `|x| = n + 3` and the
-budget at `ε = 1/2` is `c * (n + 4) ^ (3/2)`. Squaring both sides, the
-check is `c² * (n + 4)³ < (128 · n³)²`, and one large instance settles it
-because `c` is fixed first. -/
-
--- at `c = 10 ^ 6` and `n = 10 ^ 8`, the cubic floor is over the `ε = 1/2`
--- budget by twelve orders of magnitude
-#guard (10 ^ 6) ^ 2 * (10 ^ 8 + 4) ^ 3 < (128 * (10 ^ 8) ^ 3) ^ 2
-
--- the negative control: the same comparison at `ε = 3` — a budget C0 does
--- *not* ask for at every `ε` — is satisfied, so the `#guard` above is
--- about the exponent and not about the constants
-#guard 128 * (10 ^ 8) ^ 3 < 10 ^ 6 * (10 ^ 8 + 4) ^ 4
-
-/-! ## §E. `width_lt_two_pow` does not close finding 2
-
-Recorded because the opposite is written in a landed commit message and a
-landed plan section, and a compiled distinction outlives both.
-
-The two statements below are the whole of it. The first is a *space*
-statement: it bounds `W`, the ordering phase's width parameter, by the
-machine's addressable range, and it is what makes the general-`R`
-`chainWidth n d D₁ R ≤ W` pin unaddressable rather than merely expensive.
-The second is a *cost* statement: it bounds `Kl`, the level budget, from
-below. Its derivation (`level_cost_floor_cubic`) mentions neither `W` nor
-`2 ^ w` nor any layout, and its hypotheses are two slots that carry no
-width.
-
-So the `WordBoundK` repair and `width_lt_two_pow` between them close
-finding 3 and re-read finding 2's *width* half; the cost floor is
-untouched by both, and survives at `W = ns`, at `W = 0`, and with the
-width path deleted entirely. -/
-
-section Distinction
-
-variable {n q_top cap mb ns W ℓ Kmass : ℕ} {φ : Lax3.FirstOrder.FO 0}
-  {Ksc : ℕ → ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
-
-/-- The space statement, cited at its landed name. -/
-theorem width_is_bounded {L : Layout} {B w : ℕ} (hfit : L.FitsWords B w)
-    (hWB : n + W + 1 < B) : W < 2 ^ w :=
-  BridgeSeamProbe.width_lt_two_pow hfit hWB
-
-/-- The cost statement, with the width path deleted. `W` does not occur
-in `level_cost_floor_cubic` — not in its hypotheses, not in its
-conclusion, not anywhere in its proof — which is the point: no choice of
-`W`, and no bound on `W` from any source, reaches the floor. This
-restatement carries no `W` binder either, and is proved by that theorem
-applied unchanged. -/
-theorem floor_has_no_width (hℓ : 1 ≤ ℓ)
-    (hKs : ∀ j < ℓ, ∀ t : ℕ,
-      RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
-    (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
-      (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
-        ≤ Kl j m) :
-    16 * (n * n * n) ≤ Kl 0 n :=
-  level_cost_floor_cubic hℓ hKs hKl
-
-end Distinction
 
 /-! ## §F. The axiom check -/
 
@@ -774,8 +510,5 @@ end Distinction
 #print axioms slot26_hdeg_blocked
 #print axioms deg_slot_at_bot
 #print axioms no_word_size_through_deg_slot
-#print axioms level_cost_floor_cubic
-#print axioms level_cost_floor_sharp
-#print axioms driverRoot_decides_sentence_floored
 
 end Lax3Proofs.Refine.SlotSweep

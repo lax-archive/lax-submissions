@@ -144,6 +144,9 @@ theorem cluName_notMem_scratchArrs (j : ℕ) : cluName j ∉ scratchArrs := by
 theorem resName_notMem_scratchArrs (j : ℕ) : resName j ∉ scratchArrs := by
   simp [scratchArrs, resName, String.ext_iff]
 
+theorem parName_notMem_scratchArrs (j : ℕ) : parName j ∉ scratchArrs := by
+  simp [scratchArrs, parName, balName, String.ext_iff]
+
 theorem batName_notMem_scratchArrs (j : ℕ) : batName j ∉ scratchArrs := by
   simp [scratchArrs, batName, String.ext_iff]
 
@@ -190,6 +193,9 @@ theorem not_bbExt_cluName (j : ℕ) : ¬ BbExt (cluName j) :=
 
 theorem not_bbExt_resName (j : ℕ) : ¬ BbExt (resName j) :=
   not_bbExt_of_cons (by rw [resName, String.toList_append]; rfl) (by decide)
+
+theorem not_bbExt_parName (j : ℕ) : ¬ BbExt (parName j) :=
+  not_bbExt_of_cons (by rw [parName, balName, String.toList_append]; rfl) (by decide)
 
 theorem not_bbExt_batName (j : ℕ) : ¬ BbExt (batName j) :=
   not_bbExt_of_cons (by rw [batName, String.toList_append]; rfl) (by decide)
@@ -297,7 +303,9 @@ theorem ScatPre.run {c : Com} {σ σ' : Env} {K : ℕ}
       Mem, mmj, (by rw [hfa _ (memName_notMem_scratchArrs j) (not_bbExt_memName j)]; exact hmemA),
       (by rw [hfv _ (hVmm j)]; exact hmemV), hmemE, hmemBd⟩,
     hplayrec.congr (fun a _ => hfv (ctrName a) (hVctr a))
-      (fun a _ => hfa (gamName a) (gamName_notMem_scratchArrs a) (not_bbExt_gamName a)),
+      (fun a _ => hfa (resName a) (resName_notMem_scratchArrs a) (not_bbExt_resName a))
+      (fun a _ => hfa (gamName a) (gamName_notMem_scratchArrs a) (not_bbExt_gamName a))
+      (fun a _ => hfa (parName a) (parName_notMem_scratchArrs a) (not_bbExt_parName a)),
     ?_, ?_, ?_, ?_, ?_, hmn, hordlt, hcout⟩,
     ⟨⟨⟨Xa, ?_, hXaS, hXaB⟩, ⟨Wa, ?_, hWaS, hWaB⟩, ⟨Ra, ?_, hRaS, hRaB⟩, ?_, hAlvB, hmask,
       hmaskpt, ?_, hGamB, Mem', mm',
@@ -482,6 +490,20 @@ theorem underscore_notMem_bfsPar :
 theorem underscore_notMem_extractPath :
     ∀ a ∈ RamBfsPaths.extractPathCom.warrs, '_' ∉ a.toList := by decide
 
+theorem warrs_bfsBlockParCom (r : ℕ) :
+    (Refine.BfsBlockPar.bfsBlockParCom r).warrs =
+      (Refine.BfsBlockPar.bfsBlockParCom 0).warrs := rfl
+
+theorem underscore_notMem_bfsBlockPar :
+    ∀ a ∈ (Refine.BfsBlockPar.bfsBlockParCom 0).warrs, '_' ∉ a.toList := by decide
+
+theorem warrs_markParentsCom (cap j a : ℕ) :
+    (markParentsCom cap j a).warrs = [batName j] := rfl
+
+theorem warrs_memFillAt_cacheframe (j : ℕ) (a : String) (c : ℕ) :
+    (memFillAt j a c).warrs = [a] := by
+  simp [memFillAt, Com.warrs]
+
 /-- Every array the descent writes is a literal or a prefixed name, and
 neither carries the separator. -/
 theorem underscore_notMem_warrs_descendCom (cap j : ℕ) :
@@ -490,10 +512,10 @@ theorem underscore_notMem_warrs_descendCom (cap j : ℕ) :
     rw [cluName]; exact underscore_notMem_prefixed (by decide) j
   have hres : '_' ∉ (resName j).toList := by
     rw [resName]; exact underscore_notMem_prefixed (by decide) j
-  have hbal : '_' ∉ (balName j).toList := by
-    rw [balName]; exact underscore_notMem_prefixed (by decide) j
-  have hblt : '_' ∉ (balAltName j).toList := by
-    rw [balAltName]; exact underscore_notMem_prefixed (by decide) j
+  have hpds : '_' ∉ (pdsName j).toList := by
+    rw [pdsName, balAltName]; exact underscore_notMem_prefixed (by decide) j
+  have hpar : '_' ∉ (parName j).toList := by
+    rw [parName, balName]; exact underscore_notMem_prefixed (by decide) j
   have hbat : '_' ∉ (batName j).toList := by
     rw [batName]; exact underscore_notMem_prefixed (by decide) j
   have halv : ∀ d : ℕ, '_' ∉ (alvName d).toList := fun d => by
@@ -502,10 +524,6 @@ theorem underscore_notMem_warrs_descendCom (cap j : ℕ) :
     rw [gamName]; exact underscore_notMem_prefixed (by decide) d
   have hmem : ∀ d : ℕ, '_' ∉ (memName d).toList := fun d => by
     rw [memName]; exact underscore_notMem_prefixed (by decide) d
-  have hstage : ∀ b : ℕ, '_' ∉ (ballStage j b).toList := by
-    intro b
-    rw [ballStage]
-    split <;> assumption
   have hanc : ∀ a' : ℕ, ∀ a ∈ (ancestorStep cap j a').warrs, '_' ∉ a.toList := by
     intro a' a ha
     simp only [ancestorStep, Com.warrs, List.mem_append, List.nil_append,
@@ -526,19 +544,60 @@ theorem underscore_notMem_warrs_descendCom (cap j : ℕ) :
     · exact hbat
     · obtain ⟨b, -, hm⟩ := mem_warrs_foldRange _ j h; exact hanc b a hm
     · exact hbat
+  have hswap : ∀ z : String, '_' ∉ z.toList → '_' ∉ (cacheSwap j z).toList := by
+    intro z hz
+    unfold cacheSwap
+    split
+    · exact hres
+    split
+    · decide
+    split
+    · exact hpds
+    split
+    · decide
+    split
+    · exact hpar
+    split
+    · decide
+    · exact hz
+  have hcacheBfs : ∀ a ∈ (cacheBfsCom cap j).warrs, '_' ∉ a.toList := by
+    intro a ha
+    rw [cacheBfsCom, Refine.ScatterBlock.renCom_warrs, List.mem_map] at ha
+    obtain ⟨z, hz, rfl⟩ := ha
+    apply hswap z
+    rw [warrs_bfsBlockParCom] at hz
+    exact underscore_notMem_bfsBlockPar z hz
+  have hcache : ∀ a ∈ (cacheRoundCom cap j).warrs, '_' ∉ a.toList := by
+    intro a ha
+    have ha' : a = pdsName j ∨ a ∈ (cacheBfsCom cap j).warrs := by
+      simpa [cacheRoundCom, Com.warrs, warrs_memFillAt_cacheframe] using ha
+    rcases ha' with rfl | ha'
+    · exact hpds
+    · exact hcacheBfs a ha'
+  have hbatchCached : ∀ a ∈ (batchCachedCom cap j).warrs, '_' ∉ a.toList := by
+    intro a ha
+    simp only [batchCachedCom, Com.warrs, List.mem_append, List.mem_cons,
+      List.not_mem_nil, or_false, RamDriverIO.warrs_fillCom, warrs_andCom] at ha
+    rcases ha with rfl | rfl | h | rfl
+    · exact hbat
+    · exact hbat
+    · obtain ⟨b, -, hm⟩ := mem_warrs_foldRange _ j h
+      rw [warrs_markParentsCom] at hm
+      simp only [List.mem_singleton] at hm
+      subst a
+      exact hbat
+    · exact hbat
   intro a ha
   simp only [descendCom, Com.warrs, List.mem_append, List.mem_cons, List.not_mem_nil,
     or_false, false_or, warrs_clusterLoad, warrs_andCom, warrs_subCom,
-    warrs_memFilterCom, RamDriverIO.warrs_fillCom] at ha
-  rcases ha with (rfl | rfl | rfl) | rfl | (rfl | rfl | h) | h | rfl | rfl | rfl | rfl
+    warrs_memFilterCom] at ha
+  rcases ha with (rfl | rfl | rfl) | rfl | hc | hb | rfl | rfl | rfl | rfl
   · exact hclu
   · exact hclu
   · exact hmem (j + 1)
   · exact hres
-  · exact hbal
-  · exact hbal
-  · obtain ⟨b, -, rfl⟩ := mem_warrs_chainCom _ _ _ h; exact hstage (b + 1)
-  · exact hbatch a h
+  · exact hcache a hc
+  · exact hbatchCached a hb
   · exact halv (j + 1)
   · exact hgam (j + 1)
   · exact hgam (j + 1)
@@ -644,7 +703,8 @@ or below `j`, hence one the level at depth `j + 1` does not write. -/
 def TurnFrozen (j : ℕ) (a : String) : Prop :=
   a ∈ [alvName j, cluName j, resName j, batName j,
       ordName j, xofName j, xmmName j, asgName j, memName j, klName j] ∨
-    (∃ c, a = colName j c) ∨ (∃ b ≤ j, a = gamName b)
+    (∃ c, a = colName j c) ∨
+      (∃ b ≤ j, a = gamName b ∨ a = resName b ∨ a = parName b)
 
 /-- **The frame of the nested driver, discharged from its syntax.**
 
@@ -693,14 +753,21 @@ theorem innerFrames {ℓ : ℕ} {wA : (ℕ → ℕ) → ℕ} {inner : Com} {Kin 
       Mem, mmj, (by rw [hfa _ (_root_.Or.inl (by simp [TurnFrozen]))]; exact hmemA),
       (by rw [hfv _ (hVmm j le_rfl)]; exact hmemV), hmemE, hmemBd⟩,
     hplayrec.congr (fun a ha => hfv (ctrName a) (hVctr a (by omega)))
-      (fun a ha => hfa (gamName a) (_root_.Or.inr (_root_.Or.inr ⟨a, by omega, rfl⟩))),
+      (fun a ha => hfa (resName a)
+        (_root_.Or.inr (_root_.Or.inr ⟨a, by omega, _root_.Or.inr (_root_.Or.inl rfl)⟩)))
+      (fun a ha => hfa (gamName a)
+        (_root_.Or.inr (_root_.Or.inr ⟨a, by omega, _root_.Or.inl rfl⟩)))
+      (fun a ha => hfa (parName a)
+        (_root_.Or.inr (_root_.Or.inr ⟨a, by omega,
+          _root_.Or.inr (_root_.Or.inr rfl)⟩))),
     ?_, ?_, ?_, ?_, ?_, hmn, hordlt, hcout⟩,
     ⟨⟨⟨Xa, ?_, hXaS, hXaB⟩, ⟨Wa, ?_, hWaS, hWaB⟩, ⟨Ra, ?_, hRaS, hRaB⟩, halv'', hAlvB, hmask,
       hmaskpt, hgam'', hGamB, Mem'', mm'', hmemA'', hmemV'', hmemE'',
       hmemBd''⟩, hwrange⟩, hcol'', ?_,
     ⟨kl, kq, ?_, ?_, hkqmb, hkllt, hklinj, hklsnd, hklcmp⟩⟩
   · rw [hfa _ (_root_.Or.inl (by simp))]; exact halvj
-  · rw [hfa _ (_root_.Or.inr (_root_.Or.inr ⟨j, le_rfl, rfl⟩))]; exact hgamj
+  · rw [hfa _ (_root_.Or.inr (_root_.Or.inr ⟨j, le_rfl, _root_.Or.inl rfl⟩))]
+    exact hgamj
   · intro cc hcc
     rw [hfa _ (_root_.Or.inr (_root_.Or.inl ⟨cc, rfl⟩))]
     exact hcolj cc hcc
@@ -748,7 +815,7 @@ theorem clusterFrames {ℓ k : ℕ} {wA : (ℕ → ℕ) → ℕ} {wBk : ℕ} {in
     {bw nb : ℕ} {Kd Ke Kc Kk Kkl Ks Kr K : ℕ}
     (hcsr : CsrGraph G ns O T)
     {d : ℕ} (hB : WordBoundK B n d ns cap mb)
-    (hdes : DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m Kd)
+    (hdes : DescendStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m k Kd)
     (henum : ∀ X W Alv' Gam',
       EnumStep B cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m X W Alv' Gam' Ke)
     (hcol : ∀ X W w Alv' Gam',
@@ -773,8 +840,8 @@ theorem clusterFrames {ℓ k : ℕ} {wA : (ℕ → ℕ) → ℕ} {wBk : ℕ} {in
       (foldIdx (fun i β => RamDriver.scatterDeadCom q_top cap mb φ j i β) 0
         (tablesAt q_top cap mb φ j)).warrs)
     (hbud : ∀ (M' : ℕ → ℕ) (r : ℕ), Refine.ScatterBlock.BallBudget n r G M' O bw nb)
-    (hread : ∀ X W w Alv' Gam' C',
-      ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asg m X W w
+    (hread : ∀ X W w Alv' Gam' C', k < n →
+      ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asg m k X W w
         Alv' Gam' C' Kr)
     (hinnerTab : ∀ i, tabName j i ∉ inner.warrs)
     (hmono : Monotone Kin)
@@ -794,11 +861,10 @@ theorem clusterFrames {ℓ k : ℕ} {wA : (ℕ → ℕ) → ℕ} {wBk : ℕ} {in
     fun _ _ _ _ _ _ => innerFrames hinner hA hVctr hVxp hVcur hVmm hVkk
   refine Spec.of_exists fun σ hσ => ?_
   obtain ⟨hlev, htsz, hbarr, hplay, hcov, hcn⟩ := hσ
-  have hcnlt : σ.vars (curName j) < n := by rw [hcn]; exact hkn
   have hturn : TurnPre B n cap mb ns Ws j G O T M Gm C π ord Xoff Xmem asg m σ :=
     ⟨hlev, hplay, hcov⟩
   obtain ⟨σ₁, hr₁, hturn₁, hout₁, hc₁, hwa₁, X, W, Alv', Gam', hball, hWne, hWcard,
-      hsub₁, hXcl₁, hbat₁, hplay₁⟩ := (hdes hcsr hB).run ⟨hturn, hcnlt⟩
+      hsub₁, hXcl₁, hbat₁, hplay₁⟩ := (hdes hcsr hB hkn halive).run ⟨hturn, hcn⟩
   rw [hcn] at hsub₁ hXcl₁
   have hXalive : ∀ v : Fin n, v ∈ X → M (v : ℕ) ≠ 0 :=
     fun v hv => Refine.MassAlive.clusterAt_subset_alive halive (hXcl₁ v hv)
@@ -859,9 +925,9 @@ theorem clusterFrames {ℓ k : ℕ} {wA : (ℕ → ℕ) → ℕ} {wBk : ℕ} {in
     have hvX : v ∈ X := hball v (by rw [hv]; exact hc₅₀) (WalkDistance.mem_ball_self _ _ _)
     exact ⟨hXalive v hvX, hvX⟩
   obtain ⟨σ₆, hr₆, hturn₆, hout₆, hc₆, hrb₆⟩ :=
-    (hread X W w Alv' Gam' C').run (σ := σ₅)
+    (hread X W w Alv' Gam' C' hkn).run (σ := σ₅)
       ⟨hturn₅, hdat₅, hcolarr₅, hcolbit₃, hcolread₃, htab₅, htsz₅,
-        by rw [hc₅₀]; exact hcnlt, hvis, hflag₅⟩
+        hc₅₀.trans hcn, hvis, hflag₅⟩
   refine ⟨σ₆, _,
     hr₁.seq (hr₂.seq (hr₃.seq (hrₖ.seq (hrₗ.seq (hr₄.seq (hr₅.seq hr₆)))))), by omega,
     hturn₆.2.2, fun i hi Tb Tb₀ harr harr₀ v hv => ?_⟩

@@ -1,4 +1,5 @@
 import Lax3Proofs.Refine.ElimCompact
+import Lax3Proofs.Refine.OrderActiveTail
 
 /-!
 # ND-MC G2/E2-sym — the compacted-arena symmetrization
@@ -80,8 +81,9 @@ open Lax3Proofs.Augmentation (Orientation)
 open Lax3Proofs.RamDriverCluster (markSet)
 open Lax3Proofs.TgtWidenProbe (PSt PRes exec execC pB pF augSt aug5doff aug5dtg)
 open Lax3Proofs.Refine.ScatterBlock (MemList)
-open Lax3Proofs.Refine.ElimCompact (padArrs cutArrs tailOf padArrs_arrs cutArrs_arrs
+open Lax3Proofs.Refine.ElimCompact (padArrs cutArrs tailOf padArrs_arrs padArrs_vars cutArrs_arrs
   run_of_run_cutArrs tail_preserved take_arrOf memGraph getD_padArrs)
+open Lax3Proofs.Refine.OrderActiveTail
 
 /-! ## §1 The program
 
@@ -541,7 +543,7 @@ def SymPreps (B n mm nt W kd : ℕ) : Prop :=
       (∃ g, σ'.arrs "ooff" = arrOf (n + 1) g ∧ ∀ i ≤ mm, g i = 0) ∧
       (∃ g, σ'.arrs "ofl" = arrOf n g) ∧ (∃ g, σ'.arrs "otg" = arrOf W g) ∧
       (∃ g, σ'.arrs "off" = arrOf (n + 1) g) ∧
-      σ'.arrs "tgt" = arrOf nt T₀
+      σ'.arrs "tgt" = arrOf nt T₀ ∧ ActiveZeroTail mm σ σ'
 
 /-- **The two word bounds a preparation copy needs, from the block
 structure itself.** An in-list offset of an `m`-slot structure is at most
@@ -732,16 +734,18 @@ theorem symCompact_spec {B n mm nt W kd m : ℕ} {D : Orientation mm} {IO IT T�
     (hent : SymEntryC n mm nt W kd IO IT T₀ σ) :
     ∃ σ'', Run B symCompactCore σ σ'' (symCompactCost mm kd) ∧
       SymMemPost mm nt m D T₀ σ'' ∧
-      (σ''.arrs "off").drop (mm + 1) = (σ.arrs "off").drop (mm + 1) := by
+      (σ''.arrs "off").drop (mm + 1) = (σ.arrs "off").drop (mm + 1) ∧
+      ActiveZeroTail mm σ σ'' ∧ σ''.vars "kn" = n := by
   classical
   have hmn : mm ≤ n := hent.2.2.2.1
-  obtain ⟨σ1, DT, r1, hn1, hmm1, hdtg1, hDT, hdoff1, hooff1, hofl1, hotg1, hoffE1, htgt1⟩ :=
+  obtain ⟨σ1, DT, r1, hn1, hmm1, hdtg1, hDT, hdoff1, hooff1, hofl1, hotg1,
+    hoffE1, htgt1, htail1⟩ :=
     h1 IO IT T₀ σ hmmB hkdB hIOB hITB hent
   -- the block structure survives the prefix copy of the target array
   have hin' : InCsr D m IO DT :=
     Lax3Proofs.RamDriverAugment.inCsr_congr_prefix hin fun j hj => hDT j (by omega)
   -- the carrier install
-  obtain ⟨σ2, r2, hpre2, -, -, harr2⟩ :=
+  obtain ⟨σ2, r2, hpre2, hkn2, -, harr2⟩ :=
     symSetCarrier_spec (B := B) (n := n) (mm := mm) (nt := nt) (W := W) (DO := IO) (DT := DT)
       (T₀ := T₀) hnB hn1 hmm1 hmn hdoff1 hdtg1 hooff1 hofl1 hotg1 hoffE1 htgt1
   -- the pass, at the arena's carrier
@@ -752,8 +756,32 @@ theorem symCompact_spec {B n mm nt W kd m : ℕ} {D : Orientation mm} {IO IT T�
     simp only [Lax3Proofs.RamDriverAugment.symCost]; omega
   have hge : 200 ≤ Lax3Proofs.RamDriverAugment.symCost mm kd := by
     simp only [Lax3Proofs.RamDriverAugment.symCost]; omega
-  refine ⟨padArrs τ (tailOf σ2 (symClen mm nt W)), (r1.seq (r2.seq r3)).mono ?_,
-    ⟨O, T, ?_, ?_, hcsr, htail⟩, ?_⟩
+  let σ3 := padArrs τ (tailOf σ2 (symClen mm nt W))
+  have htail12 : ActiveZeroTail mm σ1 σ2 := by
+    apply ActiveZeroTail.of_frame
+    intro a ha
+    exact harr2 a
+  have htail23 : ActiveZeroTail mm σ2 σ3 := by
+    intro a ha
+    simp only [activeZeroNames, List.mem_cons, List.not_mem_nil, or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · rw [r3.frame_arr "elm" (by decide)]
+    · rw [r3.frame_arr "bh" (by decide)]
+    · have hlen : symClen mm nt W "ooff" ≤ (σ2.arrs "ooff").length := by
+        rw [symClen_ooff, harr2 "ooff"]
+        obtain ⟨g, hg, -⟩ := hooff1
+        rw [hg, length_arrOf]
+        omega
+      simpa only [σ3, symClen_ooff] using htl "ooff" hlen
+    · rw [r3.frame_arr "noff" (by decide)]
+    · rw [r3.frame_arr "stf" (by decide)]
+    · rw [r3.frame_arr "sta" (by decide)]
+    · rw [r3.frame_arr "std" (by decide)]
+    · rw [r3.frame_arr "ste" (by decide)]
+  have htailAll : ActiveZeroTail mm σ σ3 :=
+    ActiveZeroTail.trans (ActiveZeroTail.trans htail1 htail12) htail23
+  refine ⟨σ3, (r1.seq (r2.seq r3)).mono ?_,
+    ⟨O, T, ?_, ?_, hcsr, htail⟩, ?_, htailAll, ?_⟩
   · rw [symCompactCost]; omega
   · intro i hi
     rw [getD_padArrs (by rw [hoff']; simpa [arrOf] using Nat.lt_succ_of_le hi), hoff',
@@ -761,6 +789,7 @@ theorem symCompact_spec {B n mm nt W kd m : ℕ} {D : Orientation mm} {IO IT T�
   · have htlz : (σ2.arrs "tgt").drop (symClen mm nt W "tgt") = [] := by
       rw [symClen_tgt, harr2 "tgt", htgt1]
       exact List.drop_eq_nil_of_le (by simp [arrOf])
+    change (padArrs τ (tailOf σ2 (symClen mm nt W))).arrs "tgt" = arrOf nt T
     rw [padArrs_arrs, tailOf, htlz, List.append_nil, htgt']
   · have hoffσ1 : σ1.arrs "off" = σ.arrs "off" :=
       r1.frame_arr "off" (notMem_symPrepCom_warrs (by decide) (by decide) (by decide))
@@ -770,7 +799,39 @@ theorem symCompact_spec {B n mm nt W kd m : ℕ} {D : Orientation mm} {IO IT T�
       omega
     have h := htl "off" hlen
     rw [symClen_off] at h
-    rw [h, harr2 "off", hoffσ1]
+    simpa only [σ3] using h.trans (by rw [harr2 "off", hoffσ1])
+  · have h := (r3.frame_var "kn" (by decide)).trans hkn2
+    simpa only [σ3, padArrs_vars] using h
+
+/-- The compact symmetrization with the saved carrier restored.  Its CSR
+answer is identical to `symCompact_spec`; the extra two ticks make the
+next compact engine call start again from the ambient carrier. -/
+theorem symCompactCom_spec {B n mm nt W kd m : ℕ} {D : Orientation mm}
+    {IO IT T₀ : ℕ → ℕ} {σ : Env} (h1 : SymPreps B n mm nt W kd)
+    (hin : InCsr D m IO IT) (hmkd : m ≤ kd) (hkdW : kd ≤ W) (hfit : m + m ≤ nt)
+    (hnB : n < B) (hB2 : m + m < B) (hmmB : mm + 1 < B) (hkdB : kd < B)
+    (hIOB : ∀ i ≤ mm, IO i < B) (hITB : ∀ j < kd, IT j < B)
+    (hent : SymEntryC n mm nt W kd IO IT T₀ σ) :
+    ∃ σ'', Run B symCompactCom σ σ'' (symCompactCost mm kd + 2) ∧
+      SymMemPost mm nt m D T₀ σ'' ∧
+      (σ''.arrs "off").drop (mm + 1) = (σ.arrs "off").drop (mm + 1) ∧
+      ActiveZeroTail mm σ σ'' ∧ σ''.vars "n" = n := by
+  obtain ⟨τ, hrun, hpost, htail, hzeroTail, hkn⟩ :=
+    symCompact_spec h1 hin hmkd hkdW hfit hnB hB2 hmmB hkdB hIOB hITB hent
+  let σ'' := τ.setVar "n" n
+  have hr : Run B (.assign "n" (.var "kn")) τ σ'' 2 := by
+    have h := Run.assign (B := B) (σ := τ) (x := "n") (e := .var "kn")
+      (evalB_var (by rw [hkn]; omega))
+    rw [hkn] at h
+    simpa only [σ''] using h
+  refine ⟨σ'', ?_, ?_, ?_, ?_, ?_⟩
+  · exact hrun.seq hr
+  · simpa only [σ'', SymMemPost, arrs_setVar] using hpost
+  · simpa only [σ'', arrs_setVar] using htail
+  · simpa only [σ'', ActiveZeroTail, arrs_setVar] using hzeroTail
+  · simp [σ'']
+
+#print axioms symCompactCom_spec
 
 /-! ## §8 What this family did *not* need
 

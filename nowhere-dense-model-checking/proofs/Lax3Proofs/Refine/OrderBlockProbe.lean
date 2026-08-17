@@ -212,13 +212,13 @@ is the `Ω(n²)` floor; with `Ko 1 0` constant it is harmless, which is
 exactly `orderCostA`'s empty-arena reading,
 `G2CostProbe.emptyArena_charge_const`.) -/
 theorem nested_emptyCharge_floor {n ns cap mb q_top ℓ Kmass : ℕ}
-    {φ : Lax3.FirstOrder.FO 0} {Ksc : ℕ → ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+    {φ : Lax3.FirstOrder.FO 0} {Ksc : ℕ → ℕ} {Ko Kc Ks Kl : ℕ → ℕ → ℕ}
     (hℓ : 2 ≤ ℓ)
     (hKs : ∀ j < ℓ, ∀ t : ℕ,
       RamDriverRoot.turnCostSize n ns cap mb q_top j φ (Ksc j) t (Kl (j + 1) t) ≤ Ks j t)
     (hKl : ∀ j < ℓ, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ Kmass * (m + 1) →
-      Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j m) :
     ∀ m, m * (Ko 1 0 + 11) ≤ Kl 0 m := by
   intro m
@@ -252,19 +252,19 @@ solvable `hKo` form is therefore `O(1)`-class on the empty arena —
 form: the member-list interior is the only route to the §2.1 slot. -/
 theorem emptyCharge_route_dead (cap mb q_top : ℕ) (φ : Lax3.FirstOrder.FO 0)
     (Ksc : ℕ → ℕ) :
-    ¬ ∃ (Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ),
+    ¬ ∃ (Ko Kc Ks Kl : ℕ → ℕ → ℕ),
       (∀ j < 3, ∀ t : ℕ,
         RamDriverRoot.turnCostSize (10 ^ 11) (2 * (10 ^ 11 - 1)) cap mb q_top j φ
           (Ksc j) t (Kl (j + 1) t) ≤ Ks j t) ∧
       (∀ j < 3, ∀ m t : ℕ, t ≤ m → ∀ bs : ℕ → ℕ,
         (∑ c ∈ Finset.range t, bs c) ≤ 8 * (m + 1) →
-        Ko j m + (Kc j m + (Kd j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+        Ko j m + (Kc j m + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
           ≤ Kl j m) ∧
       (10 ^ 11 ≤ Ko 1 0) ∧
       (∀ w, Kl 0 w ≤
-        (3 * G2CostProbe.g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 + 10 ^ 4) *
+        (3 * G2CostProbe.g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 + 10 ^ 4) *
           (8 + 1) ^ 3 * (w + 1)) := by
-  rintro ⟨Ko, Kc, Kd, Ks, Kl, hKs, hKl, hKo1, hclose⟩
+  rintro ⟨Ko, Kc, Ks, Kl, hKs, hKl, hKo1, hclose⟩
   have hfloor := nested_emptyCharge_floor (by omega) hKs hKl
     (10 ^ 11 + 2 * (10 ^ 11 - 1))
   have hup := hclose (10 ^ 11 + 2 * (10 ^ 11 - 1))
@@ -272,7 +272,7 @@ theorem emptyCharge_route_dead (cap mb q_top : ℕ) (φ : Lax3.FirstOrder.FO 0)
       (10 ^ 11 + 2 * (10 ^ 11 - 1)) * (Ko 1 0 + 11) :=
     Nat.mul_le_mul_left _ (by omega)
   have hcontra : (10 ^ 11 + 2 * (10 ^ 11 - 1)) * (10 ^ 11 + 11) ≤
-      (3 * G2CostProbe.g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 + 10 ^ 4) *
+      (3 * G2CostProbe.g2A 2 2 1 (10 ^ 4) (10 ^ 4) (10 ^ 4) 8 + 10 ^ 4) *
         (8 + 1) ^ 3 * ((10 ^ 11 + 2 * (10 ^ 11 - 1)) + 1) :=
     le_trans hcharge (le_trans hfloor hup)
   exact absurd hcontra (by decide +kernel)

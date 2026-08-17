@@ -132,16 +132,17 @@ theorem phaseBudgetM_eq (a b R w : ℕ) :
 
 /-! ### §2 The re-validated existence witness
 
-The per-level constant of the recurrence, with the three phase slots at
+The per-level constant of the recurrence, with the two live phase slots at
 M-class coefficients instead of the landed size-blind forms. The turn
 slot keeps `G2CostProbe.turnCostSizeA` verbatim — the size-READING turn
 cost — since nothing in P4.5/P4.6 moved it. -/
 
 /-- The per-level constant of the M-class recurrence: the order phase
-over its `R + 1` rounds, the cover and dead-sweep phases, and the turn's
-own leaves at the mass coefficient. -/
-def g2M (ao bo ac bc ad bd R ct ksc D : ℕ) : ℕ :=
-  (1 + R) * (ao + bo) + (((ac + bc) + (ad + bd)) + ((ct + ksc + 3) * (D + 1) + 14))
+over its `R + 1` rounds, the cover phase, and the turn's own leaves at
+the mass coefficient. The former dead-sweep coefficient is absent because
+that phase is absent from the program. -/
+def g2M (ao bo ac bc R ct ksc D : ℕ) : ℕ :=
+  (1 + R) * (ao + bo) + ((ac + bc) + ((ct + ksc + 3) * (D + 1) + 14))
 
 /-- **The existence probe, re-validated at M-class phase costs.**
 
@@ -149,7 +150,7 @@ For every level count, mass coefficient, base coefficient, round count
 and M-class constant family there are cost functions satisfying,
 verbatim:
 
-* the three **M-class** phase slots — each stated at an arbitrary member
+* the two live **M-class** phase slots — each stated at an arbitrary member
   count `m ≤ w`, so the budget must pay the phase at every arena the
   weight admits, and is `O(1)` in the carrier on the empty arena;
 * the landed Σ-interface shapes of
@@ -163,30 +164,29 @@ weight. The witness is `CostRecurrence`'s canonical solution.
 This is the positive half of the standing rule: the proposed side
 conditions are not merely floor-free, they are **satisfied**, and the
 satisfying family is exhibited. -/
-theorem g2m_exists (ℓ D Cb R ao bo ac bc ad bd ct ksc : ℕ) (Ksc : ℕ → ℕ)
+theorem g2m_exists (ℓ D Cb R ao bo ac bc ct ksc : ℕ) (Ksc : ℕ → ℕ)
     (hKsc : ∀ j < ℓ, Ksc j ≤ ksc) :
-    ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
+    ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
       -- the M-class phase slots (member-read, carrier-blind)
       (∀ j w m, m ≤ w → phaseMR ao bo R m ≤ Ko j w) ∧
       (∀ j w m, m ≤ w → phaseMR ac bc 0 m ≤ Kc j w) ∧
-      (∀ j w m, m ≤ w → phaseMR ad bd 0 m ≤ Kd j w) ∧
       (∀ w, Cb * (w + 1) ≤ Kl ℓ w) ∧
       -- landed Σ-interface shapes, verbatim
       (∀ j, Monotone (Kl j)) ∧
       (∀ j < ℓ, ∀ s : ℕ, turnCostSizeA ct (Ksc j) s (Kl (j + 1) s) ≤ Ks j s) ∧
       (∀ j < ℓ, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
         (∑ c ∈ Finset.range t, bs c) ≤ D * (w + 1) →
-        Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+        Ko j w + (Kc j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
           ≤ Kl j w) ∧
       -- the closed form: geometric in `D + 1`, linear in the weight
-      (∀ w, Kl 0 w ≤ (ℓ * g2M ao bo ac bc ad bd R ct ksc D + Cb) * (D + 1) ^ ℓ * (w + 1)) := by
+      (∀ w, Kl 0 w ≤ (ℓ * g2M ao bo ac bc R ct ksc D + Cb) * (D + 1) ^ ℓ * (w + 1)) := by
   classical
   obtain ⟨Kl, Kt, hbase, hmono, hKt, hKlS, hKl0, -⟩ :=
     CostRecurrence.exists_driverCostsSigma ℓ D Cb
-      (fun _ => (1 + R) * (ao + bo)) (fun _ => (ac + bc) + (ad + bd))
+      (fun _ => (1 + R) * (ao + bo)) (fun _ => ac + bc)
       (fun j => ct + Ksc j + 3)
       (fun _ w => phaseBudgetM ao bo R w)
-      (fun _ w => phaseBudgetM ac bc 0 w + phaseBudgetM ad bd 0 w)
+      (fun _ w => phaseBudgetM ac bc 0 w)
       (fun j s => (ct + Ksc j) * (s + 1) + 3)
       (fun j s Kin => turnCostSizeA ct (Ksc j) s Kin + 3)
       (fun _ _ => le_rfl)
@@ -194,11 +194,9 @@ theorem g2m_exists (ℓ D Cb R ao bo ac bc ad bd ct ksc : ℕ) (Ksc : ℕ → �
       (fun j s => by nlinarith)
       (fun j s Kin => by simp only [turnCostSizeA]; omega)
   refine ⟨fun _ w => phaseBudgetM ao bo R w, fun _ w => phaseBudgetM ac bc 0 w,
-    fun _ w => phaseBudgetM ad bd 0 w,
     fun j s => turnCostSizeA ct (Ksc j) s (Kl (j + 1) s), Kl,
     fun _ _ _ h => phaseMR_le_budget h _ _ _, fun _ _ _ h => phaseMR_le_budget h _ _ _,
-    fun _ _ _ h => phaseMR_le_budget h _ _ _, hbase, hmono,
-    fun _ _ _ => le_rfl, ?_, ?_⟩
+    hbase, hmono, fun _ _ _ => le_rfl, ?_, ?_⟩
   · -- the landed `hKl` shape, from the solver's, via the `+3` turn shift
     exact RamDriverRoot.levelCost_of_sigma
       (fun j s => hKt j s) (fun j hj m t htm bs hbs => hKlS j hj m t htm bs hbs)
@@ -208,11 +206,11 @@ theorem g2m_exists (ℓ D Cb R ao bo ac bc ad bd ct ksc : ℕ) (Ksc : ℕ → �
     refine Nat.mul_le_mul_right _ ?_
     have hs : (∑ j ∈ Finset.range ℓ,
           CostRecurrence.driverASigma (fun _ => (1 + R) * (ao + bo))
-            (fun _ => (ac + bc) + (ad + bd)) (fun j => ct + Ksc j + 3) D j * (D + 1) ^ j) +
+            (fun _ => ac + bc) (fun j => ct + Ksc j + 3) D j * (D + 1) ^ j) +
           Cb * (D + 1) ^ ℓ =
         CostRecurrence.solve
           (CostRecurrence.driverASigma (fun _ => (1 + R) * (ao + bo))
-            (fun _ => (ac + bc) + (ad + bd)) (fun j => ct + Ksc j + 3) D)
+            (fun _ => ac + bc) (fun j => ct + Ksc j + 3) D)
           (fun _ => D + 1) Cb ℓ 0 :=
       (CostRecurrence.solve_const _ _ _ _).symm
     rw [hs]
@@ -236,8 +234,8 @@ coefficient is left at the landed probe's numeral), `kdec = 87` (§6). -/
 /-- The witness's root budget at level count `ℓ`, base `Cb` and the
 M-class constant family: the closed form of `g2m_exists`, plus the
 root's own weight-linear reads (§6). -/
-def rootBudgetM (ℓ Cb ao bo ac bc ad bd R ct ksc D kdec ksent : ℕ) : ℕ :=
-  (kdec + ksent + (ℓ * g2M ao bo ac bc ad bd R ct ksc D + Cb)) * (D + 1) ^ ℓ
+def rootBudgetM (ℓ Cb ao bo ac bc R ct ksc D kdec ksent : ℕ) : ℕ :=
+  (kdec + ksent + (ℓ * g2M ao bo ac bc R ct ksc D + Cb)) * (D + 1) ^ ℓ
 
 /-- **The C0 shape, end to end, at M-class phase costs**: the witness's
 root budget, read at the cover-degree parameter `⌈c·w^{ε/ℓ}⌉₊`, is
@@ -249,34 +247,34 @@ theorem mclass_c0_shape {c ε : ℝ} (hc : 0 ≤ c) (hε : 0 < ε) {ℓ : ℕ} (
     (K : ℝ) ≤ ((C : ℝ) * (c + 2) ^ ℓ) * ((w : ℝ) + 1) ^ (1 + ε) :=
   g2_c0_shape hc hε hℓ hw hK
 
--- **The gate at the measured constants**: all three phase slots at the
+-- **The gate at the measured constants**: both live phase slots at the
 -- P4.6 law `68·m + 12`, `R = 0`, `D = 8`, `ℓ = 3`, `ct = 200`,
 -- `ksc = 10⁴`. The per-level constant, cell by cell.
-#guard g2M 68 12 68 12 68 12 0 200 (10 ^ 4) 8 =
-  (1 + 0) * (68 + 12) + (((68 + 12) + (68 + 12)) + ((200 + 10 ^ 4 + 3) * 9 + 14))
-#guard g2M 68 12 68 12 68 12 0 200 (10 ^ 4) 8 = 92081
+#guard g2M 68 12 68 12 0 200 (10 ^ 4) 8 =
+  (1 + 0) * (68 + 12) + ((68 + 12) + ((200 + 10 ^ 4 + 3) * 9 + 14))
+#guard g2M 68 12 68 12 0 200 (10 ^ 4) 8 = 92001
 
 -- and the root budget it induces (`kdec = 87`, `ksent = Cb = 10⁴`)
-#guard rootBudgetM 3 (10 ^ 4) 68 12 68 12 68 12 0 200 (10 ^ 4) 8 87 (10 ^ 4) =
-  296330 * 729
+#guard rootBudgetM 3 (10 ^ 4) 68 12 68 12 0 200 (10 ^ 4) 8 87 (10 ^ 4) =
+  296090 * 729
 
 -- **ε = 1** (the guard `C0Probe`'s cubic floor LOST at `c = 10⁹`,
 -- `n = 10⁹`, on the star carrier `ns = 2·(n − 1)`): the M-class witness
 -- budget clears it with ten orders to spare
-#guard rootBudgetM 3 (10 ^ 4) 68 12 68 12 68 12 0 200 (10 ^ 4) 8 87 (10 ^ 4) *
+#guard rootBudgetM 3 (10 ^ 4) 68 12 68 12 0 200 (10 ^ 4) 8 87 (10 ^ 4) *
     (10 ^ 9 + 2 * (10 ^ 9 - 1) + 1)
   ≤ 10 ^ 9 * (3 * 10 ^ 9 + 4) ^ 2
 
 -- **ε = 1/2** (`C0Probe`'s second guard, squared form): at `n = 10⁸`
 -- the witness budget clears `c·(3n+4)^{3/2}` at `c = 10⁷`
-#guard (rootBudgetM 3 (10 ^ 4) 68 12 68 12 68 12 0 200 (10 ^ 4) 8 87 (10 ^ 4) *
+#guard (rootBudgetM 3 (10 ^ 4) 68 12 68 12 0 200 (10 ^ 4) 8 87 (10 ^ 4) *
     (10 ^ 8 + 2 * (10 ^ 8 - 1) + 1)) ^ 2
   ≤ (10 ^ 7) ^ 2 * (3 * 10 ^ 8 + 4) ^ 3
 
 -- **The rounds are affordable too**: at `R = 4` augment/relink rounds
 -- the same ε = 1 gate still clears — the M-class order phase's round
 -- factor is `(1 + R)` on a constant, not on the carrier
-#guard rootBudgetM 3 (10 ^ 4) 68 12 68 12 68 12 4 200 (10 ^ 4) 8 87 (10 ^ 4) *
+#guard rootBudgetM 3 (10 ^ 4) 68 12 68 12 4 200 (10 ^ 4) 8 87 (10 ^ 4) *
     (10 ^ 9 + 2 * (10 ^ 9 - 1) + 1)
   ≤ 10 ^ 9 * (3 * 10 ^ 9 + 4) ^ 2
 
@@ -368,13 +366,13 @@ the other phase slots is assumed: only the turn slot (at
 `G2CostProbe.turnCostSizeA`, the size-reading form §2 uses), the Σ-shaped
 level condition, and the ONE size-blind order slot. -/
 theorem mixed_order_slot_floor {n ns W ℓ D ct : ℕ} {Ksc : ℕ → ℕ}
-    {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+    {Ko Kc Ks Kl : ℕ → ℕ → ℕ}
     (hℓ : 2 ≤ ℓ)
     (hKs : ∀ j < ℓ, ∀ s : ℕ, turnCostSizeA ct (Ksc j) s (Kl (j + 1) s) ≤ Ks j s)
     (hKo : ∀ j w, RamDriverCompose.orderPhaseCost n ns W ≤ Ko j w)
     (hKl : ∀ j < ℓ, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
       (∑ c ∈ Finset.range t, bs c) ≤ D * (w + 1) →
-      Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j w + (Kc j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j w) :
     n * (60 * W + 1600 * n) ≤ Kl 0 (n + ns) := by
   -- the nested level pays the size-blind order phase on the EMPTY arena
@@ -407,18 +405,18 @@ order slot is M-class. This is `g2m_exists` read at
 `68`/`12`; it exists so the refutation that follows is a difference in
 ONE slot and not a difference in the statement. -/
 theorem mclass_order_slot_satisfiable (Ksc : ℕ → ℕ) (hKsc : ∀ j < 3, Ksc j ≤ 10 ^ 4) :
-    ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
+    ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
         (∀ j w m, m ≤ w → phaseMR 68 12 0 m ≤ Ko j w) ∧
         (∀ j < 3, ∀ s : ℕ, turnCostSizeA 200 (Ksc j) s (Kl (j + 1) s) ≤ Ks j s) ∧
         (∀ j < 3, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
           (∑ c ∈ Finset.range t, bs c) ≤ 8 * (w + 1) →
-          Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+          Ko j w + (Kc j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
             ≤ Kl j w) ∧
         (∀ w, Kl 0 w ≤
-          (3 * g2M 68 12 68 12 68 12 0 200 (10 ^ 4) 8 + 10 ^ 4) * (8 + 1) ^ 3 * (w + 1)) := by
-  obtain ⟨Ko, Kc, Kd, Ks, Kl, hKo, -, -, -, -, hKs, hKl, hcl⟩ :=
-    g2m_exists 3 8 (10 ^ 4) 0 68 12 68 12 68 12 200 (10 ^ 4) Ksc hKsc
-  exact ⟨Ko, Kc, Kd, Ks, Kl, hKo, hKs, hKl, hcl⟩
+          (3 * g2M 68 12 68 12 0 200 (10 ^ 4) 8 + 10 ^ 4) * (8 + 1) ^ 3 * (w + 1)) := by
+  obtain ⟨Ko, Kc, Ks, Kl, hKo, -, -, -, hKs, hKl, hcl⟩ :=
+    g2m_exists 3 8 (10 ^ 4) 0 68 12 68 12 200 (10 ^ 4) Ksc hKsc
+  exact ⟨Ko, Kc, Ks, Kl, hKo, hKs, hKl, hcl⟩
 
 /-- **The control bites: the M-class order slot is load-bearing.** At the
 C0 star numerals (`ℓ = 3`, `D = 8`, `Cb = 10⁴`, `ct = 200`, `ksc = 10⁴`,
@@ -434,22 +432,22 @@ difference between the two is exactly the member-driven charging.
 old floor — `chainWidth`'s `n·n`, which made it cubic — already died at
 `G2CostProbe.width_step_dead`.) -/
 theorem mclass_order_slot_load_bearing (W : ℕ) (Ksc : ℕ → ℕ) :
-    ¬ ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
+    ¬ ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
         (∀ j w, RamDriverCompose.orderPhaseCost (10 ^ 9) (2 * (10 ^ 9 - 1)) W ≤ Ko j w) ∧
         (∀ j < 3, ∀ s : ℕ, turnCostSizeA 200 (Ksc j) s (Kl (j + 1) s) ≤ Ks j s) ∧
         (∀ j < 3, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
           (∑ c ∈ Finset.range t, bs c) ≤ 8 * (w + 1) →
-          Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6)))
+          Ko j w + (Kc j w + ((∑ c ∈ Finset.range t, (Ks j (bs c) + 11)) + 6))
             ≤ Kl j w) ∧
         (∀ w, Kl 0 w ≤
-          (3 * g2M 68 12 68 12 68 12 0 200 (10 ^ 4) 8 + 10 ^ 4) * (8 + 1) ^ 3 * (w + 1)) := by
-  rintro ⟨Ko, Kc, Kd, Ks, Kl, hKo, hKs, hKl, hcl⟩
+          (3 * g2M 68 12 68 12 0 200 (10 ^ 4) 8 + 10 ^ 4) * (8 + 1) ^ 3 * (w + 1)) := by
+  rintro ⟨Ko, Kc, Ks, Kl, hKo, hKs, hKl, hcl⟩
   have hfloor := mixed_order_slot_floor (n := 10 ^ 9) (ns := 2 * (10 ^ 9 - 1)) (W := W)
     (ℓ := 3) (D := 8) (ct := 200) (Ksc := Ksc) (by omega) hKs hKo hKl
   have hup := hcl (10 ^ 9 + 2 * (10 ^ 9 - 1))
   have hlow : 1600 * (10 ^ 9) * (10 ^ 9) ≤ 10 ^ 9 * (60 * W + 1600 * 10 ^ 9) := by nlinarith
   have hbad : 1600 * (10 ^ 9) * (10 ^ 9) ≤
-      (3 * g2M 68 12 68 12 68 12 0 200 (10 ^ 4) 8 + 10 ^ 4) * (8 + 1) ^ 3 *
+      (3 * g2M 68 12 68 12 0 200 (10 ^ 4) 8 + 10 ^ 4) * (8 + 1) ^ 3 *
         (10 ^ 9 + 2 * (10 ^ 9 - 1) + 1) :=
     le_trans hlow (le_trans hfloor hup)
   exact absurd hbad (by simp only [g2M]; decide +kernel)
@@ -461,7 +459,7 @@ theorem mclass_order_slot_load_bearing (W : ℕ) (Ksc : ℕ → ℕ) :
 
 -- and, side by side at the ε = 1 numerals of §3: the M-class witness
 -- budget is ten orders BELOW the floor the size-blind slot forces
-#guard rootBudgetM 3 (10 ^ 4) 68 12 68 12 68 12 0 200 (10 ^ 4) 8 87 (10 ^ 4) *
+#guard rootBudgetM 3 (10 ^ 4) 68 12 68 12 0 200 (10 ^ 4) 8 87 (10 ^ 4) *
     (10 ^ 9 + 2 * (10 ^ 9 - 1) + 1)
   < 1600 * (10 ^ 9) * (10 ^ 9)
 
@@ -534,16 +532,16 @@ through the restated root's cost text gives exactly `rootBudgetM`'s
 closed form at the input weight — the shape §3's `#guard`s clear and
 `mclass_c0_shape` carries to `n^{1+ε}`. -/
 theorem rootBudgetM_closes {Kdec Ksent : ℕ → ℕ → ℕ} {Kl : ℕ → ℕ → ℕ}
-    {n ns nsd ℓ Cb ao bo ac bc ad bd R ct ksc D ksent : ℕ}
+    {n ns nsd ℓ Cb ao bo ac bc R ct ksc D ksent : ℕ}
     (hns : nsd ≤ ns) (hmono : Monotone (Kl 0))
     (hdecle : Kdec n ns ≤ 87 * (n + ns + 1))
     (hsent : Ksent n ns ≤ ksent * (n + ns + 1))
     (hcl : ∀ w, Kl 0 w ≤
-      (ℓ * g2M ao bo ac bc ad bd R ct ksc D + Cb) * (D + 1) ^ ℓ * (w + 1)) :
+      (ℓ * g2M ao bo ac bc R ct ksc D + Cb) * (D + 1) ^ ℓ * (w + 1)) :
     Kdec n ns + (Kl 0 (n + nsd) + Ksent n ns) ≤
-      rootBudgetM ℓ Cb ao bo ac bc ad bd R ct ksc D 87 ksent * (n + ns + 1) := by
+      rootBudgetM ℓ Cb ao bo ac bc R ct ksc D 87 ksent * (n + ns + 1) := by
   have h := rootD_close (Kdec := Kdec) (Ksent := Ksent) (nsd := nsd) (ksent := ksent)
-    (C := ℓ * g2M ao bo ac bc ad bd R ct ksc D + Cb) hns hmono hdecle hsent hcl
+    (C := ℓ * g2M ao bo ac bc R ct ksc D + Cb) hns hmono hdecle hsent hcl
   simpa only [rootBudgetM] using h
 
 /-! ### §7 Axioms -/

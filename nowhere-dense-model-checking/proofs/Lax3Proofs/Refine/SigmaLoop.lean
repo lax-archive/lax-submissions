@@ -1,4 +1,5 @@
-import Lax3Proofs.RamDriver
+import Lax13Proofs.Reasoning
+import Lax13Proofs.Spec
 
 /-!
 **The counted scan at per-turn costs** — the Σ-shaped loop rule of the

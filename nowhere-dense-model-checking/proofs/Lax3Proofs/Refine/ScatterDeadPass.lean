@@ -211,11 +211,18 @@ and the one-bit-times-a-count reading of the outside term is false.
 **Wave (c2a), the verdict.** Two routes were on the table and a third
 was the answer.
 
+**2026-08-10 monotone-game follow-up.** The exact-arena counterexample
+below remains valid, but it no longer constrains the executable
+successor. `SplitterWinRec.ReachedSubR` permits that successor to retain
+the current cluster while the mathematical generating set records the
+omitted path portions. The batch set still remains unchanged; only the
+recorded game position is now cluster-supported as well.
+
 * *Narrow the batch* — one more `andCom` at the end of
   `RamDriver.batchCom`. It is not free, and
   `game_arena_sees_the_cluster_cut` below is why:
-  `RamDriver.playRec_succ`'s `hstep` cuts the *game* arena by the batch,
-  and the game arena is **not** cluster-restricted, so the same
+  the former exact successor cut the whole *game* ball by the batch,
+  and that exact arena is **not** cluster-restricted, so the same
   intersection that is invisible at the child arena is visible there.
   The recorded round moves, and with it
   `RamDriverDescend.batchCom_spec`'s walk-support clause, whose

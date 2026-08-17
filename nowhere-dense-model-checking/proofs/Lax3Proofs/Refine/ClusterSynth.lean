@@ -1350,7 +1350,7 @@ the comparison is exact on both sides.
 | `andCom_spec` | `15·N + 6` | `22·N + 4` | `+7` |
 | `subCom_spec` | `17·N + 6` | `26·N + 4` | `+9` |
 | `andSelfCom_spec` | `15·N + 6` | `22·N + 4` | `+7` |
-| `clusterLoad_spec` | `16·n² + 11·n + 24` | `12·n + 15·m + 19` | **see below** |
+| `clusterLoad_spec` | `11·n + 24·m + 26` | `12·n + 15·m + 19` | **see below** |
 
 The per-cell excess is the same deviation everywhere and it is not a
 regression in the algorithm: the machine's cell expression is *one*
@@ -1362,32 +1362,28 @@ truncation minus the two units the machine's constant folding of `.lit
 1` saves. Every one of the six is accounted for by 2E/D-b's rule, and
 none by a change of algorithm.
 
-**The load is the other direction, and it is the wave's headline.** The
-hand-walked budget is *quadratic per cluster* — `16·n²` — because the
-walk bounds the block by the whole cluster arena `Xmem`, whose length is
-`n·n`; the tower's is `12·n + 15·m` with `m` the block's own size, and
-the block sizes of a level sum to the cover's write pointer. Summed over
-the centres of one level, that is
+**The load is now block-priced on both sides.** The hand walk consumes the
+`CluScan` lower endpoint and costs `11·n + 24·m + 26`, where `m` is the
+selected block's size. Its larger per-block coefficient includes the child
+member-list emission that this older tower model does not perform. Summed
+over the centres of one level, both readings have shape
 
-    hand-walked   Θ(n³)      (16·n² per centre)
-    tower         Θ(n·k) + Θ(xp)   with k the number of centres
+    Θ(n·k) + Θ(xp)   with k the number of centres,
 
-so the touched-only half of the pass is *proved* touched-only here for
-the first time, and what is left of the `n²` is the fill, one `12·n` per
-centre (2F/D-a). -/
+because the block sizes sum to the cover's write pointer. The remaining
+carrier term is the indicator clear, once per centre (2F/D-a). -/
 
 section Cash
 
 -- the two figures side by side at §1's arena — six vertices, and the
 -- middle block's three members
 #guard clusterLoadK 6 3 = 136
-#guard 16 * (6 * 6) + 11 * 6 + 24 = 666
+#guard 11 * 6 + 24 * 3 + 26 = 164
 
--- and the shape of the difference, at a carrier ten times as wide with
--- the same block: the tower's number grows linearly, the baseline's
--- quadratically
+-- at a carrier ten times as wide with the same block, both readings now
+-- grow linearly
 #guard clusterLoadK 60 3 = 784
-#guard 16 * (60 * 60) + 11 * 60 + 24 = 58284
+#guard 11 * 60 + 24 * 3 + 26 = 758
 
 end Cash
 

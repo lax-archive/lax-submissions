@@ -179,9 +179,8 @@ theorem level_interface_floor
   have hks : Kl 1 0 ≤ Ks 0 0 := by
     have h := hKs 0 (by omega) 0
     simp only [Nat.zero_add] at h
-    rw [RamDriverRoot.turnCostSize_eq] at h
     refine le_trans ?_ h
-    simp only [RamDriverRoot.turnCost]
+    simp only [RamDriverRoot.turnCostSize]
     omega
   -- the level at the root runs `n` turns
   have h0 := hKl 0 (by omega) n n le_rfl (fun _ => 0) (by simp)

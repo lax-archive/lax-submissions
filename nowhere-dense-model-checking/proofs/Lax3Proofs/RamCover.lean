@@ -426,6 +426,29 @@ theorem inCluster_subset_ball (A : SimpleGraph (Fin n)) (π : Equiv.Perm (Fin n)
   fun z hz => mem_ball.mpr (withinDist_symm
     (mem_ball.mp (mem_ball_of_mem_wreach ((inCluster_iff ha z.isLt).mp (by simpa using hz)))))
 
+/-- A weak-reachability witness for membership in a cluster can be chosen entirely
+inside that cluster.  Indeed, after cutting the witness at a support vertex `z`,
+the suffix from `z` to the centre has no greater length and retains the same
+ordering-minimal centre.  This is the connectivity fact used by the driver to
+cache one bounded-depth parent tree for a cluster. -/
+theorem exists_walk_support_inCluster
+    (A : SimpleGraph (Fin n)) (π : Equiv.Perm (Fin n)) {r a w : ℕ}
+    (ha : a < n) (hw : w < n) (h : InCluster A π r a w) :
+    ∃ p : A.Walk (⟨a, ha⟩ : Fin n) ⟨w, hw⟩,
+      p.length ≤ 2 * r ∧ ∀ z ∈ p.support, InCluster A π r a (z : ℕ) := by
+  obtain ⟨q, hq, hmin⟩ := mem_wreach_iff.mp ((inCluster_iff ha hw).mp h)
+  refine ⟨q.reverse, ?_, ?_⟩
+  · simpa only [SimpleGraph.Walk.length_reverse] using hq
+  · intro z hz
+    have hzq : z ∈ q.support := by
+      simpa only [SimpleGraph.Walk.support_reverse, List.mem_reverse] using hz
+    apply (inCluster_iff ha z.isLt).mpr
+    apply mem_wreach_iff.mpr
+    refine ⟨q.dropUntil z hzq, ?_, ?_⟩
+    · exact (q.length_dropUntil_le hzq).trans hq
+    · intro y hy
+      exact hmin y (q.support_dropUntil_subset hzq hy)
+
 /-! ### The arena of one turn
 
 The pass runs the search in the ambient arena with the centres already

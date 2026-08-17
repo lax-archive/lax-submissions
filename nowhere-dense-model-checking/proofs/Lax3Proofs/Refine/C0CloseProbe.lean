@@ -8,8 +8,8 @@ import Lax3Proofs.Refine.DeadSweep
 # The C0 close, run at the constants the package has actually measured
 
 `Refine/G2ExistsRevalidation.lean` §3 compiled the M-class close at
-**borrowed** constants: `g2M 68 12 68 12 68 12 0 200 (10^4) 8` plugs the
-order phase's measured `68`/`12` into the cover and dead slots as well,
+**borrowed** constants: `g2M 68 12 68 12 0 200 (10^4) 8` plugs the
+order phase's measured `68`/`12` into the cover slot as well,
 and reads the turn at the pre-R1.8 `200`. This file re-runs the same
 landed chain at each phase's own measured number, and back-solves the
 coefficient ceiling every remaining engine wave has to hit.
@@ -40,8 +40,9 @@ program text (`23·n + 12`, the two calling-convention copies), and
 `narrow_leaf_refutes_constant_ksc` compiles that no narrowing of the
 probe bound, the member counts or the ball budget produces a constant
 `ksc` while those copies stand. Beyond them the honest reading is the
-turn's **cluster**, not a constant, so the close needs the turn's size
-slot read as well — `turnCostSize` discards it today.
+turn's **cluster**, not a constant. The readback now uses the turn's
+size slot, but the scatter chain still enters that slot as an additive
+total; B4 must make that particular charge size-relative too.
 
 ## The four sections
 
@@ -62,8 +63,8 @@ slot read as well — `turnCostSize` discards it today.
   ceiling clears, the ceiling plus one does not), next to the phase's
   measured value.
 * **§4** the honesty controls: the carrier-charged scatter leaf, a
-  carrier-bearing phase form, the un-narrowed `hKd` slot and the landed
-  base — four compiled refutations, in `Refine.CostShapeProbe` style.
+  carrier-bearing phase form, the now-retired `hKd` slot and the landed
+  base — historical controls remain labeled as such.
 
 ## What this file does NOT claim
 
@@ -92,7 +93,7 @@ open Lax3Proofs.Refine.G2CostProbe (turnCostSizeA)
 | cover slot | `aCovSlot`, `bCovSlot` | `kcov 150 ka D` twice | forced, see `cover_measured_pair_insufficient` |
 | descend | — | `200` at the block WEIGHT | `G2CostProbe.blockLeaves_le_weight` |
 | turn | `ctTurn` | `KillListPass.ctKL` = `443` | `200 + 84 + klc`, R1.8 |
-| dead | `aDead`, `bd` | `0`, **opaque** | R1.8 took the sweep out; landed reading `12` |
+| retired dead | `aDead`, `bDeadProbe` | historical only | absent from `g2M` and the root budget |
 | scatter | `ksc` | **opaque, and refuted at the landed reading AND at every narrowing of it** | §4, control 1/1b |
 | base | `Cb` | **opaque — T4b unstarted, and refuted at the landed reading** | §4 |
 | root decode | `kdecRoot` | `87` | `G2ExistsRevalidation.decodeDLCost_le_weight` |
@@ -295,19 +296,15 @@ theorem descendLeaves_sum_le_mass {t D w : ℕ} {sz dg bs : ℕ → ℕ}
         rw [Finset.sum_add_distrib]; simp
     _ ≤ 200 * (D * (w + 1) + t) := Nat.mul_le_mul_left _ (by omega)
 
-/-- **Dead, member coefficient — ZERO.** Wave R1.8-T3-flip took
-`RamDriver.sweepCom` out of the driver's program: the level's
-postcondition is `TableInvOn` at `alive ∪ D` and the kills are written
-at kill time, inside the turn. There is no per-level dead pass left to
-charge at the member count. -/
+/-- **Retired dead coefficient.** Wave R1.8-T3-flip took
+`RamDriver.sweepCom` out of the driver's program, and `b4-iface` removed
+the corresponding slot from the recurrence.  This zero remains only so
+older design controls can name the historical coefficient. -/
 def aDead : ℕ := 0
 
-/-- **Dead, per-level residue — OPAQUE.** What remains per level is
-`O(1)` bookkeeping (the outside count and the default bit ride the
-turn). The landed closures `DeadRowProbe.deadRow_interface_closes` and
-`KillListPass.killList_interface_closes` read it at `12`; that number is
-a chosen residue with no measured leaf under it, so every theorem below
-carries it as a parameter and this numeral appears only in `#guard`s. -/
+/-- **Retired dead residue.** The old interface instantiated its dead
+slot at `12`.  No live root budget reads this value after `b4-iface`; it
+is retained temporarily for historical design controls. -/
 def bDeadProbe : ℕ := 12
 
 /-- **Scatter leaf — OPAQUE, and E4c's deliverable.** `ksc` bounds the
@@ -353,13 +350,13 @@ absorbing the one extra `(D + 1)`: the honest exponent budget is
 `ℓ + 1`, i.e. the cover degree must be read at `⌈c·w^{ε/(ℓ+1)}⌉₊`. -/
 
 /-- The `D`-free part of the per-level constant. -/
-def g2Const (ao bo kcC ad bd R ct ksc : ℕ) : ℕ :=
-  (1 + R) * (ao + bo) + (kcC + (ad + bd)) + (ct + ksc + 3) + 14
+def g2Const (ao bo kcC R ct ksc : ℕ) : ℕ :=
+  (1 + R) * (ao + bo) + kcC + (ct + ksc + 3) + 14
 
 /-- **The `D`-free root constant.** `cstarM` is what `mclass_c0_shape`
 may legitimately be applied at, once the extra `(D + 1)` is absorbed. -/
-def cstarM (ℓ Cb ao bo kcC ad bd R ct ksc kdec ksent : ℕ) : ℕ :=
-  kdec + ksent + Cb + ℓ * g2Const ao bo kcC ad bd R ct ksc
+def cstarM (ℓ Cb ao bo kcC R ct ksc kdec ksent : ℕ) : ℕ :=
+  kdec + ksent + Cb + ℓ * g2Const ao bo kcC R ct ksc
 
 /-- **The cover slot pair is `(D + 1)`-linear at a `D`-free
 coefficient** — which is what lets the root constant be `D`-free at
@@ -374,38 +371,37 @@ theorem cov_slot_le_kcovC (ka D : ℕ) : aCovSlot ka D + bCovSlot ka D ≤ kcovC
 of `g2M` is either already `(D + 1)`-linear or bounded by its own
 coefficient times `(D + 1)`, so one extra factor absorbs the whole
 `D`-dependence and `cstarM` is a constant of the parameters alone. -/
-theorem rootBudgetM_le_cstar {ℓ Cb ao bo ac bc kcC ad bd R ct ksc D kdec ksent : ℕ}
+theorem rootBudgetM_le_cstar {ℓ Cb ao bo ac bc kcC R ct ksc D kdec ksent : ℕ}
     (hcov : ac + bc ≤ kcC * (D + 1)) :
-    rootBudgetM ℓ Cb ao bo ac bc ad bd R ct ksc D kdec ksent
-      ≤ cstarM ℓ Cb ao bo kcC ad bd R ct ksc kdec ksent * (D + 1) ^ (ℓ + 1) := by
+    rootBudgetM ℓ Cb ao bo ac bc R ct ksc D kdec ksent
+      ≤ cstarM ℓ Cb ao bo kcC R ct ksc kdec ksent * (D + 1) ^ (ℓ + 1) := by
   have hD : 0 < D + 1 := Nat.succ_pos _
-  have hg : g2M ao bo ac bc ad bd R ct ksc D ≤ g2Const ao bo kcC ad bd R ct ksc * (D + 1) := by
+  have hg : g2M ao bo ac bc R ct ksc D ≤ g2Const ao bo kcC R ct ksc * (D + 1) := by
     have h1 : (1 + R) * (ao + bo) ≤ (1 + R) * (ao + bo) * (D + 1) :=
       Nat.le_mul_of_pos_right _ hD
-    have h3 : ad + bd ≤ (ad + bd) * (D + 1) := Nat.le_mul_of_pos_right _ hD
     have h4 : (14 : ℕ) ≤ 14 * (D + 1) := Nat.le_mul_of_pos_right _ hD
-    have hexp : g2Const ao bo kcC ad bd R ct ksc * (D + 1)
-        = (1 + R) * (ao + bo) * (D + 1) + kcC * (D + 1) + (ad + bd) * (D + 1) +
+    have hexp : g2Const ao bo kcC R ct ksc * (D + 1)
+        = (1 + R) * (ao + bo) * (D + 1) + kcC * (D + 1) +
             (ct + ksc + 3) * (D + 1) + 14 * (D + 1) := by
       simp only [g2Const]; ring
     simp only [g2M]
     omega
-  have hmain : kdec + ksent + (ℓ * g2M ao bo ac bc ad bd R ct ksc D + Cb)
-      ≤ cstarM ℓ Cb ao bo kcC ad bd R ct ksc kdec ksent * (D + 1) := by
-    have hg' : ℓ * g2M ao bo ac bc ad bd R ct ksc D
-        ≤ ℓ * (g2Const ao bo kcC ad bd R ct ksc * (D + 1)) := Nat.mul_le_mul_left _ hg
+  have hmain : kdec + ksent + (ℓ * g2M ao bo ac bc R ct ksc D + Cb)
+      ≤ cstarM ℓ Cb ao bo kcC R ct ksc kdec ksent * (D + 1) := by
+    have hg' : ℓ * g2M ao bo ac bc R ct ksc D
+        ≤ ℓ * (g2Const ao bo kcC R ct ksc * (D + 1)) := Nat.mul_le_mul_left _ hg
     have hb : kdec + ksent + Cb ≤ (kdec + ksent + Cb) * (D + 1) :=
       Nat.le_mul_of_pos_right _ hD
-    have hrhs : cstarM ℓ Cb ao bo kcC ad bd R ct ksc kdec ksent * (D + 1)
+    have hrhs : cstarM ℓ Cb ao bo kcC R ct ksc kdec ksent * (D + 1)
         = (kdec + ksent + Cb) * (D + 1) +
-            ℓ * (g2Const ao bo kcC ad bd R ct ksc * (D + 1)) := by
+            ℓ * (g2Const ao bo kcC R ct ksc * (D + 1)) := by
       simp only [cstarM]; ring
     omega
-  calc rootBudgetM ℓ Cb ao bo ac bc ad bd R ct ksc D kdec ksent
-      = (kdec + ksent + (ℓ * g2M ao bo ac bc ad bd R ct ksc D + Cb)) * (D + 1) ^ ℓ := rfl
-    _ ≤ (cstarM ℓ Cb ao bo kcC ad bd R ct ksc kdec ksent * (D + 1)) * (D + 1) ^ ℓ :=
+  calc rootBudgetM ℓ Cb ao bo ac bc R ct ksc D kdec ksent
+      = (kdec + ksent + (ℓ * g2M ao bo ac bc R ct ksc D + Cb)) * (D + 1) ^ ℓ := rfl
+    _ ≤ (cstarM ℓ Cb ao bo kcC R ct ksc kdec ksent * (D + 1)) * (D + 1) ^ ℓ :=
         Nat.mul_le_mul_right _ hmain
-    _ = cstarM ℓ Cb ao bo kcC ad bd R ct ksc kdec ksent * (D + 1) ^ (ℓ + 1) := by ring
+    _ = cstarM ℓ Cb ao bo kcC R ct ksc kdec ksent * (D + 1) ^ (ℓ + 1) := by ring
 
 /-- The C0 cover degree, at the honest exponent budget `ℓ + 1`. -/
 noncomputable def coverDeg (c ε : ℝ) (ℓ w : ℕ) : ℕ := ⌈c * (w : ℝ) ^ (ε / ((ℓ + 1 : ℕ) : ℝ))⌉₊
@@ -415,10 +411,10 @@ degree `⌈c·w^{ε/(ℓ+1)}⌉₊`, is inside `n^{1+ε}` at a constant
 `cstarM·(c+2)^{ℓ+1}`. `mclass_c0_shape` is consumed at `ℓ + 1`; nothing
 is re-derived. -/
 theorem c0_shape_real {c ε : ℝ} (hc : 0 ≤ c) (hε : 0 < ε)
-    {ℓ Cb ao bo ac bc kcC ad bd R ct ksc kdec ksent w K : ℕ} (hw : 1 ≤ w)
+    {ℓ Cb ao bo ac bc kcC R ct ksc kdec ksent w K : ℕ} (hw : 1 ≤ w)
     (hcov : ac + bc ≤ kcC * (coverDeg c ε ℓ w + 1))
-    (hK : K ≤ rootBudgetM ℓ Cb ao bo ac bc ad bd R ct ksc (coverDeg c ε ℓ w) kdec ksent * (w + 1)) :
-    (K : ℝ) ≤ ((cstarM ℓ Cb ao bo kcC ad bd R ct ksc kdec ksent : ℝ) * (c + 2) ^ (ℓ + 1))
+    (hK : K ≤ rootBudgetM ℓ Cb ao bo ac bc R ct ksc (coverDeg c ε ℓ w) kdec ksent * (w + 1)) :
+    (K : ℝ) ≤ ((cstarM ℓ Cb ao bo kcC R ct ksc kdec ksent : ℝ) * (c + 2) ^ (ℓ + 1))
       * ((w : ℝ) + 1) ^ (1 + ε) := by
   refine mclass_c0_shape (ℓ := ℓ + 1) hc hε (by omega) hw ?_
   refine le_trans hK ?_
@@ -427,8 +423,8 @@ theorem c0_shape_real {c ε : ℝ} (hc : 0 ≤ c) (hε : 0 < ε)
 /-- **The assembled close, at the measured constants.**
 
 The M-class phase slots at the order phase's measured `68`/`12`, the
-cover phase's measured `kcov 150 ka D` slot pair, the dead phase's
-post-R1.8 `(0, bd)` and the turn at the measured `ctTurn = ctKL`; the
+cover phase's measured `kcov 150 ka D` slot pair, and the turn at the
+measured `ctTurn = ctKL`; the
 landed Σ-interface shapes of `RamDriverRoot.driverRoot_decides_sentence`
 verbatim; the cover phase's own measured cost paid; and the restated
 root's cost text inside `cstarM · (D+1)^{ℓ+1} · (|x|+1)`.
@@ -438,20 +434,19 @@ It asks for a per-level scatter charge bounded by a constant chosen
 before `n`. §4 compiles that the LANDED instantiation — the whole
 carrier as the ball budget, `Refine.ScatterDeadPass.ballBudget_carrier` —
 does not supply one. Everything else in this theorem is measured. -/
-theorem c0_close_at_measured {ka bd Cb ksent kscN R ℓ D : ℕ} (Ksc : ℕ → ℕ)
+theorem c0_close_at_measured {ka Cb ksent kscN R ℓ D : ℕ} (Ksc : ℕ → ℕ)
     (hKsc : ∀ j < ℓ, Ksc j ≤ kscN) :
-    ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
+    ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
       -- the M-class phase slots, at each phase's own measured constants
       (∀ j w m, m ≤ w → phaseMR aOrd bOrd R m ≤ Ko j w) ∧
       (∀ j w m, m ≤ w → phaseMR (aCovSlot ka D) (bCovSlot ka D) 0 m ≤ Kc j w) ∧
-      (∀ j w m, m ≤ w → phaseMR aDead bd 0 m ≤ Kd j w) ∧
       (∀ w, Cb * (w + 1) ≤ Kl ℓ w) ∧
       -- the landed Σ-interface shapes, verbatim
       (∀ j, Monotone (Kl j)) ∧
       (∀ j < ℓ, ∀ s : ℕ, turnCostSizeA ctTurn (Ksc j) s (Kl (j + 1) s) ≤ Ks j s) ∧
       (∀ j < ℓ, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
         (∑ c ∈ range t, bs c) ≤ D * (w + 1) →
-        Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ range t, (Ks j (bs c) + 11)) + 6)))
+        Ko j w + (Kc j w + ((∑ c ∈ range t, (Ks j (bs c) + 11)) + 6))
           ≤ Kl j w) ∧
       -- the cover phase's measured cost is actually paid
       (∀ j w mlen mm : ℕ, ∀ bw : ℕ → ℕ, mlen ≤ w →
@@ -461,11 +456,11 @@ theorem c0_close_at_measured {ka bd Cb ksent kscN R ℓ D : ℕ} (Ksc : ℕ → 
       (∀ Kdec Ksent : ℕ → ℕ → ℕ, ∀ n ns nsd : ℕ, nsd ≤ ns →
         Kdec n ns ≤ kdecRoot * (n + ns + 1) → Ksent n ns ≤ ksent * (n + ns + 1) →
         Kdec n ns + (Kl 0 (n + nsd) + Ksent n ns)
-          ≤ cstarM ℓ Cb aOrd bOrd (kcovC ka) aDead bd R ctTurn kscN kdecRoot ksent
+          ≤ cstarM ℓ Cb aOrd bOrd (kcovC ka) R ctTurn kscN kdecRoot ksent
               * (D + 1) ^ (ℓ + 1) * (n + ns + 1)) := by
-  obtain ⟨Ko, Kc, Kd, Ks, Kl, hKo, hKc, hKd, hbase, hmono, hKs, hKlS, hcl⟩ :=
-    g2m_exists ℓ D Cb R aOrd bOrd (aCovSlot ka D) (bCovSlot ka D) aDead bd ctTurn kscN Ksc hKsc
-  refine ⟨Ko, Kc, Kd, Ks, Kl, hKo, hKc, hKd, hbase, hmono, hKs, hKlS, ?_, ?_⟩
+  obtain ⟨Ko, Kc, Ks, Kl, hKo, hKc, hbase, hmono, hKs, hKlS, hcl⟩ :=
+    g2m_exists ℓ D Cb R aOrd bOrd (aCovSlot ka D) (bCovSlot ka D) ctTurn kscN Ksc hKsc
+  refine ⟨Ko, Kc, Ks, Kl, hKo, hKc, hbase, hmono, hKs, hKlS, ?_, ?_⟩
   · exact fun j w mlen mm bw h1 h2 h3 =>
       coverPhase_paid_by_slot (fun m hm => hKc j w m hm) h1 h2 h3
   · intro Kdec Ksent n ns nsd hns hdec hsent
@@ -478,25 +473,23 @@ The instance family is `C0Probe`'s own: sparse members, `|x| = 3·n + 3`,
 the star carrier `ns = 2·(n − 1)`, `R = 0`, `D = 8`, `ℓ = 3`, all
 constants chosen before `n`. What changed against
 `G2ExistsRevalidation` §3 is the *constants*: the cover slot at
-`kcov 150 20 8 = 1482` twice instead of a borrowed `68`/`12`, the dead
-slot at `(0, 12)` instead of a borrowed `68`/`12`, and the turn at the
+`kcov 150 20 8 = 1482` twice instead of a borrowed `68`/`12`, and the turn at the
 measured `443` instead of the pre-R1.8 `200`. -/
 
 -- the per-level constant at the measured family, cell by cell
-#guard g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead bDeadProbe 0
-    ctTurn kscProbe 8
-  = (1 + 0) * (68 + 12) + (((1482 + 1482) + (0 + 12)) + ((443 + 10 ^ 4 + 3) * 9 + 14))
-#guard g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead bDeadProbe 0
-    ctTurn kscProbe 8 = 97084
+#guard g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) 0 ctTurn kscProbe 8
+  = (1 + 0) * (68 + 12) + ((1482 + 1482) + ((443 + 10 ^ 4 + 3) * 9 + 14))
+#guard g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) 0
+    ctTurn kscProbe 8 = 97072
 
 -- …and the root budget it induces. The borrowed-constant reading is
 -- BELOW it: the landed §3 gate was optimistic by the cover and turn
 -- deltas together.
-#guard rootBudgetM 3 CbProbe aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead
-    bDeadProbe 0 ctTurn kscProbe 8 kdecRoot ksentProbe = 226966131
-#guard rootBudgetM 3 (10 ^ 4) 68 12 68 12 68 12 0 200 (10 ^ 4) 8 87 (10 ^ 4)
-  < rootBudgetM 3 CbProbe aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead
-      bDeadProbe 0 ctTurn kscProbe 8 kdecRoot ksentProbe
+#guard rootBudgetM 3 CbProbe aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8)
+    0 ctTurn kscProbe 8 kdecRoot ksentProbe = 226939887
+#guard rootBudgetM 3 (10 ^ 4) 68 12 68 12 0 200 (10 ^ 4) 8 87 (10 ^ 4)
+  < rootBudgetM 3 CbProbe aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8)
+      0 ctTurn kscProbe 8 kdecRoot ksentProbe
 
 /-- The star instance's arena weight at carrier `n`: `n + 2·(n − 1)`. -/
 def starW (n : ℕ) : ℕ := n + 2 * (n - 1)
@@ -504,8 +497,8 @@ def starW (n : ℕ) : ℕ := n + 2 * (n - 1)
 /-- The measured family's root budget at level count `ℓ`, cover degree
 `D` and scatter coefficient `ksc`. -/
 def budgetAt (ℓ D ksc : ℕ) : ℕ :=
-  rootBudgetM ℓ CbProbe aOrd bOrd (aCovSlot kaProbe D) (bCovSlot kaProbe D) aDead
-    bDeadProbe 0 ctTurn ksc D kdecRoot ksentProbe
+  rootBudgetM ℓ CbProbe aOrd bOrd (aCovSlot kaProbe D) (bCovSlot kaProbe D)
+    0 ctTurn ksc D kdecRoot ksentProbe
 
 -- **ε = 1** at `c = 10⁹`, `n = 10⁹` (`C0Probe`'s first guard, the one
 -- the landed root's cubic floor lost)
@@ -521,8 +514,8 @@ def budgetAt (ℓ D ksc : ℕ) : ℕ :=
 
 -- **the rounds are affordable**: `R = 4` augment/relink rounds move the
 -- order phase by a factor on a constant, not on the carrier
-#guard rootBudgetM 3 CbProbe aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead
-    bDeadProbe 4 ctTurn kscProbe 8 kdecRoot ksentProbe * (starW (10 ^ 9) + 1)
+#guard rootBudgetM 3 CbProbe aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8)
+    4 ctTurn kscProbe 8 kdecRoot ksentProbe * (starW (10 ^ 9) + 1)
   ≤ 10 ^ 9 * (3 * 10 ^ 9 + 4) ^ 2
 
 /-! #### Sensitivity in `ℓ` and `D` (hazard 5)
@@ -560,13 +553,12 @@ recorded for the shape of the dependence.
 
 | constant | wave | measured / landed | ceiling at ε = 1/2 | margin |
 |---|---|---|---|---|
-| `aOrd` | E-order | `68` | `79 093 857` | ×10⁶ |
-| `ka` | E3b | unmeasured | `39 546 914` | — |
-| `bd` | `hKd` deletion | `12` (chosen) | `79 093 801` | ×10⁶ |
-| `ctTurn` | E4c descend | `443` | `8 788 641` | ×10⁴ |
-| `ksc` | **E4c scatter** | `131·n + …` | `8 798 198` | **DEFICIT ×1489 at `n = 10⁸`, and growing** |
-| `Cb` | T4b | none | `237 291 369` | — |
-| `ksentProbe` | — | none | `237 291 369` | — |
+| `aOrd` | E-order | `68` | `79 093 869` | ×10⁶ |
+| `ka` | E3b | unmeasured | `39 546 920` | — |
+| `ctTurn` | E4c descend | `443` | `8 788 643` | ×10⁴ |
+| `ksc` | **E4c scatter** | `131·n + …` | `8 798 200` | **DEFICIT ×1489 at `n = 10⁸`, and growing** |
+| `Cb` | T4b | none | `237 291 405` | — |
+| `ksentProbe` | — | none | `237 291 405` | — |
 | `R` | E-order | unmeasured | `988 672` | — |
 
 `ksc` is the only entry whose measured value is above its ceiling, and
@@ -578,56 +570,51 @@ def gateHalf (b : ℕ) : Prop := (b * (starW (10 ^ 8) + 1)) ^ 2 ≤ (10 ^ 7) ^ 2
 instance : DecidablePred gateHalf := fun _ => inferInstanceAs (Decidable (_ ≤ _))
 
 /-- The measured family at ε = 1/2, with one constant free. -/
-def famHalf (ao ka bd ct ksc Cb ksent R : ℕ) : ℕ :=
-  rootBudgetM 3 Cb ao bOrd (aCovSlot ka 8) (bCovSlot ka 8) aDead bd R ct ksc 8 kdecRoot ksent
+def famHalf (ao ka ct ksc Cb ksent R : ℕ) : ℕ :=
+  rootBudgetM 3 Cb ao bOrd (aCovSlot ka 8) (bCovSlot ka 8) R ct ksc 8 kdecRoot ksent
 
 /-- The measured reading of every constant at once. -/
-def famHalfMeasured : ℕ := famHalf aOrd kaProbe bDeadProbe ctTurn kscProbe CbProbe ksentProbe 0
+def famHalfMeasured : ℕ := famHalf aOrd kaProbe ctTurn kscProbe CbProbe ksentProbe 0
 
-#guard famHalfMeasured = 226966131
+#guard famHalfMeasured = 226939887
 #guard gateHalf famHalfMeasured
 
--- **`aOrd` — E-order.** Measured `68`; ceiling `79 093 857`.
-#guard gateHalf (famHalf 79093857 kaProbe bDeadProbe ctTurn kscProbe CbProbe ksentProbe 0)
-#guard ¬ gateHalf (famHalf 79093858 kaProbe bDeadProbe ctTurn kscProbe CbProbe ksentProbe 0)
-#guard aOrd < 79093857
+-- **`aOrd` — E-order.** Measured `68`; ceiling `79 093 869`.
+#guard gateHalf (famHalf 79093869 kaProbe ctTurn kscProbe CbProbe ksentProbe 0)
+#guard ¬ gateHalf (famHalf 79093870 kaProbe ctTurn kscProbe CbProbe ksentProbe 0)
+#guard aOrd < 79093869
 
--- **`ka` — E3b's cover residue.** Unmeasured; ceiling `39 546 914`.
-#guard gateHalf (famHalf aOrd 39546914 bDeadProbe ctTurn kscProbe CbProbe ksentProbe 0)
-#guard ¬ gateHalf (famHalf aOrd 39546915 bDeadProbe ctTurn kscProbe CbProbe ksentProbe 0)
-
--- **`bd` — the dead residue / `hKd` slot.** Landed reading `12`;
--- ceiling `79 093 801`.
-#guard gateHalf (famHalf aOrd kaProbe 79093801 ctTurn kscProbe CbProbe ksentProbe 0)
-#guard ¬ gateHalf (famHalf aOrd kaProbe 79093802 ctTurn kscProbe CbProbe ksentProbe 0)
+-- **`ka` — E3b's cover residue.** Unmeasured; ceiling `39 546 920`.
+#guard gateHalf (famHalf aOrd 39546920 ctTurn kscProbe CbProbe ksentProbe 0)
+#guard ¬ gateHalf (famHalf aOrd 39546921 ctTurn kscProbe CbProbe ksentProbe 0)
 
 -- **`ct` — E4c's descend leaves plus R1.8's kill writes.** Measured
--- `443`; ceiling `8 788 641`.
-#guard gateHalf (famHalf aOrd kaProbe bDeadProbe 8788641 kscProbe CbProbe ksentProbe 0)
-#guard ¬ gateHalf (famHalf aOrd kaProbe bDeadProbe 8788642 kscProbe CbProbe ksentProbe 0)
-#guard ctTurn < 8788641
+-- `443`; ceiling `8 788 643`.
+#guard gateHalf (famHalf aOrd kaProbe 8788643 kscProbe CbProbe ksentProbe 0)
+#guard ¬ gateHalf (famHalf aOrd kaProbe 8788644 kscProbe CbProbe ksentProbe 0)
+#guard ctTurn < 8788643
 
--- **`ksc` — E4c's scatter leaf. The one deficit.** Ceiling `8 798 198`;
+-- **`ksc` — E4c's scatter leaf. The one deficit.** Ceiling `8 798 200`;
 -- the landed reading at `n = 10⁸` is at least `131·10⁸ + 96`, which is
 -- a factor `1488` over it. §4 compiles the lower bound.
-#guard gateHalf (famHalf aOrd kaProbe bDeadProbe ctTurn 8798198 CbProbe ksentProbe 0)
-#guard ¬ gateHalf (famHalf aOrd kaProbe bDeadProbe ctTurn 8798199 CbProbe ksentProbe 0)
-#guard ¬ gateHalf (famHalf aOrd kaProbe bDeadProbe ctTurn (131 * 10 ^ 8 + 96) CbProbe
+#guard gateHalf (famHalf aOrd kaProbe ctTurn 8798200 CbProbe ksentProbe 0)
+#guard ¬ gateHalf (famHalf aOrd kaProbe ctTurn 8798201 CbProbe ksentProbe 0)
+#guard ¬ gateHalf (famHalf aOrd kaProbe ctTurn (131 * 10 ^ 8 + 96) CbProbe
   ksentProbe 0)
-#guard 1488 * 8798198 ≤ 131 * 10 ^ 8 + 96
+#guard 1488 * 8798200 ≤ 131 * 10 ^ 8 + 96
 
--- **`Cb` — T4b's base.** No measurement; ceiling `237 291 369`.
-#guard gateHalf (famHalf aOrd kaProbe bDeadProbe ctTurn kscProbe 237291369 ksentProbe 0)
-#guard ¬ gateHalf (famHalf aOrd kaProbe bDeadProbe ctTurn kscProbe 237291370 ksentProbe 0)
+-- **`Cb` — T4b's base.** No measurement; ceiling `237 291 405`.
+#guard gateHalf (famHalf aOrd kaProbe ctTurn kscProbe 237291405 ksentProbe 0)
+#guard ¬ gateHalf (famHalf aOrd kaProbe ctTurn kscProbe 237291406 ksentProbe 0)
 
 -- **`ksent` — the root's sentence charge.** No measurement; same
 -- ceiling as `Cb`, since both are additive at the root.
-#guard gateHalf (famHalf aOrd kaProbe bDeadProbe ctTurn kscProbe CbProbe 237291369 0)
-#guard ¬ gateHalf (famHalf aOrd kaProbe bDeadProbe ctTurn kscProbe CbProbe 237291370 0)
+#guard gateHalf (famHalf aOrd kaProbe ctTurn kscProbe CbProbe 237291405 0)
+#guard ¬ gateHalf (famHalf aOrd kaProbe ctTurn kscProbe CbProbe 237291406 0)
 
 -- **`R` — E-order's augment/relink rounds.** Ceiling `988 672`.
-#guard gateHalf (famHalf aOrd kaProbe bDeadProbe ctTurn kscProbe CbProbe ksentProbe 988672)
-#guard ¬ gateHalf (famHalf aOrd kaProbe bDeadProbe ctTurn kscProbe CbProbe ksentProbe 988673)
+#guard gateHalf (famHalf aOrd kaProbe ctTurn kscProbe CbProbe ksentProbe 988672)
+#guard ¬ gateHalf (famHalf aOrd kaProbe ctTurn kscProbe CbProbe ksentProbe 988673)
 
 /-- The ε = 1 gate, for the record: at a quadratic budget every ceiling
 is seven orders looser, which is why the landed §3 guards — all at
@@ -637,23 +624,23 @@ def gateOne (b : ℕ) : Prop := b * (starW (10 ^ 9) + 1) ≤ 10 ^ 9 * (3 * 10 ^ 
 instance : DecidablePred gateOne := fun _ => inferInstanceAs (Decidable (_ ≤ _))
 
 def famOne (ksc : ℕ) : ℕ :=
-  rootBudgetM 3 CbProbe aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead
-    bDeadProbe 0 ctTurn ksc 8 kdecRoot ksentProbe
+  rootBudgetM 3 CbProbe aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8)
+    0 ctTurn ksc 8 kdecRoot ksentProbe
 
 -- the ε = 1 ceiling on `ksc`, and the fact the landed carrier-charged
 -- reading at `n = 10⁹` clears it — the gate is blind here
-#guard gateOne (famOne 152415790731588)
-#guard ¬ gateOne (famOne 152415790731589)
+#guard gateOne (famOne 152415790731590)
+#guard ¬ gateOne (famOne 152415790731591)
 #guard gateOne (famOne (131 * 10 ^ 9 + 96))
 
 -- the ε = 1/4 ceilings, for the two constants that bind
-#guard ((famHalf aOrd kaProbe bDeadProbe 66852400 kscProbe CbProbe ksentProbe 0 *
+#guard ((famHalf aOrd kaProbe 66852401 kscProbe CbProbe ksentProbe 0 *
     (starW (10 ^ 8) + 1)) ^ 4 ≤ (10 ^ 10) ^ 4 * (3 * 10 ^ 8 + 4) ^ 5)
-#guard ¬ ((famHalf aOrd kaProbe bDeadProbe 66852401 kscProbe CbProbe ksentProbe 0 *
+#guard ¬ ((famHalf aOrd kaProbe 66852402 kscProbe CbProbe ksentProbe 0 *
     (starW (10 ^ 8) + 1)) ^ 4 ≤ (10 ^ 10) ^ 4 * (3 * 10 ^ 8 + 4) ^ 5)
-#guard ((famHalf aOrd kaProbe bDeadProbe ctTurn 66861957 CbProbe ksentProbe 0 *
+#guard ((famHalf aOrd kaProbe ctTurn 66861958 CbProbe ksentProbe 0 *
     (starW (10 ^ 8) + 1)) ^ 4 ≤ (10 ^ 10) ^ 4 * (3 * 10 ^ 8 + 4) ^ 5)
-#guard ¬ ((famHalf aOrd kaProbe bDeadProbe ctTurn 66861958 CbProbe ksentProbe 0 *
+#guard ¬ ((famHalf aOrd kaProbe ctTurn 66861959 CbProbe ksentProbe 0 *
     (starW (10 ^ 8) + 1)) ^ 4 ≤ (10 ^ 10) ^ 4 * (3 * 10 ^ 8 + 4) ^ 5)
 
 /-! ### §4 The honesty controls
@@ -663,20 +650,20 @@ rather than decorative. The pattern is `Refine.CostShapeProbe`'s: state
 what the landed object costs, and show no constant of the interface
 covers it. -/
 
-/-- **The empty-arena floor, once for all four phase slots.** Any phase
+/-- **The empty-arena floor, once for both live phase slots.** Any phase
 slot bounded below by a quantity `F` that the arena does not read forces
 `t·F` at the root over the root level's `t` turns — the mechanism of
 `C0Probe.level_interface_floor`, re-read through the M-class Σ shape.
 `F` is a parameter, so each control below supplies it from its own
 slot. -/
 theorem nested_slot_floor {F n ns ℓ D ct : ℕ} {Ksc : ℕ → ℕ}
-    {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
+    {Ko Kc Ks Kl : ℕ → ℕ → ℕ}
     (hℓ : 2 ≤ ℓ)
     (hKs : ∀ j < ℓ, ∀ s : ℕ, turnCostSizeA ct (Ksc j) s (Kl (j + 1) s) ≤ Ks j s)
-    (hF : F ≤ Ko 1 0 + (Kc 1 0 + Kd 1 0))
+    (hF : F ≤ Ko 1 0 + Kc 1 0)
     (hKl : ∀ j < ℓ, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
       (∑ c ∈ range t, bs c) ≤ D * (w + 1) →
-      Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ range t, (Ks j (bs c) + 11)) + 6)))
+      Ko j w + (Kc j w + ((∑ c ∈ range t, (Ks j (bs c) + 11)) + 6))
         ≤ Kl j w) :
     n * F ≤ Kl 0 (n + ns) := by
   have h10 : F ≤ Kl 1 0 := by
@@ -807,10 +794,11 @@ narrowing that the accounting ceiling *does* reach is the cluster's
 size, not a constant — the reading `RamDriverRoot.clusterStepAt` grants
 is uniform in the turn's cluster (`hbnd` fixes `Kb` before `X` exists),
 so a cluster-scale charge cannot be stated there at all. Cashing it
-needs the turn's **size slot** — `RamDriverRoot.turnCostSize` discards
-its size argument today (`turnCostSize_size_blind`, `SlotSweep` control
-4) while `G2CostProbe.turnCostSizeA` reads it — which is B4's, not
-E4c's. -/
+needs the turn's **size slot**. `RamDriverRoot.turnCostSize` now reads
+that argument for readback (`SlotSweep.turnCostSize_reads_size`), while
+the scatter total is still additive; `G2CostProbe.turnCostSizeA` makes
+the scatter charge a size-relative coefficient. That remaining change
+is B4's, not E4c's. -/
 
 /-- **The landed per-atom charge in closed form**, at the root's own
 instantiation. Two of its terms are opaque and neither reads the
@@ -1350,17 +1338,17 @@ runs `n` turns of it, and `cc·n²` is outside a budget linear in the
 weight. `cc = 1` suffices — the control is not an artefact of a large
 coefficient. -/
 theorem carrier_phase_load_bearing (cc : ℕ) (hcc : 1 ≤ cc) (Ksc : ℕ → ℕ) :
-    ¬ ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
+    ¬ ∃ Ko Kc Ks Kl : ℕ → ℕ → ℕ,
         (∀ j w m, m ≤ w → phaseCarrier aOrd cc m (10 ^ 10) ≤ Ko j w) ∧
         (∀ j < 3, ∀ s : ℕ, turnCostSizeA ctTurn (Ksc j) s (Kl (j + 1) s) ≤ Ks j s) ∧
         (∀ j < 3, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
           (∑ c ∈ range t, bs c) ≤ 8 * (w + 1) →
-          Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ range t, (Ks j (bs c) + 11)) + 6)))
+          Ko j w + (Kc j w + ((∑ c ∈ range t, (Ks j (bs c) + 11)) + 6))
             ≤ Kl j w) ∧
-        (∀ w, Kl 0 w ≤ (3 * g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead
-          bDeadProbe 0 ctTurn kscProbe 8 + CbProbe) * (8 + 1) ^ 3 * (w + 1)) := by
-  rintro ⟨Ko, Kc, Kd, Ks, Kl, hKo, hKs, hKl, hcl⟩
-  have hF : cc * 10 ^ 10 ≤ Ko 1 0 + (Kc 1 0 + Kd 1 0) := by
+        (∀ w, Kl 0 w ≤ (3 * g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8)
+          0 ctTurn kscProbe 8 + CbProbe) * (8 + 1) ^ 3 * (w + 1)) := by
+  rintro ⟨Ko, Kc, Ks, Kl, hKo, hKs, hKl, hcl⟩
+  have hF : cc * 10 ^ 10 ≤ Ko 1 0 + Kc 1 0 := by
     have h := hKo 1 0 0 le_rfl
     simp only [phaseCarrier, Nat.mul_zero, Nat.zero_add] at h
     omega
@@ -1370,19 +1358,17 @@ theorem carrier_phase_load_bearing (cc : ℕ) (hcc : 1 ≤ cc) (Ksc : ℕ → �
   have hlow : 10 ^ 10 * 10 ^ 10 ≤ 10 ^ 10 * (cc * 10 ^ 10) := by
     exact Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_left _ (by omega))
   have hbad : 10 ^ 10 * 10 ^ 10 ≤
-      (3 * g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead bDeadProbe 0
+      (3 * g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) 0
         ctTurn kscProbe 8 + CbProbe) * (8 + 1) ^ 3 * (10 ^ 10 + 2 * (10 ^ 10 - 1) + 1) :=
     le_trans hlow (le_trans hfloor hup)
   exact absurd hbad (by decide +kernel)
 
-/-! #### Control 3 — the root's `hKd` slot has NOT been narrowed
+/-! #### Retired control — the former `hKd` charge
 
-R1.8 removed `RamDriver.sweepCom` from the driver's program, but
-`RamDriverRoot.levelAt`'s `hKd` still reserves
-`Refine.DeadSweep.sweepCost q_top cap mb j n φ` — a CARRIER walk — and
-`hKl` still sums `Kd j w`. The M-class dead slot `(0, bd)` reads the
-post-R1.8 program; the root slot reads the pre-R1.8 one. The delta is
-real and has not been cashed. -/
+`b4-iface` cashed this control: the dead sweep is absent from the program,
+and both `hKd` and its `Kd` summand are now absent from the root recurrence.
+The elementary sweep floor remains below because the historical base-slot
+control compares against the same old carrier reading. -/
 
 /-- The retired sweep costs at least `4·n + 6`. -/
 theorem sweepCost_floor (q_top cap mb jd n : ℕ) (φ : Lax3.FirstOrder.FO 0) :
@@ -1391,52 +1377,6 @@ theorem sweepCost_floor (q_top cap mb jd n : ℕ) (φ : Lax3.FirstOrder.FO 0) :
   have : 4 * n ≤ (Lax3Proofs.RamDriverBot.turnCost q_top cap mb jd φ + 4) * n :=
     Nat.mul_le_mul_right _ (by omega)
   omega
-
-/-- **The un-narrowed `hKd` slot forces `Ω(n²)`.** Any cost family
-meeting the root's own dead slot pays the retired carrier sweep on the
-EMPTY arena of a nested level, and the root level runs `n` turns of it.
-This is a delta to be cashed by deleting the slot, not one already
-cashed. -/
-theorem landed_hKd_slot_floor {n ns ℓ D ct q_top cap mb : ℕ}
-    {φ : Lax3.FirstOrder.FO 0} {Ksc : ℕ → ℕ} {Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ}
-    (hℓ : 2 ≤ ℓ)
-    (hKs : ∀ j < ℓ, ∀ s : ℕ, turnCostSizeA ct (Ksc j) s (Kl (j + 1) s) ≤ Ks j s)
-    (hKd : ∀ j w, Lax3Proofs.Refine.DeadSweep.sweepCost q_top cap mb j n φ ≤ Kd j w)
-    (hKl : ∀ j < ℓ, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
-      (∑ c ∈ range t, bs c) ≤ D * (w + 1) →
-      Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ range t, (Ks j (bs c) + 11)) + 6)))
-        ≤ Kl j w) :
-    n * (4 * n + 6) ≤ Kl 0 (n + ns) := by
-  have hF : 4 * n + 6 ≤ Ko 1 0 + (Kc 1 0 + Kd 1 0) := by
-    have h1 := sweepCost_floor q_top cap mb 1 n φ
-    have h2 := hKd 1 0
-    omega
-  exact nested_slot_floor hℓ hKs hF hKl
-
-/-- **…and it is outside the measured family's closed form.** At
-`n = 10¹⁰` on the star carrier the floor is `4·10²⁰`; the closed form
-grants under `7·10¹⁸`. So the M-class close and the landed `hKd` slot
-are not simultaneously satisfiable: the slot must go. -/
-theorem landed_hKd_load_bearing {q_top cap mb : ℕ} {φ : Lax3.FirstOrder.FO 0}
-    (Ksc : ℕ → ℕ) :
-    ¬ ∃ Ko Kc Kd Ks Kl : ℕ → ℕ → ℕ,
-        (∀ j w, Lax3Proofs.Refine.DeadSweep.sweepCost q_top cap mb j (10 ^ 10) φ ≤ Kd j w) ∧
-        (∀ j < 3, ∀ s : ℕ, turnCostSizeA ctTurn (Ksc j) s (Kl (j + 1) s) ≤ Ks j s) ∧
-        (∀ j < 3, ∀ w t : ℕ, t ≤ w → ∀ bs : ℕ → ℕ,
-          (∑ c ∈ range t, bs c) ≤ 8 * (w + 1) →
-          Ko j w + (Kc j w + (Kd j w + ((∑ c ∈ range t, (Ks j (bs c) + 11)) + 6)))
-            ≤ Kl j w) ∧
-        (∀ w, Kl 0 w ≤ (3 * g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead
-          bDeadProbe 0 ctTurn kscProbe 8 + CbProbe) * (8 + 1) ^ 3 * (w + 1)) := by
-  rintro ⟨Ko, Kc, Kd, Ks, Kl, hKd, hKs, hKl, hcl⟩
-  have hfloor := landed_hKd_slot_floor (n := 10 ^ 10) (ns := 2 * (10 ^ 10 - 1))
-    (ℓ := 3) (D := 8) (ct := ctTurn) (Ksc := Ksc) (by omega) hKs hKd hKl
-  have hup := hcl (10 ^ 10 + 2 * (10 ^ 10 - 1))
-  have hbad : 10 ^ 10 * (4 * 10 ^ 10 + 6) ≤
-      (3 * g2M aOrd bOrd (aCovSlot kaProbe 8) (bCovSlot kaProbe 8) aDead bDeadProbe 0
-        ctTurn kscProbe 8 + CbProbe) * (8 + 1) ^ 3 * (10 ^ 10 + 2 * (10 ^ 10 - 1) + 1) :=
-    le_trans hfloor hup
-  exact absurd hbad (by decide +kernel)
 
 /-! #### Control 4 — the base was a hole AND a refutation (T4b, closed) -/
 
@@ -1454,9 +1394,8 @@ hypothesis it names — but that hypothesis is no longer the driver's:
 it is quoted at, `RamDriver.baseCom` walks the depth's member list, and
 `Refine.G2CostProbe.hKbase_paid` discharges the slot at
 `sweepCoeffA`. The floor below is therefore about the *retired* reading,
-and the sweep it is measured against (`sweepCost_floor`) is the vestigial
-`hKd` slot's, not the base's — which is why the two now have to be named
-separately. -/
+and the sweep it is measured against (`sweepCost_floor`) is historical,
+not a live root slot. -/
 theorem landed_base_needs_carrier_Cb {q_top cap mb ℓ n Cb : ℕ} {φ : Lax3.FirstOrder.FO 0}
     {Kl : ℕ → ℕ → ℕ}
     (hKbase : ∀ m, Lax3Proofs.Refine.DeadSweep.sweepCost q_top cap mb ℓ n φ ≤ Kl ℓ m)
@@ -1475,7 +1414,7 @@ below are the aggregate: the measured family clears the gate and a
 family with every constant one step over its ceiling does not. -/
 
 #guard gateHalf famHalfMeasured
-#guard ¬ gateHalf (famHalf 79093858 39546915 79093802 8788642 8798199 237291370 237291370 988673)
+#guard ¬ gateHalf (famHalf 79093870 39546921 8788644 8798201 237291406 237291406 988673)
 
 /-! ### §5 Axioms -/
 
@@ -1497,8 +1436,6 @@ family with every constant one step over its ceiling does not. -/
 #print axioms narrow_scatter_leaf_unbounded
 #print axioms narrow_leaf_refutes_constant_ksc
 #print axioms carrier_phase_load_bearing
-#print axioms landed_hKd_slot_floor
-#print axioms landed_hKd_load_bearing
 #print axioms landed_base_needs_carrier_Cb
 
 -- wave E4c-b: the modelled post-wiring charge (control 1c), and wave

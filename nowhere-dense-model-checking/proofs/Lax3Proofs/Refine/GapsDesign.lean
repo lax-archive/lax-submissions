@@ -388,17 +388,17 @@ instantiated at `Cb := CbM`, pays the member-driven base at the arena
 weight and still closes to the same `(D + 1)^ℓ · (w + 1)` root shape.
 This is the compiled answer to question 2 for this slot: **the target
 shape fits the M-class slot, with no new interface**. -/
-theorem base_fits_the_close (q_top cap mb ℓ n mm D R ao bo ac bc ad bd ct ksc : ℕ)
+theorem base_fits_the_close (q_top cap mb ℓ n mm D R ao bo ac bc ct ksc : ℕ)
     (φ : Lax3.FirstOrder.FO 0) (Ksc : ℕ → ℕ) (hKsc : ∀ j < ℓ, Ksc j ≤ ksc)
     {Mem M : ℕ → ℕ} (H : SimpleGraph (Fin n))
     (hmem : Lax3Proofs.RamDriver.MemEnum n mm Mem M) :
     ∃ Kl : ℕ → ℕ → ℕ,
       baseCostM q_top cap mb ℓ mm φ
           ≤ Kl ℓ (Lax3Proofs.Refine.MassWeight.arenaWeight n H M) ∧
-        (∀ w, Kl 0 w ≤ (ℓ * g2M ao bo ac bc ad bd R ct ksc D + CbM q_top cap mb ℓ φ)
+        (∀ w, Kl 0 w ≤ (ℓ * g2M ao bo ac bc R ct ksc D + CbM q_top cap mb ℓ φ)
           * (D + 1) ^ ℓ * (w + 1)) := by
-  obtain ⟨Ko, Kc, Kd, Ks, Kl, -, -, -, hbase, -, -, -, hcl⟩ :=
-    g2m_exists ℓ D (CbM q_top cap mb ℓ φ) R ao bo ac bc ad bd ct ksc Ksc hKsc
+  obtain ⟨Ko, Kc, Ks, Kl, -, -, hbase, -, -, -, hcl⟩ :=
+    g2m_exists ℓ D (CbM q_top cap mb ℓ φ) R ao bo ac bc ct ksc Ksc hKsc
   exact ⟨Kl, baseSlot_paid H hmem hbase, hcl⟩
 
 /-! #### §1.5 The contract move, compiled

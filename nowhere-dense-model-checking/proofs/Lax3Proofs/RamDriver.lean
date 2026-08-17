@@ -6,7 +6,10 @@ import Lax3Proofs.RamBfsPaths
 import Lax3Proofs.RamCover
 import Lax3Proofs.RamScatter
 import Lax3Proofs.Refine.MassMath
+import Lax3Proofs.Refine.BlockLeaves
+import Lax3Proofs.Refine.BfsBlockPar
 import Lax3Proofs.Refine.ScatterBlockProg
+import Lax3Proofs.Refine.DriverPrelude
 import Lax3Proofs.SplitterWinRec
 
 /-!
@@ -39,7 +42,7 @@ cluster and reading the boolean combinations back.
 
 The recursion bottoms out at `j = ℓ`, where `ℓ` is the round bound of the
 splitter game on the class. That is not a fuel cut-off: by
-`Lax3Proofs.SplitterWinRec.reachedR_length_lt` no play of the recorded
+`Lax3Proofs.SplitterWinRec.reachedSubR_length_lt` no play of the recorded
 game lasts `ℓ` rounds, so the arena at depth `ℓ` is *edgeless*, and
 the base case is the unary-structure evaluation of `Lax3Proofs.BotEval` —
 row lookups, equality tests, and a witness search over the environment
@@ -53,16 +56,13 @@ The driver carries **two** masks per depth. The *work* arena `alv j` is
 the one the tables are about: it is the arena of `Evaluator.stepArena`,
 the cluster restriction followed by the batch isolation. The *game*
 arena `gam j` is the one the splitter strategy is played in: the ball
-restriction followed by the same batch isolation, which is exactly
-`SplitterWinRec.nextArenaR` of the round the descent records. Keeping
-both is what makes the game invariant an equality rather than an
-approximation — the recorded rounds are literally a `ReachedR` play —
-while the work arena, which the cover has cut down further, is a subgraph
-of the game arena and inherits the edgelessness at the bottom. The one
-lemma that connects them is `stepArena_le_nextArena` — the cluster lies
-inside the ball, and the two arenas isolate the same batch — and
-`playRec_succ` is the descent step, whose last hypothesis is what that
-inequality discharges.
+restriction defines the exact round successor, while the executable
+retains only its current cover cluster. The recorded game is therefore
+a monotone `ReachedSubR` play: every stored position is a subgraph of the
+exact successor. The work arena is in turn a subgraph of that retained
+game arena and inherits the edgelessness at the bottom. The lemma
+`stepArena_le_nextArena` proves that the cluster lies inside the
+mathematical ball, and `playRec_succ` records the retained subposition.
 
 # Names
 
@@ -359,14 +359,10 @@ where it meets `W ∩ X`.
 This is the verdict of (c2a). The atom pass needs
 `Refine.DeadRowProbe.stepColoringP_subset`'s `hw : ∀ i, w i ∈ X`, which
 `RamDriverCluster.ClusterData` did not supply, and the lemma says the
-narrowing that supplies it costs the *arena* nothing: the batch as a
-SET — which the game invariant, the child mask and the kill set are all
-stated at — may stay exactly what `batchCom` marked, and only the
-padded ENUMERATION `RamDriver.enumBatch` reads out of it is cut down to
-the cluster. Narrowing the batch itself is a different change and not
-this one: `RamDriver.playRec_succ`'s `hstep` cuts the *game* arena,
-which is not cluster-restricted, and there the same intersection is
-visible — `Refine.ScatterDeadPass.game_arena_sees_the_cluster_cut`. -/
+narrowing that supplies it costs the *arena* nothing. The executable
+now materialises `W ∩ X` directly; this
+identity is the semantic bridge to the exact splitter round, whose
+definition may still use the full mathematical batch `W`. -/
 theorem deleteVerts_inter_cluster (A : SimpleGraph (Fin n)) (X W : Set (Fin n)) :
     deleteVerts (deleteVerts A Xᶜ) (W ∩ X) = deleteVerts (deleteVerts A Xᶜ) W := by
   ext u v
@@ -390,8 +386,8 @@ theorem stepArenaP_eq_inter (A : SimpleGraph (Fin n)) (X : Set (Fin n)) {mb : �
 driver writes — alive, in the cluster, out of the batch, which is what
 `andCom` followed by `subCom` computes — is the cluster step's arena.
 This is the bridge between the program's three arrays and
-`Evaluator.stepArena`; the game arena's is the same statement with the
-ball's indicator in place of the cluster's. -/
+`Evaluator.stepArena`; the retained game arena uses the same cluster
+indicator over its (possibly larger) parent mask. -/
 theorem masked_step {G : SimpleGraph (Fin n)} (M Xa Wa : ℕ → ℕ) {X W : Set (Fin n)}
     (hX : ∀ v : Fin n, v ∈ X ↔ Xa (v : ℕ) ≠ 0)
     (hW : ∀ v : Fin n, v ∈ W ↔ Wa (v : ℕ) ≠ 0) :
@@ -421,7 +417,7 @@ lies in the ball the round restricts to and the two isolate the same
 batch, so every edge that survives the step survives the round. This is
 the one inequality that lets the driver keep the game invariant as an
 equality while its own arena is cut down further by the cover: it is what
-`playRec_succ`'s last hypothesis is discharged by. -/
+`playRec_succ` uses before retaining the executable successor. -/
 theorem stepArena_le_nextArena {r : ℕ} {A P : SimpleGraph (Fin n)} {v : Fin n}
     {X W : Set (Fin n)} (hAP : A ≤ P) (hX : X ⊆ ball A r v) :
     deleteVerts (deleteVerts A Xᶜ) W ≤ deleteVerts (deleteVerts P (ball P r v)ᶜ) W := by
@@ -449,14 +445,14 @@ arrays. -/
 /-- The driver's game state at a node of depth `j`. -/
 def PlayOk (cap : ℕ) (G : SimpleGraph (Fin n)) (j : ℕ) (A : SimpleGraph (Fin n)) : Prop :=
   A = ⊥ ∨ ∃ (rounds : List (RoundR n)) (P : SimpleGraph (Fin n)),
-    ReachedR (2 * cap) G rounds P ∧ rounds.length = j ∧ A ≤ P
+    ReachedSubR (2 * cap) G rounds P ∧ rounds.length = j ∧ A ≤ P
 
 variable {cap : ℕ} {G : SimpleGraph (Fin n)}
 
 /-- At the root nothing has been played and the work arena is the input
 graph. -/
 theorem playOk_zero (cap : ℕ) (G : SimpleGraph (Fin n)) : PlayOk cap G 0 G :=
-  Or.inr ⟨[], G, ReachedR.nil, rfl, le_rfl⟩
+  Or.inr ⟨[], G, ReachedSubR.nil, rfl, le_rfl⟩
 
 /-- An edgeless arena stays edgeless: every cluster step of it isolates
 inside a graph with no edges. -/
@@ -481,7 +477,7 @@ theorem eq_bot_of_playOk_full {N : ℕ → ℕ} {s : ℕ}
     {A : SimpleGraph (Fin n)} (h : PlayOk cap G (N (2 * s + 2)) A) : A = ⊥ := by
   rcases h with h | ⟨rounds, P, hR, hlen, -⟩
   · exact h
-  · exact absurd (reachedR_length_lt hQ hR) (by rw [hlen]; omega)
+  · exact absurd (reachedSubR_length_lt hQ hR) (by rw [hlen]; omega)
 
 /-! ### The descent, semantically
 
@@ -736,8 +732,9 @@ def cluName (j : ℕ) : String := "clu" ++ toString j
 which the distance profiles are measured. -/
 def resName (j : ℕ) : String := "res" ++ toString j
 
-/-- The indicator of the ball the current round restricts the game arena
-to. -/
+/-- The indicator of the game-ball used to truncate the current round's
+recorded connector paths.  The executable successor itself may retain
+only the current cluster. -/
 def balName (j : ℕ) : String := "bal" ++ toString j
 
 /-- The other half of the ball's ping-pong. `expandCom` reads its source
@@ -749,6 +746,14 @@ the ball it is supposed to build. The chain therefore alternates between
 two names, and — the radius being `2 · cap`, an even number — ends where
 it started. -/
 def balAltName (j : ℕ) : String := "blt" ++ toString j
+
+/-- The retained parent tree at depth `j`.  The former game-ball buffer is
+reused: the executable no longer materialises that ball. -/
+def parName (j : ℕ) : String := balName j
+
+/-- Distance scratch for the cached parent search at depth `j`.  The former
+ball ping-pong buffer is likewise free after the semantic ball elimination. -/
+def pdsName (j : ℕ) : String := balAltName j
 
 /-- The indicator of the batch the splitter strategy isolates at depth
 `j`. -/
@@ -801,10 +806,6 @@ def ordName (j : ℕ) : String := "od" ++ toString j
 /-- The block offsets of the cluster arena of depth `j`: the level's copy
 of the cover's `xoff`. -/
 def xofName (j : ℕ) : String := "xf" ++ toString j
-
-/-- The block members of the cluster arena of depth `j`: the level's copy
-of the cover's `xmem`. -/
-def xmmName (j : ℕ) : String := "xm" ++ toString j
 
 /-- The assignment array of depth `j`: the level's copy of the cover's
 `asg`, which the readback compares against the cursor. -/
@@ -999,12 +1000,8 @@ clause, `RamDriverCluster`) and the mass mathematics
 mass equation is stated over, so a consumer never has to bridge two
 readings of a block's length. `arenaSize` is `markSet` counted —
 `RamDriverCluster.arenaSize_eq_markSet` is that identity, `rfl`. It is
-stated here rather than there because the obligation `Prop`s of this
-file read it. -/
-
-/-- **The size of an arena**: how many of the carrier's vertices the
-mask leaves alive. This is the size a level's cost is read at. -/
-noncomputable def arenaSize (n : ℕ) (M : ℕ → ℕ) : ℕ := {v : Fin n | M (v : ℕ) ≠ 0}.ncard
+defined in `Refine.DriverPrelude`, above the driver and the block engines
+that share the reading. -/
 
 /-- A mask that kills nothing leaves the whole carrier — the root's
 case, which is why the root's cost is `Kl 0 n`. -/
@@ -1069,50 +1066,6 @@ theorem MemEnum.card_le_arenaSize {n mm : ℕ} {Mem M : ℕ → ℕ}
     rw [arenaSize, Set.ncard_eq_toFinset_card']
   omega
 
-/-- **What the compaction scan leaves.** `cps` lists, in strictly
-increasing order, exactly the `cnum` positions below `n` whose block is
-nonempty **and whose centre the mask leaves alive**.
-
-**Rebase B2, on wave B4's finding; the alive clause landed by B8.** The
-emptiness predicate alone filters nothing — `Refine.MassAlive.block_nonempty`
-— so `le_mass` was an equality with `n` and bought no cost. `alive` is
-the clause the Σ interface needs: `Refine.ArenaBlock.mass_of_alive_compaction`
-turns it, with the cover's own postcondition, into the whole cost supply
-of a level. What it costs is not the walk but the *induction*, and the
-answer is `RamDriver.sweepCom` at the head of the level — see
-`compactCom`. -/
-structure Compacted (n cnum m : ℕ) (M ord Xoff cps : ℕ → ℕ) : Prop where
-  /-- One turn per member of the cluster arena at most. -/
-  le_mass : cnum ≤ m
-  /-- And never more turns than there are positions. -/
-  le_carrier : cnum ≤ n
-  /-- Every listed position is a position. -/
-  lt : ∀ k < cnum, cps k < n
-  /-- The list is strictly increasing. -/
-  mono : ∀ k k' : ℕ, k < k' → k' < cnum → cps k < cps k'
-  /-- Every listed position has a nonempty block. -/
-  nonempty : ∀ k < cnum, Xoff (cps k) < Xoff (cps k + 1)
-  /-- **Every listed centre is alive.** The one clause the Σ-shaped cost
-  interface reads: `Refine.ArenaBlock.cnum_le_arenaSize` counts the turns
-  against the arena through it, and `Refine.MassAlive.aliveMass_le`
-  bounds their blocks. -/
-  alive : ∀ k < cnum, M (ord (cps k)) ≠ 0
-  /-- And every position with a nonempty block and a live centre is
-  listed. A *dead* centre is deliberately not listed: its cluster is its
-  own singleton (`Refine.MassAlive.clusterAt_dead`) and the level's
-  edgeless sweep has already written its row. -/
-  covers : ∀ c < n, Xoff c < Xoff (c + 1) → M (ord c) ≠ 0 → ∃ k < cnum, cps k = c
-
-/-- The list has no repetitions, which is what tells the turns of the
-compacted loop apart. -/
-theorem Compacted.inj {n cnum m : ℕ} {M ord Xoff cps : ℕ → ℕ}
-    (h : Compacted n cnum m M ord Xoff cps) {k k' : ℕ} (hk : k < cnum) (hk' : k' < cnum)
-    (he : cps k = cps k') : k = k' := by
-  rcases Nat.lt_trichotomy k k' with hlt | heq | hgt
-  · exact absurd he (Nat.ne_of_lt (h.mono k k' hlt hk'))
-  · exact heq
-  · exact absurd he.symm (Nat.ne_of_lt (h.mono k' k hgt hk))
-
 /-! ### The play, as the machine records it
 
 `PlayOk` says that *some* list of rounds is a play of the recorded game
@@ -1135,17 +1088,16 @@ named without the list, which is the form the descent's obligations are
 stated in: everything the descent is asked about an earlier round is
 asked about a connector and a mask the *state* holds.
 
-The play half is an *equality*, not the inequality `PlayOk` carries: the
-game arena of the depth is exactly the position the recorded play
-reaches. That is what makes it descend. `ReachedR.step` only extends a
-play to the arena the new round's own batch leaves, so a driver whose
-game arena were merely a subgraph of it could never record another round;
-and the driver can afford the equality because it keeps a *second* mask
-per depth for exactly this purpose — the game arena is cut by the ball
-and the batch alone, while the work arena is cut further by the cover.
+The current game arena is the position the recorded play reaches, while
+each transition may retain any subgraph of the exact round successor.
+That monotone form is what lets the executable driver cut the position
+to the current cover block immediately: the generating set still records
+the portions of the mathematical connector walks outside the retained
+set, but those vertices need never be materialised by the machine.  The
+work arena remains a subgraph of the retained game arena.
 
 The disjunct `masked G Gm = ⊥` is the dead branch. A connector with no
-incident edge ends the play — `ReachedR` records no round for it,
+incident edge ends the play — `ReachedSubR` records no round for it,
 `nextArenaR_eq_bot_of_isolated` says the arena it leaves is edgeless —
 and every deeper game arena is a subgraph of that one, so the record
 below such a node is the memory half and nothing else.
@@ -1153,7 +1105,7 @@ below such a node is the memory half and nothing else.
 Nothing here is a new obligation on the *program*: `descendCom` already
 writes `ctrName j` and `gamName j` and already re-initializes every
 array of the depth below, and `playRec_succ` is `SplitterWinRec`'s
-`reachedR_descend` at the arrays instead of at an existential. -/
+`reachedSubR_descend` at the arrays instead of at an existential. -/
 
 section PlayRecord
 
@@ -1245,13 +1197,104 @@ theorem RecordsPlay.congr {B : ℕ} {G : SimpleGraph (Fin n)} {σ σ' : Env} :
         ⟨Ga, by rw [ha b (by omega)]; exact hga, hgaB, hea⟩,
         hrest.congr (fun a haa => hv a (by omega)) (fun a haa => ha a (by omega))⟩
 
+/-! ### Retained parent-tree caches -/
+
+/-- **The parent caches of all earlier rounds.** At depth `j`, round `a`
+retains its connector, its cluster-restricted work mask, and a capped
+parent tree rooted at that connector.  The tree covers its whole retained
+mask, while the current work arena is contained in every earlier retained
+mask.  The latter clause is what makes the current connector a discovered
+target in each earlier tree. -/
+def CachedRounds (cap : ℕ) (G : SimpleGraph (Fin n)) (j : ℕ)
+    (M : ℕ → ℕ) (σ : Env) : Prop :=
+  ∀ a, a < j → ∃ (u : Fin n) (R Ga D P : ℕ → ℕ),
+    σ.vars (ctrName a) = (u : ℕ) ∧ σ.arrs (resName a) = arrOf n R ∧
+    σ.arrs (gamName a) = arrOf n Ga ∧ σ.arrs (parName a) = arrOf n P ∧
+    RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P ∧
+    (∀ z, z < n → R z ≠ 0 → RamBfs.WD G R (2 * cap) (u : ℕ) z) ∧
+    masked G R ≤ masked G Ga ∧
+    ∀ z, z < n → M z ≠ 0 → R z ≠ 0
+
+/-- No rounds have been cached at the root. -/
+theorem cachedRounds_zero (cap : ℕ) (G : SimpleGraph (Fin n)) (M : ℕ → ℕ) (σ : Env) :
+    CachedRounds cap G 0 M σ := by
+  intro a ha
+  omega
+
+/-- The retained caches cross a pass that frames their connector, mask,
+and parent arrays. -/
+theorem CachedRounds.congr {j : ℕ} {G : SimpleGraph (Fin n)} {M : ℕ → ℕ} {σ σ' : Env}
+    (h : CachedRounds cap G j M σ)
+    (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
+    (hr : ∀ a < j, σ'.arrs (resName a) = σ.arrs (resName a))
+    (hg : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a))
+    (hp : ∀ a < j, σ'.arrs (parName a) = σ.arrs (parName a)) :
+    CachedRounds cap G j M σ' := by
+  intro a ha
+  obtain ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG, hsub⟩ := h a ha
+  exact ⟨u, R, Ga, D, P, by rw [hv a ha]; exact hctr, by rw [hr a ha]; exact hres,
+    by rw [hg a ha]; exact hgam, by rw [hp a ha]; exact hpar, hT, hcov, hRG, hsub⟩
+
+/-- Shrinking the current work arena preserves every earlier cache. -/
+theorem CachedRounds.mono {j : ℕ} {G : SimpleGraph (Fin n)} {M M' : ℕ → ℕ} {σ : Env}
+    (h : CachedRounds cap G j M σ)
+    (hsub : ∀ z, z < n → M' z ≠ 0 → M z ≠ 0) :
+    CachedRounds cap G j M' σ := by
+  intro a ha
+  obtain ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG, hMR⟩ := h a ha
+  exact ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG,
+    fun z hz hM' => hMR z hz (hsub z hz hM')⟩
+
+/-- Add the cache built by the current round while carrying all earlier
+caches across the round's writes. -/
+theorem CachedRounds.succ {j : ℕ} {G : SimpleGraph (Fin n)} {M M' : ℕ → ℕ} {σ σ' : Env}
+    (h : CachedRounds cap G j M σ)
+    (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
+    (hr : ∀ a < j, σ'.arrs (resName a) = σ.arrs (resName a))
+    (hg : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a))
+    (hp : ∀ a < j, σ'.arrs (parName a) = σ.arrs (parName a))
+    (hM'M : ∀ z, z < n → M' z ≠ 0 → M z ≠ 0)
+    {u : Fin n} {R Ga D P : ℕ → ℕ}
+    (hctr : σ'.vars (ctrName j) = (u : ℕ)) (hres : σ'.arrs (resName j) = arrOf n R)
+    (hgam : σ'.arrs (gamName j) = arrOf n Ga)
+    (hpar : σ'.arrs (parName j) = arrOf n P)
+    (hT : RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P)
+    (hcov : ∀ z, z < n → R z ≠ 0 → RamBfs.WD G R (2 * cap) (u : ℕ) z)
+    (hRG : masked G R ≤ masked G Ga)
+    (hM'R : ∀ z, z < n → M' z ≠ 0 → R z ≠ 0) :
+    CachedRounds cap G (j + 1) M' σ' := by
+  intro a ha
+  rcases Nat.lt_or_ge a j with haj | haj
+  · obtain ⟨v, S, Sa, E, Q, hctr', hres', hgam', hpar', hQ, hcov', hSG, hMS⟩ := h a haj
+    exact ⟨v, S, Sa, E, Q, by rw [hv a haj]; exact hctr', by rw [hr a haj]; exact hres',
+      by rw [hg a haj]; exact hgam', by rw [hp a haj]; exact hpar', hQ, hcov', hSG,
+      fun z hz hM' => hMS z hz (hM'M z hz hM')⟩
+  · have haj' : a = j := by omega
+    subst haj'
+    exact ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG, hM'R⟩
+
+/-- A live current target is reached by every earlier cached tree. -/
+theorem CachedRounds.target {j : ℕ} {G : SimpleGraph (Fin n)} {M : ℕ → ℕ} {σ : Env}
+    (h : CachedRounds cap G j M σ) {a t : ℕ} (ha : a < j) (ht : t < n)
+    (hMt : M t ≠ 0) :
+    ∃ (u : Fin n) (R Ga D P : ℕ → ℕ),
+      σ.vars (ctrName a) = (u : ℕ) ∧ σ.arrs (resName a) = arrOf n R ∧
+      σ.arrs (gamName a) = arrOf n Ga ∧ σ.arrs (parName a) = arrOf n P ∧
+      RamBfsPaths.ParTree G R (2 * cap) (u : ℕ) D P ∧
+      masked G R ≤ masked G Ga ∧ D t ≤ 2 * cap := by
+  obtain ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hcov, hRG, hMR⟩ := h a ha
+  have hwd := hcov t ht (hMR t ht hMt)
+  exact ⟨u, R, Ga, D, P, hctr, hres, hgam, hpar, hT, hRG,
+    hT.reach (2 * cap) le_rfl t hwd⟩
+
 /-- **The recorded play.** The rounds are in the state, and — off the
 dead branch — they are a play of the recorded game whose position is the
 depth's own game arena, of which the work arena is a subgraph. -/
 def PlayRec (B : ℕ) (cap : ℕ) (G : SimpleGraph (Fin n)) (j : ℕ)
     (M Gm : ℕ → ℕ) (σ : Env) : Prop :=
   ∃ rounds : List (RoundR n), RecordsPlay B G σ j rounds ∧ masked G M ≤ masked G Gm ∧
-    (masked G Gm = ⊥ ∨ ReachedR (2 * cap) G rounds (masked G Gm))
+    (masked G Gm = ⊥ ∨ ReachedSubR (2 * cap) G rounds (masked G Gm)) ∧
+    CachedRounds cap G j M σ
 
 /-- **The recorded play implies the game invariant.** `PlayOk`'s rounds
 are this record's, and its arena the depth's own game arena, so every
@@ -1259,7 +1302,7 @@ obligation that used to carry `PlayOk` can be handed this instead. -/
 theorem playOk_of_playRec {B j : ℕ} {G : SimpleGraph (Fin n)}
     {M Gm : ℕ → ℕ} {σ : Env} (h : PlayRec B cap G j M Gm σ) :
     PlayOk cap G j (masked G M) := by
-  obtain ⟨rounds, hrec, hle, hbot | hR⟩ := h
+  obtain ⟨rounds, hrec, hle, hbot | hR, -⟩ := h
   · exact Or.inl (le_bot_iff.mp (by rw [← hbot]; exact hle))
   · exact Or.inr ⟨rounds, masked G Gm, hR, hrec.length, hle⟩
 
@@ -1268,53 +1311,61 @@ cut out the input graph. -/
 theorem playRec_zero {B : ℕ} (cap : ℕ) (G : SimpleGraph (Fin n))
     {M Gm : ℕ → ℕ} {σ : Env} (hM : masked G M = G) (hGm : masked G Gm = G) :
     PlayRec B cap G 0 M Gm σ :=
-  ⟨[], rfl, by rw [hM, hGm], Or.inr (by rw [hGm]; exact ReachedR.nil)⟩
+  ⟨[], rfl, by rw [hM, hGm], Or.inr (by rw [hGm]; exact ReachedSubR.nil),
+    cachedRounds_zero cap G M σ⟩
 
 /-- The whole record crosses a pass of the depth's own arrays. -/
 theorem PlayRec.congr {B j : ℕ} {G : SimpleGraph (Fin n)}
     {M Gm : ℕ → ℕ} {σ σ' : Env} (h : PlayRec B cap G j M Gm σ)
     (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
-    (ha : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a)) :
+    (hr : ∀ a < j, σ'.arrs (resName a) = σ.arrs (resName a))
+    (ha : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a))
+    (hp : ∀ a < j, σ'.arrs (parName a) = σ.arrs (parName a)) :
     PlayRec B cap G j M Gm σ' := by
-  obtain ⟨rounds, hrec, hle, hplay⟩ := h
-  exact ⟨rounds, hrec.congr hv ha, hle, hplay⟩
+  obtain ⟨rounds, hrec, hle, hplay, hcache⟩ := h
+  exact ⟨rounds, hrec.congr hv ha, hle, hplay, hcache.congr hv hr ha hp⟩
 
 /-- **The descent step of the record.** A turn at depth `j` extends it by
 its own connector, its own game mask and the batch it marked.
 
-What the turn owes is exactly what `descendCom` computes, and no more.
-The ball is the ball of the *game* arena — which is why the expansion
-chain runs in `gamName j` and not in `alvName j`. The batch `W` is
-whatever the program marked, asked for four things and not for an
-equation with any other set: it stays inside the ball, it holds the
-connector, it holds — for every earlier round the state records and the
-arena of that round connects to the connector — the part inside the ball
-of the support of *some* short walk between them, and the new game mask
-cuts the game arena by it and by the ball and by nothing else. The new
-work mask is cut further, by the cluster, and is asked only to stay
-inside the new game arena.
+The retained set `X` may be any subset of the connector's game ball.  The
+machine need mark only the portions inside `X` of the earlier connector
+walks; `reachedSubR_descend` puts the omitted portions in the mathematical
+generating set, where deleting `Xᶜ` removes them without a machine pass.
+The next recorded arena may be any subgraph of the arena left by retaining
+`X` and deleting the executable batch `W`, and the next work arena stays
+below it.
 
-The two cases are the two ends of `SplitterWinRec.reachedR_descend`: a
-connector with an incident edge extends the play, the recorded round
-being `W` together with the parts of those supports that ran out of the
-ball; one without ends it, `eq_bot_of_isolated` making the new game arena
-edgeless. -/
+If the connector has an incident edge this extends the monotone play.  If
+it is isolated, every such retained successor is edgeless and the record
+enters its dead branch. -/
 theorem playRec_succ {B j : ℕ} {G : SimpleGraph (Fin n)}
     {M Gm M' Gm' : ℕ → ℕ} {σ σ' : Env} (h : PlayRec B cap G j M Gm σ)
     (hv : ∀ a < j, σ'.vars (ctrName a) = σ.vars (ctrName a))
+    (hr : ∀ a < j, σ'.arrs (resName a) = σ.arrs (resName a))
     (ha : ∀ a < j, σ'.arrs (gamName a) = σ.arrs (gamName a))
+    (hp : ∀ a < j, σ'.arrs (parName a) = σ.arrs (parName a))
+    (hM'M : ∀ z, z < n → M' z ≠ 0 → M z ≠ 0)
     {v : Fin n} (hctr : σ'.vars (ctrName j) = (v : ℕ))
     (hgam : σ'.arrs (gamName j) = arrOf n Gm) (hGmB : ∀ z < n, Gm z < B)
-    {W : Set (Fin n)} (hWball : W ⊆ ball (masked G Gm) (2 * cap) v) (hWself : v ∈ W)
+    {R D P : ℕ → ℕ} (hres : σ'.arrs (resName j) = arrOf n R)
+    (hpar : σ'.arrs (parName j) = arrOf n P)
+    (hT : RamBfsPaths.ParTree G R (2 * cap) (v : ℕ) D P)
+    (hcov : ∀ z, z < n → R z ≠ 0 → RamBfs.WD G R (2 * cap) (v : ℕ) z)
+    (hRG : masked G R ≤ masked G Gm)
+    (hM'R : ∀ z, z < n → M' z ≠ 0 → R z ≠ 0)
+    {X W : Set (Fin n)} (hXball : X ⊆ ball (masked G Gm) (2 * cap) v)
+    (hWself : v ∈ W)
     (hWwalk : ∀ (u : Fin n) (A : SimpleGraph (Fin n)), RecordedRound B G σ j u A →
       WithinDist A (2 * cap) u v →
       ∃ p : A.Walk u v, p.length ≤ 2 * cap ∧
-        {z | z ∈ p.support} ∩ ball (masked G Gm) (2 * cap) v ⊆ W)
-    (hstep : masked G Gm' =
-      deleteVerts (deleteVerts (masked G Gm) (ball (masked G Gm) (2 * cap) v)ᶜ) W)
+        {z | z ∈ p.support} ∩ X ⊆ W)
+    (hstep : masked G Gm' ≤ deleteVerts (deleteVerts (masked G Gm) Xᶜ) W)
     (hle' : masked G M' ≤ masked G Gm') :
     PlayRec B cap G (j + 1) M' Gm' σ' := by
-  obtain ⟨rounds, hrec, -, hplay⟩ := h
+  obtain ⟨rounds, hrec, -, hplay, hcache⟩ := h
+  have hcache' : CachedRounds cap G (j + 1) M' σ' :=
+    hcache.succ hv hr ha hp hM'M hctr hres hgam hpar hT hcov hRG hM'R
   have hrec' : ∀ S : Set (Fin n),
       RecordsPlay B G σ' (j + 1) (⟨v, masked G Gm, S⟩ :: rounds) := fun S => by
     rw [RecordsPlay]
@@ -1324,12 +1375,22 @@ theorem playRec_succ {B j : ℕ} {G : SimpleGraph (Fin n)}
     · obtain ⟨u, hu⟩ := hadj
       rw [hbot] at hu
       exact absurd hu (by simp)
-    · obtain ⟨S, hS⟩ := reachedR_descend hR hadj hWball hWself
-        (fun e he => hWwalk e.vtx e.arena (hrec.mem e he))
-      exact ⟨⟨v, masked G Gm, S⟩ :: rounds, hrec' S, hle', Or.inr (by rw [hstep]; exact hS)⟩
-  · refine ⟨⟨v, masked G Gm, W⟩ :: rounds, hrec' W, hle', Or.inl ?_⟩
-    rw [hstep]
-    exact eq_bot_of_isolated (fun z hz => hadj ⟨z, hz⟩) W
+    · obtain ⟨S, hS⟩ := reachedSubR_descend (A' := masked G Gm') hR hadj hXball hWself
+        (fun e he => hWwalk e.vtx e.arena (hrec.mem e he)) hstep
+      exact ⟨⟨v, masked G Gm, S⟩ :: rounds, hrec' S, hle', Or.inr hS, hcache'⟩
+  · refine ⟨⟨v, masked G Gm, W⟩ :: rounds, hrec' W, hle', Or.inl ?_, hcache'⟩
+    have hviso : ∀ z, ¬ (masked G Gm).Adj v z := fun z hz => hadj ⟨z, hz⟩
+    have hbot : deleteVerts (deleteVerts (masked G Gm) Xᶜ) W = ⊥ := by
+      ext z w
+      simp only [SimpleGraph.bot_adj, iff_false]
+      intro hzw
+      obtain ⟨hzw', -, -⟩ := SplitterBasics.deleteVerts_adj.mp hzw
+      obtain ⟨hA, hzXc, -⟩ := SplitterBasics.deleteVerts_adj.mp hzw'
+      have hzX : z ∈ X := by simpa using hzXc
+      have hzv := eq_of_mem_ball_of_isolated hviso (hXball hzX)
+      exact hviso w (hzv ▸ hA)
+    rw [hbot] at hstep
+    exact le_bot_iff.mp hstep
 
 end PlayRecord
 
@@ -1358,9 +1419,12 @@ def DecodeMem (n ns W : ℕ) (σ : Env) : Prop :=
 /-! ### Plumbing
 
 Four flat passes the driver writes itself, since none of them belongs to
-any of the sub-programs: a fill, a copy, and the two mask operations. All
-four are the kit's array pass with a different cell expression, so their
-walks are one application of `Fill.loop_spec` apiece.
+any of the sub-programs: a fill, a copy, and the two mask operations. The
+prefix primitives `fillUpto` and `copyUpto` live in
+`Refine.DriverPrelude`, above both the driver and the block engines; all
+four passes here are the kit's array pass with a different cell
+expression, so their walks are one application of `Fill.loop_spec`
+apiece.
 
 **Wave B4-walk-2m-3 adds a fifth, and it is not flat**: `memFillAt`
 walks a *member list* instead of the carrier. Its walk is not here —
@@ -1372,16 +1436,8 @@ a program the driver runs belongs above the driver. Only the two
 definitions move; the charge, the invariant, the walk and the write-set
 lemmas all stay where E4c-b built them. -/
 
-/-- A flat pass over the first `bnd` cells of an array, writing the value
-of `e` into each. -/
-def fillUpto (a : String) (bnd e : Expr) : Com :=
-  .seq (.assign "i" (.lit 0)) (.while (.lt (.var "i") bnd) (Fill.put a "i" e))
-
 /-- The same over the whole carrier. -/
 def fillCom (a : String) (e : Expr) : Com := fillUpto a (.var "n") e
-
-/-- Copy the first `bnd` cells of one array into another. -/
-def copyUpto (src dst : String) (bnd : Expr) : Com := fillUpto dst bnd (.get src (.var "i"))
 
 /-- Copy one array of the carrier's length into another: the whole of the
 driver's calling convention, since every sub-program addresses fixed
@@ -1420,6 +1476,36 @@ def andCom (a b dst : String) : Com :=
 /-- The first mask with everything the second marks killed. -/
 def subCom (a b dst : String) : Com :=
   fillCom dst (.mul (.get a (.var "i")) (.sub (.lit 1) (.get b (.var "i"))))
+
+/-! ### Cover-block maps
+
+These are the block-local counterparts of `fillCom`, `copyCom`,
+`andCom`, and `subCom`.  The cover row load supplies the interval; the
+driver-independent executable loops live in `Refine.BlockLeaves`. -/
+
+def coverClearCom (j : ℕ) (dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockClearRangeCom (xmmName j) dst)
+
+def coverCopyCom (j : ℕ) (src dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockCopyRangeCom (xmmName j) src dst)
+
+def coverAndCom (j : ℕ) (a b dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockAndRangeCom (xmmName j) a b dst)
+
+def coverSubCom (j : ℕ) (a b dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockSubRangeCom (xmmName j) a b dst)
+
+def coverAndSelfCom (j : ℕ) (b dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockAndSelfRangeCom (xmmName j) b dst)
+
+def coverSubSelfCom (j : ℕ) (b dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (Refine.BlockLeaves.blockSubSelfRangeCom (xmmName j) b dst)
 
 /-- Sequence a command over a list, giving each entry its position. -/
 def foldIdx {X : Type*} (f : ℕ → X → Com) : ℕ → List X → Com
@@ -1466,12 +1552,35 @@ the mask cuts out. -/
 def expandCom (msk src dst : String) : Com :=
   .seq (.assign "z" (.lit 0)) (.while (.lt (.var "z") (.var "n")) (expandStep msk src dst))
 
+/-- The body of an expansion whose outer rows are named by a cover
+block.  The inner CSR scan is still `expandStep`; only the outer carrier
+counter is replaced by the slot pointer `p` and the member read
+`z := idx[p]`. -/
+def expandBlockLoop (idx msk src dst : String) : Com :=
+  .while (.lt (.var "p") (.var "pend"))
+    (.seq (.assign "z" (.get idx (.var "p")))
+      (.seq (expandStep msk src dst)
+        (.assign "p" (.add (.var "p") (.lit 1)))))
+
+/-- One neighbourhood expansion over the current cover block at depth
+`j`.  The row load opens exactly
+`xmmName j[Xoff[cur] .. Xoff[cur+1])`; no carrier scan occurs. -/
+def expandBlockCom (j : ℕ) (msk src dst : String) : Com :=
+  .seq (Csr.loadRow (xofName j) (curName j) "p" "pend")
+    (expandBlockLoop (xmmName j) msk src dst)
+
 /-- The chain of expansions: `nm a` holds the `a`-neighbourhood of what
 `nm 0` was set to. The names must be pairwise distinct at consecutive
 stages, since a step reads all of its source while it writes its
 destination. -/
 def chainCom (msk : String) (nm : ℕ → String) (r : ℕ) : Com :=
   foldRange (fun a => expandCom msk (nm a) (nm (a + 1))) r
+
+/-- The same expansion chain over the current cover block.  Each stage
+reloads the row because the inner expansion reuses the row-pointer
+scalars; its arrays remain block-supported between stages. -/
+def chainBlockCom (j : ℕ) (msk : String) (nm : ℕ → String) (r : ℕ) : Com :=
+  foldRange (fun a => expandBlockCom j msk (nm a) (nm (a + 1))) r
 
 /-! ### The colour arrays of the next depth
 
@@ -1533,8 +1642,9 @@ def colourCom (cap mb j : ℕ) : Com :=
 
 A recorded round isolates the connector itself together with, for every
 earlier connector the round's arena reaches, the support of a short walk
-from it to the new one *taken in the arena that round was played in*, all
-cut down to the ball the round restricts to. The driver has what it needs
+from it to the new one *taken in the arena that round was played in*.
+The executable batch retains only the part of those supports in the
+current cover cluster, which itself lies in the round's ball. The driver has what it needs
 to mark that: the earlier connectors are the scalars `ctr a`, and the
 arenas they were played in are the game masks `gam a`, which is exactly
 why the game masks are kept. The walk is whatever
@@ -1551,6 +1661,49 @@ def markPath (bat : String) : Com :=
         (.seq (.store bat (.get "path" (.var "i")) (.lit 1))
           (.assign "i" (.add (.var "i") (.lit 1))))))
 
+/-! #### Cached parent trees -/
+
+/-- Exchange the three fixed arrays of the block parent engine with the
+three per-depth arrays that retain one cluster's cache.  All six names are
+pairwise distinct by their prefixes, so this permutation is an involution. -/
+def cacheSwap (j : ℕ) : String → String := fun z =>
+  if z = "alv" then resName j else if z = resName j then "alv"
+  else if z = "dist" then pdsName j else if z = pdsName j then "dist"
+  else if z = "par" then parName j else if z = parName j then "par" else z
+
+/-- Build the parent tree for the current retained cluster in place.  The
+queue arrays remain shared scratch; mask, distance scratch, and parents are
+renamed onto their per-depth storage. -/
+def cacheBfsCom (cap j : ℕ) : Com :=
+  Refine.ScatterBlock.renCom (cacheSwap j)
+    (Refine.BfsBlockPar.bfsBlockParCom (2 * cap))
+
+/-- Prepare and build the cache for one round.  The cluster load has
+already emitted its raw block into the child's member buffer and left its
+length in `"bq"`; the touched-only fill therefore cleans exactly that block
+before the parent search runs on the retained mask. -/
+def cacheRoundCom (cap j : ℕ) : Com :=
+  .seq (.assign "src" (.var (ctrName j)))
+    (.seq (.assign (mnumName (j + 1)) (.var "bq"))
+      (.seq (memFillAt j (pdsName j) (2 * cap + 1))
+        (cacheBfsCom cap j)))
+
+/-- One fixed-count parent step: mark the current vertex, read its parent,
+and advance the loop counter. -/
+def markParentStep (j a : ℕ) : Com :=
+  .seq (.store (batName j) (.var "pc") (.lit 1))
+    (.seq (.assign "pc" (.get (parName a) (.var "pc")))
+      (.assign "pi" (.add (.var "pi") (.lit 1))))
+
+/-- Mark `2·cap + 1` successive vertices of an earlier cached parent chain.
+Once the root is reached its self-parent is marked repeatedly, so a fixed
+loop is sufficient and no materialised distance array is needed. -/
+def markParentsCom (cap j a : ℕ) : Com :=
+  .seq (.assign "pc" (.var (ctrName j)))
+    (.seq (.assign "plen" (.lit (2 * cap + 1)))
+      (.seq (.assign "pi" (.lit 0))
+        (.while (.lt (.var "pi") (.var "plen")) (markParentStep j a))))
+
 /-- One earlier round's contribution: the path from its connector to the
 current one, searched in the arena that round was played in.
 
@@ -1562,7 +1715,7 @@ IMP+ does not. So the two halves are separated here and the walk back is
 run only when the search found the target — `dist[tv] ≤ 2·cap`, the
 sentinel `RamBfs.initDist` writes being `2·cap + 1`.
 
-Skipping it costs nothing. `SplitterWinRec.ReachedR` asks a round for a
+Skipping it costs nothing. `SplitterWinRec.ReachedSubR` asks a round for a
 walk to an earlier connector only *when the round's arena puts the two
 within the cap*, and the guard's false branch is exactly that
 hypothesis' negation: `RamBfs.BfsTree.reach` says a vertex the arena
@@ -1578,9 +1731,9 @@ def ancestorStep (cap j a : ℕ) : Com :=
             (.seq RamBfsPaths.extractPathCom (markPath (batName j)))
             .skip))))
 
-/-- **The batch of the round**: the connector together with a short walk
-from every earlier connector the round's arena reaches, cut down to the
-ball the round restricts to.
+/-- **The executable part of the batch**: the connector together with
+the portion inside the retained cover cluster of one short walk from
+every earlier connector the round's arena reaches.
 
 The last pass reads its own destination, which is what
 `RamDriverDescend.andSelfCom_spec` is for. -/
@@ -1588,7 +1741,17 @@ def batchCom (cap j : ℕ) : Com :=
   .seq (fillCom (batName j) (.lit 0))
     (.seq (.store (batName j) (.var (ctrName j)) (.lit 1))
       (.seq (foldRange (fun a => ancestorStep cap j a) j)
-        (andCom (batName j) (balName j) (batName j))))
+        (andCom (batName j) (cluName j) (batName j))))
+
+/-- **The cached batch phase.** It has the same opening, connector, and
+cluster cut as `batchCom`; each earlier contribution now follows the
+retained parent tree for that round instead of copying its arena and
+running another breadth-first search. -/
+def batchCachedCom (cap j : ℕ) : Com :=
+  .seq (fillCom (batName j) (.lit 0))
+    (.seq (.store (batName j) (.var (ctrName j)) (.lit 1))
+      (.seq (foldRange (fun a => markParentsCom cap j a) j)
+        (andCom (batName j) (cluName j) (batName j))))
 
 /-- The padded enumeration of the batch **inside the cluster**, as an
 array of exactly `mb` entries: the vertices the batch and the cluster
@@ -1598,17 +1761,15 @@ is the centre of the very cluster the turn loaded — so the repetition is
 well defined, and `FormulaTables.range_comp_of_surjective` is why it
 costs the isolation rewrite nothing.
 
-**The cluster guard is wave R1.8-T3-flip (c2a).** The pass used to
-enumerate the whole batch, and the palette built off it then had a
-profile slot centred at an out-of-cluster batch entry — a class the
-child's colour rows could not be blind to, which is what
+**The cluster guard is wave R1.8-T3-flip (c2a).** The palette must not
+have a profile slot centred at an out-of-cluster batch entry — a class
+the child's colour rows could not be blind to, which is what
 `Refine.ScatterDeadPass.outside_class_not_uniform_refuted` compiles and
 what left `Refine.DeadRowProbe.stepColoringP_subset`'s `hw` without a
-producer. Cutting the *enumeration* by the cluster supplies it, and
-costs nothing anywhere else: the batch as a set — the game invariant's
-`W`, the child mask's, the kill set's — is untouched, and the cluster
-step's arena cannot see the difference
-(`RamDriver.deleteVerts_inter_cluster`). -/
+producer. `batchCom` now already cuts its indicator to the cluster;
+this second guard documents and enforces the palette boundary. The
+cluster-step arena cannot distinguish that retained batch from the
+full mathematical batch (`RamDriver.deleteVerts_inter_cluster`). -/
 def enumBatch (bat clu : String) (mb : ℕ) : Com :=
   .seq (.assign "bc" (.lit 0))
     (.seq (.assign "z" (.lit 0))
@@ -2161,20 +2322,19 @@ def memFilterCom (j : ℕ) : Com :=
               .skip)
             (.assign "mk" (.add (.var "mk") (.lit 1)))))))
 
-/-- The state of the next depth: the ball of the round in the game
-arena, the batch, the two masks the cluster step produces — and the
-child's member list, filtered out of the block row the cluster load
-emitted. -/
+/-- The state of the next depth: the cluster-truncated batch, the work
+and game masks retained on that cluster, and the child's member list
+filtered out of the block row the cluster load emitted.  The fourth
+slot builds the retained parent cache for this round; the batch then
+reuses every cache accumulated so far. -/
 def descendCom (cap j : ℕ) : Com :=
   .seq (.assign (ctrName j) (.get (ordName j) (.var (curName j))))
     (.seq (clusterLoad j)
       (.seq (andCom (alvName j) (cluName j) (resName j))
-        (.seq (.seq (fillCom (balName j) (.lit 0))
-            (.seq (.store (balName j) (.var (ctrName j)) (.lit 1))
-              (chainCom (gamName j) (ballStage j) (2 * cap))))
-          (.seq (batchCom cap j)
+        (.seq (cacheRoundCom cap j)
+          (.seq (batchCachedCom cap j)
             (.seq (subCom (resName j) (batName j) (alvName (j + 1)))
-              (.seq (andCom (gamName j) (balName j) (gamName (j + 1)))
+              (.seq (andCom (gamName j) (cluName j) (gamName (j + 1)))
                 (.seq (subCom (gamName (j + 1)) (batName j) (gamName (j + 1)))
                   (memFilterCom (j + 1)))))))))
 
@@ -2192,29 +2352,31 @@ noncomputable def bcExpr {α : Type*} (val : α → Expr) : BC α → Expr
 open Classical in
 /-- The valuation of the atoms of the formula at position `i` of depth
 `j`: a local atom is a bit of the depth-`(j + 1)` table at the vertex the
-readback stands on, a scatter atom is the flag the scatter pass left. -/
+readback loaded into `"rv"`, a scatter atom is the flag the scatter pass
+left. -/
 noncomputable def atomExpr (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j i : ℕ)
     (β : DistFO (sigL cap mb j) 1) :
     DistFO (sigL cap mb (j + 1)) 1 ⊕ ScatterSentence (sigL cap mb (j + 1)) → Expr
-  | .inl γ => .get (tabName (j + 1) (posOf γ (tablesAt q_top cap mb φ (j + 1)))) (.var "z")
+  | .inl γ => .get (tabName (j + 1) (posOf γ (tablesAt q_top cap mb φ (j + 1)))) (.var "rv")
   | .inr σ => .var (flgName j i (posOf σ (bcAtomsOf q_top (stepFml cap mb j β)).2))
 
 open Classical in
-/-- **The readback.** Walk the vertices this cluster was assigned and
-write, for every tabled formula, the value of its own boolean
-combination. -/
+/-- **The readback.** Walk the current cluster's block, retain the
+assignment guard, and write, for every assigned vertex and every tabled
+formula, the value of its own boolean combination.  The block walk is
+the interval `[xoff[cur], xoff[cur+1])`; `"z"` is its slot pointer,
+`"zend"` its end, and `"rv"` the vertex loaded from `xmem`. -/
 noncomputable def readbackCom (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j : ℕ) : Com :=
-  .seq (.assign "z" (.lit 0))
-    (.while (.lt (.var "z") (.var "n"))
-      (.seq (.ite (.eq (.get (asgName j) (.var "z")) (.var (curName j)))
-              (foldIdx (fun i β =>
-                  .store (tabName j i) (.var "z")
-                    (if h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧ DRank 1 q' (stepFml cap mb j β) then
-                      bcExpr (atomExpr q_top cap mb φ j i β) (bcOf q_top (stepFml cap mb j β) h)
-                    else .lit 0)) 0
-                (tablesAt q_top cap mb φ j))
-              .skip)
-        (.assign "z" (.add (.var "z") (.lit 1)))))
+  RamAugment.blockScan (xofName j) (xmmName j) (curName j) "z" "zend" "rv"
+    (.ite (.eq (.get (asgName j) (.var "rv")) (.var (curName j)))
+      (foldIdx (fun i β =>
+          .store (tabName j i) (.var "rv")
+            (if h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧ DRank 1 q' (stepFml cap mb j β) then
+              bcExpr (atomExpr q_top cap mb φ j i β)
+                (bcOf q_top (stepFml cap mb j β) h)
+            else .lit 0)) 0
+        (tablesAt q_top cap mb φ j))
+      .skip)
 
 open Classical in
 /-- **The kill pass** (rebase R1.8, design §2.3): the rows of the
@@ -2965,10 +3127,11 @@ theorem TablesSized.run {B q_top cap mb n : ℕ} {φ : Lax3.FirstOrder.FO 0} {c 
     TablesSized q_top cap mb φ n σ' := fun j => (h j).run hr
 
 /-- **The per-depth arrays of every depth, at the lengths the driver
-addresses them at.** Every one of them is *stored into* by a pass of the
-level of its own depth — `descendCom` writes the cluster indicator, the
-restricted mask, the two halves of the ball's ping-pong, the batch and
-the two masks of the next depth; `colourCom` writes the depth's whole
+addresses or reserves them at.** The active arrays are *stored into* by
+a pass of their own depth — `descendCom` writes the cluster indicator, the
+restricted mask, the batch and the two masks of the next depth (the two
+legacy ball buffers remain reserved but are no longer touched);
+`colourCom` writes the depth's whole
 colour palette; the ordering pass writes the depth's order array and
 `coverSave` the depth's three copies of the cover — and an out-of-range
 store has no derivation in IMP+, so no precondition of a level can do
@@ -3899,18 +4062,17 @@ correct.
 
 It splits along the turn's six passes.
 
-* `descendCom` is nine flat passes and one chain of expansions. Its
-  content is the two mask equations: the work arena of the next depth is
-  `stepArenaP` at the cluster and the batch, and the game arena is
-  the next arena of the round the descent records — the ball and the
-  same batch. The expansion chain that builds the ball is `expandCom`
-  iterated `2·cap` times, whose own content is one step of `WithinDist`.
+* `descendCom` loads the cover cluster, builds its retained batch, and
+  writes the work and game masks of the next depth on that cluster. The
+  mathematical ball is not materialised: `RamCover.inCluster_subset_ball`
+  proves that the retained game mask is a legal subposition of the exact
+  splitter successor.
 * `batchCom` marks the round: the connector, then one call of
   `RamBfsPaths.bfsParCom` per earlier round in *that* round's game mask,
   and a walk back under the guard. `RamBfsPaths.bfsPath_spec` is what the
   two halves together are worth, and what the recorded round asks of them
-  is that the support of the walk they found lies in the batch where the
-  ball keeps it.
+  is that the part of the support inside the retained cluster lies in
+  the executable batch.
 * `enumBatch` is the padding, and `exists_pad_enum` — proved above — is
   what its result is worth.
 * `colourCom` is `Evaluator.isoColoring`'s three slot equations, each an
@@ -3927,12 +4089,11 @@ It splits along the turn's six passes.
 **The game invariant.** The turn is handed `PlayRec` at its own depth
 and the nested driver only at masks that have it one depth down, so the
 turn owes the descent step of the invariant, which is `playRec_succ` — at
-the ball the expansion chain built in the *game* arena and the batch
-`batchCom` produced. That is why the driver carries two masks per depth
-and why `descendCom` writes `gamName (j+1)` from `gamName j`: the
-equality a recorded round needs is exact only if the ball is taken in the
-game arena, and `ballStage`'s parity is what makes the chain end in the
-ball's own array.
+the cover cluster proved to lie inside the mathematical game ball and
+the cluster-truncated batch `batchCom` produced. `ReachedSubR` permits the
+machine to hand only this supported subposition to the next depth.
+That is why the driver still carries two masks per depth, while
+`descendCom` now cuts both successors by the current cluster.
 
 **Rebase B2 (§5.2).** The turn is now stated *at its own position*. The
 precondition pins `curName j` to the parameter `k` instead of merely
@@ -4335,5 +4496,3 @@ theorem driver_correct (hrank : Lax3.FirstOrder.rank φ ≤ q_top)
 end Main
 
 end Lax3Proofs.RamDriver
-
-

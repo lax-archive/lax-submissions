@@ -1,12 +1,12 @@
-import Lax3Proofs.RamDriverCluster
+import Lax3Proofs.RamDriverAugment
 
 /-!
 The **readback of one cluster**, walked: the obligation
 `Lax3Proofs.RamDriverCluster.ReadbackStep` discharged, together with the
 two pieces of bit arithmetic the driver's generated code is written in.
 
-The readback is the last pass of a cluster's turn. It walks the
-carrier, and at every vertex the cover assigned to the centre being
+The readback is the last pass of a cluster's turn. It walks the current
+block, and at every member the cover assigned to the centre being
 processed it stores, for every formula of the depth's table, the value
 of that formula's own boolean combination over the depth-`(j+1)` tables
 and the scatter flags. `Lax3Proofs.RamDriver.sat_iff_eval_step` says
@@ -37,12 +37,13 @@ stores. Three ingredients, in the order the walk consumes them.
   depth-`j` table disturbs neither the level's surface nor the atom
   valuation. This is where the name injectivity is spent.
 
-The walk itself is `Spec.forRangeZero` over the carrier with
-`Spec.ite` inside it, whose true branch is `block_spec` — an induction
-along `List.drop p` of the depth's table list, one `Spec.store` per
-entry — and whose false branch is `Spec.skip`, correct because the
-postcondition speaks only of the vertices the cover assigned to the
-centre. `readback_spec` is the result, and `rbCost` is what it costs.
+The walk itself is `RamAugment.blockScan` over the current cover block
+with `Spec.ite` inside it, whose true branch is `block_spec` — an
+induction along `List.drop p` of the depth's table list, one
+`Spec.store` per entry — and whose false branch is `Spec.skip`, correct
+because the postcondition speaks only of the vertices the cover
+assigned to the centre. `readback_spec` is the result, and `rbCost` is
+what it costs.
 
 # Which obligation
 
@@ -287,14 +288,12 @@ noncomputable def rbCell (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j i :
 /-- The readback, with the store expression named. -/
 theorem readbackCom_eq (q_top cap mb j : ℕ) (φ : Lax3.FirstOrder.FO 0) :
     readbackCom q_top cap mb φ j =
-      .seq (.assign "z" (.lit 0))
-        (.while (.lt (.var "z") (.var "n"))
-          (.seq (.ite (.eq (.get (asgName j) (.var "z")) (.var (curName j)))
-                  (foldIdx (fun i β =>
-                      .store (tabName j i) (.var "z") (rbCell q_top cap mb φ j i β)) 0
-                    (tablesAt q_top cap mb φ j))
-                  .skip)
-            (.assign "z" (.add (.var "z") (.lit 1))))) := rfl
+      Lax3Proofs.RamAugment.blockScan (xofName j) (xmmName j) (curName j) "z" "zend" "rv"
+        (.ite (.eq (.get (asgName j) (.var "rv")) (.var (curName j)))
+          (foldIdx (fun i β =>
+              .store (tabName j i) (.var "rv") (rbCell q_top cap mb φ j i β)) 0
+            (tablesAt q_top cap mb φ j))
+          .skip) := rfl
 
 /-- **The cell is a bit, and the bit is the combination.** -/
 theorem evalB_rbCell {B q_top cap mb j i : ℕ} {φ : Lax3.FirstOrder.FO 0}
@@ -318,25 +317,30 @@ theorem evalB_rbCell {B q_top cap mb j i : ℕ} {φ : Lax3.FirstOrder.FO 0}
       rintro ⟨h', -⟩
       exact h h'
 
-/-- What one table array of the depth holds at the vertices of the
-cluster the readback has already passed. -/
-noncomputable def TabOk (q_top cap mb j : ℕ) {n : ℕ} (asg : ℕ → ℕ) (cc : ℕ)
+/-- What one table array of the depth holds at the slots of the current
+block the readback has already passed. -/
+noncomputable def TabOk (q_top cap mb j : ℕ) {n : ℕ}
+    (Xoff Xmem asg : ℕ → ℕ) (cc : ℕ)
     (vl : Fin n → StepAtom cap mb j → Prop) (β : DistFO (sigL cap mb j) 1)
     (nm : String) (T₀ : ℕ → ℕ) (σ : Env) (bnd : ℕ) : Prop :=
   ∃ Tb : ℕ → ℕ, σ.arrs nm = arrOf n Tb ∧
-    (∀ v : Fin n, asg (v : ℕ) ≠ cc → Tb (v : ℕ) = T₀ (v : ℕ)) ∧
-    ∀ v : Fin n, (v : ℕ) < bnd → asg (v : ℕ) = cc →
-      Tb (v : ℕ) ≤ 1 ∧
-      (Tb (v : ℕ) ≠ 0 ↔ ∃ h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧ DRank 1 q' (stepFml cap mb j β),
-        (bcOf q_top (stepFml cap mb j β) h).eval (vl v))
+    (∀ v : Fin n, (asg (v : ℕ) ≠ cc ∨
+      ∀ p, Xoff cc ≤ p → p < bnd → Xmem p ≠ (v : ℕ)) →
+        Tb (v : ℕ) = T₀ (v : ℕ)) ∧
+    ∀ p, Xoff cc ≤ p → p < bnd → ∃ hp : Xmem p < n,
+      asg (Xmem p) = cc →
+        Tb (Xmem p) ≤ 1 ∧
+        (Tb (Xmem p) ≠ 0 ↔
+          ∃ h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧ DRank 1 q' (stepFml cap mb j β),
+            (bcOf q_top (stepFml cap mb j β) h).eval (vl ⟨Xmem p, hp⟩))
 
 /-- Everything the readback reads and never writes: the level's own
-surface, the cover's assignment, the centre being processed, the output
-tape, and the values of the atoms of every tabled formula at every
-vertex **the turn was assigned**.
+surface, the cover's block and assignment, the centre being processed,
+the output tape, and the values of the atoms of every tabled formula at
+every vertex **the turn was assigned**.
 
 **Wave R1.8-T3-flip (c2b): at the visited vertices only.** The loop
-evaluates an atom expression under the guard `asg[z] = cc` and nowhere
+evaluates an atom expression under the guard `asg[rv] = cc` and nowhere
 else, so asking for the valuation off the guard asks for something the
 walk never uses — and something the caller can no longer supply, since a
 local atom reads the depth-`(j+1)` table row and a vertex outside
@@ -344,18 +348,22 @@ local atom reads the depth-`(j+1)` table row and a vertex outside
 precondition; `RamDriverCluster.ReadbackStep`'s own visited-vertex
 clause is what turns it back into a statement about the cluster. -/
 def RbBase (B q_top cap mb ns Ws j : ℕ) {n : ℕ} (φ : Lax3.FirstOrder.FO 0) (O T M Gm : ℕ → ℕ)
-    (C : ℕ → ℕ → ℕ) (asg : ℕ → ℕ) (cc : ℕ) (ou : List ℕ)
+    (C : ℕ → ℕ → ℕ) (Xoff Xmem asg : ℕ → ℕ) (cc : ℕ) (ou : List ℕ)
     (val : Fin n → ℕ → StepAtom cap mb j → Prop) (σ : Env) : Prop :=
-  LevelPre B n cap mb ns Ws O T j M Gm C σ ∧ σ.arrs (asgName j) = arrOf n asg ∧
-    (∀ v < n, asg v < B) ∧ σ.vars (curName j) = cc ∧ cc < B ∧ σ.out = ou ∧
-    ∀ (v : Fin n), asg (v : ℕ) = cc → ∀ (i : ℕ)
+  LevelPre B n cap mb ns Ws O T j M Gm C σ ∧
+    σ.arrs (xofName j) = arrOf (n + 1) Xoff ∧
+    σ.arrs (xmmName j) = arrOf (n * n) Xmem ∧
+    σ.arrs (asgName j) = arrOf n asg ∧
+    σ.vars (curName j) = cc ∧ cc < B ∧ σ.out = ou ∧
+    ∀ p, Xoff cc ≤ p → p < Xoff (cc + 1) → ∀ hp : Xmem p < n,
+      asg (Xmem p) = cc → ∀ (i : ℕ)
         (hi : i < (tablesAt q_top cap mb φ j).length)
         (h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧
           DRank 1 q' (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])),
         ∀ a ∈ (bcOf q_top (stepFml cap mb j (tablesAt q_top cap mb φ j)[i]) h).atoms,
           ∃ u ≤ 1,
       (atomExpr q_top cap mb φ j i (tablesAt q_top cap mb φ j)[i] a).evalB B
-          (σ.setVar "z" (v : ℕ)) = some u ∧ (u ≠ 0 ↔ val v i a)
+          (σ.setVar "rv" (Xmem p)) = some u ∧ (u ≠ 0 ↔ val ⟨Xmem p, hp⟩ i a)
 
 /-! #### The frame of one store
 
@@ -409,18 +417,14 @@ theorem levelPre_setArr_tab {B cap mb ns Ws j : ℕ} {O T M Gm : ℕ → ℕ} {C
   · rw [arrs_setArr, if_neg (lit_ne_tabName (q := "dist") (by decide) j i)]; exact hd
   · rw [arrs_setArr, if_neg (lit_ne_tabName (q := "q") (by decide) j i)]; exact hq
 
-/-- Moving the counter leaves the level's surface alone. -/
-theorem levelPre_setVar_z {B cap mb ns Ws j : ℕ} {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ} {σ : Env}
+/-- Moving one of the readback's three private scalars leaves the
+level's surface alone. -/
+theorem levelPre_setVar_readback {B cap mb ns Ws j : ℕ} {O T M Gm : ℕ → ℕ}
+    {C : ℕ → ℕ → ℕ} {σ : Env} {x : String}
+    (hxn : x ≠ "n") (hxm : x ≠ "m") (hxlw : x ≠ "lw") (hxmm : x ≠ mnumName j)
     (h : LevelPre B n cap mb ns Ws O T j M Gm C σ) (k : ℕ) :
-    LevelPre B n cap mb ns Ws O T j M Gm C (σ.setVar "z" k) := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, ⟨hsz, hd, hq⟩, hdep, hm,
-    ⟨hle, hlw, hosz, hz⟩, hpad0, hTB⟩ := h
-  exact ⟨by rw [vars_setVar, if_neg (by decide)]; exact h1, h2, h3, h4, h5, h6, h7, h8, h9,
-    ⟨fun p hp => by simpa using hsz p hp, by simpa using hd, by simpa using hq⟩,
-    hdep.setVar _ k,
-    by rw [vars_setVar, if_neg (by decide)]; exact hm,
-    ⟨hle, by rw [vars_setVar, if_neg (by decide)]; exact hlw,
-      fun p hp => by simpa using hosz p hp, by simpa using hz⟩, hpad0, hTB⟩
+    LevelPre B n cap mb ns Ws O T j M Gm C (σ.setVar x k) :=
+  RamDriverCluster.levelPre_setVar h x hxn hxm hxlw hxmm k
 
 /-- Writing a depth-`j` table leaves the atoms of the depth-`j`
 combinations alone: they are read out of the depth-`(j+1)` tables and
@@ -431,39 +435,99 @@ theorem evalB_atomExpr_setArr {B q_top cap mb j i i' : ℕ} {φ : Lax3.FirstOrde
       = (atomExpr q_top cap mb φ j i β a).evalB B σ := by
   cases a with
   | inl γ =>
-    show (Expr.get (tabName (j + 1) _) (.var "z")).evalB B _ = _
+    show (Expr.get (tabName (j + 1) _) (.var "rv")).evalB B _ = _
     rw [Expr.evalB, Expr.evalB, arrs_setArr,
       if_neg (Ne.symm (tabName_ne_succ j i' _))]
     rfl
   | inr σs => rfl
 
+/-- Updating a private readback scalar does not change an atom after
+the current vertex has been rebound in `"rv"`. -/
+theorem evalB_atomExpr_setVar_readback {B q_top cap mb j i : ℕ}
+    {φ : Lax3.FirstOrder.FO 0} {β : DistFO (sigL cap mb j) 1}
+    (a : StepAtom cap mb j) (σ : Env) {x : String} (k v : ℕ)
+    (hflg : ∀ i' k', flgName j i' k' ≠ x) :
+    (atomExpr q_top cap mb φ j i β a).evalB B ((σ.setVar x k).setVar "rv" v) =
+      (atomExpr q_top cap mb φ j i β a).evalB B (σ.setVar "rv" v) := by
+  cases a with
+  | inl γ =>
+    simp [atomExpr, Expr.evalB]
+  | inr σs =>
+    simp [atomExpr, Expr.evalB, hflg,
+      (by simp [flgName, String.ext_iff] : flgName j i _ ≠ "rv")]
+
 /-- **The frame of one store.** -/
 theorem rbBase_setArr_tab {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
-    {C : ℕ → ℕ → ℕ} {asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
+    {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
     {val : Fin n → ℕ → StepAtom cap mb j → Prop} {σ : Env}
-    (h : RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ) (i idx v : ℕ) :
-    RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val (σ.setArr (tabName j i) idx v) := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7⟩ := h
-  refine ⟨levelPre_setArr_tab h1 i idx v, ?_, h3, h4, h5, h6, ?_⟩
-  · rw [arrs_setArr, if_neg (by simp [tabName, asgName, String.ext_iff])]; exact h2
-  · intro w hw p hp hr a ha
-    obtain ⟨u, hu1, hueval, huiff⟩ := h7 w hw p hp hr a ha
+    (h : RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ)
+    (i idx v : ℕ) :
+    RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val
+      (σ.setArr (tabName j i) idx v) := by
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8⟩ := h
+  refine ⟨levelPre_setArr_tab h1 i idx v, ?_, ?_, ?_, h5, h6, h7, ?_⟩
+  · rw [arrs_setArr, if_neg (by simp [tabName, xofName, String.ext_iff])]; exact h2
+  · rw [arrs_setArr, if_neg (by simp [tabName, xmmName, String.ext_iff])]; exact h3
+  · rw [arrs_setArr, if_neg (by simp [tabName, asgName, String.ext_iff])]; exact h4
+  · intro z hzlo hzhi hzn hzcc p hp hr a ha
+    obtain ⟨u, hu1, hueval, huiff⟩ := h8 z hzlo hzhi hzn hzcc p hp hr a ha
     refine ⟨u, hu1, ?_, huiff⟩
     rw [setArr_setVar, evalB_atomExpr_setArr]
     exact hueval
 
-/-- **The frame of the counter.** -/
-theorem rbBase_setVar_z {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
-    {C : ℕ → ℕ → ℕ} {asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
+/-- **The frame of a private readback scalar.** -/
+theorem rbBase_setVar_readback {B q_top cap mb ns Ws j : ℕ}
+    {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
+    {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
     {val : Fin n → ℕ → StepAtom cap mb j → Prop} {σ : Env}
-    (h : RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ) (k : ℕ) :
-    RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val (σ.setVar "z" k) := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7⟩ := h
-  refine ⟨levelPre_setVar_z h1 k, h2, h3, ?_, h5, h6, ?_⟩
-  · rw [vars_setVar, if_neg (by simp [curName, String.ext_iff])]; exact h4
-  · intro w hw p hp hr a ha
-    obtain ⟨u, hu1, hueval, huiff⟩ := h7 w hw p hp hr a ha
-    exact ⟨u, hu1, by rw [setVar_setVar_same]; exact hueval, huiff⟩
+    {x : String} (hxn : x ≠ "n") (hxm : x ≠ "m") (hxlw : x ≠ "lw")
+    (hxmm : x ≠ mnumName j) (hxcur : x ≠ curName j)
+    (hflg : ∀ i k, flgName j i k ≠ x)
+    (h : RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ) (k : ℕ) :
+    RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val
+      (σ.setVar x k) := by
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8⟩ := h
+  refine ⟨levelPre_setVar_readback hxn hxm hxlw hxmm h1 k,
+    by simpa using h2, by simpa using h3, by simpa using h4, ?_, h6, h7, ?_⟩
+  · rw [vars_setVar, if_neg hxcur.symm]; exact h5
+  · intro z hzlo hzhi hzn hzcc p hp hr a ha
+    obtain ⟨u, hu1, hueval, huiff⟩ := h8 z hzlo hzhi hzn hzcc p hp hr a ha
+    exact ⟨u, hu1, by
+      rw [evalB_atomExpr_setVar_readback a σ k (Xmem z) hflg]
+      exact hueval, huiff⟩
+
+theorem rbBase_setVar_z {B q_top cap mb ns Ws j : ℕ}
+    {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
+    {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
+    {val : Fin n → ℕ → StepAtom cap mb j → Prop} {σ : Env}
+    (h : RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ) (k : ℕ) :
+    RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val
+      (σ.setVar "z" k) :=
+  rbBase_setVar_readback (by decide) (by decide) (by decide)
+    (by simp [mnumName, String.ext_iff]) (by simp [curName, String.ext_iff])
+    (by intro i p; simp [flgName, String.ext_iff]) h k
+
+theorem rbBase_setVar_zend {B q_top cap mb ns Ws j : ℕ}
+    {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
+    {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
+    {val : Fin n → ℕ → StepAtom cap mb j → Prop} {σ : Env}
+    (h : RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ) (k : ℕ) :
+    RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val
+      (σ.setVar "zend" k) :=
+  rbBase_setVar_readback (by decide) (by decide) (by decide)
+    (by simp [mnumName, String.ext_iff]) (by simp [curName, String.ext_iff])
+    (by intro i p; simp [flgName, String.ext_iff]) h k
+
+theorem rbBase_setVar_rv {B q_top cap mb ns Ws j : ℕ}
+    {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
+    {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
+    {val : Fin n → ℕ → StepAtom cap mb j → Prop} {σ : Env}
+    (h : RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ) (k : ℕ) :
+    RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val
+      (σ.setVar "rv" k) :=
+  rbBase_setVar_readback (by decide) (by decide) (by decide)
+    (by simp [mnumName, String.ext_iff]) (by simp [curName, String.ext_iff])
+    (by intro i p; simp [flgName, String.ext_iff]) h k
 
 /-- Setting a scalar to the value it already holds changes nothing. -/
 theorem setVar_self {σ : Env} {x : String} {v : ℕ} (h : σ.vars x = v) : σ.setVar x v = σ := by
@@ -495,95 +559,123 @@ noncomputable def blockCost (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j 
 of the formula at position `p`, and leaves every other table where it
 was. -/
 theorem store_step_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
-    {C : ℕ → ℕ → ℕ} {asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
+    {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
     {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ} (hB : 1 < B) (hn : n < B)
-    {z₀ : ℕ} (hz₀ : z₀ < n) (hcc : asg z₀ = cc) (p : ℕ)
+    {z₀ : ℕ} (hzlo : Xoff cc ≤ z₀) (hzhi : z₀ < Xoff (cc + 1))
+    (hz₀ : Xmem z₀ < n) (hcc : asg (Xmem z₀) = cc) (p : ℕ)
     (hp : p < (tablesAt q_top cap mb φ j).length) :
     Spec B
-      (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ ∧ σ.vars "z" = z₀ ∧
+      (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
+        σ.vars "z" = z₀ ∧ σ.vars "rv" = Xmem z₀ ∧
         ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
-          TabOk q_top cap mb j asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
+          TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
             (tabName j i) (T₀ i) σ (if i < p then z₀ + 1 else z₀))
-      (.store (tabName j p) (.var "z") (rbCell q_top cap mb φ j p (tablesAt q_top cap mb φ j)[p]))
-      (fun _ σ' => RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ' ∧ σ'.vars "z" = z₀ ∧
+      (.store (tabName j p) (.var "rv") (rbCell q_top cap mb φ j p (tablesAt q_top cap mb φ j)[p]))
+      (fun _ σ' => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ' ∧
+        σ'.vars "z" = z₀ ∧ σ'.vars "rv" = Xmem z₀ ∧
         ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
-          TabOk q_top cap mb j asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
+          TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
             (tabName j i) (T₀ i) σ' (if i < p + 1 then z₀ + 1 else z₀))
       (cellCost q_top cap mb φ j p (tablesAt q_top cap mb φ j)[p]) := by
   refine Spec.of_exists fun σ hσ => ?_
-  obtain ⟨hbase, hz, htab⟩ := hσ
-  have hzB : σ.vars "z" < B := by omega
-  have hidx : (Expr.var "z").evalB B σ = some z₀ := by rw [evalB_var hzB, hz]
+  obtain ⟨hbase, hz, hrv, htab⟩ := hσ
+  have hrvB : σ.vars "rv" < B := by rw [hrv]; omega
+  have hidx : (Expr.var "rv").evalB B σ = some (Xmem z₀) := by
+    rw [evalB_var hrvB, hrv]
   -- the value of the cell at the vertex the readback stands on
   have hval : ∀ h : ∃ q' : ℕ, q' + 1 ≤ q_top ∧
         DRank 1 q' (stepFml cap mb j (tablesAt q_top cap mb φ j)[p]),
       ∀ a ∈ (bcOf q_top (stepFml cap mb j (tablesAt q_top cap mb φ j)[p]) h).atoms, ∃ u ≤ 1,
       (atomExpr q_top cap mb φ j p (tablesAt q_top cap mb φ j)[p] a).evalB B σ = some u ∧
-        (u ≠ 0 ↔ val ⟨z₀, hz₀⟩ p a) := by
+        (u ≠ 0 ↔ val ⟨Xmem z₀, hz₀⟩ p a) := by
     intro h a ha
-    obtain ⟨u, hu1, hueval, huiff⟩ := hbase.2.2.2.2.2.2 ⟨z₀, hz₀⟩ hcc p hp h a ha
-    exact ⟨u, hu1, by rwa [setVar_self hz] at hueval, huiff⟩
+    obtain ⟨u, hu1, hueval, huiff⟩ :=
+      hbase.2.2.2.2.2.2.2 z₀ hzlo hzhi hz₀ hcc p hp h a ha
+    exact ⟨u, hu1, by rwa [setVar_self hrv] at hueval, huiff⟩
   obtain ⟨u, hu1, hueval, huiff⟩ := evalB_rbCell (i := p) hB hval
   -- the array being written is there, at the carrier's length
   obtain ⟨Tb, hTb, hTb0, hTbval⟩ := htab p hp
-  have hlen : z₀ < (σ.arrs (tabName j p)).length := by rw [hTb, length_arrOf]; exact hz₀
-  refine ⟨σ.setArr (tabName j p) z₀ u, _, Run.store hidx hueval hlen, ?_, ?_, ?_, ?_⟩
+  have hlen : Xmem z₀ < (σ.arrs (tabName j p)).length := by
+    rw [hTb, length_arrOf]; exact hz₀
+  refine ⟨σ.setArr (tabName j p) (Xmem z₀) u, _, Run.store hidx hueval hlen, ?_, ?_, ?_, ?_, ?_⟩
   · simp [cellCost]
-  · exact rbBase_setArr_tab hbase p z₀ u
+  · exact rbBase_setArr_tab hbase p (Xmem z₀) u
   · rw [vars_setArr]; exact hz
+  · rw [vars_setArr]; exact hrv
   · intro i hi
     by_cases hip : i = p
     · subst hip
-      refine ⟨fun k => if k = z₀ then u else Tb k, ?_, ?_, ?_⟩
+      refine ⟨fun k => if k = Xmem z₀ then u else Tb k, ?_, ?_, ?_⟩
       · rw [arrs_setArr, if_pos rfl, hTb, set_arrOf]
       · intro w hw
+        rw [if_pos (by omega : i < i + 1)] at hw
         dsimp only
-        rw [if_neg (fun hc => hw (by rw [hc]; exact hcc))]
-        exact hTb0 w hw
-      · intro w hw hwc
-        rw [if_pos (by omega)] at hw
+        by_cases hwv : (w : ℕ) = Xmem z₀
+        · rw [if_pos hwv]
+          exfalso
+          rcases hw with hw | hw
+          · exact hw (by simpa [hwv] using hcc)
+          · exact hw z₀ hzlo (by omega) hwv.symm
+        · rw [if_neg hwv]
+          refine hTb0 w ?_
+          rw [if_neg (lt_irrefl i)]
+          rcases hw with hw | hw
+          · exact Or.inl hw
+          · exact Or.inr fun q hqlo hqhi => hw q hqlo (by omega)
+      · intro q hqlo hqhi
+        rw [if_pos (by omega)] at hqhi
         dsimp only
-        by_cases hwz : (w : ℕ) = z₀
-        · rw [if_pos hwz]
-          refine ⟨hu1, ?_⟩
+        by_cases hqv : Xmem q = Xmem z₀
+        · rw [if_pos hqv]
+          have hqn : Xmem q < n := by rw [hqv]; exact hz₀
+          refine ⟨hqn, fun _ => ⟨hu1, ?_⟩⟩
           rw [huiff]
-          have hwv : w = (⟨z₀, hz₀⟩ : Fin n) := Fin.ext hwz
-          rw [hwv]
-        · rw [if_neg hwz]
-          refine hTbval w ?_ hwc
+          have hv : (⟨Xmem q, hqn⟩ : Fin n) = ⟨Xmem z₀, hz₀⟩ := Fin.ext hqv
+          rw [hv]
+        · rw [if_neg hqv]
+          have hqne : q ≠ z₀ := fun h => hqv (by rw [h])
+          refine hTbval q hqlo ?_
           rw [if_neg (lt_irrefl _)]
           omega
     · obtain ⟨Tc, hTc, hTc0, hTcval⟩ := htab i hi
-      refine ⟨Tc, ?_, hTc0, ?_⟩
+      refine ⟨Tc, ?_, ?_, ?_⟩
       · rw [arrs_setArr, if_neg (tabName_ne_of_ne j hip), hTc]
-      · intro w hw hwc
-        refine hTcval w ?_ hwc
+      · intro v hv
+        refine hTc0 v ?_
+        by_cases hlt : i < p
+        · simpa [hlt, show i < p + 1 by omega] using hv
+        · have hnxt : ¬ i < p + 1 := by omega
+          simpa [hlt, hnxt] using hv
+      · intro q hqlo hqhi
+        refine hTcval q hqlo ?_
         by_cases hlt : i < p
         · rw [if_pos hlt]
-          rw [if_pos (by omega : i < p + 1)] at hw
-          exact hw
+          rw [if_pos (by omega : i < p + 1)] at hqhi
+          exact hqhi
         · rw [if_neg hlt]
-          rw [if_neg (by omega : ¬ i < p + 1)] at hw
-          exact hw
+          rw [if_neg (by omega : ¬ i < p + 1)] at hqhi
+          exact hqhi
 
 /-- **The block of one vertex**, by induction along the table list: at
 the end every table of the depth is right at the vertex the readback
 stands on. -/
 theorem block_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
-    {C : ℕ → ℕ → ℕ} {asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
+    {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
     {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ} (hB : 1 < B) (hn : n < B)
-    {z₀ : ℕ} (hz₀ : z₀ < n) (hcc : asg z₀ = cc) :
+    {z₀ : ℕ} (hzlo : Xoff cc ≤ z₀) (hzhi : z₀ < Xoff (cc + 1))
+    (hz₀ : Xmem z₀ < n) (hcc : asg (Xmem z₀) = cc) :
     ∀ (l : List (DistFO (sigL cap mb j) 1)) (p : ℕ), l = (tablesAt q_top cap mb φ j).drop p →
       Spec B
-        (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ ∧ σ.vars "z" = z₀ ∧
+        (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
+          σ.vars "z" = z₀ ∧ σ.vars "rv" = Xmem z₀ ∧
           ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
-            TabOk q_top cap mb j asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
+            TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
               (tabName j i) (T₀ i) σ (if i < p then z₀ + 1 else z₀))
-        (foldIdx (fun i β => .store (tabName j i) (.var "z") (rbCell q_top cap mb φ j i β)) p l)
-        (fun _ σ' => RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ' ∧
-          σ'.vars "z" = z₀ ∧
+        (foldIdx (fun i β => .store (tabName j i) (.var "rv") (rbCell q_top cap mb φ j i β)) p l)
+        (fun _ σ' => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ' ∧
+          σ'.vars "z" = z₀ ∧ σ'.vars "rv" = Xmem z₀ ∧
           ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
-            TabOk q_top cap mb j asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
+            TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
               (tabName j i) (T₀ i) σ' (if i < p + l.length then z₀ + 1 else z₀))
         (blockCost q_top cap mb φ j p l) := by
   intro l
@@ -601,14 +693,14 @@ theorem block_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O
     obtain ⟨hβ, hltail⟩ := List.cons.inj hl
     subst hβ
     have hstep := (store_step_spec (ns := ns) (O := O) (T := T) (M := M) (Gm := Gm) (C := C)
-      (ou := ou) (val := val) hB hn hz₀ hcc p hp).seq (ih (p + 1) hltail)
+      (ou := ou) (val := val) hB hn hzlo hzhi hz₀ hcc p hp).seq (ih (p + 1) hltail)
       (fun _ _ _ hQ => hQ) (fun _ _ _ _ _ hQ' => hQ')
     refine hstep.post ?_ |>.mono (le_of_eq ?_)
     · intro σ σ' _ hQ
-      refine ⟨hQ.1, hQ.2.1, ?_⟩
+      refine ⟨hQ.1, hQ.2.1, hQ.2.2.1, ?_⟩
       intro i hi
       simp only [List.length_cons]
-      have hq := hQ.2.2 i hi
+      have hq := hQ.2.2.2 i hi
       by_cases hlt : i < p + (l.length + 1)
       · rw [if_pos hlt]
         rwa [if_pos (by omega : i < p + 1 + l.length)] at hq
@@ -623,156 +715,254 @@ theorem one_le_blockCost (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j p :
   | nil => rw [blockCost]
   | cons β l ih => rw [blockCost]; exact le_trans (ih (p + 1)) (Nat.le_add_left _ _)
 
+theorem wvars_readbackFold (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j : ℕ) :
+    ∀ (p : ℕ) (l : List (DistFO (sigL cap mb j) 1)),
+      (foldIdx (fun i β => .store (tabName j i) (.var "rv")
+        (rbCell q_top cap mb φ j i β)) p l).wvars = [] := by
+  intro p l
+  induction l generalizing p with
+  | nil => rfl
+  | cons β l ih => rw [foldIdx, Com.wvars, ih (p + 1), Com.wvars, List.append_nil]
+
 /-- The assignment test of the readback's loop: the vertex is the one
 the cover assigned to the centre being processed. -/
 theorem evalB_asgCond {B j : ℕ} {asg : ℕ → ℕ} {cc z₀ : ℕ} {σ : Env}
-    (hasg : σ.arrs (asgName j) = arrOf n asg) (hasgB : ∀ v < n, asg v < B)
-    (hc : σ.vars (curName j) = cc) (hcB : cc < B) (hz : σ.vars "z" = z₀) (hz₀ : z₀ < n) (hn : n < B) :
-    ∃ b, (Cond.eq (.get (asgName j) (.var "z")) (.var (curName j))).evalB B σ = some b ∧
+    (hasg : σ.arrs (asgName j) = arrOf n asg) (hasgB : asg z₀ < B)
+    (hc : σ.vars (curName j) = cc) (hcB : cc < B) (hrv : σ.vars "rv" = z₀)
+    (hz₀ : z₀ < n) (hn : n < B) :
+    ∃ b, (Cond.eq (.get (asgName j) (.var "rv")) (.var (curName j))).evalB B σ = some b ∧
       (b = true ↔ asg z₀ = cc) := by
-  have hzB : σ.vars "z" < B := by omega
+  have hzB : σ.vars "rv" < B := by rw [hrv]; omega
   refine evalB_condEq_isSome (m := asg z₀) (n := cc) ?_ ?_
-  · refine evalB_get (evalB_var hzB) ?_ (hasgB z₀ hz₀)
-    rw [hz, hasg]
+  · refine evalB_get (evalB_var hzB) ?_ hasgB
+    rw [hrv, hasg]
     exact getElem?_arrOf _ hz₀
   · have h := evalB_var (x := curName j) (σ := σ) (B := B) (by omega)
     rwa [hc] at h
 
 /-- The invariant of the readback's loop: the tables are right at every
-vertex of the cluster the counter has passed. -/
+member slot of the current block the slot pointer has passed. -/
 def RbInv (B q_top cap mb ns Ws j : ℕ) {n : ℕ} (φ : Lax3.FirstOrder.FO 0) (O T M Gm : ℕ → ℕ)
-    (C : ℕ → ℕ → ℕ) (asg : ℕ → ℕ) (cc : ℕ) (ou : List ℕ)
+    (C : ℕ → ℕ → ℕ) (Xoff Xmem asg : ℕ → ℕ) (cc : ℕ) (ou : List ℕ)
     (val : Fin n → ℕ → StepAtom cap mb j → Prop) (T₀ : ℕ → ℕ → ℕ) (σ : Env) : Prop :=
-  RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ ∧ σ.vars "z" ≤ n ∧
+  RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
+    σ.vars "zend" = Xoff (cc + 1) ∧ Xoff cc ≤ σ.vars "z" ∧
+    σ.vars "z" ≤ Xoff (cc + 1) ∧
     ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
-      TabOk q_top cap mb j asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i] (tabName j i)
+      TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i] (tabName j i)
         (T₀ i) σ (σ.vars "z")
 
 /-- **One turn of the readback's loop.** -/
-theorem body_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
-    {C : ℕ → ℕ → ℕ} {asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
-    {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ} (hB : 1 < B) (hn : n < B) :
-    Spec B (fun σ => RbInv B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val T₀ σ ∧
-        σ.vars "z" < n)
-      (.seq (.ite (.eq (.get (asgName j) (.var "z")) (.var (curName j)))
-              (foldIdx (fun i β =>
-                  .store (tabName j i) (.var "z") (rbCell q_top cap mb φ j i β)) 0
-                (tablesAt q_top cap mb φ j))
-              .skip)
-        (.assign "z" (.add (.var "z") (.lit 1))))
-      (fun σ σ' => RbInv B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val T₀ σ' ∧
-        σ'.vars "z" = σ.vars "z" + 1)
-      (1 + 4 + blockCost q_top cap mb φ j 0 (tablesAt q_top cap mb φ j) + 4) := by
+theorem ite_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
+    {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
+    {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ}
+    (hB : 1 < B) (hn : n < B) {z₀ : ℕ}
+    (hzlo : Xoff cc ≤ z₀) (hzhi : z₀ < Xoff (cc + 1))
+    (hz₀ : Xmem z₀ < n) (hasgB : asg (Xmem z₀) < B) :
+    Spec B
+      (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
+        σ.vars "z" = z₀ ∧ σ.vars "rv" = Xmem z₀ ∧
+        ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
+          TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i)
+            (tablesAt q_top cap mb φ j)[i] (tabName j i) (T₀ i) σ z₀)
+      (.ite (.eq (.get (asgName j) (.var "rv")) (.var (curName j)))
+        (foldIdx (fun i β =>
+            .store (tabName j i) (.var "rv") (rbCell q_top cap mb φ j i β)) 0
+          (tablesAt q_top cap mb φ j)) .skip)
+      (fun _ σ' => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ' ∧
+        σ'.vars "z" = z₀ ∧ σ'.vars "rv" = Xmem z₀ ∧
+        ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
+          TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i)
+            (tablesAt q_top cap mb φ j)[i] (tabName j i) (T₀ i) σ' (z₀ + 1))
+      (1 + 4 + blockCost q_top cap mb φ j 0 (tablesAt q_top cap mb φ j)) := by
   classical
   set L := (tablesAt q_top cap mb φ j).length with hL
-  -- the conditional
-  have hite : Spec B
-      (fun σ => RbInv B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val T₀ σ ∧ σ.vars "z" < n)
-      (.ite (.eq (.get (asgName j) (.var "z")) (.var (curName j)))
-        (foldIdx (fun i β => .store (tabName j i) (.var "z") (rbCell q_top cap mb φ j i β)) 0
-          (tablesAt q_top cap mb φ j)) .skip)
-      (fun σ σ' => RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ' ∧
-        σ'.vars "z" = σ.vars "z" ∧
-        ∀ (i : ℕ) (hi : i < L),
-          TabOk q_top cap mb j asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
-            (tabName j i) (T₀ i) σ' (σ.vars "z" + 1))
-      (1 + 4 + blockCost q_top cap mb φ j 0 (tablesAt q_top cap mb φ j)) := by
-    refine Spec.ite ?_ ?_ ?_
-    · rintro σ ⟨⟨hbase, -, -⟩, hlt⟩
-      obtain ⟨b, hb, -⟩ := evalB_asgCond hbase.2.1 hbase.2.2.1 hbase.2.2.2.1 hbase.2.2.2.2.1
-        rfl hlt hn
-      exact ⟨b, hb⟩
-    · refine Spec.of_exists fun σ hσ => ?_
-      obtain ⟨⟨⟨hbase, hle, htab⟩, hlt⟩, hcond⟩ := hσ
-      obtain ⟨b, hb, hbiff⟩ := evalB_asgCond hbase.2.1 hbase.2.2.1 hbase.2.2.2.1
-        hbase.2.2.2.2.1 rfl hlt hn
-      have hasgz : asg (σ.vars "z") = cc := hbiff.mp (Option.some.inj (hb.symm.trans hcond))
-      have hpre : ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
-          TabOk q_top cap mb j asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
-            (tabName j i) (T₀ i) σ (if i < 0 then σ.vars "z" + 1 else σ.vars "z") := by
-        intro i hi
-        rw [if_neg (by omega : ¬ i < 0)]
-        exact htab i hi
-      have hdrop : tablesAt q_top cap mb φ j = (tablesAt q_top cap mb φ j).drop 0 := by
-        rw [List.drop_zero]
-      obtain ⟨σ', hrun, hQ⟩ :=
-        (block_spec (ns := ns) (O := O) (T := T) (M := M) (Gm := Gm) (C := C) (ou := ou)
-          (val := val) hB hn hlt hasgz (tablesAt q_top cap mb φ j) 0
-          hdrop).run (σ := σ) ⟨hbase, rfl, hpre⟩
-      refine ⟨σ', _, hrun, le_rfl, hQ.1, hQ.2.1, ?_⟩
+  refine Spec.ite ?_ ?_ ?_
+  · rintro σ ⟨hbase, hz, hrv, -⟩
+    obtain ⟨b, hb, -⟩ := evalB_asgCond hbase.2.2.2.1
+      hasgB hbase.2.2.2.2.1 hbase.2.2.2.2.2.1 hrv hz₀ hn
+    exact ⟨b, hb⟩
+  · refine Spec.of_exists fun σ hσ => ?_
+    obtain ⟨⟨hbase, hz, hrv, htab⟩, hcond⟩ := hσ
+    obtain ⟨b, hb, hbiff⟩ := evalB_asgCond hbase.2.2.2.1
+      hasgB hbase.2.2.2.2.1 hbase.2.2.2.2.2.1 hrv hz₀ hn
+    have hasgz : asg (Xmem z₀) = cc := hbiff.mp (Option.some.inj (hb.symm.trans hcond))
+    have hpre : ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
+        TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i)
+          (tablesAt q_top cap mb φ j)[i] (tabName j i) (T₀ i) σ
+          (if i < 0 then z₀ + 1 else z₀) := by
       intro i hi
-      have hq := hQ.2.2 i hi
-      rwa [if_pos (by omega : i < 0 + (tablesAt q_top cap mb φ j).length)] at hq
-    · refine (Spec.skip.post ?_).mono (one_le_blockCost q_top cap mb φ j 0 _)
-      rintro σ σ' ⟨⟨⟨hbase, hle, htab⟩, hlt⟩, hcond⟩ rfl
-      obtain ⟨b, hb, hbiff⟩ := evalB_asgCond hbase.2.1 hbase.2.2.1 hbase.2.2.2.1
-        hbase.2.2.2.2.1 rfl hlt hn
-      have hbfalse : b = false := Option.some.inj (hb.symm.trans hcond)
-      have hasgz : asg (σ'.vars "z") ≠ cc := by
-        intro hc
-        rw [hbiff.mpr hc] at hbfalse
-        exact absurd hbfalse (by simp)
-      refine ⟨hbase, rfl, ?_⟩
-      intro i hi
-      obtain ⟨Tb, hTb, hTb0, hTbval⟩ := htab i hi
-      refine ⟨Tb, hTb, hTb0, ?_⟩
-      intro w hw hwc
-      refine hTbval w ?_ hwc
-      rcases Nat.lt_or_ge (w : ℕ) (σ'.vars "z") with h | h
-      · exact h
-      · exact absurd (by rw [show (w : ℕ) = σ'.vars "z" by omega] at hwc; exact hwc) hasgz
-  -- the counter
-  refine (hite.seq (Spec.assign (x := "z") (e := .add (.var "z") (.lit 1))
-      (f := fun σ => σ.vars "z" + 1)
-      (P := fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ ∧ σ.vars "z" < n)
-      ?_) ?_ ?_).mono (by simp [Expr.size])
-  · rintro σ ⟨hbase, hlt⟩
-    exact evalB_bin (evalB_var (by omega)) (evalB_lit (by omega)) (by simp; omega)
-  · rintro σ σ' ⟨-, hlt⟩ ⟨hbase, hzeq, -⟩
-    exact ⟨hbase, by rw [hzeq]; exact hlt⟩
-  · rintro σ σ' σ'' ⟨-, hlt⟩ ⟨hbase, hzeq, htab⟩ rfl
-    refine ⟨⟨rbBase_setVar_z hbase _, ?_, ?_⟩, ?_⟩
-    · rw [vars_setVar, if_pos rfl, hzeq]; omega
-    · intro i hi
-      rw [vars_setVar, if_pos rfl, hzeq]
+      rw [if_neg (by omega : ¬ i < 0)]
       exact htab i hi
-    · rw [vars_setVar, if_pos rfl, hzeq]
+    have hdrop : tablesAt q_top cap mb φ j = (tablesAt q_top cap mb φ j).drop 0 := by
+      rw [List.drop_zero]
+    obtain ⟨σ', hrun, hQ⟩ :=
+      (block_spec (ns := ns) (O := O) (T := T) (M := M) (Gm := Gm) (C := C)
+        (ou := ou) (val := val) hB hn hzlo hzhi hz₀ hasgz
+        (tablesAt q_top cap mb φ j) 0
+        hdrop).run (σ := σ) ⟨hbase, hz, hrv, hpre⟩
+    refine ⟨σ', _, hrun, le_rfl, hQ.1, hQ.2.1, hQ.2.2.1, ?_⟩
+    intro i hi
+    have hq := hQ.2.2.2 i hi
+    rwa [if_pos (by omega : i < 0 + (tablesAt q_top cap mb φ j).length)] at hq
+  · refine (Spec.skip.post ?_).mono (one_le_blockCost q_top cap mb φ j 0 _)
+    rintro σ σ' ⟨⟨hbase, hz, hrv, htab⟩, hcond⟩ rfl
+    obtain ⟨b, hb, hbiff⟩ := evalB_asgCond hbase.2.2.2.1
+      hasgB hbase.2.2.2.2.1 hbase.2.2.2.2.2.1 hrv hz₀ hn
+    have hbfalse : b = false := Option.some.inj (hb.symm.trans hcond)
+    have hasgz : asg (Xmem z₀) ≠ cc := by
+      intro hc
+      rw [hbiff.mpr hc] at hbfalse
+      exact absurd hbfalse (by simp)
+    refine ⟨hbase, hz, hrv, ?_⟩
+    intro i hi
+    obtain ⟨Tb, hTb, hTb0, hTbval⟩ := htab i hi
+    refine ⟨Tb, hTb, ?_, ?_⟩
+    · intro v hv
+      refine hTb0 v ?_
+      rcases hv with hv | hv
+      · exact Or.inl hv
+      · exact Or.inr fun p hp hpl => hv p hp (by omega)
+    intro q hqlo hqhi
+    by_cases hq : q < z₀
+    · exact hTbval q hqlo hq
+    · have hqeq : q = z₀ := by omega
+      have hqn : Xmem q < n := by rw [hqeq]; exact hz₀
+      refine ⟨hqn, fun hqcc => ?_⟩
+      exact (hasgz (by rwa [hqeq] at hqcc)).elim
 
-/-- The cost of the readback: one turn of the loop per vertex, one
-store per tabled formula. -/
-noncomputable def rbCost (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j n : ℕ) : ℕ :=
-  (1 + 4 + blockCost q_top cap mb φ j 0 (tablesAt q_top cap mb φ j) + 4 + 4) * n + 6
+/-- The cost of the readback: one guarded table block per member slot. -/
+noncomputable def rbCost (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j s : ℕ) : ℕ :=
+  (1 + 4 + blockCost q_top cap mb φ j 0 (tablesAt q_top cap mb φ j) + 11) * s + 12
 
-/-- **The readback walks the carrier and writes every table.** At every
-vertex the cover assigned to the centre being processed, the bit of
-every tabled formula is the value of that formula's own boolean
+theorem rbCost_mono (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j : ℕ) :
+    Monotone (rbCost q_top cap mb φ j) := by
+  intro a b hab
+  simp only [rbCost]
+  exact Nat.add_le_add_right (Nat.mul_le_mul_left _ hab) _
+
+/-- **The readback walks the current cover block and writes every table.**
+At every vertex the cover assigned to the centre being processed, the
+bit of every tabled formula is the value of that formula's own boolean
 combination over the atom valuation the caller supplies. -/
-theorem readback_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0} {O T M Gm : ℕ → ℕ}
-    {C : ℕ → ℕ → ℕ} {asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
-    {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ} (hB : 1 < B) (hn : n < B) :
+theorem readback_specCore {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0}
+    {O T M Gm : ℕ → ℕ}
+    {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ} {cc : ℕ} {ou : List ℕ}
+    {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ}
+    {m : ℕ} (hB : 1 < B) (hn : n < B) (hcc : cc < n)
+    (hmono : Xoff cc ≤ Xoff (cc + 1)) (hend : Xoff (cc + 1) ≤ m)
+    (hm : m ≤ n * n) (hmB : m < B)
+    (hmem : ∀ p < m, Xmem p < n)
+    (hasgB : ∀ p, Xoff cc ≤ p → p < Xoff (cc + 1) → asg (Xmem p) < B) :
     Spec B
-      (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ ∧
+      (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
         ∀ (i : ℕ), i < (tablesAt q_top cap mb φ j).length →
           σ.arrs (tabName j i) = arrOf n (T₀ i))
       (readbackCom q_top cap mb φ j)
-      (fun _ σ' => RbBase B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val σ' ∧
+      (fun _ σ' => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ' ∧
         ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
-          TabOk q_top cap mb j asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
-            (tabName j i) (T₀ i) σ' n)
-      (rbCost q_top cap mb φ j n) := by
+          TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i) (tablesAt q_top cap mb φ j)[i]
+            (tabName j i) (T₀ i) σ' (Xoff (cc + 1)))
+      (rbCost q_top cap mb φ j (Xoff (cc + 1) - Xoff cc)) := by
   rw [readbackCom_eq, rbCost]
-  refine ((Spec.forRangeZero (B := B) "z" "n"
-    (RbInv B q_top cap mb ns Ws j φ O T M Gm C asg cc ou val T₀) n
-    (1 + 4 + blockCost q_top cap mb φ j 0 (tablesAt q_top cap mb φ j) + 4) hn
-    (fun σ hσ => hσ.2.1) (fun σ hσ => hσ.1.1.1) (body_spec hB hn)).pre ?_).post ?_
-  · rintro σ ⟨hbase, hsized⟩
-    refine ⟨rbBase_setVar_z hbase 0, ?_, ?_⟩
-    · rw [vars_setVar, if_pos rfl]; omega
-    · intro i hi
-      exact ⟨T₀ i, hsized i hi, fun _ _ => rfl,
-        fun w hw => by rw [vars_setVar, if_pos rfl] at hw; omega⟩
-  · rintro σ σ' - ⟨⟨hbase, -, htab⟩, hzn⟩
-    exact ⟨hbase, fun i hi => hzn ▸ htab i hi⟩
+  let I := RbInv B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val T₀
+  refine Spec.of_exists fun σ hσ => ?_
+  obtain ⟨hbase₀, hsized⟩ := hσ
+  obtain ⟨σ', K, hrun, hKr, hI, hz⟩ := RamDriverAugment.blockScan_run
+    (B := B) (o := xofName j) (t := xmmName j) (x := curName j)
+    (j := "z") (jend := "zend") (w := "rv")
+    (c := .ite (.eq (.get (asgName j) (.var "rv")) (.var (curName j)))
+      (foldIdx (fun i β => .store (tabName j i) (.var "rv")
+        (rbCell q_top cap mb φ j i β)) 0 (tablesAt q_top cap mb φ j)) .skip)
+    (nv := n) (len := n * n)
+    (Kb := 1 + 4 + blockCost q_top cap mb φ j 0 (tablesAt q_top cap mb φ j))
+    (v := cc) (off := Xoff) (tgt := Xmem) (I := I) (σ := σ)
+    (by simp [curName, String.ext_iff]) (by decide) hB hcc (by omega)
+    hbase₀.2.1 hmono
+    (le_trans hend hm)
+    (lt_of_le_of_lt hend hmB)
+    hbase₀.2.2.2.2.1
+    (by intro τ hτ; exact hτ.1.2.2.1)
+    (by intro p hp; exact lt_trans (hmem p (lt_of_lt_of_le hp hend)) hn)
+    (by intro τ hτ; exact ⟨hτ.2.1, hτ.2.2.2.1⟩)
+    (by
+      refine ⟨rbBase_setVar_zend (rbBase_setVar_z hbase₀ (Xoff cc)) (Xoff (cc + 1)), ?_, ?_, ?_, ?_⟩
+      · simp
+      · simp
+      · simpa using hmono
+      · intro i hi
+        refine ⟨T₀ i, by simpa using hsized i hi, fun _ _ => rfl, ?_⟩
+        intro p hp hlt
+        rw [show ((σ.setVar "z" (Xoff cc)).setVar "zend" (Xoff (cc + 1))).vars "z" =
+          Xoff cc by simp] at hlt
+        omega)
+    (by
+      intro τ hτ hlt
+      obtain ⟨hbase, hzend₀, hlo, hle, htab⟩ := hτ
+      have hp_m : τ.vars "z" < m := lt_of_lt_of_le hlt hend
+      have hp_n : Xmem (τ.vars "z") < n := hmem _ hp_m
+      obtain ⟨τ', hrun, hbase', hz', hrv', htab'⟩ :=
+        (ite_spec (ns := ns) (O := O) (T := T) (M := M) (Gm := Gm) (C := C)
+          (Xoff := Xoff) (Xmem := Xmem) (asg := asg) (cc := cc) (ou := ou)
+          (val := val) (T₀ := T₀) hB hn hlo hlt hp_n
+          (hasgB _ hlo hlt)).run (σ :=
+            τ.setVar "rv" (Xmem (τ.vars "z")))
+          ⟨rbBase_setVar_rv hbase _, by simp, by simp, by
+            intro i hi
+            simpa [TabOk] using htab i hi⟩
+      have hzend : τ'.vars "zend" = τ.vars "zend" :=
+        hrun.frame_var "zend" (by
+          simp [Com.wvars, wvars_readbackFold])
+      refine ⟨τ', _, hrun, le_rfl, hz', ?_⟩
+      refine ⟨rbBase_setVar_z hbase' (τ.vars "z" + 1), ?_, ?_, ?_, ?_⟩
+      · rw [vars_setVar, if_neg (by decide : "zend" ≠ "z"), hzend, hzend₀]
+      · rw [vars_setVar, if_pos rfl]; omega
+      · rw [vars_setVar, if_pos rfl]; omega
+      · intro i hi
+        rw [vars_setVar, if_pos rfl]
+        simpa [TabOk] using htab' i hi)
+  refine ⟨σ', K, hrun, hKr, hI.1, ?_⟩
+  intro i hi
+  rw [← hz]
+  exact hI.2.2.2.2 i hi
+
+/-- The carrier-cover presentation of `readback_specCore`.  Kept as the
+landed API; the active adapter below uses the operational core directly. -/
+theorem readback_spec {B q_top cap mb ns Ws j : ℕ} {φ : Lax3.FirstOrder.FO 0}
+    {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ} {Xoff Xmem asg : ℕ → ℕ}
+    {cc : ℕ} {ou : List ℕ}
+    {val : Fin n → ℕ → StepAtom cap mb j → Prop} {T₀ : ℕ → ℕ → ℕ}
+    {G : SimpleGraph (Fin n)} {A₀ ord : ℕ → ℕ} {π : Equiv.Perm (Fin n)}
+    {r m : ℕ} (hB : 1 < B) (hn : n < B) (hcc : cc < n)
+    (hout : RamCover.CoverOut G A₀ π ord r m Xoff Xmem asg)
+    (hm : m ≤ n * n) (hmB : m < B) :
+    Spec B
+      (fun σ => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ ∧
+        ∀ (i : ℕ), i < (tablesAt q_top cap mb φ j).length →
+          σ.arrs (tabName j i) = arrOf n (T₀ i))
+      (readbackCom q_top cap mb φ j)
+      (fun _ σ' => RbBase B q_top cap mb ns Ws j φ O T M Gm C Xoff Xmem asg cc ou val σ' ∧
+        ∀ (i : ℕ) (hi : i < (tablesAt q_top cap mb φ j).length),
+          TabOk q_top cap mb j Xoff Xmem asg cc (fun v => val v i)
+            (tablesAt q_top cap mb φ j)[i] (tabName j i) (T₀ i) σ'
+            (Xoff (cc + 1)))
+      (rbCost q_top cap mb φ j (Xoff (cc + 1) - Xoff cc)) := by
+  have hoff_le : ∀ k ≤ n, Xoff k ≤ m := by
+    have key : ∀ d k, k + d = n → Xoff k ≤ Xoff n := by
+      intro d
+      induction d with
+      | zero => intro k hk; rw [show k = n by omega]
+      | succ d ih =>
+          intro k hk
+          exact le_trans (hout.mono k (by omega)) (ih (k + 1) (by omega))
+    intro k hk
+    rw [← hout.last]
+    exact key (n - k) k (by omega)
+  exact readback_specCore hB hn hcc (hout.mono cc hcc)
+    (hoff_le (cc + 1) (by omega)) hm hmB hout.mem_lt
+    (fun p _ hp =>
+      have hp_m : p < m := lt_of_lt_of_le hp (hoff_le (cc + 1) (by omega))
+      lt_trans (hout.asg_lt _ (hout.mem_lt p hp_m)) hn)
 
 /-! #### The frame of the whole readback
 
@@ -782,16 +972,13 @@ what those two lists are: the depth's own tables, and the counter. -/
 
 theorem wvars_foldIdx (q_top cap mb : ℕ) (φ : Lax3.FirstOrder.FO 0) (j : ℕ) :
     ∀ (p : ℕ) (l : List (DistFO (sigL cap mb j) 1)),
-      (foldIdx (fun i β => .store (tabName j i) (.var "z") (rbCell q_top cap mb φ j i β))
+      (foldIdx (fun i β => .store (tabName j i) (.var "rv") (rbCell q_top cap mb φ j i β))
         p l).wvars = [] := by
-  intro p l
-  induction l generalizing p with
-  | nil => rfl
-  | cons β l ih => rw [foldIdx, Com.wvars, ih (p + 1), Com.wvars, List.append_nil]
+  exact wvars_readbackFold q_top cap mb φ j
 
 theorem mem_warrs_foldIdx {q_top cap mb : ℕ} {φ : Lax3.FirstOrder.FO 0} {j : ℕ} {a : String} :
     ∀ (p : ℕ) (l : List (DistFO (sigL cap mb j) 1)),
-      a ∈ (foldIdx (fun i β => .store (tabName j i) (.var "z") (rbCell q_top cap mb φ j i β))
+      a ∈ (foldIdx (fun i β => .store (tabName j i) (.var "rv") (rbCell q_top cap mb φ j i β))
         p l).warrs → ∃ i, a = tabName j i := by
   intro p l
   induction l generalizing p with
@@ -809,15 +996,18 @@ else. -/
 theorem mem_warrs_readbackCom {q_top cap mb : ℕ} {φ : Lax3.FirstOrder.FO 0} {j : ℕ}
     {a : String} (h : a ∈ (readbackCom q_top cap mb φ j).warrs) : ∃ i, a = tabName j i := by
   rw [readbackCom_eq] at h
-  simp only [Com.warrs, List.append_nil, List.nil_append] at h
+  simp only [RamAugment.blockScan, Csr.loadRow, Csr.scan, Com.warrs,
+    List.append_nil, List.nil_append] at h
   exact mem_warrs_foldIdx 0 _ h
 
-/-- The readback assigns the counter and nothing else. -/
+/-- The readback assigns its slot pointer, end pointer and loaded vertex only. -/
 theorem not_mem_wvars_readbackCom {q_top cap mb : ℕ} {φ : Lax3.FirstOrder.FO 0} {j : ℕ}
-    {y : String} (hy : y ≠ "z") : y ∉ (readbackCom q_top cap mb φ j).wvars := by
+    {y : String} (hyz : y ≠ "z") (hyend : y ≠ "zend") (hyrv : y ≠ "rv") :
+    y ∉ (readbackCom q_top cap mb φ j).wvars := by
   rw [readbackCom_eq]
-  simp only [Com.wvars, wvars_foldIdx, List.append_nil, List.nil_append]
-  simp only [List.mem_cons, List.not_mem_nil, or_false, List.mem_append]
+  simp only [RamAugment.blockScan, Csr.loadRow, Csr.scan, Com.wvars, wvars_foldIdx,
+    List.append_nil, List.nil_append, List.mem_cons, List.not_mem_nil, or_false,
+    List.mem_append]
   tauto
 
 /-! ### The obligation
@@ -842,25 +1032,31 @@ precondition, so this file consumes it as it stands and carries no gap.
   scatter phase's own postcondition — both true of the passes that
   write them, `readback_spec` itself by `evalB_rbCell`.
 * **The centre.** `σ.vars "c" < n` is a conjunct of `ReadbackStep`'s
-  precondition and `n < B` a hypothesis here; the cover's
-  `RamCover.CoverOut.asg_lt` supplies the assignment's bound. -/
+  precondition and `n < B` a hypothesis here; the cover's block bound
+  and `RamCover.CoverOut.asg_lt` supply the loaded member's bounds. -/
 
 /-- A scatter flag is not the readback's counter. -/
 theorem flgName_ne_z (j i k : ℕ) : flgName j i k ≠ "z" := by
+  simp [flgName, String.ext_iff]
+
+theorem flgName_ne_rv (j i k : ℕ) : flgName j i k ≠ "rv" := by
   simp [flgName, String.ext_iff]
 
 /-- **The readback of one cluster, discharged.** -/
 theorem readbackStep {B q_top cap mb ns Ws j : ℕ} {n : ℕ} {φ : Lax3.FirstOrder.FO 0}
     {G : SimpleGraph (Fin n)}
     {O T M Gm : ℕ → ℕ} {C : ℕ → ℕ → ℕ} {π : Equiv.Perm (Fin n)}
-    {ord Xoff Xmem asg : ℕ → ℕ} {m : ℕ} {X W : Set (Fin n)} {w : Fin mb → Fin n}
+    {ord Xoff Xmem asg : ℕ → ℕ} {m k : ℕ} {X W : Set (Fin n)} {w : Fin mb → Fin n}
     {Alv' Gam' : ℕ → ℕ} {C' : ℕ → ℕ → ℕ} {K : ℕ} (hB : 1 < B) (hn : n < B)
-    (hK : rbCost q_top cap mb φ j n ≤ K) :
-    ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asg m X W w
+    (hkn : k < n)
+    (hK : RamCover.CoverOut G M π ord cap m Xoff Xmem asg →
+      rbCost q_top cap mb φ j (Xoff (k + 1) - Xoff k) ≤ K) :
+    ReadbackStep B q_top cap mb ns Ws j φ G O T M Gm C π ord Xoff Xmem asg m k X W w
       Alv' Gam' C' K := by
   classical
   intro σ hσ
-  obtain ⟨hturn, hdata, hcolarr, hcolbit, hcolread, htabinv, htsz, hcn, hvis, hflag⟩ := hσ
+  obtain ⟨hturn, hdata, hcolarr, hcolbit, hcolread, htabinv, htsz, hck, hvis, hflag⟩ := hσ
+  have hcn : σ.vars (curName j) < n := by rw [hck]; exact hkn
   have hcB : σ.vars (curName j) < B := lt_trans hcn hn
   -- the depth's own tables are there, and this names their cells
   set T₀ : ℕ → ℕ → ℕ := fun i v => (σ.arrs (tabName j i)).getD v 0 with hT₀def
@@ -873,7 +1069,6 @@ theorem readbackStep {B q_top cap mb ns Ws j : ℕ} {n : ℕ} {φ : Lax3.FirstOr
     rw [hT₀def]
     simp only [hg, getD_arrOf _ hv]
   obtain ⟨hlevel, hplayrec, hordA, hxoffA, hxmemA, hasgA, hxpA, hmn, hmB, hordlt, hcout⟩ := hturn
-  have hasgB : ∀ v < n, asg v < B := fun v hv => lt_trans (hcout.asg_lt v hv) hn
   -- **the atoms of every tabled formula, at every vertex the turn was assigned**
   -- (wave R1.8-T3-flip (c2b)). A visited vertex is in the cluster and alive at the
   -- parent depth (`hvis`), so it is either alive at the child depth or a vertex
@@ -895,11 +1090,12 @@ theorem readbackStep {B q_top cap mb ns Ws j : ℕ} {n : ℕ} {φ : Lax3.FirstOr
         DRank 1 q' (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])),
       ∀ a ∈ (bcOf q_top (stepFml cap mb j (tablesAt q_top cap mb φ j)[i]) h).atoms,
         ∃ u ≤ 1, (atomExpr q_top cap mb φ j i (tablesAt q_top cap mb φ j)[i] a).evalB B
-            (σ.setVar "z" (v : ℕ)) = some u ∧
+            (σ.setVar "rv" (v : ℕ)) = some u ∧
           (u ≠ 0 ↔ atomVal (stepArenaP (masked G M) X w)
             (stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w) v a) := by
     intro v hvcur i hi h a ha
-    have hzv : (σ.setVar "z" (v : ℕ)).vars "z" = (v : ℕ) := by rw [vars_setVar, if_pos rfl]
+    have hrvv : (σ.setVar "rv" (v : ℕ)).vars "rv" = (v : ℕ) := by
+      rw [vars_setVar, if_pos rfl]
     cases a with
     | inl γ =>
       have hmemγ : γ ∈ tablesAt q_top cap mb φ (j + 1) :=
@@ -909,9 +1105,9 @@ theorem readbackStep {B q_top cap mb ns Ws j : ℕ} {n : ℕ} {φ : Lax3.FirstOr
       have hvd : v ∈ RamDriverCluster.rowDom M Alv' X W := hrow v hvcur
       refine ⟨Tc (v : ℕ), hTc1 _ hvd, ?_, ?_⟩
       · show (Expr.get (tabName (j + 1) (posOf γ (tablesAt q_top cap mb φ (j + 1))))
-          (.var "z")).evalB B _ = _
+          (.var "rv")).evalB B _ = _
         refine evalB_get (k := (v : ℕ)) ?_ ?_ (lt_of_le_of_lt (hTc1 _ hvd) hB)
-        · rw [evalB_var (by rw [hzv]; omega), hzv]
+        · rw [evalB_var (by rw [hrvv]; omega), hrvv]
         · rw [arrs_setVar, hTc]
           exact getElem?_arrOf _ v.isLt
       · rw [hTcval v hvd, heq, masked_alv_eq hdata, hcolread]
@@ -924,38 +1120,62 @@ theorem readbackStep {B q_top cap mb ns Ws j : ℕ} {n : ℕ} {φ : Lax3.FirstOr
           (stepFml cap mb j (tablesAt q_top cap mb φ j)[i])).2)), hf1, ?_, hfiff⟩
       show (Expr.var (flgName j i _)).evalB B _ = _
       rw [evalB_var (by
-          rw [vars_setVar, if_neg (flgName_ne_z _ _ _)]; omega),
-        vars_setVar, if_neg (flgName_ne_z _ _ _)]
+          rw [vars_setVar, if_neg (flgName_ne_rv _ _ _)]; omega),
+        vars_setVar, if_neg (flgName_ne_rv _ _ _)]
   -- the walk
   obtain ⟨σ', hrun, ⟨hbase', htab'⟩, hfv, hfa, -, -⟩ :=
-    (readback_spec (ns := ns) (O := O) (T := T) (M := M) (Gm := Gm) (C := C) (asg := asg)
+    (readback_spec (ns := ns) (O := O) (T := T) (M := M) (Gm := Gm) (C := C)
+      (Xoff := Xoff) (Xmem := Xmem) (asg := asg)
       (cc := σ.vars (curName j)) (ou := σ.out) (T₀ := T₀)
       (val := fun v _ a => atomVal (stepArenaP (masked G M) X w)
         (stepColoringP cap (masked G M) (colRead n C (sigL cap mb j)) X w) v a)
-      hB hn).frame.run (σ := σ)
-      ⟨⟨hlevel, hasgA, hasgB, rfl, hcB, rfl, hatom⟩, hsz⟩
+      hB hn hcn hcout hmn hmB).frame.run (σ := σ)
+      ⟨⟨hlevel, hxoffA, hxmemA, hasgA, rfl, hcB, rfl,
+        fun p _ _ hp hcur => hatom ⟨Xmem p, hp⟩ hcur⟩, hsz⟩
   have hframeA : ∀ a : String, (∀ i, a ≠ tabName j i) → σ'.arrs a = σ.arrs a :=
     fun a hane => hfa a (fun hm => by
       obtain ⟨i, hi⟩ := mem_warrs_readbackCom hm
       exact hane i hi)
-  have hframeV : ∀ x : String, x ≠ "z" → σ'.vars x = σ.vars x :=
-    fun x hxne => hfv x (not_mem_wvars_readbackCom hxne)
-  refine ⟨σ', hrun.mono hK, ⟨hbase'.1,
-    hplayrec.congr (fun a _ => hframeV (ctrName a) (by simp [ctrName, String.ext_iff]))
+  have hframeV : ∀ x : String, x ≠ "z" → x ≠ "zend" → x ≠ "rv" →
+      σ'.vars x = σ.vars x :=
+    fun x hxz hxe hxv => hfv x (not_mem_wvars_readbackCom hxz hxe hxv)
+  have hKr : rbCost q_top cap mb φ j
+      (Xoff (σ.vars (curName j) + 1) - Xoff (σ.vars (curName j))) ≤ K :=
+    by simpa [hck] using hK hcout
+  refine ⟨σ', hrun.mono hKr, ⟨hbase'.1,
+    hplayrec.congr (fun a _ => hframeV (ctrName a)
+        (by simp [ctrName, String.ext_iff]) (by simp [ctrName, String.ext_iff])
+        (by simp [ctrName, String.ext_iff]))
+      (fun a _ => hframeA (resName a) (fun i => Ne.symm (by
+        simp [tabName, resName, String.ext_iff])))
       (fun a _ => hframeA (gamName a) (fun i => Ne.symm (by
-        simp [tabName, gamName, String.ext_iff]))),
-    ?_, ?_, ?_, hbase'.2.1, ?_, hmn, hmB, hordlt, hcout⟩,
-    hbase'.2.2.2.2.2.1, hbase'.2.2.2.1, ?_⟩
+        simp [tabName, gamName, String.ext_iff])))
+      (fun a _ => hframeA (parName a) (fun i => Ne.symm (by
+        simp [tabName, parName, balName, String.ext_iff]))),
+    ?_, ?_, ?_, hbase'.2.2.2.1, ?_, hmn, hmB, hordlt, hcout⟩,
+    hbase'.2.2.2.2.2.2.1, hbase'.2.2.2.2.1, ?_⟩
   · rw [hframeA (ordName j) (fun i => Ne.symm (by
       simp [tabName, ordName, String.ext_iff]))]; exact hordA
   · rw [hframeA (xofName j) (fun i => Ne.symm (by
       simp [tabName, xofName, String.ext_iff]))]; exact hxoffA
   · rw [hframeA (xmmName j) (fun i => Ne.symm (by
       simp [tabName, xmmName, String.ext_iff]))]; exact hxmemA
-  · rw [hframeV (xpName j) (by simp [xpName, String.ext_iff])]; exact hxpA
+  · rw [hframeV (xpName j) (by simp [xpName, String.ext_iff])
+      (by simp [xpName, String.ext_iff]) (by simp [xpName, String.ext_iff])]
+    exact hxpA
   · intro i hi
     obtain ⟨Tb, hTb, hTb0, hTbval⟩ := htab' i hi
-    exact ⟨Tb, T₀ i, hTb, hsz i hi, hTb0, fun v hv => hTbval v v.isLt hv⟩
+    refine ⟨Tb, T₀ i, hTb, hsz i hi, fun v hv => hTb0 v (Or.inl hv),
+      fun v hv => ?_⟩
+    have hcl : RamCover.InCluster (masked G M) π cap (ord (σ.vars (curName j))) (v : ℕ) := by
+      have hs := hcout.asg_cover (v : ℕ) v.isLt (WalkDistance.mem_ball_self _ _ _)
+      simpa [hv] using hs
+    obtain ⟨p, hp₁, hp₂, hp₃⟩ := (hcout.block _ hcn (v : ℕ)).mpr hcl
+    obtain ⟨hpn, hrowp⟩ := hTbval p hp₁ hp₂
+    obtain ⟨hbit, hval⟩ := hrowp (by rwa [hp₃])
+    have hpv : (⟨Xmem p, hpn⟩ : Fin n) = v := Fin.ext hp₃
+    refine ⟨by simpa [hp₃] using hbit, ?_⟩
+    simpa [hp₃, hpv] using hval
 
 end Readback
 
