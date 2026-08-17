@@ -1,0 +1,197 @@
+\begin{thebibliography}{10}
+
+\bibitem{abrgavmal+07}
+I.~Abraham, C.~Gavoille, D.~Malkhi, and U.~Wieder.
+\newblock Strong-diameter decompositions of minor free graphs.
+\newblock In {\em Proceedings of the nineteenth annual ACM Symposium on
+  Parallel Algorithms and Architectures}, pages 16--24, 2007.
+
+\bibitem{bodfomlok+09}
+H.L. Bodlaender, F.V. Fomin, D.~Lokshtanov, E.~Penninkx, S.~Saurabh, and D.M.
+  Thilikos.
+\newblock ({M}eta) {K}ernelization.
+\newblock In {\em Proceedings of the 50th Annual IEEE Symposium on Foundations
+  of Computer Science}, pages 629--638, 2009.
+
+\bibitem{buscoslaf+07}
+C.~Busch, R.~LaFortune, and S.~Tirthapura.
+\newblock Improved sparse covers for graphs excluding a fixed minor.
+\newblock In {\em Proceedings of the twenty-sixth annual ACM Symposium on
+  Principles of Distributed Computing}, pages 61--70, 2007.
+
+\bibitem{cou90}
+B.~Courcelle.
+\newblock Graph rewriting: An algebraic and logic approach.
+\newblock In J.~van Leeuwen, editor, {\em Handbook of Theoretical Computer
+  Science}, volume~B, pages 194--242. Elsevier Science Publishers, 1990.
+
+\bibitem{coumakrot00}
+B.~Courcelle, J.A. Makowsky, and U.~Rotics.
+\newblock Linear time solvable optimization problems on graphs of bounded
+  clique width.
+\newblock {\em Theory of Computing Systems}, 33(2):125--150, 2000.
+
+\bibitem{coumakrot01}
+B.~Courcelle, J.A. Makowsky, and U.~Rotics.
+\newblock On the fixed-parameter complexity of graph enumeration problems
+  definable in monadic second-order logic.
+\newblock {\em Discrete Applied Mathematics}, 108(1--2):23--52, 2001.
+
+\bibitem{dawgrokre07}
+A.~Dawar, M.~Grohe, and S.~Kreutzer.
+\newblock Locally excluding a minor.
+\newblock In {\em Proceedings of the 22nd IEEE Symposium on Logic in Computer
+  Science}, pages 270--279, 2007.
+
+\bibitem{dawgrokre+06}
+A.~Dawar, M.~Grohe, S.~Kreutzer, and N.~Schweikardt.
+\newblock Approximation schemes for first-order definable optimisation
+  problems.
+\newblock In {\em Proceedings of the 21st IEEE Symposium on Logic in Computer
+  Science}, pages 411--420, 2006.
+
+\bibitem{DawarKre09}
+A.~Dawar and S.~Kreutzer.
+\newblock Domination problems in nowhere-dense classes of graphs.
+\newblock In {\em Foundations of software technology and theoretical computer
+  science (FSTTCS)}, pages 157--168, 2009.
+
+\bibitem{Diestel05}
+R.~Diestel.
+\newblock {\em Graph Theory}.
+\newblock Springer-Verlag, 3rd edition, 2005.
+
+\bibitem{DowneyF98}
+R.~Downey and M.~Fellows.
+\newblock {\em Parameterized Complexity}.
+\newblock Springer, 1999.
+
+\bibitem{dowfeltay96}
+R.G. Downey, M.R. Fellows, and U.~Taylor.
+\newblock The parameterized complexity of relational database queries and an
+  improved characterization of {W}[1].
+\newblock In D.S. Bridges, C.~Calude, P.~Gibbons, S.~Reeves, and I.H. Witten,
+  editors, {\em Combinatorics, Complexity, and Logic}, volume~39 of {\em
+  Proceedings of DMTCS}, pages 194--213. Springer-Verlag, 1996.
+
+\bibitem{Dvorak13}
+Z.~Dvo{\v r}{\'a}k.
+\newblock Constant-factor approximation of the domination number in sparse
+  graphs.
+\newblock {\em Eur. J. Comb.}, 34(5):833--840, 2013.
+
+\bibitem{dvokratho10}
+Z.~Dvo{\v r}{\'a}k, D.~Kr{\'a}l, and R.~Thomas.
+\newblock Deciding first-order properties for sparse graphs.
+\newblock In {\em Proceedings of the 51st Annual IEEE Symposium on Foundations
+  of Computer Science}, pages 133--142, 2010.
+
+\bibitem{EbbinghausFluTho94}
+H.-D. Ebbinghaus, J.~Flum, and W.~Thomas.
+\newblock {\em Mathematical Logic}.
+\newblock Springer, 2nd edition, 1994.
+
+\bibitem{flugro01}
+J.~Flum and M.~Grohe.
+\newblock Fixed-parameter tractability, definability, and model checking.
+\newblock {\em {SIAM} Journal on Computing}, 31(1):113--145, 2001.
+
+\bibitem{FlumGro06}
+J.~Flum and M.~Grohe.
+\newblock {\em Parameterized Complexity Theory}.
+\newblock Springer Verlag, 2006.
+
+\bibitem{frigro01}
+M.~Frick and M.~Grohe.
+\newblock Deciding first-order properties of locally tree-decomposable
+  structures.
+\newblock {\em Journal of the ACM}, 48:1184--1206, 2001.
+
+\bibitem{Gaifman82}
+H.~Gaifman.
+\newblock On local and non-local properties.
+\newblock In J.~Stern, editor, {\em Herbrand Symposium, Logic Colloquium '81},
+  pages 105 -- 135. North Holland, 1982.
+
+\bibitem{gro07b}
+M.~Grohe.
+\newblock Logic, graphs, and algorithms.
+\newblock In J.~Flum, E.~Gr\"adel, and T.~Wilke, editors, {\em Logic and
+  Automata -- History and Perspectives}, volume~2 of {\em Texts in Logic and
+  Games}, pages 357--422. Amsterdam University Press, 2007.
+
+\bibitem{grokawree13}
+M.~Grohe, K.~Kawarabayashi, and B.~Reed.
+\newblock A simple algorithm for the graph minor decomposition -- logic meets
+  structural graph theory--.
+\newblock In {\em Proceedings of the 24th Annual ACM-SIAM Symposium on Discrete
+  Algorithms}, 2013.
+
+\bibitem{grokre11}
+M.~Grohe and S.~Kreutzer.
+\newblock Methods for algorithmic meta theorems.
+\newblock In M.~Grohe and J.A. Makowsky, editors, {\em Model Theoretic Methods
+  in Finite Combinatorics}, volume 558 of {\em Contemporary Mathematics}, pages
+  181--206. American Mathematical Society, 2011.
+
+\bibitem{KiersteadY03}
+H.A. Kierstead and D.~Yang.
+\newblock Orderings on graphs and game coloring number.
+\newblock {\em Order}, 20(3):255--264, 2003.
+
+\bibitem{kre11}
+S.~Kreutzer.
+\newblock Algorithmic meta-theorems.
+\newblock In J.~Esparza, C.~Michaux, and C.~Steinhorn, editors, {\em Finite and
+  Algorithmic Model Theory}, London Mathematical Society Lecture Note Series,
+  chapter~5, pages 177--270. Cambridge University Press, 2011.
+
+\bibitem{kretaz10a}
+S.~Kreutzer and S.~Tazari.
+\newblock Lower bounds for the complexity of monadic second-order logic.
+\newblock In {\em Proceedings of the 25th IEEE Symposium on Logic in Computer
+  Science}, 2010.
+
+\bibitem{kretaz10}
+S.~Kreutzer and S.~Tazari.
+\newblock On brambles, grid-like minors, and parameterized intractability of
+  monadic second-order logic.
+\newblock In {\em Proceedings of the 21st Annual ACM-SIAM Symposium on Discrete
+  Algorithms}, 2010.
+
+\bibitem{LangerRRS12}
+A.~Langer, F.~Reidl, P.~Rossmanith, and S.~Sikdar.
+\newblock Evaluation of an mso-solver.
+\newblock In {\em ALENEX}, pages 55--63, 2012.
+
+\bibitem{NesetrilOdM12}
+J.~{Ne\v set\v ril} and P.~Ossona {de Mendez}.
+\newblock {\em Sparsity}.
+\newblock Springer, 2012.
+
+\bibitem{NesetrilO11}
+J.~{Ne\v{s}et{\v r}il} and P.~{Ossona de Mendez}.
+\newblock On nowhere dense graphs.
+\newblock {\em European Journal of Combinatorics}, 32(4):600--617, 2011.
+
+\bibitem{NesetrilO05}
+J.~Nešetřil and P.~Ossona de~Mendez.
+\newblock Grad and classes with bounded expansion ii. algorithmic aspects.
+\newblock {\em arXiv}, math/0508324v2, 2005.
+
+\bibitem{papyan91}
+C.H. Papadimitriou and M.~Yannakakis.
+\newblock Optimization, approximation, and complexity classes.
+\newblock {\em Journal of Computer and System Sciences}, 43:425--440, 1991.
+
+\bibitem{see96}
+D.~Seese.
+\newblock Linear time computable problems and first-order descriptions.
+\newblock {\em Mathematical Structures in Computer Science}, 6:505--526, 1996.
+
+\bibitem{Zhu09}
+X.~Zhu.
+\newblock Colouring graphs with bounded generalized colouring number.
+\newblock {\em Discrete Mathematics}, 309:5562--5568, 2009.
+
+\end{thebibliography}

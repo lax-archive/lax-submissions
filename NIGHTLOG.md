@@ -6108,3 +6108,75 @@ reclaimable are 54 MB, not a meaningful reclaim; the real consumers are
 `~/.elan` (34 GB) and `~/.lax/warm` (7.4 GB), neither this campaign's to
 prune. `lax build` stays a landing-boundary gate run from the main
 checkout, never a per-wave gate in a worktree.
+
+## ND-MC restart — 2026-08-17 (Jan: prune, rethink, then formalize)
+
+**Next session's goal, set by Jan: a clean critique.** Run
+`Workflow({name: 'ndmc-critique'})` — the harness is now checked in at
+`.claude/workflows/ndmc-critique.js` — and keep repairing
+`plans/nowhere-dense-model-checking/algorithm-v2.md` until nothing
+survives its adversarial verifier at severity major or fatal. Re-point
+the four group prompts at whatever is unaudited in the current revision
+before each run; auditing what a previous round already fixed wastes the
+pass. Do not start proving until the critique is clean.
+
+**What happened.** Jan's instruction: prune all algorithmic work so it
+stops polluting the thinking, take notes so the history need not be read,
+rethink the key algorithmic argument from first principles as human
+readable pseudocode with runtimes, and only then formalize — preferring
+high-level pseudocode arguments, because the campaign kept getting lost in
+implementation detail.
+
+Pruned 103 files / 102,545 lines (the `Ram*`/`Refine*` word-RAM layer plus
+the abstract evaluator and its formula tables). Kept and green at **3410
+jobs**: the 25-file mathematical layer — the locality engine of
+arXiv:2606.23180, which still discharges `Lax3.Locality` and
+`Lax3.NormalForm`; the isolation splitter game; the sparse covers with
+their augmentation chain; the two rewrites and the edgeless base case.
+Two files were later restored on audit evidence (`CostRecurrence`,
+`TgtCoupling`) — see `pruned-algorithmic-layer.md` §3a.
+
+**Three audits ran, 29 agents.** They are the session's real product, and
+the pattern in them is the thing to carry forward: *every claim not pinned
+to a cited statement turned out wrong.*
+
+- Audit 1 (7 agents) on the evidence the prune rested on. The prune was
+  right; two of its three stated reasons were not. `Spec`'s `K` is an
+  upper bound, so the `128·n³` result is a floor on budget parameters, not
+  on steps — it refutes the proof architecture, not the program and not
+  the algorithm. And **"ε = ½ clears with headroom; the algorithm is not a
+  dead end" is false** and is struck from both documents: the guard is
+  evaluated at two numerals the same file compiles as unrealisable, covers
+  3 of 8 rows, and hard-wires `ℓ = 3` where the class forces `N(2s+2)` at
+  radius `2·9^12`. **Nothing in this repository supports or refutes the
+  algorithm's `n^{1+ε}`.** The real justification for the prune is the
+  cover phase: `coverCom` is a carrier loop around a carrier loop, run
+  once per node with `Θ(n)` nodes, hence cubic on an edgeless input.
+- Audit 2 (13 agents) on the redesign itself: ~20 findings, two unsound.
+  The fused `induce` violated `sat_iso`'s pre-isolation profile
+  requirement; the batch computation was *vacuous* because isolation is
+  permanent. Rev 3 repairs both.
+- Audit 3 (9 agents) **was still running when the session ended.** Its
+  findings are lost with the container — re-run the harness.
+
+**Decisions Jan took.** (1) Squaring the headline axiom's word-length side
+condition, `c·(|x|+v+1)² ≤ 2^w`, because the algorithm needs
+`Θ(n^{1+δ})` addressable cells and the linear form afforded only linear
+space. Recorded as a deliberate deviation in the concept's own docstring;
+it weakens the statement and touches no other submission. (2) Checking in
+`references/gks/` (arXiv:1311.3899) despite its non-CC-BY licence — both
+earlier audits had to check every "GKS §6" claim against absence.
+
+**Where a successor starts.** `algorithm-v2.md` §8 step 0: the cover, in
+*time* and in *space*, together. It is the sole superlinear routine, the
+sole source of `D(N)`, the sole reason §7 needs `δ`, and the sole reason
+the contract had to change. Everything else is downstream of it. §7 is a
+fresh derivation and the design's load-bearing unproved claim; the owed
+lemmas are the order-preserving compaction (§5 step 3′), the
+`S`-generalized `ReachedR`, `(★)`'s edge half, and `ctr`'s π-min identity.
+
+**One process rule earned three times this session and worth keeping:**
+read the theorem, not the docstring, and not the file's framing prose. It
+cost a compiled proof of §8 step 1 (deleted as "arithmetic for the wrong
+program", restored two hours later), and it is what both refuted claims of
+audit 1 had in common.

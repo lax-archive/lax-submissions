@@ -3,6 +3,15 @@
 **Rev 3, 2026-08-17.** Status: **design under repair — the abstract core is
 sound modulo the owed lemmas listed in §8; the space seam of §11 is resolved.**
 
+> **Next milestone, set by Jan 2026-08-17: a clean critique.** Run
+> `Workflow({name: 'ndmc-critique'})` and repair this document until nothing
+> survives its adversarial verifier at major or fatal. A third audit (9 agents,
+> aimed at the cover's time and space and at Rev 3's two new inventions) was
+> launched and did not finish before the session ended; its findings were not
+> folded in and must be re-obtained. **Do not start proving until the critique
+> is clean** — this document has been through two audits and neither round was
+> the last one.
+
 Rev 1 was written in one pass after pruning the algorithmic layer. Two
 adversarial audits followed, 20 agents in total: one on the evidence the prune
 rested on (`pruned-algorithmic-layer.md` §2 Rev 2 records its outcome), one on

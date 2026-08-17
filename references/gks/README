@@ -1,0 +1,24 @@
+arXiv:1311.3899 (Grohe–Kreutzer–Siebertz, "Deciding first-order properties
+of nowhere dense graphs"; JACM 2017) LaTeX source, fetched 2026-08-17.
+
+**License differs from the other references here.** This one is under
+arXiv's default non-exclusive distribution license, not CC-BY 4.0. It is
+checked in on Jan's explicit permission, 2026-08-17, because both audits
+of the ND-MC algorithm redesign had to run without it: every claim traced
+to "GKS §6" or "GKS §8" in `plans/nowhere-dense-model-checking/` had been
+checked against absence rather than against text, and §6 (sparse
+neighborhood covers) is the one routine the whole running-time argument
+rests on.
+
+Section map, by line in `nowheredense.tex`:
+
+  261  Introduction
+  503  Preliminaries
+  613  Nowhere Dense Classes of Graphs
+  758  Game theoretic characterisation      -- the splitter game
+  917  Independent Sets                     -- the problem the DT scatter
+                                               sentences let us skip
+ 1227  Sparse Neighbourhood Covers          -- §6, the cover and its degree
+ 1562  Locality of First-Order Logic        -- superseded for us by rploc
+ 2470  The Main Algorithm                   -- §8, the recursion and its cost
+ 2766  Conclusion
