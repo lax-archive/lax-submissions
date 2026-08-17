@@ -6205,3 +6205,58 @@ read the theorem, not the docstring, and not the file's framing prose. It
 cost a compiled proof of §8 step 1 (deleted as "arithmetic for the wrong
 program", restored two hours later), and it is what both refuted claims of
 audit 1 had in common.
+
+## ND-MC — 2026-08-17, second session: design closed, execution prepared
+
+**Where a successor starts: `/ndmc`.** Not this file, not `algorithm-v2.md`.
+The campaign now has an operational half —
+`plans/nowhere-dense-model-checking/execution-plan.md` (§8 as thirteen leaves
+E0–E13, each with the one file it owns, its dependencies, its source pin and
+the hazards that would yield a plausible but weaker theorem) and
+`execution-ledger.md` (status per leaf, updated at every boundary). The
+supervisor loop `.claude/commands/ndmc.md` reads both, dispatches waves of
+`Agent` subagents, gates with `.claude/leaf-gate.sh`, lands, records, and
+repeats without asking at ordinary boundaries. **No workflows in the execution
+path** — Jan's instruction: they need his permission on every call, and this
+loop must not need him. Wave 1 is E1/E2/E3.
+
+**Jan closed the design.** "I think we converged to minor plan details only
+that are best left to the individual workers." Agreed, with one exception that
+was not worker-level and is now fixed: the pinned source disagreed with the
+task packet.
+
+**Three things landed that a fourth audit would not have found.**
+
+- **§7 stops being tightened, and `c ≥ 6` is retired.** Jan's call: take the
+  slack. `δ = ε/(ℓ+2)`, and the base constant `K := c_D + 2 + a + c(c_D+1)` is
+  *chosen*, not constrained, so the induction step holds outright. Rev 4 forced
+  the constant into `(2c)^{L+1}` with the same `c` that carries every routine's
+  constant — coupling the exponential's base to quantities it has no reason to
+  touch, and turning the step into a tight numeric inequality. That coupling is
+  why this one paragraph has been wrong in *three consecutive revisions*, each
+  time a dropped term a slack inequality would have swallowed. GKS never meet
+  such a condition because they never tighten (`δ = ε/(2ℓ)`, tex:2621).
+- **The cover's exponent is `1+2δ`, not `1+δ`.** Rev 4 transcribed GKS's own
+  accounting for their own cover algorithm as `2n^{1+2δ}` into §6.2 and left §4
+  charging `N^{1+δ}`, without reconciling them. `δ` is the wcol parameter and
+  the cover costs two of it; that is the whole reason the split moves to `ℓ+2`.
+- **§8 step 0b was never blocked.** Rev 4: "cannot be formalized from any
+  document this project holds… ask Jan for it." One bibliography lookup:
+  arXiv math/0508324v2, now `references/nodm05/`. Following it one link further
+  — its Lemma 4.1 is only a citation too — gives arXiv math/0508323v1, now
+  `references/nodm05i/`, where Lemma 6.1 is **proved in full**. Four links, and
+  it terminates. Jan then permitted all required texts in the repo, which
+  settles the licence posture for these and for `references/gks/`.
+
+**The pattern, now five for five.** Every defect this campaign has found is a
+place where a document asserted something its own cited object does not say —
+and both of today's were found by ordinary careful reading, not by the three
+adversarial audits (29 agents) that missed them. That is the argument for
+handing the rest to the workers: the remaining defect class is "nobody opened
+the citation", and the fix is thirteen workers each opening their own leaf's,
+which is what every leaf row in `execution-plan.md` now requires.
+
+**Loose end.** Round 4 of `ndmc-critique` was dispatched against Rev 4 and had
+not returned when the session wrapped. It is the last workflow this campaign
+runs. Read its result, fold anything at major or fatal into the affected leaf
+rows — *not* into a document rewrite, the design is closed — and dispatch wave 1.

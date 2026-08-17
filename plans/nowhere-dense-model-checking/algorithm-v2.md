@@ -1,27 +1,34 @@
 # ND-MC: the algorithm, rethought from first principles
 
-**Rev 4, 2026-08-17.** Status: **abstract core sound and unshaken by three
-audits; the constants, the downward channel and the schedule are repaired here;
-one external import is now the critical path.**
+**Rev 5, 2026-08-17.** Status: **design closed; execution has begun.** The
+abstract core is unshaken by three adversarial audits, the constants are
+slackened rather than tightened, and the external import that Rev 4 called the
+critical path is neither external nor blocking.
 
-> **Next milestone: re-run `Workflow({name: 'ndmc-critique'})` against Rev 4.**
-> The third audit ran (9 agents, 1.35M tokens) and its findings are folded in
-> below, marked ⟨B⟩. Nine findings survived its adversarial verifier at major.
-> None was in the algorithm: the abstract core — §5's recursion, §7's shape,
-> D2–D4, and *both* of Rev 3's new inventions — survived every attack. What
-> broke was the seams between the twenty Rev 3 patches, the constants, and the
-> work order of §8.
+> **Next milestone: `/ndmc`.** Design work on this document is finished. The
+> operational expansion is `execution-plan.md` (§8 as thirteen leaves, E0–E13,
+> each with its owned file, dependencies, source pin and hazards) and
+> `execution-ledger.md` (where each stands). Amend this document when a leaf
+> proves it wrong — do not re-audit it.
 >
-> **The one thing that changes the plan** (§8 step 0b, and see §12): the cover's
-> `O(N^{1+δ})` *time* bound is true as a theorem of the literature and **cannot
-> be formalized from any document this project holds**. GKS prove it in three
-> stages and the only superlinear stage — computing `aug(G,r)` with
-> `Δ⁻ ≤ n^ε` — is `thm:computingorientation` (gks tex:1342-1352), whose entire
-> content is the citation *[Nešetřil–Ossona de Mendez 2005, Cor 4.2, Thm 4.3]*.
-> No proof, no round count, no per-round cost anywhere in GKS; and the five Lean
-> files §6.2 names carry the **degree** half only, with zero step content. §8
-> step 0 was priced as "one probe". It is the import of an external 2005 paper
-> that is not in this repository. **Ask Jan for it before step 0 starts.**
+> **Two things changed on the day execution opened, and both shrink the plan.**
+>
+> *§8 step 0b is not blocked.* GKS's bracket resolves to arXiv math/0508324v2,
+> now checked in at `references/nodm05/`; its own Lemma 4.1 defers once more, to
+> Lemma 6.1 of arXiv math/0508323v1 at `references/nodm05i/`, where it is
+> **proved in full**. The deferral chain is four links and terminates in a
+> proof. Rev 4 wrote that this "cannot be formalized from any document this
+> project holds" and that Jan should be asked for the paper; it took one
+> bibliography lookup. What none of the four papers states — and what E0
+> therefore owes — is the **nowhere-dense instantiation**: NOdM's Theorem 4.3 is
+> a *bounded expansion* statement in time *O(n)*, while GKS cite it for
+> *nowhere dense* with `Δ⁻ ≤ n^ε` in `f(r,ε)·n^{1+ε}`.
+>
+> *§7 stops being tightened* (⟨C⟩ below, Jan's call). `δ = ε/(ℓ+2)` and a
+> chosen base constant `K`, in place of Rev 4's `ε/(ℓ+1)` and the forced
+> `(2c)^{L+1}` shape that manufactured `c ≥ 6`. The headline is unchanged. The
+> cover's honest exponent is `1+2δ`, which Rev 4 quoted in §6.2 and charged as
+> `1+δ` in §4 without reconciling the two.
 
 Rev 1 was written in one pass after pruning the algorithmic layer. Two
 adversarial audits followed, 20 agents in total: one on the evidence the prune
@@ -313,9 +320,11 @@ R  := ρ⁻(0, q) = 9^{q(q+1)}              -- the global radius cap
 N, s := Lax12 UQW witnesses of C at radius 2R    -- ⟨B⟩ via exists_roundBudget
 ℓ  := N (2s + 2)                         -- ⟨B⟩ the round budget, NOT an axiom's ℓ
 m  := ℓ · (2R + 1)                       -- ⟨B⟩ the batch width, and it is proved
-δ  := ε / (ℓ + 1)
+δ  := ε / (ℓ + 2)                        -- ⟨C⟩ ℓ+2, not ℓ+1; the cover costs 2δ
 c_D  from Lax12's subpolynomial wcol;  D(N) := ⌈c_D · N^δ⌉
-c  := max(every routine's constant, c_D, 6)          -- ⟨B⟩ 6, not 1; see §7
+c  := max(every routine's constant, c_D)             -- ⟨C⟩ no numeric floor
+a  := c + (2 + ℓ·R)·c_D                  -- ⟨C⟩ the per-node non-recursive charge
+K  := c_D + 2 + a                        -- ⟨C⟩ chosen, not constrained; see §7
 ```
 
 ⟨B⟩ **`ℓ` and `m` were mis-sourced, and the repair is a repin, not new
@@ -326,7 +335,7 @@ precondition with `ReachedR`, and **`ReachedR` consumes neither number** —
 `SplitterWinRec.lean:54-56` says in as many words that *"No size clause is
 imposed on a recorded round"*. So the axiom's pair was consumed by nothing,
 while `ℓ` drives `δ`, the schedule `ℱ_0 … ℱ_ℓ`, §8 step 4b's frame count and the
-headline `(2c)^{ℓ+1}`. Worse, had the axiom's `ℓ` been smaller than `N(2s+2)`,
+headline `K^{ℓ+1}`. Worse, had the axiom's `ℓ` been smaller than `N(2s+2)`,
 §5's leaf test would have called `BotTables` on an arena with edges and §6.4's
 premise would fail *silently*. The numbers with proofs behind them are:
 
@@ -361,7 +370,7 @@ is fixed before `n` is read, and against the endorsed axiom a larger `c` both
 loosens the time bound and *shrinks* the admissible input set
 (⟨B⟩ `ModelChecking.lean:115` for the axiom and `:122` for the side condition;
 Rev 3 cited `:81/84`, which are docstring lines), so `R = 9^{q(q+1)}`, `L_ℓ`,
-`(2c)^{ℓ+1}` and the
+`K^{ℓ+1}` and the
 `ℓ+1` live frames are all absorbable. **The only quantity in the entire design
 that is neither constant nor linear in the input is `D(N)`, and it enters in
 exactly one place: `cover`.** Every space failure (§11) and the whole of §7's
@@ -433,7 +442,7 @@ why that is phantom.*
 | `bfs A v d` | the `≤ d`-ball of `v` with distances, `d ≤ 2R` | `O(‖ball_d(v)‖)` |
 | `bfsSupports A v d` | ⟨B⟩ one BFS from `v` materialising the `≤ d+1` support names at every reached vertex | `O(d·‖ball_d(v)‖)` |
 | `recordProfiles B W` | ⟨B⟩ §6.3 — cumulative capped distance rows for the batch and colour classes | `O((m + L)·‖B‖·(R+1))` |
-| `cover A r` | ordering `π`, clusters `X_u`, assignment `ctr` | `O(‖A‖^{1+δ})` — §6.2, §8 step 0b, §11 |
+| `cover A r` | ordering `π`, clusters `X_u`, assignment `ctr` | ⟨C⟩ `O(‖A‖^{1+2δ})` — §6.2, §8 step 0b, §11 |
 | `greedyScatter A r P t` | `min(t, size of the greedy maximal r-scattered subset of P)` | `O(t·‖A‖)` |
 | `BotTables A j` | ⟨B⟩ §6.4 — the leaf's table, read off colour rows | `O(‖A‖)` |
 
@@ -726,9 +735,16 @@ return picked
 Per node at depth `j < ℓ` with arena size `N`:
 
 ```
- T_j(N) ≤ c·N^{1+δ}  +  c·Σ_u N_u  +  Σ_u T_{j+1}(N_u)
-          └ cover ┘     └ children ┘   └ recursion ┘
+ T_j(N) ≤ a·N^{1+2δ}  +  c·Σ_u N_u  +  Σ_u T_{j+1}(N_u)
+          └ cover ┘      └ children ┘   └ recursion ┘
 ```
+
+⟨C⟩ **The cover's exponent is `1+2δ`, not `1+δ`.** §6.2 transcribes GKS's own
+accounting for their own cover algorithm as `≤ 2n^{1+2δ}` (tex:1459-1517), and
+they set `δ := ε/2` at the head of that proof precisely so `2δ = ε`. Rev 4
+charged the routine at `N^{1+δ}` in §4 and then quoted the `2δ` bound in §6.2
+without reconciling the two. `δ` is the wcol parameter; the cover costs two of
+it.
 
 ⟨A⟩ Rev 1 dropped the middle term from the induction — the whole column §6
 spends five subsections charging. It is absorbable but it tightens the constant
@@ -745,60 +761,59 @@ produces exactly this shape (`CoverDegree.lean:366-378` concludes at
 because both endpoints must — has **no counterpart in the surviving layer**
 (`CoverDegree.lean:512/524/535` are pure vertex counts) and is an owed lemma.
 
-**Standing hypotheses, ⟨A⟩ absent from Rev 1 and necessary:** `N ≥ 1`,
-`c_D ≤ c`, and ⟨B⟩ **`c ≥ 6`**.
+**Standing hypotheses:** `N ≥ 1` and `c_D ≤ c`. ⟨C⟩ *That is the whole list.
+There is no lower bound on `c`.*
 
-⟨B⟩ **Rev 3's stated inequality was wrong twice, and its stated hypothesis
-`c ≥ 1` is false.** It printed `c(1+c_D) + (2c)^L·c_D ≤ 2c·(2c)^L`, dropping
-one `c` from the cover/children sum *and* the `+1` from the recursion
-coefficient — the very ceiling this section defends four lines earlier with a
-worked numeral ("it is not pedantry"). This is the same failure mode as the
-counterexample the previous audit gave, one revision later, in the paragraph
-written to repair it.
+⟨C⟩ **The middle term is the wrong quantity, and the leading one absorbs it.**
+§4 charges `restrict A S` at `O(Σ_{s∈S} deg_A(s) + |S|(L + ℓ·R))` and *proves*
+no data structure achieves `O(‖A[S]‖ + |S|)` (the `K_{3,n−3}` witness), so
+`c·Σ_u N_u` does not dominate the restrict column for any constant `c`. §4's
+own aggregate — `Σ_u Σ_{s∈X_u} deg_A(s) ≤ 2c_D‖A‖^{1+δ}`, plus §6.1's channel
+copy at `ℓ·R·c_D‖A‖^{1+δ}` — is what does, and it belongs in the leading
+coefficient: `a := c + (2 + ℓ·R)·c_D`, as §3 now defines it. *Rev 4 wrote
+`a := c + 2c_D` and dropped the `ℓ·R` factor its own D6 had just introduced.*
 
-⟨B⟩ **And the middle term was the wrong quantity.** §4 charges `restrict A S`
-at `O(Σ_{s∈S} deg_A(s) + …)` and *proves* no data structure achieves
-`O(‖A[S]‖ + |S|)` (the `K_{3,n−3}` witness). So `c·Σ_u N_u` does not dominate
-the restrict column for any constant `c`. §4 says that column "is absorbed by
-the cover term in §7" — but §7's cover term was `c·N^{1+δ}` with the *same* `c`,
-so the term was simply missing. Fold it into a single leading coefficient:
+**Claim.** ⟨C⟩ `T_j(N) ≤ K^{L+1} · N^{1+(L+2)δ}` with `L := ℓ−j`, whence at the
+root with `δ = ε/(ℓ+2)`:  `T_0(n) ≤ K^{ℓ+1} · n^{1+ε}`. *The headline shape is
+unchanged; the split moves by one level and the constant is now chosen.*
 
-```
- T_j(N) ≤ a·N^{1+δ}  +  c·Σ_u N_u  +  Σ_u T_{j+1}(N_u),
-          a := c + 2c_D   (cover, plus the restrict/hist aggregate of §4/§6.1)
-```
-
-**Claim.** `T_j(N) ≤ (2c)^{ℓ−j+1} · N^{1+(ℓ−j+1)δ}`, whence at the root with
-`δ = ε/(ℓ+1)`:  `T_0(n) ≤ (2c)^{ℓ+1} · n^{1+ε}`. *The headline shape is
-unchanged; only the admissible constant moves.*
-
-*Proof.* Downward induction. With `L = ℓ−j ≥ 1`, using `(★)` and `N_u ≤ N`:
+*Proof.* Downward induction. Using `(★)`, `N_u ≤ N` and `N ≥ 1`:
 
 ```
- recursion  (2c)^L·Σ_u N_u^{1+Lδ} ≤ (2c)^L·N^{Lδ}·(c_D+1)N^{1+δ}
- children   c·Σ_u N_u             ≤ c(c_D+1)·N^{1+δ}
- cover      a·N^{1+δ}
+ recursion  K^L·Σ_u N_u^{1+(L+1)δ} ≤ K^L·N^{(L+1)δ}·(c_D+1)N^{1+δ}
+                                    = K^L(c_D+1)·N^{1+(L+2)δ}
+ children   c·Σ_u N_u               ≤ c(c_D+1)·N^{1+δ}      ≤ … ·N^{1+(L+2)δ}
+ cover      a·N^{1+2δ}                                       ≤ … ·N^{1+(L+2)δ}
 ```
 
-so the step is the constant inequality
+so the step is `K^L·(c_D+1) + a + c(c_D+1) ≤ K^{L+1}`, i.e.
 
 ```
- a + c(c_D+1) + (2c)^L·(c_D+1)  ≤  (2c)^{L+1}.
+ K^L·(K − c_D − 1)  ≥  a + c(c_D+1).
 ```
 
-It is tightest at `L = 1`, where with `c_D = c` and `a = 3c` it reads
-`3c² + 6c ≤ 4c²`, i.e. **`c ≥ 6`**, tight at `c = 6` (144 ≤ 144); `L ≥ 2` is
-slacker. The base at `j = ℓ` is the leaf, charged linearly at `c·N ≤ (2c)·N^{1+δ}`.
-That the leaf is charged at all is why `δ = ε/(ℓ+1)` and not `ε/ℓ` — there are
-`ℓ+1` levels to divide `ε` among. ∎
+⟨C⟩ **`K` is defined, not constrained.** Take `K := c_D + 2 + a + c(c_D+1)`
+(§3 abbreviates this, folding `c(c_D+1)` into `a`'s slack): then
+`K − c_D − 1 ≥ a + c(c_D+1)` and `K^L ≥ 1`, so the step holds at every `L ≥ 0`
+with nothing to check. The base at `j = ℓ` is the leaf, charged linearly at
+`c·N ≤ K·N^{1+2δ}`. There are `ℓ+2` levels of exponent to divide `ε` among —
+`ℓ+1` levels of recursion, each spending one `δ` through `(★)`, plus the
+cover's own second `δ`. ∎
 
-⟨B⟩ *The audit reported `c ≥ 4`, which is the figure without the restrict term;
-its own fix note asked for the recheck once that term is folded in. Rechecked:
-`c ≥ 6`. §3 now defines `c := max(…, c_D, 6)`. GKS never meet this constraint
-because they do not tighten — their `δ = ε/(2ℓ)` (tex:2621) buys `2δ` of
-exponent per level, so the additive term is absorbed into the exponent and no
-constant condition arises. The tighter `ε/(ℓ+1)` split is what makes the
-coefficient binding.*
+⟨C⟩ **Rev 4's `c ≥ 6` is retired, and so is the shape that produced it.** Rev 4
+forced the constant into the form `(2c)^{L+1}` with the *same* `c` that carries
+every routine's constant, which couples the base of the exponential to
+quantities it has no reason to touch and turns the induction step into a tight
+numeric inequality — `3c² + 6c ≤ 4c²`, tight at `c = 6`. Decoupling `K` from
+`c` dissolves it. **This is Jan's call, 2026-08-17: take the slack, do not
+tighten.** The justification is empirical rather than aesthetic. This paragraph
+has been wrong in three consecutive revisions — Rev 1 dropped the middle term,
+Rev 3 dropped a `c` and the `+1`, Rev 4 dropped the `ℓ·R` factor and reported
+`c ≥ 6` where the same page's `a` gives a different figure — and every one of
+those was a dropped term in a *tight* inequality that a slack one would have
+swallowed. GKS never meet such a condition because they never tighten: their
+`δ = ε/(2ℓ)` (tex:2621) is slacker still and would also serve here. A tight
+constant nobody needs is a defect surface, not a result.
 
 **This is an amendment of a compiled proof, not new work.** The restored
 `CostRecurrence.lean` (`pruned-algorithmic-layer.md` §3a) has
@@ -807,8 +822,8 @@ verbatim, and `sigma_root_almostLinear` (`:610`) closing the exponent. Rev 1
 called that file *"correct arithmetic for the wrong program"* — reading its
 framing prose instead of its statements, which is the same error this redesign
 exists to stop making. Two gaps remain and are step 1's content: it assumes each
-level's charge is **linear** in arena weight where §6.2's cover is `c·N^{1+δ}`,
-and it splits `ε` as `ε/ℓ` rather than `ε/(ℓ+1)`.
+level's charge is **linear** in arena weight where §6.2's cover is ⟨C⟩ `a·N^{1+2δ}`,
+and it splits `ε` as `ε/ℓ` rather than ⟨C⟩ `ε/(ℓ+2)`.
 
 ---
 
@@ -1012,7 +1027,7 @@ could not shake — but two of its four stated reasons were false, and the true
 reason is stronger than the one given.**
 
 - *Struck: "enough for any `n^{1+δ}` with `δ ≤ 1`."* `δ ≤ 1` is nowhere
-  established and **fails at `ε > ℓ+1`**, since `δ = ε/(ℓ+1)`.
+  established and **fails at `ε > ℓ+2`**, since ⟨C⟩ `δ = ε/(ℓ+2)`.
 - *Struck: "it should be a property of the encoding alone."* The admissible set
   **already** varies with `(C, φ, ε)` through `c`, under either exponent. The
   exponent's stability is a convenience, not a principle.
