@@ -1,6 +1,7 @@
 # ND-MC: the algorithm, rethought from first principles
 
-**Rev 3, 2026-08-17.** Status: **design under repair — do not build from it yet.**
+**Rev 3, 2026-08-17.** Status: **design under repair — the abstract core is
+sound modulo the owed lemmas listed in §8; the space seam of §11 is resolved.**
 
 Rev 1 was written in one pass after pruning the algorithmic layer. Two
 adversarial audits followed, 20 agents in total: one on the evidence the prune
@@ -13,8 +14,9 @@ The audit's summary judgement is worth stating up front, because it is neither
 "fine" nor "start over": *the abstract core — §5's recursion, §7's recurrence,
 D2–D4 — is sound modulo specific repairs; but one previously unexamined issue
 is fatal as written, and it is not in the algorithm. It is the seam between the
-algorithm and the endorsed axiom's word length.* See §11, which is new and is
-now the first thing to resolve.
+algorithm and the endorsed axiom's word length.* See §11 — which Jan resolved
+the same day by squaring the concept's word-length side condition, the one
+change in this revision that touches the endorsed surface.
 
 The purpose of this document is to be the thing the formalization is written
 *against*. If a future Lean file cannot be traced back to a numbered line or a
@@ -79,7 +81,8 @@ budgets, so the gate would have rejected §6.2 first.
 
 P1a is checkable by reading a program. It is not a theorem discovered at the
 end. Anything that violates it is rejected at review, whatever its cost lemma
-says. P1b is the space counterpart and is where §11 bites.
+says. P1b is the space counterpart, and §11 is what makes it affordable: under
+the concept's original linear word-length side condition it was unsatisfiable.
 
 ---
 
@@ -108,7 +111,8 @@ step 3′ and §8 step 4a.
 ⟨A⟩ *Memory, corrected.* Rev 1 said "at most `ℓ+1` arenas are live, each of
 size at most `n`". That omitted the cover output, which a node cannot release
 until its whole subtree finishes, so peak live memory is `Θ(n^{1+δ})`,
-dominated by the root's cover. That is exactly the quantity §11 cannot address.
+dominated by the root's cover. That is the quantity §11 is about, and the
+squared side condition is what makes it addressable.
 
 **D2 — Isolation, not deletion. ⟨A⟩ But *not* fused with the restriction.**
 Splitter's move keeps the batch's vertices and drops their incident edges.
@@ -667,10 +671,11 @@ from it — `pruned-algorithmic-layer.md` §3a.)*
 
 ---
 
-## §11 ⟨A⟩ The seam that is fatal as written: space against word length
+## §11 ⟨A⟩ Space against word length — found by audit, resolved by contract
 
 *New in Rev 3. No claim group was assigned this; the completeness critic found
-it, and it is the reason this document's status is "under repair".*
+it. It was fatal as written and is now resolved; the resolution is recorded at
+the end of this section.*
 
 **The machine's memory is its word length.** Lax13's RAM has `2^w` cells and
 every address is taken mod `2^w` (`Lax13/Ram.lean:9-10, 25, 231-237`), so a cell
@@ -694,21 +699,39 @@ where `2^w ≤ 2·c·(|x| + max x + 1)`. On a sparse member that is linear in `n
 where the driver needs `n²`."* Rev 1 contained no occurrence of "space", "word
 length" or `2^w`.
 
-**Candidate repairs, none verified:**
+**Resolved 2026-08-17 by Jan: the side condition is squared.**
+`Lax3.ModelChecking` now admits `x` at word length `w` when
+`c·(|x| + v + 1)² ≤ 2^w`, so the smallest admissible word length moves from
+`log|x| + O(1)` to `2·log|x| + O(1)` — a constant factor in `w`, a quadratic
+factor in addressable memory, and enough for any `n^{1+δ}` with `δ ≤ 1`. The
+deviation is recorded in full in the concept's own docstring, including what it
+costs: the program is excused from the narrowest word lengths, and that is a
+genuine weakening. It touches no other submission — the side condition lives in
+this submission's own concept file, and Lax11's Courcelle axiom keeps the linear
+form, which is correct for it since Courcelle runs in linear space.
+
+⟨A⟩ **Correction to Rev 3 as first written:** that revision said this change
+would collide with Lax11 and with the thirteen lakefiles pinning `word-ram`. It
+does not. Nothing outside `concepts/Lax3/ModelChecking.lean` mentions the
+condition, and no package consumes the axiom.
+
+**The exponent is `2`, not `1 + δ`,** because `δ = ε/(ℓ+1)` depends on the class
+and on `ε`; a side condition varying with them would make the admissible input
+set vary with the parameter, where it should be a property of the encoding
+alone.
+
+**This does not close O6, it unblocks it.** The two space repairs below remain
+worth having, because they would let the *linear* side condition be restored and
+the statement strengthened — which is why the concept writes `^ 2` out rather
+than folding it into `c`:
 
 1. **Stream the cover.** Nothing forces the cluster family to be materialized:
    the tree is walked depth-first, so if `X_u` can be produced on demand from
    the ordering `π` alone, peak memory is `O(max cluster + n)` per level. The
    obstacle is that `X_u` is a *wreach fibre*, and computing one fibre without
-   the whole wreach relation is not obviously possible. This is the repair to
-   try first, and it is a question about `cover` alone.
+   the whole wreach relation is not obviously possible.
 2. **Bound the augmentation chain's live memory** independently of its output
    size, or recompute rather than store.
-3. **Strengthen the concept's word-length side condition.** This is a
-   concept-surface change and therefore **Jan's call, not mine** — and it should
-   be a last resort, since the current side condition is the one the Lax11
-   Courcelle axiom uses and the archive's consistency across submissions is
-   worth more than this algorithm's convenience.
 
-Until one of these is settled, **§8 step 7 cannot be discharged and no amount of
-work on steps 1–6 changes that.** That is why §8 now opens with it.
+Neither is on the critical path now. `cover` stays §8 step 0 for its *time*
+bound, which is still the design's falsifier.
