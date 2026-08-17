@@ -506,6 +506,64 @@ theorem sum_eraseBiCost_transIn_cached_le {D : Orientation n} {d ns : ℕ}
 
 /-! ## Builder-to-reader seam -/
 
+/-- The two row buffers which must already be allocated while the cache is
+built.  Their contents are scratch; only their carrier-sized allocation is
+retained. -/
+structure TransBuffers (n : ℕ) (P : Env → Prop) (sigma : Env) : Prop where
+  persistent : P sigma
+  vin_length : (sigma.arrs "vin").length = n
+  vout_length : (sigma.arrs "vout").length = n
+
+/-- Adding the two retained row-buffer lengths to a persistent predicate does
+not obstruct the cache builder: IMP array stores never resize an array. -/
+theorem transBuffers_cacheBuildClosed {P : Env → Prop}
+    {flag off tgt : String} (hclose : CacheBuildClosed P flag off tgt) :
+    CacheBuildClosed (TransBuffers n P) flag off tgt := by
+  constructor
+  · intro sigma a x han hmem
+    exact ⟨hclose.setVar han hmem.persistent,
+      by simpa using hmem.vin_length,
+      by simpa using hmem.vout_length⟩
+  · intro sigma a p x ha hmem
+    exact ⟨hclose.setArr ha hmem.persistent,
+      (length_arrs_setArr
+        (σ := sigma) (a := a) (i := p) (v := x) (b := "vin")).trans
+          hmem.vin_length,
+      (length_arrs_setArr
+        (σ := sigma) (a := a) (i := p) (v := x) (b := "vout")).trans
+          hmem.vout_length⟩
+
+/-- Every exact-set provider lifts through the two allocated buffers.  This
+requires no array-frame hypothesis because a successful IMP run preserves
+all array lengths. -/
+theorem providesSetRows_underTransBuffers
+    {B n W : ℕ} {P : Env → Prop} {S : Fin n → Finset (Fin n)}
+    {dst : String} {provide : Com} {kappa : ℕ → ℕ}
+    (hp : ProvidesSetRows B n W S P dst provide kappa) :
+    ProvidesSetRows B n W S (TransBuffers n P) dst provide kappa := by
+  intro root E Deg R ID BH BV BN
+  refine Spec.of_exists fun sigma hpre => ?_
+  obtain ⟨hmem, heng, hw⟩ := hpre
+  obtain ⟨tau, hr, hP, heng', hstable, tail, A, hrow, htail, hA⟩ :=
+    (hp root E Deg R ID BH BV BN).run ⟨hmem.persistent, heng, hw⟩
+  exact ⟨tau, kappa root, hr, le_rfl,
+    ⟨hP,
+      by rw [Lax3Proofs.RamDriver.run_length_arrs hr "vin",
+        hmem.vin_length],
+      by rw [Lax3Proofs.RamDriver.run_length_arrs hr "vout",
+        hmem.vout_length]⟩,
+    heng', hstable, tail, A, hrow, htail, hA⟩
+
+/-- Reader-ready cache memory, with the ghost target function hidden.  The
+program stores only the concrete arrays; subsequent providers must not make
+their public interface depend on which witness is chosen here. -/
+def CachedTransReady (D : Orientation n) (d : ℕ)
+    (flag off tgt : String) (P : Env → Prop) (sigma : Env) : Prop :=
+  ∃ T,
+    SetCsrRows (heavyInRows D d) (cacheOff D d n) (cacheOff D d) T ∧
+    CachedTransMem D d (cacheOff D d n) n flag off tgt
+      (cacheOff D d) T P sigma
+
 /-- The terminal executable cache invariant, together with the two retained
 nested buffers, is exactly the common memory consumed by the cached
 `transIn` provider. -/
@@ -524,6 +582,188 @@ theorem cachedTransMem_of_final {n W d : ℕ} {P : Env → Prop}
   obtain ⟨T, hrows, hcache⟩ := heavyCacheMem_of_final h
   exact ⟨T, hrows, hcache, hvin, hvout⟩
 
+/-- A builder whose persistent state carries the two row buffers terminates
+directly in the reader-ready existential predicate. -/
+theorem cachedTransReady_of_final {n W d : ℕ} {P : Env → Prop}
+    {D : Orientation n} {flag off tgt : String}
+    {E Deg R ID BH BV BN : ℕ → ℕ} {sigma : Env}
+    (h : CacheBuildAt W (TransBuffers n P) D d n flag off tgt
+      E Deg R ID BH BV BN sigma) :
+    CachedTransReady D d flag off tgt P sigma := by
+  obtain ⟨T, hrows, hcache⟩ := heavyCacheMem_of_final h
+  exact ⟨T, hrows,
+    ⟨⟨hcache.persistent.persistent, hcache.flag_eq, hcache.csr⟩,
+      hcache.persistent.vin_length, hcache.persistent.vout_length⟩⟩
+
+/-- The complete executable cache construction, stated at exactly the
+persistent predicate consumed by all later cached incoming-row calls. -/
+theorem cacheBuildReady_spec {B n W d : ℕ} {P : Env → Prop}
+    {D : Orientation n} {flag off tgt : String}
+    {E Deg R ID BH BV BN : ℕ → ℕ}
+    {provideOut provideIn : Com} {kout kin : ℕ → ℕ}
+    (hd : D.InDegLE d)
+    (hB1 : 1 < B) (hnB : n < B) (hddB : d * d < B)
+    (hclose : CacheBuildClosed P flag off tgt)
+    (hflagEngine : flag ∉ engineArrNames)
+    (hoffEngine : off ∉ engineArrNames)
+    (htgtEngine : tgt ∉ engineArrNames)
+    (hflagOff : flag ≠ off) (hflagTgt : flag ≠ tgt)
+    (hoffTgt : off ≠ tgt) (htgtVrow : tgt ≠ "vrow")
+    (houtFlag : flag ∉ provideOut.warrs)
+    (houtOff : off ∉ provideOut.warrs)
+    (houtTgt : tgt ∉ provideOut.warrs)
+    (hinFlag : flag ∉ provideIn.warrs)
+    (hinOff : off ∉ provideIn.warrs)
+    (hinTgt : tgt ∉ provideIn.warrs)
+    (hpout : ProvidesSetRows B n W (outSet D) P "vrow"
+      provideOut kout)
+    (hpin : ProvidesSetRows B n W (fun w => D.inN w) P "vrow"
+      provideIn kin) :
+    Spec B
+      (CacheBuildStart W (TransBuffers n P) n flag off tgt
+        E Deg R ID BH BV BN)
+      (cacheBuild d flag off tgt provideOut provideIn)
+      (fun _ tau => CachedTransReady D d flag off tgt P tau)
+      ((∑ k ∈ Finset.range n,
+          (cacheBuildTurnCost D d kout kin k + 4)) + 11) := by
+  apply (cacheBuild_spec hd hB1 hnB hddB
+    (transBuffers_cacheBuildClosed hclose)
+    hflagEngine hoffEngine htgtEngine hflagOff hflagTgt hoffTgt htgtVrow
+    houtFlag houtOff houtTgt hinFlag hinOff hinTgt
+    (providesSetRows_underTransBuffers hpout)
+    (providesSetRows_underTransBuffers hpin)).post
+  intro _ tau _ hfinal
+  exact cachedTransReady_of_final hfinal
+
+/-- Eliminate the hidden target witness at the provider boundary.  Thus the
+command built once above can be reused by every later incoming two-walk row
+without exposing, rebuilding, or choosing a different cache. -/
+theorem virtualTransInCachedProvidesSetRows_ready
+    {B n W d : ℕ} {P : Env → Prop}
+    {D : Orientation n} {flag off tgt : String}
+    {provideOuter provideInner : Com} {kouter kinner : ℕ → ℕ}
+    (hd : D.InDegLE d)
+    (hclose : CachedTransScratchClosed P)
+    (hflagScratch : flag ∉ cachedTransScratchArrNames)
+    (hoffScratch : off ∉ cachedTransScratchArrNames)
+    (htgtScratch : tgt ∉ cachedTransScratchArrNames)
+    (hinnerFrames : FratIncomingFrames provideInner)
+    (houterFrames : FratOutgoingFrames provideOuter)
+    (hinnerFlag : flag ∉ provideInner.warrs)
+    (hinnerOff : off ∉ provideInner.warrs)
+    (hinnerTgt : tgt ∉ provideInner.warrs)
+    (houterFlag : flag ∉ provideOuter.warrs)
+    (houterOff : off ∉ provideOuter.warrs)
+    (houterTgt : tgt ∉ provideOuter.warrs)
+    (hB4 : 3 < B) (hnB : n < B) (hBW : n + W + 1 < B)
+    (hoffEngine : off ∉ engineArrNames)
+    (htgtEngine : tgt ∉ engineArrNames)
+    (hinner : ProvidesSetRows B n W (fun w => D.inN w)
+      P "vin" provideInner kinner)
+    (houter : ProvidesSetRows B n W (fun w => D.inN w)
+      P "vout" provideOuter kouter) :
+    ProvidesSetRows B n W (transInSet D)
+      (FratWorkspace n (CachedTransReady D d flag off tgt P)) "vrow"
+      (virtualFratProvide provideOuter
+        (cachedIncomingVin flag off tgt provideInner))
+      (eraseBiCost kouter
+        (cachedIncomingCost D d (baseProvideCost (cacheOff D d)) kinner)
+        (fun w => D.inN w) (fun w => D.inN w)) := by
+  intro root E Deg R ID BH BV BN
+  refine Spec.of_exists fun sigma hpre => ?_
+  obtain ⟨hwork, heng, hw⟩ := hpre
+  obtain ⟨T, hrows, hcache⟩ := hwork.persistent
+  have hnsnt : cacheOff D d n ≤ n := cacheOff_final_le hd
+  have hnsB : cacheOff D d n < B := lt_of_le_of_lt hnsnt hnB
+  have hfixed := virtualTransInCachedProvidesSetRows
+    (B := B) (n := n) (ns := cacheOff D d n) (nt := n) (W := W)
+    (d := d) (P := P) (D := D) (flag := flag) (off := off) (tgt := tgt)
+    (O := cacheOff D d) (T := T) hrows hclose hflagScratch
+    hoffScratch htgtScratch hinnerFrames houterFrames
+    hinnerFlag hinnerOff hinnerTgt houterFlag houterOff houterTgt
+    hB4 hnB hnsnt hBW hnsB hoffEngine htgtEngine hinner houter
+  obtain ⟨tau, hr, hwork', heng', hstable, tail, A, hrow, htail, hA⟩ :=
+    (hfixed root E Deg R ID BH BV BN).run
+      ⟨⟨hcache, hwork.vout_length, hwork.vin_length,
+        hwork.vrow_length, hwork.save_length, hwork.stamp_zero⟩,
+        heng, hw⟩
+  exact ⟨tau, _, hr, le_rfl,
+    ⟨⟨T, hrows, hwork'.persistent⟩,
+      hwork'.vout_length, hwork'.vin_length, hwork'.vrow_length,
+      hwork'.save_length, hwork'.stamp_zero⟩,
+    heng', hstable, tail, A, hrow, htail, hA⟩
+
+/-- A reader-ready cache remains resident across writes of the generic
+elimination engine. -/
+theorem cachedTransReady_engineClosed
+    {D : Orientation n} {d : ℕ} {flag off tgt : String} {P : Env → Prop}
+    (hP : EngineClosed P)
+    (hflag : flag ∉ engineArrNames) (hoff : off ∉ engineArrNames)
+    (htgt : tgt ∉ engineArrNames) :
+    EngineClosed (CachedTransReady D d flag off tgt P) := by
+  constructor
+  · intro sigma a x ha hready
+    obtain ⟨T, hrows, hmem⟩ := hready
+    exact ⟨T, hrows,
+      ⟨⟨hP.setVar ha hmem.cache.persistent,
+          by simpa using hmem.cache.flag_eq,
+          ⟨by simpa using hmem.cache.csr.off_eq,
+            by simpa using hmem.cache.csr.tgt_eq,
+            by simpa using hmem.cache.csr.row_length⟩⟩,
+        by simpa using hmem.vin_length,
+        by simpa using hmem.vout_length⟩⟩
+  · intro sigma a p x ha hready
+    obtain ⟨T, hrows, hmem⟩ := hready
+    have haflag : a ≠ flag := fun e => hflag (e ▸ ha)
+    have haoff : a ≠ off := fun e => hoff (e ▸ ha)
+    have hatgt : a ≠ tgt := fun e => htgt (e ▸ ha)
+    exact ⟨T, hrows,
+      ⟨⟨hP.setArr ha hmem.cache.persistent,
+          (by
+            rw [HasHeavyFlag, arrs_setArr, if_neg (Ne.symm haflag)]
+            exact hmem.cache.flag_eq),
+          ⟨(by
+              rw [arrs_setArr, if_neg (Ne.symm haoff)]
+              exact hmem.cache.csr.off_eq),
+            (by
+              rw [arrs_setArr, if_neg (Ne.symm hatgt)]
+              exact hmem.cache.csr.tgt_eq),
+            (length_arrs_setArr
+              (σ := sigma) (a := a) (i := p) (v := x) (b := "vrow")).trans
+                hmem.cache.csr.row_length⟩⟩,
+        (length_arrs_setArr
+          (σ := sigma) (a := a) (i := p) (v := x) (b := "vin")).trans
+            hmem.vin_length,
+        (length_arrs_setArr
+          (σ := sigma) (a := a) (i := p) (v := x) (b := "vout")).trans
+            hmem.vout_length⟩⟩
+
+/-- The run-level closure used by the complete virtual eliminator. -/
+theorem cachedTransReady_engineRunClosed
+    {D : Orientation n} {d : ℕ} {flag off tgt : String} {P : Env → Prop}
+    (hP : EngineRunClosed P)
+    (hflag : flag ∉ engineArrNames) (hoff : off ∉ engineArrNames)
+    (htgt : tgt ∉ engineArrNames) :
+    EngineRunClosed (CachedTransReady D d flag off tgt P) := by
+  intro B K c sigma tau hr hvars harrs hready
+  obtain ⟨T, hrows, hmem⟩ := hready
+  have frame (a : String) (ha : a ∉ engineArrNames) :
+      tau.arrs a = sigma.arrs a := by
+    apply hr.frame_arr a
+    intro hc
+    exact ha (harrs a hc)
+  exact ⟨T, hrows,
+    ⟨⟨hP hr hvars harrs hmem.cache.persistent,
+        (by rw [HasHeavyFlag, frame flag hflag]; exact hmem.cache.flag_eq),
+        ⟨(by rw [frame off hoff]; exact hmem.cache.csr.off_eq),
+          (by rw [frame tgt htgt]; exact hmem.cache.csr.tgt_eq),
+          by rw [Lax3Proofs.RamDriver.run_length_arrs hr "vrow",
+            hmem.cache.csr.row_length]⟩⟩,
+      by rw [Lax3Proofs.RamDriver.run_length_arrs hr "vin",
+        hmem.vin_length],
+      by rw [Lax3Proofs.RamDriver.run_length_arrs hr "vout",
+        hmem.vout_length]⟩⟩
+
 /-! ## Axiom audit for the cached transitive boundary -/
 
 #print axioms cacheVinProvidesSetRows
@@ -534,5 +774,9 @@ theorem cachedTransMem_of_final {n W d : ℕ} {P : Env → Prop}
 #print axioms sum_eraseBiCost_transIn_eq
 #print axioms sum_eraseBiCost_transIn_cached_le
 #print axioms cachedTransMem_of_final
+#print axioms cacheBuildReady_spec
+#print axioms virtualTransInCachedProvidesSetRows_ready
+#print axioms cachedTransReady_engineClosed
+#print axioms cachedTransReady_engineRunClosed
 
 end Lax3Proofs.Refine.OrderVirtualCachedTransIn
