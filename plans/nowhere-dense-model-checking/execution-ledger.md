@@ -13,10 +13,10 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 | leaf | what it closes | status | wave | commit | note |
 |---|---|---|---|---|---|
-| E0 | cover time bound stated as an assumption; §8/§9 rewrite | ready | — | — | unblocked 2026-08-17: `references/nodm05/` + `nodm05i/` are the two NOdM papers GKS defer to; the chain now bottoms out in a proof |
-| E1 | cover clusters are path-closed (§5) | ready | — | — | priced at ~10 lines, untested |
-| E2 | `ctr` and the π-min identity (§4) | ready | — | — | priced at ~6 lines, untested |
-| E3 | the edge half of (★) (§7) | ready | — | — | no counterpart in the surviving layer |
+| E0 | cover time bound stated as an assumption; §8/§9 rewrite | wip | w1 | — | unblocked 2026-08-17: `references/nodm05/` + `nodm05i/` are the two NOdM papers GKS defer to; the chain now bottoms out in a proof |
+| E1 | cover clusters are path-closed (§5) | wip | w1 | — | priced at ~10 lines, untested |
+| E2 | `ctr` and the π-min identity (§4) | wip | w1 | — | priced at ~6 lines, untested |
+| E3 | the edge half of (★) (§7) | wip | w1 | — | no counterpart in the surviving layer |
 | E4 | the cost recurrence, amended and slackened (§7) | waiting | — | — | needs E3, E0. `c ≥ 6` must **disappear** — see plan |
 | E5 | `ReachedR` generalized to `S`-moves (§8.2) | ready | — | — | five analogue lemmas; `hbatch` is an equality, not `⊆` |
 | E6 | carrier transport for `ReachedR` (§9) | waiting | — | — | needs E5 |
@@ -61,3 +61,24 @@ Two things changed on the day the ledger opened, and both shrink the plan:
   `(2c)^{L+1}` shape that manufactured the `c ≥ 6` side condition. The headline
   is unchanged; three consecutive revisions got that paragraph's arithmetic
   wrong, and the tight inequality was the reason.
+
+### 2026-08-17 — wave 1 dispatched, and the gate was red before it
+
+`w1` is E0, E1, E2, E3, one worker each, on `worktree-w1` off `main`. Seed took
+0.9 s; the packages were already warm.
+
+**The baseline gate failed, and not because of a leaf.**
+`.claude/leaf-gate.sh nowhere-dense-model-checking` was red on `main` at
+`b9a049a`: both `lake build`s passed, and the statement audit rejected the
+package with `Lax3Proofs must have no module docstring`. The `/-! -/` block
+after the root module's import list is what the 2026-08-17 prune left behind;
+no other section of that file uses one. Converted to `--` comments at `38c5243`
+and the audit passes. What this cost is worth recording: **no leaf in this
+campaign could have landed until it was fixed**, and it was invisible from the
+ledger, which had never seen a gate run. Run the gate once at the start of a
+campaign, not first at the first landing.
+
+Also measured: a cold-ish full `leaf-gate.sh` is ~10 min (concepts 25 s, proofs
+1 m31 s, inspector 36 s, plus the two prior `lake build`s); a re-run of the
+`lax build` audit alone against a warm tree is ~16 s. Budget the gate per
+landing, not per leaf.
