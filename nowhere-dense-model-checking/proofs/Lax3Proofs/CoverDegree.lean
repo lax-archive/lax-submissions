@@ -339,12 +339,11 @@ the fibers of weak `2 · rc`-reachability under `π` form an
 
 All of them are postconditions of the two engines and nothing else.
 The chain and the greedy rounds come from the augmentation pass
-(`AugStep` per round plus `RamElim.greedyFratRound_of_cert`); `d₀` and
-its minimality, and `k` and its minimality, are the in-degree and
+(`AugStep` per round plus a greedy fraternal round); `d₀` and its
+minimality, and `k` and its minimality, are the in-degree and
 back-degree bounds of the two elimination passes together with the
 greedy guarantee `∀ k', LowDegreeVertices _ k' → k ≤ k'` of `ElimPost`;
-`π` is the permutation the rank array of the last pass defines
-(`RamCover.rankPerm`).  Nothing is assumed about the density of `G` or
+`π` is the permutation the rank array of the last pass defines.  Nothing is assumed about the density of `G` or
 about the size of `d₀`: both come from nowhere denseness inside.
 
 # Proof
@@ -560,8 +559,8 @@ The Σ-interface's `OrderImplements` carries a parametric predicate
 
     P π _ := ∀ v, (wreach G π (2 · rc) v).ncard ≤ ⌈c · m ^ δ⌉₊
 
-— the exact hypothesis `RamCover.isNeighborhoodCover_of_out` consumes,
-so that the cover the *next* phase builds along `ord` has the
+— the exact hypothesis a cover pass along `ord` consumes, so that the
+cover the *next* phase builds along `ord` has the
 subpolynomial degree the mass accounting stands on.
 
 `exists_wreach_degree` is that discharge in one step: it is
@@ -594,8 +593,8 @@ radius arithmetic `3·t ≤ R`, `2·rc ≤ 2^t`, and every `δ > 0`, there is a
 constant `c` such that the ordering produced by an `R`-round greedy
 chain with greedy eliminations at both ends satisfies
 `(wreach G π (2·rc) v).ncard ≤ ⌈c · m^δ⌉₊` at every vertex.  This is the
-statement the revised `OrderImplements` carries as its predicate `P` and
-the form `RamCover.isNeighborhoodCover_of_out` consumes. -/
+statement an ordering phase carries as its postcondition and the form a
+cover pass along that ordering consumes. -/
 theorem exists_wreach_degree (C : GraphClass) (hC : NowhereDense C) (rc R t : ℕ)
     (ht : 3 * t ≤ R) (hrt : 2 * rc ≤ 2 ^ t) (δ : ℝ) (hδ : 0 < δ) :
     ∃ c : ℝ, ∀ (n : ℕ) (Gn : SimpleGraph (Fin n)), C n Gn →
@@ -621,16 +620,16 @@ theorem exists_wreach_degree (C : GraphClass) (hC : NowhereDense C) (rc R t : �
 places: the fold (the chain and the per-round greedy property), the
 phase's *first* elimination (`d₀` and its minimality, off `ElimPost` at
 the level's own arena) and its *last* (`k` and its minimality, off
-`ElimPost` at the **symmetrized augmented** graph — which is what
-`RamDriver.symCom` is in the text for).
+`ElimPost` at the **symmetrized augmented** graph — which is why an
+implementation needs a symmetrization pass at all).
 
 `AugChainData` names that list once, so that the phase obligation's
 parametric slot `P` has a value with a name rather than a six-clause
 conjunction written out at every call site, and so that the wave which
 proves the phase and the wave which consumes it agree on the interface
 without either reading the other's file. `wreach_degree_of_data` is the
-consumption: the bundle plus the class mathematics is the predicate
-`RamCover.isNeighborhoodCover_of_out` takes.
+consumption: the bundle plus the class mathematics is the predicate a
+cover pass takes.
 
 Nothing here is new mathematics — it is `exists_wreach_degree` with its
 hypotheses named — and that is the point: the `R*` phase's
@@ -677,9 +676,10 @@ theorem augChainData_iff {m : ℕ} {G : SimpleGraph (Fin m)} {D : ℕ → Orient
 `R = 0` the chain is the single orientation `D 0`, and the *last*
 elimination's graph is `(D 0).toGraph = G` — so the bundle degenerates
 to the level's own two elimination bounds and carries nothing about
-augmentation. That is exactly why `RamDriverCompose.orderImplements₀`
-instantiates `P` at `True` and the `R*` phase does not: the content of
-the slot is the fold, and the fold at `R = 0` is `Com.skip`. -/
+augmentation. That is exactly why an `R = 0` ordering phase can only
+instantiate its postcondition at `True` while the `R*` phase cannot:
+the content of the slot is the fold, and the fold at `R = 0` is a
+no-op. -/
 theorem augChainData_zero {m : ℕ} {G : SimpleGraph (Fin m)} {D : ℕ → Orientation m}
     {π : Equiv.Perm (Fin m)} {d₀ k : ℕ} (h : AugChainData G D π 0 d₀ k) :
     (D 0).InDegLE d₀ ∧ BackDegLE (D 0).toGraph (fun v => ((π v : Fin m) : ℕ)) k :=

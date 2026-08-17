@@ -1,130 +1,61 @@
+-- The locality theorem of arXiv:2606.23180 and its normal form.
 import Lax3Proofs.WalkDistance
 import Lax3Proofs.Horizon
+import Lax3Proofs.SyntaxLemmas
+import Lax3Proofs.SemLocal
 import Lax3Proofs.Clusters
 import Lax3Proofs.ScatterCore
-import Lax3Proofs.SemLocal
-import Lax3Proofs.SyntaxLemmas
 import Lax3Proofs.Separation
 import Lax3Proofs.FarQuant
 import Lax3Proofs.BCAlgebra
 import Lax3Proofs.ScatterFml
 import Lax3Proofs.Assembly
+
+-- Plain first-order logic as an input to the distance-logic engine.
+import Lax3Proofs.Reduction
+
+-- The isolation splitter game and Splitter's win on nowhere dense classes.
 import Lax3Proofs.SplitterBasics
 import Lax3Proofs.SplitterMono
 import Lax3Proofs.SplitterWin
+import Lax3Proofs.SplitterWinRec
+import Lax3Proofs.UqwInstantiation
+
+-- Sparse neighborhood covers and the augmentation chain behind their degree.
 import Lax3Proofs.CoverConstruction
 import Lax3Proofs.Augmentation
 import Lax3Proofs.AugmentedDensity
-import Lax3Proofs.Isolate
-import Lax3Proofs.Relativize
-import Lax3Proofs.Reduction
-import Lax3Proofs.Evaluator
-import Lax3Proofs.RamBfs
-import Lax3Proofs.RamBfsPaths
-import Lax3Proofs.Refine.BfsBridge
 import Lax3Proofs.OrderedCovers
 import Lax3Proofs.CoverDegree
-import Lax3Proofs.RamElim
+
+-- The two rewrites a step of the recursion performs, and the leaf case.
+import Lax3Proofs.Relativize
+import Lax3Proofs.Isolate
 import Lax3Proofs.BotEval
-import Lax3Proofs.SplitterWinRec
-import Lax3Proofs.RamCover
-import Lax3Proofs.RamAugment
-import Lax3Proofs.FormulaTables
-import Lax3Proofs.RamScatter
-import Lax3Proofs.RamDriver
-import Lax3Proofs.RamDriverBase
-import Lax3Proofs.RamDriverCluster
-import Lax3Proofs.RamDriverIO
-import Lax3Proofs.RamDriverDescend
-import Lax3Proofs.RamDriverFrames
-import Lax3Proofs.RamDriverOrder
-import Lax3Proofs.RamDriverBot
-import Lax3Proofs.RamDriverAugment
-import Lax3Proofs.RamDriverCompose
-import Lax3Proofs.RamDriverWrites
-import Lax3Proofs.RamDriverRoot
-import Lax3Proofs.CostRecurrence
-import Lax3Proofs.UqwInstantiation
-import Lax3Proofs.TgtCoupling
-import Lax3Proofs.TgtWidenProbe
-import Lax3Proofs.C0Probe
-import Lax3Proofs.CsrWide
-import Lax3Proofs.Refine.AugmentSynth
-import Lax3Proofs.Refine.AugmentSynth2
-import Lax3Proofs.Refine.AugmentTwins
-import Lax3Proofs.Refine.ScatterSynth
-import Lax3Proofs.Refine.ElimSynth
-import Lax3Proofs.Refine.ElimSynth2
-import Lax3Proofs.Refine.ElimSynth3
-import Lax3Proofs.Refine.ElimSynth4
-import Lax3Proofs.Refine.ElimSynth5
-import Lax3Proofs.Refine.T1FriProbe
-import Lax3Proofs.Refine.CoverSynth
-import Lax3Proofs.Refine.OrderSynth
-import Lax3Proofs.Refine.ElimSynth6
-import Lax3Proofs.Refine.ElimSynth7
-import Lax3Proofs.Refine.ElimCompactWalks
-import Lax3Proofs.Refine.ElimCompactCsr
-import Lax3Proofs.Refine.ElimCompactSpec
-import Lax3Proofs.Refine.ReachedBridge
-import Lax3Proofs.Refine.ClusterSynth
-import Lax3Proofs.Refine.ExpandSynth
-import Lax3Proofs.Refine.SigmaLoop
-import Lax3Proofs.Refine.CostShapeProbe
-import Lax3Proofs.Refine.MassMath
-import Lax3Proofs.Refine.MassAlive
-import Lax3Proofs.Refine.ArenaBlock
-import Lax3Proofs.Refine.DeadRow
-import Lax3Proofs.Refine.DeadSweep
-import Lax3Proofs.Refine.BaseShed
-import Lax3Proofs.Refine.DeadRowProbe
-import Lax3Proofs.Refine.DeadRowDomain
-import Lax3Proofs.Refine.KillPass
-import Lax3Proofs.Refine.KillListWalk
-import Lax3Proofs.Refine.KillListPass
-import Lax3Proofs.Refine.OrderBridge
-import Lax3Proofs.Refine.BlockLeaves
-import Lax3Proofs.RamDriverDedup
-import Lax3Proofs.Refine.G2CostProbe
-import Lax3Proofs.Refine.MassWeight
-import Lax3Proofs.Refine.CoverBlock
-import Lax3Proofs.Refine.BfsBlock
-import Lax3Proofs.Refine.BfsBlockCost
-import Lax3Proofs.Refine.BfsBlockDiff
-import Lax3Proofs.Refine.ScatterBlockCost
-import Lax3Proofs.Refine.ScatterBlockProg
-import Lax3Proofs.Refine.ScatterBlockBfs
-import Lax3Proofs.Refine.ScatterBlockMark
-import Lax3Proofs.Refine.ScatterBlockClear
-import Lax3Proofs.Refine.ScatterBlock
-import Lax3Proofs.Refine.ScatterBlockDiff
-import Lax3Proofs.Refine.ScatterDeadFold
-import Lax3Proofs.Refine.ScatterDeadEngine
-import Lax3Proofs.Refine.OrderBlockProbe
-import Lax3Proofs.Refine.BridgeSeamProbe
-import Lax3Proofs.Refine.ArenaPointer
-import Lax3Proofs.Refine.ArenaWidth
-import Lax3Proofs.Refine.CoverWidth
-import Lax3Proofs.Refine.BridgeCrossing
-import Lax3Proofs.Refine.SlotSweep
-import Lax3Proofs.Refine.OrderSigProbe
-import Lax3Proofs.Refine.OrderSigProbeM
-import Lax3Proofs.Refine.DriverRootD
-import Lax3Proofs.Refine.G2ExistsRevalidation
-import Lax3Proofs.Refine.MemThreadProbe
-import Lax3Proofs.Refine.MemThreadGate
-import Lax3Proofs.Refine.ArenaSeam
-import Lax3Proofs.Refine.OrderEngineProbe
-import Lax3Proofs.Refine.ElimCompact
-import Lax3Proofs.Refine.SymCompact
-import Lax3Proofs.Refine.AugCompact
-import Lax3Proofs.Refine.CompactPreps
-import Lax3Proofs.Refine.AugCompactScatter
-import Lax3Proofs.Refine.ScatterDeadPass
-import Lax3Proofs.Refine.ScatterDeadTurn
-import Lax3Proofs.Refine.DeadRowSigma
-import Lax3Proofs.Refine.C0CloseProbe
-import Lax3Proofs.Refine.B4Design
-import Lax3Proofs.Refine.GapsDesign
-import Lax3Proofs.Refine.BfsBlockMask
-import Lax3Proofs.Refine.ScatterBlockMask
+
+/-!
+The proofs package of submission Lax3.
+
+What is here is the **mathematical layer** of the nowhere dense model
+checking theorem: the locality engine of arXiv:2606.23180, the isolation
+splitter game and Splitter's win on nowhere dense classes, the sparse
+neighborhood covers of Grohe–Kreutzer–Siebertz §6 with the augmentation
+machinery behind their degree bound, and the two syntactic rewrites
+(relativization to a cluster, isolation of a batch) that a recursion
+descending the game tree performs on formulas.
+
+What is *not* here, deliberately: the algorithm and its realization on
+the word RAM. That layer was pruned on 2026-08-17 and is being redesigned
+from first principles. See `plans/nowhere-dense-model-checking/`:
+`pruned-algorithmic-layer.md` records what was removed and what it
+taught, `algorithm-v2.md` is the design that replaces it. Nothing in
+this package refers to the pruned layer, and the concept surface in
+`../concepts` is unchanged by the prune.
+
+Discharged here: `Lax3.Locality.locality` and `Lax3.NormalForm.normalForm`
+(in `Assembly`). Still axioms on the concept surface:
+`Lax3.ModelChecking.exists_almostLinearTime_program_modelChecking` (the
+headline, which is what the redesign is for),
+`Lax3.NowhereDenseSplitter.splitterWins_of_nowhereDense`, and
+`Lax3.NeighborhoodCoverBound.exists_neighborhoodCover_degree_wcol`.
+-/

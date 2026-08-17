@@ -4,10 +4,9 @@ import Mathlib.Combinatorics.SimpleGraph.Walk.Basic
 /-!
 **`hQ`, the mathematics of the campaign, derived.**
 
-`RamDriverRoot.driverRoot_decides_sentence` carries exactly one
-hypothesis that is not about the machine: uniform quasi-wideness of the
-arena at radius `2 · cap`, together with `hℓ : ℓ = N (2 s + 2)` fixing
-the round budget. This file produces both from Lax12's endorsed theorem
+The descent through the game tree needs exactly one hypothesis that is
+not about the machine: uniform quasi-wideness of the arena at radius
+`2 · cap`, together with `hℓ : ℓ = N (2 s + 2)` fixing the round budget. This file produces both from Lax12's endorsed theorem
 that nowhere dense classes are uniformly quasi-wide.
 
 # The statement
@@ -102,8 +101,8 @@ theorem exists_roundBudget (C : GraphClass) (hC : NowhereDense C) (cap : ℕ) :
 
 /-- **The flat form**: the round budget as the only threshold. A consumer
 that has already fixed `ℓ` reads `hQ` as "every point set of at least `ℓ`
-vertices splits", which is how `RamDriverCluster.levelImplements` uses it
-after `hℓ` is substituted. -/
+vertices splits", which is how a level of the recursion uses it after
+`hℓ` is substituted. -/
 theorem exists_flat_margin (C : GraphClass) (hC : NowhereDense C) (cap : ℕ) :
     ∃ (s ℓ : ℕ), ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
       ∀ Pt : Set (Fin n), ℓ ≤ Pt.ncard →

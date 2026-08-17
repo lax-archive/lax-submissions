@@ -15,10 +15,10 @@ the arena it currently holds, and the walk it ends up with is whatever
 its search found.
 
 Nor can the program's walk be *named* by a function of the arena and the
-two vertices, which is what an oracle interface would ask for. What the
-machine leaves behind is pinned by `Lax3Proofs.RamBfsPaths.bfsPath_spec`
-only up to `∃ p, p.length ≤ d ∧ bufSet n L Buf = {z | z ∈ p.support}` —
-*some* walk of length at most the cap. Two independent solutions of that
+two vertices, which is what an oracle interface would ask for. What a
+breadth-first search leaves behind is pinned only up to `∃ p, p.length ≤
+d ∧ (the buffer's set) = {z | z ∈ p.support}` — *some* walk of length at
+most the cap. Two independent solutions of that
 existential may differ: in `C₄` at `r ≥ 2` the two antipodal vertices are
 joined by two walks of length two, and which one comes back is decided by
 the order of the block structure's rows on one side and by

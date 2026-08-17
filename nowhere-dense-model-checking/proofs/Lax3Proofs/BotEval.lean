@@ -2,11 +2,11 @@ import Lax3Proofs.SyntaxLemmas
 import Lax3Proofs.WalkDistance
 
 /-!
-The **edgeless base case** of the model-checking evaluator: satisfaction
-of distance logic in the graph `⊥` on `Fin n`, the arena at which
-`Lax3Proofs.Evaluator` stops descending and returns `Sat` itself. The
-RAM driver has to *evaluate* that value, by color lookups and counting;
-the lemmas below are the bridge it evaluates along.
+The **edgeless base case** of the model-checking recursion: satisfaction
+of distance logic in the graph `⊥` on `Fin n`, the arena at which the
+descent through the splitter game tree stops and returns `Sat` itself.
+An implementation has to *evaluate* that value, by color lookups and
+counting; the lemmas below are the bridge it evaluates along.
 
 An edgeless graph has no walks but the empty ones, so every distance in
 it is zero or infinite. Two vertices are within distance `d` exactly when
