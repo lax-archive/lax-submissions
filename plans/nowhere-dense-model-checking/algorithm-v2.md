@@ -1,16 +1,27 @@
 # ND-MC: the algorithm, rethought from first principles
 
-**Rev 3, 2026-08-17.** Status: **design under repair — the abstract core is
-sound modulo the owed lemmas listed in §8; the space seam of §11 is resolved.**
+**Rev 4, 2026-08-17.** Status: **abstract core sound and unshaken by three
+audits; the constants, the downward channel and the schedule are repaired here;
+one external import is now the critical path.**
 
-> **Next milestone, set by Jan 2026-08-17: a clean critique.** Run
-> `Workflow({name: 'ndmc-critique'})` and repair this document until nothing
-> survives its adversarial verifier at major or fatal. A third audit (9 agents,
-> aimed at the cover's time and space and at Rev 3's two new inventions) was
-> launched and did not finish before the session ended; its findings were not
-> folded in and must be re-obtained. **Do not start proving until the critique
-> is clean** — this document has been through two audits and neither round was
-> the last one.
+> **Next milestone: re-run `Workflow({name: 'ndmc-critique'})` against Rev 4.**
+> The third audit ran (9 agents, 1.35M tokens) and its findings are folded in
+> below, marked ⟨B⟩. Nine findings survived its adversarial verifier at major.
+> None was in the algorithm: the abstract core — §5's recursion, §7's shape,
+> D2–D4, and *both* of Rev 3's new inventions — survived every attack. What
+> broke was the seams between the twenty Rev 3 patches, the constants, and the
+> work order of §8.
+>
+> **The one thing that changes the plan** (§8 step 0b, and see §12): the cover's
+> `O(N^{1+δ})` *time* bound is true as a theorem of the literature and **cannot
+> be formalized from any document this project holds**. GKS prove it in three
+> stages and the only superlinear stage — computing `aug(G,r)` with
+> `Δ⁻ ≤ n^ε` — is `thm:computingorientation` (gks tex:1342-1352), whose entire
+> content is the citation *[Nešetřil–Ossona de Mendez 2005, Cor 4.2, Thm 4.3]*.
+> No proof, no round count, no per-round cost anywhere in GKS; and the five Lean
+> files §6.2 names carry the **degree** half only, with zero step content. §8
+> step 0 was priced as "one probe". It is the import of an external 2005 paper
+> that is not in this repository. **Ask Jan for it before step 0 starts.**
 
 Rev 1 was written in one pass after pruning the algorithmic layer. Two
 adversarial audits followed, 20 agents in total: one on the evidence the prune
@@ -42,8 +53,12 @@ degree; each cluster becomes one child, obtained by restricting the arena to
 the cluster, recording the distances to Splitter's batch as colors, and then
 isolating that batch. The formula each child must answer is determined by the
 parent's formula alone, by a purely syntactic rewrite — so the whole formula
-schedule is a compile-time constant. Splitter wins in `ℓ` rounds, so at depth
-`ℓ` the arena is edgeless and every formula is decided by reading color rows.
+schedule is a compile-time constant. ⟨B⟩ The play cannot record more than `ℓ`
+rounds, so by depth `ℓ` the arena is edgeless and every formula is decided by
+reading color rows. *Rev 3 still said here "Splitter wins in `ℓ` rounds, so at
+depth `ℓ` the arena is edgeless" — verbatim the inference §9 records as
+underivable and §5 was patched to avoid. The depth bound is
+`reachedR_length_lt`, which bounds the play's length without naming a batch.*
 Information then flows back up: each child returns a table of truth values, one
 bit per (vertex, tabled formula), and the parent's table is a boolean
 combination of its children's entries and of finitely many *scatter counts* —
@@ -172,9 +187,23 @@ greedy — `Θ(N)` BFS calls, `Θ(N²)` at that node, silently, with a correct
 answer. Nothing in `ScatterSentences.lean:193` rules `t = 0` out.
 
 ⟨A⟩ The greedy choice is order-dependent by definition (`greedyChoice`
-recurses on `Fin n`'s canonical order), which makes §6.1's "`S` given sorted"
-**load-bearing for correctness, not only for the CSR build**, and makes the
-compaction lemma of §5 step 3′ an *order-preserving* one.
+recurses on `Fin n`'s canonical order).
+
+⟨B⟩ **Rev 3 drew two consequences from that and both are phantom.** It made
+§6.1's "`S` given sorted" load-bearing *for correctness*, and made the
+compaction lemma of §5 step 3′ an *order-preserving* one with a *dead-vertex
+correction*. Neither is needed, and the reason is inside Rev 3's own sentence:
+step 3′ says the compaction "must come **before** `locality`", and that is
+exactly what removes the rest. Step 3′ transports `DistFO.Sat`, which has no
+order-sensitive constructor, so *any* bijection `Fin N ≃ X` serves and
+monotonicity of `up` buys nothing semantic. Scatter values enter only through
+`locality`'s output (`Locality.lean:104-110`), applied at `B`, and the program
+computes them at `B` too (§5 lines 25-26); `ScatterSentence.Sat` is evaluated
+per graph on that graph's own carrier (`ScatterSentences.lean:180-184`) and
+`greedySet` recurses on that carrier's own `Fin N` order (`:126-133`). **No
+greedy value ever crosses the compaction boundary, so nothing needs
+correcting.** Sortedness in §6.1 is a CSR-build cost matter, not correctness.
+This deletes the only two clauses that made §8 step 4a hard.
 
 **D4 — One-variable tables, everywhere.** The only semantic objects the
 recursion computes are bits `tab[v][β]` for `β` a one-variable local formula.
@@ -215,9 +244,46 @@ which is what the deleted `ancestorStep` did — one carrier-wide BFS per
 ancestor per turn, a P1a violation and a principal source of the old cost.
 *What the channel must carry:* per earlier round, enough to certify
 `SplitterWinRec.ReachedR.step`'s `hwalk` **in that round's own arena** — see
-§5's batch and O1. A recorded parent-pointer path of `≤ 2R` vertices per round
-suffices, so the channel is `O(ℓ·R)`, still constant, but it is *maintained*
-through `restrict`, which is a new obligation on §6.1.
+§5's batch and O1.
+
+⟨B⟩ **Rev 3 said "a recorded parent-pointer path of `≤ 2R` vertices per round
+suffices, so the channel is `O(ℓ·R)`, still constant". That is wrong, and it is
+the finding four independent auditors converged on.** Two things are being
+confused, and they are mutually exclusive:
+
+- `ReachedR.step`'s `hwalk` (`SplitterWinRec.lean:195-198`) is quantified over
+  **every** `e ∈ rounds` and demands a walk in `e.arena` from `e.vtx` to *the
+  new connector* — a vertex that is not known when round `e` is played, and is
+  a different vertex at every descendant. So the round-`e` datum must answer
+  "path from `e.vtx` to `x`" for arbitrary `x` in the whole subtree below `e`.
+  That is arena-proportional data, not one path.
+- Concatenation cannot rescue it: `path(e.vtx→u') ++ path(u'→u'')` has length
+  up to `4R > 2R`, and no fresh BFS from `e.vtx` is available later because
+  `e.vtx` is edge-isolated in every later arena (`isolatedR`, `:251-260`).
+- And a *parent array* cannot be carried either, because restriction destroys
+  parent chains: if the recorded chain is `u_e — a — b — c` and an intermediate
+  round isolates `b` while `a` and `c` stay joined through another vertex, then
+  `b ∉ X''` and walking parents back from `c` stops at `b`, missing `a`. But
+  `reachedR_descend`'s `hbatch` (`:533-538`) proves `batchR = W` *exactly*, so a
+  missing element makes the arena the program built differ from the game's, and
+  the round is not a round of the game. Re-entry is not a corner case; it is
+  the generic effect of ancestor isolation on a path recorded before it.
+
+**The channel, restated.** For each ancestor round `e` and each vertex `x` of
+the current arena, store the `≤ 2R+1` names of `support(p_{e.vtx → x})`. So the
+channel is `O(ℓ·R)` **per vertex**, i.e. `O(ℓ·R·‖A‖)` per node. Filtering at
+`restrict` is sound because carriers are nested: `(S ∩ X₁) ∩ X₂ = S ∩ X₂` for
+`X₂ ⊆ X₁`, so a support list filtered to the child carrier is still the support
+of a walk of the ancestor's arena. Line 19's batch is then an `O(ℓ·R)` lookup.
+
+*This costs nothing that matters and it is P1-legal.* The channel is
+own-arena-proportional (P1a and P1b hold), the `restrict` copy costs
+`O(ℓ·R·|S|)`, which aggregates over a node's children to
+`O(ℓ·R·c_D·‖A‖^{1+δ})` and is absorbed by the cover term exactly as the
+`Σ deg` column is (§4), and §11's peak grows by `Θ(ℓ·R·n)`, affordable under the
+squared side condition. What dies is only D6's slogan "constant-size channel",
+§4's `hist : List Path` type, and the omission of a `hist` term from
+`restrict`'s charge — all three corrected below.
 
 **D7 — Cost is written, not discovered.** Every routine is written in a layer
 that produces its machine text, its meaning, and its step count *together*.
@@ -244,16 +310,58 @@ Given the class `C`, the sentence `φ`, and `ε > 0`:
 ```
 q  := qr(φ)                              -- top quantifier rank
 R  := ρ⁻(0, q) = 9^{q(q+1)}              -- the global radius cap
-ℓ, m := splitter parameters of C at radius 2R
+N, s := Lax12 UQW witnesses of C at radius 2R    -- ⟨B⟩ via exists_roundBudget
+ℓ  := N (2s + 2)                         -- ⟨B⟩ the round budget, NOT an axiom's ℓ
+m  := ℓ · (2R + 1)                       -- ⟨B⟩ the batch width, and it is proved
 δ  := ε / (ℓ + 1)
 c_D  from Lax12's subpolynomial wcol;  D(N) := ⌈c_D · N^δ⌉
-c  := max(every routine's constant, c_D, 1)          -- ⟨A⟩ see §7
+c  := max(every routine's constant, c_D, 6)          -- ⟨B⟩ 6, not 1; see §7
 ```
+
+⟨B⟩ **`ℓ` and `m` were mis-sourced, and the repair is a repin, not new
+mathematics.** Rev 3 took both from `NowhereDenseSplitter.splitterWins_of_
+nowhereDense` (`concepts/Lax3/NowhereDenseSplitter.lean:57-60`), a bare
+`∃ ℓ m, ∀ n G, C n G → SplitterWins m r ℓ G`. But §9's O1 repair replaced the
+precondition with `ReachedR`, and **`ReachedR` consumes neither number** —
+`SplitterWinRec.lean:54-56` says in as many words that *"No size clause is
+imposed on a recorded round"*. So the axiom's pair was consumed by nothing,
+while `ℓ` drives `δ`, the schedule `ℱ_0 … ℱ_ℓ`, §8 step 4b's frame count and the
+headline `(2c)^{ℓ+1}`. Worse, had the axiom's `ℓ` been smaller than `N(2s+2)`,
+§5's leaf test would have called `BotTables` on an arena with edges and §6.4's
+premise would fail *silently*. The numbers with proofs behind them are:
+
+- `ℓ = N(2s+2)` — `UqwInstantiation.exists_roundBudget C hC R` (`:96-100`)
+  returns exactly `∃ N s ℓ, ℓ = N (2s+2) ∧ …`, and the depth bound that uses it
+  is `SplitterWinRec.reachedR_length_lt` (`:561-567`), concluding
+  `rounds.length < N (2s+2)`. Note `exists_roundBudget` instantiates the UQW at
+  `2 * cap`, so `cap := R` is the game radius `2R`.
+- `m = ℓ·(2R+1)` — `SplitterWinRec.splitterWins_of_reachedR` (`:459-465`)
+  concludes `SplitterWins (N (2s+2) * (r+1)) r b A`.
+
+**Consequence: the batch of §5 line 19 is legal, and it is not an invention.**
+`SplitterWin.genSet` (`:192-194`) is literally `genSet r (e :: rest) v =
+pathSet e.2 r e.1 v ∪ genSet r rest v` — the connector plus one recorded path
+per earlier round, which is §5 line 19's set — and `genSet_ncard_le` (`:217-218`)
+proves `≤ 1 + rounds.length·(r+1)`. At depth `j ≤ ℓ−1` that is
+`|W| ≤ 1 + (ℓ−1)(2R+1) ≤ ℓ(2R+1) = m`. Rev 3 worried this batch might be
+illegal; under the corrected `m` it is legal, by a landed lemma.
+
+⟨B⟩ **`R` is the radius; the augmentation chain's depth is a different number
+and the document never named it.** `CoverDegree.exists_cover_degree` takes `rc`
+(cover radius), `R` (augmentation *rounds*) and `t` with `3t ≤ R`,
+`2·rc ≤ 2^t` (`CoverDegree.lean:366-370`). Passing `R := rc := 9^{q(q+1)}`
+satisfies both side conditions, but the returned constant is
+`6·(3·max c₀ 0 + 5)^(2·16^R)`, so instantiating the *round* parameter at the
+*radius* costs a two-level tower for nothing. The chain depth needed is
+`≈ 3⌈log₂(4·rc)⌉`; GKS have the same slack and flag it (tex:1369-1372: a
+`⌈log_{3/2} r⌉+1`-augmentation would suffice). Name the depth separately.
 
 ⟨A⟩ **Standing remark: constants are free, `n^δ` is not.** Every constant above
 is fixed before `n` is read, and against the endorsed axiom a larger `c` both
 loosens the time bound and *shrinks* the admissible input set
-(`ModelChecking.lean:81/84`), so `R = 9^{q(q+1)}`, `L_ℓ`, `(2c)^{ℓ+1}` and the
+(⟨B⟩ `ModelChecking.lean:115` for the axiom and `:122` for the side condition;
+Rev 3 cited `:81/84`, which are docstring lines), so `R = 9^{q(q+1)}`, `L_ℓ`,
+`(2c)^{ℓ+1}` and the
 `ℓ+1` live frames are all absorbable. **The only quantity in the entire design
 that is neither constant nor linear in the input is `D(N)`, and it enters in
 exactly one place: `cover`.** Every space failure (§11) and the whole of §7's
@@ -305,22 +413,35 @@ structure Arena where
   col  : Fin N → Fin L → Bool -- color rows
   up   : Fin N → ℕ            -- this vertex's name in the parent (monotone)
   own  : Fin N → Bool         -- "this node answers for this vertex"
-  hist : List Path            -- ⟨A⟩ D6's channel: ≤ ℓ recorded paths, ≤ 2R each
+  hist : Fin N → Fin ℓ → List (Fin N)
+       -- ⟨B⟩ D6's channel, CORRECTED: per vertex and per ancestor round,
+       -- the ≤ 2R+1 support names of that round's walk to this vertex.
+       -- NOT `List Path`: see D6 for why one path per round cannot work.
 
 ‖A‖ := A.N + A.M
 ```
 
-`up` is **monotone** — ⟨A⟩ load-bearing, because the greedy scatter choice is
-defined by the canonical vertex order, so the compaction must preserve it.
+`up` is **monotone** — ⟨B⟩ for the one-pass CSR construction of §6.1, not for
+any semantic reason. *Rev 3 said it was load-bearing because the greedy scatter
+choice is order-defined and the compaction must preserve it; D3 above records
+why that is phantom.*
 
 | operation | result | charge |
 |---|---|---|
-| `restrict A S` | the arena on `S ⊆ V(A)` with the edges of `A[S]`, `up` set to the `A`-names, `hist` restricted | ⟨A⟩ `O(Σ_{s∈S} deg_A(s) + \|S\|·L)` |
+| `restrict A S` | the arena on `S ⊆ V(A)` with the edges of `A[S]`, `up` set to the `A`-names, `hist` filtered | ⟨B⟩ `O(Σ_{s∈S} deg_A(s) + \|S\|·(L + ℓ·R))` |
 | `isolate B W` | drop the edges incident to `W` | `O(‖B‖)` |
-| `bfs A v d` | the `≤ d`-ball of `v` with distances, `d ≤ 2R`; parent-recording variant available | `O(‖ball_d(v)‖)` |
-| `pushColor A P` | append one color row | `O(A.N)` |
-| `cover A r` | ordering `π`, clusters `X_u`, assignment `ctr` | `O(‖A‖^{1+δ})` — §6.2, and see §11 |
+| `bfs A v d` | the `≤ d`-ball of `v` with distances, `d ≤ 2R` | `O(‖ball_d(v)‖)` |
+| `bfsSupports A v d` | ⟨B⟩ one BFS from `v` materialising the `≤ d+1` support names at every reached vertex | `O(d·‖ball_d(v)‖)` |
+| `recordProfiles B W` | ⟨B⟩ §6.3 — cumulative capped distance rows for the batch and colour classes | `O((m + L)·‖B‖·(R+1))` |
+| `cover A r` | ordering `π`, clusters `X_u`, assignment `ctr` | `O(‖A‖^{1+δ})` — §6.2, §8 step 0b, §11 |
 | `greedyScatter A r P t` | `min(t, size of the greedy maximal r-scattered subset of P)` | `O(t·‖A‖)` |
+| `BotTables A j` | ⟨B⟩ §6.4 — the leaf's table, read off colour rows | `O(‖A‖)` |
+
+⟨B⟩ *Rev 3's table omitted `recordProfiles` — the routine the D2 unfusing
+created, and the one carrying the tower-sized `L` — and `BotTables`, while
+listing a `pushColor` that nothing in §5 calls. The table is the document's
+inventory of charged operations; §7 cannot be checked against a pseudocode it
+does not cover.*
 
 ⟨A⟩ **The `restrict` charge is not `O(‖A[S]‖ + |S|)`, and no data structure
 achieves that.** Scanning `s`'s CSR row costs `deg_A(s)`, not `deg_{A[S]}(s)`.
@@ -339,12 +460,29 @@ so the whole children-building column is absorbed by the cover term in §7.
 ⟨A⟩ **`cover` must also return `ctr`, and nothing in the surviving layer
 produces it.** `IsNeighborhoodCover.ball_subset` is an existential
 (`NeighborhoodCovers.lean:53`); §6.2's `X_u := {w : u ∈ wreach_π(A,2R,w)}`
-never mentions `ctr`; `OrderedCovers.lean` has no occurrence of it. The GKS
-construction `ctr v := π-min(ball_R(v))` costs `Σ_v ‖ball_R(v)‖`, which is
-`Θ(n²)` on `K_{1,n−1}` — *precisely the sum O1(b) is rejected for*. The repair
-is `ctr v := π-min(wreach_π(A,R,v))`, computed from the same wreach fibres the
-cover already builds; the identity `ball_R(v) ⊆ X_{π-min(wreach_π(A,R,v))}` is
-an obligation of §8 step 6.
+never mentions `ctr`; `OrderedCovers.lean` has no occurrence of it. Use
+`ctr v := π-min(wreach_π(A,R,v))`, computed from the same wreach fibres the
+cover already builds.
+
+⟨B⟩ **Two corrections to Rev 3's account of this, both in the reader's favour.**
+
+*It is not a repair of GKS; it is GKS.* Rev 3 attributed `ctr v := π-min(ball_R(v))`
+to GKS and rejected it at `Θ(n²)` on a star. That sum appears nowhere in GKS:
+their ball-minimum occurs only in the *existence* proof (tex:1444-1451), which
+is a proof, not an algorithm. Their algorithm is the Remark at tex:1522-1538 —
+*"we associate with `v` the set `X_{2r}[G,<,u]` for the `<`-minimal `u` such
+that `v ∈ N_r^{G∖S(u)}(u)` … As the sets are computed in increasing order, this
+can be done at no extra cost"* — and by their own Claim (tex:1468-1471)
+`X_r[G,<,u] = N_r^{G∖S(u)}(u)`, so that `u` **is** `π-min(wreach_π(A,R,v))`.
+Rev 3 reinvented the source in wreach language and then argued with it.
+
+*And the owed identity is near-free, so §8 step 6's estimate is inflated.*
+Write `u* := π-min(ball_R(v))`. (1) `wreach ⊆ ball`, immediate from
+`mem_wreach_iff`. (2) `u* ∈ wreach_R(π,v)`: any walk `v→u*` of length `≤ R` has
+every support vertex within `R` of `v`, hence in `ball_R(v)`, hence `π u* ≤ π y`
+by minimality of `u*` — which is exactly `wreach`'s third conjunct. So the two
+`π`-minima coincide, and `ball_R(v) ⊆ X_{ctr v}` is GKS tex:1443 transcribed:
+roughly six lines, not a design risk.
 
 ---
 
@@ -375,14 +513,16 @@ an obligation of §8 step 6.
 13      (π, X, ctr) := cover(A, R)                             -- §6.2, §11
 14      tab := uninitialised table of size A.N × |ℱ_j|
 15      for each centre u with X_u ≠ ∅:                        -- one child each
-16          B₀ := restrict(A, X_u)                             -- §6.1
-17          P  := bfsParents(B₀, u, 2R)                        -- ⟨A⟩ ONE BFS,
-18                                                             -- recorded, carried down
-19          W  := pad_m( {u} ∪ ⋃_{h ∈ A.hist} (h ∩ X_u) )      -- ⟨A⟩ the batch
+16          B₀ := restrict(A, X_u)                             -- §6.1, filters hist
+17          S  := bfsSupports(B₀, u, 2R)                       -- ⟨B⟩ ONE BFS; at each w,
+18                                                             --  the ≤2R+1 support names
+18                                                             --  of the u→w walk
+19          W  := pad_m( {u} ∪ ⋃_{e ∈ rounds} B₀.hist[u][e] )  -- ⟨B⟩ = genSet, |W| ≤ m
 20          B₀ := recordProfiles(B₀, W)                        -- §6.3, BEFORE isolating
 21          B  := isolate(B₀, W)                               -- ⟨A⟩ D2, unfused
 22          B.own  := (fun v => ctr (B.up v) = u)
-23          B.hist := (P :: A.hist) ↾ B
+23          B.hist := fun w e => if e = now then S[w]          -- ⟨B⟩ per vertex, not
+23                               else B₀.hist[w][e]            --  one path per round
 24          sub := Tables(B, j+1)                              -- recurse
 25          sc  := ( greedyScatter(B, σ.r, {w : sub[w][σ.β]}, σ.t) ≥ σ.t
 26                   for each scatter sentence σ occurring in dec_j )
@@ -427,6 +567,24 @@ This needs a **fourth guarantee on `cover`**: *for every `w ∈ X_u` there is a
 its proof, ~10 lines. It is not in the endorsed `IsNeighborhoodCover` and must
 be added proofs-side.
 
+⟨B⟩ **The lemma is true — audited against the definition, and the source proves
+it twice over.** `Lax12.ColoringNumbers.wreach` (`ColoringNumbers.lean:64-67`)
+is `{u | ∃ w : G.Walk v u, w.length ≤ r ∧ ∀ y ∈ w.support, π u ≤ π y}`: the
+`π`-minimality clause is **non-strict**, over the **whole support**, about the
+**endpoint** — exactly as Rev 3 read it, so `dropUntil` preserves it verbatim
+and Mathlib's `support_dropUntil_subset` / `length_dropUntil_le` supply the
+rest. The audit's suspicion that the clause was subtly different (about `w`'s
+own position, or strict) is refuted by the definition. GKS prove the same fact
+by a shorter route: `X_{2r}[G,<,v] = N_{2r}^{G∖S(v)}(v)` (tex:1468-1471) is a
+*ball in the peeled graph*, and a BFS tree of a ball lies inside that ball.
+
+**What the invention does not supply is the channel.** One BFS from `u` does
+give the walk `hwalk` demands for every descendant connector, because every
+descendant carrier `⊆ X_u`. But `hwalk` is quantified over every earlier round
+and the connector is unknown when the BFS runs, so the *record* must be
+per-vertex, not one path. That is D6's correction, and line 17 above is written
+for it: `bfsSupports`, not `bfsParents`.
+
 ### Why line 28 is correct
 
 Fix `β ∈ ℱ_j`, local of rank `(1, q−1)`, and `v` with `ctr v = u`.
@@ -455,9 +613,20 @@ This is not bookkeeping: the two readings **disagree on a value the algorithm
 computes**. Applying `locality` at `B_full'` evaluates its scatter atoms over
 all of `Fin n`, where every vertex outside `X_u` is isolated *and colourless*,
 and greedy picks them; applying it at `B` evaluates over `X_u` only. So the
-compaction must come *before* `locality`, and it must be **order-preserving**
-(D3) and carry a **dead-vertex correction** for the greedy choice. Owed
-lemma, §8 step 4a.
+compaction must come *before* `locality`. Owed lemma, §8 step 4a.
+
+⟨B⟩ **And that is the whole of it — Rev 3's two extra clauses are deleted.**
+Rev 3 added that the compaction "must be **order-preserving** (D3) and carry a
+**dead-vertex correction** for the greedy choice". Once it comes before
+`locality`, neither is needed: step 3′ transports `DistFO.Sat`, which has no
+order-sensitive constructor, so any bijection serves; and no greedy value
+crosses the boundary, because scatter atoms are evaluated at `B` on `B`'s own
+carrier (D3). *A correction is in fact constructible for the route the design
+already abandoned — dead vertices are isolated and colour-identical, hence
+mutually automorphic and never blocking, so the greedy set shifts by `0` or
+`|dead|` — which is only further evidence that moving the compaction before
+`locality` was right.* §8 step 4a shrinks accordingly: it is a plain
+`Sat`-transport along a bijection.
 
 ### Why every table entry is written exactly once
 
@@ -471,11 +640,13 @@ Total readback `Σ_u |X_u| ≤ D·A.N`.
 
 `N = ‖A‖` is the node's own arena size.
 
-### 6.1 `restrict A S` — ⟨A⟩ `O(Σ_{s∈S} deg_A(s) + |S|·L)`
-Rank `S` (given sorted, and this is load-bearing — D3) to get local names; scan
-each `s ∈ S`'s CSR row keeping neighbours in `S`; write the CSR; copy the `L`
-colour rows; set `up`, restrict `hist`. Aggregates to `2c_D·‖A‖^{1+δ}` over a
-node's children (§4).
+### 6.1 `restrict A S` — ⟨B⟩ `O(Σ_{s∈S} deg_A(s) + |S|·(L + ℓ·R))`
+Rank `S` (given sorted — ⟨B⟩ a CSR-build cost matter, *not* correctness; see
+D3) to get local names; scan each `s ∈ S`'s CSR row keeping neighbours in `S`;
+write the CSR; copy the `L` colour rows; set `up`; **filter `hist`** — for each
+`s ∈ S` and each ancestor round, intersect the stored support list with `S`,
+sound because carriers are nested (D6). Aggregates to `O((1 + ℓ·R)·c_D·‖A‖^{1+δ})`
+over a node's children (§4), still absorbed by the cover term.
 
 The membership test needs a parent-name-indexed lookup. Allocate **one** scratch
 array of length `A.N` per *node*, reused across children and cleared only at the
@@ -493,6 +664,31 @@ superlinear routine, (ii) the sole source of `D(N)`, (iii) therefore the sole
 reason §7 needs `δ` and `(★)`, and (iv) the sole reason §11 exists. Rev 1
 isolated its most uncertain claim and then scheduled it after the gate — the
 exact error the prune note records as *"attack the falsifier first"*.
+
+⟨B⟩ **What this section describes is the ordering, not the cover algorithm.**
+Reading the clusters off `π` is itself a real routine, and GKS give it
+(tex:1459-1520): process vertices in **ascending `π` order**; from `v`, run
+`2r` BFS levels in the *peeled* graph `G ∖ S(v)`; then **delete `v`**.
+Correctness is `X_{2r}[G,<,v] = N_{2r}^{G∖S(v)}(v)` (tex:1468-1471). It needs a
+specific representation — edges split into `N_<`/`N_>` lists, built in
+`O(n^{1+δ})`, with `d_<(v) ≤ |wreach_{2r}[G,<,v]| ≤ n^δ` — and its accounting
+is `Σ_v(|X_v|·n^δ + Σ_{w∈N_>(v)} d_<(w)) ≤ 2n^δ·Σ_v|X_v| ≤ 2n^{1+2δ}`. Note
+this **is** `(★)`: the design's starred bound is GKS's own accounting identity,
+not merely the design's. Two consequences for this document: the peeling sweep
+**mutates the arena**, which §4's operation table does not model; and `ctr`
+falls out of the same sweep for free (§4).
+
+⟨B⟩ **Two side conditions the document never states.** (i) GKS's cover theorem
+holds only for `n ≥ f(r,ε)`; the design applies `cover` at *every* node, and
+arenas shrink with depth, so most deep nodes are below any fixed threshold. It
+is absorbable — below threshold the arena is of constant size — but "constants
+are free" (§3) is about constant *factors*, and this is a domain restriction.
+(ii) The **degree** half carries no such threshold in Lean:
+`CoverDegree.exists_cover_degree` (`:366-378`) is `∀ (m) (G : SimpleGraph (Fin m)),
+G ⊑ Gn → …` with `m = 0` discharged separately and `c` uniform — quantified over
+every subgraph copy on its **own** carrier, which is exactly what licenses
+re-applying it at every node, and is stronger than GKS's statement. The
+threshold worry therefore applies to the time half alone, which is §8 step 0b.
 
 ### 6.3 `recordProfiles B₀ W` — `O((m + L)·‖B₀‖·(R+1))`
 BFS to depth `R` from each of the `m` padded batch vertices and from each of the
@@ -550,18 +746,59 @@ because both endpoints must — has **no counterpart in the surviving layer**
 (`CoverDegree.lean:512/524/535` are pure vertex counts) and is an owed lemma.
 
 **Standing hypotheses, ⟨A⟩ absent from Rev 1 and necessary:** `N ≥ 1`,
-`c ≥ 1`, and `c_D ≤ c`. Rev 1's induction is *false without them* — the auditor
-gave a full counterexample at `c = 1, c_D = 100, δ = 0.1, ℓ = 1`, where the
-step fails by a factor of 50. §3 now defines `c := max(…, c_D, 1)`.
+`c_D ≤ c`, and ⟨B⟩ **`c ≥ 6`**.
+
+⟨B⟩ **Rev 3's stated inequality was wrong twice, and its stated hypothesis
+`c ≥ 1` is false.** It printed `c(1+c_D) + (2c)^L·c_D ≤ 2c·(2c)^L`, dropping
+one `c` from the cover/children sum *and* the `+1` from the recursion
+coefficient — the very ceiling this section defends four lines earlier with a
+worked numeral ("it is not pedantry"). This is the same failure mode as the
+counterexample the previous audit gave, one revision later, in the paragraph
+written to repair it.
+
+⟨B⟩ **And the middle term was the wrong quantity.** §4 charges `restrict A S`
+at `O(Σ_{s∈S} deg_A(s) + …)` and *proves* no data structure achieves
+`O(‖A[S]‖ + |S|)` (the `K_{3,n−3}` witness). So `c·Σ_u N_u` does not dominate
+the restrict column for any constant `c`. §4 says that column "is absorbed by
+the cover term in §7" — but §7's cover term was `c·N^{1+δ}` with the *same* `c`,
+so the term was simply missing. Fold it into a single leading coefficient:
+
+```
+ T_j(N) ≤ a·N^{1+δ}  +  c·Σ_u N_u  +  Σ_u T_{j+1}(N_u),
+          a := c + 2c_D   (cover, plus the restrict/hist aggregate of §4/§6.1)
+```
 
 **Claim.** `T_j(N) ≤ (2c)^{ℓ−j+1} · N^{1+(ℓ−j+1)δ}`, whence at the root with
-`δ = ε/(ℓ+1)`:  `T_0(n) ≤ (2c)^{ℓ+1} · n^{1+ε}`.
+`δ = ε/(ℓ+1)`:  `T_0(n) ≤ (2c)^{ℓ+1} · n^{1+ε}`. *The headline shape is
+unchanged; only the admissible constant moves.*
 
-*Proof.* Downward induction; with `L = ℓ−j ≥ 1` the step reduces to the
-constant inequality `c(1+c_D) + (2c)^L·c_D ≤ 2c·(2c)^L`, which holds under
-`c ≥ 1`, `c_D ≤ c`. The leaf is charged linearly and the formula charges it at
-`1+δ`; that slack is also why `δ = ε/(ℓ+1)` and not `ε/ℓ` — the leaf level is
-charged too, so there are `ℓ+1` levels to divide `ε` among. ∎
+*Proof.* Downward induction. With `L = ℓ−j ≥ 1`, using `(★)` and `N_u ≤ N`:
+
+```
+ recursion  (2c)^L·Σ_u N_u^{1+Lδ} ≤ (2c)^L·N^{Lδ}·(c_D+1)N^{1+δ}
+ children   c·Σ_u N_u             ≤ c(c_D+1)·N^{1+δ}
+ cover      a·N^{1+δ}
+```
+
+so the step is the constant inequality
+
+```
+ a + c(c_D+1) + (2c)^L·(c_D+1)  ≤  (2c)^{L+1}.
+```
+
+It is tightest at `L = 1`, where with `c_D = c` and `a = 3c` it reads
+`3c² + 6c ≤ 4c²`, i.e. **`c ≥ 6`**, tight at `c = 6` (144 ≤ 144); `L ≥ 2` is
+slacker. The base at `j = ℓ` is the leaf, charged linearly at `c·N ≤ (2c)·N^{1+δ}`.
+That the leaf is charged at all is why `δ = ε/(ℓ+1)` and not `ε/ℓ` — there are
+`ℓ+1` levels to divide `ε` among. ∎
+
+⟨B⟩ *The audit reported `c ≥ 4`, which is the figure without the restrict term;
+its own fix note asked for the recheck once that term is folded in. Rechecked:
+`c ≥ 6`. §3 now defines `c := max(…, c_D, 6)`. GKS never meet this constraint
+because they do not tighten — their `δ = ε/(2ℓ)` (tex:2621) buys `2δ` of
+exponent per level, so the additive term is absorbed into the exponent and no
+constant condition arises. The tighter `ε/(ℓ+1)` split is what makes the
+coefficient binding.*
 
 **This is an amendment of a compiled proof, not new work.** The restored
 `CostRecurrence.lean` (`pruned-algorithmic-layer.md` §3a) has
@@ -582,15 +819,33 @@ steps before a gate forbidding machine-level work; it scheduled the falsifier
 (`cover`) last; and it called steps 1–4 "independent" when two of them gate the
 shape of the others. Re-ordered:
 
-0. **§11 and `cover`, together, as one probe, before anything else.** Does the
-   cover fit the machine's addressable space, and does it meet `O(N^{1+δ})`
-   time? These are the same question about the same routine, and either answer
-   may force reconsideration of the cover rather than of the algorithm.
+0. ⟨B⟩ **Split — Rev 3's step 0 bundled two questions that are not the same
+   question, one of which is already answered and the other of which cannot be
+   closed with the documents in hand.** A reader who follows Rev 3's step 0
+   spends a week and lands nothing.
+   - 0a. **The space half is settled; do not spend a week on it.** §11's
+     conclusion is right and is in fact *unconditional* — see §11 as rewritten.
+     Nothing to probe.
+   - 0b. **The time half is not a probe: it is an external import.** GKS prove
+     the cover theorem (tex:1255-1263) in three stages, and the only
+     superlinear stage — `aug(G,r)` with `Δ⁻ ≤ n^ε` in time `f(r,ε)·n^{1+ε}` —
+     is `thm:computingorientation` (tex:1342-1352), whose whole proof is the
+     bracket *[Nešetřil–Ossona de Mendez 2005, Cor 4.2, Thm 4.3]*. GKS give no
+     round count and no per-round cost; their only remark on rounds is the
+     aside at tex:1369-1372. The Lean side carries none of it either:
+     `exists_augChain_wcol` (`Augmentation.lean:1030`),
+     `exists_augChain_subpolynomial` (`:1059`),
+     `exists_densityAtMost_of_nowhereDense` (`AugmentedDensity.lean:984`),
+     `isNeighborhoodCover_wreach` (`OrderedCovers.lean:111`) and
+     `exists_cover_degree` (`CoverDegree.lean:366`) are **existence and degree
+     statements with zero step content**. **Blocked pending NOdM 2005, which is
+     not in this repository — ask Jan.** Until it is here, the cover's time
+     bound is an assumption of the design, and should be written as one.
 1. **Amend the cost-recursion lemma** of §7 — already compiled as
    `CostRecurrence.exists_driverCostsSigma` / `sigma_root_almostLinear`.
    Generalize `hKo`/`hKc` from arena-linear to `c·N^{1+δ}`, re-split `ε` over
    `ℓ+1`, add the standing hypotheses, and prove (★)'s owed edge half.
-   Mathlib-only. **Note it is not independent of step 0:** a different cover
+   Mathlib-only. **Note it is not independent of step 0b:** a different cover
    changes `D`, hence `(★)`, hence the parameterisation.
 2. **Resolve O1/O5 together** — generalize `SplitterWinRec.ReachedR` from
    ball-moves to `S`-moves and prove the analogues of `isolatedR`,
@@ -604,8 +859,10 @@ shape of the others. Re-ordered:
 4. **The abstract algorithm** — §5 over the `Arena` interface of §4 taken
    abstractly; correctness by §5's chain; cost by §7. **Hard gate: no ND-MC
    driver is written until this is complete and reviewed.**
-   - 4a. the compaction/transport lemma of step 3′, order-preserving, with its
-     dead-vertex correction — owed, and on the critical path.
+   - 4a. the compaction/transport lemma of step 3′ — ⟨B⟩ a plain `Sat`-transport
+     along a bijection `Fin N ≃ X`. *Rev 3 required it to be order-preserving
+     and to carry a dead-vertex correction; D3 and §5 record why both clauses
+     are phantom. Still owed, but much smaller than Rev 3 priced it.*
    - 4b. unrolling §5's depth-`ℓ` recursion into `ℓ+1` depth-indexed levels:
      Lax13's machine has no call stack, so this is a real step and Rev 1
      assigned it to nobody. Say whether the `ℓ+1` frames are laid out
@@ -641,7 +898,19 @@ remains genuinely open:
   play-record `ReachedR` and take the leaf from `reachedR_length_lt`, which
   bounds depth without ever naming a batch — which is what the deleted driver
   did (`RamDriver.lean:41-45`) and Rev 1 lost;
-- carrier transport for `ReachedR` under adding isolated vertices.
+- carrier transport for `ReachedR` under adding isolated vertices. ⟨B⟩ Note
+  `RoundR n` fixes `arena : SimpleGraph (Fin n)` (`SplitterWinRec.lean:129-135`)
+  and `ReachedR` types `A : SimpleGraph (Fin n)` (`:192-193`), so §5's `# pre:`
+  line does **not** typecheck against D1's renumbered `A : SimpleGraph (Fin N_j)`;
+  and `nextArenaR` restricts to `ball e.arena r e.vtx` (`:153-154`) where the
+  design restricts to `X_u ⊆ ball`. Both are booked here and at §8 step 2, but
+  §5's precondition is written in a notation that presumes them discharged.
+
+⟨B⟩ **Resolved by this audit, and struck from the open list:** whether the
+algorithm's self-built batch is a legal move. It is — see §3. The batch is
+`SplitterWin.genSet`, its size bound `genSet_ncard_le` is landed, and the
+correct `m = ℓ(2R+1)` comes from `splitterWins_of_reachedR`. What made this look
+open was reading `m` off the wrong existential.
 
 **O2 — make the locality decomposition a function.** Unchanged, but ⟨A⟩ its
 payoff is smaller than Rev 1 claimed: `ℓ`, `m`, `c_D` remain
@@ -658,7 +927,17 @@ question is not whether to build one but how much of the tower to instantiate,
 and that is step 5.
 
 **O6 — ⟨A⟩ new, and the one that decides the project: what does `cover` cost in
-*space*?** See §11.
+*space*?** See §11. ⟨B⟩ **Closed by the third audit: the squared side condition
+suffices unconditionally**, because a cover degree is at most the carrier size,
+so the peak is `≤ N²` for every `ε` and `δ` with no hypothesis. §11 carries the
+argument. The space question is no longer what decides the project.
+
+**O7 — ⟨B⟩ new, and it replaces O6 as the one that decides the project: can the
+cover's *time* bound be obtained at all?** GKS defer it to Nešetřil–Ossona de
+Mendez 2005, which is not in this repository, and the Lean cover layer carries
+only the degree half. See §8 step 0b. This is the design's load-bearing
+unproved claim, and unlike §7 it cannot be discharged by working harder on
+material already here.
 
 ---
 
@@ -724,10 +1003,29 @@ would collide with Lax11 and with the thirteen lakefiles pinning `word-ram`. It
 does not. Nothing outside `concepts/Lax3/ModelChecking.lean` mentions the
 condition, and no package consumes the axiom.
 
-**The exponent is `2`, not `1 + δ`,** because `δ = ε/(ℓ+1)` depends on the class
-and on `ε`; a side condition varying with them would make the admissible input
-set vary with the parameter, where it should be a property of the encoding
-alone.
+**The exponent is `2`, not `1 + δ`,** because a side condition varying with the
+class and `ε` would be harder to read and to reuse than one fixed by the
+encoding.
+
+⟨B⟩ **The change is sufficient — it is the one decision in Rev 3 the audit
+could not shake — but two of its four stated reasons were false, and the true
+reason is stronger than the one given.**
+
+- *Struck: "enough for any `n^{1+δ}` with `δ ≤ 1`."* `δ ≤ 1` is nowhere
+  established and **fails at `ε > ℓ+1`**, since `δ = ε/(ℓ+1)`.
+- *Struck: "it should be a property of the encoding alone."* The admissible set
+  **already** varies with `(C, φ, ε)` through `c`, under either exponent. The
+  exponent's stability is a convenience, not a principle.
+- **The true argument needs no hypothesis at all.** A cover degree is at most
+  the carrier size, so `Σ_u |X_u| ≤ N²` for *every* `ε` and `δ`
+  (`wreach_fibre_eq`, `CoverDegree.lean:584`; `sum_ncard_le_mul`, `:512`), and
+  the same holds for the augmentation chain's round graphs. The guarantee is
+  `2^w ≥ c·(|x|+1)² ≥ c·n²` (`ModelChecking.lean:122`). Choose `c` large enough
+  to absorb the `ℓ+1` live frames and their constants — legal, since `c` is
+  bound by the `∃` under `∀ C φ ε` and `ComputesInTime` is `∀ x ∈ D`, so a
+  larger `c` loosens the time bound and shrinks the obligation together. **It
+  fits for every `ε` and `δ`, unconditionally.** Keep the exponent; the
+  concept's docstring should carry this reason rather than the two struck ones.
 
 **This does not close O6, it unblocks it.** The two space repairs below remain
 worth having, because they would let the *linear* side condition be restored and
@@ -736,11 +1034,62 @@ than folding it into `c`:
 
 1. **Stream the cover.** Nothing forces the cluster family to be materialized:
    the tree is walked depth-first, so if `X_u` can be produced on demand from
-   the ordering `π` alone, peak memory is `O(max cluster + n)` per level. The
-   obstacle is that `X_u` is a *wreach fibre*, and computing one fibre without
-   the whole wreach relation is not obviously possible.
+   the ordering `π` alone, peak memory is `O(max cluster + n)` per level.
+   ⟨B⟩ *Rev 3 recorded an obstacle here — "computing one fibre without the whole
+   wreach relation is not obviously possible" — and the source refutes it:
+   `X_{2r}[G,<,v] = N_{2r}^{G∖S(v)}(v)` (GKS tex:1468-1471), so **one cluster is
+   one BFS in the peeled graph**, no wreach relation required. Streaming would
+   still not restore the linear side condition, so this stays off the critical
+   path — but the stated obstacle is not the reason.*
 2. **Bound the augmentation chain's live memory** independently of its output
    size, or recompute rather than store.
 
-Neither is on the critical path now. `cover` stays §8 step 0 for its *time*
+Neither is on the critical path now. `cover` stays §8 step 0b for its *time*
 bound, which is still the design's falsifier.
+
+---
+
+## §12 ⟨B⟩ The third audit — what it changed, and what it could not shake
+
+Nine agents, 1.35M tokens, four attack groups each followed by an adversarial
+verifier told to refute the auditor, then a synthesizer. Nine findings survived
+at **major**; none was in the algorithm. Recorded here so the next session
+inherits the evidence instead of re-deriving it.
+
+**What survived unshaken.** §5's recursion, §7's *shape*, D2–D4, and **both** of
+Rev 3's new inventions. The path-closure lemma is true (§5, verified against
+`wreach`'s definition and independently against GKS tex:1468-1471). The
+compaction lemma is true and *smaller* than Rev 3 thought (D3, §5, §8 4a). The
+squared side condition is sufficient **unconditionally** (§11). Rev 3 was a
+real repair; what it did not do was reconcile its twenty patches with each
+other.
+
+**The four real defects, all seam defects.**
+
+1. **The channel** (D6, §4, §5 lines 17-23). `bfsParents` records a *tree*;
+   `hist : List Path` declares a *path*; `ReachedR.step` needs a per-vertex
+   answer. All three differ, and Rev 3 asserted the cheapest one. Repaired to
+   per-vertex support lists at `O(ℓ·R·‖A‖)` per node.
+2. **`ℓ` and `m` were mis-sourced** (§3). The O1 precondition swap cut them from
+   the axiom they were read out of, and nothing noticed. Repaired to
+   `ℓ := N(2s+2)` and `m := ℓ(2R+1)`, both landed — and under the corrected `m`
+   the batch is legal and *is* `SplitterWin.genSet`, already in the repository.
+3. **§7's constant arithmetic** (§7). Two dropped terms and a false hypothesis,
+   in the paragraph written to repair the previous audit's counterexample.
+   Repaired to a three-term recurrence with `c ≥ 6`.
+4. **§8's work order** (§8 step 0). The step scheduled first bundled a settled
+   question with an unclosable one.
+
+**The finding that changes the plan.** The cover's `O(N^{1+δ})` *time* bound is
+true in the literature and unformalizable from anything this project holds: GKS
+defer their only superlinear stage to Nešetřil–Ossona de Mendez 2005, which is
+not in this repository, and the Lean cover layer carries the degree half only.
+Get that paper before step 0b.
+
+**The process rule, earned a fourth time.** Every defect above is a place where
+the document asserted something its own cited object does not say — `List Path`
+against what line 23 stores, an axiom's `ℓ` against the lemma actually used, a
+printed inequality against the recurrence above it, GKS's `ctr` against GKS's
+Remark. *Read the theorem, not the docstring, and not the file's framing prose.*
+The one place Rev 3 did read the definition — the `wreach` minimality clause —
+is the one place its invention survived intact.

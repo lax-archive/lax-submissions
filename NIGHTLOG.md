@@ -6112,13 +6112,19 @@ checkout, never a per-wave gate in a worktree.
 ## ND-MC restart — 2026-08-17 (Jan: prune, rethink, then formalize)
 
 **Next session's goal, set by Jan: a clean critique.** Run
-`Workflow({name: 'ndmc-critique'})` — the harness is now checked in at
-`.claude/workflows/ndmc-critique.js` — and keep repairing
-`plans/nowhere-dense-model-checking/algorithm-v2.md` until nothing
-survives its adversarial verifier at severity major or fatal. Re-point
-the four group prompts at whatever is unaudited in the current revision
-before each run; auditing what a previous round already fixed wastes the
-pass. Do not start proving until the critique is clean.
+`Workflow({name: 'ndmc-critique'})` — the harness is checked in at
+`.claude/workflows/ndmc-critique.js` — against **Rev 4**, and keep
+repairing `plans/nowhere-dense-model-checking/algorithm-v2.md` until
+nothing survives its adversarial verifier at severity major or fatal.
+Re-point the four group prompts at whatever is unaudited in the current
+revision before each run; auditing what a previous round already fixed
+wastes the pass. Do not start proving until the critique is clean.
+
+Three rounds have now run (7, 13, 9 agents). The trend is the useful
+signal: round 2 found two *unsound* claims, round 3 found none — nine
+seam defects and one external dependency, with the algorithm itself
+unshaken. A fourth round against Rev 4 is the right next move, and if it
+comes back clean the critique goal is met.
 
 **What happened.** Jan's instruction: prune all algorithmic work so it
 stops polluting the thinking, take notes so the history need not be read,
@@ -6156,8 +6162,17 @@ to a cited statement turned out wrong.*
   The fused `induce` violated `sat_iso`'s pre-isolation profile
   requirement; the batch computation was *vacuous* because isolation is
   permanent. Rev 3 repairs both.
-- Audit 3 (9 agents) **was still running when the session ended.** Its
-  findings are lost with the container — re-run the harness.
+- Audit 3 (9 agents, 1.35M tokens) completed and is folded into **Rev 4**;
+  §12 of `algorithm-v2.md` records it. Nine findings survived at major and
+  **none was in the algorithm** — §5's recursion, §7's shape, D2–D4 and
+  *both* of Rev 3's inventions survived every attack, and the squared side
+  condition is sufficient unconditionally. What broke was the seams between
+  Rev 3's twenty patches: the downward channel (`bfsParents` records a tree,
+  `hist` declared a path, `ReachedR.step` needs a per-vertex answer — three
+  different things), `ℓ` and `m` mis-sourced after the O1 precondition swap
+  (repaired to `ℓ = N(2s+2)`, `m = ℓ(2R+1)`, under which the batch is legal
+  and *is* `SplitterWin.genSet`, already in the repository), §7's constant
+  arithmetic, and §8's work order.
 
 **Decisions Jan took.** (1) Squaring the headline axiom's word-length side
 condition, `c·(|x|+v+1)² ≤ 2^w`, because the algorithm needs
@@ -6167,8 +6182,18 @@ it weakens the statement and touches no other submission. (2) Checking in
 `references/gks/` (arXiv:1311.3899) despite its non-CC-BY licence — both
 earlier audits had to check every "GKS §6" claim against absence.
 
-**Where a successor starts.** `algorithm-v2.md` §8 step 0: the cover, in
-*time* and in *space*, together. It is the sole superlinear routine, the
+**Where a successor starts.** `algorithm-v2.md` §8 step 0b, and it needs
+Jan first: **the cover's `O(N^{1+δ})` time bound cannot be formalized from
+anything this project holds.** GKS prove it in three stages and the only
+superlinear one — computing `aug(G,r)` with `Δ⁻ ≤ n^ε` — is
+`thm:computingorientation` (`references/gks/nowheredense.tex:1342-1352`),
+whose entire content is a citation to *Nešetřil–Ossona de Mendez 2005,
+Cor 4.2 / Thm 4.3*. No proof, no round count, no per-round cost anywhere in
+GKS; and the five Lean files §6.2 names carry the **degree** half only, with
+zero step content. §8 step 0 had been priced as "one probe"; it is the
+import of an external 2005 paper. **Get that paper before step 0b starts.**
+The space half of step 0 is settled — the squared side condition suffices
+unconditionally. It is the sole superlinear routine, the
 sole source of `D(N)`, the sole reason §7 needs `δ`, and the sole reason
 the contract had to change. Everything else is downstream of it. §7 is a
 fresh derivation and the design's load-bearing unproved claim; the owed
