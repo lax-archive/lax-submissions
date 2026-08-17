@@ -1,6 +1,9 @@
 # ND-MC: the algorithm, rethought from first principles
 
-Rev 1, 2026-08-17. Status: **design for review.** Written after pruning the
+Rev 2, 2026-08-17. Status: **design for review, audited once.** Rev 2 folds in
+a 7-agent adversarial audit of the evidence Rev 1 rested on; corrections are
+marked in §7, §8, §10 and O5. A second audit, of this document's own claims,
+was running when Rev 2 was written. Written after pruning the
 whole algorithmic layer (`pruned-algorithmic-layer.md`); nothing below is
 inherited from it except three *facts* that the prune note records and that are
 cited here by name.
@@ -409,11 +412,31 @@ every routine in §6 is then written against: hit `c·N^{1+δ}` per node with yo
 own arena's `N`, and you are done. Nothing downstream ever needs to know a
 numeral.
 
-Contrast with what was pruned: a downward affine recursion `Kl j ≥ a j + n·Kl
-(j+1)` over ~30 named constants tied together by hypothesis slots at a
-19-argument root theorem. That recursion is *correct arithmetic for the wrong
-program* — its per-level coefficient is `n` precisely because the program swept
-the carrier, i.e. it is P1's violation written as a recurrence.
+**Hypotheses the display above hides**, all of which step 1 must carry
+explicitly: `c ≥ 1` and `c_D ≤ c`, without which the absorption into
+`(2c)^{ℓ−j+1}` fails; `N ≥ 1`; and `N_u ≤ N`, used twice. At `j = ℓ` the
+claimed formula reads `T_ℓ(N) ≤ 2c·N^{1+δ}` against a leaf charged linearly —
+true, but the slack is real and is also why `δ = ε/(ℓ+1)` and not `ε/ℓ`: the
+leaf level is charged too, so there are `ℓ+1` levels to divide `ε` among.
+
+**This is an amendment of a compiled proof, not new work.** The restored
+`CostRecurrence.lean` (`pruned-algorithmic-layer.md` §3a) has
+`exists_driverCostsSigma` (`:441`) carrying `(★)` as
+`∑_{c<t} bs c ≤ D·(m+1)` verbatim, and `sigma_root_almostLinear` (`:610`)
+closing `C·(⌈c·n^{ε/ℓ}⌉+1)^ℓ·(n+1) ≤ C(c+2)^ℓ·(n+1)^{1+ε}`. Rev 1 of this
+document called that file *"correct arithmetic for the wrong program"*. That
+was wrong, and it is worth recording why, because it is the same mistake the
+redesign exists to stop making. The *affine* recursion in the file's opening
+prose really is the old driver's, and its per-level coefficient really is `n`
+because the program swept the carrier — but the Σ-form theorems below that
+prose are architecture-neutral and are exactly what §7 needs. Reading a file's
+framing instead of its statements is the same error as reading a docstring
+instead of a theorem.
+
+Two gaps remain between the restored file and §7, and closing them is step 1's
+whole content: it assumes each level's own charge is **linear** in arena weight
+(`hKo : Ko j m ≤ ko j·(m+1)`) where §6.2's cover is `c·N^{1+δ}`, and it splits
+`ε` as `ε/ℓ` where §7 splits it as `ε/(ℓ+1)`.
 
 ---
 
@@ -422,9 +445,13 @@ the carrier, i.e. it is P1's violation written as a recurrence.
 Each step is a landing boundary. Steps 1–4 are infrastructure and are
 independent of each other; step 5 is the milestone.
 
-1. **The cost-recursion lemma** of §7. Standalone, ~150 lines, no dependency on
-   anything in this submission. Do it first so that every later charge has a
-   target.
+1. **Amend the cost-recursion lemma** of §7 — it is already compiled, as
+   `CostRecurrence.exists_driverCostsSigma` and `sigma_root_almostLinear`
+   (restored; `pruned-algorithmic-layer.md` §3a). Generalize `hKo`/`hKc` from
+   arena-linear to `c·N^{1+δ}`, re-split `ε` as `ε/(ℓ+1)`, and state the
+   hypotheses §7 now lists. Mathlib-only. Do it first, because §7 is the
+   design's load-bearing unproved claim (§10) and every later charge is
+   written against it.
 2. **The `Prog` combinator layer** (D7): one structure carrying machine text,
    meaning, and charge together, with one soundness lemma per combinator
    (`seq`, `ite`, `forRange`, `whileDec`) over Lax13's IMP+.
@@ -513,11 +540,54 @@ word RAM by a single generic simulation theorem, cuts that work materially —
 and whether `ram-linear-time` (Lax11, Courcelle on the same machine) already
 has such a layer to reuse. This factors the headline; it does not weaken it.
 
+**O5 — The history is not constant-size, and D6 as written cannot supply what
+the win proof needs.** *(Added 2026-08-17 on audit; this is a real hit, not a
+caution.)* §5 line 19 passes a constant-size `hist` down and D6 says a node
+"never reads its parent's arrays". But the surviving `SplitterWinRec.lean` —
+which *survived* the prune, so this is checkable now — has at `:195-199`
+
+```
+ReachedR.step … (hwalk : ∀ e ∈ rounds, WithinDist e.arena r e.vtx v →
+    ∃ p : e.arena.Walk e.vtx v, p.length ≤ r ∧ {z | z ∈ p.support} ⊆ S)
+```
+
+where the walk type is `e.arena.Walk` — **each earlier round's own arena**, not
+the current one. `SplitterWin.lean:192-194`'s `genSet r (e :: rest) v =
+pathSet e.2 r e.1 v ∪ genSet r rest v` maintains one path per earlier round *in
+that round's graph*. So O1's premise — "the lecture notes' strategy maintains
+paths in the current arena" — is **false against the very file O1 points at**,
+and the guard does not save it: `:265-273 mem_ball_of_roundR` says a connector
+still carrying an edge lies in the ball of every earlier round, and arenas only
+shrink (`:156 nextArenaR_le`), so a walk in an ancestor's arena cannot in
+general be lifted from the current one. The deleted driver paid for this
+explicitly, with an `ancestorStep` that restored every ancestor's game mask and
+ran a BFS in it — `j` carrier-wide BFS runs per turn, which is itself a P1
+violation.
+
+So the node's downward channel must carry, per earlier round, enough to certify
+`hwalk` **in that round's arena**: a walk witness, or that round's arena mask.
+A witness is `≤ r` vertices per round, hence `O(ℓ·r)` — still constant — but it
+must be *maintained* through `induce`, which is a new obligation on §6.1 and a
+correction to D6. A mask is not constant and would reintroduce the ancestor
+sweep.
+
+**Resolve O5 together with O1, before step 4, and note the interaction: O1's
+cluster-local strategy and O5's per-round witnesses are the same question asked
+from two ends.** If witnesses can be threaded, both close; if they cannot, the
+design needs a termination measure that is not the splitter game, and that is a
+larger change than either question suggests on its own.
+
 ---
 
 ## §10 What this design owes to the pruned layer
 
-Three facts, and nothing else:
+*(Rev 2, 2026-08-17. Rev 1 claimed "three facts, and nothing else". That was
+not honest: §3 L0, D5, §6.4, O2, O3, D7 and §8 each import a further
+pruned-layer finding, and §7 turns out to rest on a compiled lemma from it —
+see `pruned-algorithmic-layer.md` §3a. The list below is the load-bearing
+part, not the whole debt.)*
+
+The three facts the design is built on:
 
 1. The cost model of the source is **per cluster**, not per carrier: GKS charge
    each cluster `O(|V(G_X)| + |E(G_X)|)` and the whole `n^{1+ε}` proof rests on
@@ -526,7 +596,19 @@ Three facts, and nothing else:
 2. The isolation variant genuinely eliminates GKS §8's `θ`-variant formula
    family and readout formulas, with no residue. This is D2, and it was
    verified against the source before it was implemented.
-3. `n^{1+ε}` at `ε = ½` clears at every measured constant with 10⁴–10⁶ of
-   headroom on every row. **The algorithm is not a dead end; the gap was shape,
-   not headroom.** That is why this document redesigns the shape and changes
-   nothing about the mathematics.
+3. ~~`n^{1+ε}` at `ε = ½` clears at every measured constant with 10⁴–10⁶ of
+   headroom on every row; the algorithm is not a dead end; the gap was shape,
+   not headroom.~~ **Struck 2026-08-17 on audit: false.** The `#guard` behind
+   it is evaluated at two numerals the same file compiles as unrealisable, it
+   describes 3 of 8 table rows, it is a decidable predicate on an `n`-free
+   constant with no link to any program or `Spec`, and its `ℓ = 3` is
+   hard-wired where the class forces `ℓ = N(2s+2)` at radius `2·9^12`. See
+   `pruned-algorithmic-layer.md` §2 (4).
+
+   **What replaces it.** Nothing in this repository supports *or* refutes the
+   claim that the algorithm meets `n^{1+ε}`; the compiled evidence bears only
+   on the deleted implementation. The support for it is the GKS paper's
+   running-time analysis, which is not formalized here. **§7 of this document
+   is therefore a fresh derivation, not a transcription of a checked result,
+   and it is the load-bearing unproved claim of the entire design.** §8 step 1
+   exists to discharge it before anything is built on it.

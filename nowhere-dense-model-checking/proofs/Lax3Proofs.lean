@@ -33,6 +33,12 @@ import Lax3Proofs.Relativize
 import Lax3Proofs.Isolate
 import Lax3Proofs.BotEval
 
+-- Machine-independent arithmetic the redesign's cost argument amends rather
+-- than re-derives: the sigma recursion over the game tree with its n^(1+eps)
+-- close, and the adjacency-slot bound a cover implementation must size to.
+import Lax3Proofs.CostRecurrence
+import Lax3Proofs.TgtCoupling
+
 /-!
 The proofs package of submission Lax3.
 
