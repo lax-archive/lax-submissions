@@ -26,6 +26,11 @@ the three things listed under **Stop conditions**.
   memory. It must be accurate after every boundary, because a compacted
   context or a new session recovers everything from it and from `git log`.
 
+**Cold start.** If you have just opened this session, your first three actions
+are: read the ledger, read the plan rows for whatever it says is `ready`, and
+`git log --oneline -8`. That is the whole handover. Do not read `algorithm-v2.md`
+end to end — read the §§ the leaf you are dispatching pins.
+
 If `$ARGUMENTS` is `--status`, print the ledger's open rows and stop.
 If `$ARGUMENTS` names a leaf id, run just that leaf and stop after landing it.
 Otherwise run the full loop below.
@@ -46,9 +51,12 @@ If nothing is ready and nothing is blocked, the campaign is **done**.
 **2. Seed.** One worktree per wave, from the main checkout:
 
 ```
-git worktree add .claude/worktrees/<wave> -b worktree-<wave> main
+git worktree add .claude/worktrees/w<N> -b worktree-w<N> main
 .claude/worktree-seed.sh
 ```
+
+Waves are numbered `w1`, `w2`, … and the number goes in the ledger's `wave`
+column, so a landed row says which dispatch produced it.
 
 Always name `main` explicitly. Run the seed with no arguments, once,
 before any build or any lean-lsp call. Never run a cold `lake build` in an
@@ -113,10 +121,13 @@ merge onto `main`, then remove the worktree promptly — disk is tight — and
 delete its branch. Stage only the files belonging to this boundary; leave
 any unrelated WIP unstaged.
 
-**8. Record.** Update the ledger row: status `done`, the landing commit,
-and one line on what is now true that was not before. If the leaf changed
-what a *later* leaf must do, edit that later row in the plan now, while you
-still remember why. Commit the ledger with the boundary.
+**8. Record.** Update the ledger row: status `done`, the wave, the landing
+commit, and one line on what is now true that was not before. Flip every row
+this unblocks from `waiting` to `ready` in the same edit — that is what makes
+the next iteration's selection a lookup rather than a re-derivation.
+
+If the leaf changed what a *later* leaf must do, edit that later row in the
+plan now, while you still remember why. Commit the ledger with the boundary.
 
 **9. Push.** `git push -u origin <branch>`. On network failure retry four
 times with 2s/4s/8s/16s backoff.
@@ -133,10 +144,14 @@ Stop the loop and report to Jan only for:
    `algorithm-v2.md` that no amount of proving will fix. Record it in the
    document as the audits' findings are recorded (a `⟨…⟩` tag naming the
    revision), then stop.
-3. **A licence, contract, or endorsed-surface change** — anything touching
-   `concepts/Lax3/*.lean`'s statements, a `lakefile.toml` pin, or a
-   reference under `references/`. Squaring the word-length side condition
-   was Jan's call; so is the next one like it.
+3. **A contract or endorsed-surface change** — anything touching
+   `concepts/Lax3/*.lean`'s **statements** or a `lakefile.toml` pin.
+   Squaring the word-length side condition was Jan's call; so is the next
+   one like it. *Adding a source under `references/` is **not** a stop
+   condition* — Jan granted that standing on 2026-08-17 ("you are allowed
+   to put all required texts into this repo"). Fetch what a leaf needs,
+   write it a README in the house style, and force-add it: `references/`
+   is gitignored and every source there was force-added.
 
 Everything else — a failed build, a wrong lemma, a worker that produced
 nothing, a leaf that turns out to be three leaves — you handle and continue.

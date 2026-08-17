@@ -323,8 +323,9 @@ m  := ℓ · (2R + 1)                       -- ⟨B⟩ the batch width, and it i
 δ  := ε / (ℓ + 2)                        -- ⟨C⟩ ℓ+2, not ℓ+1; the cover costs 2δ
 c_D  from Lax12's subpolynomial wcol;  D(N) := ⌈c_D · N^δ⌉
 c  := max(every routine's constant, c_D)             -- ⟨C⟩ no numeric floor
-a  := c + (2 + ℓ·R)·c_D                  -- ⟨C⟩ the per-node non-recursive charge
-K  := c_D + 2 + a                        -- ⟨C⟩ chosen, not constrained; see §7
+a  := c + (2 + ℓ·R)·c_D                  -- ⟨C⟩ cover + restrict/hist aggregate
+A  := a + c·(c_D + 1)                    -- ⟨C⟩ ALL of a node's non-recursive charge
+K  := c_D + 1 + A                        -- ⟨C⟩ chosen, not constrained; see §7
 ```
 
 ⟨B⟩ **`ℓ` and `m` were mis-sourced, and the repair is a repin, not new
@@ -786,17 +787,18 @@ unchanged; the split moves by one level and the constant is now chosen.*
  cover      a·N^{1+2δ}                                       ≤ … ·N^{1+(L+2)δ}
 ```
 
-so the step is `K^L·(c_D+1) + a + c(c_D+1) ≤ K^{L+1}`, i.e.
+Both non-recursive lines sit against `N^{1+(L+2)δ}`, and `A := a + c(c_D+1)`
+is §3's name for their total, so the step is `K^L·(c_D+1) + A ≤ K^{L+1}`, i.e.
 
 ```
- K^L·(K − c_D − 1)  ≥  a + c(c_D+1).
+ K^L·(K − c_D − 1)  ≥  A.
 ```
 
-⟨C⟩ **`K` is defined, not constrained.** Take `K := c_D + 2 + a + c(c_D+1)`
-(§3 abbreviates this, folding `c(c_D+1)` into `a`'s slack): then
-`K − c_D − 1 ≥ a + c(c_D+1)` and `K^L ≥ 1`, so the step holds at every `L ≥ 0`
-with nothing to check. The base at `j = ℓ` is the leaf, charged linearly at
-`c·N ≤ K·N^{1+2δ}`. There are `ℓ+2` levels of exponent to divide `ε` among —
+⟨C⟩ **`K` is defined, not constrained.** §3 sets `K := c_D + 1 + A`, so
+`K − c_D − 1 = A` exactly and `K^L ≥ 1`: the step holds at every `L ≥ 0` with
+nothing to check and nothing to choose. The base at `j = ℓ` is the leaf,
+charged linearly at `c·N ≤ K·N^{1+2δ}` — and `K ≥ c` holds outright, since
+`A ≥ c(c_D+1) ≥ c`. There are `ℓ+2` levels of exponent to divide `ε` among —
 `ℓ+1` levels of recursion, each spending one `δ` through `(★)`, plus the
 cover's own second `δ`. ∎
 

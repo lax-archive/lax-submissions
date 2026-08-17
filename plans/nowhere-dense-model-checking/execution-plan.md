@@ -47,25 +47,35 @@ that closes it and several other leaves depend on being careful about it.
 ## The DAG
 
 ```
-        E1 ─┐
-        E2 ─┼──────────────┐
-        E3 ──→ E4 ─────────┤
-        E5 ──→ E6 ─────────┼──→ E9 ──→ E10 ─┐
-        E7 ────────────────┤          E12 ──┼──→ E13
-        E8 ────────────────┘     ┌────┘     │
-        E11 ─────────────────────┴──────────┘
-        E0  (document leaf; gates E4's parameterisation)
+  no dependencies                    gated                    final
+
+  E0 ─┐
+  E3 ─┴─→ E4 ─┐
+  E1 ─────────┤
+  E2 ─────────┤
+  E5 ─→ E6 ───┼─→ E9 ─┬─→ E10 ─┐
+  E7 ─────────┤       │        ├─→ E13
+  E8 ─────────┘       └─→ E12 ─┘
+  E11 ────────────────────┘
 ```
+
+Read it as: **E0, E1, E2, E3, E5, E7, E8 and E11 are dispatchable on day one** —
+eight of the thirteen, all independent. E4 waits on E0+E3, E6 on E5, E9 on
+everything above it, E12 on E9+E11, E13 on E10+E12.
 
 Suggested waves — but **width is the supervisor's call at dispatch time**, set
 by review bandwidth, not by this diagram:
 
-- **Wave 1** — E1, E2, E3. Three small, disjoint cover-layer satellites. The
-  cheapest possible first wave, and it de-risks the two lemmas §5 and §4 price
-  at "roughly six lines" and "~10 lines" — figures nobody has tested.
-- **Wave 2** — E0, E4, E5, E7, E8, E11. All disjoint; E4 needs E3 landed.
-- **Wave 3** — E6, then E9 alone. E9 is the hard gate.
-- **Wave 4** — E10, E12. **Wave 5** — E13.
+- **Wave 1 (`w1`)** — E0, E1, E2, E3. Three small, disjoint cover-layer
+  satellites plus the one document leaf. The cheapest possible first wave, it
+  de-risks the two lemmas §5 and §4 price at "roughly six lines" and "~10
+  lines" — figures nobody has tested — and it lands **both** of E4's
+  dependencies, so wave 2 opens fully.
+- **Wave 2 (`w2`)** — E4, E5, E7, E8, E11. All disjoint, all unblocked by w1.
+  The widest wave in the campaign; split it if review bandwidth says so.
+- **Wave 3 (`w3`)** — E6, then E9 **alone**. E9 is the hard gate: no ND-MC
+  driver is written until it is complete and reviewed.
+- **Wave 4 (`w4`)** — E10, E12. **Wave 5 (`w5`)** — E13.
 
 ---
 
@@ -171,12 +181,13 @@ Three changes, and the third is a **decision Jan took on 2026-08-17**:
 2. Re-split `ε` over **`ℓ+2`**, not `ℓ` and not Rev 4's `ℓ+1`: the cover's own
    `2δ` costs one δ beyond what (★) accumulates per level.
 3. **Take the slack; do not tighten.** Prove
-   `T_j(N) ≤ K^{L+1}·N^{1+(L+2)δ}` with `L := ℓ−j` and the base constant `K`
-   **chosen**, e.g. `K := c_D + 2 + a`, rather than forced into the shape
-   `(2c)^{L+1}` with `c` also carrying every routine's constant. The step
-   condition is then `K^L·(K − c_D − 1) ≥ a`, which the choice satisfies
-   outright. **Rev 4's `c ≥ 6` condition disappears** — it was an artifact of
-   coupling the exponential's base to the routine constants, and that coupling
+   `T_j(N) ≤ K^{L+1}·N^{1+(L+2)δ}` with `L := ℓ−j`, where `A := a + c(c_D+1)`
+   is a node's total non-recursive charge and the base constant is **chosen**,
+   `K := c_D + 1 + A`, rather than forced into the shape `(2c)^{L+1}` with `c`
+   also carrying every routine's constant. The step condition is then
+   `K^L·(K − c_D − 1) ≥ A`, and the choice makes its left side exactly `K^L·A`.
+   **Rev 4's `c ≥ 6` condition disappears** — it was an artifact of coupling
+   the exponential's base to the routine constants, and that coupling
    is what made this the most error-prone paragraph in the document: Rev 1
    dropped the middle term, Rev 3 dropped a `c` and a `+1`, Rev 4 rewrote it
    again. A tight inequality nobody needs is a defect surface, not a result.
