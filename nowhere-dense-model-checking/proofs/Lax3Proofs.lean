@@ -88,6 +88,9 @@ import Lax3Proofs.SolveMatFrame
 import Lax3Proofs.SolveMatArena
 import Lax3Proofs.SolveMatTop
 import Lax3Proofs.SolveMat
+import Lax3Proofs.SolveBlocks
+import Lax3Proofs.SolveBlocksScatter
+import Lax3Proofs.SolveBlocksBot
 
 -- The proofs package of submission Lax3.
 --
