@@ -142,6 +142,10 @@ theorem nextArenaS_eq_bot_of_isolated {e : RoundS n}
 
 variable {G : SimpleGraph (Fin n)}
 
+-- The file's namespace and the game share their name by design — the
+-- task's pinned interface — so the duplicate-namespace linter is
+-- silenced for this declaration.
+set_option linter.dupNamespace false in
 /-- The positions of a play from `G` in which every Connector move so far
 was a vertex that still had an incident edge, every recorded restriction
 set was a legal one — inside the ball of the round — and every recorded

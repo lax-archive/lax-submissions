@@ -73,13 +73,14 @@ Both directions keep the length on the nose.
 section Walks
 
 variable (e : Fin N ≃ ↥X)
-  (hAdj : ∀ a b : Fin N, B.Adj a b ↔ A.Adj (e a : Fin n) (e b))
 
 /-- A walk of the compact arena maps to a walk of the kept arena of the
 same length, supported inside the cluster: every edge crosses by the
 adjacency hypothesis, and every vertex of the image lies in `X` because
 it is a value of the bijection. -/
-private theorem exists_walk_push {a b : Fin N} (p : B.Walk a b) :
+private theorem exists_walk_push
+    (hAdj : ∀ a b : Fin N, B.Adj a b ↔ A.Adj (e a : Fin n) (e b))
+    {a b : Fin N} (p : B.Walk a b) :
     ∃ q : A.Walk (e a : Fin n) (e b : Fin n),
       q.length = p.length ∧ ∀ z ∈ q.support, z ∈ X := by
   induction p with
@@ -101,7 +102,9 @@ pulls back to a walk of the compact arena of the same length. The
 endpoints are carried as equations so that the induction can move its
 first endpoint; the support hypothesis supplies the cluster membership
 each pullback vertex needs. -/
-private theorem exists_walk_pull {x y : Fin n} (q : A.Walk x y) {a b : Fin N}
+private theorem exists_walk_pull
+    (hAdj : ∀ a b : Fin N, B.Adj a b ↔ A.Adj (e a : Fin n) (e b))
+    {x y : Fin n} (q : A.Walk x y) {a b : Fin N}
     (hax : (e a : Fin n) = x) (hby : (e b : Fin n) = y)
     (hq : ∀ z ∈ q.support, z ∈ X) :
     ∃ p : B.Walk a b, p.length = q.length := by
@@ -111,7 +114,7 @@ private theorem exists_walk_pull {x y : Fin n} (q : A.Walk x y) {a b : Fin N}
     exact ⟨.nil, rfl⟩
   | @cons x c y hxc q ih =>
     have hc : c ∈ X := hq c (by simp)
-    obtain ⟨p, hp⟩ := ih (a := e.symm ⟨c, hc⟩) (by simp)
+    obtain ⟨p, hp⟩ := ih (a := e.symm ⟨c, hc⟩) (by simp) hby
       (fun z hz => hq z (by simp [hz]))
     refine ⟨.cons ((hAdj a (e.symm ⟨c, hc⟩)).mpr ?_) p, by simp [hp]⟩
     rw [hax]
@@ -119,7 +122,9 @@ private theorem exists_walk_pull {x y : Fin n} (q : A.Walk x y) {a b : Fin N}
 
 /-- A distance bound of the compact arena is a distance bound inside the
 cluster of the kept arena, through the bijection. -/
-private theorem withinDist_compact_iff (d : ℕ) (a b : Fin N) :
+private theorem withinDist_compact_iff
+    (hAdj : ∀ a b : Fin N, B.Adj a b ↔ A.Adj (e a : Fin n) (e b))
+    (d : ℕ) (a b : Fin N) :
     WithinDist B d a b ↔ WithinDistIn X A d (e a : Fin n) (e b : Fin n) := by
   constructor
   · rintro ⟨p, hp⟩
@@ -135,7 +140,7 @@ end Walks
 environment extended by a witness reads, on the kept side, as the kept
 environment extended by the image of the witness. -/
 private theorem snoc_env (e : Fin N ≃ ↥X) {k : ℕ} (m : Fin k → Fin N) (v : Fin N) :
-    (fun i => (e (Fin.snoc m v i) : Fin n)) =
+    (fun i : Fin (k + 1) => (e ((Fin.snoc m v : Fin (k + 1) → Fin N) i) : Fin n)) =
       Fin.snoc (fun i => (e (m i) : Fin n)) (e v : Fin n) :=
   Fin.comp_snoc (fun a => (e a : Fin n)) m v
 
@@ -223,7 +228,8 @@ private theorem walk_to_deleteVerts_compl (p : A.Walk u v)
   have hedges : ∀ ed ∈ p.edges, ed ∈ (deleteVerts A Xᶜ).edgeSet := by
     intro ed
     refine Sym2.ind (fun x y hed => ?_) ed
-    exact SimpleGraph.mem_edgeSet.mpr ⟨p.adj_of_mem_edges hed,
+    show (deleteVerts A Xᶜ).Adj x y
+    exact ⟨p.adj_of_mem_edges hed,
       Set.notMem_compl_iff.mpr (hp x (p.fst_mem_support_of_mem_edges hed)),
       Set.notMem_compl_iff.mpr (hp y (p.snd_mem_support_of_mem_edges hed))⟩
   exact ⟨p.transfer _ hedges, p.length_transfer hedges, p.support_transfer hedges⟩
