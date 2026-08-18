@@ -29,9 +29,35 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E12b | `restrict` + `isolate` (§6.1) | done | w6 | 84ae503 | scratch array **one per node**, amortization visible in the cost model; charge is `Σ_{s∈S} deg_A(s)`-shaped — `O(‖A[S]‖+|S|)` is FALSE (`K_{3,n−3}`) |
 | E12c | the `cover` sweep + computed `ctr` (§6.2 ⟨B⟩) | done | w6 | 84ae503 | GKS's peeling sweep, `N_</N_>` split repr; identities to `Driver.cluster` and `CoverCentres.ctr`; (★) as GKS's accounting; expect 2 runs, schedule first |
 | E12d | `recordProfiles` (§6.3) | done | w6 | 84ae503 | iterate single-source `chargeB0` `(m+L)` times; rows cumulative, measured in `preG` **before** isolation; identity target `Driver.childCol`'s slot families |
-| E13 | compose to the headline (§8.7) | wip | w7 | — | conditional composition (`Headline.lean`): the abstract headline under `CoverOrderingTime`, the encoding seam, and the mapped remainder — full discharge is out of scope by design (the axiom carries no cover-time hypothesis) |
+| E13 | compose to the headline (§8.7) | done | w7 | b2df405 | `headline_abstract`/`headline_encoded`: full iff at `FirstOrder.Sat`, cost at `(x.length+1)^{1+ε}` under `CoverOrderingTime` alone; remainder mapped in-file |
 
 ## Campaign log
+
+### 2026-08-18 — w7 lands E13, and the ledger is complete (`b2df405`)
+
+**All thirteen leaves (plus the three E12 sub-leaves) are done.** What the
+campaign now holds, end to end: the cover layer's four owed guarantees with
+the time bound as one named hypothesis (`CoverOrderingTime`); the slackened
+cost induction with no constant side conditions; the cluster-restricted game
+record with its transports; the compaction; the schedule; the abstract driver,
+correct for every ordering and affordable under the one hypothesis; the
+`ℓ+1`-level unroll computing exactly the same tables at exactly the same cost,
+with the run-tree invariant threaded end to end; the complete machine-routine
+layer with charges and identities; and the composition `headline_encoded` —
+the endorsed axiom's statement, reachable conditionally, at its own input
+measure, with the full iff on every graph.
+
+**What this campaign deliberately does not contain**, mapped precisely in
+`Headline.lean`'s remainder section, is the successor work: (a) the composed
+NREST driver program over the `Impl*` routines (the largest block), (b)
+Sepref/Codegen to a `Lax13.Ram.Program` plus a CSR front end (which exists
+nowhere yet), (c) the `CoverOrderingTime` discharge — the NOdM formalization,
+a campaign of its own — (d) the word-size condition spent against the static
+layout, (e) the machine-side `T` arithmetic. The endorsed axiom stands until
+those exist; nothing found in seven waves contradicts its shape.
+
+The loop's own termination condition is met: no leaf is ready, none is
+blocked. **The campaign is complete.**
 
 ### 2026-08-18 — w6 lands: the machine layer is complete (`84ae503`)
 
