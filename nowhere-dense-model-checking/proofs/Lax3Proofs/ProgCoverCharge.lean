@@ -306,7 +306,7 @@ private theorem dmax_cast_le {c₀ X : ℝ} (hc₀ : 0 ≤ c₀) (hX : 1 ≤ X) 
     nlinarith [hceil, hX, hc₀]
   calc (((3 * ⌈c₀ * X⌉₊ + 2) ^ P : ℕ) : ℝ)
       = (((3 * ⌈c₀ * X⌉₊ + 2 : ℕ) : ℝ)) ^ P := by push_cast; ring
-    _ ≤ ((3 * c₀ + 5) * X) ^ P := by gcongr; positivity
+    _ ≤ ((3 * c₀ + 5) * X) ^ P := by gcongr
 
 /-- `(m^(δ/P))^P = m^δ`: the inner exponent, undone. -/
 private theorem rpow_div_pow (m P : ℕ) (hP : 0 < P) (δ : ℝ) :
@@ -331,7 +331,7 @@ theorem exists_greedyChain_inDegLE (C : GraphClass) (hC : NowhereDense C)
     ∃ c : ℝ, ∀ (n : ℕ) (Gn : SimpleGraph (Fin n)), C n Gn →
       ∀ (m : ℕ) (G : SimpleGraph (Fin m)), G ⊑ Gn →
         ∀ i ≤ R, (greedyChain G i).InDegLE ⌈c * (m : ℝ) ^ δ⌉₊ := by
-  have hPpos : 0 < (16 ^ R : ℕ) := Nat.pos_pow_of_pos R (by omega)
+  have hPpos : 0 < (16 ^ R : ℕ) := by positivity
   have hδ' : 0 < δ / ((16 ^ R : ℕ) : ℝ) := div_pos hδ (by exact_mod_cast hPpos)
   obtain ⟨c₀, hc₀0, hc₀⟩ := exists_greedyChain_inDegLE_pow C hC R _ hδ'
   refine ⟨(3 * c₀ + 5) ^ (16 ^ R : ℕ), fun n Gn hGn m G hsub i hi v => ?_⟩
@@ -370,7 +370,7 @@ theorem exists_chainCharge_le (C : GraphClass) (hC : NowhereDense C) (R : ℕ)
   refine ⟨(4 * (5 * R + 8) : ℝ) * (3 * c₀ + 5) ^ (2 * 16 ^ R : ℕ), by positivity, ?_⟩
   intro n Gn hGn m G hsub
   rcases Nat.eq_zero_or_pos m with rfl | hm
-  · rw [chainCharge_zero, Nat.cast_zero, Nat.cast_zero,
+  · rw [chainCharge_zero, Nat.cast_zero,
       Real.zero_rpow (by positivity : (1 : ℝ) + δ ≠ 0), mul_zero]
   -- the uniform in-degree bound of every round
   have huni := hc₀ n Gn hGn m G hsub
