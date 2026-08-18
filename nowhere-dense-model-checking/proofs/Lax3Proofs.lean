@@ -71,6 +71,12 @@ import Lax3Proofs.Impl
 -- headline under CoverOrderingTime, at the endorsed axiom's vocabulary.
 import Lax3Proofs.Headline
 
+-- The discharge campaign (F): the greedy ordering routine, the CSR
+-- front end, and the driver's frame as one NREST program.
+import Lax3Proofs.CoverRoutine
+import Lax3Proofs.ImplFrontEnd
+import Lax3Proofs.ProgFrame
+
 -- The proofs package of submission Lax3.
 --
 -- What is here is the mathematical layer of the nowhere dense model
