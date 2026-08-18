@@ -22,13 +22,48 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E6 | carrier transport for `ReachedR` (§9) | done | w3 | 55ba312 | `ArenaTransport`: one pushforward covers bijection + isolated cases; §5 line 8 was a **type error** — record kept at the root carrier, §5/§9 rewritten |
 | E7 | the compaction lemma (§5 step 3′, §8.4a) | done | w2 | b0444fa | `sat_compact_iff_satWithin_deleteVerts_compl`; plain `Sat↔Sat` is false (`exU` sees isolated verts) — `SatWithin` is the true form; no order hypothesis |
 | E8 | locality decomposition as a function (§8.3, O2) | done | w2 | b0444fa | `localityBC` via the Assembly discharge (axiom-free); `rfl`-irrelevant in the rank witness; atom lists for E9 |
-| E9 | the abstract algorithm — **hard gate** (§8.4) | wip | w4 | — | all deps landed; solo worker on the `Driver*` family; may split into fresh rows |
-| E10 | unrolling the depth-`ℓ` recursion (§8.4b) | waiting | — | — | needs E9 |
+| E9 | the abstract algorithm — **hard gate** (§8.4) | done | w4 | bf7baef | did **not** split: `Driver*` (5 files, 2125 lines); `tables_correct` unconditional, `mc_correct` for every ordering, `mkSetup_dcost_root_le` from `CoverOrderingTime` |
+| E10 | unrolling the depth-`ℓ` recursion (§8.4b) | ready | — | — | E9 landed; also owns threading `Inv` through the reified run tree (E9's split note (a)) |
 | E11 | the `Refine` tower probe (§8.5) | done | w2 | b0444fa | charge is alive-summed + carrier-sized init per call: restrict-then-BFS **forced**, mask ≠ restrict; `SpaceBudgetProbe` is §11's natural home |
-| E12 | `Arena` implementation and remaining routines (§8.6) | waiting | — | — | needs E9, E11 |
+| E12 | `Arena` implementation and remaining routines (§8.6) | ready | — | — | E9, E11 landed; owes the per-vertex hist lists (D6, machine-level), the BotEval row evaluator, and `ctr` computed from the sweep |
 | E13 | compose to the headline (§8.7) | waiting | — | — | needs everything |
 
 ## Campaign log
+
+### 2026-08-18 — w4 lands: the hard gate is passed (`bf7baef`)
+
+What is now true: **the abstract algorithm exists and is correct and
+affordable.** `mc_correct` — the driver decides `φ` on every input, for every
+ordering routine and every scatter choice; `mkSetup_dcost_root_le` — its cost
+closes at `KD^{ℓ+1}·‖A₀‖^{1+ε}` from exactly one hypothesis, E0's
+`CoverOrderingTime`; `eq_bot_of_inv_depth` — the leaf test is exhaustive in
+budget, via the `ReachedS` invariant kept at the root carrier as E6 prescribed.
+E9 did not split. E10 and E12 are both ready and disjoint — they are the next
+wave, and E13 is the only leaf behind them.
+
+Findings worth keeping:
+
+- **The leaf IS `Sat`, and that is landed intent, not a shortcut**:
+  `BotEval`'s docstring defines the base case as "returns `Sat` itself; an
+  implementation has to evaluate that value" — its lemma set is the machine's
+  evaluation bridge, consumed at E12, with the off-budget fuel-0 corner
+  covered by `eq_bot_of_inv_depth`.
+- **§5 step 3′ dissolves under reordering**: fusing the compaction with line
+  16's restrict makes every later rewrite a landed lemma on the child carrier.
+  The doc's stated order would have needed a genuinely new transport. Doc
+  simplification available; not urgent.
+- **D6 sharpened and scoped**: the abstract layer needs only `(vtx, arena)`
+  pairs — `Classical.choose`-deterministic `pathSet` reconstructs identical
+  supports at descent. The per-vertex lists are purely P1a avoidance on the
+  machine; entirely E12's.
+- **`IsCostRecurrence`'s `node` clause is not consumable at an arena-typed
+  cost** (size-indexed sup does not exist once `hist` makes the type infinite
+  per weight); E9 ran the induction directly, consuming `chosenK_step` + the
+  E3 mass bounds. Optional refactor: an arena-shaped `node` clause. Not
+  blocking anything.
+- The augmentation-round instantiation is `R' := 3R, t := R` — slack absorbed
+  as constants; the `≈3log₂(4rc)` depth naming stays an E12-side constant
+  improvement.
 
 ### 2026-08-18 — w3 lands: E6, and §5's precondition is finally well-typed (`55ba312`)
 
