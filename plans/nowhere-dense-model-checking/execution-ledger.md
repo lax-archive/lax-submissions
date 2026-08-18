@@ -22,7 +22,7 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E6 | carrier transport for `ReachedR` (§9) | done | w3 | 55ba312 | `ArenaTransport`: one pushforward covers bijection + isolated cases; §5 line 8 was a **type error** — record kept at the root carrier, §5/§9 rewritten |
 | E7 | the compaction lemma (§5 step 3′, §8.4a) | done | w2 | b0444fa | `sat_compact_iff_satWithin_deleteVerts_compl`; plain `Sat↔Sat` is false (`exU` sees isolated verts) — `SatWithin` is the true form; no order hypothesis |
 | E8 | locality decomposition as a function (§8.3, O2) | done | w2 | b0444fa | `localityBC` via the Assembly discharge (axiom-free); `rfl`-irrelevant in the rank witness; atom lists for E9 |
-| E9 | the abstract algorithm — **hard gate** (§8.4) | ready | — | — | all deps landed (E1,E2,E4,E5,E6,E7,E8); may split into fresh rows |
+| E9 | the abstract algorithm — **hard gate** (§8.4) | wip | w4 | — | all deps landed; solo worker on the `Driver*` family; may split into fresh rows |
 | E10 | unrolling the depth-`ℓ` recursion (§8.4b) | waiting | — | — | needs E9 |
 | E11 | the `Refine` tower probe (§8.5) | done | w2 | b0444fa | charge is alive-summed + carrier-sized init per call: restrict-then-BFS **forced**, mask ≠ restrict; `SpaceBudgetProbe` is §11's natural home |
 | E12 | `Arena` implementation and remaining routines (§8.6) | waiting | — | — | needs E9, E11 |
