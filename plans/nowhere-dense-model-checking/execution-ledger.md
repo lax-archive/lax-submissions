@@ -29,7 +29,7 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E12b | `restrict` + `isolate` (§6.1) | done | w6 | 84ae503 | scratch array **one per node**, amortization visible in the cost model; charge is `Σ_{s∈S} deg_A(s)`-shaped — `O(‖A[S]‖+|S|)` is FALSE (`K_{3,n−3}`) |
 | E12c | the `cover` sweep + computed `ctr` (§6.2 ⟨B⟩) | done | w6 | 84ae503 | GKS's peeling sweep, `N_</N_>` split repr; identities to `Driver.cluster` and `CoverCentres.ctr`; (★) as GKS's accounting; expect 2 runs, schedule first |
 | E12d | `recordProfiles` (§6.3) | done | w6 | 84ae503 | iterate single-source `chargeB0` `(m+L)` times; rows cumulative, measured in `preG` **before** isolation; identity target `Driver.childCol`'s slot families |
-| E13 | compose to the headline (§8.7) | ready | — | — | every dependency landed; the endorsed axiom's statement is frozen — a mismatch is stop-condition 3 |
+| E13 | compose to the headline (§8.7) | wip | w7 | — | conditional composition (`Headline.lean`): the abstract headline under `CoverOrderingTime`, the encoding seam, and the mapped remainder — full discharge is out of scope by design (the axiom carries no cover-time hypothesis) |
 
 ## Campaign log
 
