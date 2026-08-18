@@ -40,8 +40,7 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F6 | codegen to the machine — **split** | done (part) | w10 | 9b4cdfa | `mc_computesInTime_of_solveSpec`: ONE named obligation (`SolveSpec`) from the axiom; parse `Spec` discharged; `mcD` verbatim; word-size condition spent (`mcB = q(|x|+1)²`) |
 | F6b | arena materialization + profiles reroute + root eval | ready | — | — | from `CsrIn` via F2's bridges; swap the one program stage to `profilesCMS`/`recordProfilesMS_eq_childCol`; `mcProg`'s root shape; block-0 `botEval` route with the dead-branch guard |
 | F6c | the `ℓ+1` driver blocks (Sepref descent) | ready | — | — | the campaign's largest remaining block: per-frame IMP+ `Spec`s against the landed `Impl*` specs, `EndToEnd.lean` §4 route or direct `Spec`-kit; expect multiple runs |
-| F7 | discharge the endorsed axiom | waiting | — | — | needs F6b, F6c; then: instantiate `SolveSpec`, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close |
-| F7 | discharge the endorsed axiom | waiting | — | — | needs everything; `conclusion:` header style |
+| F7 | discharge the endorsed axiom | waiting | — | — | needs F6b, F6c; then: instantiate `SolveSpec`, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close; `conclusion:` header style |
 
 ## Campaign log
 
