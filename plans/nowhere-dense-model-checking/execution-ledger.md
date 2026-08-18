@@ -23,12 +23,44 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E7 | the compaction lemma (§5 step 3′, §8.4a) | done | w2 | b0444fa | `sat_compact_iff_satWithin_deleteVerts_compl`; plain `Sat↔Sat` is false (`exU` sees isolated verts) — `SatWithin` is the true form; no order hypothesis |
 | E8 | locality decomposition as a function (§8.3, O2) | done | w2 | b0444fa | `localityBC` via the Assembly discharge (axiom-free); `rfl`-irrelevant in the rank witness; atom lists for E9 |
 | E9 | the abstract algorithm — **hard gate** (§8.4) | done | w4 | bf7baef | did **not** split: `Driver*` (5 files, 2125 lines); `tables_correct` unconditional, `mc_correct` for every ordering, `mkSetup_dcost_root_le` from `CoverOrderingTime` |
-| E10 | unrolling the depth-`ℓ` recursion (§8.4b) | wip | w5 | — | `Unroll*` family; also owns threading `Inv` through the reified run tree |
+| E10 | unrolling the depth-`ℓ` recursion (§8.4b) | done | w5 | a1d9294 | `Unroll`; iterative form = `tables` by fuel induction; frames **static**, peak `(ℓ+1)(2+c_S)·n²` absorbed by the squared guarantee; `mkSetup_memLeaf_eq_bot` closes E9's deferred composition |
 | E11 | the `Refine` tower probe (§8.5) | done | w2 | b0444fa | charge is alive-summed + carrier-sized init per call: restrict-then-BFS **forced**, mask ≠ restrict; `SpaceBudgetProbe` is §11's natural home |
-| E12 | `Arena` implementation and remaining routines (§8.6) | wip | w5 | — | `Impl*` family; expected to split — priorities: bfs/bfsSupports, guarded greedyScatter, BotTables evaluator, restrict |
-| E13 | compose to the headline (§8.7) | waiting | — | — | needs everything |
+| E12 | `Arena` implementation (§8.6) — **split** | done (part) | w5 | a1d9294 | `Impl{Scatter,Bot,Bfs}` landed: guarded scatter (`t=0` guard is the cost statement), `botEval = Sat ⊥`, BFS at `B₀` with `chargeB0_total = 2‖B₀‖+d+2`; remainder is E12b/c/d |
+| E12b | `restrict` + `isolate` (§6.1) | ready | — | — | scratch array **one per node**, amortization visible in the cost model; charge is `Σ_{s∈S} deg_A(s)`-shaped — `O(‖A[S]‖+|S|)` is FALSE (`K_{3,n−3}`) |
+| E12c | the `cover` sweep + computed `ctr` (§6.2 ⟨B⟩) | ready | — | — | GKS's peeling sweep, `N_</N_>` split repr; identities to `Driver.cluster` and `CoverCentres.ctr`; (★) as GKS's accounting; expect 2 runs, schedule first |
+| E12d | `recordProfiles` (§6.3) | ready | — | — | iterate single-source `chargeB0` `(m+L)` times; rows cumulative, measured in `preG` **before** isolation; identity target `Driver.childCol`'s slot families |
+| E13 | compose to the headline (§8.7) | waiting | — | — | needs E12b, E12c, E12d |
 
 ## Campaign log
+
+### 2026-08-18 — w5 lands: the unroll, and the machine layer opens (`a1d9294`)
+
+What is now true: §8 step 4b is closed — the driver runs as `ℓ+1` static
+levels computing *exactly* `tables`, priced identically, with the run tree
+reified and the invariant threaded end to end (`mkSetup_memLeaf_eq_bot`). And
+the machine layer has its first three routines with their identities to the
+abstract driver: the scatter atoms, the leaf evaluator, and BFS-at-`B₀`.
+E12 split as predicted: E12b (restrict/isolate), E12c (the cover sweep — the
+sole superlinear routine, scheduled first per §6.2 ⟨A⟩), E12d (recordProfiles).
+E13 now waits on exactly those three.
+
+Findings worth keeping:
+
+- **`descend_spec` gives exact distances** — the tower's `Post` is strong
+  enough to reconstruct the BFS tree consumer-side; no new tower program was
+  needed for `bfsSupports`. The tower lacks multi-source BFS; E12d's honest
+  route is `(m+L)` single-source calls, matching §6.3's charge.
+- **`bfsSupports` delivers "IS a witness-walk support", not "= `genSet`'s
+  chosen walks"** — the latter is neither provable (Classical choice) nor
+  needed (the driver needs *some* walk support). Consistent with E9's D6
+  scoping.
+- Toolchain drift notes for future workers: `Fin.find` is proof-carrying now;
+  `List.pairwise_lt_finRange` → `sortedLT_finRange`; `Finset.toList` is
+  noncomputable — evaluators use `decide`.
+- E12's worker flagged §7's "edge half is owed" as load-bearing context —
+  it was stale (E3 landed it); fixed in this landing. Doc drift after a leaf
+  lands is real: when a landing supersedes a design sentence, fix the
+  sentence in the same boundary.
 
 ### 2026-08-18 — w4 lands: the hard gate is passed (`bf7baef`)
 
