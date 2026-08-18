@@ -109,30 +109,53 @@ verdict for the word-ram scans).
 
 Status of the per-routine discharges:
 
-1. `SolveBlocksScatter.lean` — **`greedyScatter`, discharged**: the
-   guarded early-stop sweep with the marking BFS-by-rounds inlined
-   (`scatterCom_spec`: the count cell ends at
-   `Impl.greedyScatter G r X t` exactly). Its budget mirrors
-   `Impl.greedyScatterCost` at the machine marking charge
-   `W := markK` (per-pick reset + `r` frontier rounds,
-   `≤ c·(r+2)·(N + ns)` — §6.5's `W := ‖A‖` at a schedule constant).
-2. `botEval` (block 0's live route) — next: the candidate set via a
-   first-`k+1`-per-row-class table (one `O(N·L)` scan per arena, then
-   `≤ k + 2^L` candidates per quantifier from the table — §6.4's
-   schedule), the evaluator compiled by structural recursion over the
-   (compile-time) formula. Budget `botC`'s shape,
-   `(1 + |ℱ_j|)·‖A‖` at a schedule constant.
+1. `SolveBlocksScatter.lean` — **`greedyScatter`, discharged end to
+   end**: the guarded early-stop sweep with the marking BFS-by-rounds
+   inlined (`scatterCom_spec`, and `scatterCom_spec_graphCsr` at this
+   file's seam: the count cell ends at `Impl.greedyScatter G r X t`
+   exactly, from a CSR, a predicate bit array, and mark/distance
+   scratch of the right length — the sweep cleans its own mark slate,
+   so calls chain without a caller-side wipe and the `t = 0` guard
+   stays free). Budget `scatterK = 41·N + (markK + 30)·t + 24`,
+   `Impl.greedyScatterCost`'s `t·(n + W)` shape at the machine
+   marking charge `W := markK ≤ 69·(r+1)·(N+ns+1)` (§6.5's
+   `W := ‖A‖` at the schedule constant `r ≤ 2R`); envelope
+   `scatterK_le : ≤ 130·(t+1)·(r+1)·(N+ns+1)` for F7.
+2. `SolveBlocksBot.lean` — **block 0's schedule, abstract half
+   discharged**: the representative table (`firsts` — first `K+1`
+   vertices per packed row code; `mem_tableReps_iff` — at any
+   environment of size `≤ K` the per-row `find?` is exactly
+   `Impl.FirstRep`), and the table-scheduled evaluator `botEvalT`
+   with `botEvalT_eq_botEval`/`botEvalT_eq_sat` — the value block 0's
+   IMP+ table fill must produce, per (`v`, `β ∈ ℱ_j`) bit, with the
+   per-entry work a constant of `(L, K, φ)`. Remaining for block 0:
+   the IMP+ compilation itself — one `O(N·L)` table-build pass over
+   `ColBits` into a `2^L`-strided region, then the structural
+   recursion over the (compile-time) formula with an `env` scratch
+   array, each `exU` a loop over `≤ k + 2^L·(K+1)` table candidates.
+   Budget `botC`'s `(1 + |ℱ_j|)·‖A‖` shape.
 3. isolate (one CSR sweep, `Impl.isolateCharge`), restrict
    (`restrictSweep`'s one-scratch-array discipline — the scratch is
    per *node*, cleared at the `|S|` touched entries, never a fresh
    array per child), supports (`chargeB0` + descend), profilesMS
    (`ImplMultiSource`, `profilesChargeMS`), the cover sweep
    (`sweepCharge`), readback — then the conditional frame-block
-   composition (the per-centre `Spec.seq` chain + the centre loop),
-   then the `ℓ+1` chain by induction on the level index mirroring
-   `driverProg_le_spec`, closing `SolveSpec` with
-   `Ks = ` the block chain's total, reconciled against
-   `ProgCharge.exists_mcChargeMS_T` by F7.
+   composition (the per-centre `Spec.seq` chain + the centre loop,
+   against `ProgFrame.frameProg_le_spec`'s shape), then the `ℓ+1`
+   chain by induction on the level index mirroring
+   `driverProg_le_spec`, closing `SolveSpec` with `Ks =` the block
+   chain's total, reconciled against `ProgCharge.exists_mcChargeMS_T`
+   by F7. Two seam facts the scatter discharge fixed for that
+   composition: (a) a routine's `Spec` should clean the scratch it
+   dirties (the sweep's own mark wipe) — the caller cannot afford a
+   per-call wipe behind a cost guard, so self-cleanup is part of each
+   routine's contract, not the block's; (b) the readback needs the
+   per-centre guarded scatter *counts* stored (one small region,
+   `|scatterAtoms|·|ℱ_j|` cells per centre's turn, reused per centre
+   like the restrict scratch), and the cover slot must deliver the
+   cluster *bit-vectors* alongside the order — the machine `π` as a
+   rank array plus a per-centre membership region is the seam
+   `ImplCover`'s discharge should be stated against.
 -/
 
 namespace Lax3Proofs.Prog
