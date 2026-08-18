@@ -34,13 +34,38 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F2 | the CSR front end | done | w8 | 2206f72 | round trip is a graph **equality**; `chargeParse` total = `x.length` exactly |
 | F3 | the frame program (NREST) | done | w8 | 2206f72 | `frameProg_le_spec`: the table IS `frameEval` given the two slots; charge ledger named; comparison deferred to F3c |
 | F3b | multi-source profiles via a virtual source | done | w9 | 7ed61d3 | bridge survives source-revisits (strong recursion); `recordProfilesMS_eq_childCol` against the frozen target; marker free; §6.3's `(m+L)` shape restored |
-| F3c | `frameCharge` vs `frameCost`, at the node | wip | w10 | — | F3b landed; reroute `frameCharge`'s profile column through `profilesChargeMS`; compare at the node, `ord := timedGreedyRoutine` |
+| F3c | the program's charge, closed to the `T`-clause | done | w10 | 9b4cdfa | `exists_mcChargeMS_T` with **no `CoverOrderingTime` assumption**; route (b) forced (landed budget fails the headline — MS column swap + transfer lemmas); direct-κ vs `dcost` impossible; empty centres make node-aggregate essential |
 | F4 | the driver program (ℓ+1 levels) | done | w9 | 7ed61d3 | `driverProg_le_spec` by level induction; `mcProg_headline` at the axiom's semantic object; fuel-0 edged branch dead on the class |
 | F5 | the cover pipeline's cost, proved | done | w9 | 7ed61d3 | **`coverOrderingTime_of_nowhereDense`** with the honest witness `timedGreedyRoutine`; true exponent `1+δ`; no sort (the peel ranks); vacuity guarded (`le_chainCharge`) |
-| F6 | codegen to the machine | wip | w10 | — | F2, F4, F5 landed; cover slot = `coverProg`; the fuel-0 dead branch routed around via `memLeaf_eq_bot`; precedent `EndToEnd.lean` |
+| F6 | codegen to the machine — **split** | done (part) | w10 | 9b4cdfa | `mc_computesInTime_of_solveSpec`: ONE named obligation (`SolveSpec`) from the axiom; parse `Spec` discharged; `mcD` verbatim; word-size condition spent (`mcB = q(|x|+1)²`) |
+| F6b | arena materialization + profiles reroute + root eval | ready | — | — | from `CsrIn` via F2's bridges; swap the one program stage to `profilesCMS`/`recordProfilesMS_eq_childCol`; `mcProg`'s root shape; block-0 `botEval` route with the dead-branch guard |
+| F6c | the `ℓ+1` driver blocks (Sepref descent) | ready | — | — | the campaign's largest remaining block: per-frame IMP+ `Spec`s against the landed `Impl*` specs, `EndToEnd.lean` §4 route or direct `Spec`-kit; expect multiple runs |
+| F7 | discharge the endorsed axiom | waiting | — | — | needs F6b, F6c; then: instantiate `SolveSpec`, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close |
 | F7 | discharge the endorsed axiom | waiting | — | — | needs everything; `conclusion:` header style |
 
 ## Campaign log
+
+### 2026-08-18 — w10 lands: one `Spec` obligation from the axiom (`9b4cdfa`)
+
+What is now true: the endorsed axiom is reachable through exactly one named
+hole. `mc_computesInTime_of_solveSpec` delivers `ComputesInTime` on the
+axiom's input set verbatim, at `T = L.const · mcK`, conditional on
+`SolveSpec` alone — the compiled solve stage's `Spec`. And the number that
+fills `T` exists: `exists_mcChargeMS_T` bounds the whole program budget by
+`c'·(|x|+1)^{1+ε}` with **no cover-time assumption** — F5's theorem consumed,
+the honest routine pinned, the vacuity question answered in the object.
+
+Hard-won shape facts, recorded so they are not relearned: the landed
+`frameCharge` does NOT satisfy the headline (the profiles column gap is real
+— F3b's MS budget is not an optimization but a correctness requirement of
+the accounting); direct-κ against `dcost` is impossible (unbounded ratio);
+empty centres are free in `dcost` but not in the program's ledger, so only
+node-aggregate comparisons close. The session hit its usage limit mid-wave —
+both workers resumed from transcripts with nothing lost — and zombie LSP
+servers of deleted worktrees exhausted container memory (killed by open-file
+path; future waves should expect this).
+
+**The remaining work is F6b + F6c (the Sepref descent), then F7's ∃-close.**
 
 ### 2026-08-18 — w9 lands, and the design's one unproved claim is unproved no more (`7ed61d3`)
 
