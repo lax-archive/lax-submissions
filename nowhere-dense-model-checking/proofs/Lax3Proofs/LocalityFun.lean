@@ -1,9 +1,9 @@
-import Lax3.Locality
+import Lax3Proofs.Assembly
 import Lax3Proofs.BCAlgebra
 
 /-!
 The locality decomposition as a *function*. The endorsed theorem
-`Lax3.Locality.locality` is an existential: every formula of distance
+`Lax3.Locality.locality` is an existential (consumed here through its proofs-side discharge `Lax3Proofs.Assembly.locality`, so the axiom stays out of the footprint): every formula of distance
 rank `(k, q)` *has* an equivalent boolean combination of local formulas
 and scatter sentences. A consumer that `Classical.choose`s it ad hoc gets
 no guarantee that two use sites at the same `(choice, φ)` pick the same
@@ -27,7 +27,7 @@ buys is a function, not decidability.
 
 namespace Lax3Proofs.LocalityFun
 
-open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
+open Lax3 Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 
 variable {L : ℕ}
 
@@ -37,7 +37,7 @@ asserts to exist, fixed as a function of `(choice, φ)` (and the ranks).
 The rank witness `hφ` does not enter the choice: see `localityBC_irrel`. -/
 noncomputable def localityBC (choice : ScatterChoice) {k q : ℕ} (φ : DistFO L k)
     (hφ : DistFO.DRank k q φ) : BC (DistFO L k ⊕ ScatterSentence L) :=
-  (locality choice φ hφ).choose
+  (Lax3Proofs.Assembly.locality choice φ hφ).choose
 
 /-- The formula atoms of the chosen decomposition are local and of
 distance rank `(k, q)`. -/
@@ -45,14 +45,14 @@ theorem localityBC_atoms_local (choice : ScatterChoice) {k q : ℕ} (φ : DistFO
     (hφ : DistFO.DRank k q φ) :
     ∀ ψ : DistFO L k, Sum.inl ψ ∈ (localityBC choice φ hφ).atoms →
       DistFO.IsLocal ψ ∧ DistFO.DRank k q ψ :=
-  (locality choice φ hφ).choose_spec.1
+  (Lax3Proofs.Assembly.locality choice φ hφ).choose_spec.1
 
 /-- The scatter-sentence atoms of the chosen decomposition have distance
 rank `(k, q)`. -/
 theorem localityBC_atoms_scatter (choice : ScatterChoice) {k q : ℕ} (φ : DistFO L k)
     (hφ : DistFO.DRank k q φ) :
     ∀ σ : ScatterSentence L, Sum.inr σ ∈ (localityBC choice φ hφ).atoms → σ.DRank k q :=
-  (locality choice φ hφ).choose_spec.2.1
+  (Lax3Proofs.Assembly.locality choice φ hφ).choose_spec.2.1
 
 /-- The chosen decomposition is equivalent to the formula in every finite
 colored graph under every environment. -/
@@ -62,7 +62,7 @@ theorem localityBC_eval (choice : ScatterChoice) {k q : ℕ} (φ : DistFO L k)
       DistFO.Sat G col m φ ↔
         (localityBC choice φ hφ).eval
           (Sum.elim (DistFO.Sat G col m) (ScatterSentence.Sat choice G col)) :=
-  (locality choice φ hφ).choose_spec.2.2
+  (Lax3Proofs.Assembly.locality choice φ hφ).choose_spec.2.2
 
 /-- **The semantic gate.** The chosen decomposition does not depend on
 the rank witness: two use sites at the same `(choice, φ)` see the same
