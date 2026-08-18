@@ -17,7 +17,7 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E1 | cover clusters are path-closed (§5) | done | w1 | 8709c19 | `ClusterPaths`; delivered through to the induced graph, ~110 lines against the ~10-line estimate |
 | E2 | `ctr` and the π-min identity (§4) | done | w1 | 8709c19 | `CoverCentres`; `ctr` is noncomputable (`Finset.min'` via `π`) — E12 must implement it; ~217 lines against the ~6-line estimate |
 | E3 | the edge half of (★) (§7) | done | w1 | 8709c19 | `CoverEdgeSum.sum_clusterWeight_le_rpow`; hypotheses exactly `0 ≤ c_D`, `0 ≤ δ`, `1 ≤ ‖A‖`; ceiling carried into `c_D+1` |
-| E4 | the cost recurrence, amended and slackened (§7) | ready | — | — | E3, E0 landed. `c ≥ 6` must **disappear** — see plan |
+| E4 | the cost recurrence, amended and slackened (§7) | wip | w2 | — | E3, E0 landed. `c ≥ 6` must **disappear** — see plan |
 | E5 | `ReachedR` generalized to `S`-moves (§8.2) | ready | — | — | five analogue lemmas; `hbatch` is an equality, not `⊆` |
 | E6 | carrier transport for `ReachedR` (§9) | waiting | — | — | needs E5 |
 | E7 | the compaction lemma (§5 step 3′, §8.4a) | ready | — | — | much smaller than Rev 3 priced it (D3) |
