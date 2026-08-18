@@ -33,10 +33,10 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F1 | ordering routine + `data` discharge | done | w8 | 2206f72 | **no hypothesis at all**; minimality via `sInf`; new `greedyStep` (landed `tightStep` fails `PiIncreasing` on greedy rounds); F5 owes exactly `time` |
 | F2 | the CSR front end | done | w8 | 2206f72 | round trip is a graph **equality**; `chargeParse` total = `x.length` exactly |
 | F3 | the frame program (NREST) | done | w8 | 2206f72 | `frameProg_le_spec`: the table IS `frameEval` given the two slots; charge ledger named; comparison deferred to F3c |
-| F3b | multi-source profiles via a virtual source | ready | — | — | consumer-side `H_c` (one added vertex adjacent to the class), landed single-source BFS, distance bridge `dist_{H_c}(s*,z) ≤ b+1 ↔ ∃y∈class, dist_H(y,z) ≤ b`; restores §6.3's `m+L` count; marker class special-cased free (E12d note) |
+| F3b | multi-source profiles via a virtual source | wip | w9 | — | consumer-side `H_c` (one added vertex adjacent to the class), landed single-source BFS, distance bridge `dist_{H_c}(s*,z) ≤ b+1 ↔ ∃y∈class, dist_H(y,z) ≤ b`; restores §6.3's `m+L` count; marker class special-cased free (E12d note) |
 | F3c | `frameCharge` vs `frameCost`, at the node | waiting | — | — | needs F3b; state `dcost_node_le`-style at the node (restrict column fits only the aggregate — `K_{3,n−3}`) |
-| F4 | the driver program (ℓ+1 levels) | ready | — | — | F3's slot interfaces landed; cover slot stays parametric until F5 |
-| F5 | the cover pipeline's cost, proved | ready | — | — | F1 landed (chain shape: `greedyChain`, per-level `elimBound`+peel+sort+arc enumeration — the `O(md²·n)` shape); owes the program accounting into `covC` |
+| F4 | the driver program (ℓ+1 levels) | wip | w9 | — | F3's slot interfaces landed; cover slot stays parametric until F5 |
+| F5 | the cover pipeline's cost, proved | wip | w9 | — | F1 landed (chain shape: `greedyChain`, per-level `elimBound`+peel+sort+arc enumeration — the `O(md²·n)` shape); owes the program accounting into `covC` |
 | F6 | codegen to the machine | waiting | — | — | needs F2, F4; precedent `Codegen/Examples/EndToEnd.lean` |
 | F7 | discharge the endorsed axiom | waiting | — | — | needs everything; `conclusion:` header style |
 
