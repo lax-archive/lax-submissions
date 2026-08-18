@@ -83,6 +83,24 @@ Also measured: a cold-ish full `leaf-gate.sh` is ~10 min (concepts 25 s, proofs
 `lax build` audit alone against a warm tree is ~16 s. Budget the gate per
 landing, not per leaf.
 
+### 2026-08-18 — the flow is cloud-adjusted: nothing may live only in the container
+
+This session runs in an ephemeral claude.ai/code container — reclaimed on
+inactivity, repo recloned fresh next time. Standing adjustments, Jan's call:
+
+- **Push at every boundary** — `main` and the mirror `claude/ndmc-71wd6g`
+  both (origin/main is live again as of `801d5df`; the stop hook watches it).
+- **Checkpoint-push in-flight waves**: at every supervisor wake, commit the
+  wave worktree's current files on its `worktree-w<N>` branch and push. Not a
+  landing — never merge a checkpoint; review still happens on final state
+  only. If the container dies mid-wave, recovery = fetch `worktree-w<N>`,
+  diff against `main`, salvage or re-dispatch per leaf.
+- **Delete the remote `worktree-w<N>` branch when the wave lands** (the
+  landing supersedes it).
+- A dead container also kills the wave's workers and any fallback timer;
+  the ledger + `git log` on origin remain the whole recovery state, as
+  designed.
+
 ### 2026-08-18 — w1 lands: the cover layer owes nothing but time (`8709c19`)
 
 What is now true: the four guarantees §4/§5 demand of `cover` beyond the
