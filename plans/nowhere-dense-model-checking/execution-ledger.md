@@ -39,11 +39,28 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F5 | the cover pipeline's cost, proved | done | w9 | 7ed61d3 | **`coverOrderingTime_of_nowhereDense`** with the honest witness `timedGreedyRoutine`; true exponent `1+δ`; no sort (the peel ranks); vacuity guarded (`le_chainCharge`) |
 | F6 | codegen to the machine — **split** | done (part) | w10 | 9b4cdfa | `mc_computesInTime_of_solveSpec`: ONE named obligation (`SolveSpec`) from the axiom; parse `Spec` discharged; `mcD` verbatim; word-size condition spent (`mcB = q(|x|+1)²`) |
 | F6b | arena materialization + profiles reroute + root eval | done | w11 | c4cde5b | `frameProgMS` at the MS budget; the CSR cells ARE the root arena; `solveSpec_of_rest` leaves one obligation; the sweep's BFS cut to F6d |
-| F6c | the `ℓ+1` driver blocks — run 1 | done (part) | w11 | 7bad766 | frame contract + greedyScatter fully IMP+ (with an inlined marking BFS) + botEval's schedule fix; direct `Spec`-kit route validated; 5-run continuation mapped in `SolveBlocks.lean` |
-| F6d | shared IMP+ BFS: generalize `markCom` | ready | — | — | premise softened by F6c run 1: `markCom` (BFS by rounds) now exists inside the scatter; generalize its pattern for supports/profilesMS rather than build from scratch |
-| F7 | discharge the endorsed axiom | waiting | — | — | needs F6c, F6d; then: instantiate `SolveSpec` via `solveSpec_of_rest`, `q`/`c` per `hspan`, `temps ≥` boolean depth, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close with the `conclusion:` header |
+| F6c | the `ℓ+1` driver blocks — run 1 | done (part) | w11 | 7bad766 | frame contract + greedyScatter fully IMP+ (with an inlined marking BFS) + botEval's schedule fix; direct `Spec`-kit route validated; continuation split into F6c2/F6c3 + the post-F6d stages (supports, profilesMS, cover sweep, readback, frame/driver composition) |
+| F6c2 | restrict + isolate as IMP+ (run 2) | wip | w12 | — | owns `SolveBlocksRestrict.lean`; `restrictCom` at `MArena.restrict` (renumbering via rank scratch, self-cleaned at touched entries) is the bar, `isolateCom` if it fits |
+| F6c3 | block 0's IMP+ table fill (run 3) | wip | w12 | — | owns `SolveBlocksBotCom.lean`; the `firsts` table build + the generated per-entry evaluator, target `botEvalT` verbatim |
+| F6d | shared IMP+ BFS: generalize `markCom` | wip | w12 | — | owns `SolveBfs.lean` (new); deliverable is `bfsCom_spec` at `ImplBfs.BallTable` — exact truncated distances, consumers: supports (`descend`), profilesMS (on `vsrc`), sweep slot |
+| F7 | discharge the endorsed axiom | waiting | — | — | needs F6c (all runs), F6d; then: instantiate `SolveSpec` via `solveSpec_of_rest`, `q`/`c` per `hspan`, `temps ≥` boolean depth, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close with the `conclusion:` header |
 
 ## Campaign log
+
+### 2026-08-18 — wave 12 dispatched: F6d + the two BFS-free F6c runs
+
+Fresh session, cold start from the ledger. Wave 12 is three workers on
+disjoint new files in `worktree-w12`: **F6d** (`SolveBfs.lean` — the shared
+BFS-by-rounds command, generalizing run 1's `markCom` to deliver exact
+truncated distances at `ImplBfs.BallTable`, the seam `descend`/`bfsSupports`
+and the `vsrc` route already consume), **F6c2** (`SolveBlocksRestrict.lean` —
+`restrictCom`/`isolateCom` against `MArena.restrict`/`isolate`, rank-scratch
+renumbering self-cleaned at touched entries), **F6c3**
+(`SolveBlocksBotCom.lean` — the `firsts` table build + the compile-time
+generated evaluator, target `botEvalT` verbatim). Chosen because they are
+the only F6 stages that do not consume F6d's BFS; supports/profilesMS/cover
+sweep/composition follow once F6d lands. Workers do not touch the root
+module; the supervisor adds the three imports at landing.
 
 ### 2026-08-18 — session wrap-up (Jan's call): the state, and the road left
 
