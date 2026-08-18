@@ -84,6 +84,10 @@ import Lax3Proofs.ProgCharge
 import Lax3Proofs.ProgCodegenParse
 import Lax3Proofs.ProgCodegenLayout
 import Lax3Proofs.ProgCodegen
+import Lax3Proofs.SolveMatFrame
+import Lax3Proofs.SolveMatArena
+import Lax3Proofs.SolveMatTop
+import Lax3Proofs.SolveMat
 
 -- The proofs package of submission Lax3.
 --
