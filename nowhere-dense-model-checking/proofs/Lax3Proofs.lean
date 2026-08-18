@@ -20,6 +20,7 @@ import Lax3Proofs.SplitterMono
 import Lax3Proofs.SplitterWin
 import Lax3Proofs.SplitterWinRec
 import Lax3Proofs.UqwInstantiation
+import Lax3Proofs.ReachedS
 
 -- Sparse neighborhood covers and the augmentation chain behind their degree.
 import Lax3Proofs.CoverConstruction
@@ -36,12 +37,15 @@ import Lax3Proofs.CoverSpec
 import Lax3Proofs.Relativize
 import Lax3Proofs.Isolate
 import Lax3Proofs.BotEval
+import Lax3Proofs.Compaction
+import Lax3Proofs.LocalityFun
 
 -- Machine-independent arithmetic the redesign's cost argument amends rather
 -- than re-derives: the sigma recursion over the game tree with its n^(1+eps)
 -- close, and the adjacency-slot bound a cover implementation must size to.
 import Lax3Proofs.CostRecurrence
 import Lax3Proofs.TgtCoupling
+import Lax3Proofs.RefineBfsProbe
 
 -- The proofs package of submission Lax3.
 --
