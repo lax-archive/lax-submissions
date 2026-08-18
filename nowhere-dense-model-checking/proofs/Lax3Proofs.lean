@@ -80,6 +80,10 @@ import Lax3Proofs.ProgFrame
 import Lax3Proofs.ProgDriver
 import Lax3Proofs.ProgCoverCharge
 import Lax3Proofs.ProgCover
+import Lax3Proofs.ProgCharge
+import Lax3Proofs.ProgCodegenParse
+import Lax3Proofs.ProgCodegenLayout
+import Lax3Proofs.ProgCodegen
 
 -- The proofs package of submission Lax3.
 --
