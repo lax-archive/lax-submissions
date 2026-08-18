@@ -843,25 +843,44 @@ shape of the others. Re-ordered:
    - 0a. **The space half is settled; do not spend a week on it.** §11's
      conclusion is right and is in fact *unconditional* — see §11 as rewritten.
      Nothing to probe.
-   - 0b. **The time half is not a probe: it is an external import.** GKS prove
-     the cover theorem (tex:1255-1263) in three stages, and the only
-     superlinear stage — `aug(G,r)` with `Δ⁻ ≤ n^ε` in time `f(r,ε)·n^{1+ε}` —
-     is `thm:computingorientation` (tex:1342-1352), whose whole proof is the
-     bracket *[Nešetřil–Ossona de Mendez 2005, Cor 4.2, Thm 4.3]*. GKS give no
-     round count and no per-round cost; their only remark on rounds is the
-     aside at tex:1369-1372. The Lean side carries none of it either:
-     `exists_augChain_wcol` (`Augmentation.lean:1030`),
-     `exists_augChain_subpolynomial` (`:1059`),
-     `exists_densityAtMost_of_nowhereDense` (`AugmentedDensity.lean:984`),
-     `isNeighborhoodCover_wreach` (`OrderedCovers.lean:111`) and
-     `exists_cover_degree` (`CoverDegree.lean:366`) are **existence and degree
-     statements with zero step content**. **Blocked pending NOdM 2005, which is
-     not in this repository — ask Jan.** Until it is here, the cover's time
-     bound is an assumption of the design, and should be written as one.
+   - 0b. **⟨C⟩ The time half is neither a probe nor an import: the deferral
+     chain was opened link by link on 2026-08-17, it is four links long, and it
+     terminates in a proof.** Rev 4's text below this point said the opposite —
+     "blocked pending NOdM 2005, which is not in this repository, ask Jan" — and
+     was wrong within one bibliography lookup. The chain, each link read rather
+     than recorded: (1) GKS's cover theorem, `thm:alg-covers`
+     (`gks tex:1254-1263`). (2) Its only superlinear stage,
+     `thm:computingorientation` (tex:1342-1352), whose whole proof is the
+     bracket *[NOdM 2005, Cor 4.2, Thm 4.3]*; GKS's only remark on rounds is
+     the aside at tex:1369-1372. (3) The bracket resolves onto
+     `references/nodm05/BEII.tex` §4, where the algorithm is given in full:
+     transitivity arcs in `O(md²·n)` (`:615-620`), fraternity edges in
+     `O(md²·n)` with `|L| ≤ md²·n/2` (`:672-674`), simplification +
+     low-indegree orientation + merge in `O(md²·n)` (`:676-678`), the
+     in-degree recurrence `md(G_{i+1}) ≤ md(G_i)² + 2∇₀(G_i)` (`:570-571`),
+     and the orientation step proved unconditionally — acyclic, in-degree
+     `⌊2∇₀(G)⌋`, `O(n+m)` (`:446-499`). (4) Part II's own Lemma 4.1
+     (`:530-542`) is *"special case of Lemma 6.1 of [POMNI]"* — part I,
+     `references/nodm05i/BEI.tex:1064-1091`, where it is **proved in full**,
+     with Corollary 6.2 (`:1092-1101`) bounding `md(G_i)` along the chain.
+     Nothing below that is deferred. **What no paper in the chain states is
+     the nowhere-dense instantiation**: Theorem 4.3 (`BEII.tex:679-688`) is a
+     *bounded expansion* statement at fixed `c` in time *O(n)*, and Corollary
+     4.2 (`:545-567`) likewise opens with bounded expansion, while GKS cite
+     both for *nowhere dense* with `Δ⁻ ≤ n^ε` in `f(r,ε)·n^{1+ε}`. The owed
+     work is exactly that adaptation — `∇_s` subpolynomial through the round
+     recursion, and the `O(md²·n)` accounting at `md = n^δ` instead of
+     `md = O(1)` — not the import of a paper. Until it is done, the cover's
+     time bound is an assumption of the design, and it now **is** written as
+     one: `Lax3Proofs.CoverSpec.CoverOrderingTime` (`CoverSpec.lean`), whose
+     `IsCoverOrdering.time` field is the single unproved claim and whose
+     cover, radius, covering and degree clauses are all derived from the
+     landed layer, not assumed.
 1. **Amend the cost-recursion lemma** of §7 — already compiled as
    `CostRecurrence.exists_driverCostsSigma` / `sigma_root_almostLinear`.
-   Generalize `hKo`/`hKc` from arena-linear to `c·N^{1+δ}`, re-split `ε` over
-   `ℓ+1`, add the standing hypotheses, and prove (★)'s owed edge half.
+   Generalize `hKo`/`hKc` from arena-linear to ⟨C⟩ `a·N^{1+2δ}` (the cover's
+   honest exponent — §7), re-split `ε` over ⟨C⟩ `ℓ+2`,
+   add the standing hypotheses, and prove (★)'s owed edge half.
    Mathlib-only. **Note it is not independent of step 0b:** a different cover
    changes `D`, hence `(★)`, hence the parameterisation.
 2. **Resolve O1/O5 together** — generalize `SplitterWinRec.ReachedR` from
@@ -950,11 +969,22 @@ so the peak is `≤ N²` for every `ε` and `δ` with no hypothesis. §11 carrie
 argument. The space question is no longer what decides the project.
 
 **O7 — ⟨B⟩ new, and it replaces O6 as the one that decides the project: can the
-cover's *time* bound be obtained at all?** GKS defer it to Nešetřil–Ossona de
-Mendez 2005, which is not in this repository, and the Lean cover layer carries
-only the degree half. See §8 step 0b. This is the design's load-bearing
-unproved claim, and unlike §7 it cannot be discharged by working harder on
-material already here.
+cover's *time* bound be obtained at all?** ⟨C⟩ **Narrowed by E0, not closed.**
+Rev 4 wrote here that GKS defer to a paper this repository lacks and that the
+claim "cannot be discharged by working harder on material already here"; both
+NOdM papers are now at `references/nodm05{,i}/` and the second clause is false —
+see §8 step 0b for the chain, opened link by link, terminating in part I's
+Lemma 6.1 with the algorithm and its per-round `O(md²·n)` costs given in full
+in part II. The bound is still load-bearing and still unproved: it stands as
+the hypothesis `Lax3Proofs.CoverSpec.CoverOrderingTime` — `f` quantified
+before the graph, exponent `1+2δ` — with everything else about the cover
+derived, so the open question is now exactly the `time` field. What would
+close it: (i) the nowhere-dense instantiation of Corollary 4.2 — `∇_s`
+subpolynomial through the round recursion `md(G_{i+1}) ≤ md(G_i)² + 2∇₀(G_i)`,
+with an explicit threshold `n ≥ f(r,ε)`; (ii) the `O(md²·n)` accounting of
+the augmentation and orientation rounds at `md = n^δ` rather than `md = O(1)`.
+Formalizing that is a campaign, not a leaf (`execution-plan.md`, "what is
+deliberately not a leaf"); the design consumes the hypothesis.
 
 ---
 

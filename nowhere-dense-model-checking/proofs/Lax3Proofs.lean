@@ -27,6 +27,10 @@ import Lax3Proofs.Augmentation
 import Lax3Proofs.AugmentedDensity
 import Lax3Proofs.OrderedCovers
 import Lax3Proofs.CoverDegree
+import Lax3Proofs.ClusterPaths
+import Lax3Proofs.CoverCentres
+import Lax3Proofs.CoverEdgeSum
+import Lax3Proofs.CoverSpec
 
 -- The two rewrites a step of the recursion performs, and the leaf case.
 import Lax3Proofs.Relativize
