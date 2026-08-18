@@ -127,7 +127,9 @@ def chargeTotal (v : ACost String ℕ) : ℕ := (progKeys.map v.toFun).sum
 
 theorem chargeTotal_add (a b : ACost String ℕ) :
     chargeTotal (a + b) = chargeTotal a + chargeTotal b := by
-  simp [chargeTotal, progKeys]
+  simp only [chargeTotal, progKeys, List.map_cons, List.map_nil, List.sum_cons,
+    List.sum_nil, ACost.toFun_add]
+  omega
 
 @[simp] theorem chargeTotal_zero : chargeTotal 0 = 0 := by
   simp [chargeTotal, progKeys]
@@ -136,7 +138,7 @@ theorem chargeTotal_add (a b : ACost String ℕ) :
 theorem chargeTotal_cost {k : String} (hk : k ∈ progKeys) (n : ℕ) :
     chargeTotal (ACost.cost k n) = n := by
   simp only [progKeys] at hk
-  fin_cases hk <;> simp [chargeTotal, progKeys, ACost.toFun_cost]
+  fin_cases hk <;> simp [chargeTotal, progKeys]
 
 theorem chargeTotal_listSum (l : List (ACost String ℕ)) :
     chargeTotal l.sum = (l.map chargeTotal).sum := by
@@ -148,7 +150,7 @@ theorem chargeTotal_listSum (l : List (ACost String ℕ)) :
 `progKeys` it vanishes. (Used through `mcChargeMS_toFun_eq_zero`.) -/
 theorem chargeTotal_cost_notMem {k : String} (hk : k ∉ progKeys) (n : ℕ)
     (m : String) (hm : m ∈ progKeys) : (ACost.cost k n).toFun m = 0 :=
-  ACost.toFun_cost_ne (fun h => hk (h ▸ hm)) n
+  ACost.toFun_cost_ne (by rintro rfl; exact hk hm) n
 
 /-- The `ECost` total over the same ten currencies. -/
 def totalE (v : ECost) : ℕ∞ := (progKeys.map v.toFun).sum
@@ -269,9 +271,13 @@ theorem frameChargeMS_toFun_eq {k : String} (hk : k ≠ "frame.profiles")
   · rw [if_pos hbot, if_pos hbot]
   · rw [if_neg hbot, if_neg hbot]
     simp only [ACost.toFun_add, toFun_listSum, List.map_map]
-    congr 2
-    refine congrArg List.sum (List.map_congr_left fun u _ => ?_)
-    exact centreChargeMS_toFun_eq S j A ℓp htab nx hk _ u (hnx _)
+    have hmap : ∀ u : Fin A.N,
+        ((fun x => ACost.toFun x k)
+          ∘ centreChargeMS S j A ℓp htab nx nxC' ((ord A.N A.G).order)) u
+        = ((fun x => ACost.toFun x k)
+          ∘ centreCharge S j A ℓp htab nx nxC ((ord A.N A.G).order)) u :=
+      fun u => centreChargeMS_toFun_eq S j A ℓp htab nx hk _ u (hnx _)
+    rw [List.map_congr_left fun u _ => hmap u]
 
 /-- **The driver's MS budget is the landed budget off the profiles
 column** — every non-`"frame.profiles"` ledger entry of
@@ -309,5 +315,775 @@ theorem mcChargeMS_toFun_eq (ℓpF : ℕ → ℕ)
   rw [driverChargeMS_toFun_eq S ord ℓpF htabF covC hk]
 
 end UsersLemma
+
+/-! ## The per-currency closed forms of the components -/
+
+section ComponentTotals
+
+variable (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀)
+
+open Classical in
+@[simp] theorem chargeTotal_restrictC (ℓp : ℕ) (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) :
+    chargeTotal (restrictC S j A ℓp π u)
+      = Impl.childCharge A.G (S.pal j) ℓp S.R (cluster S A π u) :=
+  chargeTotal_cost (by decide) _
+
+open Classical in
+@[simp] theorem chargeTotal_supportsC (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) :
+    chargeTotal (supportsC S j A π u)
+      = (2 * Impl.gsize (preG S A π u) + S.R + 2)
+        + (S.R + 2) * (2 * Impl.gsize (preG S A π u)) :=
+  chargeTotal_cost (by decide) _
+
+open Classical in
+@[simp] theorem chargeTotal_profilesCMS (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) :
+    chargeTotal (profilesCMS S j A π u)
+      = Impl.profilesChargeMS (preG S A π u) S.width (relPal (S.pal j)) S.R :=
+  chargeTotal_cost (by decide) _
+
+open Classical in
+@[simp] theorem chargeTotal_isolateC {ℓp : ℕ} (htab : Fin A.N → Fin ℓp → List (Fin A.N))
+    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) :
+    chargeTotal (isolateC S j A htab π u)
+      = Impl.isolateCharge ((Impl.ofArena A htab).restrict (cluster S A π u)) :=
+  chargeTotal_cost (by decide) _
+
+@[simp] theorem chargeTotal_allocC : chargeTotal (allocC A) = A.N :=
+  chargeTotal_cost (by decide) _
+
+@[simp] theorem chargeTotal_readC :
+    chargeTotal (readC S j A) = A.N * (1 + (F S j).length) :=
+  chargeTotal_cost (by decide) _
+
+@[simp] theorem chargeTotal_botC :
+    chargeTotal (botC S j A) = (1 + (F S j).length) * weight A :=
+  chargeTotal_cost (by decide) _
+
+end ComponentTotals
+
+open Classical in
+/-- The cover slot's total, at F5's concrete vector: the ordering
+phase's honest `chainCharge` (the routine's abstract `steps` field,
+`coverC_order_eq_steps` — the vacuity note's answer) plus the sweep's
+account. -/
+theorem chargeTotal_coverC (m : ℕ) (G : SimpleGraph (Fin m)) (rc R D : ℕ) :
+    chargeTotal (coverC m G rc R D)
+      = chainCharge G R
+        + Impl.sweepCharge G ((timedGreedyRoutine R) m G).order rc D := by
+  rw [coverC, chargeTotal_add, chargeTotal_cost (by decide),
+    chargeTotal_cost (by decide)]
+
+open Classical in
+theorem chargeTotal_centreChargeMS (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀)
+    (ℓp : ℕ) (htab : Fin A.N → Fin ℓp → List (Fin A.N))
+    (nx : (B : Arena (S.pal (j + 1)) n₀) → Fin B.N → DistFO (S.pal (j + 1)) 1 → Prop)
+    (nxC : Arena (S.pal (j + 1)) n₀ → ACost String ℕ)
+    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) :
+    chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u)
+      = Impl.childCharge A.G (S.pal j) ℓp S.R (cluster S A π u)
+        + (((2 * Impl.gsize (preG S A π u) + S.R + 2)
+            + (S.R + 2) * (2 * Impl.gsize (preG S A π u)))
+          + (Impl.profilesChargeMS (preG S A π u) S.width (relPal (S.pal j)) S.R
+            + (Impl.isolateCharge ((Impl.ofArena A htab).restrict (cluster S A π u))
+              + (chargeTotal (nxC (childArena S A π u))
+                + scatterCost S j A π u (nx (childArena S A π u)))))) := by
+  rw [centreChargeMS, chargeTotal_add, chargeTotal_add, chargeTotal_add,
+    chargeTotal_add, chargeTotal_add, chargeTotal_restrictC, chargeTotal_supportsC,
+    chargeTotal_profilesCMS, chargeTotal_isolateC, chargeTotal_cost (by decide)]
+
+/-! ## The geometry: `B₀` weighs no more than its cluster -/
+
+/-- The edge count of `preG` — `B₀` before isolation — is at most the
+cluster's internal edge count: the compaction embeds its edge set into
+`internalEdgeSet` (the `weight_childArena_le` argument, without the
+isolation step). -/
+theorem edgeSet_ncard_preG_le (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
+    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) :
+    (preG S A π u).edgeSet.ncard
+      ≤ (internalEdgeSet A.G (cluster S A π u)).ncard := by
+  have hinj : Function.Injective
+      (Sym2.map (fun a => ((childEquiv S A π u) a : Fin A.N))) :=
+    Sym2.map.injective fun a b hab =>
+      (childEquiv S A π u).injective (Subtype.ext hab)
+  have himg : Sym2.map (fun a => ((childEquiv S A π u) a : Fin A.N)) ''
+      (preG S A π u).edgeSet ⊆ internalEdgeSet A.G (cluster S A π u) := by
+    rintro e ⟨e', he', rfl⟩
+    induction e' with
+    | _ a b =>
+      have hadj : A.G.Adj ((childEquiv S A π u) a : Fin A.N)
+          ((childEquiv S A π u) b : Fin A.N) := he'
+      rw [Sym2.map_mk]
+      refine ⟨hadj, ?_⟩
+      intro x hx
+      rcases Sym2.mem_iff.mp hx with rfl | rfl
+      · exact ((childEquiv S A π u) a).2
+      · exact ((childEquiv S A π u) b).2
+  calc (preG S A π u).edgeSet.ncard
+      = (Sym2.map (fun a => ((childEquiv S A π u) a : Fin A.N)) ''
+          (preG S A π u).edgeSet).ncard :=
+        (Set.ncard_image_of_injective _ hinj).symm
+    _ ≤ (internalEdgeSet A.G (cluster S A π u)).ncard :=
+        Set.ncard_le_ncard himg (Set.toFinite _)
+
+/-- The Finset/ncard bridge for edge counts (instance-free right side). -/
+theorem edgeFinset_card_eq_ncard {m : ℕ} (H : SimpleGraph (Fin m))
+    [DecidableRel H.Adj] : H.edgeFinset.card = H.edgeSet.ncard := by
+  rw [← SimpleGraph.coe_edgeFinset H, Set.ncard_coe_finset]
+
+open Classical in
+/-- **`‖B₀ᵤ‖ ≤ clusterWeight`**: the profile/supports arena of one
+centre — carrier the cluster, edges before isolation — weighs no more
+than the cluster's weight, so the per-centre `gsize`-priced columns sum
+by `CoverEdgeSum.sum_clusterWeight_le_rpow`. -/
+theorem gsize_preG_le (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
+    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) :
+    Impl.gsize (preG S A π u) ≤ clusterWeight A.G (cluster S A π u) := by
+  show childN S A π u + (preG S A π u).edgeFinset.card
+    ≤ (cluster S A π u).ncard + (internalEdgeSet A.G (cluster S A π u)).ncard
+  rw [edgeFinset_card_eq_ncard]
+  exact Nat.add_le_add le_rfl (edgeSet_ncard_preG_le S A π u)
+
+/-! ## The per-node comparison (deliverable 1) -/
+
+/-- **The per-level node constant** — a number of the schedule alone
+(level `j`, history rounds `ℓp`), fixed before any graph is read. It
+collects: the restrict column's per-vertex multiplier
+(`S.pal j + ℓp(2R+1) + 2`), the per-`clusterWeight` coefficients of the
+supports, profiles (MS), isolate and scatter columns, their per-vertex
+constants, the readback, and the node allocation. -/
+noncomputable def nodeConst (S : Setup L) (j ℓp : ℕ) : ℕ :=
+  (S.pal j + ℓp * (2 * S.R + 1) + 2)
+    + (2 * (S.R + 3) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1) + 2
+        + 2 * scatterBudget S j)
+    + ((S.R + 2) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1))
+    + (F S j).length + 4
+
+open Classical in
+/-- **F3c's per-node comparison** (`dcost_node_le`-shaped, at the node
+aggregate). At a node with an edge, under
+
+* the cover-degree hypothesis in the landed fibre form (the shape
+  `cluster_fibre_eq` converts `exists_wreach_degree_timedGreedyRoutine`
+  into), and
+* a `f·N^{1+2δ}` bound on the cover slot's total (what
+  `exists_coverCharge_le` supplies for F5's `coverC` at the honest
+  `timedGreedyRoutine` steps),
+
+the frame's whole MS-routed ledger total is within the abstract node
+envelope plus the recursion slots' own totals:
+
+    total ≤ (f + (c+1)·nodeConst)·‖A‖^{1+2δ} + Σ_u total (nxC childᵤ).
+
+The `c·Σ_u‖child‖` middle term of `dcost_node_le`'s shape is folded
+into the envelope by the same mass clause
+(`sum_clusterWeight_le_rpow`); the sum over the slots runs over **all**
+centres — empty clusters' subtrees cost `0`
+(`driverChargeMS_chargeTotal_of_bot`). -/
+theorem frameChargeMS_chargeTotal_le (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) (j : ℕ) (A : Arena (S.pal j) n₀)
+    (ℓp : ℕ) (htab : Fin A.N → Fin ℓp → List (Fin A.N))
+    (nx : (B : Arena (S.pal (j + 1)) n₀) → Fin B.N → DistFO (S.pal (j + 1)) 1 → Prop)
+    (covC : ACost String ℕ) (nxC : Arena (S.pal (j + 1)) n₀ → ACost String ℕ)
+    {c f δ : ℝ} (hc : 0 ≤ c) (hf : 0 ≤ f) (hδ : 0 ≤ δ)
+    (hbot : ¬ A.G = ⊥) (hW : 1 ≤ weight A)
+    (hcov : (chargeTotal covC : ℝ) ≤ f * (A.N : ℝ) ^ (1 + 2 * δ))
+    (hdeg : ∀ v : Fin A.N,
+      {u : Fin A.N | v ∈ cluster S A ((ord A.N A.G).order) u}.ncard
+        ≤ ⌈c * (A.N : ℝ) ^ δ⌉₊) :
+    (chargeTotal (frameChargeMS S ord j A ℓp htab nx covC nxC) : ℝ)
+      ≤ (f + (c + 1) * (nodeConst S j ℓp : ℝ)) * (weight A : ℝ) ^ (1 + 2 * δ)
+        + ∑ u : Fin A.N,
+            (chargeTotal (nxC (childArena S A ((ord A.N A.G).order) u)) : ℝ) := by
+  classical
+  set π : Equiv.Perm (Fin A.N) := (ord A.N A.G).order with hπdef
+  set d : ℕ := ⌈c * (A.N : ℝ) ^ δ⌉₊ with hddef
+  -- abbreviations for the schedule constants of this level
+  set Kr : ℕ := S.pal j + ℓp * (2 * S.R + 1) + 2 with hKrdef
+  set Kc : ℕ := 2 * (S.R + 3) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1) + 2
+    + 2 * scatterBudget S j with hKcdef
+  set Kq : ℕ := (S.R + 2) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1) with hKqdef
+  -- §1 the ℕ ledger, column by column
+  have htot : chargeTotal (frameChargeMS S ord j A ℓp htab nx covC nxC)
+      = chargeTotal covC + (A.N
+        + ((((List.finRange A.N).map fun u =>
+              chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u)).sum)
+          + A.N * (1 + (F S j).length))) := by
+    rw [frameChargeMS, if_neg hbot, chargeTotal_add, chargeTotal_add,
+      chargeTotal_add, chargeTotal_listSum, List.map_map, chargeTotal_allocC,
+      chargeTotal_readC]
+    rfl
+  have hlist : ((List.finRange A.N).map fun u =>
+        chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u)).sum
+      = ∑ u : Fin A.N, chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u) :=
+    (Fin.sum_univ_def _).symm
+  -- §2 per-centre columns against the cluster weight
+  have hsup : ∀ u : Fin A.N,
+      (2 * Impl.gsize (preG S A π u) + S.R + 2)
+        + (S.R + 2) * (2 * Impl.gsize (preG S A π u))
+      ≤ 2 * (S.R + 3) * clusterWeight A.G (cluster S A π u) + (S.R + 2) := by
+    intro u
+    have hg := gsize_preG_le S A π u
+    calc (2 * Impl.gsize (preG S A π u) + S.R + 2)
+          + (S.R + 2) * (2 * Impl.gsize (preG S A π u))
+        = 2 * (S.R + 3) * Impl.gsize (preG S A π u) + (S.R + 2) := by ring
+      _ ≤ 2 * (S.R + 3) * clusterWeight A.G (cluster S A π u) + (S.R + 2) :=
+          Nat.add_le_add_right (Nat.mul_le_mul_left _ hg) _
+  have hpro : ∀ u : Fin A.N,
+      Impl.profilesChargeMS (preG S A π u) S.width (relPal (S.pal j)) S.R
+      ≤ 6 * (S.width + relPal (S.pal j)) * (S.R + 1)
+          * clusterWeight A.G (cluster S A π u)
+        + 6 * (S.width + relPal (S.pal j)) * (S.R + 1) := by
+    intro u
+    refine (Impl.profilesChargeMS_le _ _ _ _).trans ?_
+    have hg := gsize_preG_le S A π u
+    calc (S.width + relPal (S.pal j))
+          * (6 * (S.R + 1) * (Impl.gsize (preG S A π u) + 1))
+        = 6 * (S.width + relPal (S.pal j)) * (S.R + 1) * Impl.gsize (preG S A π u)
+          + 6 * (S.width + relPal (S.pal j)) * (S.R + 1) := by ring
+      _ ≤ _ := Nat.add_le_add_right (Nat.mul_le_mul_left _ hg) _
+  have hiso : ∀ u : Fin A.N,
+      Impl.isolateCharge ((Impl.ofArena A htab).restrict (cluster S A π u))
+      ≤ 2 * clusterWeight A.G (cluster S A π u) := by
+    intro u
+    rw [Impl.isolateCharge_eq, edgeFinset_card_eq_ncard]
+    have h1 : ((Impl.ofArena A htab).restrict (cluster S A π u)).G.edgeSet.ncard
+        ≤ (internalEdgeSet A.G (cluster S A π u)).ncard :=
+      edgeSet_ncard_preG_le S A π u
+    have h2 : ((Impl.ofArena A htab).restrict (cluster S A π u)).N
+        = (cluster S A π u).ncard := rfl
+    have hcw : clusterWeight A.G (cluster S A π u)
+        = (cluster S A π u).ncard + (internalEdgeSet A.G (cluster S A π u)).ncard :=
+      rfl
+    omega
+  have hsc : ∀ u : Fin A.N,
+      scatterCost S j A π u (nx (childArena S A π u))
+      ≤ 2 * scatterBudget S j * clusterWeight A.G (cluster S A π u) := by
+    intro u
+    refine (scatterCost_le S j A π u _).trans ?_
+    have h := weight_childArena_le S A π u
+    calc scatterBudget S j * (2 * weight (childArena S A π u))
+        ≤ scatterBudget S j * (2 * clusterWeight A.G (cluster S A π u)) :=
+          Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ h)
+      _ = 2 * scatterBudget S j * clusterWeight A.G (cluster S A π u) := by ring
+  have hcen : ∀ u : Fin A.N,
+      chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u)
+      ≤ Impl.childCharge A.G (S.pal j) ℓp S.R (cluster S A π u)
+        + (Kc * clusterWeight A.G (cluster S A π u) + Kq)
+        + chargeTotal (nxC (childArena S A π u)) := by
+    intro u
+    rw [chargeTotal_centreChargeMS]
+    refine le_trans (Nat.add_le_add le_rfl (Nat.add_le_add (hsup u)
+      (Nat.add_le_add (hpro u) (Nat.add_le_add (hiso u)
+        (Nat.add_le_add le_rfl (hsc u)))))) ?_
+    apply le_of_eq
+    rw [hKcdef, hKqdef]
+    ring
+  -- §3 the node aggregates, in ℕ
+  have hccN : ∑ u : Fin A.N, Impl.childCharge A.G (S.pal j) ℓp S.R (cluster S A π u)
+      ≤ d * (2 * A.G.edgeFinset.card) + A.N * d * Kr := by
+    rw [hKrdef]
+    exact Impl.sum_childCharge_le A.G (S.pal j) ℓp S.R (fun u => cluster S A π u)
+      d hdeg
+  have hsumN : ∑ u : Fin A.N, chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u)
+      ≤ (d * (2 * A.G.edgeFinset.card) + A.N * d * Kr)
+        + (Kc * (∑ u : Fin A.N, clusterWeight A.G (cluster S A π u)) + A.N * Kq)
+        + ∑ u : Fin A.N, chargeTotal (nxC (childArena S A π u)) := by
+    calc ∑ u : Fin A.N, chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u)
+        ≤ ∑ u : Fin A.N,
+            (Impl.childCharge A.G (S.pal j) ℓp S.R (cluster S A π u)
+              + (Kc * clusterWeight A.G (cluster S A π u) + Kq)
+              + chargeTotal (nxC (childArena S A π u))) :=
+          Finset.sum_le_sum fun u _ => hcen u
+      _ = (∑ u : Fin A.N, Impl.childCharge A.G (S.pal j) ℓp S.R (cluster S A π u))
+          + (Kc * (∑ u : Fin A.N, clusterWeight A.G (cluster S A π u)) + A.N * Kq)
+          + ∑ u : Fin A.N, chargeTotal (nxC (childArena S A π u)) := by
+          rw [Finset.sum_add_distrib, Finset.sum_add_distrib, Finset.sum_add_distrib,
+            ← Finset.mul_sum, Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+            smul_eq_mul, mul_comm A.N Kq]
+      _ ≤ _ := by
+          exact Nat.add_le_add (Nat.add_le_add hccN le_rfl) le_rfl
+  -- §4 cast once, then the ℝ endgame
+  set W : ℝ := (weight A : ℝ) with hWdef
+  have hW1 : (1 : ℝ) ≤ W := by rw [hWdef]; exact_mod_cast hW
+  have hWpos : (0 : ℝ) < W := lt_of_lt_of_le zero_lt_one hW1
+  set Wp : ℝ := W ^ ((1 : ℝ) + 2 * δ) with hWpdef
+  have hWpnn : (0 : ℝ) ≤ Wp := Real.rpow_nonneg hWpos.le _
+  have hWWp : W ≤ Wp := by
+    rw [hWpdef]
+    calc W = W ^ (1 : ℝ) := (Real.rpow_one W).symm
+      _ ≤ W ^ ((1 : ℝ) + 2 * δ) :=
+        Real.rpow_le_rpow_of_exponent_le hW1 (by linarith)
+  have hNW : (A.N : ℝ) ≤ W := by
+    rw [hWdef]
+    exact_mod_cast Nat.le_add_right A.N (A.G.edgeSet.ncard)
+  have hMW : (A.G.edgeFinset.card : ℝ) ≤ W := by
+    rw [hWdef, edgeFinset_card_eq_ncard]
+    exact_mod_cast Nat.le_add_left (A.G.edgeSet.ncard) A.N
+  have hone_le : (1 : ℝ) ≤ W ^ δ := by
+    rw [hWdef]
+    exact one_le_rpow (by exact_mod_cast hW) hδ
+  have hdC : (d : ℝ) ≤ (c + 1) * W ^ δ := by
+    rw [hddef]
+    have hceil : ((⌈c * (A.N : ℝ) ^ δ⌉₊ : ℕ) : ℝ) ≤ c * (A.N : ℝ) ^ δ + 1 :=
+      (Nat.ceil_lt_add_one
+        (mul_nonneg hc (Real.rpow_nonneg (Nat.cast_nonneg _) δ))).le
+    refine hceil.trans ?_
+    have hNe : (A.N : ℝ) ^ δ ≤ W ^ δ :=
+      Real.rpow_le_rpow (Nat.cast_nonneg _) hNW hδ
+    nlinarith [hone_le, hNe, hc]
+  have hsplit : W ^ ((1 : ℝ) + δ) = W * W ^ δ := by
+    rw [Real.rpow_add hWpos, Real.rpow_one]
+  have hWdWp : W ^ ((1 : ℝ) + δ) ≤ Wp := by
+    rw [hWpdef]
+    exact Real.rpow_le_rpow_of_exponent_le hW1 (by linarith)
+  have hcwR : ((∑ u : Fin A.N, clusterWeight A.G (cluster S A π u) : ℕ) : ℝ)
+      ≤ (c + 1) * W ^ ((1 : ℝ) + δ) := by
+    rw [hWdef]
+    exact sum_clusterWeight_le_rpow A.G (fun u => cluster S A π u) c δ hc hδ hW hdeg
+  -- the seven priced columns
+  have hT1 : (chargeTotal covC : ℝ) ≤ f * Wp := by
+    refine hcov.trans ?_
+    rw [hWpdef]
+    refine mul_le_mul_of_nonneg_left ?_ hf
+    exact Real.rpow_le_rpow (Nat.cast_nonneg _) hNW (by linarith)
+  have hT2 : (A.N : ℝ) ≤ Wp := hNW.trans hWWp
+  have hT3 : (d : ℝ) * (2 * (A.G.edgeFinset.card : ℝ)) ≤ 2 * (c + 1) * Wp := by
+    have h1 : (d : ℝ) * (2 * (A.G.edgeFinset.card : ℝ))
+        ≤ ((c + 1) * W ^ δ) * (2 * W) := by
+      have hd0 : (0 : ℝ) ≤ (d : ℝ) := Nat.cast_nonneg _
+      have hM0 : (0 : ℝ) ≤ 2 * (A.G.edgeFinset.card : ℝ) := by positivity
+      refine mul_le_mul hdC (by linarith) hM0 (by positivity)
+    refine h1.trans ?_
+    calc ((c + 1) * W ^ δ) * (2 * W) = 2 * (c + 1) * (W * W ^ δ) := by ring
+      _ = 2 * (c + 1) * W ^ ((1 : ℝ) + δ) := by rw [hsplit]
+      _ ≤ 2 * (c + 1) * Wp := by
+          refine mul_le_mul_of_nonneg_left hWdWp (by linarith)
+  have hT4 : (A.N : ℝ) * (d : ℝ) * (Kr : ℝ) ≤ (Kr : ℝ) * (c + 1) * Wp := by
+    have h1 : (A.N : ℝ) * (d : ℝ) ≤ W * ((c + 1) * W ^ δ) :=
+      mul_le_mul hNW hdC (Nat.cast_nonneg _) hWpos.le
+    have h2 : W * ((c + 1) * W ^ δ) = (c + 1) * W ^ ((1 : ℝ) + δ) := by
+      rw [hsplit]; ring
+    have h3 : (A.N : ℝ) * (d : ℝ) ≤ (c + 1) * Wp := by
+      refine (h1.trans_eq h2).trans ?_
+      exact mul_le_mul_of_nonneg_left hWdWp (by linarith)
+    calc (A.N : ℝ) * (d : ℝ) * (Kr : ℝ) ≤ ((c + 1) * Wp) * (Kr : ℝ) :=
+          mul_le_mul_of_nonneg_right h3 (Nat.cast_nonneg _)
+      _ = (Kr : ℝ) * (c + 1) * Wp := by ring
+  have hT5 : (Kc : ℝ) * ((∑ u : Fin A.N, clusterWeight A.G (cluster S A π u) : ℕ) : ℝ)
+      ≤ (Kc : ℝ) * (c + 1) * Wp := by
+    calc (Kc : ℝ) * ((∑ u : Fin A.N, clusterWeight A.G (cluster S A π u) : ℕ) : ℝ)
+        ≤ (Kc : ℝ) * ((c + 1) * W ^ ((1 : ℝ) + δ)) :=
+          mul_le_mul_of_nonneg_left hcwR (Nat.cast_nonneg _)
+      _ ≤ (Kc : ℝ) * ((c + 1) * Wp) := by
+          refine mul_le_mul_of_nonneg_left ?_ (Nat.cast_nonneg _)
+          exact mul_le_mul_of_nonneg_left hWdWp (by linarith)
+      _ = (Kc : ℝ) * (c + 1) * Wp := by ring
+  have hT6 : (A.N : ℝ) * (Kq : ℝ) ≤ (Kq : ℝ) * Wp := by
+    calc (A.N : ℝ) * (Kq : ℝ) ≤ Wp * (Kq : ℝ) :=
+          mul_le_mul_of_nonneg_right hT2 (Nat.cast_nonneg _)
+      _ = (Kq : ℝ) * Wp := by ring
+  have hT7 : (A.N : ℝ) * (1 + ((F S j).length : ℝ))
+      ≤ (1 + ((F S j).length : ℝ)) * Wp := by
+    calc (A.N : ℝ) * (1 + ((F S j).length : ℝ))
+        ≤ Wp * (1 + ((F S j).length : ℝ)) := by
+          refine mul_le_mul_of_nonneg_right hT2 (by positivity)
+      _ = (1 + ((F S j).length : ℝ)) * Wp := by ring
+  -- the coefficient consolidation into the named constant
+  have hcoef : f * Wp + Wp + 2 * (c + 1) * Wp + (Kr : ℝ) * (c + 1) * Wp
+      + (Kc : ℝ) * (c + 1) * Wp + (Kq : ℝ) * Wp + (1 + ((F S j).length : ℝ)) * Wp
+      ≤ (f + (c + 1) * (nodeConst S j ℓp : ℝ)) * Wp := by
+    have hnc : (nodeConst S j ℓp : ℝ)
+        = (Kr : ℝ) + (Kc : ℝ) + (Kq : ℝ) + ((F S j).length : ℝ) + 4 := by
+      unfold nodeConst
+      rw [hKrdef, hKcdef, hKqdef]
+      push_cast
+      ring
+    have hco : f + 1 + 2 * (c + 1) + (Kr : ℝ) * (c + 1) + (Kc : ℝ) * (c + 1)
+        + (Kq : ℝ) + (1 + ((F S j).length : ℝ))
+        ≤ f + (c + 1) * (nodeConst S j ℓp : ℝ) := by
+      rw [hnc]
+      nlinarith [hc, Nat.cast_nonneg (α := ℝ) Kr, Nat.cast_nonneg (α := ℝ) Kc,
+        Nat.cast_nonneg (α := ℝ) Kq, Nat.cast_nonneg (α := ℝ) (F S j).length]
+    calc f * Wp + Wp + 2 * (c + 1) * Wp + (Kr : ℝ) * (c + 1) * Wp
+        + (Kc : ℝ) * (c + 1) * Wp + (Kq : ℝ) * Wp + (1 + ((F S j).length : ℝ)) * Wp
+        = (f + 1 + 2 * (c + 1) + (Kr : ℝ) * (c + 1) + (Kc : ℝ) * (c + 1)
+            + (Kq : ℝ) + (1 + ((F S j).length : ℝ))) * Wp := by ring
+      _ ≤ (f + (c + 1) * (nodeConst S j ℓp : ℝ)) * Wp :=
+          mul_le_mul_of_nonneg_right hco hWpnn
+  -- assemble
+  have hcast : (chargeTotal (frameChargeMS S ord j A ℓp htab nx covC nxC) : ℝ)
+      = (chargeTotal covC : ℝ) + ((A.N : ℝ)
+        + ((∑ u : Fin A.N,
+              (chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u) : ℝ))
+          + (A.N : ℝ) * (1 + ((F S j).length : ℝ)))) := by
+    rw [htot, hlist]
+    push_cast
+    ring
+  have hsumR : ∑ u : Fin A.N,
+        (chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u) : ℝ)
+      ≤ ((d : ℝ) * (2 * (A.G.edgeFinset.card : ℝ)) + (A.N : ℝ) * (d : ℝ) * (Kr : ℝ))
+        + ((Kc : ℝ) * ((∑ u : Fin A.N, clusterWeight A.G (cluster S A π u) : ℕ) : ℝ)
+          + (A.N : ℝ) * (Kq : ℝ))
+        + ∑ u : Fin A.N, (chargeTotal (nxC (childArena S A π u)) : ℝ) := by
+    have h := hsumN
+    have hcast2 : ((∑ u : Fin A.N,
+          chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u) : ℕ) : ℝ)
+        ≤ (((d * (2 * A.G.edgeFinset.card) + A.N * d * Kr)
+            + (Kc * (∑ u : Fin A.N, clusterWeight A.G (cluster S A π u)) + A.N * Kq)
+            + ∑ u : Fin A.N, chargeTotal (nxC (childArena S A π u)) : ℕ) : ℝ) := by
+      exact_mod_cast h
+    push_cast at hcast2
+    convert hcast2 using 2
+    push_cast
+    ring
+  rw [hcast]
+  have hmid : (chargeTotal covC : ℝ) + ((A.N : ℝ)
+      + ((∑ u : Fin A.N,
+            (chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u) : ℝ))
+        + (A.N : ℝ) * (1 + ((F S j).length : ℝ))))
+      ≤ f * Wp + Wp + 2 * (c + 1) * Wp + (Kr : ℝ) * (c + 1) * Wp
+        + (Kc : ℝ) * (c + 1) * Wp + (Kq : ℝ) * Wp + (1 + ((F S j).length : ℝ)) * Wp
+        + ∑ u : Fin A.N, (chargeTotal (nxC (childArena S A π u)) : ℝ) := by
+    linarith [hsumR, hT1, hT2, hT3, hT4, hT5, hT6, hT7]
+  refine hmid.trans ?_
+  linarith [hcoef]
+
+/-! ## The level lift (deliverable 2) -/
+
+/-- An arena with no vertices is edgeless. -/
+theorem arena_bot_of_N_eq_zero {Λ : ℕ} (A : Arena Λ n₀) (hN : A.N = 0) :
+    A.G = ⊥ := by
+  ext a b
+  exact absurd a.pos (by omega)
+
+/-- An arena with no vertices weighs nothing. -/
+theorem weight_eq_zero_of_N_eq_zero {Λ : ℕ} (A : Arena Λ n₀) (hN : A.N = 0) :
+    weight A = 0 := by
+  have hbot := arena_bot_of_N_eq_zero A hN
+  show A.N + A.G.edgeSet.ncard = 0
+  rw [hbot, SimpleGraph.edgeSet_bot, Set.ncard_empty, hN]
+
+/-- **Empty clusters cost nothing, at every fuel**: the subtree of an
+empty child arena (both `driverChargeMS` branches immediately take the
+leaf charge at weight `0`). This is what lets the per-node comparison
+sum its slot terms over *all* centres while `dcostAux` skips the empty
+ones. -/
+theorem chargeTotal_driverChargeMS_of_N_eq_zero (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (covC : (j : ℕ) → Arena (S.pal j) n₀ → ACost String ℕ)
+    (fuel j : ℕ) (A : Arena (S.pal j) n₀) (hN : A.N = 0) :
+    chargeTotal (driverChargeMS S ord ℓp htabF covC fuel j A) = 0 := by
+  have hbot := arena_bot_of_N_eq_zero A hN
+  have hw := weight_eq_zero_of_N_eq_zero A hN
+  cases fuel with
+  | zero => rw [driverChargeMS, chargeTotal_botC, hw, Nat.mul_zero]
+  | succ fuel =>
+    rw [driverChargeMS, frameChargeMS, if_pos hbot, chargeTotal_botC, hw,
+      Nat.mul_zero]
+
+/-- The leaf constant of the schedule, uniform over the run's depths. -/
+noncomputable def botBound (S : Setup L) : ℕ :=
+  (Finset.range (S.depth + 1)).sup (fun j => 1 + (F S j).length) + 1
+
+theorem one_le_botBound (S : Setup L) : 1 ≤ botBound S := Nat.le_add_left 1 _
+
+theorem bot_le_botBound (S : Setup L) {j : ℕ} (hj : j ≤ S.depth) :
+    1 + (F S j).length ≤ botBound S := by
+  have h : j ∈ Finset.range (S.depth + 1) := Finset.mem_range.mpr (by omega)
+  exact (Finset.le_sup (f := fun j => 1 + (F S j).length) h).trans (Nat.le_succ _)
+
+/-- The node constant of the schedule, uniform over the run's depths —
+`DriverCost.chargeBound`'s mate for the program's ledger. -/
+noncomputable def nodeConstBound (S : Setup L) (ℓp : ℕ → ℕ) : ℕ :=
+  (Finset.range (S.depth + 1)).sup (fun j => nodeConst S j (ℓp j)) + 1
+
+theorem nodeConst_le_nodeConstBound (S : Setup L) (ℓp : ℕ → ℕ) {j : ℕ}
+    (hj : j ≤ S.depth) : nodeConst S j (ℓp j) ≤ nodeConstBound S ℓp := by
+  have h : j ∈ Finset.range (S.depth + 1) := Finset.mem_range.mpr (by omega)
+  exact (Finset.le_sup (f := fun j => nodeConst S j (ℓp j)) h).trans (Nat.le_succ _)
+
+/-- **The program's recurrence constant** — `DriverCost.KD`'s mate:
+`KP = f + (c+1)·nodeConstBound + (c+1) + botBound`, a function of the
+schedule, the history-round profile `ℓp`, the cover-degree constant `c`
+and the cover-time constant `f` alone — fixed before any graph. -/
+noncomputable def KP (S : Setup L) (ℓp : ℕ → ℕ) (c f : ℝ) : ℝ :=
+  f + (c + 1) * (nodeConstBound S ℓp : ℝ) + (c + 1) + (botBound S : ℝ)
+
+theorem one_le_KP (S : Setup L) (ℓp : ℕ → ℕ) {c f : ℝ} (hc : 0 ≤ c)
+    (hf : 0 ≤ f) : 1 ≤ KP S ℓp c f := by
+  have hbB : (1 : ℝ) ≤ (botBound S : ℝ) := by exact_mod_cast one_le_botBound S
+  have h1 : (0 : ℝ) ≤ (c + 1) * (nodeConstBound S ℓp : ℝ) :=
+    mul_nonneg (by linarith) (Nat.cast_nonneg _)
+  unfold KP
+  linarith
+
+open Classical in
+/-- **The level lift** — `DriverCost.dcostAux_le`'s downward induction,
+rerun on `chargeTotal ∘ driverChargeMS`: under the cover slot's total
+bound and the routine's wreach-degree bound, both quantified over
+subgraph copies of `Gn` (exactly the shape
+`exists_coverCharge_le`/`exists_wreach_degree_timedGreedyRoutine`
+supply on a class member), every node's whole MS-routed program budget
+obeys
+
+    total ≤ KP^{fuel+1} · ‖A‖^{1+(fuel+2)·2δ}.
+
+Per level: the node step is `frameChargeMS_chargeTotal_le`, the
+recursive column goes through the mass clause (`sum_child_weight_le`),
+empty clusters cost `0`, and the per-level exponent increment is `2δ`
+(the node envelope's own exponent). -/
+theorem driverChargeMS_chargeTotal_le (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (covC : (j : ℕ) → Arena (S.pal j) n₀ → ACost String ℕ)
+    {c f δ : ℝ} {nn : ℕ} {Gn : SimpleGraph (Fin nn)}
+    (hc : 0 ≤ c) (hf : 0 ≤ f) (hδ : 0 ≤ δ)
+    (hcov : ∀ (j : ℕ) (A : Arena (S.pal j) n₀), A.G ⊑ Gn →
+      (chargeTotal (covC j A) : ℝ) ≤ f * (A.N : ℝ) ^ (1 + 2 * δ))
+    (hdeg : ∀ (m : ℕ) (G : SimpleGraph (Fin m)), G ⊑ Gn →
+      ∀ v : Fin m, (wreach G ((ord m G).order) (2 * S.R) v).ncard
+        ≤ ⌈c * (m : ℝ) ^ δ⌉₊) :
+    ∀ (fuel j : ℕ), j + fuel ≤ S.depth → ∀ (A : Arena (S.pal j) n₀),
+      A.G ⊑ Gn → 1 ≤ weight A →
+      (chargeTotal (driverChargeMS S ord ℓp htabF covC fuel j A) : ℝ)
+        ≤ KP S ℓp c f ^ (fuel + 1)
+          * (weight A : ℝ) ^ (1 + ((fuel : ℝ) + 2) * (2 * δ)) := by
+  classical
+  have hbB : (1 : ℝ) ≤ (botBound S : ℝ) := by exact_mod_cast one_le_botBound S
+  have hncB : (0 : ℝ) ≤ (nodeConstBound S ℓp : ℝ) := Nat.cast_nonneg _
+  have hK1 : (1 : ℝ) ≤ KP S ℓp c f := by
+    have h1 : (0 : ℝ) ≤ (c + 1) * (nodeConstBound S ℓp : ℝ) :=
+      mul_nonneg (by linarith) hncB
+    unfold KP
+    linarith
+  have hKnn : (0 : ℝ) ≤ KP S ℓp c f := by linarith
+  -- the leaf charge fits under every level's bound
+  have hleaf : ∀ (jj : ℕ), jj ≤ S.depth → ∀ (B : Arena (S.pal jj) n₀),
+      1 ≤ weight B → ∀ (kk : ℕ) (e : ℝ), 0 ≤ e →
+      (chargeTotal (botC S jj B) : ℝ)
+        ≤ KP S ℓp c f ^ (kk + 1) * (weight B : ℝ) ^ (1 + e) := by
+    intro jj hjj B hWB kk e he
+    rw [chargeTotal_botC]
+    have hW1 : (1 : ℝ) ≤ (weight B : ℝ) := by exact_mod_cast hWB
+    have hpow : (weight B : ℝ) ≤ (weight B : ℝ) ^ (1 + e) := by
+      have h := Real.rpow_le_rpow_of_exponent_le hW1
+        (by linarith : (1 : ℝ) ≤ 1 + e)
+      rwa [Real.rpow_one] at h
+    have hbb : (1 : ℝ) + ((F S jj).length : ℝ) ≤ KP S ℓp c f := by
+      have h1 : (1 : ℝ) + ((F S jj).length : ℝ) ≤ (botBound S : ℝ) := by
+        exact_mod_cast bot_le_botBound S hjj
+      have h2 : (0 : ℝ) ≤ (c + 1) * (nodeConstBound S ℓp : ℝ) :=
+        mul_nonneg (by linarith) hncB
+      refine h1.trans ?_
+      unfold KP
+      linarith
+    have hKk : KP S ℓp c f ≤ KP S ℓp c f ^ (kk + 1) :=
+      le_self_pow₀ hK1 (Nat.succ_ne_zero kk)
+    push_cast
+    calc (1 + ((F S jj).length : ℝ)) * (weight B : ℝ)
+        ≤ KP S ℓp c f * (weight B : ℝ) ^ (1 + e) :=
+          mul_le_mul hbb hpow (Nat.cast_nonneg _) hKnn
+      _ ≤ KP S ℓp c f ^ (kk + 1) * (weight B : ℝ) ^ (1 + e) :=
+          mul_le_mul_of_nonneg_right hKk
+            (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+  intro fuel
+  induction fuel with
+  | zero =>
+    intro j hj A hcopy hWA
+    rw [driverChargeMS]
+    exact hleaf j (by omega) A hWA 0 _ (by positivity)
+  | succ fuel ih =>
+    intro j hj A hcopy hWA
+    rw [driverChargeMS]
+    by_cases hbot : A.G = ⊥
+    · rw [frameChargeMS, if_pos hbot]
+      exact hleaf j (by omega) A hWA (fuel + 1) _ (by positivity)
+    · have hdeg' : ∀ v : Fin A.N,
+          {u : Fin A.N | v ∈ cluster S A ((ord A.N A.G).order) u}.ncard
+            ≤ ⌈c * (A.N : ℝ) ^ δ⌉₊ := by
+        intro v
+        rw [cluster_fibre_eq]
+        exact hdeg A.N A.G hcopy v
+      have hnode := frameChargeMS_chargeTotal_le S ord j A (ℓp j) (htabF j A)
+        (fun B => Unroll.unrollAux S ord fuel (j + 1) B) (covC j A)
+        (fun B => driverChargeMS S ord ℓp htabF covC fuel (j + 1) B)
+        hc hf hδ hbot hWA (hcov j A hcopy) hdeg'
+      refine hnode.trans ?_
+      set W : ℝ := (weight A : ℝ) with hWdef
+      have hW1 : (1 : ℝ) ≤ W := by rw [hWdef]; exact_mod_cast hWA
+      have hWpos : (0 : ℝ) < W := lt_of_lt_of_le zero_lt_one hW1
+      set K : ℝ := KP S ℓp c f with hKdef
+      have hKL : (0 : ℝ) ≤ K ^ (fuel + 1) := pow_nonneg hKnn _
+      have hE : (0 : ℝ) ≤ W ^ (((fuel : ℝ) + 2) * (2 * δ)) :=
+        Real.rpow_nonneg hWpos.le _
+      -- each slot total, through the induction hypothesis / the zero
+      have hterm : ∀ u : Fin A.N,
+          (chargeTotal (driverChargeMS S ord ℓp htabF covC fuel (j + 1)
+            (childArena S A ((ord A.N A.G).order) u)) : ℝ)
+          ≤ (K ^ (fuel + 1) * W ^ (((fuel : ℝ) + 2) * (2 * δ))) *
+            (if (cluster S A ((ord A.N A.G).order) u).Nonempty
+              then (weight (childArena S A ((ord A.N A.G).order) u) : ℝ)
+              else 0) := by
+        intro u
+        by_cases hne : (cluster S A ((ord A.N A.G).order) u).Nonempty
+        · rw [if_pos hne]
+          have hWu := one_le_weight_child S A ((ord A.N A.G).order) hne
+          have hIH := ih (j + 1) (by omega)
+            (childArena S A ((ord A.N A.G).order) u)
+            ((childArena_isContained S A ((ord A.N A.G).order) u).trans hcopy)
+            hWu
+          have hWu1 : (1 : ℝ) ≤
+              (weight (childArena S A ((ord A.N A.G).order) u) : ℝ) := by
+            exact_mod_cast hWu
+          have hWupos : (0 : ℝ) <
+              (weight (childArena S A ((ord A.N A.G).order) u) : ℝ) :=
+            lt_of_lt_of_le zero_lt_one hWu1
+          have hWuW : (weight (childArena S A ((ord A.N A.G).order) u) : ℝ) ≤ W := by
+            rw [hWdef]
+            exact_mod_cast weight_child_le S A ((ord A.N A.G).order) u
+          have hsplit : (weight (childArena S A ((ord A.N A.G).order) u) : ℝ) ^
+              (1 + ((fuel : ℝ) + 2) * (2 * δ))
+              = (weight (childArena S A ((ord A.N A.G).order) u) : ℝ) *
+                (weight (childArena S A ((ord A.N A.G).order) u) : ℝ) ^
+                  (((fuel : ℝ) + 2) * (2 * δ)) := by
+            rw [Real.rpow_add hWupos, Real.rpow_one]
+          have hmono : (weight (childArena S A ((ord A.N A.G).order) u) : ℝ) ^
+              (((fuel : ℝ) + 2) * (2 * δ)) ≤ W ^ (((fuel : ℝ) + 2) * (2 * δ)) :=
+            Real.rpow_le_rpow hWupos.le hWuW (by positivity)
+          calc (chargeTotal (driverChargeMS S ord ℓp htabF covC fuel (j + 1)
+                (childArena S A ((ord A.N A.G).order) u)) : ℝ)
+              ≤ K ^ (fuel + 1) *
+                (weight (childArena S A ((ord A.N A.G).order) u) : ℝ) ^
+                  (1 + ((fuel : ℝ) + 2) * (2 * δ)) := hIH
+            _ = K ^ (fuel + 1) *
+                ((weight (childArena S A ((ord A.N A.G).order) u) : ℝ) *
+                  (weight (childArena S A ((ord A.N A.G).order) u) : ℝ) ^
+                    (((fuel : ℝ) + 2) * (2 * δ))) := by rw [hsplit]
+            _ ≤ K ^ (fuel + 1) *
+                ((weight (childArena S A ((ord A.N A.G).order) u) : ℝ) *
+                  W ^ (((fuel : ℝ) + 2) * (2 * δ))) := by
+                refine mul_le_mul_of_nonneg_left
+                  (mul_le_mul_of_nonneg_left hmono (Nat.cast_nonneg _)) hKL
+            _ = (K ^ (fuel + 1) * W ^ (((fuel : ℝ) + 2) * (2 * δ))) *
+                (weight (childArena S A ((ord A.N A.G).order) u) : ℝ) := by ring
+        · rw [if_neg hne, mul_zero]
+          have hN0 : (childArena S A ((ord A.N A.G).order) u).N = 0 := by
+            have hemp : cluster S A ((ord A.N A.G).order) u = ∅ :=
+              Set.not_nonempty_iff_eq_empty.mp hne
+            show childN S A ((ord A.N A.G).order) u = 0
+            show (cluster S A ((ord A.N A.G).order) u).ncard = 0
+            rw [hemp, Set.ncard_empty]
+          rw [chargeTotal_driverChargeMS_of_N_eq_zero S ord ℓp htabF covC
+            fuel (j + 1) _ hN0]
+          simp
+      -- the recursive column, against the mass clause
+      have hrec : ∑ u : Fin A.N,
+          (chargeTotal (driverChargeMS S ord ℓp htabF covC fuel (j + 1)
+            (childArena S A ((ord A.N A.G).order) u)) : ℝ)
+          ≤ (K ^ (fuel + 1) * W ^ (((fuel : ℝ) + 2) * (2 * δ))) *
+            ((c + 1) * W ^ ((1 : ℝ) + δ)) := by
+        calc ∑ u : Fin A.N,
+            (chargeTotal (driverChargeMS S ord ℓp htabF covC fuel (j + 1)
+              (childArena S A ((ord A.N A.G).order) u)) : ℝ)
+            ≤ ∑ u : Fin A.N,
+              (K ^ (fuel + 1) * W ^ (((fuel : ℝ) + 2) * (2 * δ))) *
+                (if (cluster S A ((ord A.N A.G).order) u).Nonempty
+                  then (weight (childArena S A ((ord A.N A.G).order) u) : ℝ)
+                  else 0) := Finset.sum_le_sum fun u _ => hterm u
+          _ = (K ^ (fuel + 1) * W ^ (((fuel : ℝ) + 2) * (2 * δ))) *
+              ∑ u : Fin A.N,
+                (if (cluster S A ((ord A.N A.G).order) u).Nonempty
+                  then (weight (childArena S A ((ord A.N A.G).order) u) : ℝ)
+                  else 0) := by rw [Finset.mul_sum]
+          _ ≤ (K ^ (fuel + 1) * W ^ (((fuel : ℝ) + 2) * (2 * δ))) *
+              ((c + 1) * W ^ ((1 : ℝ) + δ)) := by
+              refine mul_le_mul_of_nonneg_left ?_ (mul_nonneg hKL hE)
+              exact sum_child_weight_le S A ((ord A.N A.G).order) hc hδ hWA hdeg'
+      -- the exponent bookkeeping
+      have hEsplit : W ^ (((fuel : ℝ) + 2) * (2 * δ)) * W ^ ((1 : ℝ) + δ)
+          = W ^ (1 + (δ + ((fuel : ℝ) + 2) * (2 * δ))) := by
+        rw [← Real.rpow_add hWpos]
+        congr 1
+        ring
+      have hE1 : W ^ (1 + (δ + ((fuel : ℝ) + 2) * (2 * δ)))
+          ≤ W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) :=
+        Real.rpow_le_rpow_of_exponent_le hW1
+          (by nlinarith [hδ, Nat.cast_nonneg (α := ℝ) fuel])
+      have hEa : W ^ ((1 : ℝ) + 2 * δ)
+          ≤ W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) :=
+        Real.rpow_le_rpow_of_exponent_le hW1
+          (by nlinarith [hδ, Nat.cast_nonneg (α := ℝ) fuel])
+      have hNE : (0 : ℝ) ≤ W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) :=
+        Real.rpow_nonneg hWpos.le _
+      -- the node constant, uniformized
+      have hncj : (nodeConst S j (ℓp j) : ℝ) ≤ (nodeConstBound S ℓp : ℝ) := by
+        exact_mod_cast nodeConst_le_nodeConstBound S ℓp
+          (show j ≤ S.depth by omega)
+      have hamaxnn : (0 : ℝ) ≤ f + (c + 1) * (nodeConstBound S ℓp : ℝ) := by
+        have h1 : (0 : ℝ) ≤ (c + 1) * (nodeConstBound S ℓp : ℝ) :=
+          mul_nonneg (by linarith) hncB
+        linarith
+      have hamax : f + (c + 1) * (nodeConst S j (ℓp j) : ℝ)
+          ≤ f + (c + 1) * (nodeConstBound S ℓp : ℝ) := by
+        have h1 : (c + 1) * (nodeConst S j (ℓp j) : ℝ)
+            ≤ (c + 1) * (nodeConstBound S ℓp : ℝ) :=
+          mul_le_mul_of_nonneg_left hncj (by linarith)
+        linarith
+      -- the chosen K absorbs the step
+      have hKstep : (f + (c + 1) * (nodeConstBound S ℓp : ℝ))
+          + (c + 1) * K ^ (fuel + 1) ≤ K ^ (fuel + 1 + 1) := by
+        have hK1k : (1 : ℝ) ≤ K ^ (fuel + 1) := one_le_pow₀ hK1
+        have hKA : (f + (c + 1) * (nodeConstBound S ℓp : ℝ)) + (c + 1) ≤ K := by
+          rw [hKdef]
+          unfold KP
+          linarith
+        calc (f + (c + 1) * (nodeConstBound S ℓp : ℝ)) + (c + 1) * K ^ (fuel + 1)
+            ≤ (f + (c + 1) * (nodeConstBound S ℓp : ℝ)) * K ^ (fuel + 1)
+              + (c + 1) * K ^ (fuel + 1) := by
+              nlinarith [hK1k, hamaxnn]
+          _ = ((f + (c + 1) * (nodeConstBound S ℓp : ℝ)) + (c + 1))
+              * K ^ (fuel + 1) := by ring
+          _ ≤ K * K ^ (fuel + 1) :=
+              mul_le_mul_of_nonneg_right hKA (by linarith)
+          _ = K ^ (fuel + 1 + 1) := by ring
+      -- assemble
+      have hstep1 : (f + (c + 1) * (nodeConst S j (ℓp j) : ℝ)) * W ^ ((1 : ℝ) + 2 * δ)
+          ≤ (f + (c + 1) * (nodeConstBound S ℓp : ℝ))
+            * W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) :=
+        mul_le_mul hamax hEa (Real.rpow_nonneg hWpos.le _) hamaxnn
+      have hstep2 : (K ^ (fuel + 1) * W ^ (((fuel : ℝ) + 2) * (2 * δ))) *
+            ((c + 1) * W ^ ((1 : ℝ) + δ))
+          ≤ (c + 1) * K ^ (fuel + 1)
+            * W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) := by
+        calc (K ^ (fuel + 1) * W ^ (((fuel : ℝ) + 2) * (2 * δ))) *
+              ((c + 1) * W ^ ((1 : ℝ) + δ))
+            = (c + 1) * K ^ (fuel + 1)
+              * (W ^ (((fuel : ℝ) + 2) * (2 * δ)) * W ^ ((1 : ℝ) + δ)) := by ring
+          _ = (c + 1) * K ^ (fuel + 1)
+              * W ^ (1 + (δ + ((fuel : ℝ) + 2) * (2 * δ))) := by rw [hEsplit]
+          _ ≤ (c + 1) * K ^ (fuel + 1)
+              * W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) := by
+              refine mul_le_mul_of_nonneg_left hE1 ?_
+              exact mul_nonneg (by linarith) hKL
+      have hcast2 : ((fuel + 1 : ℕ) : ℝ) + 2 = ((fuel : ℝ) + 1) + 2 := by
+        push_cast
+        ring
+      rw [hcast2]
+      calc (f + (c + 1) * (nodeConst S j (ℓp j) : ℝ)) * W ^ ((1 : ℝ) + 2 * δ)
+            + ∑ u : Fin A.N,
+                (chargeTotal (driverChargeMS S ord ℓp htabF covC fuel (j + 1)
+                  (childArena S A ((ord A.N A.G).order) u)) : ℝ)
+          ≤ (f + (c + 1) * (nodeConstBound S ℓp : ℝ))
+              * W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ))
+            + (c + 1) * K ^ (fuel + 1)
+              * W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) :=
+            add_le_add hstep1 (hrec.trans hstep2)
+        _ = ((f + (c + 1) * (nodeConstBound S ℓp : ℝ)) + (c + 1) * K ^ (fuel + 1))
+            * W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) := by ring
+        _ ≤ K ^ (fuel + 1 + 1) * W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) :=
+            mul_le_mul_of_nonneg_right hKstep hNE
 
 end Lax3Proofs.Prog
