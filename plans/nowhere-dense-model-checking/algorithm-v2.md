@@ -771,8 +771,10 @@ condition, so it is carried.
 at `c_D = 1, δ = ½, N = 2`, `D(N)·N = 4 > 2^{1.5} = 2.83`. The surviving Lean
 produces exactly this shape (`CoverDegree.lean:366-378` concludes at
 `⌈c·m^δ⌉₊`). The edge half of (★) — an edge of `A[X_u]` lies in `≤ D` clusters
-because both endpoints must — has **no counterpart in the surviving layer**
-(`CoverDegree.lean:512/524/535` are pure vertex counts) and is an owed lemma.
+because both endpoints must — ⟨C⟩ **landed as E3**:
+`CoverEdgeSum.sum_clusterWeight_le_rpow`, ceiling carried into `c_D + 1`
+(`CoverDegree.lean:512/524/535` are pure vertex counts, which is why it was
+owed until then).
 
 **Standing hypotheses:** `N ≥ 1` and `c_D ≤ c`. ⟨C⟩ *That is the whole list.
 There is no lower bound on `c`.*

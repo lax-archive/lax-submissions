@@ -55,6 +55,14 @@ import Lax3Proofs.DriverArena
 import Lax3Proofs.DriverCorrect
 import Lax3Proofs.DriverCost
 import Lax3Proofs.Driver
+import Lax3Proofs.Unroll
+
+-- The machine-level routines (E12): the guarded greedy scatter, the
+-- edgeless-leaf evaluator, and BFS with supports at the restricted arena.
+import Lax3Proofs.ImplScatter
+import Lax3Proofs.ImplBot
+import Lax3Proofs.ImplBfs
+import Lax3Proofs.Impl
 
 -- The proofs package of submission Lax3.
 --
