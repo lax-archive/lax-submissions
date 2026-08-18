@@ -38,8 +38,8 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F4 | the driver program (ℓ+1 levels) | done | w9 | 7ed61d3 | `driverProg_le_spec` by level induction; `mcProg_headline` at the axiom's semantic object; fuel-0 edged branch dead on the class |
 | F5 | the cover pipeline's cost, proved | done | w9 | 7ed61d3 | **`coverOrderingTime_of_nowhereDense`** with the honest witness `timedGreedyRoutine`; true exponent `1+δ`; no sort (the peel ranks); vacuity guarded (`le_chainCharge`) |
 | F6 | codegen to the machine — **split** | done (part) | w10 | 9b4cdfa | `mc_computesInTime_of_solveSpec`: ONE named obligation (`SolveSpec`) from the axiom; parse `Spec` discharged; `mcD` verbatim; word-size condition spent (`mcB = q(|x|+1)²`) |
-| F6b | arena materialization + profiles reroute + root eval | ready | — | — | from `CsrIn` via F2's bridges; swap the one program stage to `profilesCMS`/`recordProfilesMS_eq_childCol`; `mcProg`'s root shape; block-0 `botEval` route with the dead-branch guard |
-| F6c | the `ℓ+1` driver blocks (Sepref descent) | ready | — | — | the campaign's largest remaining block: per-frame IMP+ `Spec`s against the landed `Impl*` specs, `EndToEnd.lean` §4 route or direct `Spec`-kit; expect multiple runs |
+| F6b | arena materialization + profiles reroute + root eval | wip | w11 | — | from `CsrIn` via F2's bridges; swap the one program stage to `profilesCMS`/`recordProfilesMS_eq_childCol`; `mcProg`'s root shape; block-0 `botEval` route with the dead-branch guard |
+| F6c | the `ℓ+1` driver blocks (Sepref descent) | wip | w11 | — | the campaign's largest remaining block: per-frame IMP+ `Spec`s against the landed `Impl*` specs, `EndToEnd.lean` §4 route or direct `Spec`-kit; expect multiple runs |
 | F7 | discharge the endorsed axiom | waiting | — | — | needs F6b, F6c; then: instantiate `SolveSpec`, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close; `conclusion:` header style |
 
 ## Campaign log
