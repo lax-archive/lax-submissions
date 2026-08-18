@@ -75,7 +75,11 @@ import Lax3Proofs.Headline
 -- front end, and the driver's frame as one NREST program.
 import Lax3Proofs.CoverRoutine
 import Lax3Proofs.ImplFrontEnd
+import Lax3Proofs.ImplMultiSource
 import Lax3Proofs.ProgFrame
+import Lax3Proofs.ProgDriver
+import Lax3Proofs.ProgCoverCharge
+import Lax3Proofs.ProgCover
 
 -- The proofs package of submission Lax3.
 --
