@@ -13,11 +13,11 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 | leaf | what it closes | status | wave | commit | note |
 |---|---|---|---|---|---|
-| E0 | cover time bound stated as an assumption; §8/§9 rewrite | wip | w1 | — | unblocked 2026-08-17: `references/nodm05/` + `nodm05i/` are the two NOdM papers GKS defer to; the chain now bottoms out in a proof |
-| E1 | cover clusters are path-closed (§5) | wip | w1 | — | priced at ~10 lines, untested |
-| E2 | `ctr` and the π-min identity (§4) | wip | w1 | — | priced at ~6 lines, untested |
-| E3 | the edge half of (★) (§7) | wip | w1 | — | no counterpart in the surviving layer |
-| E4 | the cost recurrence, amended and slackened (§7) | waiting | — | — | needs E3, E0. `c ≥ 6` must **disappear** — see plan |
+| E0 | cover time bound stated as an assumption; §8/§9 rewrite | done | w1 | 8709c19 | `CoverSpec.CoverOrderingTime`; only the `time` field is assumed, cover/degree derived; §8 0b + §9 O7 rewritten, pins spot-checked |
+| E1 | cover clusters are path-closed (§5) | done | w1 | 8709c19 | `ClusterPaths`; delivered through to the induced graph, ~110 lines against the ~10-line estimate |
+| E2 | `ctr` and the π-min identity (§4) | done | w1 | 8709c19 | `CoverCentres`; `ctr` is noncomputable (`Finset.min'` via `π`) — E12 must implement it; ~217 lines against the ~6-line estimate |
+| E3 | the edge half of (★) (§7) | done | w1 | 8709c19 | `CoverEdgeSum.sum_clusterWeight_le_rpow`; hypotheses exactly `0 ≤ c_D`, `0 ≤ δ`, `1 ≤ ‖A‖`; ceiling carried into `c_D+1` |
+| E4 | the cost recurrence, amended and slackened (§7) | ready | — | — | E3, E0 landed. `c ≥ 6` must **disappear** — see plan |
 | E5 | `ReachedR` generalized to `S`-moves (§8.2) | ready | — | — | five analogue lemmas; `hbatch` is an equality, not `⊆` |
 | E6 | carrier transport for `ReachedR` (§9) | waiting | — | — | needs E5 |
 | E7 | the compaction lemma (§5 step 3′, §8.4a) | ready | — | — | much smaller than Rev 3 priced it (D3) |
@@ -82,3 +82,33 @@ Also measured: a cold-ish full `leaf-gate.sh` is ~10 min (concepts 25 s, proofs
 1 m31 s, inspector 36 s, plus the two prior `lake build`s); a re-run of the
 `lax build` audit alone against a warm tree is ~16 s. Budget the gate per
 landing, not per leaf.
+
+### 2026-08-18 — w1 lands: the cover layer owes nothing but time (`8709c19`)
+
+What is now true: the four guarantees §4/§5 demand of `cover` beyond the
+endorsed `IsNeighborhoodCover` all exist proofs-side — path-closure into the
+induced graph (E1), a named `ctr` with the π-min identity at the two distinct
+radii (E2), the edge half of (★) with the ceiling absorbed into `c_D+1` (E3) —
+and the one thing nobody can prove from material in-repo, the ordering phase's
+step count, is a hypothesis with a name (`CoverOrderingTime`, E0) rather than a
+gap with a citation. E4's dependencies are both landed; wave 2 is E4, E5, E7,
+E8, E11.
+
+Findings worth keeping:
+
+- **The line-count estimates were off by an order of magnitude** — "~6 lines"
+  (E2) landed at ~217, "~10 lines" (E1) at ~110. The *arguments* were exactly
+  as priced (the math was right); the factor is statements, docstrings, and
+  the private `withinDist_of_mem_support` E2 had to re-prove because
+  `CoverConstruction` hides it. Price future leaves accordingly.
+- `ctr` is noncomputable as defined. Fine for the abstract layer; E12 owes the
+  computed version read off the cover sweep.
+- E0 went past its packet in the right direction: `CoverDegree.AugChainData`
+  lets the whole cover *structure* be derived rather than assumed, so the
+  assumption surface is exactly one field (`IsCoverOrdering.time`), plus two
+  controls (binder-order rationale, satisfiability on the empty class).
+- Worker-report channel: all four completion notifications were lost;
+  supervision recovered entirely from the files, which is what the review
+  order prescribes anyway. E3's worker left five mechanical build errors
+  (a misspelled lemma name, two `noncomputable`s, two casts through a `set`
+  binder) — fixed at review, smaller than a correction round-trip.
