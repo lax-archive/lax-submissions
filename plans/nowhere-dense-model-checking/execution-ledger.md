@@ -33,14 +33,29 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F1 | ordering routine + `data` discharge | done | w8 | 2206f72 | **no hypothesis at all**; minimality via `sInf`; new `greedyStep` (landed `tightStep` fails `PiIncreasing` on greedy rounds); F5 owes exactly `time` |
 | F2 | the CSR front end | done | w8 | 2206f72 | round trip is a graph **equality**; `chargeParse` total = `x.length` exactly |
 | F3 | the frame program (NREST) | done | w8 | 2206f72 | `frameProg_le_spec`: the table IS `frameEval` given the two slots; charge ledger named; comparison deferred to F3c |
-| F3b | multi-source profiles via a virtual source | wip | w9 | — | consumer-side `H_c` (one added vertex adjacent to the class), landed single-source BFS, distance bridge `dist_{H_c}(s*,z) ≤ b+1 ↔ ∃y∈class, dist_H(y,z) ≤ b`; restores §6.3's `m+L` count; marker class special-cased free (E12d note) |
-| F3c | `frameCharge` vs `frameCost`, at the node | waiting | — | — | needs F3b; state `dcost_node_le`-style at the node (restrict column fits only the aggregate — `K_{3,n−3}`) |
-| F4 | the driver program (ℓ+1 levels) | wip | w9 | — | F3's slot interfaces landed; cover slot stays parametric until F5 |
-| F5 | the cover pipeline's cost, proved | wip | w9 | — | F1 landed (chain shape: `greedyChain`, per-level `elimBound`+peel+sort+arc enumeration — the `O(md²·n)` shape); owes the program accounting into `covC` |
-| F6 | codegen to the machine | waiting | — | — | needs F2, F4; precedent `Codegen/Examples/EndToEnd.lean` |
+| F3b | multi-source profiles via a virtual source | done | w9 | 7ed61d3 | bridge survives source-revisits (strong recursion); `recordProfilesMS_eq_childCol` against the frozen target; marker free; §6.3's `(m+L)` shape restored |
+| F3c | `frameCharge` vs `frameCost`, at the node | ready | — | — | F3b landed; reroute `frameCharge`'s profile column through `profilesChargeMS`; compare at the node, `ord := timedGreedyRoutine` |
+| F4 | the driver program (ℓ+1 levels) | done | w9 | 7ed61d3 | `driverProg_le_spec` by level induction; `mcProg_headline` at the axiom's semantic object; fuel-0 edged branch dead on the class |
+| F5 | the cover pipeline's cost, proved | done | w9 | 7ed61d3 | **`coverOrderingTime_of_nowhereDense`** with the honest witness `timedGreedyRoutine`; true exponent `1+δ`; no sort (the peel ranks); vacuity guarded (`le_chainCharge`) |
+| F6 | codegen to the machine | ready | — | — | F2, F4, F5 landed; cover slot = `coverProg`; the fuel-0 dead branch routed around via `memLeaf_eq_bot`; precedent `EndToEnd.lean` |
 | F7 | discharge the endorsed axiom | waiting | — | — | needs everything; `conclusion:` header style |
 
 ## Campaign log
+
+### 2026-08-18 — w9 lands, and the design's one unproved claim is unproved no more (`7ed61d3`)
+
+**`coverOrderingTime_of_nowhereDense` is a theorem.** O7 — "the one that
+decides the project" — is decided: the cover's time bound, assumed since E0,
+is discharged by the honest witness (`timedGreedyRoutine`, `steps :=
+chainCharge`), at the true exponent `1+δ` (the interface's `1+2δ` a
+weakening), with the greedy chain's in-degree bound found already landed by a
+route the plan had mislabeled (`greedy_chain_joint_inDegLE`, not the wcol
+chain's `:1076`). Vacuity honestly flagged: the Prop was always cheaply true
+at `steps := 0`; the deliverable is the witness, and `le_chainCharge` pins it
+as real. F3's profiles blocker dissolved consumer-side (F3b's virtual source;
+the bridge's source-revisit subtlety handled by strong recursion). F4
+composed the levels and landed `mcProg_headline`. Wave 10 is F3c + F6; then
+F7 discharges the endorsed axiom.
 
 ### 2026-08-18 — the discharge campaign opens (Jan's authorization)
 
