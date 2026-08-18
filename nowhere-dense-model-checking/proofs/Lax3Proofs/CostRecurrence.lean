@@ -2,6 +2,7 @@ import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Tactic.Ring
+import Lax3Proofs.CoverEdgeSum
 
 /-!
 **Status after the 2026-08-17 prune.** This file survived the deletion of the
@@ -14,14 +15,16 @@ throughout the prose below (`RamDriverRoot.*`, `turnCost`, the `hK*` slots)
 are deleted; read those names as a record of the shape the recursion was
 extracted from, not as live references.
 
-Two adjustments the redesign needs, and neither is in the file yet:
-`exists_driverCostsSigma` assumes each level's own charge is **linear** in the
-arena weight (`hKo : Ko j m ≤ ko j * (m + 1)`), whereas the redesign's cover
-phase is `c · N^(1+δ)`; and it splits `ε` as `ε/ℓ` where the redesign splits
-it as `ε/(ℓ+1)`, because the redesign charges the leaf level too. Generalizing
-`hKo`/`hKc` from arena-linear to `N^(1+δ)` and re-doing the exponent split is
-`algorithm-v2.md` §8 step 1 — which is therefore an amendment of a compiled
-proof, not new work.
+Two adjustments the redesign needed are now in the file, in the **Rev-5
+recurrence** section at the bottom (2026-08-18): `exists_driverCostsSigma`
+assumes each level's own charge is **linear** in the arena weight
+(`hKo : Ko j m ≤ ko j * (m + 1)`), whereas the redesign's cover phase is
+`a · N^(1+2δ)`; and it splits `ε` as `ε/ℓ` where Rev 5 splits it as
+`ε/(ℓ+2)` — `ℓ+1` levels of recursion each spending one `δ` through (★),
+plus the cover's own second `δ`. The Rev-5 section (`IsCostRecurrence`,
+`cost_le_of_isCostRecurrence`, `cost_root_le`, `chosenK_step`) carries both,
+with the slackened `K := c_D + 1 + A` of §3. `exists_driverCostsSigma` and
+`sigma_root_almostLinear` stay exactly as landed for their consumers.
 -/
 
 /-!
@@ -663,5 +666,323 @@ theorem sigma_root_almostLinear {c ε : ℝ} (hc : 0 ≤ c) (hε : 0 < ε) {ℓ 
 -- **Refuted**: and the ceiling alone already breaks the naive reading
 -- `⌈c · n ^ (ε/ℓ)⌉ ^ ℓ ≤ c ^ ℓ · n ^ ε`, at `n = 250` (`⌈√250⌉ = 16`).
 #guard ¬ (16 ^ 2 ≤ 1 ^ 2 * 250)
+
+/-! ### The Rev-5 recurrence: `a·N^(1+2δ)` cover charge, slack `K`, `ε/(ℓ+2)` split
+
+`algorithm-v2.md` §7, the ⟨C⟩ Rev-5 form (2026-08-17).  Per node at
+depth `j < ℓ` with arena size `N ≥ 1`,
+
+```
+T j N ≤ a·N^(1+2δ) + c·Σ_u N_u + Σ_u T (j+1) N_u,
+(★)  Σ_u N_u ≤ (c_D + 1)·N^(1+δ),   1 ≤ N_u ≤ N,
+```
+
+and at the bottom the leaf is charged `T ℓ N ≤ c·N`.  The claim is
+`T j N ≤ K^(L+1)·N^(1+(L+2)δ)` with `L = ℓ - j`, by downward induction:
+the recursion term spends one `δ` through `(★)` and picks up `(c_D+1)`,
+the children and cover terms are absorbed at the same exponent, and the
+step closes iff `K^L·(c_D+1) + A ≤ K^(L+1)` with `A = a + c·(c_D+1)` —
+which §3's *choice* `K := c_D + 1 + A` satisfies at every `L` with
+nothing left to check (`chosenK_step`; at `L = 0` it is an equality,
+so no side condition on any constant can hide in it).
+
+The standing hypotheses are `1 ≤ N`, `c_D ≤ c`, and nonnegativity of
+`a`, `c_D`, `δ` — **there is no lower bound on `c`** — and the ceiling's
+`+1` is carried inside `(★)`'s constant `c_D + 1`, never dropped.  Every
+constant is quantified before the arena: `a`, `c`, `c_D`, `δ`, `K` are
+fixed by the statement before `N` is mentioned.
+
+There are `ℓ+2` levels of exponent to divide `ε` among — `ℓ+1` levels of
+recursion each spending one `δ` through `(★)`, plus the cover's own
+second `δ` — so the root corollary reads `δ = ε/(ℓ+2)` and concludes
+`T 0 n ≤ K^(ℓ+1)·n^(1+ε)` (`cost_root_le`), on the honest cast
+`(n : ℝ) ^ (1 + ε)` itself: the induction runs entirely on `1 ≤ N`, so
+no `n + 1` padding is needed anywhere.
+
+This section *amends* the Σ shape above, it does not replace it:
+`exists_driverCostsSigma` charges a level linearly in its arena and
+`sigma_root_almostLinear` splits `ε` as `ε/ℓ`; both stay exactly as
+landed.  Here the per-node charge is the honest cover exponent
+`a·N^(1+2δ)` — the `steps ≤ f·m^(1+2δ)` shape of
+`CoverSpec.IsCoverOrdering.time`, same `δ`, same exponent — and the
+bridge lemma at the end connects `(★)` to
+`CoverEdgeSum.sum_clusterWeight_le_rpow`, whose conclusion is `(★)`'s
+edge-inclusive form. -/
+
+/-- **The Rev-5 node recurrence** (`algorithm-v2.md` §7).  An abstract
+cost `T : ℕ → ℕ → ℝ` (depth, arena size) satisfies it when the leaf
+level is charged linearly (`leaf`) and every node above the leaf level
+exhibits child arenas `Nu 0, …, Nu (t-1)` — each nonempty and no larger
+than the node's own arena — whose total mass obeys `(★)` with the
+ceiling's `+1` inside the constant `c_D + 1`, such that the node's cost
+is at most cover charge + children charge + recursive charge (`node`).
+
+A caller with concrete per-node data discharges `node` by handing over
+that node's actual child list, reindexed over `range t`; empty children
+are not recursed on (the recursion never runs on an empty arena), so
+they are dropped before the count `t` is taken — dropping them only
+lowers both sides. -/
+structure IsCostRecurrence (a c cD δ : ℝ) (ℓ : ℕ) (T : ℕ → ℕ → ℝ) : Prop where
+  leaf : ∀ N : ℕ, 1 ≤ N → T ℓ N ≤ c * N
+  node : ∀ j, j < ℓ → ∀ N : ℕ, 1 ≤ N →
+    ∃ t : ℕ, ∃ Nu : ℕ → ℕ,
+      (∀ u, u < t → 1 ≤ Nu u ∧ Nu u ≤ N) ∧
+      (∑ u ∈ range t, (Nu u : ℝ)) ≤ (cD + 1) * (N : ℝ) ^ (1 + δ) ∧
+      T j N ≤ a * (N : ℝ) ^ (1 + 2 * δ) + c * (∑ u ∈ range t, (Nu u : ℝ)) +
+        ∑ u ∈ range t, T (j + 1) (Nu u)
+
+/-- **The downward induction, solved and slackened** (§7's Claim).  Any
+cost satisfying the Rev-5 recurrence is bounded at every level by
+`K^(L+1) · N^(1+(L+2)δ)`, `L = ℓ - j`, for **any** `K` satisfying the
+step condition `K^L·(c_D+1) + (a + c·(c_D+1)) ≤ K^(L+1)` at every `L`.
+The only hypotheses beyond the step condition are `c_D ≤ c` and
+nonnegativity of `a`, `c_D`, `δ`; there is no lower bound on `c`, and
+`c ≤ K` and `1 ≤ K` are *derived* from the step condition at `L = 0`. -/
+theorem cost_le_of_isCostRecurrence {a c cD δ K : ℝ} {ℓ : ℕ} {T : ℕ → ℕ → ℝ}
+    (ha : 0 ≤ a) (hcD : 0 ≤ cD) (hccD : cD ≤ c) (hδ : 0 ≤ δ)
+    (hrec : IsCostRecurrence a c cD δ ℓ T)
+    (hK : ∀ L : ℕ, K ^ L * (cD + 1) + (a + c * (cD + 1)) ≤ K ^ (L + 1)) :
+    ∀ j, j ≤ ℓ → ∀ N : ℕ, 1 ≤ N →
+      T j N ≤ K ^ (ℓ - j + 1) * (N : ℝ) ^ (1 + (((ℓ - j : ℕ) : ℝ) + 2) * δ) := by
+  have hc : 0 ≤ c := le_trans hcD hccD
+  -- the step condition at `L = 0` already dominates `c` and `1`
+  have hK0 := hK 0
+  rw [pow_zero, pow_one, one_mul] at hK0
+  have hcK : c ≤ K := by nlinarith [mul_nonneg hc hcD]
+  have hK1 : (1 : ℝ) ≤ K := by nlinarith [mul_nonneg hc hcD]
+  have hKnn : (0 : ℝ) ≤ K := le_trans zero_le_one hK1
+  -- downward induction, by the fuel `L = ℓ - j`
+  have key : ∀ L : ℕ, ∀ j, j + L = ℓ → ∀ N : ℕ, 1 ≤ N →
+      T j N ≤ K ^ (L + 1) * (N : ℝ) ^ (1 + ((L : ℝ) + 2) * δ) := by
+    intro L
+    induction L with
+    | zero =>
+        intro j hj N hN
+        have hjeq : j = ℓ := by omega
+        simp only [Nat.cast_zero, zero_add, pow_one]
+        have hN1 : (1 : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN
+        have hexp : (N : ℝ) ^ (1 : ℝ) ≤ (N : ℝ) ^ (1 + 2 * δ) :=
+          Real.rpow_le_rpow_of_exponent_le hN1 (by nlinarith)
+        rw [Real.rpow_one] at hexp
+        calc T j N = T ℓ N := by rw [hjeq]
+          _ ≤ c * (N : ℝ) := hrec.leaf N hN
+          _ ≤ K * (N : ℝ) ^ (1 + 2 * δ) := mul_le_mul hcK hexp (Nat.cast_nonneg N) hKnn
+    | succ L ih =>
+        intro j hj N hN
+        have hjℓ : j < ℓ := by omega
+        obtain ⟨t, Nu, hchild, hmass, hT⟩ := hrec.node j hjℓ N hN
+        have hN1 : (1 : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN
+        have hNpos : (0 : ℝ) < (N : ℝ) := lt_of_lt_of_le zero_lt_one hN1
+        have hL0 : (0 : ℝ) ≤ (L : ℝ) := Nat.cast_nonneg L
+        have hLδ : (0 : ℝ) ≤ ((L : ℝ) + 2) * δ := by nlinarith [mul_nonneg hL0 hδ]
+        have hKLnn : (0 : ℝ) ≤ K ^ (L + 1) := pow_nonneg hKnn _
+        have hPnn : (0 : ℝ) ≤ (N : ℝ) ^ (((L : ℝ) + 2) * δ) :=
+          Real.rpow_nonneg hNpos.le _
+        push_cast
+        set S : ℝ := ∑ u ∈ range t, ((Nu u : ℕ) : ℝ) with hS
+        -- one child, through the induction hypothesis and `1 ≤ Nu u ≤ N`
+        have hterm : ∀ u ∈ range t, T (j + 1) (Nu u) ≤
+            (K ^ (L + 1) * (N : ℝ) ^ (((L : ℝ) + 2) * δ)) * ((Nu u : ℕ) : ℝ) := by
+          intro u hu
+          rw [Finset.mem_range] at hu
+          obtain ⟨h1, h2⟩ := hchild u hu
+          have h1' : (1 : ℝ) ≤ ((Nu u : ℕ) : ℝ) := by exact_mod_cast h1
+          have h2' : ((Nu u : ℕ) : ℝ) ≤ (N : ℝ) := by exact_mod_cast h2
+          have hpos : (0 : ℝ) < ((Nu u : ℕ) : ℝ) := lt_of_lt_of_le zero_lt_one h1'
+          have hsplit : ((Nu u : ℕ) : ℝ) ^ (1 + ((L : ℝ) + 2) * δ)
+              = ((Nu u : ℕ) : ℝ) * ((Nu u : ℕ) : ℝ) ^ (((L : ℝ) + 2) * δ) := by
+            rw [Real.rpow_add hpos, Real.rpow_one]
+          have hmono : ((Nu u : ℕ) : ℝ) ^ (((L : ℝ) + 2) * δ)
+              ≤ (N : ℝ) ^ (((L : ℝ) + 2) * δ) :=
+            Real.rpow_le_rpow hpos.le h2' hLδ
+          calc T (j + 1) (Nu u)
+              ≤ K ^ (L + 1) * ((Nu u : ℕ) : ℝ) ^ (1 + ((L : ℝ) + 2) * δ) :=
+                ih (j + 1) (by omega) (Nu u) h1
+            _ = K ^ (L + 1) *
+                (((Nu u : ℕ) : ℝ) * ((Nu u : ℕ) : ℝ) ^ (((L : ℝ) + 2) * δ)) := by
+                rw [hsplit]
+            _ ≤ K ^ (L + 1) *
+                (((Nu u : ℕ) : ℝ) * (N : ℝ) ^ (((L : ℝ) + 2) * δ)) := by
+                exact mul_le_mul_of_nonneg_left
+                  (mul_le_mul_of_nonneg_left hmono (Nat.cast_nonneg _)) hKLnn
+            _ = (K ^ (L + 1) * (N : ℝ) ^ (((L : ℝ) + 2) * δ)) * ((Nu u : ℕ) : ℝ) := by
+                ring
+        have hrecsum : ∑ u ∈ range t, T (j + 1) (Nu u)
+            ≤ (K ^ (L + 1) * (N : ℝ) ^ (((L : ℝ) + 2) * δ)) * S := by
+          rw [hS, Finset.mul_sum]
+          exact Finset.sum_le_sum hterm
+        -- `(★)` spends its `δ`, and the exponents collapse at `1 ≤ N`
+        have hEsplit : (N : ℝ) ^ (((L : ℝ) + 2) * δ) * (N : ℝ) ^ (1 + δ)
+            = (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) := by
+          rw [← Real.rpow_add hNpos]
+          congr 1
+          ring
+        have hEc : (N : ℝ) ^ (1 + δ) ≤ (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) :=
+          Real.rpow_le_rpow_of_exponent_le hN1 (by nlinarith [mul_nonneg hL0 hδ])
+        have hEa : (N : ℝ) ^ (1 + 2 * δ) ≤ (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) :=
+          Real.rpow_le_rpow_of_exponent_le hN1 (by nlinarith [mul_nonneg hL0 hδ])
+        have hNE : (0 : ℝ) ≤ (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) :=
+          Real.rpow_nonneg hNpos.le _
+        -- the three charges, each at the target exponent
+        have h1 : a * (N : ℝ) ^ (1 + 2 * δ) ≤ a * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) :=
+          mul_le_mul_of_nonneg_left hEa ha
+        have h2 : c * S ≤ c * (cD + 1) * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) := by
+          calc c * S ≤ c * ((cD + 1) * (N : ℝ) ^ (1 + δ)) :=
+                mul_le_mul_of_nonneg_left hmass hc
+            _ ≤ c * ((cD + 1) * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ)) :=
+                mul_le_mul_of_nonneg_left
+                  (mul_le_mul_of_nonneg_left hEc (by linarith)) hc
+            _ = c * (cD + 1) * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) := by ring
+        have h3 : (K ^ (L + 1) * (N : ℝ) ^ (((L : ℝ) + 2) * δ)) * S
+            ≤ K ^ (L + 1) * (cD + 1) * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) := by
+          calc (K ^ (L + 1) * (N : ℝ) ^ (((L : ℝ) + 2) * δ)) * S
+              ≤ (K ^ (L + 1) * (N : ℝ) ^ (((L : ℝ) + 2) * δ)) *
+                ((cD + 1) * (N : ℝ) ^ (1 + δ)) :=
+                mul_le_mul_of_nonneg_left hmass (mul_nonneg hKLnn hPnn)
+            _ = K ^ (L + 1) * (cD + 1) *
+                ((N : ℝ) ^ (((L : ℝ) + 2) * δ) * (N : ℝ) ^ (1 + δ)) := by ring
+            _ = K ^ (L + 1) * (cD + 1) * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) := by
+                rw [hEsplit]
+        calc T j N
+            ≤ a * (N : ℝ) ^ (1 + 2 * δ) + c * S + ∑ u ∈ range t, T (j + 1) (Nu u) := hT
+          _ ≤ a * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ)
+              + c * (cD + 1) * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ)
+              + K ^ (L + 1) * (cD + 1) * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) :=
+              add_le_add (add_le_add h1 h2) (le_trans hrecsum h3)
+          _ = (K ^ (L + 1) * (cD + 1) + (a + c * (cD + 1)))
+              * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) := by ring
+          _ ≤ K ^ (L + 1 + 1) * (N : ℝ) ^ (1 + ((L : ℝ) + 1 + 2) * δ) :=
+              mul_le_mul_of_nonneg_right (hK (L + 1)) hNE
+  intro j hj N hN
+  exact key (ℓ - j) j (by omega) N hN
+
+/-- **The root, at `δ = ε/(ℓ+2)`** (§7's headline).  At the root the
+arena is the whole input, `L = ℓ`, and the exponent `1 + (ℓ+2)·δ`
+collapses to `1 + ε`: `T 0 n ≤ K^(ℓ+1) · n^(1+ε)`, on the honest cast
+`(n : ℝ) ^ (1 + ε)` itself — the induction runs on `1 ≤ N` throughout,
+so no `n + 1` padding is needed.  `K` and `δ` are fixed before `n`, and
+`ℓ = 0` is allowed: `ℓ + 2` never vanishes. -/
+theorem cost_root_le {a c cD ε K : ℝ} {ℓ : ℕ} {T : ℕ → ℕ → ℝ}
+    (ha : 0 ≤ a) (hcD : 0 ≤ cD) (hccD : cD ≤ c) (hε : 0 ≤ ε)
+    (hrec : IsCostRecurrence a c cD (ε / ((ℓ : ℝ) + 2)) ℓ T)
+    (hK : ∀ L : ℕ, K ^ L * (cD + 1) + (a + c * (cD + 1)) ≤ K ^ (L + 1))
+    {n : ℕ} (hn : 1 ≤ n) :
+    T 0 n ≤ K ^ (ℓ + 1) * (n : ℝ) ^ (1 + ε) := by
+  have hδ : 0 ≤ ε / ((ℓ : ℝ) + 2) := div_nonneg hε (by positivity)
+  have h := cost_le_of_isCostRecurrence ha hcD hccD hδ hrec hK 0 (Nat.zero_le ℓ) n hn
+  rw [Nat.sub_zero] at h
+  have hexp : 1 + ((ℓ : ℝ) + 2) * (ε / ((ℓ : ℝ) + 2)) = 1 + ε := by
+    have h2 : ((ℓ : ℝ) + 2) ≠ 0 := by positivity
+    field_simp
+  rwa [hexp] at h
+
+/-- **`K` is defined, not constrained** (§3).  The choice
+`K := c_D + 1 + A` with `A := a + c·(c_D+1)` satisfies the step
+condition at every `L`, with nothing to check: `K - c_D - 1 = A`
+exactly and `K^L ≥ 1`.  The only hypotheses are `c_D ≤ c` and
+nonnegativity — **no lower bound on `c` of any kind**. -/
+theorem chosenK_step {a c cD : ℝ} (ha : 0 ≤ a) (hcD : 0 ≤ cD) (hccD : cD ≤ c) :
+    ∀ L : ℕ, (cD + 1 + (a + c * (cD + 1))) ^ L * (cD + 1) + (a + c * (cD + 1))
+      ≤ (cD + 1 + (a + c * (cD + 1))) ^ (L + 1) := by
+  intro L
+  have hc : 0 ≤ c := le_trans hcD hccD
+  have hA : 0 ≤ a + c * (cD + 1) := add_nonneg ha (mul_nonneg hc (by linarith))
+  have hK1 : (1 : ℝ) ≤ cD + 1 + (a + c * (cD + 1)) := by linarith
+  have hKL : (1 : ℝ) ≤ (cD + 1 + (a + c * (cD + 1))) ^ L := one_le_pow₀ hK1
+  calc (cD + 1 + (a + c * (cD + 1))) ^ L * (cD + 1) + (a + c * (cD + 1))
+      ≤ (cD + 1 + (a + c * (cD + 1))) ^ L * (cD + 1) +
+        (cD + 1 + (a + c * (cD + 1))) ^ L * (a + c * (cD + 1)) :=
+        add_le_add le_rfl (le_mul_of_one_le_left hA hKL)
+    _ = (cD + 1 + (a + c * (cD + 1))) ^ L * (cD + 1 + (a + c * (cD + 1))) := by ring
+    _ = (cD + 1 + (a + c * (cD + 1))) ^ (L + 1) := (pow_succ _ _).symm
+
+-- At `L = 0` the chosen `K` meets the step with *equality*, for **all**
+-- `a`, `c`, `c_D` — the slack is zero there, so no side condition on any
+-- constant can be hiding in the step.
+example (a c cD : ℝ) :
+    (cD + 1 + (a + c * (cD + 1))) ^ 0 * (cD + 1) + (a + c * (cD + 1))
+      = (cD + 1 + (a + c * (cD + 1))) ^ 1 := by ring
+
+/-- **The headline, with §3's `K` plugged in**: any cost satisfying the
+Rev-5 recurrence at `δ = ε/(ℓ+2)` is bounded at the root by
+`(c_D + 1 + (a + c·(c_D+1)))^(ℓ+1) · n^(1+ε)`.  Zero conditions on `K`
+remain: the chosen `K` discharges the step outright. -/
+theorem cost_root_le_chosenK {a c cD ε : ℝ} {ℓ : ℕ} {T : ℕ → ℕ → ℝ}
+    (ha : 0 ≤ a) (hcD : 0 ≤ cD) (hccD : cD ≤ c) (hε : 0 ≤ ε)
+    (hrec : IsCostRecurrence a c cD (ε / ((ℓ : ℝ) + 2)) ℓ T)
+    {n : ℕ} (hn : 1 ≤ n) :
+    T 0 n ≤ (cD + 1 + (a + c * (cD + 1))) ^ (ℓ + 1) * (n : ℝ) ^ (1 + ε) :=
+  cost_root_le ha hcD hccD hε hrec (chosenK_step ha hcD hccD) hn
+
+/-! #### The bridge to `(★)` as the cover supplies it
+
+`IsCostRecurrence.node` asks for the child masses in the abstract range
+shape `∑ u ∈ range t, Nu u ≤ (c_D + 1) · N^(1+δ)`.  E9's concrete masses
+are the cluster weights of a cover of degree `⌈c_D · N^δ⌉₊`, and
+`CoverEdgeSum.sum_clusterWeight_le_rpow` bounds their `Fin`-indexed sum
+by `(c_D + 1) · ‖A‖^(1+δ)`.  `star_of_cover_degree` reindexes that over
+`range` and adds the per-child cap `‖A[X u]‖ ≤ ‖A‖`, which is exactly
+what `node`'s `Nu u ≤ N` clause wants at arena `N = ‖A‖`.  The `1 ≤ Nu u`
+half is the caller's: the recursion is only ever run on the nonempty
+clusters, and dropping empty ones only lowers both sides of `node`. -/
+
+section Bridge
+
+variable {N : ℕ}
+
+/-- A cluster weighs no more than the whole structure:
+`‖A[S]‖ ≤ ‖A‖`. -/
+theorem clusterWeight_le_graphWeight (G : SimpleGraph (Fin N)) (S : Set (Fin N)) :
+    CoverEdgeSum.clusterWeight G S ≤ CoverEdgeSum.graphWeight G := by
+  refine Nat.add_le_add ?_ ?_
+  · calc S.ncard ≤ (Set.univ : Set (Fin N)).ncard :=
+        Set.ncard_le_ncard (Set.subset_univ S) Set.finite_univ
+      _ = N := by simp [Set.ncard_univ]
+  · exact Set.ncard_le_ncard (CoverEdgeSum.internalEdgeSet_subset G S) (Set.toFinite _)
+
+/-- The cluster weights of a cover, reindexed over `ℕ` for the
+`range`-shaped sums of `IsCostRecurrence.node` (`0` beyond the
+family). -/
+noncomputable def clusterMass (G : SimpleGraph (Fin N)) (X : Fin N → Set (Fin N))
+    (u : ℕ) : ℕ :=
+  if h : u < N then CoverEdgeSum.clusterWeight G (X ⟨u, h⟩) else 0
+
+/-- Each reindexed mass is capped by the arena — `node`'s `Nu u ≤ N`
+clause at arena `‖A‖`. -/
+theorem clusterMass_le_graphWeight (G : SimpleGraph (Fin N)) (X : Fin N → Set (Fin N))
+    (u : ℕ) : clusterMass G X u ≤ CoverEdgeSum.graphWeight G := by
+  unfold clusterMass
+  split
+  · exact clusterWeight_le_graphWeight G _
+  · exact Nat.zero_le _
+
+/-- The reindexed sum is the `Fin`-indexed one. -/
+theorem sum_range_clusterMass (G : SimpleGraph (Fin N)) (X : Fin N → Set (Fin N)) :
+    ∑ u ∈ range N, clusterMass G X u = ∑ u : Fin N, CoverEdgeSum.clusterWeight G (X u) := by
+  rw [← Fin.sum_univ_eq_sum_range (fun u => clusterMass G X u) N]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  simp [clusterMass]
+
+/-- **The bridge to `(★)`.**  From the cover-degree bound in the exact
+shape `CoverDegree.exists_cover_degree` delivers it — `⌈c_D · N^δ⌉₊`,
+ceiling included — the reindexed cluster masses satisfy both mass
+clauses of `IsCostRecurrence.node` at arena `‖A‖`: each is at most
+`‖A‖`, and their total is at most `(c_D + 1) · ‖A‖^(1+δ)`.  This is
+`CoverEdgeSum.sum_clusterWeight_le_rpow` verbatim, reindexed; the `+1`
+is the ceiling and cannot be dropped. -/
+theorem star_of_cover_degree (G : SimpleGraph (Fin N)) (X : Fin N → Set (Fin N))
+    {cD δ : ℝ} (hcD : 0 ≤ cD) (hδ : 0 ≤ δ) (hW : 1 ≤ CoverEdgeSum.graphWeight G)
+    (h : ∀ v : Fin N, {u : Fin N | v ∈ X u}.ncard ≤ ⌈cD * (N : ℝ) ^ δ⌉₊) :
+    (∀ u, clusterMass G X u ≤ CoverEdgeSum.graphWeight G) ∧
+    (∑ u ∈ range N, ((clusterMass G X u : ℕ) : ℝ))
+      ≤ (cD + 1) * ((CoverEdgeSum.graphWeight G : ℕ) : ℝ) ^ (1 + δ) := by
+  refine ⟨clusterMass_le_graphWeight G X, ?_⟩
+  have hcast : (∑ u ∈ range N, ((clusterMass G X u : ℕ) : ℝ))
+      = ((∑ u : Fin N, CoverEdgeSum.clusterWeight G (X u) : ℕ) : ℝ) := by
+    rw [← sum_range_clusterMass G X, Nat.cast_sum]
+  rw [hcast]
+  exact CoverEdgeSum.sum_clusterWeight_le_rpow G X cD δ hcD hδ hW h
+
+end Bridge
 
 end Lax3Proofs.CostRecurrence
