@@ -23,9 +23,9 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E7 | the compaction lemma (§5 step 3′, §8.4a) | done | w2 | b0444fa | `sat_compact_iff_satWithin_deleteVerts_compl`; plain `Sat↔Sat` is false (`exU` sees isolated verts) — `SatWithin` is the true form; no order hypothesis |
 | E8 | locality decomposition as a function (§8.3, O2) | done | w2 | b0444fa | `localityBC` via the Assembly discharge (axiom-free); `rfl`-irrelevant in the rank witness; atom lists for E9 |
 | E9 | the abstract algorithm — **hard gate** (§8.4) | done | w4 | bf7baef | did **not** split: `Driver*` (5 files, 2125 lines); `tables_correct` unconditional, `mc_correct` for every ordering, `mkSetup_dcost_root_le` from `CoverOrderingTime` |
-| E10 | unrolling the depth-`ℓ` recursion (§8.4b) | ready | — | — | E9 landed; also owns threading `Inv` through the reified run tree (E9's split note (a)) |
+| E10 | unrolling the depth-`ℓ` recursion (§8.4b) | wip | w5 | — | `Unroll*` family; also owns threading `Inv` through the reified run tree |
 | E11 | the `Refine` tower probe (§8.5) | done | w2 | b0444fa | charge is alive-summed + carrier-sized init per call: restrict-then-BFS **forced**, mask ≠ restrict; `SpaceBudgetProbe` is §11's natural home |
-| E12 | `Arena` implementation and remaining routines (§8.6) | ready | — | — | E9, E11 landed; owes the per-vertex hist lists (D6, machine-level), the BotEval row evaluator, and `ctr` computed from the sweep |
+| E12 | `Arena` implementation and remaining routines (§8.6) | wip | w5 | — | `Impl*` family; expected to split — priorities: bfs/bfsSupports, guarded greedyScatter, BotTables evaluator, restrict |
 | E13 | compose to the headline (§8.7) | waiting | — | — | needs everything |
 
 ## Campaign log
