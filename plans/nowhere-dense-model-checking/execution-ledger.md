@@ -30,9 +30,9 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E12c | the `cover` sweep + computed `ctr` (§6.2 ⟨B⟩) | done | w6 | 84ae503 | GKS's peeling sweep, `N_</N_>` split repr; identities to `Driver.cluster` and `CoverCentres.ctr`; (★) as GKS's accounting; expect 2 runs, schedule first |
 | E12d | `recordProfiles` (§6.3) | done | w6 | 84ae503 | iterate single-source `chargeB0` `(m+L)` times; rows cumulative, measured in `preG` **before** isolation; identity target `Driver.childCol`'s slot families |
 | E13 | compose to the headline (§8.7) | done | w7 | b2df405 | `headline_abstract`/`headline_encoded`: full iff at `FirstOrder.Sat`, cost at `(x.length+1)^{1+ε}` under `CoverOrderingTime` alone; remainder mapped in-file |
-| F1 | ordering routine + `data` discharge | ready | — | — | pieces landed (`exists_augChain_wcol`, `exists_greedy_round`, `greedy_chain_inDegLE`); the assembly with `ElimPost` minimalities is the content |
-| F2 | the CSR front end | ready | — | — | `EncodesGraph` → root arena, NREST charge `O(x.length)` |
-| F3 | the frame program (NREST) | ready | — | — | cover + recursion as parameterized slots; expected to split |
+| F1 | ordering routine + `data` discharge | wip | w8 | — | pieces landed (`exists_augChain_wcol`, `exists_greedy_round`, `greedy_chain_inDegLE`); the assembly with `ElimPost` minimalities is the content |
+| F2 | the CSR front end | wip | w8 | — | `EncodesGraph` → root arena, NREST charge `O(x.length)` |
+| F3 | the frame program (NREST) | wip | w8 | — | cover + recursion as parameterized slots; expected to split |
 | F4 | the driver program (ℓ+1 levels) | waiting | — | — | needs F3, F5 |
 | F5 | the cover pipeline's cost, proved | waiting | — | — | needs F1; math half further landed than E0 knew (`exists_augChain_inDeg_subpolynomial`); owes the per-round program accounting |
 | F6 | codegen to the machine | waiting | — | — | needs F2, F4; precedent `Codegen/Examples/EndToEnd.lean` |
