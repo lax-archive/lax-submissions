@@ -62,6 +62,9 @@ import Lax3Proofs.Unroll
 import Lax3Proofs.ImplScatter
 import Lax3Proofs.ImplBot
 import Lax3Proofs.ImplBfs
+import Lax3Proofs.ImplRestrict
+import Lax3Proofs.ImplCover
+import Lax3Proofs.ImplProfiles
 import Lax3Proofs.Impl
 
 -- The proofs package of submission Lax3.

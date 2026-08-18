@@ -1,6 +1,9 @@
 import Lax3Proofs.ImplBfs
 import Lax3Proofs.ImplScatter
 import Lax3Proofs.ImplBot
+import Lax3Proofs.ImplRestrict
+import Lax3Proofs.ImplCover
+import Lax3Proofs.ImplProfiles
 
 /-!
 # E12 — the `Arena` implementation and the routines (§8 step 6): head
@@ -39,15 +42,22 @@ the identity to the abstract layer the driver (`DriverArena`) consumes.
   `tablesAux_bot_eq_botEval` — the identity to what `Driver.tablesAux`
   returns at its leaf, at every fuel.
 
-## Not yet in this family (E12's remainder)
+The remainder landed as its own satellites (E12b/c/d):
 
-`restrict` (§6.1, with the one-scratch-array-per-node amortization and
-the `Σ_{s∈S} deg_A(s)`-shaped charge — NOT `O(‖A[S]‖ + |S|)`, which is
-false), `isolate`, `recordProfiles` (§6.3), the `cover` ordering-to-
-clusters sweep (§6.2 ⟨B⟩, GKS's own peeling routine with the `N_</N_>`
-split and the `(★)` accounting), and the computed `ctr` read off that
-sweep with the identity to `CoverCentres.ctr`. See the campaign record
-for the split.
+* **`ImplRestrict`** — `restrict` + `isolate` (§6.1): local names by the
+  driver's own enumeration (identities to `preG`/`childCol0` are `rfl`),
+  the one-scratch-array-per-node sweep with the clean-restoration
+  invariant load-bearing, `childCharge` with no carrier-sized term, and
+  the children-aggregate closed to `2(c+1)·‖A‖^{1+δ}`.
+* **`ImplCover`** — the peeling sweep (§6.2 ⟨B⟩): the peeled-ball =
+  wreach-fibre identity at no side condition, the sweep and computed
+  `sweepCtr` with identities to `Driver.cluster` and `CoverCentres.ctr`,
+  and GKS's `(★)` accounting closed at `2·D·(n·D)` — under `1 ≤ r`,
+  which GKS assume silently and which is false at `r = 0`.
+* **`ImplProfiles`** — `recordProfiles` (§6.3): `(m+L)` single-source
+  `BallTable`s assembled into exactly `Driver.childCol` (function
+  equality), cumulative rows in `preG` before isolation; the honest
+  iterated-call charge with the multi-source gap priced, not hidden.
 -/
 
 namespace Lax3Proofs.Impl
