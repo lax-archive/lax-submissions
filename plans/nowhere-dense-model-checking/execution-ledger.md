@@ -45,6 +45,39 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-18 — session wrap-up (Jan's call): the state, and the road left
+
+Jan closed the session mid-wave-11. Landed this session: **all seventeen E
+rows and F1–F5, F3b/F3c, F6, F6b** — the abstract theorem, the machine layer,
+the discharged cover-time bound, and the codegen skeleton one `SolveSpec`
+hole from the endorsed axiom, with the `T`-clause number already proved
+(`exists_mcChargeMS_T`).
+
+**What remains, precisely** (the next session's cold start is this entry +
+`git log`):
+
+1. **F6c** — in flight at wrap-up; its checkpoint (if any files were written)
+   is on `origin/worktree-w11`. Review against its packet, land or
+   re-dispatch. Its scope: the per-frame state contract, the routine `Spec`s
+   (botEval, greedyScatter, isolate, restrict, supports, profilesMS,
+   cover-sweep), one conditional frame block.
+2. **F6d** (minted at wrap-up) — the shared IMP+ marking-BFS command; three
+   consumers wait on it (F6b's scatter sweep slot `hscat`, the supports
+   stage, the profilesMS stage). Build it first.
+3. **F7** — the ∃-close: instantiate `SolveSpec` from F6b's
+   `solveSpec_of_rest` + F6c's blocks, pick `q`/`c` per
+   `mcLayout_fitsWords`'s `hspan`, `temps ≥` the boolean depth (F6b's seam
+   note), `T x := L.const·mcK`, reconcile `Ks` against
+   `exists_mcChargeMS_T`, and write the theorem with the
+   `conclusion: Lax3.ModelChecking.exists_almostLinearTime_program_modelChecking`
+   header.
+
+Known seams for the next workers: `Nat.decLe` vs `Classical.propDecidable`
+at scatter guards (`if_congr` crosses it); zombie LSP servers of dead
+worktrees eat container memory (kill by open-file path); pushes that report
+"Everything up-to-date" wrongly — verify `ls-remote`, push by explicit
+refspec.
+
 ### 2026-08-18 — w10 lands: one `Spec` obligation from the axiom (`9b4cdfa`)
 
 What is now true: the endorsed axiom is reachable through exactly one named
