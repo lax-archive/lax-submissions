@@ -104,6 +104,7 @@ open Lax13Proofs.Refine
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences
 open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ColoringNumbers
 open Lax3Proofs.Driver
+open Lax3Proofs.LocalityFun
 open Lax3Proofs.CoverEdgeSum
 
 variable {L n₀ : ℕ}
@@ -1085,5 +1086,389 @@ theorem driverChargeMS_chargeTotal_le (S : Setup L)
             * W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) := by ring
         _ ≤ K ^ (fuel + 1 + 1) * W ^ (1 + (((fuel : ℝ) + 1) + 2) * (2 * δ)) :=
             mul_le_mul_of_nonneg_right hKstep hNE
+
+/-! ## The root: `mcChargeMS`, priced (the headline, deliverable 2) -/
+
+/-- The scatter budget of the root evaluation: the sum of `σ.t` over
+`top`'s scatter atoms — a constant of the schedule. The `t = 0` guard
+is priced in: a zero atom charges nothing
+(`Impl.greedyScatterCost_zero`). -/
+noncomputable def topBudget (S : Setup L) : ℕ :=
+  ((scatterAtoms S.choice S.φ S.hφ).map fun σ => σ.t).sum
+
+/-- The root scatter column fits `topBudget · 2‖G‖`, independently of
+the delivered table — `Impl.greedyScatterCost_le` per atom, at the §6.5
+marking parameter `W := ‖rootArena‖`. -/
+theorem topScatterCost_le (S : Setup L) (G : SimpleGraph (Fin n₀))
+    (col : Coloring n₀ L) (T : Fin n₀ → DistFO L 1 → Prop) :
+    topScatterCost S G col T ≤ topBudget S * (2 * graphWeight G) := by
+  have hNW : n₀ ≤ graphWeight G := Nat.le_add_right _ _
+  have hw : weight (rootArena G col) = graphWeight G := rfl
+  calc topScatterCost S G col T
+      ≤ ((scatterAtoms S.choice S.φ S.hφ).map fun σ =>
+          σ.t * (2 * graphWeight G)).sum := by
+        refine List.sum_le_sum fun σ _ => ?_
+        refine le_trans (Impl.greedyScatterCost_le _ _ _ _ _) ?_
+        exact Nat.mul_le_mul_left _ (by omega)
+    _ = topBudget S * (2 * graphWeight G) := by
+        rw [List.sum_map_mul_right, topBudget]
+
+open Classical in
+/-- **The root program's budget, priced on one graph**: under the cover
+slot's total bound and the routine's wreach-degree bound over subgraph
+copies of `G` itself, the whole `mcChargeMS` total — root driver plus
+the top scatter column — is within
+`(KP^{ℓ+1} + 2·topBudget)·‖G‖^{1+(ℓ+2)·2δ}`. -/
+theorem mcChargeMS_chargeTotal_le (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (covC : (j : ℕ) → Arena (S.pal j) n₀ → ACost String ℕ)
+    {c f δ : ℝ} (hc : 0 ≤ c) (hf : 0 ≤ f) (hδ : 0 ≤ δ)
+    (G : SimpleGraph (Fin n₀)) (col : Coloring n₀ L)
+    (hcov : ∀ (j : ℕ) (A : Arena (S.pal j) n₀), A.G ⊑ G →
+      (chargeTotal (covC j A) : ℝ) ≤ f * (A.N : ℝ) ^ (1 + 2 * δ))
+    (hdeg : ∀ (m : ℕ) (H : SimpleGraph (Fin m)), H ⊑ G →
+      ∀ v : Fin m, (wreach H ((ord m H).order) (2 * S.R) v).ncard
+        ≤ ⌈c * (m : ℝ) ^ δ⌉₊)
+    (hW : 1 ≤ graphWeight G) :
+    (chargeTotal (mcChargeMS S ord ℓp htabF covC G col) : ℝ)
+      ≤ (KP S ℓp c f ^ (S.depth + 1) + 2 * (topBudget S : ℝ))
+        * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ)) := by
+  have hcopy : (rootArena (L := L) G col).G ⊑ G := ⟨SimpleGraph.Copy.id G⟩
+  have hWr : 1 ≤ weight (rootArena (L := L) G col) := hW
+  have hdrv := driverChargeMS_chargeTotal_le S ord ℓp htabF covC hc hf hδ
+    hcov hdeg S.depth 0 (by omega) (rootArena G col) hcopy hWr
+  rw [Headline.weight_rootArena] at hdrv
+  have htot : chargeTotal (mcChargeMS S ord ℓp htabF covC G col)
+      = chargeTotal (driverChargeMS S ord ℓp htabF covC S.depth 0 (rootArena G col))
+        + topScatterCost S G col (tables S ord 0 (rootArena G col)) := by
+    rw [mcChargeMS, chargeTotal_add, chargeTotal_cost (by decide)]
+  have hW1 : (1 : ℝ) ≤ (graphWeight G : ℝ) := by exact_mod_cast hW
+  have hE0 : (0 : ℝ) ≤ ((S.depth : ℝ) + 2) * (2 * δ) := by
+    have h1 : (0 : ℝ) ≤ (S.depth : ℝ) + 2 := by
+      have := Nat.cast_nonneg (α := ℝ) S.depth
+      linarith
+    have h2 : (0 : ℝ) ≤ 2 * δ := by linarith
+    exact mul_nonneg h1 h2
+  have hWe : (graphWeight G : ℝ)
+      ≤ (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ)) := by
+    have h := Real.rpow_le_rpow_of_exponent_le hW1
+      (by linarith : (1 : ℝ) ≤ 1 + ((S.depth : ℝ) + 2) * (2 * δ))
+    rwa [Real.rpow_one] at h
+  have htop : (topScatterCost S G col (tables S ord 0 (rootArena G col)) : ℝ)
+      ≤ 2 * (topBudget S : ℝ)
+        * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ)) := by
+    have h : (topScatterCost S G col (tables S ord 0 (rootArena G col)) : ℝ)
+        ≤ (topBudget S : ℝ) * (2 * (graphWeight G : ℝ)) := by
+      exact_mod_cast topScatterCost_le S G col (tables S ord 0 (rootArena G col))
+    refine h.trans ?_
+    calc (topBudget S : ℝ) * (2 * (graphWeight G : ℝ))
+        = 2 * (topBudget S : ℝ) * (graphWeight G : ℝ) := by ring
+      _ ≤ 2 * (topBudget S : ℝ)
+          * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ)) := by
+          refine mul_le_mul_of_nonneg_left hWe (by positivity)
+  rw [htot]
+  push_cast
+  have hrhs : (KP S ℓp c f ^ (S.depth + 1) + 2 * (topBudget S : ℝ))
+      * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ))
+      = KP S ℓp c f ^ (S.depth + 1)
+          * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ))
+        + 2 * (topBudget S : ℝ)
+          * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ)) := by ring
+  rw [hrhs]
+  exact add_le_add hdrv htop
+
+/-! ## The headline on a class (the `mcCharge_le`-shaped corollary) -/
+
+/-- The headline's `δ`: `ε/(2(ℓ+2))` — half the abstract layer's
+`ε/(ℓ+2)`, because the program's per-level exponent increment is `2δ`
+(the node envelope's own exponent). -/
+noncomputable def headlineδ (S : Setup L) (ε : ℝ) : ℝ :=
+  ε / (2 * ((S.depth : ℝ) + 2))
+
+/-- **The headline's cover family** — F5's slot vector, per node: the
+priced greedy routine at `3·S.R` rounds, sweep radius `S.R`, degree
+parameter `⌈cf·N^δ⌉₊`. `ProgCover.coverProg_slot` fills the frame's
+cover slot with exactly this budget, so instantiating F4's
+`CoverSlotSpec` at `coverProg`/`coverCF` makes `mcChargeMS` at this
+family the MS-routed program's advertised budget. -/
+noncomputable def coverCF (S : Setup L) (cf δ : ℝ) :
+    (j : ℕ) → Arena (S.pal j) n₀ → ACost String ℕ :=
+  fun _j A => coverC A.N A.G S.R (3 * S.R) ⌈cf * (A.N : ℝ) ^ δ⌉₊
+
+open Classical in
+/-- **The leaf's headline** (`mcCharge_le`-shaped, at the MS-routed
+budget): on a nowhere dense class, for every setup, `ε > 0` and
+history-round profile `ℓp`, there are constants `cf, κ ≥ 0` — fixed
+before any graph — such that on every member the whole root budget of
+the program, at the honest priced routine `timedGreedyRoutine (3·S.R)`
+and the concrete cover family `coverCF S cf (headlineδ S ε)`, is
+
+    chargeTotal (mcChargeMS …) ≤ κ · (‖G‖+1)^{1+ε}.
+
+The degree parameter of the sweep is `exists_coverCharge_le`'s derived
+`⌈cf·N^δ⌉₊`; the wreach-degree constant of the recursion is
+`exists_wreach_degree_timedGreedyRoutine`'s (it lives inside `κ`
+through `KP`). The radius arithmetic `3t ≤ R`, `2·S.R ≤ 2^t`,
+`1 ≤ S.R` is discharged by the setup itself (`t := S.R`,
+`Setup.one_le_R`, `two_mul_le_two_pow`). F6/F7 consume this verbatim;
+the decision clause is `ProgDriver.mcProg_headline`. -/
+theorem exists_mcChargeMS_chargeTotal_le (C : GraphClass) (hC : NowhereDense C)
+    (S : Setup L) {ε : ℝ} (hε : 0 < ε) (ℓp : ℕ → ℕ) :
+    ∃ cf κ : ℝ, 0 ≤ cf ∧ 0 ≤ κ ∧
+      ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
+        ∀ (col : Coloring n L)
+          (htabF : (j : ℕ) → (A : Arena (S.pal j) n) →
+            Fin A.N → Fin (ℓp j) → List (Fin A.N)),
+          (chargeTotal (mcChargeMS S (timedGreedyRoutine (3 * S.R)) ℓp htabF
+              (coverCF S cf (headlineδ S ε)) G col) : ℝ)
+            ≤ κ * ((graphWeight G : ℝ) + 1) ^ (1 + ε) := by
+  have hδ : 0 < headlineδ S ε := by
+    unfold headlineδ
+    positivity
+  obtain ⟨cdeg, hcdeg0, hdegAll⟩ := exists_wreach_degree_timedGreedyRoutine C hC
+    S.R (3 * S.R) S.R le_rfl (two_mul_le_two_pow S.one_le_R) (headlineδ S ε) hδ
+  obtain ⟨cs, fs, hcs0, hfs0, hcovAll⟩ := exists_coverCharge_le C hC
+    S.R (3 * S.R) S.R le_rfl (two_mul_le_two_pow S.one_le_R) S.one_le_R
+    (headlineδ S ε) hδ
+  have hK1 : (1 : ℝ) ≤ KP S ℓp cdeg fs := one_le_KP S ℓp hcdeg0 hfs0
+  have hκ0 : (0 : ℝ) ≤ KP S ℓp cdeg fs ^ (S.depth + 1) + 2 * (topBudget S : ℝ) := by
+    have h1 : (0 : ℝ) ≤ KP S ℓp cdeg fs ^ (S.depth + 1) :=
+      pow_nonneg (by linarith) _
+    have h2 : (0 : ℝ) ≤ (topBudget S : ℝ) := Nat.cast_nonneg _
+    linarith
+  refine ⟨cs, KP S ℓp cdeg fs ^ (S.depth + 1) + 2 * (topBudget S : ℝ),
+    hcs0, hκ0, ?_⟩
+  intro n G hG col htabF
+  by_cases hW : 1 ≤ graphWeight G
+  · -- the honest case: the lift at the root, then the exponent choice
+    have hcovG : ∀ (j : ℕ) (A : Arena (S.pal j) n), A.G ⊑ G →
+        (chargeTotal (coverCF S cs (headlineδ S ε) j A) : ℝ)
+          ≤ fs * (A.N : ℝ) ^ (1 + 2 * headlineδ S ε) := by
+      intro j A hsub
+      have hCF : chargeTotal (coverCF S cs (headlineδ S ε) j A)
+          = chainCharge A.G (3 * S.R)
+            + Impl.sweepCharge A.G
+                ((timedGreedyRoutine (3 * S.R)) A.N A.G).order S.R
+                ⌈cs * (A.N : ℝ) ^ headlineδ S ε⌉₊ :=
+        chargeTotal_coverC A.N A.G S.R (3 * S.R) _
+      rw [hCF]
+      exact_mod_cast hcovAll n G hG A.N A.G hsub
+    have hdegG : ∀ (m : ℕ) (H : SimpleGraph (Fin m)), H ⊑ G →
+        ∀ v : Fin m,
+          (wreach H (((timedGreedyRoutine (3 * S.R)) m H).order) (2 * S.R) v).ncard
+            ≤ ⌈cdeg * (m : ℝ) ^ headlineδ S ε⌉₊ :=
+      fun m H hsub v => hdegAll n G hG m H hsub v
+    have hmc := mcChargeMS_chargeTotal_le S (timedGreedyRoutine (3 * S.R)) ℓp
+      htabF (coverCF S cs (headlineδ S ε)) hcdeg0 hfs0 hδ.le G col hcovG hdegG hW
+    have hexp : 1 + ((S.depth : ℝ) + 2) * (2 * headlineδ S ε) = 1 + ε := by
+      rw [headlineδ]
+      have h2 : 2 * ((S.depth : ℝ) + 2) ≠ 0 := by positivity
+      field_simp
+      try ring
+    rw [hexp] at hmc
+    refine hmc.trans ?_
+    refine mul_le_mul_of_nonneg_left ?_ hκ0
+    refine Real.rpow_le_rpow (Nat.cast_nonneg _) (by linarith) (by linarith)
+  · -- the degenerate input: `‖G‖ = 0`, so the whole ledger is `0`
+    have hgw : graphWeight G = 0 := by omega
+    have hn : n = 0 := by
+      have h : n ≤ graphWeight G := Nat.le_add_right _ _
+      omega
+    have hdz : chargeTotal (driverChargeMS S (timedGreedyRoutine (3 * S.R)) ℓp
+        htabF (coverCF S cs (headlineδ S ε)) S.depth 0 (rootArena G col)) = 0 :=
+      chargeTotal_driverChargeMS_of_N_eq_zero S (timedGreedyRoutine (3 * S.R))
+        ℓp htabF _ S.depth 0 (rootArena G col) hn
+    have htopz : topScatterCost S G col
+        (tables S (timedGreedyRoutine (3 * S.R)) 0 (rootArena G col)) = 0 := by
+      have h := topScatterCost_le S G col
+        (tables S (timedGreedyRoutine (3 * S.R)) 0 (rootArena G col))
+      rw [hgw] at h
+      omega
+    have hmcz : chargeTotal (mcChargeMS S (timedGreedyRoutine (3 * S.R)) ℓp htabF
+        (coverCF S cs (headlineδ S ε)) G col) = 0 := by
+      rw [mcChargeMS, chargeTotal_add, chargeTotal_cost (by decide), hdz, htopz]
+    rw [hmcz, hgw]
+    simp only [Nat.cast_zero, zero_add, Real.one_rpow, mul_one]
+    exact hκ0
+
+/-! ## The `T`-arithmetic close (deliverable 3, E13's item (e)) -/
+
+open Lax11.GraphEncoding in
+/-- **The endorsed axiom's `T` clause, at the charge level** — E13's
+item (e), stated so F7 need only multiply by the machine's `L.const`:
+for every nowhere dense `C`, plain sentence `φ : FO 0`, `ε > 0` and
+history profile `ℓp`, there are `cf, c' ≥ 0` and a ℕ-valued
+`T : List ℕ → ℕ` — all fixed before any input — with
+
+* `T x ≤ c'·(|x|+1)^{1+ε}` for **every** word `x`, and
+* on every member of `C` and every CSR encoding `x` of it
+  (`EncodesGraph`), the root program's whole ledger total at the
+  campaign setup — `mcChargeMS` at the priced routine and the headline
+  cover family — is at most `T x`.
+
+The encoding seam is `Headline.graphWeight_add_three_le_length`'s
+direction (`‖G‖ ≤ |x|`); the `ECost` reading of the same number is
+`totalE_liftACost`. -/
+theorem exists_mcChargeMS_T (C : GraphClass) (hC : NowhereDense C)
+    (φ : Lax3.FirstOrder.FO 0) {ε : ℝ} (hε : 0 < ε) (ℓp : ℕ → ℕ) :
+    ∃ (cf c' : ℝ) (T : List ℕ → ℕ), 0 ≤ cf ∧ 0 ≤ c' ∧
+      (∀ x : List ℕ, (T x : ℝ) ≤ c' * ((x.length : ℝ) + 1) ^ (1 + ε)) ∧
+      ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
+        ∀ (col : Coloring n 0)
+          (htabF : (j : ℕ) →
+            (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+            Fin A.N → Fin (ℓp j) → List (Fin A.N))
+          (x : List ℕ), EncodesGraph x n G →
+          chargeTotal (mcChargeMS (Headline.headlineSetup C hC φ)
+              (timedGreedyRoutine (3 * (Headline.headlineSetup C hC φ).R))
+              ℓp htabF
+              (coverCF (Headline.headlineSetup C hC φ) cf
+                (headlineδ (Headline.headlineSetup C hC φ) ε))
+              G col) ≤ T x := by
+  obtain ⟨cf, κ, hcf0, hκ0, hmain⟩ :=
+    exists_mcChargeMS_chargeTotal_le C hC (Headline.headlineSetup C hC φ) hε ℓp
+  refine ⟨cf, κ + 1, fun x => ⌈κ * ((x.length : ℝ) + 1) ^ (1 + ε)⌉₊, hcf0,
+    by linarith, ?_, ?_⟩
+  · -- the `T` bound, for every word
+    intro x
+    have h1 : (1 : ℝ) ≤ (x.length : ℝ) + 1 := by
+      have := Nat.cast_nonneg (α := ℝ) x.length
+      linarith
+    have hle1 : (1 : ℝ) ≤ ((x.length : ℝ) + 1) ^ (1 + ε) := by
+      calc (1 : ℝ) = 1 ^ ((1 : ℝ) + ε) := (Real.one_rpow _).symm
+        _ ≤ ((x.length : ℝ) + 1) ^ (1 + ε) :=
+          Real.rpow_le_rpow (by norm_num) h1 (by linarith)
+    have hy : (0 : ℝ) ≤ κ * ((x.length : ℝ) + 1) ^ (1 + ε) :=
+      mul_nonneg hκ0 (by linarith)
+    calc ((⌈κ * ((x.length : ℝ) + 1) ^ (1 + ε)⌉₊ : ℕ) : ℝ)
+        ≤ κ * ((x.length : ℝ) + 1) ^ (1 + ε) + 1 := (Nat.ceil_lt_add_one hy).le
+      _ ≤ (κ + 1) * ((x.length : ℝ) + 1) ^ (1 + ε) := by nlinarith [hle1, hκ0]
+  · -- the budget against the axiom's measure, on members
+    intro n G hG col htabF x hx
+    have hb := hmain n G hG col htabF
+    have hlen : (graphWeight G : ℝ) ≤ (x.length : ℝ) :=
+      Nat.cast_le.mpr (Headline.graphWeight_le_length hx)
+    have h2 : (chargeTotal (mcChargeMS (Headline.headlineSetup C hC φ)
+        (timedGreedyRoutine (3 * (Headline.headlineSetup C hC φ).R)) ℓp htabF
+        (coverCF (Headline.headlineSetup C hC φ) cf
+          (headlineδ (Headline.headlineSetup C hC φ) ε)) G col) : ℝ)
+        ≤ κ * ((x.length : ℝ) + 1) ^ (1 + ε) := by
+      refine hb.trans ?_
+      refine mul_le_mul_of_nonneg_left ?_ hκ0
+      refine Real.rpow_le_rpow (by positivity) (by linarith) (by linarith)
+    have h3 := h2.trans (Nat.le_ceil _)
+    exact_mod_cast h3
+
+/-! ## The total is the whole ledger: support honesty
+
+Off the ten program currencies every vector of the family vanishes, so
+`chargeTotal` (and, through `totalE_liftACost`, the `ECost` total F7
+reads) misses nothing. -/
+
+/-- A program-currency charge vanishes off `progKeys`. -/
+theorem toFun_cost_eq_zero_of_notMem {kk : String} (hkk : kk ∈ progKeys)
+    {k : String} (hk : k ∉ progKeys) (n : ℕ) : (ACost.cost kk n).toFun k = 0 :=
+  ACost.toFun_cost_ne (by rintro rfl; exact hk hkk) n
+
+open Classical in
+/-- F5's `coverC` (hence `coverCF`) spends only program currencies. -/
+theorem coverC_toFun_eq_zero_of_notMem (m : ℕ) (G : SimpleGraph (Fin m))
+    (rc R D : ℕ) {k : String} (hk : k ∉ progKeys) :
+    (coverC m G rc R D).toFun k = 0 :=
+  coverC_toFun_ne m G rc R D (by rintro rfl; exact hk (by decide))
+    (by rintro rfl; exact hk (by decide))
+
+section Support
+
+variable (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+
+open Classical in
+theorem centreChargeMS_toFun_eq_zero (j : ℕ) (A : Arena (S.pal j) n₀) (ℓp : ℕ)
+    (htab : Fin A.N → Fin ℓp → List (Fin A.N))
+    (nx : (B : Arena (S.pal (j + 1)) n₀) → Fin B.N → DistFO (S.pal (j + 1)) 1 → Prop)
+    (nxC : Arena (S.pal (j + 1)) n₀ → ACost String ℕ)
+    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) {k : String} (hk : k ∉ progKeys)
+    (hnxC : (nxC (childArena S A π u)).toFun k = 0) :
+    (centreChargeMS S j A ℓp htab nx nxC π u).toFun k = 0 := by
+  simp only [centreChargeMS, restrictC, supportsC, profilesCMS, isolateC,
+    ACost.toFun_add, hnxC,
+    toFun_cost_eq_zero_of_notMem (show "frame.restrict" ∈ progKeys by decide) hk,
+    toFun_cost_eq_zero_of_notMem (show "frame.supports" ∈ progKeys by decide) hk,
+    toFun_cost_eq_zero_of_notMem (show "frame.profiles" ∈ progKeys by decide) hk,
+    toFun_cost_eq_zero_of_notMem (show "frame.isolate" ∈ progKeys by decide) hk,
+    toFun_cost_eq_zero_of_notMem (show "frame.scatter" ∈ progKeys by decide) hk,
+    add_zero, zero_add]
+
+open Classical in
+theorem frameChargeMS_toFun_eq_zero (j : ℕ) (A : Arena (S.pal j) n₀) (ℓp : ℕ)
+    (htab : Fin A.N → Fin ℓp → List (Fin A.N))
+    (nx : (B : Arena (S.pal (j + 1)) n₀) → Fin B.N → DistFO (S.pal (j + 1)) 1 → Prop)
+    (covC : ACost String ℕ) (nxC : Arena (S.pal (j + 1)) n₀ → ACost String ℕ)
+    {k : String} (hk : k ∉ progKeys) (hcovC : covC.toFun k = 0)
+    (hnxC : ∀ B, (nxC B).toFun k = 0) :
+    (frameChargeMS S ord j A ℓp htab nx covC nxC).toFun k = 0 := by
+  rw [frameChargeMS]
+  by_cases hbot : A.G = ⊥
+  · rw [if_pos hbot]
+    exact toFun_cost_eq_zero_of_notMem (by decide) hk _
+  · rw [if_neg hbot]
+    have hall : (allocC A).toFun k = 0 :=
+      toFun_cost_eq_zero_of_notMem (by decide) hk _
+    have hread : (readC S j A).toFun k = 0 :=
+      toFun_cost_eq_zero_of_notMem (by decide) hk _
+    have hz : ((List.finRange A.N).map
+        ((fun x => ACost.toFun x k)
+          ∘ centreChargeMS S j A ℓp htab nx nxC ((ord A.N A.G).order))).sum = 0 := by
+      refine List.sum_eq_zero ?_
+      intro x hx
+      obtain ⟨u, -, rfl⟩ := List.mem_map.mp hx
+      exact centreChargeMS_toFun_eq_zero S j A ℓp htab nx nxC _ u hk (hnxC _)
+    simp only [ACost.toFun_add, toFun_listSum, List.map_map, hcovC, hall, hread,
+      hz, add_zero, zero_add]
+
+open Classical in
+/-- **Support honesty for the driver**: off the ten program currencies
+the whole level recursion's ledger vanishes — provided the cover family
+does (which `coverCF` satisfies,
+`coverC_toFun_eq_zero_of_notMem`). -/
+theorem driverChargeMS_toFun_eq_zero (ℓpF : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓpF j) → List (Fin A.N))
+    (covC : (j : ℕ) → Arena (S.pal j) n₀ → ACost String ℕ)
+    {k : String} (hk : k ∉ progKeys)
+    (hcovC : ∀ (j : ℕ) (A : Arena (S.pal j) n₀), (covC j A).toFun k = 0) :
+    ∀ (fuel j : ℕ) (A : Arena (S.pal j) n₀),
+      (driverChargeMS S ord ℓpF htabF covC fuel j A).toFun k = 0 := by
+  intro fuel
+  induction fuel with
+  | zero =>
+    intro j A
+    rw [driverChargeMS]
+    exact toFun_cost_eq_zero_of_notMem (by decide) hk _
+  | succ fuel ih =>
+    intro j A
+    rw [driverChargeMS]
+    exact frameChargeMS_toFun_eq_zero S ord j A (ℓpF j) (htabF j A) _ _ _ hk
+      (hcovC j A) (fun B => ih (j + 1) B)
+
+open Classical in
+/-- **Support honesty at the root**: `mcChargeMS` vanishes off
+`progKeys`, so `chargeTotal` is the whole ledger — nothing is spent
+outside the ten currencies the total sums. -/
+theorem mcChargeMS_toFun_eq_zero (ℓpF : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓpF j) → List (Fin A.N))
+    (covC : (j : ℕ) → Arena (S.pal j) n₀ → ACost String ℕ)
+    (G : SimpleGraph (Fin n₀)) (col : Coloring n₀ L)
+    {k : String} (hk : k ∉ progKeys)
+    (hcovC : ∀ (j : ℕ) (A : Arena (S.pal j) n₀), (covC j A).toFun k = 0) :
+    (mcChargeMS S ord ℓpF htabF covC G col).toFun k = 0 := by
+  rw [mcChargeMS, ACost.toFun_add,
+    driverChargeMS_toFun_eq_zero S ord ℓpF htabF covC hk hcovC,
+    toFun_cost_eq_zero_of_notMem (by decide) hk _, add_zero]
+
+end Support
 
 end Lax3Proofs.Prog
