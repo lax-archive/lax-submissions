@@ -19,7 +19,7 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E3 | the edge half of (★) (§7) | done | w1 | 8709c19 | `CoverEdgeSum.sum_clusterWeight_le_rpow`; hypotheses exactly `0 ≤ c_D`, `0 ≤ δ`, `1 ≤ ‖A‖`; ceiling carried into `c_D+1` |
 | E4 | the cost recurrence, amended and slackened (§7) | done | w2 | b0444fa | `cost_root_le_chosenK`: `K^{ℓ+1}·n^{1+ε}` at `δ=ε/(ℓ+2)`, **no condition on `c`**; `star_of_cover_degree` bridges (★) to E3 |
 | E5 | `ReachedR` generalized to `S`-moves (§8.2) | done | w2 | b0444fa | `ReachedS`; descend batch is an equality; `splitterWins_of_reachedS` via mixed histories — no `splitterWins_anti` needed |
-| E6 | carrier transport for `ReachedR` (§9) | ready | — | — | E5 landed; transport `ReachedS` under adding isolated vertices and renumbering |
+| E6 | carrier transport for `ReachedR` (§9) | wip | w3 | — | E5 landed; transport `ReachedS` under adding isolated vertices and renumbering |
 | E7 | the compaction lemma (§5 step 3′, §8.4a) | done | w2 | b0444fa | `sat_compact_iff_satWithin_deleteVerts_compl`; plain `Sat↔Sat` is false (`exU` sees isolated verts) — `SatWithin` is the true form; no order hypothesis |
 | E8 | locality decomposition as a function (§8.3, O2) | done | w2 | b0444fa | `localityBC` via the Assembly discharge (axiom-free); `rfl`-irrelevant in the rank witness; atom lists for E9 |
 | E9 | the abstract algorithm — **hard gate** (§8.4) | waiting | — | — | needs E6 only now; may split into fresh rows |
