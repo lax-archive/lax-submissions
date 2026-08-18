@@ -515,8 +515,20 @@ roughly six lines, not a design risk.
  6      return eval(top, s)
 
  7  Tables(A, j) : Fin A.N → ℱ_j → Bool
- 8      # pre:  ReachedR 2R G rounds A  — a record of the play so far     ⟨A⟩
- 9      #       (NOT `SplitterWins m 2R (ℓ−j) A`; see O1)
+ 8      # pre:  ReachedS 2R G₀ hist (map upᵣ A)                           ⟨C⟩
+ 9      #       — hist : List (RoundS n₀) on the ROOT carrier n₀; G₀ the
+ 9      #         root arena; upᵣ : Fin A.N ↪ Fin n₀ the composite of the
+ 9      #         up maps; the record is never re-typed.
+ 9      #       (NOT `SplitterWins m 2R (ℓ−j) A`; see O1. ⟨C⟩ E6: the old
+ 9      #       `ReachedR 2R G rounds A` was a TYPE ERROR at a renumbered
+ 9      #       child — the record's carrier is fixed — and no transport
+ 9      #       fixes it; keeping `hist` at the root closes the invariant:
+ 9      #       root case is `ReachedS.nil` at `upᵣ = id`; the step is
+ 9      #       `ReachedS.reachedS_descend` at the root plus
+ 9      #       `ArenaTransport.nextArenaS_mapRound` and the line-16/21
+ 9      #       restrict∘isolate identity to re-express the reached arena
+ 9      #       as `map upᵣ' B`. Wholesale re-typing, where a driver wants
+ 9      #       it: `ArenaTransport.reachedS_map`/`reachedS_restrict`.)
 10      if j = ℓ or A has no edges:                            -- leaf, O(‖A‖)
 11          return BotTables(A, j)                             -- §6.4
 12
@@ -941,6 +953,16 @@ remains genuinely open:
   and `nextArenaR` restricts to `ball e.arena r e.vtx` (`:153-154`) where the
   design restricts to `X_u ⊆ ball`. Both are booked here and at §8 step 2, but
   §5's precondition is written in a notation that presumes them discharged.
+  ⟨C⟩ **Both discharged.** The `S`-move record is `ReachedS` (E5); the
+  transport is `ArenaTransport` (E6) — `reachedS_map`/`reachedS_restrict`
+  along any embedding, `nextArenaS_mapRound`, `ball_map`, with the isolated
+  extension as the non-surjective case of the same pushforward. E6's verdict
+  on the `# pre:` line stands in §5 as rewritten: the record is kept at the
+  **root** carrier and never re-typed — the transport exists, and the
+  invariant is cheaper without invoking it per level. One deliberate deviation
+  from this bullet as written: the child-to-root map is the composite of
+  monotone `up` maps onto a *cluster*, so the lemmas are stated for a general
+  embedding, with `Fin.castLE` only as the named padding instance.
 
 ⟨B⟩ **Resolved by this audit, and struck from the open list:** whether the
 algorithm's self-built batch is a legal move. It is — see §3. The batch is

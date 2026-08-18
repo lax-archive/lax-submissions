@@ -21,6 +21,7 @@ import Lax3Proofs.SplitterWin
 import Lax3Proofs.SplitterWinRec
 import Lax3Proofs.UqwInstantiation
 import Lax3Proofs.ReachedS
+import Lax3Proofs.ArenaTransport
 
 -- Sparse neighborhood covers and the augmentation chain behind their degree.
 import Lax3Proofs.CoverConstruction
