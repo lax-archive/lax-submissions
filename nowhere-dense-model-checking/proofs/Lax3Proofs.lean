@@ -48,6 +48,14 @@ import Lax3Proofs.CostRecurrence
 import Lax3Proofs.TgtCoupling
 import Lax3Proofs.RefineBfsProbe
 
+-- The abstract algorithm (E9): section 5's driver over the abstract
+-- arena -- schedule, arena and recursion, correctness, cost.
+import Lax3Proofs.DriverSchedule
+import Lax3Proofs.DriverArena
+import Lax3Proofs.DriverCorrect
+import Lax3Proofs.DriverCost
+import Lax3Proofs.Driver
+
 -- The proofs package of submission Lax3.
 --
 -- What is here is the mathematical layer of the nowhere dense model
