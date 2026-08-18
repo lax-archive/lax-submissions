@@ -140,7 +140,9 @@ theorem sweepAcc_spec (G : SimpleGraph (Fin n)) (r : ℕ) (X : Set (Fin n)) :
       by_cases hgv : GreedyMem G r X v
       · rw [sweepAcc, if_pos (htest.mpr hgv)]
         refine sweepAcc_spec G r X vs (acc ++ [v]) hsort' (fun u => ?_)
-          (fun u w hu hw => ?_) (by simp [List.nodup_append, hnd, hvacc])
+          (fun u w hu hw => ?_)
+          (hnd.append (List.nodup_singleton v)
+            (fun a ha hav => hvacc ((List.mem_singleton.mp hav) ▸ ha)))
         · constructor
           · intro hu
             rcases List.mem_append.mp hu with h | h
@@ -177,12 +179,12 @@ routine's picked list with `ScatterSentences.greedySet`, the set the
 endorsed `greedyChoice` counts. -/
 theorem mem_sweep_iff (G : SimpleGraph (Fin n)) (r : ℕ) (X : Set (Fin n)) (v : Fin n) :
     v ∈ sweep G r X ↔ v ∈ greedySet G r X :=
-  (sweepAcc_spec G r X (List.finRange n) [] (List.pairwise_lt_finRange n)
+  (sweepAcc_spec G r X (List.finRange n) [] (List.sortedLT_iff_pairwise.mp (List.sortedLT_finRange n))
     (by simp [List.mem_finRange]) (by simp [List.mem_finRange]) List.nodup_nil).1 v
 
 theorem sweep_nodup (G : SimpleGraph (Fin n)) (r : ℕ) (X : Set (Fin n)) :
     (sweep G r X).Nodup :=
-  (sweepAcc_spec G r X (List.finRange n) [] (List.pairwise_lt_finRange n)
+  (sweepAcc_spec G r X (List.finRange n) [] (List.sortedLT_iff_pairwise.mp (List.sortedLT_finRange n))
     (by simp [List.mem_finRange]) (by simp [List.mem_finRange]) List.nodup_nil).2
 
 /-- **The sweep's count is the greedy count**: the picked list has
