@@ -26,12 +26,36 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E10 | unrolling the depth-`ℓ` recursion (§8.4b) | done | w5 | a1d9294 | `Unroll`; iterative form = `tables` by fuel induction; frames **static**, peak `(ℓ+1)(2+c_S)·n²` absorbed by the squared guarantee; `mkSetup_memLeaf_eq_bot` closes E9's deferred composition |
 | E11 | the `Refine` tower probe (§8.5) | done | w2 | b0444fa | charge is alive-summed + carrier-sized init per call: restrict-then-BFS **forced**, mask ≠ restrict; `SpaceBudgetProbe` is §11's natural home |
 | E12 | `Arena` implementation (§8.6) — **split** | done (part) | w5 | a1d9294 | `Impl{Scatter,Bot,Bfs}` landed: guarded scatter (`t=0` guard is the cost statement), `botEval = Sat ⊥`, BFS at `B₀` with `chargeB0_total = 2‖B₀‖+d+2`; remainder is E12b/c/d |
-| E12b | `restrict` + `isolate` (§6.1) | wip | w6 | — | scratch array **one per node**, amortization visible in the cost model; charge is `Σ_{s∈S} deg_A(s)`-shaped — `O(‖A[S]‖+|S|)` is FALSE (`K_{3,n−3}`) |
-| E12c | the `cover` sweep + computed `ctr` (§6.2 ⟨B⟩) | wip | w6 | — | GKS's peeling sweep, `N_</N_>` split repr; identities to `Driver.cluster` and `CoverCentres.ctr`; (★) as GKS's accounting; expect 2 runs, schedule first |
-| E12d | `recordProfiles` (§6.3) | wip | w6 | — | iterate single-source `chargeB0` `(m+L)` times; rows cumulative, measured in `preG` **before** isolation; identity target `Driver.childCol`'s slot families |
-| E13 | compose to the headline (§8.7) | waiting | — | — | needs E12b, E12c, E12d |
+| E12b | `restrict` + `isolate` (§6.1) | done | w6 | 84ae503 | scratch array **one per node**, amortization visible in the cost model; charge is `Σ_{s∈S} deg_A(s)`-shaped — `O(‖A[S]‖+|S|)` is FALSE (`K_{3,n−3}`) |
+| E12c | the `cover` sweep + computed `ctr` (§6.2 ⟨B⟩) | done | w6 | 84ae503 | GKS's peeling sweep, `N_</N_>` split repr; identities to `Driver.cluster` and `CoverCentres.ctr`; (★) as GKS's accounting; expect 2 runs, schedule first |
+| E12d | `recordProfiles` (§6.3) | done | w6 | 84ae503 | iterate single-source `chargeB0` `(m+L)` times; rows cumulative, measured in `preG` **before** isolation; identity target `Driver.childCol`'s slot families |
+| E13 | compose to the headline (§8.7) | ready | — | — | every dependency landed; the endorsed axiom's statement is frozen — a mismatch is stop-condition 3 |
 
 ## Campaign log
+
+### 2026-08-18 — w6 lands: the machine layer is complete (`84ae503`)
+
+What is now true: every routine of §4's table exists with its charge and its
+identity to the abstract driver — twelve of thirteen leaves done, and only the
+composition (E13) remains. Three findings from the wave:
+
+- **E12c's fibre lemma holds with no side condition** — the peeled-ball IS
+  the wreach fibre, at any radius; the strict peel and the non-strict
+  endpoint clause are the same condition read through `not_lt`. But **(★)'s
+  closing needs `1 ≤ r`**, which GKS assume silently and which is false at
+  `r = 0` (a star refutes both `d_< ≤ |wreach|` and `N_> ⊆ X_v`). Explicit
+  hypothesis, spent in two lemmas; the design's `R ≥ 1` supplies it.
+- E12b's identities are `rfl` because it reuses the driver's own cluster
+  enumeration — pick implementation names to match the abstraction's and the
+  seam disappears.
+- E12d's marker class is `univ`, so its naive per-member iteration prices
+  `classSum ≥ n`; semantically the marker row is free (`y := z`). A
+  consumer-side special-case lemma is available to E13 if the constant
+  matters; it does not affect the exponent.
+
+A container restart hit mid-gate; the filesystem survived, the gate was
+re-run green, and nothing was lost — the checkpoint discipline was not
+needed this time but would have bounded the loss to one wake interval.
 
 ### 2026-08-18 — w5 lands: the unroll, and the machine layer opens (`a1d9294`)
 
