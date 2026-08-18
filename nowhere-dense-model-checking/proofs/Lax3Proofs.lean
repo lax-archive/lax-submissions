@@ -67,6 +67,10 @@ import Lax3Proofs.ImplCover
 import Lax3Proofs.ImplProfiles
 import Lax3Proofs.Impl
 
+-- The composition to the headline (E13): the conditional abstract
+-- headline under CoverOrderingTime, at the endorsed axiom's vocabulary.
+import Lax3Proofs.Headline
+
 -- The proofs package of submission Lax3.
 --
 -- What is here is the mathematical layer of the nowhere dense model
