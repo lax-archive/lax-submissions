@@ -39,8 +39,8 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F5 | the cover pipeline's cost, proved | done | w9 | 7ed61d3 | **`coverOrderingTime_of_nowhereDense`** with the honest witness `timedGreedyRoutine`; true exponent `1+δ`; no sort (the peel ranks); vacuity guarded (`le_chainCharge`) |
 | F6 | codegen to the machine — **split** | done (part) | w10 | 9b4cdfa | `mc_computesInTime_of_solveSpec`: ONE named obligation (`SolveSpec`) from the axiom; parse `Spec` discharged; `mcD` verbatim; word-size condition spent (`mcB = q(|x|+1)²`) |
 | F6b | arena materialization + profiles reroute + root eval | done | w11 | c4cde5b | `frameProgMS` at the MS budget; the CSR cells ARE the root arena; `solveSpec_of_rest` leaves one obligation; the sweep's BFS cut to F6d |
-| F6c | the `ℓ+1` driver blocks (Sepref descent) | wip | w11 | — | worker in flight at session wrap-up; partial state (if any) checkpointed on `origin/worktree-w11`; recovery: fetch, review against the packet, land or re-dispatch |
-| F6d | one shared IMP+ marking-BFS command | ready | — | — | **minted at wrap-up on F6b's finding**: no IMP+ BFS exists anywhere landed; the scatter sweep (`hscat`), the supports stage, and the profilesMS stage all consume it — build once, first |
+| F6c | the `ℓ+1` driver blocks — run 1 | done (part) | w11 | 7bad766 | frame contract + greedyScatter fully IMP+ (with an inlined marking BFS) + botEval's schedule fix; direct `Spec`-kit route validated; 5-run continuation mapped in `SolveBlocks.lean` |
+| F6d | shared IMP+ BFS: generalize `markCom` | ready | — | — | premise softened by F6c run 1: `markCom` (BFS by rounds) now exists inside the scatter; generalize its pattern for supports/profilesMS rather than build from scratch |
 | F7 | discharge the endorsed axiom | waiting | — | — | needs F6c, F6d; then: instantiate `SolveSpec` via `solveSpec_of_rest`, `q`/`c` per `hspan`, `temps ≥` boolean depth, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close with the `conclusion:` header |
 
 ## Campaign log
