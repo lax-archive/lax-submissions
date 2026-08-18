@@ -19,16 +19,32 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E3 | the edge half of (★) (§7) | done | w1 | 8709c19 | `CoverEdgeSum.sum_clusterWeight_le_rpow`; hypotheses exactly `0 ≤ c_D`, `0 ≤ δ`, `1 ≤ ‖A‖`; ceiling carried into `c_D+1` |
 | E4 | the cost recurrence, amended and slackened (§7) | done | w2 | b0444fa | `cost_root_le_chosenK`: `K^{ℓ+1}·n^{1+ε}` at `δ=ε/(ℓ+2)`, **no condition on `c`**; `star_of_cover_degree` bridges (★) to E3 |
 | E5 | `ReachedR` generalized to `S`-moves (§8.2) | done | w2 | b0444fa | `ReachedS`; descend batch is an equality; `splitterWins_of_reachedS` via mixed histories — no `splitterWins_anti` needed |
-| E6 | carrier transport for `ReachedR` (§9) | wip | w3 | — | E5 landed; transport `ReachedS` under adding isolated vertices and renumbering |
+| E6 | carrier transport for `ReachedR` (§9) | done | w3 | 55ba312 | `ArenaTransport`: one pushforward covers bijection + isolated cases; §5 line 8 was a **type error** — record kept at the root carrier, §5/§9 rewritten |
 | E7 | the compaction lemma (§5 step 3′, §8.4a) | done | w2 | b0444fa | `sat_compact_iff_satWithin_deleteVerts_compl`; plain `Sat↔Sat` is false (`exU` sees isolated verts) — `SatWithin` is the true form; no order hypothesis |
 | E8 | locality decomposition as a function (§8.3, O2) | done | w2 | b0444fa | `localityBC` via the Assembly discharge (axiom-free); `rfl`-irrelevant in the rank witness; atom lists for E9 |
-| E9 | the abstract algorithm — **hard gate** (§8.4) | waiting | — | — | needs E6 only now; may split into fresh rows |
+| E9 | the abstract algorithm — **hard gate** (§8.4) | ready | — | — | all deps landed (E1,E2,E4,E5,E6,E7,E8); may split into fresh rows |
 | E10 | unrolling the depth-`ℓ` recursion (§8.4b) | waiting | — | — | needs E9 |
 | E11 | the `Refine` tower probe (§8.5) | done | w2 | b0444fa | charge is alive-summed + carrier-sized init per call: restrict-then-BFS **forced**, mask ≠ restrict; `SpaceBudgetProbe` is §11's natural home |
 | E12 | `Arena` implementation and remaining routines (§8.6) | waiting | — | — | needs E9, E11 |
 | E13 | compose to the headline (§8.7) | waiting | — | — | needs everything |
 
 ## Campaign log
+
+### 2026-08-18 — w3 lands: E6, and §5's precondition is finally well-typed (`55ba312`)
+
+What is now true: every dependency of E9 is `done`. The carrier seam D1 opened
+is closed the cheap way — the play record lives at the root carrier and is
+never re-typed; `ArenaTransport` supplies the wholesale transports anyway
+(`reachedS_map`/`reachedS_restrict` along any embedding, `nextArenaS_mapRound`,
+`ball_map`), and §5 line 8 now states the invariant that actually typechecks.
+E6's one deviation from the plan is recorded in §9: general embeddings, not
+`castLE` — the child-to-root composite of `up` maps lands on a cluster, not an
+initial segment. One identity is explicitly booked for E12: `map emb B =
+deleteVerts (deleteVerts A Xᶜ) W` at the implementation's restrict∘isolate
+(line 16/21), which is what re-expresses a child's reached arena at the root.
+
+**Wave 4 is E9 alone — the hard gate.** No ND-MC driver until it is complete
+and reviewed.
 
 ### 2026-08-18 — w2 lands: every interface E9 composes against exists (`b0444fa`)
 
