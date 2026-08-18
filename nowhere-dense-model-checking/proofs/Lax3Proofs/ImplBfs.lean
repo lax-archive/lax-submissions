@@ -208,10 +208,11 @@ theorem parents_nonempty {s : Fin n} {d : ℕ} {D : Fin n → ℕ}
     (hD : BallTable H s d D) {v : Fin n} (hvd : D v ≤ d) (hv : 0 < D v) :
     (parents H D v).Nonempty := by
   obtain ⟨w, hw⟩ : WithinDist H (D v) v s :=
-    withinDist_symm ((hD v (D v) hvd).mp le_rfl)
+    withinDist_symm (mem_ball.mp ((hD v (D v) hvd).mp le_rfl))
   cases w with
   | nil =>
-      have : D v ≤ 0 := (hD v 0 (Nat.zero_le d)).mpr (mem_ball_self H 0 v)
+      have : D v ≤ 0 :=
+        (hD v 0 (Nat.zero_le d)).mpr (mem_ball_self H 0 v)
       omega
   | cons hadj p =>
       rename_i u
@@ -219,53 +220,46 @@ theorem parents_nonempty {s : Fin n} {d : ℕ} {D : Fin n → ℕ}
         simp only [SimpleGraph.Walk.length_cons] at hw
         omega
       have hu : D u ≤ D v - 1 :=
-        (hD u (D v - 1) (by omega)).mpr (withinDist_symm ⟨p, hp⟩)
+        (hD u (D v - 1) (by omega)).mpr (mem_ball.mpr (withinDist_symm ⟨p, hp⟩))
       exact ⟨u, Finset.mem_filter.mpr ⟨Finset.mem_univ u, hadj.symm, by omega⟩⟩
 
 /-- **The support is a walk's support** — the correctness of `descend`:
 at every reached vertex there is a walk to the source of length exactly
 `D v` whose support is precisely the recorded list. -/
 theorem descend_spec {s : Fin n} {d : ℕ} {D : Fin n → ℕ}
-    (hD : BallTable H s d D) :
-    ∀ v : Fin n, D v ≤ d →
-      ∃ w : H.Walk v s, w.length = D v ∧ w.support = descend H D v := by
-  suffices h : ∀ c : ℕ, ∀ v : Fin n, D v = c → D v ≤ d →
-      ∃ w : H.Walk v s, w.length = D v ∧ w.support = descend H D v by
-    exact fun v hv => h (D v) v rfl hv
-  intro c
-  induction c using Nat.strong_induction_on with
-  | _ c ih =>
-    intro v hc hvd
-    rcases Nat.eq_zero_or_pos (D v) with h0 | hpos
-    · -- the source itself: the empty walk
-      have hvs : WithinDist H 0 s v := (hD v 0 (Nat.zero_le d)).mp (le_of_eq h0)
-      obtain ⟨w, hw⟩ := hvs
-      cases w with
-      | nil =>
-          have hemp : ¬ (parents H D v).Nonempty := by
-            rintro ⟨u, hu⟩
-            have := (Finset.mem_filter.mp hu).2.2
-            omega
-          refine ⟨.nil, by simpa using h0.symm, ?_⟩
-          rw [descend, dif_neg hemp, SimpleGraph.Walk.support_nil]
-      | cons hadj p => simp at hw
-    · -- one step down the gradient, then the inductive walk
-      have hne := parents_nonempty hD hvd hpos
-      set u := (parents H D v).min' hne with hu
-      obtain ⟨-, hadj, hlt⟩ :
-          u ∈ Finset.univ ∧ H.Adj u v ∧ D u < D v := by
-        have := (parents H D v).min'_mem hne
-        rwa [parents, Finset.mem_filter, and_assoc] at this
-      obtain ⟨w', hw'len, hw'sup⟩ :=
-        ih (D u) (by omega) u rfl (by omega)
-      refine ⟨.cons hadj.symm w', ?_, ?_⟩
-      · -- the length is exactly `D v`: the walk certifies `D v ≤ D u + 1`
-        have hle : D v ≤ D u + 1 := by
-          refine (hD v (D u + 1) (by omega)).mpr ?_
-          exact withinDist_symm ⟨.cons hadj.symm w', by simp [hw'len]⟩
-        simp only [SimpleGraph.Walk.length_cons, hw'len]
-        omega
-      · rw [SimpleGraph.Walk.support_cons, hw'sup, descend, dif_pos hne]
+    (hD : BallTable H s d D) (v : Fin n) (hvd : D v ≤ d) :
+    ∃ w : H.Walk v s, w.length = D v ∧ w.support = descend H D v := by
+  rcases Nat.eq_zero_or_pos (D v) with h0 | hpos
+  · -- the source itself: the empty walk
+    obtain ⟨w, hw⟩ : WithinDist H 0 s v := mem_ball.mp ((hD v 0 (Nat.zero_le d)).mp (le_of_eq h0))
+    cases w with
+    | nil =>
+        have hemp : ¬ (parents H D v).Nonempty := by
+          rintro ⟨u, hu⟩
+          have := (Finset.mem_filter.mp hu).2.2
+          omega
+        refine ⟨.nil, by simpa using h0.symm, ?_⟩
+        rw [SimpleGraph.Walk.support_nil, descend, dif_neg hemp]
+    | cons hadj p => simp at hw
+  · -- one step down the gradient, then the recursive walk
+    have hne := parents_nonempty hD hvd hpos
+    set u := (parents H D v).min' hne with hu
+    have hmem := (parents H D v).min'_mem hne
+    rw [← hu, parents, Finset.mem_filter] at hmem
+    obtain ⟨-, hadj, hlt⟩ := hmem
+    obtain ⟨w', hw'len, hw'sup⟩ := descend_spec hD u (by omega)
+    refine ⟨.cons hadj.symm w', ?_, ?_⟩
+    · -- the length is exactly `D v`: the walk certifies `D v ≤ D u + 1`
+      have hle : D v ≤ D u + 1 := by
+        refine (hD v (D u + 1) (by omega)).mpr (mem_ball.mpr ?_)
+        exact withinDist_symm ⟨.cons hadj.symm w', by simp [hw'len]⟩
+      simp only [SimpleGraph.Walk.length_cons, hw'len]
+      omega
+    · rw [SimpleGraph.Walk.support_cons, hw'sup]
+      conv_rhs => rw [descend]
+      rw [dif_pos hne, ← hu]
+termination_by D v
+decreasing_by exact hlt
 
 /-- The recorded list has exactly `D v + 1` names… -/
 theorem length_descend {s : Fin n} {d : ℕ} {D : Fin n → ℕ}

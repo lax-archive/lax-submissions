@@ -330,7 +330,7 @@ theorem scatterCostAux_le (G : SimpleGraph (Fin n)) (r : ℕ) (X : Set (Fin n))
       · have hrec := scatterCostAux_le G r X W t vs acc h
         rw [List.length_cons]
         refine le_trans (Nat.add_le_add_left hrec _) (le_of_eq ?_)
-        simp only [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+        simp only [Nat.add_left_comm, Nat.add_assoc]
 
 /-- **The §4 charge**: `greedyScatter` costs `O(t·‖A‖)` — precisely
 `t * (n + W)` with `W` the per-pick marking charge (`W := ‖A‖` at the

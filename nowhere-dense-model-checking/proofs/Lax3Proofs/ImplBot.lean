@@ -204,8 +204,7 @@ theorem botEval_eq_sat (colB : Fin n → Fin L → Bool) (col : Coloring n L)
       · intro hsat
         rcases (sat_exU_bot_of_repr φ {w | w ∈ reps colB m}
             (reps_spec colB hcol m)).mp hsat with ⟨i, hi⟩ | ⟨w, hwW, -, hw⟩
-        · exact ⟨m i, List.mem_append.mpr (Or.inl (by
-            simpa using List.mem_ofFn.mpr ⟨i, rfl⟩)),
+        · exact ⟨m i, List.mem_append.mpr (Or.inl (List.mem_ofFn.mpr ⟨i, rfl⟩)),
             (ih (Fin.snoc m (m i))).mpr hi⟩
         · exact ⟨w, List.mem_append.mpr (Or.inr hwW), (ih (Fin.snoc m w)).mpr hw⟩
   | exL r g φ ih =>
