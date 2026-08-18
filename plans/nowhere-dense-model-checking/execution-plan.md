@@ -334,4 +334,87 @@ condition). **Deps:** everything.
   (§11 repairs 1 and 2). Real, and they would let the *linear* side condition
   be restored — but off the critical path.
 - **Formalizing NOdM 2005.** E0 states the cover's time bound as an
-  assumption. Discharging it is a campaign, not a leaf.
+  assumption. Discharging it is a campaign, not a leaf. **Jan authorized that
+  campaign on 2026-08-18** ("discharge all the remaining ones") — it is the F
+  section below.
+
+---
+
+# The discharge campaign — F leaves (authorized 2026-08-18)
+
+The E campaign ended at `Headline.lean`'s conditional composition; its
+remainder map (items (a)–(e) of that file's `/-! -/` section) is this DAG.
+The goal is the endorsed axiom itself:
+`Lax3.ModelChecking.exists_almostLinearTime_program_modelChecking`, discharged
+by a proofs-side theorem in `Assembly`'s style (`conclusion:` header).
+
+```
+  F1 ─→ F5 ─┐
+  F2 ────────┼─→ F6 ─→ F7
+  F3 ─→ F4 ─┘
+```
+
+## F1 — the ordering routine, and `IsCoverOrdering.data` discharged
+
+Construct a total `CoverSpec.OrderingRoutine` from the landed greedy-chain
+material and prove its `data` field on every class member's subgraph copy.
+The pieces are landed and named in `CoverSpec.lean`'s docstring:
+`exists_augChain_wcol` (`Augmentation.lean:1030`), `exists_greedy_round`
+(`:1157`), `greedy_chain_inDegLE` (`:1175`); the target is `AugChainData`
+(`CoverDegree.lean:642`) — six clauses incl. the two elimination
+*minimalities* (`ElimPost`), which is the assembly E0 recorded as the only
+missing piece. **Owns:** `Lax3Proofs/CoverRoutine.lean`. **Deps:** none.
+**Hazard:** the routine is total (`∀ m G`); the property holds on members —
+do not let totality leak class hypotheses into the definition.
+
+## F2 — the CSR front end
+
+From `Lax11.GraphEncoding.EncodesGraph x n G`: the parse of the word `x` into
+the root arena (identity to `Driver.rootArena`/`Impl.MArena` at the encoded
+graph), as an NREST computation with charge `O(x.length)`. E13's
+`graphWeight_add_three_le_length` is the seam already crossed once.
+**Owns:** `Lax3Proofs/ImplFrontEnd.lean`. **Deps:** none.
+
+## F3 — the frame program
+
+`Unroll.frameEval` as one NREST program composed from the landed `Impl*`
+routines — cover/restrict/profiles/isolate/recurse-slot/scatter/readback —
+with the recursive call and the cover pass as *parameters* (an NREST
+computation with a spec-and-charge slot each), and the charge theorem against
+`Unroll.frameCost`'s shape. **Owns:** `Lax3Proofs/ProgFrame*.lean`.
+**Deps:** none (parameterized). Expected to split.
+
+## F4 — the driver program
+
+The `ℓ+1`-level composition of F3's frames per `Unroll.unrollAux`, the cover
+slot filled by F5's program, charge `≤ unrolledCost`-shaped.
+**Owns:** `Lax3Proofs/ProgDriver.lean`. **Deps:** F3, F5.
+
+## F5 — the cover pipeline's cost, proved
+
+The augmentation rounds + low-indegree orientation + ordering + peeling sweep
+as cost-carrying NREST programs, total charge `≤ f·m^{1+2δ}`. The
+*mathematics* is landed further than E0 knew:
+`exists_augChain_inDeg_subpolynomial` (`Augmentation.lean:1076`) already
+bounds every round's in-degree by `c·m^δ` on nowhere-dense classes, and
+`ImplCover` carries the sweep's `(★)` accounting. What this leaf owes is the
+per-round `O(md²·n)`-style program accounting (`references/nodm05/BEII.tex`
+`:570-680` is the source; E0's §8 0b rewrite pins it) and the composition.
+**Owns:** `Lax3Proofs/ProgCover*.lean`. **Deps:** F1. Expected to split.
+
+## F6 — codegen to the machine
+
+Sepref/Translate/compile of F2 ∘ F4 into one `Lax13.Ram.Program`;
+`ComputesInTime` via `computesInTime_of_spec` (`Cash.lean:407-419`); the
+squared word-size condition spent as `hinp`/`FitsWords` against `Unroll`'s
+static layout (§11, `SpaceBudgetProbe`). The tower's landed end-to-end
+precedent is `Refine/Codegen/Examples/EndToEnd.lean` (P5's acceptance, two
+programs at `ComputesInTime`). **Owns:** `Lax3Proofs/ProgCodegen*.lean`.
+**Deps:** F2, F4. Expected to split.
+
+## F7 — the discharge
+
+The theorem with `conclusion: Lax3.ModelChecking.
+exists_almostLinearTime_program_modelChecking`: F6's program, `T` closed by
+E13's arithmetic chain at F5's proved bound in place of `CoverOrderingTime`.
+**Owns:** `Lax3Proofs/HeadlineDischarge.lean`. **Deps:** everything.

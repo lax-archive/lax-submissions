@@ -30,8 +30,25 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | E12c | the `cover` sweep + computed `ctr` (§6.2 ⟨B⟩) | done | w6 | 84ae503 | GKS's peeling sweep, `N_</N_>` split repr; identities to `Driver.cluster` and `CoverCentres.ctr`; (★) as GKS's accounting; expect 2 runs, schedule first |
 | E12d | `recordProfiles` (§6.3) | done | w6 | 84ae503 | iterate single-source `chargeB0` `(m+L)` times; rows cumulative, measured in `preG` **before** isolation; identity target `Driver.childCol`'s slot families |
 | E13 | compose to the headline (§8.7) | done | w7 | b2df405 | `headline_abstract`/`headline_encoded`: full iff at `FirstOrder.Sat`, cost at `(x.length+1)^{1+ε}` under `CoverOrderingTime` alone; remainder mapped in-file |
+| F1 | ordering routine + `data` discharge | ready | — | — | pieces landed (`exists_augChain_wcol`, `exists_greedy_round`, `greedy_chain_inDegLE`); the assembly with `ElimPost` minimalities is the content |
+| F2 | the CSR front end | ready | — | — | `EncodesGraph` → root arena, NREST charge `O(x.length)` |
+| F3 | the frame program (NREST) | ready | — | — | cover + recursion as parameterized slots; expected to split |
+| F4 | the driver program (ℓ+1 levels) | waiting | — | — | needs F3, F5 |
+| F5 | the cover pipeline's cost, proved | waiting | — | — | needs F1; math half further landed than E0 knew (`exists_augChain_inDeg_subpolynomial`); owes the per-round program accounting |
+| F6 | codegen to the machine | waiting | — | — | needs F2, F4; precedent `Codegen/Examples/EndToEnd.lean` |
+| F7 | discharge the endorsed axiom | waiting | — | — | needs everything; `conclusion:` header style |
 
 ## Campaign log
+
+### 2026-08-18 — the discharge campaign opens (Jan's authorization)
+
+Jan, in his own words: *"Please discharge all the remaining ones."* The
+remainder map of `Headline.lean` becomes the F DAG (execution-plan.md, F
+section). Recon before minting: the greedy-chain assembly pieces are all
+landed; `exists_augChain_inDeg_subpolynomial` already carries the md ≤ c·m^δ
+per-round mathematics; and the Refine tower has a landed end-to-end
+`ComputesInTime` precedent (`Codegen/Examples/EndToEnd.lean`), so the codegen
+path is exercised, not hypothetical. **Wave 8 (`w8`) is F1, F2, F3.**
 
 ### 2026-08-18 — w7 lands E13, and the ledger is complete (`b2df405`)
 
