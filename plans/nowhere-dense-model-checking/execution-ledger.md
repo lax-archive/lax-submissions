@@ -34,10 +34,10 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F2 | the CSR front end | done | w8 | 2206f72 | round trip is a graph **equality**; `chargeParse` total = `x.length` exactly |
 | F3 | the frame program (NREST) | done | w8 | 2206f72 | `frameProg_le_spec`: the table IS `frameEval` given the two slots; charge ledger named; comparison deferred to F3c |
 | F3b | multi-source profiles via a virtual source | done | w9 | 7ed61d3 | bridge survives source-revisits (strong recursion); `recordProfilesMS_eq_childCol` against the frozen target; marker free; §6.3's `(m+L)` shape restored |
-| F3c | `frameCharge` vs `frameCost`, at the node | ready | — | — | F3b landed; reroute `frameCharge`'s profile column through `profilesChargeMS`; compare at the node, `ord := timedGreedyRoutine` |
+| F3c | `frameCharge` vs `frameCost`, at the node | wip | w10 | — | F3b landed; reroute `frameCharge`'s profile column through `profilesChargeMS`; compare at the node, `ord := timedGreedyRoutine` |
 | F4 | the driver program (ℓ+1 levels) | done | w9 | 7ed61d3 | `driverProg_le_spec` by level induction; `mcProg_headline` at the axiom's semantic object; fuel-0 edged branch dead on the class |
 | F5 | the cover pipeline's cost, proved | done | w9 | 7ed61d3 | **`coverOrderingTime_of_nowhereDense`** with the honest witness `timedGreedyRoutine`; true exponent `1+δ`; no sort (the peel ranks); vacuity guarded (`le_chainCharge`) |
-| F6 | codegen to the machine | ready | — | — | F2, F4, F5 landed; cover slot = `coverProg`; the fuel-0 dead branch routed around via `memLeaf_eq_bot`; precedent `EndToEnd.lean` |
+| F6 | codegen to the machine | wip | w10 | — | F2, F4, F5 landed; cover slot = `coverProg`; the fuel-0 dead branch routed around via `memLeaf_eq_bot`; precedent `EndToEnd.lean` |
 | F7 | discharge the endorsed axiom | waiting | — | — | needs everything; `conclusion:` header style |
 
 ## Campaign log
