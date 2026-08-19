@@ -2823,8 +2823,9 @@ private theorem fillBody_spec {Fl : List (DistFO Lc 1)}
     refine ⟨τ'', (hr'.seq hrst).mono (by
       have := evalK_le_evalKMax (Lc := Lc) (K := K) (List.getElem_mem hi)
       omega), ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-    · exact rowBits_of_arrs_eq (by rw [hoth'' ca (Ne.symm hta_ca)]
-        exact harr' ca hca_ea hca_xa) hrowτ
+    · refine rowBits_of_arrs_eq ?_ hrowτ
+      rw [hoth'' ca (Ne.symm hta_ca)]
+      exact harr' ca hca_ea hca_xa
     · refine firstsSt_of_arrs_eq ?_ ?_ hfstτ
       · rw [hoth'' na (Ne.symm hta_na)]
         exact harr' na hna_ea hna_xa
@@ -2875,10 +2876,10 @@ private theorem fillBody_spec {Fl : List (DistFO Lc 1)}
       by rw [hσ₁, arrs_setArr, if_neg (Ne.symm hea_xa)]; exact hxa0,
       by rw [hσ₁]; simpa using hvdef.symm,
       by rw [hσ₁]; simpa using hn,
-      by rw [hσ₁, arrs_setArr, if_neg (Ne.symm hta_ea)]; exact htal,
+      by rw [hσ₁, arrs_setArr, if_neg hta_ea]; exact htal,
       ?_, fun i hi h0 => absurd h0 (by omega)⟩
     intro w hw i hi
-    rw [hσ₁, arrs_setArr, if_neg (Ne.symm hta_ea)]
+    rw [hσ₁, arrs_setArr, if_neg hta_ea]
     exact hold w hw i hi
   obtain ⟨τf, hrf, hτf⟩ := hscan σ₁ hInv₃0
   simp only [Nat.zero_add] at hτf
@@ -2930,12 +2931,12 @@ private theorem fillBody_spec {Fl : List (DistFO Lc 1)}
     omega
   · rw [hoth_h xa (Ne.symm hea_xa)]
     exact hxaf
-  · rw [hoth_h ta (Ne.symm hta_ea)]
+  · rw [hoth_h ta hta_ea]
     exact htalf
   · -- every scanned row, the fresh one included
     intro w hw i hi
     rw [hvh] at hw
-    rw [hoth_h ta (Ne.symm hta_ea)]
+    rw [hoth_h ta hta_ea]
     rcases Nat.lt_or_ge (w : ℕ) v with hwv | hwv
     · exact holdf w hwv i hi
     · have hweq : w = (⟨v, hvN⟩ : Fin N) := Fin.ext (by omega)
@@ -2976,8 +2977,8 @@ theorem fillCom_spec {Fl : List (DistFO Lc 1)}
       by simp only [vars_setVar, if_neg (by decide : ("bt.n" : String) ≠ "bt.v")]; exact hn,
       by simp, by simpa using hea0, by simpa using hxa0, by simpa using htal, ?_⟩
     intro w hw i hi
-    simp only [vars_setVar, if_pos rfl] at hw
-    omega
+    have hw0 : (w : ℕ) < 0 := by simp at hw; exact hw
+    exact absurd hw0 (by omega)
   obtain ⟨σ', hrl, hI, hvN'⟩ := hloop.run hpre
   obtain ⟨-, -, -, -, -, -, htal', htab'⟩ := hI
   refine ⟨σ', hrl.mono (by

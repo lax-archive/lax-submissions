@@ -2859,9 +2859,113 @@ private theorem histBody_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
       by rw [hv "rs.i" (by decide) (by decide)],
       by rw [vars_setVar, if_neg (by decide), hσ₁]; simp,
       by simp,
-      f, by rw [ha]; exact hfarr, hdone i (by omega)?, ?_⟩
-    sorry
-  sorry
+      f, by rw [ha]; exact hfarr, hdone, ?_⟩
+    intro r hr
+    rw [vars_setVar, if_pos rfl] at hr
+    omega
+  have hmid := Spec.forRangeZero (B := B) "rs.q" "rs.p"
+    (HistMidSt nmP nmC la ra n ℓp hb S histP i) ℓp (36 * hb + 38)
+    (by
+      have h1 : 1 * ℓp ≤ n * ℓp := Nat.mul_le_mul_right ℓp (by omega)
+      have h2 : n * ℓp ≤ n * ℓp * (hb + 1) := Nat.le_mul_of_pos_right _ (by omega)
+      omega)
+    (fun τ hτ => hτ.hq) (fun τ hτ => hτ.hp)
+    (histRoundStep_spec hNB hHB hhc hhra hhla hlt)
+  obtain ⟨σ₂, hmrun, hMid₂, hq₂⟩ := hmid.run hMid₁
+  obtain ⟨hh₂, hcl₂, hk₂, hp₂, hhb₂, hra₂, hiv₂, hs₂, -, f₂, hfarr₂, hdoneA₂, hdoneR₂⟩ := hMid₂
+  -- the member counter
+  have hinc : Run B (.assign "rs.i" (.add (.var "rs.i") (.lit 1))) σ₂
+      (σ₂.setVar "rs.i" (i + 1)) 4 := by
+    have hev := evalB_incr (B := B) (x := "rs.i") (σ := σ₂) (by rw [hiv₂]; omega)
+    rw [hiv₂] at hev
+    exact (Run.assign hev).mono (by simp)
+  refine ⟨σ₂.setVar "rs.i" (i + 1), ?_,
+    ⟨⟨by simpa using hh₂.1, fun v p => by simpa using hh₂.2 v p⟩,
+      ⟨by simpa using hcl₂.1, fun t ht => by simpa using hcl₂.2 t ht⟩,
+      by simpa using hk₂,
+      by simpa using hp₂,
+      by simpa using hhb₂,
+      by simpa using hra₂,
+      by simp; omega, ?_⟩, by simp [← hi_def]⟩
+  · have h := hread.seq (hmrun.seq hinc)
+    exact h.mono (by omega)
+  · refine ⟨f₂, by simpa using hfarr₂, ?_⟩
+    intro a ha r hr
+    simp at ha
+    rcases Nat.lt_or_ge a i with hai | hai
+    · exact hdoneA₂ a hai r hr
+    · have hae : a = i := by omega
+      subst hae
+      exact hdoneR₂ r (by omega)
+
+/-- **The channel filter, discharged**: the child channel region ends at
+`(A.restrict S).hist` — per vertex and per round, the stored list's
+in-order intersection with the cluster, renamed local. Cost
+`|S|·O(ℓp·(hb+1))`. -/
+private theorem histFilter_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
+    (hhc : nmC.hist ≠ nmP.hist) (hhra : nmC.hist ≠ ra) (hhla : nmC.hist ≠ la) :
+    Spec B
+      (fun σ => HistArr nmP.hist ℓp hb histP σ ∧ ClusterList la S σ ∧
+        σ.vars "rs.k" = S.ncard ∧ σ.vars "rs.p" = ℓp ∧ σ.vars "rs.h" = hb ∧
+        σ.arrs ra = arrOf n (rk S) ∧
+        (σ.arrs nmC.hist).length = S.ncard * ℓp * (hb + 1))
+      (histFilter nmP nmC la ra)
+      (fun _ σ' => HistArr nmP.hist ℓp hb histP σ' ∧ ClusterList la S σ' ∧
+        σ'.vars "rs.k" = S.ncard ∧ σ'.arrs ra = arrOf n (rk S) ∧
+        HistArr nmC.hist ℓp hb
+          (fun a r => (histP (Impl.restrictEmb S a) r).filterMap
+            (Impl.toLocal S)) σ')
+      (((36 * hb + 42) * ℓp + 17) * S.ncard + 6) := by
+  have hmain := Spec.forRangeZero (B := B) "rs.i" "rs.k"
+    (HistSt nmP nmC la ra n ℓp hb S histP) S.ncard ((36 * hb + 42) * ℓp + 13)
+    (by have := ncard_le_carrier S; omega)
+    (fun τ hτ => hτ.hiN) (fun τ hτ => hτ.hk)
+    (histBody_spec hNB hHB hhc hhra hhla)
+  refine ((hmain.pre ?_).post ?_).mono le_rfl
+  · rintro σ ⟨hh, hcl, hk, hp, hhb, hra, hlen⟩
+    refine ⟨⟨by simpa using hh.1, fun v p => by simpa using hh.2 v p⟩,
+      ⟨by simpa using hcl.1, fun t ht => by simpa using hcl.2 t ht⟩,
+      by simpa using hk, by simpa using hp, by simpa using hhb,
+      by simpa using hra, by simp,
+      fun p => (σ.arrs nmC.hist).getD p 0, ?_, ?_⟩
+    · simp only [arrs_setVar]
+      rw [← hlen]
+      exact (arrOf_getD _).symm
+    · intro a ha
+      simp at ha
+  · rintro σ σ' - ⟨⟨hh, hcl, hk, -, -, hra, -, f, hfarr, hdone⟩, hie⟩
+    refine ⟨hh, hcl, hk, hra, by rw [hfarr, length_arrOf], ?_⟩
+    intro v p
+    have hvk : (v : ℕ) < S.ncard := v.2
+    have hpl : (p : ℕ) < ℓp := p.2
+    obtain ⟨hbase, hents⟩ := hdone (v : ℕ) (by rw [hie]; exact hvk) (p : ℕ) hpl
+    have hch : chN histP S (v : ℕ) (p : ℕ)
+        = ((histP (Impl.restrictEmb S v) p).filterMap (Impl.toLocal S)).map
+            Fin.val := by
+      have h := chN_eq (S := S) (histP := histP) hvk hpl
+      rw [show (⟨(v : ℕ), hvk⟩ : Fin S.ncard) = v from Fin.ext rfl,
+        show (⟨(p : ℕ), hpl⟩ : Fin ℓp) = p from Fin.ext rfl] at h
+      exact h
+    have hlen_eq : (chN histP S (v : ℕ) (p : ℕ)).length
+        = ((histP (Impl.restrictEmb S v) p).filterMap (Impl.toLocal S)).length := by
+      rw [hch, List.length_map]
+    have hlenhb : (chN histP S (v : ℕ) (p : ℕ)).length ≤ hb := by
+      have h1 : (chN histP S (v : ℕ) (p : ℕ)).length
+          ≤ (histN histP (embN S (v : ℕ)) (p : ℕ)).length :=
+        List.length_filterMap_le _ _
+      have h2 := histN_len_le hh (embN S (v : ℕ)) (p : ℕ)
+      omega
+    refine ⟨by omega, ?_, ?_⟩
+    · rw [hfarr, getD_arrOf _ (by
+        have := hist_idx_lt (n := S.ncard) (hb := hb) hvk hpl
+          (show 0 < hb + 1 by omega)
+        omega), hbase, hlen_eq]
+    · intro m hm
+      have hmch : m < (chN histP S (v : ℕ) (p : ℕ)).length := by omega
+      rw [hfarr, getD_arrOf _ (by
+        have := hist_idx_lt (n := S.ncard) (hb := hb) hvk hpl
+          (show 1 + m < hb + 1 by omega)
+        omega), hents m hmch, hch, getD_map_val _ (by omega)]
 
 end HistFilter
 
