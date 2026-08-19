@@ -110,6 +110,26 @@ private theorem arrs_setArr_self (σ : Env) (a : String) (i v : ℕ) :
 private theorem arrs_setArr_ne {a b : String} (h : b ≠ a) (σ : Env) (i v : ℕ) :
     (σ.setArr a i v).arrs b = σ.arrs b := by simp [h]
 
+/-- `GraphCsr` transports along array agreement. -/
+private theorem graphCsr_of_eq {o t : String} {N ns : ℕ}
+    {G : SimpleGraph (Fin N)} {σ σ' : Env} (h : GraphCsr o t G ns σ)
+    (ho : σ'.arrs o = σ.arrs o) (ht : σ'.arrs t = σ.arrs t) :
+    GraphCsr o t G ns σ' := by
+  obtain ⟨off, tgt, hc, h0, hnd, hadj⟩ := h
+  exact ⟨off, tgt, hc.of_eq ho ht, h0, hnd, hadj⟩
+
+/-- `ColBits` transports along array agreement. -/
+private theorem colBits_of_eq {a : String} {N Λl : ℕ} {col : Coloring N Λl}
+    {σ σ' : Env} (h : ColBits a col σ) (ha : σ'.arrs a = σ.arrs a) :
+    ColBits a col σ' :=
+  ⟨by rw [ha]; exact h.1, fun v c => by rw [ha]; exact h.2 v c⟩
+
+/-- `FinBits` transports along array agreement. -/
+private theorem finBits_of_eq {a : String} {N : ℕ} {X : Set (Fin N)}
+    {σ σ' : Env} (h : FinBits a X σ) (ha : σ'.arrs a = σ.arrs a) :
+    FinBits a X σ' :=
+  ⟨by rw [ha]; exact h.1, fun v => by rw [ha]; exact h.2 v⟩
+
 private theorem evalB_incr {B : ℕ} {x : String} {σ : Env}
     (hx : σ.vars x + 1 < B) :
     (Expr.add (.var x) (.lit 1)).evalB B σ = some (σ.vars x + 1) := by
@@ -2229,5 +2249,992 @@ theorem vsrcCom_spec
       hsrc hoff0 hnd hvoF hg'
 
 end VsrcSpec
+
+/-! ## §5 The two calls: one batch slot, one colour class -/
+
+/-- One batch call: load the carrier/slot cells and the radius `R`,
+load the source from the batch region at (compile-time) slot `j`, run
+the landed BFS into `pd` directly — `bfsCom` cleans the region it is
+handed, so there is no copy and no caller-side wipe. -/
+def batchCom (oa ta ba nN nS : String) (R j : ℕ) (pd : String) : Com :=
+  .seq (.assign "bf.n" (.var nN))
+    (.seq (.assign "bf.m" (.var nS))
+      (.seq (.assign "bf.r" (.lit R))
+        (.seq (.assign "bf.v" (.get ba (.lit j)))
+          (bfsCom oa ta pd))))
+
+/-- One colour-class call: extract the class column, materialize the
+`vsrc` CSR, point the BFS cells at the augmented arena — carrier
+`N + 1`, slots `ns + 2·|X|` (computed from the saved member total),
+radius `R + 1`, source the carrier cell's value `N` (= `Fin.last`) —
+and run the landed BFS into `pu` directly. -/
+def classCom (oa ta ca xb vo nN nS : String) (Λl c R : ℕ)
+    (vt pu : String) : Com :=
+  .seq (classBitsCom ca xb nN Λl c)
+    (.seq (vsrcCom oa ta xb vo vt nN nS)
+      (.seq (.assign "bf.n" (.add (.var nN) (.lit 1)))
+        (.seq (.assign "bf.m"
+            (.add (.var nS) (.add (.var "pw.t") (.var "pw.t"))))
+          (.seq (.assign "bf.r" (.lit (R + 1)))
+            (.seq (.assign "bf.v" (.var nN))
+              (bfsCom vo vt pu))))))
+
+section Calls
+
+variable {B N ns mb Λl R : ℕ} {H : SimpleGraph (Fin N)}
+  {oa ta ca ba xb vo vt pu pd nN nS : String}
+
+/-- **One batch call, discharged**: the `pd` region becomes the exact
+truncated distance table of the `j`-th padded batch vertex at radius
+`R`, every entry `≤ R + 1`. -/
+theorem batchCom_spec {w : Fin mb → Fin N} {j : ℕ} (hjmb : j < mb)
+    (hpd_oa : pd ≠ oa) (hpd_ta : pd ≠ ta) (_hpd_ba : pd ≠ ba)
+    (hnN_scr : nN ∉ profScalars) (hnS_scr : nS ∉ profScalars)
+    (hNB : N + 2 < B) (hnsB : ns + 2 * N + 1 < B) (hRB : R + 3 < B)
+    (hmbB : mb < B) :
+    Spec B
+      (fun σ => GraphCsr oa ta H ns σ ∧
+        σ.vars nN = N ∧ σ.vars nS = ns ∧
+        (σ.arrs ba).length = mb ∧
+        (∀ j' : Fin mb, (σ.arrs ba).getD (j' : ℕ) 0 = (w j' : ℕ)) ∧
+        (σ.arrs pd).length = N)
+      (batchCom oa ta ba nN nS R j pd)
+      (fun _ σ' => (σ'.arrs pd).length = N ∧
+        (∀ v : Fin N, (σ'.arrs pd).getD (v : ℕ) 0 ≤ R + 1) ∧
+        Impl.BallTable H (w ⟨j, hjmb⟩) R
+          (fun v => (σ'.arrs pd).getD (v : ℕ) 0))
+      (batchK N ns R) := by
+  have hbfsub : (["bf.n", "bf.m", "bf.r", "bf.v"] : List String)
+      ⊆ profScalars := by decide
+  have hnN_bf : ∀ y ∈ (["bf.n", "bf.m", "bf.r", "bf.v"] : List String),
+      nN ≠ y := fun y hy h => hnN_scr (h ▸ hbfsub hy)
+  have hnS_bf : ∀ y ∈ (["bf.n", "bf.m", "bf.r", "bf.v"] : List String),
+      nS ≠ y := fun y hy h => hnS_scr (h ▸ hbfsub hy)
+  intro σ hσ
+  obtain ⟨hcsr, hn, hs, hbalen, hbaget, hpdlen⟩ := hσ
+  -- the four cell loads
+  have ha1 : Run B (.assign "bf.n" (.var nN)) σ (σ.setVar "bf.n" N) 2 := by
+    have hev := evalB_var (B := B) (x := nN) (σ := σ) (by rw [hn]; omega)
+    rw [hn] at hev
+    exact (Run.assign hev).mono (by simp)
+  set σ₁ := σ.setVar "bf.n" N with hσ₁
+  have ha2 : Run B (.assign "bf.m" (.var nS)) σ₁ (σ₁.setVar "bf.m" ns) 2 := by
+    have h1s : σ₁.vars nS = ns := by
+      rw [hσ₁, vars_setVar_ne (hnS_bf _ (by decide))]
+      exact hs
+    have hev := evalB_var (B := B) (x := nS) (σ := σ₁) (by rw [h1s]; omega)
+    rw [h1s] at hev
+    exact (Run.assign hev).mono (by simp)
+  set σ₂ := σ₁.setVar "bf.m" ns with hσ₂
+  have ha3 : Run B (.assign "bf.r" (.lit R)) σ₂ (σ₂.setVar "bf.r" R) 2 :=
+    (Run.assign (evalB_lit (by omega))).mono (by simp)
+  set σ₃ := σ₂.setVar "bf.r" R with hσ₃
+  have ha4 : Run B (.assign "bf.v" (.get ba (.lit j))) σ₃
+      (σ₃.setVar "bf.v" ((w ⟨j, hjmb⟩ : Fin N) : ℕ)) 3 := by
+    have h3ba : σ₃.arrs ba = σ.arrs ba := by
+      rw [hσ₃, arrs_setVar, hσ₂, arrs_setVar, hσ₁, arrs_setVar]
+    have hev : (Expr.get ba (.lit j)).evalB B σ₃
+        = some ((w ⟨j, hjmb⟩ : Fin N) : ℕ) := by
+      refine evalB_get (evalB_lit (by omega)) ?_
+        (by have := (w ⟨j, hjmb⟩).isLt; omega)
+      rw [h3ba, ← hbaget ⟨j, hjmb⟩]
+      exact getElem?_getD (by rw [hbalen]; omega)
+    exact (Run.assign hev).mono (by simp)
+  set σ₄ := σ₃.setVar "bf.v" ((w ⟨j, hjmb⟩ : Fin N) : ℕ) with hσ₄
+  -- the BFS
+  have h4arr : ∀ b, σ₄.arrs b = σ.arrs b := by
+    intro b
+    rw [hσ₄, arrs_setVar, hσ₃, arrs_setVar, hσ₂, arrs_setVar, hσ₁, arrs_setVar]
+  have h4n : σ₄.vars "bf.n" = N := by
+    rw [hσ₄, vars_setVar_ne (by decide), hσ₃, vars_setVar_ne (by decide),
+      hσ₂, vars_setVar_ne (by decide), hσ₁, vars_setVar_self]
+  have h4m : σ₄.vars "bf.m" = ns := by
+    rw [hσ₄, vars_setVar_ne (by decide), hσ₃, vars_setVar_ne (by decide),
+      hσ₂, vars_setVar_self]
+  have h4r : σ₄.vars "bf.r" = R := by
+    rw [hσ₄, vars_setVar_ne (by decide), hσ₃, vars_setVar_self]
+  have h4v : σ₄.vars "bf.v" = ((w ⟨j, hjmb⟩ : Fin N) : ℕ) := by
+    rw [hσ₄, vars_setVar_self]
+  have hcsr4 : GraphCsr oa ta H ns σ₄ :=
+    graphCsr_of_eq hcsr (h4arr oa) (h4arr ta)
+  obtain ⟨σ', hr', -, hlen', hbd', hbt'⟩ :=
+    (bfsCom_spec_graphCsr (G := H) (w ⟨j, hjmb⟩) (show N < B by omega)
+      (show ns < B by omega) (show R + 2 < B by omega) hpd_oa hpd_ta).run
+    ⟨hcsr4, h4n, h4m, h4r, h4v, by rw [h4arr]; exact hpdlen⟩
+  exact ⟨σ', (ha1.seq (ha2.seq (ha3.seq (ha4.seq hr')))).mono
+    (by unfold batchK; omega), hlen', hbd', hbt'⟩
+
+/-- **One colour-class call, discharged**: the `pu` region becomes the
+virtual-source distance table of the class — one landed BFS at radius
+`R + 1` from the machine source `N` (`Fin.last`) on the materialized
+`vsrc` CSR — every entry `≤ R + 2`. Uniform budget `msK` (a class of
+any size fits: `|X| ≤ N`, the `gsize_vsrc_le` shape at machine
+sizes). -/
+theorem classCom_spec {col : Coloring N Λl} (c : Fin Λl)
+    (hxb_oa : xb ≠ oa) (hxb_ta : xb ≠ ta) (hxb_ca : xb ≠ ca)
+    (hvo_oa : vo ≠ oa) (hvo_ta : vo ≠ ta) (hvo_xb : vo ≠ xb)
+    (_hvo_ca : vo ≠ ca)
+    (hvt_oa : vt ≠ oa) (hvt_ta : vt ≠ ta) (hvt_xb : vt ≠ xb)
+    (hvt_vo : vt ≠ vo) (_hvt_ca : vt ≠ ca)
+    (hpu_vo : pu ≠ vo) (hpu_vt : pu ≠ vt) (hpu_xb : pu ≠ xb)
+    (hnN_scr : nN ∉ profScalars) (hnS_scr : nS ∉ profScalars)
+    (hNB : N + 2 < B) (hnsB : ns + 2 * N + 1 < B) (hRB : R + 3 < B)
+    (hΛB : N * Λl < B) :
+    Spec B
+      (fun σ => GraphCsr oa ta H ns σ ∧ ColBits ca col σ ∧
+        σ.vars nN = N ∧ σ.vars nS = ns ∧
+        (σ.arrs xb).length = N ∧ (σ.arrs vo).length = N + 2 ∧
+        (σ.arrs vt).length = ns + 2 * (col c).ncard ∧
+        (σ.arrs pu).length = N + 1)
+      (classCom oa ta ca xb vo nN nS Λl (c : ℕ) R vt pu)
+      (fun _ σ' => (σ'.arrs xb).length = N ∧ (σ'.arrs vo).length = N + 2 ∧
+        (σ'.arrs vt).length = ns + 2 * (col c).ncard ∧
+        (σ'.arrs pu).length = N + 1 ∧
+        (∀ v : Fin (N + 1), (σ'.arrs pu).getD (v : ℕ) 0 ≤ R + 2) ∧
+        Impl.BallTable (Impl.vsrc H (col c)) (Fin.last N) (R + 1)
+          (fun v => (σ'.arrs pu).getD (v : ℕ) 0))
+      (msK N ns R) := by
+  have hnN_pw : nN ∉ pwScalars := fun h =>
+    hnN_scr (List.mem_append_left _ h)
+  have hnS_pw : nS ∉ pwScalars := fun h =>
+    hnS_scr (List.mem_append_left _ h)
+  have hnN_i : nN ≠ "pw.i" := fun h => hnN_pw (by rw [h]; decide)
+  have hbfsub : (["bf.n", "bf.m", "bf.r", "bf.v"] : List String)
+      ⊆ profScalars := by decide
+  have hnN_bf : ∀ y ∈ (["bf.n", "bf.m", "bf.r", "bf.v"] : List String),
+      nN ≠ y := fun y hy h => hnN_scr (h ▸ hbfsub hy)
+  have hnS_bf : ∀ y ∈ (["bf.n", "bf.m", "bf.r", "bf.v"] : List String),
+      nS ≠ y := fun y hy h => hnS_scr (h ▸ hbfsub hy)
+  have hncle : (col c).ncard ≤ N := by
+    rw [← xcnt_eq_ncard]
+    exact xcnt_le N
+  intro σ hσ
+  obtain ⟨hcsr, hcb, hn, hs, hxblen, hvolen, hvtlen, hpulen⟩ := hσ
+  -- 1. the class column
+  obtain ⟨σ₁, hr1, hpost1⟩ :=
+    ((classBitsCom_spec ca xb nN c (Ne.symm hxb_ca) hnN_i (by omega)
+      hΛB).frame).run ⟨hcb, hn, hxblen⟩
+  obtain ⟨hfb1, hfv1, hfa1, -, -⟩ := hpost1
+  have h1arr : ∀ b, b ≠ xb → σ₁.arrs b = σ.arrs b := fun b hb =>
+    hfa1 b (by rw [warrs_classBitsCom]; simp [hb])
+  have h1vars : ∀ y, y ≠ "pw.i" → σ₁.vars y = σ.vars y := fun y hy =>
+    hfv1 y (by rw [wvars_classBitsCom]; simp [hy])
+  have h1n : σ₁.vars nN = N := by rw [h1vars nN hnN_i]; exact hn
+  have h1s : σ₁.vars nS = ns := by
+    rw [h1vars nS (fun h => hnS_pw (by rw [h]; decide))]
+    exact hs
+  -- 2. the `vsrc` CSR
+  obtain ⟨σ₂, hr2, hpost2⟩ :=
+    ((vsrcCom_spec (X := col c) hvo_oa hvo_ta hvo_xb hvt_oa hvt_ta hvt_xb
+      hvt_vo hnN_pw hnS_pw hNB hnsB).frame).run
+    ⟨graphCsr_of_eq hcsr (h1arr oa (Ne.symm hxb_oa))
+        (h1arr ta (Ne.symm hxb_ta)), hfb1, h1n, h1s,
+      by rw [h1arr vo hvo_xb]; exact hvolen,
+      by rw [h1arr vt hvt_xb]; exact hvtlen⟩
+  obtain ⟨⟨hvcsr, h2n, h2s, h2t⟩, hfv2, hfa2, -, -⟩ := hpost2
+  have h2pu : σ₂.arrs pu = σ.arrs pu := by
+    have h := hfa2 pu (by rw [warrs_vsrcCom]; simp [hpu_vo, hpu_vt])
+    rw [h, h1arr pu hpu_xb]
+  -- 3. the four BFS cells
+  have hb1 : Run B (.assign "bf.n" (.add (.var nN) (.lit 1))) σ₂
+      (σ₂.setVar "bf.n" (N + 1)) 4 := by
+    have hev := evalB_incr (B := B) (x := nN) (σ := σ₂) (by rw [h2n]; omega)
+    rw [h2n] at hev
+    exact (Run.assign hev).mono (by simp)
+  set σ₃ := σ₂.setVar "bf.n" (N + 1) with hσ₃
+  have hb2 : Run B (.assign "bf.m"
+      (.add (.var nS) (.add (.var "pw.t") (.var "pw.t")))) σ₃
+      (σ₃.setVar "bf.m" (ns + 2 * (col c).ncard)) 6 := by
+    have h3s : σ₃.vars nS = ns := by
+      rw [hσ₃, vars_setVar_ne (hnS_bf _ (by decide))]
+      exact h2s
+    have h3t : σ₃.vars "pw.t" = (col c).ncard := by
+      rw [hσ₃, vars_setVar_ne (by decide)]
+      exact h2t
+    have htt := evalB_bin (B := B) (op := .add)
+      (evalB_var (x := "pw.t") (σ := σ₃) (by rw [h3t]; omega))
+      (evalB_var (x := "pw.t") (σ := σ₃) (by rw [h3t]; omega))
+      (by simp only [Bop.apply_add]; rw [h3t]; omega)
+    simp only [Bop.apply_add] at htt
+    rw [h3t] at htt
+    have hev := evalB_bin (B := B) (op := .add)
+      (evalB_var (x := nS) (σ := σ₃) (by rw [h3s]; omega)) htt
+      (by simp only [Bop.apply_add]; rw [h3s]; omega)
+    simp only [Bop.apply_add] at hev
+    rw [h3s] at hev
+    have he : ns + ((col c).ncard + (col c).ncard)
+        = ns + 2 * (col c).ncard := by omega
+    rw [he] at hev
+    exact (Run.assign hev).mono (by simp)
+  set σ₄ := σ₃.setVar "bf.m" (ns + 2 * (col c).ncard) with hσ₄
+  have hb3 : Run B (.assign "bf.r" (.lit (R + 1))) σ₄
+      (σ₄.setVar "bf.r" (R + 1)) 2 :=
+    (Run.assign (evalB_lit (by omega))).mono (by simp)
+  set σ₅ := σ₄.setVar "bf.r" (R + 1) with hσ₅
+  have hb4 : Run B (.assign "bf.v" (.var nN)) σ₅ (σ₅.setVar "bf.v" N) 2 := by
+    have h5n : σ₅.vars nN = N := by
+      rw [hσ₅, vars_setVar_ne (hnN_bf _ (by decide)), hσ₄,
+        vars_setVar_ne (hnN_bf _ (by decide)), hσ₃,
+        vars_setVar_ne (hnN_bf _ (by decide))]
+      exact h2n
+    have hev := evalB_var (B := B) (x := nN) (σ := σ₅) (by rw [h5n]; omega)
+    rw [h5n] at hev
+    exact (Run.assign hev).mono (by simp)
+  set σ₆ := σ₅.setVar "bf.v" N with hσ₆
+  -- 4. the landed BFS on the augmented arena
+  have h6arr : ∀ b, σ₆.arrs b = σ₂.arrs b := by
+    intro b
+    rw [hσ₆, arrs_setVar, hσ₅, arrs_setVar, hσ₄, arrs_setVar, hσ₃, arrs_setVar]
+  have h6n : σ₆.vars "bf.n" = N + 1 := by
+    rw [hσ₆, vars_setVar_ne (by decide), hσ₅, vars_setVar_ne (by decide),
+      hσ₄, vars_setVar_ne (by decide), hσ₃, vars_setVar_self]
+  have h6m : σ₆.vars "bf.m" = ns + 2 * (col c).ncard := by
+    rw [hσ₆, vars_setVar_ne (by decide), hσ₅, vars_setVar_ne (by decide),
+      hσ₄, vars_setVar_self]
+  have h6r : σ₆.vars "bf.r" = R + 1 := by
+    rw [hσ₆, vars_setVar_ne (by decide), hσ₅, vars_setVar_self]
+  have h6v : σ₆.vars "bf.v" = ((Fin.last N : Fin (N + 1)) : ℕ) := by
+    rw [hσ₆, vars_setVar_self]
+    rfl
+  obtain ⟨σ', hr', hpost'⟩ :=
+    ((bfsCom_spec_graphCsr (G := Impl.vsrc H (col c)) (Fin.last N)
+      (show N + 1 < B by omega) (show ns + 2 * (col c).ncard < B by omega)
+      (show R + 1 + 2 < B by omega) hpu_vo hpu_vt).frame).run
+    ⟨graphCsr_of_eq hvcsr (h6arr vo) (h6arr vt), h6n, h6m, h6r, h6v,
+      by rw [h6arr pu, h2pu]; exact hpulen⟩
+  obtain ⟨⟨hcsr', hlen', hbd', hbt'⟩, hfv', hfa', -, -⟩ := hpost'
+  -- the scratch lengths, read back off the final state
+  have h'xb : σ'.arrs xb = σ₁.arrs xb := by
+    have h1 := hfa' xb (by rw [warrs_bfsCom]; simp [Ne.symm hpu_xb])
+    have h2 := hfa2 xb (by
+      rw [warrs_vsrcCom]
+      simp [Ne.symm hvo_xb, Ne.symm hvt_xb])
+    rw [h1, h6arr xb, h2]
+  have hxblen' : (σ'.arrs xb).length = N := by
+    rw [h'xb, hfb1.1]
+  obtain ⟨offv, tgtv, hcv, -, -, -⟩ := hcsr'
+  have hvolen' : (σ'.arrs vo).length = N + 2 := hcv.length_off
+  have hvtlen' : (σ'.arrs vt).length = ns + 2 * (col c).ncard := hcv.length_tgt
+  refine ⟨σ', (hr1.seq (hr2.seq (hb1.seq (hb2.seq (hb3.seq
+    (hb4.seq hr')))))).mono ?_, hxblen', hvolen', hvtlen', hlen', hbd', hbt'⟩
+  -- the budget: the class call fits the uniform slot
+  have hmono : bfsK (N + 1) (ns + 2 * (col c).ncard) (R + 1)
+      ≤ bfsK (N + 1) (ns + 2 * N) (R + 1) := by
+    unfold bfsK
+    have h := Nat.mul_le_mul_right (R + 1)
+      (show 15 * (N + 1) + 38 * (ns + 2 * (col c).ncard) + 16
+        ≤ 15 * (N + 1) + 38 * (ns + 2 * N) + 16 by omega)
+    omega
+  unfold msK
+  omega
+
+end Calls
+
+/-! The two calls' frame data. -/
+
+theorem warrs_batchCom (oa ta ba nN nS : String) (R j : ℕ) (pd : String) :
+    (batchCom oa ta ba nN nS R j pd).warrs = [pd, pd, pd] := rfl
+
+theorem wvars_batchCom_subset (oa ta ba nN nS : String) (R j : ℕ)
+    (pd : String) :
+    ∀ y ∈ (batchCom oa ta ba nN nS R j pd).wvars, y ∈ profScalars := by
+  intro y hy
+  have he : (batchCom oa ta ba nN nS R j pd).wvars
+      = "bf.n" :: "bf.m" :: "bf.r" :: "bf.v" :: (bfsCom oa ta pd).wvars := rfl
+  rw [he] at hy
+  simp only [List.mem_cons] at hy
+  rcases hy with rfl | rfl | rfl | rfl | h
+  · decide
+  · decide
+  · decide
+  · decide
+  · exact List.mem_append_right _ (wvars_bfsCom_subset oa ta pd y h)
+
+theorem warrs_classCom (oa ta ca xb vo nN nS : String) (Λl c R : ℕ)
+    (vt pu : String) :
+    (classCom oa ta ca xb vo nN nS Λl c R vt pu).warrs
+      = [xb, vo, vo, vo, vt, vt, vt, vt, pu, pu, pu] := rfl
+
+theorem wvars_classCom_subset (oa ta ca xb vo nN nS : String) (Λl c R : ℕ)
+    (vt pu : String) :
+    ∀ y ∈ (classCom oa ta ca xb vo nN nS Λl c R vt pu).wvars,
+      y ∈ profScalars := by
+  intro y hy
+  have he : (classCom oa ta ca xb vo nN nS Λl c R vt pu).wvars
+      = (classBitsCom ca xb nN Λl c).wvars
+        ++ ((vsrcCom oa ta xb vo vt nN nS).wvars
+          ++ ("bf.n" :: "bf.m" :: "bf.r" :: "bf.v"
+            :: (bfsCom vo vt pu).wvars)) := rfl
+  rw [he] at hy
+  rcases List.mem_append.mp hy with h | h
+  · rw [wvars_classBitsCom] at h
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at h
+    rcases h with rfl | rfl <;> decide
+  · rcases List.mem_append.mp h with h | h
+    · exact List.mem_append_left _
+        (wvars_vsrcCom_subset oa ta xb vo vt nN nS y h)
+    · simp only [List.mem_cons] at h
+      rcases h with rfl | rfl | rfl | rfl | h
+      · decide
+      · decide
+      · decide
+      · decide
+      · exact List.mem_append_right _ (wvars_bfsCom_subset vo vt pu y h)
+
+theorem wvars_markerCom_subset (pu nN : String) :
+    ∀ y ∈ (markerCom pu nN).wvars, y ∈ profScalars := by
+  intro y hy
+  rw [wvars_markerCom] at hy
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+  rcases hy with rfl | rfl | rfl <;> decide
+
+/-! ## §6 The stage, assembled -/
+
+/-- The batch half: one static copy of `batchCom` per padded batch
+slot (a duplicate costs another call, per E12d). -/
+def batchSeq (pn : ProfNames) (R : ℕ) : ℕ → Com
+  | 0 => .skip
+  | j + 1 => .seq (batchSeq pn R j)
+      (batchCom pn.oa pn.ta pn.ba pn.nN pn.nS R j (pn.pd j))
+
+/-- The colour half below the marker: one static copy of `classCom`
+per colour class — E10-conformant, the machine loops are over the
+carrier and the slots only. -/
+def classSeq (pn : ProfNames) (Λl R : ℕ) : ℕ → Com
+  | 0 => .skip
+  | c + 1 => .seq (classSeq pn Λl R c)
+      (classCom pn.oa pn.ta pn.ca pn.xb pn.vo pn.nN pn.nS Λl c R
+        (pn.vt c) (pn.pu c))
+
+/-- **The profilesMS stage**: `mb` batch calls, `Λ` class calls, the
+marker's free row — `mb + L` tables, `mb + (L - 1)` BFS runs. -/
+def profilesCom (pn : ProfNames) (mb Λl R : ℕ) : Com :=
+  .seq (batchSeq pn R mb)
+    (.seq (classSeq pn Λl R Λl) (markerCom (pn.pu Λl) pn.nN))
+
+theorem warrs_batchSeq_subset (pn : ProfNames) (R : ℕ) (k : ℕ) :
+    ∀ a ∈ (batchSeq pn R k).warrs, ∃ j < k, a = pn.pd j := by
+  induction k with
+  | zero =>
+    intro a ha
+    simp [batchSeq] at ha
+  | succ k ih =>
+    intro a ha
+    have he : (batchSeq pn R (k + 1)).warrs
+        = (batchSeq pn R k).warrs
+          ++ (batchCom pn.oa pn.ta pn.ba pn.nN pn.nS R k (pn.pd k)).warrs := rfl
+    rw [he] at ha
+    rcases List.mem_append.mp ha with h | h
+    · obtain ⟨j, hj, hja⟩ := ih a h
+      exact ⟨j, by omega, hja⟩
+    · rw [warrs_batchCom] at h
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at h
+      rcases h with rfl | rfl | rfl <;> exact ⟨k, by omega, rfl⟩
+
+theorem warrs_classSeq_subset (pn : ProfNames) (Λl R : ℕ) (k : ℕ) :
+    ∀ a ∈ (classSeq pn Λl R k).warrs,
+      a = pn.xb ∨ a = pn.vo ∨ (∃ c < k, a = pn.vt c) ∨ ∃ c < k, a = pn.pu c := by
+  induction k with
+  | zero =>
+    intro a ha
+    simp [classSeq] at ha
+  | succ k ih =>
+    intro a ha
+    have he : (classSeq pn Λl R (k + 1)).warrs
+        = (classSeq pn Λl R k).warrs
+          ++ (classCom pn.oa pn.ta pn.ca pn.xb pn.vo pn.nN pn.nS Λl k R
+            (pn.vt k) (pn.pu k)).warrs := rfl
+    rw [he] at ha
+    rcases List.mem_append.mp ha with h | h
+    · rcases ih a h with h1 | h1 | ⟨c, hc, h1⟩ | ⟨c, hc, h1⟩
+      · exact Or.inl h1
+      · exact Or.inr (Or.inl h1)
+      · exact Or.inr (Or.inr (Or.inl ⟨c, by omega, h1⟩))
+      · exact Or.inr (Or.inr (Or.inr ⟨c, by omega, h1⟩))
+    · rw [warrs_classCom] at h
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at h
+      rcases h with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+      · exact Or.inl rfl
+      · exact Or.inr (Or.inl rfl)
+      · exact Or.inr (Or.inl rfl)
+      · exact Or.inr (Or.inl rfl)
+      · exact Or.inr (Or.inr (Or.inl ⟨k, by omega, rfl⟩))
+      · exact Or.inr (Or.inr (Or.inl ⟨k, by omega, rfl⟩))
+      · exact Or.inr (Or.inr (Or.inl ⟨k, by omega, rfl⟩))
+      · exact Or.inr (Or.inr (Or.inl ⟨k, by omega, rfl⟩))
+      · exact Or.inr (Or.inr (Or.inr ⟨k, by omega, rfl⟩))
+      · exact Or.inr (Or.inr (Or.inr ⟨k, by omega, rfl⟩))
+      · exact Or.inr (Or.inr (Or.inr ⟨k, by omega, rfl⟩))
+
+theorem wvars_batchSeq_subset (pn : ProfNames) (R : ℕ) (k : ℕ) :
+    ∀ y ∈ (batchSeq pn R k).wvars, y ∈ profScalars := by
+  induction k with
+  | zero =>
+    intro y hy
+    simp [batchSeq] at hy
+  | succ k ih =>
+    intro y hy
+    have he : (batchSeq pn R (k + 1)).wvars
+        = (batchSeq pn R k).wvars
+          ++ (batchCom pn.oa pn.ta pn.ba pn.nN pn.nS R k (pn.pd k)).wvars := rfl
+    rw [he] at hy
+    rcases List.mem_append.mp hy with h | h
+    · exact ih y h
+    · exact wvars_batchCom_subset _ _ _ _ _ _ _ _ y h
+
+theorem wvars_classSeq_subset (pn : ProfNames) (Λl R : ℕ) (k : ℕ) :
+    ∀ y ∈ (classSeq pn Λl R k).wvars, y ∈ profScalars := by
+  induction k with
+  | zero =>
+    intro y hy
+    simp [classSeq] at hy
+  | succ k ih =>
+    intro y hy
+    have he : (classSeq pn Λl R (k + 1)).wvars
+        = (classSeq pn Λl R k).wvars
+          ++ (classCom pn.oa pn.ta pn.ca pn.xb pn.vo pn.nN pn.nS Λl k R
+            (pn.vt k) (pn.pu k)).wvars := rfl
+    rw [he] at hy
+    rcases List.mem_append.mp hy with h | h
+    · exact ih y h
+    · exact wvars_classCom_subset _ _ _ _ _ _ _ _ _ _ _ _ y h
+
+/-- The stage's frame data, for the block composition: every scalar it
+writes is scratch, every array it writes is a scratch or table
+region. -/
+theorem wvars_profilesCom_subset (pn : ProfNames) (mb Λl R : ℕ) :
+    ∀ y ∈ (profilesCom pn mb Λl R).wvars, y ∈ profScalars := by
+  intro y hy
+  have he : (profilesCom pn mb Λl R).wvars
+      = (batchSeq pn R mb).wvars
+        ++ ((classSeq pn Λl R Λl).wvars ++ (markerCom (pn.pu Λl) pn.nN).wvars)
+      := rfl
+  rw [he] at hy
+  rcases List.mem_append.mp hy with h | h
+  · exact wvars_batchSeq_subset _ _ _ y h
+  · rcases List.mem_append.mp h with h | h
+    · exact wvars_classSeq_subset _ _ _ _ y h
+    · exact wvars_markerCom_subset _ _ y h
+
+theorem warrs_profilesCom_subset (pn : ProfNames) (mb Λl R : ℕ) :
+    ∀ a ∈ (profilesCom pn mb Λl R).warrs,
+      a = pn.xb ∨ a = pn.vo ∨ (∃ j < mb, a = pn.pd j)
+        ∨ (∃ c < Λl, a = pn.vt c) ∨ ∃ c < Λl + 1, a = pn.pu c := by
+  intro a ha
+  have he : (profilesCom pn mb Λl R).warrs
+      = (batchSeq pn R mb).warrs
+        ++ ((classSeq pn Λl R Λl).warrs ++ (markerCom (pn.pu Λl) pn.nN).warrs)
+      := rfl
+  rw [he] at ha
+  rcases List.mem_append.mp ha with h | h
+  · obtain ⟨j, hj, hja⟩ := warrs_batchSeq_subset pn R mb a h
+    exact Or.inr (Or.inr (Or.inl ⟨j, hj, hja⟩))
+  · rcases List.mem_append.mp h with h | h
+    · rcases warrs_classSeq_subset pn Λl R Λl a h with h1 | h1 | ⟨c, hc, h1⟩ | ⟨c, hc, h1⟩
+      · exact Or.inl h1
+      · exact Or.inr (Or.inl h1)
+      · exact Or.inr (Or.inr (Or.inr (Or.inl ⟨c, hc, h1⟩)))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨c, by omega, h1⟩)))
+    · rw [warrs_markerCom] at h
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at h
+      rcases h with rfl | rfl <;>
+        exact Or.inr (Or.inr (Or.inr (Or.inr ⟨Λl, by omega, rfl⟩)))
+
+/-- **The stage's precondition** — the arena's read-only surface (the
+pre-isolation CSR, the colour rows, the two cells, the padded batch)
+and every scratch/table region at its exact length. -/
+structure ProfPre (pn : ProfNames) {N Λl mb : ℕ} (H : SimpleGraph (Fin N))
+    (col : Coloring N Λl) (ns : ℕ) (w : Fin mb → Fin N) (σ : Env) : Prop where
+  csr : GraphCsr pn.oa pn.ta H ns σ
+  colb : ColBits pn.ca col σ
+  n_eq : σ.vars pn.nN = N
+  s_eq : σ.vars pn.nS = ns
+  ba_len : (σ.arrs pn.ba).length = mb
+  ba_get : ∀ j : Fin mb, (σ.arrs pn.ba).getD (j : ℕ) 0 = (w j : ℕ)
+  xb_len : (σ.arrs pn.xb).length = N
+  vo_len : (σ.arrs pn.vo).length = N + 2
+  pd_len : ∀ j : Fin mb, (σ.arrs (pn.pd (j : ℕ))).length = N
+  vt_len : ∀ c : Fin Λl, (σ.arrs (pn.vt (c : ℕ))).length = ns + 2 * (col c).ncard
+  pu_len : ∀ c, c < Λl + 1 → (σ.arrs (pn.pu c)).length = N + 1
+
+section Stage
+
+variable {B N ns mb Λl R : ℕ} {H : SimpleGraph (Fin N)} {col : Coloring N Λl}
+  {w : Fin mb → Fin N} {pn : ProfNames}
+
+variable (hok : pn.Ok mb (Λl + 1))
+  (hNB : N + 2 < B) (hnsB : ns + 2 * N + 1 < B) (hRB : R + 3 < B)
+  (hmbB : mb < B) (hΛB : N * Λl < B)
+
+include hok hNB hnsB hRB hmbB in
+/-- The batch half's fold: after `k` calls, the first `k` batch tables
+are in place and the stage precondition still holds. -/
+theorem batchSeq_spec :
+    ∀ k, k ≤ mb →
+      Spec B (ProfPre pn H col ns w) (batchSeq pn R k)
+        (fun _ σ' => ProfPre pn H col ns w σ' ∧
+          ∀ j : Fin mb, (j : ℕ) < k →
+            (∀ v : Fin N, (σ'.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0 ≤ R + 1) ∧
+            Impl.BallTable H (w j) R
+              (fun v => (σ'.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0))
+        (k * batchK N ns R + 1) := by
+  intro k
+  induction k with
+  | zero =>
+    intro _ σ hσ
+    exact ⟨σ, Run.skip.mono (by omega), hσ, fun j hj => absurd hj (by omega)⟩
+  | succ k ih =>
+    intro hk1
+    have hkmb : k < mb := hk1
+    have hro := hok.pd_ro k hkmb
+    have hpd_oa : pn.pd k ≠ pn.oa := fun h => hro (by rw [h]; simp)
+    have hpd_ta : pn.pd k ≠ pn.ta := fun h => hro (by rw [h]; simp)
+    have hpd_ca : pn.pd k ≠ pn.ca := fun h => hro (by rw [h]; simp)
+    have hpd_ba : pn.pd k ≠ pn.ba := fun h => hro (by rw [h]; simp)
+    refine ((Spec.seq (ih (by omega))
+      ((batchCom_spec (H := H) (w := w) (j := k) hkmb hpd_oa hpd_ta hpd_ba
+        hok.nN_scr hok.nS_scr hNB hnsB hRB hmbB).frame)
+      ?_ ?_).mono ?_)
+    · rintro σ σ' hσ ⟨hpre', htabs⟩
+      exact ⟨hpre'.csr, hpre'.n_eq, hpre'.s_eq, hpre'.ba_len, hpre'.ba_get,
+        hpre'.pd_len ⟨k, hkmb⟩⟩
+    · rintro σ σ' σ'' hσ ⟨hpre', htabs⟩ ⟨⟨hlen'', hbd'', hbt''⟩, hfv, hfa, -, -⟩
+      have harr : ∀ b, b ≠ pn.pd k → σ''.arrs b = σ'.arrs b := fun b hb =>
+        hfa b (by rw [warrs_batchCom]; simp [hb])
+      have hvars : ∀ y, y ∉ profScalars → σ''.vars y = σ'.vars y := fun y hy =>
+        hfv y (fun hmem => hy (wvars_batchCom_subset _ _ _ _ _ _ _ _ y hmem))
+      refine ⟨⟨graphCsr_of_eq hpre'.csr (harr _ (Ne.symm hpd_oa))
+          (harr _ (Ne.symm hpd_ta)),
+        colBits_of_eq hpre'.colb (harr _ (Ne.symm hpd_ca)),
+        by rw [hvars _ hok.nN_scr]; exact hpre'.n_eq,
+        by rw [hvars _ hok.nS_scr]; exact hpre'.s_eq,
+        by rw [harr _ (Ne.symm hpd_ba)]; exact hpre'.ba_len,
+        fun j => by rw [harr _ (Ne.symm hpd_ba)]; exact hpre'.ba_get j,
+        by rw [harr _ (Ne.symm (hok.pd_xb k hkmb))]; exact hpre'.xb_len,
+        by rw [harr _ (Ne.symm (hok.pd_vo k hkmb))]; exact hpre'.vo_len,
+        ?_, ?_, ?_⟩, ?_⟩
+      · intro j
+        by_cases hj : (j : ℕ) = k
+        · rw [hj]
+          exact hlen''
+        · rw [harr _ (fun h => hj (hok.pd_inj (j : ℕ) j.isLt k hkmb h))]
+          exact hpre'.pd_len j
+      · intro c'
+        rw [harr _ (Ne.symm (hok.pd_vt k hkmb (c' : ℕ)
+          (by have := c'.isLt; omega)))]
+        exact hpre'.vt_len c'
+      · intro c hc
+        rw [harr _ (Ne.symm (hok.pd_pu k hkmb c hc))]
+        exact hpre'.pu_len c hc
+      · intro j hj
+        rcases Nat.lt_or_ge (j : ℕ) k with hjk | hjk
+        · have hne : pn.pd (j : ℕ) ≠ pn.pd k := fun h =>
+            (show (j : ℕ) ≠ k by omega) (hok.pd_inj (j : ℕ) j.isLt k hkmb h)
+          have heq : σ''.arrs (pn.pd (j : ℕ)) = σ'.arrs (pn.pd (j : ℕ)) :=
+            harr _ hne
+          have hfun : (fun v : Fin N => (σ''.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0)
+              = fun v : Fin N => (σ'.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0 := by
+            rw [heq]
+          refine ⟨fun v => ?_, ?_⟩
+          · rw [heq]
+            exact (htabs j hjk).1 v
+          · rw [hfun]
+            exact (htabs j hjk).2
+        · have hjeq : (j : ℕ) = k := by omega
+          have hw : w j = w ⟨k, hkmb⟩ := by
+            congr 1
+            exact Fin.ext hjeq
+          constructor
+          · intro v
+            rw [hjeq]
+            exact hbd'' v
+          · rw [hjeq, hw]
+            exact hbt''
+    · rw [Nat.succ_mul]
+      omega
+
+include hok hNB hnsB hRB hΛB in
+/-- The colour half's fold: after `k` class calls, the first `k`
+virtual-source tables are in place. -/
+theorem classSeq_spec :
+    ∀ k, k ≤ Λl →
+      Spec B (ProfPre pn H col ns w) (classSeq pn Λl R k)
+        (fun _ σ' => ProfPre pn H col ns w σ' ∧
+          ∀ c : Fin Λl, (c : ℕ) < k →
+            (∀ v : Fin (N + 1),
+              (σ'.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0 ≤ R + 2) ∧
+            Impl.BallTable (Impl.vsrc H (col c)) (Fin.last N) (R + 1)
+              (fun v => (σ'.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0))
+        (k * msK N ns R + 1) := by
+  intro k
+  induction k with
+  | zero =>
+    intro _ σ hσ
+    exact ⟨σ, Run.skip.mono (by omega), hσ, fun c hc => absurd hc (by omega)⟩
+  | succ k ih =>
+    intro hk1
+    have hkΛ : k < Λl := hk1
+    have hkL : k + 1 < Λl + 1 := by omega
+    have hxro := hok.xb_ro
+    have hvro := hok.vo_ro
+    have htro := hok.vt_ro k hkL
+    have hpro := hok.pu_ro k (by omega)
+    have hxb_oa : pn.xb ≠ pn.oa := fun h => hxro (by rw [h]; simp)
+    have hxb_ta : pn.xb ≠ pn.ta := fun h => hxro (by rw [h]; simp)
+    have hxb_ca : pn.xb ≠ pn.ca := fun h => hxro (by rw [h]; simp)
+    have hvo_oa : pn.vo ≠ pn.oa := fun h => hvro (by rw [h]; simp)
+    have hvo_ta : pn.vo ≠ pn.ta := fun h => hvro (by rw [h]; simp)
+    have hvo_ca : pn.vo ≠ pn.ca := fun h => hvro (by rw [h]; simp)
+    have hvt_oa : pn.vt k ≠ pn.oa := fun h => htro (by rw [h]; simp)
+    have hvt_ta : pn.vt k ≠ pn.ta := fun h => htro (by rw [h]; simp)
+    have hvt_ca : pn.vt k ≠ pn.ca := fun h => htro (by rw [h]; simp)
+    have hvo_xb : pn.vo ≠ pn.xb := Ne.symm hok.xb_vo
+    have hvt_xb : pn.vt k ≠ pn.xb := hok.vt_xb k hkL
+    have hvt_vo : pn.vt k ≠ pn.vo := hok.vt_vo k hkL
+    have hpu_vo : pn.pu k ≠ pn.vo := hok.pu_vo k (by omega)
+    have hpu_xb : pn.pu k ≠ pn.xb := hok.pu_xb k (by omega)
+    have hpu_vt : pn.pu k ≠ pn.vt k :=
+      Ne.symm (hok.vt_pu k hkL k (by omega))
+    refine ((Spec.seq (ih (by omega))
+      ((classCom_spec (H := H) (col := col) ⟨k, hkΛ⟩ hxb_oa hxb_ta hxb_ca
+        hvo_oa hvo_ta hvo_xb hvo_ca hvt_oa hvt_ta hvt_xb hvt_vo hvt_ca
+        hpu_vo hpu_vt hpu_xb hok.nN_scr hok.nS_scr hNB hnsB hRB hΛB).frame)
+      ?_ ?_).mono ?_)
+    · rintro σ σ' hσ ⟨hpre', htabs⟩
+      exact ⟨hpre'.csr, hpre'.colb, hpre'.n_eq, hpre'.s_eq, hpre'.xb_len,
+        hpre'.vo_len, hpre'.vt_len ⟨k, hkΛ⟩, hpre'.pu_len k (by omega)⟩
+    · rintro σ σ' σ'' hσ ⟨hpre', htabs⟩
+        ⟨⟨hxbl'', hvol'', hvtl'', hpul'', hbd'', hbt''⟩, hfv, hfa, -, -⟩
+      have harr : ∀ b, b ≠ pn.xb → b ≠ pn.vo → b ≠ pn.vt k → b ≠ pn.pu k →
+          σ''.arrs b = σ'.arrs b := fun b h1 h2 h3 h4 =>
+        hfa b (by rw [warrs_classCom]; simp [h1, h2, h3, h4])
+      have hvars : ∀ y, y ∉ profScalars → σ''.vars y = σ'.vars y := fun y hy =>
+        hfv y (fun hmem => hy (wvars_classCom_subset _ _ _ _ _ _ _ _ _ _ _ _ y hmem))
+      have hroarr : ∀ b, b ∈ [pn.oa, pn.ta, pn.ca, pn.ba] →
+          σ''.arrs b = σ'.arrs b := by
+        intro b hb
+        refine harr b ?_ ?_ ?_ ?_ <;> intro h <;> rw [h] at hb
+        · exact hxro hb
+        · exact hvro hb
+        · exact htro hb
+        · exact hpro hb
+      refine ⟨⟨graphCsr_of_eq hpre'.csr (hroarr _ (by simp)) (hroarr _ (by simp)),
+        colBits_of_eq hpre'.colb (hroarr _ (by simp)),
+        by rw [hvars _ hok.nN_scr]; exact hpre'.n_eq,
+        by rw [hvars _ hok.nS_scr]; exact hpre'.s_eq,
+        by rw [hroarr _ (by simp)]; exact hpre'.ba_len,
+        fun j => by rw [hroarr _ (by simp)]; exact hpre'.ba_get j,
+        hxbl'', hvol'', ?_, ?_, ?_⟩, ?_⟩
+      · -- the batch tables' regions keep their length
+        intro j
+        rw [harr _ (hok.pd_xb (j : ℕ) j.isLt) (hok.pd_vo (j : ℕ) j.isLt)
+          (hok.pd_vt (j : ℕ) j.isLt k hkL)
+          (hok.pd_pu (j : ℕ) j.isLt k (by omega))]
+        exact hpre'.pd_len j
+      · -- the `vt` regions
+        intro c'
+        by_cases hc' : (c' : ℕ) = k
+        · have hc'fin : c' = (⟨k, hkΛ⟩ : Fin Λl) := Fin.ext hc'
+          rw [hc'fin]
+          exact hvtl''
+        · rw [harr _ (hok.vt_xb (c' : ℕ) (by have := c'.isLt; omega))
+            (hok.vt_vo (c' : ℕ) (by have := c'.isLt; omega))
+            (fun h => hc' (hok.vt_inj (c' : ℕ) (by have := c'.isLt; omega) k hkL h))
+            (hok.vt_pu (c' : ℕ) (by have := c'.isLt; omega) k (by omega))]
+          exact hpre'.vt_len c'
+      · -- the `pu` regions
+        intro c hc
+        by_cases hck : c = k
+        · rw [hck]
+          exact hpul''
+        · rw [harr _ (hok.pu_xb c hc) (hok.pu_vo c hc)
+            (Ne.symm (hok.vt_pu k hkL c hc))
+            (fun h => hck (hok.pu_inj c hc k (by omega) h))]
+          exact hpre'.pu_len c hc
+      · -- the class tables
+        intro c hc
+        rcases Nat.lt_or_ge (c : ℕ) k with hck | hck
+        · have hne : σ''.arrs (pn.pu (c : ℕ)) = σ'.arrs (pn.pu (c : ℕ)) :=
+            harr _ (hok.pu_xb (c : ℕ) (by omega)) (hok.pu_vo (c : ℕ) (by omega))
+              (Ne.symm (hok.vt_pu k hkL (c : ℕ) (by omega)))
+              (fun h => (show (c : ℕ) ≠ k by omega)
+                (hok.pu_inj (c : ℕ) (by omega) k (by omega) h))
+          have hfun : (fun v : Fin (N + 1) =>
+              (σ''.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0)
+              = fun v : Fin (N + 1) => (σ'.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0 := by
+            rw [hne]
+          refine ⟨fun v => ?_, ?_⟩
+          · rw [hne]
+            exact (htabs c hck).1 v
+          · rw [hfun]
+            exact (htabs c hck).2
+        · have hceq : (c : ℕ) = k := by omega
+          have hcfin : c = (⟨k, hkΛ⟩ : Fin Λl) := Fin.ext hceq
+          constructor
+          · intro v
+            rw [hceq]
+            exact hbd'' v
+          · rw [hceq, hcfin]
+            exact hbt''
+    · rw [Nat.succ_mul]
+      omega
+
+include hok hNB hnsB hRB hmbB hΛB in
+/-- **The profilesMS stage, discharged** (the generic headline): from
+the stage precondition, the `mb + L` table regions hold distance
+tables satisfying **`Impl.ProfileTablesMS`** at the relativized palette
+`relColoring col univ` — `mb` batch tables and `L = Λ + 1`
+virtual-source tables, the marker's for free — with every stored value
+`≤ R + 2`. Budget `profilesK`, `profilesChargeMS`'s two-term shape. -/
+theorem profilesCom_spec :
+    Spec B (ProfPre pn H col ns w) (profilesCom pn mb Λl R)
+      (fun _ σ' =>
+        (∀ j : Fin mb, ∀ v : Fin N,
+          (σ'.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0 ≤ R + 1) ∧
+        (∀ c : Fin (Λl + 1), ∀ v : Fin (N + 1),
+          (σ'.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0 ≤ R + 2) ∧
+        Impl.ProfileTablesMS H w (Driver.relColoring col Set.univ) R
+          (fun j v => (σ'.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0)
+          (fun c v => (σ'.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0))
+      (profilesK mb (Λl + 1) N ns R) := by
+  have hnN_i : pn.nN ≠ "pw.i" := fun h => hok.nN_scr (by rw [h]; decide)
+  have hnN_u : pn.nN ≠ "pw.u" := fun h => hok.nN_scr (by rw [h]; decide)
+  intro σ hσ
+  -- the batch half
+  obtain ⟨σ₁, hr1, hpre1, htabs1⟩ :=
+    (batchSeq_spec hok hNB hnsB hRB hmbB mb le_rfl).run hσ
+  -- the colour half, framed to keep the batch tables
+  obtain ⟨σ₂, hr2, hpost2⟩ :=
+    ((classSeq_spec hok hNB hnsB hRB hΛB Λl le_rfl).frame).run hpre1
+  obtain ⟨⟨hpre2, htabs2⟩, hfv2, hfa2, -, -⟩ := hpost2
+  have hpd2 : ∀ j : Fin mb,
+      σ₂.arrs (pn.pd (j : ℕ)) = σ₁.arrs (pn.pd (j : ℕ)) := by
+    intro j
+    refine hfa2 _ (fun hmem => ?_)
+    rcases warrs_classSeq_subset pn Λl R Λl _ hmem with h | h | ⟨c, hc, h⟩ |
+      ⟨c, hc, h⟩
+    · exact hok.pd_xb (j : ℕ) j.isLt h
+    · exact hok.pd_vo (j : ℕ) j.isLt h
+    · exact hok.pd_vt (j : ℕ) j.isLt c (by omega) h
+    · exact hok.pd_pu (j : ℕ) j.isLt c (by omega) h
+  -- the marker's free row
+  obtain ⟨σ₃, hr3, hpost3⟩ :=
+    ((markerCom_spec (B := B) (N := N) (pn.pu Λl) pn.nN hnN_i hnN_u
+      hNB).frame).run ⟨hpre2.n_eq, hpre2.pu_len Λl (by omega)⟩
+  obtain ⟨⟨hmklen, hmk⟩, hfv3, hfa3, -, -⟩ := hpost3
+  have h3arr : ∀ b, b ≠ pn.pu Λl → σ₃.arrs b = σ₂.arrs b := fun b hb =>
+    hfa3 b (by rw [warrs_markerCom]; simp [hb])
+  have hpd3 : ∀ j : Fin mb,
+      σ₃.arrs (pn.pd (j : ℕ)) = σ₁.arrs (pn.pd (j : ℕ)) := by
+    intro j
+    rw [h3arr _ (hok.pd_pu (j : ℕ) j.isLt Λl (by omega)), hpd2 j]
+  have hpu3 : ∀ c : Fin Λl,
+      σ₃.arrs (pn.pu (c : ℕ)) = σ₂.arrs (pn.pu (c : ℕ)) := by
+    intro c
+    exact h3arr _ (fun h => (show (c : ℕ) ≠ Λl by have := c.isLt; omega)
+      (hok.pu_inj (c : ℕ) (by have := c.isLt; omega) Λl (by omega) h))
+  refine ⟨σ₃, ?_, ?_, ?_, ?_, ?_⟩
+  · -- the run, at the two-term budget
+    have h := hr1.seq (hr2.seq hr3)
+    refine h.mono ?_
+    have hmk := markerK_add_lt_msK N ns R
+    unfold profilesK
+    rw [Nat.succ_mul]
+    omega
+  · -- batch values fit `mcB`
+    intro j v
+    rw [hpd3 j]
+    exact (htabs1 j j.isLt).1 v
+  · -- colour values fit `mcB`
+    intro c v
+    by_cases hc : (c : ℕ) < Λl
+    · have heq : σ₃.arrs (pn.pu (c : ℕ)) = σ₂.arrs (pn.pu (c : ℕ)) :=
+        hpu3 ⟨(c : ℕ), hc⟩
+      rw [heq]
+      exact (htabs2 ⟨(c : ℕ), hc⟩ hc).1 v
+    · have hceq : (c : ℕ) = Λl := by have := c.isLt; omega
+      rw [hceq, hmk v]
+      unfold Impl.markerTable
+      split <;> omega
+  · -- the seam's batch half
+    intro j
+    show Impl.BallTable H (w j) R
+      (fun v => (σ₃.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0)
+    have hfun : (fun v : Fin N => (σ₃.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0)
+        = fun v : Fin N => (σ₁.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0 := by
+      rw [hpd3 j]
+    rw [hfun]
+    exact (htabs1 j j.isLt).2
+  · -- the seam's colour half, marker last and free
+    intro c
+    show Impl.BallTable (Impl.vsrc H (Driver.relColoring col Set.univ c))
+      (Fin.last N) (R + 1)
+      (fun v => (σ₃.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0)
+    induction c using Fin.lastCases with
+    | last =>
+      rw [Driver.relColoring_last]
+      have hfun : (fun v : Fin (N + 1) =>
+          (σ₃.arrs (pn.pu ((Fin.last Λl : Fin (Λl + 1)) : ℕ))).getD (v : ℕ) 0)
+          = Impl.markerTable N := funext fun v => hmk v
+      rw [hfun]
+      exact Impl.markerTable_ballTable H (R + 1)
+    | cast c₀ =>
+      rw [Driver.relColoring_castSucc]
+      have hfun : (fun v : Fin (N + 1) =>
+          (σ₃.arrs (pn.pu ((Fin.castSucc c₀ : Fin (Λl + 1)) : ℕ))).getD
+            (v : ℕ) 0)
+          = fun v : Fin (N + 1) =>
+              (σ₂.arrs (pn.pu (c₀ : ℕ))).getD (v : ℕ) 0 := by
+        rw [show ((Fin.castSucc c₀ : Fin (Λl + 1)) : ℕ) = (c₀ : ℕ) from rfl,
+          hpu3 c₀]
+      rw [hfun]
+      exact (htabs2 c₀ c₀.isLt).2
+
+end Stage
+
+/-! The stage's remaining frame data: no tape traffic. -/
+
+theorem noWrite_batchCom (oa ta ba nN nS : String) (R j : ℕ) (pd : String) :
+    (batchCom oa ta ba nN nS R j pd).NoWrite :=
+  ⟨trivial, trivial, trivial, trivial, noWrite_bfsCom oa ta pd⟩
+
+theorem noWrite_classCom (oa ta ca xb vo nN nS : String) (Λl c R : ℕ)
+    (vt pu : String) :
+    (classCom oa ta ca xb vo nN nS Λl c R vt pu).NoWrite :=
+  ⟨noWrite_classBitsCom ca xb nN Λl c,
+    noWrite_vsrcCom oa ta xb vo vt nN nS,
+    trivial, trivial, trivial, trivial, noWrite_bfsCom vo vt pu⟩
+
+theorem not_reads_batchCom (oa ta ba nN nS : String) (R j : ℕ) (pd : String) :
+    ¬ (batchCom oa ta ba nN nS R j pd).reads := by
+  intro h
+  rcases h with h | h | h | h | h
+  · exact h
+  · exact h
+  · exact h
+  · exact h
+  · exact not_reads_bfsCom oa ta pd h
+
+theorem not_reads_classCom (oa ta ca xb vo nN nS : String) (Λl c R : ℕ)
+    (vt pu : String) :
+    ¬ (classCom oa ta ca xb vo nN nS Λl c R vt pu).reads := by
+  intro h
+  rcases h with h | h | h | h | h | h
+  · exact not_reads_classBitsCom ca xb nN Λl c h
+  · exact not_reads_vsrcCom oa ta xb vo vt nN nS h
+  · exact h
+  · exact h
+  · exact h
+  · rcases h with h | h
+    · exact h
+    · exact not_reads_bfsCom vo vt pu h
+
+theorem noWrite_batchSeq (pn : ProfNames) (R : ℕ) :
+    ∀ k, (batchSeq pn R k).NoWrite := by
+  intro k
+  induction k with
+  | zero => trivial
+  | succ k ih => exact ⟨ih, noWrite_batchCom _ _ _ _ _ _ _ _⟩
+
+theorem noWrite_classSeq (pn : ProfNames) (Λl R : ℕ) :
+    ∀ k, (classSeq pn Λl R k).NoWrite := by
+  intro k
+  induction k with
+  | zero => trivial
+  | succ k ih => exact ⟨ih, noWrite_classCom _ _ _ _ _ _ _ _ _ _ _ _⟩
+
+theorem noWrite_profilesCom (pn : ProfNames) (mb Λl R : ℕ) :
+    (profilesCom pn mb Λl R).NoWrite :=
+  ⟨noWrite_batchSeq pn R mb, noWrite_classSeq pn Λl R Λl,
+    noWrite_markerCom (pn.pu Λl) pn.nN⟩
+
+theorem not_reads_batchSeq (pn : ProfNames) (R : ℕ) :
+    ∀ k, ¬ (batchSeq pn R k).reads := by
+  intro k
+  induction k with
+  | zero => exact fun h => h
+  | succ k ih =>
+    rintro (h | h)
+    · exact ih h
+    · exact not_reads_batchCom _ _ _ _ _ _ _ _ h
+
+theorem not_reads_classSeq (pn : ProfNames) (Λl R : ℕ) :
+    ∀ k, ¬ (classSeq pn Λl R k).reads := by
+  intro k
+  induction k with
+  | zero => exact fun h => h
+  | succ k ih =>
+    rintro (h | h)
+    · exact ih h
+    · exact not_reads_classCom _ _ _ _ _ _ _ _ _ _ _ _ h
+
+theorem not_reads_profilesCom (pn : ProfNames) (mb Λl R : ℕ) :
+    ¬ (profilesCom pn mb Λl R).reads := by
+  rintro (h | h | h)
+  · exact not_reads_batchSeq pn R mb h
+  · exact not_reads_classSeq pn Λl R Λl h
+  · exact not_reads_markerCom (pn.pu Λl) pn.nN h
+
+/-! ## §7 The stage at the driver's child — under the frozen identity -/
+
+section ChildInstance
+
+open Lax3Proofs.Driver
+
+variable {B L n₀ ℓp : ℕ}
+
+/-- **F6c5's headline** — the profilesMS stage at the pre-isolation
+child of centre `u` (§5 line 20; `preG`, BEFORE `isolateCom` — the
+campaign's oldest hazard): from the restricted arena's regions
+(`ProfPre` at the machine arena `restrict (ofArena A htab) (cluster)`,
+whose graph IS `preG` and whose colours ARE `childCol0`, both
+definitionally) and the padded batch region (`batchFn` — a duplicate
+costs another call), the `mb + L` table regions satisfy
+`Impl.ProfileTablesMS` at the child's data verbatim, and therefore —
+**under the frozen identity `recordProfilesMS_eq_childCol`** — the
+coloring they assemble IS `Driver.childCol S A π u`: same
+`Fin (S.R+1)` indexing, same cumulative `≤ a` rows, same `preG`; the
+`pu` rows ride `vsrc_withinDist_succ_iff`'s landed `+1` shift, never
+re-derived here. Budget `profilesK` at `L = relPal Λ` — the
+`mb·callCost + L·callCostMS` two-term shape, marker free. -/
+theorem profilesCom_spec_childCol (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
+    (htab : Fin A.N → Fin ℓp → List (Fin A.N))
+    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N)
+    {ns : ℕ} (pn : ProfNames) (hok : pn.Ok S.width (relPal Λ))
+    (hNB : childN S A π u + 2 < B)
+    (hnsB : ns + 2 * childN S A π u + 1 < B)
+    (hRB : S.R + 3 < B) (hmbB : S.width < B)
+    (hΛB : childN S A π u * Λ < B) :
+    Spec B
+      (ProfPre pn ((Impl.ofArena A htab).restrict (cluster S A π u)).G
+        ((Impl.ofArena A htab).restrict (cluster S A π u)).col
+        ns (batchFn S A π u))
+      (profilesCom pn S.width Λ S.R)
+      (fun _ σ' =>
+        Impl.ProfileTablesMS (preG S A π u) (batchFn S A π u)
+          (childColR S A π u) S.R
+          (fun j v => (σ'.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0)
+          (fun c v => (σ'.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0) ∧
+        Impl.recordProfilesMS S.R (childColR S A π u)
+          (fun j v => (σ'.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0)
+          (fun c v => (σ'.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0)
+          = childCol S A π u ∧
+        (∀ j : Fin S.width, ∀ v : Fin (childN S A π u),
+          (σ'.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0 ≤ S.R + 1) ∧
+        (∀ c : Fin (relPal Λ), ∀ v : Fin (childN S A π u + 1),
+          (σ'.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0 ≤ S.R + 2))
+      (profilesK S.width (relPal Λ) (childN S A π u) ns S.R) := by
+  refine (profilesCom_spec (B := B)
+    (H := ((Impl.ofArena A htab).restrict (cluster S A π u)).G)
+    (col := ((Impl.ofArena A htab).restrict (cluster S A π u)).col)
+    (w := batchFn S A π u) (pn := pn) hok hNB hnsB hRB hmbB hΛB).post ?_
+  rintro σ σ' hσ ⟨hbd1, hbd2, hpt⟩
+  have hpt' : Impl.ProfileTablesMS (preG S A π u) (batchFn S A π u)
+      (childColR S A π u) S.R
+      (fun j v => (σ'.arrs (pn.pd (j : ℕ))).getD (v : ℕ) 0)
+      (fun c v => (σ'.arrs (pn.pu (c : ℕ))).getD (v : ℕ) 0) := hpt
+  exact ⟨hpt', Impl.recordProfilesMS_eq_childCol S A π u hpt', hbd1, hbd2⟩
+
+end ChildInstance
 
 end Lax3Proofs.Prog

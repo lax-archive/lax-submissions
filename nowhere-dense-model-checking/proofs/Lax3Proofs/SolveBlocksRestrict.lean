@@ -1613,7 +1613,12 @@ private theorem colCell_spec (hNB : n < B) (hLB : n * Lc < B)
     have hmul : (Expr.mul (.var "rs.i") (.var "rs.l")).evalB B σ = some (i * Lc) := by
       have h := evalB_bin (B := B) (op := .mul)
         (evalB_var (x := "rs.i") (by rw [hiv]; omega))
-        (evalB_var (x := "rs.l") (by rw [hl]; omega)) (by rw [hiv, hl]; simp; omega)
+        (evalB_var (x := "rs.l") (by rw [hl]; omega))
+        (by
+          rw [hiv, hl]
+          have h1 : i * Lc ≤ n * Lc := Nat.mul_le_mul_right Lc (by omega)
+          simp
+          omega)
       rw [hiv, hl] at h
       simpa using h
     have h := evalB_bin (B := B) (op := .add) hmul
@@ -1633,7 +1638,12 @@ private theorem colCell_spec (hNB : n < B) (hLB : n * Lc < B)
     have hmul : (Expr.mul (.var "rs.s") (.var "rs.l")).evalB B σ = some (s' * Lc) := by
       have h := evalB_bin (B := B) (op := .mul)
         (evalB_var (x := "rs.s") (by rw [hs]; omega))
-        (evalB_var (x := "rs.l") (by rw [hl]; omega)) (by rw [hs, hl]; simp; omega)
+        (evalB_var (x := "rs.l") (by rw [hl]; omega))
+        (by
+          rw [hs, hl]
+          have h1 : s' * Lc ≤ n * Lc := Nat.mul_le_mul_right Lc (by omega)
+          simp
+          omega)
       rw [hs, hl] at h
       simpa using h
     have hidx : (Expr.add (.mul (.var "rs.s") (.var "rs.l")) (.var "rs.q")).evalB B σ
@@ -1669,10 +1679,10 @@ private theorem colCell_spec (hNB : n < B) (hLB : n * Lc < B)
     simp [hb]
   have h'q : σ'.vars "rs.q" = q + 1 := by rw [hσ']; simp
   refine ⟨σ', (hst.seq hinc).mono (by omega),
-    ⟨⟨by rw [h'arrs _ hcc]; exact hcolP.1,
-        fun v c => by rw [h'arrs _ hcc]; exact hcolP.2 v c⟩,
-      ⟨by rw [h'arrs _ hcla]; exact hcl.1,
-        fun t ht => by rw [h'arrs _ hcla]; exact hcl.2 t ht⟩,
+    ⟨⟨by rw [h'arrs _ (Ne.symm hcc)]; exact hcolP.1,
+        fun v c => by rw [h'arrs _ (Ne.symm hcc)]; exact hcolP.2 v c⟩,
+      ⟨by rw [h'arrs _ (Ne.symm hcla)]; exact hcl.1,
+        fun t ht => by rw [h'arrs _ (Ne.symm hcla)]; exact hcl.2 t ht⟩,
       by rw [h'vars "rs.k" (by decide)]; exact hk,
       by rw [h'vars "rs.l" (by decide)]; exact hl,
       by rw [h'vars "rs.i" (by decide)]; exact hiv,
@@ -1731,9 +1741,8 @@ private theorem colCopyBody_spec (hNB : n < B) (hLB : n * Lc < B)
     (ColInSt nmP nmC la n Lc S colP i) Lc 16
     (by
       have hn1 : 1 ≤ n := by have := embN_lt S hlt; omega
-      calc Lc = 1 * Lc := (Nat.one_mul Lc).symm
-        _ ≤ n * Lc := Nat.mul_le_mul_right Lc hn1
-      _ < B := hLB)
+      have h1 : 1 * Lc ≤ n * Lc := Nat.mul_le_mul_right Lc hn1
+      omega)
     (fun τ hτ => hτ.hq) (fun τ hτ => hτ.hl)
     (colCell_spec hNB hLB hcc hcla hlt)
   obtain ⟨σ₂, hinrun, hin₂, hq₂⟩ := hinner.run hin₁
@@ -1754,7 +1763,7 @@ private theorem colCopyBody_spec (hNB : n < B) (hLB : n * Lc < B)
     exact h.mono (by omega)
   · refine ⟨f₂, by simpa using hfarr₂, ?_⟩
     intro a ha c' hc'
-    simp only [vars_setVar, if_pos rfl] at ha
+    simp at ha
     rcases Nat.lt_or_ge a i with hai | hai
     · exact hfdone₂ a hai c' hc'
     · have hae : a = i := by omega
@@ -1799,11 +1808,10 @@ private theorem colCopy_spec (hNB : n < B) (hLB : n * Lc < B)
     · rw [hfdone (v : ℕ) (by rw [hie]; exact v.2) (c : ℕ) c.2, pbit,
         dif_pos ⟨embN_lt S v.2, c.2⟩]
       have hv : (⟨embN S (v : ℕ), embN_lt S v.2⟩ : Fin n)
-          = Impl.restrictEmb S v := by
-        rw [embN_of_lt S v.2]
-        exact Fin.ext (by simp [Fin.eta])
-      rw [hv]
-      congr 1
+          = Impl.restrictEmb S v := Fin.ext (embN_of_lt S v.2)
+      have hcfin : (⟨(c : ℕ), c.2⟩ : Fin Lc) = c := Fin.ext rfl
+      rw [hv, hcfin]
+      rfl
     · have h1 : (v : ℕ) * Lc + (c : ℕ) < ((v : ℕ) + 1) * Lc := by
         have : ((v : ℕ) + 1) * Lc = (v : ℕ) * Lc + Lc := by ring
         have := c.2
@@ -1880,12 +1888,14 @@ private theorem upCopy_spec (hNB : n < B) (hn0B : n₀ < B)
         · rw [hσ₁]
           simp only [arrs_setVar]
           rw [getElem?_eq_getD (by rw [hupP.1]; omega)]
-          have := hupP.2 ⟨embN S i, hsN⟩
-          rw [show ((⟨embN S i, hsN⟩ : Fin n) : ℕ) = embN S i from rfl] at this
-          rw [this, upN, dif_pos hlt]
-          congr 2
-          rw [embN_of_lt S hlt]
-          exact Fin.ext (by simp)
+          congr 1
+          calc (σ.arrs nmP.up).getD (embN S i) 0
+              = (upP (⟨embN S i, hsN⟩ : Fin n) : ℕ) := hupP.2 ⟨embN S i, hsN⟩
+            _ = upN upP S i := by
+                rw [upN, dif_pos hlt]
+                have harg : (⟨embN S i, hsN⟩ : Fin n) = Impl.restrictEmb S ⟨i, hlt⟩ :=
+                  Fin.ext (embN_of_lt S hlt)
+                rw [harg]
         · rw [upN, dif_pos hlt]
           have := (upP (Impl.restrictEmb S ⟨i, hlt⟩)).2
           omega
@@ -1901,33 +1911,35 @@ private theorem upCopy_spec (hNB : n < B) (hn0B : n₀ < B)
       have hev := evalB_incr (B := B) (x := "rs.i") (σ := σ₂) (by rw [h2i]; omega)
       rw [h2i] at hev
       exact (Run.assign hev).mono (by simp)
-    refine ⟨_, (hread.seq (hst.seq hinc)).mono (by omega), ⟨?_, ?_, ?_, ?_, ?_⟩,
-      by simp [hσ₂, hσ₁, ← hi_def]⟩
-    · refine ⟨?_, fun v => ?_⟩ <;>
-        (simp only [hσ₂, hσ₁, arrs_setVar, vars_setVar, arrs_setArr,
-          if_neg (Ne.symm huu)])
-      · exact hupP.1
-      · exact hupP.2 v
-    · refine ⟨?_, fun t ht => ?_⟩ <;>
-        (simp only [hσ₂, hσ₁, arrs_setVar, vars_setVar, arrs_setArr,
-          if_neg (Ne.symm hula)])
-      · exact hcl.1
-      · exact hcl.2 t ht
-    · simp only [hσ₂, hσ₁, vars_setVar]
-      rw [if_neg (by decide), if_neg (by decide)]
-      exact hk
-    · simp [hσ₂, hσ₁]; omega
-    · refine ⟨fun p => if p = i then upN upP S i else f p, ?_, ?_⟩
-      · simp only [hσ₂, hσ₁, arrs_setVar, vars_setVar, arrs_setArr, if_pos rfl]
-        rw [hfarr, set_arrOf]
-      · intro a ha
-        simp only [hσ₂, hσ₁, vars_setVar] at ha
-        rw [if_pos rfl] at ha
-        show (if a = i then upN upP S i else f a) = upN upP S a
-        by_cases hae : a = i
-        · rw [if_pos hae, hae]
-        · rw [if_neg hae]
-          exact hfpre a (by omega)
+    set σ₃ := σ₂.setVar "rs.i" (i + 1) with hσ₃
+    have h3vars : ∀ y, y ≠ "rs.s" → y ≠ "rs.i" → σ₃.vars y = σ.vars y := by
+      intro y hy1 hy2
+      rw [hσ₃, hσ₂, hσ₁]
+      simp [hy1, hy2]
+    have h3arrs : ∀ b, b ≠ nmC.up → σ₃.arrs b = σ.arrs b := by
+      intro b hb
+      rw [hσ₃, hσ₂, hσ₁]
+      simp [hb]
+    have h3i : σ₃.vars "rs.i" = i + 1 := by rw [hσ₃]; simp
+    have h3up : σ₃.arrs nmC.up = (σ.arrs nmC.up).set i (upN upP S i) := by
+      rw [hσ₃, hσ₂, hσ₁]
+      simp
+    refine ⟨σ₃, (hread.seq (hst.seq hinc)).mono (by omega),
+      ⟨⟨by rw [h3arrs _ (Ne.symm huu)]; exact hupP.1,
+        fun v => by rw [h3arrs _ (Ne.symm huu)]; exact hupP.2 v⟩,
+      ⟨by rw [h3arrs _ (Ne.symm hula)]; exact hcl.1,
+        fun t ht => by rw [h3arrs _ (Ne.symm hula)]; exact hcl.2 t ht⟩,
+      by rw [h3vars "rs.k" (by decide) (by decide)]; exact hk,
+      by rw [h3i]; omega, ?_⟩, h3i⟩
+    refine ⟨fun p => if p = i then upN upP S i else f p, ?_, ?_⟩
+    · rw [h3up, hfarr, set_arrOf]
+    · intro a ha
+      rw [h3i] at ha
+      show (if a = i then upN upP S i else f a) = upN upP S a
+      by_cases hae : a = i
+      · rw [if_pos hae, hae]
+      · rw [if_neg hae]
+        exact hfpre a (by omega)
   have hmain := Spec.forRangeZero (B := B) "rs.i" "rs.k"
     (UpSt nmP nmC la n S upP) S.ncard 12 (by omega)
     (fun τ hτ => hτ.hiN) (fun τ hτ => hτ.hk) hbody
@@ -1948,9 +1960,868 @@ private theorem upCopy_spec (hNB : n < B) (hn0B : n₀ < B)
     rw [hfarr, getD_arrOf _ v.2, hfpre (v : ℕ) (by rw [hie]; exact v.2), upN,
       dif_pos v.2]
     congr 2
-    exact Fin.ext (by simp)
 
 end UpCopy
+
+/-! ## §11 The channel filter
+
+Per member and per ancestor round, the stored list is filtered through
+the scratch **in order** — `Impl.restrict_hist_map`'s in-order
+intersection, on the machine. -/
+
+section HistFilter
+
+variable {B n ℓp hb : ℕ} {S : Set (Fin n)} {nmP nmC : ArenaNames} {la ra : String}
+
+/-- The parent's stored list at plain numbers (total; `[]` out of
+range). -/
+private noncomputable def histN (histP : Fin n → Fin ℓp → List (Fin n))
+    (v r : ℕ) : List ℕ :=
+  if h : v < n ∧ r < ℓp then (histP ⟨v, h.1⟩ ⟨r, h.2⟩).map Fin.val else []
+
+/-- The child's stored list at plain numbers: the parent's, filtered
+through the scratch. -/
+private noncomputable def chN (histP : Fin n → Fin ℓp → List (Fin n))
+    (S : Set (Fin n)) (a r : ℕ) : List ℕ :=
+  (histN histP (embN S a) r).filterMap (rkOpt S)
+
+variable {histP : Fin n → Fin ℓp → List (Fin n)}
+
+/-- The machine filter at numbers IS the abstract `filterMap toLocal`,
+renamed down — `restrict_hist_map`'s machine half. -/
+private theorem filterMap_rkOpt_map_val (l : List (Fin n)) :
+    (l.map Fin.val).filterMap (rkOpt S)
+      = (l.filterMap (Impl.toLocal S)).map Fin.val := by
+  induction l with
+  | nil => rfl
+  | cons x l ih =>
+    have hx : rkOpt S (x : ℕ) = (Impl.toLocal S x).map Fin.val := by
+      rw [rkOpt]
+      exact dif_pos x.2
+    rw [List.map_cons, List.filterMap_cons, List.filterMap_cons, hx]
+    cases hto : Impl.toLocal S x with
+    | none => simpa using ih
+    | some b => simp [ih]
+
+private theorem chN_eq {a r : ℕ} (ha : a < S.ncard) (hr : r < ℓp) :
+    chN histP S a r
+      = ((histP (Impl.restrictEmb S ⟨a, ha⟩) ⟨r, hr⟩).filterMap
+          (Impl.toLocal S)).map Fin.val := by
+  have h1 : (⟨embN S a, embN_lt S ha⟩ : Fin n) = Impl.restrictEmb S ⟨a, ha⟩ :=
+    Fin.ext (embN_of_lt S ha)
+  rw [chN, histN, dif_pos ⟨embN_lt S ha, hr⟩, h1, filterMap_rkOpt_map_val]
+
+private theorem histN_len_le {a' : String} {σ : Env}
+    (hh : HistArr a' ℓp hb histP σ) (v r : ℕ) :
+    (histN histP v r).length ≤ hb := by
+  rw [histN]
+  split
+  · rename_i h
+    rw [List.length_map]
+    exact (hh.2 ⟨v, h.1⟩ ⟨r, h.2⟩).1
+  · simp
+
+private theorem histN_entry_lt {v r m : ℕ}
+    (hm : m < (histN histP v r).length) : (histN histP v r).getD m 0 < n := by
+  have hall : ∀ x ∈ histN histP v r, x < n := by
+    intro x hx
+    rw [histN] at hx
+    split at hx
+    · obtain ⟨y, -, rfl⟩ := List.mem_map.mp hx
+      exact y.2
+    · simp at hx
+  have hmem : (histN histP v r).getD m 0 ∈ histN histP v r := by
+    rw [getD_eq_getElem hm]
+    exact List.getElem_mem hm
+  exact hall _ hmem
+
+/-- Reading the parent's length prefix. -/
+private theorem histArr_base {σ : Env} (hh : HistArr nmP.hist ℓp hb histP σ)
+    {v r : ℕ} (hv : v < n) (hr : r < ℓp) :
+    (σ.arrs nmP.hist).getD ((v * ℓp + r) * (hb + 1)) 0
+      = (histN histP v r).length := by
+  have h := (hh.2 ⟨v, hv⟩ ⟨r, hr⟩).2.1
+  rw [histN, dif_pos ⟨hv, hr⟩, List.length_map]
+  exact h
+
+/-- Reading one stored name. -/
+private theorem histArr_entry {σ : Env} (hh : HistArr nmP.hist ℓp hb histP σ)
+    {v r m : ℕ} (hv : v < n) (hr : r < ℓp)
+    (hm : m < (histN histP v r).length) :
+    (σ.arrs nmP.hist).getD ((v * ℓp + r) * (hb + 1) + 1 + m) 0
+      = (histN histP v r).getD m 0 := by
+  have hm' : m < (histP ⟨v, hv⟩ ⟨r, hr⟩).length := by
+    rw [histN, dif_pos ⟨hv, hr⟩, List.length_map] at hm
+    exact hm
+  have h := (hh.2 ⟨v, hv⟩ ⟨r, hr⟩).2.2 m hm'
+  rw [histN, dif_pos ⟨hv, hr⟩,
+    getD_eq_getElem (show m < ((histP ⟨v, hv⟩ ⟨r, hr⟩).map Fin.val).length by
+      rw [List.length_map]; exact hm'),
+    List.getElem_map]
+  exact h
+
+/-- The block index arithmetic: any in-block cell stays inside the
+region. -/
+private theorem hist_idx_lt {v r c : ℕ} (hv : v < n) (hr : r < ℓp)
+    (hc : c < hb + 1) :
+    (v * ℓp + r) * (hb + 1) + c < n * ℓp * (hb + 1) := by
+  have h2 : (v + 1) * ℓp ≤ n * ℓp := Nat.mul_le_mul_right ℓp (by omega)
+  have h3 : (v + 1) * ℓp = v * ℓp + ℓp := by ring
+  have h4 : (v * ℓp + r + 1) * (hb + 1) ≤ n * ℓp * (hb + 1) :=
+    Nat.mul_le_mul_right (hb + 1) (by omega)
+  have h5 : (v * ℓp + r + 1) * (hb + 1) = (v * ℓp + r) * (hb + 1) + (hb + 1) := by
+    ring
+  omega
+
+/-- Two in-block cells coincide only in the same block at the same
+offset. -/
+private theorem hist_idx_inj {a r c a' r' c' : ℕ} (hr : r < ℓp)
+    (hc : c < hb + 1) (hr' : r' < ℓp) (hc' : c' < hb + 1)
+    (h : (a * ℓp + r) * (hb + 1) + c = (a' * ℓp + r') * (hb + 1) + c') :
+    a = a' ∧ r = r' ∧ c = c' := by
+  obtain ⟨h1, h2⟩ := grid_inj hc hc' h
+  obtain ⟨h3, h4⟩ := grid_inj hr hr' h1
+  exact ⟨h3, h4, h2⟩
+
+private theorem keptLen_le_self (F : ℕ → Option ℕ) (l : List ℕ) (m : ℕ) :
+    keptLen F l m ≤ m :=
+  le_trans (List.length_filterMap_le _ _) (by rw [List.length_take]; omega)
+
+/-- One filled channel block. -/
+private def blockDone (ℓp hb : ℕ) (L : List ℕ) (a r : ℕ) (f : ℕ → ℕ) : Prop :=
+  f ((a * ℓp + r) * (hb + 1)) = L.length ∧
+    ∀ m < L.length, f ((a * ℓp + r) * (hb + 1) + 1 + m) = L.getD m 0
+
+/-- The outer state of the channel filter. -/
+private structure HistSt (nmP nmC : ArenaNames) (la ra : String) (n ℓp hb : ℕ)
+    (S : Set (Fin n)) (histP : Fin n → Fin ℓp → List (Fin n)) (σ : Env) : Prop where
+  hh : HistArr nmP.hist ℓp hb histP σ
+  hcl : ClusterList la S σ
+  hk : σ.vars "rs.k" = S.ncard
+  hp : σ.vars "rs.p" = ℓp
+  hhb : σ.vars "rs.h" = hb
+  hra : σ.arrs ra = arrOf n (rk S)
+  hiN : σ.vars "rs.i" ≤ S.ncard
+  harr : ∃ f, σ.arrs nmC.hist = arrOf (S.ncard * ℓp * (hb + 1)) f ∧
+    ∀ a < σ.vars "rs.i", ∀ r < ℓp, blockDone ℓp hb (chN histP S a r) a r f
+
+/-- The middle state: member `i`'s rounds, done below the round
+counter. -/
+private structure HistMidSt (nmP nmC : ArenaNames) (la ra : String) (n ℓp hb : ℕ)
+    (S : Set (Fin n)) (histP : Fin n → Fin ℓp → List (Fin n)) (i : ℕ)
+    (σ : Env) : Prop where
+  hh : HistArr nmP.hist ℓp hb histP σ
+  hcl : ClusterList la S σ
+  hk : σ.vars "rs.k" = S.ncard
+  hp : σ.vars "rs.p" = ℓp
+  hhb : σ.vars "rs.h" = hb
+  hra : σ.arrs ra = arrOf n (rk S)
+  hiv : σ.vars "rs.i" = i
+  hs : σ.vars "rs.s" = embN S i
+  hq : σ.vars "rs.q" ≤ ℓp
+  harr : ∃ f, σ.arrs nmC.hist = arrOf (S.ncard * ℓp * (hb + 1)) f ∧
+    (∀ a < i, ∀ r < ℓp, blockDone ℓp hb (chN histP S a r) a r f) ∧
+    ∀ r < σ.vars "rs.q", blockDone ℓp hb (chN histP S i r) i r f
+
+/-- The inner state: one list, filtered up to the read cursor. -/
+private structure HistInSt (nmP nmC : ArenaNames) (ra : String) (n ℓp hb : ℕ)
+    (S : Set (Fin n)) (histP : Fin n → Fin ℓp → List (Fin n)) (i q : ℕ)
+    (σ : Env) : Prop where
+  hh : HistArr nmP.hist ℓp hb histP σ
+  hra : σ.arrs ra = arrOf n (rk S)
+  hav : σ.vars "rs.a" = (embN S i * ℓp + q) * (hb + 1)
+  hbv : σ.vars "rs.b" = (i * ℓp + q) * (hb + 1)
+  hev : σ.vars "rs.e" = (histN histP (embN S i) q).length
+  hdN : σ.vars "rs.d" ≤ (histN histP (embN S i) q).length
+  htv : σ.vars "rs.t"
+    = keptLen (rkOpt S) (histN histP (embN S i) q) (σ.vars "rs.d")
+  harr : ∃ f, σ.arrs nmC.hist = arrOf (S.ncard * ℓp * (hb + 1)) f ∧
+    (∀ a < i, ∀ r < ℓp, blockDone ℓp hb (chN histP S a r) a r f) ∧
+    (∀ r < q, blockDone ℓp hb (chN histP S i r) i r f) ∧
+    ∀ m < σ.vars "rs.t",
+      f ((i * ℓp + q) * (hb + 1) + 1 + m) = (chN histP S i q).getD m 0
+
+/-- **One stored name of the filter**: read it, one scratch lookup, emit
+its local name if marked. -/
+private theorem histSlot_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
+    (hhc : nmC.hist ≠ nmP.hist) (hhra : nmC.hist ≠ ra)
+    {i q : ℕ} (hik : i < S.ncard) (hqp : q < ℓp) :
+    Spec B
+      (fun σ => HistInSt nmP nmC ra n ℓp hb S histP i q σ ∧
+        σ.vars "rs.d" < (histN histP (embN S i) q).length)
+      (histSlot nmP nmC ra)
+      (fun σ σ' => HistInSt nmP nmC ra n ℓp hb S histP i q σ' ∧
+        σ'.vars "rs.d" = σ.vars "rs.d" + 1) 32 := by
+  intro σ hσ
+  obtain ⟨⟨hh, hra, hav, hbv, hev, hdN, htv, f, hfarr, hdoneA, hdoneR, hcur⟩, hlt⟩ := hσ
+  have hkn : S.ncard ≤ n := ncard_le_carrier S
+  have hn1 : 1 ≤ n := by have := embN_lt S hik; omega
+  have hp1 : 1 ≤ ℓp := by omega
+  have hnpB : n * ℓp * (hb + 1) < B := hHB
+  have hhbB : hb + 1 < B := by
+    have h1 : 1 * 1 * (hb + 1) ≤ n * ℓp * (hb + 1) :=
+      Nat.mul_le_mul_right (hb + 1) (by
+        calc 1 * 1 = 1 := by ring
+          _ ≤ n * ℓp := Nat.one_le_iff_ne_zero.mpr (by positivity))
+    have h2 : 1 * 1 * (hb + 1) = hb + 1 := by ring
+    omega
+  set L := histN histP (embN S i) q with hL_def
+  have hLhb : L.length ≤ hb := histN_len_le hh _ _
+  set d := σ.vars "rs.d" with hd_def
+  set A := (embN S i * ℓp + q) * (hb + 1) with hA_def
+  set Bb := (i * ℓp + q) * (hb + 1) with hBb_def
+  set t := σ.vars "rs.t" with ht_def
+  have hsn : embN S i < n := embN_lt S hik
+  have htle : t ≤ d := by
+    rw [htv]
+    exact keptLen_le_self _ _ _
+  -- the stored-name read
+  have hidxsrc : A + 1 + d < n * ℓp * (hb + 1) := by
+    have h := hist_idx_lt (hb := hb) hsn hqp (show 1 + d < hb + 1 by omega)
+    rw [← hA_def] at h
+    omega
+  have hwval : (σ.arrs nmP.hist).getD (A + 1 + d) 0 = L.getD d 0 :=
+    histArr_entry hh hsn hqp hlt
+  have hwlt : L.getD d 0 < n := histN_entry_lt hlt
+  have hread : Run B (.assign "rs.w"
+      (.get nmP.hist (.add (.var "rs.a") (.add (.var "rs.d") (.lit 1)))))
+      σ (σ.setVar "rs.w" (L.getD d 0)) 8 := by
+    have hidx : (Expr.add (.var "rs.a") (.add (.var "rs.d") (.lit 1))).evalB B σ
+        = some (A + (d + 1)) := by
+      have h1 : (Expr.add (.var "rs.d") (.lit 1)).evalB B σ = some (d + 1) := by
+        have h := evalB_incr (B := B) (x := "rs.d") (σ := σ)
+          (by rw [← hd_def]; omega)
+        rwa [← hd_def] at h
+      have h2 := evalB_bin (B := B) (op := .add)
+        (evalB_var (x := "rs.a") (by rw [hav]; omega)) h1
+        (by rw [hav]; simp; omega)
+      rw [hav] at h2
+      simpa using h2
+    refine (Run.assign (evalB_get hidx ?_ (by omega))).mono (by simp)
+    rw [show A + (d + 1) = A + 1 + d by omega,
+      getElem?_eq_getD (by rw [hh.1]; omega), hwval]
+  set σa := σ.setVar "rs.w" (L.getD d 0) with hσa
+  set x := rk S (L.getD d 0) with hx_def
+  have hxk : x ≤ S.ncard := rk_le S _
+  -- the rank read
+  have hxread : Run B (.assign "rs.x" (.get ra (.var "rs.w"))) σa
+      (σa.setVar "rs.x" x) 3 := by
+    have haw : σa.vars "rs.w" = L.getD d 0 := by rw [hσa]; simp
+    have hwev : (Expr.var "rs.w").evalB B σa = some (L.getD d 0) := by
+      rw [← haw]
+      exact evalB_var (by rw [haw]; omega)
+    refine (Run.assign (evalB_get hwev ?_ (by omega))).mono (by simp)
+    rw [hσa]
+    simp only [arrs_setVar]
+    rw [hra, getElem?_arrOf _ hwlt]
+  set σb := σa.setVar "rs.x" x with hσb
+  have hbx : σb.vars "rs.x" = x := by rw [hσb]; simp
+  have hbt : σb.vars "rs.t" = t := by rw [hσb, hσa]; simp [ht_def]
+  have hbd : σb.vars "rs.d" = d := by rw [hσb, hσa]; simp [hd_def]
+  have hbb : σb.vars "rs.b" = Bb := by rw [hσb, hσa]; simp [hbv]
+  have hbarrs : ∀ b, σb.arrs b = σ.arrs b := by intro b; rw [hσb, hσa]; simp
+  have hcond : (Cond.lt (.lit 0) (.var "rs.x")).evalB B σb
+      = some (decide (0 < x)) := by
+    refine evalB_condLt (evalB_lit (by omega)) ?_
+    rw [← hbx]
+    exact evalB_var (by rw [hbx]; omega)
+  by_cases hx0 : 0 < x
+  · -- kept: emit and advance the kept count
+    have hcondT : (Cond.lt (.lit 0) (.var "rs.x")).evalB B σb = some true := by
+      rw [hcond]
+      congr 1
+      simpa using hx0
+    have hsome : rkOpt S (L.getD d 0) = some (x - 1) := rk_pos_elim S rfl hx0
+    have hkept1 : keptLen (rkOpt S) L (d + 1) = keptLen (rkOpt S) L d + 1 :=
+      keptLen_succ_some hlt hsome
+    have hkle : keptLen (rkOpt S) L d + 1 ≤ (L.filterMap (rkOpt S)).length := by
+      have h := keptLen_le (rkOpt S) L (d + 1)
+      rw [hkept1] at h
+      exact h
+    have hthb : t < hb := by
+      have h1 : (L.filterMap (rkOpt S)).length ≤ L.length :=
+        List.length_filterMap_le _ _
+      rw [htv]
+      omega
+    have hidxdst : Bb + 1 + t < S.ncard * ℓp * (hb + 1) := by
+      have h1 : i * ℓp + q < S.ncard * ℓp := by
+        have h2 : (i + 1) * ℓp ≤ S.ncard * ℓp := Nat.mul_le_mul_right ℓp (by omega)
+        have h3 : (i + 1) * ℓp = i * ℓp + ℓp := by ring
+        omega
+      have h4 : (i * ℓp + q + 1) * (hb + 1) ≤ S.ncard * ℓp * (hb + 1) :=
+        Nat.mul_le_mul_right (hb + 1) (by omega)
+      have h5 : (i * ℓp + q + 1) * (hb + 1) = Bb + (hb + 1) := by
+        rw [hBb_def]; ring
+      omega
+    have hdstB : Bb + 1 + t < B := by
+      have : S.ncard * ℓp * (hb + 1) ≤ n * ℓp * (hb + 1) :=
+        Nat.mul_le_mul_right (hb + 1) (Nat.mul_le_mul_right ℓp hkn)
+      omega
+    have hst : Run B (.store nmC.hist
+        (.add (.var "rs.b") (.add (.var "rs.t") (.lit 1)))
+        (.sub (.var "rs.x") (.lit 1)))
+        σb (σb.setArr nmC.hist (Bb + 1 + t) (x - 1)) 9 := by
+      have hidx : (Expr.add (.var "rs.b") (.add (.var "rs.t") (.lit 1))).evalB B σb
+          = some (Bb + (t + 1)) := by
+        have h1 : (Expr.add (.var "rs.t") (.lit 1)).evalB B σb = some (t + 1) := by
+          have h := evalB_incr (B := B) (x := "rs.t") (σ := σb)
+            (by rw [hbt]; omega)
+          rwa [hbt] at h
+        have h2 := evalB_bin (B := B) (op := .add)
+          (evalB_var (x := "rs.b") (by rw [hbb]; omega)) h1
+          (by rw [hbb]; simp; omega)
+        rw [hbb] at h2
+        simpa using h2
+      have hxv : (Expr.var "rs.x").evalB B σb = some x := by
+        rw [← hbx]
+        exact evalB_var (by rw [hbx]; omega)
+      have h1v : (Expr.lit 1).evalB B σb = some 1 := evalB_lit (by omega)
+      have hval : (Expr.sub (.var "rs.x") (.lit 1)).evalB B σb = some (x - 1) := by
+        have h := evalB_bin (B := B) (op := .sub) hxv h1v (by simp; omega)
+        simpa using h
+      have h := Run.store (a := nmC.hist) hidx hval
+        (by rw [hbarrs, hfarr, length_arrOf]; omega)
+      rw [show Bb + (t + 1) = Bb + 1 + t by omega] at h
+      exact h.mono (by simp)
+    set σc := σb.setArr nmC.hist (Bb + 1 + t) (x - 1) with hσc
+    have hbump : Run B (.assign "rs.t" (.add (.var "rs.t") (.lit 1))) σc
+        (σc.setVar "rs.t" (t + 1)) 4 := by
+      have hct : σc.vars "rs.t" = t := by rw [hσc]; simpa using hbt
+      have hev := evalB_incr (B := B) (x := "rs.t") (σ := σc) (by rw [hct]; omega)
+      rw [hct] at hev
+      exact (Run.assign hev).mono (by simp)
+    set σd := σc.setVar "rs.t" (t + 1) with hσd
+    have hite : Run B (.ite (.lt (.lit 0) (.var "rs.x"))
+        (.seq (.store nmC.hist (.add (.var "rs.b") (.add (.var "rs.t") (.lit 1)))
+            (.sub (.var "rs.x") (.lit 1)))
+          (.assign "rs.t" (.add (.var "rs.t") (.lit 1)))) .skip) σb σd 17 :=
+      (Run.ite_true hcondT (hst.seq hbump)).mono (by simp)
+    have hinc : Run B (.assign "rs.d" (.add (.var "rs.d") (.lit 1))) σd
+        (σd.setVar "rs.d" (d + 1)) 4 := by
+      have hdd : σd.vars "rs.d" = d := by rw [hσd, hσc]; simpa using hbd
+      have hev := evalB_incr (B := B) (x := "rs.d") (σ := σd) (by rw [hdd]; omega)
+      rw [hdd] at hev
+      exact (Run.assign hev).mono (by simp)
+    set σ' := σd.setVar "rs.d" (d + 1) with hσ'
+    have hrun : Run B (histSlot nmP nmC ra) σ σ' 32 :=
+      (hread.seq (hxread.seq (hite.seq hinc))).mono (by omega)
+    have h'vars : ∀ y, y ≠ "rs.w" → y ≠ "rs.x" → y ≠ "rs.t" → y ≠ "rs.d" →
+        σ'.vars y = σ.vars y := by
+      intro y hy1 hy2 hy3 hy4
+      rw [hσ', hσd, hσc, hσb, hσa]
+      simp [hy1, hy2, hy3, hy4]
+    have h'arrs : ∀ b, b ≠ nmC.hist → σ'.arrs b = σ.arrs b := by
+      intro b hb'
+      rw [hσ', hσd, hσc, hσb, hσa]
+      simp [hb']
+    have h'd : σ'.vars "rs.d" = d + 1 := by rw [hσ']; simp
+    have h't : σ'.vars "rs.t" = t + 1 := by rw [hσ', hσd]; simp
+    have h'hist : σ'.arrs nmC.hist = (arrOf (S.ncard * ℓp * (hb + 1)) f).set
+        (Bb + 1 + t) (x - 1) := by
+      rw [hσ', hσd, hσc]
+      simp only [arrs_setVar]
+      rw [arrs_setArr, if_pos rfl, hbarrs, hfarr]
+    refine ⟨σ', hrun,
+      ⟨⟨by rw [h'arrs _ (Ne.symm hhc)]; exact hh.1,
+          fun v p => by rw [h'arrs _ (Ne.symm hhc)]; exact hh.2 v p⟩,
+        by rw [h'arrs _ (Ne.symm hhra)]; exact hra,
+        by rw [h'vars "rs.a" (by decide) (by decide) (by decide) (by decide)]; exact hav,
+        by rw [h'vars "rs.b" (by decide) (by decide) (by decide) (by decide)]; exact hbv,
+        by rw [h'vars "rs.e" (by decide) (by decide) (by decide) (by decide)]; exact hev,
+        by rw [h'd, ← hL_def]; omega,
+        ?_, ?_⟩, by rw [h'd]⟩
+    · rw [h'd, h't, htv, ← hL_def, hkept1]
+    · refine ⟨fun p => if p = Bb + 1 + t then x - 1 else f p, ?_, ?_, ?_, ?_⟩
+      · rw [h'hist, set_arrOf]
+      · intro a ha r hr
+        obtain ⟨hbase, hents⟩ := hdoneA a ha r hr
+        refine ⟨?_, ?_⟩
+        · show (if (a * ℓp + r) * (hb + 1) = Bb + 1 + t then x - 1
+              else f ((a * ℓp + r) * (hb + 1))) = _
+          rw [if_neg, hbase]
+          intro hcon
+          have hcon' : (a * ℓp + r) * (hb + 1) + 0
+              = (i * ℓp + q) * (hb + 1) + (1 + t) := by
+            rw [hBb_def] at hcon
+            omega
+          have hinj := hist_idx_inj (hr := hr) (hc := Nat.zero_lt_succ hb)
+            (hr' := hqp) (hc' := show 1 + t < hb + 1 by omega) hcon'
+          omega
+        · intro m hm
+          show (if (a * ℓp + r) * (hb + 1) + 1 + m = Bb + 1 + t then x - 1
+              else f ((a * ℓp + r) * (hb + 1) + 1 + m)) = _
+          rw [if_neg, hents m hm]
+          intro hcon
+          have hmhb : m < hb := by
+            have := histN_len_le hh (embN S a) r
+            have hle : (chN histP S a r).length ≤ (histN histP (embN S a) r).length :=
+              List.length_filterMap_le _ _
+            omega
+          have hcon' : (a * ℓp + r) * (hb + 1) + (1 + m)
+              = (i * ℓp + q) * (hb + 1) + (1 + t) := by
+            rw [hBb_def] at hcon
+            omega
+          have hinj := hist_idx_inj (hr := hr) (hc := show 1 + m < hb + 1 by omega)
+            (hr' := hqp) (hc' := show 1 + t < hb + 1 by omega) hcon'
+          omega
+      · intro r hr
+        obtain ⟨hbase, hents⟩ := hdoneR r hr
+        refine ⟨?_, ?_⟩
+        · show (if (i * ℓp + r) * (hb + 1) = Bb + 1 + t then x - 1
+              else f ((i * ℓp + r) * (hb + 1))) = _
+          rw [if_neg, hbase]
+          intro hcon
+          have hcon' : (i * ℓp + r) * (hb + 1) + 0
+              = (i * ℓp + q) * (hb + 1) + (1 + t) := by
+            rw [hBb_def] at hcon
+            omega
+          have hinj := hist_idx_inj (hr := lt_trans hr hqp)
+            (hc := Nat.zero_lt_succ hb)
+            (hr' := hqp) (hc' := show 1 + t < hb + 1 by omega) hcon'
+          omega
+        · intro m hm
+          show (if (i * ℓp + r) * (hb + 1) + 1 + m = Bb + 1 + t then x - 1
+              else f ((i * ℓp + r) * (hb + 1) + 1 + m)) = _
+          rw [if_neg, hents m hm]
+          intro hcon
+          have hmhb : m < hb := by
+            have := histN_len_le hh (embN S i) r
+            have hle : (chN histP S i r).length ≤ (histN histP (embN S i) r).length :=
+              List.length_filterMap_le _ _
+            omega
+          have hcon' : (i * ℓp + r) * (hb + 1) + (1 + m)
+              = (i * ℓp + q) * (hb + 1) + (1 + t) := by
+            rw [hBb_def] at hcon
+            omega
+          have hinj := hist_idx_inj (hr := lt_trans hr hqp)
+            (hc := show 1 + m < hb + 1 by omega)
+            (hr' := hqp) (hc' := show 1 + t < hb + 1 by omega) hcon'
+          omega
+      · intro m hm
+        rw [h't] at hm
+        show (if Bb + 1 + m = Bb + 1 + t then x - 1 else f (Bb + 1 + m))
+          = (chN histP S i q).getD m 0
+        by_cases hmt : m = t
+        · subst hmt
+          rw [if_pos rfl, chN, ← hL_def, htv]
+          exact (filterMap_getD_kept hlt hsome).symm
+        · rw [if_neg (by omega)]
+          exact hcur m (by omega)
+  · -- unmarked: skipped
+    have hcondF : (Cond.lt (.lit 0) (.var "rs.x")).evalB B σb = some false := by
+      rw [hcond]
+      congr 1
+      simpa using hx0
+    have hnone : rkOpt S (L.getD d 0) = none :=
+      (rkOpt_eq_none_iff_rk S _).mpr (by omega)
+    have hite : Run B (.ite (.lt (.lit 0) (.var "rs.x"))
+        (.seq (.store nmC.hist (.add (.var "rs.b") (.add (.var "rs.t") (.lit 1)))
+            (.sub (.var "rs.x") (.lit 1)))
+          (.assign "rs.t" (.add (.var "rs.t") (.lit 1)))) .skip) σb σb 17 :=
+      (Run.ite_false hcondF Run.skip).mono (by simp)
+    have hinc : Run B (.assign "rs.d" (.add (.var "rs.d") (.lit 1))) σb
+        (σb.setVar "rs.d" (d + 1)) 4 := by
+      have hev := evalB_incr (B := B) (x := "rs.d") (σ := σb) (by rw [hbd]; omega)
+      rw [hbd] at hev
+      exact (Run.assign hev).mono (by simp)
+    set σ' := σb.setVar "rs.d" (d + 1) with hσ'
+    have hrun : Run B (histSlot nmP nmC ra) σ σ' 32 :=
+      (hread.seq (hxread.seq (hite.seq hinc))).mono (by omega)
+    have h'vars : ∀ y, y ≠ "rs.w" → y ≠ "rs.x" → y ≠ "rs.d" →
+        σ'.vars y = σ.vars y := by
+      intro y hy1 hy2 hy3
+      rw [hσ', hσb, hσa]
+      simp [hy1, hy2, hy3]
+    have h'arrs : ∀ b, σ'.arrs b = σ.arrs b := by
+      intro b
+      rw [hσ', hσb, hσa]
+      simp
+    have h'd : σ'.vars "rs.d" = d + 1 := by rw [hσ']; simp
+    refine ⟨σ', hrun,
+      ⟨⟨by rw [h'arrs]; exact hh.1, fun v p => by rw [h'arrs]; exact hh.2 v p⟩,
+        by rw [h'arrs]; exact hra,
+        by rw [h'vars "rs.a" (by decide) (by decide) (by decide)]; exact hav,
+        by rw [h'vars "rs.b" (by decide) (by decide) (by decide)]; exact hbv,
+        by rw [h'vars "rs.e" (by decide) (by decide) (by decide)]; exact hev,
+        by rw [h'd, ← hL_def]; omega,
+        ?_, ?_⟩, by rw [h'd]⟩
+    · rw [h'd, h'vars "rs.t" (by decide) (by decide) (by decide), ← ht_def, htv,
+        ← hL_def, keptLen_succ_none hlt hnone]
+    · exact ⟨f, by rw [h'arrs]; exact hfarr, hdoneA, hdoneR,
+        fun m hm => hcur m (by
+          rwa [h'vars "rs.t" (by decide) (by decide) (by decide)] at hm)⟩
+
+private theorem getD_map_val {k' : ℕ} (l : List (Fin k')) {m : ℕ}
+    (hm : m < l.length) : (l.map Fin.val).getD m 0 = (l[m] : ℕ) := by
+  rw [getD_eq_getElem (by rw [List.length_map]; exact hm), List.getElem_map]
+
+/-- **One round of a member's filter**: locate the two blocks, filter
+the stored list in order, seal the kept count. -/
+private theorem histRoundStep_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
+    (hhc : nmC.hist ≠ nmP.hist) (hhra : nmC.hist ≠ ra) (hhla : nmC.hist ≠ la)
+    {i : ℕ} (hik : i < S.ncard) :
+    Spec B
+      (fun σ => HistMidSt nmP nmC la ra n ℓp hb S histP i σ ∧
+        σ.vars "rs.q" < ℓp)
+      (.seq (histRound nmP nmC ra) (.assign "rs.q" (.add (.var "rs.q") (.lit 1))))
+      (fun σ σ' => HistMidSt nmP nmC la ra n ℓp hb S histP i σ' ∧
+        σ'.vars "rs.q" = σ.vars "rs.q" + 1)
+      (36 * hb + 38) := by
+  intro σ hσ
+  obtain ⟨⟨hh, hcl, hk, hp, hhb, hra, hiv, hs, hq, f, hfarr, hdoneA, hdoneR⟩, hlt⟩ := hσ
+  have hkn : S.ncard ≤ n := ncard_le_carrier S
+  have hn1 : 1 ≤ n := by have := embN_lt S hik; omega
+  have hsn : embN S i < n := embN_lt S hik
+  set q₀ := σ.vars "rs.q" with hq0_def
+  set A₀ := (embN S i * ℓp + q₀) * (hb + 1) with hA0_def
+  set B₀ := (i * ℓp + q₀) * (hb + 1) with hB0_def
+  set L := histN histP (embN S i) q₀ with hL_def
+  have hLhb : L.length ≤ hb := histN_len_le hh _ _
+  have hA0lt : A₀ < n * ℓp * (hb + 1) := by
+    have h := hist_idx_lt (hb := hb) hsn hlt (show 0 < hb + 1 by omega)
+    rw [← hA0_def] at h
+    omega
+  have hB0lt : B₀ < S.ncard * ℓp * (hb + 1) := by
+    have h := hist_idx_lt (n := S.ncard) (hb := hb) hik hlt
+      (show 0 < hb + 1 by omega)
+    rw [← hB0_def] at h
+    omega
+  have hkregion : S.ncard * ℓp * (hb + 1) ≤ n * ℓp * (hb + 1) :=
+    Nat.mul_le_mul_right (hb + 1) (Nat.mul_le_mul_right ℓp hkn)
+  have hhbB : hb + 1 < B := by
+    have h1 : 1 * (hb + 1) ≤ n * ℓp * (hb + 1) :=
+      Nat.mul_le_mul_right (hb + 1)
+        (by have := Nat.mul_le_mul (show 1 ≤ n by omega) (show 1 ≤ ℓp by omega)
+            simpa using this)
+    omega
+  have hpB : ℓp < B := by
+    have h1 : n * ℓp ≤ n * ℓp * (hb + 1) := Nat.le_mul_of_pos_right _ (by omega)
+    have h2 : 1 * ℓp ≤ n * ℓp := Nat.mul_le_mul_right ℓp (by omega)
+    omega
+  have hslpq : embN S i * ℓp + q₀ < n * ℓp := by
+    have h2 : (embN S i + 1) * ℓp ≤ n * ℓp := Nat.mul_le_mul_right ℓp (by omega)
+    have h3 : (embN S i + 1) * ℓp = embN S i * ℓp + ℓp := by ring
+    omega
+  have hilpq : i * ℓp + q₀ < S.ncard * ℓp := by
+    have h2 : (i + 1) * ℓp ≤ S.ncard * ℓp := Nat.mul_le_mul_right ℓp (by omega)
+    have h3 : (i + 1) * ℓp = i * ℓp + ℓp := by ring
+    omega
+  have hnlp_le : n * ℓp ≤ n * ℓp * (hb + 1) := Nat.le_mul_of_pos_right _ (by omega)
+  have hklp_le : S.ncard * ℓp ≤ S.ncard * ℓp * (hb + 1) :=
+    Nat.le_mul_of_pos_right _ (by omega)
+  -- 1. the source base
+  have hr1 : Run B (.assign "rs.a"
+      (.mul (.add (.mul (.var "rs.s") (.var "rs.p")) (.var "rs.q"))
+        (.add (.var "rs.h") (.lit 1)))) σ (σ.setVar "rs.a" A₀) 10 := by
+    have hm1 : (Expr.mul (.var "rs.s") (.var "rs.p")).evalB B σ
+        = some (embN S i * ℓp) := by
+      have h := evalB_bin (B := B) (op := .mul)
+        (evalB_var (x := "rs.s") (by rw [hs]; omega))
+        (evalB_var (x := "rs.p") (by rw [hp]; omega))
+        (by rw [hs, hp]; simp; omega)
+      rw [hs, hp] at h
+      simpa using h
+    have hm2 : (Expr.add (.mul (.var "rs.s") (.var "rs.p")) (.var "rs.q")).evalB B σ
+        = some (embN S i * ℓp + q₀) := by
+      have h := evalB_bin (B := B) (op := .add) hm1
+        (evalB_var (x := "rs.q") (by omega)) (by rw [← hq0_def]; simp; omega)
+      rw [← hq0_def] at h
+      simpa using h
+    have hm3 : (Expr.add (.var "rs.h") (.lit 1)).evalB B σ = some (hb + 1) := by
+      have h := evalB_incr (B := B) (x := "rs.h") (σ := σ) (by rw [hhb]; omega)
+      rwa [hhb] at h
+    have h := evalB_bin (B := B) (op := .mul) hm2 hm3
+      (by simp; rw [← hA0_def]; omega)
+    have h' : (Expr.mul (.add (.mul (.var "rs.s") (.var "rs.p")) (.var "rs.q"))
+        (.add (.var "rs.h") (.lit 1))).evalB B σ = some A₀ := by
+      rw [hA0_def]
+      simpa using h
+    exact (Run.assign h').mono (by simp)
+  set σ₁ := σ.setVar "rs.a" A₀ with hσ₁
+  have h1vars : ∀ y, y ≠ "rs.a" → σ₁.vars y = σ.vars y := by
+    intro y hy
+    rw [hσ₁]
+    simp [hy]
+  -- 2. the destination base
+  have hr2 : Run B (.assign "rs.b"
+      (.mul (.add (.mul (.var "rs.i") (.var "rs.p")) (.var "rs.q"))
+        (.add (.var "rs.h") (.lit 1)))) σ₁ (σ₁.setVar "rs.b" B₀) 10 := by
+    have h1i : σ₁.vars "rs.i" = i := by rw [h1vars _ (by decide)]; exact hiv
+    have h1p : σ₁.vars "rs.p" = ℓp := by rw [h1vars _ (by decide)]; exact hp
+    have h1q : σ₁.vars "rs.q" = q₀ := by rw [h1vars _ (by decide)]
+    have h1h : σ₁.vars "rs.h" = hb := by rw [h1vars _ (by decide)]; exact hhb
+    have hm1 : (Expr.mul (.var "rs.i") (.var "rs.p")).evalB B σ₁
+        = some (i * ℓp) := by
+      have h := evalB_bin (B := B) (op := .mul)
+        (evalB_var (x := "rs.i") (by rw [h1i]; omega))
+        (evalB_var (x := "rs.p") (by rw [h1p]; omega))
+        (by rw [h1i, h1p]; simp
+            have : i * ℓp ≤ S.ncard * ℓp := Nat.mul_le_mul_right ℓp (by omega)
+            omega)
+      rw [h1i, h1p] at h
+      simpa using h
+    have hm2 : (Expr.add (.mul (.var "rs.i") (.var "rs.p")) (.var "rs.q")).evalB B σ₁
+        = some (i * ℓp + q₀) := by
+      have h := evalB_bin (B := B) (op := .add) hm1
+        (evalB_var (x := "rs.q") (by rw [h1q]; omega)) (by rw [h1q]; simp; omega)
+      rw [h1q] at h
+      simpa using h
+    have hm3 : (Expr.add (.var "rs.h") (.lit 1)).evalB B σ₁ = some (hb + 1) := by
+      have h := evalB_incr (B := B) (x := "rs.h") (σ := σ₁) (by rw [h1h]; omega)
+      rwa [h1h] at h
+    have h := evalB_bin (B := B) (op := .mul) hm2 hm3
+      (by simp; rw [← hB0_def]; omega)
+    have h' : (Expr.mul (.add (.mul (.var "rs.i") (.var "rs.p")) (.var "rs.q"))
+        (.add (.var "rs.h") (.lit 1))).evalB B σ₁ = some B₀ := by
+      rw [hB0_def]
+      simpa using h
+    exact (Run.assign h').mono (by simp)
+  set σ₂ := σ₁.setVar "rs.b" B₀ with hσ₂
+  have h2vars : ∀ y, y ≠ "rs.a" → y ≠ "rs.b" → σ₂.vars y = σ.vars y := by
+    intro y hy1 hy2
+    rw [hσ₂, hσ₁]
+    simp [hy1, hy2]
+  have h2arrs : ∀ b, σ₂.arrs b = σ.arrs b := by
+    intro b
+    rw [hσ₂, hσ₁]
+    simp
+  -- 3. the stored length
+  have hr3 : Run B (.assign "rs.e" (.get nmP.hist (.var "rs.a"))) σ₂
+      (σ₂.setVar "rs.e" L.length) 3 := by
+    have h2a : σ₂.vars "rs.a" = A₀ := by rw [hσ₂]; simp [hσ₁]
+    have haev : (Expr.var "rs.a").evalB B σ₂ = some A₀ := by
+      rw [← h2a]
+      exact evalB_var (by rw [h2a]; omega)
+    refine (Run.assign (evalB_get haev ?_ (by omega))).mono (by simp)
+    rw [h2arrs, getElem?_eq_getD (by rw [hh.1]; omega)]
+    rw [histArr_base hh hsn hlt]
+  set σ₃ := σ₂.setVar "rs.e" L.length with hσ₃
+  -- 4. reset the kept count
+  have hr4 : Run B (.assign "rs.t" (.lit 0)) σ₃ (σ₃.setVar "rs.t" 0) 2 :=
+    (Run.assign (evalB_lit (by omega))).mono (by simp)
+  set σ₄ := σ₃.setVar "rs.t" 0 with hσ₄
+  have h4vars : ∀ y, y ≠ "rs.a" → y ≠ "rs.b" → y ≠ "rs.e" → y ≠ "rs.t" →
+      σ₄.vars y = σ.vars y := by
+    intro y hy1 hy2 hy3 hy4
+    rw [hσ₄, hσ₃, hσ₂, hσ₁]
+    simp [hy1, hy2, hy3, hy4]
+  have h4arrs : ∀ b, σ₄.arrs b = σ.arrs b := by
+    intro b
+    rw [hσ₄, hσ₃, hσ₂, hσ₁]
+    simp
+  -- 5. the filter loop
+  have hIn : HistInSt nmP nmC ra n ℓp hb S histP i q₀ (σ₄.setVar "rs.d" 0) := by
+    have hv : ∀ y, y ≠ "rs.d" → (σ₄.setVar "rs.d" 0).vars y = σ₄.vars y := by
+      intro y hy
+      simp [hy]
+    have ha : ∀ b, (σ₄.setVar "rs.d" 0).arrs b = σ.arrs b := by
+      intro b
+      simp only [arrs_setVar]
+      exact h4arrs b
+    have h4a : σ₄.vars "rs.a" = A₀ := by rw [hσ₄, hσ₃, hσ₂]; simp [hσ₁]
+    have h4b : σ₄.vars "rs.b" = B₀ := by rw [hσ₄, hσ₃]; simp [hσ₂]
+    have h4e : σ₄.vars "rs.e" = L.length := by rw [hσ₄]; simp [hσ₃]
+    have h4t : σ₄.vars "rs.t" = 0 := by rw [hσ₄]; simp
+    refine ⟨⟨by rw [ha]; exact hh.1, fun v p => by rw [ha]; exact hh.2 v p⟩,
+      by rw [ha]; exact hra,
+      by rw [hv "rs.a" (by decide)]; exact h4a,
+      by rw [hv "rs.b" (by decide)]; exact h4b,
+      by rw [hv "rs.e" (by decide)]; exact h4e,
+      by simp,
+      ?_,
+      f, by rw [ha]; exact hfarr, hdoneA, hdoneR, ?_⟩
+    · have h1 : (σ₄.setVar "rs.d" 0).vars "rs.t" = 0 := by
+        rw [vars_setVar, if_neg (by decide)]
+        exact h4t
+      have h2 : (σ₄.setVar "rs.d" 0).vars "rs.d" = 0 := by simp
+      rw [h1, h2, keptLen_zero]
+    · intro m hm
+      have h1 : (σ₄.setVar "rs.d" 0).vars "rs.t" = 0 := by
+        rw [vars_setVar, if_neg (by decide)]
+        exact h4t
+      rw [h1] at hm
+      omega
+  have hinner := Spec.forRangeZero (B := B) "rs.d" "rs.e"
+    (HistInSt nmP nmC ra n ℓp hb S histP i q₀) L.length 32 (by omega)
+    (fun τ hτ => hτ.hdN) (fun τ hτ => hτ.hev)
+    (histSlot_spec hNB hHB hhc hhra hik hlt)
+  obtain ⟨σ₅, hr5, hpost5⟩ := (hinner.frame).run hIn
+  obtain ⟨⟨hIn5, hd5⟩, hfv5, hfa5, -, -⟩ := hpost5
+  obtain ⟨hh5, hra5, hav5, hbv5, hev5, hdN5, htv5, f5, hfarr5, hdoneA5, hdoneR5, hcur5⟩ := hIn5
+  have hwv : (Com.seq (.assign "rs.d" (.lit 0))
+      (.while (.lt (.var "rs.d") (.var "rs.e")) (histSlot nmP nmC ra))).wvars
+      = ["rs.d", "rs.w", "rs.x", "rs.t", "rs.d"] := rfl
+  have hwa : (Com.seq (.assign "rs.d" (.lit 0))
+      (.while (.lt (.var "rs.d") (.var "rs.e")) (histSlot nmP nmC ra))).warrs
+      = [nmC.hist] := rfl
+  have h5keep : ∀ y, y ∈ (["rs.q", "rs.i", "rs.s", "rs.k", "rs.p", "rs.h"] :
+      List String) → σ₅.vars y = σ₄.vars y := by
+    intro y hy
+    refine hfv5 y ?_
+    rw [hwv]
+    fin_cases hy <;> decide
+  have h5la : σ₅.arrs la = σ₄.arrs la := by
+    refine hfa5 la ?_
+    rw [hwa]
+    simp [Ne.symm hhla]
+  -- the kept count sealed the whole list
+  have ht5 : σ₅.vars "rs.t" = (chN histP S i q₀).length := by
+    rw [htv5, hd5]
+    have h := keptLen_full (rkOpt S) (histN histP (embN S i) q₀)
+    rw [← hL_def] at h ⊢
+    rw [h]
+    rfl
+  have hchlen : (chN histP S i q₀).length ≤ hb := by
+    have h1 : (chN histP S i q₀).length ≤ L.length := by
+      rw [chN, ← hL_def]
+      exact List.length_filterMap_le _ _
+    omega
+  -- 6. seal the length prefix
+  have hr6 : Run B (.store nmC.hist (.var "rs.b") (.var "rs.t")) σ₅
+      (σ₅.setArr nmC.hist B₀ ((chN histP S i q₀).length)) 3 := by
+    have hbev : (Expr.var "rs.b").evalB B σ₅ = some B₀ := by
+      have h := evalB_var (B := B) (x := "rs.b") (σ := σ₅)
+        (by rw [hbv5, ← hB0_def]; omega)
+      rw [hbv5, ← hB0_def] at h
+      exact h
+    have htev : (Expr.var "rs.t").evalB B σ₅
+        = some ((chN histP S i q₀).length) := by
+      rw [← ht5]
+      exact evalB_var (by rw [ht5]; omega)
+    refine (Run.store hbev htev ?_).mono (by simp)
+    rw [hfarr5, length_arrOf]
+    omega
+  set σ₆ := σ₅.setArr nmC.hist B₀ ((chN histP S i q₀).length) with hσ₆
+  -- 7. the round counter
+  have hr7 : Run B (.assign "rs.q" (.add (.var "rs.q") (.lit 1))) σ₆
+      (σ₆.setVar "rs.q" (q₀ + 1)) 4 := by
+    have h6q : σ₆.vars "rs.q" = q₀ := by
+      rw [hσ₆]
+      simp only [vars_setArr]
+      rw [h5keep "rs.q" (by simp), h4vars "rs.q" (by decide) (by decide) (by decide)
+        (by decide)]
+    have hev := evalB_incr (B := B) (x := "rs.q") (σ := σ₆) (by rw [h6q]; omega)
+    rw [h6q] at hev
+    exact (Run.assign hev).mono (by simp)
+  set σ₇ := σ₆.setVar "rs.q" (q₀ + 1) with hσ₇
+  have h7vars : ∀ y, y ∈ (["rs.i", "rs.s", "rs.k", "rs.p", "rs.h"] : List String) →
+      σ₇.vars y = σ.vars y := by
+    intro y hy
+    have hyq : y ≠ "rs.q" := by fin_cases hy <;> decide
+    rw [hσ₇, vars_setVar, if_neg hyq, hσ₆, vars_setArr, h5keep y (by fin_cases hy <;> simp)]
+    refine h4vars y ?_ ?_ ?_ ?_ <;> fin_cases hy <;> decide
+  have h7arrs : ∀ b, b ≠ nmC.hist → σ₇.arrs b = σ₅.arrs b := by
+    intro b hb'
+    rw [hσ₇, hσ₆]
+    simp [hb']
+  have h7q : σ₇.vars "rs.q" = q₀ + 1 := by rw [hσ₇]; simp
+  -- assemble
+  refine ⟨σ₇, ?_, ⟨⟨by rw [h7arrs _ (Ne.symm hhc)]; exact hh5.1,
+      fun v p => by rw [h7arrs _ (Ne.symm hhc)]; exact hh5.2 v p⟩,
+    ⟨by rw [h7arrs _ (Ne.symm hhla), h5la]; simpa using hcl.1,
+      fun t' ht' => by rw [h7arrs _ (Ne.symm hhla), h5la]; simpa using hcl.2 t' ht'⟩,
+    by rw [h7vars "rs.k" (by simp)]; exact hk,
+    by rw [h7vars "rs.p" (by simp)]; exact hp,
+    by rw [h7vars "rs.h" (by simp)]; exact hhb,
+    by rw [h7arrs _ (Ne.symm hhra)]; exact hra5,
+    by rw [h7vars "rs.i" (by simp)]; exact hiv,
+    by rw [h7vars "rs.s" (by simp)]; exact hs,
+    by rw [h7q]; omega, ?_⟩, by rw [h7q]⟩
+  · -- the run, at the round budget
+    have h := (hr1.seq (hr2.seq (hr3.seq (hr4.seq (hr5.seq hr6))))).seq hr7
+    refine h.mono ?_
+    have : (32 + 4) * L.length + 6 ≤ 36 * hb + 6 := by
+      have := Nat.mul_le_mul_left 36 hLhb
+      omega
+    omega
+  · -- the sealed round joins the done set
+    refine ⟨fun p => if p = B₀ then (chN histP S i q₀).length else f5 p, ?_, ?_, ?_⟩
+    · rw [hσ₇, arrs_setVar, hσ₆, arrs_setArr, if_pos rfl, hfarr5, set_arrOf]
+    · intro a ha r hr
+      obtain ⟨hbase, hents⟩ := hdoneA5 a ha r hr
+      refine ⟨?_, ?_⟩
+      · show (if (a * ℓp + r) * (hb + 1) = B₀ then _ else f5 ((a * ℓp + r) * (hb + 1)))
+          = _
+        rw [if_neg, hbase]
+        intro hcon
+        have hcon' : (a * ℓp + r) * (hb + 1) + 0
+            = (i * ℓp + q₀) * (hb + 1) + 0 := by
+          rw [hB0_def] at hcon
+          omega
+        have hinj := hist_idx_inj (hr := hr) (hc := Nat.zero_lt_succ hb)
+          (hr' := hlt) (hc' := Nat.zero_lt_succ hb) hcon'
+        omega
+      · intro m hm
+        show (if (a * ℓp + r) * (hb + 1) + 1 + m = B₀ then _
+            else f5 ((a * ℓp + r) * (hb + 1) + 1 + m)) = _
+        rw [if_neg, hents m hm]
+        intro hcon
+        have hmhb : m < hb := by
+          have := histN_len_le hh (embN S a) r
+          have hle : (chN histP S a r).length ≤ (histN histP (embN S a) r).length :=
+            List.length_filterMap_le _ _
+          omega
+        have hcon' : (a * ℓp + r) * (hb + 1) + (1 + m)
+            = (i * ℓp + q₀) * (hb + 1) + 0 := by
+          rw [hB0_def] at hcon
+          omega
+        have hinj := hist_idx_inj (hr := hr) (hc := show 1 + m < hb + 1 by omega)
+          (hr' := hlt) (hc' := Nat.zero_lt_succ hb) hcon'
+        omega
+    · intro r hr
+      rw [h7q] at hr
+      rcases Nat.lt_or_ge r q₀ with hrq | hrq
+      · obtain ⟨hbase, hents⟩ := hdoneR5 r hrq
+        refine ⟨?_, ?_⟩
+        · show (if (i * ℓp + r) * (hb + 1) = B₀ then _
+              else f5 ((i * ℓp + r) * (hb + 1))) = _
+          rw [if_neg, hbase]
+          intro hcon
+          have hcon' : (i * ℓp + r) * (hb + 1) + 0
+              = (i * ℓp + q₀) * (hb + 1) + 0 := by
+            rw [hB0_def] at hcon
+            omega
+          have hinj := hist_idx_inj (hr := lt_trans hrq hlt)
+            (hc := Nat.zero_lt_succ hb)
+            (hr' := hlt) (hc' := Nat.zero_lt_succ hb) hcon'
+          omega
+        · intro m hm
+          show (if (i * ℓp + r) * (hb + 1) + 1 + m = B₀ then _
+              else f5 ((i * ℓp + r) * (hb + 1) + 1 + m)) = _
+          rw [if_neg, hents m hm]
+          intro hcon
+          have hmhb : m < hb := by
+            have := histN_len_le hh (embN S i) r
+            have hle : (chN histP S i r).length ≤ (histN histP (embN S i) r).length :=
+              List.length_filterMap_le _ _
+            omega
+          have hcon' : (i * ℓp + r) * (hb + 1) + (1 + m)
+              = (i * ℓp + q₀) * (hb + 1) + 0 := by
+            rw [hB0_def] at hcon
+            omega
+          have hinj := hist_idx_inj (hr := lt_trans hrq hlt)
+            (hc := show 1 + m < hb + 1 by omega)
+            (hr' := hlt) (hc' := Nat.zero_lt_succ hb) hcon'
+          omega
+      · have hre : r = q₀ := by omega
+        subst hre
+        refine ⟨?_, ?_⟩
+        · show (if (i * ℓp + r) * (hb + 1) = B₀ then (chN histP S i r).length
+              else f5 ((i * ℓp + r) * (hb + 1))) = _
+          rw [if_pos (by rw [hB0_def])]
+        · intro m hm
+          show (if (i * ℓp + r) * (hb + 1) + 1 + m = B₀ then _
+              else f5 ((i * ℓp + r) * (hb + 1) + 1 + m)) = _
+          rw [if_neg, hcur5 m (by rw [ht5]; exact hm)]
+          intro hcon
+          have hmhb : m < hb := by omega
+          have hcon' : (i * ℓp + r) * (hb + 1) + (1 + m)
+              = (i * ℓp + r) * (hb + 1) + 0 := by
+            rw [hB0_def] at hcon
+            omega
+          omega
+
+end HistFilter
 
 end Phases
 

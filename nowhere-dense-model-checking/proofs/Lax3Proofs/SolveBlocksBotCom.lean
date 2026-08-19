@@ -1889,4 +1889,806 @@ theorem evalCom_spec :
 
 end EvalSpec
 
+/-! ## §8 The table build -/
+
+/-- Wipe an array's first `n` cells — `n` unrolled stores (every use
+has `n` a schedule constant: the count region, the two scratch
+regions). Each call cleans its own slate; no caller owes a wipe. -/
+def zeroCom (a : String) (n : ℕ) : Com :=
+  seqIdx (fun i _ => .store a (.lit i) (.lit 0)) (List.range n) 0
+
+/-- Compute the row code of the vertex in `"bt.v"` into `"bt.c"`: the
+machine's `codeAux`, one unrolled bit read per color — the `L` half of
+the `N·L` build pass. -/
+def rowCodeCom (ca : String) (Lc : ℕ) : Com :=
+  .seq (.assign "bt.c" (.lit 0))
+    (seqIdx (fun cbit _ =>
+        .assign "bt.c" (.add (.var "bt.c")
+          (.mul (.get ca (.add (.mul (.var "bt.v") (.lit Lc)) (.lit cbit)))
+            (.lit (2 ^ cbit)))))
+      (List.range Lc) 0)
+
+/-- One vertex of the build pass: compute its row code, read the row's
+count, and append the vertex to its row's seats while one is free —
+the stored values are the row code (`< 2^L`, `rowCode_lt`), the count
+(`≤ K+1`) and the vertex name (`< N`). -/
+def buildBody (ca na fa : String) (Lc K : ℕ) : Com :=
+  .seq (rowCodeCom ca Lc)
+    (.seq (.assign "bt.d" (.get na (.var "bt.c")))
+      (.seq (.ite (.lt (.var "bt.d") (.lit (K + 1)))
+        (.seq (.store fa (.add (.mul (.var "bt.c") (.lit (K + 1))) (.var "bt.d"))
+            (.var "bt.v"))
+          (.store na (.var "bt.c") (.add (.var "bt.d") (.lit 1))))
+        .skip)
+        (.assign "bt.v" (.add (.var "bt.v") (.lit 1)))))
+
+/-- **The table build**: wipe the count region, then one pass over the
+carrier — `O(N·L)`, §6.4's one scan. -/
+def buildCom (ca na fa : String) (Lc K : ℕ) : Com :=
+  .seq (zeroCom na (2 ^ Lc))
+    (.seq (.assign "bt.v" (.lit 0))
+      (.while (.lt (.var "bt.v") (.var "bt.n")) (buildBody ca na fa Lc K)))
+
+/-- The partial representative table: `firsts`, restricted to the
+vertices already scanned — the build loop's invariant data. -/
+def firstsUpto {N Lc : ℕ} (colB : Fin N → Fin Lc → Bool) (K v ρ : ℕ) :
+    List (Fin N) :=
+  (((List.finRange N).take v).filter fun u => rowCode colB u == ρ).take (K + 1)
+
+section BuildLemmas
+
+variable {N Lc : ℕ} {colB : Fin N → Fin Lc → Bool} {K : ℕ}
+
+theorem firstsUpto_zero (ρ : ℕ) : firstsUpto colB K 0 ρ = [] := rfl
+
+/-- The full scan's table is `firsts`. -/
+theorem firstsUpto_eq_firsts {v : ℕ} (h : N ≤ v) (ρ : ℕ) :
+    firstsUpto colB K v ρ = firsts colB K ρ := by
+  have htake : (List.finRange N).take v = List.finRange N :=
+    List.take_of_length_le (by simpa using h)
+  rw [firstsUpto, htake, firsts]
+
+theorem firstsUpto_length_le (v ρ : ℕ) :
+    (firstsUpto colB K v ρ).length ≤ K + 1 :=
+  List.length_take_le _ _
+
+/-- One scanned vertex extends its own row's filtered list and no
+other's. -/
+private theorem filter_take_succ {v : ℕ} (hv : v < N) (ρ : ℕ) :
+    ((List.finRange N).take (v + 1)).filter (fun u => rowCode colB u == ρ)
+      = ((List.finRange N).take v).filter (fun u => rowCode colB u == ρ)
+        ++ (if rowCode colB ⟨v, hv⟩ == ρ then [(⟨v, hv⟩ : Fin N)] else []) := by
+  have hlen : v < (List.finRange N).length := by simpa using hv
+  have hgv : (List.finRange N)[v] = (⟨v, hv⟩ : Fin N) := by
+    apply Fin.ext
+    simp
+  rw [List.take_add_one, List.getElem?_eq_getElem hlen, Option.toList_some, hgv,
+    List.filter_append]
+  congr 1
+  simp only [List.filter_cons, List.filter_nil]
+
+/-- A same-row vertex with a free seat takes the next one. -/
+theorem firstsUpto_succ_pos {v : ℕ} (hv : v < N) {ρ : ℕ}
+    (hρ : rowCode colB ⟨v, hv⟩ = ρ)
+    (hlen : (firstsUpto colB K v ρ).length < K + 1) :
+    firstsUpto colB K (v + 1) ρ = firstsUpto colB K v ρ ++ [⟨v, hv⟩] := by
+  set l := ((List.finRange N).take v).filter (fun u => rowCode colB u == ρ) with hl
+  have hll : l.length < K + 1 := by
+    have := hlen
+    rw [firstsUpto, ← hl, List.length_take] at this
+    omega
+  have htake : l.take (K + 1) = l := List.take_of_length_le (by omega)
+  rw [firstsUpto, filter_take_succ hv ρ, if_pos (by simp [hρ]), ← hl,
+    List.take_append, htake, firstsUpto, ← hl, htake]
+  congr 1
+  rw [List.take_of_length_le]
+  simp
+  omega
+
+/-- A same-row vertex with a full row is dropped by the `take`. -/
+theorem firstsUpto_succ_full {v : ℕ} (hv : v < N) {ρ : ℕ}
+    (hρ : rowCode colB ⟨v, hv⟩ = ρ)
+    (hlen : ¬ (firstsUpto colB K v ρ).length < K + 1) :
+    firstsUpto colB K (v + 1) ρ = firstsUpto colB K v ρ := by
+  set l := ((List.finRange N).take v).filter (fun u => rowCode colB u == ρ) with hl
+  have hll : K + 1 ≤ l.length := by
+    have := hlen
+    rw [firstsUpto, ← hl, List.length_take] at this
+    omega
+  rw [firstsUpto, filter_take_succ hv ρ, if_pos (by simp [hρ]), ← hl,
+    List.take_append, firstsUpto, ← hl]
+  have : K + 1 - l.length = 0 := by omega
+  rw [this]
+  simp
+
+/-- Another row's table is untouched by the scanned vertex. -/
+theorem firstsUpto_succ_ne {v : ℕ} (hv : v < N) {ρ : ℕ}
+    (hρ : rowCode colB ⟨v, hv⟩ ≠ ρ) :
+    firstsUpto colB K (v + 1) ρ = firstsUpto colB K v ρ := by
+  rw [firstsUpto, filter_take_succ hv ρ, if_neg (by simpa using hρ), List.append_nil,
+    firstsUpto]
+
+/-- The appended seat holds the appended vertex. -/
+theorem firstsUpto_getElem_last {v : ℕ} (hv : v < N) {ρ s : ℕ}
+    (hρ : rowCode colB ⟨v, hv⟩ = ρ)
+    (hlen : (firstsUpto colB K v ρ).length < K + 1)
+    (hs : s = (firstsUpto colB K v ρ).length)
+    (h : s < (firstsUpto colB K (v + 1) ρ).length) :
+    (firstsUpto colB K (v + 1) ρ)[s] = (⟨v, hv⟩ : Fin N) := by
+  subst hs
+  have hstep := firstsUpto_succ_pos hv hρ hlen
+  have h1 : (firstsUpto colB K (v + 1) ρ)[(firstsUpto colB K v ρ).length]?
+      = some (⟨v, hv⟩ : Fin N) := by
+    rw [hstep, List.getElem?_append_right (le_refl _)]
+    simp
+  rw [List.getElem?_eq_getElem h] at h1
+  exact Option.some.inj h1
+
+/-- The earlier seats are untouched by the append. -/
+theorem firstsUpto_getElem_lt {v : ℕ} (hv : v < N) {ρ s : ℕ}
+    (hρ : rowCode colB ⟨v, hv⟩ = ρ)
+    (hlen : (firstsUpto colB K v ρ).length < K + 1)
+    (hs : s < (firstsUpto colB K v ρ).length)
+    (h : s < (firstsUpto colB K (v + 1) ρ).length) :
+    (firstsUpto colB K (v + 1) ρ)[s] = (firstsUpto colB K v ρ)[s] := by
+  have hstep := firstsUpto_succ_pos hv hρ hlen
+  have h1 : (firstsUpto colB K (v + 1) ρ)[s]?
+      = some ((firstsUpto colB K v ρ)[s]) := by
+    rw [hstep, List.getElem?_append_left hs, List.getElem?_eq_getElem hs]
+  rw [List.getElem?_eq_getElem h] at h1
+  exact Option.some.inj h1
+
+end BuildLemmas
+
+/-! ## §9 The fill loop and the block -/
+
+/-- One table entry: evaluate the (compile-time) formula at the
+current vertex, write the bit at `v·|Fl| + i`. -/
+noncomputable def entryGen (ca na fa ea xa ta : String) (Lc K len : ℕ)
+    (i : ℕ) (β : DistFO Lc 1) : Com :=
+  .seq (evalCom ca na fa ea xa Lc K β)
+    (.store ta (.add (.mul (.var "bt.v") (.lit len)) (.lit i)) (.var "bt.r"))
+
+/-- One vertex's row of table entries: load the vertex into the env
+scratch, one unrolled entry per schedule formula, clean the scratch,
+advance. -/
+noncomputable def fillBody (ca na fa ea xa ta : String) (Lc K : ℕ)
+    (Fl : List (DistFO Lc 1)) : Com :=
+  .seq (.store ea (.lit 0) (.var "bt.v"))
+    (.seq (seqIdx (entryGen ca na fa ea xa ta Lc K Fl.length) Fl 0)
+      (.seq (.store ea (.lit 0) (.lit 0))
+        (.assign "bt.v" (.add (.var "bt.v") (.lit 1)))))
+
+/-- **The fill loop** over the carrier. -/
+noncomputable def fillCom (ca na fa ea xa ta : String) (Lc K : ℕ)
+    (Fl : List (DistFO Lc 1)) : Com :=
+  .seq (.assign "bt.v" (.lit 0))
+    (.while (.lt (.var "bt.v") (.var "bt.n")) (fillBody ca na fa ea xa ta Lc K Fl))
+
+/-- **Block 0, whole** (§6.4's machine schedule): load the carrier
+size from the contract's cell, wipe the two evaluator scratch regions
+and the count region, build the representative table in one `N·L`
+pass, then fill the `N·|Fl|` table bits at a schedule constant each. -/
+noncomputable def botCom (nN ca na fa ea xa ta : String) (Lc K : ℕ)
+    (Fl : List (DistFO Lc 1)) : Com :=
+  .seq (.assign "bt.n" (.var nN))
+    (.seq (zeroCom ea (K + 1))
+      (.seq (zeroCom xa (K + 1))
+        (.seq (buildCom ca na fa Lc K)
+          (fillCom ca na fa ea xa ta Lc K Fl))))
+
+/-! The block's write footprint, off the syntax. -/
+
+section BlockSyntactic
+
+variable (ca na fa ea xa ta nN : String) (Lc K : ℕ)
+
+theorem warrs_zeroCom (a : String) (n : ℕ) {W : List String} (ha : a ∈ W) :
+    (zeroCom a n).warrs ⊆ W := by
+  refine warrs_seqIdx (fun i _ => ?_) _ _
+  show [a] ⊆ W
+  simpa using ha
+
+theorem wvars_zeroCom (a : String) (n : ℕ) {W : List String} :
+    (zeroCom a n).wvars ⊆ W := by
+  refine wvars_seqIdx (fun i _ => ?_) _ _
+  show ([] : List String) ⊆ W
+  simp
+
+theorem wvars_rowCodeCom : (rowCodeCom ca Lc).wvars ⊆ btScalars := by
+  rw [rowCodeCom]
+  show (["bt.c"] ++ _) ⊆ btScalars
+  refine List.append_subset.mpr ⟨by decide, ?_⟩
+  refine wvars_seqIdx (fun i _ => ?_) _ _
+  show ["bt.c"] ⊆ btScalars
+  decide
+
+theorem warrs_rowCodeCom {W : List String} : (rowCodeCom ca Lc).warrs ⊆ W := by
+  rw [rowCodeCom]
+  show (([] ++ _) : List String) ⊆ W
+  rw [List.nil_append]
+  refine warrs_seqIdx (fun i _ => ?_) _ _
+  show ([] : List String) ⊆ W
+  simp
+
+theorem wvars_buildCom : (buildCom ca na fa Lc K).wvars ⊆ btScalars := by
+  rw [buildCom, buildBody]
+  show ((zeroCom na (2 ^ Lc)).wvars ++ (["bt.v"]
+    ++ ((rowCodeCom ca Lc).wvars ++ (["bt.d"] ++ ((([] ++ []) ++ []) ++ ["bt.v"]))))) ⊆ _
+  refine List.append_subset.mpr ⟨wvars_zeroCom na _, ?_⟩
+  refine List.append_subset.mpr ⟨by decide, ?_⟩
+  refine List.append_subset.mpr ⟨wvars_rowCodeCom ca Lc, ?_⟩
+  decide
+
+theorem warrs_buildCom : (buildCom ca na fa Lc K).warrs ⊆ [na, fa] := by
+  rw [buildCom, buildBody]
+  show ((zeroCom na (2 ^ Lc)).warrs ++ ([]
+    ++ ((rowCodeCom ca Lc).warrs ++ ([] ++ ((([fa] ++ [na]) ++ []) ++ []))))) ⊆ _
+  refine List.append_subset.mpr ⟨warrs_zeroCom na _ (by simp), ?_⟩
+  rw [List.nil_append]
+  refine List.append_subset.mpr ⟨warrs_rowCodeCom ca Lc, ?_⟩
+  simp
+
+theorem wvars_fillCom (Fl : List (DistFO Lc 1)) :
+    (fillCom ca na fa ea xa ta Lc K Fl).wvars ⊆ btScalars := by
+  rw [fillCom, fillBody]
+  show (["bt.v"] ++ ([] ++ (_ ++ ([] ++ ["bt.v"])))) ⊆ _
+  refine List.append_subset.mpr ⟨by decide, ?_⟩
+  rw [List.nil_append]
+  refine List.append_subset.mpr ⟨?_, by decide⟩
+  refine wvars_seqIdx (fun i β => ?_) _ _
+  rw [entryGen]
+  show ((evalCom ca na fa ea xa Lc K β).wvars ++ []) ⊆ _
+  rw [List.append_nil]
+  exact (wvars_evalCom ca na fa ea xa Lc K β).trans evalWScalars_subset_btScalars
+
+theorem warrs_fillCom (Fl : List (DistFO Lc 1)) :
+    (fillCom ca na fa ea xa ta Lc K Fl).warrs ⊆ [ea, xa, ta] := by
+  rw [fillCom, fillBody]
+  show (([] ++ ([ea] ++ (_ ++ ([ea] ++ [])))) : List String) ⊆ _
+  rw [List.nil_append]
+  refine List.append_subset.mpr ⟨by simp, ?_⟩
+  refine List.append_subset.mpr ⟨?_, by simp⟩
+  refine warrs_seqIdx (fun i β => ?_) _ _
+  rw [entryGen]
+  show ((evalCom ca na fa ea xa Lc K β).warrs ++ [ta]) ⊆ _
+  refine List.append_subset.mpr ⟨?_, by simp⟩
+  refine (warrs_evalCom ca na fa ea xa Lc K β).trans ?_
+  intro x hx
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+  rcases hx with rfl | rfl <;> simp
+
+theorem wvars_botCom (Fl : List (DistFO Lc 1)) :
+    (botCom nN ca na fa ea xa ta Lc K Fl).wvars ⊆ btScalars := by
+  rw [botCom]
+  show (["bt.n"] ++ ((zeroCom ea (K + 1)).wvars ++ ((zeroCom xa (K + 1)).wvars
+    ++ ((buildCom ca na fa Lc K).wvars
+      ++ (fillCom ca na fa ea xa ta Lc K Fl).wvars)))) ⊆ _
+  refine List.append_subset.mpr ⟨by decide, ?_⟩
+  refine List.append_subset.mpr ⟨wvars_zeroCom ea _, ?_⟩
+  refine List.append_subset.mpr ⟨wvars_zeroCom xa _, ?_⟩
+  exact List.append_subset.mpr
+    ⟨wvars_buildCom ca na fa Lc K, wvars_fillCom ca na fa ea xa ta Lc K Fl⟩
+
+theorem warrs_botCom (Fl : List (DistFO Lc 1)) :
+    (botCom nN ca na fa ea xa ta Lc K Fl).warrs ⊆ [na, fa, ea, xa, ta] := by
+  rw [botCom]
+  show (([] ++ ((zeroCom ea (K + 1)).warrs ++ ((zeroCom xa (K + 1)).warrs
+    ++ ((buildCom ca na fa Lc K).warrs
+      ++ (fillCom ca na fa ea xa ta Lc K Fl).warrs)))) : List String) ⊆ _
+  rw [List.nil_append]
+  refine List.append_subset.mpr ⟨warrs_zeroCom ea _ (by simp), ?_⟩
+  refine List.append_subset.mpr ⟨warrs_zeroCom xa _ (by simp), ?_⟩
+  refine List.append_subset.mpr ⟨?_, ?_⟩
+  · refine (warrs_buildCom ca na fa Lc K).trans ?_
+    intro x hx
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+    rcases hx with rfl | rfl <;> simp
+  · refine (warrs_fillCom ca na fa ea xa ta Lc K Fl).trans ?_
+    intro x hx
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+    rcases hx with rfl | rfl | rfl <;> simp
+
+end BlockSyntactic
+
+/-! ## §10 The build and fill passes, discharged -/
+
+section BlockSpec
+
+variable {B N Lc K : ℕ} {colB : Fin N → Fin Lc → Bool}
+  {ca na fa ea xa ta : String}
+
+/-- A same-row later entry sits at a strictly larger strided index. -/
+private theorem rowIdx_lt {len w v i' i : ℕ} (hv : w < v) (hi' : i' < len) :
+    w * len + i' < v * len + i := by
+  have h1 : (w + 1) * len ≤ v * len := Nat.mul_le_mul_right _ (by omega)
+  rw [Nat.succ_mul] at h1
+  omega
+
+variable (h2LB : 2 ^ Lc * (K + 1) < B) (hNB : N < B) (hNLB : N * Lc < B)
+
+include h2LB in
+/-- **The wipe, discharged**: the region becomes the zero array;
+nothing else moves. -/
+private theorem zeroCom_spec {a : String} {n : ℕ} (hnB : n < B) :
+    Spec B (fun σ => (σ.arrs a).length = n) (zeroCom a n)
+      (fun σ σ' => σ'.arrs a = arrOf n (fun _ => 0) ∧
+        (∀ b, b ≠ a → σ'.arrs b = σ.arrs b) ∧ σ'.vars = σ.vars)
+      (3 * n + 1) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  intro σ hlen
+  set Inv : ℕ → Env → Prop := fun j τ =>
+    (τ.arrs a).length = n ∧ (∀ i, i < j → (τ.arrs a).getD i 0 = 0) ∧
+      (∀ b, b ≠ a → τ.arrs b = σ.arrs b) ∧ τ.vars = σ.vars with hInv
+  have hstep : ∀ i, i < (List.range n).length →
+      Spec B (Inv (0 + i)) (Com.store a (.lit (0 + i)) (.lit 0))
+        (fun _ τ' => Inv (0 + i + 1) τ') 3 := by
+    intro i hi
+    rw [List.length_range] at hi
+    simp only [Nat.zero_add]
+    intro τ hτ
+    obtain ⟨hl, hz, hb, hv⟩ := hτ
+    refine ⟨τ.setArr a i 0,
+      (Run.store (evalB_lit (by omega)) (evalB_lit (by omega)) (by omega)).mono
+        (by simp), ?_, ?_, ?_, ?_⟩
+    · simpa using hl
+    · intro i' hi'
+      rw [arrs_setArr, if_pos rfl, set_eq_arrOf_upd i 0 hl, getD_arrOf _ (by omega)]
+      by_cases he : i' = i
+      · subst he
+        rw [upd_self]
+      · rw [upd_of_ne _ he]
+        exact hz i' (by omega)
+    · intro b hb'
+      rw [arrs_setArr, if_neg hb']
+      exact hb b hb'
+    · simpa using hv
+  have hscan := seqIdx_spec (B := B) (Kb := 3)
+    (gen := fun i _ => Com.store a (.lit i) (.lit 0)) Inv (List.range n) 0 hstep
+  obtain ⟨τ, hrun, hτ⟩ :=
+    hscan σ ⟨hlen, fun i hi => absurd hi (by omega), fun _ _ => rfl, rfl⟩
+  simp only [List.length_range, Nat.zero_add] at hτ
+  obtain ⟨hl, hz, hb, hv⟩ := hτ
+  refine ⟨τ, hrun.mono (by rw [List.length_range]; omega), ?_, hb, hv⟩
+  refine eq_of_getD (by rw [hl, length_arrOf]) ?_
+  intro i hi
+  rw [hl] at hi
+  rw [getD_arrOf _ hi]
+  exact hz i hi
+
+include h2LB hNB hNLB in
+/-- **The row-code computation, discharged**: `"bt.c"` ends holding
+`rowCode` of the current vertex — the machine's `codeAux`, one bit
+read per color, every partial code below `2^L` (`codeAux_lt`, the
+stored-value citation for this scalar). -/
+private theorem rowCodeCom_spec (v : Fin N) :
+    Spec B (fun σ => RowBits ca colB σ ∧ σ.vars "bt.v" = (v : ℕ))
+      (rowCodeCom ca Lc)
+      (fun σ σ' => σ'.vars "bt.c" = rowCode colB v ∧ σ'.arrs = σ.arrs ∧
+        (∀ y, y ≠ "bt.c" → σ'.vars y = σ.vars y))
+      (11 * Lc + 3) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have h2L1 : 2 ^ Lc ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_right _ (by omega)
+  intro σ hσ
+  obtain ⟨hrow, hv⟩ := hσ
+  set σ₀ := σ.setVar "bt.c" 0 with hσ₀
+  have hr₀ : Run B (.assign "bt.c" (.lit 0)) σ σ₀ 2 := run_assign_lit (by omega)
+  set Inv : ℕ → Env → Prop := fun j τ =>
+    τ.arrs = σ.arrs ∧ (∀ y, y ≠ "bt.c" → τ.vars y = σ.vars y) ∧
+      τ.vars "bt.c" = codeAux (rowBit colB v) j with hInv
+  have hstep : ∀ j, j < (List.range Lc).length →
+      Spec B (Inv (0 + j))
+        (Com.assign "bt.c" (.add (.var "bt.c")
+          (.mul (.get ca (.add (.mul (.var "bt.v") (.lit Lc)) (.lit (0 + j))))
+            (.lit (2 ^ (0 + j))))))
+        (fun _ τ' => Inv (0 + j + 1) τ') 11 := by
+    intro j hj
+    rw [List.length_range] at hj
+    simp only [Nat.zero_add]
+    intro τ hτ
+    obtain ⟨harr, hvars, hc⟩ := hτ
+    have hvτ : τ.vars "bt.v" = (v : ℕ) := by
+      rw [hvars _ (by decide)]
+      exact hv
+    have hNpos : 0 < N := v.pos
+    have hLN : Lc ≤ N * Lc := Nat.le_mul_of_pos_left _ hNpos
+    have hidx : (v : ℕ) * Lc + j < N * Lc := by
+      have h1 : ((v : ℕ) + 1) * Lc ≤ N * Lc :=
+        Nat.mul_le_mul_right _ (by have := v.is_lt; omega)
+      rw [Nat.succ_mul] at h1
+      omega
+    have hvev : (Expr.var "bt.v").evalB B τ = some (v : ℕ) := by
+      rw [← hvτ]
+      exact evalB_var (by rw [hvτ]; exact lt_trans v.is_lt hNB)
+    have hmul : (Expr.mul (.var "bt.v") (.lit Lc)).evalB B τ = some ((v : ℕ) * Lc) := by
+      refine evalB_bin hvev (evalB_lit (by omega)) ?_
+      show (v : ℕ) * Lc < B
+      omega
+    have haddi : (Expr.add (.mul (.var "bt.v") (.lit Lc)) (.lit j)).evalB B τ
+        = some ((v : ℕ) * Lc + j) := by
+      refine evalB_bin hmul (evalB_lit (by omega)) ?_
+      show (v : ℕ) * Lc + j < B
+      omega
+    have hget : (Expr.get ca (.add (.mul (.var "bt.v") (.lit Lc)) (.lit j))).evalB B τ
+        = some (if colB v ⟨j, hj⟩ then 1 else 0) := by
+      refine evalB_get haddi ?_ (by split <;> omega)
+      rw [getElem?_eq_getD (by rw [harr, hrow.1]; exact hidx), harr]
+      exact congrArg some (hrow.2 v ⟨j, hj⟩)
+    have hpow : (2 : ℕ) ^ j < B := by
+      have h1 : (2 : ℕ) ^ j ≤ 2 ^ Lc := Nat.pow_le_pow_right (by omega) (by omega)
+      omega
+    have hmul2 : (Expr.mul (.get ca (.add (.mul (.var "bt.v") (.lit Lc)) (.lit j)))
+        (.lit (2 ^ j))).evalB B τ
+        = some ((if colB v ⟨j, hj⟩ then 1 else 0) * 2 ^ j) := by
+      refine evalB_bin hget (evalB_lit hpow) ?_
+      show (if colB v ⟨j, hj⟩ then 1 else 0) * 2 ^ j < B
+      split <;> omega
+    -- the bit as `codeAux`'s summand
+    have hbit : (if colB v ⟨j, hj⟩ then 1 else 0) * 2 ^ j
+        = (if rowBit colB v j then 2 ^ j else 0) := by
+      rw [rowBit_of_lt colB v hj]
+      split <;> omega
+    have hcode1 := codeAux_lt (rowBit colB v) (j + 1)
+    have hcodeeq : codeAux (rowBit colB v) (j + 1)
+        = codeAux (rowBit colB v) j + (if rowBit colB v j then 2 ^ j else 0) := rfl
+    have hpow1 : (2 : ℕ) ^ (j + 1) ≤ 2 ^ Lc := Nat.pow_le_pow_right (by omega) (by omega)
+    have hcB : τ.vars "bt.c" < B := by
+      rw [hc]
+      have := codeAux_lt (rowBit colB v) j
+      have h1 : (2 : ℕ) ^ j ≤ 2 ^ Lc := Nat.pow_le_pow_right (by omega) (by omega)
+      omega
+    have haddall : (Expr.add (.var "bt.c")
+        (.mul (.get ca (.add (.mul (.var "bt.v") (.lit Lc)) (.lit j)))
+          (.lit (2 ^ j)))).evalB B τ
+        = some (codeAux (rowBit colB v) j + (if colB v ⟨j, hj⟩ then 1 else 0) * 2 ^ j) := by
+      have hcv : (Expr.var "bt.c").evalB B τ = some (codeAux (rowBit colB v) j) := by
+        rw [← hc]
+        exact evalB_var hcB
+      refine evalB_bin hcv hmul2 ?_
+      show codeAux (rowBit colB v) j + (if colB v ⟨j, hj⟩ then 1 else 0) * 2 ^ j < B
+      rw [hbit, ← hcodeeq]
+      omega
+    refine ⟨τ.setVar "bt.c" _, (Run.assign haddall).mono (by simp), ?_, ?_, ?_⟩
+    · simpa using harr
+    · intro y hy
+      rw [vars_setVar, if_neg hy]
+      exact hvars y hy
+    · rw [vars_setVar, if_pos rfl, hbit, ← hcodeeq]
+  have hscan := seqIdx_spec (B := B) (Kb := 11)
+    (gen := fun j _ => Com.assign "bt.c" (.add (.var "bt.c")
+      (.mul (.get ca (.add (.mul (.var "bt.v") (.lit Lc)) (.lit j)))
+        (.lit (2 ^ j)))))
+    Inv (List.range Lc) 0 hstep
+  have hInv0 : Inv 0 σ₀ := by
+    refine ⟨by rw [hσ₀]; simp, fun y hy => by rw [hσ₀, vars_setVar, if_neg hy], ?_⟩
+    rw [hσ₀, vars_setVar, if_pos rfl]
+    rfl
+  obtain ⟨τ, hrunS, hτ⟩ := hscan σ₀ hInv0
+  simp only [List.length_range, Nat.zero_add] at hτ
+  obtain ⟨harr, hvars, hcode⟩ := hτ
+  exact ⟨τ, (hr₀.seq hrunS).mono (by rw [List.length_range]; omega),
+    hcode, harr, hvars⟩
+
+open Classical in
+/-- The build loop's invariant: the count and seat regions hold
+exactly the partial table of the scanned prefix. -/
+def BuildInv (ca na fa : String) {N Lc : ℕ} (colB : Fin N → Fin Lc → Bool)
+    (K : ℕ) (σ : Env) : Prop :=
+  RowBits ca colB σ ∧ σ.vars "bt.n" = N ∧ σ.vars "bt.v" ≤ N ∧
+    (σ.arrs na).length = 2 ^ Lc ∧ (σ.arrs fa).length = 2 ^ Lc * (K + 1) ∧
+    ∀ ρ, ρ < 2 ^ Lc →
+      (σ.arrs na).getD ρ 0 = (firstsUpto colB K (σ.vars "bt.v") ρ).length ∧
+      ∀ s, (hs : s < (firstsUpto colB K (σ.vars "bt.v") ρ).length) →
+        (σ.arrs fa).getD (ρ * (K + 1) + s) 0
+          = ((firstsUpto colB K (σ.vars "bt.v") ρ)[s] : ℕ)
+
+include h2LB hNB hNLB in
+open Classical in
+/-- **One vertex of the build pass, discharged**: the appended values
+are the vertex's row code (`< 2^L`, `rowCode_lt`), the bumped count
+(`≤ K+1`) and the vertex name (`< N`) — the stored-value classes this
+pass owns. -/
+private theorem buildBody_spec (hca_na : ca ≠ na) (hca_fa : ca ≠ fa)
+    (hna_fa : na ≠ fa) :
+    Spec B (fun σ => BuildInv ca na fa colB K σ ∧ σ.vars "bt.v" < N)
+      (buildBody ca na fa Lc K)
+      (fun σ σ' => BuildInv ca na fa colB K σ' ∧
+        σ'.vars "bt.v" = σ.vars "bt.v" + 1)
+      (11 * Lc + 26) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  have h2L1 : 2 ^ Lc ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_right _ (by omega)
+  rintro σ ⟨hInv, hvN⟩
+  obtain ⟨hrow, hn, hvle, hnal, hfal, htab⟩ := hInv
+  -- 1. the row code
+  obtain ⟨σ₁, hr₁, hcval, harr₁, hvars₁⟩ :=
+    (rowCodeCom_spec h2LB hNB hNLB (⟨σ.vars "bt.v", hvN⟩ : Fin N)) σ ⟨hrow, rfl⟩
+  set v := σ.vars "bt.v" with hvdef
+  set ρ₀ := rowCode colB (⟨v, hvN⟩ : Fin N) with hρ₀
+  have hρ₀lt : ρ₀ < 2 ^ Lc := rowCode_lt colB _
+  have hv₁ : σ₁.vars "bt.v" = v := hvars₁ _ (by decide)
+  have hn₁ : σ₁.vars "bt.n" = N := by rw [hvars₁ _ (by decide)]; exact hn
+  -- 2. the count read
+  set cnt := (firstsUpto colB K v ρ₀).length with hcntdef
+  have hcntle : cnt ≤ K + 1 := firstsUpto_length_le v ρ₀
+  have hdev : (Expr.get na (.var "bt.c")).evalB B σ₁ = some cnt := by
+    have hcv : (Expr.var "bt.c").evalB B σ₁ = some ρ₀ := by
+      rw [← hcval]
+      exact evalB_var (by rw [hcval]; omega)
+    refine evalB_get hcv ?_ (by omega)
+    rw [getElem?_eq_getD (by rw [harr₁, hnal]; exact hρ₀lt), harr₁]
+    exact congrArg some (htab ρ₀ hρ₀lt).1
+  set σ₂ := σ₁.setVar "bt.d" cnt with hσ₂
+  have hr₂ : Run B (.assign "bt.d" (.get na (.var "bt.c"))) σ₁ σ₂ 3 := by
+    rw [hσ₂]
+    exact (Run.assign hdev).mono (by simp)
+  have harr₂ : σ₂.arrs = σ.arrs := by
+    rw [hσ₂]
+    simpa using harr₁
+  have hd₂ : σ₂.vars "bt.d" = cnt := by rw [hσ₂, vars_setVar, if_pos rfl]
+  have hc₂ : σ₂.vars "bt.c" = ρ₀ := by
+    rw [hσ₂, vars_setVar, if_neg (by decide)]
+    exact hcval
+  have hv₂ : σ₂.vars "bt.v" = v := by
+    rw [hσ₂, vars_setVar, if_neg (by decide)]
+    exact hv₁
+  have hn₂ : σ₂.vars "bt.n" = N := by
+    rw [hσ₂, vars_setVar, if_neg (by decide)]
+    exact hn₁
+  -- 3. the guarded append
+  have hcond : (Cond.lt (.var "bt.d") (.lit (K + 1))).evalB B σ₂
+      = some (decide (cnt < K + 1)) := by
+    have h1 : (Expr.var "bt.d").evalB B σ₂ = some cnt := by
+      rw [← hd₂]
+      exact evalB_var (by rw [hd₂]; omega)
+    exact evalB_condLt h1 (evalB_lit (by omega))
+  by_cases hfree : cnt < K + 1
+  · -- a free seat: append the vertex and bump the count
+    have hcondT : (Cond.lt (.var "bt.d") (.lit (K + 1))).evalB B σ₂ = some true := by
+      rw [hcond]
+      congr 1
+      simpa using hfree
+    have hseat : ρ₀ * (K + 1) + cnt < 2 ^ Lc * (K + 1) := by
+      have h1 : (ρ₀ + 1) * (K + 1) ≤ 2 ^ Lc * (K + 1) :=
+        Nat.mul_le_mul_right _ (by omega)
+      rw [Nat.succ_mul] at h1
+      omega
+    have hidxev : (Expr.add (.mul (.var "bt.c") (.lit (K + 1))) (.var "bt.d")).evalB B σ₂
+        = some (ρ₀ * (K + 1) + cnt) := by
+      have h1 : (Expr.mul (.var "bt.c") (.lit (K + 1))).evalB B σ₂
+          = some (ρ₀ * (K + 1)) := by
+        have hcv : (Expr.var "bt.c").evalB B σ₂ = some ρ₀ := by
+          rw [← hc₂]
+          exact evalB_var (by rw [hc₂]; omega)
+        refine evalB_bin hcv (evalB_lit (by omega)) ?_
+        show ρ₀ * (K + 1) < B
+        omega
+      have h2 : (Expr.var "bt.d").evalB B σ₂ = some cnt := by
+        rw [← hd₂]
+        exact evalB_var (by rw [hd₂]; omega)
+      refine evalB_bin h1 h2 ?_
+      show ρ₀ * (K + 1) + cnt < B
+      omega
+    have hvev : (Expr.var "bt.v").evalB B σ₂ = some v := by
+      rw [← hv₂]
+      exact evalB_var (by rw [hv₂]; omega)
+    set σ₃ := σ₂.setArr fa (ρ₀ * (K + 1) + cnt) v with hσ₃
+    have hr₃ : Run B (.store fa (.add (.mul (.var "bt.c") (.lit (K + 1))) (.var "bt.d"))
+        (.var "bt.v")) σ₂ σ₃ 7 := by
+      rw [hσ₃]
+      refine (Run.store hidxev hvev ?_).mono (by simp)
+      rw [harr₂, hfal]
+      exact hseat
+    have hcv₃ : (Expr.var "bt.c").evalB B σ₃ = some ρ₀ := by
+      have h3 : σ₃.vars "bt.c" = ρ₀ := by rw [hσ₃]; simpa using hc₂
+      rw [← h3]
+      exact evalB_var (by rw [h3]; omega)
+    have hd₃ : σ₃.vars "bt.d" = cnt := by rw [hσ₃]; simpa using hd₂
+    have hdev₃ : (Expr.add (.var "bt.d") (.lit 1)).evalB B σ₃ = some (cnt + 1) := by
+      have h4 : (Expr.var "bt.d").evalB B σ₃ = some cnt := by
+        rw [← hd₃]
+        exact evalB_var (by rw [hd₃]; omega)
+      refine evalB_bin h4 (evalB_lit (by omega)) ?_
+      show cnt + 1 < B
+      omega
+    set σ₄ := σ₃.setArr na ρ₀ (cnt + 1) with hσ₄
+    have hr₄ : Run B (.store na (.var "bt.c") (.add (.var "bt.d") (.lit 1))) σ₃ σ₄ 5 := by
+      rw [hσ₄]
+      refine (Run.store hcv₃ hdev₃ ?_).mono (by simp)
+      rw [hσ₃, arrs_setArr, if_neg hna_fa, harr₂, hnal]
+      exact hρ₀lt
+    have hv₄ : σ₄.vars "bt.v" = v := by rw [hσ₄, hσ₃]; simpa using hv₂
+    have hincr : (Expr.add (.var "bt.v") (.lit 1)).evalB B σ₄ = some (v + 1) := by
+      have h5 : (Expr.var "bt.v").evalB B σ₄ = some v := by
+        rw [← hv₄]
+        exact evalB_var (by rw [hv₄]; omega)
+      refine evalB_bin h5 (evalB_lit (by omega)) ?_
+      show v + 1 < B
+      omega
+    set σ₅ := σ₄.setVar "bt.v" (v + 1) with hσ₅
+    have hr₅ : Run B (.assign "bt.v" (.add (.var "bt.v") (.lit 1))) σ₄ σ₅ 4 := by
+      rw [hσ₅]
+      exact (Run.assign hincr).mono (by simp)
+    have hrun : Run B (buildBody ca na fa Lc K) σ σ₅ (11 * Lc + 26) := by
+      refine (hr₁.seq (hr₂.seq ((Run.ite_true hcondT (hr₃.seq hr₄)).seq hr₅))).mono ?_
+      simp only [size_condLt, size_var, size_lit]
+      omega
+    -- the invariant at `v + 1`
+    have hfa₅ : σ₅.arrs fa = (σ.arrs fa).set (ρ₀ * (K + 1) + cnt) v := by
+      rw [hσ₅]
+      simp only [arrs_setVar]
+      rw [hσ₄, arrs_setArr, if_neg (Ne.symm hna_fa), hσ₃, arrs_setArr, if_pos rfl,
+        harr₂]
+    have hna₅ : σ₅.arrs na = (σ.arrs na).set ρ₀ (cnt + 1) := by
+      rw [hσ₅]
+      simp only [arrs_setVar]
+      rw [hσ₄, arrs_setArr, if_pos rfl, hσ₃, arrs_setArr, if_neg hna_fa, harr₂]
+    have hoth₅ : ∀ b, b ≠ na → b ≠ fa → σ₅.arrs b = σ.arrs b := by
+      intro b h1 h2
+      rw [hσ₅]
+      simp only [arrs_setVar]
+      rw [hσ₄, arrs_setArr, if_neg h1, hσ₃, arrs_setArr, if_neg h2, harr₂]
+    have hv₅ : σ₅.vars "bt.v" = v + 1 := by rw [hσ₅, vars_setVar, if_pos rfl]
+    have hn₅ : σ₅.vars "bt.n" = N := by
+      rw [hσ₅, vars_setVar, if_neg (by decide), hσ₄, hσ₃]
+      simpa using hn₂
+    refine ⟨σ₅, hrun, ⟨?_, hn₅, by omega, ?_, ?_, ?_⟩, by rw [hv₅]⟩
+    · exact rowBits_of_arrs_eq (hoth₅ ca hca_na hca_fa) hrow
+    · rw [hna₅]
+      simp only [List.length_set]
+      exact hnal
+    · rw [hfa₅]
+      simp only [List.length_set]
+      exact hfal
+    · -- the table, per row code
+      intro ρ hρ
+      rw [hv₅]
+      by_cases hρeq : ρ = ρ₀
+      · subst hρeq
+        have hstep := firstsUpto_succ_pos hvN (hρ₀.symm) (by rw [← hcntdef]; exact hfree)
+        have hlen1 : (firstsUpto colB K (v + 1) ρ₀).length = cnt + 1 := by
+          rw [hstep]
+          simp [← hcntdef]
+        constructor
+        · rw [hna₅, set_eq_arrOf_upd ρ₀ (cnt + 1) hnal, getD_arrOf _ (by omega),
+            upd_self, hlen1]
+        · intro s hs
+          rw [hlen1] at hs
+          rw [hfa₅, set_eq_arrOf_upd _ v hfal, getD_arrOf _ (by
+            have h1 : (ρ₀ + 1) * (K + 1) ≤ 2 ^ Lc * (K + 1) :=
+              Nat.mul_le_mul_right _ (by omega)
+            rw [Nat.succ_mul] at h1
+            omega)]
+          by_cases hscnt : s = cnt
+          · subst hscnt
+            rw [upd_self,
+              firstsUpto_getElem_last hvN hρ₀.symm (by rw [← hcntdef]; exact hfree)
+                hcntdef (by omega)]
+          · rw [upd_of_ne _ (by
+              intro hcon
+              exact hscnt (seatIdx_inj (by omega) (by omega) hcon).2)]
+            have hslt : s < cnt := by omega
+            rw [firstsUpto_getElem_lt hvN hρ₀.symm (by rw [← hcntdef]; exact hfree)
+              (by rw [← hcntdef]; exact hslt) (by omega)]
+            exact (htab ρ₀ hρ).2 s (by rw [← hcntdef]; exact hslt)
+      · have hstep := firstsUpto_succ_ne (colB := colB) (K := K) hvN
+          (by rw [← hρ₀]; exact fun hc => hρeq hc.symm)
+        rw [hstep]
+        constructor
+        · rw [hna₅, set_eq_arrOf_upd ρ₀ (cnt + 1) hnal, getD_arrOf _ (by omega),
+            upd_of_ne _ hρeq]
+          exact (htab ρ hρ).1
+        · intro s hs
+          have hsK : s < K + 1 := lt_of_lt_of_le hs (firstsUpto_length_le v ρ)
+          rw [hfa₅, set_eq_arrOf_upd _ v hfal, getD_arrOf _ (by
+            have h1 : (ρ + 1) * (K + 1) ≤ 2 ^ Lc * (K + 1) :=
+              Nat.mul_le_mul_right _ (by omega)
+            rw [Nat.succ_mul] at h1
+            omega)]
+          rw [upd_of_ne _ (by
+            intro hcon
+            exact hρeq (seatIdx_inj hsK (by omega) hcon).1)]
+          exact (htab ρ hρ).2 s hs
+  · -- the row is full: nothing to append
+    have hcondF : (Cond.lt (.var "bt.d") (.lit (K + 1))).evalB B σ₂ = some false := by
+      rw [hcond]
+      congr 1
+      simpa using hfree
+    have hincr : (Expr.add (.var "bt.v") (.lit 1)).evalB B σ₂ = some (v + 1) := by
+      have h5 : (Expr.var "bt.v").evalB B σ₂ = some v := by
+        rw [← hv₂]
+        exact evalB_var (by rw [hv₂]; omega)
+      refine evalB_bin h5 (evalB_lit (by omega)) ?_
+      show v + 1 < B
+      omega
+    set σ₅ := σ₂.setVar "bt.v" (v + 1) with hσ₅
+    have hr₅ : Run B (.assign "bt.v" (.add (.var "bt.v") (.lit 1))) σ₂ σ₅ 4 := by
+      rw [hσ₅]
+      exact (Run.assign hincr).mono (by simp)
+    have hrun : Run B (buildBody ca na fa Lc K) σ σ₅ (11 * Lc + 26) := by
+      refine (hr₁.seq (hr₂.seq ((Run.ite_false hcondF Run.skip).seq hr₅))).mono ?_
+      simp only [size_condLt, size_var, size_lit]
+      omega
+    have harr₅ : σ₅.arrs = σ.arrs := by
+      rw [hσ₅]
+      simpa using harr₂
+    have hv₅ : σ₅.vars "bt.v" = v + 1 := by rw [hσ₅, vars_setVar, if_pos rfl]
+    have hn₅ : σ₅.vars "bt.n" = N := by
+      rw [hσ₅, vars_setVar, if_neg (by decide)]
+      exact hn₂
+    refine ⟨σ₅, hrun, ⟨rowBits_of_arrs_eq (by rw [harr₅]) hrow, hn₅, by omega,
+      by rw [harr₅]; exact hnal, by rw [harr₅]; exact hfal, ?_⟩, by rw [hv₅]⟩
+    intro ρ hρ
+    rw [hv₅]
+    by_cases hρeq : ρ = ρ₀
+    · subst hρeq
+      have hstep := firstsUpto_succ_full hvN (hρ₀.symm) (by rw [← hcntdef]; exact hfree)
+      rw [hstep, harr₅]
+      exact htab ρ₀ hρ₀lt
+    · have hstep := firstsUpto_succ_ne (colB := colB) (K := K) hvN
+        (by rw [← hρ₀]; exact fun hc => hρeq hc.symm)
+      rw [hstep, harr₅]
+      exact htab ρ hρ
+
+include h2LB hNB hNLB in
+open Classical in
+/-- **The table build, discharged** (§6.4's one `O(N·L)` pass): from
+the color rows and the two regions' lengths, the count and seat
+regions end holding `firsts` verbatim — `FirstsSt`, the region
+contract every evaluator read consumes (`mem_tableReps_iff` then gives
+the `Impl.FirstRep` semantics for free, per `SolveBlocksBot`). -/
+theorem buildCom_spec (hca_na : ca ≠ na) (hca_fa : ca ≠ fa) (hna_fa : na ≠ fa) :
+    Spec B (fun σ => RowBits ca colB σ ∧ σ.vars "bt.n" = N ∧
+        (σ.arrs na).length = 2 ^ Lc ∧ (σ.arrs fa).length = 2 ^ Lc * (K + 1))
+      (buildCom ca na fa Lc K)
+      (fun _ σ' => FirstsSt na fa colB K σ' ∧ RowBits ca colB σ' ∧
+        σ'.vars "bt.n" = N)
+      (buildK N Lc) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have h2L1 : 2 ^ Lc ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_right _ (by omega)
+  rintro σ ⟨hrow, hn, hnal, hfal⟩
+  -- the count wipe
+  obtain ⟨σz, hrz, hzarr, hzoth, hzvars⟩ :=
+    (zeroCom_spec h2LB (a := na) (n := 2 ^ Lc) (by omega)) σ hnal
+  -- the pass
+  have hloop := Spec.forRangeZero (B := B) "bt.v" "bt.n"
+    (BuildInv ca na fa colB K) N (11 * Lc + 26) hNB
+    (fun τ hτ => hτ.2.2.1) (fun τ hτ => hτ.2.1)
+    (buildBody_spec h2LB hNB hNLB hca_na hca_fa hna_fa)
+  have hpre : BuildInv ca na fa colB K (σz.setVar "bt.v" 0) := by
+    refine ⟨?_, ?_, by simp, ?_, ?_, ?_⟩
+    · refine rowBits_of_arrs_eq ?_ hrow
+      simp only [arrs_setVar]
+      exact hzoth ca hca_na
+    · simp only [vars_setVar, if_neg (by decide : ("bt.n" : String) ≠ "bt.v")]
+      rw [hzvars]
+      exact hn
+    · simp only [arrs_setVar]
+      rw [hzarr, length_arrOf]
+    · simp only [arrs_setVar]
+      rw [hzoth fa (Ne.symm hna_fa)]
+      exact hfal
+    · intro ρ hρ
+      have hv0 : (σz.setVar "bt.v" 0).vars "bt.v" = 0 := by simp
+      rw [hv0]
+      constructor
+      · simp only [arrs_setVar]
+        rw [hzarr, getD_arrOf _ hρ, firstsUpto_zero]
+        rfl
+      · intro s hs
+        rw [firstsUpto_zero] at hs
+        simp at hs
+  obtain ⟨σ', hrl, hI, hvN'⟩ := hloop.run hpre
+  obtain ⟨hrow', hn', hvle', hnal', hfal', htab'⟩ := hI
+  refine ⟨σ', (hrz.seq hrl).mono (by
+    have h1 : (11 * Lc + 26 + 4) * N = (11 * Lc + 30) * N := by ring
+    simp only [buildK]
+    omega), ?_, hrow', hn'⟩
+  refine ⟨hnal', hfal', ?_⟩
+  intro ρ hρ
+  have := htab' ρ hρ
+  rwa [hvN', firstsUpto_eq_firsts (le_refl N) ρ] at this
+
+end BlockSpec
+
 end Lax3Proofs.Prog
