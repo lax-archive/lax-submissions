@@ -40,11 +40,12 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F6 | codegen to the machine — **split** | done (part) | w10 | 9b4cdfa | `mc_computesInTime_of_solveSpec`: ONE named obligation (`SolveSpec`) from the axiom; parse `Spec` discharged; `mcD` verbatim; word-size condition spent (`mcB = q(|x|+1)²`) |
 | F6b | arena materialization + profiles reroute + root eval | done | w11 | c4cde5b | `frameProgMS` at the MS budget; the CSR cells ARE the root arena; `solveSpec_of_rest` leaves one obligation; the sweep's BFS cut to F6d |
 | F6c | the `ℓ+1` driver blocks — run 1 | done (part) | w11 | 7bad766 | frame contract + greedyScatter fully IMP+ (with an inlined marking BFS) + botEval's schedule fix; direct `Spec`-kit route validated; continuation split into F6c2/F6c3 + the post-F6d stages (supports, profilesMS, cover sweep, readback, frame/driver composition) |
-| F6c2 | restrict + isolate as IMP+ (run 2) | wip | w13 | — | owns `SolveBlocksRestrict.lean`; `restrictCom` at `MArena.restrict` (renumbering via rank scratch, self-cleaned at touched entries) is the bar, `isolateCom` if it fits |
-| F6c3 | block 0's IMP+ table fill (run 3) | wip | w13 | — | owns `SolveBlocksBotCom.lean`; the `firsts` table build + the generated per-entry evaluator, target `botEvalT` verbatim |
+| F6c2 | restrict + isolate as IMP+ | done | w13 | 7736b66 | both landed; fill amortized at the **parent** degree; forced the `setEquiv` repin (sorted `orderIsoOfFin` — the docstring lied about its own theorem, lesson #6); exact-length-region seam flagged for the composer |
+| F6c3 | block 0's IMP+ table fill | done | w13 | 7736b66 | `botCom_spec` at the frame contract, table at `Sat A.G` under `hbot`; edgelessness a hypothesis, no machine edge scan; budget in `botC`'s shape |
 | F6d | shared IMP+ BFS: generalize `markCom` | done | w12 | ab14f30 | `bfsCom_spec` literally at `ImplBfs.BallTable` (+ sentinel bound clause), `bfsK ≤ 69·(d+1)·(N+ns+1)`; markCom's invariant minus the mark coupling; gate green |
-| F6c4 | supports stage: `bfsSupports`/`descend` as IMP+ | wip | w13 | — | owns `SolveBlocksSupports.lean`; least-parent array in one slot pass (min-tracked — rows are unsorted), counted gradient walks into the `HistArr` column |
-| F6c5 | profilesMS stage: `vsrc` + `recordProfilesMS` as IMP+ | wip | w13 | — | owns `SolveBlocksProfiles.lean`; materialize the `vsrc` CSR, run landed `bfsCom` from `Fin.last`, read rows at `recordProfilesMS` verbatim (`recordProfilesMS_eq_childCol` frozen on top) |
+| F6c4 | supports stage as IMP+ | done | w13 | 7736b66 | least parent by min-in-cell; stored lists = `Impl.descend` verbatim; `d+1 ≤ hb` is the slot-capacity hypothesis the composer supplies |
+| F6c5 | profilesMS stage as IMP+ | done | w13 | 7736b66 | lands under the frozen identity with `preG` by `rfl`; marker at zero BFS; per-class exact-length `vt` regions — the composer's windowed-contract seam |
+| F6c6 | the frame + `ℓ+1` chain: close `SolveSpec` | ready | — | — | compose per-centre `Spec.seq` (restrict → supports → profilesMS → isolate → recurse → scatter → readback) + cover-sweep stage + the level chain mirroring `driverProg_le_spec`; owes the **windowed/prefix-CSR `ArenaSt` variant** (max-size regions; F6c2/F6c5's exact-length seam), the cover slot's cluster bit-vectors + rank array (F6c1's seam rule), the batch region (`ProfPre.ba_get`, from supports), and `Ks :=` the chain total |
 | F7 | discharge the endorsed axiom | waiting | — | — | needs F6c (all runs), F6d; then: instantiate `SolveSpec` via `solveSpec_of_rest`, `q`/`c` per `hspan`, `temps ≥` boolean depth, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close with the `conclusion:` header |
 
 ## Campaign log
@@ -63,6 +64,23 @@ generated evaluator, target `botEvalT` verbatim). Chosen because they are
 the only F6 stages that do not consume F6d's BFS; supports/profilesMS/cover
 sweep/composition follow once F6d lands. Workers do not touch the root
 module; the supervisor adds the three imports at landing.
+
+### 2026-08-19 — w13 lands: the machine has every routine (`7736b66`)
+
+All four remaining routine stages are IMP+ programs with `Spec`s landing on
+the frozen abstract identities — 13.4k lines, the heaviest wave. What is now
+true: **every §4 operation exists at every layer** — abstract, NREST, and
+compiled-machine `Spec`. The remaining distance to the axiom is composition
+(F6c6: the frame chain and `ℓ+1` levels closing `SolveSpec`, with the
+windowed-region contract the exact-length seam demands) and then F7's
+∃-close. Two findings entered the permanent record: `Driver.setEquiv` was
+Classical-chosen while its consumer's docstring said "sorted" — repinned to
+the sorted enumeration under D3/E7's any-bijection license (the read-the-
+theorem lesson, sixth occurrence); and exact-length CSR regions cannot serve
+a per-centre loop over different-sized children — the composer owes the
+prefix-CSR variant. Process: one worker ran git against its packet (benign,
+disclosed); two cross-file name collisions fixed at review; one worker
+resumed cleanly after a connection drop.
 
 ### 2026-08-18 — w11 lands in full; the session closes here
 
