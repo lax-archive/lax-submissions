@@ -2990,6 +2990,446 @@ theorem fillCom_spec {Fl : List (DistFO Lc 1)}
   rw [hvN']
   exact w.is_lt
 
+include h2LB hNB hNLB in
+open Classical in
+/-- **The whole block, at the raw regions**: load the carrier size,
+wipe the scratch, build the table, fill the bits. The table region
+ends holding `botEvalT`'s values for the whole family. -/
+theorem botCom_spec_core {nN : String} {Fl : List (DistFO Lc 1)}
+    (hca_na : ca ≠ na) (hca_fa : ca ≠ fa) (hca_ea : ca ≠ ea) (hca_xa : ca ≠ xa)
+    (hna_fa : na ≠ fa) (hna_ea : na ≠ ea) (hna_xa : na ≠ xa)
+    (hfa_ea : fa ≠ ea) (hfa_xa : fa ≠ xa) (hea_xa : ea ≠ xa)
+    (hta_ca : ta ≠ ca) (hta_na : ta ≠ na) (hta_fa : ta ≠ fa)
+    (hta_ea : ta ≠ ea) (hta_xa : ta ≠ xa)
+    (hq : ∀ β ∈ Fl, qdepth β ≤ K) (hTB : N * Fl.length < B) :
+    Spec B (fun σ => σ.vars nN = N ∧ RowBits ca colB σ ∧
+        (σ.arrs na).length = 2 ^ Lc ∧ (σ.arrs fa).length = 2 ^ Lc * (K + 1) ∧
+        (σ.arrs ea).length = K + 1 ∧ (σ.arrs xa).length = K + 1 ∧
+        (σ.arrs ta).length = N * Fl.length)
+      (botCom nN ca na fa ea xa ta Lc K Fl)
+      (fun _ σ' => (σ'.arrs ta).length = N * Fl.length ∧
+        ∀ (w : Fin N) i, (hi : i < Fl.length) →
+          (σ'.arrs ta).getD ((w : ℕ) * Fl.length + i) 0
+            = (if botEvalT colB K (fun _ => w) Fl[i] then 1 else 0))
+      (botComK N Lc K Fl) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  have h2L1 : 2 ^ Lc ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_right _ (by omega)
+  rintro σ ⟨hnN, hrow, hnal, hfal, heal, hxal, htal⟩
+  -- the carrier size into its cell
+  have hnev : (Expr.var nN).evalB B σ = some N := by
+    rw [← hnN]
+    exact evalB_var (by rw [hnN]; omega)
+  set σa := σ.setVar "bt.n" N with hσa
+  have hra : Run B (.assign "bt.n" (.var nN)) σ σa 2 := by
+    rw [hσa]
+    exact (Run.assign hnev).mono (by simp)
+  -- the two scratch wipes
+  obtain ⟨σb, hrb, hbarr, hboth, hbvars⟩ :=
+    (zeroCom_spec h2LB (a := ea) (n := K + 1) (by omega)) σa
+      (by rw [hσa]; simpa using heal)
+  obtain ⟨σc, hrc, hcarr, hcoth, hcvars⟩ :=
+    (zeroCom_spec h2LB (a := xa) (n := K + 1) (by omega)) σb
+      (by show (σb.arrs xa).length = K + 1
+          rw [hboth xa (Ne.symm hea_xa), hσa]
+          simpa using hxal)
+  -- the table build
+  have hpreb : RowBits ca colB σc ∧ σc.vars "bt.n" = N ∧
+      (σc.arrs na).length = 2 ^ Lc ∧ (σc.arrs fa).length = 2 ^ Lc * (K + 1) := by
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · refine rowBits_of_arrs_eq ?_ hrow
+      rw [hcoth ca hca_xa, hboth ca hca_ea, hσa]
+      simp
+    · rw [hcvars, hbvars, hσa, vars_setVar, if_pos rfl]
+    · rw [hcoth na hna_xa, hboth na hna_ea, hσa]
+      simpa using hnal
+    · rw [hcoth fa hfa_xa, hboth fa hfa_ea, hσa]
+      simpa using hfal
+  obtain ⟨σd, hrd, ⟨hdfst, hdrow, hdn⟩, -, hdarr, -, -⟩ :=
+    ((buildCom_spec h2LB hNB hNLB hca_na hca_fa hna_fa).frame) σc hpreb
+  have hbnot : ∀ b, b ≠ na → b ≠ fa → σd.arrs b = σc.arrs b := by
+    intro b hb1 hb2
+    refine hdarr b (fun hm => ?_)
+    have := warrs_buildCom ca na fa Lc K hm
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at this
+    rcases this with rfl | rfl
+    · exact hb1 rfl
+    · exact hb2 rfl
+  -- the fill
+  obtain ⟨σe, hre, hetal, hetab⟩ :=
+    (fillCom_spec h2LB hNB hNLB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa
+      hta_ca hta_na hta_fa hta_ea hta_xa hq hTB) σd
+      ⟨hdrow, hdfst, hdn,
+        by rw [hbnot ea (Ne.symm hna_ea) (Ne.symm hfa_ea), hcoth ea hea_xa]
+           exact hbarr,
+        by rw [hbnot xa (Ne.symm hna_xa) (Ne.symm hfa_xa)]
+           exact hcarr,
+        by rw [hbnot ta hta_na hta_fa, hcoth ta hta_xa, hboth ta hta_ea, hσa]
+           simpa using htal⟩
+  refine ⟨σe, ?_, hetal, hetab⟩
+  refine (hra.seq (hrb.seq (hrc.seq (hrd.seq hre)))).mono ?_
+  simp only [botComK]
+  omega
+
 end BlockSpec
+
+/-! ## §11 The write-free tape facts, off the syntax -/
+
+section TapeSyntactic
+
+variable (ca na fa ea xa ta nN : String) (Lc K : ℕ)
+
+private theorem noWrite_offEnvCom (k : ℕ) : (offEnvCom ea k).NoWrite := by
+  rw [offEnvCom]
+  refine ⟨trivial, noWrite_seqIdx (fun i _ => ?_) _ _⟩
+  exact ⟨trivial, trivial⟩
+
+private theorem noWrite_seatCom (k ρ s : ℕ) : (seatCom fa ea K k ρ s).NoWrite := by
+  rw [seatCom]
+  exact ⟨⟨⟨trivial, noWrite_offEnvCom ea k, ⟨trivial, trivial⟩, trivial⟩, trivial⟩,
+    trivial⟩
+
+private theorem noWrite_trialCom (k : ℕ) (e : Expr) {cb : Com} (h : cb.NoWrite) :
+    (trialCom ea xa k e cb).NoWrite := by
+  rw [trialCom]
+  exact ⟨trivial, h, ⟨trivial, trivial⟩, trivial⟩
+
+private theorem noWrite_rhoCom (k ρ : ℕ) {cb : Com} (h : cb.NoWrite) :
+    (rhoCom na fa ea xa K k ρ cb).NoWrite := by
+  rw [rhoCom]
+  refine ⟨trivial, trivial, noWrite_seqIdx (fun s _ => ?_) _ _,
+    noWrite_trialCom ea xa k _ h, trivial⟩
+  exact noWrite_seatCom fa ea K k ρ _
+
+/-- The evaluator writes no output — the tape frame every composed
+block reads off the syntax. -/
+theorem noWrite_evalCom : ∀ {k : ℕ} (φ : DistFO Lc k),
+    (evalCom ca na fa ea xa Lc K φ).NoWrite
+  | _, .adj _ _ => trivial
+  | _, .eq i j => ⟨trivial, trivial⟩
+  | _, .color c i => trivial
+  | _, .distLe _ i j => ⟨trivial, trivial⟩
+  | _, .distColorLt r c i => by
+      rw [evalCom]
+      split
+      · exact trivial
+      · exact trivial
+  | _, .not φ => ⟨noWrite_evalCom φ, trivial⟩
+  | _, .and φ ψ => ⟨noWrite_evalCom φ, noWrite_evalCom ψ, trivial⟩
+  | k, .exU φ => by
+      rw [evalCom, exUCom]
+      refine ⟨noWrite_seqIdx (fun i _ => ?_) _ _,
+        noWrite_seqIdx (fun _ ρ => ?_) _ _, trivial, trivial⟩
+      · exact noWrite_trialCom ea xa k _ (noWrite_evalCom φ)
+      · exact noWrite_rhoCom na fa ea xa K k _ (noWrite_evalCom φ)
+  | k, .exL r g φ => by
+      rw [evalCom, exLCom]
+      refine ⟨noWrite_seqIdx (fun _ i => ?_) _ _, trivial, trivial⟩
+      exact noWrite_trialCom ea xa k _ (noWrite_evalCom φ)
+
+private theorem noWrite_zeroCom (a : String) (n : ℕ) : (zeroCom a n).NoWrite := by
+  rw [zeroCom]
+  refine noWrite_seqIdx (fun i _ => ?_) _ _
+  exact trivial
+
+private theorem noWrite_rowCodeCom : (rowCodeCom ca Lc).NoWrite := by
+  rw [rowCodeCom]
+  refine ⟨trivial, noWrite_seqIdx (fun i _ => ?_) _ _⟩
+  exact trivial
+
+private theorem noWrite_buildCom : (buildCom ca na fa Lc K).NoWrite := by
+  rw [buildCom, buildBody]
+  exact ⟨noWrite_zeroCom na _, trivial,
+    noWrite_rowCodeCom ca Lc, trivial, ⟨⟨trivial, trivial⟩, trivial⟩, trivial⟩
+
+private theorem noWrite_fillCom (Fl : List (DistFO Lc 1)) :
+    (fillCom ca na fa ea xa ta Lc K Fl).NoWrite := by
+  rw [fillCom, fillBody]
+  refine ⟨trivial, trivial, noWrite_seqIdx (fun i β => ?_) _ _, trivial, trivial⟩
+  exact ⟨noWrite_evalCom ca na fa ea xa Lc K β, trivial⟩
+
+/-- **The whole block writes no output.** -/
+theorem noWrite_botCom (Fl : List (DistFO Lc 1)) :
+    (botCom nN ca na fa ea xa ta Lc K Fl).NoWrite := by
+  rw [botCom]
+  exact ⟨trivial, noWrite_zeroCom ea _, noWrite_zeroCom xa _,
+    noWrite_buildCom ca na fa Lc K, noWrite_fillCom ca na fa ea xa ta Lc K Fl⟩
+
+private theorem not_reads_offEnvCom (k : ℕ) : ¬ (offEnvCom ea k).reads := by
+  rw [offEnvCom]
+  show ¬ (False ∨ _)
+  refine not_or.mpr ⟨not_false, not_reads_seqIdx (fun i _ => ?_) _ _⟩
+  show ¬ (False ∨ False)
+  simp
+
+private theorem not_reads_seatCom (k ρ s : ℕ) : ¬ (seatCom fa ea K k ρ s).reads := by
+  rw [seatCom]
+  show ¬ ((((False ∨ ((offEnvCom ea k).reads ∨ ((False ∨ False) ∨ False))) ∨ False))
+    ∨ False)
+  simp only [not_or]
+  exact ⟨⟨⟨not_false, not_reads_offEnvCom ea k, ⟨not_false, not_false⟩, not_false⟩,
+    not_false⟩, not_false⟩
+
+private theorem not_reads_trialCom (k : ℕ) (e : Expr) {cb : Com} (h : ¬ cb.reads) :
+    ¬ (trialCom ea xa k e cb).reads := by
+  rw [trialCom]
+  show ¬ (False ∨ (cb.reads ∨ ((False ∨ False) ∨ False)))
+  simp only [not_or]
+  exact ⟨not_false, h, ⟨not_false, not_false⟩, not_false⟩
+
+private theorem not_reads_rhoCom (k ρ : ℕ) {cb : Com} (h : ¬ cb.reads) :
+    ¬ (rhoCom na fa ea xa K k ρ cb).reads := by
+  rw [rhoCom]
+  show ¬ (False ∨ (False ∨ (_ ∨ ((trialCom ea xa k (.var "bt.w") cb).reads ∨ False))))
+  simp only [not_or]
+  refine ⟨not_false, not_false, not_reads_seqIdx (fun s _ => ?_) _ _,
+    not_reads_trialCom ea xa k _ h, not_false⟩
+  exact not_reads_seatCom fa ea K k ρ _
+
+/-- The evaluator reads no input. -/
+theorem not_reads_evalCom : ∀ {k : ℕ} (φ : DistFO Lc k),
+    ¬ (evalCom ca na fa ea xa Lc K φ).reads
+  | _, .adj _ _ => not_false
+  | _, .eq i j => by
+      rw [evalCom, eqCom]
+      show ¬ (False ∨ False)
+      simp
+  | _, .color c i => not_false
+  | _, .distLe _ i j => by
+      rw [evalCom, eqCom]
+      show ¬ (False ∨ False)
+      simp
+  | _, .distColorLt r c i => by
+      rw [evalCom]
+      split
+      · exact not_false
+      · exact not_false
+  | _, .not φ => by
+      rw [evalCom]
+      show ¬ ((evalCom ca na fa ea xa Lc K φ).reads ∨ False)
+      exact not_or.mpr ⟨not_reads_evalCom φ, not_false⟩
+  | _, .and φ ψ => by
+      rw [evalCom]
+      show ¬ ((evalCom ca na fa ea xa Lc K φ).reads
+        ∨ ((evalCom ca na fa ea xa Lc K ψ).reads ∨ False))
+      exact not_or.mpr ⟨not_reads_evalCom φ,
+        not_or.mpr ⟨not_reads_evalCom ψ, not_false⟩⟩
+  | k, .exU φ => by
+      rw [evalCom, exUCom]
+      show ¬ (_ ∨ (_ ∨ ((False ∨ False))))
+      simp only [not_or]
+      refine ⟨not_reads_seqIdx (fun i _ => ?_) _ _,
+        not_reads_seqIdx (fun _ ρ => ?_) _ _, not_false, not_false⟩
+      · exact not_reads_trialCom ea xa k _ (not_reads_evalCom φ)
+      · exact not_reads_rhoCom na fa ea xa K k _ (not_reads_evalCom φ)
+  | k, .exL r g φ => by
+      rw [evalCom, exLCom]
+      show ¬ (_ ∨ ((False ∨ False)))
+      simp only [not_or]
+      refine ⟨not_reads_seqIdx (fun _ i => ?_) _ _, not_false, not_false⟩
+      exact not_reads_trialCom ea xa k _ (not_reads_evalCom φ)
+
+private theorem not_reads_zeroCom (a : String) (n : ℕ) : ¬ (zeroCom a n).reads := by
+  rw [zeroCom]
+  refine not_reads_seqIdx (fun i _ => ?_) _ _
+  exact not_false
+
+private theorem not_reads_rowCodeCom : ¬ (rowCodeCom ca Lc).reads := by
+  rw [rowCodeCom]
+  show ¬ (False ∨ _)
+  refine not_or.mpr ⟨not_false, not_reads_seqIdx (fun i _ => ?_) _ _⟩
+  exact not_false
+
+private theorem not_reads_buildCom : ¬ (buildCom ca na fa Lc K).reads := by
+  rw [buildCom, buildBody]
+  show ¬ ((zeroCom na (2 ^ Lc)).reads ∨ (False ∨ ((rowCodeCom ca Lc).reads
+    ∨ (False ∨ (((False ∨ False) ∨ False) ∨ False)))))
+  simp only [not_or]
+  exact ⟨not_reads_zeroCom na _, not_false, not_reads_rowCodeCom ca Lc, not_false,
+    ⟨⟨not_false, not_false⟩, not_false⟩, not_false⟩
+
+private theorem not_reads_fillCom (Fl : List (DistFO Lc 1)) :
+    ¬ (fillCom ca na fa ea xa ta Lc K Fl).reads := by
+  rw [fillCom, fillBody]
+  show ¬ (False ∨ (False ∨ (_ ∨ (False ∨ False))))
+  simp only [not_or]
+  refine ⟨not_false, not_false, not_reads_seqIdx (fun i β => ?_) _ _,
+    not_false, not_false⟩
+  show ¬ ((evalCom ca na fa ea xa Lc K β).reads ∨ False)
+  exact not_or.mpr ⟨not_reads_evalCom ca na fa ea xa Lc K β, not_false⟩
+
+/-- **The whole block reads no input.** -/
+theorem not_reads_botCom (Fl : List (DistFO Lc 1)) :
+    ¬ (botCom nN ca na fa ea xa ta Lc K Fl).reads := by
+  rw [botCom]
+  show ¬ (False ∨ ((zeroCom ea (K + 1)).reads ∨ ((zeroCom xa (K + 1)).reads
+    ∨ ((buildCom ca na fa Lc K).reads ∨ (fillCom ca na fa ea xa ta Lc K Fl).reads))))
+  simp only [not_or]
+  exact ⟨not_false, not_reads_zeroCom ea _, not_reads_zeroCom xa _,
+    not_reads_buildCom ca na fa Lc K, not_reads_fillCom ca na fa ea xa ta Lc K Fl⟩
+
+end TapeSyntactic
+
+/-! ## §12 The block against the contract — `botCom_spec` -/
+
+section Contract
+
+open Lax3.ColoredGraphs
+
+variable {B Lc K : ℕ} {na fa ea xa : String}
+
+open Classical in
+/-- **Block 0, discharged against the per-frame contract** (F6c3's
+deliverable). From `ArenaSt` at an **edgeless** arena — `A.G = ⊥` is a
+*hypothesis*, the frame chain's guard (`mkSetup_memLeaf_eq_bot`), not
+a machine-side check — plus the scratch and table regions' lengths,
+`botCom` leaves the table region holding **exactly the `Sat A.G`
+values of the schedule family** (`TableBits` at
+`fun v β => Sat A.G A.col (fun _ => v) β` — the value
+`Driver.tablesAux`'s leaf returns, by `Impl.tablesAux_bot_eq_botEval`
+composed with `botEvalT_eq_botEval`; the crossing here is
+`botEvalT_eq_sat` plus `if_congr` over the decidability seam), and
+returns the arena contract intact. The depth hypothesis
+`∀ β ∈ Fl, qdepth β ≤ K` instantiates the schedule's `K` at the
+family's depth; the four `< B` hypotheses are the stored-value
+classes (`N·L` color reads, `2^L·(K+1)` seats, `N·|Fl|` table cells,
+`N` names), all below `mcB` at a schedule constant once `N ≤ n₀ ≤ |x|`
+(the head file's stored-value paragraph, discharged by F7). -/
+theorem botCom_spec {n₀ ℓp : ℕ} (hb : ℕ) (nm : ArenaNames)
+    (A : Impl.MArena Lc n₀ ℓp) (hbot : A.G = ⊥) (Fl : List (DistFO Lc 1))
+    (hq : ∀ β ∈ Fl, qdepth β ≤ K)
+    (hNB : A.N < B) (hNLB : A.N * Lc < B) (h2LB : 2 ^ Lc * (K + 1) < B)
+    (hTB : A.N * Fl.length < B)
+    (hnd : [nm.col, na, fa, ea, xa, nm.tab].Nodup)
+    (hoff : nm.off ∉ [na, fa, ea, xa, nm.tab])
+    (htgt : nm.tgt ∉ [na, fa, ea, xa, nm.tab])
+    (hup : nm.up ∉ [na, fa, ea, xa, nm.tab])
+    (hhist : nm.hist ∉ [na, fa, ea, xa, nm.tab])
+    (hnN : nm.nN ∉ btScalars) (hnS : nm.nS ∉ btScalars) :
+    Spec B (fun σ => ArenaSt nm hb A σ ∧
+        (σ.arrs na).length = 2 ^ Lc ∧ (σ.arrs fa).length = 2 ^ Lc * (K + 1) ∧
+        (σ.arrs ea).length = K + 1 ∧ (σ.arrs xa).length = K + 1 ∧
+        (σ.arrs nm.tab).length = A.N * Fl.length)
+      (botCom nm.nN nm.col na fa ea xa nm.tab Lc K Fl)
+      (fun _ σ' => ArenaSt nm hb A σ' ∧
+        TableBits nm.tab Fl (fun v β => Sat A.G A.col (fun _ => v) β) σ')
+      (botComK A.N Lc K Fl) := by
+  -- the pairwise disequalities, off the name lists
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
+    List.nodup_nil, and_true, not_or] at hnd
+  obtain ⟨⟨hca_na, hca_fa, hca_ea, hca_xa, hca_ta⟩,
+    ⟨hna_fa, hna_ea, hna_xa, hna_ta⟩, ⟨hfa_ea, hfa_xa, hfa_ta⟩,
+    ⟨hea_xa, hea_ta⟩, ⟨hxa_ta, -⟩⟩ := hnd
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hoff htgt hup hhist
+  obtain ⟨hoff_na, hoff_fa, hoff_ea, hoff_xa, hoff_ta⟩ := hoff
+  obtain ⟨htgt_na, htgt_fa, htgt_ea, htgt_xa, htgt_ta⟩ := htgt
+  obtain ⟨hup_na, hup_fa, hup_ea, hup_xa, hup_ta⟩ := hup
+  obtain ⟨hhist_na, hhist_fa, hhist_ea, hhist_xa, hhist_ta⟩ := hhist
+  have hnotmem : ∀ x : String, x ≠ na → x ≠ fa → x ≠ ea → x ≠ xa → x ≠ nm.tab →
+      x ∉ ([na, fa, ea, xa, nm.tab] : List String) := by
+    intro x h1 h2 h3 h4 h5 hm
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hm
+    rcases hm with rfl | rfl | rfl | rfl | rfl
+    · exact h1 rfl
+    · exact h2 rfl
+    · exact h3 rfl
+    · exact h4 rfl
+    · exact h5 rfl
+  intro σ hσ
+  obtain ⟨hAst, hnal, hfal, heal, hxal, htal⟩ := hσ
+  -- the machine's Bool rows, bridged to the contract's coloring
+  set colB : Fin A.N → Fin Lc → Bool := fun v c => decide (v ∈ A.col c) with hcolB
+  have hcol : ∀ v c, colB v c = true ↔ v ∈ A.col c := by
+    intro v c
+    rw [hcolB]
+    simp
+  have hrow : RowBits nm.col colB σ := ColBits_rowBits hAst.col
+  obtain ⟨σ', hrun, htal', htab'⟩ :=
+    (botCom_spec_core (colB := colB) h2LB hNB hNLB
+      hca_na hca_fa hca_ea hca_xa hna_fa hna_ea hna_xa hfa_ea hfa_xa hea_xa
+      (Ne.symm hca_ta) (Ne.symm hna_ta) (Ne.symm hfa_ta) (Ne.symm hea_ta)
+      (Ne.symm hxa_ta) hq hTB) σ
+      ⟨hAst.n_eq, hrow, hnal, hfal, heal, hxal, htal⟩
+  have hframe_v : ∀ y, y ∉ btScalars → σ'.vars y = σ.vars y := by
+    intro y hy
+    exact hrun.frame_var y
+      (fun hm => hy (wvars_botCom nm.col na fa ea xa nm.tab nm.nN Lc K Fl hm))
+  have hframe_a : ∀ b, b ∉ ([na, fa, ea, xa, nm.tab] : List String) →
+      σ'.arrs b = σ.arrs b := by
+    intro b hb
+    exact hrun.frame_arr b
+      (fun hm => hb (warrs_botCom nm.col na fa ea xa nm.tab nm.nN Lc K Fl hm))
+  obtain ⟨hn_eq, hcsr, hcolst, hupst, hhistst⟩ := hAst
+  refine ⟨σ', hrun, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩
+  · -- the carrier size cell
+    rw [hframe_v nm.nN hnN]
+    exact hn_eq
+  · -- the CSR
+    obtain ⟨off, tgt, hc, h0, hnd', hadj⟩ := hcsr
+    rw [hframe_v nm.nS hnS]
+    exact ⟨off, tgt,
+      hc.of_eq (hframe_a nm.off (hnotmem _ hoff_na hoff_fa hoff_ea hoff_xa hoff_ta))
+        (hframe_a nm.tgt (hnotmem _ htgt_na htgt_fa htgt_ea htgt_xa htgt_ta)),
+      h0, hnd', hadj⟩
+  · -- the color rows
+    unfold ColBits at hcolst ⊢
+    rw [hframe_a nm.col (hnotmem _ hca_na hca_fa hca_ea hca_xa hca_ta)]
+    exact hcolst
+  · -- the renaming
+    unfold UpArr at hupst ⊢
+    rw [hframe_a nm.up (hnotmem _ hup_na hup_fa hup_ea hup_xa hup_ta)]
+    exact hupst
+  · -- the channel
+    unfold HistArr at hhistst ⊢
+    rw [hframe_a nm.hist (hnotmem _ hhist_na hhist_fa hhist_ea hhist_xa hhist_ta)]
+    exact hhistst
+  · -- the table region's length
+    exact htal'
+  · -- the table region's bits: `botEvalT` crossed to `Sat A.G` through
+    -- `botEvalT_eq_sat`, `if_congr` at the decidability seam
+    intro v i hi
+    rw [htab' v i hi]
+    refine if_congr ?_ rfl rfl
+    have hsat := botEvalT_eq_sat colB A.col hcol Fl[i] (fun _ => v)
+      (by
+        calc 1 + qdepth Fl[i] ≤ 1 + K :=
+              Nat.add_le_add_left (hq Fl[i] (List.getElem_mem hi)) 1
+          _ = K + 1 := Nat.add_comm 1 K)
+    rw [hbot]
+    exact hsat
+
+end Contract
+
+/-! ## §13 The budget's envelope — `botC`'s shape -/
+
+/-- **The envelope, for F7's reconciliation**: the whole block runs
+within one schedule constant times `(1 + |ℱ_j|)·(N + 1)` — `botC`'s
+`(1 + |ℱ_j|)·‖A‖` shape at `weight A ≥ N` (the leaf block reads no
+edges, so the CSR never enters its cost). The constant collects the
+`2^L` wipe, the `11L` row-code reads, the `K`-cell scratch wipes and
+the family's per-entry maximum — schedule data, carrier-free. -/
+theorem botComK_le (N Lc K : ℕ) (Fl : List (DistFO Lc 1)) :
+    botComK N Lc K Fl
+      ≤ (3 * 2 ^ Lc + 11 * Lc + 6 * K + evalKMax Lc K Fl + 60)
+        * ((1 + Fl.length) * (N + 1)) := by
+  set E := evalKMax Lc K Fl with hE
+  set F := Fl.length with hF
+  set C := 3 * 2 ^ Lc + 11 * Lc + 6 * K + E + 60 with hC
+  have h1 : (11 * Lc + 30) * N + 15 * N ≤ C * N := by
+    have h0 : 11 * Lc + 45 ≤ C := by omega
+    calc (11 * Lc + 30) * N + 15 * N = (11 * Lc + 45) * N := by ring
+      _ ≤ C * N := Nat.mul_le_mul_right _ h0
+  have h2 : (F * (E + 7)) * N ≤ C * (F * N) := by
+    calc (F * (E + 7)) * N = F * N * (E + 7) := by ring
+      _ ≤ F * N * C := Nat.mul_le_mul_left _ (by omega)
+      _ = C * (F * N) := by ring
+  have h3 : 3 * 2 ^ Lc + 6 * K + 23 ≤ C := by omega
+  have hexp : C * ((1 + F) * (N + 1)) = C * N + C + C * (F * N) + C * F := by ring
+  have hbot : botComK N Lc K Fl
+      = ((11 * Lc + 30) * N + 15 * N) + (F * (E + 7)) * N
+        + (3 * 2 ^ Lc + 6 * K + 23) := by
+    simp only [botComK, buildK, fillK, ← hE, ← hF]
+    ring
+  omega
 
 end Lax3Proofs.Prog
