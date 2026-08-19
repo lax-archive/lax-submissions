@@ -96,6 +96,11 @@ import Lax3Proofs.SolveBlocksRestrict
 import Lax3Proofs.SolveBlocksBotCom
 import Lax3Proofs.SolveBlocksSupports
 import Lax3Proofs.SolveBlocksProfiles
+import Lax3Proofs.SolveChainWin
+import Lax3Proofs.SolveChainBot
+import Lax3Proofs.SolveChainCover
+import Lax3Proofs.SolveChainRestrict
+import Lax3Proofs.SolveChain
 
 -- The proofs package of submission Lax3.
 --
