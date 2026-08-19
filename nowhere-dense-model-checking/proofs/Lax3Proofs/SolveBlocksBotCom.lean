@@ -1564,8 +1564,8 @@ private theorem exLCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
   obtain ⟨τ, hrun, hτ⟩ := hscan σ hInv0
   simp only [List.length_map, Nat.zero_add] at hτ
   have htp : TrialPost ea xa k (g.toList.any q) σ τ := by
-    have := hτ
-    rwa [List.take_of_length_le (le_refl _)] at this
+    have h : TrialPost ea xa k ((g.toList.take g.toList.length).any q) σ τ := hτ
+    rwa [List.take_of_length_le (le_refl _)] at h
   -- the collected bit is the guard set's disjunction
   have hbit : g.toList.any q
       = decide (∃ i ∈ g, botEvalT colB K (Fin.snoc m (m i)) φ = true) := by
@@ -1606,7 +1606,7 @@ private theorem exLCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
     simp only [List.length_map, Finset.length_toList]
     omega
   · rw [hσ', hσf]
-    simp only [vars_setArr, vars_setVar, if_pos rfl]
+    simp
   · rw [hσ', arrs_setArr, if_neg hea_xa, hσf]
     simp only [arrs_setVar]
     exact htp.1

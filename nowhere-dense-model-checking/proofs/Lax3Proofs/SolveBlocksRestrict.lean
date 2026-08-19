@@ -1505,6 +1505,453 @@ private theorem csrFill_spec (hNB : n < B) (hnsB : ns < B)
 
 end CsrFill
 
+/-! ## §9 The color copy -/
+
+/-- Unique decomposition of a strided index — what keeps one block's
+writes out of every other block. -/
+private theorem grid_inj {L a b c q : ℕ} (hc : c < L) (hq : q < L)
+    (h : a * L + c = b * L + q) : a = b ∧ c = q := by
+  rcases lt_trichotomy a b with hab | hab | hab
+  · exfalso
+    have h1 := Nat.mul_le_mul_right L (show a + 1 ≤ b by omega)
+    have h2 : (a + 1) * L = a * L + L := by ring
+    omega
+  · subst hab
+    omega
+  · exfalso
+    have h1 := Nat.mul_le_mul_right L (show b + 1 ≤ a by omega)
+    have h2 : (b + 1) * L = b * L + L := by ring
+    omega
+
+section ColCopy
+
+variable {B n n₀ Lc : ℕ} {S : Set (Fin n)} {nmP nmC : ArenaNames} {la : String}
+
+open Classical in
+/-- The parent color bit at plain numbers. -/
+private noncomputable def pbit (colP : Coloring n Lc) (w c' : ℕ) : ℕ :=
+  if h : w < n ∧ c' < Lc then
+    (if (⟨w, h.1⟩ : Fin n) ∈ colP ⟨c', h.2⟩ then 1 else 0) else 0
+
+private theorem colBits_getD {colP : Coloring n Lc} {a : String} {σ : Env}
+    (h : ColBits a colP σ) {w c' : ℕ} (hw : w < n) (hc : c' < Lc) :
+    (σ.arrs a).getD (w * Lc + c') 0 = pbit colP w c' := by
+  have := h.2 ⟨w, hw⟩ ⟨c', hc⟩
+  rw [pbit, dif_pos ⟨hw, hc⟩]
+  simpa using this
+
+private theorem pbit_lt_two (colP : Coloring n Lc) (w c' : ℕ) :
+    pbit colP w c' ≤ 1 := by
+  rw [pbit]
+  split
+  · split <;> omega
+  · omega
+
+/-- The outer state of the color copy. -/
+private structure ColSt (nmP nmC : ArenaNames) (la : String) (n Lc : ℕ)
+    (S : Set (Fin n)) (colP : Coloring n Lc) (σ : Env) : Prop where
+  hcolP : ColBits nmP.col colP σ
+  hcl : ClusterList la S σ
+  hk : σ.vars "rs.k" = S.ncard
+  hl : σ.vars "rs.l" = Lc
+  hiN : σ.vars "rs.i" ≤ S.ncard
+  harr : ∃ f, σ.arrs nmC.col = arrOf (S.ncard * Lc) f ∧
+    ∀ a < σ.vars "rs.i", ∀ c' < Lc, f (a * Lc + c') = pbit colP (embN S a) c'
+
+/-- The inner state: member `i`'s block, filled below the round
+counter. -/
+private structure ColInSt (nmP nmC : ArenaNames) (la : String) (n Lc : ℕ)
+    (S : Set (Fin n)) (colP : Coloring n Lc) (i : ℕ) (σ : Env) : Prop where
+  hcolP : ColBits nmP.col colP σ
+  hcl : ClusterList la S σ
+  hk : σ.vars "rs.k" = S.ncard
+  hl : σ.vars "rs.l" = Lc
+  hiv : σ.vars "rs.i" = i
+  hs : σ.vars "rs.s" = embN S i
+  hq : σ.vars "rs.q" ≤ Lc
+  harr : ∃ f, σ.arrs nmC.col = arrOf (S.ncard * Lc) f ∧
+    (∀ a < i, ∀ c' < Lc, f (a * Lc + c') = pbit colP (embN S a) c') ∧
+    ∀ c' < σ.vars "rs.q", f (i * Lc + c') = pbit colP (embN S i) c'
+
+variable {colP : Coloring n Lc}
+
+/-- One cell of a member's color row. -/
+private theorem colCell_spec (hNB : n < B) (hLB : n * Lc < B)
+    (hcc : nmC.col ≠ nmP.col) (hcla : nmC.col ≠ la)
+    {i : ℕ} (hik : i < S.ncard) :
+    Spec B
+      (fun σ => ColInSt nmP nmC la n Lc S colP i σ ∧ σ.vars "rs.q" < Lc)
+      (.seq (.store nmC.col
+          (.add (.mul (.var "rs.i") (.var "rs.l")) (.var "rs.q"))
+          (.get nmP.col (.add (.mul (.var "rs.s") (.var "rs.l")) (.var "rs.q"))))
+        (.assign "rs.q" (.add (.var "rs.q") (.lit 1))))
+      (fun σ σ' => ColInSt nmP nmC la n Lc S colP i σ' ∧
+        σ'.vars "rs.q" = σ.vars "rs.q" + 1) 16 := by
+  intro σ hσ
+  obtain ⟨⟨hcolP, hcl, hk, hl, hiv, hs, hqLc, f, hfarr, hfdone, hfcur⟩, hlt⟩ := hσ
+  have hkn : S.ncard ≤ n := ncard_le_carrier S
+  have hn1 : 1 ≤ n := by have := embN_lt S hik; omega
+  have hLcB : Lc < B := by
+    calc Lc = 1 * Lc := (Nat.one_mul Lc).symm
+      _ ≤ n * Lc := Nat.mul_le_mul_right Lc hn1
+      _ < B := hLB
+  set q := σ.vars "rs.q" with hq_def
+  set s' := embN S i with hs'_def
+  have hs'n : s' < n := embN_lt S hik
+  -- the destination index
+  have hdstv : i * Lc + q < S.ncard * Lc := by
+    have h1 : i * Lc + q < (i + 1) * Lc := by
+      have : (i + 1) * Lc = i * Lc + Lc := by ring
+      omega
+    have h2 : (i + 1) * Lc ≤ S.ncard * Lc := Nat.mul_le_mul_right Lc (by omega)
+    omega
+  have hdstB : i * Lc + q < B := by
+    have : S.ncard * Lc ≤ n * Lc := Nat.mul_le_mul_right Lc hkn
+    omega
+  have hdst : (Expr.add (.mul (.var "rs.i") (.var "rs.l")) (.var "rs.q")).evalB B σ
+      = some (i * Lc + q) := by
+    have hmul : (Expr.mul (.var "rs.i") (.var "rs.l")).evalB B σ = some (i * Lc) := by
+      have h := evalB_bin (B := B) (op := .mul)
+        (evalB_var (x := "rs.i") (by rw [hiv]; omega))
+        (evalB_var (x := "rs.l") (by rw [hl]; omega)) (by rw [hiv, hl]; simp; omega)
+      rw [hiv, hl] at h
+      simpa using h
+    have h := evalB_bin (B := B) (op := .add) hmul
+      (evalB_var (x := "rs.q") (by omega)) (by rw [← hq_def]; simp; omega)
+    rw [← hq_def] at h
+    simpa using h
+  -- the source read
+  have hsrcv : s' * Lc + q < n * Lc := by
+    have h1 : s' * Lc + q < (s' + 1) * Lc := by
+      have : (s' + 1) * Lc = s' * Lc + Lc := by ring
+      omega
+    have h2 : (s' + 1) * Lc ≤ n * Lc := Nat.mul_le_mul_right Lc (by omega)
+    omega
+  have hsrc : (Expr.get nmP.col
+      (.add (.mul (.var "rs.s") (.var "rs.l")) (.var "rs.q"))).evalB B σ
+      = some (pbit colP s' q) := by
+    have hmul : (Expr.mul (.var "rs.s") (.var "rs.l")).evalB B σ = some (s' * Lc) := by
+      have h := evalB_bin (B := B) (op := .mul)
+        (evalB_var (x := "rs.s") (by rw [hs]; omega))
+        (evalB_var (x := "rs.l") (by rw [hl]; omega)) (by rw [hs, hl]; simp; omega)
+      rw [hs, hl] at h
+      simpa using h
+    have hidx : (Expr.add (.mul (.var "rs.s") (.var "rs.l")) (.var "rs.q")).evalB B σ
+        = some (s' * Lc + q) := by
+      have h := evalB_bin (B := B) (op := .add) hmul
+        (evalB_var (x := "rs.q") (by omega)) (by rw [← hq_def]; simp; omega)
+      rw [← hq_def] at h
+      simpa using h
+    refine evalB_get hidx ?_ (by have := pbit_lt_two colP s' q; omega)
+    rw [getElem?_eq_getD (by rw [hcolP.1]; omega), colBits_getD hcolP hs'n hlt]
+  have hst : Run B (.store nmC.col
+      (.add (.mul (.var "rs.i") (.var "rs.l")) (.var "rs.q"))
+      (.get nmP.col (.add (.mul (.var "rs.s") (.var "rs.l")) (.var "rs.q"))))
+      σ (σ.setArr nmC.col (i * Lc + q) (pbit colP s' q)) 12 := by
+    refine (Run.store hdst hsrc ?_).mono (by simp)
+    rw [hfarr, length_arrOf]
+    exact hdstv
+  set σ₁ := σ.setArr nmC.col (i * Lc + q) (pbit colP s' q) with hσ₁
+  have hinc : Run B (.assign "rs.q" (.add (.var "rs.q") (.lit 1))) σ₁
+      (σ₁.setVar "rs.q" (q + 1)) 4 := by
+    have h1q : σ₁.vars "rs.q" = q := by rw [hσ₁]; simp [hq_def]
+    have hev := evalB_incr (B := B) (x := "rs.q") (σ := σ₁) (by rw [h1q]; omega)
+    rw [h1q] at hev
+    exact (Run.assign hev).mono (by simp)
+  set σ' := σ₁.setVar "rs.q" (q + 1) with hσ'
+  have h'vars : ∀ y, y ≠ "rs.q" → σ'.vars y = σ.vars y := by
+    intro y hy
+    rw [hσ', hσ₁]
+    simp [hy]
+  have h'arrs : ∀ b, b ≠ nmC.col → σ'.arrs b = σ.arrs b := by
+    intro b hb
+    rw [hσ', hσ₁]
+    simp [hb]
+  have h'q : σ'.vars "rs.q" = q + 1 := by rw [hσ']; simp
+  refine ⟨σ', (hst.seq hinc).mono (by omega),
+    ⟨⟨by rw [h'arrs _ hcc]; exact hcolP.1,
+        fun v c => by rw [h'arrs _ hcc]; exact hcolP.2 v c⟩,
+      ⟨by rw [h'arrs _ hcla]; exact hcl.1,
+        fun t ht => by rw [h'arrs _ hcla]; exact hcl.2 t ht⟩,
+      by rw [h'vars "rs.k" (by decide)]; exact hk,
+      by rw [h'vars "rs.l" (by decide)]; exact hl,
+      by rw [h'vars "rs.i" (by decide)]; exact hiv,
+      by rw [h'vars "rs.s" (by decide)]; exact hs,
+      by rw [h'q]; omega, ?_⟩, by rw [h'q]⟩
+  refine ⟨fun p => if p = i * Lc + q then pbit colP s' q else f p, ?_, ?_, ?_⟩
+  · rw [hσ', arrs_setVar, hσ₁, arrs_setArr, if_pos rfl, hfarr, set_arrOf]
+  · intro a ha c' hc'
+    show (if a * Lc + c' = i * Lc + q then pbit colP s' q else f (a * Lc + c'))
+      = pbit colP (embN S a) c'
+    rw [if_neg fun hcon => by have := (grid_inj hc' hlt hcon).1; omega]
+    exact hfdone a ha c' hc'
+  · intro c' hc'
+    rw [h'q] at hc'
+    show (if i * Lc + c' = i * Lc + q then pbit colP s' q else f (i * Lc + c'))
+      = pbit colP (embN S i) c'
+    by_cases hcq : c' = q
+    · subst hcq
+      rw [if_pos rfl, hs'_def]
+    · rw [if_neg fun hcon => hcq (grid_inj (by omega) hlt hcon).2]
+      exact hfcur c' (by omega)
+
+/-- One member of the color copy. -/
+private theorem colCopyBody_spec (hNB : n < B) (hLB : n * Lc < B)
+    (hcc : nmC.col ≠ nmP.col) (hcla : nmC.col ≠ la) :
+    Spec B
+      (fun σ => ColSt nmP nmC la n Lc S colP σ ∧ σ.vars "rs.i" < S.ncard)
+      (colCopyBody nmP nmC la)
+      (fun σ σ' => ColSt nmP nmC la n Lc S colP σ' ∧
+        σ'.vars "rs.i" = σ.vars "rs.i" + 1) (20 * Lc + 13) := by
+  intro σ hσ
+  obtain ⟨⟨hcolP, hcl, hk, hl, hiN, f, hfarr, hfdone⟩, hlt⟩ := hσ
+  have hkn : S.ncard ≤ n := ncard_le_carrier S
+  set i := σ.vars "rs.i" with hi_def
+  -- the member read
+  have hread : Run B (.assign "rs.s" (.get la (.var "rs.i"))) σ
+      (σ.setVar "rs.s" (embN S i)) 3 := by
+    refine (Run.assign (evalB_get (evalB_var (by omega)) ?_
+      (by have := embN_lt S hlt; omega))).mono (by simp)
+    exact clusterList_read hcl hlt
+  set σ₁ := σ.setVar "rs.s" (embN S i) with hσ₁
+  -- the inner loop over the palette
+  have hin₁ : ColInSt nmP nmC la n Lc S colP i (σ₁.setVar "rs.q" 0) := by
+    refine ⟨⟨by rw [hσ₁]; simpa using hcolP.1,
+        fun v c => by rw [hσ₁]; simpa using hcolP.2 v c⟩,
+      ⟨by rw [hσ₁]; simpa using hcl.1,
+        fun t ht => by rw [hσ₁]; simpa using hcl.2 t ht⟩,
+      by rw [hσ₁]; simpa using hk,
+      by rw [hσ₁]; simpa using hl,
+      by rw [hσ₁]; simpa using hi_def.symm,
+      by rw [hσ₁]; simp,
+      by simp, f, by rw [hσ₁]; simpa using hfarr, hfdone, ?_⟩
+    intro c' hc'
+    simp at hc'
+  have hinner := Spec.forRangeZero (B := B) "rs.q" "rs.l"
+    (ColInSt nmP nmC la n Lc S colP i) Lc 16
+    (by
+      have hn1 : 1 ≤ n := by have := embN_lt S hlt; omega
+      calc Lc = 1 * Lc := (Nat.one_mul Lc).symm
+        _ ≤ n * Lc := Nat.mul_le_mul_right Lc hn1
+      _ < B := hLB)
+    (fun τ hτ => hτ.hq) (fun τ hτ => hτ.hl)
+    (colCell_spec hNB hLB hcc hcla hlt)
+  obtain ⟨σ₂, hinrun, hin₂, hq₂⟩ := hinner.run hin₁
+  obtain ⟨hcolP₂, hcl₂, hk₂, hl₂, hiv₂, hs₂, hq₂', f₂, hfarr₂, hfdone₂, hfcur₂⟩ := hin₂
+  -- the counter
+  have hinc : Run B (.assign "rs.i" (.add (.var "rs.i") (.lit 1))) σ₂
+      (σ₂.setVar "rs.i" (i + 1)) 4 := by
+    have hev := evalB_incr (B := B) (x := "rs.i") (σ := σ₂) (by rw [hiv₂]; omega)
+    rw [hiv₂] at hev
+    exact (Run.assign hev).mono (by simp)
+  refine ⟨σ₂.setVar "rs.i" (i + 1), ?_, ⟨⟨by simpa using hcolP₂.1,
+      fun v c => by simpa using hcolP₂.2 v c⟩,
+    ⟨by simpa using hcl₂.1, fun t ht => by simpa using hcl₂.2 t ht⟩,
+    by simpa using hk₂,
+    by simpa using hl₂,
+    by simp; omega, ?_⟩, by simp [← hi_def]⟩
+  · have h := hread.seq (hinrun.seq hinc)
+    exact h.mono (by omega)
+  · refine ⟨f₂, by simpa using hfarr₂, ?_⟩
+    intro a ha c' hc'
+    simp only [vars_setVar, if_pos rfl] at ha
+    rcases Nat.lt_or_ge a i with hai | hai
+    · exact hfdone₂ a hai c' hc'
+    · have hae : a = i := by omega
+      subst hae
+      exact hfcur₂ c' (by omega)
+
+/-- **The color copy, discharged**: the child color region ends at the
+copied rows — `(A.restrict S).col`, cell by cell. Cost `|S|·O(Λ)`. -/
+private theorem colCopy_spec (hNB : n < B) (hLB : n * Lc < B)
+    (hcc : nmC.col ≠ nmP.col) (hcla : nmC.col ≠ la) :
+    Spec B
+      (fun σ => ColBits nmP.col colP σ ∧ ClusterList la S σ ∧
+        σ.vars "rs.k" = S.ncard ∧ σ.vars "rs.l" = Lc ∧
+        (σ.arrs nmC.col).length = S.ncard * Lc)
+      (colCopy nmP nmC la)
+      (fun _ σ' => ColBits nmP.col colP σ' ∧ ClusterList la S σ' ∧
+        σ'.vars "rs.k" = S.ncard ∧ σ'.vars "rs.l" = Lc ∧
+        ColBits nmC.col
+          (fun c => {a | Impl.restrictEmb S a ∈ colP c} :
+            Coloring S.ncard Lc) σ')
+      ((20 * Lc + 17) * S.ncard + 6) := by
+  have hmain := Spec.forRangeZero (B := B) "rs.i" "rs.k"
+    (ColSt nmP nmC la n Lc S colP) S.ncard (20 * Lc + 13)
+    (by have := ncard_le_carrier S; omega)
+    (fun τ hτ => hτ.hiN) (fun τ hτ => hτ.hk)
+    (colCopyBody_spec hNB hLB hcc hcla)
+  refine ((hmain.pre ?_).post ?_).mono le_rfl
+  · rintro σ ⟨hcolP, hcl, hk, hl, hlen⟩
+    refine ⟨⟨by simpa using hcolP.1, fun v c => by simpa using hcolP.2 v c⟩,
+      ⟨by simpa using hcl.1, fun t ht => by simpa using hcl.2 t ht⟩,
+      by simpa using hk, by simpa using hl, by simp,
+      fun p => (σ.arrs nmC.col).getD p 0, ?_, ?_⟩
+    · simp only [arrs_setVar]
+      rw [← hlen]
+      exact (arrOf_getD _).symm
+    · intro a ha
+      simp at ha
+  · rintro σ σ' - ⟨⟨hcolP, hcl, hk, hl, -, f, hfarr, hfdone⟩, hie⟩
+    refine ⟨hcolP, hcl, hk, hl, by rw [hfarr, length_arrOf], ?_⟩
+    intro v c
+    rw [hfarr, getD_arrOf]
+    · rw [hfdone (v : ℕ) (by rw [hie]; exact v.2) (c : ℕ) c.2, pbit,
+        dif_pos ⟨embN_lt S v.2, c.2⟩]
+      have hv : (⟨embN S (v : ℕ), embN_lt S v.2⟩ : Fin n)
+          = Impl.restrictEmb S v := by
+        rw [embN_of_lt S v.2]
+        exact Fin.ext (by simp [Fin.eta])
+      rw [hv]
+      congr 1
+    · have h1 : (v : ℕ) * Lc + (c : ℕ) < ((v : ℕ) + 1) * Lc := by
+        have : ((v : ℕ) + 1) * Lc = (v : ℕ) * Lc + Lc := by ring
+        have := c.2
+        omega
+      have h2 : ((v : ℕ) + 1) * Lc ≤ S.ncard * Lc :=
+        Nat.mul_le_mul_right Lc v.2
+      omega
+
+end ColCopy
+
+/-! ## §10 The renaming, composed -/
+
+section UpCopy
+
+variable {B n n₀ : ℕ} {S : Set (Fin n)} {nmP nmC : ArenaNames} {la : String}
+
+/-- The child's root name at plain numbers. -/
+private noncomputable def upN (upP : Fin n ↪ Fin n₀) (S : Set (Fin n)) (a : ℕ) : ℕ :=
+  if h : a < S.ncard then (upP (Impl.restrictEmb S ⟨a, h⟩) : ℕ) else 0
+
+private structure UpSt (nmP nmC : ArenaNames) (la : String) (n : ℕ) {n₀ : ℕ}
+    (S : Set (Fin n)) (upP : Fin n ↪ Fin n₀) (σ : Env) : Prop where
+  hupP : UpArr nmP.up upP σ
+  hcl : ClusterList la S σ
+  hk : σ.vars "rs.k" = S.ncard
+  hiN : σ.vars "rs.i" ≤ S.ncard
+  harr : ∃ f, σ.arrs nmC.up = arrOf S.ncard f ∧
+    ∀ a < σ.vars "rs.i", f a = upN upP S a
+
+variable {upP : Fin n ↪ Fin n₀}
+
+/-- **The renaming, discharged**: the child's `up` region ends at the
+composite `(restrictEmb S).trans upP` — E6's never-re-typed record. -/
+private theorem upCopy_spec (hNB : n < B) (hn0B : n₀ < B)
+    (huu : nmC.up ≠ nmP.up) (hula : nmC.up ≠ la) :
+    Spec B
+      (fun σ => UpArr nmP.up upP σ ∧ ClusterList la S σ ∧
+        σ.vars "rs.k" = S.ncard ∧ (σ.arrs nmC.up).length = S.ncard)
+      (upCopy nmP nmC la)
+      (fun _ σ' => UpArr nmP.up upP σ' ∧ ClusterList la S σ' ∧
+        σ'.vars "rs.k" = S.ncard ∧
+        UpArr nmC.up ((Impl.restrictEmb S).trans upP) σ')
+      (16 * S.ncard + 6) := by
+  have hkn : S.ncard ≤ n := ncard_le_carrier S
+  have hbody : Spec B
+      (fun σ => UpSt nmP nmC la n S upP σ ∧ σ.vars "rs.i" < S.ncard)
+      (.seq (.assign "rs.s" (.get la (.var "rs.i")))
+        (.seq (.store nmC.up (.var "rs.i") (.get nmP.up (.var "rs.s")))
+          (.assign "rs.i" (.add (.var "rs.i") (.lit 1)))))
+      (fun σ σ' => UpSt nmP nmC la n S upP σ' ∧
+        σ'.vars "rs.i" = σ.vars "rs.i" + 1) 12 := by
+    intro σ hσ
+    obtain ⟨⟨hupP, hcl, hk, hiN, f, hfarr, hfpre⟩, hlt⟩ := hσ
+    set i := σ.vars "rs.i" with hi_def
+    have hsN : embN S i < n := embN_lt S hlt
+    have hread : Run B (.assign "rs.s" (.get la (.var "rs.i"))) σ
+        (σ.setVar "rs.s" (embN S i)) 3 := by
+      refine (Run.assign (evalB_get (evalB_var (by omega)) ?_ (by omega))).mono
+        (by simp)
+      exact clusterList_read hcl hlt
+    set σ₁ := σ.setVar "rs.s" (embN S i) with hσ₁
+    have hst : Run B (.store nmC.up (.var "rs.i") (.get nmP.up (.var "rs.s")))
+        σ₁ (σ₁.setArr nmC.up i (upN upP S i)) 5 := by
+      have h1i : σ₁.vars "rs.i" = i := by rw [hσ₁]; simp [hi_def]
+      have h1s : σ₁.vars "rs.s" = embN S i := by rw [hσ₁]; simp
+      have hiev : (Expr.var "rs.i").evalB B σ₁ = some i := by
+        rw [← h1i]
+        exact evalB_var (by rw [h1i]; omega)
+      have hsev : (Expr.get nmP.up (.var "rs.s")).evalB B σ₁
+          = some (upN upP S i) := by
+        refine evalB_get (k := embN S i) ?_ ?_ ?_
+        · rw [← h1s]
+          exact evalB_var (by rw [h1s]; omega)
+        · rw [hσ₁]
+          simp only [arrs_setVar]
+          rw [getElem?_eq_getD (by rw [hupP.1]; omega)]
+          have := hupP.2 ⟨embN S i, hsN⟩
+          rw [show ((⟨embN S i, hsN⟩ : Fin n) : ℕ) = embN S i from rfl] at this
+          rw [this, upN, dif_pos hlt]
+          congr 2
+          rw [embN_of_lt S hlt]
+          exact Fin.ext (by simp)
+        · rw [upN, dif_pos hlt]
+          have := (upP (Impl.restrictEmb S ⟨i, hlt⟩)).2
+          omega
+      refine (Run.store hiev hsev ?_).mono (by simp)
+      rw [hσ₁]
+      simp only [arrs_setVar]
+      rw [hfarr, length_arrOf]
+      omega
+    set σ₂ := σ₁.setArr nmC.up i (upN upP S i) with hσ₂
+    have hinc : Run B (.assign "rs.i" (.add (.var "rs.i") (.lit 1))) σ₂
+        (σ₂.setVar "rs.i" (i + 1)) 4 := by
+      have h2i : σ₂.vars "rs.i" = i := by rw [hσ₂, hσ₁]; simp [hi_def]
+      have hev := evalB_incr (B := B) (x := "rs.i") (σ := σ₂) (by rw [h2i]; omega)
+      rw [h2i] at hev
+      exact (Run.assign hev).mono (by simp)
+    refine ⟨_, (hread.seq (hst.seq hinc)).mono (by omega), ⟨?_, ?_, ?_, ?_, ?_⟩,
+      by simp [hσ₂, hσ₁, ← hi_def]⟩
+    · refine ⟨?_, fun v => ?_⟩ <;>
+        (simp only [hσ₂, hσ₁, arrs_setVar, vars_setVar, arrs_setArr,
+          if_neg (Ne.symm huu)])
+      · exact hupP.1
+      · exact hupP.2 v
+    · refine ⟨?_, fun t ht => ?_⟩ <;>
+        (simp only [hσ₂, hσ₁, arrs_setVar, vars_setVar, arrs_setArr,
+          if_neg (Ne.symm hula)])
+      · exact hcl.1
+      · exact hcl.2 t ht
+    · simp only [hσ₂, hσ₁, vars_setVar]
+      rw [if_neg (by decide), if_neg (by decide)]
+      exact hk
+    · simp [hσ₂, hσ₁]; omega
+    · refine ⟨fun p => if p = i then upN upP S i else f p, ?_, ?_⟩
+      · simp only [hσ₂, hσ₁, arrs_setVar, vars_setVar, arrs_setArr, if_pos rfl]
+        rw [hfarr, set_arrOf]
+      · intro a ha
+        simp only [hσ₂, hσ₁, vars_setVar] at ha
+        rw [if_pos rfl] at ha
+        show (if a = i then upN upP S i else f a) = upN upP S a
+        by_cases hae : a = i
+        · rw [if_pos hae, hae]
+        · rw [if_neg hae]
+          exact hfpre a (by omega)
+  have hmain := Spec.forRangeZero (B := B) "rs.i" "rs.k"
+    (UpSt nmP nmC la n S upP) S.ncard 12 (by omega)
+    (fun τ hτ => hτ.hiN) (fun τ hτ => hτ.hk) hbody
+  refine ((hmain.pre ?_).post ?_).mono le_rfl
+  · rintro σ ⟨hupP, hcl, hk, hlen⟩
+    refine ⟨⟨by simpa using hupP.1, fun v => by simpa using hupP.2 v⟩,
+      ⟨by simpa using hcl.1, fun t ht => by simpa using hcl.2 t ht⟩,
+      by simpa using hk, by simp,
+      fun p => (σ.arrs nmC.up).getD p 0, ?_, ?_⟩
+    · simp only [arrs_setVar]
+      rw [← hlen]
+      exact (arrOf_getD _).symm
+    · intro a ha
+      simp at ha
+  · rintro σ σ' - ⟨⟨hupP, hcl, hk, -, f, hfarr, hfpre⟩, hie⟩
+    refine ⟨hupP, hcl, hk, by rw [hfarr, length_arrOf], ?_⟩
+    intro v
+    rw [hfarr, getD_arrOf _ v.2, hfpre (v : ℕ) (by rw [hie]; exact v.2), upN,
+      dif_pos v.2]
+    congr 2
+    exact Fin.ext (by simp)
+
+end UpCopy
+
 end Phases
 
 end Lax3Proofs.Prog

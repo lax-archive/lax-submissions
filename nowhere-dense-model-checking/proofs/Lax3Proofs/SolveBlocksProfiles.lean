@@ -2224,7 +2224,8 @@ theorem vsrcCom_spec
     omega
   · -- the `GraphCsr` at `Impl.vsrc H X`
     rw [← hxcard]
-    exact vsrcCsr_readout (fun i hi => hc.off_le_succ hi) hc.last hadj hrows'
+    exact vsrcCsr_readout (N := N) (ns := ns) (X := X) (off := off) (tgt := tgt)
+      (H := H) (g := g') (fun i hi => hc.off_le_succ hi) hc.last hadj hrows'
       hsrc hoff0 hnd hvoF hg'
 
 end VsrcSpec
