@@ -2689,6 +2689,307 @@ theorem buildCom_spec (hca_na : ca ≠ na) (hca_fa : ca ≠ fa) (hna_fa : na ≠
   have := htab' ρ hρ
   rwa [hvN', firstsUpto_eq_firsts (le_refl N) ρ] at this
 
+open Classical in
+/-- The fill loop's invariant: the scratch regions clean between
+vertices, every scanned vertex's row of table bits written. -/
+def FillInv (ca na fa ea xa ta : String) {N Lc : ℕ}
+    (colB : Fin N → Fin Lc → Bool) (K : ℕ) (Fl : List (DistFO Lc 1))
+    (σ : Env) : Prop :=
+  RowBits ca colB σ ∧ FirstsSt na fa colB K σ ∧ σ.vars "bt.n" = N ∧
+    σ.vars "bt.v" ≤ N ∧
+    σ.arrs ea = arrOf (K + 1) (fun _ => 0) ∧
+    σ.arrs xa = arrOf (K + 1) (fun _ => 0) ∧
+    (σ.arrs ta).length = N * Fl.length ∧
+    ∀ w : Fin N, (w : ℕ) < σ.vars "bt.v" → ∀ i, (hi : i < Fl.length) →
+      (σ.arrs ta).getD ((w : ℕ) * Fl.length + i) 0
+        = (if botEvalT colB K (fun _ => w) Fl[i] then 1 else 0)
+
+include h2LB hNB hNLB in
+open Classical in
+/-- **One vertex's row of table entries, discharged**: the vertex into
+the env scratch, one evaluator call and one bit write per schedule
+formula, the scratch cleaned. The depth budget enters here: every
+`β ∈ Fl` is evaluated at one env entry, so `qdepth β ≤ K` is exactly
+`botEvalT`'s `1 + qdepth β ≤ K + 1`. -/
+private theorem fillBody_spec {Fl : List (DistFO Lc 1)}
+    (hca_ea : ca ≠ ea) (hca_xa : ca ≠ xa) (hna_ea : na ≠ ea) (hna_xa : na ≠ xa)
+    (hfa_ea : fa ≠ ea) (hfa_xa : fa ≠ xa) (hea_xa : ea ≠ xa)
+    (hta_ca : ta ≠ ca) (hta_na : ta ≠ na) (hta_fa : ta ≠ fa)
+    (hta_ea : ta ≠ ea) (hta_xa : ta ≠ xa)
+    (hq : ∀ β ∈ Fl, qdepth β ≤ K) (hTB : N * Fl.length < B) :
+    Spec B (fun σ => FillInv ca na fa ea xa ta colB K Fl σ ∧ σ.vars "bt.v" < N)
+      (fillBody ca na fa ea xa ta Lc K Fl)
+      (fun σ σ' => FillInv ca na fa ea xa ta colB K Fl σ' ∧
+        σ'.vars "bt.v" = σ.vars "bt.v" + 1)
+      (Fl.length * (evalKMax Lc K Fl + 7) + 11) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  rintro σ ⟨hInv, hvN⟩
+  obtain ⟨hrow, hfst, hn, hvle, hea0, hxa0, htal, hold⟩ := hInv
+  set v := σ.vars "bt.v" with hvdef
+  set mv : Fin 1 → Fin N := fun _ => (⟨v, hvN⟩ : Fin N) with hmv
+  have hNpos : 0 < N := by omega
+  -- 1. the vertex into the env scratch (a vertex name, `< N`)
+  have h0l : 0 < (σ.arrs ea).length := by rw [hea0, length_arrOf]; omega
+  set σ₁ := σ.setArr ea 0 v with hσ₁
+  have hr₁ : Run B (.store ea (.lit 0) (.var "bt.v")) σ σ₁ 3 := by
+    rw [hσ₁, hvdef]
+    exact (Run.store (evalB_lit (by omega)) (evalB_var (by omega)) h0l).mono (by simp)
+  have henv₁ : σ₁.arrs ea = arrOf (K + 1) (envFun mv) := by
+    rw [hσ₁, arrs_setArr, if_pos rfl, hea0, set_arrOf_eq_upd]
+    refine arrOf_congr fun i hi => ?_
+    rw [upd_apply]
+    by_cases h0 : i = 0
+    · subst h0
+      rw [if_pos rfl, envFun_lt mv (by omega)]
+    · rw [if_neg h0, envFun_ge mv (by omega)]
+  -- 2. the row of entries
+  set Inv₃ : ℕ → Env → Prop := fun j τ =>
+    RowBits ca colB τ ∧ FirstsSt na fa colB K τ ∧
+      τ.arrs ea = arrOf (K + 1) (envFun mv) ∧
+      τ.arrs xa = arrOf (K + 1) (fun _ => 0) ∧
+      τ.vars "bt.v" = v ∧ τ.vars "bt.n" = N ∧
+      (τ.arrs ta).length = N * Fl.length ∧
+      (∀ w : Fin N, (w : ℕ) < v → ∀ i, (hi : i < Fl.length) →
+        (τ.arrs ta).getD ((w : ℕ) * Fl.length + i) 0
+          = (if botEvalT colB K (fun _ => w) Fl[i] then 1 else 0)) ∧
+      (∀ i, (hi : i < Fl.length) → i < j →
+        (τ.arrs ta).getD (v * Fl.length + i) 0
+          = (if botEvalT colB K mv Fl[i] then 1 else 0)) with hInv₃
+  have hstep : ∀ i (hi : i < Fl.length),
+      Spec B (Inv₃ (0 + i)) (entryGen ca na fa ea xa ta Lc K Fl.length (0 + i) Fl[i])
+        (fun _ τ' => Inv₃ (0 + i + 1) τ') (evalKMax Lc K Fl + 7) := by
+    intro i hi
+    simp only [Nat.zero_add]
+    rw [entryGen]
+    intro τ hτ
+    obtain ⟨hrowτ, hfstτ, henvτ, hxaτ, hvτ, hnτ, htalτ, holdτ, hrowv⟩ := hτ
+    have hEv : EvalSt ca na fa ea xa colB K mv τ := by
+      refine ⟨hrowτ, hfstτ, henvτ, by rw [hxaτ, length_arrOf], fun i' hi' => ?_⟩
+      rw [hxaτ]
+      by_cases h : i' < K + 1
+      · rw [getD_arrOf _ h]
+      · exact getD_ge_len (by rw [length_arrOf]; omega)
+    have hd : 1 + qdepth Fl[i] ≤ K + 1 := by
+      have := hq Fl[i] (List.getElem_mem hi)
+      omega
+    obtain ⟨τ', hr', hrb, hea', hxa', harr', hvar'⟩ :=
+      (evalCom_spec h2LB hNB hNLB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa
+        Fl[i] mv hd) τ hEv
+    -- the bit write (index below `N·|Fl|`, value a bit)
+    have hFlB : Fl.length < B := by
+      have : Fl.length ≤ N * Fl.length := Nat.le_mul_of_pos_left _ hNpos
+      omega
+    have hidxlt : v * Fl.length + i < N * Fl.length := by
+      have h1 : (v + 1) * Fl.length ≤ N * Fl.length :=
+        Nat.mul_le_mul_right _ (by omega)
+      rw [Nat.succ_mul] at h1
+      omega
+    have hvτ' : τ'.vars "bt.v" = v := by
+      rw [hvar' _ (by decide)]
+      exact hvτ
+    have hidxev : (Expr.add (.mul (.var "bt.v") (.lit Fl.length)) (.lit i)).evalB B τ'
+        = some (v * Fl.length + i) := by
+      have h1 : (Expr.mul (.var "bt.v") (.lit Fl.length)).evalB B τ'
+          = some (v * Fl.length) := by
+        have hvv : (Expr.var "bt.v").evalB B τ' = some v := by
+          rw [← hvτ']
+          exact evalB_var (by rw [hvτ']; omega)
+        refine evalB_bin hvv (evalB_lit (by omega)) ?_
+        show v * Fl.length < B
+        omega
+      refine evalB_bin h1 (evalB_lit (by omega)) ?_
+      show v * Fl.length + i < B
+      omega
+    have hrev : (Expr.var "bt.r").evalB B τ'
+        = some (if botEvalT colB K mv Fl[i] then 1 else 0) := by
+      rw [← hrb]
+      exact evalB_var (by rw [hrb]; split <;> omega)
+    have hta' : τ'.arrs ta = τ.arrs ta := harr' ta hta_ea hta_xa
+    set τ'' := τ'.setArr ta (v * Fl.length + i)
+      (if botEvalT colB K mv Fl[i] then 1 else 0) with hτ''
+    have hrst : Run B (.store ta (.add (.mul (.var "bt.v") (.lit Fl.length)) (.lit i))
+        (.var "bt.r")) τ' τ'' 7 := by
+      rw [hτ'']
+      refine (Run.store hidxev hrev ?_).mono (by simp)
+      rw [hta', htalτ]
+      exact hidxlt
+    have hta'' : τ''.arrs ta = (τ.arrs ta).set (v * Fl.length + i)
+        (if botEvalT colB K mv Fl[i] then 1 else 0) := by
+      rw [hτ'', arrs_setArr, if_pos rfl, hta']
+    have hoth'' : ∀ b, b ≠ ta → τ''.arrs b = τ'.arrs b := by
+      intro b hb
+      rw [hτ'', arrs_setArr, if_neg hb]
+    refine ⟨τ'', (hr'.seq hrst).mono (by
+      have := evalK_le_evalKMax (Lc := Lc) (K := K) (List.getElem_mem hi)
+      omega), ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · exact rowBits_of_arrs_eq (by rw [hoth'' ca (Ne.symm hta_ca)]
+        exact harr' ca hca_ea hca_xa) hrowτ
+    · refine firstsSt_of_arrs_eq ?_ ?_ hfstτ
+      · rw [hoth'' na (Ne.symm hta_na)]
+        exact harr' na hna_ea hna_xa
+      · rw [hoth'' fa (Ne.symm hta_fa)]
+        exact harr' fa hfa_ea hfa_xa
+    · rw [hoth'' ea (Ne.symm hta_ea), hea']
+      exact henvτ
+    · rw [hoth'' xa (Ne.symm hta_xa), hxa']
+      exact hxaτ
+    · rw [hτ'']
+      simp only [vars_setArr]
+      exact hvτ'
+    · rw [hτ'']
+      simp only [vars_setArr]
+      rw [hvar' _ (by decide)]
+      exact hnτ
+    · rw [hta'']
+      simp only [List.length_set]
+      exact htalτ
+    · -- the finished rows stand
+      intro w hw i' hi'
+      rw [hta'', set_eq_arrOf_upd _ _ htalτ, getD_arrOf _ (by
+        have h1 : ((w : ℕ) + 1) * Fl.length ≤ N * Fl.length :=
+          Nat.mul_le_mul_right _ (by have := w.is_lt; omega)
+        rw [Nat.succ_mul] at h1
+        omega)]
+      rw [upd_of_ne _ (Nat.ne_of_lt (rowIdx_lt hw hi'))]
+      exact holdτ w hw i' hi'
+    · -- this row grows by one entry
+      intro i' hi' hij
+      rw [hta'', set_eq_arrOf_upd _ _ htalτ, getD_arrOf _ (by
+        have h1 : (v + 1) * Fl.length ≤ N * Fl.length :=
+          Nat.mul_le_mul_right _ (by omega)
+        rw [Nat.succ_mul] at h1
+        omega)]
+      by_cases hii : i' = i
+      · subst hii
+        rw [upd_self]
+      · rw [upd_of_ne _ (by omega)]
+        exact hrowv i' hi' (by omega)
+  have hscan := seqIdx_spec (B := B) (Kb := evalKMax Lc K Fl + 7)
+    (gen := entryGen ca na fa ea xa ta Lc K Fl.length) Inv₃ Fl 0 hstep
+  have hInv₃0 : Inv₃ 0 σ₁ := by
+    refine ⟨rowBits_of_arrs_eq (by rw [hσ₁, arrs_setArr, if_neg hca_ea]) hrow,
+      firstsSt_of_arrs_eq (by rw [hσ₁, arrs_setArr, if_neg hna_ea])
+        (by rw [hσ₁, arrs_setArr, if_neg hfa_ea]) hfst,
+      henv₁,
+      by rw [hσ₁, arrs_setArr, if_neg (Ne.symm hea_xa)]; exact hxa0,
+      by rw [hσ₁]; simpa using hvdef.symm,
+      by rw [hσ₁]; simpa using hn,
+      by rw [hσ₁, arrs_setArr, if_neg (Ne.symm hta_ea)]; exact htal,
+      ?_, fun i hi h0 => absurd h0 (by omega)⟩
+    intro w hw i hi
+    rw [hσ₁, arrs_setArr, if_neg (Ne.symm hta_ea)]
+    exact hold w hw i hi
+  obtain ⟨τf, hrf, hτf⟩ := hscan σ₁ hInv₃0
+  simp only [Nat.zero_add] at hτf
+  obtain ⟨hrowf, hfstf, henvf, hxaf, hvf, hnf, htalf, holdf, hrowvf⟩ := hτf
+  -- 3. clean the env scratch, advance the vertex
+  have h0lf : 0 < (τf.arrs ea).length := by rw [henvf, length_arrOf]; omega
+  set τg := τf.setArr ea 0 0 with hτg
+  have hrg : Run B (.store ea (.lit 0) (.lit 0)) τf τg 3 := by
+    rw [hτg]
+    exact (Run.store (evalB_lit (by omega)) (evalB_lit (by omega)) h0lf).mono (by simp)
+  have hvg : τg.vars "bt.v" = v := by rw [hτg]; simpa using hvf
+  have hincr : (Expr.add (.var "bt.v") (.lit 1)).evalB B τg = some (v + 1) := by
+    have h5 : (Expr.var "bt.v").evalB B τg = some v := by
+      rw [← hvg]
+      exact evalB_var (by rw [hvg]; omega)
+    refine evalB_bin h5 (evalB_lit (by omega)) ?_
+    show v + 1 < B
+    omega
+  set τh := τg.setVar "bt.v" (v + 1) with hτh
+  have hrh : Run B (.assign "bt.v" (.add (.var "bt.v") (.lit 1))) τg τh 4 := by
+    rw [hτh]
+    exact (Run.assign hincr).mono (by simp)
+  have hrun : Run B (fillBody ca na fa ea xa ta Lc K Fl) σ τh
+      (Fl.length * (evalKMax Lc K Fl + 7) + 11) := by
+    refine (hr₁.seq (hrf.seq (hrg.seq hrh))).mono ?_
+    omega
+  have hoth_h : ∀ b, b ≠ ea → τh.arrs b = τf.arrs b := by
+    intro b hb
+    rw [hτh]
+    simp only [arrs_setVar]
+    rw [hτg, arrs_setArr, if_neg hb]
+  have hea_h : τh.arrs ea = arrOf (K + 1) (fun _ => 0) := by
+    rw [hτh]
+    simp only [arrs_setVar]
+    rw [hτg, arrs_setArr, if_pos rfl, henvf, set_arrOf_eq_upd]
+    refine arrOf_congr fun i hi => ?_
+    rw [upd_apply]
+    by_cases h0 : i = 0
+    · subst h0
+      rw [if_pos rfl]
+    · rw [if_neg h0, envFun_ge mv (by omega)]
+  have hvh : τh.vars "bt.v" = v + 1 := by rw [hτh, vars_setVar, if_pos rfl]
+  refine ⟨τh, hrun, ⟨?_, ?_, ?_, ?_, hea_h, ?_, ?_, ?_⟩, by rw [hvh]⟩
+  · exact rowBits_of_arrs_eq (hoth_h ca hca_ea) hrowf
+  · exact firstsSt_of_arrs_eq (hoth_h na hna_ea) (hoth_h fa hfa_ea) hfstf
+  · rw [hτh, vars_setVar, if_neg (by decide), hτg]
+    simpa using hnf
+  · rw [hvh]
+    omega
+  · rw [hoth_h xa (Ne.symm hea_xa)]
+    exact hxaf
+  · rw [hoth_h ta (Ne.symm hta_ea)]
+    exact htalf
+  · -- every scanned row, the fresh one included
+    intro w hw i hi
+    rw [hvh] at hw
+    rw [hoth_h ta (Ne.symm hta_ea)]
+    rcases Nat.lt_or_ge (w : ℕ) v with hwv | hwv
+    · exact holdf w hwv i hi
+    · have hweq : w = (⟨v, hvN⟩ : Fin N) := Fin.ext (by omega)
+      subst hweq
+      exact hrowvf i hi hi
+
+include h2LB hNB hNLB in
+open Classical in
+/-- **The fill loop, discharged**: from the built table and clean
+scratch, every `(v, β ∈ Fl)` table bit is written — `botEvalT`'s
+value, at a schedule constant per entry. -/
+theorem fillCom_spec {Fl : List (DistFO Lc 1)}
+    (hca_ea : ca ≠ ea) (hca_xa : ca ≠ xa) (hna_ea : na ≠ ea) (hna_xa : na ≠ xa)
+    (hfa_ea : fa ≠ ea) (hfa_xa : fa ≠ xa) (hea_xa : ea ≠ xa)
+    (hta_ca : ta ≠ ca) (hta_na : ta ≠ na) (hta_fa : ta ≠ fa)
+    (hta_ea : ta ≠ ea) (hta_xa : ta ≠ xa)
+    (hq : ∀ β ∈ Fl, qdepth β ≤ K) (hTB : N * Fl.length < B) :
+    Spec B (fun σ => RowBits ca colB σ ∧ FirstsSt na fa colB K σ ∧
+        σ.vars "bt.n" = N ∧ σ.arrs ea = arrOf (K + 1) (fun _ => 0) ∧
+        σ.arrs xa = arrOf (K + 1) (fun _ => 0) ∧
+        (σ.arrs ta).length = N * Fl.length)
+      (fillCom ca na fa ea xa ta Lc K Fl)
+      (fun _ σ' => (σ'.arrs ta).length = N * Fl.length ∧
+        ∀ (w : Fin N) i, (hi : i < Fl.length) →
+          (σ'.arrs ta).getD ((w : ℕ) * Fl.length + i) 0
+            = (if botEvalT colB K (fun _ => w) Fl[i] then 1 else 0))
+      (fillK N Lc K Fl) := by
+  have hloop := Spec.forRangeZero (B := B) "bt.v" "bt.n"
+    (FillInv ca na fa ea xa ta colB K Fl) N
+    (Fl.length * (evalKMax Lc K Fl + 7) + 11) hNB
+    (fun τ hτ => hτ.2.2.2.1) (fun τ hτ => hτ.2.2.1)
+    (fillBody_spec h2LB hNB hNLB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa
+      hta_ca hta_na hta_fa hta_ea hta_xa hq hTB)
+  rintro σ ⟨hrow, hfst, hn, hea0, hxa0, htal⟩
+  have hpre : FillInv ca na fa ea xa ta colB K Fl (σ.setVar "bt.v" 0) := by
+    refine ⟨rowBits_of_arrs_eq (by simp) hrow,
+      firstsSt_of_arrs_eq (by simp) (by simp) hfst,
+      by simp only [vars_setVar, if_neg (by decide : ("bt.n" : String) ≠ "bt.v")]; exact hn,
+      by simp, by simpa using hea0, by simpa using hxa0, by simpa using htal, ?_⟩
+    intro w hw i hi
+    simp only [vars_setVar, if_pos rfl] at hw
+    omega
+  obtain ⟨σ', hrl, hI, hvN'⟩ := hloop.run hpre
+  obtain ⟨-, -, -, -, -, -, htal', htab'⟩ := hI
+  refine ⟨σ', hrl.mono (by
+    have h1 : (Fl.length * (evalKMax Lc K Fl + 7) + 11 + 4) * N
+        = (Fl.length * (evalKMax Lc K Fl + 7) + 15) * N := by ring
+    simp only [fillK]
+    omega), htal', ?_⟩
+  intro w i hi
+  refine htab' w ?_ i hi
+  rw [hvN']
+  exact w.is_lt
+
 end BlockSpec
 
 end Lax3Proofs.Prog

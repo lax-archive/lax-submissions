@@ -2804,21 +2804,17 @@ private theorem histRoundStep_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
             (hr' := hlt) (hc' := Nat.zero_lt_succ hb) hcon'
           omega
       · have hre : r = q₀ := by omega
-        subst hre
         refine ⟨?_, ?_⟩
-        · show (if (i * ℓp + r) * (hb + 1) = B₀ then (chN histP S i r).length
-              else f5 ((i * ℓp + r) * (hb + 1))) = _
-          rw [if_pos (by rw [hB0_def])]
+        · show (if (i * ℓp + r) * (hb + 1) = B₀ then (chN histP S i q₀).length
+              else f5 ((i * ℓp + r) * (hb + 1))) = (chN histP S i r).length
+          rw [hre, if_pos (by rw [hB0_def])]
         · intro m hm
-          show (if (i * ℓp + r) * (hb + 1) + 1 + m = B₀ then _
-              else f5 ((i * ℓp + r) * (hb + 1) + 1 + m)) = _
-          rw [if_neg, hcur5 m (by rw [ht5]; exact hm)]
+          show (if (i * ℓp + r) * (hb + 1) + 1 + m = B₀
+                then (chN histP S i q₀).length
+              else f5 ((i * ℓp + r) * (hb + 1) + 1 + m)) = (chN histP S i r).getD m 0
+          rw [hre, if_neg, hcur5 m (by rw [ht5, ← hre]; exact hm)]
           intro hcon
-          have hmhb : m < hb := by omega
-          have hcon' : (i * ℓp + r) * (hb + 1) + (1 + m)
-              = (i * ℓp + r) * (hb + 1) + 0 := by
-            rw [hB0_def] at hcon
-            omega
+          rw [hB0_def] at hcon
           omega
 
 end HistFilter

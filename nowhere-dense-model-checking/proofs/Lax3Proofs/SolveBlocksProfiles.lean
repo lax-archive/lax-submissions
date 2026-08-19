@@ -53,7 +53,16 @@ Per-class `vt` regions carry class-dependent exact lengths (`ns +
 only; the palette is schedule data). `pd`/`pu`/`vt` are name families
 (`ProfNames`), their disjointness one `Ok` bundle that `lv`-style
 names discharge. Scratch scalars are `pwScalars` (fresh prefix `"pw."`)
-plus `bfsCom`'s own `bfScalars`.
+plus `bfsCom`'s own `bfScalars`. The stage's precondition (`ProfPre`)
+assembles from the pre-isolation child's `ArenaSt` by
+`ProfPre.of_arenaSt` — the contract is the reconciliation point, and
+the stage reads only the CSR, the colours and the two cells of it.
+Every region precondition is an *exact* data-dependent length, the
+convention `bfsCom` itself landed (`(σ.arrs da).length = N`); how the
+block assembler provides exact-length regions per centre is that
+seam's existing question, not a new one — but note the `vt` family
+sharpens it: the lengths are class-dependent, not merely
+centre-dependent.
 
 ## The budget (§6.3's two-term shape)
 
@@ -3182,6 +3191,36 @@ section ChildInstance
 open Lax3Proofs.Driver
 
 variable {B L n₀ ℓp : ℕ}
+
+/-- **The stage's precondition off the head file's contract**: a
+frame block holding the pre-isolation child in `ArenaSt` form
+discharges `ProfPre`'s arena surface from the contract's own fields
+(the CSR at the slot-count cell's value, the colour rows, the carrier
+cell) — the batch region and the scratch/table lengths are the block's
+own obligations. `up`/`hist` are not consumed: the profiles stage reads
+only the graph and the colours. -/
+theorem ProfPre.of_arenaSt {Λ n₀ ℓp hb : ℕ} {A : Impl.MArena Λ n₀ ℓp}
+    {an : ArenaNames} {σ : Env} (hA : ArenaSt an hb A σ)
+    {mb : ℕ} {w : Fin mb → Fin A.N} (pn : ProfNames)
+    (hoa : pn.oa = an.off) (hta : pn.ta = an.tgt) (hca : pn.ca = an.col)
+    (hnN : pn.nN = an.nN) (hnS : pn.nS = an.nS)
+    (hba : (σ.arrs pn.ba).length = mb)
+    (hbag : ∀ j : Fin mb, (σ.arrs pn.ba).getD (j : ℕ) 0 = (w j : ℕ))
+    (hxb : (σ.arrs pn.xb).length = A.N)
+    (hvo : (σ.arrs pn.vo).length = A.N + 2)
+    (hpd : ∀ j : Fin mb, (σ.arrs (pn.pd (j : ℕ))).length = A.N)
+    (hvt : ∀ c : Fin Λ, (σ.arrs (pn.vt (c : ℕ))).length
+      = σ.vars an.nS + 2 * (A.col c).ncard)
+    (hpu : ∀ c, c < Λ + 1 → (σ.arrs (pn.pu c)).length = A.N + 1) :
+    ProfPre pn A.G A.col (σ.vars an.nS) w σ := by
+  refine ⟨?_, ?_, ?_, ?_, hba, hbag, hxb, hvo, hpd, hvt, hpu⟩
+  · rw [hoa, hta]
+    exact hA.csr
+  · rw [hca]
+    exact hA.col
+  · rw [hnN]
+    exact hA.n_eq
+  · rw [hnS]
 
 /-- **F6c5's headline** — the profilesMS stage at the pre-isolation
 child of centre `u` (§5 line 20; `preG`, BEFORE `isolateCom` — the
