@@ -103,6 +103,9 @@ import Lax3Proofs.SolveChainRestrict
 import Lax3Proofs.SolveChain
 import Lax3Proofs.SolveFrameStages
 import Lax3Proofs.SolveFrameBridge
+import Lax3Proofs.SolveGlueStep
+import Lax3Proofs.SolveGlueLoad
+import Lax3Proofs.SolveGlueLoop
 
 -- The proofs package of submission Lax3.
 --
