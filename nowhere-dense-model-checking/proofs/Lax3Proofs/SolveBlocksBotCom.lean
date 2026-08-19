@@ -1,0 +1,1636 @@
+import Lax3Proofs.SolveBlocksBot
+
+/-!
+# F6c/3 — block 0's IMP+ table fill, discharged
+
+`SolveBlocksBot` landed §6.4's schedule abstractly: the packed row
+codes (`rowCode`), the representative table (`firsts`, one `O(N·L)`
+scan's worth of data, `≤ 2^L·(K+1)` cells), the table-read candidate
+completion (`tableReps`, exactly `Impl.FirstRep` by
+`mem_tableReps_iff`), and the table-scheduled evaluator `botEvalT`
+with `botEvalT_eq_botEval`/`botEvalT_eq_sat`. This file is the machine
+half: the IMP+ programs that build the table and fill block 0's
+`TableBits` region with `botEvalT`'s bits, and their discharged
+`Spec`s.
+
+* **The table build** (`buildCom`): one pass over the color-bit region
+  (`ColBits`, rows at stride `L`), computing each vertex's `rowCode`
+  by `L` unrolled bit reads (`rowCodeCom` — the machine's
+  `codeAux`), and appending the vertex to its row's `firsts` list
+  while a seat is free. `buildCom_spec`: the count region `na` and
+  the seat region `fa` end holding `firsts` verbatim (`FirstsSt`),
+  from nothing but the lengths — the pass zeroes its own count region
+  (`2^L` cells, a schedule-constant prologue).
+* **The per-entry evaluator** (`evalCom`): the compile-time structural
+  recursion over the formula — the same move `SolveMatTop.bcExpr`
+  makes for the root combination, here over `DistFO`. Atoms are env
+  reads and one row-bit read; `not`/`and` are a flip and a
+  short-circuit; a quantifier is an **unrolled** candidate loop: the
+  `k` environment entries, then per row code `ρ < 2^L` the first
+  `K+1` seats of `firsts ρ` scanned for the first off-environment
+  entry (`seatCom` — the machine's `find? (offEnv m)`), the found
+  candidate tried through the env scratch cell `k`. The env scratch
+  (`ea`, `K+1` cells) and the per-depth accumulator scratch (`xa`,
+  `K+1` cells) are **self-cleaned**: `evalCom`'s `Spec` returns both
+  regions exactly as it found them (the campaign's seam rule — the
+  caller never owes a wipe). `evalCom_spec`: `"bt.r"` ends holding
+  `botEvalT`'s bit, within `evalK` — a cost of `(L, K, φ)` alone,
+  carrier-free. The depth budget `k + qdepth φ ≤ K + 1` is threaded
+  hypothesis-to-hypothesis through the recursion: each quantifier
+  case consumes one unit (`qdepth` drops by one as `k` grows by
+  one), so every `mem_tableReps_iff`/`botEvalT` obligation below
+  receives exactly the instance it needs.
+* **The block** (`botCom`): load the carrier size, wipe the two
+  scratch regions, build the table, then the fill loop over `(v, β ∈
+  Fl)` writing `TableBits` — `β` runs over the level's schedule
+  family as a compile-time list, so the per-vertex body is `|Fl|`
+  unrolled evaluator calls. **`botCom_spec`**: from `ArenaSt` at an
+  **edgeless** arena (`A.G = ⊥` is a hypothesis — the dead edged
+  branch is the frame chain's guard, `mkSetup_memLeaf_eq_bot`; no
+  machine-side edge scan exists here), the table region ends holding
+  exactly the `Sat A.G`-values of the family — the value
+  `Driver.tablesAux`'s leaf returns, through
+  `Impl.tablesAux_bot_eq_botEval` + `botEvalT_eq_botEval`, landed
+  here through `botEvalT_eq_sat`. The arena contract is returned
+  intact.
+
+## The budget, named (botC's `(1 + |ℱ_j|)·‖A‖` shape)
+
+`botComK N L K Fl = buildK N L + fillK N L K Fl + 6K + 10`:
+
+* `buildK N L = 3·2^L + (11L + 30)·N + 7` — **the one `N·L` build
+  pass** (`11L + 30` per vertex: the `L` unrolled bit reads and the
+  seat append) plus the `2^L` count wipe;
+* `fillK N L K Fl = (|Fl|·(evalKMax + 7) + 15)·N + 6` — **a
+  schedule constant per `(v, β)` entry**: `evalKMax` bounds `evalK`
+  over the family, and `evalK` is defined by recursion on the formula
+  from `(L, K)` alone — no occurrence of the carrier;
+* the remainder is the two `K+1`-cell scratch wipes.
+
+`botComK_le` closes the envelope at one schedule constant times
+`(1 + |Fl|)·(N + 1)` — `botC`'s shape at `weight A ≥ N` (the leaf
+block reads no edges, so the CSR does not enter its cost at all).
+
+## Stored values (`mcB`, cited at the writes)
+
+Everything this block stores is a row code (`< 2^L`, a schedule
+constant — `rowCode_lt`, cited at the count writes), a seat count
+(`≤ K+1`), a vertex name (`< N` — the seat and env writes), a bit
+(`≤ 1` — the table writes), or an index below one of `N·L`,
+`2^L·(K+1)`, `N·|Fl|`. The four explicit `< B` hypotheses
+(`hNB/hNLB/h2LB/hTBB`) are exactly these classes; at `B := mcB q x`
+they are the head file's stored-value arithmetic (`N ≤ n₀ ≤ |x|`,
+everything else schedule-constant), discharged by F7 once.
+
+## Division of labour
+
+Names are parameters throughout (`na` counts, `fa` seats, `ea` env,
+`xa` accumulators; the color rows and the table are the contract's
+`nm.col`/`nm.tab`), with the distinctness hypotheses
+`decide`-dischargeable at F7's concrete names; the fixed scratch
+scalars are `btScalars`. Nothing here touches the frame blocks, the
+scatter routine, or `proofs/Lax3Proofs.lean`.
+-/
+
+namespace Lax3Proofs.Prog
+
+open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Reasoning.Lib
+open Lax13Proofs.Codegen (arrOf_getD getD_eq_getElem)
+open Lax3.DistFO
+
+/-! ## §1 Sequencing an unrolled pass -/
+
+/-- A compile-time pass: one command per list element, positions
+threaded — `seqIdx gen l k` is `gen k l[0]; gen (k+1) l[1]; …`. Every
+unrolled loop of this file (candidate trials, seat scans, row-bit
+reads, the schedule family's entries) is one of these. -/
+def seqIdx {α : Type*} (gen : ℕ → α → Com) : List α → ℕ → Com
+  | [], _ => .skip
+  | a :: s, k => .seq (gen k a) (seqIdx gen s (k + 1))
+
+theorem seqIdx_nil {α : Type*} (gen : ℕ → α → Com) (k : ℕ) :
+    seqIdx gen [] k = .skip := rfl
+
+theorem seqIdx_cons {α : Type*} (gen : ℕ → α → Com) (a : α) (s : List α) (k : ℕ) :
+    seqIdx gen (a :: s) k = .seq (gen k a) (seqIdx gen s (k + 1)) := rfl
+
+/-- The pass writes only scalars its steps write. -/
+theorem wvars_seqIdx {α : Type*} {gen : ℕ → α → Com} {W : List String}
+    (h : ∀ i a, (gen i a).wvars ⊆ W) :
+    ∀ (l : List α) (k : ℕ), (seqIdx gen l k).wvars ⊆ W
+  | [], _ => by simp [seqIdx]
+  | a :: s, k => by
+      rw [seqIdx_cons]
+      show ((gen k a).wvars ++ (seqIdx gen s (k + 1)).wvars) ⊆ W
+      exact List.append_subset.mpr ⟨h k a, wvars_seqIdx h s (k + 1)⟩
+
+/-- The pass stores only into arrays its steps store into. -/
+theorem warrs_seqIdx {α : Type*} {gen : ℕ → α → Com} {W : List String}
+    (h : ∀ i a, (gen i a).warrs ⊆ W) :
+    ∀ (l : List α) (k : ℕ), (seqIdx gen l k).warrs ⊆ W
+  | [], _ => by simp [seqIdx]
+  | a :: s, k => by
+      rw [seqIdx_cons]
+      show ((gen k a).warrs ++ (seqIdx gen s (k + 1)).warrs) ⊆ W
+      exact List.append_subset.mpr ⟨h k a, warrs_seqIdx h s (k + 1)⟩
+
+theorem noWrite_seqIdx {α : Type*} {gen : ℕ → α → Com}
+    (h : ∀ i a, (gen i a).NoWrite) :
+    ∀ (l : List α) (k : ℕ), (seqIdx gen l k).NoWrite
+  | [], _ => by simp [seqIdx, Com.NoWrite]
+  | a :: s, k => by
+      rw [seqIdx_cons]
+      exact ⟨h k a, noWrite_seqIdx h s (k + 1)⟩
+
+theorem not_reads_seqIdx {α : Type*} {gen : ℕ → α → Com}
+    (h : ∀ i a, ¬ (gen i a).reads) :
+    ∀ (l : List α) (k : ℕ), ¬ (seqIdx gen l k).reads
+  | [], _ => by simp [seqIdx]
+  | a :: s, k => by
+      rw [seqIdx_cons]
+      show ¬ ((gen k a).reads ∨ (seqIdx gen s (k + 1)).reads)
+      exact not_or.mpr ⟨h k a, not_reads_seqIdx h s (k + 1)⟩
+
+/-- **The pass's `Spec`**, threaded through a position-indexed
+invariant: if step `i` carries `Inv i` to `Inv (i + 1)` within `Kb`,
+the pass carries `Inv k` to `Inv (k + l.length)` within
+`l.length·Kb + 1`. -/
+theorem seqIdx_spec {α : Type*} {B Kb : ℕ} {gen : ℕ → α → Com}
+    (Inv : ℕ → Env → Prop) :
+    ∀ (l : List α) (k : ℕ),
+      (∀ i (hi : i < l.length),
+        Spec B (Inv (k + i)) (gen (k + i) l[i])
+          (fun _ σ' => Inv (k + i + 1) σ') Kb) →
+      Spec B (Inv k) (seqIdx gen l k)
+        (fun _ σ' => Inv (k + l.length) σ') (l.length * Kb + 1) := by
+  intro l
+  induction l with
+  | nil =>
+    intro k _
+    rw [seqIdx_nil]
+    exact Spec.skip.post (fun σ σ' hσ hq => by
+      rw [hq]; simpa using hσ) |>.mono (by simp)
+  | cons a s ih =>
+    intro k h
+    rw [seqIdx_cons]
+    have h0 : Spec B (Inv k) (gen k a) (fun _ σ' => Inv (k + 1) σ') Kb := by
+      have := h 0 (by simp)
+      simpa using this
+    have hs : Spec B (Inv (k + 1)) (seqIdx gen s (k + 1))
+        (fun _ σ' => Inv (k + 1 + s.length) σ') (s.length * Kb + 1) := by
+      refine ih (k + 1) (fun i hi => ?_)
+      have := h (i + 1) (by simpa using Nat.succ_lt_succ hi)
+      have he : k + (i + 1) = k + 1 + i := by omega
+      rw [he] at this
+      simpa using this
+    have hseq := h0.seq hs (fun _ σ' _ hq => hq)
+      (fun σ σ' σ'' _ _ hq => show Inv (k + (a :: s).length) σ'' by
+        have he : k + (a :: s).length = k + 1 + s.length := by
+          simp; omega
+        rw [he]; exact hq)
+    refine hseq.mono ?_
+    have : (a :: s).length * Kb = s.length * Kb + Kb := by
+      simp [Nat.succ_mul]
+    omega
+
+/-! ## §2 Small helpers -/
+
+private theorem getElem?_eq_getD {l : List ℕ} {i : ℕ} (h : i < l.length) :
+    l[i]? = some (l.getD i 0) := by
+  rw [List.getElem?_eq_getElem h, getD_eq_getElem h]
+
+/-- Two `ℕ`-lists agreeing in length and pointwise `getD` are equal. -/
+private theorem eq_of_getD {l l' : List ℕ} (hlen : l.length = l'.length)
+    (h : ∀ i, i < l.length → l.getD i 0 = l'.getD i 0) : l = l' := by
+  refine List.ext_getElem hlen (fun i h₁ h₂ => ?_)
+  have := h i h₁
+  rwa [getD_eq_getElem h₁, getD_eq_getElem h₂] at this
+
+/-- The strided seat index is injective in `(ρ, s)` while the seat is
+in range: the machine's `2^L × (K+1)` table is genuinely
+two-dimensional. -/
+private theorem seatIdx_inj {K ρ ρ' s s' : ℕ} (hs : s < K + 1) (hs' : s' < K + 1)
+    (h : ρ * (K + 1) + s = ρ' * (K + 1) + s') : ρ = ρ' ∧ s = s' := by
+  have key : ρ = ρ' := by
+    rcases Nat.lt_trichotomy ρ ρ' with hlt | heq | hgt
+    · exfalso
+      have h1 : ρ * (K + 1) + (K + 1) ≤ ρ' * (K + 1) := by
+        have h2 := Nat.mul_le_mul_right (K + 1) (Nat.succ_le_of_lt hlt)
+        rwa [Nat.succ_mul] at h2
+      omega
+    · exact heq
+    · exfalso
+      have h1 : ρ' * (K + 1) + (K + 1) ≤ ρ * (K + 1) := by
+        have h2 := Nat.mul_le_mul_right (K + 1) (Nat.succ_le_of_lt hgt)
+        rwa [Nat.succ_mul] at h2
+      omega
+  subst key
+  omega
+
+/-- `find?` on one more element, when the prefix failed. -/
+private theorem find?_take_succ_of_none {α : Type*} {p : α → Bool} {l : List α}
+    {s : ℕ} (h : (l.take s).find? p = none) (hs : s < l.length) :
+    (l.take (s + 1)).find? p = if p l[s] then some l[s] else none := by
+  rw [List.take_add_one, List.find?_append, h]
+  rw [List.getElem?_eq_getElem hs]
+  cases hp : p l[s] <;> simp [List.find?, hp]
+
+/-- `find?` is stable under extending the prefix once it has found. -/
+private theorem find?_take_succ_of_some {α : Type*} {p : α → Bool} {l : List α}
+    {s : ℕ} {u : α} (h : (l.take s).find? p = some u) :
+    (l.take (s + 1)).find? p = some u := by
+  rw [List.take_add_one, List.find?_append, h, Option.some_or]
+
+/-! ## §3 The scratch names and regions -/
+
+/-- The scalars the evaluator may write: result, found flag, seat
+candidate, off-env flag, found candidate, seat count. -/
+def evalWScalars : List String := ["bt.r", "bt.f", "bt.x", "bt.o", "bt.w", "bt.d"]
+
+/-- All of block 0's scratch scalars: the evaluator's, the row-code
+accumulator, the vertex counter, the carrier size. -/
+def btScalars : List String :=
+  ["bt.r", "bt.f", "bt.x", "bt.o", "bt.w", "bt.d", "bt.c", "bt.v", "bt.n"]
+
+theorem evalWScalars_subset_btScalars : evalWScalars ⊆ btScalars := by decide
+
+variable {N Lc : ℕ}
+
+/-- The environment region's cell function: entries of `m` below `k`,
+zero above — the self-cleaned shape the evaluator receives and
+returns. -/
+def envFun {k : ℕ} (m : Fin k → Fin N) : ℕ → ℕ :=
+  fun i => if h : i < k then (m ⟨i, h⟩ : ℕ) else 0
+
+theorem envFun_lt {k : ℕ} (m : Fin k → Fin N) {i : ℕ} (h : i < k) :
+    envFun m i = (m ⟨i, h⟩ : ℕ) := dif_pos h
+
+theorem envFun_ge {k : ℕ} (m : Fin k → Fin N) {i : ℕ} (h : k ≤ i) :
+    envFun m i = 0 := dif_neg (by omega)
+
+theorem envFun_lt_bound {B k : ℕ} (m : Fin k → Fin N) (i : ℕ) (hNB : N < B) :
+    envFun m i < B := by
+  unfold envFun
+  split
+  · exact lt_trans (Fin.is_lt _) hNB
+  · omega
+
+/-- Writing the candidate into the scratch cell `k` is exactly the
+`Fin.snoc` extension of the environment. -/
+theorem envFun_snoc {k : ℕ} (m : Fin k → Fin N) (w : Fin N) :
+    upd (envFun m) k (w : ℕ) = envFun (Fin.snoc m w) := by
+  funext i
+  rw [upd_apply]
+  rcases Nat.lt_trichotomy i k with h | rfl | h
+  · rw [if_neg (by omega), envFun_lt m h, envFun_lt (Fin.snoc m w) (by omega)]
+    have hc : (⟨i, by omega⟩ : Fin (k + 1)) = Fin.castSucc ⟨i, h⟩ := rfl
+    rw [hc, Fin.snoc_castSucc]
+  · rw [if_pos rfl, envFun_lt (Fin.snoc m w) (by omega)]
+    have hc : (⟨i, by omega⟩ : Fin (i + 1)) = Fin.last i := rfl
+    rw [hc, Fin.snoc_last]
+  · rw [if_neg (by omega), envFun_ge m (by omega), envFun_ge (Fin.snoc m w) (by omega)]
+
+/-- Cleaning the scratch cell `k` returns the environment to `m`. -/
+theorem envFun_unsnoc {k : ℕ} (m : Fin k → Fin N) (w : Fin N) :
+    upd (envFun (Fin.snoc m w)) k 0 = envFun m := by
+  funext i
+  rw [upd_apply, ← envFun_snoc m w, upd_apply]
+  rcases Nat.lt_trichotomy i k with h | rfl | h
+  · rw [if_neg (by omega), if_neg (by omega)]
+  · rw [if_pos rfl, envFun_ge m (by omega)]
+  · rw [if_neg (by omega), if_neg (by omega), envFun_ge m (by omega)]
+
+/-- The color rows as the machine's bit region, at the `Bool` rows the
+landed evaluator is stated over: entry `v·L + c` is the bit of
+`colB v c`. (`ColBits_rowBits` bridges from the contract's `ColBits`.) -/
+def RowBits (ca : String) (colB : Fin N → Fin Lc → Bool) (σ : Env) : Prop :=
+  (σ.arrs ca).length = N * Lc ∧
+    ∀ (v : Fin N) (c : Fin Lc),
+      (σ.arrs ca).getD ((v : ℕ) * Lc + (c : ℕ)) 0 = if colB v c then 1 else 0
+
+open Lax3.ColoredGraphs in
+open Classical in
+/-- The contract's color region is the machine's bit region at the
+decided rows — the `colB`/`hcol` pair every landed `SolveBlocksBot`
+statement consumes. -/
+theorem ColBits_rowBits {ca : String} {col : Coloring N Lc} {σ : Env}
+    (h : ColBits ca col σ) :
+    RowBits ca (fun v c => decide (v ∈ col c)) σ := by
+  refine ⟨h.1, fun v c => ?_⟩
+  rw [h.2 v c]
+  by_cases hm : v ∈ col c
+  · rw [if_pos hm, if_pos (by simpa using hm)]
+  · rw [if_neg hm, if_neg (by simpa using hm)]
+
+/-- **The representative table's region contract**: the count region
+holds each row code's `firsts` length, the seat region holds its
+entries in order at stride `K+1`. This is what one build pass
+establishes and every evaluator read consumes. -/
+def FirstsSt (na fa : String) (colB : Fin N → Fin Lc → Bool) (K : ℕ)
+    (σ : Env) : Prop :=
+  (σ.arrs na).length = 2 ^ Lc ∧ (σ.arrs fa).length = 2 ^ Lc * (K + 1) ∧
+    ∀ ρ, ρ < 2 ^ Lc →
+      (σ.arrs na).getD ρ 0 = (firsts colB K ρ).length ∧
+      ∀ s, (hs : s < (firsts colB K ρ).length) →
+        (σ.arrs fa).getD (ρ * (K + 1) + s) 0 = ((firsts colB K ρ)[s] : ℕ)
+
+/-- A row's table list is at most `K+1` long — its seat indices stay
+inside the stride. -/
+theorem firsts_length_le (colB : Fin N → Fin Lc → Bool) (K ρ : ℕ) :
+    (firsts colB K ρ).length ≤ K + 1 := by
+  rw [firsts]
+  exact (List.length_take_le _ _)
+
+/-- **The evaluator's state contract** at environment `m`: the two
+table regions, the env region holding exactly `m` (zeros above), and
+the accumulator region zero from depth `k` up. -/
+def EvalSt (ca na fa ea xa : String) (colB : Fin N → Fin Lc → Bool) (K : ℕ)
+    {k : ℕ} (m : Fin k → Fin N) (σ : Env) : Prop :=
+  RowBits ca colB σ ∧ FirstsSt na fa colB K σ ∧
+    σ.arrs ea = arrOf (K + 1) (envFun m) ∧
+    (σ.arrs xa).length = K + 1 ∧
+    ∀ i, k ≤ i → (σ.arrs xa).getD i 0 = 0
+
+/-- The evaluator's state, mid-quantifier: the accumulator cell of the
+*current* depth is live, only the deeper cells are owed as zero. This
+is what one candidate trial preserves. -/
+def TrialSt (ca na fa ea xa : String) (colB : Fin N → Fin Lc → Bool) (K : ℕ)
+    {k : ℕ} (m : Fin k → Fin N) (σ : Env) : Prop :=
+  RowBits ca colB σ ∧ FirstsSt na fa colB K σ ∧
+    σ.arrs ea = arrOf (K + 1) (envFun m) ∧
+    (σ.arrs xa).length = K + 1 ∧
+    ∀ i, k + 1 ≤ i → (σ.arrs xa).getD i 0 = 0
+
+theorem EvalSt.trialSt {ca na fa ea xa : String} {colB : Fin N → Fin Lc → Bool}
+    {K k : ℕ} {m : Fin k → Fin N} {σ : Env}
+    (h : EvalSt ca na fa ea xa colB K m σ) :
+    TrialSt ca na fa ea xa colB K m σ :=
+  ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.1, fun i hi => h.2.2.2.2 i (by omega)⟩
+
+/-- **One candidate's footprint** (the composable postcondition): the
+env region is returned verbatim, the accumulator cell `k` is forced to
+`1` exactly when the candidate's bit `b` is set, every other cell and
+region and every non-scratch scalar is untouched. `b₁ || b₂` composes
+(`TrialPost.trans`), which is what folds the unrolled candidate loop. -/
+def TrialPost (ea xa : String) (k : ℕ) (b : Bool) (σ σ' : Env) : Prop :=
+  σ'.arrs ea = σ.arrs ea ∧
+    (σ'.arrs xa).getD k 0 = (if b then 1 else (σ.arrs xa).getD k 0) ∧
+    (∀ i, i ≠ k → (σ'.arrs xa).getD i 0 = (σ.arrs xa).getD i 0) ∧
+    (σ'.arrs xa).length = (σ.arrs xa).length ∧
+    (∀ a, a ≠ ea → a ≠ xa → σ'.arrs a = σ.arrs a) ∧
+    (∀ y, y ∉ evalWScalars → σ'.vars y = σ.vars y)
+
+theorem TrialPost.rfl {ea xa : String} {k : ℕ} {σ : Env} :
+    TrialPost ea xa k false σ σ := by
+  refine ⟨_root_.rfl, ?_, fun _ _ => _root_.rfl, _root_.rfl,
+    fun _ _ _ => _root_.rfl, fun _ _ => _root_.rfl⟩
+  simp
+
+theorem TrialPost.trans {ea xa : String} {k : ℕ} {b₁ b₂ : Bool} {σ σ' σ'' : Env}
+    (h₁ : TrialPost ea xa k b₁ σ σ') (h₂ : TrialPost ea xa k b₂ σ' σ'') :
+    TrialPost ea xa k (b₁ || b₂) σ σ'' := by
+  obtain ⟨he₁, hk₁, hi₁, hl₁, ha₁, hv₁⟩ := h₁
+  obtain ⟨he₂, hk₂, hi₂, hl₂, ha₂, hv₂⟩ := h₂
+  refine ⟨he₂.trans he₁, ?_, fun i hi => (hi₂ i hi).trans (hi₁ i hi),
+    hl₂.trans hl₁, fun a h1 h2 => (ha₂ a h1 h2).trans (ha₁ a h1 h2),
+    fun y hy => (hv₂ y hy).trans (hv₁ y hy)⟩
+  rw [hk₂, hk₁]
+  cases b₁ <;> cases b₂ <;> simp
+
+/-- The mid-quantifier state survives one candidate's footprint. -/
+theorem TrialSt.of_post {ca na fa ea xa : String} {colB : Fin N → Fin Lc → Bool}
+    {K k : ℕ} {m : Fin k → Fin N} {b : Bool} {σ σ' : Env}
+    (hca : ca ≠ ea) (hca' : ca ≠ xa) (hna : na ≠ ea) (hna' : na ≠ xa)
+    (hfa : fa ≠ ea) (hfa' : fa ≠ xa)
+    (h : TrialSt ca na fa ea xa colB K m σ)
+    (hp : TrialPost ea xa k b σ σ') :
+    TrialSt ca na fa ea xa colB K m σ' := by
+  obtain ⟨hrow, hfst, henv, hxl, hxz⟩ := h
+  obtain ⟨he, _, hi, hl, ha, _⟩ := hp
+  refine ⟨?_, ?_, he.trans henv, hl.trans hxl, fun i hik => ?_⟩
+  · rw [RowBits, ha ca hca hca']
+    exact hrow
+  · rw [FirstsSt, ha na hna hna', ha fa hfa hfa']
+    exact hfst
+  · rw [hi i (by omega)]
+    exact hxz i hik
+
+/-! ## §4 The programs -/
+
+/-- Set `"bt.o"` to the off-environment bit of the candidate held in
+`"bt.x"`: `1`, then one unrolled equality test per environment entry. -/
+def offEnvCom (ea : String) (k : ℕ) : Com :=
+  .seq (.assign "bt.o" (.lit 1))
+    (seqIdx (fun i _ =>
+        .ite (.eq (.get ea (.lit i)) (.var "bt.x"))
+          (.assign "bt.o" (.lit 0)) .skip)
+      (List.range k) 0)
+
+/-- One seat of row code `ρ`'s scan (the machine's
+`find? (offEnv m)`): while nothing is found and the seat is occupied
+(`s < "bt.d"`, the row's count), read the seat into `"bt.x"`, test it
+against the environment, and record the first success in
+`"bt.f"`/`"bt.w"`. -/
+def seatCom (fa ea : String) (K k ρ s : ℕ) : Com :=
+  .ite (.eq (.var "bt.f") (.lit 0))
+    (.ite (.lt (.lit s) (.var "bt.d"))
+      (.seq (.assign "bt.x" (.get fa (.lit (ρ * (K + 1) + s))))
+        (.seq (offEnvCom ea k)
+          (.ite (.eq (.var "bt.o") (.lit 1))
+            (.seq (.assign "bt.f" (.lit 1)) (.assign "bt.w" (.var "bt.x")))
+            .skip)))
+      .skip)
+    .skip
+
+/-- Try one candidate (the expression `e`): write it into the env
+scratch cell `k`, run the compiled subformula `cb`, force the
+accumulator cell `k` on success, clean the env cell — the self-cleanup
+that lets trials chain with no caller-side wipe. -/
+def trialCom (ea xa : String) (k : ℕ) (e : Expr) (cb : Com) : Com :=
+  .seq (.store ea (.lit k) e)
+    (.seq cb
+      (.seq (.ite (.eq (.var "bt.r") (.lit 1)) (.store xa (.lit k) (.lit 1)) .skip)
+        (.store ea (.lit k) (.lit 0))))
+
+/-- One row code's turn of an unrestricted quantifier: reset the found
+flag, read the row's count, scan the `K+1` seats for the first
+off-environment entry, and try it if one was found. -/
+def rhoCom (na fa ea xa : String) (K k ρ : ℕ) (cb : Com) : Com :=
+  .seq (.assign "bt.f" (.lit 0))
+    (.seq (.assign "bt.d" (.get na (.lit ρ)))
+      (.seq (seqIdx (fun s _ => seatCom fa ea K k ρ s) (List.range (K + 1)) 0)
+        (.ite (.eq (.var "bt.f") (.lit 1))
+          (trialCom ea xa k (.var "bt.w") cb) .skip)))
+
+/-- **The unrestricted quantifier, unrolled** (§6.4's schedule): the
+`k` environment entries, then one `rhoCom` per row code — `≤ k +
+2^L·(K+1)` candidates however large the arena. The accumulator cell
+`k` collects the disjunction and is cleaned on the way out. -/
+def exUCom (na fa ea xa : String) (Lc K k : ℕ) (cb : Com) : Com :=
+  .seq (seqIdx (fun i _ => trialCom ea xa k (.get ea (.lit i)) cb) (List.range k) 0)
+    (.seq (seqIdx (fun _ ρ => rhoCom na fa ea xa K k ρ cb) (List.range (2 ^ Lc)) 0)
+      (.seq (.assign "bt.r" (.get xa (.lit k)))
+        (.store xa (.lit k) (.lit 0))))
+
+/-- The local quantifier: its guard set is compile-time syntax, so it
+is the same unrolled trial loop over the guard's entries — no search
+at all. -/
+def exLCom (ea xa : String) (k : ℕ) (g : List ℕ) (cb : Com) : Com :=
+  .seq (seqIdx (fun _ i => trialCom ea xa k (.get ea (.lit i)) cb) g 0)
+    (.seq (.assign "bt.r" (.get xa (.lit k)))
+      (.store xa (.lit k) (.lit 0)))
+
+/-- An equality atom: one comparison of two env cells. -/
+def eqCom (ea : String) (i j : ℕ) : Com :=
+  .ite (.eq (.get ea (.lit i)) (.get ea (.lit j)))
+    (.assign "bt.r" (.lit 1)) (.assign "bt.r" (.lit 0))
+
+/-- A color atom: one row-bit read at stride `Lc`. -/
+def colorCom (ca ea : String) (Lc c i : ℕ) : Com :=
+  .assign "bt.r"
+    (.get ca (.add (.mul (.get ea (.lit i)) (.lit Lc)) (.lit c)))
+
+/-- **The compiled evaluator** — `botEvalT`, by compile-time
+structural recursion over the formula (`bcExpr`'s move at `DistFO`):
+atoms are env reads and row-bit reads, `not` flips, `and`
+short-circuits, the quantifiers are the unrolled candidate loops. The
+formula, `k`, `K` and `Lc` are schedule data; the carrier never
+appears. -/
+noncomputable def evalCom (ca na fa ea xa : String) (Lc K : ℕ) :
+    {k : ℕ} → DistFO Lc k → Com
+  | _, .adj _ _ => .assign "bt.r" (.lit 0)
+  | _, .eq i j => eqCom ea i j
+  | _, .color c i => colorCom ca ea Lc c i
+  | _, .distLe _ i j => eqCom ea i j
+  | _, .distColorLt r c i =>
+      if r = 0 then .assign "bt.r" (.lit 0) else colorCom ca ea Lc c i
+  | _, .not φ =>
+      .seq (evalCom ca na fa ea xa Lc K φ)
+        (.assign "bt.r" (.sub (.lit 1) (.var "bt.r")))
+  | _, .and φ ψ =>
+      .seq (evalCom ca na fa ea xa Lc K φ)
+        (.ite (.eq (.var "bt.r") (.lit 1)) (evalCom ca na fa ea xa Lc K ψ) .skip)
+  | k, .exU φ => exUCom na fa ea xa Lc K k (evalCom ca na fa ea xa Lc K φ)
+  | k, .exL _ g φ =>
+      exLCom ea xa k (g.toList.map Fin.val) (evalCom ca na fa ea xa Lc K φ)
+
+/-! ## §5 The costs — functions of the schedule alone -/
+
+/-- The per-entry evaluator's budget, by the same compile-time
+recursion: a function of `(Lc, K, φ)` **only** — the carrier does not
+occur, which is the whole content of "schedule-constant per table
+entry". -/
+def evalK (Lc K : ℕ) : {k : ℕ} → DistFO Lc k → ℕ
+  | _, .adj _ _ => 2
+  | _, .eq _ _ => 9
+  | _, .color _ _ => 8
+  | _, .distLe _ _ _ => 9
+  | _, .distColorLt _ _ _ => 8
+  | _, .not φ => evalK Lc K φ + 4
+  | _, .and φ ψ => evalK Lc K φ + evalK Lc K ψ + 4
+  | k, .exU φ =>
+      k * (evalK Lc K φ + 14)
+        + 2 ^ Lc * ((K + 1) * (7 * k + 22) + evalK Lc K φ + 24) + 8
+  | _, .exL _ g φ => g.card * (evalK Lc K φ + 14) + 7
+
+/-- The family's per-entry budget: the maximum of `evalK` over the
+schedule list. -/
+def evalKMax (Lc K : ℕ) (Fl : List (DistFO Lc 1)) : ℕ :=
+  (Fl.map (evalK Lc K)).foldr max 0
+
+theorem evalK_le_evalKMax {Lc K : ℕ} {Fl : List (DistFO Lc 1)}
+    {β : DistFO Lc 1} (h : β ∈ Fl) : evalK Lc K β ≤ evalKMax Lc K Fl := by
+  induction Fl with
+  | nil => cases h
+  | cons γ t ih =>
+    rw [List.mem_cons] at h
+    show evalK Lc K β ≤ max (evalK Lc K γ) ((t.map (evalK Lc K)).foldr max 0)
+    rcases h with rfl | h
+    · exact le_max_left _ _
+    · exact le_trans (ih h) (le_max_right _ _)
+
+/-- **The one `N·L` build pass's budget**: `11L + 30` per vertex (the
+`L` unrolled row-bit reads, the seat append), plus the
+schedule-constant `2^L` count wipe. -/
+def buildK (N Lc : ℕ) : ℕ := 3 * 2 ^ Lc + (11 * Lc + 30) * N + 7
+
+/-- **The fill loop's budget**: a schedule constant per `(v, β)`
+entry — `botC`'s `|ℱ_j| · N` term. -/
+def fillK (N Lc K : ℕ) (Fl : List (DistFO Lc 1)) : ℕ :=
+  (Fl.length * (evalKMax Lc K Fl + 7) + 15) * N + 6
+
+/-- **The whole block's budget**: the build pass, the fill loop, and
+the two `K+1`-cell scratch wipes. -/
+def botComK (N Lc K : ℕ) (Fl : List (DistFO Lc 1)) : ℕ :=
+  buildK N Lc + fillK N Lc K Fl + 6 * K + 10
+
+/-! ## §6 The write footprint, off the syntax -/
+
+section Syntactic
+
+variable (ca na fa ea xa : String) (Lc K : ℕ)
+
+theorem wvars_offEnvCom (k : ℕ) : (offEnvCom ea k).wvars ⊆ evalWScalars := by
+  rw [offEnvCom]
+  show ((Com.assign "bt.o" (.lit 1)).wvars ++ _) ⊆ _
+  refine List.append_subset.mpr ⟨by decide, ?_⟩
+  refine wvars_seqIdx (fun i _ => ?_) _ _
+  show (["bt.o"] ++ []) ⊆ evalWScalars
+  decide
+
+theorem warrs_offEnvCom (k : ℕ) {W : List String} : (offEnvCom ea k).warrs ⊆ W := by
+  rw [offEnvCom]
+  show ([] ++ _ : List String) ⊆ W
+  rw [List.nil_append]
+  refine warrs_seqIdx (fun i _ => ?_) _ _
+  show (([] ++ []) : List String) ⊆ W
+  simp
+
+theorem wvars_seatCom (k ρ s : ℕ) : (seatCom fa ea K k ρ s).wvars ⊆ evalWScalars := by
+  rw [seatCom]
+  show ((((["bt.x"] ++ ((offEnvCom ea k).wvars ++ ((["bt.f"] ++ ["bt.w"]) ++ []))) ++ [])
+      ++ []) : List String) ⊆ _
+  simp only [List.append_nil]
+  refine List.append_subset.mpr ⟨by decide, ?_⟩
+  exact List.append_subset.mpr ⟨wvars_offEnvCom ea k, by decide⟩
+
+theorem warrs_seatCom (k ρ s : ℕ) {W : List String} :
+    (seatCom fa ea K k ρ s).warrs ⊆ W := by
+  rw [seatCom]
+  show (((([] ++ ((offEnvCom ea k).warrs ++ (([] ++ []) ++ []))) ++ [])
+      ++ []) : List String) ⊆ W
+  simp only [List.append_nil, List.nil_append]
+  exact warrs_offEnvCom ea k
+
+theorem wvars_trialCom (k : ℕ) (e : Expr) (cb : Com)
+    (hcb : cb.wvars ⊆ evalWScalars) :
+    (trialCom ea xa k e cb).wvars ⊆ evalWScalars := by
+  rw [trialCom]
+  show ([] ++ (cb.wvars ++ (([] ++ []) ++ []))) ⊆ _
+  simpa using hcb
+
+theorem warrs_trialCom (k : ℕ) (e : Expr) (cb : Com)
+    (hcb : cb.warrs ⊆ [ea, xa]) :
+    (trialCom ea xa k e cb).warrs ⊆ [ea, xa] := by
+  rw [trialCom]
+  show ([ea] ++ (cb.warrs ++ (([xa] ++ []) ++ [ea]))) ⊆ _
+  refine List.append_subset.mpr ⟨by simp, ?_⟩
+  refine List.append_subset.mpr ⟨hcb, by simp⟩
+
+theorem wvars_rhoCom (k ρ : ℕ) (cb : Com) (hcb : cb.wvars ⊆ evalWScalars) :
+    (rhoCom na fa ea xa K k ρ cb).wvars ⊆ evalWScalars := by
+  rw [rhoCom]
+  show (["bt.f"] ++ (["bt.d"] ++ (_ ++ ((trialCom ea xa k (.var "bt.w") cb).wvars ++ [])))) ⊆ _
+  refine List.append_subset.mpr ⟨by decide, ?_⟩
+  refine List.append_subset.mpr ⟨by decide, ?_⟩
+  refine List.append_subset.mpr ⟨?_, ?_⟩
+  · exact wvars_seqIdx (fun s _ => wvars_seatCom fa ea K k ρ s) _ _
+  · simpa using wvars_trialCom ea xa k (.var "bt.w") cb hcb
+
+theorem warrs_rhoCom (k ρ : ℕ) (cb : Com) (hcb : cb.warrs ⊆ [ea, xa]) :
+    (rhoCom na fa ea xa K k ρ cb).warrs ⊆ [ea, xa] := by
+  rw [rhoCom]
+  show ([] ++ ([] ++ (_ ++ ((trialCom ea xa k (.var "bt.w") cb).warrs ++ [])))) ⊆ _
+  simp only [List.nil_append]
+  refine List.append_subset.mpr ⟨?_, ?_⟩
+  · exact warrs_seqIdx (fun s _ => warrs_seatCom fa ea K k ρ s) _ _
+  · simpa using warrs_trialCom ea xa k (.var "bt.w") cb hcb
+
+theorem wvars_exUCom (k : ℕ) (cb : Com) (hcb : cb.wvars ⊆ evalWScalars) :
+    (exUCom na fa ea xa Lc K k cb).wvars ⊆ evalWScalars := by
+  rw [exUCom]
+  show (_ ++ (_ ++ (["bt.r"] ++ []))) ⊆ _
+  refine List.append_subset.mpr ⟨?_, List.append_subset.mpr ⟨?_, by decide⟩⟩
+  · exact wvars_seqIdx (fun i _ => wvars_trialCom ea xa k _ cb hcb) _ _
+  · exact wvars_seqIdx (fun _ ρ => wvars_rhoCom na fa ea xa K k ρ cb hcb) _ _
+
+theorem warrs_exUCom (k : ℕ) (cb : Com) (hcb : cb.warrs ⊆ [ea, xa]) :
+    (exUCom na fa ea xa Lc K k cb).warrs ⊆ [ea, xa] := by
+  rw [exUCom]
+  show (_ ++ (_ ++ ([] ++ [xa]))) ⊆ _
+  refine List.append_subset.mpr ⟨?_, List.append_subset.mpr ⟨?_, by simp⟩⟩
+  · exact warrs_seqIdx (fun i _ => warrs_trialCom ea xa k _ cb hcb) _ _
+  · exact warrs_seqIdx (fun _ ρ => warrs_rhoCom na fa ea xa K k ρ cb hcb) _ _
+
+theorem wvars_exLCom (k : ℕ) (g : List ℕ) (cb : Com)
+    (hcb : cb.wvars ⊆ evalWScalars) :
+    (exLCom ea xa k g cb).wvars ⊆ evalWScalars := by
+  rw [exLCom]
+  show (_ ++ (["bt.r"] ++ [])) ⊆ _
+  refine List.append_subset.mpr ⟨?_, by decide⟩
+  exact wvars_seqIdx (fun _ i => wvars_trialCom ea xa k _ cb hcb) _ _
+
+theorem warrs_exLCom (k : ℕ) (g : List ℕ) (cb : Com)
+    (hcb : cb.warrs ⊆ [ea, xa]) :
+    (exLCom ea xa k g cb).warrs ⊆ [ea, xa] := by
+  rw [exLCom]
+  show (_ ++ ([] ++ [xa])) ⊆ _
+  refine List.append_subset.mpr ⟨?_, by simp⟩
+  exact warrs_seqIdx (fun _ i => warrs_trialCom ea xa k _ cb hcb) _ _
+
+/-- The evaluator writes only its own scratch scalars. -/
+theorem wvars_evalCom : ∀ {k : ℕ} (φ : DistFO Lc k),
+    (evalCom ca na fa ea xa Lc K φ).wvars ⊆ evalWScalars
+  | _, .adj _ _ => by
+      rw [evalCom]; show ["bt.r"] ⊆ evalWScalars; decide
+  | _, .eq i j => by
+      rw [evalCom, eqCom]; show (["bt.r"] ++ ["bt.r"]) ⊆ evalWScalars; decide
+  | _, .color c i => by
+      rw [evalCom, colorCom]; show ["bt.r"] ⊆ evalWScalars; decide
+  | _, .distLe _ i j => by
+      rw [evalCom, eqCom]; show (["bt.r"] ++ ["bt.r"]) ⊆ evalWScalars; decide
+  | _, .distColorLt r c i => by
+      rw [evalCom]
+      split
+      · show ["bt.r"] ⊆ evalWScalars; decide
+      · rw [colorCom]; show ["bt.r"] ⊆ evalWScalars; decide
+  | _, .not φ => by
+      rw [evalCom]
+      show ((evalCom ca na fa ea xa Lc K φ).wvars ++ ["bt.r"]) ⊆ _
+      exact List.append_subset.mpr ⟨wvars_evalCom φ, by decide⟩
+  | _, .and φ ψ => by
+      rw [evalCom]
+      show ((evalCom ca na fa ea xa Lc K φ).wvars
+        ++ ((evalCom ca na fa ea xa Lc K ψ).wvars ++ [])) ⊆ _
+      refine List.append_subset.mpr ⟨wvars_evalCom φ, ?_⟩
+      simpa using wvars_evalCom ψ
+  | k, .exU φ => by
+      rw [evalCom]
+      exact wvars_exUCom na fa ea xa Lc K k _ (wvars_evalCom φ)
+  | k, .exL r g φ => by
+      rw [evalCom]
+      exact wvars_exLCom ea xa k _ _ (wvars_evalCom φ)
+
+/-- The evaluator stores only into its two scratch regions. -/
+theorem warrs_evalCom : ∀ {k : ℕ} (φ : DistFO Lc k),
+    (evalCom ca na fa ea xa Lc K φ).warrs ⊆ [ea, xa]
+  | _, .adj _ _ => by rw [evalCom]; exact List.nil_subset _
+  | _, .eq i j => by
+      rw [evalCom, eqCom]
+      show (([] ++ []) : List String) ⊆ _
+      simp
+  | _, .color c i => by rw [evalCom, colorCom]; exact List.nil_subset _
+  | _, .distLe _ i j => by
+      rw [evalCom, eqCom]
+      show (([] ++ []) : List String) ⊆ _
+      simp
+  | _, .distColorLt r c i => by
+      rw [evalCom]
+      split
+      · exact List.nil_subset _
+      · rw [colorCom]; exact List.nil_subset _
+  | _, .not φ => by
+      rw [evalCom]
+      show ((evalCom ca na fa ea xa Lc K φ).warrs ++ []) ⊆ _
+      simpa using warrs_evalCom φ
+  | _, .and φ ψ => by
+      rw [evalCom]
+      show ((evalCom ca na fa ea xa Lc K φ).warrs
+        ++ ((evalCom ca na fa ea xa Lc K ψ).warrs ++ [])) ⊆ _
+      refine List.append_subset.mpr ⟨warrs_evalCom φ, ?_⟩
+      simpa using warrs_evalCom ψ
+  | k, .exU φ => by
+      rw [evalCom]
+      exact warrs_exUCom na fa ea xa Lc K k _ (warrs_evalCom φ)
+  | k, .exL r g φ => by
+      rw [evalCom]
+      exact warrs_exLCom ea xa k _ _ (warrs_evalCom φ)
+
+end Syntactic
+
+/-! ## §7 The evaluator, discharged -/
+
+section EvalSpec
+
+variable {B N Lc K : ℕ} {colB : Fin N → Fin Lc → Bool}
+  {ca na fa ea xa : String}
+
+/-- The bound is at least two as soon as the seat region fits below it. -/
+private theorem one_lt_of_seats (h2LB : 2 ^ Lc * (K + 1) < B) : 1 < B := by
+  have h1 : 0 < 2 ^ Lc * (K + 1) := by positivity
+  omega
+
+private theorem run_assign_lit {x : String} {v : ℕ} {σ : Env} (hv : v < B) :
+    Run B (.assign x (.lit v)) σ (σ.setVar x v) 2 :=
+  (Run.assign (evalB_lit hv)).mono (by simp)
+
+private theorem evalB_get_lit {a : String} {i v : ℕ} {σ : Env}
+    (hi : i < (σ.arrs a).length) (hv : (σ.arrs a).getD i 0 = v)
+    (hiB : i < B) (hvB : v < B) :
+    (Expr.get a (.lit i)).evalB B σ = some v := by
+  refine evalB_get (evalB_lit hiB) ?_ hvB
+  rw [getElem?_eq_getD hi, hv]
+
+/-- A store into a length-pinned array, as an `upd` of its cell
+function. -/
+private theorem set_eq_arrOf_upd {l : List ℕ} {n : ℕ} (i v : ℕ) (hl : l.length = n) :
+    l.set i v = arrOf n (upd (fun j => l.getD j 0) i v) := by
+  have hpin : l = arrOf n fun j => l.getD j 0 := by
+    rw [← hl]; exact (arrOf_getD l).symm
+  calc l.set i v = (arrOf n fun j => l.getD j 0).set i v := by rw [← hpin]
+    _ = _ := set_arrOf_eq_upd _ _ _
+
+/-- Reading past the end of an array is the default. -/
+private theorem getD_ge_len {l : List ℕ} {i : ℕ} (h : l.length ≤ i) :
+    l.getD i 0 = 0 := by
+  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none h]
+  rfl
+
+private theorem rowBits_of_arrs_eq {σ σ' : Env} (h : σ'.arrs ca = σ.arrs ca)
+    (hr : RowBits ca colB σ) : RowBits ca colB σ' := by
+  unfold RowBits at hr ⊢
+  rw [h]; exact hr
+
+private theorem firstsSt_of_arrs_eq {σ σ' : Env} (hna : σ'.arrs na = σ.arrs na)
+    (hfa : σ'.arrs fa = σ.arrs fa) (hf : FirstsSt na fa colB K σ) :
+    FirstsSt na fa colB K σ' := by
+  unfold FirstsSt at hf ⊢
+  rw [hna, hfa]; exact hf
+
+private theorem trialSt_of_arrs_eq {k : ℕ} {m : Fin k → Fin N} {σ σ' : Env}
+    (h : σ'.arrs = σ.arrs) (hst : TrialSt ca na fa ea xa colB K m σ) :
+    TrialSt ca na fa ea xa colB K m σ' := by
+  unfold TrialSt RowBits FirstsSt at hst ⊢
+  rw [h]; exact hst
+
+private theorem evalSt_of_arrs_eq {k : ℕ} {m : Fin k → Fin N} {σ σ' : Env}
+    (h : σ'.arrs = σ.arrs) (hst : EvalSt ca na fa ea xa colB K m σ) :
+    EvalSt ca na fa ea xa colB K m σ' := by
+  unfold EvalSt RowBits FirstsSt at hst ⊢
+  rw [h]; exact hst
+
+/-- A state whose regions and non-scratch scalars are untouched is a
+null candidate footprint. -/
+private theorem trialPost_of_untouched {k : ℕ} {σ σ' : Env}
+    (harr : σ'.arrs = σ.arrs)
+    (hv : ∀ y, y ∉ evalWScalars → σ'.vars y = σ.vars y) :
+    TrialPost ea xa k false σ σ' := by
+  refine ⟨by rw [harr], by rw [harr]; simp, fun i _ => by rw [harr],
+    by rw [harr], fun a _ _ => by rw [harr], hv⟩
+
+/-- **The composable per-node postcondition**: the result bit, the two
+scratch regions returned verbatim, everything else framed. -/
+def EvalPost (ea xa : String) (bit : ℕ) (σ σ' : Env) : Prop :=
+  σ'.vars "bt.r" = bit ∧ σ'.arrs ea = σ.arrs ea ∧ σ'.arrs xa = σ.arrs xa ∧
+    (∀ a, a ≠ ea → a ≠ xa → σ'.arrs a = σ.arrs a) ∧
+    (∀ y, y ∉ evalWScalars → σ'.vars y = σ.vars y)
+
+open Classical in
+/-- **The off-environment test, discharged**: from the env region at
+`m` and the candidate in `"bt.x"`, the flag `"bt.o"` ends holding
+`offEnv m x`'s bit; nothing else moves. -/
+private theorem offEnvCom_spec (h2LB : 2 ^ Lc * (K + 1) < B) (hNB : N < B)
+    {k : ℕ} (hkK : k ≤ K + 1) (m : Fin k → Fin N) (x : Fin N) :
+    Spec B
+      (fun σ => σ.arrs ea = arrOf (K + 1) (envFun m) ∧ σ.vars "bt.x" = (x : ℕ))
+      (offEnvCom ea k)
+      (fun σ σ' => σ'.vars "bt.o" = (if offEnv m x then 1 else 0) ∧
+        σ'.arrs = σ.arrs ∧ σ'.vars "bt.x" = σ.vars "bt.x" ∧
+        (∀ y, y ≠ "bt.o" → σ'.vars y = σ.vars y))
+      (7 * k + 3) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  intro σ hσ
+  obtain ⟨henv, hx⟩ := hσ
+  set σ₀ := σ.setVar "bt.o" 1 with hσ₀
+  have hrun₀ : Run B (.assign "bt.o" (.lit 1)) σ σ₀ 2 := run_assign_lit (by omega)
+  set Inv : ℕ → Env → Prop := fun j τ =>
+    τ.arrs = σ.arrs ∧ (∀ y, y ≠ "bt.o" → τ.vars y = σ.vars y) ∧
+      τ.vars "bt.o" = (if ∀ i : Fin k, (i : ℕ) < j → m i ≠ x then 1 else 0)
+    with hInv
+  have hstep : ∀ i, i < (List.range k).length →
+      Spec B (Inv (0 + i))
+        (Com.ite (.eq (.get ea (.lit (0 + i))) (.var "bt.x"))
+          (.assign "bt.o" (.lit 0)) .skip)
+        (fun _ τ' => Inv (0 + i + 1) τ') 7 := by
+    intro i hi
+    rw [List.length_range] at hi
+    intro τ hτ
+    obtain ⟨harr, hvars, ho⟩ := hτ
+    have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+    have hmiB : (m ⟨i, hi⟩ : ℕ) < B := lt_trans (Fin.is_lt _) hNB
+    have hread : (Expr.get ea (.lit (0 + i))).evalB B τ = some (m ⟨i, hi⟩ : ℕ) := by
+      refine evalB_get_lit ?_ ?_ (by omega) hmiB
+      · rw [harr]
+        rw [henv, length_arrOf]
+        omega
+      · rw [harr]
+        rw [henv, getD_arrOf _ (by omega : 0 + i < K + 1)]
+        have : 0 + i = i := by omega
+        rw [this, envFun_lt m hi]
+    have hxτ : τ.vars "bt.x" = (x : ℕ) := by
+      rw [hvars _ (by decide)]; exact hx
+    have hxev : (Expr.var "bt.x").evalB B τ = some (x : ℕ) := by
+      rw [← hxτ]
+      exact evalB_var (by rw [hxτ]; exact lt_trans (Fin.is_lt _) hNB)
+    have hcond := evalB_condEq hread hxev
+    by_cases heq : (m ⟨i, hi⟩ : ℕ) = (x : ℕ)
+    · -- the candidate is this entry: clear the flag
+      have hcondT : (Cond.eq (.get ea (.lit (0 + i))) (.var "bt.x")).evalB B τ
+          = some true := by
+        rw [hcond]
+        congr 1
+        simpa using heq
+      refine ⟨τ.setVar "bt.o" 0,
+        (Run.ite_true hcondT (run_assign_lit (by omega))).mono (by simp), ?_, ?_, ?_⟩
+      · simpa using harr
+      · intro y hy
+        rw [vars_setVar, if_neg hy]
+        exact hvars y hy
+      · rw [vars_setVar, if_pos rfl]
+        have hP : ¬ ∀ i' : Fin k, (i' : ℕ) < 0 + i + 1 → m i' ≠ x := by
+          intro hall
+          exact hall ⟨i, hi⟩ (by simp) (Fin.val_inj.mp heq)
+        rw [if_neg hP]
+    · -- not this entry: the flag stands
+      have hcondF : (Cond.eq (.get ea (.lit (0 + i))) (.var "bt.x")).evalB B τ
+          = some false := by
+        rw [hcond]
+        congr 1
+        simpa using heq
+      refine ⟨τ, (Run.ite_false hcondF Run.skip).mono (by simp), harr, hvars, ?_⟩
+      rw [ho]
+      refine if_congr ?_ rfl rfl
+      constructor
+      · intro h i' hi'
+        rcases Nat.lt_or_ge (i' : ℕ) (0 + i) with h2 | h2
+        · exact h i' h2
+        · have hieq : i' = ⟨i, hi⟩ := by
+            apply Fin.ext
+            show (i' : ℕ) = i
+            omega
+          subst hieq
+          intro hcon
+          exact heq (congrArg Fin.val hcon)
+      · intro h i' hi'
+        exact h i' (by omega)
+  -- assemble: the flag initialization, then the scan
+  have hscan := seqIdx_spec (B := B) (Kb := 7)
+    (gen := fun i _ => Com.ite (.eq (.get ea (.lit i)) (.var "bt.x"))
+      (.assign "bt.o" (.lit 0)) .skip)
+    Inv (List.range k) 0 hstep
+  have hInv0 : Inv 0 σ₀ := by
+    refine ⟨by rw [hσ₀]; simp, fun y hy => by rw [hσ₀, vars_setVar, if_neg hy], ?_⟩
+    rw [hσ₀, vars_setVar, if_pos rfl, if_pos (fun i' h => absurd h (by omega))]
+  obtain ⟨τ, hrunS, hτ⟩ := hscan σ₀ hInv0
+  simp only [List.length_range, Nat.zero_add] at hτ
+  obtain ⟨harr, hvars, ho⟩ := hτ
+  refine ⟨τ, (hrun₀.seq hrunS).mono (by rw [List.length_range]; omega), ?_,
+    harr, hvars _ (by decide), fun y hy => hvars y hy⟩
+  rw [ho]
+  refine if_congr ?_ rfl rfl
+  rw [offEnv_eq_true_iff]
+  constructor
+  · rintro h ⟨i, hix⟩
+    exact h i i.is_lt hix
+  · intro h i' _ hcon
+    exact h ⟨i', hcon⟩
+
+variable (h2LB : 2 ^ Lc * (K + 1) < B) (hNB : N < B)
+  (hca_ea : ca ≠ ea) (hca_xa : ca ≠ xa) (hna_ea : na ≠ ea) (hna_xa : na ≠ xa)
+  (hfa_ea : fa ≠ ea) (hfa_xa : fa ≠ xa) (hea_xa : ea ≠ xa)
+
+include h2LB hNB in
+open Classical in
+/-- **One row code's seat scan, discharged**: from the mid-quantifier
+state with a clear flag and the row's count in `"bt.d"`, the scan ends
+with `"bt.f"`/`"bt.w"` reporting exactly `find? (offEnv m)`'s verdict
+on the row's table list; no array moves. -/
+private theorem seatScan_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
+    (ρ : ℕ) (hρ : ρ < 2 ^ Lc) :
+    Spec B
+      (fun σ => TrialSt ca na fa ea xa colB K m σ ∧
+        σ.vars "bt.f" = 0 ∧ σ.vars "bt.d" = (firsts colB K ρ).length)
+      (seqIdx (fun s _ => seatCom fa ea K k ρ s) (List.range (K + 1)) 0)
+      (fun σ σ' => σ'.arrs = σ.arrs ∧
+        (∀ y, y ∉ evalWScalars → σ'.vars y = σ.vars y) ∧
+        (∀ w, (firsts colB K ρ).find? (offEnv m) = some w →
+          σ'.vars "bt.f" = 1 ∧ σ'.vars "bt.w" = (w : ℕ)) ∧
+        ((firsts colB K ρ).find? (offEnv m) = none → σ'.vars "bt.f" = 0))
+      ((K + 1) * (7 * k + 22) + 1) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  intro σ hσ
+  obtain ⟨hst, hf0, hd⟩ := hσ
+  have hfl_le := firsts_length_le colB K ρ
+  set Inv : ℕ → Env → Prop := fun j τ =>
+    τ.arrs = σ.arrs ∧ (∀ y, y ∉ evalWScalars → τ.vars y = σ.vars y) ∧
+      τ.vars "bt.d" = (firsts colB K ρ).length ∧
+      (∀ w, ((firsts colB K ρ).take j).find? (offEnv m) = some w →
+        τ.vars "bt.f" = 1 ∧ τ.vars "bt.w" = (w : ℕ)) ∧
+      (((firsts colB K ρ).take j).find? (offEnv m) = none → τ.vars "bt.f" = 0)
+    with hInv
+  have hstep : ∀ s, s < (List.range (K + 1)).length →
+      Spec B (Inv (0 + s)) (seatCom fa ea K k ρ (0 + s))
+        (fun _ τ' => Inv (0 + s + 1) τ') (7 * k + 22) := by
+    intro s hs
+    rw [List.length_range] at hs
+    intro τ hτ
+    obtain ⟨harr, hvars, hdτ, hsome, hnone⟩ := hτ
+    cases hfind : ((firsts colB K ρ).take (0 + s)).find? (offEnv m) with
+    | some w =>
+      -- already found: the flag blocks the seat
+      obtain ⟨hf1, hw⟩ := hsome w hfind
+      have hcondF : (Cond.eq (.var "bt.f") (.lit 0)).evalB B τ = some false := by
+        rw [evalB_condEq (evalB_var (by rw [hf1]; omega)) (evalB_lit (by omega)), hf1]
+        simp
+      refine ⟨τ, (Run.ite_false hcondF Run.skip).mono
+        (by simp only [size_condEq, size_var, size_lit]; omega),
+        harr, hvars, hdτ, ?_, ?_⟩
+      · intro w' hw'
+        rw [find?_take_succ_of_some hfind] at hw'
+        injection hw' with hww
+        subst hww
+        exact ⟨hf1, hw⟩
+      · intro hcon
+        rw [find?_take_succ_of_some hfind] at hcon
+        simp at hcon
+    | none =>
+      -- nothing yet: test the seat
+      have hf0τ : τ.vars "bt.f" = 0 := hnone hfind
+      have hcondT : (Cond.eq (.var "bt.f") (.lit 0)).evalB B τ = some true := by
+        rw [evalB_condEq (evalB_var (by rw [hf0τ]; omega)) (evalB_lit (by omega)), hf0τ]
+        simp
+      have hdev : (Expr.var "bt.d").evalB B τ = some (firsts colB K ρ).length := by
+        rw [← hdτ]
+        exact evalB_var (by rw [hdτ]; omega)
+      have hcond2 := evalB_condLt (evalB_lit (show 0 + s < B by omega)) hdev
+      by_cases hslt : 0 + s < (firsts colB K ρ).length
+      · -- an occupied seat: read it and test off-environment
+        have hcond2T : (Cond.lt (.lit (0 + s)) (.var "bt.d")).evalB B τ = some true := by
+          rw [hcond2]
+          congr 1
+          simpa using hslt
+        set w := (firsts colB K ρ)[0 + s]'hslt with hwdef
+        have hidx : ρ * (K + 1) + (0 + s) < 2 ^ Lc * (K + 1) := by
+          have h1 : (ρ + 1) * (K + 1) ≤ 2 ^ Lc * (K + 1) :=
+            Nat.mul_le_mul_right _ (by omega)
+          rw [Nat.succ_mul] at h1
+          omega
+        have hxev : (Expr.get fa (.lit (ρ * (K + 1) + (0 + s)))).evalB B τ
+            = some (w : ℕ) := by
+          refine evalB_get_lit ?_ ?_ (by omega) (lt_trans (Fin.is_lt _) hNB)
+          · rw [harr, hst.2.1.2.1]
+            exact hidx
+          · rw [harr]
+            exact (hst.2.1.2.2 ρ hρ).2 (0 + s) hslt
+        set τ₁ := τ.setVar "bt.x" (w : ℕ) with hτ₁
+        have hr₁ : Run B (.assign "bt.x" (.get fa (.lit (ρ * (K + 1) + (0 + s)))))
+            τ τ₁ 3 := (Run.assign hxev).mono (by simp)
+        -- the off-environment test
+        obtain ⟨τ₂, hr₂, hoval, hoarr, hox, hovars⟩ :=
+          (offEnvCom_spec h2LB hNB (by omega : k ≤ K + 1) m w) τ₁
+            ⟨by rw [hτ₁]; simp only [arrs_setVar]; rw [harr]; exact hst.2.2.1,
+              by rw [hτ₁]; simp⟩
+        have hxτ₂ : τ₂.vars "bt.x" = (w : ℕ) := by rw [hox, hτ₁]; simp
+        have hoB : τ₂.vars "bt.o" < B := by rw [hoval]; split <;> omega
+        have hcond3 := evalB_condEq (evalB_var hoB) (evalB_lit (by omega : (1:ℕ) < B))
+        by_cases hoff : offEnv m w = true
+        · -- first off-environment seat: record it
+          have hcond3T : (Cond.eq (.var "bt.o") (.lit 1)).evalB B τ₂ = some true := by
+            rw [hcond3, hoval, hoff]
+            simp
+          set τ₃ := τ₂.setVar "bt.f" 1 with hτ₃
+          have hr₃ : Run B (.assign "bt.f" (.lit 1)) τ₂ τ₃ 2 := run_assign_lit (by omega)
+          have hwτ₃ : τ₃.vars "bt.x" = (w : ℕ) := by rw [hτ₃]; simpa using hxτ₂
+          set τ₄ := τ₃.setVar "bt.w" (w : ℕ) with hτ₄
+          have hr₄ : Run B (.assign "bt.w" (.var "bt.x")) τ₃ τ₄ 2 := by
+            have hev : (Expr.var "bt.x").evalB B τ₃ = some (w : ℕ) := by
+              rw [← hwτ₃]
+              exact evalB_var (by rw [hwτ₃]; exact lt_trans (Fin.is_lt _) hNB)
+            rw [hτ₄]
+            exact (Run.assign hev).mono (by simp)
+          have hrun : Run B (seatCom fa ea K k ρ (0 + s)) τ τ₄ (7 * k + 22) := by
+            refine (Run.ite_true hcondT (Run.ite_true hcond2T
+              (hr₁.seq (hr₂.seq (Run.ite_true hcond3T (hr₃.seq hr₄)))))).mono ?_
+            simp only [size_condEq, size_condLt, size_var, size_lit]
+            omega
+          have hfindS : ((firsts colB K ρ).take (0 + s + 1)).find? (offEnv m)
+              = some w := by
+            rw [find?_take_succ_of_none hfind hslt, ← hwdef, if_pos hoff]
+          refine ⟨τ₄, hrun, ?_, ?_, ?_, ?_, ?_⟩
+          · rw [hτ₄, hτ₃]
+            simp only [arrs_setVar]
+            rw [hoarr, hτ₁]
+            simpa using harr
+          · intro y hy
+            have hyf : y ≠ "bt.f" := fun hc => hy (by rw [hc]; decide)
+            have hyw : y ≠ "bt.w" := fun hc => hy (by rw [hc]; decide)
+            have hyx : y ≠ "bt.x" := fun hc => hy (by rw [hc]; decide)
+            have hyo : y ≠ "bt.o" := fun hc => hy (by rw [hc]; decide)
+            rw [hτ₄, vars_setVar, if_neg hyw, hτ₃, vars_setVar, if_neg hyf,
+              hovars y hyo, hτ₁, vars_setVar, if_neg hyx]
+            exact hvars y hy
+          · have hyd : ("bt.d" : String) ≠ "bt.w" := by decide
+            rw [hτ₄, vars_setVar, if_neg (by decide : ("bt.d" : String) ≠ "bt.w"),
+              hτ₃, vars_setVar, if_neg (by decide : ("bt.d" : String) ≠ "bt.f"),
+              hovars _ (by decide), hτ₁, vars_setVar,
+              if_neg (by decide : ("bt.d" : String) ≠ "bt.x")]
+            exact hdτ
+          · intro w' hw'
+            rw [hfindS] at hw'
+            injection hw' with hww
+            subst hww
+            constructor
+            · rw [hτ₄, vars_setVar, if_neg (by decide : ("bt.f" : String) ≠ "bt.w"),
+                hτ₃, vars_setVar, if_pos rfl]
+            · rw [hτ₄, vars_setVar, if_pos rfl]
+          · intro hcon
+            rw [hfindS] at hcon
+            simp at hcon
+        · -- on the environment: the seat is skipped
+          have hoff' : offEnv m w = false := by
+            rw [Bool.not_eq_true] at hoff
+            exact hoff
+          have hcond3F : (Cond.eq (.var "bt.o") (.lit 1)).evalB B τ₂ = some false := by
+            rw [hcond3, hoval, hoff']
+            simp
+          have hrun : Run B (seatCom fa ea K k ρ (0 + s)) τ τ₂ (7 * k + 22) := by
+            refine (Run.ite_true hcondT (Run.ite_true hcond2T
+              (hr₁.seq (hr₂.seq (Run.ite_false hcond3F Run.skip))))).mono ?_
+            simp only [size_condEq, size_condLt, size_var, size_lit]
+            omega
+          have hfindS : ((firsts colB K ρ).take (0 + s + 1)).find? (offEnv m)
+              = none := by
+            rw [find?_take_succ_of_none hfind hslt, ← hwdef, if_neg (by rw [hoff']; simp)]
+          have hfτ₂ : τ₂.vars "bt.f" = 0 := by
+            rw [hovars _ (by decide), hτ₁, vars_setVar,
+              if_neg (by decide : ("bt.f" : String) ≠ "bt.x")]
+            exact hf0τ
+          refine ⟨τ₂, hrun, ?_, ?_, ?_, ?_, ?_⟩
+          · rw [hoarr, hτ₁]
+            simpa using harr
+          · intro y hy
+            have hyx : y ≠ "bt.x" := fun hc => hy (by rw [hc]; decide)
+            have hyo : y ≠ "bt.o" := fun hc => hy (by rw [hc]; decide)
+            rw [hovars y hyo, hτ₁, vars_setVar, if_neg hyx]
+            exact hvars y hy
+          · rw [hovars _ (by decide), hτ₁, vars_setVar,
+              if_neg (by decide : ("bt.d" : String) ≠ "bt.x")]
+            exact hdτ
+          · intro w' hw'
+            rw [hfindS] at hw'
+            simp at hw'
+          · intro _
+            exact hfτ₂
+      · -- an empty seat: the count blocks it
+        have hcond2F : (Cond.lt (.lit (0 + s)) (.var "bt.d")).evalB B τ = some false := by
+          rw [hcond2]
+          congr 1
+          simpa using hslt
+        have htake : (firsts colB K ρ).take (0 + s) = firsts colB K ρ :=
+          List.take_of_length_le (by omega)
+        have htake' : (firsts colB K ρ).take (0 + s + 1) = firsts colB K ρ :=
+          List.take_of_length_le (by omega)
+        refine ⟨τ, (Run.ite_true hcondT (Run.ite_false hcond2F Run.skip)).mono
+          (by simp only [size_condEq, size_condLt, size_var, size_lit]; omega),
+          harr, hvars, hdτ, ?_, ?_⟩
+        · intro w' hw'
+          rw [htake'] at hw'
+          rw [htake] at hfind
+          rw [hfind] at hw'
+          simp at hw'
+        · intro _
+          exact hf0τ
+  -- assemble the K + 1 seats
+  have hscan := seqIdx_spec (B := B) (Kb := 7 * k + 22)
+    (gen := fun s _ => seatCom fa ea K k ρ s)
+    Inv (List.range (K + 1)) 0 hstep
+  have hInv0 : Inv 0 σ := by
+    refine ⟨rfl, fun _ _ => rfl, hd, ?_, fun _ => hf0⟩
+    intro w hw
+    simp at hw
+  obtain ⟨τ, hrunS, hτ⟩ := hscan σ hInv0
+  simp only [List.length_range, Nat.zero_add] at hτ
+  obtain ⟨harr, hvars, hdτ, hsome, hnone⟩ := hτ
+  have htake : (firsts colB K ρ).take (K + 1) = firsts colB K ρ :=
+    List.take_of_length_le hfl_le
+  rw [htake] at hsome hnone
+  exact ⟨τ, hrunS.mono (by rw [List.length_range]), harr, hvars, hsome, hnone⟩
+
+include h2LB hca_ea hna_ea hfa_ea hea_xa in
+open Classical in
+/-- **One candidate trial, discharged**: from the mid-quantifier state
+with the candidate `w` delivered by the expression `e`, the trial's
+whole footprint is `TrialPost` at the candidate's `botEvalT` bit — the
+env scratch cell is written, used by the compiled subformula, and
+cleaned on the way out (the seam rule: no caller-side wipe, ever). The
+stored values are the candidate (`< N`) and two bits. -/
+private theorem trialCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N) (w : Fin N)
+    {e : Expr} {cb : Com} {Kb : ℕ} (φ : DistFO Lc (k + 1))
+    (hese : e.size ≤ 2)
+    (hbody : Spec B (fun σ => EvalSt ca na fa ea xa colB K (Fin.snoc m w) σ) cb
+      (EvalPost ea xa (if botEvalT colB K (Fin.snoc m w) φ then 1 else 0)) Kb) :
+    Spec B
+      (fun σ => TrialSt ca na fa ea xa colB K m σ ∧ e.evalB B σ = some (w : ℕ))
+      (trialCom ea xa k e cb)
+      (fun σ σ' => TrialPost ea xa k (botEvalT colB K (Fin.snoc m w) φ) σ σ')
+      (Kb + 14) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  rintro σ ⟨hst, hev⟩
+  obtain ⟨hrow, hfst, henv, hxl, hxz⟩ := hst
+  -- 1. the candidate into the env scratch cell (a vertex name, `< N`)
+  have hkl : k < (σ.arrs ea).length := by rw [henv, length_arrOf]; omega
+  set σ₁ := σ.setArr ea k (w : ℕ) with hσ₁
+  have hr₁ : Run B (.store ea (.lit k) e) σ σ₁ (2 + e.size) := by
+    rw [hσ₁]
+    exact (Run.store (evalB_lit (by omega)) hev hkl).mono (by simp)
+  have hea₁ : σ₁.arrs ea = arrOf (K + 1) (envFun (Fin.snoc m w)) := by
+    rw [hσ₁, arrs_setArr, if_pos rfl, henv, set_arrOf_eq_upd, envFun_snoc]
+  have hEval₁ : EvalSt ca na fa ea xa colB K (Fin.snoc m w) σ₁ := by
+    refine ⟨rowBits_of_arrs_eq ?_ hrow, firstsSt_of_arrs_eq ?_ ?_ hfst, hea₁, ?_, ?_⟩
+    · rw [hσ₁, arrs_setArr, if_neg hca_ea]
+    · rw [hσ₁, arrs_setArr, if_neg hna_ea]
+    · rw [hσ₁, arrs_setArr, if_neg hfa_ea]
+    · rw [hσ₁, arrs_setArr, if_neg (Ne.symm hea_xa)]
+      exact hxl
+    · intro i hi
+      rw [hσ₁, arrs_setArr, if_neg (Ne.symm hea_xa)]
+      exact hxz i hi
+  -- 2. the compiled subformula
+  obtain ⟨σ₂, hr₂, hrb, hea₂, hxa₂, harr₂, hvar₂⟩ := hbody σ₁ hEval₁
+  have hxa₂σ : σ₂.arrs xa = σ.arrs xa := by
+    rw [hxa₂, hσ₁, arrs_setArr, if_neg (Ne.symm hea_xa)]
+  -- 3. force the accumulator cell on success
+  have hrB : σ₂.vars "bt.r" < B := by rw [hrb]; split <;> omega
+  have hcond := evalB_condEq (evalB_var hrB) (evalB_lit (show (1:ℕ) < B by omega))
+  by_cases hb : botEvalT colB K (Fin.snoc m w) φ = true
+  · -- success: `xa[k] := 1`, then clean the env cell
+    have hr1 : σ₂.vars "bt.r" = 1 := by rw [hrb, hb]; simp
+    have hcondT : (Cond.eq (.var "bt.r") (.lit 1)).evalB B σ₂ = some true := by
+      rw [hcond, hr1]; simp
+    have hkxl : k < (σ₂.arrs xa).length := by rw [hxa₂σ, hxl]; omega
+    set σ₃ := σ₂.setArr xa k 1 with hσ₃
+    have hr₃ : Run B (.store xa (.lit k) (.lit 1)) σ₂ σ₃ 3 := by
+      rw [hσ₃]
+      exact (Run.store (evalB_lit (by omega)) (evalB_lit (by omega)) hkxl).mono (by simp)
+    have hkel : k < (σ₃.arrs ea).length := by
+      rw [hσ₃, arrs_setArr, if_neg hea_xa, hea₂, hea₁, length_arrOf]
+      omega
+    set σ' := σ₃.setArr ea k 0 with hσ'
+    have hr₄ : Run B (.store ea (.lit k) (.lit 0)) σ₃ σ' 3 := by
+      rw [hσ']
+      exact (Run.store (evalB_lit (by omega)) (evalB_lit (by omega)) hkel).mono (by simp)
+    refine ⟨σ', (hr₁.seq (hr₂.seq ((Run.ite_true hcondT hr₃).seq hr₄))).mono
+      (by simp only [size_condEq, size_var, size_lit]; omega), ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · -- the env region is returned verbatim
+      rw [hσ', arrs_setArr, if_pos rfl, hσ₃, arrs_setArr, if_neg hea_xa, hea₂, hea₁,
+        set_arrOf_eq_upd, envFun_unsnoc, henv]
+    · -- the accumulator cell holds the forced bit
+      rw [hb, if_pos rfl]
+      rw [hσ', arrs_setArr, if_neg (Ne.symm hea_xa), hσ₃, arrs_setArr, if_pos rfl,
+        hxa₂σ, set_eq_arrOf_upd k 1 hxl, getD_arrOf _ (by omega)]
+      simp [upd]
+    · -- the other accumulator cells stand
+      intro i hik
+      rw [hσ', arrs_setArr, if_neg (Ne.symm hea_xa), hσ₃, arrs_setArr, if_pos rfl,
+        hxa₂σ, set_eq_arrOf_upd k 1 hxl]
+      by_cases hiK : i < K + 1
+      · rw [getD_arrOf _ hiK, upd_of_ne _ hik]
+      · rw [getD_ge_len (by rw [length_arrOf]; omega), getD_ge_len (by rw [hxl]; omega)]
+    · rw [hσ', hσ₃]
+      simp only [length_arrs_setArr]
+      rw [hxa₂σ]
+    · intro a ha1 ha2
+      rw [hσ', arrs_setArr, if_neg ha1, hσ₃, arrs_setArr, if_neg ha2,
+        harr₂ a ha1 ha2, hσ₁, arrs_setArr, if_neg ha1]
+    · intro y hy
+      rw [hσ', hσ₃]
+      simp only [vars_setArr]
+      rw [hvar₂ y hy, hσ₁]
+      simp only [vars_setArr]
+  · -- failure: the accumulator stands, the env cell is cleaned
+    have hbf : botEvalT colB K (Fin.snoc m w) φ = false := by
+      rw [Bool.not_eq_true] at hb
+      exact hb
+    have hr0 : σ₂.vars "bt.r" = 0 := by rw [hrb, hbf]; simp
+    have hcondF : (Cond.eq (.var "bt.r") (.lit 1)).evalB B σ₂ = some false := by
+      rw [hcond, hr0]; simp
+    have hkel : k < (σ₂.arrs ea).length := by
+      rw [hea₂, hea₁, length_arrOf]
+      omega
+    set σ' := σ₂.setArr ea k 0 with hσ'
+    have hr₄ : Run B (.store ea (.lit k) (.lit 0)) σ₂ σ' 3 := by
+      rw [hσ']
+      exact (Run.store (evalB_lit (by omega)) (evalB_lit (by omega)) hkel).mono (by simp)
+    refine ⟨σ', (hr₁.seq (hr₂.seq ((Run.ite_false hcondF Run.skip).seq hr₄))).mono
+      (by simp only [size_condEq, size_var, size_lit]; omega), ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · rw [hσ', arrs_setArr, if_pos rfl, hea₂, hea₁, set_arrOf_eq_upd, envFun_unsnoc, henv]
+    · rw [hbf, if_neg Bool.false_ne_true, hσ', arrs_setArr,
+        if_neg (Ne.symm hea_xa), hxa₂σ]
+    · intro i _
+      rw [hσ', arrs_setArr, if_neg (Ne.symm hea_xa), hxa₂σ]
+    · rw [hσ']
+      simp only [length_arrs_setArr]
+      rw [hxa₂σ]
+    · intro a ha1 ha2
+      rw [hσ', arrs_setArr, if_neg ha1, harr₂ a ha1 ha2, hσ₁, arrs_setArr, if_neg ha1]
+    · intro y hy
+      rw [hσ']
+      simp only [vars_setArr]
+      rw [hvar₂ y hy, hσ₁]
+      simp only [vars_setArr]
+
+include h2LB hNB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa in
+open Classical in
+/-- **One row code's turn, discharged**: reset the flag, read the
+row's count, scan the seats, try the first off-environment
+representative if the row has one — the footprint is `TrialPost` at
+the bit of `find? (offEnv m)`'s single candidate. -/
+private theorem rhoCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
+    (ρ : ℕ) (hρ : ρ < 2 ^ Lc) {cb : Com} {Kb : ℕ} (φ : DistFO Lc (k + 1))
+    (hbody : ∀ w : Fin N, Spec B
+      (fun σ => EvalSt ca na fa ea xa colB K (Fin.snoc m w) σ) cb
+      (EvalPost ea xa (if botEvalT colB K (Fin.snoc m w) φ then 1 else 0)) Kb) :
+    Spec B (fun σ => TrialSt ca na fa ea xa colB K m σ)
+      (rhoCom na fa ea xa K k ρ cb)
+      (fun σ σ' => TrialPost ea xa k
+        ((((firsts colB K ρ).find? (offEnv m)).toList).any
+          fun w => botEvalT colB K (Fin.snoc m w) φ) σ σ')
+      ((K + 1) * (7 * k + 22) + Kb + 24) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  have hfl_le := firsts_length_le colB K ρ
+  have h2L1 : 2 ^ Lc ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_right _ (by omega)
+  intro σ hst
+  -- reset the flag, read the count
+  set σ₁ := σ.setVar "bt.f" 0 with hσ₁
+  have hr₁ : Run B (.assign "bt.f" (.lit 0)) σ σ₁ 2 := run_assign_lit (by omega)
+  have hdev : (Expr.get na (.lit ρ)).evalB B σ₁ = some (firsts colB K ρ).length := by
+    refine evalB_get_lit ?_ ?_ (by omega) (by omega)
+    · rw [hσ₁]
+      simp only [arrs_setVar]
+      rw [hst.2.1.1]
+      exact hρ
+    · rw [hσ₁]
+      simp only [arrs_setVar]
+      exact (hst.2.1.2.2 ρ hρ).1
+  set σ₂ := σ₁.setVar "bt.d" (firsts colB K ρ).length with hσ₂
+  have hr₂ : Run B (.assign "bt.d" (.get na (.lit ρ))) σ₁ σ₂ 3 := by
+    rw [hσ₂]
+    exact (Run.assign hdev).mono (by simp)
+  have harr₂ : σ₂.arrs = σ.arrs := by rw [hσ₂, hσ₁]; rfl
+  have hst₂ : TrialSt ca na fa ea xa colB K m σ₂ := trialSt_of_arrs_eq harr₂ hst
+  -- the seat scan
+  obtain ⟨σ₃, hr₃, harr₃, hvars₃, hsome, hnone⟩ :=
+    (seatScan_spec h2LB hNB hkK m ρ hρ) σ₂
+      ⟨hst₂, by rw [hσ₂, vars_setVar, if_neg (by decide), hσ₁, vars_setVar, if_pos rfl],
+        by rw [hσ₂, vars_setVar, if_pos rfl]⟩
+  have harr₃σ : σ₃.arrs = σ.arrs := harr₃.trans harr₂
+  have hvars₃σ : ∀ y, y ∉ evalWScalars → σ₃.vars y = σ.vars y := by
+    intro y hy
+    have hyf : y ≠ "bt.f" := fun hc => hy (by rw [hc]; decide)
+    have hyd : y ≠ "bt.d" := fun hc => hy (by rw [hc]; decide)
+    rw [hvars₃ y hy, hσ₂, vars_setVar, if_neg hyd, hσ₁, vars_setVar, if_neg hyf]
+  have htp₀ : TrialPost ea xa k false σ σ₃ := trialPost_of_untouched harr₃σ hvars₃σ
+  -- the trial, if a representative was found
+  cases hfind : (firsts colB K ρ).find? (offEnv m) with
+  | some w =>
+    obtain ⟨hf1, hw⟩ := hsome w hfind
+    have hcondT : (Cond.eq (.var "bt.f") (.lit 1)).evalB B σ₃ = some true := by
+      rw [evalB_condEq (evalB_var (by rw [hf1]; omega)) (evalB_lit (by omega)), hf1]
+      simp
+    have hst₃ : TrialSt ca na fa ea xa colB K m σ₃ := trialSt_of_arrs_eq harr₃σ hst
+    have hev : (Expr.var "bt.w").evalB B σ₃ = some (w : ℕ) := by
+      rw [← hw]
+      exact evalB_var (by rw [hw]; exact lt_trans (Fin.is_lt _) hNB)
+    obtain ⟨σ₄, hr₄, htp₄⟩ :=
+      (trialCom_spec h2LB hca_ea hna_ea hfa_ea hea_xa hkK m w (e := .var "bt.w")
+        φ (by simp) (hbody w)) σ₃ ⟨hst₃, hev⟩
+    have hfinal := htp₀.trans htp₄
+    rw [Bool.false_or] at hfinal
+    refine ⟨σ₄, ?_, ?_⟩
+    · refine (hr₁.seq (hr₂.seq (hr₃.seq (Run.ite_true hcondT hr₄)))).mono ?_
+      simp only [size_condEq, size_var, size_lit]
+      omega
+    · simpa using hfinal
+  | none =>
+    have hf0 := hnone hfind
+    have hcondF : (Cond.eq (.var "bt.f") (.lit 1)).evalB B σ₃ = some false := by
+      rw [evalB_condEq (evalB_var (by rw [hf0]; omega)) (evalB_lit (by omega)), hf0]
+      simp
+    refine ⟨σ₃, ?_, ?_⟩
+    · refine (hr₁.seq (hr₂.seq (hr₃.seq (Run.ite_false hcondF Run.skip)))).mono ?_
+      simp only [size_condEq, size_var, size_lit]
+      omega
+    · simpa using htp₀
+
+include h2LB hNB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa in
+open Classical in
+/-- **The unrestricted quantifier, discharged** (§6.4's schedule): the
+`k` environment candidates, then one turn per row code — `botEvalT`'s
+`exU` clause verbatim, `≤ k + 2^L·(K+1)` candidates however large the
+arena. The accumulator cell is collected into `"bt.r"` and cleaned. -/
+private theorem exUCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
+    (φ : DistFO Lc (k + 1)) {cb : Com} {Kb : ℕ}
+    (hbody : ∀ w : Fin N, Spec B
+      (fun σ => EvalSt ca na fa ea xa colB K (Fin.snoc m w) σ) cb
+      (EvalPost ea xa (if botEvalT colB K (Fin.snoc m w) φ then 1 else 0)) Kb) :
+    Spec B (fun σ => EvalSt ca na fa ea xa colB K m σ)
+      (exUCom na fa ea xa Lc K k cb)
+      (EvalPost ea xa (if botEvalT colB K m (.exU φ) then 1 else 0))
+      (k * (Kb + 14) + 2 ^ Lc * ((K + 1) * (7 * k + 22) + Kb + 24) + 8) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  intro σ hσ
+  set q : Fin N → Bool := fun w => botEvalT colB K (Fin.snoc m w) φ with hq
+  set frep : ℕ → List (Fin N) :=
+    fun ρ => ((firsts colB K ρ).find? (offEnv m)).toList with hfrep
+  -- fold 1: the environment candidates
+  set Inv₁ : ℕ → Env → Prop := fun j τ =>
+    TrialPost ea xa k (((List.ofFn m).take j).any q) σ τ with hInv₁
+  have hstep₁ : ∀ i, i < (List.range k).length →
+      Spec B (Inv₁ (0 + i)) (trialCom ea xa k (.get ea (.lit (0 + i))) cb)
+        (fun _ τ' => Inv₁ (0 + i + 1) τ') (Kb + 14) := by
+    intro i hi
+    rw [List.length_range] at hi
+    simp only [Nat.zero_add]
+    intro τ htp
+    have hstτ : TrialSt ca na fa ea xa colB K m τ :=
+      TrialSt.of_post hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hσ.trialSt htp
+    have hev : (Expr.get ea (.lit i)).evalB B τ = some (m ⟨i, hi⟩ : ℕ) := by
+      refine evalB_get_lit ?_ ?_ (by omega) (lt_trans (Fin.is_lt _) hNB)
+      · rw [hstτ.2.2.1, length_arrOf]
+        omega
+      · rw [hstτ.2.2.1, getD_arrOf _ (by omega), envFun_lt m hi]
+    obtain ⟨τ', hr', htp'⟩ :=
+      (trialCom_spec h2LB hca_ea hna_ea hfa_ea hea_xa hkK m (m ⟨i, hi⟩)
+        (e := .get ea (.lit i)) φ (by simp) (hbody _)) τ ⟨hstτ, hev⟩
+    refine ⟨τ', hr', ?_⟩
+    have hfinal := htp.trans htp'
+    have htake : (List.ofFn m).take (i + 1)
+        = (List.ofFn m).take i ++ [m ⟨i, hi⟩] := by
+      rw [List.take_add_one, List.getElem?_eq_getElem (by simpa using hi),
+        Option.toList_some, List.getElem_ofFn]
+    show TrialPost ea xa k (((List.ofFn m).take (i + 1)).any q) σ τ'
+    rw [htake, List.any_append]
+    simpa using hfinal
+  have hscan₁ := seqIdx_spec (B := B) (Kb := Kb + 14)
+    (gen := fun i _ => trialCom ea xa k (.get ea (.lit i)) cb)
+    Inv₁ (List.range k) 0 hstep₁
+  have hInv₁0 : Inv₁ 0 σ := TrialPost.rfl
+  obtain ⟨τ₁, hrun₁, hτ₁⟩ := hscan₁ σ hInv₁0
+  simp only [List.length_range, Nat.zero_add] at hτ₁
+  have htp₁ : TrialPost ea xa k ((List.ofFn m).any q) σ τ₁ := by
+    have h : TrialPost ea xa k (((List.ofFn m).take k).any q) σ τ₁ := hτ₁
+    rwa [List.take_of_length_le (by simp)] at h
+  -- fold 2: the row codes
+  set Inv₂ : ℕ → Env → Prop := fun j τ =>
+    TrialPost ea xa k ((List.ofFn m ++ (List.range j).flatMap frep).any q) σ τ
+    with hInv₂
+  have hstep₂ : ∀ i (hi : i < (List.range (2 ^ Lc)).length),
+      Spec B (Inv₂ (0 + i)) (rhoCom na fa ea xa K k ((List.range (2 ^ Lc))[i]) cb)
+        (fun _ τ' => Inv₂ (0 + i + 1) τ') ((K + 1) * (7 * k + 22) + Kb + 24) := by
+    intro i hi
+    have hi2 : i < 2 ^ Lc := by simpa using hi
+    simp only [Nat.zero_add, List.getElem_range]
+    intro τ htp
+    have hstτ : TrialSt ca na fa ea xa colB K m τ :=
+      TrialSt.of_post hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hσ.trialSt htp
+    obtain ⟨τ', hr', htp'⟩ :=
+      (rhoCom_spec h2LB hNB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa
+        hkK m i hi2 φ hbody) τ hstτ
+    refine ⟨τ', hr', ?_⟩
+    show TrialPost ea xa k
+      ((List.ofFn m ++ (List.range (i + 1)).flatMap frep).any q) σ τ'
+    have hsplit : (List.ofFn m ++ (List.range (i + 1)).flatMap frep).any q
+        = ((List.ofFn m ++ (List.range i).flatMap frep).any q || (frep i).any q) := by
+      rw [List.range_succ, List.flatMap_append, List.flatMap_cons, List.flatMap_nil,
+        List.append_nil, ← List.append_assoc, List.any_append]
+    rw [hsplit]
+    exact htp.trans htp'
+  have hscan₂ := seqIdx_spec (B := B) (Kb := (K + 1) * (7 * k + 22) + Kb + 24)
+    (gen := fun _ ρ => rhoCom na fa ea xa K k ρ cb)
+    Inv₂ (List.range (2 ^ Lc)) 0 hstep₂
+  have hInv₂0 : Inv₂ 0 τ₁ := by
+    show TrialPost ea xa k ((List.ofFn m ++ (List.range 0).flatMap frep).any q) σ τ₁
+    rw [show (List.range 0).flatMap frep = [] from rfl, List.append_nil]
+    exact htp₁
+  obtain ⟨τ₂, hrun₂, hτ₂⟩ := hscan₂ τ₁ hInv₂0
+  simp only [List.length_range, Nat.zero_add] at hτ₂
+  have htp₂ : TrialPost ea xa k
+      ((List.ofFn m ++ (List.range (2 ^ Lc)).flatMap frep).any q) σ τ₂ := hτ₂
+  -- collect the accumulator into the result, then clean it
+  have hbotU : botEvalT colB K m (.exU φ)
+      = (List.ofFn m ++ (List.range (2 ^ Lc)).flatMap frep).any q := rfl
+  have hσgd : (σ.arrs xa).getD k 0 = 0 := hσ.2.2.2.2 k (le_refl k)
+  have hxl₂ : (τ₂.arrs xa).length = K + 1 := by
+    rw [htp₂.2.2.2.1, hσ.2.2.2.1]
+  have hgd : (τ₂.arrs xa).getD k 0
+      = (if botEvalT colB K m (.exU φ) then 1 else 0) := by
+    rw [htp₂.2.1, hσgd, hbotU]
+  have hread : (Expr.get xa (.lit k)).evalB B τ₂
+      = some (if botEvalT colB K m (.exU φ) then 1 else 0) := by
+    refine evalB_get_lit (by omega) hgd (by omega) (by split <;> omega)
+  set σf := τ₂.setVar "bt.r" (if botEvalT colB K m (.exU φ) then 1 else 0) with hσf
+  have hrf : Run B (.assign "bt.r" (.get xa (.lit k))) τ₂ σf 3 := by
+    rw [hσf]
+    exact (Run.assign hread).mono (by simp)
+  have hkxl : k < (σf.arrs xa).length := by
+    rw [hσf]
+    simp only [arrs_setVar]
+    omega
+  set σ' := σf.setArr xa k 0 with hσ'
+  have hrc : Run B (.store xa (.lit k) (.lit 0)) σf σ' 3 := by
+    rw [hσ']
+    exact (Run.store (evalB_lit (by omega)) (evalB_lit (by omega)) hkxl).mono (by simp)
+  refine ⟨σ', ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · refine (hrun₁.seq (hrun₂.seq (hrf.seq hrc))).mono ?_
+    simp only [List.length_range]
+    omega
+  · rw [hσ', hσf]
+    simp
+  · rw [hσ', arrs_setArr, if_neg hea_xa, hσf]
+    simp only [arrs_setVar]
+    exact htp₂.1
+  · -- the accumulator region is returned verbatim
+    have hxaf : σ'.arrs xa = (τ₂.arrs xa).set k 0 := by
+      rw [hσ', arrs_setArr, if_pos rfl, hσf]
+    rw [hxaf]
+    refine eq_of_getD (by simp only [List.length_set]; rw [hxl₂, hσ.2.2.2.1]) ?_
+    intro i hilen
+    simp only [List.length_set] at hilen
+    rw [set_eq_arrOf_upd k 0 hxl₂, getD_arrOf _ (by omega)]
+    by_cases hik : i = k
+    · subst hik
+      rw [upd_self, hσgd]
+    · rw [upd_of_ne _ hik, htp₂.2.2.1 i hik]
+  · intro a ha1 ha2
+    rw [hσ', arrs_setArr, if_neg ha2, hσf]
+    simp only [arrs_setVar]
+    exact htp₂.2.2.2.2.1 a ha1 ha2
+  · intro y hy
+    have hyr : y ≠ "bt.r" := fun hc => hy (by rw [hc]; decide)
+    rw [hσ']
+    simp only [vars_setArr]
+    rw [hσf, vars_setVar, if_neg hyr]
+    exact htp₂.2.2.2.2.2 y hy
+
+include h2LB hNB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa in
+open Classical in
+/-- **The local quantifier, discharged**: the guard set is
+compile-time syntax, so the machine tries exactly its entries — no
+search at all, `botEvalT`'s `exL` clause verbatim. -/
+private theorem exLCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
+    (r : ℕ) (g : Finset (Fin k)) (φ : DistFO Lc (k + 1)) {cb : Com} {Kb : ℕ}
+    (hbody : ∀ w : Fin N, Spec B
+      (fun σ => EvalSt ca na fa ea xa colB K (Fin.snoc m w) σ) cb
+      (EvalPost ea xa (if botEvalT colB K (Fin.snoc m w) φ then 1 else 0)) Kb) :
+    Spec B (fun σ => EvalSt ca na fa ea xa colB K m σ)
+      (exLCom ea xa k (g.toList.map Fin.val) cb)
+      (EvalPost ea xa (if botEvalT colB K m (.exL r g φ) then 1 else 0))
+      (g.card * (Kb + 14) + 7) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  intro σ hσ
+  set q : Fin k → Bool := fun i => botEvalT colB K (Fin.snoc m (m i)) φ with hq
+  set Inv : ℕ → Env → Prop := fun j τ =>
+    TrialPost ea xa k ((g.toList.take j).any q) σ τ with hInv
+  have hstep : ∀ i, i < (g.toList.map Fin.val).length →
+      Spec B (Inv (0 + i))
+        (trialCom ea xa k (.get ea (.lit ((g.toList.map Fin.val)[i]))) cb)
+        (fun _ τ' => Inv (0 + i + 1) τ') (Kb + 14) := by
+    intro i hi
+    rw [List.length_map] at hi
+    simp only [Nat.zero_add, List.getElem_map]
+    intro τ htp
+    have hstτ : TrialSt ca na fa ea xa colB K m τ :=
+      TrialSt.of_post hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hσ.trialSt htp
+    have hev : (Expr.get ea (.lit ((g.toList[i] : Fin k) : ℕ))).evalB B τ
+        = some ((m (g.toList[i]) : ℕ)) := by
+      refine evalB_get_lit ?_ ?_ ?_ (lt_trans (Fin.is_lt _) hNB)
+      · rw [hstτ.2.2.1, length_arrOf]
+        have := (g.toList[i] : Fin k).is_lt
+        omega
+      · rw [hstτ.2.2.1, getD_arrOf _ (by have := (g.toList[i] : Fin k).is_lt; omega),
+          envFun_lt m (g.toList[i] : Fin k).is_lt]
+      · have := (g.toList[i] : Fin k).is_lt
+        omega
+    obtain ⟨τ', hr', htp'⟩ :=
+      (trialCom_spec h2LB hca_ea hna_ea hfa_ea hea_xa hkK m (m (g.toList[i]))
+        (e := .get ea (.lit ((g.toList[i] : Fin k) : ℕ))) φ (by simp) (hbody _))
+        τ ⟨hstτ, hev⟩
+    refine ⟨τ', hr', ?_⟩
+    have hfinal := htp.trans htp'
+    have htake : g.toList.take (i + 1) = g.toList.take i ++ [g.toList[i]] := by
+      rw [List.take_add_one, List.getElem?_eq_getElem hi, Option.toList_some]
+    show TrialPost ea xa k ((g.toList.take (i + 1)).any q) σ τ'
+    rw [htake, List.any_append]
+    simpa using hfinal
+  have hscan := seqIdx_spec (B := B) (Kb := Kb + 14)
+    (gen := fun _ i => trialCom ea xa k (.get ea (.lit i)) cb)
+    Inv (g.toList.map Fin.val) 0 hstep
+  have hInv0 : Inv 0 σ := TrialPost.rfl
+  obtain ⟨τ, hrun, hτ⟩ := hscan σ hInv0
+  simp only [List.length_map, Nat.zero_add] at hτ
+  have htp : TrialPost ea xa k (g.toList.any q) σ τ := by
+    have := hτ
+    rwa [List.take_of_length_le (le_refl _)] at this
+  -- the collected bit is the guard set's disjunction
+  have hbit : g.toList.any q
+      = decide (∃ i ∈ g, botEvalT colB K (Fin.snoc m (m i)) φ = true) := by
+    by_cases hex : ∃ i ∈ g, botEvalT colB K (Fin.snoc m (m i)) φ = true
+    · rw [decide_eq_true hex, List.any_eq_true]
+      obtain ⟨i, hig, hqi⟩ := hex
+      exact ⟨i, Finset.mem_toList.mpr hig, hqi⟩
+    · rw [decide_eq_false hex]
+      refine List.any_eq_false.mpr (fun i hig => ?_)
+      cases hcase : botEvalT colB K (Fin.snoc m (m i)) φ with
+      | false => rfl
+      | true => exact absurd ⟨i, Finset.mem_toList.mp hig, hcase⟩ hex
+  have hbotL : botEvalT colB K m (.exL r g φ)
+      = decide (∃ i ∈ g, botEvalT colB K (Fin.snoc m (m i)) φ = true) := rfl
+  -- collect and clean
+  have hσgd : (σ.arrs xa).getD k 0 = 0 := hσ.2.2.2.2 k (le_refl k)
+  have hxl₂ : (τ.arrs xa).length = K + 1 := by rw [htp.2.2.2.1, hσ.2.2.2.1]
+  have hgd : (τ.arrs xa).getD k 0
+      = (if botEvalT colB K m (.exL r g φ) then 1 else 0) := by
+    rw [htp.2.1, hσgd, hbotL, ← hbit]
+  have hread : (Expr.get xa (.lit k)).evalB B τ
+      = some (if botEvalT colB K m (.exL r g φ) then 1 else 0) :=
+    evalB_get_lit (by omega) hgd (by omega) (by split <;> omega)
+  set σf := τ.setVar "bt.r" (if botEvalT colB K m (.exL r g φ) then 1 else 0) with hσf
+  have hrf : Run B (.assign "bt.r" (.get xa (.lit k))) τ σf 3 := by
+    rw [hσf]
+    exact (Run.assign hread).mono (by simp)
+  have hkxl : k < (σf.arrs xa).length := by
+    rw [hσf]
+    simp only [arrs_setVar]
+    omega
+  set σ' := σf.setArr xa k 0 with hσ'
+  have hrc : Run B (.store xa (.lit k) (.lit 0)) σf σ' 3 := by
+    rw [hσ']
+    exact (Run.store (evalB_lit (by omega)) (evalB_lit (by omega)) hkxl).mono (by simp)
+  refine ⟨σ', ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · refine (hrun.seq (hrf.seq hrc)).mono ?_
+    simp only [List.length_map, Finset.length_toList]
+    omega
+  · rw [hσ', hσf]
+    simp only [vars_setArr, vars_setVar, if_pos rfl]
+  · rw [hσ', arrs_setArr, if_neg hea_xa, hσf]
+    simp only [arrs_setVar]
+    exact htp.1
+  · have hxaf : σ'.arrs xa = (τ.arrs xa).set k 0 := by
+      rw [hσ', arrs_setArr, if_pos rfl, hσf]
+    rw [hxaf]
+    refine eq_of_getD (by simp only [List.length_set]; rw [hxl₂, hσ.2.2.2.1]) ?_
+    intro i hilen
+    rw [set_eq_arrOf_upd k 0 hxl₂, getD_arrOf _ (by simp only [List.length_set] at hilen; omega)]
+    by_cases hik : i = k
+    · subst hik
+      rw [upd_self, hσgd]
+    · rw [upd_of_ne _ hik, htp.2.2.1 i hik]
+  · intro a ha1 ha2
+    rw [hσ', arrs_setArr, if_neg ha2, hσf]
+    simp only [arrs_setVar]
+    exact htp.2.2.2.2.1 a ha1 ha2
+  · intro y hy
+    have hyr : y ≠ "bt.r" := fun hc => hy (by rw [hc]; decide)
+    rw [hσ']
+    simp only [vars_setArr]
+    rw [hσf, vars_setVar, if_neg hyr]
+    exact htp.2.2.2.2.2 y hy
+
+end EvalSpec
+
+end Lax3Proofs.Prog
