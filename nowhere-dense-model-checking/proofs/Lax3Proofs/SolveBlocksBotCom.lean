@@ -925,7 +925,7 @@ private theorem offEnvCom_spec (h2LB : 2 ^ Lc * (K + 1) < B) (hNB : N < B)
   · intro h i' _ hcon
     exact h ⟨i', hcon⟩
 
-variable (h2LB : 2 ^ Lc * (K + 1) < B) (hNB : N < B)
+variable (h2LB : 2 ^ Lc * (K + 1) < B) (hNB : N < B) (hNLB : N * Lc < B)
   (hca_ea : ca ≠ ea) (hca_xa : ca ≠ xa) (hna_ea : na ≠ ea) (hna_xa : na ≠ xa)
   (hfa_ea : fa ≠ ea) (hfa_xa : fa ≠ xa) (hea_xa : ea ≠ xa)
 
@@ -1271,7 +1271,7 @@ private theorem trialCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N) (w
       rw [hvar₂ y hy, hσ₁]
       simp only [vars_setArr]
 
-include h2LB hNB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa in
+include h2LB hNB hca_ea hna_ea hfa_ea hea_xa in
 open Classical in
 /-- **One row code's turn, discharged**: reset the flag, read the
 row's count, scan the seats, try the first off-environment
@@ -1428,7 +1428,7 @@ private theorem exUCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
     have hstτ : TrialSt ca na fa ea xa colB K m τ :=
       TrialSt.of_post hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hσ.trialSt htp
     obtain ⟨τ', hr', htp'⟩ :=
-      (rhoCom_spec h2LB hNB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa
+      (rhoCom_spec h2LB hNB hca_ea hna_ea hfa_ea hea_xa
         hkK m i hi2 φ hbody) τ hstτ
     refine ⟨τ', hr', ?_⟩
     show TrialPost ea xa k
@@ -1486,6 +1486,7 @@ private theorem exUCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
   · -- the accumulator region is returned verbatim
     have hxaf : σ'.arrs xa = (τ₂.arrs xa).set k 0 := by
       rw [hσ', arrs_setArr, if_pos rfl, hσf]
+      simp only [arrs_setVar]
     rw [hxaf]
     refine eq_of_getD (by simp only [List.length_set]; rw [hxl₂, hσ.2.2.2.1]) ?_
     intro i hilen
@@ -1526,34 +1527,34 @@ private theorem exLCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
   set q : Fin k → Bool := fun i => botEvalT colB K (Fin.snoc m (m i)) φ with hq
   set Inv : ℕ → Env → Prop := fun j τ =>
     TrialPost ea xa k ((g.toList.take j).any q) σ τ with hInv
-  have hstep : ∀ i, i < (g.toList.map Fin.val).length →
+  have hstep : ∀ i (hi : i < (g.toList.map Fin.val).length),
       Spec B (Inv (0 + i))
         (trialCom ea xa k (.get ea (.lit ((g.toList.map Fin.val)[i]))) cb)
         (fun _ τ' => Inv (0 + i + 1) τ') (Kb + 14) := by
     intro i hi
-    rw [List.length_map] at hi
+    have hi2 : i < g.toList.length := by simpa using hi
     simp only [Nat.zero_add, List.getElem_map]
     intro τ htp
     have hstτ : TrialSt ca na fa ea xa colB K m τ :=
       TrialSt.of_post hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hσ.trialSt htp
-    have hev : (Expr.get ea (.lit ((g.toList[i] : Fin k) : ℕ))).evalB B τ
-        = some ((m (g.toList[i]) : ℕ)) := by
+    have hev : (Expr.get ea (.lit ((g.toList[i]'hi2 : Fin k) : ℕ))).evalB B τ
+        = some ((m (g.toList[i]'hi2) : ℕ)) := by
       refine evalB_get_lit ?_ ?_ ?_ (lt_trans (Fin.is_lt _) hNB)
       · rw [hstτ.2.2.1, length_arrOf]
-        have := (g.toList[i] : Fin k).is_lt
+        have := (g.toList[i]'hi2 : Fin k).is_lt
         omega
-      · rw [hstτ.2.2.1, getD_arrOf _ (by have := (g.toList[i] : Fin k).is_lt; omega),
-          envFun_lt m (g.toList[i] : Fin k).is_lt]
-      · have := (g.toList[i] : Fin k).is_lt
+      · rw [hstτ.2.2.1, getD_arrOf _ (by have := (g.toList[i]'hi2 : Fin k).is_lt; omega),
+          envFun_lt m (g.toList[i]'hi2 : Fin k).is_lt]
+      · have := (g.toList[i]'hi2 : Fin k).is_lt
         omega
     obtain ⟨τ', hr', htp'⟩ :=
-      (trialCom_spec h2LB hca_ea hna_ea hfa_ea hea_xa hkK m (m (g.toList[i]))
-        (e := .get ea (.lit ((g.toList[i] : Fin k) : ℕ))) φ (by simp) (hbody _))
+      (trialCom_spec h2LB hca_ea hna_ea hfa_ea hea_xa hkK m (m (g.toList[i]'hi2))
+        (e := .get ea (.lit ((g.toList[i]'hi2 : Fin k) : ℕ))) φ (by simp) (hbody _))
         τ ⟨hstτ, hev⟩
     refine ⟨τ', hr', ?_⟩
     have hfinal := htp.trans htp'
-    have htake : g.toList.take (i + 1) = g.toList.take i ++ [g.toList[i]] := by
-      rw [List.take_add_one, List.getElem?_eq_getElem hi, Option.toList_some]
+    have htake : g.toList.take (i + 1) = g.toList.take i ++ [g.toList[i]'hi2] := by
+      rw [List.take_add_one, List.getElem?_eq_getElem hi2, Option.toList_some]
     show TrialPost ea xa k ((g.toList.take (i + 1)).any q) σ τ'
     rw [htake, List.any_append]
     simpa using hfinal
@@ -1574,10 +1575,8 @@ private theorem exLCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
       obtain ⟨i, hig, hqi⟩ := hex
       exact ⟨i, Finset.mem_toList.mpr hig, hqi⟩
     · rw [decide_eq_false hex]
-      refine List.any_eq_false.mpr (fun i hig => ?_)
-      cases hcase : botEvalT colB K (Fin.snoc m (m i)) φ with
-      | false => rfl
-      | true => exact absurd ⟨i, Finset.mem_toList.mp hig, hcase⟩ hex
+      exact List.any_eq_false.mpr
+        (fun i hig hc => hex ⟨i, Finset.mem_toList.mp hig, hc⟩)
   have hbotL : botEvalT colB K m (.exL r g φ)
       = decide (∃ i ∈ g, botEvalT colB K (Fin.snoc m (m i)) φ = true) := rfl
   -- collect and clean
@@ -1612,6 +1611,7 @@ private theorem exLCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
     exact htp.1
   · have hxaf : σ'.arrs xa = (τ.arrs xa).set k 0 := by
       rw [hσ', arrs_setArr, if_pos rfl, hσf]
+      simp only [arrs_setVar]
     rw [hxaf]
     refine eq_of_getD (by simp only [List.length_set]; rw [hxl₂, hσ.2.2.2.1]) ?_
     intro i hilen
@@ -1630,6 +1630,262 @@ private theorem exLCom_spec {k : ℕ} (hkK : k ≤ K) (m : Fin k → Fin N)
     simp only [vars_setArr]
     rw [hσf, vars_setVar, if_neg hyr]
     exact htp.2.2.2.2.2 y hy
+
+/-- The result assignment's footprint. -/
+private theorem evalPost_assign_r {bit v : ℕ} {σ : Env} (hv : v = bit) :
+    EvalPost ea xa bit σ (σ.setVar "bt.r" v) := by
+  subst hv
+  refine ⟨by simp, by simp, by simp, fun a _ _ => by simp, fun y hy => ?_⟩
+  rw [vars_setVar, if_neg (fun hc => hy (by rw [hc]; decide))]
+
+/-- Footprints chain, the later bit winning. -/
+private theorem evalPost_trans {b₁ b₂ : ℕ} {σ σ₁ σ₂ : Env}
+    (h₁ : EvalPost ea xa b₁ σ σ₁) (h₂ : EvalPost ea xa b₂ σ₁ σ₂) :
+    EvalPost ea xa b₂ σ σ₂ :=
+  ⟨h₂.1, h₂.2.1.trans h₁.2.1, h₂.2.2.1.trans h₁.2.2.1,
+    fun a ha1 ha2 => (h₂.2.2.2.1 a ha1 ha2).trans (h₁.2.2.2.1 a ha1 ha2),
+    fun y hy => (h₂.2.2.2.2 y hy).trans (h₁.2.2.2.2 y hy)⟩
+
+/-- Every node costs at least one unit. -/
+private theorem one_le_evalK (Lc K : ℕ) :
+    ∀ {k : ℕ} (φ : DistFO Lc k), 1 ≤ evalK Lc K φ
+  | _, .adj _ _ => by simp [evalK]
+  | _, .eq _ _ => by simp [evalK]
+  | _, .color _ _ => by simp [evalK]
+  | _, .distLe _ _ _ => by simp [evalK]
+  | _, .distColorLt _ _ _ => by simp [evalK]
+  | _, .not φ => by simp only [evalK]; omega
+  | _, .and φ ψ => by simp only [evalK]; omega
+  | _, .exU φ => by simp only [evalK]; omega
+  | _, .exL _ g φ => by simp only [evalK]; omega
+
+include h2LB hNB in
+open Classical in
+/-- An equality atom, discharged: two env reads and one test. -/
+private theorem eqCom_spec {k : ℕ} (hkK : k ≤ K + 1) (m : Fin k → Fin N)
+    (i j : Fin k) :
+    Spec B (fun σ => EvalSt ca na fa ea xa colB K m σ)
+      (eqCom ea (i : ℕ) (j : ℕ))
+      (EvalPost ea xa (if decide (m i = m j) then 1 else 0)) 9 := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  intro σ hσ
+  have hie : (Expr.get ea (.lit (i : ℕ))).evalB B σ = some (m i : ℕ) := by
+    refine evalB_get_lit ?_ ?_ (by have := i.is_lt; omega) (lt_trans (Fin.is_lt _) hNB)
+    · rw [hσ.2.2.1, length_arrOf]
+      have := i.is_lt
+      omega
+    · rw [hσ.2.2.1, getD_arrOf _ (by have := i.is_lt; omega), envFun_lt m i.is_lt]
+  have hje : (Expr.get ea (.lit (j : ℕ))).evalB B σ = some (m j : ℕ) := by
+    refine evalB_get_lit ?_ ?_ (by have := j.is_lt; omega) (lt_trans (Fin.is_lt _) hNB)
+    · rw [hσ.2.2.1, length_arrOf]
+      have := j.is_lt
+      omega
+    · rw [hσ.2.2.1, getD_arrOf _ (by have := j.is_lt; omega), envFun_lt m j.is_lt]
+  have hcond := evalB_condEq hie hje
+  by_cases heq : (m i : ℕ) = (m j : ℕ)
+  · have hcondT : (Cond.eq (.get ea (.lit (i : ℕ))) (.get ea (.lit (j : ℕ)))).evalB B σ
+        = some true := by
+      rw [hcond]
+      congr 1
+      simpa using heq
+    refine ⟨σ.setVar "bt.r" 1,
+      (Run.ite_true hcondT (run_assign_lit (by omega))).mono
+        (by simp only [size_condEq, size_get, size_lit]; omega),
+      evalPost_assign_r ?_⟩
+    rw [decide_eq_true (Fin.val_inj.mp heq)]
+    simp
+  · have hcondF : (Cond.eq (.get ea (.lit (i : ℕ))) (.get ea (.lit (j : ℕ)))).evalB B σ
+        = some false := by
+      rw [hcond]
+      congr 1
+      simpa using heq
+    refine ⟨σ.setVar "bt.r" 0,
+      (Run.ite_false hcondF (run_assign_lit (by omega))).mono
+        (by simp only [size_condEq, size_get, size_lit]; omega),
+      evalPost_assign_r ?_⟩
+    rw [decide_eq_false (fun hc => heq (congrArg Fin.val hc))]
+    simp
+
+include h2LB hNB hNLB in
+open Classical in
+/-- A color atom, discharged: one row-bit read at stride `Lc`. The
+read index is below `N·Lc`, the value a bit. -/
+private theorem colorCom_spec {k : ℕ} (hkK : k ≤ K + 1) (m : Fin k → Fin N)
+    (c : Fin Lc) (i : Fin k) :
+    Spec B (fun σ => EvalSt ca na fa ea xa colB K m σ)
+      (colorCom ca ea Lc (c : ℕ) (i : ℕ))
+      (EvalPost ea xa (if colB (m i) c then 1 else 0)) 8 := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  have hK1 : K + 1 ≤ 2 ^ Lc * (K + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  intro σ hσ
+  have hNpos : 0 < N := (m i).pos
+  have hLpos : 0 < Lc := c.pos
+  have hLN : Lc ≤ N * Lc := Nat.le_mul_of_pos_left _ hNpos
+  have hie : (Expr.get ea (.lit (i : ℕ))).evalB B σ = some (m i : ℕ) := by
+    refine evalB_get_lit ?_ ?_ (by have := i.is_lt; omega) (lt_trans (Fin.is_lt _) hNB)
+    · rw [hσ.2.2.1, length_arrOf]
+      have := i.is_lt
+      omega
+    · rw [hσ.2.2.1, getD_arrOf _ (by have := i.is_lt; omega), envFun_lt m i.is_lt]
+  have hidx : (m i : ℕ) * Lc + (c : ℕ) < N * Lc := by
+    have h1 : ((m i : ℕ) + 1) * Lc ≤ N * Lc :=
+      Nat.mul_le_mul_right _ (by have := (m i).is_lt; omega)
+    rw [Nat.succ_mul] at h1
+    have := c.is_lt
+    omega
+  have hmul : (Expr.mul (.get ea (.lit (i : ℕ))) (.lit Lc)).evalB B σ
+      = some ((m i : ℕ) * Lc) := by
+    refine evalB_bin hie (evalB_lit (by omega)) ?_
+    show (m i : ℕ) * Lc < B
+    omega
+  have hadd : (Expr.add (.mul (.get ea (.lit (i : ℕ))) (.lit Lc)) (.lit (c : ℕ))).evalB B σ
+      = some ((m i : ℕ) * Lc + (c : ℕ)) := by
+    refine evalB_bin hmul (evalB_lit ?_) ?_
+    · have := c.is_lt
+      omega
+    · show (m i : ℕ) * Lc + (c : ℕ) < B
+      omega
+  have hget : (Expr.get ca (.add (.mul (.get ea (.lit (i : ℕ))) (.lit Lc))
+      (.lit (c : ℕ)))).evalB B σ = some (if colB (m i) c then 1 else 0) := by
+    refine evalB_get hadd ?_ (by split <;> omega)
+    rw [getElem?_eq_getD (by rw [hσ.1.1]; exact hidx), hσ.1.2 (m i) c]
+  exact ⟨σ.setVar "bt.r" (if colB (m i) c then 1 else 0),
+    (Run.assign hget).mono (by simp),
+    evalPost_assign_r rfl⟩
+
+include h2LB hNB hNLB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa in
+open Classical in
+/-- **The compiled evaluator, discharged** (the per-entry half of
+block 0): within the depth budget `k + qdepth φ ≤ K + 1`, the result
+scalar ends holding **`botEvalT`'s bit** — the landed table-scheduled
+evaluator's value, per `SolveBlocksBot` — and the two scratch regions
+are returned verbatim, everything else framed. The budget is
+`evalK Lc K φ`, a function of the schedule alone. The depth budget is
+threaded through the structural recursion: each quantifier case hands
+its body `(k + 1) + qdepth φ ≤ K + 1`, which is exactly the
+hypothesis it received with one `qdepth` unit spent. -/
+theorem evalCom_spec :
+    ∀ {k : ℕ} (φ : DistFO Lc k) (m : Fin k → Fin N),
+      k + qdepth φ ≤ K + 1 →
+      Spec B (fun σ => EvalSt ca na fa ea xa colB K m σ)
+        (evalCom ca na fa ea xa Lc K φ)
+        (EvalPost ea xa (if botEvalT colB K m φ then 1 else 0))
+        (evalK Lc K φ) := by
+  have h1B : 1 < B := one_lt_of_seats h2LB
+  intro k φ
+  induction φ with
+  | adj i j =>
+    intro m _ σ hσ
+    refine ⟨σ.setVar "bt.r" 0, run_assign_lit (by omega), evalPost_assign_r ?_⟩
+    simp [show botEvalT colB K m (.adj i j) = false from rfl]
+  | eq i j =>
+    intro m hd
+    simp only [qdepth] at hd
+    exact eqCom_spec h2LB hNB (by omega) m i j
+  | color c i =>
+    intro m hd
+    simp only [qdepth] at hd
+    exact colorCom_spec h2LB hNB hNLB (by omega) m c i
+  | distLe r i j =>
+    intro m hd
+    simp only [qdepth] at hd
+    exact eqCom_spec h2LB hNB (by omega) m i j
+  | distColorLt r c i =>
+    intro m hd
+    simp only [qdepth] at hd
+    rcases Nat.eq_zero_or_pos r with rfl | hr
+    · have hcmd : evalCom ca na fa ea xa Lc K (.distColorLt 0 c i)
+          = .assign "bt.r" (.lit 0) := by
+        simp [evalCom]
+      have hb : botEvalT colB K m (.distColorLt 0 c i) = false := rfl
+      rw [hcmd, hb]
+      intro σ hσ
+      refine ⟨σ.setVar "bt.r" 0,
+        (run_assign_lit (by omega)).mono (by simp only [evalK]; omega),
+        evalPost_assign_r (by simp)⟩
+    · have hcmd : evalCom ca na fa ea xa Lc K (.distColorLt r c i)
+          = colorCom ca ea Lc (c : ℕ) (i : ℕ) := by
+        simp only [evalCom]
+        rw [if_neg (by omega)]
+      have hb : botEvalT colB K m (.distColorLt r c i) = colB (m i) c := by
+        show (decide (0 < r) && colB (m i) c) = colB (m i) c
+        rw [decide_eq_true hr, Bool.true_and]
+      rw [hcmd, show (evalK Lc K (.distColorLt r c i) : ℕ) = 8 from rfl, hb]
+      exact colorCom_spec h2LB hNB hNLB (by omega) m c i
+  | not φ ih =>
+    intro m hd
+    simp only [qdepth] at hd
+    intro σ hσ
+    obtain ⟨σ₁, hr₁, hp₁⟩ := ih m (by omega) σ hσ
+    have hrv : σ₁.vars "bt.r" = (if botEvalT colB K m φ then 1 else 0) := hp₁.1
+    have hsub : (Expr.sub (.lit 1) (.var "bt.r")).evalB B σ₁
+        = some (1 - σ₁.vars "bt.r") := by
+      refine evalB_bin (evalB_lit (by omega)) (evalB_var ?_) ?_
+      · rw [hrv]
+        split <;> omega
+      · show 1 - σ₁.vars "bt.r" < B
+        omega
+    refine ⟨σ₁.setVar "bt.r" (1 - σ₁.vars "bt.r"),
+      (hr₁.seq (Run.assign hsub)).mono
+        (by simp only [evalK, size_sub, size_lit, size_var]; omega),
+      evalPost_trans hp₁ (evalPost_assign_r ?_)⟩
+    rw [hrv]
+    show 1 - (if botEvalT colB K m φ then 1 else 0)
+        = (if (!botEvalT colB K m φ) then 1 else 0)
+    cases botEvalT colB K m φ <;> simp
+  | and φ ψ ih₁ ih₂ =>
+    intro m hd
+    simp only [qdepth] at hd
+    intro σ hσ
+    obtain ⟨σ₁, hr₁, hp₁⟩ := ih₁ m (by omega) σ hσ
+    have hσ₁ : EvalSt ca na fa ea xa colB K m σ₁ := by
+      refine ⟨rowBits_of_arrs_eq (hp₁.2.2.2.1 ca hca_ea hca_xa) hσ.1,
+        firstsSt_of_arrs_eq (hp₁.2.2.2.1 na hna_ea hna_xa)
+          (hp₁.2.2.2.1 fa hfa_ea hfa_xa) hσ.2.1, ?_, ?_, ?_⟩
+      · rw [hp₁.2.1]
+        exact hσ.2.2.1
+      · rw [hp₁.2.2.1]
+        exact hσ.2.2.2.1
+      · intro i hi
+        rw [hp₁.2.2.1]
+        exact hσ.2.2.2.2 i hi
+    have hrB : σ₁.vars "bt.r" < B := by rw [hp₁.1]; split <;> omega
+    have hcond := evalB_condEq (evalB_var hrB) (evalB_lit (show (1:ℕ) < B by omega))
+    by_cases hb : botEvalT colB K m φ = true
+    · have hr1 : σ₁.vars "bt.r" = 1 := by rw [hp₁.1, hb]; simp
+      have hcondT : (Cond.eq (.var "bt.r") (.lit 1)).evalB B σ₁ = some true := by
+        rw [hcond, hr1]
+        simp
+      obtain ⟨σ₂, hr₂, hp₂⟩ := ih₂ m (by omega) σ₁ hσ₁
+      refine ⟨σ₂, (hr₁.seq (Run.ite_true hcondT hr₂)).mono
+        (by simp only [evalK, size_condEq, size_var, size_lit]; omega), ?_⟩
+      show EvalPost ea xa
+        (if (botEvalT colB K m φ && botEvalT colB K m ψ) then 1 else 0) σ σ₂
+      rw [hb, Bool.true_and]
+      exact evalPost_trans hp₁ hp₂
+    · have hbf : botEvalT colB K m φ = false := by rwa [Bool.not_eq_true] at hb
+      have hr0 : σ₁.vars "bt.r" = 0 := by rw [hp₁.1, hbf]; simp
+      have hcondF : (Cond.eq (.var "bt.r") (.lit 1)).evalB B σ₁ = some false := by
+        rw [hcond, hr0]
+        simp
+      have hψ1 := one_le_evalK Lc K ψ
+      refine ⟨σ₁, (hr₁.seq (Run.ite_false hcondF Run.skip)).mono
+        (by simp only [evalK, size_condEq, size_var, size_lit]; omega), ?_⟩
+      show EvalPost ea xa
+        (if (botEvalT colB K m φ && botEvalT colB K m ψ) then 1 else 0) σ σ₁
+      rw [hbf, Bool.false_and, ← hbf]
+      exact hp₁
+  | exU φ ih =>
+    intro m hd
+    simp only [qdepth] at hd
+    exact exUCom_spec h2LB hNB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa
+      (by omega) m φ (fun w => ih (Fin.snoc m w) (by omega))
+  | exL r g φ ih =>
+    intro m hd
+    simp only [qdepth] at hd
+    exact exLCom_spec h2LB hNB hca_ea hca_xa hna_ea hna_xa hfa_ea hfa_xa hea_xa
+      (by omega) m r g φ (fun w => ih (Fin.snoc m w) (by omega))
 
 end EvalSpec
 
