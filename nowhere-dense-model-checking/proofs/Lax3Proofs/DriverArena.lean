@@ -109,11 +109,15 @@ open Lax3Proofs.LocalityFun Lax3Proofs.WalkDistance
 /-! ### Finite-set plumbing: the compaction bijection and the pad -/
 
 /-- A bijection of `Fin X.ncard` with a set `X` of vertices — the
-compaction bijection. `Classical`-chosen; the compaction transport
-(`Compaction.sat_compact_iff_satWithin`) asks nothing of it. -/
+compaction bijection, **in ascending vertex order**. The compaction
+transport (`Compaction.sat_compact_iff_satWithin`) asks nothing of the
+order — any bijection serves (D3/E7) — but the machine layer can only
+*compute* an order-pinned enumeration, so the sorted one is the pin
+(F6c2's finding: the previous `equivFin` route was `Classical`-chosen
+and no program could realize the abstract local names). -/
 noncomputable def setEquiv {k : ℕ} (X : Set (Fin k)) : Fin X.ncard ≃ ↥X :=
-  (((Set.toFinite X).toFinset.equivFin.trans
-      (finCongr (Set.ncard_eq_toFinset_card X (Set.toFinite X)).symm)).symm).trans
+  ((finCongr (Set.ncard_eq_toFinset_card X (Set.toFinite X))).trans
+      ((Set.toFinite X).toFinset.orderIsoOfFin rfl).toEquiv).trans
     (Equiv.setCongr (Set.Finite.coe_toFinset (Set.toFinite X)))
 
 /-- Padding a set to a fixed width: list its elements through `setEquiv`

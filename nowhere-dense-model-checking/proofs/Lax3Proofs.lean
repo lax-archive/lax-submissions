@@ -92,6 +92,10 @@ import Lax3Proofs.SolveBlocks
 import Lax3Proofs.SolveBlocksScatter
 import Lax3Proofs.SolveBlocksBot
 import Lax3Proofs.SolveBfs
+import Lax3Proofs.SolveBlocksRestrict
+import Lax3Proofs.SolveBlocksBotCom
+import Lax3Proofs.SolveBlocksSupports
+import Lax3Proofs.SolveBlocksProfiles
 
 -- The proofs package of submission Lax3.
 --
