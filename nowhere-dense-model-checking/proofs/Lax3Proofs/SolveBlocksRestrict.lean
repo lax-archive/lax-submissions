@@ -2817,6 +2817,52 @@ private theorem histRoundStep_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
           rw [hB0_def] at hcon
           omega
 
+/-- One member of the channel filter: all its rounds, in order. -/
+private theorem histBody_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
+    (hhc : nmC.hist ≠ nmP.hist) (hhra : nmC.hist ≠ ra) (hhla : nmC.hist ≠ la) :
+    Spec B
+      (fun σ => HistSt nmP nmC la ra n ℓp hb S histP σ ∧
+        σ.vars "rs.i" < S.ncard)
+      (histBody nmP nmC la ra)
+      (fun σ σ' => HistSt nmP nmC la ra n ℓp hb S histP σ' ∧
+        σ'.vars "rs.i" = σ.vars "rs.i" + 1)
+      ((36 * hb + 42) * ℓp + 13) := by
+  intro σ hσ
+  obtain ⟨⟨hh, hcl, hk, hp, hhb, hra, hiN, f, hfarr, hdone⟩, hlt⟩ := hσ
+  have hkn : S.ncard ≤ n := ncard_le_carrier S
+  have hn1 : 1 ≤ n := by have := embN_lt S hlt; omega
+  set i := σ.vars "rs.i" with hi_def
+  -- the member read
+  have hread : Run B (.assign "rs.s" (.get la (.var "rs.i"))) σ
+      (σ.setVar "rs.s" (embN S i)) 3 := by
+    refine (Run.assign (evalB_get (evalB_var (by omega)) ?_
+      (by have := embN_lt S hlt; omega))).mono (by simp)
+    exact clusterList_read hcl hlt
+  set σ₁ := σ.setVar "rs.s" (embN S i) with hσ₁
+  -- the rounds
+  have hMid₁ : HistMidSt nmP nmC la ra n ℓp hb S histP i (σ₁.setVar "rs.q" 0) := by
+    have hv : ∀ y, y ≠ "rs.q" → y ≠ "rs.s" →
+        ((σ₁.setVar "rs.q" 0)).vars y = σ.vars y := by
+      intro y hy1 hy2
+      rw [hσ₁]
+      simp [hy1, hy2]
+    have ha : ∀ b, ((σ₁.setVar "rs.q" 0)).arrs b = σ.arrs b := by
+      intro b
+      rw [hσ₁]
+      simp
+    refine ⟨⟨by rw [ha]; exact hh.1, fun v p => by rw [ha]; exact hh.2 v p⟩,
+      ⟨by rw [ha]; exact hcl.1, fun t ht => by rw [ha]; exact hcl.2 t ht⟩,
+      by rw [hv "rs.k" (by decide) (by decide)]; exact hk,
+      by rw [hv "rs.p" (by decide) (by decide)]; exact hp,
+      by rw [hv "rs.h" (by decide) (by decide)]; exact hhb,
+      by rw [ha]; exact hra,
+      by rw [hv "rs.i" (by decide) (by decide)],
+      by rw [vars_setVar, if_neg (by decide), hσ₁]; simp,
+      by simp,
+      f, by rw [ha]; exact hfarr, hdone i (by omega)?, ?_⟩
+    sorry
+  sorry
+
 end HistFilter
 
 end Phases
