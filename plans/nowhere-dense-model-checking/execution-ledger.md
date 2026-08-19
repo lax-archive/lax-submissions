@@ -42,7 +42,9 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F6c | the `ℓ+1` driver blocks — run 1 | done (part) | w11 | 7bad766 | frame contract + greedyScatter fully IMP+ (with an inlined marking BFS) + botEval's schedule fix; direct `Spec`-kit route validated; continuation split into F6c2/F6c3 + the post-F6d stages (supports, profilesMS, cover sweep, readback, frame/driver composition) |
 | F6c2 | restrict + isolate as IMP+ (run 2) | wip | w12 | — | owns `SolveBlocksRestrict.lean`; `restrictCom` at `MArena.restrict` (renumbering via rank scratch, self-cleaned at touched entries) is the bar, `isolateCom` if it fits |
 | F6c3 | block 0's IMP+ table fill (run 3) | wip | w12 | — | owns `SolveBlocksBotCom.lean`; the `firsts` table build + the generated per-entry evaluator, target `botEvalT` verbatim |
-| F6d | shared IMP+ BFS: generalize `markCom` | wip | w12 | — | owns `SolveBfs.lean` (new); deliverable is `bfsCom_spec` at `ImplBfs.BallTable` — exact truncated distances, consumers: supports (`descend`), profilesMS (on `vsrc`), sweep slot |
+| F6d | shared IMP+ BFS: generalize `markCom` | done | w12 | ab14f30 | `bfsCom_spec` literally at `ImplBfs.BallTable` (+ sentinel bound clause), `bfsK ≤ 69·(d+1)·(N+ns+1)`; markCom's invariant minus the mark coupling; gate green |
+| F6c4 | supports stage: `bfsSupports`/`descend` as IMP+ | wip | w12 | — | owns `SolveBlocksSupports.lean`; least-parent array in one slot pass (min-tracked — rows are unsorted), counted gradient walks into the `HistArr` column |
+| F6c5 | profilesMS stage: `vsrc` + `recordProfilesMS` as IMP+ | wip | w12 | — | owns `SolveBlocksProfiles.lean`; materialize the `vsrc` CSR, run landed `bfsCom` from `Fin.last`, read rows at `recordProfilesMS` verbatim (`recordProfilesMS_eq_childCol` frozen on top) |
 | F7 | discharge the endorsed axiom | waiting | — | — | needs F6c (all runs), F6d; then: instantiate `SolveSpec` via `solveSpec_of_rest`, `q`/`c` per `hspan`, `temps ≥` boolean depth, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close with the `conclusion:` header |
 
 ## Campaign log
@@ -62,7 +64,23 @@ the only F6 stages that do not consume F6d's BFS; supports/profilesMS/cover
 sweep/composition follow once F6d lands. Workers do not touch the root
 module; the supervisor adds the three imports at landing.
 
-### 2026-08-18 — session wrap-up (Jan's call): the state, and the road left
+### 2026-08-18 — w11 lands in full; the session closes here
+
+F6c's run-1 report arrived during wrap-up and was reviewed and landed
+(`9996e30`), after F6b (`c4cde5b`). The wave is complete. Two supervisor
+cwd slips during the wrap-up landings (a doubled worktree path, and an edit
+applied to the worktree's root module instead of main's) were both caught by
+the gate and fixed — the gate earned its keep twice in twenty minutes.
+
+**The one remaining stretch is F6c-2** (~4 focused runs, mapped in the row
+above and in `SolveBlocks.lean`'s continuation section), then **F7**'s
+∃-close. Everything else — the mathematics, the abstract algorithm, the cost
+chain to the axiom's own `T`-clause, the codegen skeleton, the frame
+contract, and two routines all the way down to IMP+ — is landed, gated, and
+pushed. F6d dissolved: the marking BFS exists (`markCom`), its pattern
+reuses.
+
+### (superseded by the entry above) session wrap-up (Jan's call): the state, and the road left
 
 Jan closed the session mid-wave-11. Landed this session: **all seventeen E
 rows and F1–F5, F3b/F3c, F6, F6b** — the abstract theorem, the machine layer,
