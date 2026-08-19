@@ -72,13 +72,16 @@ cwd slips during the wrap-up landings (a doubled worktree path, and an edit
 applied to the worktree's root module instead of main's) were both caught by
 the gate and fixed — the gate earned its keep twice in twenty minutes.
 
-**The one remaining stretch is F6c-2** (~4 focused runs, mapped in the row
-above and in `SolveBlocks.lean`'s continuation section), then **F7**'s
-∃-close. Everything else — the mathematics, the abstract algorithm, the cost
-chain to the axiom's own `T`-clause, the codegen skeleton, the frame
-contract, and two routines all the way down to IMP+ — is landed, gated, and
-pushed. F6d dissolved: the marking BFS exists (`markCom`), its pattern
-reuses.
+**Correction, written minutes later:** a second supervisor session picked
+the loop up from this ledger while this one was wrapping — it landed F6c
+first (`7bad766`; this session's `9996e30` was a benign near-empty duplicate),
+landed **F6d as `SolveBfs`** (`ab14f30`, the shared bounded BFS at
+`BallTable`), and dispatched wave 12 (F6c2–F6c5). The remaining stretch is
+theirs: the F6c2–F6c5 rows above, then **F7**'s ∃-close. Everything else —
+the mathematics, the abstract algorithm, the cost chain to the axiom's own
+`T`-clause, the codegen skeleton, the frame contract, and the first routines
+down to IMP+ — is landed, gated, and pushed. This session ends here; the
+ledger did its job twice over.
 
 ### (superseded by the entry above) session wrap-up (Jan's call): the state, and the road left
 
