@@ -2979,6 +2979,547 @@ private theorem histFilter_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
 
 end HistFilter
 
+/-! ## §12 The frame data of the phases -/
+
+section FrameData
+
+variable (nmP nmC : ArenaNames) (la ra : String)
+
+private theorem wvars_rankMark : (rankMark la ra).wvars = ["rs.i", "rs.s", "rs.i"] := rfl
+private theorem warrs_rankMark : (rankMark la ra).warrs = [ra] := rfl
+private theorem wvars_rankClear : (rankClear la ra).wvars = ["rs.i", "rs.s", "rs.i"] := rfl
+private theorem warrs_rankClear : (rankClear la ra).warrs = [ra] := rfl
+private theorem wvars_csrFill : (csrFill nmP nmC la ra).wvars
+    = ["rs.c", "rs.i", "rs.s", "rs.j", "rs.e", "rs.w", "rs.x", "rs.c", "rs.j",
+      "rs.i"] := rfl
+private theorem warrs_csrFill : (csrFill nmP nmC la ra).warrs
+    = [nmC.off, nmC.tgt, nmC.off] := rfl
+private theorem wvars_colCopy : (colCopy nmP nmC la).wvars
+    = ["rs.i", "rs.s", "rs.q", "rs.q", "rs.i"] := rfl
+private theorem warrs_colCopy : (colCopy nmP nmC la).warrs = [nmC.col] := rfl
+private theorem wvars_upCopy : (upCopy nmP nmC la).wvars
+    = ["rs.i", "rs.s", "rs.i"] := rfl
+private theorem warrs_upCopy : (upCopy nmP nmC la).warrs = [nmC.up] := rfl
+private theorem wvars_histFilter : (histFilter nmP nmC la ra).wvars
+    = ["rs.i", "rs.s", "rs.q", "rs.a", "rs.b", "rs.e", "rs.t", "rs.d", "rs.w",
+      "rs.x", "rs.t", "rs.d", "rs.q", "rs.i"] := rfl
+private theorem warrs_histFilter : (histFilter nmP nmC la ra).warrs
+    = [nmC.hist, nmC.hist] := rfl
+private theorem wvars_sizeCells : (sizeCells nmC).wvars = [nmC.nN, nmC.nS] := rfl
+private theorem warrs_sizeCells : (sizeCells nmC).warrs = ([] : List String) := rfl
+
+/-- Every scalar the routine writes is scratch or one of the child's
+two cells. -/
+theorem wvars_restrictCom_subset :
+    ∀ y ∈ (restrictCom nmP nmC la ra).wvars,
+      y ∈ rsScalars ∨ y = nmC.nN ∨ y = nmC.nS := by
+  intro y hy
+  have h : (restrictCom nmP nmC la ra).wvars
+      = ["rs.i", "rs.s", "rs.i"] ++ (["rs.c", "rs.i", "rs.s", "rs.j", "rs.e",
+        "rs.w", "rs.x", "rs.c", "rs.j", "rs.i"] ++ (["rs.i", "rs.s", "rs.q",
+        "rs.q", "rs.i"] ++ (["rs.i", "rs.s", "rs.i"] ++ (["rs.i", "rs.s",
+        "rs.q", "rs.a", "rs.b", "rs.e", "rs.t", "rs.d", "rs.w", "rs.x",
+        "rs.t", "rs.d", "rs.q", "rs.i"] ++ (["rs.i", "rs.s", "rs.i"]
+        ++ [nmC.nN, nmC.nS]))))) := rfl
+  rw [h] at hy
+  simp only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at hy
+  rcases hy with hy | hy | hy | hy | hy | hy | hy <;>
+    first
+      | (left; rcases hy with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+          | rfl | rfl | rfl | rfl | rfl <;> decide)
+      | (rcases hy with rfl | rfl
+         · right; left; rfl
+         · right; right; rfl)
+
+/-- Every array the routine stores into is the scratch or a child
+region. -/
+theorem warrs_restrictCom :
+    (restrictCom nmP nmC la ra).warrs
+      = [ra, nmC.off, nmC.tgt, nmC.off, nmC.col, nmC.up, nmC.hist, nmC.hist,
+        ra] := rfl
+
+/-- The routine never writes the output tape. -/
+theorem noWrite_restrictCom : (restrictCom nmP nmC la ra).NoWrite := by
+  simp [restrictCom, rankMark, rankClear, csrFill, csrFillBody, csrSlot,
+    colCopy, colCopyBody, upCopy, histFilter, histBody, histRound, histSlot,
+    sizeCells, Csr.loadRow, Csr.scan, Csr.slot, Com.NoWrite]
+
+/-- The routine never reads the input tape. -/
+theorem not_reads_restrictCom : ¬ (restrictCom nmP nmC la ra).reads := by
+  simp [restrictCom, rankMark, rankClear, csrFill, csrFillBody, csrSlot,
+    colCopy, colCopyBody, upCopy, histFilter, histBody, histRound, histSlot,
+    sizeCells, Csr.loadRow, Csr.scan, Csr.slot, Com.reads]
+
+end FrameData
+
+/-! ## §13 The budget -/
+
+/-- **The routine's budget**, its terms mirroring `Impl.childCharge` by
+name: `27·dS` for the row scans with `dS := Σ_{s∈S} deg_A(s)` — the
+**parent** degrees, never `‖A[S]‖` — then `|S|` times the per-member
+work of the mark, the color-row copy (`Λ`), the renaming, the channel
+filter (`ℓp·O(hb)`) and the clear, and a constant tail. **No `A.N`
+term**: the carrier-sized wipe that would make a node `Θ(A.N²)` is
+visibly absent. -/
+def restrictK (dS k Λc ℓp hb : ℕ) : ℕ :=
+  27 * dS + k * (20 * Λc + (36 * hb + 42) * ℓp + 132) + 45
+
+/-- The budget against the abstract per-child account, at the channel
+bound `hb := 2R+1` (§4's stored-list bound): one schedule constant. -/
+theorem restrictK_le_childCharge {n : ℕ} (G : SimpleGraph (Fin n))
+    [DecidableRel G.Adj] (Lc ℓp R : ℕ) (S : Set (Fin n)) :
+    restrictK (Impl.degSum G S) S.ncard Lc ℓp (2 * R + 1)
+      ≤ 132 * (Impl.childCharge G Lc ℓp R S + 1) := by
+  rw [restrictK, Impl.childCharge]
+  have h1 : 36 * (2 * R + 1) + 42 ≤ 132 * (2 * R + 1) := by omega
+  have h2 : (36 * (2 * R + 1) + 42) * ℓp ≤ 132 * (ℓp * (2 * R + 1)) := by
+    calc (36 * (2 * R + 1) + 42) * ℓp ≤ (132 * (2 * R + 1)) * ℓp :=
+          Nat.mul_le_mul_right ℓp h1
+      _ = 132 * (ℓp * (2 * R + 1)) := by ring
+  have h3 : S.ncard * (20 * Lc + (36 * (2 * R + 1) + 42) * ℓp + 132)
+      ≤ S.ncard * (132 * Lc + 132 * (ℓp * (2 * R + 1)) + 132) :=
+    Nat.mul_le_mul_left _ (by omega)
+  have h4 : S.ncard * (132 * Lc + 132 * (ℓp * (2 * R + 1)) + 132)
+      = 132 * (S.ncard * (Lc + ℓp * (2 * R + 1))) + 132 * S.ncard := by ring
+  have h5 : 132 * (Impl.degSum G S + S.ncard * (Lc + ℓp * (2 * R + 1))
+        + 2 * S.ncard + 1)
+      = 132 * Impl.degSum G S + 132 * (S.ncard * (Lc + ℓp * (2 * R + 1)))
+        + 264 * S.ncard + 132 := by ring
+  omega
+
+/-! ## §14 `restrictCom`, discharged -/
+
+section RestrictSpec
+
+variable {B n₀ Λc ℓp : ℕ}
+
+open Classical in
+/-- **`restrict`, discharged end to end** (F6c2's head deliverable):
+from the parent frame state `ArenaSt nmP hb A`, the cluster's
+enumeration region and size cell, the schedule cells, five child
+regions of the child's exact sizes, and the ONE rank scratch **clean**,
+`restrictCom` leaves the machine child that **IS** the abstract
+`MArena.restrict A S` — `ArenaSt nmC hb (A.restrict S)` — with the
+child's slot count in its cell, the parent state intact, and **the
+scratch clean again** (the self-cleaning seam rule: exactly the `|S|`
+touched entries were wiped). Budget `restrictK`, whose terms mirror
+`Impl.childCharge` by name. -/
+theorem restrictCom_spec {hb : ℕ} {A : Impl.MArena Λc n₀ ℓp}
+    {S : Set (Fin A.N)} {nmP nmC : ArenaNames} {la ra : String} {ns : ℕ}
+    (hNB : A.N < B) (hnsB : ns < B) (hn0B : n₀ < B)
+    (hLB : A.N * Λc < B) (hHB : A.N * ℓp * (hb + 1) < B)
+    -- the child regions, the scratch and the list are mutually distinct
+    -- and touch neither the parent regions nor the list
+    (hdisj : ∀ x ∈ [nmC.off, nmC.tgt, nmC.col, nmC.up, nmC.hist, ra],
+      ∀ y ∈ [nmP.off, nmP.tgt, nmP.col, nmP.up, nmP.hist, la], x ≠ y)
+    (hpair : ([nmC.off, nmC.tgt, nmC.col, nmC.up, nmC.hist, ra]).Pairwise (· ≠ ·))
+    -- the child's two cells are neither scratch nor the parent's cells
+    (hCn : nmC.nN ∉ rsScalars) (hCs : nmC.nS ∉ rsScalars)
+    (hCns : nmC.nN ≠ nmC.nS)
+    (hPn : nmP.nN ∉ rsScalars) (hPs : nmP.nS ∉ rsScalars)
+    (hPn1 : nmP.nN ≠ nmC.nN) (hPn2 : nmP.nN ≠ nmC.nS)
+    (hPs1 : nmP.nS ≠ nmC.nN) (hPs2 : nmP.nS ≠ nmC.nS) :
+    Spec B
+      (fun σ => ArenaSt nmP hb A σ ∧ σ.vars nmP.nS = ns ∧
+        ClusterList la S σ ∧ σ.vars "rs.k" = S.ncard ∧
+        σ.vars "rs.l" = Λc ∧ σ.vars "rs.p" = ℓp ∧ σ.vars "rs.h" = hb ∧
+        σ.arrs ra = arrOf A.N (fun _ => 0) ∧
+        (σ.arrs nmC.off).length = S.ncard + 1 ∧
+        (σ.arrs nmC.tgt).length
+          = ∑ v : Fin (A.restrict S).N, (A.restrict S).G.degree v ∧
+        (σ.arrs nmC.col).length = S.ncard * Λc ∧
+        (σ.arrs nmC.up).length = S.ncard ∧
+        (σ.arrs nmC.hist).length = S.ncard * ℓp * (hb + 1))
+      (restrictCom nmP nmC la ra)
+      (fun _ σ' => ArenaSt nmC hb (A.restrict S) σ' ∧
+        σ'.vars nmC.nS
+          = ∑ v : Fin (A.restrict S).N, (A.restrict S).G.degree v ∧
+        ArenaSt nmP hb A σ' ∧ σ'.vars nmP.nS = ns ∧
+        ClusterList la S σ' ∧ σ'.vars "rs.k" = S.ncard ∧
+        σ'.arrs ra = arrOf A.N (fun _ => 0))
+      (restrictK (Impl.degSum A.G S) S.ncard Λc ℓp hb) := by
+  classical
+  intro σ₀ hσ₀
+  obtain ⟨hA, hns, hcl, hk, hl, hp, hhb, hraz, hLoff, hLtgt, hLcol, hLup, hLhist⟩ := hσ₀
+  obtain ⟨off, tgt, hc0, hoff0, hnd, hadj⟩ := hA.csr
+  rw [hns] at hc0
+  have hkn : S.ncard ≤ A.N := ncard_le_carrier S
+  -- the pairwise distinctness, spelled out
+  have hpo_pt : nmC.off ≠ nmC.tgt := List.rel_of_pairwise_cons hpair (by simp)
+  have hpo_pc : nmC.off ≠ nmC.col := List.rel_of_pairwise_cons hpair (by simp)
+  have hpo_pu : nmC.off ≠ nmC.up := List.rel_of_pairwise_cons hpair (by simp)
+  have hpo_ph : nmC.off ≠ nmC.hist := List.rel_of_pairwise_cons hpair (by simp)
+  have hpo_ra : nmC.off ≠ ra := List.rel_of_pairwise_cons hpair (by simp)
+  have hpair₁ := List.Pairwise.of_cons hpair
+  have hpt_pc : nmC.tgt ≠ nmC.col := List.rel_of_pairwise_cons hpair₁ (by simp)
+  have hpt_pu : nmC.tgt ≠ nmC.up := List.rel_of_pairwise_cons hpair₁ (by simp)
+  have hpt_ph : nmC.tgt ≠ nmC.hist := List.rel_of_pairwise_cons hpair₁ (by simp)
+  have hpt_ra : nmC.tgt ≠ ra := List.rel_of_pairwise_cons hpair₁ (by simp)
+  have hpair₂ := List.Pairwise.of_cons hpair₁
+  have hpc_pu : nmC.col ≠ nmC.up := List.rel_of_pairwise_cons hpair₂ (by simp)
+  have hpc_ph : nmC.col ≠ nmC.hist := List.rel_of_pairwise_cons hpair₂ (by simp)
+  have hpc_ra : nmC.col ≠ ra := List.rel_of_pairwise_cons hpair₂ (by simp)
+  have hpair₃ := List.Pairwise.of_cons hpair₂
+  have hpu_ph : nmC.up ≠ nmC.hist := List.rel_of_pairwise_cons hpair₃ (by simp)
+  have hpu_ra : nmC.up ≠ ra := List.rel_of_pairwise_cons hpair₃ (by simp)
+  have hpair₄ := List.Pairwise.of_cons hpair₃
+  have hph_ra : nmC.hist ≠ ra := List.rel_of_pairwise_cons hpair₄ (by simp)
+  -- the child-versus-parent disequalities
+  have hdo : ∀ y ∈ [nmP.off, nmP.tgt, nmP.col, nmP.up, nmP.hist, la],
+      nmC.off ≠ y := fun y hy => hdisj _ (by simp) y hy
+  have hdt : ∀ y ∈ [nmP.off, nmP.tgt, nmP.col, nmP.up, nmP.hist, la],
+      nmC.tgt ≠ y := fun y hy => hdisj _ (by simp) y hy
+  have hdc : ∀ y ∈ [nmP.off, nmP.tgt, nmP.col, nmP.up, nmP.hist, la],
+      nmC.col ≠ y := fun y hy => hdisj _ (by simp) y hy
+  have hdu : ∀ y ∈ [nmP.off, nmP.tgt, nmP.col, nmP.up, nmP.hist, la],
+      nmC.up ≠ y := fun y hy => hdisj _ (by simp) y hy
+  have hdh : ∀ y ∈ [nmP.off, nmP.tgt, nmP.col, nmP.up, nmP.hist, la],
+      nmC.hist ≠ y := fun y hy => hdisj _ (by simp) y hy
+  have hdra : ∀ y ∈ [nmP.off, nmP.tgt, nmP.col, nmP.up, nmP.hist, la],
+      ra ≠ y := fun y hy => hdisj _ (by simp) y hy
+  have hCn' : ∀ y ∈ rsScalars, nmC.nN ≠ y := fun y hy h => hCn (h ▸ hy)
+  have hCs' : ∀ y ∈ rsScalars, nmC.nS ≠ y := fun y hy h => hCs (h ▸ hy)
+  have hPn' : ∀ y ∈ rsScalars, nmP.nN ≠ y := fun y hy h => hPn (h ▸ hy)
+  have hPs' : ∀ y ∈ rsScalars, nmP.nS ≠ y := fun y hy h => hPs (h ▸ hy)
+  -- the child CSR's dimensions
+  have hrowlen : ∀ v : Fin S.ncard, (crowL S off tgt (v : ℕ)).length
+      = (A.restrict S).G.degree v := by
+    intro v
+    refine length_eq_degree v (crowL_nodup S off tgt hnd v.2) ?_
+    intro w
+    rw [mem_crowL_iff S off tgt hadj v.2 w]
+    constructor
+    · rintro ⟨hw, hAdj⟩
+      exact ⟨hw, hAdj⟩
+    · rintro ⟨hw, hAdj⟩
+      exact ⟨hw, hAdj⟩
+  have hcns_deg : cns S off tgt
+      = ∑ v : Fin (A.restrict S).N, (A.restrict S).G.degree v := by
+    rw [cns, coff_eq_offList S off tgt le_rfl, offList_eq_sum,
+      ← Fin.sum_univ_eq_sum_range (fun t => (crowL S off tgt t).length) S.ncard]
+    exact Finset.sum_congr rfl fun v _ => hrowlen v
+  have hcns_ns : cns S off tgt ≤ ns := cns_le_ns S off tgt hc0
+  -- ── P1: the mark
+  obtain ⟨σ₁, run1, hpost1⟩ :=
+    ((rankMark_spec (S := S) hNB (Ne.symm (hdra la (by simp)))).frame).run
+      ⟨hcl, hk, hraz⟩
+  obtain ⟨⟨hcl₁, hk₁, hra₁⟩, hfv₁, hfa₁, -, -⟩ := hpost1
+  have hv₁ : ∀ y, y ≠ "rs.i" → y ≠ "rs.s" → σ₁.vars y = σ₀.vars y := by
+    intro y h1 h2
+    refine hfv₁ y ?_
+    rw [wvars_rankMark]
+    simp [h1, h2]
+  have ha₁ : ∀ b, b ≠ ra → σ₁.arrs b = σ₀.arrs b := by
+    intro b hb
+    refine hfa₁ b ?_
+    rw [warrs_rankMark]
+    simp [hb]
+  -- ── P2: the CSR fill
+  have hc₁ : Csr nmP.off nmP.tgt A.N ns A.N off tgt σ₁ :=
+    hc0.of_eq (ha₁ _ (Ne.symm (hdra _ (by simp)))) (ha₁ _ (Ne.symm (hdra _ (by simp))))
+  obtain ⟨σ₂, run2, hpost2⟩ :=
+    ((csrFill_spec (S := S) hNB hnsB (hdt _ (by simp)) hpt_ra hpo_pt.symm
+      (hdt _ (by simp)) (hdt _ (by simp)) (hdo _ (by simp)) (hdo _ (by simp))
+      (hdo _ (by simp)) hpo_ra).frame).run
+      ⟨hc₁, hcl₁, hk₁, hra₁,
+        by rw [ha₁ _ hpo_ra]; exact hLoff,
+        by rw [ha₁ _ hpt_ra, hLtgt, hcns_deg]⟩
+  obtain ⟨⟨hc₂, hcl₂, hk₂, hra₂, hoff₂, htgt₂, hcv₂⟩, hfv₂, hfa₂, -, -⟩ := hpost2
+  have hv₂ : ∀ y, y ∉ (["rs.c", "rs.i", "rs.s", "rs.j", "rs.e", "rs.w", "rs.x"] :
+      List String) → σ₂.vars y = σ₁.vars y := by
+    intro y hy
+    refine hfv₂ y ?_
+    rw [wvars_csrFill]
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hy ⊢
+    push_neg at hy ⊢
+    exact ⟨hy.1, hy.2.1, hy.2.2.1, hy.2.2.2.1, hy.2.2.2.2.1, hy.2.2.2.2.2.1,
+      hy.2.2.2.2.2.2, hy.1, hy.2.2.2.1, hy.2.1⟩
+  have ha₂ : ∀ b, b ≠ nmC.off → b ≠ nmC.tgt → σ₂.arrs b = σ₁.arrs b := by
+    intro b h1 h2
+    refine hfa₂ b ?_
+    rw [warrs_csrFill]
+    simp [h1, h2]
+  -- ── P3: the color copy
+  have hcol₂ : ColBits nmP.col A.col σ₂ := by
+    have h := hA.col
+    rw [ColBits] at h ⊢
+    rw [ha₂ _ (Ne.symm (hdo _ (by simp))) (Ne.symm (hdt _ (by simp))),
+      ha₁ _ (Ne.symm (hdra _ (by simp)))]
+    exact h
+  obtain ⟨σ₃, run3, hpost3⟩ :=
+    ((colCopy_spec (S := S) hNB hLB (hdc _ (by simp)) (hdc _ (by simp))).frame).run
+      ⟨hcol₂, hcl₂, hk₂,
+        by rw [hv₂ _ (by decide), hv₁ _ (by decide) (by decide)]; exact hl,
+        by rw [ha₂ _ hpo_pc.symm hpt_pc.symm, ha₁ _ hpc_ra]; exact hLcol⟩
+  obtain ⟨⟨hcol₃, hcl₃, hk₃, -, hccol₃⟩, hfv₃, hfa₃, -, -⟩ := hpost3
+  have hv₃ : ∀ y, y ∉ (["rs.i", "rs.s", "rs.q"] : List String) →
+      σ₃.vars y = σ₂.vars y := by
+    intro y hy
+    refine hfv₃ y ?_
+    rw [wvars_colCopy]
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hy ⊢
+    push_neg at hy ⊢
+    exact ⟨hy.1, hy.2.1, hy.2.2, hy.2.2, hy.1⟩
+  have ha₃ : ∀ b, b ≠ nmC.col → σ₃.arrs b = σ₂.arrs b := by
+    intro b hb
+    refine hfa₃ b ?_
+    rw [warrs_colCopy]
+    simp [hb]
+  -- ── P4: the renaming
+  have hup₃ : UpArr nmP.up A.up σ₃ := by
+    have h := hA.up
+    rw [UpArr] at h ⊢
+    rw [ha₃ _ (Ne.symm (hdc _ (by simp))),
+      ha₂ _ (Ne.symm (hdo _ (by simp))) (Ne.symm (hdt _ (by simp))),
+      ha₁ _ (Ne.symm (hdra _ (by simp)))]
+    exact h
+  obtain ⟨σ₄, run4, hpost4⟩ :=
+    ((upCopy_spec (S := S) hNB hn0B (hdu _ (by simp)) (hdu _ (by simp))).frame).run
+      ⟨hup₃, hcl₃, hk₃,
+        by rw [ha₃ _ hpc_pu.symm, ha₂ _ hpo_pu.symm hpt_pu.symm, ha₁ _ hpu_ra]
+           exact hLup⟩
+  obtain ⟨⟨hup₄, hcl₄, hk₄, hcup₄⟩, hfv₄, hfa₄, -, -⟩ := hpost4
+  have hv₄ : ∀ y, y ∉ (["rs.i", "rs.s"] : List String) →
+      σ₄.vars y = σ₃.vars y := by
+    intro y hy
+    refine hfv₄ y ?_
+    rw [wvars_upCopy]
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hy ⊢
+    push_neg at hy ⊢
+    exact ⟨hy.1, hy.2, hy.1⟩
+  have ha₄ : ∀ b, b ≠ nmC.up → σ₄.arrs b = σ₃.arrs b := by
+    intro b hb
+    refine hfa₄ b ?_
+    rw [warrs_upCopy]
+    simp [hb]
+  -- ── P5: the channel filter
+  have hhist₄ : HistArr nmP.hist ℓp hb A.hist σ₄ := by
+    have h := hA.hist
+    rw [HistArr] at h ⊢
+    rw [ha₄ _ (Ne.symm (hdu _ (by simp))), ha₃ _ (Ne.symm (hdc _ (by simp))),
+      ha₂ _ (Ne.symm (hdo _ (by simp))) (Ne.symm (hdt _ (by simp))),
+      ha₁ _ (Ne.symm (hdra _ (by simp)))]
+    exact h
+  have hra₄ : σ₄.arrs ra = arrOf A.N (rk S) := by
+    rw [ha₄ _ hpu_ra.symm, ha₃ _ hpc_ra.symm]
+    exact hra₂
+  obtain ⟨σ₅, run5, hpost5⟩ :=
+    ((histFilter_spec (S := S) hNB hHB (hdh _ (by simp)) hph_ra
+      (hdh _ (by simp))).frame).run
+      ⟨hhist₄, hcl₄, hk₄,
+        by rw [hv₄ _ (by decide), hv₃ _ (by decide), hv₂ _ (by decide),
+          hv₁ _ (by decide) (by decide)]; exact hp,
+        by rw [hv₄ _ (by decide), hv₃ _ (by decide), hv₂ _ (by decide),
+          hv₁ _ (by decide) (by decide)]; exact hhb,
+        hra₄,
+        by rw [ha₄ _ hpu_ph.symm, ha₃ _ hpc_ph.symm, ha₂ _ hpo_ph.symm hpt_ph.symm,
+          ha₁ _ hph_ra]; exact hLhist⟩
+  obtain ⟨⟨hhist₅, hcl₅, hk₅, hra₅, hchist₅⟩, hfv₅, hfa₅, -, -⟩ := hpost5
+  have hv₅ : ∀ y, y ∉ (["rs.i", "rs.s", "rs.q", "rs.a", "rs.b", "rs.e", "rs.t",
+      "rs.d", "rs.w", "rs.x"] : List String) → σ₅.vars y = σ₄.vars y := by
+    intro y hy
+    refine hfv₅ y ?_
+    rw [wvars_histFilter]
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hy ⊢
+    push_neg at hy ⊢
+    exact ⟨hy.1, hy.2.1, hy.2.2.1, hy.2.2.2.1, hy.2.2.2.2.1, hy.2.2.2.2.2.1,
+      hy.2.2.2.2.2.2.1, hy.2.2.2.2.2.2.2.1, hy.2.2.2.2.2.2.2.2.1,
+      hy.2.2.2.2.2.2.2.2.2, hy.2.2.2.2.2.2.1, hy.2.2.2.2.2.2.2.1, hy.2.2.1,
+      hy.1⟩
+  have ha₅ : ∀ b, b ≠ nmC.hist → σ₅.arrs b = σ₄.arrs b := by
+    intro b hb
+    refine hfa₅ b ?_
+    rw [warrs_histFilter]
+    simp [hb]
+  -- ── P6: the clear
+  obtain ⟨σ₆, run6, hpost6⟩ :=
+    ((rankClear_spec (S := S) hNB (Ne.symm (hdra la (by simp)))).frame).run
+      ⟨hcl₅, hk₅, hra₅⟩
+  obtain ⟨⟨hcl₆, hk₆, hra₆⟩, hfv₆, hfa₆, -, -⟩ := hpost6
+  have hv₆ : ∀ y, y ≠ "rs.i" → y ≠ "rs.s" → σ₆.vars y = σ₅.vars y := by
+    intro y h1 h2
+    refine hfv₆ y ?_
+    rw [wvars_rankClear]
+    simp [h1, h2]
+  have ha₆ : ∀ b, b ≠ ra → σ₆.arrs b = σ₅.arrs b := by
+    intro b hb
+    refine hfa₆ b ?_
+    rw [warrs_rankClear]
+    simp [hb]
+  -- ── P7: the child's two cells
+  have hcv₆ : σ₆.vars "rs.c" = cns S off tgt := by
+    rw [hv₆ _ (by decide) (by decide), hv₅ _ (by decide), hv₄ _ (by decide),
+      hv₃ _ (by decide)]
+    exact hcv₂
+  have hr7a : Run B (.assign nmC.nN (.var "rs.k")) σ₆
+      (σ₆.setVar nmC.nN S.ncard) 2 := by
+    have hev : (Expr.var "rs.k").evalB B σ₆ = some S.ncard := by
+      rw [← hk₆]
+      exact evalB_var (by rw [hk₆]; omega)
+    exact (Run.assign hev).mono (by simp)
+  set σ₇a := σ₆.setVar nmC.nN S.ncard with hσ₇a
+  have hr7b : Run B (.assign nmC.nS (.var "rs.c")) σ₇a
+      (σ₇a.setVar nmC.nS (cns S off tgt)) 2 := by
+    have h7c : σ₇a.vars "rs.c" = cns S off tgt := by
+      rw [hσ₇a, vars_setVar, if_neg (Ne.symm (hCn' "rs.c" (by decide)))]
+      exact hcv₆
+    have hev : (Expr.var "rs.c").evalB B σ₇a = some (cns S off tgt) := by
+      rw [← h7c]
+      exact evalB_var (by rw [h7c]; omega)
+    exact (Run.assign hev).mono (by simp)
+  set σ₇ := σ₇a.setVar nmC.nS (cns S off tgt) with hσ₇
+  have run7 : Run B (sizeCells nmC) σ₆ σ₇ 4 := (hr7a.seq hr7b).mono (by omega)
+  have hv₇ : ∀ y, y ≠ nmC.nN → y ≠ nmC.nS → σ₇.vars y = σ₆.vars y := by
+    intro y h1 h2
+    rw [hσ₇, hσ₇a]
+    simp [h1, h2]
+  have ha₇ : ∀ b, σ₇.arrs b = σ₆.arrs b := by
+    intro b
+    rw [hσ₇, hσ₇a]
+    simp
+  -- the whole-run transports back to the initial state
+  have hvars_scr : ∀ y, y ∈ rsScalars → y ≠ "rs.k" →
+      True := fun _ _ _ => trivial
+  have hArrsP : ∀ b, b ∈ [nmP.off, nmP.tgt, nmP.col, nmP.up, nmP.hist] →
+      σ₇.arrs b = σ₀.arrs b := by
+    intro b hb
+    have hb6 : b ∈ [nmP.off, nmP.tgt, nmP.col, nmP.up, nmP.hist, la] := by
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hb ⊢
+      tauto
+    rw [ha₇, ha₆ _ (Ne.symm (hdra _ hb6)), ha₅ _ (Ne.symm (hdh _ hb6)),
+      ha₄ _ (Ne.symm (hdu _ hb6)), ha₃ _ (Ne.symm (hdc _ hb6)),
+      ha₂ _ (Ne.symm (hdo _ hb6)) (Ne.symm (hdt _ hb6)),
+      ha₁ _ (Ne.symm (hdra _ hb6))]
+  have hVarsP : ∀ y, y ∉ rsScalars → y ≠ nmC.nN → y ≠ nmC.nS →
+      σ₇.vars y = σ₀.vars y := by
+    intro y hy h1 h2
+    have hne : ∀ z ∈ rsScalars, y ≠ z := fun z hz h => hy (h ▸ hz)
+    rw [hv₇ _ h1 h2,
+      hv₆ _ (hne _ (by decide)) (hne _ (by decide)),
+      hv₅ _ (by
+        simp only [List.mem_cons, List.not_mem_nil, or_false]
+        push_neg
+        exact ⟨hne _ (by decide), hne _ (by decide), hne _ (by decide),
+          hne _ (by decide), hne _ (by decide), hne _ (by decide),
+          hne _ (by decide), hne _ (by decide), hne _ (by decide),
+          hne _ (by decide)⟩),
+      hv₄ _ (by
+        simp only [List.mem_cons, List.not_mem_nil, or_false]
+        push_neg
+        exact ⟨hne _ (by decide), hne _ (by decide)⟩),
+      hv₃ _ (by
+        simp only [List.mem_cons, List.not_mem_nil, or_false]
+        push_neg
+        exact ⟨hne _ (by decide), hne _ (by decide), hne _ (by decide)⟩),
+      hv₂ _ (by
+        simp only [List.mem_cons, List.not_mem_nil, or_false]
+        push_neg
+        exact ⟨hne _ (by decide), hne _ (by decide), hne _ (by decide),
+          hne _ (by decide), hne _ (by decide), hne _ (by decide),
+          hne _ (by decide)⟩),
+      hv₁ _ (hne _ (by decide)) (hne _ (by decide))]
+  -- the child regions, carried to the end
+  have hoff₇ : σ₇.arrs nmC.off = arrOf (S.ncard + 1) (coff S off tgt) := by
+    rw [ha₇, ha₆ _ hpo_ra, ha₅ _ hpo_ph, ha₄ _ hpo_pu, ha₃ _ hpo_pc]
+    exact hoff₂
+  have htgt₇ : σ₇.arrs nmC.tgt = arrOf (cns S off tgt) (ctgt S off tgt) := by
+    rw [ha₇, ha₆ _ hpt_ra, ha₅ _ hpt_ph, ha₄ _ hpt_pu, ha₃ _ hpt_pc]
+    exact htgt₂
+  have hcol₇ : σ₇.arrs nmC.col = σ₃.arrs nmC.col := by
+    rw [ha₇, ha₆ _ hpc_ra, ha₅ _ hpc_ph, ha₄ _ hpc_pu]
+  have hup₇ : σ₇.arrs nmC.up = σ₄.arrs nmC.up := by
+    rw [ha₇, ha₆ _ hpu_ra, ha₅ _ hpu_ph]
+  have hhist₇ : σ₇.arrs nmC.hist = σ₅.arrs nmC.hist := by
+    rw [ha₇, ha₆ _ hph_ra]
+  have hnN₇ : σ₇.vars nmC.nN = S.ncard := by
+    rw [hσ₇, vars_setVar, if_neg hCns, hσ₇a]
+    simp
+  have hnS₇ : σ₇.vars nmC.nS = cns S off tgt := by
+    rw [hσ₇]
+    simp
+  refine ⟨σ₇, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- the run at the announced budget
+    have h := run1.seq (run2.seq (run3.seq (run4.seq (run5.seq (run6.seq run7)))))
+    refine h.mono ?_
+    have hΣ : ∑ t ∈ Finset.range S.ncard, Csr.rowLen off (embN S t)
+        = Impl.degSum A.G S := sum_rowLen_emb_eq_degSum S off tgt hnd hadj
+    rw [restrictK]
+    omega
+  · -- the child arena state
+    refine ⟨hnN₇, ⟨coff S off tgt, ctgt S off tgt, ?_, coff_zero S off tgt, ?_, ?_⟩,
+      ?_, ?_, ?_⟩
+    · -- the CSR relation
+      rw [hnS₇]
+      refine ⟨hoff₇, htgt₇, ?_, ?_, ?_⟩
+      · intro i hi
+        exact coff_mono S off tgt (by omega)
+      · rfl
+      · intro pp hpp
+        exact ctgt_lt S off tgt hpp
+    · -- the rows are duplicate-free
+      intro v
+      rw [row_coff_ctgt S off tgt v.2]
+      exact crowL_nodup S off tgt hnd v.2
+    · -- the rows are the child adjacency
+      intro v w
+      rw [row_coff_ctgt S off tgt v.2, mem_crowL_iff S off tgt hadj v.2 w]
+      constructor
+      · rintro ⟨hw, hAdj⟩
+        exact ⟨hw, hAdj⟩
+      · rintro ⟨hw, hAdj⟩
+        exact ⟨hw, hAdj⟩
+    · -- the color rows
+      have h := hccol₃
+      rw [ColBits] at h ⊢
+      rw [hcol₇]
+      exact h
+    · -- the renaming
+      have h := hcup₄
+      rw [UpArr] at h ⊢
+      rw [hup₇]
+      exact h
+    · -- the channel
+      have h := hchist₅
+      rw [HistArr] at h ⊢
+      rw [hhist₇]
+      exact h
+  · rw [hnS₇, hcns_deg]
+  · -- the parent arena state survives
+    refine ⟨?_, ⟨off, tgt, ?_, hoff0, hnd, hadj⟩, ?_, ?_, ?_⟩
+    · rw [hVarsP _ hPn hPn1 hPn2]
+      exact hA.n_eq
+    · have hnsv : σ₇.vars nmP.nS = ns := by
+        rw [hVarsP _ hPs hPs1 hPs2]
+        exact hns
+      rw [hnsv]
+      exact hc0.of_eq (hArrsP _ (by simp)) (hArrsP _ (by simp))
+    · have h := hA.col
+      rw [ColBits] at h ⊢
+      rw [hArrsP _ (by simp)]
+      exact h
+    · have h := hA.up
+      rw [UpArr] at h ⊢
+      rw [hArrsP _ (by simp)]
+      exact h
+    · have h := hA.hist
+      rw [HistArr] at h ⊢
+      rw [hArrsP _ (by simp)]
+      exact h
+  · rw [hVarsP _ hPs hPs1 hPs2]
+    exact hns
+  · -- the cluster region survives
+    refine ⟨?_, ?_⟩ <;> rw [ha₇, ha₆ _ (Ne.symm (hdra la (by simp)))]
+    · exact hcl₆.1
+    · exact hcl₆.2
+  · rw [hv₇ _ (Ne.symm (hCn' _ (by decide))) (Ne.symm (hCs' _ (by decide))),
+      hv₆ _ (by decide) (by decide)]
+    exact hk₅
+  · -- the scratch is clean again
+    rw [ha₇]
+    exact hra₆
+
+end RestrictSpec
+
 end Phases
 
 end Lax3Proofs.Prog
