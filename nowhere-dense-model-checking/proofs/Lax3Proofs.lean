@@ -101,6 +101,8 @@ import Lax3Proofs.SolveChainBot
 import Lax3Proofs.SolveChainCover
 import Lax3Proofs.SolveChainRestrict
 import Lax3Proofs.SolveChain
+import Lax3Proofs.SolveFrameStages
+import Lax3Proofs.SolveFrameBridge
 
 -- The proofs package of submission Lax3.
 --
