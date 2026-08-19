@@ -91,6 +91,7 @@ import Lax3Proofs.SolveMat
 import Lax3Proofs.SolveBlocks
 import Lax3Proofs.SolveBlocksScatter
 import Lax3Proofs.SolveBlocksBot
+import Lax3Proofs.SolveBfs
 
 -- The proofs package of submission Lax3.
 --
