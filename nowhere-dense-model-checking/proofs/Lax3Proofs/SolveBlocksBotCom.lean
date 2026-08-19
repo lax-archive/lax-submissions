@@ -2939,7 +2939,7 @@ private theorem fillBody_spec {Fl : List (DistFO Lc 1)}
     rw [hoth_h ta hta_ea]
     rcases Nat.lt_or_ge (w : ℕ) v with hwv | hwv
     · exact holdf w hwv i hi
-    · have hweq : w = (⟨v, hvN⟩ : Fin N) := Fin.ext (by omega)
+    · have hweq : w = (⟨v, hvN⟩ : Fin N) := Fin.ext (show (w : ℕ) = v by omega)
       subst hweq
       exact hrowvf i hi hi
 
@@ -2977,8 +2977,7 @@ theorem fillCom_spec {Fl : List (DistFO Lc 1)}
       by simp only [vars_setVar, if_neg (by decide : ("bt.n" : String) ≠ "bt.v")]; exact hn,
       by simp, by simpa using hea0, by simpa using hxa0, by simpa using htal, ?_⟩
     intro w hw i hi
-    have hw0 : (w : ℕ) < 0 := by simp at hw; exact hw
-    exact absurd hw0 (by omega)
+    simp at hw
   obtain ⟨σ', hrl, hI, hvN'⟩ := hloop.run hpre
   obtain ⟨-, -, -, -, -, -, htal', htab'⟩ := hI
   refine ⟨σ', hrl.mono (by

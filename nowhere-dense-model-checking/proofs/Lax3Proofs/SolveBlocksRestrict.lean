@@ -2888,7 +2888,9 @@ private theorem histBody_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
       by simpa using hra₂,
       by simp; omega, ?_⟩, by simp [← hi_def]⟩
   · have h := hread.seq (hmrun.seq hinc)
-    exact h.mono (by omega)
+    refine h.mono ?_
+    have heq : (36 * hb + 38 + 4) * ℓp = (36 * hb + 42) * ℓp := by ring
+    omega
   · refine ⟨f₂, by simpa using hfarr₂, ?_⟩
     intro a ha r hr
     simp at ha
@@ -2936,6 +2938,14 @@ private theorem histFilter_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
   · rintro σ σ' - ⟨⟨hh, hcl, hk, -, -, hra, -, f, hfarr, hdone⟩, hie⟩
     refine ⟨hh, hcl, hk, hra, by rw [hfarr, length_arrOf], ?_⟩
     intro v p
+    show ((histP (Impl.restrictEmb S v) p).filterMap (Impl.toLocal S)).length ≤ hb ∧
+      (σ'.arrs nmC.hist).getD (((v : ℕ) * ℓp + (p : ℕ)) * (hb + 1)) 0
+        = ((histP (Impl.restrictEmb S v) p).filterMap (Impl.toLocal S)).length ∧
+      ∀ m : ℕ,
+        ∀ _ : m < ((histP (Impl.restrictEmb S v) p).filterMap
+          (Impl.toLocal S)).length,
+        (σ'.arrs nmC.hist).getD (((v : ℕ) * ℓp + (p : ℕ)) * (hb + 1) + 1 + m) 0
+          = (((histP (Impl.restrictEmb S v) p).filterMap (Impl.toLocal S))[m] : ℕ)
     have hvk : (v : ℕ) < S.ncard := v.2
     have hpl : (p : ℕ) < ℓp := p.2
     obtain ⟨hbase, hents⟩ := hdone (v : ℕ) (by rw [hie]; exact hvk) (p : ℕ) hpl
