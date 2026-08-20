@@ -162,7 +162,10 @@ def RootLoadSpec (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
       (Krl x)
 
 /-- **Residual 3b, named**: the top scatter — `TopScatterSpec` at every
-admissible input, from the root block's postcondition, verbatim
+admissible input, from the root block's postcondition *plus the top
+stage's length-only scratch descriptor* `Scr` (the closure instantiates
+it at the level-0 descriptor `Scr 0`, which the root load establishes
+and the chain preserves — `TopScatterSpec`'s docstring), verbatim
 `solveSpec_of_chain`'s `htop`. -/
 def TopScatterAll (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
@@ -170,8 +173,8 @@ def TopScatterAll (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     (htabF : (j : ℕ) →
       (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
       Fin A.N → Fin (ℓp j) → List (Fin A.N))
-    (hbf : ℕ → ℕ) (scatCom : Com) (av : ScatterSentence 0 → Expr)
-    (Kc : ℕ) : Prop :=
+    (hbf : ℕ → ℕ) (Scr : Env → Prop) (scatCom : Com)
+    (av : ScatterSentence 0 → Expr) (Kc : ℕ) : Prop :=
   ∀ x ∈ mcD n G c w,
     TopScatterSpec (mcB q x) (Headline.headlineSetup C hC φ) ord G
       (Impl.trivialColoring n)
@@ -179,7 +182,7 @@ def TopScatterAll (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
         (Headline.headlineSetup C hC φ).depth 0 (hbf 0)
         (rootArena G (Impl.trivialColoring n))
         (htabF 0 (rootArena G (Impl.trivialColoring n))) (arenaNames 0))
-      scatCom av Kc
+      Scr scatCom av Kc
 
 /-! ## §3 The closure -/
 
@@ -220,6 +223,10 @@ theorem solveSpec_closed
     -- the run invariant's two facts at the root (F7's)
     (hAdmRoot : Adm 0 (rootArena G (Impl.trivialColoring n)))
     (hdep0 : (Headline.headlineSetup C hC φ).depth = 0 → G = ⊥)
+    -- the level-0 scratch descriptor is length-only, so it crosses the
+    -- chain to the top scatter stage (`TopScatterSpec`'s docstring)
+    (hscrLen0 : ∀ σ σ', Scr 0 σ →
+      (∀ b, (σ'.arrs b).length = (σ.arrs b).length) → Scr 0 σ')
     -- the bottom level's schedule-rank and word-size bookkeeping
     (hKq : ∀ β ∈ levelFml (Headline.headlineSetup C hC φ)
       (Headline.headlineSetup C hC φ).depth, qdepth β ≤ Kq)
@@ -258,7 +265,8 @@ theorem solveSpec_closed
     (hstep : FrameStepAll C hC φ ord G c w q ℓp htabF hbf Adm KB Scr LS LA
       frameBody)
     (hload : RootLoadSpec C hC φ G c w q ext ℓp htabF hbf Scr rootLoadCom Krl)
-    (htop : TopScatterAll C hC φ ord G c w q ℓp htabF hbf scatCom av Kc) :
+    (htop : TopScatterAll C hC φ ord G c w q ℓp htabF hbf (Scr 0) scatCom
+      av Kc) :
     SolveSpec C hC φ ord G c w q ext
       (.seq matCom
         (.seq rootLoadCom
@@ -271,7 +279,8 @@ theorem solveSpec_closed
           (Kc + topEvalCost (Headline.headlineSetup C hC φ) av)))) := by
   refine solveSpec_of_chain C hC φ ord G c w q ext ℓp htabF hbf arenaNames
     Adm KB Scr frameBody (canonBotB (Headline.headlineSetup C hC φ) Kq)
-    rootLoadCom scatCom av Krl Kc hq hextUp hAdmRoot hdep0 ?_ hload htop
+    rootLoadCom scatCom av Krl Kc hq hextUp hAdmRoot hdep0 hscrLen0 ?_
+    hload htop
   -- the chain's contract at the root, from the canonical bottom block
   -- and the frame-step residual
   intro x hx

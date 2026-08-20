@@ -107,6 +107,7 @@ import Lax3Proofs.SolveGlueStep
 import Lax3Proofs.SolveGlueLoad
 import Lax3Proofs.SolveGlueLoop
 import Lax3Proofs.SolveStep
+import Lax3Proofs.SolveSeamTop
 
 -- The proofs package of submission Lax3.
 --

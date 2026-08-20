@@ -500,19 +500,30 @@ theorem botBlock_owned (LS LA : ℕ → List String) (nmF : ℕ → ArenaNames)
 open Classical in
 /-- **The top scatter stage's obligation** (named residual, seam 2):
 some read state `Q` reachable from the root block's postcondition
-within `Kc`, under which the verdict expression family `av` reads, per
-scatter atom of `top`, the guard bit of the guarded greedy count over
-the root table — verbatim the `hscat`/`hav` pair `topCom_spec`
-consumes. Its discharge is one `scatterCom_spec_graphCsr` call per
-atom (the root CSR is the level-0 region) plus a column extraction
-from the root table region (`β ∈ ℱ_0` by `beta_mem_levelFml_zero`),
-the counts stored in a small region `av` reads. -/
+*plus the top stage's own scratch descriptor* within `Kc`, under which
+the verdict expression family `av` reads, per scatter atom of `top`,
+the guard bit of the guarded greedy count over the root table —
+verbatim the `hscat`/`hav` pair `topCom_spec` consumes. Its discharge
+is one `scatterCom_spec_graphCsr` call per atom (the root CSR is the
+level-0 region) plus a column extraction from the root table region
+(`β ∈ ℱ_0` by `beta_mem_levelFml_zero`), the counts stored in a small
+region `av` reads.
+
+`Scr` is the stage's scratch descriptor — **length-only** (module
+docstring), because IMP+ cannot allocate: the scatter machinery needs
+named `≥ N` scratch allocations and a bit region for the extracted
+column, and `BlockPost` alone carries no allocation facts, so from it
+every non-arena array may be empty and no honest scatter program is
+speccable. The chain preserves every array length
+(`specArrsLength`), so a length-only `Scr` established before the
+chain survives to this stage for free — `solveSpec_of_chain` threads
+it from the level-0 descriptor. -/
 def TopScatterSpec (B : ℕ) {L n₀ : ℕ} (S : Setup L)
     (ord : CoverSpec.OrderingRoutine) (G : SimpleGraph (Fin n₀))
-    (col : Coloring n₀ L) (P : Env → Prop) (scatCom : Com)
+    (col : Coloring n₀ L) (P Scr : Env → Prop) (scatCom : Com)
     (av : ScatterSentence L → Expr) (Kc : ℕ) : Prop :=
   ∃ Q : Env → Prop,
-    Spec B P scatCom (fun _ σ' => Q σ') Kc ∧
+    Spec B (fun σ => P σ ∧ Scr σ) scatCom (fun _ σ' => Q σ') Kc ∧
     ∀ σ, Q σ → ∀ σa ∈ scatterAtoms S.choice S.φ S.hφ,
       (av σa).evalB B σ = some (scatterBit G
         (Unroll.unrolledTables S ord 0 (rootArena G col)) σa)
@@ -533,6 +544,12 @@ summed budget, given:
 * the root's admissibility and the degenerate-depth guard (`hAdmRoot`,
   `hdep0` — the run invariant's two facts at the root, F7's),
 * the root load (`hload`) and top scatter (`htop`) seam residuals.
+
+The top scatter's scratch descriptor is the level-0 `Scr 0`: the load
+establishes it (`BlockPre` carries it), it is length-only
+(`hscrLen0` — the instantiator's descriptors always are), and the
+chain preserves every array length (`specArrsLength`), so it arrives
+at the top stage for free.
 
 The postcondition crosses `topCom_spec` at the root table: the chain's
 `unrollAux S.depth 0` **is** `unrolledTables 0` (definitionally, at
@@ -556,6 +573,8 @@ theorem solveSpec_of_chain
     (hextUp : ∀ x ∈ mcD n G c w, ext x "up" = vertexCount x)
     (hAdmRoot : Adm 0 (rootArena G (Impl.trivialColoring n)))
     (hdep0 : (Headline.headlineSetup C hC φ).depth = 0 → G = ⊥)
+    (hscrLen0 : ∀ σ σ', Scr 0 σ →
+      (∀ b, (σ'.arrs b).length = (σ.arrs b).length) → Scr 0 σ')
     (hchain : ∀ x ∈ mcD n G c w,
       BlockSpec (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp htabF hbf
         nmF Adm KB Scr (Headline.headlineSetup C hC φ).depth 0
@@ -573,7 +592,7 @@ theorem solveSpec_of_chain
           (Headline.headlineSetup C hC φ).depth 0 (hbf 0)
           (rootArena G (Impl.trivialColoring n))
           (htabF 0 (rootArena G (Impl.trivialColoring n))) (nmF 0))
-        scatCom av Kc) :
+        (Scr 0) scatCom av Kc) :
     SolveSpec C hC φ ord G c w q ext
       (.seq matCom
         (.seq rootLoadCom
@@ -595,9 +614,13 @@ theorem solveSpec_of_chain
   -- the root evaluation, at the chain's table state
   have htopS := topCom_spec (mcB q x) (Headline.headlineSetup C hC φ) ord G
     (Impl.trivialColoring n) av rfl h1B hscat hav
-  -- chain ; top
-  have hct := Spec.seq hchainS htopS
-    (fun _ σ' _ hpost => hpost) (fun _ _ _ _ _ h => h)
+  -- chain ; top: the chain preserves every array length, so the
+  -- length-only level-0 scratch descriptor crosses it for free and
+  -- lands, with the block postcondition, in the top stage's fixed
+  -- precondition
+  have hct := Spec.seq (specArrsLength hchainS) htopS
+    (fun σ σ' hpre hpost => ⟨hpost.1, hscrLen0 σ σ' hpre.2.2 hpost.2⟩)
+    (fun _ _ _ _ _ h => h)
   -- load ; (chain ; top)
   have hall := Spec.seq (hload x ⟨henc, hside⟩) hct
     (fun _ _ _ h => h) (fun _ _ _ _ _ h => h)
