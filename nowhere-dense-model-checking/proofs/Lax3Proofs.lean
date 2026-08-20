@@ -108,6 +108,8 @@ import Lax3Proofs.SolveGlueLoad
 import Lax3Proofs.SolveGlueLoop
 import Lax3Proofs.SolveStep
 import Lax3Proofs.SolveSeamTop
+import Lax3Proofs.SolveSegPrep
+import Lax3Proofs.SolveSegRead
 
 -- The proofs package of submission Lax3.
 --
