@@ -112,6 +112,8 @@ import Lax3Proofs.SolveSegPrep
 import Lax3Proofs.SolveSegRead
 import Lax3Proofs.SolveCovLoad
 import Lax3Proofs.SolveCovStep
+import Lax3Proofs.SolveMachPrep
+import Lax3Proofs.SolveMachRead
 
 -- The proofs package of submission Lax3.
 --
