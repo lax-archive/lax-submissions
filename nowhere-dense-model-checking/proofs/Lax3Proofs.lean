@@ -106,6 +106,7 @@ import Lax3Proofs.SolveFrameBridge
 import Lax3Proofs.SolveGlueStep
 import Lax3Proofs.SolveGlueLoad
 import Lax3Proofs.SolveGlueLoop
+import Lax3Proofs.SolveStep
 
 -- The proofs package of submission Lax3.
 --
