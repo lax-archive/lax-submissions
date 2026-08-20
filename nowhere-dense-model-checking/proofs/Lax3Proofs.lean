@@ -110,6 +110,8 @@ import Lax3Proofs.SolveStep
 import Lax3Proofs.SolveSeamTop
 import Lax3Proofs.SolveSegPrep
 import Lax3Proofs.SolveSegRead
+import Lax3Proofs.SolveCovLoad
+import Lax3Proofs.SolveCovStep
 
 -- The proofs package of submission Lax3.
 --
