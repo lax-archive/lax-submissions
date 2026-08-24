@@ -117,6 +117,7 @@ import Lax3Proofs.SolveMachRead
 import Lax3Proofs.SolveMachReadRun
 import Lax3Proofs.SolveSweepAdj
 import Lax3Proofs.SolveSweepStep
+import Lax3Proofs.SolveSweepBuild
 import Lax3Proofs.SolveSweepOrder
 
 -- The proofs package of submission Lax3.
