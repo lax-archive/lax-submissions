@@ -59,6 +59,51 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-24 — w23 lands three of four, and finds two landed contracts defective
+
+What is now true that was not before: **the cover sweep's build pass, the
+min-degree peel, the swap-delete program and the scatter-and-readback pass all
+exist as IMP+ programs with `Spec`s** — three of F6c12's six residuals
+discharged verbatim (`5e8ff02`, `3734244`, `a5e5d24`), each gated
+independently, each with an axiom footprint identical to the landed consumer
+it feeds.
+
+**The wave's real yield is three findings, and two of them are defects in
+material that had already landed.**
+
+1. **`AdjDeleteIn` (`SolveSweepAdj.lean:325`) is FALSE**, and w23 proves it —
+   `not_adjDeleteIn`, for every `B`, every program, every budget. It
+   quantifies over every `N` and every `DelAdjSt` state and relates none of
+   them to `B`; at `N = B+2` with a single edge, its postcondition demands a
+   store at index `B`, which `Run B` forbids. `AdjBuildIn` (`:308`) has the
+   same shape and is undischargeable for the same reason, with a second cause:
+   **IMP+ has no array-length primitive** (`Imp.lean:158`), so a fixed command
+   cannot find the end of a carrier whose size lives only in a list length.
+   Both repairs are one hypothesis wide — `AdjDeleteInW` adds `N + N² < B`,
+   `AdjBuildAt` moves the two figures into named cells — and both are free at
+   `mcB` from `1 ≤ q`. **The pattern is now three deep** (F6c8's
+   `TopScatterSpec`, and these two): a contract stated at a `Spec` without the
+   length or word facts its own program needs is not a hard leaf, it is a
+   false one. Audit the remaining named contracts for it before dispatching
+   against them.
+
+2. **The batch is not machine-computable** — the ⟨D⟩ finding, recorded in
+   `algorithm-v2.md` §5 and blocking residual (1). See that entry; it is Jan's
+   decision, not a leaf's.
+
+3. **A cost defect the supervisor's own packet authorized.** The packet told
+   W4 that "a correct `O(N)` scan per round is acceptable — name the budget
+   honestly", without first checking §7. §7 charges the whole cover routine at
+   `a·N^{1+2δ}`, so the resulting `86N² + 43N + 14` breaks the headline at the
+   root. The worker did exactly what it was told and flagged the gap in its
+   report; the error is the packet's. Minted as **F6c13** (bucket-queue
+   degeneracy ordering, `O(N + m)`), which now blocks F7. *Check the cost
+   envelope before authorizing a slower algorithm, not after.*
+
+Also measured: the leaf gate is ~30 s against a warm tree, so landing per
+boundary is cheap — and `lax build` strips the sibling overrides **every**
+time, gate runs included, so `sibling-overrides.sh` belongs after each one.
+
 ### 2026-08-24 — wave 23 dispatched: four of F6c12's six machine programs
 
 Fresh session, fresh container, cold start from this ledger. Two environment
