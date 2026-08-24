@@ -66,6 +66,45 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-24 — overnight: the loop runs unattended, and how to recover it
+
+Jan, going to bed: *"Keep the machine running all night until ndmc is fully
+proven end to end."* Combined with the standing grant of full decision
+authority, that is a mandate to select, dispatch, review, gate, land and
+re-dispatch without stopping, and to resolve every decision that arises.
+
+**If you are a fresh session reading this after a container reclaim, this
+entry plus `git log` is your whole handover.** Do:
+
+1. `git log --oneline -8` on `claude/ndmc-1om1vl` (the campaign branch —
+   local `main` is an unrelated lineage with **no common ancestor**; always
+   name the branch explicitly when creating worktrees).
+2. Read the leaf table above for `ready`/`wip` rows.
+3. `git fetch origin` and check for `worktree-w*` branches. A `wip` row with a
+   pushed `worktree-w<N>` is an interrupted wave: diff it against the campaign
+   branch, salvage what is complete, re-dispatch the rest.
+4. The container starts with **no `.lake/build`**. Run `.claude/capture-seed.sh`
+   then one `lake build` in `nowhere-dense-model-checking/{concepts,proofs}`
+   before seeding any worktree — a worktree cannot be seeded from an unbuilt
+   main checkout.
+
+**Standing hazards, all earned this session:**
+
+- **Check §7's cost envelope BEFORE authorizing an algorithm.** Three separate
+  leaves this session hit it: w23's packet authorized an `O(N)` scan and got an
+  `86N²` peel; w24 and w25 both correctly refused to land a quadratic. A named
+  residual at the right budget beats a proved theorem at the wrong one.
+- **`AdjDeleteIn` and `AdjBuildIn` (`SolveSweepAdj.lean:325`, `:308`) are false
+  as landed.** Use `AdjDeleteInW` / `AdjBuildAt`. Three landed contracts have
+  now been found unspeccable for want of length or word facts; audit any named
+  contract before dispatching against it.
+- **Read the theorem, not the docstring** — eight recorded instances, and one
+  of them (`SolveMachPrep.lean:23-26`) cost a leaf outright.
+- `lax build` strips the sibling overrides **every** time, gate runs included;
+  re-run `.claude/sibling-overrides.sh` after each.
+- The supervisor's cwd drifts into worktrees; use `git -C <repo>` for every
+  landing command. Two near-misses this session.
+
 ### 2026-08-24 — the panel, and four decisions taken under full authority
 
 Jan: *"You have full authority to resolve all decisions. Do not wait for input
