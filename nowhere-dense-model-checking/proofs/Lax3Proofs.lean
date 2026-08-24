@@ -119,6 +119,7 @@ import Lax3Proofs.SolveSweepAdj
 import Lax3Proofs.SolveSweepStep
 import Lax3Proofs.SolveSweepBuild
 import Lax3Proofs.SolveSweepMdPeel
+import Lax3Proofs.SolveSweepPeel
 import Lax3Proofs.SolveSweepOrder
 
 -- The proofs package of submission Lax3.
