@@ -607,6 +607,56 @@ and the connector is unknown when the BFS runs, so the *record* must be
 per-vertex, not one path. That is D6's correction, and line 17 above is written
 for it: `bfsSupports`, not `bfsParents`.
 
+⟨D⟩ **The formalization does not do this, and F6c12 is where it stops being
+free.** `DriverArena.batchRoot` (`:246-247`) is
+`SplitterWin.genSet (2*S.R) A.hist (A.up u)` — the *abstract game's* chosen
+walks, not the recorded BFS supports this section prescribes. `genSet` unions
+`pathSet` (`SplitterWin.lean:192-194`), and `pathSet` is
+`(withinDist_iff.mp h).choose.support` (`:152-153`): a `Classical.choose`-picked
+walk whose only characterisation is `pathSet_spec`, "the support of *some* walk
+of length `≤ r`". No program can be proved to output it. That is fatal at the
+machine layer and nowhere earlier, because `childArena.G` is
+`deleteVerts (preG …) (Set.range (batchFn …))` (`:281`) and
+`profilesCom_specW` takes the batch as a parameter `w` whose values the batch
+region must *already hold* (`SolveFrameStages.lean:802-803`) — so the child
+construction must compute `batchFn` exactly, and `pathSet` appears in no
+machine-layer file at all. Every landed statement mentioning `batchFn` takes it
+as a precondition; nothing in the tree produces it.
+
+**Two campaign decisions collide here, and the collision is the finding.** w4
+scoped D6 down to `(vtx, arena)` rounds on the ground that
+"`Classical.choose`-deterministic `pathSet` reconstructs identical supports at
+descent" — true of the abstract layer, false of any machine. w5 then recorded
+that `bfsSupports` "delivers *is* a witness-walk support, not `= genSet`'s
+chosen walks — the latter is neither provable (Classical choice) nor needed
+(the driver needs *some* walk support)". The second half of that sentence is
+what is wrong: `childArena` pins the isolated set to `range batchFn`, so the
+machine is required to hit `genSet`'s chosen walks on the nose. `bfsSupports`
+being *a* witness support is exactly what this section asked for; the Lean
+`batchRoot` never adopted it.
+
+**What the descent argument actually needs is weaker than what `batchRoot`
+supplies**, which is why the repair is available rather than the design being
+wrong. `DriverCorrect.inv_child` consumes `batchRoot` through exactly three
+properties — the pad fits (`batchSet_ncard_le`), the connector is in the batch
+(`self_mem_genSet`), and `hwalk` (`:490-493`), which is an **existential**:
+"there is a walk `p` of length `≤ 2R` with `p.support ∩ Ximg ⊆ W`", consumed in
+that form by `ReachedS.reachedS_descend`. All three hold of the canonical
+least-parent descent `Impl.descend` (`ImplBfs.lean`, `descend_spec` gives a walk
+of length exactly `D v`; `min'` makes it choice-free), which is the object the
+channel already carries — `SolveMachPrep` §1–§2 having already proved the
+channel's columns canonical (`ballTable_eq_ballDist`, `descendCol_eq_descendTab`).
+
+This is a **design-to-formalization drift**, not a hole in this section: the
+repair direction is the one line 17 already names. Which repair to take —
+redefine `pathSet` canonically at `Fin n`, or re-express `batchRoot` off the
+channel's recorded supports, or parameterise `batchRoot` over any set with the
+three properties — is a decision about landed abstract files (`SplitterWin`,
+`DriverArena`, and `DriverCorrect`'s `hwalk` proof), with cascade into `Driver`,
+`Unroll`, `Headline` and every machine-layer target. It is Jan's call, not a
+leaf's. Recorded 2026-08-24 at wave 23, when F6c12's child-construction pass
+could not be written.
+
 ### Why line 28 is correct
 
 Fix `β ∈ ℱ_j`, local of rank `(1, q−1)`, and `v` with `ctr v = u`.
