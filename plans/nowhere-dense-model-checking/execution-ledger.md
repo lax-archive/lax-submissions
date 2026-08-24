@@ -53,10 +53,56 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F6c10a | `CentrePrepAll` + `CentreReadAll` | done (part) | w19 | 945aeef | the seams PROVED: `unrollAux_succ_of_ne_bot` (recursive table = `RowEval` after the leaf guard), `tablePartial_succ`, `bcExprA` full evaluation (compiled row = `RowEval`'s bit under `1 < B`), atom membership in `levelFml (j+1)`; `centreStepAll_of_childLoad_rows` concludes verbatim `CentreStepAll` from TWO machine residuals — **`ChildLoadAll`** (restrict→bfs 2R→supports→profilesMS→isolate chain + glue, delivering the windowed contract at `Impl.ofArena childArena` with `htabF (j+1)`, level-`j` names untouched) and **`ReadRowsAll`** (write exactly the centre-`u` rows at `RowEval`'s bits). F7 notes: channel content per child arena; descriptor tower guarded to `j+1 ≤ depth`. Remainder → F6c11 |
 | F6c10b | `CoverAllIn` + `RootCsrLoadAll` | done (part) | w20 | d7f22ca | **`RootCsrLoadAll` DISCHARGED outright** (`rootCsrLoadAll_csrLoadCom`: row-stamped mark-array dedup, O(n+m) at `70|x|+20`; scope findings — `adj_iff` is an iff ⇒ no self-loops, both directions present, dedup only). `CoverAllIn` split at its own seam: `coverAllIn_of_order_sweep` verbatim from **`CovOrderIn`** (rank array of `ord`'s order) + **`CovSweepIn`** (rank array → `CoverStageSpec` post). Findings: ordering must be computed inside `covC`; **`timedGreedyRoutine` NOT machine-matchable** (choice-picked `elimRank`) — headline binds `∃ ord`, F7 instantiates a machine-defined min-degree peel (attains `elimBound`, sInf clauses stay provable; residuals parametric in `ord`); peeled BFS must be a frontier-queue over a **deletable adjacency structure** (full-pass rounds bust `sweepCharge`). Remainder → F6c11 |
 | F6c11 | the four machine passes | done (part) | w21+w22 | a2e8b61 | w21: `machChild_eq_ofArena` + `ChildLoadParts` + `htabF` canonicity kit + readback bit bridges (see w21 note in log). w22: `DelAdjSt` (deletable adjacency, full bridge algebra; deletion priced at CURRENT degree inside `sweepCharge`), `covSweepIn_of_build_peel` verbatim from **`CovAdjBuildIn`**+**`CovPeelIn`**; **`mdOrderingRoutine R`** — the machine ordering (min-degree peel, `mdRank` replacing the choice-picked `elimRank`) with the FULL six-clause `AugChainData` proved (`mdRank_backDegLE` resolves clauses 5–6: optimal elimination of the AUGMENTED graph); `covOrderIn_of_aug_mdPeel` verbatim from **`CovAugAdjIn`**+**`CovMdPeelIn`**. Remaining SIX program residuals → F6c12 |
-| F6c12 | the six machine programs | ready | — | — | per-centre: (1) `ChildLoadPartsAll` (`SolveMachPrep`: stage composition + glue at `machChild`), (2) `ReadRowsAll` (`SolveSegRead`: programs+frames only — bit bridges landed); cover: (3) `CovAdjBuildIn` (O(N+ns) build + rank inversion into `OrdArr`), (4) `CovPeelIn` (queue-BFS peel over `DelAdjSt` to `CtrArr`/`ClusterCsr`; `Lib.Queue`), (5) `CovAugAdjIn` (augmentation rounds leaving `DelAdjSt` of the augmented graph — E12's priced obligation), (6) `CovMdPeelIn` (min-degree peel to `RankArr` of `mdOrderingRoutine`); then KB pin + `KsChargeBridge`, then F7 (repin `ord := mdOrderingRoutine R`, owes `time` as before — F5's `coverOrderingTime_of_nowhereDense` used `timedGreedyRoutine`, check transfer or rerun at `mdOrderingRoutine`) |
+| F6c12 | the six machine programs | wip | w23 | — | **w23 dispatched on four of the six** (see log); `CovPeelIn`+`CovAugAdjIn` held for w24. Scope finding: `AdjBuildIn`/`AdjDeleteIn` (`SolveSweepAdj.lean:308,325`) are contracts with **no programs** — three of the six consume them, so each is folded into the worker that needs it rather than minted as a leaf. per-centre: (1) `ChildLoadPartsAll` (`SolveMachPrep`: stage composition + glue at `machChild`), (2) `ReadRowsAll` (`SolveSegRead`: programs+frames only — bit bridges landed); cover: (3) `CovAdjBuildIn` (O(N+ns) build + rank inversion into `OrdArr`), (4) `CovPeelIn` (queue-BFS peel over `DelAdjSt` to `CtrArr`/`ClusterCsr`; `Lib.Queue`), (5) `CovAugAdjIn` (augmentation rounds leaving `DelAdjSt` of the augmented graph — E12's priced obligation), (6) `CovMdPeelIn` (min-degree peel to `RankArr` of `mdOrderingRoutine`); then KB pin + `KsChargeBridge`, then F7 (repin `ord := mdOrderingRoutine R`, owes `time` as before — F5's `coverOrderingTime_of_nowhereDense` used `timedGreedyRoutine`, check transfer or rerun at `mdOrderingRoutine`) |
 | F7 | discharge the endorsed axiom | waiting | — | — | needs F6c10a+b, then KB pin + `KsChargeBridge`; `Adm` must be `Inv`-based (w17 finding); then: `Adm` at the run tree (`mkSetup_memLeaf_eq_bot`), instantiate `SolveSpec` via `solveSpec_closed`, `q`/`c` per `hspan`, `temps ≥` boolean depth, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close with the `conclusion:` header |
 
 ## Campaign log
+
+### 2026-08-24 — wave 23 dispatched: four of F6c12's six machine programs
+
+Fresh session, fresh container, cold start from this ledger. Two environment
+facts worth keeping, because both cost time before any leaf could move:
+
+- **The container had no `.lake/build` at all.** `capture-seed.sh` installed
+  all nine submissions (every sibling `identical`; ND-MC itself `DRIFTED —
+  partial reuse`, its capture predating the whole campaign at
+  `4af91eadd121`), after which `lake build` replayed ND-MC's own drift —
+  3525 jobs, one-time. Seeding `w23` off that took 3 s and replays in 4 s.
+  A worktree cannot be seeded before the main checkout is built; budget the
+  main build first in any fresh container.
+- **Local `main` is not this campaign.** `git merge-base main
+  claude/ndmc-1om1vl` exits 1 — no common ancestor. `816e5cc` is an
+  unrelated lineage; the campaign is `claude/ndmc-1om1vl` = `origin/main` =
+  `783eb34`. Worktrees must name **`claude/ndmc-1om1vl`** as the base, and
+  that branch is the supervisor's checkout. Naming `main` here would branch
+  from a tree that has never seen the campaign.
+
+**The baseline gate was run before dispatch and is green** (`concepts` 10 s,
+`proofs` 1m55s, inspector 27 s; 8 pre-existing warnings, all
+proof-dependency/draft-dependency). This is the w1 lesson applied: that gate
+was red on `main` for a reason no leaf caused, and nothing could have landed
+until it was fixed. Note `lax build` drops the sibling overrides — the run
+was followed by `.claude/sibling-overrides.sh`, and main re-replays in 2 s.
+
+Wave 23 is four workers on four disjoint **new** files in `worktree-w23`:
+**W1** `SolveMachPrepRun` (`ChildLoadPartsAll` — the five landed stage lifts
+composed with glue, landing at `machChild`'s five regions), **W2**
+`SolveMachReadRun` (`ReadRowsAll` — programs and frames only; w21 landed the
+bit bridges), **W3** `SolveSweepBuild` (`CovAdjBuildIn`, including the
+`AdjBuildIn` program), **W4** `SolveSweepMdPeel` (the `AdjDeleteIn` program,
+then `CovMdPeelIn`).
+
+Held for w24: **`CovPeelIn`** (the frontier-queue BFS over `DelAdjSt` with
+row emission, first-hit `ctr` marks and deletion — the pass `sweepCharge`
+actually prices) and **`CovAugAdjIn`** (the `R` rounds of tight
+transitive–fraternal augmentation, which `SolveSweepOrder.lean:410` itself
+calls "E12's priced obligation"). Both are algorithmic heavyweights; width
+was capped at what one supervisor can review, not at the DAG's fan-out.
+
+Scope finding entered at dispatch: `AdjBuildIn` and `AdjDeleteIn` are named
+contracts with **no programs** ("nothing here proves a program",
+`SolveSweepAdj.lean:78`), and three of the six residuals consume them. Each
+is folded into the worker that needs it rather than minted as a leaf.
 
 ### 2026-08-18 — wave 12 dispatched: F6d + the two BFS-free F6c runs
 
