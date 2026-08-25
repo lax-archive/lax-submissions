@@ -75,6 +75,85 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — the augmentation round's body, and a review method that failed
+
+`SolveAugRoundSeams.lean` (1344 lines). **`AugRoundIn` is not discharged**, but
+its three computational stages now compose: `augRdBody_spec` proves
+`augRdBody = augRdFratHalf ; trCom ; emCom` carries the round's windowed
+orientation region to a `TrInCsr` of `greedyStep (selRank (bucketSel n)
+(fratGraph D)) D`, with the arc count in `nO` and the fraternal mark region
+restored to all-zero at exactly `n·n` cells. Real composition —
+`Spec.of_exists`/`Run.seq`/`Spec.frame`/`Spec.run` over the three landed
+dischargers.
+
+**The budget is an equality, not an estimate.** `augRdBodyK n a f T = 961n +
+443a + 576f + 270T + 217`, and `augRdBodyK_eq` proves it equals
+`augRoundBudget 961 443 576 270 217 D`. Every figure is already in
+`levelCharge`'s currency (`n`, `arcCount`, `fratPairCount`, `transPairCount`);
+the one conversion — the peel's `176·nf` at `nf ≤ fratPairCount D` — is routed
+from `fratCom_spec`'s own existential rather than estimated. Cross-checks
+against the inherited full-round figures with the difference accounted for
+exactly by the three carrier sweeps and the two missing passes.
+
+**A supervisor review method failed, and this is the correction.** I reported
+the interrupted predecessor's checkpoint as "zero `sorry`" on the strength of
+`grep -c sorry`. It was not: an elaboration error at its line 269 had leaked
+**`sorryAx`** into `augRdStTr_of_augStInN`, which that grep cannot see.
+`grep` for the token is not a soundness check — **only a green build or
+`#print axioms` is.** Every future landing report of mine states which of the
+two it rests on.
+
+**A worker finding overturned, in the right direction.** The predecessor
+concluded that the exact-length `InNCsr` blocks the round and a new windowed
+region was owed. `SolveAugOrient.lean:1921` already defines `augStInNW` —
+`augStInN` read at the truncation `winA` — `augBaseOrientIn_orCom` already
+*delivers* it, and `SolveChainWin.specWindow` is the generic exact-to-windowed
+transport. The predecessor's file did not import `SolveAugOrient`, which is why
+it missed this; its no-go theorem is true and kept, only the conclusion drawn
+from it was wrong. **Second time a worker's snapshot has hidden a fact that was
+already landed** — the first being the un-privatised `sq_lt_mcB`.
+
+**`sel` must be `fun m => bucketSel m`.** Confirmed rather than newly decided:
+`fratPeelAt_fratPeelCom` delivers `selRank (bucketSel n) …` and nothing else,
+and `selRank` genuinely depends on the tie-break. `SolveAugBaseFrame` §2 already
+pins `AugBasePeelIn` there and `covAugAdjSelIn_of_base_rounds_sym` is stated at
+arbitrary `sel`, so the three residuals still compose — but this **rules out**
+`covAugAdjIn_of_base_rounds_sym` (`SolveAugCompose.lean:568`), whose hypotheses
+are at `mdSel`.
+
+**The peel's `n·n + n` gets a separate `sk`, not a widened `mkF`** — the
+fraternal mark region must be *exactly* `n·n` for its restoration clause to
+re-establish its own precondition, so widening it breaks the round at round 2;
+and `bucketPeelCom` writes the whole block without restoring it. Space, not
+time.
+
+Inhabitation done to the `exists_symPre` standard: 23 concrete region names and
+4 figure cells discharging every name bundle by `decide`, allocations produced
+from *any* state, and the precondition satisfiable in full.
+
+**Four gaps, pinned.**
+(a) **`augSymCsrIn_symCom` is stated at `augStInN`** while the base pass and the
+rounds both speak `augStInNW`, and `augStInNW → augStInN` is false (the
+allocation exceeds the extent). Since `covAugAdjSelIn_of_base_rounds_sym` uses
+one `AugSt` for all three residuals, **the rounds and the symmetrization cannot
+currently meet.** The repair is one line in a landed file: `SolveAugSymMerge`'s
+own Finding 3 records that it consumes the region *only* through
+`trInCsr_of_inNCsr`, which is `augStInNW`'s first clause.
+(b) The transitive mark matrix is never re-zeroed — `TrClearAt` states the
+missing pass at `20n + 20T + 10`; program unwritten.
+(c) The emit's output lands in `(o', t')` — `InCsrCopyAt` states the copy-back
+at `20n + 20a + 20`; program unwritten. (b) and (c) are exactly what separates
+`augRdBody_spec` from `AugRoundIn`.
+(d) **The round's word bound has no landed route.** `augRdBody_spec` needs
+`n + n² + a + f + T < B`; the landed material gives the first two terms and
+nothing about the three counts, and no theorem turns `n·d²` into `< mcB q x`.
+The worker recorded this as landing on `Adm`, "threaded through every residual
+of the augmentation with no landed instantiation at all" — **that half is now
+out of date**: `chainAdm` landed hours earlier in `SolveF7Adm.lean`, invisible
+to a worktree cut before it. Whether `chainAdm`'s `Inv` half yields `n·d² < mcB
+q x`, or whether this is genuinely F7-c's choice of `q`, is the next question,
+not an open-ended one.
+
 ### 2026-08-25 — a container restart killed two workers; both recovered from their branches
 
 The session's container was replaced. Every running subagent died with it —
