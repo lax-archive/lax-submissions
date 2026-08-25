@@ -1803,6 +1803,316 @@ theorem prepChain1 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
         (lv_ne_lit (by decide) (by decide) _)
         (lv_ne_of_base_ne (by decide) (by decide) _ _))
 
+/-! ## §5 The scalar write set, and the budget -/
+
+/-- **Every scalar `prepC` assigns to** is one of the four stage scratch
+pools, one of the pass's own cells, or one of the *child's* two arena
+cells. In particular the level's own two cells and the loop counter are
+never written — which is the `levelScalars` half of
+`ChildLoadPartsScr`'s frame clause. -/
+theorem prepC_notMem_wvars (S : Setup L) (ℓp hbf : ℕ → ℕ)
+    (co cm : ℕ → String) (j : ℕ) {y : String}
+    (h1 : y ∉ rsScalars) (h2 : y ∉ bfScalars) (h3 : y ∉ spScalars)
+    (h4 : y ∉ profScalars)
+    (h5 : y ≠ (arenaNames (j + 1)).nN) (h6 : y ≠ (arenaNames (j + 1)).nS)
+    (hcb : y ≠ pcCb) (hct : y ≠ pcCt) (hcc : y ≠ pcCc)
+    (hjr : y ≠ pcJr) (hmw : y ≠ pcMw) (hec : y ≠ pcEc) (hic : y ≠ pcIc)
+    (hln : y ≠ pcLn) (hbs : y ≠ pcBs) (hav : y ≠ pcAv) (hsc : y ≠ pcSc)
+    (hpw : y ≠ pcW) (hdd : y ≠ pcDd) (hvv : y ≠ pcVv) (hno : y ≠ pcNo) :
+    y ∉ (prepC S ℓp hbf co cm j).wvars := by
+  intro hy
+  have he : (prepC S ℓp hbf co cm j).wvars
+      = (clusterRowCom (co j) (cm j) pcLa (ctrName j) pcCb "rs.k" pcCt).wvars
+        ++ ((centreIdxCom pcLa (ctrName j) "rs.k" pcCc pcCt).wvars
+        ++ (["rs.l", "rs.p", "rs.h"]
+        ++ ((restrictCom (arenaNames j) (prepMid j) pcLa (pcRa j)).wvars
+        ++ ([pcJr, pcMw]
+        ++ ((mkBatchCom (arenaNames (j + 1)).hist pcBb pcBi pcCc
+              (arenaNames (j + 1)).nN pcJr pcMw pcEc pcIc pcLn pcBs pcAv
+              pcSc (ℓp j) (hbf j)).wvars
+        ++ (["bf.n", "bf.m", "bf.r", "bf.v"]
+        ++ ((bfsCom pcOi pcTi pcDa).wvars
+        ++ (["sp.n", "sp.m", "sp.r", "sp.l", "sp.h", "sp.p"]
+        ++ ((supportsCom pcOi pcTi pcDa pcPa (arenaNames (j + 1)).hist).wvars
+        ++ ((profilesCom (prepProfNames j) S.width (S.pal j) S.R).wvars
+        ++ ((colWriteCom (arenaNames (j + 1)).col (arenaNames (j + 1)).nN
+              pcPd pcPu pcW pcDd pcVv (relPal (S.pal j)) S.width S.R).wvars
+        ++ ((isolateCom (prepMid j) (arenaNames (j + 1)).off
+              (arenaNames (j + 1)).tgt pcNo pcBb).wvars
+        ++ [(arenaNames (j + 1)).nS])))))))))))) := rfl
+  rw [he] at hy
+  simp only [List.mem_append, List.mem_cons, List.not_mem_nil,
+    or_false] at hy
+  rcases hy with hy | hy | hy | hy | hy | hy | hy | hy | hy | hy | hy | hy
+    | hy | hy
+  · exact clusterRowCom_notMem_wvars hcb
+      (fun hEq => h1 (by rw [hEq]; decide)) hct hy
+  · exact centreIdxCom_notMem_wvars hcc hct hy
+  · rcases hy with rfl | rfl | rfl <;> exact h1 (by decide)
+  · rcases wvars_restrictCom_subset (nmP := arenaNames j)
+      (nmC := prepMid j) (la := pcLa) (ra := pcRa j) y hy with h | h | h
+    · exact h1 h
+    · exact h5 h
+    · exact h6 h
+  · rcases hy with rfl | rfl
+    · exact hjr rfl
+    · exact hmw rfl
+  · exact mkBatchCom_notMem_wvars hav hec hbs hln hic hsc hy
+  · rcases hy with rfl | rfl | rfl | rfl <;> exact h2 (by decide)
+  · exact h2 (wvars_bfsCom_subset pcOi pcTi pcDa y hy)
+  · rcases hy with rfl | rfl | rfl | rfl | rfl | rfl <;> exact h3 (by decide)
+  · exact h3 (wvars_supportsCom_subset pcOi pcTi pcDa pcPa
+      (arenaNames (j + 1)).hist y hy)
+  · exact h4 (wvars_profilesCom_subset (prepProfNames j) S.width (S.pal j)
+      S.R y hy)
+  · rcases wvars_colWriteCom (arenaNames (j + 1)).col
+      (arenaNames (j + 1)).nN pcPd pcPu pcW pcDd pcVv (relPal (S.pal j))
+      S.width S.R y hy with h | h | h
+    · exact hvv h
+    · exact hpw h
+    · exact hdd h
+  · rcases wvars_isolateCom_subset (prepMid j) (arenaNames (j + 1)).off
+      (arenaNames (j + 1)).tgt pcNo pcBb y hy with h | h
+    · exact h1 h
+    · exact hno h
+  · subst hy; exact h6 rfl
+
+/-- **The level's own scalars are outside the write set** — the
+`ctrName j :: levelScalars j` half of `ChildLoadPartsScr`'s frame
+clause. Each of the three is `lv`-tagged at a base or a level the pass
+never touches. -/
+theorem prepC_frame_scalars (S : Setup L) (ℓp hbf : ℕ → ℕ)
+    (co cm : ℕ → String) (j : ℕ) {y : String}
+    (hy : y ∈ ctrName j :: levelScalars j) :
+    y ∉ (prepC S ℓp hbf co cm j).wvars := by
+  simp only [levelScalars, List.mem_cons, List.not_mem_nil, or_false] at hy
+  rcases hy with rfl | rfl | rfl
+  · exact prepC_notMem_wvars S ℓp hbf co cm j
+      (lv_notMem (by decide) j) (lv_notMem (by decide) j)
+      (lv_notMem (by decide) j) (lv_notMem (by decide) j)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact prepC_notMem_wvars S ℓp hbf co cm j
+      (lv_notMem (by decide) j) (lv_notMem (by decide) j)
+      (lv_notMem (by decide) j) (lv_notMem (by decide) j)
+      (lv_ne_of_level_ne (by decide) (by omega))
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact prepC_notMem_wvars S ℓp hbf co cm j
+      (lv_notMem (by decide) j) (lv_notMem (by decide) j)
+      (lv_notMem (by decide) j) (lv_notMem (by decide) j)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_level_ne (by decide) (by omega))
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+
+/-- **The fourteen step costs sum inside the pass's budget.** The two
+slacks are the ones `prepPassK` was already sized with: `restrictK` is
+charged at the *relativised* palette (the stage runs at the parent's,
+which is smaller), and `profilesK` at one class more than the stage
+emits. The sixteen scalar loads are `prepLoadK` exactly. -/
+theorem prepChainK_le (cN cns dS Λ ℓpj hbj mb R : ℕ) :
+    clusterRowK cN + (centreIdxK cN + (6 + (restrictK dS cN Λ ℓpj hbj
+      + (4 + (mkBatchK cN ℓpj hbj mb + (8 + (bfsK cN cns (2 * R)
+      + (12 + (supportsK cN cns (2 * R) + (profilesK mb (Λ + 1) cN cns R
+      + (colWriteK cN (relPal Λ) mb R + (isolateK cN cns + 2))))))))))))
+      ≤ prepPassK cN cns dS (relPal Λ) ℓpj hbj mb R + prepLoadK := by
+  have h1 : cN * (20 * Λ + (36 * hbj + 42) * ℓpj + 132)
+      ≤ cN * (20 * relPal Λ + (36 * hbj + 42) * ℓpj + 132) :=
+    Nat.mul_le_mul_left cN (by unfold relPal; omega)
+  have h2 : (Λ + 1) * msK cN cns R ≤ (relPal Λ + 1) * msK cN cns R :=
+    Nat.mul_le_mul_right _ (by unfold relPal; omega)
+  unfold prepPassK prepStageK prepLoadK restrictK profilesK
+  omega
+
+/-! ## §6 The residual, discharged -/
+
+open Classical in
+/-- **`ChildLoadPartsScr`, discharged.** The strengthened residual
+`SolveMachPrepSeam` reduced the whole prep segment to, proved for the
+concrete command `prepC`, the concrete descriptor `prepScr`, the
+concrete channel witness `chanTabChild`, and the concrete budget
+`prepKP` — whose `prepKP_le` fits §7's envelope with no `A.N` term.
+
+Five hypotheses stand, all named and all satisfiable:
+
+* `hp`, `hw` — the landed pins (`stdPins`, `headlineSetup_widthPin`);
+* `hwb : PrepWB` — the word-size bundle (`prepWB_exists`), at F7's
+  instantiation a lower bound on the schedule constant `q`;
+* `hcn : PrepCoverNames` — the cover's three arrays are not the pass's
+  (`prepCoverNames_exists`);
+* `hrowb : 2 * S.R + 1 ≤ hbf j` — the channel region's stride bound,
+  **not** a landed pin (it holds at the witness `chanBound S`, where it
+  is an equality);
+* `hrowA` — the admissibility witness's own row bound, verbatim
+  `prepAdm`'s second clause. -/
+theorem prepC_childLoadPartsScr (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) {ℓp hbf : ℕ → ℕ}
+    {ca co cm : ℕ → String} {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    (hp : PrepPins S ℓp (chanTab S ℓp) hbf Adm) (hw : WidthPin S)
+    (hwb : PrepWB S ℓp hbf n₀ B) (hcn : ∀ j, PrepCoverNames ca co cm j)
+    (hrowb : ∀ j, 2 * S.R + 1 ≤ hbf j)
+    (hrowA : ∀ (j : ℕ) (A : Arena (S.pal j) n₀), Adm j A →
+      ∀ (v : Fin A.N) (e : ℕ), (A.chan v e).length ≤ 2 * S.R + 1) :
+    ChildLoadPartsScr B S ord ℓp (chanTab S ℓp) hbf Adm
+      (prepScr S ℓp hbf n₀) ca co cm (prepC S ℓp hbf co cm)
+      (chanTabChild S ord ℓp) (prepKP S ord ℓp hbf) := by
+  intro k j A hdiag hAdm hbot u
+  have hjd : j < S.depth := by omega
+  have hj : j ≤ S.depth := le_of_lt hjd
+  have hApos : 0 < A.N := by
+    rcases Nat.eq_zero_or_pos A.N with hN | hN
+    · exact absurd (by ext a b; exact absurd a.2 (by omega)) hbot
+    · exact hN
+  have hpalB : S.pal j < B := by
+    have h := prepWB_pal hwb hj A
+    have h' : S.pal j ≤ A.N * S.pal j := Nat.le_mul_of_pos_left _ hApos
+    omega
+  refine Spec.mono (Spec.post (Spec.pre (Spec.frameA
+      (prepChain1 S ord hp hw j hj hjd (hp.col j) (hp.bound j) hwb hpalB
+        (hcn j) A hAdm (hrowb j) (hrowA j A hAdm) u))
+      (fun σ hσ => ⟨hσ.1.2.2.1, hσ.2, hσ.1.1.1, hσ.1.1.2.2⟩)) ?_) ?_
+  · rintro σ σ' - h
+    refine ⟨h.1.1, h.1.2, fun y hy =>
+      h.2.2.1 y (prepC_frame_scalars S ℓp hbf co cm j hy),
+      fun a ha => ?_, h.2.2.2⟩
+    -- the array frame: the cover's three regions and the level's six
+    simp only [List.mem_cons] at ha
+    rcases ha with rfl | rfl | rfl | ha
+    · exact h.2.1 _ (prepC_frame_cover S ℓp hbf j (hcn j) (by simp))
+    · exact h.2.1 _ (prepC_frame_cover S ℓp hbf j (hcn j) (by simp))
+    · exact h.2.1 _ (prepC_frame_cover S ℓp hbf j (hcn j) (by simp))
+    · exact h.2.1 _ (prepC_frame_level S ℓp hbf co cm j ha)
+  · rw [prepKP_apply]
+    exact prepChainK_le (childN S A ((ord A.N A.G).order) u)
+      (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+        (preG S A ((ord A.N A.G).order) u).degree v)
+      (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) u)) (S.pal j)
+      (ℓp j) (hbf j) S.width S.R
+
 end Chain
+
+/-! ## §7 The quantified residual, and the prep segment -/
+
+section Headline
+
+variable {n : ℕ}
+
+open Classical in
+/-- **`ChildLoadPartsScrAll`, discharged** — the residual per admissible
+input. The word bundle is asked for at each input's own bound `mcB q x`,
+which is where F7's `q` enters. -/
+theorem prepC_childLoadPartsScrAll (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) (ord : CoverSpec.OrderingRoutine) {G : SimpleGraph (Fin n)}
+    (c w q : ℕ) {ℓp hbf : ℕ → ℕ} {ca co cm : ℕ → String}
+    {Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop}
+    (hp : PrepPins (Headline.headlineSetup C hC φ) ℓp
+      (chanTab (Headline.headlineSetup C hC φ) ℓp) hbf Adm)
+    (hw : WidthPin (Headline.headlineSetup C hC φ))
+    (hwb : ∀ x ∈ mcD n G c w,
+      PrepWB (Headline.headlineSetup C hC φ) ℓp hbf n (mcB q x))
+    (hcn : ∀ j, PrepCoverNames ca co cm j)
+    (hrowb : ∀ j, 2 * (Headline.headlineSetup C hC φ).R + 1 ≤ hbf j)
+    (hrowA : ∀ (j : ℕ)
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n), Adm j A →
+      ∀ (v : Fin A.N) (e : ℕ),
+        (A.chan v e).length ≤ 2 * (Headline.headlineSetup C hC φ).R + 1) :
+    ChildLoadPartsScrAll C hC φ ord G c w q ℓp
+      (chanTab (Headline.headlineSetup C hC φ) ℓp) hbf Adm
+      (prepScr (Headline.headlineSetup C hC φ) ℓp hbf n) ca co cm
+      (prepC (Headline.headlineSetup C hC φ) ℓp hbf co cm)
+      (chanTabChild (Headline.headlineSetup C hC φ) ord ℓp)
+      (prepKP (Headline.headlineSetup C hC φ) ord ℓp hbf) :=
+  fun x hx =>
+    prepC_childLoadPartsScr (Headline.headlineSetup C hC φ) ord hp hw
+      (hwb x hx) hcn hrowb hrowA
+
+open Classical in
+/-- **`CentrePrepAll`, verbatim** — the whole prep segment, with no
+length-only transport anywhere: `SolveMachPrepSeam`'s corollary fed with
+the residual this file discharges, and its two descriptor obligations
+read off `prepScr` itself. -/
+theorem prepC_centrePrepAll (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) (ord : CoverSpec.OrderingRoutine) {G : SimpleGraph (Fin n)}
+    (c w q : ℕ) {ℓp hbf : ℕ → ℕ} {ca co cm : ℕ → String}
+    {Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop}
+    (hp : PrepPins (Headline.headlineSetup C hC φ) ℓp
+      (chanTab (Headline.headlineSetup C hC φ) ℓp) hbf Adm)
+    (hw : WidthPin (Headline.headlineSetup C hC φ))
+    (hwb : ∀ x ∈ mcD n G c w,
+      PrepWB (Headline.headlineSetup C hC φ) ℓp hbf n (mcB q x))
+    (hcn : ∀ j, PrepCoverNames ca co cm j)
+    (hrowb : ∀ j, 2 * (Headline.headlineSetup C hC φ).R + 1 ≤ hbf j)
+    (hrowA : ∀ (j : ℕ)
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n), Adm j A →
+      ∀ (v : Fin A.N) (e : ℕ),
+        (A.chan v e).length ≤ 2 * (Headline.headlineSetup C hC φ).R + 1) :
+    CentrePrepAll C hC φ ord G c w q ℓp
+      (chanTab (Headline.headlineSetup C hC φ) ℓp) hbf Adm
+      (prepScr (Headline.headlineSetup C hC φ) ℓp hbf n) ca co cm
+      (prepC (Headline.headlineSetup C hC φ) ℓp hbf co cm)
+      (prepKP (Headline.headlineSetup C hC φ) ord ℓp hbf) :=
+  centrePrepAll_of_partsScr_chanTab C hC φ ord G c w q ℓp hbf Adm _ ca co cm
+    _ _
+    (fun j _ σ hσ => prepScr_down (Headline.headlineSetup C hC φ) ℓp hbf n
+      j σ hσ)
+    (fun j _ σ hσ => prepScr_htabLen (Headline.headlineSetup C hC φ) ℓp hbf
+      n j σ hσ)
+    (prepC_childLoadPartsScrAll C hC φ ord c w q hp hw hwb hcn hrowb hrowA)
+
+end Headline
+
+/-! ## §8 The axiom profile -/
+
+#print axioms prepScr_frameC
+#print axioms prep_profilesStageH
+#print axioms prep_isolateStageR
+#print axioms prepChainK_le
+#print axioms prepC_frame_scalars
+#print axioms prepC_childLoadPartsScr
+#print axioms prepC_childLoadPartsScrAll
+#print axioms prepC_centrePrepAll
 
 end Lax3Proofs.Prog
