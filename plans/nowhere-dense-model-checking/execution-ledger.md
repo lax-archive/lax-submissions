@@ -75,6 +75,49 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — second container restart, and the compile-the-checkpoint rule pays immediately
+
+The container was replaced again; both running workers died. Recovery as before,
+but this time the new rule was applied instead of stated: **I compiled the
+surviving checkpoint before saying anything about it.**
+
+`SolveF7Bridge.lean` (1051 lines, the ledger-bridge leaf's in-flight state)
+**does not build**, and `#print axioms` reports **`sorryAx`** — in a file
+containing no literal `sorry`. Two elaboration errors at `:982` (application
+type mismatch) and `:999` (a `rewrite` that finds no occurrence) are leaking it
+in. Under the old habit I would have run `grep -c sorry`, seen `0`, and
+described the checkpoint as clean for the third time. The errors are now handed
+to the continuation worker as its first task.
+
+The other worktree had written nothing — that leaf restarts clean.
+
+Both branches pushed to origin this time, not merely committed locally: the
+first restart survived only because the *filesystem* survived, and that is not
+something to rely on twice.
+
+**Elaboration cost, measured rather than argued.** Jan's hypothesis was that
+~21-minute elaborations are inherent to the Isabelle-style refinement idiom and
+should be accepted. The per-file numbers from the gate say otherwise:
+
+| file | lines | elaboration |
+|---|---|---|
+| `SolveMachPrepComp2` | 978 | **1236 s** |
+| `SolveMachPrepComp` | 945 | **576 s** |
+| `SolveAugSymMerge` | 2245 | 17 s |
+| `SolveAugRoundIn` | 1961 | 14 s |
+| `SolveAugRoundSeams` | 1398 | 10 s |
+
+The last three are the same `Spec.seq`/`Spec.frame`/`Spec.mono` idiom over
+machine programs with budgets, at twice the size — ~7 ms/line against
+~1264 ms/line, a factor of ~180. The whole package is 3565 jobs and rebuilds
+warm in ~4 minutes; these two files alone took the landing gate to ~30. So the
+aggregate cost of the refinement style is already paid and is fine; what is here
+is a localized pathology, and the standing suspect (`open Classical in` over
+statements mentioning `SimpleGraph.degree`, making instance search re-derive
+decidability under `Classical.propDecidable`) has exactly that signature. The
+next leaf measures it with the profiler before touching anything, and is told a
+correct diagnosis beats hitting the target.
+
 ### 2026-08-25 — the prep composition's side conditions, and a third invisible binding requirement
 
 `ChildLoadPartsScrAll` is **not** discharged, and the leaf says so — no wiring
