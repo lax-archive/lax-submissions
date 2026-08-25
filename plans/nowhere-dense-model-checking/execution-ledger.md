@@ -75,6 +75,66 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-26 — `KsChargeBridge` DISCHARGED: F7-b closes, and the two audit gaps are proved
+
+`b7_KsChargeBridge` (`SolveF7Bridge.lean`, 1179 lines + `SolveF7BridgeCover.lean`,
+207) concludes `KsChargeBridge` at **exactly** `solveSpec_closed_scr`'s budget,
+with `KB := chainKB`. The concrete `cB` reads **only schedule constants** —
+`S.R`, `S.width`, `S.pal`, `S.depth`, `ℓp`, the level families and their scatter
+atoms. No carrier, no input word, nothing quadratic; the per-node terms go
+against `allocC`'s `A.N` and `readC`'s `A.N·(1+|ℱ_j|)`, and every column's
+argument is `childN`, `Σ_v preG.degree v`, or a cluster mass.
+
+The capstone `b7c_KsChargeBridge_bucket` carries the landed `(cf, c', T)` of
+`exists_mcChargeMS_T_bucket_coverColumn` **and** the bridge together, on every
+member of the class, at the machine's real routine, column and budget — leaving
+**`hKrl` as the single hypothesis**, which is a `RootLoadSpec` residual, not a
+ledger one.
+
+**(1) The ⊥-node excess: the bound exists and is better than feared.**
+`b7_chainKB_bot` gives `chainKB k j A ≤ b7BotA(k)·A.N + b7BotB` at `A.G = ⊥`
+with `b7BotA(k) = M₀ + k·(D + B')` — **linear in the fuel, not `2^k`** — because
+the branching stops at carrier one (`childN_eq_one_of_bot`), so each level
+multiplies by the node's own `A.N` rather than by a branching factor. Against
+`chargeTotal (botC S j A) ≥ A.N` that is a schedule constant times the node's own
+ledger entry. Both side conditions discharged at the real budgets:
+`b7c_peelK_le_bot` proves `peelK a b c S A π = (a+b)·A.N` at `A.G = ⊥` outright
+(every cluster a singleton, every back-degree `0`), and the glue's `hglue` is
+only `6 ≤ Kglue`, met by the constant.
+
+**(2) The scatter slack: the form I specified was false, and the worker said so.**
+I asked for `scatterK ≤ c·(greedyScatterCost + N + ns + 1)`. In fact
+`scatterK N ns r t = 41N + (markK+30)·t + 24` while `greedyScatterCost … t` is
+`0` at `t = 0`, so **`scatterK ≤ c·greedyScatterCost` is false**, and the mixed
+form needs the residue placed somewhere real. `b7_scatterK_le_greedy` proves
+`scatterK ≤ 130·((t+1)(r+1))·(greedyScatterCost + N + ns + 1)` and
+`b7_centreScatterK_le` charges the residue **against the supports column**
+(`b7_supports_ge`), a cluster-mass figure the ledger already sums. `t` and `r`
+are atom fields fixed by the schedule, so the factor is a constant per atom.
+
+**A correction to my packet, and the right one.** I had the checkpoint asking
+`hKcov` at *every* arena. That is not satisfiable by the machine's own cover
+budget: `peelK_le_coverCFSel_total` and clause 3 of
+`exists_mcChargeMS_T_bucket_coverColumn` both carry the weak-colouring side
+condition `A.G ⊑ G`, a fact about arenas the run actually reaches, not about all
+arenas. The fix is an `Adm` closed under the frame step's children plus an
+`i ≤ S.depth` guard, discharged through `ardIsContained_of_chainAdm`;
+`b7_KsChargeBridge_all` keeps the unrestricted form for anyone who wants it. And
+`hKcovBot` deliberately stays unrestricted, because **`chainAdm` is genuinely not
+closed under `childArena` at edgeless arenas** (`chainAdm_child` needs
+`¬ A.G = ⊥`) — which is exactly why the two cover clauses have to be split
+rather than unified. Second time today that the `⊥` branch has forced a split
+nobody anticipated.
+
+Elaboration: 7.7 s and 3.6 s — squarely in the refinement-style band, further
+evidence the prep files' 576 s / 1236 s is a local pathology rather than the
+idiom. Axioms: the three standard, plus UQW on exactly the three results quoting
+`headlineSetup`; no `sorryAx`, confirmed by forced re-elaboration with the
+oleans deleted and independently by `lean_verify` on both capstones.
+
+**F7's remaining residuals after this**: `FrameStepAllScr` (the prep composition
+is w34's), `RootLoadSpec`, `TopScatterAll`, and F7-c's constants (w35's).
+
 ### 2026-08-25 — overnight wave: the three remaining F7 pieces run in parallel
 
 Jan's standing authority renewed for the night. Three workers, one per remaining

@@ -157,6 +157,8 @@ import Lax3Proofs.SolveAugOrient
 import Lax3Proofs.SolveAugSymMerge
 import Lax3Proofs.SolveAugRoundSeams
 import Lax3Proofs.SolveAugRoundIn
+import Lax3Proofs.SolveF7Bridge
+import Lax3Proofs.SolveF7BridgeCover
 
 -- The proofs package of submission Lax3.
 --
