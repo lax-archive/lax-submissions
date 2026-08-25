@@ -136,8 +136,22 @@ clean window at the parent's, with the array in between dirtied and
 only partly restored. With one scratch per level the deeper arrays are
 outside the pass's write set entirely, so the deep half of the
 descriptor rides `Run`'s frame and `hscrDown` costs one `take`
-(`prepScr_down`). -/
-def pcRa : ℕ → String := lv "pc.r"
+(`prepScr_down`).
+
+The base is `"sa.r"`, **not** a `pc.·` base of the pass's own pool:
+this is deliberate and load-bearing. `SolveScrFrameSat.rankScrName` —
+the array the chain's *own* descriptor tower `RankScrTower` tracks, and
+the one `SolveF7Seam.f7sScr` is built over — is `lv "sa.r" j`. If the
+pass ranked into a private array the tower never sees, then `prepScr`
+(which the stage preconditions need) and `RankScrTower` (which the
+chain's descriptor supplies) would be clauses about **two different
+arrays**, and no descriptor could satisfy both from one clean window.
+With the two identified, `prepScr` *implies* `RankScrTower`
+(`SolveMachPrepChainTop.rankScrTower_of_prepScr`), which is what lets
+one descriptor serve the pass and the chain at once. `"sa.r"` is four
+characters, as `lv_inj` requires, and clashes at the base with every
+one of `sa.o/t/c/u/h/b`, so nothing in the level pool moves. -/
+def pcRa : ℕ → String := lv "sa.r"
 /-- Array: the **pre-isolation** child CSR offsets. `restrictCom` builds
 the child here, not in the level's own region, because `isolateCom`
 needs a fresh output pair and the deliverable is stated at
