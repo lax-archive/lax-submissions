@@ -75,6 +75,42 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — residual 1's real blocker: a content clause with nowhere to live
+
+The prep composition is **one seam** from discharge, and the seam is not
+algorithmic. `restrictCom_specW`'s precondition carries a **content** clause —
+`(σ.arrs ra).take A.N = arrOf A.N (fun _ => 0)`, a clean rank scratch — on an
+array **outside `levelArrays j`**. `CLInv` offers exactly one slot for such a
+thing, `Scr j`, and both landed transports move `Scr` with **`hscrLen`, which
+is length-only**. No content clause survives that.
+
+**Both obvious escapes are ruled out.** Carrying the clause in `Scr` alone
+forfeits the `CentrePrepAll` corollary — the point of the chain. Wiping the
+scratch inside `prepC` costs `Θ(A.N)` per centre, i.e. `Θ(A.N²)` overall:
+**exactly §6.1's trap, and the reason `restrictK` deliberately has no `A.N`
+term.** Supervisor decision: take the third way — re-establish `Scr` from the
+pass's *actual postcondition* (array-frame plus restored scratch) rather than
+from lengths. The fact that makes it exist: the pass **does** restore the
+scratch, cleaning only the `|S|` entries it touched, per §6.1's "one scratch
+array per node, cleared only at the touched entries, never one per child".
+Nothing landed says so, which is the whole defect.
+
+**Four seams the same wave closed**, none of which had been landed: nothing
+computed `(centreChild : ℕ)` at all (`bfsCom_specW` needs it in `bf.v` and
+`mkBatchCom_batch` took it as a *hypothesis*); the `ArenaStW` palette move
+(`arenaStW_recol`); `restrictCom_specW` states **neither** a frame clause nor a
+no-reallocation clause though `ChildLoadParts` demands both (`Spec.frameA`
+supplies both for every stage at once); and the supports patch **is**
+`Driver.childChan` — now a theorem (`supportsPatch_eq_childChan`) rather than a
+docstring claim.
+
+**A forced ordering nobody had stated**: the colour writer must run **before**
+`isolateCom`. `isolateCom_specW` returns `ArenaStW` at the palette of the arena
+it was handed, while `profilesCom_specW` requires the *parent's* palette — so
+the only consistent order is `profiles → colWrite → isolate`, with the recolour
+turning the pre-isolation child into an `isoPal` arena that isolate then
+isolates. `isolate_recol_eq_machChild` is that identity, by `rfl`.
+
 ### 2026-08-25 — the F7 readiness audit, and a supervisor claim retracted
 
 **Retraction.** The commit landing `StepEmitIn` said *"only the symmetrization
