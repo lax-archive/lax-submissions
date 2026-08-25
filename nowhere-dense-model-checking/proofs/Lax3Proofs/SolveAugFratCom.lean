@@ -34,8 +34,10 @@ between them — exactly the four sweeps `fratKStd`'s docstring prices:
 
 The mark region is `n·n` cells, required clear on entry — which is what
 a fresh allocation is (`Imp.lean:20-44`) — and the emit sweep's
-*clearing* test restores it, so no region is ever re-zeroed and the two
-sweeps together touch `mk` at most `2·fratPairCount D` times.
+*clearing* test restores it: `fratCom_spec` (§10) carries that as a
+postcondition, so a caller may hand the same window to the next round.
+No region is ever re-zeroed and the two sweeps together touch `mk` at
+most `2·fratPairCount D` times.
 
 The two enumeration sweeps share one skeleton, `frSweep`, proved once
 in §4-§6: three nested loops (`w` over the carrier, `x` over the slots
@@ -44,7 +46,15 @@ turns are exactly the elements of `fratCands n (Csr.row off tgt)` in
 order.  Its interface is `FrAct`: a body that, at a candidate `(a, b)`,
 moves an abstract accumulator `J` from the processed prefix `L` to
 `L ++ [(a, b)]` and leaves the loop's own cursors alone.  The two
-concrete bodies (§7, §9) instantiate it.
+concrete bodies (§7, §8) instantiate it, at `Ka = 24` and `Ka = 27`.
+
+## What is proved
+
+`fratCom_spec` — the pass, with everything it leaves — and
+`fratCsrAt_fratCom`, the landed residual `FratCsrAt` verbatim at
+`fratKStd`, obtained from it by dropping the two clauses the contract
+does not carry.  The `example` beside them discharges the whole
+hypothesis bundle at concrete names, so nothing here is vacuous.
 
 ## What the accumulator is
 
@@ -84,8 +94,9 @@ elements).  No term is tight; `Spec`'s budget is an upper bound.
    the named cell `nN` and the output slot count is *published* into
    `nF`; the pass never asks for `(σ.arrs a).length`.  The input slot
    count cell `nS` of `FratCsrAt` is not read by the program at all —
-   the row bounds come from `o` — so the pass is correct at any value
-   of it; the contract's clause is simply not needed.
+   the row bounds come from `o`, and the loop that would need `ns` does
+   not exist — so `fratCom_spec` is stated *without* that clause and
+   `fratCsrAt_fratCom` simply discards it.  `nS` may hold anything.
 2. **`n·n < B` is the word bound that matters.**  The only index the
    pass forms that is not already inside the input CSR is `x·n + y`,
    and `frRow_lt_sq` puts it below `n·n`.  Every other figure is below
@@ -1962,12 +1973,6 @@ theorem fratCom_spec {B : ℕ} {nN nF o t o' t' dg mk : String}
   have hf2a : ∀ z : String, z ≠ mk → z ≠ dg → τ2.arrs z = τ1.arrs z := fun z h1 h2 =>
     hrun2.frame_arr z (by
       simp [frSweep, frOuterC, frMidC, frInnerC, frCountAct, Csr.scan, Com.warrs, h1, h2])
-  have hf2v : ∀ y : String, y ∉ frScalars → τ2.vars y = τ1.vars y := by
-    intro y hy'
-    obtain ⟨e1, e2, e3, e4, e5, e6, e7, e8, -, -, e11, -⟩ := frScalars_ne hy'
-    exact hrun2.frame_var y (by
-      simp [frSweep, frOuterC, frMidC, frInnerC, frCountAct, Csr.scan, Com.wvars,
-        e1, e2, e3, e4, e5, e6, e7, e8, e11])
   -- sweep 3: the prefix sums
   have h2o' : τ2.arrs o' = σ.arrs o' := by
     rw [hf2a o' hnm.o'_mk hnm.o'_dg, hf1a o' hnm.o'_dg]
