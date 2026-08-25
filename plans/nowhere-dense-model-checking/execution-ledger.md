@@ -75,6 +75,37 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — the sixth `hscrLen` site, and why it is the expensive one
+
+Supervisor reading during wave 29, relayed to W34 mid-flight (new information
+that genuinely changes the task — the one thing that justifies interrupting a
+worker). The packet framed `hscrLen0` as a missing frame clause on the return
+path. It is not. The real shape:
+
+- `BlockPre S j … (Scr j) …` carries the scratch descriptor.
+- `BlockPost S ord k j … = ArenaStW … ∧ TableBitsW …` (`SolveChain.lean:200`)
+  carries **no `Scr` conjunct at all**.
+
+So nothing about `Scr 0` survives `chainCom` on its own, and
+`solveSpec_of_chain` bridges the gap by the only route open to it:
+`specArrsLength` preserves every array *length*, and `hscrLen0` converts
+length-preservation back into `Scr 0`. **That is precisely the mechanism
+`rankScr_not_length_only` refutes.** `hscrLen0` is therefore not a convenience
+to be dropped; it is load-bearing, and removing it forces `BlockPost` to gain
+the conjunct — the same additive move `ChildLoadScr` made one layer down.
+
+Two consequences priced into W34's leaf: the obligation propagates to **both**
+producers of a `BlockSpec` — `FrameStep` (still undischarged, so there it is a
+cheap statement change, and W35 is composing its prep segment against
+`ChildLoadPartsScrAll`, which already delivers `Scr j σ'`) and **`botBlock_spec`**
+(`SolveChain.lean:386`), which **is** discharged, so whether `canonBotB`
+actually restores level-`depth`'s rank scratch is now an open question with a
+name. And `TopScatterSpec` is a sixth *consumer*: its definition is clean (the
+`Scr` is a parameter, length-only is not baked in), but its docstring and
+`solveSpec_of_chain`'s both assert the top stage's descriptor arrives "for free
+because it is length-only" — false the moment `hscrLen0` goes. Docstring drift
+number eleven, caught before it landed.
+
 ### 2026-08-25 — wave 29 dispatched: the seam's five siblings, the prep composition, and F7 opens
 
 Worktree `w29` off `45bec3b`, three leaves, file ownership disjoint and stated
