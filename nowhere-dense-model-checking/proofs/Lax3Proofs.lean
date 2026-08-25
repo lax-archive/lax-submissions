@@ -122,6 +122,7 @@ import Lax3Proofs.SolveMachPrepPins
 import Lax3Proofs.SolveMachPrepBatch
 import Lax3Proofs.SolveMachPrepCol
 import Lax3Proofs.SolveMachPrepAll
+import Lax3Proofs.SolveMachPrepSeam
 import Lax3Proofs.SolveSweepAdj
 import Lax3Proofs.SolveSweepStep
 import Lax3Proofs.SolveSweepBuild

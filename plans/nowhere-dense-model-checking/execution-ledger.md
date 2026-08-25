@@ -75,6 +75,57 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — the CLInv scratch seam: the escape hatch was not a trade-off, it was inconsistent
+
+Residual 1's blocker (logged two entries below as "a content clause with nowhere
+to live") is resolved, and entirely **additively** — `SolveMachPrepSeam.lean`
+(737 lines) edits no landed statement. The clause the child-building pass owes
+goes into the *pass's own postcondition* as `Scr j σ'`: `ChildLoadScr` is
+verbatim `ChildLoad` plus that conjunct, `ChildLoadPartsScr` likewise, and both
+weaken back (`childLoad_of_childLoadScr`, `childLoadParts_of_partsScr`), so
+nothing that consumes the landed residuals is deprived.
+`centrePrep_of_childLoadScr` then concludes **verbatim `CentrePrep`** with
+`hscrLen` gone — only `hscrDown` and `htabLen` remain — and
+`centrePrepAll_of_partsScr_chanTab` reproduces the whole prep segment at the
+canonical channel witness (`chanTab_hhtab` still `rfl`).
+
+**The finding that settles the design question.** My note in `SolveMachPrepAll`
+§6 said carrying the clean-scratch clause inside `Scr` "forfeits the
+`CentrePrepAll` corollary". `rankScr_not_length_only` proves something
+stronger: a `Scr` that implies `RankScr` **and** satisfies `hscrLen`'s
+length-only `∀ σ σ'` shape is **inconsistent** at any state with a non-empty
+window — flip one scratch cell, every array length is unchanged, so `hscrLen`
+would carry the clause to a state that plainly fails it. So the two were never
+a trade-off to balance: `hscrLen` had to leave the prep segment. Recorded as a
+theorem rather than a supervisor opinion.
+
+`clInv_frame_scr` is the mechanism: the landed `clInv_frame` re-derives `Scr j`
+from lengths alone; this variant takes `Scr j σ'` as a premise and then needs
+**no** length clause at all, because `BlockPre`'s table bound rides the frame on
+`(arenaNames j).tab`, already in the level's array pool. That is what lets a
+pass which *writes and restores* an array outside `levelArrays j` still carry
+the loop invariant.
+
+**Follow-up leaf, minted here.** `hscrLen` is demanded at five more sites, all
+on files this leaf did not own: `clInv_setVar_ctr`/`centreLoop_of_step`
+(`SolveGlueLoop`), `frameElse_of_cover_loop` (`SolveGlueStep`),
+`centreStep_of_prep_read` (`SolveStep`), `centreRead_of_rows` (`SolveSegRead`),
+and `hscrLen0` in `solveSpec_of_chain` (`SolveChain`) / `solveSpec_closed`
+(`SolveFrameBridge`). By the finding above a `RankScr`-carrying `Scr` kills all
+five, and `rankScr_frame` is the shape that fixes them — free at the counter
+bump and the inner block (`Run.frame`, ownership from `j+1`), but at the **cover
+stage and the return path it must be stated**, because `CoverAll` and
+`ReadRows` frame only `ca/co/cm :: levelArrays j`. §6 of the new module names
+all five so nobody rediscovers them.
+
+`ChildLoadPartsAll` itself is **not** discharged and is not a residual but a
+multi-leaf job: `prepC j` undefined (~25 names, ~60 disequalities), four
+unstated inter-stage seams (restrict's child `ArenaStW` → `HistArrW`;
+`profilesCom_specW`'s tables → `colWriteCom_machChild`'s indexed `pdF`/`puF`
+families; the `ℓp j → ℓp (j+1)` hand-over under `ColPin`; every allocation the
+stages ask of `Scr`, including `bi` at length **exactly** `S.width`), and the
+nine-`Spec.seq` budget summation into `prepPassK`.
+
 ### 2026-08-25 — the fraternal peel: the landed peel composed, and a pricing identity
 
 `AugRoundIn`'s hidden obligation is discharged. `fratPeelAt_fratPeelCom` leaves
