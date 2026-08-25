@@ -75,6 +75,74 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — the F7 readiness audit, and a supervisor claim retracted
+
+**Retraction.** The commit landing `StepEmitIn` said *"only the symmetrization
+merge remains before F7"*. **That was wrong.** A read-only audit of
+`solveSpec_closed`'s residual chain, leaf by leaf against the Lean text, finds
+**five** open residuals under it, not one:
+
+| residual | file:line | note |
+|---|---|---|
+| `ChildLoadPartsAll` | `SolveMachPrep.lean:299` | all three blocking sub-programs now landed; **only the composition is unwritten** |
+| `AugRoundIn` | `SolveAugCompose.lean:391` | **bigger than the ledger implied** — see below |
+| `AugSymCsrIn` | `SolveAugCompose.lean:604` | in flight (w28) |
+| `PeelSweepIn` | `SolveSweepPeel.lean:328` | **confirmed undischarged** |
+| `PeelGroupIn` | `SolveSweepPeel.lean:380` | **confirmed undischarged** |
+
+`covPeelIn_of_sweep_group` is the *only* route to `CovPeelIn`, the only route to
+`CovSweepIn`, required by the only route to `CoverAllIn`. So the peel pair is on
+the critical path and was never dispatched.
+
+**`AugRoundIn` owes a fraternal-graph peel nobody had named.** `StepEmitIn`
+takes the ranking as an *arbitrary* `rk` via `RankAt sg rk σ`, while
+`AugRoundIn`'s postcondition is at `greedyStep (selRank (sel A.N) (fratGraph
+(selChain … i))) …` — and **nothing landed computes the selection rank of
+`fratGraph D`**. Every landed peel works off a `DelAdjSt`/arena CSR, not the
+`CsrPrefix fo ft (fratGraph D) nf` the round holds. It also owes per-round
+zeroing of `ad`/`sd`/`dg`, all three demanded all-zero by `StepEmitIn`'s
+precondition.
+
+**Three further items the F7 row never named:**
+
+1. **The `T`-uniformity step.** `mc_computesInTime_of_solveSpec` returns
+   `T x = L.const · mcK Ks x`, and **`Ks` depends on `n` and `G`** (through
+   `KB depth 0 (rootArena G _)`, `topScatK n (∑ v, G.degree v) atoms`, and
+   `Krl x`). The axiom binds `T` **before** `n, G, w` and quantifies over *all*
+   words. So F7 must produce a uniform majorant and weaken along it.
+   `ComputesInTime` is trivially monotone in `T`, but **no such lemma is
+   landed**. The ledger's `T x := L.const·mcK` is therefore **wrong**, and
+   `ProgCodegen.lean:145-149`'s own continuation note repeats the error.
+2. **`hokS : Com.Ok` and `hnw : NoWrite` for the whole composed command.**
+   The package contains exactly **two** `Com.Ok` proofs (`parseCom_ok`,
+   `matCom_ok`) and none for any routine. `OwnedFrom` constrains only *writes*,
+   so it does not supply `Com.Ok`, which needs every *read* name plus expression
+   depth. **The single largest unnamed item in the row.**
+3. **`temps` is an edit, not a pick.** `mcLayout` hard-codes `temps = 2`, while
+   `t[i] := a[j] + b[k]` already needs `≥ 3` and `bcExpr` is deeper.
+   Parameterising it moves the literal `11` in `mcLayout_span_le`, hence `hspan`
+   in three landed theorems.
+
+**Corrections to landed beliefs**: `Adm := Inv` does **not** work (`hAdmChild`
+is unrestricted in `j` while `inv_child`'s `hwidth` needs `j < depth`); the
+guarded `prepAdm S j A ∧ (j ≤ S.depth → Inv S G j A)` does, and is not landed.
+`headline_encoded` is **not on F7's path** — nothing consumes it. `KB` is still
+unpinned and `frameK`, its advertised target, is consumed by nothing and has
+the wrong shape. `AdjBuildIn` is dead (consumed by nothing); `AdjDeleteIn` is
+refuted. E0 is no longer an assumption.
+
+**Verdict: F7 is one leaf behind six others, and is itself three** — F7-a
+(`Adm` + the `KB` fuel recursion), F7-b (`KsChargeBridge` in a *uniform-`cB`*
+form, which the landed shape does not deliver since it binds `∃ cB` after `G`),
+F7-c (codegen: `temps`, `eS`/`eA`, `Com.Ok`, `NoWrite`, `q`/`c`, the
+`T`-monotonicity step, the ∃-close).
+
+The lesson for the supervisor: **a leaf count is not a readiness measure.**
+I had been tracking rows, and the rows understated the DAG because five
+residuals lived inside one mega-row (F6c12) rather than as rows of their own.
+They are minted below.
+
+
 ### 2026-08-25 — the staleness rule, strengthened after it failed twice
 
 The rule recorded earlier — *an edit to a landed file must precede the wave's
