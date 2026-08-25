@@ -75,6 +75,33 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-26 — the cover stage became composable while nobody was looking; w38 dispatched
+
+Tracing what `FrameStepAllScr` still needs turned up a leaf that had quietly
+become ready. `frameStepAll_of_cover_loopScr` has two content hypotheses,
+`CoverAllIn` and `CentreLoopAllScr`. The second waits on the prep composition
+(w34). **The first does not wait on anything any more** — every link in its
+chain was discharged in the course of tonight, and no one had joined them:
+
+`coverAllIn_of_order_sweep` ← `CovSweepIn` (w37's `sweepClose_covSweepIn`) +
+`CovOrderIn` (`covOrderIn_bucketPeel`, unconditional on the peel side) ←
+`CovAugAdjSelIn` (`covAugAdjSelIn_of_base_rounds_sym`) ← `AugBaseIn`
+(`augBaseIn_of_adj_peel_orient`, its three leaves all discharged) + `AugRoundIn`
+(w41, conditional only on `ArdWord`, which F7-c's `f7q` already bounds) +
+`AugSymIn` (`augSymIn_of_symCsr_build` with **`augSymCsrIn_symComW`**, the
+`augStInNW` variant w41 added — the un-`W` one cannot be used, since
+`augStInNW → augStInN` is false).
+
+Dispatched as w38 with the three pinned facts its predecessors paid for: `sel`
+must be `bucketSel` (so `covAugAdjIn_of_base_rounds_sym` at `mdSel` is
+unusable); the `it j` over-allocation `ardCap N = 2N³+N²+N+1` is a requirement on
+the base pass's free `Sbd` and must be *chosen*, not discovered; and the
+exact-length trap. Its cost clause names every legal currency explicitly, because
+the last foreign-currency term to hide a `Θ(N²)` was inside this very sweep.
+
+Four workers now: prep composition, the two seam residuals, the temps/bridge
+repairs, and this. That is one per remaining piece of the axiom's proof.
+
 ### 2026-08-26 — F7-c closes the last mile, and finds three defects between `SolveSpec` and the axiom
 
 `f7close_modelChecking` (`SolveF7Close.lean`, with `SolveF7CloseQ` and
