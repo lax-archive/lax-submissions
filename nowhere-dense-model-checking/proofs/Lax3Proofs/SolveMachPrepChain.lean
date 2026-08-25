@@ -971,6 +971,838 @@ theorem prepChain9 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
   · exact prepScr_frameC hscr (fun b => by rw [hap]) (fun i _ => hap _)
       (fun i => hkeep _ (prep_nN_notMem_sp i))
 
+open Classical in
+/-- The same, with the distance table the BFS produces bound
+existentially — the shape the step before it hands over in. -/
+theorem prepChain9E (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    {ℓp hbf : ℕ → ℕ} {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    (hp : PrepPins S ℓp (chanTab S ℓp) hbf Adm)
+    (j : ℕ) (hj : j ≤ S.depth) (hjd : j < S.depth)
+    (hcol : ℓp (j + 1) = ℓp j) (hbd : hbf (j + 1) = hbf j)
+    (hwb : PrepWB S ℓp hbf n₀ B)
+    (A : Arena (S.pal j) n₀) (hAdm : Adm j A) (hrowb : 2 * S.R + 1 ≤ hbf j)
+    (u : Fin A.N) :
+    Spec B
+      (fun σ => ∃ D : Fin (childN S A ((ord A.N A.G).order) u) → ℕ,
+        Lax3Proofs.Impl.BallTable (preG S A ((ord A.N A.G).order) u)
+            (centreChild S A ((ord A.N A.G).order) u) (2 * S.R) D ∧
+          (∀ v : Fin (childN S A ((ord A.N A.G).order) u),
+            D v ≤ 2 * S.R + 1) ∧
+          (ArenaStW (prepMid j) (hbf j)
+              ((Impl.ofArena A (chanTab S ℓp j A)).restrict
+                (cluster S A ((ord A.N A.G).order) u)) σ ∧
+            σ.vars (arenaNames (j + 1)).nN
+              = childN S A ((ord A.N A.G).order) u ∧
+            σ.vars (arenaNames (j + 1)).nS
+              = ∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                  (preG S A ((ord A.N A.G).order) u).degree v ∧
+            (∀ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (σ.arrs pcDa).getD (v : ℕ) 0 = D v) ∧
+            (∀ i : Fin S.width, (σ.arrs pcBi).getD (i : ℕ) 0
+              = ((batchFn S A ((ord A.N A.G).order) u i :
+                  Fin (childN S A ((ord A.N A.G).order) u)) : ℕ)) ∧
+            FinBitsW pcBb
+              (Set.range (batchFn S A ((ord A.N A.G).order) u)) σ ∧
+            prepScr S ℓp hbf n₀ j σ))
+      (.seq (prepSupCells S ℓp hbf j)
+        (.seq (supportsCom pcOi pcTi pcDa pcPa (arenaNames (j + 1)).hist)
+          (.seq (profilesCom (prepProfNames j) S.width (S.pal j) S.R)
+            (.seq (colWriteCom (arenaNames (j + 1)).col
+                (arenaNames (j + 1)).nN pcPd pcPu pcW pcDd pcVv
+                (relPal (S.pal j)) S.width S.R)
+              (.seq (isolateCom (prepMid j) (arenaNames (j + 1)).off
+                  (arenaNames (j + 1)).tgt pcNo pcBb)
+                (.assign (arenaNames (j + 1)).nS (.var pcNo)))))))
+      (fun _ σ' => PrepDeliv S ord ℓp hbf j A u σ')
+      (12 + (supportsK (childN S A ((ord A.N A.G).order) u)
+          (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+            (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+        + (profilesK S.width (S.pal j + 1)
+            (childN S A ((ord A.N A.G).order) u)
+            (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (preG S A ((ord A.N A.G).order) u).degree v) S.R
+          + (colWriteK (childN S A ((ord A.N A.G).order) u)
+              (relPal (S.pal j)) S.width S.R
+            + (isolateK (childN S A ((ord A.N A.G).order) u)
+                (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                  (preG S A ((ord A.N A.G).order) u).degree v) + 2))))) := by
+  refine Spec.exists1 (fun D => ?_)
+  refine Spec.imp (fun hD => ?_) (fun σ hσ => hσ.1)
+  refine Spec.imp (fun hDd => ?_) (fun σ hσ => hσ.2.1)
+  exact Spec.pre
+    (prepChain9 S ord hp j hj hjd hcol hbd hwb A hAdm hrowb u hD hDd)
+    (fun σ hσ => hσ.2.2)
+
+open Classical in
+/-- **Steps 8–14** — the BFS, at radius `2 * S.R` and source the
+connector's own child name. One BFS, one written column. -/
+theorem prepChain8 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    {ℓp hbf : ℕ → ℕ} {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    (hp : PrepPins S ℓp (chanTab S ℓp) hbf Adm)
+    (j : ℕ) (hj : j ≤ S.depth) (hjd : j < S.depth)
+    (hcol : ℓp (j + 1) = ℓp j) (hbd : hbf (j + 1) = hbf j)
+    (hwb : PrepWB S ℓp hbf n₀ B)
+    (A : Arena (S.pal j) n₀) (hAdm : Adm j A) (hrowb : 2 * S.R + 1 ≤ hbf j)
+    (u : Fin A.N) :
+    Spec B
+      (fun σ => ArenaStW (prepMid j) (hbf j)
+            ((Impl.ofArena A (chanTab S ℓp j A)).restrict
+              (cluster S A ((ord A.N A.G).order) u)) σ ∧
+          σ.vars "bf.n" = childN S A ((ord A.N A.G).order) u ∧
+          σ.vars "bf.m" = σ.vars (arenaNames (j + 1)).nS ∧
+          σ.vars "bf.r" = 2 * S.R ∧
+          σ.vars "bf.v"
+            = ((centreChild S A ((ord A.N A.G).order) u :
+                Fin (childN S A ((ord A.N A.G).order) u)) : ℕ) ∧
+          σ.vars (arenaNames (j + 1)).nN
+            = childN S A ((ord A.N A.G).order) u ∧
+          σ.vars (arenaNames (j + 1)).nS
+            = ∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v ∧
+          (∀ i : Fin S.width, (σ.arrs pcBi).getD (i : ℕ) 0
+            = ((batchFn S A ((ord A.N A.G).order) u i :
+                Fin (childN S A ((ord A.N A.G).order) u)) : ℕ)) ∧
+          FinBitsW pcBb
+            (Set.range (batchFn S A ((ord A.N A.G).order) u)) σ ∧
+          prepScr S ℓp hbf n₀ j σ)
+      (.seq (bfsCom pcOi pcTi pcDa)
+        (.seq (prepSupCells S ℓp hbf j)
+          (.seq (supportsCom pcOi pcTi pcDa pcPa (arenaNames (j + 1)).hist)
+            (.seq (profilesCom (prepProfNames j) S.width (S.pal j) S.R)
+              (.seq (colWriteCom (arenaNames (j + 1)).col
+                  (arenaNames (j + 1)).nN pcPd pcPu pcW pcDd pcVv
+                  (relPal (S.pal j)) S.width S.R)
+                (.seq (isolateCom (prepMid j) (arenaNames (j + 1)).off
+                    (arenaNames (j + 1)).tgt pcNo pcBb)
+                  (.assign (arenaNames (j + 1)).nS (.var pcNo))))))))
+      (fun _ σ' => PrepDeliv S ord ℓp hbf j A u σ')
+      (bfsK (childN S A ((ord A.N A.G).order) u)
+          (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+            (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+        + (12 + (supportsK (childN S A ((ord A.N A.G).order) u)
+            (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+          + (profilesK S.width (S.pal j + 1)
+              (childN S A ((ord A.N A.G).order) u)
+              (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v) S.R
+            + (colWriteK (childN S A ((ord A.N A.G).order) u)
+                (relPal (S.pal j)) S.width S.R
+              + (isolateK (childN S A ((ord A.N A.G).order) u)
+                  (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                    (preG S A ((ord A.N A.G).order) u).degree v)
+                + 2)))))) := by
+  refine Spec.seq (Spec.pre (Spec.frameA
+      (prep_bfsStage hwb j A ((ord A.N A.G).order) u))
+      (fun σ hσ => ⟨hσ.1, hσ.2.1, hσ.2.2.1, hσ.2.2.2.1, hσ.2.2.2.2.1,
+        hσ.2.2.2.2.2.2.2.2.2⟩))
+    (prepChain9E S ord hp j hj hjd hcol hbd hwb A hAdm hrowb u) ?_
+    (fun _ _ _ _ _ h => h)
+  rintro σ σ' ⟨-, -, -, -, -, hnN, hnS, hbi, hbits, hscr⟩
+    ⟨⟨hAW, hnSe, hlen, hDd, hD⟩, harr, hvar, -⟩
+  have hnp : ∀ b : String, b ≠ pcDa → σ'.arrs b = σ.arrs b := by
+    intro b hb
+    refine harr b ?_
+    rw [warrs_bfsCom]
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨hb, hb, hb⟩
+  have hvp : ∀ y : String, y ∉ bfScalars → σ'.vars y = σ.vars y :=
+    fun y hy => hvar y (fun hmem =>
+      hy (wvars_bfsCom_subset pcOi pcTi pcDa y hmem))
+  refine ⟨_, hD, hDd, hAW, ?_, ?_, fun v => rfl, ?_, ?_, ?_⟩
+  · rw [hvp _ (prep_nN_notMem_bf (j + 1))]; exact hnN
+  · rw [hnSe]; exact hnS
+  · intro i
+    rw [hnp pcBi (lv_ne_of_base_ne (by decide) (by decide) _ _)]
+    exact hbi i
+  · exact finBitsW_of_eq hbits
+      (hnp pcBb (lv_ne_of_base_ne (by decide) (by decide) _ _))
+  · exact prepScr_frameC hscr hlen
+      (fun i _ => hnp _ (lv_ne_of_base_ne (by decide) (by decide) _ _))
+      (fun i => hvp _ (prep_nN_notMem_bf i))
+
+open Classical in
+/-- **Steps 7–14** — the BFS's four input cells, then the BFS. -/
+theorem prepChain7 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    {ℓp hbf : ℕ → ℕ} {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    (hp : PrepPins S ℓp (chanTab S ℓp) hbf Adm)
+    (j : ℕ) (hj : j ≤ S.depth) (hjd : j < S.depth)
+    (hcol : ℓp (j + 1) = ℓp j) (hbd : hbf (j + 1) = hbf j)
+    (hwb : PrepWB S ℓp hbf n₀ B)
+    (A : Arena (S.pal j) n₀) (hAdm : Adm j A) (hrowb : 2 * S.R + 1 ≤ hbf j)
+    (u : Fin A.N) :
+    Spec B
+      (fun σ => ArenaStW (prepMid j) (hbf j)
+            ((Impl.ofArena A (chanTab S ℓp j A)).restrict
+              (cluster S A ((ord A.N A.G).order) u)) σ ∧
+          σ.vars (arenaNames (j + 1)).nN
+            = childN S A ((ord A.N A.G).order) u ∧
+          σ.vars (arenaNames (j + 1)).nS
+            = ∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v ∧
+          σ.vars pcCc
+            = ((centreChild S A ((ord A.N A.G).order) u :
+                Fin (childN S A ((ord A.N A.G).order) u)) : ℕ) ∧
+          (∀ i : Fin S.width, (σ.arrs pcBi).getD (i : ℕ) 0
+            = ((batchFn S A ((ord A.N A.G).order) u i :
+                Fin (childN S A ((ord A.N A.G).order) u)) : ℕ)) ∧
+          FinBitsW pcBb
+            (Set.range (batchFn S A ((ord A.N A.G).order) u)) σ ∧
+          prepScr S ℓp hbf n₀ j σ)
+      (.seq (prepBfsCells S j)
+        (.seq (bfsCom pcOi pcTi pcDa)
+          (.seq (prepSupCells S ℓp hbf j)
+            (.seq (supportsCom pcOi pcTi pcDa pcPa
+                (arenaNames (j + 1)).hist)
+              (.seq (profilesCom (prepProfNames j) S.width (S.pal j) S.R)
+                (.seq (colWriteCom (arenaNames (j + 1)).col
+                    (arenaNames (j + 1)).nN pcPd pcPu pcW pcDd pcVv
+                    (relPal (S.pal j)) S.width S.R)
+                  (.seq (isolateCom (prepMid j) (arenaNames (j + 1)).off
+                      (arenaNames (j + 1)).tgt pcNo pcBb)
+                    (.assign (arenaNames (j + 1)).nS (.var pcNo)))))))))
+      (fun _ σ' => PrepDeliv S ord ℓp hbf j A u σ')
+      (8 + (bfsK (childN S A ((ord A.N A.G).order) u)
+          (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+            (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+        + (12 + (supportsK (childN S A ((ord A.N A.G).order) u)
+            (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+          + (profilesK S.width (S.pal j + 1)
+              (childN S A ((ord A.N A.G).order) u)
+              (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v) S.R
+            + (colWriteK (childN S A ((ord A.N A.G).order) u)
+                (relPal (S.pal j)) S.width S.R
+              + (isolateK (childN S A ((ord A.N A.G).order) u)
+                  (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                    (preG S A ((ord A.N A.G).order) u).degree v)
+                + 2))))))) := by
+  have hcNB : childN S A ((ord A.N A.G).order) u < B := by
+    have := prepWB_childN hwb A ((ord A.N A.G).order) u; omega
+  have hcnsB : (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+      (preG S A ((ord A.N A.G).order) u).degree v) < B := by
+    have := prepWB_profNs hwb A ((ord A.N A.G).order) u; omega
+  refine Spec.seq (Spec.pre
+      (prepBfsCells_spec (B := B) S j (by have := prepWB_twoR hwb; omega))
+      (fun σ hσ => ⟨by rw [hσ.2.1]; exact hcNB, by rw [hσ.2.2.1]; exact hcnsB,
+        by rw [hσ.2.2.2.1]
+           exact lt_of_lt_of_le
+             (centreChild S A ((ord A.N A.G).order) u).2 (le_of_lt hcNB)⟩))
+    (prepChain8 S ord hp j hj hjd hcol hbd hwb A hAdm hrowb u) ?_
+    (fun _ _ _ _ _ h => h)
+  rintro σ σ' ⟨hAW, hnN, hnS, hcc, hbi, hbits, hscr⟩
+    ⟨e1, e2, e3, e4, hvp, hap⟩
+  have hkeep : ∀ y : String, y ∉ bfScalars → σ'.vars y = σ.vars y := by
+    intro y hy
+    refine hvp y ?_ ?_ ?_ ?_ <;> (rintro rfl; exact hy (by decide))
+  refine ⟨arenaStW_of_eq hAW (hkeep _ (prep_nN_notMem_bf (j + 1)))
+      (hkeep _ (prep_nS_notMem_bf (j + 1))) (hap _) (hap _) (hap _) (hap _)
+      (hap _), ?_, ?_, e3, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [e1, hnN]
+  · rw [e2, hkeep _ (prep_nS_notMem_bf (j + 1))]
+  · rw [e4, hcc]
+  · rw [hkeep _ (prep_nN_notMem_bf (j + 1))]; exact hnN
+  · rw [hkeep _ (prep_nS_notMem_bf (j + 1))]; exact hnS
+  · intro i; rw [hap]; exact hbi i
+  · exact finBitsW_of_eq hbits (hap _)
+  · exact prepScr_frameC hscr (fun b => by rw [hap]) (fun i _ => hap _)
+      (fun i => hkeep _ (prep_nN_notMem_bf i))
+
+open Classical in
+/-- **Steps 6–14** — the batch builder. It reads the channel region *as
+`restrictCom` leaves it*, which is why it precedes the supports pass. -/
+theorem prepChain6 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    {ℓp hbf : ℕ → ℕ} {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    (hp : PrepPins S ℓp (chanTab S ℓp) hbf Adm) (hw : WidthPin S)
+    (j : ℕ) (hj : j ≤ S.depth) (hjd : j < S.depth)
+    (hcol : ℓp (j + 1) = ℓp j) (hbd : hbf (j + 1) = hbf j)
+    (hwb : PrepWB S ℓp hbf n₀ B)
+    (A : Arena (S.pal j) n₀) (hAdm : Adm j A) (hrowb : 2 * S.R + 1 ≤ hbf j)
+    (hrowA : ∀ (v : Fin A.N) (e : ℕ), (A.chan v e).length ≤ 2 * S.R + 1)
+    (u : Fin A.N) :
+    Spec B
+      (fun σ => HistArrW (arenaNames (j + 1)).hist (ℓp j) (hbf j)
+            (childHistTab S A ((ord A.N A.G).order) u
+              (chanTab S ℓp j A)) σ ∧
+          σ.vars (arenaNames (j + 1)).nN
+            = childN S A ((ord A.N A.G).order) u ∧
+          σ.vars pcCc
+            = ((centreChild S A ((ord A.N A.G).order) u :
+                Fin (childN S A ((ord A.N A.G).order) u)) : ℕ) ∧
+          σ.vars pcJr = j ∧ σ.vars pcMw = S.width ∧
+          prepScr S ℓp hbf n₀ j σ ∧
+          ArenaStW (prepMid j) (hbf j)
+            ((Impl.ofArena A (chanTab S ℓp j A)).restrict
+              (cluster S A ((ord A.N A.G).order) u)) σ ∧
+          σ.vars (arenaNames (j + 1)).nS
+            = ∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v)
+      (.seq (mkBatchCom (arenaNames (j + 1)).hist pcBb pcBi pcCc
+          (arenaNames (j + 1)).nN pcJr pcMw pcEc pcIc pcLn pcBs pcAv pcSc
+          (ℓp j) (hbf j))
+        (.seq (prepBfsCells S j)
+          (.seq (bfsCom pcOi pcTi pcDa)
+            (.seq (prepSupCells S ℓp hbf j)
+              (.seq (supportsCom pcOi pcTi pcDa pcPa
+                  (arenaNames (j + 1)).hist)
+                (.seq (profilesCom (prepProfNames j) S.width (S.pal j) S.R)
+                  (.seq (colWriteCom (arenaNames (j + 1)).col
+                      (arenaNames (j + 1)).nN pcPd pcPu pcW pcDd pcVv
+                      (relPal (S.pal j)) S.width S.R)
+                    (.seq (isolateCom (prepMid j) (arenaNames (j + 1)).off
+                        (arenaNames (j + 1)).tgt pcNo pcBb)
+                      (.assign (arenaNames (j + 1)).nS (.var pcNo))))))))))
+      (fun _ σ' => PrepDeliv S ord ℓp hbf j A u σ')
+      (mkBatchK (childN S A ((ord A.N A.G).order) u) (ℓp j) (hbf j) S.width
+        + (8 + (bfsK (childN S A ((ord A.N A.G).order) u)
+            (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+          + (12 + (supportsK (childN S A ((ord A.N A.G).order) u)
+              (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+            + (profilesK S.width (S.pal j + 1)
+                (childN S A ((ord A.N A.G).order) u)
+                (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                  (preG S A ((ord A.N A.G).order) u).degree v) S.R
+              + (colWriteK (childN S A ((ord A.N A.G).order) u)
+                  (relPal (S.pal j)) S.width S.R
+                + (isolateK (childN S A ((ord A.N A.G).order) u)
+                    (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                      (preG S A ((ord A.N A.G).order) u).degree v)
+                  + 2)))))))) := by
+  refine Spec.seq (Spec.pre (Spec.frameA
+      (prep_mkBatchStage hwb hp hw j A hjd hAdm hrowA
+        ((ord A.N A.G).order) u))
+      (fun σ hσ => ⟨hσ.1, hσ.2.1, hσ.2.2.1, hσ.2.2.2.1, hσ.2.2.2.2.1,
+        hσ.2.2.2.2.2.1⟩))
+    (prepChain7 S ord hp j hj hjd hcol hbd hwb A hAdm hrowb u) ?_
+    (fun _ _ _ _ _ h => h)
+  rintro σ σ' ⟨-, hnN, hcc, -, -, hscr, hAW, hnS⟩
+    ⟨⟨hbits, -, hbi, hvp, hap, hlen⟩, -, -, -⟩
+  have hkeepV : ∀ y : String, y ≠ pcAv → y ≠ pcSc → y ≠ pcEc → y ≠ pcIc →
+      y ≠ pcLn → y ≠ pcBs → σ'.vars y = σ.vars y := hvp
+  have hkeepA : ∀ b : String, b ≠ pcBb → b ≠ pcBi →
+      σ'.arrs b = σ.arrs b := hap
+  have hvN : σ'.vars (arenaNames (j + 1)).nN
+      = σ.vars (arenaNames (j + 1)).nN := by
+    refine hkeepV _ ?_ ?_ ?_ ?_ ?_ ?_ <;>
+      exact lv_ne_of_base_ne (by decide) (by decide) _ _
+  have hvS : σ'.vars (arenaNames (j + 1)).nS
+      = σ.vars (arenaNames (j + 1)).nS := by
+    refine hkeepV _ ?_ ?_ ?_ ?_ ?_ ?_ <;>
+      exact lv_ne_of_base_ne (by decide) (by decide) _ _
+  have hvC : σ'.vars pcCc = σ.vars pcCc := by
+    refine hkeepV _ ?_ ?_ ?_ ?_ ?_ ?_ <;>
+      exact lv_ne_of_base_ne (by decide) (by decide) _ _
+  have harrM : ∀ b : String, b ≠ pcBb → b ≠ pcBi →
+      σ'.arrs b = σ.arrs b := hkeepA
+  refine ⟨arenaStW_of_eq hAW hvN hvS ?_ ?_ ?_ ?_ ?_, ?_, ?_, ?_, hbi,
+    hbits, ?_⟩
+  · exact harrM _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact harrM _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact harrM _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact harrM _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact harrM _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · rw [hvN]; exact hnN
+  · rw [hvS]; exact hnS
+  · rw [hvC]; exact hcc
+  · refine prepScr_frameC hscr hlen (fun i _ => harrM _ ?_ ?_) (fun i => ?_)
+    · exact lv_ne_of_base_ne (by decide) (by decide) _ _
+    · exact lv_ne_of_base_ne (by decide) (by decide) _ _
+    · refine hkeepV _ ?_ ?_ ?_ ?_ ?_ ?_ <;>
+        exact lv_ne_of_base_ne (by decide) (by decide) _ _
+
+open Classical in
+/-- **Steps 5–14** — the batch builder's two schedule cells, then the
+builder. -/
+theorem prepChain5 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    {ℓp hbf : ℕ → ℕ} {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    (hp : PrepPins S ℓp (chanTab S ℓp) hbf Adm) (hw : WidthPin S)
+    (j : ℕ) (hj : j ≤ S.depth) (hjd : j < S.depth)
+    (hcol : ℓp (j + 1) = ℓp j) (hbd : hbf (j + 1) = hbf j)
+    (hwb : PrepWB S ℓp hbf n₀ B)
+    (A : Arena (S.pal j) n₀) (hAdm : Adm j A) (hrowb : 2 * S.R + 1 ≤ hbf j)
+    (hrowA : ∀ (v : Fin A.N) (e : ℕ), (A.chan v e).length ≤ 2 * S.R + 1)
+    (u : Fin A.N) :
+    Spec B
+      (fun σ => ArenaStW (prepMid j) (hbf j)
+            ((Impl.ofArena A (chanTab S ℓp j A)).restrict
+              (cluster S A ((ord A.N A.G).order) u)) σ ∧
+          σ.vars (arenaNames (j + 1)).nN
+            = childN S A ((ord A.N A.G).order) u ∧
+          σ.vars (arenaNames (j + 1)).nS
+            = ∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v ∧
+          σ.vars pcCc
+            = ((centreChild S A ((ord A.N A.G).order) u :
+                Fin (childN S A ((ord A.N A.G).order) u)) : ℕ) ∧
+          prepScr S ℓp hbf n₀ j σ)
+      (.seq (prepBatchCells S j)
+        (.seq (mkBatchCom (arenaNames (j + 1)).hist pcBb pcBi pcCc
+            (arenaNames (j + 1)).nN pcJr pcMw pcEc pcIc pcLn pcBs pcAv pcSc
+            (ℓp j) (hbf j))
+          (.seq (prepBfsCells S j)
+            (.seq (bfsCom pcOi pcTi pcDa)
+              (.seq (prepSupCells S ℓp hbf j)
+                (.seq (supportsCom pcOi pcTi pcDa pcPa
+                    (arenaNames (j + 1)).hist)
+                  (.seq (profilesCom (prepProfNames j) S.width (S.pal j) S.R)
+                    (.seq (colWriteCom (arenaNames (j + 1)).col
+                        (arenaNames (j + 1)).nN pcPd pcPu pcW pcDd pcVv
+                        (relPal (S.pal j)) S.width S.R)
+                      (.seq (isolateCom (prepMid j)
+                          (arenaNames (j + 1)).off
+                          (arenaNames (j + 1)).tgt pcNo pcBb)
+                        (.assign (arenaNames (j + 1)).nS
+                          (.var pcNo)))))))))))
+      (fun _ σ' => PrepDeliv S ord ℓp hbf j A u σ')
+      (4 + (mkBatchK (childN S A ((ord A.N A.G).order) u) (ℓp j) (hbf j)
+            S.width
+        + (8 + (bfsK (childN S A ((ord A.N A.G).order) u)
+            (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+          + (12 + (supportsK (childN S A ((ord A.N A.G).order) u)
+              (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+            + (profilesK S.width (S.pal j + 1)
+                (childN S A ((ord A.N A.G).order) u)
+                (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                  (preG S A ((ord A.N A.G).order) u).degree v) S.R
+              + (colWriteK (childN S A ((ord A.N A.G).order) u)
+                  (relPal (S.pal j)) S.width S.R
+                + (isolateK (childN S A ((ord A.N A.G).order) u)
+                    (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                      (preG S A ((ord A.N A.G).order) u).degree v)
+                  + 2))))))))) := by
+  refine Spec.seq (Spec.pre
+      (prepBatchCells_spec (B := B) S j (prepWB_level hwb hj)
+        (prepWB_width hwb)) (fun _ _ => trivial))
+    (prepChain6 S ord hp hw j hj hjd hcol hbd hwb A hAdm hrowb hrowA u) ?_
+    (fun _ _ _ _ _ h => h)
+  rintro σ σ' ⟨hAW, hnN, hnS, hcc, hscr⟩ ⟨e1, e2, hvp, hap⟩
+  have hkeep : ∀ y : String, y ≠ pcJr → y ≠ pcMw →
+      σ'.vars y = σ.vars y := hvp
+  have hAW' : ArenaStW (prepMid j) (hbf j)
+      ((Impl.ofArena A (chanTab S ℓp j A)).restrict
+        (cluster S A ((ord A.N A.G).order) u)) σ' :=
+    arenaStW_of_eq hAW
+      (hkeep _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+        (lv_ne_of_base_ne (by decide) (by decide) _ _))
+      (hkeep _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+        (lv_ne_of_base_ne (by decide) (by decide) _ _))
+      (hap _) (hap _) (hap _) (hap _) (hap _)
+  have hvN : σ'.vars (arenaNames (j + 1)).nN
+      = σ.vars (arenaNames (j + 1)).nN :=
+    hkeep ((arenaNames (j + 1)).nN)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  have hvS : σ'.vars (arenaNames (j + 1)).nS
+      = σ.vars (arenaNames (j + 1)).nS :=
+    hkeep ((arenaNames (j + 1)).nS)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  have hvC : σ'.vars pcCc = σ.vars pcCc :=
+    hkeep pcCc (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  refine ⟨histArrW_childHistTab (nm := prepMid j) S A
+      ((ord A.N A.G).order) u (chanTab S ℓp j A) hAW'
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _), ?_, ?_, e1, e2, ?_,
+    hAW', ?_⟩
+  · rw [hvN]; exact hnN
+  · rw [hvC]; exact hcc
+  · exact prepScr_frameC hscr (fun b => by rw [hap]) (fun i _ => hap _)
+      (fun i => hkeep ((arenaNames i).nN)
+        (lv_ne_of_base_ne (by decide) (by decide) _ _)
+        (lv_ne_of_base_ne (by decide) (by decide) _ _))
+  · rw [hvS]; exact hnS
+
+open Classical in
+/-- **Steps 4–14** — the restrict stage. This is the one step that
+writes the level's rank scratch, and the one that re-establishes the
+descriptor from its own postcondition rather than from a frame
+(`prepScr_out`): the stage cleans exactly `take A.N`, which is exactly
+the descriptor's window. -/
+theorem prepChain4 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    {ℓp hbf : ℕ → ℕ} {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    (hp : PrepPins S ℓp (chanTab S ℓp) hbf Adm) (hw : WidthPin S)
+    (j : ℕ) (hj : j ≤ S.depth) (hjd : j < S.depth)
+    (hcol : ℓp (j + 1) = ℓp j) (hbd : hbf (j + 1) = hbf j)
+    (hwb : PrepWB S ℓp hbf n₀ B)
+    (A : Arena (S.pal j) n₀) (hAdm : Adm j A) (hrowb : 2 * S.R + 1 ≤ hbf j)
+    (hrowA : ∀ (v : Fin A.N) (e : ℕ), (A.chan v e).length ≤ 2 * S.R + 1)
+    (u : Fin A.N) :
+    Spec B
+      (fun σ => ArenaStW (arenaNames j) (hbf j)
+            (Impl.ofArena A (chanTab S ℓp j A)) σ ∧
+          ClusterList pcLa (cluster S A ((ord A.N A.G).order) u) σ ∧
+          σ.vars "rs.k" = (cluster S A ((ord A.N A.G).order) u).ncard ∧
+          σ.vars "rs.l" = S.pal j ∧ σ.vars "rs.p" = ℓp j ∧
+          σ.vars "rs.h" = hbf j ∧
+          prepScr S ℓp hbf n₀ j σ ∧
+          σ.vars pcCc
+            = ((centreChild S A ((ord A.N A.G).order) u :
+                Fin (childN S A ((ord A.N A.G).order) u)) : ℕ))
+      (.seq (restrictCom (arenaNames j) (prepMid j) pcLa (pcRa j))
+        (.seq (prepBatchCells S j)
+          (.seq (mkBatchCom (arenaNames (j + 1)).hist pcBb pcBi pcCc
+              (arenaNames (j + 1)).nN pcJr pcMw pcEc pcIc pcLn pcBs pcAv
+              pcSc (ℓp j) (hbf j))
+            (.seq (prepBfsCells S j)
+              (.seq (bfsCom pcOi pcTi pcDa)
+                (.seq (prepSupCells S ℓp hbf j)
+                  (.seq (supportsCom pcOi pcTi pcDa pcPa
+                      (arenaNames (j + 1)).hist)
+                    (.seq (profilesCom (prepProfNames j) S.width (S.pal j)
+                        S.R)
+                      (.seq (colWriteCom (arenaNames (j + 1)).col
+                          (arenaNames (j + 1)).nN pcPd pcPu pcW pcDd pcVv
+                          (relPal (S.pal j)) S.width S.R)
+                        (.seq (isolateCom (prepMid j)
+                            (arenaNames (j + 1)).off
+                            (arenaNames (j + 1)).tgt pcNo pcBb)
+                          (.assign (arenaNames (j + 1)).nS
+                            (.var pcNo))))))))))))
+      (fun _ σ' => PrepDeliv S ord ℓp hbf j A u σ')
+      (restrictK (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) u))
+            (cluster S A ((ord A.N A.G).order) u).ncard (S.pal j) (ℓp j)
+            (hbf j)
+        + (4 + (mkBatchK (childN S A ((ord A.N A.G).order) u) (ℓp j)
+              (hbf j) S.width
+          + (8 + (bfsK (childN S A ((ord A.N A.G).order) u)
+              (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+            + (12 + (supportsK (childN S A ((ord A.N A.G).order) u)
+                (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                  (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+              + (profilesK S.width (S.pal j + 1)
+                  (childN S A ((ord A.N A.G).order) u)
+                  (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                    (preG S A ((ord A.N A.G).order) u).degree v) S.R
+                + (colWriteK (childN S A ((ord A.N A.G).order) u)
+                    (relPal (S.pal j)) S.width S.R
+                  + (isolateK (childN S A ((ord A.N A.G).order) u)
+                      (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                        (preG S A ((ord A.N A.G).order) u).degree v)
+                    + 2)))))))))) := by
+  refine Spec.seq (Spec.pre (Spec.frameA
+      (prep_restrictStage hwb j hj A ((ord A.N A.G).order) u))
+      (fun σ hσ => ⟨hσ.1, hσ.2.1, hσ.2.2.1, hσ.2.2.2.1, hσ.2.2.2.2.1,
+        hσ.2.2.2.2.2.1, hσ.2.2.2.2.2.2.1⟩))
+    (prepChain5 S ord hp hw j hj hjd hcol hbd hwb A hAdm hrowb hrowA u) ?_
+    (fun _ _ _ _ _ h => h)
+  rintro σ σ' ⟨-, -, -, -, -, -, hscr, hcc⟩
+    ⟨⟨hAWc, hnS, hAWp, -, -, -, -, htake⟩, harr, hvar, hlen⟩
+  have hvp : ∀ y : String, y ∉ rsScalars → y ≠ (prepMid j).nN →
+      y ≠ (prepMid j).nS → σ'.vars y = σ.vars y := by
+    intro y h1 h2 h3
+    refine hvar y (fun hmem => ?_)
+    rcases wvars_restrictCom_subset (nmP := arenaNames j) (nmC := prepMid j)
+      (la := pcLa) (ra := pcRa j) y hmem with h | h | h
+    · exact h1 h
+    · exact h2 h
+    · exact h3 h
+  have hdeep : ∀ i, j < i → σ'.arrs (pcRa i) = σ.arrs (pcRa i) := by
+    intro i hi
+    refine harr _ ?_
+    rw [warrs_restrictCom]
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · exact lv_ne_of_level_ne (by decide) (by omega)
+    · exact lv_ne_of_base_ne (by decide) (by decide) _ _
+    · exact lv_ne_of_base_ne (by decide) (by decide) _ _
+    · exact lv_ne_of_base_ne (by decide) (by decide) _ _
+    · exact lv_ne_of_base_ne (by decide) (by decide) _ _
+    · exact lv_ne_of_base_ne (by decide) (by decide) _ _
+    · exact lv_ne_of_base_ne (by decide) (by decide) _ _
+    · exact lv_ne_of_base_ne (by decide) (by decide) _ _
+    · exact lv_ne_of_level_ne (by decide) (by omega)
+  have hnN : σ'.vars (arenaNames (j + 1)).nN
+      = childN S A ((ord A.N A.G).order) u := hAWc.n_eq
+  refine ⟨hAWc, hnN, hnS, ?_, ?_⟩
+  · rw [hvp pcCc (lv_notMem (by decide) 0)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)]
+    exact hcc
+  · refine prepScr_out hscr hlen hdeep (rankScr_of_take hAWp htake)
+      (fun i => ?_)
+    by_cases hi : i = j + 1
+    · subst hi
+      rw [hnN]
+      exact prep_childN_le_root S A _ u
+    · rw [hvp ((arenaNames i).nN) (prep_nN_notMem_rs i)
+        (lv_ne_of_level_ne (by decide) hi)
+        (lv_ne_of_base_ne (by decide) (by decide) _ _)]
+      exact hscr.2.2.2.1 i
+
+open Classical in
+/-- **Steps 3–14** — the restrict stage's three schedule cells, then
+the restrict stage. -/
+theorem prepChain3 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    {ℓp hbf : ℕ → ℕ} {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    (hp : PrepPins S ℓp (chanTab S ℓp) hbf Adm) (hw : WidthPin S)
+    (j : ℕ) (hj : j ≤ S.depth) (hjd : j < S.depth)
+    (hcol : ℓp (j + 1) = ℓp j) (hbd : hbf (j + 1) = hbf j)
+    (hwb : PrepWB S ℓp hbf n₀ B) (hpalB : S.pal j < B)
+    (A : Arena (S.pal j) n₀) (hAdm : Adm j A) (hrowb : 2 * S.R + 1 ≤ hbf j)
+    (hrowA : ∀ (v : Fin A.N) (e : ℕ), (A.chan v e).length ≤ 2 * S.R + 1)
+    (u : Fin A.N) :
+    Spec B
+      (fun σ => ArenaStW (arenaNames j) (hbf j)
+            (Impl.ofArena A (chanTab S ℓp j A)) σ ∧
+          ClusterList pcLa (cluster S A ((ord A.N A.G).order) u) σ ∧
+          σ.vars "rs.k" = (cluster S A ((ord A.N A.G).order) u).ncard ∧
+          σ.vars pcCc
+            = ((centreChild S A ((ord A.N A.G).order) u :
+                Fin (childN S A ((ord A.N A.G).order) u)) : ℕ) ∧
+          prepScr S ℓp hbf n₀ j σ)
+      (.seq (prepRestrictCells S ℓp hbf j)
+        (.seq (restrictCom (arenaNames j) (prepMid j) pcLa (pcRa j))
+          (.seq (prepBatchCells S j)
+            (.seq (mkBatchCom (arenaNames (j + 1)).hist pcBb pcBi pcCc
+                (arenaNames (j + 1)).nN pcJr pcMw pcEc pcIc pcLn pcBs pcAv
+                pcSc (ℓp j) (hbf j))
+              (.seq (prepBfsCells S j)
+                (.seq (bfsCom pcOi pcTi pcDa)
+                  (.seq (prepSupCells S ℓp hbf j)
+                    (.seq (supportsCom pcOi pcTi pcDa pcPa
+                        (arenaNames (j + 1)).hist)
+                      (.seq (profilesCom (prepProfNames j) S.width
+                          (S.pal j) S.R)
+                        (.seq (colWriteCom (arenaNames (j + 1)).col
+                            (arenaNames (j + 1)).nN pcPd pcPu pcW pcDd pcVv
+                            (relPal (S.pal j)) S.width S.R)
+                          (.seq (isolateCom (prepMid j)
+                              (arenaNames (j + 1)).off
+                              (arenaNames (j + 1)).tgt pcNo pcBb)
+                            (.assign (arenaNames (j + 1)).nS
+                              (.var pcNo)))))))))))))
+      (fun _ σ' => PrepDeliv S ord ℓp hbf j A u σ')
+      (6 + (restrictK
+              (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) u))
+              (cluster S A ((ord A.N A.G).order) u).ncard (S.pal j) (ℓp j)
+              (hbf j)
+        + (4 + (mkBatchK (childN S A ((ord A.N A.G).order) u) (ℓp j)
+              (hbf j) S.width
+          + (8 + (bfsK (childN S A ((ord A.N A.G).order) u)
+              (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+            + (12 + (supportsK (childN S A ((ord A.N A.G).order) u)
+                (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                  (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+              + (profilesK S.width (S.pal j + 1)
+                  (childN S A ((ord A.N A.G).order) u)
+                  (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                    (preG S A ((ord A.N A.G).order) u).degree v) S.R
+                + (colWriteK (childN S A ((ord A.N A.G).order) u)
+                    (relPal (S.pal j)) S.width S.R
+                  + (isolateK (childN S A ((ord A.N A.G).order) u)
+                      (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                        (preG S A ((ord A.N A.G).order) u).degree v)
+                    + 2))))))))))) := by
+  refine Spec.seq (Spec.pre
+      (prepRestrictCells_spec (B := B) S ℓp hbf j hpalB (prepWB_lp hwb hj)
+        (by have := prepWB_hb hwb hj; omega)) (fun _ _ => trivial))
+    (prepChain4 S ord hp hw j hj hjd hcol hbd hwb A hAdm hrowb hrowA u) ?_
+    (fun _ _ _ _ _ h => h)
+  rintro σ σ' ⟨hAW, hcl, hk, hcc, hscr⟩ ⟨e1, e2, e3, hvp, hap⟩
+  have hkeepN : σ'.vars (arenaNames j).nN = σ.vars (arenaNames j).nN :=
+    hvp _ (lv_ne_lit (by decide) (by decide) _)
+      (lv_ne_lit (by decide) (by decide) _)
+      (lv_ne_lit (by decide) (by decide) _)
+  have hkeepS : σ'.vars (arenaNames j).nS = σ.vars (arenaNames j).nS :=
+    hvp _ (lv_ne_lit (by decide) (by decide) _)
+      (lv_ne_lit (by decide) (by decide) _)
+      (lv_ne_lit (by decide) (by decide) _)
+  refine ⟨arenaStW_of_eq hAW hkeepN hkeepS (hap _) (hap _) (hap _) (hap _)
+      (hap _), ?_, ?_, e1, e2, e3, ?_, ?_⟩
+  · exact ⟨by rw [hap]; exact hcl.1, fun t ht => by rw [hap]; exact hcl.2 t ht⟩
+  · rw [hvp "rs.k" (by decide) (by decide) (by decide)]; exact hk
+  · exact prepScr_frameC hscr (fun b => by rw [hap]) (fun i _ => hap _)
+      (fun i => hvp ((arenaNames i).nN)
+        (lv_ne_lit (by decide) (by decide) _)
+        (lv_ne_lit (by decide) (by decide) _)
+        (lv_ne_lit (by decide) (by decide) _))
+  · rw [hvp pcCc (lv_ne_lit (by decide) (by decide) _)
+      (lv_ne_lit (by decide) (by decide) _)
+      (lv_ne_lit (by decide) (by decide) _)]
+    exact hcc
+
+open Classical in
+/-- **Steps 2–14** — the connector scan. It reads the cluster row the
+copy just wrote and leaves the centre's own child name in `pcCc`. -/
+theorem prepChain2 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    {ℓp hbf : ℕ → ℕ} {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    (hp : PrepPins S ℓp (chanTab S ℓp) hbf Adm) (hw : WidthPin S)
+    (j : ℕ) (hj : j ≤ S.depth) (hjd : j < S.depth)
+    (hcol : ℓp (j + 1) = ℓp j) (hbd : hbf (j + 1) = hbf j)
+    (hwb : PrepWB S ℓp hbf n₀ B) (hpalB : S.pal j < B)
+    (A : Arena (S.pal j) n₀) (hAdm : Adm j A) (hrowb : 2 * S.R + 1 ≤ hbf j)
+    (hrowA : ∀ (v : Fin A.N) (e : ℕ), (A.chan v e).length ≤ 2 * S.R + 1)
+    (u : Fin A.N) :
+    Spec B
+      (fun σ => ClusterList pcLa (cluster S A ((ord A.N A.G).order) u) σ ∧
+          σ.vars (ctrName j) = (u : ℕ) ∧
+          σ.vars "rs.k" = childN S A ((ord A.N A.G).order) u ∧
+          ArenaStW (arenaNames j) (hbf j)
+            (Impl.ofArena A (chanTab S ℓp j A)) σ ∧
+          prepScr S ℓp hbf n₀ j σ)
+      (.seq (centreIdxCom pcLa (ctrName j) "rs.k" pcCc pcCt)
+        (.seq (prepRestrictCells S ℓp hbf j)
+          (.seq (restrictCom (arenaNames j) (prepMid j) pcLa (pcRa j))
+            (.seq (prepBatchCells S j)
+              (.seq (mkBatchCom (arenaNames (j + 1)).hist pcBb pcBi pcCc
+                  (arenaNames (j + 1)).nN pcJr pcMw pcEc pcIc pcLn pcBs
+                  pcAv pcSc (ℓp j) (hbf j))
+                (.seq (prepBfsCells S j)
+                  (.seq (bfsCom pcOi pcTi pcDa)
+                    (.seq (prepSupCells S ℓp hbf j)
+                      (.seq (supportsCom pcOi pcTi pcDa pcPa
+                          (arenaNames (j + 1)).hist)
+                        (.seq (profilesCom (prepProfNames j) S.width
+                            (S.pal j) S.R)
+                          (.seq (colWriteCom (arenaNames (j + 1)).col
+                              (arenaNames (j + 1)).nN pcPd pcPu pcW pcDd
+                              pcVv (relPal (S.pal j)) S.width S.R)
+                            (.seq (isolateCom (prepMid j)
+                                (arenaNames (j + 1)).off
+                                (arenaNames (j + 1)).tgt pcNo pcBb)
+                              (.assign (arenaNames (j + 1)).nS
+                                (.var pcNo))))))))))))))
+      (fun _ σ' => PrepDeliv S ord ℓp hbf j A u σ')
+      (centreIdxK (childN S A ((ord A.N A.G).order) u)
+        + (6 + (restrictK
+                (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) u))
+                (cluster S A ((ord A.N A.G).order) u).ncard (S.pal j)
+                (ℓp j) (hbf j)
+          + (4 + (mkBatchK (childN S A ((ord A.N A.G).order) u) (ℓp j)
+                (hbf j) S.width
+            + (8 + (bfsK (childN S A ((ord A.N A.G).order) u)
+                (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                  (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+              + (12 + (supportsK (childN S A ((ord A.N A.G).order) u)
+                  (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                    (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+                + (profilesK S.width (S.pal j + 1)
+                    (childN S A ((ord A.N A.G).order) u)
+                    (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                      (preG S A ((ord A.N A.G).order) u).degree v) S.R
+                  + (colWriteK (childN S A ((ord A.N A.G).order) u)
+                      (relPal (S.pal j)) S.width S.R
+                    + (isolateK (childN S A ((ord A.N A.G).order) u)
+                        (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                          (preG S A ((ord A.N A.G).order) u).degree v)
+                      + 2)))))))))))) := by
+  refine Spec.seq (Spec.pre
+      (prep_centreIdxStage (B := B) j A ((ord A.N A.G).order) u
+        (by have := prepWB_N hwb A; omega))
+      (fun σ hσ => ⟨hσ.1, hσ.2.1, hσ.2.2.1⟩))
+    (prepChain3 S ord hp hw j hj hjd hcol hbd hwb hpalB A hAdm hrowb hrowA u)
+    ?_ (fun _ _ _ _ _ h => h)
+  rintro σ σ' ⟨hcl, hctr, hk, hAW, hscr⟩ ⟨hcc, hvp, hap⟩
+  have hkeepN : σ'.vars (arenaNames j).nN = σ.vars (arenaNames j).nN :=
+    hvp _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  have hkeepS : σ'.vars (arenaNames j).nS = σ.vars (arenaNames j).nS :=
+    hvp _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  refine ⟨arenaStW_of_eq hAW hkeepN hkeepS (hap _) (hap _) (hap _) (hap _)
+      (hap _), ?_, ?_, hcc, ?_⟩
+  · exact ⟨by rw [hap]; exact hcl.1, fun t ht => by rw [hap]; exact hcl.2 t ht⟩
+  · rw [hvp "rs.k" (Ne.symm prep_cc_ne_rsk) (Ne.symm prep_ct_ne_rsk)]
+    exact hk
+  · exact prepScr_frameC hscr (fun b => by rw [hap]) (fun i _ => hap _)
+      (fun i => hvp ((arenaNames i).nN)
+        (lv_ne_of_base_ne (by decide) (by decide) _ _)
+        (lv_ne_of_base_ne (by decide) (by decide) _ _))
+
+open Classical in
+/-- **Steps 1–14** — the whole pass. The cluster-row copy is the only
+stage that reads an array the pass does not own, which is why
+`PrepCoverNames` enters here. -/
+theorem prepChain1 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    {ℓp hbf : ℕ → ℕ} {ca co cm : ℕ → String}
+    {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    (hp : PrepPins S ℓp (chanTab S ℓp) hbf Adm) (hw : WidthPin S)
+    (j : ℕ) (hj : j ≤ S.depth) (hjd : j < S.depth)
+    (hcol : ℓp (j + 1) = ℓp j) (hbd : hbf (j + 1) = hbf j)
+    (hwb : PrepWB S ℓp hbf n₀ B) (hpalB : S.pal j < B)
+    (hcn : PrepCoverNames ca co cm j)
+    (A : Arena (S.pal j) n₀) (hAdm : Adm j A) (hrowb : 2 * S.R + 1 ≤ hbf j)
+    (hrowA : ∀ (v : Fin A.N) (e : ℕ), (A.chan v e).length ≤ 2 * S.R + 1)
+    (u : Fin A.N) :
+    Spec B
+      (fun σ => ClusterCsr (co j) (cm j)
+            (cluster S A ((ord A.N A.G).order)) σ ∧
+          σ.vars (ctrName j) = (u : ℕ) ∧
+          ArenaStW (arenaNames j) (hbf j)
+            (Impl.ofArena A (chanTab S ℓp j A)) σ ∧
+          prepScr S ℓp hbf n₀ j σ)
+      (prepC S ℓp hbf co cm j)
+      (fun _ σ' => PrepDeliv S ord ℓp hbf j A u σ')
+      (clusterRowK (cluster S A ((ord A.N A.G).order) u).ncard
+        + (centreIdxK (childN S A ((ord A.N A.G).order) u)
+        + (6 + (restrictK
+                (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) u))
+                (cluster S A ((ord A.N A.G).order) u).ncard (S.pal j)
+                (ℓp j) (hbf j)
+          + (4 + (mkBatchK (childN S A ((ord A.N A.G).order) u) (ℓp j)
+                (hbf j) S.width
+            + (8 + (bfsK (childN S A ((ord A.N A.G).order) u)
+                (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                  (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+              + (12 + (supportsK (childN S A ((ord A.N A.G).order) u)
+                  (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                    (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+                + (profilesK S.width (S.pal j + 1)
+                    (childN S A ((ord A.N A.G).order) u)
+                    (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                      (preG S A ((ord A.N A.G).order) u).degree v) S.R
+                  + (colWriteK (childN S A ((ord A.N A.G).order) u)
+                      (relPal (S.pal j)) S.width S.R
+                    + (isolateK (childN S A ((ord A.N A.G).order) u)
+                        (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                          (preG S A ((ord A.N A.G).order) u).degree v)
+                      + 2))))))))))))) := by
+  refine Spec.seq (Spec.pre
+      (prep_clusterRowStage hwb j hcn A ((ord A.N A.G).order) u)
+      (fun σ hσ => ⟨hσ.1, hσ.2.1, hσ.2.2.2⟩))
+    (prepChain2 S ord hp hw j hj hjd hcol hbd hwb hpalB A hAdm hrowb hrowA u)
+    ?_ (fun _ _ _ _ _ h => h)
+  rintro σ σ' ⟨-, hctr, hAW, hscr⟩ ⟨hcl, hk, hvp, hap, hlen⟩
+  have hla : ∀ b : String, b ≠ pcLa → σ'.arrs b = σ.arrs b := hap
+  have hkeepN : σ'.vars (arenaNames j).nN = σ.vars (arenaNames j).nN :=
+    hvp _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_lit (by decide) (by decide) _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  have hkeepS : σ'.vars (arenaNames j).nS = σ.vars (arenaNames j).nS :=
+    hvp _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_lit (by decide) (by decide) _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  refine ⟨hcl, ?_, hk, arenaStW_of_eq hAW hkeepN hkeepS ?_ ?_ ?_ ?_ ?_, ?_⟩
+  · rw [hvp (ctrName j) (prep_ctr_ne_cb j)
+      (lv_ne_lit (by decide) (by decide) _) (Ne.symm (prep_ct_ne_ctr j))]
+    exact hctr
+  · exact hla _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact hla _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact hla _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact hla _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact hla _ (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  · exact prepScr_frameC hscr hlen
+      (fun i _ => hla _ (lv_ne_of_base_ne (by decide) (by decide) _ _))
+      (fun i => hvp ((arenaNames i).nN)
+        (lv_ne_of_base_ne (by decide) (by decide) _ _)
+        (lv_ne_lit (by decide) (by decide) _)
+        (lv_ne_of_base_ne (by decide) (by decide) _ _))
+
 end Chain
 
 end Lax3Proofs.Prog
