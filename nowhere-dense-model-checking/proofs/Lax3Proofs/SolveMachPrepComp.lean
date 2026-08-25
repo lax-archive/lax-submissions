@@ -115,9 +115,20 @@ pairwise disjointness. -/
 /-- Array: the cluster's enumeration region (`restrictCom`'s
 `ClusterList`). -/
 def pcLa : String := "pc.l"
-/-- Array: the rank scratch — the one array `restrictCom` dirties and
-cleans. -/
-def pcRa : String := "pc.r"
+/-- Array family: the rank scratch — the one array `restrictCom`
+dirties and cleans, **one per level**.
+
+Level-tagging it is not cosmetic. `restrictCom_specW` restores the
+scratch only on `take A.N` and says nothing about the tail, so a
+*shared* scratch cannot carry a clean-window clause down the recursion:
+`centrePrep_of_childLoadScr`'s `hscrDown : ∀ σ, Scr j σ → Scr (j+1) σ`
+would have to produce a clean window at the child's carrier out of a
+clean window at the parent's, with the array in between dirtied and
+only partly restored. With one scratch per level the deeper arrays are
+outside the pass's write set entirely, so the deep half of the
+descriptor rides `Run`'s frame and `hscrDown` costs one `take`
+(`prepScr_down`). -/
+def pcRa : ℕ → String := lv "pc.r"
 /-- Array: the **pre-isolation** child CSR offsets. `restrictCom` builds
 the child here, not in the level's own region, because `isolateCom`
 needs a fresh output pair and the deliverable is stated at
@@ -434,5 +445,370 @@ theorem colWrite_tables_of_profiles {cN mb Λr : ℕ} {ca : String}
    fun c => ⟨hpune c, hpulen c, fun _ => rfl⟩⟩
 
 end DriverSeams
+
+/-! ## §3 The command -/
+
+section Program
+
+variable {L : ℕ}
+
+/-- The restrict stage's three schedule cells (`|S|` is already in
+`"rs.k"` — the cluster-row copy put it there). -/
+def prepRestrictCells (S : Setup L) (ℓp hbf : ℕ → ℕ) (j : ℕ) : Com :=
+  .seq (.assign "rs.l" (.lit (S.pal j)))
+    (.seq (.assign "rs.p" (.lit (ℓp j))) (.assign "rs.h" (.lit (hbf j))))
+
+/-- The batch builder's two schedule cells: the round count — the level
+constant, by the round-count pin — and the batch width. -/
+def prepBatchCells (S : Setup L) (j : ℕ) : Com :=
+  .seq (.assign pcJr (.lit j)) (.assign pcMw (.lit S.width))
+
+/-- The BFS's four input cells. The source is the connector's own child
+name, which the connector scan left in `pcCc`; the radius is `2R`,
+never `R`. -/
+def prepBfsCells (S : Setup L) (j : ℕ) : Com :=
+  .seq (.assign "bf.n" (.var (arenaNames (j + 1)).nN))
+    (.seq (.assign "bf.m" (.var (arenaNames (j + 1)).nS))
+      (.seq (.assign "bf.r" (.lit (2 * S.R))) (.assign "bf.v" (.var pcCc))))
+
+/-- The supports pass's six input cells. The written column is `j` —
+the round-count pin's value of `A.hist.length`, a compile-time
+constant — and the radius is again `2R`. -/
+def prepSupCells (S : Setup L) (ℓp hbf : ℕ → ℕ) (j : ℕ) : Com :=
+  .seq (.assign "sp.n" (.var (arenaNames (j + 1)).nN))
+    (.seq (.assign "sp.m" (.var (arenaNames (j + 1)).nS))
+      (.seq (.assign "sp.r" (.lit (2 * S.R)))
+        (.seq (.assign "sp.l" (.lit (ℓp j)))
+          (.seq (.assign "sp.h" (.lit (hbf j))) (.assign "sp.p" (.lit j))))))
+
+/-- The profiles stage's name family at the pass's own regions: the
+**pre-isolation** child CSR (`pcOi`/`pcTi`), the child's colour rows at
+the parent palette, and the padded batch index region. -/
+def prepProfNames (j : ℕ) : ProfNames :=
+  ⟨pcOi, pcTi, (arenaNames (j + 1)).col, pcBi, pcXb, pcVo,
+    (arenaNames (j + 1)).nN, (arenaNames (j + 1)).nS, pcPd, pcVt, pcPu⟩
+
+/-- **The child-building pass, as one command.** Nine stages in
+`SolveMachPrepAll` §0's order, with the constant-many input loads
+spliced between them and one closing scalar move (§2's
+`arenaStW_setVar_nS`).
+
+Two orderings are forced: `mkBatchCom` reads the channel region **as
+`restrictCom` leaves it**, so it precedes `supportsCom`, which patches
+a column of it; and `profilesCom` reads the colour region at the
+*parent's* palette, so it precedes `colWriteCom`, which rewrites it at
+`isoPal`. -/
+def prepC (S : Setup L) (ℓp hbf : ℕ → ℕ) (co cm : ℕ → String) (j : ℕ) : Com :=
+  .seq (clusterRowCom (co j) (cm j) pcLa (ctrName j) pcCb "rs.k" pcCt)
+    (.seq (centreIdxCom pcLa (ctrName j) "rs.k" pcCc pcCt)
+      (.seq (prepRestrictCells S ℓp hbf j)
+        (.seq (restrictCom (arenaNames j) (prepMid j) pcLa (pcRa j))
+          (.seq (prepBatchCells S j)
+            (.seq (mkBatchCom (arenaNames (j + 1)).hist pcBb pcBi pcCc
+                (arenaNames (j + 1)).nN pcJr pcMw pcEc pcIc pcLn pcBs pcAv
+                pcSc (ℓp j) (hbf j))
+              (.seq (prepBfsCells S j)
+                (.seq (bfsCom pcOi pcTi pcDa)
+                  (.seq (prepSupCells S ℓp hbf j)
+                    (.seq (supportsCom pcOi pcTi pcDa pcPa
+                        (arenaNames (j + 1)).hist)
+                      (.seq (profilesCom (prepProfNames j) S.width (S.pal j)
+                          S.R)
+                        (.seq (colWriteCom (arenaNames (j + 1)).col
+                            (arenaNames (j + 1)).nN pcPd pcPu pcW pcDd pcVv
+                            (relPal (S.pal j)) S.width S.R)
+                          (.seq (isolateCom (prepMid j)
+                              (arenaNames (j + 1)).off (arenaNames (j + 1)).tgt
+                              pcNo pcBb)
+                            (.assign (arenaNames (j + 1)).nS
+                              (.var pcNo))))))))))))))
+
+end Program
+
+/-! ## §4 The budget, loads included -/
+
+/-- **The pass's constant-many input loads.** Sixteen assignments — the
+restrict stage's three schedule cells, the batch builder's two, the
+BFS's four, the supports pass's six, and the closing slot-count move —
+each `.assign x e` with `e.size = 1`, so `1 + 1` words apiece.
+
+`prepPassK`'s docstring says these "ride the slack `prepPassK_le`
+leaves". `prepPassK_load_le` below is that claim, discharged: the slack
+is real, and it lives in `restrictK`'s own per-member charge, so the
+schedule constant `4` does **not** move. -/
+def prepLoadK : ℕ := 32
+
+/-- The cluster-row copy, the connector scan **and** the pass's sixteen
+input loads together still fit `restrictK`'s per-member charge — `31`
+per member against the `132` already charged, with the `56` constant
+absorbed by the `45 + 132·|S|` the restrict stage already pays. The
+child's carrier is never empty (`childN_pos`), which is where `1 ≤ cN`
+comes from. -/
+theorem clusterRowK_centreIdxK_load_le_restrictK (dS cN Λc ℓp hb : ℕ)
+    (hcN : 1 ≤ cN) :
+    clusterRowK cN + centreIdxK cN + prepLoadK ≤ restrictK dS cN Λc ℓp hb := by
+  have h : 132 * cN ≤ cN * (20 * Λc + (36 * hb + 42) * ℓp + 132) := by
+    have h' : cN * 132 ≤ cN * (20 * Λc + (36 * hb + 42) * ℓp + 132) :=
+      Nat.mul_le_mul_left cN (by omega)
+    omega
+  unfold clusterRowK centreIdxK prepLoadK restrictK
+  omega
+
+/-- The whole pass, loads included, is still four `prepStageK`s. -/
+theorem prepPassK_load_le_prepStageK (cN cns dS Λc ℓp hb mb R : ℕ)
+    (hcN : 1 ≤ cN) :
+    prepPassK cN cns dS Λc ℓp hb mb R + prepLoadK
+      ≤ 4 * prepStageK cN cns dS cN Λc ℓp hb mb R := by
+  have h0 := clusterRowK_centreIdxK_load_le_restrictK dS cN Λc ℓp hb hcN
+  have h2 : restrictK dS cN Λc ℓp hb
+      ≤ prepStageK cN cns dS cN Λc ℓp hb mb R := by
+    unfold prepStageK; omega
+  have h3 := mkBatchK_le_prepStageK cN cns dS Λc ℓp hb mb R hcN
+  have h4 := colWriteK_le_prepStageK cN cns dS cN Λc ℓp hb mb R
+  unfold prepPassK
+  omega
+
+/-- **The pass's budget fits §7's envelope, loads included** — verbatim
+`prepPassK_le`'s conclusion with `prepLoadK` added to the left: the
+same `restrictK` column plus the same schedule constant times the
+child's weight `‖B₀‖ + 1`, and **no `A.N` term**. The loads cost
+nothing the shape can see. -/
+theorem prepPassK_load_le (cN cns dS Λc ℓp hb mb R : ℕ) (hcN : 1 ≤ cN) :
+    prepPassK cN cns dS Λc ℓp hb mb R + prepLoadK
+      ≤ 4 * restrictK dS cN Λc ℓp hb
+        + 4 * (800 * (R + 1) * (mb + Λc + 2) * (cN + cns + 1)) := by
+  have h1 := prepPassK_load_le_prepStageK cN cns dS Λc ℓp hb mb R hcN
+  have h2 := prepStageK_le cN cns dS cN Λc ℓp hb mb R
+  omega
+
+section Charge
+
+variable {L n₀ : ℕ}
+
+open Classical in
+/-- **The pass's budget at the driver's own dimensions** — the `KP` the
+composition instantiates. Every figure is the *child's* except
+`restrictK`'s `dS`, which is §6.1's own parent-degree column: the
+cluster's carrier `childN`, the child graph's slot count, the parent
+degree sum over the cluster, and the schedule's `(ℓp j, hbf j, width,
+R)` at the **relativised** palette (the colour writer emits `Λ+1`
+class blocks, so `prepPassK`'s single `Λc` slot must be `relPal`, not
+`S.pal j` — at which `restrictK` and `profilesK` are then over-, never
+under-, charged). -/
+noncomputable def prepKP (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    (ℓp hbf : ℕ → ℕ) : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ → ℕ :=
+  fun _ j A m =>
+    if h : m < A.N then
+      prepPassK (childN S A ((ord A.N A.G).order) ⟨m, h⟩)
+        (∑ v : Fin (childN S A ((ord A.N A.G).order) ⟨m, h⟩),
+          (preG S A ((ord A.N A.G).order) ⟨m, h⟩).degree v)
+        (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) ⟨m, h⟩))
+        (relPal (S.pal j)) (ℓp j) (hbf j) S.width S.R + prepLoadK
+    else 0
+
+open Classical in
+@[simp] theorem prepKP_apply (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    (ℓp hbf : ℕ → ℕ) (k j : ℕ) (A : Arena (S.pal j) n₀) (u : Fin A.N) :
+    prepKP (n₀ := n₀) S ord ℓp hbf k j A (u : ℕ)
+      = prepPassK (childN S A ((ord A.N A.G).order) u)
+          (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+            (preG S A ((ord A.N A.G).order) u).degree v)
+          (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) u))
+          (relPal (S.pal j)) (ℓp j) (hbf j) S.width S.R + prepLoadK := by
+  rw [prepKP, dif_pos u.2]
+
+open Classical in
+/-- **The instantiated budget fits §7's envelope.** `restrictK` at the
+parent-degree column, plus a schedule constant times the child's own
+weight. There is **no `A.N` term**: `childN`, the child's slot count and
+`Impl.degSum A.G (cluster …)` are all charged per child, and §6.1's
+`Θ(A.N²)` scratch trap is avoided because `prepC` never wipes a
+carrier-sized region at the parent's dimension. -/
+theorem prepKP_le (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    (ℓp hbf : ℕ → ℕ) (k j : ℕ) (A : Arena (S.pal j) n₀) (u : Fin A.N) :
+    prepKP (n₀ := n₀) S ord ℓp hbf k j A (u : ℕ)
+      ≤ 4 * restrictK (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) u))
+            (childN S A ((ord A.N A.G).order) u) (relPal (S.pal j)) (ℓp j)
+            (hbf j)
+        + 4 * (800 * (S.R + 1) * (S.width + relPal (S.pal j) + 2)
+            * (childN S A ((ord A.N A.G).order) u
+              + (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                  (preG S A ((ord A.N A.G).order) u).degree v) + 1)) := by
+  rw [prepKP_apply]
+  exact prepPassK_load_le _ _ _ _ _ _ _ _ (childN_pos S A _ u)
+
+end Charge
+
+/-! ## §5 The level's scratch descriptor
+
+**The recurring trap, discharged.** An exact-length or allocation
+clause in a stage's *precondition* is a binding requirement on whoever
+establishes it, and IMP+ `store` is `List.set`, so **no run changes an
+array's length**: every length the pass needs must already hold in the
+state it is handed. `ChildLoadPartsScr`'s frame clause
+(`∀ b, (σ'.arrs b).length = (σ.arrs b).length`) then makes it
+impossible for the pass to repair one. `PrepAlloc` is the complete list
+of what the nine stages demand, read off their preconditions, at the
+**root's** dimensions so that the clause is data-independent:
+
+* `profilesCom_specW` asks the batch index region at length **exactly**
+  `S.width` — an equality, `BatchWidthScr`, not a `≤`;
+* everything else is a `≤`, but the child's own five regions have to be
+  sized for the level-`(j+1)` palette (`n₀ * S.pal (i+1)`), not the
+  parent's, because the **colour writer** rewrites them at `isoPal`
+  after `restrictCom` filled them at `S.pal i`.
+-/
+
+section Descriptor
+
+variable {L : ℕ}
+
+/-- The truncation of a zero block is a zero block. -/
+theorem take_arrOf {n m : ℕ} (f : ℕ → ℕ) (h : m ≤ n) :
+    (arrOf n f).take m = arrOf m f := by
+  apply List.ext_getElem?
+  intro i
+  by_cases hi : i < m
+  · rw [List.getElem?_take_of_lt hi, getElem?_arrOf f (lt_of_lt_of_le hi h),
+      getElem?_arrOf f hi]
+  · rw [List.getElem?_eq_none (by rw [List.length_take, length_arrOf]; omega),
+      List.getElem?_eq_none (by rw [length_arrOf]; omega)]
+
+/-- A clean window shrinks. -/
+theorem take_eq_arrOf_of_le {l : List ℕ} {n m : ℕ}
+    (h : l.take n = arrOf n (fun _ => 0)) (hm : m ≤ n) :
+    l.take m = arrOf m (fun _ => 0) := by
+  have h1 : (l.take n).take m = l.take m := by
+    rw [List.take_take, Nat.min_eq_left hm]
+  rw [← h1, h, take_arrOf _ hm]
+
+/-- **Every allocation the nine stages ask for**, at level `i`, read off
+their preconditions and stated at the root's dimensions. -/
+def PrepAlloc (S : Setup L) (ℓp hbf : ℕ → ℕ) (n₀ : ℕ) (i : ℕ)
+    (σ : Env) : Prop :=
+  -- the child's own six regions (`restrictCom`, `colWriteCom`, the block)
+  n₀ + 1 ≤ (σ.arrs (arenaNames (i + 1)).off).length ∧
+  n₀ * n₀ ≤ (σ.arrs (arenaNames (i + 1)).tgt).length ∧
+  n₀ * S.pal (i + 1) ≤ (σ.arrs (arenaNames (i + 1)).col).length ∧
+  n₀ ≤ (σ.arrs (arenaNames (i + 1)).up).length ∧
+  n₀ * ℓp i * (hbf i + 1) ≤ (σ.arrs (arenaNames (i + 1)).hist).length ∧
+  n₀ * (levelFml S (i + 1)).length ≤ (σ.arrs (arenaNames (i + 1)).tab).length ∧
+  -- the pre-isolation CSR pair `restrictCom` builds into
+  n₀ + 1 ≤ (σ.arrs pcOi).length ∧ n₀ * n₀ ≤ (σ.arrs pcTi).length ∧
+  -- the pass's own scratch regions
+  n₀ ≤ (σ.arrs pcLa).length ∧ n₀ ≤ (σ.arrs (pcRa i)).length ∧
+  n₀ ≤ (σ.arrs pcBb).length ∧ n₀ ≤ (σ.arrs pcDa).length ∧
+  n₀ ≤ (σ.arrs pcPa).length ∧ n₀ ≤ (σ.arrs pcXb).length ∧
+  n₀ + 2 ≤ (σ.arrs pcVo).length ∧
+  -- the profiles stage's three table families
+  (∀ t < S.width, n₀ ≤ (σ.arrs (pcPd t)).length) ∧
+  (∀ c < S.pal i, n₀ * n₀ + 2 * n₀ ≤ (σ.arrs (pcVt c)).length) ∧
+  (∀ c < S.pal i + 1, n₀ + 1 ≤ (σ.arrs (pcPu c)).length)
+
+/-- Allocations are length-only: they ride every pass's frame. -/
+theorem prepAlloc_len {S : Setup L} {ℓp hbf : ℕ → ℕ} {n₀ i : ℕ} {σ σ' : Env}
+    (h : PrepAlloc S ℓp hbf n₀ i σ)
+    (hlen : ∀ b, (σ'.arrs b).length = (σ.arrs b).length) :
+    PrepAlloc S ℓp hbf n₀ i σ' := by
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15,
+    h16, h17, h18⟩ := h
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    fun t ht => ?_, fun c hc => ?_, fun c hc => ?_⟩
+  · rw [hlen]; exact h1
+  · rw [hlen]; exact h2
+  · rw [hlen]; exact h3
+  · rw [hlen]; exact h4
+  · rw [hlen]; exact h5
+  · rw [hlen]; exact h6
+  · rw [hlen]; exact h7
+  · rw [hlen]; exact h8
+  · rw [hlen]; exact h9
+  · rw [hlen]; exact h10
+  · rw [hlen]; exact h11
+  · rw [hlen]; exact h12
+  · rw [hlen]; exact h13
+  · rw [hlen]; exact h14
+  · rw [hlen]; exact h15
+  · rw [hlen]; exact h16 t ht
+  · rw [hlen]; exact h17 c hc
+  · rw [hlen]; exact h18 c hc
+
+/-- **The level's scratch descriptor**, concretely. Four clauses beyond
+the allocations:
+
+* the **deep** rank scratches are clean on the whole root window — they
+  are outside the pass's write set, so this rides `Run`'s frame;
+* **this** level's rank scratch is clean on this level's carrier window
+  — verbatim `restrictCom_specW`'s content pre- and postcondition;
+* every level's carrier cell is below the root's carrier — the one
+  scalar fact that lets `hscrDown` shrink a deep clean window to the
+  child's, and a fact the pass re-establishes (`childN ≤ A.N ≤ n₀`);
+* the batch index region is at length exactly `S.width`. -/
+def prepScr (S : Setup L) (ℓp hbf : ℕ → ℕ) (n₀ : ℕ) : ℕ → Env → Prop :=
+  fun j σ =>
+    (∀ i, j ≤ i → PrepAlloc S ℓp hbf n₀ i σ) ∧
+    (∀ i, j < i → (σ.arrs (pcRa i)).take n₀ = arrOf n₀ (fun _ => 0)) ∧
+    RankScr (pcRa j) (arenaNames j).nN σ ∧
+    (∀ i, σ.vars (arenaNames i).nN ≤ n₀) ∧
+    BatchWidthScr pcBi S.width σ
+
+/-- **`hscrDown`, discharged for the concrete descriptor.** The deep
+half restricts; the child's own clean window is the deep one shrunk to
+the child's carrier, which is legal because every carrier cell is below
+the root's. This is the clause the *landed* `centrePrep_of_childLoadScr`
+asks for, and it is exactly why the rank scratch is level-indexed. -/
+theorem prepScr_down (S : Setup L) (ℓp hbf : ℕ → ℕ) (n₀ j : ℕ) (σ : Env)
+    (h : prepScr S ℓp hbf n₀ j σ) : prepScr S ℓp hbf n₀ (j + 1) σ := by
+  obtain ⟨halloc, hdeep, -, hcell, hbw⟩ := h
+  refine ⟨fun i hi => halloc i (by omega), fun i hi => hdeep i (by omega),
+    ?_, hcell, hbw⟩
+  exact take_eq_arrOf_of_le (hdeep (j + 1) (by omega)) (hcell (j + 1))
+
+/-- **`htabLen`, discharged for the concrete descriptor**: the child's
+table region is allocated at the root's carrier times the child level's
+schedule family. -/
+theorem prepScr_htabLen (S : Setup L) (ℓp hbf : ℕ → ℕ) (n₀ j : ℕ) (σ : Env)
+    (h : prepScr S ℓp hbf n₀ j σ) :
+    n₀ * (levelFml S (j + 1)).length
+      ≤ (σ.arrs (arenaNames (j + 1)).tab).length :=
+  (h.1 j le_rfl).2.2.2.2.2.1
+
+/-- The descriptor's own allocations, at this level. -/
+theorem prepScr_alloc {S : Setup L} {ℓp hbf : ℕ → ℕ} {n₀ j : ℕ} {σ : Env}
+    (h : prepScr S ℓp hbf n₀ j σ) : PrepAlloc S ℓp hbf n₀ j σ :=
+  h.1 j le_rfl
+
+/-- The clean rank window this level's restrict stage consumes. -/
+theorem prepScr_rank {S : Setup L} {ℓp hbf : ℕ → ℕ} {n₀ j : ℕ} {σ : Env}
+    (h : prepScr S ℓp hbf n₀ j σ) : RankScr (pcRa j) (arenaNames j).nN σ :=
+  h.2.2.1
+
+/-- The batch index region's exact length — `profilesCom_specW`'s one
+equality precondition. -/
+theorem prepScr_batchWidth {S : Setup L} {ℓp hbf : ℕ → ℕ} {n₀ j : ℕ}
+    {σ : Env} (h : prepScr S ℓp hbf n₀ j σ) :
+    (σ.arrs pcBi).length = S.width := h.2.2.2.2
+
+/-- **The descriptor is re-establishable by the pass** — the shape
+`ChildLoadPartsScr`'s added conjunct takes. Everything but the two
+content clauses rides lengths and the frame; the level's own clean
+window is `restrictCom_specW`'s own postcondition, and the carrier-cell
+bound is `childN ≤ A.N ≤ n₀`. -/
+theorem prepScr_out {S : Setup L} {ℓp hbf : ℕ → ℕ} {n₀ j : ℕ} {σ σ' : Env}
+    (h : prepScr S ℓp hbf n₀ j σ)
+    (hlen : ∀ b, (σ'.arrs b).length = (σ.arrs b).length)
+    (hdeep : ∀ i, j < i → σ'.arrs (pcRa i) = σ.arrs (pcRa i))
+    (hrank : RankScr (pcRa j) (arenaNames j).nN σ')
+    (hcell : ∀ i, σ'.vars (arenaNames i).nN ≤ n₀) :
+    prepScr S ℓp hbf n₀ j σ' := by
+  obtain ⟨halloc, hdp, -, -, hbw⟩ := h
+  refine ⟨fun i hi => prepAlloc_len (halloc i hi) hlen, ?_, hrank, hcell, ?_⟩
+  · intro i hi
+    rw [hdeep i hi]
+    exact hdp i hi
+  · rw [BatchWidthScr, hlen pcBi]
+    exact hbw
+
+end Descriptor
 
 end Lax3Proofs.Prog
