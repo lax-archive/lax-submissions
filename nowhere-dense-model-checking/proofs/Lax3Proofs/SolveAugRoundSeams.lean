@@ -121,8 +121,9 @@ restores itself, the transitive one does not, and they cannot be the
 same array (the fraternal pass needs its own window clear at the top of
 the round, when the transitive marks of the previous round are still
 set).  `TrClearAt` below is that pass as a contract, at
-`trClearK n T = 20·n + 20·T + 10` — in `augRoundBudget`'s own currency,
-so the design is sound and only the program is missing.
+`trClearK n T = 19·n + 23·T + 20` — in `augRoundBudget`'s own currency.
+**Written in wave 32**: `SolveAugRoundIn`'s `ardClearCom` /
+`ardClearAt`.
 
 **(c) The emit's output lands in the wrong pair** (§3).  `StepEmitIn`
 reads the orientation from `(o, t)` and writes the next one into
@@ -134,7 +135,8 @@ needs the next orientation back in the region `AugSt` names, and
 alternate.  A copy-back of `n + 1` offsets and `arcCount (greedyStep rk
 D)` targets is therefore required; nothing landed does it.
 `InCsrCopyAt` below is that pass as a contract, at
-`inCsrCopyK n a = 20·n + 20·a + 20`, read at
+`inCsrCopyK n a = 12·n + 12·a + 32` — **written in wave 32**
+(`SolveAugRoundIn`'s `ardCopyCom` / `ardCopyAt`) — read at
 `a = arcCount (greedyStep rk D) ≤ arcCount D + fratPairCount D +
 transPairCount D` — again in currency.
 
@@ -192,25 +194,26 @@ zeroing sweep would not be.
 576·f + 270·T + 217`, at *equality* with
 `augRoundBudget 961 443 576 270 217 D`.
 
-§5 sums all seven stages — the three written, the three carrier sweeps
-and the two named-but-missing passes — into
+§5 sums all seven stages — the three of §4b, the three carrier sweeps
+and the two passes `SolveAugRoundIn` writes — into
 
-    augRdRoundK n a f T = 1034·n + 463·a + 596·f + 310·T + 265
-      = augRoundBudget 1034 463 596 310 265 D
+    augRdRoundK n a f T = 1025·n + 455·a + 588·f + 305·T + 287
+      = augRoundBudget 1025 455 588 305 287 D
 
 at `a = arcCount D`, `f = fratPairCount D`, `T = transPairCount D` —
 `levelCharge`'s currency term for term, with every stage's figure
 converted: the peel's `176·nf` at `nf ≤ fratPairCount D`
 (`fratPeelK_le_augRoundBudget`), the copy's `20·a'` at
 `arcCount (greedyStep rk D) ≤ a + f + T` (`arcCount_greedyStep_le`).
-The two missing passes cost `73, 20, 20, 40, 48` of the five
-coefficients (`augRdBodyK_le_augRdRoundK`).  No term is quadratic in
-the carrier: `augRdRoundK_le` prices the round at
-`n·(1034 + 463·d + 906·d²) + 265` under `D.InDegLE d`.
+The two named passes are now **written** (`SolveAugRoundIn` §2, §3) and
+cost `64, 12, 12, 35, 70` of the five coefficients
+(`augRdBodyK_le_augRdRoundK`).  No term is quadratic in the carrier:
+`augRdRoundK_le` prices the round at
+`n·(1025 + 455·d + 893·d²) + 287` under `D.InDegLE d`.
 
 Against `augChainCost_le_selChainCharge`'s gates (`kn ≤ 3k`,
 `ka ≤ 2k`, `kf ≤ 4k`, `kt ≤ 2k`) the four coefficients close at
-`k = 345`, and *a fortiori* at the `k = 475` the base and
+`k = 342`, and *a fortiori* at the `k = 475` the base and
 symmetrization passes already use — so the whole augmentation still
 sits inside `f·m^{1+δ} + O(R)`, one δ inside §7's envelope
 (`augRdRoundK_le_levelCharge`, `augRd_chainCost_le`).
@@ -507,7 +510,7 @@ def TrClearAt (B : ℕ) (nN ro rt mk : String) (clC : Com)
 enumeration it undoes.  Nothing here is measured — the pass does not
 exist — but the shape is the one `augRoundBudget` can pay for, and §5
 prices the round at it. -/
-def trClearK (n T : ℕ) : ℕ := 20 * n + 20 * T + 10
+def trClearK (n T : ℕ) : ℕ := 19 * n + 23 * T + 20
 
 /-! ## §3 The copy-back, as a contract
 
@@ -527,7 +530,7 @@ def InCsrCopyAt (B : ℕ) (nN nO nA o' t' io it : String) (cpC : Com)
     Spec B
       (fun σ => TrInCsr o' t' D (arcCount D) off tgt σ ∧
         σ.vars nN = n ∧ σ.vars nO = arcCount D ∧
-        n + arcCount D < B ∧
+        n + arcCount D + 1 < B ∧
         n + 1 ≤ (σ.arrs io).length ∧ arcCount D ≤ (σ.arrs it).length)
       cpC
       (fun σ σ' => (∃ off' tgt' : ℕ → ℕ,
@@ -536,8 +539,9 @@ def InCsrCopyAt (B : ℕ) (nN nO nA o' t' io it : String) (cpC : Com)
         (∀ b, b ≠ io → b ≠ it → σ'.arrs b = σ.arrs b))
       (kc n (arcCount D))
 
-/-- The copy's target shape: `20·n + 20·a + 20`. -/
-def inCsrCopyK (n a : ℕ) : ℕ := 20 * n + 20 * a + 20
+/-- The copy's measured shape: `12·n + 12·a + 32`
+(`SolveAugRoundIn`'s `ardCopy_spec`). -/
+def inCsrCopyK (n a : ℕ) : ℕ := 12 * n + 12 * a + 32
 
 /-- **The copy is priced in `augRoundBudget`'s currency.**  Its figure
 is the *output*'s arc count, and `arcCount_greedyStep_le` puts that
@@ -653,6 +657,7 @@ theorem augRdFratHalf_spec {B : ℕ}
         σ'.vars nN = n ∧
         (σ'.arrs mkF).length = n * n ∧ (∀ i, (σ'.arrs mkF).getD i 0 = 0) ∧
         (∀ b, (σ'.arrs b).length = (σ.arrs b).length) ∧
+        (∀ y, y ∉ frScalars → y ∉ fpScalars → y ≠ nF → σ'.vars y = σ.vars y) ∧
         (∀ b, b ≠ fo → b ≠ ft → b ≠ dgF → b ≠ mkF → b ≠ ao → b ≠ aj →
           b ≠ dgP → b ≠ mt → b ≠ sg → b ≠ tp → b ≠ sk →
           σ'.arrs b = σ.arrs b))
@@ -697,7 +702,7 @@ theorem augRdFratHalf_spec {B : ℕ}
       b ≠ tp → b ≠ sk → σ'.arrs b = τ.arrs b := hfa2
   have hmkFσ' : σ'.arrs mkF = τ.arrs mkF := hkeep2 mkF m1 m2 m3 m4 m5 m6 m7
   have hmkFlen : (τ.arrs mkF).length = n * n := by rw [hlen1 mkF]; exact hmkFL
-  refine ⟨σ', _, hrun1.seq hrun2, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨σ', _, hrun1.seq hrun2, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simp only [augRdFratHalfK, fratPeelK]; omega
   · exact augRd_trInCsr_of_eq hcsr1 (hkeep2 o w1 w2 w3 w4 w5 w6 w7)
       (hkeep2 t x1 x2 x3 x4 x5 x6 x7)
@@ -707,6 +712,8 @@ theorem augRdFratHalf_spec {B : ℕ}
   · rw [hmkFσ', hmkFlen]
   · rw [hmkFσ']; exact augRd_mk_zero_of_rows hmkFlen hmk1
   · exact fun b => by rw [hlen2 b, hlen1 b]
+  · intro y hy1 hy2 hy3
+    rw [hfv2 y hy2, hfv1 y hy1 hy3]
   · intro b b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11
     rw [hkeep2 b b5 b6 b7 b8 b9 b10 b11, hkeep b b1 b2 b3 b4]
 
@@ -757,6 +764,37 @@ structure AugRdSep (fo ft dgF mkF ao aj dgP mt sg tp sk
   sep : ∀ a ∈ [fo, ft, dgF, mkF, ao, aj, dgP, mt, sg, tp, sk],
     ∀ b ∈ [ro, rt, mkT, o', t', qo, qt, ad, sd, dgE], a ≠ b
 
+/-- The round's twenty working regions other than the fraternal mark
+matrix — the ones whose allocation clauses are all `≤`. -/
+def augRdAllocs (fo ft dgF ao aj dgP mt sg tp sk ro rt mkT o' t' qo qt ad sd
+    dgE : String) : List String :=
+  [fo, ft, dgF, ao, aj, dgP, mt, sg, tp, sk, ro, rt, mkT, o', t', qo, qt, ad,
+    sd, dgE]
+
+/-- The scalars `emCom` can assign to: the emit's own eight, the
+transpose's ten, and the output count cell. -/
+theorem augRd_mem_wvars_emCom
+    {nN nO o t ro rt mk fo ft sg o' t' qo qt ad sd dg y : String}
+    (h : y ∈ (emCom nN nO o t ro rt mk fo ft sg o' t' qo qt ad sd dg).wvars) :
+    y ∈ emScalars ∨ y ∈ tpScalars ∨ y = nO := by
+  simp only [emCom, emLoopCom, emHead, emRowScan, emStep, emCndIn, emCndOut,
+    emCndFrat, emCndTrans, tpCom, tpCntCom, tpOffCom, tpScatCom, tpScatOut,
+    tpScatIn, Csr.scan, Com.wvars, List.append_assoc, List.mem_append,
+    List.mem_cons, List.not_mem_nil, or_false, List.nil_append] at h
+  simp only [emScalars, tpScalars, List.mem_cons, List.not_mem_nil, or_false]
+  tauto
+
+/-- The same, contraposed — the shape a frame consumes. -/
+theorem augRd_not_mem_wvars_emCom
+    {nN nO o t ro rt mk fo ft sg o' t' qo qt ad sd dg y : String}
+    (h1 : y ∉ emScalars) (h2 : y ∉ tpScalars) (h3 : y ≠ nO) :
+    y ∉ (emCom nN nO o t ro rt mk fo ft sg o' t' qo qt ad sd dg).wvars := by
+  intro hc
+  rcases augRd_mem_wvars_emCom hc with h | h | h
+  · exact h1 h
+  · exact h2 h
+  · exact h3 h
+
 /-- **The round's body.**  `augRdFratHalf`, then the landed transitive
 pass, then the landed emit. -/
 def augRdBody (nN nF nT nO o t fo ft dgF mkF ao aj dgP mt sg tp sk
@@ -799,7 +837,7 @@ theorem augRdBody_spec {B : ℕ}
     (hcl : FpCells nN nF)
     (hnNtr : nN ∉ trScalars) (hnFtr : nF ∉ trScalars)
     (hnNT : nN ≠ nT) (hnFT : nF ≠ nT)
-    (hnNem : nN ∉ emScalars) (hnNtp : nN ∉ tpScalars)
+    (hnNem : nN ∉ emScalars) (hnNtp : nN ∉ tpScalars) (hnNO : nN ≠ nO)
     {n : ℕ} (D : Orientation n) (off tgt : ℕ → ℕ) :
     Spec B
       (fun σ => TrInCsr o t D (arcCount D) off tgt σ ∧ σ.vars nN = n ∧
@@ -833,7 +871,15 @@ theorem augRdBody_spec {B : ℕ}
         σ'.vars nO =
           arcCount (greedyStep (selRank (bucketSel n) (fratGraph D)) D) ∧
         (σ'.arrs mkF).length = n * n ∧
-        (∀ i, (σ'.arrs mkF).getD i 0 = 0))
+        (∀ i, (σ'.arrs mkF).getD i 0 = 0) ∧
+        (∃ ttF : ℕ → ℕ, TransCsrAt ro rt mkT D ttF σ') ∧
+        σ'.vars nN = n ∧
+        (∀ b, (σ'.arrs b).length = (σ.arrs b).length) ∧
+        (∀ y, y ∉ frScalars → y ∉ fpScalars → y ∉ trScalars → y ∉ emScalars →
+          y ∉ tpScalars → y ≠ nF → y ≠ nT → y ≠ nO → σ'.vars y = σ.vars y) ∧
+        (∀ b, b ≠ mkF →
+          b ∉ augRdAllocs fo ft dgF ao aj dgP mt sg tp sk ro rt mkT o' t' qo qt
+            ad sd dgE → σ'.arrs b = σ.arrs b))
       (augRdBodyK n (arcCount D) (fratPairCount D) (transPairCount D)) := by
   classical
   refine Spec.of_exists (fun σ hσ => ?_)
@@ -861,7 +907,7 @@ theorem augRdBody_spec {B : ℕ}
       (Ne.symm (hsep.sep sk (by simp) b hb))
   -- phase A: the fraternal half
   obtain ⟨τ, hrunA, hcsrA, ⟨nf, hfratA, hnfvA, hnfleA⟩, hrankA, hnvA,
-    hmkFlA, hmkF0A, hlenA, hfrA⟩ :=
+    hmkFlA, hmkF0A, hlenA, hfvA, hfrA⟩ :=
     (augRdFratHalf_spec (B := B) hfh hto hnN hnF hFN hcl D off tgt).run
       ⟨hcsr, hnv, by omega, by omega, by omega, hfoL, hftL, hdgFL, hmkFL, hmkF0,
         haoL, hajL, hdgPL, hmtL, hsgL, htpL, hskL⟩
@@ -929,9 +975,9 @@ theorem augRdBody_spec {B : ℕ}
   have hnfvB : ρ.vars nF = nf := by
     rw [hfvB nF (augRd_not_mem_wvars_trCom hnFtr hnFT)]; exact hnfvA
   -- phase C: the emit
-  obtain ⟨σ', hrunC, -, -, -, -, hfaC, off', tgt', hemC, hnOC⟩ :=
-    (stepEmitIn_emCom_emK (B := B) (nF := nF) (nO := nO) hem hnNem hnNtp D
-      (selRank (bucketSel n) (fratGraph D)) (arcCount D) nf off tgt ttF).run
+  obtain ⟨σ', hrunC, ⟨-, htrC, -, -, hfaC, off', tgt', hemC, hnOC⟩, hfvC, -, -, -⟩ :=
+    ((stepEmitIn_emCom_emK (B := B) (nF := nF) (nO := nO) hem hnNem hnNtp D
+      (selRank (bucketSel n) (fratGraph D)) (arcCount D) nf off tgt ttF).frame).run
       ⟨hcsrB, htrB,
         csrPrefix_of_eq hfratA hem.fo_ft hBfo hBft,
         ⟨by rw [hBsg]; exact hrankA.1, by rw [hBsg]; exact hrankA.2⟩,
@@ -955,10 +1001,24 @@ theorem augRdBody_spec {B : ℕ}
         | exact hsep.sep mkF (by simp) ad (by simp)
         | exact hsep.sep mkF (by simp) sd (by simp)
         | exact hsep.sep mkF (by simp) dgE (by simp)
-  refine ⟨σ', _, hrunA.seq (hrunB.seq hrunC), ?_, ⟨off', tgt', hemC⟩, hnOC, ?_, ?_⟩
+  have hrun : Run B _ σ σ' _ := hrunA.seq (hrunB.seq hrunC)
+  refine ⟨σ', _, hrun, ?_, ⟨off', tgt', hemC⟩, hnOC, ?_, ?_, ⟨ttF, htrC⟩, ?_, ?_,
+    ?_, ?_⟩
   · simp only [augRdBodyK]; omega
   · rw [hCmkF, hBmkF]; exact hmkFlA
   · rw [hCmkF, hBmkF]; exact hmkF0A
+  · rw [hfvC nN (augRd_not_mem_wvars_emCom hnNem hnNtp hnNO)]; exact hnvB
+  · intro b; exact run_arrs_length_eq hrun b
+  · intro y hy1 hy2 hy3 hy4 hy5 hy6 hy7 hy8
+    rw [hfvC y (augRd_not_mem_wvars_emCom hy4 hy5 hy8),
+      hfvB y (augRd_not_mem_wvars_trCom hy3 hy7), hfvA y hy1 hy2 hy6]
+  · intro b hbmk hballoc
+    simp only [augRdAllocs, List.mem_cons, List.not_mem_nil, or_false,
+      not_or] at hballoc
+    obtain ⟨q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15,
+      q16, q17, q18, q19, q20⟩ := hballoc
+    rw [hfaC b q14 q15 q16 q17 q18 q19 q20, hkeepB b q11 q12 q13,
+      hfrA b q1 q2 q3 hbmk q4 q5 q6 q7 q8 q9 q10]
 
 /-! ### §4c Anti-vacuity: the body's precondition is inhabited
 
@@ -978,13 +1038,6 @@ private theorem augRd_getD_replicate (m i : ℕ) :
     simp
   · rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by simpa using h)]
     rfl
-
-/-- The round's twenty working regions other than the fraternal mark
-matrix — the ones whose allocation clauses are all `≤`. -/
-def augRdAllocs (fo ft dgF ao aj dgP mt sg tp sk ro rt mkT o' t' qo qt ad sd
-    dgE : String) : List String :=
-  [fo, ft, dgF, ao, aj, dgP, mt, sg, tp, sk, ro, rt, mkT, o', t', qo, qt, ad,
-    sd, dgE]
 
 /-- **Every allocation the round's body asks for is establishable, from
 any state, by allocating and nothing else.**  Twenty regions at one
@@ -1163,6 +1216,7 @@ theorem augRdBody_names_std :
       ("rd.nN" : String) ∉ trScalars ∧ ("rd.nF" : String) ∉ trScalars ∧
       ("rd.nN" : String) ≠ "rd.nT" ∧ ("rd.nF" : String) ≠ "rd.nT" ∧
       ("rd.nN" : String) ∉ emScalars ∧ ("rd.nN" : String) ∉ tpScalars ∧
+      ("rd.nN" : String) ≠ "rd.nO" ∧
       ("rd.mkF" : String) ∉ augRdAllocs "rd.fo" "rd.ft" "rd.dgF" "rd.ao"
         "rd.aj" "rd.dgP" "rd.mt" "rd.sg" "rd.tp" "rd.sk" "rd.ro" "rd.rt"
         "rd.mkT" "rd.oo" "rd.ot" "rd.qo" "rd.qt" "rd.ad" "rd.sd" "rd.dgE" :=
@@ -1180,7 +1234,7 @@ theorem augRdBody_names_std :
    ⟨by decide⟩,
    by decide, by decide, by decide, by decide, ⟨by decide, by decide⟩,
    by decide, by decide, by decide, by decide, by decide, by decide,
-   by decide⟩
+   by decide, by decide⟩
 
 /-- **The body's budget is `augRoundBudget`'s shape at `961, 443, 576,
 270, 217`** — an *equality*, so nothing is estimated in the conversion.
@@ -1240,7 +1294,7 @@ It is an *equality*, not a bound: every figure is already in the
 budget's currency, so nothing is estimated in the conversion. -/
 theorem augRdRoundK_eq {n : ℕ} (D : Orientation n) :
     augRdRoundK n (arcCount D) (fratPairCount D) (transPairCount D)
-      = augRoundBudget 1034 463 596 310 265 D := by
+      = augRoundBudget 1025 455 588 305 287 D := by
   simp only [augRdRoundK, augRoundBudget, fratKStd, fratK, fratPeelK, trK, emK,
     trClearK, inCsrCopyK]
   ring
@@ -1248,15 +1302,15 @@ theorem augRdRoundK_eq {n : ℕ} (D : Orientation n) :
 /-- The same, as the `≤` a `Spec.mono` consumes, at any budget whose
 constants dominate. -/
 theorem augRdRoundK_le_augRoundBudget {n : ℕ} (D : Orientation n)
-    {kn ka kf kt kc : ℕ} (hkn : 1034 ≤ kn) (hka : 463 ≤ ka) (hkf : 596 ≤ kf)
-    (hkt : 310 ≤ kt) (hkc : 265 ≤ kc) :
+    {kn ka kf kt kc : ℕ} (hkn : 1025 ≤ kn) (hka : 455 ≤ ka) (hkf : 588 ≤ kf)
+    (hkt : 305 ≤ kt) (hkc : 287 ≤ kc) :
     augRdRoundK n (arcCount D) (fratPairCount D) (transPairCount D)
       ≤ augRoundBudget kn ka kf kt kc D := by
-  have h1 : 1034 * n ≤ kn * n := Nat.mul_le_mul_right n hkn
-  have h2 : 463 * arcCount D ≤ ka * arcCount D := Nat.mul_le_mul_right _ hka
-  have h3 : 596 * fratPairCount D ≤ kf * fratPairCount D :=
+  have h1 : 1025 * n ≤ kn * n := Nat.mul_le_mul_right n hkn
+  have h2 : 455 * arcCount D ≤ ka * arcCount D := Nat.mul_le_mul_right _ hka
+  have h3 : 588 * fratPairCount D ≤ kf * fratPairCount D :=
     Nat.mul_le_mul_right _ hkf
-  have h4 : 310 * transPairCount D ≤ kt * transPairCount D :=
+  have h4 : 305 * transPairCount D ≤ kt * transPairCount D :=
     Nat.mul_le_mul_right _ hkt
   rw [augRdRoundK_eq]
   simp only [augRoundBudget]
@@ -1269,7 +1323,7 @@ round is inside `345·levelCharge D + 265`, so it changes no exponent —
 only the `f` of the envelope theorem. -/
 theorem augRdRoundK_le_levelCharge {n : ℕ} (D : Orientation n) :
     augRdRoundK n (arcCount D) (fratPairCount D) (transPairCount D)
-      ≤ 345 * levelCharge D + 265 := by
+      ≤ 345 * levelCharge D + 287 := by
   rw [augRdRoundK_eq]
   simp only [augRoundBudget, levelCharge]
   omega
@@ -1281,24 +1335,24 @@ repetitions of the pass safe.  The `n·n` that does appear is *space*
 (the two mark windows and the peel's cell block), never time. -/
 theorem augRdRoundK_le {n : ℕ} {D : Orientation n} {d : ℕ} (hd : D.InDegLE d) :
     augRdRoundK n (arcCount D) (fratPairCount D) (transPairCount D)
-      ≤ n * (1034 + 463 * d + 906 * (d * d)) + 265 := by
+      ≤ n * (1025 + 455 * d + 893 * (d * d)) + 287 := by
   have h1 := arcCount_le hd
   have h2 := fratPairCount_le hd
   have h3 := transPairCount_le hd
   rw [augRdRoundK_eq]
   simp only [augRoundBudget]
-  calc 1034 * n + 463 * arcCount D + 596 * fratPairCount D
-        + 310 * transPairCount D + 265
-      ≤ 1034 * n + 463 * (n * d) + 596 * (n * (d * d)) + 310 * (n * (d * d))
-        + 265 := by omega
-    _ = n * (1034 + 463 * d + 906 * (d * d)) + 265 := by ring
+  calc 1025 * n + 455 * arcCount D + 588 * fratPairCount D
+        + 305 * transPairCount D + 287
+      ≤ 1025 * n + 455 * (n * d) + 588 * (n * (d * d)) + 305 * (n * (d * d))
+        + 287 := by omega
+    _ = n * (1025 + 455 * d + 893 * (d * d)) + 287 := by ring
 
 /-- **The four coefficients pass `augChainCost_le_selChainCharge`'s
 gates.**  `kn ≤ 3k`, `ka ≤ 2k`, `kf ≤ 4k`, `kt ≤ 2k` hold at every
 `k ≥ 345`, so in particular at the `k = 475` the base and
 symmetrization passes already close at. -/
-theorem augRdRoundK_gates {k : ℕ} (hk : 345 ≤ k) :
-    1034 ≤ 3 * k ∧ 463 ≤ 2 * k ∧ 596 ≤ 4 * k ∧ 310 ≤ 2 * k := by
+theorem augRdRoundK_gates {k : ℕ} (hk : 342 ≤ k) :
+    1025 ≤ 3 * k ∧ 455 ≤ 2 * k ∧ 588 ≤ 4 * k ∧ 305 ≤ 2 * k := by
   refine ⟨by omega, by omega, by omega, by omega⟩
 
 /-- **The whole augmentation still closes inside §7's envelope with the
@@ -1312,9 +1366,9 @@ theorem augRd_chainCost_le (sel : ∀ m : ℕ, MinDegSel m)
     (hsa : sa ≤ 5 * 475) :
     ∃ f : ℝ, 0 ≤ f ∧ ∀ (m₀ : ℕ) (Gn : SimpleGraph (Fin m₀)), C m₀ Gn →
       ∀ (m : ℕ) (G : SimpleGraph (Fin m)), G ⊑ Gn →
-        (augChainCost bn ba bc 1034 463 596 310 265 sn sa sc (sel m) G R : ℝ)
-          ≤ f * (m : ℝ) ^ (1 + δ) + (bc + sc + 1 + R * 265 : ℕ) :=
-  exists_augChainCost_le sel C hC R δ hδ bn ba bc 1034 463 596 310 265 sn sa sc
+        (augChainCost bn ba bc 1025 455 588 305 287 sn sa sc (sel m) G R : ℝ)
+          ≤ f * (m : ℝ) ^ (1 + δ) + (bc + sc + 1 + R * 287 : ℕ) :=
+  exists_augChainCost_le sel C hC R δ hδ bn ba bc 1025 455 588 305 287 sn sa sc
     475 hbn hba (by omega) (by omega) (by omega) (by omega) hsn hsa
 
 /-! ## §6 Axiom audit -/

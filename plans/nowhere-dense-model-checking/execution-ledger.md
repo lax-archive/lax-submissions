@@ -75,6 +75,75 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — `AugRoundIn` DISCHARGED, and F7's `q` gets a number
+
+`augRoundIn_ardRoundCom` (`SolveAugRoundIn.lean`, 1961 lines) concludes
+`AugRoundIn` **verbatim** at `AugSt := augStInNW io it nA`, program
+`rdC j = frZero(ad); frZero(sd); frZero(dgE); augRdBody; ardClearCom; ardCopyCom`,
+coefficients **`1025, 455, 588, 305, 287`** — conditional on **exactly one**
+named hypothesis beyond name and frame conditions, `ArdWord`.
+`augRoundIn_ardRoundCom_std` instantiates the whole bundle at 27 concrete names
+with `Smp = Ssw = fun _ _ => True`, leaving `ArdWord` alone. `augRdRoundK_eq`
+makes the budget an equality with `augRoundBudget`; the coefficient gates
+`kn ≤ 3k, ka ≤ 2k, kf ≤ 4k, kt ≤ 2k` close at `k ≥ 342`, inside the landed
+`k = 475`. Under `InDegLE d` the round is `n·(1025 + 455d + 893d²) + 287` — no
+time term quadratic in the carrier.
+
+**All four gaps closed.**
+(a) The region mismatch that stopped the augmentation composing at all is
+repaired **beside** the landed theorem, which is untouched: `augSymCsrIn_symComW`
+restates the symmetrization at `augStInNW`. `SolveAugSymMerge`'s own Finding 3
+was right — the pass reads the region only through `trInCsr_of_inNCsr` and
+`hst.2`, both clauses of `augStInNW`. **The three residuals of
+`covAugAdjSelIn_of_base_rounds_sym` now speak one `AugSt`.**
+(b) `ardClearCom` discharges `TrClearAt` verbatim at `19n + 23T + 20`.
+(c) `ardCopyCom` discharges `InCsrCopyAt` at `12n + 12a + 32`.
+(d) See below.
+
+**The verdict on the word bound, and the number F7 has been missing.** The
+out-of-date half was indeed out of date: **`chainAdm` supplies the structural
+half.** `Inv`'s third clause carries `ReachedS (2R) G_0 rounds (map A.up A.G)` on
+every arena with an edge — exactly `AugRoundIn`'s case — and `reachedS_le` gives
+`A.G` contained in `G_0`, which is what `exists_selChain_inDegLE_pow` consumes.
+But turning `n*d^2` into `< mcB q x` is **not** a fact about any `Adm`: it
+compares the class's density constant with the schedule's.
+`ardWordBound_of_inDegLE` states and proves the inequality:
+
+> if some `K` has `d^2 <= K*(N+1)` at every carrier `N`, then **`q >= 3*K + 2`**
+> makes `N + N^2 + a + f + T + 1 < mcB q x` at every arena of every input.
+
+The condition on `K` is a condition on the exponent: `d` is
+`(3*ceil(c_0*m^delta')+2)^(16^R)`, so `d^2 <= K*(m+1)` asks
+`delta' * 16^R <= 1/2` — **free**, because `exists_selChain_inDegLE_pow` holds at
+every `delta' > 0` with `R` fixed first. So F7-c's "choose `q` per `hspan`" now
+has an actual inequality to satisfy rather than a placeholder.
+
+**Changes to material landed one commit earlier** (all in files the worker
+owned, all reported rather than slipped in): `augRdBody_spec` gained
+`hnNO : nN != nO` — a real if minor weakening — and a strengthened postcondition
+(the transitive CSR witness, the carrier cell, length preservation, the frames)
+without which the round cannot re-establish `ArenaStW`; `augRdFratHalf_spec`
+gained its scalar frame; `InCsrCopyAt`'s word bound went from `n + arcCount D < B`
+to `+ 1 < B` because the copy computes `n+1`; and the five coefficients were
+re-measured from `1034 463 596 310 265`. This is the right way for a same-day
+figure to move — measured, restated, and named.
+
+**Pinned for the assembly leaf.** `Srd` is one predicate for all `R` rounds while
+the counts grow and lengths cannot, so every allocation is sized by the carrier
+alone: `ardCap N = 2N^3 + N^2 + N + 1` (space only — `arcCount <= N^2`,
+`frat, trans <= N^3`). `exists_ardSrd` establishes all of it **except**
+`(io j)`/`(it j)`, since reallocating those would destroy the region the round
+reads — so `ardCap A.N <= |sigma.arrs (it j)|` is a requirement on the base
+pass's `Sbd`, which is a free parameter of `augBaseOrientIn_orCom` and therefore
+satisfiable, but must be *chosen* that way. And `covAugAdjIn_of_base_rounds_sym`
+stays unusable — its hypotheses are at `mdSel` while the augmentation lands
+`CovAugAdjSelIn ... bucketSel`; use `covAugAdjSelIn_of_base_rounds_sym`.
+
+**Supervisor slip, caught by checking**: my first attempt to add the import and
+gate ran from a drifted cwd (a `cd` into `Lax3Proofs/` earlier in the session),
+so the root-module edit silently did not happen and the gate could not find its
+script. Absolute paths for every landing command, not just for `git -C`.
+
 ### 2026-08-25 — the augmentation round's body, and a review method that failed
 
 `SolveAugRoundSeams.lean` (1344 lines). **`AugRoundIn` is not discharged**, but

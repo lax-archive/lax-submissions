@@ -154,6 +154,7 @@ import Lax3Proofs.SolveAugBaseFrame
 import Lax3Proofs.SolveAugOrient
 import Lax3Proofs.SolveAugSymMerge
 import Lax3Proofs.SolveAugRoundSeams
+import Lax3Proofs.SolveAugRoundIn
 
 -- The proofs package of submission Lax3.
 --

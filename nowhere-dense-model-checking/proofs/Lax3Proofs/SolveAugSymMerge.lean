@@ -1,4 +1,5 @@
 import Lax3Proofs.SolveAugBaseFrame
+import Lax3Proofs.SolveAugOrient
 
 set_option autoImplicit false
 
@@ -1583,6 +1584,153 @@ theorem augSymCsrIn_symCom (C : GraphClass) (hC : NowhereDense C)
   · exact hSmp j σ σ' hSm hfa' hfv'
   · exact hSsw j σ σ' hSw hfa' hfv'
 
+/-! ### §10b The same discharge at the **windowed** orientation region
+
+Finding 3 above records that this pass consumes the orientation region
+through exactly two facts: `trInCsr_of_inNCsr`, i.e. only the *windowed*
+`TrInCsr`, and the arc-count cell `nA j` (which is all
+`symCsrSizes_exact` reads of it — `symCsrSizes_exact hst _ _` uses
+`hst.2` and nothing else).  Both are clauses of `augStInNW`
+(`SolveAugOrient.lean:1921`), so the discharge is available verbatim at
+that region too.
+
+This is not a convenience.  `augStInN` contains the *exact-length*
+`InNCsr`, and `SolveAugRoundSeams`'s `augRd_augStInN_forces_constant`
+shows that no round pass can carry it from `D` to `greedyStep rk D`:
+IMP+ `store` is `List.set`, no run changes an array's length, and the
+region pins that length to its orientation's arc count.  The rounds are
+therefore stated at `augStInNW` — which is also what
+`augBaseOrientIn_orCom` delivers — and
+`covAugAdjSelIn_of_base_rounds_sym` takes **one** `AugSt` for all three
+residuals.  Without this variant the base pass, the rounds and the
+symmetrization have no common region and the augmentation does not
+compose at all.
+
+`augStInNW → augStInN` is *false* (the allocation exceeds the extent),
+so this is a genuinely new statement and not a weakening of §10: the
+two are incomparable preconditions, and §10 is left exactly as it
+landed. -/
+
+open Classical in
+/-- **`AugSymCsrIn`, discharged at `augStInNW`** — `augSymCsrIn_symCom`
+at the windowed orientation region, the one the base pass produces and
+the rounds can carry.  Same program, same budget, same hypothesis
+bundle; only the region changes. -/
+theorem augSymCsrIn_symComW (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) (sel : ∀ m : ℕ, MinDegSel m) (R : ℕ) {n : ℕ}
+    (G : SimpleGraph (Fin n)) (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (ca co : ℕ → String) (io it nA : ℕ → String)
+    (nNy nSy soO stO qoY qtY dgY : ℕ → String)
+    (aoO ajO dgO mtO : ℕ → String)
+    (Srd Smp Ssw : ℕ → Env → Prop)
+    (hq : 1 ≤ q)
+    (hnm : ∀ j, SyNames (io j) (it j) (qoY j) (qtY j) (dgY j) (soO j) (stO j))
+    (hcy : ∀ j, nNy j ∉ syScalars ∧ nSy j ∉ syScalars ∧ nSy j ≠ nNy j ∧
+      nNy j ≠ (arenaNames j).nN ∧ nNy j ≠ (arenaNames j).nS ∧
+      nSy j ≠ (arenaNames j).nN ∧ nSy j ≠ (arenaNames j).nS)
+    (harn : ∀ (j : ℕ) (b : String), b = (arenaNames j).off ∨
+      b = (arenaNames j).tgt ∨ b = (arenaNames j).col ∨
+      b = (arenaNames j).up ∨ b = (arenaNames j).hist →
+      b ≠ qoY j ∧ b ≠ qtY j ∧ b ≠ dgY j ∧ b ≠ soO j ∧ b ≠ stO j)
+    (hSrd : ∀ j σ, Srd j σ →
+      symCsrSizes nA soO stO j σ ∧
+      σ.vars (arenaNames j).nN + 1 ≤ (σ.arrs (qoY j)).length ∧
+      σ.vars (nA j) ≤ (σ.arrs (qtY j)).length ∧
+      σ.vars (arenaNames j).nN ≤ (σ.arrs (dgY j)).length ∧
+      σ.vars (arenaNames j).nN + 1 ≤ (σ.arrs (aoO j)).length ∧
+      2 * σ.vars (nA j) ≤ (σ.arrs (ajO j)).length ∧
+      σ.vars (arenaNames j).nN ≤ (σ.arrs (dgO j)).length ∧
+      2 * σ.vars (nA j) ≤ (σ.arrs (mtO j)).length)
+    (hSmp : ∀ (j : ℕ) (σ σ' : Env), Smp j σ →
+      (∀ b, b ≠ qoY j → b ≠ qtY j → b ≠ dgY j → b ≠ soO j → b ≠ stO j →
+        σ'.arrs b = σ.arrs b) →
+      (∀ y, y ∉ syScalars → y ∉ tpScalars → y ≠ nNy j → y ≠ nSy j →
+        σ'.vars y = σ.vars y) → Smp j σ')
+    (hSsw : ∀ (j : ℕ) (σ σ' : Env), Ssw j σ →
+      (∀ b, b ≠ qoY j → b ≠ qtY j → b ≠ dgY j → b ≠ soO j → b ≠ stO j →
+        σ'.arrs b = σ.arrs b) →
+      (∀ y, y ∉ syScalars → y ∉ tpScalars → y ≠ nNy j → y ≠ nSy j →
+        σ'.vars y = σ.vars y) → Ssw j σ') :
+    AugSymCsrIn C hC φ sel R G c w q ℓp htabF hbf Adm ca co
+      nNy nSy soO stO aoO ajO dgO mtO
+      (fun j A => augStInNW io it nA j A) Srd Smp Ssw
+      (fun j => symCom (arenaNames j).nN (io j) (it j) (qoY j) (qtY j) (dgY j)
+        (soO j) (stO j) (nNy j) (nSy j))
+      90 80 60 := by
+  intro x hx j hj A hAdm hbot σ hσ
+  obtain ⟨hArena, ⟨hTrE, -, hnA⟩, hSrdσ, hcaL, hcoL, hSm, hSw⟩ := hσ
+  obtain ⟨hy1, hy2, hy3, hy4, hy5, hy6, hy7⟩ := hcy j
+  obtain ⟨hsz, hqoL, hqtL, hdgL, haoL, hajL, hdgOL, hmtL⟩ := hSrd j σ hSrdσ
+  -- the two figures, and that they are words
+  have henc : EncodesGraph x n G := hx.1
+  have hnN : σ.vars (arenaNames j).nN = A.N := hArena.n_eq
+  have hNn : A.N ≤ n := hArena.st.N_le_root
+  have hxB : x.length + 1 < mcB q x := length_add_one_lt_mcB (three_le_length henc) hq
+  have hlenx := henc.length_eq
+  have hNB : A.N < mcB q x := by omega
+  have hsq : n * n < mcB q x := sq_lt_mcB henc hq
+  have hNsq : A.N * A.N ≤ n * n := Nat.mul_le_mul hNn hNn
+  have hBsq : A.N * A.N < mcB q x := by omega
+  have h2a : 2 * arcCount (selChain (sel A.N) A.G R) ≤ A.N * A.N :=
+    two_mul_arcCount_le_sq_orient _
+  -- the exact lengths, from the descriptor and the arc-count cell alone
+  have hsoLen : (σ.arrs (soO j)).length = A.N + 1 := by rw [hsz.1, hnN]
+  have hstLen : (σ.arrs (stO j)).length
+      = 2 * arcCount (selChain (sel A.N) A.G R) := by rw [hsz.2, hnA]
+  -- the region, as the windowed CSR the transpose reads: `augStInNW`'s
+  -- own first clause, with no bridge in between
+  obtain ⟨off, tgt, hTr⟩ := hTrE
+  rw [hnN] at hqoL hdgL haoL hdgOL
+  rw [hnA] at hqtL hajL hmtL
+  obtain ⟨σ', hrun, ⟨⟨hcsr', hnNy', hnSy'⟩, hfv, hfa, -, -⟩, hlen⟩ :=
+    (specArrsLength (symCom_spec (B := mcB q x) (nN := (arenaNames j).nN)
+      (io := io j) (it := it j) (qo := qoY j) (qt := qtY j) (dg := dgY j)
+      (so := soO j) (st := stO j) (nNy := nNy j) (nSy := nSy j)
+      (D := selChain (sel A.N) A.G R) (off := off) (tgt := tgt)
+      (hnm j) (arenaNames_nN_notMem_syScalars j) (arenaNames_nN_notMem_tpScalars j)
+      hy1 hy2 hy3 hBsq).frame).run
+      ⟨hnN, hTr, hqoL, hqtL, hdgL, hsoLen, hstLen⟩
+  -- the frame, in the shapes the transports consume
+  have hfa' : ∀ b, b ≠ qoY j → b ≠ qtY j → b ≠ dgY j → b ≠ soO j → b ≠ stO j →
+      σ'.arrs b = σ.arrs b :=
+    fun b h1 h2 h3 h4 h5 => hfa b (not_mem_warrs_symCom h1 h2 h3 h4 h5)
+  have hfv' : ∀ y, y ∉ syScalars → y ∉ tpScalars → y ≠ nNy j → y ≠ nSy j →
+      σ'.vars y = σ.vars y :=
+    fun y h1 h2 h3 h4 => hfv y (not_mem_wvars_symCom h1 h2 h3 h4)
+  obtain ⟨ho1, ho2, ho3, ho4, ho5⟩ := harn j (arenaNames j).off (Or.inl rfl)
+  obtain ⟨ht1, ht2, ht3, ht4, ht5⟩ := harn j (arenaNames j).tgt (Or.inr (Or.inl rfl))
+  obtain ⟨hc1, hc2, hc3, hc4, hc5⟩ :=
+    harn j (arenaNames j).col (Or.inr (Or.inr (Or.inl rfl)))
+  obtain ⟨hu1, hu2, hu3, hu4, hu5⟩ :=
+    harn j (arenaNames j).up (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+  obtain ⟨hh1, hh2, hh3, hh4, hh5⟩ :=
+    harn j (arenaNames j).hist (Or.inr (Or.inr (Or.inr (Or.inr rfl))))
+  have hvN : σ'.vars (arenaNames j).nN = σ.vars (arenaNames j).nN :=
+    hfv' _ (arenaNames_nN_notMem_syScalars j) (arenaNames_nN_notMem_tpScalars j)
+      (Ne.symm hy4) (Ne.symm hy6)
+  have hvS : σ'.vars (arenaNames j).nS = σ.vars (arenaNames j).nS :=
+    hfv' _ (arenaNames_nS_notMem_syScalars j) (arenaNames_nS_notMem_tpScalars j)
+      (Ne.symm hy5) (Ne.symm hy7)
+  refine ⟨σ', hrun.mono (by simp only [symK]; omega), ?_,
+    ⟨2 * arcCount (selChain (sel A.N) A.G R), hcsr', hnNy', hnSy', hNB, by omega,
+      symCsr_ns_le hcsr', ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩
+  · exact arenaStW_of_eq hArena hvN hvS (hfa' _ ho1 ho2 ho3 ho4 ho5)
+      (hfa' _ ht1 ht2 ht3 ht4 ht5) (hfa' _ hc1 hc2 hc3 hc4 hc5)
+      (hfa' _ hu1 hu2 hu3 hu4 hu5) (hfa' _ hh1 hh2 hh3 hh4 hh5)
+  · rw [hlen (aoO j)]; exact haoL
+  · rw [hlen (ajO j)]; exact hajL
+  · rw [hlen (dgO j)]; exact hdgOL
+  · rw [hlen (mtO j)]; exact hmtL
+  · rw [hlen (ca j)]; exact hcaL
+  · rw [hlen (co j)]; exact hcoL
+  · exact hSmp j σ σ' hSm hfa' hfv'
+  · exact hSsw j σ σ' hSw hfa' hfv'
+
 /-! ## §11 Nothing above is vacuous
 
 `augSymCsrIn_symCom` leaves `Srd`, `Smp` and `Ssw` as parameters and
@@ -1905,6 +2053,161 @@ theorem augSymCsrIn_symCom_std (C : GraphClass) (hC : NowhereDense C)
         lv_ne_of_base_ne (by decide) (by decide) j j,
         lv_ne_of_base_ne (by decide) (by decide) j j⟩
 
+/-! ### The windowed region is inhabited jointly too
+
+§10b's discharge is at `augStInNW`, so its anti-vacuity witness has to
+be as well.  Nothing new is needed: `augStInNW` is rebuilt from a
+`TrInCsr` and the arc-count cell by `inNCsr_winA_of_trInCsr`
+(`SolveAugOrient` §1), so the reallocation only has to carry the pair
+`(io j, it j)` across — which it does, since neither is one of the nine
+regions. -/
+
+/-- `TrInCsr` transports along its own two regions: every clause naming
+the state names `σ.arrs o` or `σ.arrs t` and nothing else. -/
+theorem symTrInCsr_of_eq {o t : String} {m ns : ℕ} {D : Orientation m}
+    {off tgt : ℕ → ℕ} {σ σ' : Env} (h : TrInCsr o t D ns off tgt σ)
+    (ho : σ'.arrs o = σ.arrs o) (ht : σ'.arrs t = σ.arrs t) :
+    TrInCsr o t D ns off tgt σ' where
+  zero := h.zero
+  step := h.step
+  last := h.last
+  offLen := by rw [ho]; exact h.offLen
+  tgtLen := by rw [ht]; exact h.tgtLen
+  offGet := by rw [ho]; exact h.offGet
+  tgtGet := by rw [ht]; exact h.tgtGet
+  tgtLt := h.tgtLt
+  sound := h.sound
+  complete := h.complete
+  inj := h.inj
+
+/-- **The windowed orientation region from a `TrInCsr` and the cell.**
+Both of `augStInNW`'s first two clauses come from the same windowed
+CSR — the second through `inNCsr_winA_of_trInCsr` — so a producer never
+has to build the exact-length reading by hand. -/
+theorem augStInNW_of_trInCsr {io it nA : ℕ → String} {j : ℕ} {Λ n₀ : ℕ}
+    {A : Arena Λ n₀} {D : Orientation A.N} {off tgt : ℕ → ℕ} {σ : Env}
+    (hto : it j ≠ io j)
+    (h : TrInCsr (io j) (it j) D (arcCount D) off tgt σ)
+    (hc : σ.vars (nA j) = arcCount D) : augStInNW io it nA j A D σ :=
+  ⟨⟨off, tgt, h⟩, inNCsr_winA_of_trInCsr hto h, hc⟩
+
+/-- **`AugSymCsrIn`'s precondition at `augStInNW` is satisfiable at
+`symSrd`** — `exists_symPre` for the windowed region. -/
+theorem exists_symPreW {io it nA soO stO qoY qtY dgY aoO ajO dgO mtO : ℕ → String}
+    {j : ℕ} (hto : it j ≠ io j)
+    (h1 : soO j ∉ [stO j, qoY j, qtY j, dgY j, aoO j, ajO j, dgO j, mtO j])
+    (h2 : stO j ∉ [qoY j, qtY j, dgY j, aoO j, ajO j, dgO j, mtO j])
+    (hkeep : ∀ b, b = (arenaNames j).off ∨ b = (arenaNames j).tgt ∨
+      b = (arenaNames j).col ∨ b = (arenaNames j).up ∨ b = (arenaNames j).hist ∨
+      b = io j ∨ b = it j →
+      b ≠ soO j ∧ b ≠ stO j ∧ b ≠ qoY j ∧ b ≠ qtY j ∧ b ≠ dgY j ∧
+      b ≠ aoO j ∧ b ≠ ajO j ∧ b ≠ dgO j ∧ b ≠ mtO j)
+    {Λ n₀ ℓp hb : ℕ} {A : Arena Λ n₀}
+    {tab : Fin A.N → Fin ℓp → List (Fin A.N)} {D : Orientation A.N} {σ : Env}
+    (hA : ArenaStW (arenaNames j) hb (Impl.ofArena A tab) σ)
+    (hst : augStInNW io it nA j A D σ) :
+    ∃ σ', ArenaStW (arenaNames j) hb (Impl.ofArena A tab) σ' ∧
+      augStInNW io it nA j A D σ' ∧
+      symSrd nA soO stO qoY qtY dgY aoO ajO dgO mtO j σ' ∧
+      σ'.vars = σ.vars ∧
+      (∀ b, b ≠ soO j → b ≠ stO j → b ≠ qoY j → b ≠ qtY j → b ≠ dgY j →
+        b ≠ aoO j → b ≠ ajO j → b ≠ dgO j → b ≠ mtO j → σ'.arrs b = σ.arrs b) := by
+  obtain ⟨σ', hv, hkeepArr, hsrd⟩ := exists_symSrd (nA := nA) h1 h2 σ
+  have hgo := hkeep (arenaNames j).off (Or.inl rfl)
+  have hgt := hkeep (arenaNames j).tgt (Or.inr (Or.inl rfl))
+  have hgc := hkeep (arenaNames j).col (Or.inr (Or.inr (Or.inl rfl)))
+  have hgu := hkeep (arenaNames j).up (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+  have hgh := hkeep (arenaNames j).hist (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
+  have hgi := hkeep (io j) (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))))
+  have hgt' := hkeep (it j) (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr rfl))))))
+  refine ⟨σ', ?_, ?_, hsrd, hv, hkeepArr⟩
+  · exact arenaStW_of_eq hA (by rw [hv]) (by rw [hv])
+      (hkeepArr _ hgo.1 hgo.2.1 hgo.2.2.1 hgo.2.2.2.1 hgo.2.2.2.2.1 hgo.2.2.2.2.2.1
+        hgo.2.2.2.2.2.2.1 hgo.2.2.2.2.2.2.2.1 hgo.2.2.2.2.2.2.2.2)
+      (hkeepArr _ hgt.1 hgt.2.1 hgt.2.2.1 hgt.2.2.2.1 hgt.2.2.2.2.1 hgt.2.2.2.2.2.1
+        hgt.2.2.2.2.2.2.1 hgt.2.2.2.2.2.2.2.1 hgt.2.2.2.2.2.2.2.2)
+      (hkeepArr _ hgc.1 hgc.2.1 hgc.2.2.1 hgc.2.2.2.1 hgc.2.2.2.2.1 hgc.2.2.2.2.2.1
+        hgc.2.2.2.2.2.2.1 hgc.2.2.2.2.2.2.2.1 hgc.2.2.2.2.2.2.2.2)
+      (hkeepArr _ hgu.1 hgu.2.1 hgu.2.2.1 hgu.2.2.2.1 hgu.2.2.2.2.1 hgu.2.2.2.2.2.1
+        hgu.2.2.2.2.2.2.1 hgu.2.2.2.2.2.2.2.1 hgu.2.2.2.2.2.2.2.2)
+      (hkeepArr _ hgh.1 hgh.2.1 hgh.2.2.1 hgh.2.2.2.1 hgh.2.2.2.2.1 hgh.2.2.2.2.2.1
+        hgh.2.2.2.2.2.2.1 hgh.2.2.2.2.2.2.2.1 hgh.2.2.2.2.2.2.2.2)
+  · obtain ⟨⟨off, tgt, hTr⟩, -, hcell⟩ := hst
+    refine augStInNW_of_trInCsr hto (symTrInCsr_of_eq hTr ?_ ?_) (by rw [hv]; exact hcell)
+    · exact hkeepArr _ hgi.1 hgi.2.1 hgi.2.2.1 hgi.2.2.2.1 hgi.2.2.2.2.1
+        hgi.2.2.2.2.2.1 hgi.2.2.2.2.2.2.1 hgi.2.2.2.2.2.2.2.1 hgi.2.2.2.2.2.2.2.2
+    · exact hkeepArr _ hgt'.1 hgt'.2.1 hgt'.2.2.1 hgt'.2.2.2.1 hgt'.2.2.2.2.1
+        hgt'.2.2.2.2.2.1 hgt'.2.2.2.2.2.2.1 hgt'.2.2.2.2.2.2.2.1 hgt'.2.2.2.2.2.2.2.2
+
+/-- The windowed region is inhabited jointly with the descriptor at the
+concrete names. -/
+theorem exists_symPreW_std {j Λ n₀ ℓp hb : ℕ} {A : Arena Λ n₀}
+    {tab : Fin A.N → Fin ℓp → List (Fin A.N)} {D : Orientation A.N} {σ : Env}
+    (hA : ArenaStW (arenaNames j) hb (Impl.ofArena A tab) σ)
+    (hst : augStInNW symIo symIt symNA j A D σ) :
+    ∃ σ', ArenaStW (arenaNames j) hb (Impl.ofArena A tab) σ' ∧
+      augStInNW symIo symIt symNA j A D σ' ∧ symSrdStd j σ' ∧
+      σ'.vars = σ.vars ∧
+      (∀ b, b ≠ symSoO j → b ≠ symStO j → b ≠ symQoY j → b ≠ symQtY j →
+        b ≠ symDgY j → b ≠ symAoO j → b ≠ symAjO j → b ≠ symDgO j →
+        b ≠ symMtO j → σ'.arrs b = σ.arrs b) := by
+  refine exists_symPreW (io := symIo) (it := symIt)
+    (lv_ne_of_base_ne (by decide) (by decide) j j) ?_ ?_ ?_ hA hst
+  · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+      exact lv_ne_of_base_ne (by decide) (by decide) j j
+  · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+      exact lv_ne_of_base_ne (by decide) (by decide) j j
+  · rintro b (rfl | rfl | rfl | rfl | rfl | rfl | rfl) <;>
+      exact ⟨lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j⟩
+
+open Classical in
+/-- **§10b's hypothesis bundle, discharged at the concrete names** —
+`augSymCsrIn_symCom_std` at the windowed region. -/
+theorem augSymCsrIn_symComW_std (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) (sel : ∀ m : ℕ, MinDegSel m) (R : ℕ) {n : ℕ}
+    (G : SimpleGraph (Fin n)) (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (ca co : ℕ → String) (hq : 1 ≤ q) :
+    AugSymCsrIn C hC φ sel R G c w q ℓp htabF hbf Adm ca co
+      symNNy symNSy symSoO symStO symAoO symAjO symDgO symMtO
+      (fun j A => augStInNW symIo symIt symNA j A)
+      symSrdStd (fun _ _ => True) (fun _ _ => True)
+      (fun j => symCom (arenaNames j).nN (symIo j) (symIt j) (symQoY j) (symQtY j)
+        (symDgY j) (symSoO j) (symStO j) (symNNy j) (symNSy j))
+      90 80 60 := by
+  refine augSymCsrIn_symComW C hC φ sel R G c w q ℓp htabF hbf Adm ca co
+    symIo symIt symNA symNNy symNSy symSoO symStO symQoY symQtY symDgY
+    symAoO symAjO symDgO symMtO _ _ _ hq symNames_std ?_ ?_
+    (symSrd_spec _ _ _ _ _ _ _ _ _ _) (fun _ _ _ _ _ _ => trivial)
+    (fun _ _ _ _ _ _ => trivial)
+  · intro j
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · simp only [syScalars, List.mem_cons, List.not_mem_nil, or_false, not_or]
+      refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩ <;> exact lv_ne_fixed (by decide) (by decide) j
+    · simp only [syScalars, List.mem_cons, List.not_mem_nil, or_false, not_or]
+      refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩ <;> exact lv_ne_fixed (by decide) (by decide) j
+    all_goals exact lv_ne_of_base_ne (by decide) (by decide) j j
+  · rintro j b (rfl | rfl | rfl | rfl | rfl) <;>
+      exact ⟨lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j,
+        lv_ne_of_base_ne (by decide) (by decide) j j⟩
+
 /-! ## §12 Axiom audit
 
 §1–§9 rest on the three standard axioms alone.  §10's discharge quotes
@@ -1928,5 +2231,15 @@ composes with — additionally carries Lax12's endorsed
 #print axioms exists_symPre_std
 
 #print axioms augSymCsrIn_symCom_std
+
+#print axioms augStInNW_of_trInCsr
+
+#print axioms augSymCsrIn_symComW
+
+#print axioms exists_symPreW
+
+#print axioms exists_symPreW_std
+
+#print axioms augSymCsrIn_symComW_std
 
 end Lax3Proofs.Prog
