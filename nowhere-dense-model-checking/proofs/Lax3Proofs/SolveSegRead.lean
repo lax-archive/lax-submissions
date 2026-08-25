@@ -356,7 +356,9 @@ frame clauses; the partial table steps to `u + 1` by
 `tablePartial_succ`, its new rows converted from `RowEval` to
 `unrollAux (k+1)` by `unrollAux_succ_of_ne_bot` (the arena has an edge
 — the contract's own hypothesis); the counter clause is the frame's;
-`Scr` crosses by its length-only transport. -/
+`Scr` crosses by its length-only transport — see
+`centreRead_of_rowsScr` for the same theorem with that transport
+replaced by one a content-carrying descriptor can meet. -/
 theorem centreRead_of_rows (B : ℕ) (S : Setup L)
     (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
     (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
@@ -397,6 +399,63 @@ theorem centreRead_of_rows (B : ℕ) (S : Setup L)
       exact absurd hv (lt_irrefl _)
     · -- the new rows: the recursive clause's bits are the contract's
       intro v hv i hi
+      rw [unrollAux_succ_of_ne_bot S ord hbot v _]
+      exact hnew v (Fin.ext hv) i hi
+
+open Classical in
+/-- **`CentreRead` from the scatter-and-readback pass, without the
+length-only transport** — verbatim `centreRead_of_rows` with `hscrLen`
+replaced by the descriptor's frame law `hfr` and the *syntactic* fact
+that the readback writes no name any descriptor of level `≥ j` reads
+(`hreadFree`).
+
+The pass's landed frame clauses cover `ca/co/cm` and the five non-table
+regions; the level's rank scratch is in none of those pools, so nothing
+in `ReadRows` says it survives, exactly as `SolveMachPrepSeam` §6
+records. `hreadFree` is that missing clause, stated where the discharger
+can settle it by `Com.warrs` — the readback has no business writing the
+rank scratch. `ReadRows` itself is untouched, so
+`SolveMachReadRun`'s discharge of `ReadRowsAll` stands as it is. -/
+theorem centreRead_of_rowsScr (B : ℕ) (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop)
+    (Scr : ℕ → Env → Prop) (LV LR : ℕ → List String)
+    (ca co cm : ℕ → String) (readC : ℕ → Com)
+    (KR : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ → ℕ)
+    (hfr : ScrFrame Scr LV LR)
+    (hreadFree : ∀ j, ScrFree LV LR j (readC j))
+    (hrows : ReadRows B S ord ℓp htabF hbf Adm Scr ca co cm readC KR) :
+    CentreRead B S ord ℓp htabF hbf Adm Scr ca co cm readC KR := by
+  intro k j A hdiag hAdm hbot u
+  refine (specScr (Scr := Scr) (LV := LV) (LR := LR) (j := j) hfr
+    (hreadFree j) (hrows k j A hdiag hAdm hbot u)).post ?_
+  rintro σ σ' ⟨hCL, -, -⟩ ⟨⟨hnew, hkeep, hvars, harrs, hlen⟩, -, hscrT⟩
+  obtain ⟨⟨hA, htab, hscr⟩, hctrA, hcsr, hpart⟩ := hCL
+  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_, ?_, ?_⟩, hvars _ (by simp)⟩
+  · -- the windowed contract, off the frame clauses
+    exact arenaStW_of_eq hA (hvars _ (by simp [levelScalars]))
+      (hvars _ (by simp [levelScalars])) (harrs _ (by simp))
+      (harrs _ (by simp)) (harrs _ (by simp)) (harrs _ (by simp))
+      (harrs _ (by simp))
+  · -- the table allocation's length, preserved
+    rw [hlen]
+    exact htab
+  · -- the scratch descriptor: the pass writes nothing it reads
+    exact hscrT hscr
+  · -- the assignment region, untouched
+    exact ctrArr_of_eq hctrA (harrs _ (by simp))
+  · -- the cluster CSR, untouched
+    exact clusterCsr_of_eq hcsr (harrs _ (by simp)) (harrs _ (by simp))
+  · -- the partial table, stepped to `u + 1`
+    refine tablePartial_succ hpart ?_ ?_
+    · intro v hv i hi
+      refine hkeep v (fun heq => ?_) i hi
+      rw [heq] at hv
+      exact absurd hv (lt_irrefl _)
+    · intro v hv i hi
       rw [unrollAux_succ_of_ne_bot S ord hbot v _]
       exact hnew v (Fin.ext hv) i hi
 
@@ -442,6 +501,34 @@ theorem centreReadAll_of_rows (C : GraphClass) (hC : NowhereDense C)
   intro x hx
   exact centreRead_of_rows (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp
     htabF hbf Adm Scr ca co cm readC KR hscrLen (hrows x hx)
+
+open Classical in
+/-- **Verbatim `CentreReadAll`, from the scatter-and-readback pass —
+without the length-only transport.** The read segment's residual,
+reduced to the machine pass plus the descriptor's frame law and the
+syntactic fact that the readback writes no name the descriptor
+reads. -/
+theorem centreReadAll_of_rowsScr (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) (ord : CoverSpec.OrderingRoutine) {n : ℕ}
+    (G : SimpleGraph (Fin n)) (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (Scr : ℕ → Env → Prop) (LV LR : ℕ → List String)
+    (ca co cm : ℕ → String) (readC : ℕ → Com)
+    (KR : (k j : ℕ) →
+      Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ → ℕ)
+    (hfr : ScrFrame Scr LV LR)
+    (hreadFree : ∀ j, ScrFree LV LR j (readC j))
+    (hrows : ReadRowsAll C hC φ ord G c w q ℓp htabF hbf Adm Scr ca co cm
+      readC KR) :
+    CentreReadAll C hC φ ord G c w q ℓp htabF hbf Adm Scr ca co cm readC
+      KR := by
+  intro x hx
+  exact centreRead_of_rowsScr (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp
+    htabF hbf Adm Scr LV LR ca co cm readC KR hfr hreadFree (hrows x hx)
 
 /-! ## §6 End to end: the per-centre step from the two machine passes -/
 
@@ -505,5 +592,67 @@ theorem centreStepAll_of_childLoad_rows (C : GraphClass)
       ca co cm prepC KP hscrLen hscrDown htabLen hload)
     (centreReadAll_of_rows C hC φ ord G c w q ℓp htabF hbf Adm Scr
       ca co cm readC KR hscrLen hrows)
+
+open Classical in
+/-- **`CentreStepAllScr` from the prep segment and the readback pass**,
+wired end to end — verbatim `CentreStepAll`'s content at the
+strengthened recursion window, at the canonical body
+`centreBody prepC readC` and budget `centreKC`, with **no `hscrLen`
+anywhere**.
+
+It takes `CentrePrepAll` rather than `ChildLoadAll` on purpose. The
+only bridge from the machine pass to `CentrePrep` visible from this
+file is `SolveMachPrep.centrePrepAll_of_childLoad`, which still asks
+for `hscrLen`; its `hscrLen`-free replacement,
+`SolveMachPrepSeam.centrePrepAll_of_partsScr_chanTab`, lives downstream
+of this file in the import order, so the composition of the two halves
+belongs there and not here. Taking `CentrePrepAll` as a hypothesis
+leaves that composition to whichever file has both. -/
+theorem centreStepAll_of_prep_rowsScr (C : GraphClass)
+    (hC : NowhereDense C) (φ : FO 0) (ord : CoverSpec.OrderingRoutine)
+    {n : ℕ} (G : SimpleGraph (Fin n)) (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (KB : (k j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
+    (Scr : ℕ → Env → Prop) (LS LA LV LR : ℕ → List String)
+    (ca co cm : ℕ → String) (prepC readC : ℕ → Com)
+    (KP KR : (k j : ℕ) →
+      Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ → ℕ)
+    (hfr : ScrFrame Scr LV LR)
+    (hst : ScrStep Scr LV LR)
+    (hreadFree : ∀ j, ScrFree LV LR j (readC j))
+    (hfreshS : ∀ j i, j < i → ∀ y ∈ ctrName j :: levelScalars j, y ∉ LS i)
+    (hfreshA : ∀ j i, j < i →
+      ∀ a ∈ ca j :: co j :: cm j :: levelArrays j, a ∉ LA i)
+    (hfreshV : ∀ j i, j < i → ∀ y ∈ LV j, y ∉ LS i)
+    (hfreshR : ∀ j i, j < i → ∀ a ∈ LR j, a ∉ LA i)
+    (hAdmChild : ∀ (j : ℕ)
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n), Adm j A →
+      ¬ A.G = ⊥ → ∀ u : Fin A.N,
+      Adm (j + 1) (childArena (Headline.headlineSetup C hC φ) A
+        ((ord A.N A.G).order) u))
+    (hleafChild : ∀ (j : ℕ)
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n), Adm j A →
+      ¬ A.G = ⊥ → j + 1 = (Headline.headlineSetup C hC φ).depth →
+      ∀ u : Fin A.N,
+      (childArena (Headline.headlineSetup C hC φ) A
+        ((ord A.N A.G).order) u).G = ⊥)
+    (hprepOwn : ∀ j, OwnedFrom LS LA j (prepC j))
+    (hreadOwn : ∀ j, OwnedFrom LS LA j (readC j))
+    (hprep : CentrePrepAll C hC φ ord G c w q ℓp htabF hbf Adm Scr
+      ca co cm prepC KP)
+    (hrows : ReadRowsAll C hC φ ord G c w q ℓp htabF hbf Adm Scr ca co cm
+      readC KR) :
+    CentreStepAllScr C hC φ ord G c w q ℓp htabF hbf Adm KB Scr LS LA
+      ca co cm (centreBody prepC readC)
+      (centreKC (Headline.headlineSetup C hC φ) ord KB KP KR) :=
+  centreStepAll_of_prep_readScr C hC φ ord G c w q ℓp htabF hbf Adm KB Scr
+    LS LA LV LR ca co cm prepC readC KP KR hst hfreshS hfreshA hfreshV
+    hfreshR hAdmChild hleafChild hprepOwn hreadOwn hprep
+    (centreReadAll_of_rowsScr C hC φ ord G c w q ℓp htabF hbf Adm Scr LV LR
+      ca co cm readC KR hfr hreadFree hrows)
 
 end Lax3Proofs.Prog

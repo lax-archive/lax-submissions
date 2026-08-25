@@ -56,7 +56,15 @@ What this file itself discharges (the structural remainder of
   alone: `OwnedFrom (j+1)` says the block writes only names of pools
   `≥ j+1`, and the level-`j` names are fresh against those pools
   (`hfreshS`/`hfreshA`, the `lv` mechanism's facts, taken as
-  name-pool hypotheses); `Scr` crosses by its length-only transport;
+  name-pool hypotheses). `Scr j` is the one component that does **not**
+  cross by a frame: the block rewrites level `(j+1)`'s scratch, so no
+  agreement reaches the deeper half of the descriptor. The landed
+  `centreStep_of_prep_read` papers over that with `hscrLen`, a
+  length-only transport that `SolveMachPrepSeam.rankScr_not_length_only`
+  shows to be inconsistent with a descriptor carrying the
+  child-building pass's clean-scratch clause;
+  `centreStep_of_prep_readScr` takes the honest route — `ScrStep`, the
+  block's own restored `Scr (j+1)` plus level `j`'s framed read pool;
 * **the budget's shape** — `centreKC = KP + (KB k (j+1) child + KR)`,
   the inner block priced by the chain's own `KB` at the child's
   dimensions, so the node-aggregate sum over `u` is exactly the
@@ -114,9 +122,14 @@ theorem tablePartial_of_eq {a : String} {N Λ : ℕ} {Fl : List (DistFO Λ 1)}
 
 /-- **The loop invariant transports along agreement on the level's own
 names**: the two arena cells, the level's nine arrays (the arena's
-five, the table, the cover's three), and all lengths (`Scr` is
-length-only). This is what carries `CLInv` across the inner block by
-its frame data alone. -/
+five, the table, the cover's three), and all lengths — with `Scr`
+carried by the length-only transport `hscrLen`.
+
+That last clause is the seam: `SolveMachPrepSeam.rankScr_not_length_only`
+shows `hscrLen` to be inconsistent with any descriptor that implies the
+child-building pass's clean-scratch clause. `clInv_frame_step` below is
+this lemma with that clause replaced by what the inner block really
+offers. -/
 theorem clInv_frame {S : Setup L} {ord : CoverSpec.OrderingRoutine}
     {ℓp : ℕ → ℕ}
     {htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
@@ -144,6 +157,48 @@ theorem clInv_frame {S : Setup L} {ord : CoverSpec.OrderingRoutine}
   have htabeq := harrs ((arenaNames j).tab) (by simp [levelArrays])
   refine ⟨⟨arenaStW_of_eq hA hvN hvS hoff htgt hcol hup hhist, ?_,
     hscrLen σ σ' hscr hlen⟩, ctrArr_of_eq hctr hca,
+    clusterCsr_of_eq hcsr hco hcm, tablePartial_of_eq hpart htabeq⟩
+  rw [htabeq]
+  exact htab
+
+/-- **The loop invariant across the inner block**, with the descriptor
+carried the way it really can be. Everything but `Scr j` transports
+along agreement on the level's own names, exactly as in `clInv_frame`;
+`Scr j` cannot, because the block *rewrites* level `(j+1)`'s scratch —
+its own child-building pass does — and gives it back only as a
+descriptor. So the deeper half is taken from the block's own exit
+(`hscr'`, the `BlockPostScr` conjunct) and only level `j`'s own read
+pool is framed. That is `ScrStep`, and the landed `hscrLen` is what it
+replaces. -/
+theorem clInv_frame_step {S : Setup L} {ord : CoverSpec.OrderingRoutine}
+    {ℓp : ℕ → ℕ}
+    {htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N)}
+    {hbf : ℕ → ℕ} {Scr : ℕ → Env → Prop} {LV LR : ℕ → List String}
+    {ca co cm : ℕ → String}
+    {k j : ℕ} {A : Arena (S.pal j) n₀} {m : ℕ} {σ σ' : Env}
+    (hst : ScrStep Scr LV LR) (hscr' : Scr (j + 1) σ')
+    (h : CLInv S ord ℓp htabF hbf Scr ca co cm k j A m σ)
+    (hvN : σ'.vars (arenaNames j).nN = σ.vars (arenaNames j).nN)
+    (hvS : σ'.vars (arenaNames j).nS = σ.vars (arenaNames j).nS)
+    (harrs : ∀ a ∈ ca j :: co j :: cm j :: levelArrays j,
+      σ'.arrs a = σ.arrs a)
+    (hLV : ∀ y ∈ LV j, σ'.vars y = σ.vars y)
+    (hLR : ∀ a ∈ LR j, σ'.arrs a = σ.arrs a)
+    (hlen : ∀ b, (σ'.arrs b).length = (σ.arrs b).length) :
+    CLInv S ord ℓp htabF hbf Scr ca co cm k j A m σ' := by
+  obtain ⟨⟨hA, htab, hscr⟩, hctr, hcsr, hpart⟩ := h
+  have hca : σ'.arrs (ca j) = σ.arrs (ca j) := harrs _ (by simp)
+  have hco : σ'.arrs (co j) = σ.arrs (co j) := harrs _ (by simp)
+  have hcm : σ'.arrs (cm j) = σ.arrs (cm j) := harrs _ (by simp)
+  have hoff := harrs ((arenaNames j).off) (by simp [levelArrays])
+  have htgt := harrs ((arenaNames j).tgt) (by simp [levelArrays])
+  have hcol := harrs ((arenaNames j).col) (by simp [levelArrays])
+  have hup := harrs ((arenaNames j).up) (by simp [levelArrays])
+  have hhist := harrs ((arenaNames j).hist) (by simp [levelArrays])
+  have htabeq := harrs ((arenaNames j).tab) (by simp [levelArrays])
+  refine ⟨⟨arenaStW_of_eq hA hvN hvS hoff htgt hcol hup hhist, ?_,
+    hst j σ σ' hscr hscr' hLV hLR hlen⟩, ctrArr_of_eq hctr hca,
     clusterCsr_of_eq hcsr hco hcm, tablePartial_of_eq hpart htabeq⟩
   rw [htabeq]
   exact htab
@@ -364,6 +419,130 @@ theorem centreStep_of_prep_read (B : ℕ) (S : Setup L)
       (OwnedFrom.seq (OwnedFrom.mono_level (Nat.le_succ j) hnxOwn)
         (hreadOwn j))
 
+open Classical in
+/-- **The per-centre step, without the length-only transport** —
+verbatim `centreStep_of_prep_read` at the strengthened recursion
+window. `hscrLen` is replaced by the descriptor's step law `hst`
+(`ScrStep`) together with two freshness facts of exactly the shape
+`hfreshS`/`hfreshA` already have: the level's own descriptor cells and
+arrays are fresh against the deeper name pools.
+
+This is the one site where a plain frame does **not** suffice, and the
+reason is structural: the inner block writes level `(j+1)`'s scratch,
+so `Scr j`'s deeper half is not framed by anything. It is supplied
+instead by the block's own `BlockPostScr` conjunct — which is why the
+window is consumed at `BlockSpecScr` here. Budgets, ownership and the
+counter bookkeeping are unchanged. -/
+theorem centreStep_of_prep_readScr (B : ℕ) (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop)
+    (KB : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ) (Scr : ℕ → Env → Prop)
+    (LS LA LV LR : ℕ → List String) (ca co cm : ℕ → String)
+    (prepC readC : ℕ → Com)
+    (KP KR : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ → ℕ)
+    -- the descriptor's transport across a block
+    (hst : ScrStep Scr LV LR)
+    -- the level's own names — regions and descriptor alike — are fresh
+    -- against the deeper pools
+    (hfreshS : ∀ j i, j < i → ∀ y ∈ ctrName j :: levelScalars j, y ∉ LS i)
+    (hfreshA : ∀ j i, j < i →
+      ∀ a ∈ ca j :: co j :: cm j :: levelArrays j, a ∉ LA i)
+    (hfreshV : ∀ j i, j < i → ∀ y ∈ LV j, y ∉ LS i)
+    (hfreshR : ∀ j i, j < i → ∀ a ∈ LR j, a ∉ LA i)
+    -- the run tree's two facts at the child, through `Adm`
+    (hAdmChild : ∀ (j : ℕ) (A : Arena (S.pal j) n₀), Adm j A →
+      ¬ A.G = ⊥ → ∀ u : Fin A.N,
+      Adm (j + 1) (childArena S A ((ord A.N A.G).order) u))
+    (hleafChild : ∀ (j : ℕ) (A : Arena (S.pal j) n₀), Adm j A →
+      ¬ A.G = ⊥ → j + 1 = S.depth → ∀ u : Fin A.N,
+      (childArena S A ((ord A.N A.G).order) u).G = ⊥)
+    -- the two segments obey the write discipline (their dischargers')
+    (hprepOwn : ∀ j, OwnedFrom LS LA j (prepC j))
+    (hreadOwn : ∀ j, OwnedFrom LS LA j (readC j))
+    -- the two residuals
+    (hprep : CentrePrep B S ord ℓp htabF hbf Adm Scr ca co cm prepC KP)
+    (hread : CentreRead B S ord ℓp htabF hbf Adm Scr ca co cm readC KR) :
+    CentreStepScr B S ord ℓp htabF hbf Adm KB Scr LS LA ca co cm
+      (centreBody prepC readC) (centreKC S ord KB KP KR) := by
+  intro k j nxCom hnx hnxOwn
+  constructor
+  · intro A hdiag hAdm hbot u
+    -- the level's own names are never written by the inner block
+    have hvarF : ∀ y ∈ ctrName j :: levelScalars j, y ∉ nxCom.wvars := by
+      intro y hy hmem
+      obtain ⟨i, hi, hyi⟩ := hnxOwn.1 y hmem
+      exact hfreshS j i (by omega) y hy hyi
+    have harrF : ∀ a ∈ ca j :: co j :: cm j :: levelArrays j,
+        a ∉ nxCom.warrs := by
+      intro a ha hmem
+      obtain ⟨i, hi, hai⟩ := hnxOwn.2 a hmem
+      exact hfreshA j i (by omega) a ha hai
+    have hvarR : ∀ y ∈ LV j, y ∉ nxCom.wvars := by
+      intro y hy hmem
+      obtain ⟨i, hi, hyi⟩ := hnxOwn.1 y hmem
+      exact hfreshV j i (by omega) y hy hyi
+    have harrR : ∀ a ∈ LR j, a ∉ nxCom.warrs := by
+      intro a ha hmem
+      obtain ⟨i, hi, hai⟩ := hnxOwn.2 a hmem
+      exact hfreshR j i (by omega) a ha hai
+    -- the inner block, at the child arena of centre `u`
+    have hnxS := hnx (childArena S A ((ord A.N A.G).order) u) (by omega)
+      (hAdmChild j A hAdm hbot u)
+      (fun hk0 => hleafChild j A hAdm hbot (by omega) u)
+    have hnxF := specArrsLength (Spec.frame hnxS)
+    -- inner block ; return path — the invariant rides the frame, the
+    -- descriptor the block's own restoration
+    have hinner : Spec B
+        (fun σ => CLInv S ord ℓp htabF hbf Scr ca co cm k j A (u : ℕ) σ ∧
+          σ.vars (ctrName j) = (u : ℕ) ∧
+          BlockPre S (j + 1) (hbf (j + 1))
+            (childArena S A ((ord A.N A.G).order) u)
+            (htabF (j + 1) (childArena S A ((ord A.N A.G).order) u))
+            (Scr (j + 1)) (arenaNames (j + 1)) σ)
+        (.seq nxCom (readC j))
+        (fun σ σ' =>
+          CLInv S ord ℓp htabF hbf Scr ca co cm k j A ((u : ℕ) + 1) σ' ∧
+          σ'.vars (ctrName j) = σ.vars (ctrName j))
+        (KB k (j + 1) (childArena S A ((ord A.N A.G).order) u)
+          + KR k j A (u : ℕ)) := by
+      refine Spec.seq (hnxF.pre (fun σ h => h.2.2))
+        (hread k j A hdiag hAdm hbot u) ?_ ?_
+      · -- the block's exit satisfies the return path's precondition
+        rintro σ σ' ⟨hCL, hctr, -⟩ ⟨⟨⟨hpost, hscr1⟩, hvars, harrs, -, -⟩, hlen⟩
+        refine ⟨clInv_frame_step hst hscr1 hCL
+          (hvars _ (hvarF _ (by simp [levelScalars])))
+          (hvars _ (hvarF _ (by simp [levelScalars])))
+          (fun a ha => harrs a (harrF a ha))
+          (fun y hy => hvars y (hvarR y hy))
+          (fun a ha => harrs a (harrR a ha)) hlen, ?_, hpost⟩
+        rw [hvars _ (hvarF _ (by simp))]
+        exact hctr
+      · -- the counter survives both halves
+        rintro σ σ' σ'' - ⟨⟨-, hvars, -, -, -⟩, -⟩ ⟨hCL'', hctr''⟩
+        refine ⟨hCL'', ?_⟩
+        rw [hctr'', hvars _ (hvarF _ (by simp))]
+    -- the budget, at this centre
+    have hKC : centreKC S ord KB KP KR k j A (u : ℕ)
+        = KP k j A (u : ℕ)
+          + (KB k (j + 1) (childArena S A ((ord A.N A.G).order) u)
+            + KR k j A (u : ℕ)) := by
+      simp [centreKC, u.isLt]
+    rw [hKC]
+    -- the child construction in front
+    refine Spec.seq (hprep k j A hdiag hAdm hbot u) hinner ?_ ?_
+    · rintro σ σ' ⟨-, hctr0⟩ ⟨hCL, hctr, hpre⟩
+      exact ⟨hCL, by rw [hctr, hctr0], hpre⟩
+    · rintro σ σ' σ'' - ⟨-, hctr, -⟩ ⟨hCL'', hctr''⟩
+      exact ⟨hCL'', by rw [hctr'', hctr]⟩
+  · -- the write discipline: the segments' own, the block's weakened
+    show OwnedFrom LS LA j (.seq (prepC j) (.seq nxCom (readC j)))
+    exact OwnedFrom.seq (hprepOwn j)
+      (OwnedFrom.seq (OwnedFrom.mono_level (Nat.le_succ j) hnxOwn)
+        (hreadOwn j))
+
 /-! ## §5 The headline: `CentreStepAll` from the two residuals -/
 
 /-- Residual (a), quantified per admissible input — the child
@@ -547,5 +726,55 @@ theorem frameStepAll_of_cover_prep_read (C : GraphClass)
     (centreStepAll_of_prep_read C hC φ ord G c w q ℓp htabF hbf Adm KB Scr
       LS LA ca co cm prepC readC KP KR hscrLen hfreshS hfreshA hAdmChild
       hleafChild hprepOwn hreadOwn hprep hread)
+
+open Classical in
+/-- **The residual of `SolveGlueLoop` at the strengthened window** —
+verbatim `centreStepAll_of_prep_read` with `hscrLen` replaced by
+`ScrStep` and the two extra freshness facts of §4. Body and budget
+unchanged. -/
+theorem centreStepAll_of_prep_readScr (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) (ord : CoverSpec.OrderingRoutine) {n : ℕ}
+    (G : SimpleGraph (Fin n)) (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (KB : (k j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
+    (Scr : ℕ → Env → Prop) (LS LA LV LR : ℕ → List String)
+    (ca co cm : ℕ → String) (prepC readC : ℕ → Com)
+    (KP KR : (k j : ℕ) →
+      Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ → ℕ)
+    (hst : ScrStep Scr LV LR)
+    (hfreshS : ∀ j i, j < i → ∀ y ∈ ctrName j :: levelScalars j, y ∉ LS i)
+    (hfreshA : ∀ j i, j < i →
+      ∀ a ∈ ca j :: co j :: cm j :: levelArrays j, a ∉ LA i)
+    (hfreshV : ∀ j i, j < i → ∀ y ∈ LV j, y ∉ LS i)
+    (hfreshR : ∀ j i, j < i → ∀ a ∈ LR j, a ∉ LA i)
+    (hAdmChild : ∀ (j : ℕ)
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n), Adm j A →
+      ¬ A.G = ⊥ → ∀ u : Fin A.N,
+      Adm (j + 1) (childArena (Headline.headlineSetup C hC φ) A
+        ((ord A.N A.G).order) u))
+    (hleafChild : ∀ (j : ℕ)
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n), Adm j A →
+      ¬ A.G = ⊥ → j + 1 = (Headline.headlineSetup C hC φ).depth →
+      ∀ u : Fin A.N,
+      (childArena (Headline.headlineSetup C hC φ) A
+        ((ord A.N A.G).order) u).G = ⊥)
+    (hprepOwn : ∀ j, OwnedFrom LS LA j (prepC j))
+    (hreadOwn : ∀ j, OwnedFrom LS LA j (readC j))
+    (hprep : CentrePrepAll C hC φ ord G c w q ℓp htabF hbf Adm Scr
+      ca co cm prepC KP)
+    (hread : CentreReadAll C hC φ ord G c w q ℓp htabF hbf Adm Scr
+      ca co cm readC KR) :
+    CentreStepAllScr C hC φ ord G c w q ℓp htabF hbf Adm KB Scr LS LA
+      ca co cm (centreBody prepC readC)
+      (centreKC (Headline.headlineSetup C hC φ) ord KB KP KR) := by
+  intro x hx
+  exact centreStep_of_prep_readScr (mcB q x) (Headline.headlineSetup C hC φ)
+    ord ℓp htabF hbf Adm KB Scr LS LA LV LR ca co cm prepC readC KP KR hst
+    hfreshS hfreshA hfreshV hfreshR hAdmChild hleafChild hprepOwn hreadOwn
+    (hprep x hx) (hread x hx)
 
 end Lax3Proofs.Prog

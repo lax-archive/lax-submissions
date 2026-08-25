@@ -91,7 +91,11 @@ theorem ctrName_ne_nS (j : ℕ) : ctrName j ≠ (arenaNames j).nS :=
 /-- **The invariant is insensitive to the counter cell**: every
 component reads arrays and the two (distinct) arena cells only — the
 increment and the initialisation carry it for free. `Scr` crosses by
-its length-only transport. -/
+its length-only transport — which is why
+`clInv_setVar_ctr_scr` below exists: that transport is inconsistent
+with a content-carrying descriptor
+(`SolveMachPrepSeam.rankScr_not_length_only`), and the counter bump
+never needed it. -/
 theorem clInv_setVar_ctr {S : Setup L} {ord : CoverSpec.OrderingRoutine}
     {ℓp : ℕ → ℕ}
     {htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
@@ -216,6 +220,24 @@ def CentreStepScr (B : ℕ) (S : Setup L) (ord : CoverSpec.OrderingRoutine)
           σ'.vars (ctrName j) = σ.vars (ctrName j))
         (KC k j A (u : ℕ))) ∧
     OwnedFrom LS LA j (bodyB j nxCom)
+
+/-- The strengthened window is a **weaker** obligation on the per-centre
+discharger: it may assume more about the inner block and must conclude
+the same. So nothing that discharges `CentreStep` is deprived, and the
+descriptor's new transport costs the per-centre pipeline nothing. -/
+theorem centreStepScr_of_centreStep (B : ℕ) (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
+    {htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N)}
+    {hbf : ℕ → ℕ} {Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop}
+    {KB : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ} {Scr : ℕ → Env → Prop}
+    {LS LA : ℕ → List String} {ca co cm : ℕ → String}
+    {bodyB : ℕ → Com → Com}
+    {KC : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ → ℕ}
+    (h : CentreStep B S ord ℓp htabF hbf Adm KB Scr LS LA ca co cm bodyB KC) :
+    CentreStepScr B S ord ℓp htabF hbf Adm KB Scr LS LA ca co cm bodyB KC :=
+  fun k j nxCom hnx hown =>
+    h k j nxCom (blockSpec_of_blockSpecScr B S ord ℓp hnx) hown
 
 /-! ## §3 The loop, discharged from the per-centre residual -/
 

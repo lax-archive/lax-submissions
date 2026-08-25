@@ -369,6 +369,32 @@ theorem specScr {B K : ℕ} {P : Env → Prop} {Q : Env → Env → Prop} {c : C
       fun i hi a ha => hr.frame_arr a (hfree.2 i hi a ha)⟩
     (run_arrs_length_eq hr)⟩
 
+/-- **Conjoining allocation clauses costs nothing.** `ScrFrame` is
+closed under conjunction with any clause read off the arrays' lengths
+alone — which is where the chain's *other* demands on the descriptor
+live (`hscr`'s four leaf regions, `hscrCov`'s two cover outputs,
+`htabLen`'s child table). So a descriptor that carries content and
+satisfies `ScrFrame` still satisfies it after being fattened with
+everything else the chain asks for. -/
+theorem ScrFrame.and_lens {Scr : ℕ → Env → Prop} {LV LR : ℕ → List String}
+    (h : ScrFrame Scr LV LR) (P : ℕ → (String → ℕ) → Prop) :
+    ScrFrame (fun j σ => Scr j σ ∧ P j (fun b => (σ.arrs b).length))
+      LV LR := by
+  rintro j σ σ' ⟨h1, h2⟩ hag hlen
+  refine ⟨h j σ σ' h1 hag hlen, ?_⟩
+  rwa [show (fun b => (σ'.arrs b).length) = (fun b => (σ.arrs b).length) from
+    funext hlen]
+
+/-- The same closure for `ScrStep`. -/
+theorem ScrStep.and_lens {Scr : ℕ → Env → Prop} {LV LR : ℕ → List String}
+    (h : ScrStep Scr LV LR) (P : ℕ → (String → ℕ) → Prop) :
+    ScrStep (fun j σ => Scr j σ ∧ P j (fun b => (σ.arrs b).length))
+      LV LR := by
+  rintro j σ σ' ⟨h1, h2⟩ ⟨h1', -⟩ hV hA hlen
+  refine ⟨h j σ σ' h1 h1' hV hA hlen, ?_⟩
+  rwa [show (fun b => (σ'.arrs b).length) = (fun b => (σ.arrs b).length) from
+    funext hlen]
+
 /-- The read pool is untouched by an assignment to a cell outside it —
 the counter bump's transport, and the only `ScrAgree` a call site ever
 builds by hand. -/
