@@ -75,6 +75,34 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — overnight wave: the three remaining F7 pieces run in parallel
+
+Jan's standing authority renewed for the night. Three workers, one per remaining
+piece of F7, chosen so no two share a file and none blocks another:
+
+- **w33 — `KsChargeBridge`** (F7-b). Continuation; its first task is the two
+  elaboration errors leaking `sorryAx` into the checkpoint. Then the `⊥`-node
+  excess (`chainKB` at an edgeless arena `≤ K·(A.N+1)`, needing `Kcov` and
+  `Kglue` in `O(A.N+1)`) and the `σ.t = 0` scatter slack — the only two terms of
+  the audit without a finished column.
+- **w34 — the prep composition.** Elaboration fix first (the gate cannot afford
+  30 minutes a landing for the rest of the campaign), then the three missing
+  `warrs`/`wvars` lemmas, then `ChildLoadPartsScrAll`.
+- **w35 — F7-c, the last mile.** From `mc_computesInTime_of_solveSpec`
+  (`ProgCodegen.lean:221` — the axiom's `ComputesInTime` on the axiom's
+  admissible set verbatim) to the endorsed axiom, taking `SolveSpec` and the
+  ledger bridge as named hypotheses. Its real content is the constants: `eS`,
+  `eA`, `q`, `c` with `hq`/`hqc`/`hspan`, and **`q` is not free** — the packet
+  points it at `ardWordBound_of_inDegLE`'s `q ≥ 3K + 2` and at `PrepWB`'s own
+  lower bound, and asks for every constraint on `q` collected in one place and
+  maxed, rather than a number chosen blindly. `hokS`/`hnw` and the choice of
+  `eS`/`eA` are one problem, not two: the name pools must contain everything the
+  pipeline mentions.
+
+Three workers on 4 cores is above the load I set earlier, accepted here because
+the F7-c leaf is arithmetic and plumbing rather than program text, so its build
+share is small.
+
 ### 2026-08-25 — second container restart, and the compile-the-checkpoint rule pays immediately
 
 The container was replaced again; both running workers died. Recovery as before,
