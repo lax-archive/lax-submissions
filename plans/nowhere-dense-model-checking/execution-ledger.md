@@ -75,6 +75,71 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-26 — `CoverAllIn` CLOSES OUTRIGHT, and single-state anti-vacuity is exposed as insufficient
+
+`covAllJoin_coverAllIn_closed` concludes `CoverAllIn` at the concrete program and
+the summed budget from **exactly two hypotheses**: `1 ≤ q` and `ArdWord`.
+`CovAugAdjSelIn` is **discharged, not assumed**. All three seams repaired at
+their sources, each in the least invasive form that works:
+
+**(1) beside.** `augBasePeelInS_bucketPeelBuild` states `AugBasePeelIn` at a
+*parametric* `Sbd` — no new program and no new proof about `bucketPeelCom`,
+because the landed theorem's `Smp` is already free with a frame-shaped
+transport, so instantiating at `Smp ∧ Sbd` carries an arbitrary `Sbd` through
+and `Spec.conseq` reshuffles. The landed §2 is untouched and is the new §2b at
+its own triple.
+
+**(2) in place, after checking.** `augBaseOrientIn_orCom`'s `hSrd`/`hSmp`/`hSsw`
+gain the length clause (three lines, three call sites); **the conclusion is
+byte-identical**. The worker grepped first: the theorem had **no in-repo
+consumer**, only four prose mentions. That is the right order — check the
+consumers, then change in place.
+
+**(3) beside, and both halves were needed.** New public `symComW_spec` leaves a
+`GraphCsr` of the *truncation* at `≥` allocations; the landed `symCom_spec` is
+re-derived from it, statement unchanged. **Why windowing *and* `ardCap`, not
+one or the other** — an exact-length output of any figure is impossible, since
+`graphCsr_ns_eq_slotCount` forces slot count `2·arcCount D`, so the output must
+be windowed; but a windowed output whose caller obligation is still
+`2·arcCount D ≤ len(stO)` is satisfiable state by state and *not* by the round,
+so the allocation the round maintains must be in the carrier's currency. Same
+repair from two ends.
+
+**The re-test I demanded was run, and it is stronger than "no longer fires".**
+`augSeamSrd_not_symCsrSizes` proves `¬ (∀ σ, augSeamSrd j σ → symCsrSizes … σ)`
+for **any** output pair: the hypothesis the no-go needed is not merely unproved
+at the repaired descriptor, it is **refuted**, so no analogue can be formulated.
+
+**The supervision finding of the campaign.** *Single-state inhabitation does not
+certify a loop-maintained descriptor.* `SolveAugSymMerge` §11's
+`exists_symPreW_std` passes anti-vacuity at **one** state — which is exactly why
+nobody noticed `symSrd` cannot be maintained **across the rounds**. I have been
+demanding single-state inhabitation all campaign and it was the right check for
+preconditions; for a **round invariant** the two-state form is what is needed,
+and `augSeamSrd_no_arc_link` (two states, equal lengths and equal carrier cells,
+`nA` cells arbitrary) is its shape. Add to every future packet whose descriptor
+is maintained by a loop.
+
+**Five landed theorems are now dead weight on the route to the axiom** —
+`AugSymCsrIn` and with it `augSymIn_of_symCsr_build`, `augSymCsrIn_symCom`,
+`augSymCsrIn_symComW`, `augSymCsrIn_symComW_std`. True, but not instantiable in
+the composition: the bare `GraphCsr` postcondition is the exact-length trap. None
+was weakened or touched; `augSeamSymIn_symBuild` composes `symComW_spec` with
+`bldAdj_spec` directly instead. Also flagged: `augBaseAdjIn_bldAdjCom`'s `hSbd`
+carries no length clause either — latent, harmless today only because every
+clause of `augSeamSbd` is about arrays outside the build's four written names.
+
+Cost: nothing new. The one figure outside the standard currencies is
+`ardCap N = 2N³+N²+N+1`, extended from the round's 22 regions to 9 more — and it
+is **space**, the round's own landed allocation. No time term is quadratic.
+
+Elaboration 5–14 s across all five files. Axioms clean; no `sorryAx`.
+
+**State of the campaign after this**: the endorsed axiom's proof has **one**
+substantive residual left, `FrameStepAllScr`, whose two inputs are `CoverAllIn`
+(now closed) and `CentreLoopAllScr` (waiting only on the prep pass's fourteen
+`Spec.seq` steps).
+
 ### 2026-08-26 — `hokS` becomes satisfiable, `F7Bridge` is discharged, and `hdom` disappears
 
 Both repairs landed, plus a third defect found and fixed in the same pass.

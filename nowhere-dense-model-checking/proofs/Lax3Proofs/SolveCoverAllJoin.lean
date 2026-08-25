@@ -1,5 +1,6 @@
 import Lax3Proofs.SolveSweepClose
 import Lax3Proofs.SolveAugRoundIn
+import Lax3Proofs.SolveAugSeamFix
 
 set_option autoImplicit false
 
@@ -131,7 +132,17 @@ than asserted.
    allocation sized by the carrier alone (`ardCap`), so that the figure
    the caller must supply stops moving from round to round.
 
-None of the three is repaired here: all three live in landed files.
+## §5 What closes after the repairs
+
+None of the three seams is repaired *in this file* — all three live in
+landed files, and all three have now been repaired there
+(`augBasePeelInS_bucketPeelBuild`, `augBaseOrientIn_orCom`'s length
+clause, `symComW_spec`).  §4b–§4d are left exactly as they were pinned:
+they remain true statements about the *landed* forms, and they are the
+specification the repairs were written against.  §5 composes the
+repaired forms — through `SolveAugSeamFix`'s `augSeamCovAugAdjSelIn` —
+and closes `CoverAllIn` outright, on `1 ≤ q` and `ArdWord` alone
+(`covAllJoin_coverAllIn_closed`).
 -/
 
 namespace Lax3Proofs.Prog
@@ -801,7 +812,233 @@ theorem coverAllSym_srd_forces_no_emission (C : GraphClass)
   rw [arcCount_greedyStep] at h
   omega
 
-/-! ## §5 Axiom audit
+/-! ## §5 `CoverAllIn`, closed
+
+`SolveAugSeamFix` repairs the three seams §4b–§4d pinned and discharges
+`CovAugAdjSelIn` at a concrete family.  What is left for this file is
+what §2 always said was left: feed it to `covAllJoin_coverAllIn`.  The
+two descriptors the augmentation must carry are §1's own `covAllSmp` and
+`covAllSsw`, and both ride through on the same fact §4a used — the
+augmentation's forty written arrays are the round's `'r'` names, the
+base's and merge's `'y'` names and the four `"oc.*"` output regions, and
+none of those is one of the sweep's `"sc.*"` or the ordering peel's two.
+
+The residual hypotheses are exactly two: `1 ≤ q` and `ArdWord`. -/
+
+/-- Every name the sweep and the ordering peel speak about is outside the
+augmentation's write set: one line per name, and the line is `decide`. -/
+theorem covAllJoin_notWrite {s : String} (h1 : s.length = 4)
+    (h2 : ∀ b ∈ augSeamArdNames, s ≠ b)
+    (h3 : ∀ t ∈ augSeamBaseBases, s ≠ t)
+    (h4 : ∀ t ∈ augSeamRegBases, s ≠ t) (j : ℕ) :
+    lv s j ∉ augSeamWrites j := augSeamNotWrite h1 h2 h3 h4 j
+
+/-- **The ordering peel's scratch rides through the augmentation.** -/
+theorem covAllJoin_hSmpW (n j : ℕ) (σ σ' : Env)
+    (harr : ∀ b : String, b ∉ augSeamWrites j → σ'.arrs b = σ.arrs b)
+    (h : covAllSmp n j σ) : covAllSmp n j σ' := by
+  have hA : ∀ s : String, s.length = 4 → (∀ b ∈ augSeamArdNames, s ≠ b) →
+      (∀ t ∈ augSeamBaseBases, s ≠ t) → (∀ t ∈ augSeamRegBases, s ≠ t) →
+      σ'.arrs (lv s j) = σ.arrs (lv s j) :=
+    fun s k1 k2 k3 k4 => harr _ (covAllJoin_notWrite k1 k2 k3 k4 j)
+  have hra : σ'.arrs (sweepCloseRa j) = σ.arrs (sweepCloseRa j) :=
+    hA "sc.r" (by decide) (by decide) (by decide) (by decide)
+  have htp : σ'.arrs (covAllTpO j) = σ.arrs (covAllTpO j) :=
+    hA "oc.t" (by decide) (by decide) (by decide) (by decide)
+  have hsk : σ'.arrs (covAllSkO j) = σ.arrs (covAllSkO j) :=
+    hA "oc.k" (by decide) (by decide) (by decide) (by decide)
+  exact ⟨by rw [hra]; exact h.1, by rw [htp]; exact h.2.1,
+    by rw [hsk]; exact h.2.2⟩
+
+/-- **The sweep's scratch rides through the augmentation.** -/
+theorem covAllJoin_hSswW (n j : ℕ) (σ σ' : Env)
+    (harr : ∀ b : String, b ∉ augSeamWrites j → σ'.arrs b = σ.arrs b)
+    (hvar : ∀ y : String, y ∉ augSeamCells j → σ'.vars y = σ.vars y)
+    (h : covAllSsw n j σ) : covAllSsw n j σ' := by
+  obtain ⟨⟨hb1, hb2, hb3, hb4, hb5⟩, ⟨hp1, hp2, hp3⟩, hgr⟩ := h
+  have hA : ∀ s : String, s.length = 4 → (∀ b ∈ augSeamArdNames, s ≠ b) →
+      (∀ t ∈ augSeamBaseBases, s ≠ t) → (∀ t ∈ augSeamRegBases, s ≠ t) →
+      σ'.arrs (lv s j) = σ.arrs (lv s j) :=
+    fun s k1 k2 k3 k4 => harr _ (covAllJoin_notWrite k1 k2 k3 k4 j)
+  have hN : σ'.vars (arenaNames j).nN = σ.vars (arenaNames j).nN :=
+    hvar _ (augSeam_nN_notMem_cells j)
+  have hS : σ'.vars (arenaNames j).nS = σ.vars (arenaNames j).nS :=
+    hvar _ (augSeam_nS_notMem_cells j)
+  have hao : σ'.arrs (sweepCloseAo j) = σ.arrs (sweepCloseAo j) :=
+    hA "sc.p" (by decide) (by decide) (by decide) (by decide)
+  have haj : σ'.arrs (sweepCloseAj j) = σ.arrs (sweepCloseAj j) :=
+    hA "sc.j" (by decide) (by decide) (by decide) (by decide)
+  have hdg : σ'.arrs (sweepCloseDg j) = σ.arrs (sweepCloseDg j) :=
+    hA "sc.d" (by decide) (by decide) (by decide) (by decide)
+  have hmt : σ'.arrs (sweepCloseMt j) = σ.arrs (sweepCloseMt j) :=
+    hA "sc.t" (by decide) (by decide) (by decide) (by decide)
+  have hod : σ'.arrs (sweepCloseOd j) = σ.arrs (sweepCloseOd j) :=
+    hA "sc.q" (by decide) (by decide) (by decide) (by decide)
+  have hlo : σ'.arrs (sweepCloseLo j) = σ.arrs (sweepCloseLo j) :=
+    hA "sc.l" (by decide) (by decide) (by decide) (by decide)
+  have hlm : σ'.arrs (sweepCloseLm j) = σ.arrs (sweepCloseLm j) :=
+    hA "sc.g" (by decide) (by decide) (by decide) (by decide)
+  have hco : σ'.arrs (sweepCloseCo j) = σ.arrs (sweepCloseCo j) :=
+    hA "sc.o" (by decide) (by decide) (by decide) (by decide)
+  have hcm : σ'.arrs (sweepCloseCm j) = σ.arrs (sweepCloseCm j) :=
+    hA "sc.m" (by decide) (by decide) (by decide) (by decide)
+  have hsb : σ'.arrs (sweepCloseSb j) = σ.arrs (sweepCloseSb j) :=
+    hA "sc.b" (by decide) (by decide) (by decide) (by decide)
+  have hcnt : σ'.arrs (sweepCloseCnt j) = σ.arrs (sweepCloseCnt j) :=
+    hA "sc.n" (by decide) (by decide) (by decide) (by decide)
+  have hcur : σ'.arrs (sweepCloseCur j) = σ.arrs (sweepCloseCur j) :=
+    hA "sc.u" (by decide) (by decide) (by decide) (by decide)
+  obtain ⟨g1, g2, g3, g4⟩ := hgr
+  refine ⟨⟨?_, ?_, ?_, ?_, ?_⟩, ⟨?_, ?_, bfsClean_of_eq hp3 hco⟩, ?_, ?_, ?_, ?_⟩
+  · rw [hN, hao]; exact hb1
+  · rw [hS, haj]; exact hb2
+  · rw [hN, hdg]; exact hb3
+  · rw [hS, hmt]; exact hb4
+  · rw [hN, hod]; exact hb5
+  · rw [hlo]; exact hp1
+  · rw [hlm]; exact hp2
+  · rw [hlm, hcm]; exact g1
+  · rw [hlm, hsb]; exact g2
+  · rw [hco, hcnt]; exact g3
+  · rw [hco, hcur]; exact g4
+
+open Classical in
+/-- **`CoverAllIn`, closed.**  The whole cover stage — the augmentation
+(base, `R` rounds, symmetrization), the bucket peel that turns its output
+into the rank array, the deletable-adjacency build, the peeled BFS sweep
+and the grouping — at the summed budget, from **`1 ≤ q` and `ArdWord`
+alone**.
+
+`ArdWord` is the round's own word obligation (`SolveAugRoundIn` §4), which
+`SolveF7CloseQ`'s `f7q` supplies from `q ≥ 3·K + 2`; it is not a seam of
+this composition.  The budget is `covAllJoin_Kord_eq`'s single
+`augChainCost` plus the sweep's `peelK` column, so `covAllJoin_Kord_le`
+and `covAllJoin_Ksw_le` apply to it unchanged. -/
+theorem covAllJoin_coverAllIn_closed (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) (R : ℕ) {n : ℕ} (G : SimpleGraph (Fin n)) (c w q : ℕ)
+    (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (hq : 1 ≤ q)
+    (hword : ArdWord C hC φ (fun m => bucketSel m) R G c w q Adm) :
+    CoverAllIn C hC φ (selOrderingRoutine (fun m => bucketSel m) R) G c w q ℓp
+      htabF hbf Adm sweepCloseCa sweepCloseCo sweepCloseCm
+      (fun j σ => (augSeamSag n j σ ∧ covAllSmp n j σ) ∧ covAllSsw n j σ)
+      (fun j => .seq
+        (.seq
+          (.seq (.seq (augSeamBaseCom j) (comIter (augSeamRoundComStd j) R))
+            (augSeamSymCom j))
+          (bucketPeelCom (covAllAoO j) (covAllAjO j) (covAllDgO j)
+            (covAllMtO j) (sweepCloseRa j) (covAllTpO j) (covAllSkO j)
+            (arenaNames j).nN))
+        (.seq
+          (bldCom (arenaNames j).nN (arenaNames j).nS (arenaNames j).off
+            (arenaNames j).tgt (sweepCloseRa j) (sweepCloseAo j)
+            (sweepCloseAj j) (sweepCloseDg j) (sweepCloseMt j) (sweepCloseOd j))
+          (.seq
+            (sweepCom
+              (bfsTurnCom (Headline.headlineSetup C hC φ).R (sweepCloseCa j)
+                (sweepCloseCo j) (sweepCloseAo j) (sweepCloseAj j)
+                (sweepCloseDg j) (sweepCloseLo j) (sweepCloseLm j)
+                (arenaNames j).nN)
+              (sweepCloseCa j) (sweepCloseLo j) (sweepCloseAo j)
+              (sweepCloseAj j) (sweepCloseDg j) (sweepCloseMt j)
+              (sweepCloseOd j) (arenaNames j).nN)
+            (grCom (arenaNames j).nN (sweepCloseLo j) (sweepCloseLm j)
+              (sweepCloseOd j) (sweepCloseCo j) (sweepCloseCm j)
+              (sweepCloseCnt j) (sweepCloseCur j) (sweepCloseSb j)))))
+      (fun _j A => (augChainCost 545 554 113 1025 455 588 305 287 171 196 84
+            (bucketSel A.N) A.G R + linearPeelBudget R 313 118 40 A)
+        + peelK (12 * (Headline.headlineSetup C hC φ).R + 362) 154 192
+            (Headline.headlineSetup C hC φ) A
+            ((selOrderingRoutine (fun m => bucketSel m) R A.N A.G).order)) :=
+  covAllJoin_coverAllIn C hC φ R G c w q ℓp htabF hbf Adm (augSeamSag n) _ _ hq
+    (augSeamCovAugAdjSelIn C hC φ R G c w q ℓp htabF hbf Adm sweepCloseCa
+      sweepCloseCo (covAllSmp n) (covAllSsw n) hq hword
+      (fun j σ σ' h harr _ => covAllJoin_hSmpW n j σ σ' harr h)
+      (fun j σ σ' h harr hvar => covAllJoin_hSswW n j σ σ' harr hvar h))
+
+/-- **… and the budget is the one §3 already measured.**  The ordering
+pass folds into one `augChainCost` (`covAllJoin_Kord_eq`), so the closed
+statement's `Kag + linearPeelBudget` is `covAllJoin_Kord_le`'s subject
+verbatim. -/
+theorem covAllJoin_closed_Kord {Λ n₀ : ℕ} (A : Arena Λ n₀) (R : ℕ) :
+    augChainCost 545 554 113 1025 455 588 305 287 171 196 84
+        (bucketSel A.N) A.G R
+      + linearPeelBudget R 313 118 40 A
+    = augChainCost 545 554 113 1025 455 588 305 287 484 432 124
+        (bucketSel A.N) A.G R :=
+  covAllJoin_Kord_eq A R
+
+/-- **§5 is not a statement about an empty precondition.**  The
+augmentation's descriptor `augSeamSag` sits in `CovAugAdjSelIn`'s
+*precondition*, so it owes a witness — and it owes one **jointly with**
+the two descriptors §1 introduces, since all three must hold of the same
+state.  Here is that state, at every `n` and every level: every array
+long except the fraternal mark window, which `ardSrd` pins at exactly
+`nN·nN` and which is therefore empty at a zero carrier cell.  The three
+name families are disjoint (`'r'`, `'y'`, `'s'`, `'o'`), so nothing has
+to be reconciled. -/
+theorem covAllJoin_sag_inhabited (n j : ℕ) :
+    ∃ σ : Env, augSeamSag n j σ ∧ covAllSmp n j σ ∧ covAllSsw n j σ := by
+  classical
+  obtain ⟨σ, hσ⟩ : ∃ σ : Env, σ = (⟨fun _ => 0,
+      fun b => if b = "rf.m" then [] else List.replicate (n * n + n + 1) 0,
+      [], []⟩ : Env) := ⟨_, rfl⟩
+  have hv : ∀ y : String, σ.vars y = 0 := fun y => by rw [hσ]
+  have hmk : σ.arrs "rf.m" = [] := by rw [hσ]; simp
+  have hlen : ∀ b : String, b ≠ "rf.m" → (σ.arrs b).length = n * n + n + 1 := by
+    intro b hb; rw [hσ]; simp only [if_neg hb]; exact List.length_replicate
+  have hzero : ∀ b : String, b ≠ "rf.m" → ∀ i, (σ.arrs b).getD i 0 = 0 := by
+    intro b hb i; rw [hσ]; simp only [if_neg hb]; simp
+  have hLv : ∀ s : String, s.length = 4 → s ≠ "rf.m" → lv s j ≠ "rf.m" :=
+    fun s h1 h2 => lv_ne_len4 h1 (by decide) h2 j
+  have hreg : ∀ b ∈ augSeamRegsAll j, b ≠ "rf.m" := by
+    intro b hb
+    rcases List.mem_append.mp hb with h | h
+    · obtain ⟨t, ht, rfl⟩ := List.mem_map.mp h
+      exact lv_ne_len4 (augSeamRegBases_len t ht) (by decide)
+        (augSeamRegBases_ne_ard t ht "rf.m" (by decide)) j
+    · exact (show ∀ b ∈ ardRegionsStd 0, b ≠ "rf.m" by decide) b h
+  refine ⟨σ, ⟨⟨⟨fun b hb => ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩,
+    ⟨?_, ?_, ?_⟩, ⟨?_, ?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩
+  · rw [hv, hlen b (hreg b hb)]; simp only [ardCap]; omega
+  · rw [hv, hmk]; simp
+  · intro i; rw [hmk]; simp
+  · intro i hi; rw [hv] at hi; omega
+  · rw [hv, hlen (ardIt j) (show ("ri.t" : String) ≠ "rf.m" by decide)]; omega
+  · rw [hv, hlen (augSeamCn j) (hLv "yc.n" (by decide) (by decide))]; omega
+  · rw [hlen (augSeamRa j) (hLv "yr.a" (by decide) (by decide))]; omega
+  · rw [hlen (augSeamTp j) (hLv "yt.p" (by decide) (by decide))]; omega
+  · rw [hlen (augSeamSk j) (hLv "yk.c" (by decide) (by decide))]; omega
+  · rw [hv, hlen (augSeamAo j) (hLv "ya.o" (by decide) (by decide))]; omega
+  · rw [hv, hlen (augSeamAj j) (hLv "ya.j" (by decide) (by decide))]; omega
+  · rw [hv, hlen (augSeamDg j) (hLv "ya.d" (by decide) (by decide))]; omega
+  · rw [hv, hlen (augSeamMt j) (hLv "ya.m" (by decide) (by decide))]; omega
+  · rw [hlen (sweepCloseRa j) (hLv "sc.r" (by decide) (by decide))]; omega
+  · rw [hlen (covAllTpO j) (hLv "oc.t" (by decide) (by decide))]; omega
+  · rw [hlen (covAllSkO j) (hLv "oc.k" (by decide) (by decide))]; omega
+  · rw [hv, hlen (sweepCloseAo j) (hLv "sc.p" (by decide) (by decide))]; omega
+  · rw [hv, hlen (sweepCloseAj j) (hLv "sc.j" (by decide) (by decide))]; omega
+  · rw [hv, hlen (sweepCloseDg j) (hLv "sc.d" (by decide) (by decide))]; omega
+  · rw [hv, hlen (sweepCloseMt j) (hLv "sc.t" (by decide) (by decide))]; omega
+  · rw [hv, hlen (sweepCloseOd j) (hLv "sc.q" (by decide) (by decide))]; omega
+  · rw [hlen (sweepCloseLo j) (hLv "sc.l" (by decide) (by decide))]; omega
+  · rw [hlen (sweepCloseLm j) (hLv "sc.g" (by decide) (by decide))]; omega
+  · exact fun v _ => hzero (sweepCloseCo j) (hLv "sc.o" (by decide) (by decide)) v
+  · rw [hlen (sweepCloseLm j) (hLv "sc.g" (by decide) (by decide)),
+      hlen (sweepCloseCm j) (hLv "sc.m" (by decide) (by decide))]
+  · rw [hlen (sweepCloseLm j) (hLv "sc.g" (by decide) (by decide)),
+      hlen (sweepCloseSb j) (hLv "sc.b" (by decide) (by decide))]
+  · rw [hlen (sweepCloseCo j) (hLv "sc.o" (by decide) (by decide)),
+      hlen (sweepCloseCnt j) (hLv "sc.n" (by decide) (by decide))]
+  · rw [hlen (sweepCloseCo j) (hLv "sc.o" (by decide) (by decide)),
+      hlen (sweepCloseCur j) (hLv "sc.u" (by decide) (by decide))]
+
+/-! ## §6 Axiom audit
 
 §1–§3 quote `Headline.headlineSetup` and therefore carry Lax12's
 endorsed `uniformlyQuasiWide_of_nowhereDense`, exactly like the landed
@@ -836,5 +1073,13 @@ three standard axioms alone. -/
 #print axioms coverAllSym_srd_forces_constant
 
 #print axioms coverAllSym_srd_forces_no_emission
+
+#print axioms covAllJoin_hSmpW
+
+#print axioms covAllJoin_hSswW
+
+#print axioms covAllJoin_coverAllIn_closed
+
+#print axioms covAllJoin_sag_inhabited
 
 end Lax3Proofs.Prog

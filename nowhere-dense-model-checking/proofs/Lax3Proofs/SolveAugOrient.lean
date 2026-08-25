@@ -1957,7 +1957,21 @@ The arc coefficient is `86` and not `43` because the pass walks the
 twice the arc count (`SolveAugFrameProg` §1's handshake, read at the
 region's own last offset).  Against
 `augChainCost_le_selChainCharge`'s `bn ≤ k`, `ba ≤ 3·k` this pass alone
-closes at `k = 70`. -/
+closes at `k = 70`.
+
+**The three transports carry the length clause.**  `hSrd`, `hSmp` and
+`hSsw` are handed `(∀ b, (σ'.arrs b).length = (σ.arrs b).length)` beside
+the write frame, which the proof already has from `specArrsLength` and
+uses two lines later for `ca j`/`co j`; the sibling
+`augBasePeelIn_bucketPeelBuild` passes the same clause to *its*
+`hSmp`/`hSsw`.  Without it no descriptor constraining `io j` or `it j`
+by a length — `ardSrd`, whose region list is headed by exactly that
+pair — is reachable from any `Sbd` whatever, since the frame says
+nothing at all about the two arrays the pass writes
+(`coverAllBase_hSrd_not_ardSrd`, `SolveCoverAllJoin` §4c).  Handing the
+caller *more* information weakens no conclusion: a discharge of the
+older three-argument shape discharges this one by ignoring the extra
+argument. -/
 theorem augBaseOrientIn_orCom (C : GraphClass) (hC : NowhereDense C)
     (φ : FO 0) (sel : ∀ m : ℕ, MinDegSel m) {n : ℕ}
     (G : SimpleGraph (Fin n)) (c w q : ℕ) (ℓp : ℕ → ℕ)
@@ -1983,12 +1997,15 @@ theorem augBaseOrientIn_orCom (C : GraphClass) (hC : NowhereDense C)
       σ.vars (arenaNames j).nN ≤ (σ.arrs (cn j)).length)
     (hSrd : ∀ (j : ℕ) (σ σ' : Env), Sbd j σ →
       (∀ b, b ≠ io j → b ≠ it j → b ≠ cn j → σ'.arrs b = σ.arrs b) →
+      (∀ b : String, (σ'.arrs b).length = (σ.arrs b).length) →
       (∀ y, y ∉ nA j :: orScalars → σ'.vars y = σ.vars y) → Srd j σ')
     (hSmp : ∀ (j : ℕ) (σ σ' : Env), Smp j σ →
       (∀ b, b ≠ io j → b ≠ it j → b ≠ cn j → σ'.arrs b = σ.arrs b) →
+      (∀ b : String, (σ'.arrs b).length = (σ.arrs b).length) →
       (∀ y, y ∉ nA j :: orScalars → σ'.vars y = σ.vars y) → Smp j σ')
     (hSsw : ∀ (j : ℕ) (σ σ' : Env), Ssw j σ →
       (∀ b, b ≠ io j → b ≠ it j → b ≠ cn j → σ'.arrs b = σ.arrs b) →
+      (∀ b : String, (σ'.arrs b).length = (σ.arrs b).length) →
       (∀ y, y ∉ nA j :: orScalars → σ'.vars y = σ.vars y) → Ssw j σ') :
     AugBaseOrientIn C hC φ sel G c w q ℓp htabF hbf Adm ca co
       bao baj bdg bmt bra (fun j A => augStInNW io it nA j A) Sbd Srd Smp Ssw
@@ -2074,11 +2091,11 @@ theorem augBaseOrientIn_orCom (C : GraphClass) (hC : NowhereDense C)
       (hfa' _ (Ne.symm hcolO) (Ne.symm hcolT) (Ne.symm hcolN))
       (hfa' _ (Ne.symm hupO) (Ne.symm hupT) (Ne.symm hupN))
       (hfa' _ (Ne.symm hhistO) (Ne.symm hhistT) (Ne.symm hhistN))
-  · exact hSrd j σ σ' hSb hfa' hfv'
+  · exact hSrd j σ σ' hSb hfa' hlen hfv'
   · rw [hlen (ca j)]; exact hcaL
   · rw [hlen (co j)]; exact hcoL
-  · exact hSmp j σ σ' hSm hfa' hfv'
-  · exact hSsw j σ σ' hSw hfa' hfv'
+  · exact hSmp j σ σ' hSm hfa' hlen hfv'
+  · exact hSsw j σ σ' hSw hfa' hlen hfv'
 
 /-! ## §11 Axiom audit -/
 

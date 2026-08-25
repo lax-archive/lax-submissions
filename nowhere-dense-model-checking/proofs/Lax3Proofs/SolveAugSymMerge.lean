@@ -117,6 +117,11 @@ private theorem sy_getD_set_of_ne {l : List ℕ} {i q c : ℕ} (h : i ≠ q) :
     (l.set i c).getD q 0 = l.getD q 0 := by
   rw [List.getD_eq_getElem?_getD, List.getElem?_set_ne h, List.getD_eq_getElem?_getD]
 
+/-- Reading below a truncation is reading the array. -/
+private theorem sy_getD_take {l : List ℕ} {m i : ℕ} (h : i < m) :
+    (l.take m).getD i 0 = l.getD i 0 := by
+  simp only [List.getD_eq_getElem?_getD, List.getElem?_take_of_lt h]
+
 private theorem sy_getElem?_of_lt (l : List ℕ) (i : ℕ) (h : i < l.length) :
     l[i]? = some (l.getD i 0) := by
   rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h]
@@ -673,15 +678,21 @@ private theorem symRowAt_of_agree {st : String} {off tgt otF : ℕ → ℕ} {N :
   · rw [hagree _ (by omega)]; exact h.1 k hk
   · rw [hagree _ (by omega)]; exact h.2 k hk
 
-/-- The carried state of the merge sweep. -/
+/-- The carried state of the merge sweep.
+
+The two output allocations are asked for as `≥`, not `=`: the merge
+never reads past its own extent, and an exact-length demand on `st` is
+the trap `SolveCoverAllJoin` §4d pins — `2·arcCount D` moves from round
+to round while an array's length cannot.  §9's `symCom_spec` recovers
+the exact-length reading from this one at an exact allocation. -/
 private def SyMInv (nN io it qo qt so st : String) {N : ℕ} (D : Orientation N)
     (off tgt otF : ℕ → ℕ) (σ : Env) : Prop :=
   σ.vars nN = N ∧ σ.vars "sy.v" ≤ N ∧
     σ.vars "sy.c" = symOff off D (σ.vars "sy.v") ∧
     SymSrc io it N off tgt σ ∧ SymSrc qo qt N (outOff D) otF σ ∧
-    (σ.arrs so).length = N + 1 ∧
+    N + 1 ≤ (σ.arrs so).length ∧
     (∀ i, i < σ.vars "sy.v" → (σ.arrs so).getD i 0 = symOff off D i) ∧
-    (σ.arrs st).length = 2 * arcCount D ∧
+    2 * arcCount D ≤ (σ.arrs st).length ∧
     (∀ w, w < σ.vars "sy.v" → SymRowAt st off tgt D otF w σ)
 
 /-- **One vertex's turn of the merge**: `31` plus `18` a slot. -/
@@ -739,7 +750,7 @@ private theorem syRow_step {B : ℕ} {nN io it qo qt dg so st : String} {N : ℕ
       (lo := off v) (hi := off (v + 1)) (base := symOff off D v) (F := tgt)
       (L := σ.arrs st) hnm.st_it
       (by have := hoffle (v + 1) (by omega); omega) (by omega)
-      (by omega) (by rw [hstLen]; omega)
+      (by omega) (by omega)
       (fun p _ hp2 => lt_of_lt_of_le (hsrc1.tgtLt p (by
         have := hsrc1.le (show v + 1 ≤ N by omega) le_rfl; omega)) (le_of_lt hNB))).frame.run
       ⟨by rw [h1v, hv], by rw [h1v, hcur],
@@ -765,7 +776,7 @@ private theorem syRow_step {B : ℕ} {nN io it qo qt dg so st : String} {N : ℕ
       (base := symOff off D v + (off (v + 1) - off v)) (F := otF)
       (L := σ2.arrs st) hnm.st_qt
       (by have := houtle (v + 1) (by omega); omega) (by omega)
-      (by omega) (by rw [hlen2, hstLen]; omega)
+      (by omega) (by rw [hlen2]; omega)
       (fun p _ hp2 => lt_of_lt_of_le (hsrc2.tgtLt p (by
         have := houtle (v + 1) (show v + 1 ≤ N by omega)
         rw [outOff_last]; omega)) (le_of_lt hNB))).frame.run
@@ -807,7 +818,7 @@ private theorem syRow_step {B : ℕ} {nN io it qo qt dg so st : String} {N : ℕ
     rw [h4a, h3A b hb, h2A b hb, h1A b hbs]
   have h4so : σ4.arrs so = (σ.arrs so).set v (symOff off D v) := by
     rw [h4a, h3A so hnm.so_st, h2A so hnm.so_st, h1so]
-  have h4stlen : (σ4.arrs st).length = 2 * arcCount D := by
+  have h4stlen : 2 * arcCount D ≤ (σ4.arrs st).length := by
     rw [h4a, hlen3, hlen2]; exact hstLen
   have h4below : ∀ p, p < symOff off D v → (σ4.arrs st).getD p 0
       = (σ.arrs st).getD p 0 := by
@@ -902,12 +913,12 @@ private theorem syMerge_spec {B : ℕ} {nN io it qo qt dg so st : String} {N : �
     Spec B
       (fun σ => σ.vars nN = N ∧ SymSrc io it N off tgt σ ∧
         SymSrc qo qt N (outOff D) otF σ ∧
-        (σ.arrs so).length = N + 1 ∧ (σ.arrs st).length = 2 * arcCount D)
+        N + 1 ≤ (σ.arrs so).length ∧ 2 * arcCount D ≤ (σ.arrs st).length)
       (syMergeCom nN io it qo qt so st)
       (fun _ σ' => σ'.vars "sy.c" = 2 * arcCount D ∧
-        (σ'.arrs so).length = N + 1 ∧
+        N + 1 ≤ (σ'.arrs so).length ∧
         (∀ i, i ≤ N → (σ'.arrs so).getD i 0 = symOff off D i) ∧
-        (σ'.arrs st).length = 2 * arcCount D ∧
+        2 * arcCount D ≤ (σ'.arrs st).length ∧
         (∀ w, w < N → SymRowAt st off tgt D otF w σ'))
       (35 * N + 36 * arcCount D + 11) := by
   obtain ⟨hnNi, hnNv, hnNc, hnNj, hnNf, hnNw⟩ := syScalars_ne hnN
@@ -1319,11 +1330,22 @@ private theorem not_mem_wvars_syMergeCom {nN io it qo qt so st y : String}
   simp [syMergeCom, syRowCom, syCopyCom, syCopyBody, Csr.scan, Com.wvars,
     h2, h3, h4, h5, h6]
 
-/-- **The whole merge pass, discharged.**  From the in-neighbour CSR of
-`D`, the three scratch allocations and the two output regions at their
-*exact* lengths, `symCom` leaves a `GraphCsr` of `D.toGraph` in
-`(so, st)` and the two figures in `(nNy, nSy)`. -/
-theorem symCom_spec {B : ℕ} {nN io it qo qt dg so st nNy nSy : String} {N : ℕ}
+/-- **The whole merge pass, discharged at a windowed output.**  From the
+in-neighbour CSR of `D`, the three scratch allocations and the two output
+regions at **at least** their extents, `symCom` leaves a `GraphCsr` of
+`D.toGraph` in the *truncation* of `(so, st)` to `(N + 1, 2·arcCount D)`,
+and the two figures in `(nNy, nSy)`.
+
+The window is the whole point.  `GraphCsr` pins both array lengths by
+equality, `store` is `List.set`, so an exact-length output demand is a
+demand on whoever allocated the arrays — and `2·arcCount D` is the
+*final* orientation's arc count, which grows with every round while a
+length cannot.  Asking only `2·arcCount D ≤ (σ.arrs st).length` lets the
+allocation be sized once, by the carrier alone, and read at its extent;
+this is exactly the move `augStInNW` already makes for the orientation
+region (`SolveAugOrient` §10) and what `SolveCoverAllJoin`'s
+`coverAllSym_srd_forces_constant` shows is *forced*. -/
+theorem symComW_spec {B : ℕ} {nN io it qo qt dg so st nNy nSy : String} {N : ℕ}
     {D : Orientation N} {off tgt : ℕ → ℕ}
     (hnm : SyNames io it qo qt dg so st) (hnN : nN ∉ syScalars)
     (hnNtp : nN ∉ tpScalars) (hyN : nNy ∉ syScalars) (hyS : nSy ∉ syScalars)
@@ -1332,9 +1354,10 @@ theorem symCom_spec {B : ℕ} {nN io it qo qt dg so st nNy nSy : String} {N : �
       (fun σ => σ.vars nN = N ∧ TrInCsr io it D (arcCount D) off tgt σ ∧
         N + 1 ≤ (σ.arrs qo).length ∧ arcCount D ≤ (σ.arrs qt).length ∧
         N ≤ (σ.arrs dg).length ∧
-        (σ.arrs so).length = N + 1 ∧ (σ.arrs st).length = 2 * arcCount D)
+        N + 1 ≤ (σ.arrs so).length ∧ 2 * arcCount D ≤ (σ.arrs st).length)
       (symCom nN io it qo qt dg so st nNy nSy)
-      (fun _ σ' => GraphCsr so st D.toGraph (2 * arcCount D) σ' ∧
+      (fun _ σ' => GraphCsr so st D.toGraph (2 * arcCount D)
+          (winA (inWs so st N (2 * arcCount D)) σ') ∧
         σ'.vars nNy = N ∧ σ'.vars nSy = 2 * arcCount D)
       (symK N (arcCount D)) := by
   obtain ⟨hnNi, hnNv, hnNc, hnNj, hnNf, hnNw⟩ := syScalars_ne hnN
@@ -1381,8 +1404,30 @@ theorem symCom_spec {B : ℕ} {nN io it qo qt dg so st nNy nSy : String} {N : �
            exact hstL⟩
   have h3n : σ3.vars nN = N := by
     rw [hfv3 _ (not_mem_wvars_syMergeCom hnN)]; exact h2n
-  have hcsr : GraphCsr so st D.toGraph (2 * arcCount D) σ3 :=
-    graphCsr_of_symRows h2in h2out h3soLen h3soV h3stLen h3rows
+  -- the output, read at its own extents
+  have hws_o : inWs so st N (2 * arcCount D) so = some (N + 1) :=
+    inWs_o so st N _
+  have hws_t : inWs so st N (2 * arcCount D) st = some (2 * arcCount D) :=
+    inWs_t (Ne.symm hnm.so_st) N _
+  have hoffle : ∀ i, i ≤ N → off i ≤ arcCount D := fun i hi => h2in.off_le_ns hi
+  have houtle : ∀ i, i ≤ N → outOff D i ≤ arcCount D := fun i hi =>
+    outOff_le_arcCount D hi
+  have hcsr : GraphCsr so st D.toGraph (2 * arcCount D)
+      (winA (inWs so st N (2 * arcCount D)) σ3) := by
+    refine graphCsr_of_symRows h2in h2out ?_ ?_ ?_ ?_
+    · rw [arrs_winA_some hws_o, List.length_take]; omega
+    · intro i hi
+      rw [arrs_winA_some hws_o, sy_getD_take (by omega)]
+      exact h3soV i hi
+    · rw [arrs_winA_some hws_t, List.length_take]; omega
+    · intro w hw
+      have hstep : off (w + 1) = off w + (D.inN ⟨w, hw⟩).card := h2in.step ⟨w, hw⟩
+      refine symRowAt_of_agree (by omega) (h3rows w hw) (fun p hp => ?_)
+      have h1 := hoffle (w + 1) (by omega)
+      have h2 := houtle (w + 1) (by omega)
+      have hb : symOff off D (w + 1) ≤ 2 * arcCount D := by
+        simp only [symOff]; omega
+      rw [arrs_winA_some hws_t, sy_getD_take (by omega)]
   -- `nNy := nN`
   obtain ⟨σ4, hσ4⟩ : ∃ τ, τ = σ3.setVar nNy N := ⟨_, rfl⟩
   have r4 : Run B (.assign nNy (.var nN)) σ3 σ4 2 := by
@@ -1399,9 +1444,41 @@ theorem symCom_spec {B : ℕ} {nN io it qo qt dg so st nNy nSy : String} {N : �
       + ((35 * N + 36 * arcCount D + 11) + (2 + 2))),
     hr1.seq (hr2.seq (hr3.seq (r4.seq r5))), ?_, ?_, ?_, ?_⟩
   · simp only [symK, tpK]; omega
-  · exact graphCsr_of_eq hcsr (by rw [h5a]) (by rw [h5a])
+  · exact graphCsr_of_eq hcsr (by simp only [arrs_winA_some hws_o, h5a])
+      (by simp only [arrs_winA_some hws_t, h5a])
   · rw [hσ5, hσ4]; simp [Ne.symm hys]
   · rw [hσ5]; simp
+
+/-- **The same pass at an exact allocation** — the landed reading,
+unchanged.  When the two output regions are handed at exactly the two
+lengths `GraphCsr` pins, the truncation is the array
+(`List.take_length`) and the windowed conclusion is the plain one. -/
+theorem symCom_spec {B : ℕ} {nN io it qo qt dg so st nNy nSy : String} {N : ℕ}
+    {D : Orientation N} {off tgt : ℕ → ℕ}
+    (hnm : SyNames io it qo qt dg so st) (hnN : nN ∉ syScalars)
+    (hnNtp : nN ∉ tpScalars) (hyN : nNy ∉ syScalars) (hyS : nSy ∉ syScalars)
+    (hys : nSy ≠ nNy) (hB : N * N < B) :
+    Spec B
+      (fun σ => σ.vars nN = N ∧ TrInCsr io it D (arcCount D) off tgt σ ∧
+        N + 1 ≤ (σ.arrs qo).length ∧ arcCount D ≤ (σ.arrs qt).length ∧
+        N ≤ (σ.arrs dg).length ∧
+        (σ.arrs so).length = N + 1 ∧ (σ.arrs st).length = 2 * arcCount D)
+      (symCom nN io it qo qt dg so st nNy nSy)
+      (fun _ σ' => GraphCsr so st D.toGraph (2 * arcCount D) σ' ∧
+        σ'.vars nNy = N ∧ σ'.vars nSy = 2 * arcCount D)
+      (symK N (arcCount D)) := by
+  refine (specArrsLength
+    (symComW_spec hnm hnN hnNtp hyN hyS hys hB (off := off) (tgt := tgt))).conseq
+      (fun σ hσ => ⟨hσ.1, hσ.2.1, hσ.2.2.1, hσ.2.2.2.1, hσ.2.2.2.2.1,
+        le_of_eq hσ.2.2.2.2.2.1.symm, le_of_eq hσ.2.2.2.2.2.2.symm⟩) ?_ le_rfl
+  rintro σ σ' ⟨-, -, -, -, -, hsoL, hstL⟩ ⟨⟨hcsr, hnNy, hnSy⟩, hlen⟩
+  have hso' : (σ'.arrs so).length = N + 1 := by rw [hlen so]; exact hsoL
+  have hst' : (σ'.arrs st).length = 2 * arcCount D := by rw [hlen st]; exact hstL
+  refine ⟨graphCsr_of_eq hcsr ?_ ?_, hnNy, hnSy⟩
+  · rw [arrs_winA_some (inWs_o so st N (2 * arcCount D)), ← hso']
+    exact List.take_length.symm
+  · rw [arrs_winA_some (inWs_t (Ne.symm hnm.so_st) N (2 * arcCount D)), ← hst']
+    exact List.take_length.symm
 
 /-! ## §10 `AugSymCsrIn`, discharged
 
@@ -2221,6 +2298,8 @@ composes with — additionally carries Lax12's endorsed
 #print axioms two_mul_arcCount_le_sq_orient
 
 #print axioms graphCsr_of_symRows
+
+#print axioms symComW_spec
 
 #print axioms symCom_spec
 

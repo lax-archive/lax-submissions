@@ -352,6 +352,93 @@ theorem augBasePeelIn_bucketPeelBuild (C : GraphClass) (hC : NowhereDense C)
   · rw [hlenT (ca j)]; exact hcaL
   · rw [hlenT (co j)]; exact hcoL
 
+/-! ## §2b The same discharge at a **parametric** base descriptor
+
+§2 *pins* `AugBasePeelIn`'s `Sbd` to its own three length clauses.  That
+is fatal to the composition and not merely inconvenient:
+`augBaseIn_of_adj_peel_orient` takes **one** `Sbd` for all three base
+passes, and `augBaseOrientIn_orCom` asks that same `Sbd` to bound
+`io`/`it`/`cn` against the arena's carrier cell — which the pinned triple
+never mentions, so a state whose carrier cell exceeds every array refutes
+it, at every choice of the six names (`coverAllBase_hSbd_unsatisfiable`,
+`SolveCoverAllJoin` §4b).
+
+The repair costs no new program and no new proof about `bucketPeelCom`:
+§2's `Smp` is already a *parameter* carried across the whole pass by a
+frame-shaped transport, so instantiating it at `Smp ∧ Sbd` carries an
+arbitrary `Sbd` through the peel as well, and the rule of consequence
+reshuffles the two conjunctions.  §2 is left exactly as it landed and
+follows from §2b at `Sbd :=` its own triple. -/
+
+open Classical in
+/-- **`AugBasePeelIn`, discharged at any base descriptor** the caller
+can (a) read the peel's three allocations off and (b) carry across the
+peel's writes.  Same program, same budget `394, 352, 64`, same
+hypothesis bundle; only `Sbd` is freed, which is what lets the three
+base passes share one.
+
+The transport `hSbd` is handed the write frame, the length clause (IMP+
+changes no length) and the scalar frame — the same three §2's own
+`hSmp`/`hSsw` get — so a descriptor made of lengths and of content in
+arrays the pass does not write rides through with nothing to prove. -/
+theorem augBasePeelInS_bucketPeelBuild (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) {n : ℕ}
+    (G : SimpleGraph (Fin n)) (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (ca co : ℕ → String) (bao baj bdg bmt bra tpO skO raY odY : ℕ → String)
+    (Sbd Smp Ssw : ℕ → Env → Prop)
+    (hq : 1 ≤ q)
+    (hnd : ∀ j, Distinct6 (bao j) (bmt j) (bra j) (bdg j) (tpO j) (skO j))
+    (hnj : ∀ j, baj j ≠ bao j ∧ baj j ≠ bmt j ∧ baj j ≠ bra j ∧ baj j ≠ bdg j ∧
+      baj j ≠ tpO j ∧ baj j ≠ skO j)
+    (hnm : ∀ j, BldNames (arenaNames j).off (arenaNames j).tgt (raY j)
+      (bao j) (baj j) (bdg j) (bmt j) (odY j))
+    (harn : ∀ (j : ℕ) (b : String), b = (arenaNames j).off ∨
+      b = (arenaNames j).tgt ∨ b = (arenaNames j).col ∨
+      b = (arenaNames j).up ∨ b = (arenaNames j).hist →
+      b ≠ bao j ∧ b ≠ baj j ∧ b ≠ bdg j ∧ b ≠ bmt j ∧ b ≠ bra j ∧
+        b ≠ tpO j ∧ b ≠ skO j)
+    (hSbdL : ∀ (j : ℕ) (σ : Env), Sbd j σ →
+      n ≤ (σ.arrs (bra j)).length ∧ n ≤ (σ.arrs (tpO j)).length ∧
+        n * n + n ≤ (σ.arrs (skO j)).length)
+    (hSbd : ∀ (j : ℕ) (σ σ' : Env), Sbd j σ →
+      (∀ b : String, b ≠ bao j → b ≠ baj j → b ≠ bdg j → b ≠ bmt j →
+        b ≠ bra j → b ≠ tpO j → b ≠ skO j → σ'.arrs b = σ.arrs b) →
+      (∀ b : String, (σ'.arrs b).length = (σ.arrs b).length) →
+      (∀ y : String, y ∉ basePeelScalars → σ'.vars y = σ.vars y) → Sbd j σ')
+    (hSmp : ∀ (j : ℕ) (σ σ' : Env), Smp j σ →
+      (∀ b : String, b ≠ bao j → b ≠ baj j → b ≠ bdg j → b ≠ bmt j →
+        b ≠ bra j → b ≠ tpO j → b ≠ skO j → σ'.arrs b = σ.arrs b) →
+      (∀ b : String, (σ'.arrs b).length = (σ.arrs b).length) →
+      (∀ y : String, y ∉ basePeelScalars → σ'.vars y = σ.vars y) → Smp j σ')
+    (hSsw : ∀ (j : ℕ) (σ σ' : Env), Ssw j σ →
+      (∀ b : String, b ≠ bao j → b ≠ baj j → b ≠ bdg j → b ≠ bmt j →
+        b ≠ bra j → b ≠ tpO j → b ≠ skO j → σ'.arrs b = σ.arrs b) →
+      (∀ b : String, (σ'.arrs b).length = (σ.arrs b).length) →
+      (∀ y : String, y ∉ basePeelScalars → σ'.vars y = σ.vars y) → Ssw j σ') :
+    AugBasePeelIn C hC φ (fun m => bucketSel m) G c w q ℓp htabF hbf Adm ca co
+      bao baj bdg bmt bra Sbd Smp Ssw
+      (fun j => .seq
+        (bucketPeelCom (bao j) (baj j) (bdg j) (bmt j) (bra j) (tpO j) (skO j)
+          (arenaNames j).nN)
+        (bldAdjCom (arenaNames j).nN (arenaNames j).nS (arenaNames j).off
+          (arenaNames j).tgt (bao j) (baj j) (bdg j) (bmt j)))
+      394 352 64 := by
+  intro x hx j hj A hAdm hbot
+  refine (augBasePeelIn_bucketPeelBuild C hC φ G c w q ℓp htabF hbf Adm ca co
+    bao baj bdg bmt bra tpO skO raY odY (fun j σ => Smp j σ ∧ Sbd j σ) Ssw hq
+    hnd hnj hnm harn ?_ hSsw x hx j hj A hAdm hbot).conseq ?_ ?_ le_rfl
+  · rintro jj σ σ' ⟨h1, h2⟩ ha hl hv
+    exact ⟨hSmp jj σ σ' h1 ha hl hv, hSbd jj σ σ' h2 ha hl hv⟩
+  · rintro σ ⟨hA, hdel, hSb, hca, hco, hSm, hSw⟩
+    exact ⟨hA, hdel, hSbdL j σ hSb, hca, hco, ⟨hSm, hSb⟩, hSw⟩
+  · rintro σ σ' - ⟨hA, hdel, hra, -, hca, hco, ⟨hSm, hSb⟩, hSw⟩
+    exact ⟨hA, hdel, hra, hSb, hca, hco, hSm, hSw⟩
+
 /-! ## §3 `AugSymCsrIn`: the arithmetic it needs, and the sizing it
 forces
 
@@ -500,6 +587,8 @@ composes — additionally carries Lax12's endorsed
 `uniformlyQuasiWide_of_nowhereDense`. -/
 
 #print axioms augBasePeelIn_bucketPeelBuild
+
+#print axioms augBasePeelInS_bucketPeelBuild
 
 #print axioms slotCount_toGraph_eq_two_mul_arcCount
 
