@@ -75,6 +75,48 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — `PeelBfsIn` discharged: the cluster sweep is a machine program end to end
+
+`peelBfsIn_bfsTurnCom` (`SolveSweepBfsRun.lean`, 2183 lines) meets `PeelBfsIn`
+**verbatim** at `(abf, bbf, cbf) = (12·R + 44, 39, 76)`. All three constants
+came out as the design predicted — no correction. Composed with
+`peelSweepIn_of_bfs` (w28), one centre's BFS carries the whole peel sweep.
+
+The induction is the content. `bfsIters_run` runs `k` passes at a *shifted*
+ball family (`BlS 0 = ∅`, `BlS (m+1) = ball H m u`), carrying both the row's
+set and the expanded prefix's; `ball_succ_frontier` is the step — expanding
+only the frontier advances exactly one radius, because the layer below had its
+neighbours pushed already. The consequences are what the caller needs: the
+marking phase leaves the row at `ball H R u` and *no more*, the plain phase at
+`ball H (2R) u` = the cluster, and the expanded set is `BlS (2R) = ball H (2R-1) u`,
+so **the final level is provably not expanded**. The level loop is
+`Run.while_potential` at `Φ σ = Σ_{v ∈ L₀.drop bf.h} (25 + 38·deg v)` — the
+frontier's own bill, dropping exactly one head term per turn.
+
+`Ssc` is instantiated at the **concrete** `BfsClean (co j) n`, with no
+allocation clause added: the clean-up runs at `min n |co|`, which is `≤ |co|`
+for free and still covers `[0,n)` because an out-of-range `getD` is `0`. That
+is the exact-length trap declined rather than paid — worth contrasting with the
+five occurrences where it had to be paid.
+
+**Two landed gaps, neither a falsity.** (i) `bfsClear_spec` **states no frame at
+all** — nothing about arrays other than `co`, not even that `co`'s length
+survives, while `SweepSt` demands `A.N + 1 ≤ |co|` back. Recovered by a new
+general lemma, **`Run.arrs_length`**: a run never changes any array's length,
+because the only array update in IMP+ is a store. That is the same fact the
+exact-length trap keeps turning on, finally stated once as a lemma — export it.
+(ii) `logPart_succ`'s `holdrow` and the clean-up's carrier range both need
+pointwise frame facts no landed lemma supplies; carried as two reference clauses
+inside the file's own `BfsRow`.
+
+**Supervisor fix at review.** The file defined `Lax3Proofs.Prog.ScanInv`, which
+collides with the landed `SolveSweepBucketRound`'s declaration of the same name
+— genuinely different objects. Invisible to the worker, which built only its own
+module; the root-module build is what catches it. Renamed to `BfsScanInv` at
+landing (5 occurrences, mechanical). **Rule for future packets: a worker whose
+gate is `lake build <its own module>` has not checked for a name collision.
+Either require the root-module build or require a file-unique prefix.**
+
 ### 2026-08-25 — the sixth `hscrLen` site, and why it is the expensive one
 
 Supervisor reading during wave 29, relayed to W34 mid-flight (new information

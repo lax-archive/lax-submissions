@@ -131,6 +131,7 @@ import Lax3Proofs.SolveSweepMdPeel
 import Lax3Proofs.SolveSweepPeel
 import Lax3Proofs.SolveSweepRun
 import Lax3Proofs.SolveSweepBfs
+import Lax3Proofs.SolveSweepBfsRun
 import Lax3Proofs.SolveSweepGroup
 import Lax3Proofs.SolveSweepBucket
 import Lax3Proofs.SolveSweepSelPeel
