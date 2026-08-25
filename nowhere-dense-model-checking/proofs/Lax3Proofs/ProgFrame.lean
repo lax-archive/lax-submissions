@@ -280,14 +280,19 @@ noncomputable def allocC {L n₀ : ℕ} {S : Setup L} {j : ℕ}
 
 open Classical in
 /-- The `bfsSupports` budget: one `chargeB0`-shaped BFS call
-(`chargeB0_total`: `2‖B₀‖ + R + 2`) plus the support materialization at
-its `(R+2)·ballNorm ≤ (R+2)·2‖B₀‖` bound (`supportsCharge_le`; the
-whole-arena bound is spent up front, the `bfsBudgetN` discipline). -/
+(`chargeB0_total`: `2‖B₀‖ + 2R + 2`) plus the support materialization at
+its `(2R+2)·ballNorm ≤ (2R+2)·2‖B₀‖` bound (`supportsCharge_le`; the
+whole-arena bound is spent up front, the `bfsBudgetN` discipline).
+
+**The radius is `2R`, not `R`** (§5 line 17; `supportsCom_specW`'s own
+note: "the frame-step discharger instantiates `2R` here, never `S.R`").
+The cluster is the wreach fibre at `2R`, so a column computed at `R`
+would not cover it, and the downward channel's fit is `hb = 2R + 1`. -/
 noncomputable def supportsC (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀)
     (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) : ACost String ℕ :=
   ACost.cost "frame.supports"
-    ((2 * Impl.gsize (preG S A π u) + S.R + 2)
-      + (S.R + 2) * (2 * Impl.gsize (preG S A π u)))
+    ((2 * Impl.gsize (preG S A π u) + 2 * S.R + 2)
+      + (2 * S.R + 2) * (2 * Impl.gsize (preG S A π u)))
 
 open Classical in
 /-- The profile charge: `Impl.profilesCharge` — `S.width` batch calls
@@ -389,8 +394,8 @@ noncomputable def centreProg (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀)
   -- one BFS from the connector on `B₀`, supports materialized (§4, D6)
   NRest.bindT (NRest.spec
       (fun DT : (Fin B₀.N → ℕ) × (Fin B₀.N → Option (List (Fin B₀.N))) =>
-        Impl.BallTable B₀.G (centreChild S A π u) S.R DT.1 ∧
-          DT.2 = Impl.bfsSupports B₀.G DT.1 S.R)
+        Impl.BallTable B₀.G (centreChild S A π u) (2 * S.R) DT.1 ∧
+          DT.2 = Impl.bfsSupports B₀.G DT.1 (2 * S.R))
       fun _ => liftACost (supportsC S j A π u)) fun _DT =>
   -- the `m + Σ_c |f c|` profile BFS calls, at `B₀` — BEFORE isolation
   NRest.bindT (NRest.spec
@@ -409,7 +414,7 @@ noncomputable def centreProg (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀)
       (liftACost (isolateC S j A htab π u))) fun _ =>
   -- the recursion slot, at the child assembled from the computed pieces
   NRest.bindT (nxProg ⟨childN S A π u, B₁.G, colC, B₁.up,
-      (A.up u, SimpleGraph.map A.up A.G) :: A.hist⟩) fun Tu =>
+      (A.up u, SimpleGraph.map A.up A.G) :: A.hist, childChan S A π u⟩) fun Tu =>
   -- the guarded scatter counts for this child (§5 lines 25–26)
   NRest.consume (NRest.returnT Tu)
     (liftACost (ACost.cost "frame.scatter" (scatterCost S j A π u Tu)))
@@ -432,7 +437,7 @@ theorem mkChild_eq (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀)
       colC,
       (((Impl.ofArena A htab).restrict (cluster S A π u)).isolate
         (Set.range (batchFn S A π u))).up,
-      (A.up u, SimpleGraph.map A.up A.G) :: A.hist⟩ : Arena (S.pal (j + 1)) n₀)
+      (A.up u, SimpleGraph.map A.up A.G) :: A.hist, childChan S A π u⟩ : Arena (S.pal (j + 1)) n₀)
       = childArena S A π u := by
   subst hcolC
   rfl

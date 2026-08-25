@@ -1,6 +1,7 @@
 import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import Lax3Proofs.RefineBfsProbe
 import Lax3Proofs.CoverCentres
+import Lax3Proofs.DriverBfsTree
 
 /-!
 # `bfs` and `bfsSupports` (E12, §4/§6.1) — the tower's BFS consumed at `B₀`
@@ -40,6 +41,12 @@ unrestricted arena — E11 established that no consumer-side statement
 delivers it.
 
 ## §2 `bfsSupports` — materializing the walk supports
+
+**Relocated to `DriverBfsTree` §1** (verbatim, same namespace and
+spelling: `BallTable`, `parents`, `descend`, `bfsSupports` and their
+specs), so that `Driver.childArena`'s downward channel can be *defined*
+by them. This section's text is kept here because §2a below prices what
+it defines. Nothing about the statements changed.
 
 §4: *"one BFS from `v` materialising the `≤ d+1` support names at every
 reached vertex"* — the data D6's `hist` channel stores. The machine gets
@@ -165,137 +172,10 @@ theorem chargeB0_total (H : SimpleGraph (Fin n)) [DecidableRel H.Adj] (d : ℕ) 
   simp [gsize]
   omega
 
-/-! ### §2 `bfsSupports`: the walk supports read off the distance array -/
-
-/-- The postcondition the tower's BFS guarantees, in ND-MC vocabulary —
-verbatim the spec of `bfsAlg_computes_ball` / `bfsAlg_computes_ball_B0`.
-This single hypothesis is E11's seam: everything below consumes the
-tower through it. -/
-def BallTable (H : SimpleGraph (Fin n)) (s : Fin n) (d : ℕ) (D : Fin n → ℕ) : Prop :=
-  ∀ v : Fin n, ∀ k ≤ d, (D v ≤ k ↔ v ∈ ball H k s)
-
-variable (H : SimpleGraph (Fin n)) [DecidableRel H.Adj]
-
-/-- The strictly-closer neighbours of `v` — the BFS-tree parent
-candidates. Nonempty at every reached vertex of positive distance
-(`parents_nonempty`). -/
-def parents (D : Fin n → ℕ) (v : Fin n) : Finset (Fin n) :=
-  Finset.univ.filter fun u => H.Adj u v ∧ D u < D v
-
-/-- **The support of one recorded walk**: from `v`, descend the distance
-gradient to the source, taking the least parent at each step. Under
-`BallTable` this list is the support of a walk of length exactly `D v`
-(`descend_spec`). -/
-def descend (D : Fin n → ℕ) (v : Fin n) : List (Fin n) :=
-  if h : (parents H D v).Nonempty then
-    v :: descend D ((parents H D v).min' h)
-  else [v]
-termination_by D v
-decreasing_by
-  exact (Finset.mem_filter.mp (Finset.min'_mem _ h)).2.2
-
-/-- **`bfsSupports`** (§4): the per-vertex support table of one BFS —
-the `≤ d+1` support names at every reached vertex, nothing beyond the
-horizon. -/
-def bfsSupports (D : Fin n → ℕ) (d : ℕ) (v : Fin n) : Option (List (Fin n)) :=
-  if D v ≤ d then some (descend H D v) else none
-
-variable {H}
-
-/-- A reached vertex of positive distance has a strictly closer
-neighbour: peel the first edge of its witness walk. -/
-theorem parents_nonempty {s : Fin n} {d : ℕ} {D : Fin n → ℕ}
-    (hD : BallTable H s d D) {v : Fin n} (hvd : D v ≤ d) (hv : 0 < D v) :
-    (parents H D v).Nonempty := by
-  obtain ⟨w, hw⟩ : WithinDist H (D v) v s :=
-    withinDist_symm (mem_ball.mp ((hD v (D v) hvd).mp le_rfl))
-  cases w with
-  | nil =>
-      have : D s ≤ 0 :=
-        (hD s 0 (Nat.zero_le d)).mpr (mem_ball_self H 0 s)
-      omega
-  | cons hadj p =>
-      rename_i u
-      have hp : p.length ≤ D v - 1 := by
-        simp only [SimpleGraph.Walk.length_cons] at hw
-        omega
-      have hu : D u ≤ D v - 1 :=
-        (hD u (D v - 1) (by omega)).mpr (mem_ball.mpr (withinDist_symm ⟨p, hp⟩))
-      exact ⟨u, Finset.mem_filter.mpr ⟨Finset.mem_univ u, hadj.symm, by omega⟩⟩
-
-/-- **The support is a walk's support** — the correctness of `descend`:
-at every reached vertex there is a walk to the source of length exactly
-`D v` whose support is precisely the recorded list. -/
-theorem descend_spec {s : Fin n} {d : ℕ} {D : Fin n → ℕ}
-    (hD : BallTable H s d D) (v : Fin n) (hvd : D v ≤ d) :
-    ∃ w : H.Walk v s, w.length = D v ∧ w.support = descend H D v := by
-  rcases Nat.eq_zero_or_pos (D v) with h0 | hpos
-  · -- the source itself: the empty walk
-    obtain ⟨w, hw⟩ : WithinDist H 0 s v := mem_ball.mp ((hD v 0 (Nat.zero_le d)).mp (le_of_eq h0))
-    cases w with
-    | nil =>
-        have hemp : ¬ (parents H D s).Nonempty := by
-          rintro ⟨u, hu⟩
-          have := (Finset.mem_filter.mp hu).2.2
-          omega
-        refine ⟨.nil, by simpa using h0.symm, ?_⟩
-        rw [SimpleGraph.Walk.support_nil, descend, dif_neg hemp]
-    | cons hadj p => simp at hw
-  · -- one step down the gradient, then the recursive walk
-    have hne := parents_nonempty hD hvd hpos
-    set u := (parents H D v).min' hne with hu
-    have hmem := (parents H D v).min'_mem hne
-    rw [← hu, parents, Finset.mem_filter] at hmem
-    obtain ⟨-, hadj, hlt⟩ := hmem
-    obtain ⟨w', hw'len, hw'sup⟩ := descend_spec hD u (by omega)
-    refine ⟨.cons hadj.symm w', ?_, ?_⟩
-    · -- the length is exactly `D v`: the walk certifies `D v ≤ D u + 1`
-      have hle : D v ≤ D u + 1 := by
-        refine (hD v (D u + 1) (by omega)).mpr (mem_ball.mpr ?_)
-        exact withinDist_symm ⟨.cons hadj.symm w', by simp [hw'len]⟩
-      simp only [SimpleGraph.Walk.length_cons, hw'len]
-      omega
-    · rw [SimpleGraph.Walk.support_cons, hw'sup]
-      conv_rhs => rw [descend]
-      rw [dif_pos hne, ← hu]
-termination_by D v
-decreasing_by exact hlt
-
-/-- The recorded list has exactly `D v + 1` names… -/
-theorem length_descend {s : Fin n} {d : ℕ} {D : Fin n → ℕ}
-    (hD : BallTable H s d D) {v : Fin n} (hv : D v ≤ d) :
-    (descend H D v).length = D v + 1 := by
-  obtain ⟨w, hwlen, hwsup⟩ := descend_spec hD v hv
-  rw [← hwsup, SimpleGraph.Walk.length_support, hwlen]
-
-/-- …which is §4's `≤ d + 1` bound. -/
-theorem length_descend_le {s : Fin n} {d : ℕ} {D : Fin n → ℕ}
-    (hD : BallTable H s d D) {v : Fin n} (hv : D v ≤ d) :
-    (descend H D v).length ≤ d + 1 := by
-  rw [length_descend hD hv]
-  omega
-
-/-- Every recorded name lies in the ball being materialized. -/
-theorem mem_descend_mem_ball {s : Fin n} {d : ℕ} {D : Fin n → ℕ}
-    (hD : BallTable H s d D) {v : Fin n} (hv : D v ≤ d) :
-    ∀ x ∈ descend H D v, x ∈ ball H d s := by
-  intro x hx
-  obtain ⟨w, hwlen, hwsup⟩ := descend_spec hD v hv
-  rw [← hwsup] at hx
-  exact mem_ball.mpr (withinDist_symm
-    (Lax3Proofs.CoverCentres.withinDist_of_mem_support w (by omega) hx).2)
-
-/-- The table row of a reached vertex is its recorded support. -/
-theorem bfsSupports_eq_some {d : ℕ} {D : Fin n → ℕ} {v : Fin n} (hv : D v ≤ d) :
-    bfsSupports H D d v = some (descend H D v) := if_pos hv
-
-/-- The table row beyond the horizon is empty. -/
-theorem bfsSupports_eq_none {d : ℕ} {D : Fin n → ℕ} {v : Fin n} (hv : ¬ D v ≤ d) :
-    bfsSupports H D d v = none := if_neg hv
 
 /-! ### §2a The charge -/
 
-variable (H)
+variable (H : SimpleGraph (Fin n)) [DecidableRel H.Adj]
 
 /-- The reached set, read off the distance array (computable; equal to
 the ball under `BallTable` — `mem_reached_iff`). -/

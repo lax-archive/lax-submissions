@@ -112,25 +112,11 @@ set). -/
 def leastParent (D : Fin N → ℕ) (v : Fin N) : ℕ :=
   if h : (parents G D v).Nonempty then ((parents G D v).min' h : ℕ) else N
 
-/-- **The stored column**: `Impl.descend`'s list at reached vertices,
-the empty list beyond the horizon. -/
-def descendCol (D : Fin N → ℕ) (d : ℕ) (v : Fin N) : List (Fin N) :=
-  if D v ≤ d then descend G D v else []
+/-! `descendCol` and its three unfolding lemmas now live in
+`DriverBfsTree` §2 (relocated verbatim, same namespace and spelling) so
+that `Driver.childArena`'s channel can be defined by them. -/
 
 variable {G}
-
-/-- The column is `Impl.bfsSupports`, cell for cell (`none` reads back
-as the empty list — the encoding `HistArr` stores). -/
-theorem descendCol_eq_bfsSupports (D : Fin N → ℕ) (d : ℕ) (v : Fin N) :
-    descendCol G D d v = (bfsSupports G D d v).getD [] := by
-  rw [descendCol, Lax3Proofs.Impl.bfsSupports]
-  by_cases h : D v ≤ d <;> simp [h]
-
-theorem descendCol_of_reached {D : Fin N → ℕ} {d : ℕ} {v : Fin N}
-    (h : D v ≤ d) : descendCol G D d v = descend G D v := if_pos h
-
-theorem descendCol_of_far {D : Fin N → ℕ} {d : ℕ} {v : Fin N}
-    (h : ¬ D v ≤ d) : descendCol G D d v = [] := if_neg h
 
 /-- Membership of the parent set, unfolded. -/
 theorem mem_parents_iff {D : Fin N → ℕ} {v u : Fin N} :
@@ -182,16 +168,6 @@ theorem leastParent_step {s : Fin N} {d : ℕ} {D : Fin N → ℕ}
   refine ⟨(parents G D v).min' hne, ?_, ?_, descend_eq_cons hne⟩
   · rw [leastParent, dif_pos hne]
   · exact (mem_parents_iff.mp ((parents G D v).min'_mem hne)).2
-
-/-- Length cells fit the schedule bound (`mcB` routing: `≤ d + 1`). -/
-theorem descendCol_length_le {s : Fin N} {d : ℕ} {D : Fin N → ℕ}
-    (hD : BallTable G s d D) (v : Fin N) :
-    (descendCol G D d v).length ≤ d + 1 := by
-  rw [descendCol]
-  split
-  · rw [length_descend hD ‹_›]
-    omega
-  · simp
 
 end Abstract
 
