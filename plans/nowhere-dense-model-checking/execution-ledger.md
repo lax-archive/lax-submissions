@@ -75,6 +75,29 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — wave 29 dispatched: the seam's five siblings, the prep composition, and F7 opens
+
+Worktree `w29` off `45bec3b`, three leaves, file ownership disjoint and stated
+in every packet (two siblings are still running in `w28` on `SolveAugSymMerge`
+and `SolveSweepBfsRun`, so *five* workers now share no file).
+
+- **W34 — the five `hscrLen` sites.** Owns the six landed files that still
+  demand the length-only clause. Ownership is exclusive because these are
+  *landed* files; the packet's hard constraint is that **every landed name keeps
+  its current meaning** (restate beside, do not rewrite), because W36 is
+  building on `solveSpec_of_chain` and `KsChargeBridge` as they stand.
+- **W35 — `ChildLoadPartsAll`.** New files only (`SolveMachPrepComp*`). Targets
+  the *strengthened* `ChildLoadPartsScrAll`, which weakens back, so one discharge
+  serves both routes. Packet carries the exact-length trap and the IMP+ limits
+  (no length primitive, no disequality) up front, because item (d) of its gap
+  list — `bi` at length **exactly** `S.width` — is that trap for the sixth time.
+- **W36 — F7-a.** New file only (`SolveF7Adm*`). Pins `Adm` and `KB`. Separable
+  from residual 1 because it needs only the *statements* of `FrameStep` and
+  `KsChargeBridge`. Packet asks it to check `KB`-vs-`KsChargeBridge` term by
+  term and to report a term with no column rather than adjust `frameK`, and
+  hands it the `⊥`-branch fact from today's F5b entry so it does not rediscover
+  that the node→root step is not monotonicity.
+
 ### 2026-08-25 — F5b's dropped degree clause, and a second hole the audit missed
 
 `ProgCoverChargeDeg.lean` (743 lines) repairs the export F5b proved and threw
