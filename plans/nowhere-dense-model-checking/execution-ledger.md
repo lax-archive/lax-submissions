@@ -75,6 +75,22 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — w30 dispatched: `CovPeelIn` is composable for the first time
+
+Both halves of the peel are now in one tree, and the chain
+`peelBfsIn_bfsTurnCom` → `peelSweepIn_of_bfs` → `covPeelIn_of_sweep_group`
+(with `peelGroupIn_grCom` on the grouping side) has no missing link. Dispatched
+as a composition leaf in a fresh worktree off `94f706e`, with two deliverables:
+`CovPeelIn` discharged at an explicit numeric budget, and an honest account of
+how far that reaches toward `CovSweepIn` — a precisely pinned gap being a
+first-class result rather than a failure.
+
+The packet carries the summed-budget check against `peelK_le_coverCFSel_total`
+explicitly, because this is the exact place the `86·N²` peel broke the headline
+once already, and it carries the new naming rule from today's landing failure:
+**build the root module, not just your own, or a name collision surfaces to the
+supervisor instead of to you.**
+
 ### 2026-08-25 — `PeelBfsIn` discharged: the cluster sweep is a machine program end to end
 
 `peelBfsIn_bfsTurnCom` (`SolveSweepBfsRun.lean`, 2183 lines) meets `PeelBfsIn`
