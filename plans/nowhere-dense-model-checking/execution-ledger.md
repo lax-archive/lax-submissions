@@ -75,6 +75,122 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — the cover sweep closes, and a live quadratic is retired
+
+W37, `SolveSweepClose.lean` (944 lines). `sweepClose_covPeelIn` concludes
+`CovPeelIn` **verbatim** at `peelK (12·R + 239) 154 76` on a concrete program,
+chaining `peelBfsIn_bfsTurnCom` → `peelSweepIn_of_bfs` →
+`covPeelIn_of_sweep_group` with `peelGroupIn_grCom`:
+`(12R+44, 39, 76) → (12R+86, 93, 76) → +(153, 61, 0)`. `hR : 1 ≤ R` is not a
+hypothesis — it is `Setup.one_le_R`. **And nothing stood between `CovPeelIn` and
+`CovSweepIn`**: the missing half is `CovAdjBuildIn`, which `covAdjBuildIn_bldCom`
+already supplies, so `sweepClose_covSweepIn` concludes `CovSweepIn` verbatim at
+`peelK (12·R + 362) 154 192`.
+
+**The latent quadratic, found and retired.** The build pass's
+`bldK A.N ns = 93·N + 58·ns + 30` charges `ns`, the arena's **degree sum** —
+`Θ(A.N²)` on a dense arena, and the one figure in the cover sweep outside
+`peelK`'s currency. Nothing landed had folded it in. `sweepClose_bldK_le_peelK`
+retires it: `sum_induced_deg_le_two_sum_dlt` at `s = univ, H = G` gives
+`Σ_v deg v ≤ 2·Σ_v d_<(v)`, and `self_mem_cluster` gives `Σ_v d_<(v) ≤
+peelEdgeWork`, so `bldK ≤ peelK 123 0 116`. **This is the third time a term in a
+different currency has hidden a quadratic** (after w23's `86N²` and the
+`AdjSortIn` entry sort), and the second time it survived a supervisor cost
+review. Rule: a budget term whose argument is not `A.N`, a cluster mass, or a
+`peelK`-shaped figure is unconverted until a lemma says otherwise.
+
+Budget columns: `sweepClose_covPeelIn_budget_le` gives `12·R + 469` against
+`chargeTotal (coverCFSel …)` via `peelK_le_coverCFSel_total`; the whole sweep is
+`12·R + 708`. Per node only — the node→root step was explicitly out of scope.
+
+**Finding — `covPeelIn_of_sweep_group` is not composable with its own two
+dischargers.** Its docstring says the sweep's postcondition *is* the grouping's
+precondition, "the same six conjuncts in the same order". True of the five named
+conjuncts; the sixth is the `Sgr` parameter, and `peelSweepIn_of_bfs` (which
+fixes it to its own pre-descriptor) and `peelGroupIn_grCom` (which fixes it to
+four allocation clauses about `cm/sb/cnt/cur`) instantiate it incompatibly. Not
+false — unusable. Fixed additively: the four clauses are length-only, and an
+IMP+ run never moves an array's length, so any length-stable invariant rides
+through a `PeelSweepIn` for free (`sweepClose_peelSweepIn_conj`), plus the
+contravariant precondition monotonicity `PeelGroupIn` has because `Sgr` occurs
+only in its precondition.
+
+Also recorded: an interface asymmetry — `peelSweepIn_of_bfs`'s `hSsc` includes a
+full array-length-preservation clause while `covAdjBuildIn_bldCom`'s `hSpl` does
+not, so a length-only descriptor rides the sweep free but needs seven extra name
+disequalities to ride the build. Cheap to fix if anyone touches those statements.
+
+**The integration audit that came with it is the most useful part.** Walking the
+path from `CovSweepIn` to `CoverAllIn`, exactly two predicates were concluded by
+no theorem in the tree: `AugRoundIn` and `AugSymCsrIn` — and W37's worktree
+predates W26's landing by one commit, so `AugSymCsrIn` is in fact discharged.
+**`AugRoundIn` is the only one left.** Dispatched as w31 immediately.
+
+### 2026-08-25 — F7-a: `Adm` and `KB` pinned, and `frameK` cannot be the pin
+
+W36, `SolveF7Adm.lean` (736 lines).
+
+`chainAdm S G₀ j A := prepAdm S j A ∧ (j ≤ S.depth → Inv S G₀ j A)`. The
+`j ≤ S.depth` guard is load-bearing: `centreStep_of_prep_read`'s `hAdmChild`
+asks for the child step at **every** `j` with no side condition, while
+`inv_child` needs `1 + j·(2R+1) ≤ S.width`, which `mkSetup_width_le` supplies
+only below the leaf level; under the guard the step goes through at every `j`
+(below the leaf the width is available, above it the conclusion is vacuous).
+`prepAdm` stays unguarded because `RoundPin` is, and it costs nothing —
+`Inv`'s first two clauses *are* `prepAdm`. Root, child (at the child the frame
+step actually forms), and the fuel-`0` edgeless guard are all concrete theorems.
+Anti-vacuity is proved at a stronger statement than asked: `chainAdm_of_memTree`
+shows **every arena the driver's run tree visits** is admissible, and
+`chainAdm_prepPins` exhibits the whole `PrepPins` bundle at it, so conjoining
+`Inv` loses the prep segment nothing.
+
+`chainKB` is structural recursion on the fuel index — Lean accepts it with no
+`termination_by`, the recursive occurrence under the `nxK` lambda being the same
+shape as the landed `driverChargeMS`. Both landed `hKB` obligations close by
+`le_rfl` and are then run end to end through `botBlock_spec` and
+`blockSpec_leaf_guard`, so the fit is typechecked rather than shape-matched.
+
+**Finding 1 — `frameK` cannot be `KB (k+1) j ·`, under any instantiation.**
+`blockSpec_leaf_guard`'s `hKB` demands
+`4 + max (botComK A.N …) (KElse A) ≤ KB (k+1) j A` at **every** `A`, edgeless
+ones included, because `Spec.ite` pays the max before the test runs; `frameK`
+returns exactly `botComK A.N …` on `A.G = ⊥`, short by at least 4, for any
+`Kcov`, `Kglue`, `nxK`, `KElse`. Verified independently at review against both
+objects. Hence `frameElseK` (the else branch, unconditional), with
+`frameK_eq_frameElseK_of_ne_bot` and `frameK_le_chainKB`. `SolveChain` §7's own
+docstring anticipated that a mismatch here would be "a finding about *this
+section*, not about the chain" — which is exactly what it is.
+
+**Finding 2 — the `⊥` branch again, and this one costs the bridge a lemma.**
+Even the corrected pin fails `frameStepAll_of_cover_prep_read`'s `hKB`, whose
+`centreKC` slot holds `KB k (j+1) (childArena …)` **structurally** at every `A`.
+`KP`/`KR`/`Kcov` are free on `⊥` arenas (their contracts all carry `¬ A.G = ⊥`)
+so a discharger could zero those, but not the recursive slot. So the landed glue
+forces `KB` to pay a whole frame's recursion at edgeless nodes, while
+`frameChargeMS` pays only `botC` there and **stops recursing** — `chainKB`
+traverses strictly more nodes than `driverChargeMS`. Chargeable, not fatal: §10
+supplies `childN_eq_one_of_bot` (below an edgeless node every cluster is `{u}`)
+and `childArena_G_eq_bot_of_bot` (that child is again edgeless), so the excess
+is `N` chains of `≤ S.depth` one-vertex edgeless arenas against a `botC` charge
+of `(1+|ℱ_j|)·N` at that node. The bridge needs `chainKB` at an edgeless arena
+`≤ K·(A.N+1)`, hence `Kcov` and `Kglue` in `O(A.N+1)` at every node. **`Adm`
+cannot help here** — the mismatch is between two recursions, not a missing
+hypothesis.
+
+**The term-by-term `KsChargeBridge` verdict**: every `chainKB` term has a ledger
+column. `restrictK` exact at `hbf = fun _ => 2R+1`; `bfsK` *and* `supportsK` both
+into the single supports column; `profilesK` an exact two-term match; `isolateK`
+matched modulo one seam the bridge must check; `centreScatterK` at identical
+index sets but needing slack, because at `σ.t = 0` `greedyScatterCost` is `0`
+while `scatterK N ns r 0 = 41N + 24`; `Kcov` per node via
+`peelK_le_coverCFSel_total`; `botComK` with additive per-node slack. Two things
+remain beyond bookkeeping: the `⊥`-node excess and that scatter slack.
+
+Cost envelope clean: worst term `A.N · c(j)` with `c(j)` free of `n`; the
+structural terms are exactly `Σ_u (|X_u| + degSum + ns_u)`, §7's own shape. The
+only `N²` in the chain is `n₀·n₀ < B`, a machine word-width requirement, not a
+time charge.
+
 ### 2026-08-25 — `hscrLen` is gone from all five remaining sites, and the landed closure is retired
 
 W34, seven files, no landed statement edited in place — verified, not taken on

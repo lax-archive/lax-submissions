@@ -120,6 +120,7 @@ import Lax3Proofs.SolveMachRead
 import Lax3Proofs.SolveMachReadRun
 import Lax3Proofs.SolveMachPrepRun
 import Lax3Proofs.SolveMachPrepPins
+import Lax3Proofs.SolveF7Adm
 import Lax3Proofs.SolveMachPrepBatch
 import Lax3Proofs.SolveMachPrepCol
 import Lax3Proofs.SolveMachPrepAll
@@ -139,6 +140,7 @@ import Lax3Proofs.SolveSweepSelPeel
 import Lax3Proofs.SolveSweepBucketProg
 import Lax3Proofs.SolveSweepBucketRound
 import Lax3Proofs.SolveSweepOrder
+import Lax3Proofs.SolveSweepClose
 import Lax3Proofs.SolveAugFrat
 import Lax3Proofs.SolveAugFratCom
 import Lax3Proofs.SolveAugFratPeel
