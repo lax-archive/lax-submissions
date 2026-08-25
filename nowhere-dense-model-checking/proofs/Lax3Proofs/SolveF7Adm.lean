@@ -649,7 +649,51 @@ theorem chainKB_frameStep_hKB (S : Setup L) (ord : CoverSpec.OrderingRoutine)
   have hg := hglue k j A
   omega
 
-/-! ## §10 Axiom profile -/
+/-! ## §10 What the pinned `KB` costs below an edgeless node
+
+`ProgCharge.frameChargeMS` places the cover vector and the per-centre
+sum **only on the `A.G ≠ ⊥` branch**: an edgeless node pays `botC` and
+the ledger's recursion stops there. The pinned `KB` cannot stop —
+`frameStepAll_of_cover_prep_read`'s `hKB` holds `KB k (j+1) (childArena
+…)` structurally, at every `A` — so `chainKB` descends below edgeless
+nodes where `driverChargeMS` does not, and the `KsChargeBridge`
+discharger owes a bound on those extra subtrees.
+
+The two facts that make that bound routine: below an edgeless node
+every cluster is a singleton, so every child carries **one** vertex and
+is itself edgeless. The whole subtree below an edgeless node of carrier
+`N` is therefore `N` chains of `≤ S.depth` one-vertex arenas, whose
+per-level budgets are setup constants — against a `botC` of
+`(1 + |ℱ_j|)·N` at the node itself. -/
+
+theorem childN_eq_one_of_bot (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
+    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) (hbot : A.G = ⊥) :
+    childN S A π u = 1 := by
+  rw [childN, cluster_eq_singleton_of_isolated S A π
+    (fun z hz => by simp [hbot] at hz), Set.ncard_singleton]
+
+theorem preG_eq_bot_of_bot (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
+    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) (hbot : A.G = ⊥) :
+    preG S A π u = ⊥ := by
+  ext a b
+  simp [preG, hbot]
+
+/-- **The child of an edgeless node is edgeless** — so the pinned `KB`'s
+descent below such a node stays inside one-vertex, edgeless arenas all
+the way to the leaf level. -/
+theorem childArena_G_eq_bot_of_bot (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
+    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) (hbot : A.G = ⊥) :
+    (childArena S A π u).G = ⊥ := by
+  have hpre := preG_eq_bot_of_bot S A π u hbot
+  ext a b
+  rw [childArena_G, hpre]
+  constructor
+  · rintro ⟨h, -, -⟩
+    exact h
+  · intro h
+    exact h.elim
+
+/-! ## §11 Axiom profile -/
 
 #print axioms chainAdm_root
 #print axioms chainAdm_child
@@ -680,5 +724,8 @@ theorem chainKB_frameStep_hKB (S : Setup L) (ord : CoverSpec.OrderingRoutine)
 #print axioms chainKB_blockSpec_leaf_guard
 #print axioms centreK_add_nxK
 #print axioms chainKB_frameStep_hKB
+#print axioms childN_eq_one_of_bot
+#print axioms preG_eq_bot_of_bot
+#print axioms childArena_G_eq_bot_of_bot
 
 end Lax3Proofs.Prog
