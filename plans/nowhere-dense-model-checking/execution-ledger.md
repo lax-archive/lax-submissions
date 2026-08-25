@@ -75,6 +75,80 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-26 — F7-c closes the last mile, and finds three defects between `SolveSpec` and the axiom
+
+`f7close_modelChecking` (`SolveF7Close.lean`, with `SolveF7CloseQ` and
+`SolveF7CloseCompose`) concludes `F7Goal`, and `F7Goal` is checked to be the
+endorsed axiom's type **on the nose**:
+
+```lean
+example : F7Goal := Lax3.ModelChecking.exists_almostLinearTime_program_modelChecking
+```
+
+An `example`, so no declaration depends on the axiom, and it is the only mention
+of it — it elaborates only if the two `Prop`s are defeq. Nothing weakened:
+exponent `1+ε`, the axiom's set-builder verbatim, the side condition per-`(n,G,w)`
+inside.
+
+**Every constraint on `q`, collected and discharged** (`SolveF7CloseQ.lean`),
+`f7q = 1 + f7qPrep + f7qB + (3K+2)`: the input/fit bound (free); `PrepWB` at
+`B = mcB q x`, discharged in full; `solveSpec_closed_scr`'s `hB`, whose
+`2^{pal ℓ}·(Kq+1)` term **makes `q` a tower in the quantifier rank** — harmless,
+because `q` reaches the axiom only through `c`, never the exponent; and
+`ardWordBound_of_inDegLE`'s `q ≥ 3K+2`, with `f7_exists_selChain_inDegLE_sq`
+producing both halves at once at `δ' = 1/(2·16^R)` and
+`K = ⌈((3c₀+5)^{16^R})²⌉₊ + 4^{16^R}` (the second summand is what handles `m = 0`).
+`R` is fixed before `δ'`, so no circularity. Every other `< mcB q x` obligation in
+landed files was swept and reduces to `1 ≤ q` or routes through
+`ArdWord`/`PrepWB`/`hB`. The list is complete.
+
+**Three defects, all between `SolveSpec` and the axiom, none previously visible.**
+
+1. **`KsChargeBridge`'s quantifier order is wrong for F7** — genuinely, not
+cosmetically. It puts `∃ cB` *inside* the fixed `(n,G,c,w)`. The axiom's `T` is
+fixed **before** `n` and `G`, and an encoding `x` determines its own `(n,G)`, so a
+per-graph family `{cB(n,G)}` cannot be uniformized after the fact and yields no
+`T` at all. `F7Bridge` is the same statement with `cB` — and the cover constant
+`cf`, which the landed charge theorem *produces* — pulled out front, and
+`ksChargeBridge_of_f7Bridge` proves it implies the landed obligation at every
+instance. **This lands on the bridge discharged hours earlier**, but should be
+cheap there: `b7Cb`'s figures read only `S.R`, `S.width`, `S.pal`, `S.depth`,
+`ℓp` and the level families — no carrier and no input word — so the constant is
+already uniform in `(n, G)` and only the statement's binder order has to move.
+
+2. **`solveSpec_closed_scr`'s budget mentions `G`** — `fun x => matK x + (Krl x +
+(KB ℓ 0 (rootArena G col) + …))` is not a function of the word alone, so it
+cannot be `ProgCodegen.mcK`'s `Ks`. Repaired rather than weakened by
+`f7_solveSpec_mono_Ks` (a lift of `Spec.mono`), at the cost of one hypothesis
+`hdom` that the ledger bridge has to prove in the same place anyway.
+
+3. **`hokS` is unsatisfiable for the real pipeline as `mcLayout` stands.**
+`mcLayout eS eA` hard-codes `temps = 2` (`f7_mcLayout_temps`, by `rfl`), while
+`Expr.Ok` charges one temporary per level of **left** nesting and
+`bcExpr (.and b c) = .mul (bcExpr b) (bcExpr c)` nests left — so three nested
+conjunctions already need `temps ≥ 3`. Machine-checked witness:
+`f7_bcExpr_not_ok_at_mcLayout` proves `¬ Expr.Ok (mcLayout eS eA) (bcExpr av
+(.and (.and (.and .tru .tru) .tru) .tru)) 0` for **every** `eS`, `eA`, `av`.
+Two landed docstrings assume F7 can raise `temps` — `ProgCodegenLayout`'s ("a
+bigger `temps` only shifts the constant in `hspan`") and `SolveMatTop`'s ("F7
+instantiates the layout with `temps ≥` the compiled combination's depth") — but
+`mcLayout` has no such argument. The repair is one parameter on landed
+definitions: `mcLayout eS eA t`, `hspan` becoming `9 + t + |eS| + (2+|eA|)·q ≤ c`
+(the literal `11` is `2` temps plus `9` parse scalars), `parseCom_ok` needing
+`2 ≤ t`, `mcCom_ok`'s epilogue `0 < t`. `Layout.const = 3·idxLen + 13` counts
+**arrays**, so the machine constant and the time bound are untouched. Not made
+here — those are landed files — and everything else in F7-c transports to the
+parametric version verbatim.
+
+The worker also hit the warned-about failure mode during development: an
+elaboration error leaked `sorryAx` into three theorems in a file with no literal
+`sorry`, caught only by `#print axioms`. Third occurrence today; the gate rule
+holds.
+
+Elaboration 4.8 / 3.7 / 3.7 s. `SolveF7Close.lean` adds `import Lax3.ModelChecking`
+— the first time the proofs package imports the concept module, used only by the
+verbatim-check `example`.
+
 ### 2026-08-26 — `KsChargeBridge` DISCHARGED: F7-b closes, and the two audit gaps are proved
 
 `b7_KsChargeBridge` (`SolveF7Bridge.lean`, 1179 lines + `SolveF7BridgeCover.lean`,
