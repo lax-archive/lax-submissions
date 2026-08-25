@@ -139,6 +139,7 @@ import Lax3Proofs.SolveAugEmitCom
 import Lax3Proofs.SolveAugCompose
 import Lax3Proofs.SolveAugFrameProg
 import Lax3Proofs.SolveAugBaseFrame
+import Lax3Proofs.SolveAugOrient
 
 -- The proofs package of submission Lax3.
 --
