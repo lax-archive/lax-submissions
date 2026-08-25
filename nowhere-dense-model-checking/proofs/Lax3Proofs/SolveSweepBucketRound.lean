@@ -938,4 +938,1290 @@ theorem transCom_spec {ao aj mt tp : String}
     rw [← hlen, ← mRow]
     exact hrows z
 
+/-! ## §5 Zeroing, and the bucket build
+
+The bucket tops start at zero, and the stacks are filled by one
+downward scan of the carrier: pushing at the head with `u` descending
+leaves each bucket **ascending**, which is exactly `bInit`'s
+`(finRange N).filter`. -/
+
+/-- Fill an array's first `N` cells with zero. -/
+def bkZeroCom (a : String) : Com :=
+  .seq (.assign "bk.i" (.lit 0))
+    (.while (.lt (.var "bk.i") (.var "bk.n"))
+      (.seq (.store a (.var "bk.i") (.lit 0))
+        (.assign "bk.i" (.add (.var "bk.i") (.lit 1)))))
+
+theorem bkZeroCom_spec {a : String} {B N : ℕ} (hNB : N < B) :
+    Spec B (fun σ => σ.vars "bk.n" = N ∧ N ≤ (σ.arrs a).length)
+      (bkZeroCom a)
+      (fun _ σ' => σ'.vars "bk.n" = N ∧ N ≤ (σ'.arrs a).length ∧
+        ∀ i, i < N → (σ'.arrs a).getD i 0 = 0)
+      (11 * N + 6) := by
+  refine (Spec.forRangeZero "bk.i" "bk.n"
+    (fun σ => σ.vars "bk.n" = N ∧ N ≤ (σ.arrs a).length ∧ σ.vars "bk.i" ≤ N ∧
+      ∀ i, i < σ.vars "bk.i" → (σ.arrs a).getD i 0 = 0) N 7 hNB
+    (fun _ hI => hI.2.2.1) (fun _ hI => hI.1) ?_).conseq ?_ ?_ (by omega)
+  · rintro σ ⟨⟨hnn, hlen, hix, hfill⟩, hlt⟩
+    run_vcg
+    refine ⟨⟨?_, ?_, ?_, ?_⟩, ?_⟩
+    · simpa using hnn
+    · simpa using hlen
+    · simp only [vars_setVar, vars_setArr, eq_self_iff_true, if_true]; omega
+    · simp only [vars_setVar, vars_setArr, arrs_setVar, arrs_setArr,
+        eq_self_iff_true, if_true]
+      intro i hi
+      by_cases hie : i = σ.vars "bk.i"
+      · rw [hie]; exact getD_set_self (by omega)
+      · rw [getD_set_of_ne hie]; exact hfill i (by omega)
+    · simp
+  · rintro σ ⟨hnn, hlen⟩
+    refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [hnn, hlen]
+  · rintro σ σ' - ⟨⟨hnn, hlen, -, hfill⟩, hix⟩
+    exact ⟨hnn, hlen, fun i hi => hfill i (by omega)⟩
+
+/-- The part of the carrier from `I` up that a predicate keeps. -/
+def tailFilter (q : ℕ → Bool) (I N : ℕ) : List ℕ := (List.range' I (N - I)).filter q
+
+theorem tailFilter_self (q : ℕ → Bool) (N : ℕ) : tailFilter q N N = [] := by
+  simp [tailFilter]
+
+theorem tailFilter_zero (q : ℕ → Bool) (N : ℕ) :
+    tailFilter q 0 N = (List.range N).filter q := by
+  rw [tailFilter, List.range_eq_range']
+  simp
+
+theorem tailFilter_succ (q : ℕ → Bool) {I N : ℕ} (hI : I < N) :
+    tailFilter q I N = (if q I = true then [I] else []) ++ tailFilter q (I + 1) N := by
+  have h : N - I = (N - (I + 1)) + 1 := by omega
+  rw [tailFilter, tailFilter, h, List.range'_succ, List.filter_cons]
+  by_cases hq : q I = true <;> simp [hq]
+
+theorem tailFilter_length_le (q : ℕ → Bool) (I N : ℕ) :
+    (tailFilter q I N).length ≤ N - I := by
+  rw [tailFilter]
+  refine le_trans (List.length_filter_le _ _) ?_
+  rw [List.length_range']
+
+/-- Filtering commutes with a map along the predicate's factorisation. -/
+theorem map_filter_comp {α β : Type} (f : α → β) (p : β → Bool) (l : List α) :
+    (l.filter (fun a => p (f a))).map f = (l.map f).filter p := by
+  induction l with
+  | nil => rfl
+  | cons a t ih =>
+      by_cases h : p (f a) <;> simp [h, ih]
+
+/-- A bucket of the replay, read as a list of indices — the shape the
+machine's stack has. -/
+noncomputable def bktV {N : ℕ} (st : BState N) (d : ℕ) : List ℕ := (st.bkt d).map Fin.val
+
+/-- **The initial buckets, as index lists.** -/
+theorem bktV_bInit {N : ℕ} (F : SimpleGraph (Fin N)) (q : ℕ → Bool) (d : ℕ)
+    (hq : ∀ u : Fin N, q (u : ℕ) = decide ((nbrsIn F Finset.univ u).card = d)) :
+    bktV (bInit F) d = (List.range N).filter q := by
+  rw [bktV, bInit_bkt]
+  rw [show (fun u : Fin N => decide ((nbrsIn F Finset.univ u).card = d))
+      = (fun u : Fin N => q (u : ℕ)) from funext fun u => (hq u).symm]
+  rw [map_filter_comp Fin.val q (List.finRange N), List.map_coe_finRange_eq_range]
+
+/-- One turn of the bucket build: push the next vertex, downward, at the
+head of its degree's stack. -/
+def bkBuildBody (dg tp sk : String) : Com :=
+  .seq (.assign "bk.i" (.sub (.var "bk.i") (.lit 1)))
+  (.seq (.assign "bk.d" (.get dg (.var "bk.i")))
+  (.seq (.store sk (.add (.mul (.var "bk.d") (.var "bk.n")) (.get tp (.var "bk.d")))
+          (.var "bk.i"))
+        (.store tp (.var "bk.d") (.add (.get tp (.var "bk.d")) (.lit 1)))))
+
+/-- **The bucket build.** -/
+def bkBuildCom (dg tp sk : String) : Com :=
+  .seq (.assign "bk.i" (.var "bk.n"))
+    (.while (.lt (.lit 0) (.var "bk.i")) (bkBuildBody dg tp sk))
+
+/-- The build's invariant: each stack holds the vertices at or above the
+counter of that degree, ascending. -/
+def BInvB (dg tp sk : String) (N : ℕ) (σ : Env) : Prop :=
+  σ.vars "bk.n" = N ∧ σ.vars "bk.i" ≤ N ∧
+  N ≤ (σ.arrs dg).length ∧ N ≤ (σ.arrs tp).length ∧ N * N + N ≤ (σ.arrs sk).length ∧
+  (∀ x, x < N → (σ.arrs dg).getD x 0 < N) ∧
+  ∀ d, d < N → mLst tp sk N σ d
+    = tailFilter (fun x => decide ((σ.arrs dg).getD x 0 = d)) (σ.vars "bk.i") N
+
+/-- Two stacks never share a cell: distinct blocks of width `N`. -/
+theorem block_ne {N d d' i t : ℕ} (hne : d' ≠ d) (hi : i < N) (ht : t < N) :
+    d' * N + i ≠ d * N + t := by
+  rcases lt_trichotomy d' d with h | h | h
+  · have h1 : (d' + 1) * N ≤ d * N := Nat.mul_le_mul_right N h
+    have h2 : (d' + 1) * N = d' * N + N := by ring
+    omega
+  · exact absurd h hne
+  · have h1 : (d + 1) * N ≤ d' * N := Nat.mul_le_mul_right N h
+    have h2 : (d + 1) * N = d * N + N := by ring
+    omega
+
+set_option maxHeartbeats 1000000 in
+/-- **One turn of the bucket build.** -/
+theorem bkBuildBody_spec {dg tp sk : String}
+    (hts : tp ≠ sk) (hst : sk ≠ tp) (hdt : dg ≠ tp) (hds : dg ≠ sk)
+    {B N : ℕ} (hB : N + N * N + 1 < B) :
+    Spec B (fun σ => BInvB dg tp sk N σ ∧ 0 < σ.vars "bk.i")
+      (bkBuildBody dg tp sk)
+      (fun σ σ' => BInvB dg tp sk N σ' ∧ σ'.vars "bk.i" < σ.vars "bk.i") 21 := by
+  classical
+  rintro σ ⟨⟨hn, hile, hdglen, htplen, hsklen, hdgb, hbkt⟩, hipos⟩
+  set I : ℕ := σ.vars "bk.i" with hI
+  have hxN : I - 1 < N := by omega
+  set d : ℕ := (σ.arrs dg).getD (I - 1) 0 with hd
+  have hdN : d < N := hdgb _ hxN
+  have htpb : ∀ e, e < N → (σ.arrs tp).getD e 0 ≤ N - I := by
+    intro e he
+    have h := hbkt e he
+    have hlen : (σ.arrs tp).getD e 0 = (mLst tp sk N σ e).length := mLst_length.symm
+    rw [hlen, h]
+    exact tailFilter_length_le _ _ _
+  have htpd : (σ.arrs tp).getD d 0 ≤ N - I := htpb d hdN
+  have htpdN : (σ.arrs tp).getD d 0 < N := by omega
+  have hidx : d * N + (σ.arrs tp).getD d 0 < N * N := by
+    have h1 : (d + 1) * N ≤ N * N := Nat.mul_le_mul_right N (by omega)
+    have h2 : (d + 1) * N = d * N + N := by ring
+    omega
+  have hdB : d < B := by omega
+  have hidxB : d * N + (σ.arrs tp).getD d 0 < B := by omega
+  run_vcg
+  all_goals simp only [vars_setVar, vars_setArr, arrs_setVar, arrs_setArr,
+    String.reduceEq, reduceIte, if_neg hts, if_neg hst,
+    if_neg hdt, if_neg hds, ← hI, ← hd, hn, List.length_set]
+  all_goals try omega
+  refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+  · simp only [vars_setVar, vars_setArr, String.reduceEq, reduceIte]; exact hn
+  · simp only [vars_setVar, vars_setArr, String.reduceEq, reduceIte]; omega
+  · simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte,
+      if_neg hdt, if_neg hds]
+    exact hdglen
+  · simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte, if_neg hts,
+      List.length_set]
+    exact htplen
+  · simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte, if_neg hst,
+      List.length_set]
+    exact hsklen
+  · simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte,
+      if_neg hdt, if_neg hds]
+    exact hdgb
+  · intro d' hd'
+    simp only [vars_setVar, vars_setArr, arrs_setVar, arrs_setArr, String.reduceEq,
+      reduceIte, if_neg hdt, if_neg hds]
+    by_cases hdd : d' = d
+    · rw [hdd]
+      have hstep : mLst tp sk N
+          ((((σ.setVar "bk.i" (I - 1)).setVar "bk.d" d).setArr sk
+            (d * N + (σ.arrs tp).getD d 0) (I - 1)).setArr tp d
+            ((σ.arrs tp).getD d 0 + 1)) d
+          = (I - 1) :: mLst tp sk N σ d := by
+        refine mLst_push ?_ ?_ ?_
+        · simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte, if_neg hts]
+          exact getD_set_self (by omega)
+        · intro i hi
+          simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte, if_neg hst]
+          exact getD_set_of_ne (by omega)
+        · simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte, if_neg hst]
+          exact getD_set_self (by omega)
+      rw [hstep, hbkt d hdN, tailFilter_succ _ (show I - 1 < N by omega),
+        if_pos (by rw [← hd]; simp)]
+      simp only [List.cons_append, List.nil_append]
+      congr 2
+      omega
+    · have hstep : mLst tp sk N
+          ((((σ.setVar "bk.i" (I - 1)).setVar "bk.d" d).setArr sk
+            (d * N + (σ.arrs tp).getD d 0) (I - 1)).setArr tp d
+            ((σ.arrs tp).getD d 0 + 1)) d'
+          = mLst tp sk N σ d' := by
+        refine mLst_frame ?_ ?_
+        · simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte, if_neg hts]
+          exact getD_set_of_ne hdd
+        · intro i hi
+          simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte, if_neg hst]
+          refine getD_set_of_ne (block_ne hdd ?_ htpdN)
+          have := htpb d' hd'
+          omega
+      rw [hstep, hbkt d' hd', tailFilter_succ _ (show I - 1 < N by omega),
+        if_neg (by rw [← hd]; simp; omega)]
+      simp only [List.nil_append]
+      congr 1
+      omega
+  · omega
+set_option maxHeartbeats 1000000 in
+/-- **The bucket build, at `25·N + 6`.** Pushing at the head with the
+carrier scanned *downward* leaves every stack ascending — which is
+`bInit`'s `(finRange N).filter` (`bktV_bInit`). -/
+theorem bkBuildCom_spec {dg tp sk : String}
+    (hts : tp ≠ sk) (hst : sk ≠ tp) (hdt : dg ≠ tp) (hds : dg ≠ sk)
+    {B N : ℕ} (hB : N + N * N + 1 < B) :
+    Spec B
+      (fun σ => σ.vars "bk.n" = N ∧ N ≤ (σ.arrs dg).length ∧ N ≤ (σ.arrs tp).length ∧
+        N * N + N ≤ (σ.arrs sk).length ∧ (∀ x, x < N → (σ.arrs dg).getD x 0 < N) ∧
+        (∀ d, d < N → (σ.arrs tp).getD d 0 = 0))
+      (bkBuildCom dg tp sk)
+      (fun _ σ' => BInvB dg tp sk N σ' ∧ σ'.vars "bk.i" = 0)
+      (25 * N + 6) := by
+  classical
+  intro σ hσ
+  obtain ⟨hn, hdglen, htplen, hsklen, hdgb, htp0⟩ := hσ
+  have hNB : N < B := by omega
+  have hrun1 : Run B (.assign "bk.i" (.var "bk.n")) σ (σ.setVar "bk.i" N) 2 := by
+    refine (Run.assign (v := N) ?_).mono (by simp)
+    rw [← hn]
+    exact evalB_var (by omega)
+  have hcond : ∀ τ : Env, BInvB dg tp sk N τ →
+      (Cond.lt (.lit 0) (.var "bk.i")).evalB B τ = some (decide (0 < τ.vars "bk.i")) := by
+    intro τ hτ
+    refine evalB_condLt (evalB_lit ?_) (evalB_var ?_)
+    · omega
+    · have := hτ.2.1; omega
+  have hloop : Spec B (BInvB dg tp sk N)
+      (.while (.lt (.lit 0) (.var "bk.i")) (bkBuildBody dg tp sk))
+      (fun _ τ => BInvB dg tp sk N τ ∧
+        (Cond.lt (.lit 0) (.var "bk.i")).evalB B τ = some false)
+      (25 * N + 4) := by
+    refine Spec.while_count (BInvB dg tp sk N) (fun τ => τ.vars "bk.i") 21
+      (fun τ hτ => ⟨_, hcond τ hτ⟩)
+      ((bkBuildBody_spec hts hst hdt hds hB).pre ?_) (fun _ h => h) (fun τ hτ => ?_)
+    · rintro τ ⟨hτ, htrue⟩
+      refine ⟨hτ, ?_⟩
+      rw [hcond τ hτ] at htrue
+      simpa using htrue
+    · have hsz : (Cond.lt (Expr.lit 0) (Expr.var "bk.i")).size = 3 := by simp
+      have h1 := hτ.2.1
+      simp only [hsz]
+      have h2 : (1 + 3 + 21) * τ.vars "bk.i" ≤ (1 + 3 + 21) * N :=
+        Nat.mul_le_mul_left _ h1
+      omega
+  have hinit : BInvB dg tp sk N (σ.setVar "bk.i" N) := by
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · simp only [vars_setVar, String.reduceEq, reduceIte]; exact hn
+    · simp only [vars_setVar, String.reduceEq, reduceIte]; exact le_rfl
+    · simp only [arrs_setVar]; exact hdglen
+    · simp only [arrs_setVar]; exact htplen
+    · simp only [arrs_setVar]; exact hsklen
+    · simp only [arrs_setVar]; exact hdgb
+    · intro d hd
+      simp only [vars_setVar, String.reduceEq, reduceIte]
+      rw [tailFilter_self, mLst, arrs_setVar, htp0 d hd]
+      simp
+  obtain ⟨τ, hrun2, hI, hfalse⟩ := hloop.run hinit
+  refine ⟨τ, (hrun1.seq hrun2).mono (by omega), hI, ?_⟩
+  rw [hcond τ hI] at hfalse
+  have : ¬ (0 < τ.vars "bk.i") := by simpa using hfalse
+  omega
+
+/-! ## §6 The round
+
+The machine state a round works in: the sorted rows in `mt`, the ranks
+in `ra` (`N` marks a live vertex), the *current* degrees in `dg`, and
+the bucket stacks in `tp`/`sk`, refining the replay `bRun F k` up to
+stale cells. -/
+
+open Lax3Proofs.CoverRoutine (selRank selPerm selChain selOrderingRoutine)
+
+/-- **The round state.** Every clause is at the replay's `k`-th state;
+the stacks refine it *after* the staleness filter, which is what lazy
+deletion buys. `bk.c`, `bk.f`, `bk.v` are deliberately not pinned —
+they move inside a round. -/
+structure RSt (ao dg mt ra tp sk : String) {N : ℕ} (F : SimpleGraph (Fin N))
+    (offF : ℕ → ℕ) (k : ℕ) (σ : Env) : Prop where
+  /-- The carrier size. -/
+  nn : σ.vars "bk.n" = N
+  /-- The countdown: `bk.r` is the number of live vertices. -/
+  rr : σ.vars "bk.r" = N - k
+  /-- The offset region is allocated. -/
+  aolen : N + 1 ≤ (σ.arrs ao).length
+  /-- The offset region holds the offsets. -/
+  aoval : ∀ i, i ≤ N → (σ.arrs ao).getD i 0 = offF i
+  /-- The row region is allocated. -/
+  mtlen : offF N ≤ (σ.arrs mt).length
+  /-- The rank region is allocated. -/
+  ralen : N ≤ (σ.arrs ra).length
+  /-- The degree region is allocated. -/
+  dglen : N ≤ (σ.arrs dg).length
+  /-- The bucket tops are allocated. -/
+  tplen : N ≤ (σ.arrs tp).length
+  /-- The bucket cells are allocated. -/
+  sklen : N * N + N ≤ (σ.arrs sk).length
+  /-- The rows are the sorted rows of `F` — never written after the
+  entry transpose, so a function of `F` for the whole run. -/
+  rows : ∀ z : Fin N, (List.range ((F.neighborSet z).ncard)).map
+    (fun s => (σ.arrs mt).getD (offF (z : ℕ) + s) 0) = rowList F z
+  /-- A live vertex still holds the sentinel. -/
+  live : ∀ x : Fin N, x ∈ (bRun F k).live → (σ.arrs ra).getD (x : ℕ) 0 = N
+  /-- A peeled vertex holds its rank. -/
+  dead : ∀ x : Fin N, x ∉ (bRun F k).live →
+    (σ.arrs ra).getD (x : ℕ) 0 = selRank (bucketSel N) F x
+  /-- `dg` holds the *current* degree of a live vertex. -/
+  deg : ∀ x : Fin N, x ∈ (bRun F k).live →
+    (σ.arrs dg).getD (x : ℕ) 0 = (nbrsIn F (bRun F k).live x).card
+  /-- Every degree cell is below the carrier size. -/
+  degb : ∀ x, x < N → (σ.arrs dg).getD x 0 < N
+  /-- **The refinement**: a stack, with its stale cells dropped, is the
+  replay's bucket. -/
+  bkts : ∀ d, d < N → (mLst tp sk N σ d).filter (mOK ra dg N σ d) = bktV (bRun F k) d
+  /-- A stack holds vertices whose degree has already reached its
+  level — the clause that makes a stale cell stay stale. -/
+  elts : ∀ d, d < N → ∀ x ∈ mLst tp sk N σ d, x < N ∧ (σ.arrs dg).getD x 0 ≤ d
+  /-- A vertex is pushed into a given bucket at most once. -/
+  nodup : ∀ d, d < N → (mLst tp sk N σ d).Nodup
+  /-- The tops are inside the block. -/
+  tpb : ∀ d, d < N → (σ.arrs tp).getD d 0 ≤ N
+
+/-- The round state reads five arrays and two scalars, so assigning any
+other scalar preserves it. -/
+theorem RSt.setVar {ao dg mt ra tp sk : String} {N : ℕ} {F : SimpleGraph (Fin N)}
+    {offF : ℕ → ℕ} {k : ℕ} {σ : Env} (h : RSt ao dg mt ra tp sk F offF k σ)
+    {x : String} (h1 : x ≠ "bk.n") (h2 : x ≠ "bk.r") (v : ℕ) :
+    RSt ao dg mt ra tp sk F offF k (σ.setVar x v) := by
+  refine ⟨?_, ?_, h.aolen, h.aoval, h.mtlen, h.ralen, h.dglen, h.tplen, h.sklen,
+    h.rows, h.live, h.dead, h.deg, h.degb, h.bkts, h.elts, h.nodup, h.tpb⟩
+  · simp only [vars_setVar, if_neg (Ne.symm h1)]; exact h.nn
+  · simp only [vars_setVar, if_neg (Ne.symm h2)]; exact h.rr
+
+/-- **A stack is short.** Its entries are distinct indices, so it never
+outgrows the carrier; and if some index is missing it has room for one
+more — which is what a push needs. -/
+theorem tp_lt_of_nodup {tp sk : String} {N : ℕ} {σ : Env} {d : ℕ}
+    (hnd : (mLst tp sk N σ d).Nodup) (hlt : ∀ x ∈ mLst tp sk N σ d, x < N)
+    {u : ℕ} (hu : u < N) (hnot : u ∉ mLst tp sk N σ d) :
+    (σ.arrs tp).getD d 0 < N := by
+  classical
+  have hsub : (mLst tp sk N σ d).toFinset ⊆ (Finset.range N).erase u := by
+    intro x hx
+    rw [List.mem_toFinset] at hx
+    exact Finset.mem_erase.mpr ⟨fun hc => hnot (hc ▸ hx), Finset.mem_range.mpr (hlt x hx)⟩
+  have hcard := Finset.card_le_card hsub
+  rw [List.toFinset_card_of_nodup hnd, Finset.card_erase_of_mem
+    (Finset.mem_range.mpr hu), Finset.card_range] at hcard
+  have hlen : (mLst tp sk N σ d).length = (σ.arrs tp).getD d 0 := mLst_length
+  omega
+
+theorem RSt.tp_lt {ao dg mt ra tp sk : String} {N : ℕ} {F : SimpleGraph (Fin N)}
+    {offF : ℕ → ℕ} {k : ℕ} {σ : Env} (h : RSt ao dg mt ra tp sk F offF k σ)
+    {d : ℕ} (hd : d < N) {u : ℕ} (hu : u < N) (hnot : u ∉ mLst tp sk N σ d) :
+    (σ.arrs tp).getD d 0 < N :=
+  tp_lt_of_nodup (h.nodup d hd) (fun x hx => (h.elts d hd x hx).1) hu hnot
+
+/-! ### The cell count
+
+The fourth potential term of `peelLoop_linear_bucket_lazy` counts the
+cells in the stacks. It is a function of the tops alone. -/
+
+/-- The number of cells in the stacks. -/
+def cellCount (tp : String) (N : ℕ) (σ : Env) : ℕ :=
+  ∑ d ∈ Finset.range N, (σ.arrs tp).getD d 0
+
+theorem sum_range_set_succ {N : ℕ} {l : List ℕ} {d₀ : ℕ} (hd : d₀ < N)
+    (hlen : d₀ < l.length) :
+    ∑ d ∈ Finset.range N, (l.set d₀ (l.getD d₀ 0 + 1)).getD d 0
+      = (∑ d ∈ Finset.range N, l.getD d 0) + 1 := by
+  classical
+  have hmem : d₀ ∈ Finset.range N := Finset.mem_range.mpr hd
+  have h1 := Finset.add_sum_erase (Finset.range N)
+    (fun d => (l.set d₀ (l.getD d₀ 0 + 1)).getD d 0) hmem
+  have h2 := Finset.add_sum_erase (Finset.range N) (fun d => l.getD d 0) hmem
+  simp only [] at h1 h2
+  have h3 : ∑ d ∈ (Finset.range N).erase d₀, (l.set d₀ (l.getD d₀ 0 + 1)).getD d 0
+      = ∑ d ∈ (Finset.range N).erase d₀, l.getD d 0 :=
+    Finset.sum_congr rfl fun d hd' => getD_set_of_ne (Finset.ne_of_mem_erase hd')
+  rw [h3, getD_set_self hlen] at h1
+  omega
+
+theorem sum_range_set_pred {N : ℕ} {l : List ℕ} {d₀ : ℕ} (hd : d₀ < N)
+    (hlen : d₀ < l.length) :
+    (∑ d ∈ Finset.range N, (l.set d₀ (l.getD d₀ 0 - 1)).getD d 0) + l.getD d₀ 0
+      = (∑ d ∈ Finset.range N, l.getD d 0) + (l.getD d₀ 0 - 1) := by
+  classical
+  have hmem : d₀ ∈ Finset.range N := Finset.mem_range.mpr hd
+  have h1 := Finset.add_sum_erase (Finset.range N)
+    (fun d => (l.set d₀ (l.getD d₀ 0 - 1)).getD d 0) hmem
+  have h2 := Finset.add_sum_erase (Finset.range N) (fun d => l.getD d 0) hmem
+  simp only [] at h1 h2
+  have h3 : ∑ d ∈ (Finset.range N).erase d₀, (l.set d₀ (l.getD d₀ 0 - 1)).getD d 0
+      = ∑ d ∈ (Finset.range N).erase d₀, l.getD d 0 :=
+    Finset.sum_congr rfl fun d hd' => getD_set_of_ne (Finset.ne_of_mem_erase hd')
+  rw [h3, getD_set_self hlen] at h1
+  omega
+theorem mOK_of_arrs {ra dg : String} {N : ℕ} {σ σ' : Env}
+    (hra : σ'.arrs ra = σ.arrs ra) (hdg : σ'.arrs dg = σ.arrs dg) (d x : ℕ) :
+    mOK ra dg N σ' d x = mOK ra dg N σ d x := by
+  rw [mOK, mOK, mKey, mKey, hra, hdg]
+
+theorem mOK_fun_eq {ra dg : String} {N : ℕ} {σ σ' : Env}
+    (hra : σ'.arrs ra = σ.arrs ra) (hdg : σ'.arrs dg = σ.arrs dg) (d : ℕ) :
+    mOK ra dg N σ' d = mOK ra dg N σ d := funext fun x => mOK_of_arrs hra hdg d x
+
+/-- Reading the head of a bucket back through the index map. -/
+theorem bktV_head {N : ℕ} {st : BState N} {d x : ℕ} {l : List ℕ}
+    (h : bktV st d = x :: l) : ∃ v : Fin N, (v : ℕ) = x ∧ (st.bkt d).head? = some v := by
+  cases hb : st.bkt d with
+  | nil => rw [bktV, hb] at h; simp at h
+  | cons a t =>
+      rw [bktV, hb] at h
+      simp only [List.map_cons, List.cons.injEq] at h
+      exact ⟨a, h.1, by simp [hb]⟩
+
+theorem bktV_eq_nil {N : ℕ} {st : BState N} {d : ℕ} (h : bktV st d = []) :
+    st.bkt d = [] := by
+  rwa [bktV, List.map_eq_nil_iff] at h
+
+set_option maxHeartbeats 1000000 in
+/-- **Popping a stale cell preserves the round state.** Its head fails
+the staleness test, so dropping it changes no filtered stack — this is
+the whole content of lazy deletion. -/
+theorem RSt.pop {ao dg mt ra tp sk : String} {N : ℕ} {F : SimpleGraph (Fin N)}
+    {offF : ℕ → ℕ} {k : ℕ} {σ σ' : Env} (h : RSt ao dg mt ra tp sk F offF k σ)
+    (hvars : σ'.vars = σ.vars)
+    (hao' : σ'.arrs ao = σ.arrs ao) (hmt' : σ'.arrs mt = σ.arrs mt)
+    (hra' : σ'.arrs ra = σ.arrs ra) (hdg' : σ'.arrs dg = σ.arrs dg)
+    (hsk' : σ'.arrs sk = σ.arrs sk)
+    {c : ℕ} (hc : c < N)
+    (htp' : σ'.arrs tp = (σ.arrs tp).set c ((σ.arrs tp).getD c 0 - 1))
+    {x : ℕ} {l : List ℕ} (hlst : mLst tp sk N σ c = x :: l)
+    (hstale : mOK ra dg N σ c x = false) :
+    RSt ao dg mt ra tp sk F offF k σ' := by
+  classical
+  have hpos : 0 < (σ.arrs tp).getD c 0 := by
+    have hl : (mLst tp sk N σ c).length = (σ.arrs tp).getD c 0 := mLst_length
+    rw [hlst, List.length_cons] at hl
+    omega
+  have hclen : c < (σ.arrs tp).length := lt_of_lt_of_le hc h.tplen
+  have htpc : (σ'.arrs tp).getD c 0 = (σ.arrs tp).getD c 0 - 1 := by
+    rw [htp']; exact getD_set_self hclen
+  have htpne : ∀ d, d ≠ c → (σ'.arrs tp).getD d 0 = (σ.arrs tp).getD d 0 := by
+    intro d hd
+    rw [htp']; exact getD_set_of_ne hd
+  have hmc : mLst tp sk N σ' c = l := by
+    refine mLst_pop hlst (by omega) ?_
+    intro i _
+    rw [hsk']
+  have hmne : ∀ d, d ≠ c → mLst tp sk N σ' d = mLst tp sk N σ d := by
+    intro d hd
+    exact mLst_frame (htpne d hd) (fun i _ => by rw [hsk'])
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [hvars]; exact h.nn
+  · rw [hvars]; exact h.rr
+  · rw [hao']; exact h.aolen
+  · rw [hao']; exact h.aoval
+  · rw [hmt']; exact h.mtlen
+  · rw [hra']; exact h.ralen
+  · rw [hdg']; exact h.dglen
+  · rw [htp', List.length_set]; exact h.tplen
+  · rw [hsk']; exact h.sklen
+  · rw [hmt']; exact h.rows
+  · rw [hra']; exact h.live
+  · rw [hra']; exact h.dead
+  · rw [hdg']; exact h.deg
+  · rw [hdg']; exact h.degb
+  · intro d hd
+    rw [mOK_fun_eq hra' hdg' d]
+    by_cases hdc : d = c
+    · subst hdc
+      rw [hmc, ← h.bkts d hd, hlst,
+        List.filter_cons_of_neg (by rw [hstale]; exact Bool.false_ne_true)]
+    · rw [hmne d hdc]; exact h.bkts d hd
+  · intro d hd y hy
+    rw [hdg']
+    by_cases hdc : d = c
+    · subst hdc
+      rw [hmc] at hy
+      exact h.elts d hd y (by rw [hlst]; exact List.mem_cons_of_mem _ hy)
+    · rw [hmne d hdc] at hy
+      exact h.elts d hd y hy
+  · intro d hd
+    by_cases hdc : d = c
+    · subst hdc
+      rw [hmc]
+      have hnd := h.nodup d hd
+      rw [hlst] at hnd
+      exact hnd.of_cons
+    · rw [hmne d hdc]; exact h.nodup d hd
+  · intro d hd
+    by_cases hdc : d = c
+    · subst hdc; rw [htpc]; have := h.tpb d hd; omega
+    · rw [htpne d hdc]; exact h.tpb d hd
+/-- The head of a non-empty stack is its top cell. -/
+theorem mLst_cons {tp sk : String} {N : ℕ} {σ : Env} {d : ℕ}
+    (hpos : 0 < (σ.arrs tp).getD d 0) :
+    ∃ l, mLst tp sk N σ d
+      = (σ.arrs sk).getD (d * N + ((σ.arrs tp).getD d 0 - 1)) 0 :: l := by
+  obtain ⟨m, hm⟩ : ∃ m, (σ.arrs tp).getD d 0 = m + 1 :=
+    ⟨(σ.arrs tp).getD d 0 - 1, by omega⟩
+  refine ⟨((List.range m).map (fun i => (σ.arrs sk).getD (d * N + i) 0)).reverse, ?_⟩
+  rw [mLst, hm, List.range_succ, List.map_append, List.reverse_append]
+  simp
+
+/-- The scan's invariant: the cursor has not passed the minimum-degree
+bucket, and once the flag is down it stands *at* it with the replay's
+pop in `bk.v`. -/
+def ScanInv (ao dg mt ra tp sk : String) {N : ℕ} (F : SimpleGraph (Fin N))
+    (offF : ℕ → ℕ) (k : ℕ) (σ : Env) : Prop :=
+  RSt ao dg mt ra tp sk F offF k σ ∧ σ.vars "bk.c" ≤ bLevel (bRun F k) ∧
+  (σ.vars "bk.f" = 1 ∨
+    (σ.vars "bk.f" = 0 ∧ σ.vars "bk.c" = bLevel (bRun F k) ∧
+      ∃ v : Fin N, (v : ℕ) = σ.vars "bk.v" ∧ bPop (bRun F k) = some v))
+
+/-- The scan's potential: the cursor's remaining rise, the cells still
+in the stacks, and one last turn. -/
+noncomputable def scanPot (tp : String) {N : ℕ} (F : SimpleGraph (Fin N)) (k : ℕ)
+    (σ : Env) : ℕ :=
+  50 * (bLevel (bRun F k) - σ.vars "bk.c") + 50 * cellCount tp N σ
+    + 50 * (if σ.vars "bk.f" = 1 then 1 else 0)
+
+/-- One turn of the cursor scan: step over an empty bucket, drop a stale
+cell, or stop. -/
+def scanBody (ra dg tp sk : String) : Com :=
+  .ite (.eq (.get tp (.var "bk.c")) (.lit 0))
+    (.assign "bk.c" (.add (.var "bk.c") (.lit 1)))
+    (.seq (.assign "bk.v" (.get sk (.add (.mul (.var "bk.c") (.var "bk.n"))
+            (.sub (.get tp (.var "bk.c")) (.lit 1)))))
+      (.ite (.eq (.add (.mul (.sub (.var "bk.n") (.get ra (.var "bk.v"))) (.var "bk.n"))
+                (.get dg (.var "bk.v")))
+              (.var "bk.c"))
+        (.assign "bk.f" (.lit 0))
+        (.store tp (.var "bk.c") (.sub (.get tp (.var "bk.c")) (.lit 1)))))
+
+/-- **The cursor scan.** -/
+def scanCom (ra dg tp sk : String) : Com :=
+  .seq (.assign "bk.f" (.lit 1))
+    (.while (.eq (.var "bk.f") (.lit 1)) (scanBody ra dg tp sk))
+
+
+/-- Every rank cell is at most the sentinel. -/
+theorem RSt.ra_le {ao dg mt ra tp sk : String} {N : ℕ} {F : SimpleGraph (Fin N)}
+    {offF : ℕ → ℕ} {k : ℕ} {σ : Env} (h : RSt ao dg mt ra tp sk F offF k σ)
+    (x : Fin N) : (σ.arrs ra).getD (x : ℕ) 0 ≤ N := by
+  by_cases hx : x ∈ (bRun F k).live
+  · rw [h.live x hx]
+  · rw [h.dead x hx]
+    exact le_of_lt (Lax3Proofs.CoverRoutine.selRank_lt _ F x)
+
+set_option maxHeartbeats 1000000 in
+/-- **One turn of the cursor scan.** -/
+theorem scanBody_spec {ao dg mt ra tp sk : String}
+    (hta : tp ≠ ao) (htm : tp ≠ mt) (htr : tp ≠ ra) (htd : tp ≠ dg) (hts : tp ≠ sk)
+    {B N : ℕ} {F : SimpleGraph (Fin N)} {offF : ℕ → ℕ} (hB : N + N * N + 1 < B)
+    {k : ℕ} (hk : k < N) :
+    Spec B (fun σ => ScanInv ao dg mt ra tp sk F offF k σ ∧ σ.vars "bk.f" = 1)
+      (scanBody ra dg tp sk)
+      (fun σ σ' => ScanInv ao dg mt ra tp sk F offF k σ' ∧
+        scanPot tp F k σ' + 44 ≤ scanPot tp F k σ) 40 := by
+  classical
+  rintro σ ⟨⟨hR, hcle, -⟩, hf⟩
+  have hne : (bRun F k).live.Nonempty := bRun_live_nonempty F hk
+  have hlev : bLevel (bRun F k) = minDeg F (bRun F k).live hne :=
+    bLevel_eq_minDeg (bRun_inv F k) hne
+  have hlevN : bLevel (bRun F k) < N := by
+    rw [hlev]
+    refine lt_of_lt_of_le (minDeg_lt_card F hne) ?_
+    simpa using Finset.card_le_univ (bRun F k).live
+  have hcN : σ.vars "bk.c" < N := by omega
+  have hclen : σ.vars "bk.c" < (σ.arrs tp).length := lt_of_lt_of_le hcN hR.tplen
+  have htpb := hR.tpb (σ.vars "bk.c") hcN
+  have hnn := hR.nn
+  have hcB : σ.vars "bk.c" + 1 < B := by omega
+  have htpB : (σ.arrs tp).getD (σ.vars "bk.c") 0 < B := by omega
+  have htpsB : (σ.arrs tp).getD (σ.vars "bk.c") 0 - 1 < B := by omega
+  have hidxM : σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1) < N * N := by
+    rw [hnn]
+    have h1 : (σ.vars "bk.c" + 1) * N ≤ N * N := Nat.mul_le_mul_right N (by omega)
+    have h2 : (σ.vars "bk.c" + 1) * N = σ.vars "bk.c" * N + N := by ring
+    omega
+  have hmulB : σ.vars "bk.c" * σ.vars "bk.n" < B := by omega
+  have hidxB : σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1) < B := by omega
+  have hidxlen : σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1) < (σ.arrs sk).length := by have := hR.sklen; omega
+  -- the bucket at the minimum level is not empty
+  obtain ⟨vp, hvp, hvpS, hvpdeg⟩ := bPop_spec (bRun_inv F k) hne
+  have hbktne : (bRun F k).bkt (bLevel (bRun F k)) ≠ [] := by
+    intro hc
+    rw [bPop, hc] at hvp
+    simp at hvp
+  by_cases htz : (σ.arrs tp).getD (σ.vars "bk.c") 0 = 0
+  · -- the bucket is empty: step the cursor
+    have hml : mLst tp sk N σ (σ.vars "bk.c") = [] := by
+      rw [mLst, htz]; simp
+    have hbz : (bRun F k).bkt (σ.vars "bk.c") = [] := by
+      refine bktV_eq_nil ?_
+      rw [← hR.bkts _ hcN, hml]
+      rfl
+    have hclt : σ.vars "bk.c" < bLevel (bRun F k) := by
+      rcases Nat.lt_or_ge (σ.vars "bk.c") (bLevel (bRun F k)) with h | h
+      · exact h
+      · exact absurd (by rw [show bLevel (bRun F k) = σ.vars "bk.c" by omega]; exact hbz)
+          hbktne
+    run_vcg
+    all_goals try (exfalso; omega)
+    refine ⟨⟨hR.setVar (by decide) (by decide) _, ?_, ?_⟩, ?_⟩
+    · simp only [vars_setVar, eq_self_iff_true, if_true]; omega
+    · left; simp only [vars_setVar, String.reduceEq, reduceIte]; exact hf
+    · have hc1 : (σ.setVar "bk.c" (σ.vars "bk.c" + 1)).vars "bk.c" = σ.vars "bk.c" + 1 := rfl
+      have hf1 : (σ.setVar "bk.c" (σ.vars "bk.c" + 1)).vars "bk.f" = σ.vars "bk.f" := rfl
+      have hcc : cellCount tp N (σ.setVar "bk.c" (σ.vars "bk.c" + 1)) = cellCount tp N σ := rfl
+      rw [scanPot, scanPot, hc1, hf1, hcc]
+      omega
+  · -- the bucket is not empty: read its top
+    have hm : 0 < (σ.arrs tp).getD (σ.vars "bk.c") 0 := by omega
+    obtain ⟨l, hlst⟩ := mLst_cons (tp := tp) (sk := sk) (N := N) (σ := σ)
+      (d := σ.vars "bk.c") hm
+    have hXeq : (σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0
+        = (σ.arrs sk).getD (σ.vars "bk.c" * N + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0 := by
+      rw [hnn]
+    have hxmem : (σ.arrs sk).getD
+        (σ.vars "bk.c" * N + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0
+        ∈ mLst tp sk N σ (σ.vars "bk.c") := by
+      rw [hlst]; exact List.mem_cons_self ..
+    obtain ⟨hxN, hxdg⟩ := hR.elts _ hcN _ hxmem
+    rw [← hXeq] at hxN hxdg hxmem hlst
+    have hXB : (σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0 < B := by omega
+    have hXlenra : (σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0 < (σ.arrs ra).length := by have := hR.ralen; omega
+    have hXlendg : (σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0 < (σ.arrs dg).length := by have := hR.dglen; omega
+    have hraX : (σ.arrs ra).getD ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) 0 ≤ N := hR.ra_le ⟨(σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0, hxN⟩
+    have hraXB : (σ.arrs ra).getD ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) 0 < B := by omega
+    have hdgXB : (σ.arrs dg).getD ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) 0 < B := by omega
+    have hsubB : σ.vars "bk.n" - (σ.arrs ra).getD ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) 0 < B := by omega
+    have hmul2 : (σ.vars "bk.n" - (σ.arrs ra).getD ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) 0) * σ.vars "bk.n" ≤ N * N := by
+      rw [hnn]
+      exact Nat.mul_le_mul_right N (by omega)
+    have hmul2B : (σ.vars "bk.n" - (σ.arrs ra).getD ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) 0) * σ.vars "bk.n" < B := by omega
+    have haddB : (σ.vars "bk.n" - (σ.arrs ra).getD ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) 0) * σ.vars "bk.n"
+        + (σ.arrs dg).getD ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) 0 < B := by omega
+    have hkey : mKey ra dg N σ ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0)
+        = (σ.vars "bk.n" - (σ.arrs ra).getD ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) 0) * σ.vars "bk.n"
+          + (σ.arrs dg).getD ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) 0 := by rw [mKey, hnn]
+    run_vcg
+    all_goals try (exfalso; omega)
+    all_goals try simp only [vars_setVar, vars_setArr, arrs_setVar, String.reduceEq,
+      reduceIte]
+    all_goals try omega
+    · -- the top is live business: stop
+      rename_i hkeyc
+      have hok : mOK ra dg N σ (σ.vars "bk.c") ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) = true := by
+        rw [mOK, decide_eq_true_iff, hkey]
+        simpa using hkeyc
+      have hbv : bktV (bRun F k) (σ.vars "bk.c")
+          = (σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0 :: (mLst tp sk N σ (σ.vars "bk.c")).tail.filter
+              (mOK ra dg N σ (σ.vars "bk.c")) := by
+        rw [← hR.bkts _ hcN, hlst, List.filter_cons_of_pos hok]
+        simp
+      have hbne : (bRun F k).bkt (σ.vars "bk.c") ≠ [] := by
+        intro hc
+        rw [bktV, hc] at hbv
+        simp at hbv
+      have hceq : σ.vars "bk.c" = bLevel (bRun F k) := by
+        obtain ⟨u, hu⟩ : ∃ u : Fin N, u ∈ (bRun F k).bkt (σ.vars "bk.c") := by
+          cases hcs : (bRun F k).bkt (σ.vars "bk.c") with
+          | nil => exact absurd hcs hbne
+          | cons a t => exact ⟨a, by simp⟩
+        obtain ⟨huS, hud⟩ := ((bRun_inv F k).1 _ u).mp hu
+        have := minDeg_le F hne huS
+        rw [hlev]
+        omega
+      obtain ⟨v, hveq, hvpop⟩ := bktV_head hbv
+      refine ⟨⟨(hR.setVar (by decide) (by decide) _).setVar (by decide) (by decide) _,
+        ?_, ?_⟩, ?_⟩
+      · simp only [vars_setVar, String.reduceEq, reduceIte]; omega
+      · right
+        refine ⟨rfl, by simp only [vars_setVar, String.reduceEq, reduceIte]; exact hceq,
+          v, ?_, ?_⟩
+        · simp only [vars_setVar, String.reduceEq, reduceIte]; exact hveq
+        · rw [bPop, ← hceq]; exact hvpop
+      · have hc1 : ((σ.setVar "bk.v" ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0)).setVar "bk.f" 0).vars "bk.c"
+            = σ.vars "bk.c" := rfl
+        have hf1 : ((σ.setVar "bk.v" ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0)).setVar "bk.f" 0).vars "bk.f" = 0 := rfl
+        have hcc : cellCount tp N ((σ.setVar "bk.v" ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0)).setVar "bk.f" 0)
+            = cellCount tp N σ := rfl
+        rw [scanPot, scanPot, hc1, hf1, hcc, hf, if_neg (by decide : ¬((0 : ℕ) = 1)),
+          if_pos (rfl : (1 : ℕ) = 1)]
+        omega
+    · -- the top is stale: drop it
+      rename_i hkeyc
+      have hstale : mOK ra dg N σ (σ.vars "bk.c") ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0) = false := by
+        rw [mOK, decide_eq_false_iff_not, hkey]
+        simpa using hkeyc
+      have hpop := (hR.setVar (x := "bk.v") (by decide) (by decide) ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0)).pop
+        (σ' := (σ.setVar "bk.v" ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0)).setArr tp (σ.vars "bk.c")
+          ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1))
+        (by simp only [vars_setArr]) (by simp only [arrs_setArr, if_neg (Ne.symm hta)])
+        (by simp only [arrs_setArr, if_neg (Ne.symm htm)])
+        (by simp only [arrs_setArr, if_neg (Ne.symm htr)])
+        (by simp only [arrs_setArr, if_neg (Ne.symm htd)])
+        (by simp only [arrs_setArr, if_neg (Ne.symm hts)])
+        hcN (by simp only [arrs_setArr, arrs_setVar, eq_self_iff_true, if_true])
+        (l := l) hlst hstale
+      refine ⟨⟨hpop, ?_, ?_⟩, ?_⟩
+      · simp only [vars_setArr, vars_setVar, String.reduceEq, reduceIte]; omega
+      · left; simp only [vars_setArr, vars_setVar, String.reduceEq, reduceIte]; exact hf
+      · have hc1 : ((σ.setVar "bk.v" ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0)).setArr tp (σ.vars "bk.c")
+              ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)).vars "bk.c" = σ.vars "bk.c" := rfl
+        have hf1 : ((σ.setVar "bk.v" ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0)).setArr tp (σ.vars "bk.c")
+              ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)).vars "bk.f" = σ.vars "bk.f" := rfl
+        have hcc : cellCount tp N ((σ.setVar "bk.v" ((σ.arrs sk).getD (σ.vars "bk.c" * σ.vars "bk.n" + ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) 0)).setArr tp (σ.vars "bk.c")
+              ((σ.arrs tp).getD (σ.vars "bk.c") 0 - 1)) + 1 = cellCount tp N σ := by
+          rw [cellCount, cellCount]
+          have hsp := sum_range_set_pred (l := σ.arrs tp) (d₀ := σ.vars "bk.c") hcN hclen
+          simp only [arrs_setArr, arrs_setVar, eq_self_iff_true, if_true]
+          omega
+        rw [scanPot, scanPot, hc1, hf1]
+        omega
+
+
+set_option maxHeartbeats 1000000 in
+/-- **The cursor scan.** It stops at the minimum-degree bucket
+(`bLevel_eq_minDeg`) with the replay's pop in `bk.v`, at a cost `50` per
+step of the cursor and `50` per stale cell it drops — the two terms the
+lazy loop rule charges to the cursor's total rise and to the cell
+count. -/
+theorem scanCom_run {ao dg mt ra tp sk : String}
+    (hta : tp ≠ ao) (htm : tp ≠ mt) (htr : tp ≠ ra) (htd : tp ≠ dg) (hts : tp ≠ sk)
+    {B N : ℕ} {F : SimpleGraph (Fin N)} {offF : ℕ → ℕ} (hB : N + N * N + 1 < B)
+    {k : ℕ} (hk : k < N) {σ : Env}
+    (hR : RSt ao dg mt ra tp sk F offF k σ)
+    (hcle : σ.vars "bk.c" ≤ bLevel (bRun F k)) :
+    ∃ (σ' : Env) (K : ℕ), Run B (scanCom ra dg tp sk) σ σ' K ∧
+      RSt ao dg mt ra tp sk F offF k σ' ∧
+      σ'.vars "bk.c" = bLevel (bRun F k) ∧
+      (∃ v : Fin N, (v : ℕ) = σ'.vars "bk.v" ∧ bPop (bRun F k) = some v) ∧
+      K + 50 * cellCount tp N σ'
+        ≤ 50 * (bLevel (bRun F k) - σ.vars "bk.c") + 50 * cellCount tp N σ + 56 := by
+  classical
+  have hcond : ∀ τ : Env, ScanInv ao dg mt ra tp sk F offF k τ →
+      (Cond.eq (.var "bk.f") (.lit 1)).evalB B τ = some (τ.vars "bk.f" == 1) := by
+    intro τ hτ
+    refine evalB_condEq (evalB_var ?_) (evalB_lit ?_)
+    · rcases hτ.2.2 with h | ⟨h, -⟩ <;> omega
+    · omega
+  have hrun1 : Run B (.assign "bk.f" (.lit 1)) σ (σ.setVar "bk.f" 1) 2 :=
+    (Run.assign (v := 1) (evalB_lit (by omega))).mono (by simp)
+  have hI1 : ScanInv ao dg mt ra tp sk F offF k (σ.setVar "bk.f" 1) := by
+    refine ⟨hR.setVar (by decide) (by decide) _, ?_, Or.inl rfl⟩
+    simp only [vars_setVar, String.reduceEq, reduceIte]; exact hcle
+  have hstep : ∀ τ : Env, ScanInv ao dg mt ra tp sk F offF k τ →
+      (Cond.eq (.var "bk.f") (.lit 1)).evalB B τ = some true →
+      ∃ (τ' : Env) (K : ℕ), Run B (scanBody ra dg tp sk) τ τ' K ∧
+        ScanInv ao dg mt ra tp sk F offF k τ' ∧
+        1 + (Cond.eq (Expr.var "bk.f") (Expr.lit 1)).size + K + scanPot tp F k τ'
+          ≤ scanPot tp F k τ := by
+    intro τ hτ hv
+    have hf : τ.vars "bk.f" = 1 := by
+      rw [hcond τ hτ] at hv
+      simpa using hv
+    obtain ⟨τ', hrun, hI'', hpot⟩ := (scanBody_spec hta htm htr htd hts hB hk).run ⟨hτ, hf⟩
+    have hsz : (Cond.eq (Expr.var "bk.f") (Expr.lit 1)).size = 3 := by simp
+    exact ⟨τ', 40, hrun, hI'', by rw [hsz]; omega⟩
+  obtain ⟨σ', K, hrun2, hI', hfalse, hpay⟩ :=
+    Run.while_potential (B := B) (ScanInv ao dg mt ra tp sk F offF k)
+      (scanPot tp F k) (fun τ hτ => ⟨_, hcond τ hτ⟩) hstep hI1
+  · obtain ⟨hR', hcle', hdisj⟩ := hI'
+    have hf0 : σ'.vars "bk.f" ≠ 1 := by
+      intro hc
+      rw [hcond σ' ⟨hR', hcle', hdisj⟩, hc] at hfalse
+      simp at hfalse
+    obtain ⟨hzero, hceq, hv⟩ : σ'.vars "bk.f" = 0 ∧ σ'.vars "bk.c" = bLevel (bRun F k) ∧
+        ∃ v : Fin N, (v : ℕ) = σ'.vars "bk.v" ∧ bPop (bRun F k) = some v := by
+      rcases hdisj with h | h
+      · exact absurd h hf0
+      · exact h
+    refine ⟨σ', 2 + K, (hrun1.seq hrun2).mono le_rfl, hR', hceq, hv, ?_⟩
+    have hsz : (Cond.eq (Expr.var "bk.f") (Expr.lit 1)).size = 3 := by simp
+    have hp1 : scanPot tp F k σ' = 50 * cellCount tp N σ' := by
+      rw [scanPot, hceq, hzero]
+      simp
+    have hp2 : scanPot tp F k (σ.setVar "bk.f" 1)
+        = 50 * (bLevel (bRun F k) - σ.vars "bk.c") + 50 * cellCount tp N σ + 50 := by
+      have hc1 : (σ.setVar "bk.f" 1).vars "bk.c" = σ.vars "bk.c" := rfl
+      have hcc : cellCount tp N (σ.setVar "bk.f" 1) = cellCount tp N σ := rfl
+      rw [scanPot, hc1, hcc, show (σ.setVar "bk.f" 1).vars "bk.f" = 1 from rfl,
+        if_pos (rfl : (1 : ℕ) = 1)]
+    rw [hsz, hp1, hp2] at hpay
+    omega
+
+/-! ### The row walk
+
+The round walks `v`'s **original** row, downward, pushing each live
+neighbour into the bucket one below its current degree. Downward with a
+head push leaves the new group ascending, which is exactly `bStep`'s
+`(finRange N).filter`. -/
+
+/-- What the walk has pushed into bucket `d` by the time its counter is
+`t`: the live entries of the row's tail whose degree drops to `d`. -/
+def wpushed (ra dg : String) (N : ℕ) (τ : Env) (R : List ℕ) (t d : ℕ) : List ℕ :=
+  (R.drop t).filter
+    (fun x => decide ((τ.arrs ra).getD x 0 = N ∧ (τ.arrs dg).getD x 0 = d + 1))
+
+theorem wpushed_full {ra dg : String} {N : ℕ} {τ : Env} {R : List ℕ} {t d : ℕ}
+    (ht : R.length ≤ t) : wpushed ra dg N τ R t d = [] := by
+  rw [wpushed, List.drop_eq_nil_of_le ht]
+  rfl
+
+theorem wpushed_succ {ra dg : String} {N : ℕ} {τ : Env} {R : List ℕ} {t d : ℕ}
+    (ht : t < R.length) :
+    wpushed ra dg N τ R t d
+      = (if (τ.arrs ra).getD (R.getD t 0) 0 = N ∧
+            (τ.arrs dg).getD (R.getD t 0) 0 = d + 1 then [R.getD t 0] else [])
+        ++ wpushed ra dg N τ R (t + 1) d := by
+  have hd : R.drop t = R.getD t 0 :: R.drop (t + 1) := by
+    rw [List.drop_eq_getElem_cons ht, List.getD_eq_getElem?_getD,
+      List.getElem?_eq_getElem ht]
+    rfl
+  rw [wpushed, wpushed, hd, List.filter_cons]
+  by_cases h : (τ.arrs ra).getD (R.getD t 0) 0 = N ∧
+      (τ.arrs dg).getD (R.getD t 0) 0 = d + 1
+  · rw [if_pos (decide_eq_true h), if_pos h]; rfl
+  · rw [if_neg (by rw [decide_eq_false h]; exact Bool.false_ne_true), if_neg h]; rfl
+
+/-- **The walk's state**, relative to the state `τ` it started in: only
+`dg`, `tp` and `sk` move, `dg` drops by one at each processed live
+neighbour, and each stack has grown by exactly the group pushed so
+far. -/
+structure WSt (ao dg mt ra tp sk : String) (N : ℕ) (R : List ℕ) (D : ℕ) (τ σ : Env) :
+    Prop where
+  /-- The carrier size. -/
+  nn : σ.vars "bk.n" = N
+  /-- The counter is inside the row. -/
+  tle : σ.vars "bk.t" ≤ D
+  /-- The walked vertex. -/
+  vv : σ.vars "bk.v" = τ.vars "bk.v"
+  /-- The countdown. -/
+  rr : σ.vars "bk.r" = τ.vars "bk.r"
+  /-- The offsets are untouched. -/
+  aoq : σ.arrs ao = τ.arrs ao
+  /-- The rows are untouched. -/
+  mtq : σ.arrs mt = τ.arrs mt
+  /-- The ranks are untouched. -/
+  raq : σ.arrs ra = τ.arrs ra
+  /-- The degree region is allocated. -/
+  dglen : N ≤ (σ.arrs dg).length
+  /-- The bucket tops are allocated. -/
+  tplen : N ≤ (σ.arrs tp).length
+  /-- The bucket cells are allocated. -/
+  sklen : N * N + N ≤ (σ.arrs sk).length
+  /-- Each processed live neighbour has lost one from its degree. -/
+  degq : ∀ x, x < N → (σ.arrs dg).getD x 0
+    = (τ.arrs dg).getD x 0
+      - (if x ∈ R.drop (σ.vars "bk.t") ∧ (τ.arrs ra).getD x 0 = N then 1 else 0)
+  /-- Every degree cell is below the carrier size. -/
+  degb : ∀ x, x < N → (σ.arrs dg).getD x 0 < N
+  /-- Each stack has grown by its share of the pushed group. -/
+  stk : ∀ d, d < N → mLst tp sk N σ d
+    = wpushed ra dg N τ R (σ.vars "bk.t") d ++ mLst tp sk N τ d
+  /-- A stack holds vertices whose degree has reached its level. -/
+  elts : ∀ d, d < N → ∀ x ∈ mLst tp sk N σ d, x < N ∧ (σ.arrs dg).getD x 0 ≤ d
+  /-- A vertex is pushed into a given bucket at most once. -/
+  nodup : ∀ d, d < N → (mLst tp sk N σ d).Nodup
+  /-- The tops are inside the block. -/
+  tpb : ∀ d, d < N → (σ.arrs tp).getD d 0 ≤ N
+  /-- The walk adds at most one cell per row slot. -/
+  cnt : cellCount tp N σ + σ.vars "bk.t" ≤ cellCount tp N τ + D
+
+/-- One turn of the row walk. -/
+def walkBody (ao dg mt ra tp sk : String) : Com :=
+  .seq (.assign "bk.t" (.sub (.var "bk.t") (.lit 1)))
+  (.seq (.assign "bk.w" (.get mt (.add (.get ao (.var "bk.v")) (.var "bk.t"))))
+    (.ite (.eq (.get ra (.var "bk.w")) (.var "bk.n"))
+      (.seq (.assign "bk.d" (.sub (.get dg (.var "bk.w")) (.lit 1)))
+      (.seq (.store dg (.var "bk.w") (.var "bk.d"))
+      (.seq (.store sk (.add (.mul (.var "bk.d") (.var "bk.n")) (.get tp (.var "bk.d")))
+              (.var "bk.w"))
+            (.store tp (.var "bk.d") (.add (.get tp (.var "bk.d")) (.lit 1))))))
+      .skip))
+
+/-- **The row walk.** -/
+def walkCom (ao dg mt ra tp sk : String) : Com :=
+  .while (.lt (.lit 0) (.var "bk.t")) (walkBody ao dg mt ra tp sk)
+
+/-- Prepending an entry the vertex is not equal to leaves the walk's
+degree correction alone. -/
+theorem if_mem_cons_eq {x w : ℕ} {l : List ℕ} {P : Prop} [Decidable P] (hxw : x ≠ w) :
+    (if x ∈ w :: l ∧ P then 1 else 0) = (if x ∈ l ∧ P then (1 : ℕ) else 0) := by
+  by_cases h : x ∈ l ∧ P
+  · rw [if_pos ⟨List.mem_cons_of_mem _ h.1, h.2⟩, if_pos h]
+  · rw [if_neg h,
+      if_neg (by rintro ⟨h1, h2⟩; exact h ⟨(List.mem_cons.mp h1).resolve_left hxw, h2⟩)]
+
+set_option maxHeartbeats 1000000 in
+/-- **One turn of the row walk.** -/
+theorem walkBody_spec {ao dg mt ra tp sk : String}
+    (hda : dg ≠ ao) (hdm : dg ≠ mt) (hdr : dg ≠ ra) (hdt : dg ≠ tp) (hds : dg ≠ sk)
+    (hsa : sk ≠ ao) (hsm : sk ≠ mt) (hsr : sk ≠ ra) (hst : sk ≠ tp) (hsd : sk ≠ dg)
+    (hta : tp ≠ ao) (htm : tp ≠ mt) (htr : tp ≠ ra) (hts : tp ≠ sk)
+    {B N : ℕ} (hB : N + N * N + 1 < B)
+    {R : List ℕ} {D : ℕ} {τ : Env} {offv : ℕ}
+    (hRlen : R.length = D) (hRnd : R.Nodup) (hRlt : ∀ x ∈ R, x < N) (hDN : D < N)
+    (haov : (τ.arrs ao).getD (τ.vars "bk.v") 0 = offv)
+    (hvlen : τ.vars "bk.v" < (τ.arrs ao).length)
+    (hmtlen : offv + D ≤ (τ.arrs mt).length) (hoffB : offv + D < B)
+    (hvN : τ.vars "bk.v" < N)
+    (hrow : ∀ s, s < D → (τ.arrs mt).getD (offv + s) 0 = R.getD s 0)
+    (hposd : ∀ x ∈ R, (τ.arrs ra).getD x 0 = N → 0 < (τ.arrs dg).getD x 0)
+    (hralen : N ≤ (τ.arrs ra).length) (hraN : ∀ x, x < N → (τ.arrs ra).getD x 0 ≤ N) :
+    Spec B (fun σ => WSt ao dg mt ra tp sk N R D τ σ ∧ 0 < σ.vars "bk.t")
+      (walkBody ao dg mt ra tp sk)
+      (fun σ σ' => WSt ao dg mt ra tp sk N R D τ σ' ∧ σ'.vars "bk.t" < σ.vars "bk.t")
+      37 := by
+  classical
+  rintro σ ⟨hW, htpos⟩
+  have hnn := hW.nn
+  have htD : σ.vars "bk.t" ≤ D := hW.tle
+  have ht1 : σ.vars "bk.t" - 1 < D := by omega
+  have ht1R : σ.vars "bk.t" - 1 < R.length := by omega
+  -- the row entry the turn reads
+  have hwmem : R.getD (σ.vars "bk.t" - 1) 0 ∈ R := by
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem ht1R]
+    exact List.getElem_mem ht1R
+  have hwN : R.getD (σ.vars "bk.t" - 1) 0 < N := hRlt _ hwmem
+  have hdrop : R.drop (σ.vars "bk.t" - 1)
+      = R.getD (σ.vars "bk.t" - 1) 0 :: R.drop (σ.vars "bk.t") := by
+    rw [List.drop_eq_getElem_cons ht1R, List.getD_eq_getElem?_getD,
+      List.getElem?_eq_getElem ht1R, show σ.vars "bk.t" - 1 + 1 = σ.vars "bk.t" by omega]
+    rfl
+  have hwnot : R.getD (σ.vars "bk.t" - 1) 0 ∉ R.drop (σ.vars "bk.t") := by
+    have hnd : (R.drop (σ.vars "bk.t" - 1)).Nodup := hRnd.sublist (List.drop_sublist _ _)
+    rw [hdrop] at hnd
+    exact (List.nodup_cons.mp hnd).1
+  have hwps : ∀ d, wpushed ra dg N τ R (σ.vars "bk.t" - 1) d
+      = (if (τ.arrs ra).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 = N ∧
+            (τ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 = d + 1
+          then [R.getD (σ.vars "bk.t" - 1) 0] else [])
+        ++ wpushed ra dg N τ R (σ.vars "bk.t") d := by
+    intro d
+    have := wpushed_succ (ra := ra) (dg := dg) (N := N) (τ := τ) (R := R)
+      (t := σ.vars "bk.t" - 1) (d := d) ht1R
+    rwa [show σ.vars "bk.t" - 1 + 1 = σ.vars "bk.t" by omega] at this
+  -- the machine read, in the state's own arrays
+  have haoval : (σ.arrs ao).getD (σ.vars "bk.v") 0 = offv := by
+    rw [hW.aoq, hW.vv]; exact haov
+  have hmtread : (σ.arrs mt).getD (offv + (σ.vars "bk.t" - 1)) 0
+      = R.getD (σ.vars "bk.t" - 1) 0 := by
+    rw [hW.mtq]; exact hrow _ ht1
+  have hdgw : (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0
+      = (τ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 := by
+    rw [hW.degq _ hwN, if_neg (by rintro ⟨hc, -⟩; exact hwnot hc)]
+    omega
+  have hraw : (σ.arrs ra).getD (R.getD (σ.vars "bk.t" - 1) 0) 0
+      = (τ.arrs ra).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 := by rw [hW.raq]
+  -- bounds
+  have haolen : σ.vars "bk.v" < (σ.arrs ao).length := by rw [hW.aoq, hW.vv]; exact hvlen
+  have hvB : σ.vars "bk.v" < B := by rw [hW.vv]; omega
+  have hmtlen' : offv + (σ.vars "bk.t" - 1) < (σ.arrs mt).length := by rw [hW.mtq]; omega
+  have haoB : offv < B := by omega
+  have hidxB : offv + (σ.vars "bk.t" - 1) < B := by omega
+  have hwB : (σ.arrs mt).getD (offv + (σ.vars "bk.t" - 1)) 0 < B := by rw [hmtread]; omega
+  have hwlenra : (σ.arrs mt).getD (offv + (σ.vars "bk.t" - 1)) 0 < (σ.arrs ra).length := by
+    rw [hmtread, hW.raq]; omega
+  have hwlendg : (σ.arrs mt).getD (offv + (σ.vars "bk.t" - 1)) 0 < (σ.arrs dg).length := by
+    rw [hmtread]; have := hW.dglen; omega
+  have hraB : (σ.arrs ra).getD ((σ.arrs mt).getD (offv + (σ.vars "bk.t" - 1)) 0) 0 < B := by
+    rw [hmtread, hraw]
+    have := hraN _ hwN
+    omega
+  have hdgB : (σ.arrs dg).getD ((σ.arrs mt).getD (offv + (σ.vars "bk.t" - 1)) 0) 0 < B := by
+    rw [hmtread]
+    have := hW.degb _ hwN
+    omega
+  have hdgsB : (σ.arrs dg).getD ((σ.arrs mt).getD (offv + (σ.vars "bk.t" - 1)) 0) 0 - 1 < B := by
+    omega
+  have htB : σ.vars "bk.t" - 1 < B := by omega
+  have hnB : σ.vars "bk.n" < B := by omega
+  have hraWB : (σ.arrs ra).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 < B := by
+    rw [hraw]; have := hraN _ hwN; omega
+  have hdgWB : (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 < B := by
+    have := hW.degb _ hwN; omega
+  have hdnewN : (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1 < N := by
+    have := hW.degb _ hwN; omega
+  have htpd : (σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0 ≤ N := hW.tpb _ hdnewN
+  have hidx2 : ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) * N
+      + (σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0 ≤ N * N := by
+    have h1 : ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1 + 1) * N ≤ N * N :=
+      Nat.mul_le_mul_right N (by omega)
+    have h2 : ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1 + 1) * N
+        = ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) * N + N := by ring
+    omega
+  have hmulB : ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) * N < B := by omega
+  have hidx2B : ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) * N
+      + (σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0 < B := by omega
+  have hidx2len : ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) * N
+      + (σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0 < (σ.arrs sk).length := by
+    have := hW.sklen; omega
+  have htpdlen : (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1 < (σ.arrs tp).length := by
+    have := hW.tplen; omega
+  have htpdB : (σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0 < B := by omega
+  have htpd1B : (σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0 + 1 < B := by omega
+  have hwlendg2 : (R.getD (σ.vars "bk.t" - 1) 0) < (σ.arrs dg).length := by have := hW.dglen; omega
+  run_vcg
+  all_goals try simp only [vars_setVar, vars_setArr, arrs_setVar, arrs_setArr,
+    String.reduceEq, reduceIte, hmtread, haoval, eq_self_iff_true, if_true,
+      if_neg hda, if_neg hdm, if_neg hdr, if_neg hdt, if_neg hds,
+      if_neg hsa, if_neg hsm, if_neg hsr, if_neg hst, if_neg hsd,
+      if_neg hta, if_neg htm, if_neg htr, if_neg hts,
+      if_neg (Ne.symm hda), if_neg (Ne.symm hdm), if_neg (Ne.symm hdr),
+      if_neg (Ne.symm hdt), if_neg (Ne.symm hds), if_neg (Ne.symm hsa),
+      if_neg (Ne.symm hsm), if_neg (Ne.symm hsr), if_neg (Ne.symm hst),
+      if_neg (Ne.symm hsd), if_neg (Ne.symm hta), if_neg (Ne.symm htm),
+      if_neg (Ne.symm htr), if_neg (Ne.symm hts),
+    hnn, List.length_set]
+  all_goals try omega
+  · -- the neighbour is still live: it moves down one bucket
+    rename_i hlive
+    simp only [vars_setVar, arrs_setVar, String.reduceEq, reduceIte, hmtread, haoval,
+      hnn] at hlive
+    have hraWN : (τ.arrs ra).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 = N := by rw [← hraw]; exact hlive
+    have hdgpos : 0 < (τ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 := hposd _ hwmem hraWN
+    have hdgσ : (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 = (τ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 := hdgw
+    have hwnotin : (R.getD (σ.vars "bk.t" - 1) 0) ∉ mLst tp sk N σ ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) := by
+      intro hc
+      have := (hW.elts _ hdnewN _ hc).2
+      omega
+    have htplt : (σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0 < N :=
+      tp_lt_of_nodup (hW.nodup _ hdnewN) (fun x hx => (hW.elts _ hdnewN x hx).1) hwN hwnotin
+    have hsame : ∀ d, d < N → d ≠ (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1 →
+        ∀ i, i < (σ.arrs tp).getD d 0 → d * N + i
+          ≠ ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) * N
+            + (σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0 := by
+      intro d hd hdd i hi
+      have h1 := hW.tpb d hd
+      exact block_ne hdd (by omega) htplt
+    have hpushL : mLst tp sk N ((((σ.setVar "bk.t" (σ.vars "bk.t" - 1)).setVar "bk.w"
+          (R.getD (σ.vars "bk.t" - 1) 0)).setVar "bk.d" ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1)).setArr dg (R.getD (σ.vars "bk.t" - 1) 0)
+          ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) |>.setArr sk
+          (((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) * N
+            + (σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0) (R.getD (σ.vars "bk.t" - 1) 0) |>.setArr tp
+          ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1)
+          ((σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0 + 1))
+        ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1)
+        = (R.getD (σ.vars "bk.t" - 1) 0) :: mLst tp sk N σ ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) := by
+      refine mLst_push ?_ ?_ ?_
+      · simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte,
+          eq_self_iff_true, if_true, if_neg hda, if_neg hdm, if_neg hdr, if_neg hdt, if_neg hds,
+          if_neg hsa, if_neg hsm, if_neg hsr, if_neg hst, if_neg hsd,
+          if_neg hta, if_neg htm, if_neg htr, if_neg hts,
+          if_neg (Ne.symm hda), if_neg (Ne.symm hdm), if_neg (Ne.symm hdr),
+          if_neg (Ne.symm hdt), if_neg (Ne.symm hds), if_neg (Ne.symm hsa),
+          if_neg (Ne.symm hsm), if_neg (Ne.symm hsr), if_neg (Ne.symm hst),
+          if_neg (Ne.symm hsd), if_neg (Ne.symm hta), if_neg (Ne.symm htm),
+          if_neg (Ne.symm htr), if_neg (Ne.symm hts)]
+        exact getD_set_self (by have := hW.tplen; omega)
+      · intro i hi
+        simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte,
+          eq_self_iff_true, if_true, if_neg hda, if_neg hdm, if_neg hdr, if_neg hdt, if_neg hds,
+          if_neg hsa, if_neg hsm, if_neg hsr, if_neg hst, if_neg hsd,
+          if_neg hta, if_neg htm, if_neg htr, if_neg hts,
+          if_neg (Ne.symm hda), if_neg (Ne.symm hdm), if_neg (Ne.symm hdr),
+          if_neg (Ne.symm hdt), if_neg (Ne.symm hds), if_neg (Ne.symm hsa),
+          if_neg (Ne.symm hsm), if_neg (Ne.symm hsr), if_neg (Ne.symm hst),
+          if_neg (Ne.symm hsd), if_neg (Ne.symm hta), if_neg (Ne.symm htm),
+          if_neg (Ne.symm htr), if_neg (Ne.symm hts)]
+        exact getD_set_of_ne (by omega)
+      · simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte,
+          eq_self_iff_true, if_true, if_neg hda, if_neg hdm, if_neg hdr, if_neg hdt, if_neg hds,
+          if_neg hsa, if_neg hsm, if_neg hsr, if_neg hst, if_neg hsd,
+          if_neg hta, if_neg htm, if_neg htr, if_neg hts,
+          if_neg (Ne.symm hda), if_neg (Ne.symm hdm), if_neg (Ne.symm hdr),
+          if_neg (Ne.symm hdt), if_neg (Ne.symm hds), if_neg (Ne.symm hsa),
+          if_neg (Ne.symm hsm), if_neg (Ne.symm hsr), if_neg (Ne.symm hst),
+          if_neg (Ne.symm hsd), if_neg (Ne.symm hta), if_neg (Ne.symm htm),
+          if_neg (Ne.symm htr), if_neg (Ne.symm hts)]
+        exact getD_set_self (by have := hW.sklen; omega)
+    have hframeL : ∀ d, d < N → d ≠ (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1 →
+        mLst tp sk N ((((σ.setVar "bk.t" (σ.vars "bk.t" - 1)).setVar "bk.w"
+          (R.getD (σ.vars "bk.t" - 1) 0)).setVar "bk.d" ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1)).setArr dg (R.getD (σ.vars "bk.t" - 1) 0)
+          ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) |>.setArr sk
+          (((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) * N
+            + (σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0) (R.getD (σ.vars "bk.t" - 1) 0) |>.setArr tp
+          ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1)
+          ((σ.arrs tp).getD ((σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) 0 + 1)) d
+        = mLst tp sk N σ d := by
+      intro d hd hdd
+      refine mLst_frame ?_ ?_
+      · simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte,
+          eq_self_iff_true, if_true, if_neg hda, if_neg hdm, if_neg hdr, if_neg hdt, if_neg hds,
+          if_neg hsa, if_neg hsm, if_neg hsr, if_neg hst, if_neg hsd,
+          if_neg hta, if_neg htm, if_neg htr, if_neg hts,
+          if_neg (Ne.symm hda), if_neg (Ne.symm hdm), if_neg (Ne.symm hdr),
+          if_neg (Ne.symm hdt), if_neg (Ne.symm hds), if_neg (Ne.symm hsa),
+          if_neg (Ne.symm hsm), if_neg (Ne.symm hsr), if_neg (Ne.symm hst),
+          if_neg (Ne.symm hsd), if_neg (Ne.symm hta), if_neg (Ne.symm htm),
+          if_neg (Ne.symm htr), if_neg (Ne.symm hts)]
+        exact getD_set_of_ne hdd
+      · intro i hi
+        simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte,
+          eq_self_iff_true, if_true, if_neg hda, if_neg hdm, if_neg hdr, if_neg hdt, if_neg hds,
+          if_neg hsa, if_neg hsm, if_neg hsr, if_neg hst, if_neg hsd,
+          if_neg hta, if_neg htm, if_neg htr, if_neg hts,
+          if_neg (Ne.symm hda), if_neg (Ne.symm hdm), if_neg (Ne.symm hdr),
+          if_neg (Ne.symm hdt), if_neg (Ne.symm hds), if_neg (Ne.symm hsa),
+          if_neg (Ne.symm hsm), if_neg (Ne.symm hsr), if_neg (Ne.symm hst),
+          if_neg (Ne.symm hsd), if_neg (Ne.symm hta), if_neg (Ne.symm htm),
+          if_neg (Ne.symm htr), if_neg (Ne.symm hts)]
+        exact getD_set_of_ne (hsame d hd hdd i hi)
+    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩,
+      by omega⟩
+    all_goals try simp only [vars_setVar, vars_setArr, arrs_setVar, arrs_setArr,
+      String.reduceEq, reduceIte, eq_self_iff_true, if_true, if_neg hda, if_neg hdm, if_neg hdr, if_neg hdt, if_neg hds,
+      if_neg hsa, if_neg hsm, if_neg hsr, if_neg hst, if_neg hsd,
+      if_neg hta, if_neg htm, if_neg htr, if_neg hts,
+      if_neg (Ne.symm hda), if_neg (Ne.symm hdm), if_neg (Ne.symm hdr),
+      if_neg (Ne.symm hdt), if_neg (Ne.symm hds), if_neg (Ne.symm hsa),
+      if_neg (Ne.symm hsm), if_neg (Ne.symm hsr), if_neg (Ne.symm hst),
+      if_neg (Ne.symm hsd), if_neg (Ne.symm hta), if_neg (Ne.symm htm),
+      if_neg (Ne.symm htr), if_neg (Ne.symm hts),
+      hnn, List.length_set]
+    · omega
+    · exact hW.vv
+    · exact hW.rr
+    · exact hW.aoq
+    · exact hW.mtq
+    · exact hW.raq
+    · exact hW.dglen
+    · exact hW.tplen
+    · exact hW.sklen
+    · intro x hx
+      rw [hdrop]
+      by_cases hxw : x = R.getD (σ.vars "bk.t" - 1) 0
+      · rw [hxw, getD_set_self hwlendg2, if_pos ⟨List.mem_cons_self .., hraWN⟩, ← hdgσ]
+      · rw [getD_set_of_ne hxw, hW.degq x hx, if_mem_cons_eq hxw]
+    · intro x hx
+      by_cases hxw : x = R.getD (σ.vars "bk.t" - 1) 0
+      · rw [hxw, getD_set_self hwlendg2]; omega
+      · rw [getD_set_of_ne hxw]; exact hW.degb x hx
+    · intro d hd
+      rw [hwps d, hdgσ.symm, hraWN]
+      by_cases hdd : d = (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1
+      · subst hdd
+        rw [if_pos ⟨rfl, by omega⟩, hpushL, hW.stk _ hd]
+        simp
+      · rw [if_neg (by rintro ⟨-, hc⟩; omega), hframeL d hd hdd, hW.stk d hd]
+        simp
+    · intro d hd x hx
+      by_cases hdd : d = (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1
+      · subst hdd
+        rw [hpushL] at hx
+        rcases List.mem_cons.mp hx with rfl | hx'
+        · exact ⟨hwN, by rw [getD_set_self hwlendg2]⟩
+        · refine ⟨(hW.elts _ hd x hx').1, ?_⟩
+          by_cases hxw : x = R.getD (σ.vars "bk.t" - 1) 0
+          · have h2 := (hW.elts _ hd x hx').2
+            rw [hxw] at h2 ⊢
+            rw [getD_set_self hwlendg2]
+            
+          · rw [getD_set_of_ne hxw]; exact (hW.elts _ hd x hx').2
+      · rw [hframeL d hd hdd] at hx
+        refine ⟨(hW.elts d hd x hx).1, ?_⟩
+        by_cases hxw : x = R.getD (σ.vars "bk.t" - 1) 0
+        · have h2 := (hW.elts d hd x hx).2
+          rw [hxw] at h2 ⊢
+          rw [getD_set_self hwlendg2]
+          omega
+        · rw [getD_set_of_ne hxw]; exact (hW.elts d hd x hx).2
+    · intro d hd
+      by_cases hdd : d = (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1
+      · subst hdd
+        rw [hpushL]
+        exact List.nodup_cons.mpr ⟨hwnotin, hW.nodup _ hd⟩
+      · rw [hframeL d hd hdd]; exact hW.nodup d hd
+    · intro d hd
+      by_cases hdd : d = (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1
+      · subst hdd
+        rw [getD_set_self (by have := hW.tplen; omega)]; omega
+      · rw [getD_set_of_ne hdd]; exact hW.tpb d hd
+    · have hsucc := sum_range_set_succ (N := N) (l := σ.arrs tp)
+        (d₀ := (σ.arrs dg).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 - 1) hdnewN (by have := hW.tplen; omega)
+      have hc := hW.cnt
+      simp only [cellCount] at hc ⊢
+      simp only [arrs_setVar, arrs_setArr, String.reduceEq, reduceIte,
+        eq_self_iff_true, if_true, if_neg hda, if_neg hdm, if_neg hdr, if_neg hdt, if_neg hds,
+        if_neg hsa, if_neg hsm, if_neg hsr, if_neg hst, if_neg hsd,
+        if_neg hta, if_neg htm, if_neg htr, if_neg hts,
+        if_neg (Ne.symm hda), if_neg (Ne.symm hdm), if_neg (Ne.symm hdr),
+        if_neg (Ne.symm hdt), if_neg (Ne.symm hds), if_neg (Ne.symm hsa),
+        if_neg (Ne.symm hsm), if_neg (Ne.symm hsr), if_neg (Ne.symm hst),
+        if_neg (Ne.symm hsd), if_neg (Ne.symm hta), if_neg (Ne.symm htm),
+        if_neg (Ne.symm htr), if_neg (Ne.symm hts)]
+      omega
+  · -- the neighbour has already been peeled: nothing to do
+    rename_i hdead
+    simp only [vars_setVar, arrs_setVar, String.reduceEq, reduceIte, hmtread, haoval,
+      hnn] at hdead
+    have hraWN : (τ.arrs ra).getD (R.getD (σ.vars "bk.t" - 1) 0) 0 ≠ N := by rw [← hraw]; exact hdead
+    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩,
+      by omega⟩
+    all_goals try simp only [vars_setVar, vars_setArr, arrs_setVar, String.reduceEq,
+      reduceIte, hnn]
+    · omega
+    · exact hW.vv
+    · exact hW.rr
+    · exact hW.aoq
+    · exact hW.mtq
+    · exact hW.raq
+    · exact hW.dglen
+    · exact hW.tplen
+    · exact hW.sklen
+    · intro x hx
+      rw [hW.degq x hx, hdrop]
+      by_cases hxw : x = R.getD (σ.vars "bk.t" - 1) 0
+      · rw [if_neg (by rintro ⟨-, hc⟩; rw [hxw] at hc; exact hraWN hc),
+          if_neg (by rintro ⟨-, hc⟩; rw [hxw] at hc; exact hraWN hc)]
+      · rw [if_mem_cons_eq hxw]
+    · exact hW.degb
+    · intro d hd
+      rw [hwps d, if_neg (by rintro ⟨hc, -⟩; exact hraWN hc)]
+      simpa using hW.stk d hd
+    · exact hW.elts
+    · exact hW.nodup
+    · exact hW.tpb
+    · have hc := hW.cnt
+      simp only [cellCount, arrs_setVar] at hc ⊢
+      omega
+
+set_option maxHeartbeats 1000000 in
+/-- **The row walk, at `41·D + 4`** — affine in `v`'s **original**
+degree, which is what `staticPot` pays for. -/
+theorem walkCom_spec {ao dg mt ra tp sk : String}
+    (hda : dg ≠ ao) (hdm : dg ≠ mt) (hdr : dg ≠ ra) (hdt : dg ≠ tp) (hds : dg ≠ sk)
+    (hsa : sk ≠ ao) (hsm : sk ≠ mt) (hsr : sk ≠ ra) (hst : sk ≠ tp) (hsd : sk ≠ dg)
+    (hta : tp ≠ ao) (htm : tp ≠ mt) (htr : tp ≠ ra) (hts : tp ≠ sk)
+    {B N : ℕ} (hB : N + N * N + 1 < B)
+    {R : List ℕ} {D : ℕ} {τ : Env} {offv : ℕ}
+    (hRlen : R.length = D) (hRnd : R.Nodup) (hRlt : ∀ x ∈ R, x < N) (hDN : D < N)
+    (haov : (τ.arrs ao).getD (τ.vars "bk.v") 0 = offv)
+    (hvlen : τ.vars "bk.v" < (τ.arrs ao).length)
+    (hmtlen : offv + D ≤ (τ.arrs mt).length) (hoffB : offv + D < B)
+    (hvN : τ.vars "bk.v" < N)
+    (hrow : ∀ s, s < D → (τ.arrs mt).getD (offv + s) 0 = R.getD s 0)
+    (hposd : ∀ x ∈ R, (τ.arrs ra).getD x 0 = N → 0 < (τ.arrs dg).getD x 0)
+    (hralen : N ≤ (τ.arrs ra).length) (hraN : ∀ x, x < N → (τ.arrs ra).getD x 0 ≤ N) :
+    Spec B (WSt ao dg mt ra tp sk N R D τ)
+      (walkCom ao dg mt ra tp sk)
+      (fun _ σ' => WSt ao dg mt ra tp sk N R D τ σ' ∧ σ'.vars "bk.t" = 0)
+      (41 * D + 4) := by
+  have hcond : ∀ σ : Env, WSt ao dg mt ra tp sk N R D τ σ →
+      (Cond.lt (.lit 0) (.var "bk.t")).evalB B σ = some (decide (0 < σ.vars "bk.t")) := by
+    intro σ hσ
+    refine evalB_condLt (evalB_lit ?_) (evalB_var ?_)
+    · omega
+    · have := hσ.tle; omega
+  refine (Spec.while_count (WSt ao dg mt ra tp sk N R D τ) (fun σ => σ.vars "bk.t") 37
+    (fun σ hσ => ⟨_, hcond σ hσ⟩)
+    ((walkBody_spec hda hdm hdr hdt hds hsa hsm hsr hst hsd hta htm htr hts hB
+      hRlen hRnd hRlt hDN haov hvlen hmtlen hoffB hvN hrow hposd hralen hraN).pre ?_)
+    (fun _ h => h) (fun σ hσ => ?_)).post ?_
+  · rintro σ ⟨hσ, htrue⟩
+    refine ⟨hσ, ?_⟩
+    rw [hcond σ hσ] at htrue
+    simpa using htrue
+  · have := hσ.tle
+    have hmul : (1 + 3 + 37) * σ.vars "bk.t" ≤ (1 + 3 + 37) * D :=
+      Nat.mul_le_mul_left _ this
+    have hsz : (Cond.lt (Expr.lit 0) (Expr.var "bk.t")).size = 3 := by simp
+    simp only [hsz]
+    omega
+  · rintro σ σ' - ⟨hσ', hfalse⟩
+    refine ⟨hσ', ?_⟩
+    rw [hcond σ' hσ'] at hfalse
+    have : ¬ (0 < σ'.vars "bk.t") := by simpa using hfalse
+    omega
+
 end Lax3Proofs.Prog
