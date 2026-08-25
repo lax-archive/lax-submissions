@@ -801,10 +801,16 @@ theorem f7s_Krl_le (c w : ℕ) :
 
 open Lax11.GraphEncoding in
 open Classical in
-/-- **The ledger bridge, with no hypothesis left.**  Verbatim
-`b7c_KsChargeBridge_bucket` at the root load this file discharges:
-`Krl` is `csrLoadK x + (11·n + 8)`, and its `hKrl` is §8's bound at
-`crl = 81`.  Everything the bridge needed is now supplied. -/
+/-- **The ledger bridge, with the root load's hypothesis discharged.**
+Verbatim `b7c_KsChargeBridge_bucket` at the root load this file
+discharges: `Krl` is `csrLoadK x + (11·n + 8)`, and its `hKrl` is §8's
+bound at `crl = 81`, supplied here.
+
+The bridge's other rate hypothesis, `hKc`, is *not* this file's to
+discharge: it is the top scatter's cost column, `Kc ≤ ckc·(|x|+1)`.
+The arithmetic for it is `f7_topScatK_le_word`, which lives downstream
+of this module in the import order, so `ckc` and `hKc` are passed
+through rather than closed here. -/
 theorem f7s_KsChargeBridge_bucket
     (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     {ε : ℝ} (hε : 0 < ε) (ℓp : ℕ → ℕ) (Kq a b c : ℕ)
@@ -812,7 +818,8 @@ theorem f7s_KsChargeBridge_bucket
     (htabF : (j : ℕ) →
       (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
       Fin A.N → Fin (ℓp j) → List (Fin A.N))
-    (Kc : ℕ) (av : ScatterSentence 0 → Expr) :
+    (Kc ckc : ℕ) (av : ScatterSentence 0 → Expr)
+    (hKc : ∀ x ∈ mcD n G cw ww, Kc ≤ ckc * (x.length + 1)) :
     ∃ (cf c' : ℝ) (T : List ℕ → ℕ), 1 ≤ cf ∧ 0 ≤ c' ∧
       (∀ x : List ℕ, (T x : ℝ) ≤ c' * ((x.length : ℝ) + 1) ^ (1 + ε)) ∧
       (∀ (col : Coloring n 0) (x : List ℕ), EncodesGraph x n G →
@@ -840,7 +847,7 @@ theorem f7s_KsChargeBridge_bucket
               (rootArena G (Impl.trivialColoring n)) +
             (Kc + topEvalCost (Headline.headlineSetup C hC φ) av)))) :=
   b7c_KsChargeBridge_bucket C hC φ hε ℓp Kq a b c G hG cw ww htabF
-    (fun x => csrLoadK x + (11 * n + 8)) Kc 81 av (f7s_Krl_le cw ww)
+    (fun x => csrLoadK x + (11 * n + 8)) Kc 81 ckc av (f7s_Krl_le cw ww) hKc
 
 /-! ## §9 The two seams, composed at the one descriptor
 
