@@ -1923,7 +1923,7 @@ theorem OrdArr.of_eq {od : String} {N : ℕ} {π : Equiv.Perm (Fin N)} {σ σ' :
   rw [OrdArr, hod]; exact h
 
 /-- The two figures of an admissible arena are words. -/
-private theorem sq_lt_mcB {x : List ℕ} {n : ℕ} {G : SimpleGraph (Fin n)} {q : ℕ}
+theorem sq_lt_mcB {x : List ℕ} {n : ℕ} {G : SimpleGraph (Fin n)} {q : ℕ}
     (henc : EncodesGraph x n G) (hq : 1 ≤ q) : n * n < mcB q x := by
   have hlen := henc.length_eq
   have h2 : (x.length + 1) ^ 2 ≤ mcB q x := by

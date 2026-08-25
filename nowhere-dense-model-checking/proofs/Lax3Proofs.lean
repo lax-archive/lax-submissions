@@ -129,6 +129,7 @@ import Lax3Proofs.SolveSweepOrder
 import Lax3Proofs.SolveAugFrat
 import Lax3Proofs.SolveAugTrans
 import Lax3Proofs.SolveAugEmit
+import Lax3Proofs.SolveAugCompose
 
 -- The proofs package of submission Lax3.
 --
