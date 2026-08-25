@@ -159,6 +159,7 @@ import Lax3Proofs.SolveAugRoundSeams
 import Lax3Proofs.SolveAugRoundIn
 import Lax3Proofs.SolveF7Bridge
 import Lax3Proofs.SolveF7BridgeCover
+import Lax3Proofs.SolveF7Seam
 import Lax3Proofs.SolveF7Close
 import Lax3Proofs.SolveF7CloseQ
 import Lax3Proofs.SolveF7CloseCompose

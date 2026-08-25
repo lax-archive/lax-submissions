@@ -75,6 +75,67 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-26 — both seam residuals discharged, and `SolveSpec` now needs `FrameStepAllScr` ALONE
+
+`SolveF7Seam.lean` (997 lines) discharges `RootLoadSpec` and `TopScatterAll`
+verbatim, and the leaf's real discovery is that **they were never two leaves**.
+Each already had a landed discharger (`rootLoadSpec_of_csrLoad` with its own
+residual already closed, and `topScatterAll_of`), both stopping at a descriptor
+hypothesis, and `solveSpec_closed_scr` needs **one** `Scr` meeting both *plus*
+`hfr`/`hLVbt`/`hLRbot`/`hscr`. So it is a single descriptor with six demands.
+
+The capstone: **`f7s_solveSpec_closed_scr` produces `SolveSpec` from
+`FrameStepAllScr` alone** plus instantiator data. And `f7s_Krl_le`
+(`Krl x ≤ 81·(|x|+1)`) discharges the ledger bridge's last hypothesis, so
+`f7s_KsChargeBridge_bucket` **carries the bridge with nothing standing**.
+
+Descriptor choice, and the reasoning is the right one: `RankScrTower` plus an
+allocation tower, **not** `prepScr`. `RankScr` at the level window is the only
+*content* clause either seam reads, and the weakest descriptor is correct
+because `Scr` sits in both **preconditions**; `SolveScrFrameSat` already proves
+`ScrFrame`/`ScrStep`/`hLVbt`/`hLRbot` for it; `ScrFrame.and_lens` makes the
+allocation conjunction free; and every remaining demand is a length clause,
+which is the only kind demandable at all since no IMP+ run changes a length.
+
+**The trap, seventh occurrence — and this time the landed hypothesis is
+inconsistent, not merely unavailable.** `f7s_hScr0_refuted` proves that
+`SolveGlueLoad.rootLoadSpec_of_csrLoad`'s `hScr0`, at any content-carrying
+descriptor with `0 < N`, yields `False`: raise the level-0 carrier cell, flip one
+scratch cell — lengths unchanged, window dirty. So at any descriptor that
+carries content, that landed theorem proves nothing. This is one seam further
+out than the one `rankScr_not_length_only` closed, and it is the reason the file
+needed its own §3 rather than reusing the landed assembly directly.
+
+Three docstring drifts reported, none in the worker's files: `BlockPre`'s
+(`SolveChain.lean:195`, contradicting its own file's §3b and module docstring),
+`SolveGlueLoad.lean:41` (which describes the very hypothesis just refuted), and
+`SolveSeamTop.lean:8-9`. The two the packet named had already been repaired.
+
+**A cost note the worker raised that turned out to matter elsewhere.**
+`Kc = topScatK n (∑ deg) atoms` is Θ(n + m) — linear in carrier and slots, no
+`N²`, fine in itself — but `b7_KsChargeBridge` absorbs `Kc` into the bridge
+constant `cB`. Under the landed `KsChargeBridge` that is harmless because `cB` is
+chosen after `(n, G)`. Under **`F7Bridge`**, where `cB` must be fixed *before*
+them, it is not — so my instruction to w37 that `b7Cb` is uniform was too strong:
+its *internal* figures are schedule-only, but `Kc` and `crl` are parameters, and
+both are input-sized. Relayed mid-flight with the repair's shape, which is
+already visible in this leaf's own `f7s_Krl_le`: the bridge's right-hand side
+carries a `|x|+1` factor, so an input-sized stage figure should ride that factor
+rather than sit inside `cB`. Told w37 to stop and report if `Kc ≤ K_c0·(|x|+1)`
+cannot be had with a schedule-only constant, since that would be a headline-level
+finding rather than something to work around.
+
+Integration note for whoever discharges `FrameStepAllScr`: `f7s_solveSpec_closed_scr`
+pins residual 1 to `f7sScrH`. `PrepAlloc` and `BatchWidthScr` are length clauses
+and drop straight into `F7sAlloc`, but `prepScr`'s `∀ i, σ.vars (arenaNames i).nN
+≤ n₀` is a **cell** clause over all levels — not `and_lens`-compatible, and
+outside `rankScrLV`'s pool at level `j`. Either restrict it to `i ≥ j` or widen
+`LV i` to carry every carrier cell; the latter keeps `hLVbt` and `hctrLV`.
+
+Elaboration ~6.5 s. Axioms clean on all 18 results — and an early draft of this
+file *did* leak `sorryAx` with no literal `sorry`, caught by the `#print axioms`
+gate. Fourth occurrence today.
+
 ### 2026-08-26 — the cover stage became composable while nobody was looking; w38 dispatched
 
 Tracing what `FrameStepAllScr` still needs turned up a leaf that had quietly
