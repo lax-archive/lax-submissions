@@ -75,6 +75,40 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — a container restart killed two workers; both recovered from their branches
+
+The session's container was replaced. Every running subagent died with it —
+`ListAgents` came back empty, which is how it was noticed. The recovery worked
+exactly as the 2026-08-18 cloud-adjustment designed it to: **the worktree
+branches were the whole recovery state**, and nothing was lost.
+
+- **w29 / the prep composition**: `SolveMachPrepComp.lean` at 945 lines, **zero
+  `sorry`**, §1–§6 complete — name pool, two previously unstated inter-stage
+  seams, the concrete `prepC`, the budget with the O(1) scalar loads folded in
+  (`prepKP_le`), the name discipline, and **the level's concrete scratch
+  descriptor** `prepScr` with `prepScr_down`/`_htabLen`/`_alloc`/`_rank`/
+  `_batchWidth`/`_out`. That descriptor is the first concrete `Scr` in this
+  campaign carrying *content* rather than being a parameter constrained only
+  through implications: `prepScr_rank` is the clean-window clause and
+  `prepScr_batchWidth` the exact-`S.width` bit region. What remains is the final
+  `Spec.seq` chain to `ChildLoadPartsScrAll`.
+- **w31 / `AugRoundIn`**: `SolveAugRoundSeams.lean` at 558 lines, zero `sorry`.
+
+Both checkpointed to their branches (`556aab5`, `ca426c9`) and re-dispatched as
+continuations pointed at their predecessors' files, not restarts. Toolchain,
+warm store and both seeded worktrees survived on disk; main rebuilt green at
+3561 jobs.
+
+**Two operational facts worth keeping.** (i) The checkpoint-push discipline is
+what made this a ten-minute recovery instead of a lost afternoon — but note the
+uncommitted deltas were recovered only because the *filesystem* survived; had
+the container been replaced rather than the session, only the pushed branches
+would remain. Push worker branches, not just checkpoint them locally.
+(ii) **This machine has 4 cores.** Four workers each replaying `lake build`
+alongside a gate put 14 `lean` processes on 4 CPUs and stretched one gate to
+~50 minutes. Wave width is bounded by CPU, not only by review bandwidth; two
+concurrent workers is the right load here.
+
 ### 2026-08-25 — the cover sweep closes, and a live quadratic is retired
 
 W37, `SolveSweepClose.lean` (944 lines). `sweepClose_covPeelIn` concludes
