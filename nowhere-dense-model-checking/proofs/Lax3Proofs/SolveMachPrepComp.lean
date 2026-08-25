@@ -19,12 +19,21 @@ seams that no landed object provides.
 Every name the pass uses is `lv <base> <index>` at a four-character
 base, so **every** disequality in the composition is `decide`-able:
 `lv_notMem` and `lv_ne_lit` turn a base clash into a decidable
-proposition about string literals. The pass's own arrays and scalars
-are level-**in**dependent (`"pc.·"`, `"pf.·"`): the frame clause
-`ChildLoadPartsScr` demands is agreement on `ca j :: co j :: cm j ::
-levelArrays j`, and a base outside `{sa.·, sv.·, sl.·}` misses that
-pool at *every* level, so nothing is gained by tagging the scratch and
-the descriptor transport `hscrDown` is much cheaper without it.
+proposition about string literals, and §6 discharges the whole
+discipline once.
+
+Most of the pass's own arrays and scalars carry level tag `0`
+(`"pc.·"`): the frame clause `ChildLoadPartsScr` demands is agreement
+on `ca j :: co j :: cm j :: levelArrays j`, and a base outside
+`{sa.·, sv.·, sl.·}` misses that pool at *every* level, so a shared
+name is safe wherever the clause it carries is length-only.
+
+The **rank scratch is the exception** and is tagged per level
+(`pcRa j`). Its clause is not length-only: `restrictCom_specW` restores
+the scratch on `take A.N` and says nothing about the tail, so a shared
+scratch could not carry a clean window down the recursion at all — see
+`pcRa`'s own docstring and `prepScr_down`. The three profile table
+families are `lv`-indexed too, but by their *slot*, not by the level.
 
 ## §2 The command
 
@@ -74,7 +83,7 @@ namespace Lax3Proofs.Prog
 
 open Lax13Proofs.Imp Lax13Proofs.Reasoning
 open Lax11.GraphEncoding
-open Lax3.ColoredGraphs Lax3.DistFO
+open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax12.GraphClasses Lax12.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
@@ -114,7 +123,7 @@ pairwise disjointness. -/
 
 /-- Array: the cluster's enumeration region (`restrictCom`'s
 `ClusterList`). -/
-def pcLa : String := "pc.l"
+def pcLa : String := lv "pc.l" 0
 /-- Array family: the rank scratch — the one array `restrictCom`
 dirties and cleans, **one per level**.
 
@@ -133,22 +142,22 @@ def pcRa : ℕ → String := lv "pc.r"
 the child here, not in the level's own region, because `isolateCom`
 needs a fresh output pair and the deliverable is stated at
 `arenaNames (j+1)`. -/
-def pcOi : String := "pc.o"
+def pcOi : String := lv "pc.o" 0
 /-- Array: the pre-isolation child CSR targets. -/
-def pcTi : String := "pc.t"
+def pcTi : String := lv "pc.t" 0
 /-- Array: the batch bit vector — one region for the scan and the
 isolation both (`range_batchFn_eq_batchSet`). -/
-def pcBb : String := "pc.b"
+def pcBb : String := lv "pc.b" 0
 /-- Array: the padded batch index region, at length exactly `S.width`. -/
-def pcBi : String := "pc.i"
+def pcBi : String := lv "pc.i" 0
 /-- Array: the BFS distance region. -/
-def pcDa : String := "pc.d"
+def pcDa : String := lv "pc.d" 0
 /-- Array: the supports pass's least-parent region. -/
-def pcPa : String := "pc.p"
+def pcPa : String := lv "pc.p" 0
 /-- Array: the profiles stage's per-class bit scratch. -/
-def pcXb : String := "pc.x"
+def pcXb : String := lv "pc.x" 0
 /-- Array: the profiles stage's `vsrc` offset scratch. -/
-def pcVo : String := "pc.v"
+def pcVo : String := lv "pc.v" 0
 
 /-- Array family: the batch distance tables, one per padded slot. -/
 def pcPd : ℕ → String := lv "pf.d"
@@ -159,35 +168,35 @@ relativised colour. -/
 def pcPu : ℕ → String := lv "pf.u"
 
 /-- Scalar: the cluster row's base offset. -/
-def pcCb : String := "pc.a"
+def pcCb : String := lv "pc.a" 0
 /-- Scalar: the cluster row / connector scan counter. -/
-def pcCt : String := "pc.c"
+def pcCt : String := lv "pc.c" 0
 /-- Scalar: the connector's own child name. -/
-def pcCc : String := "pc.e"
+def pcCc : String := lv "pc.e" 0
 /-- Scalar: the batch builder's column cursor. -/
-def pcEc : String := "pc.f"
+def pcEc : String := lv "pc.f" 0
 /-- Scalar: the batch builder's entry cursor. -/
-def pcIc : String := "pc.g"
+def pcIc : String := lv "pc.g" 0
 /-- Scalar: the batch builder's row length. -/
-def pcLn : String := "pc.h"
+def pcLn : String := lv "pc.h" 0
 /-- Scalar: the batch builder's slot base. -/
-def pcBs : String := "pc.j"
+def pcBs : String := lv "pc.j" 0
 /-- Scalar: the batch builder's carrier cursor. -/
-def pcAv : String := "pc.k"
+def pcAv : String := lv "pc.k" 0
 /-- Scalar: the batch builder's emit cursor. -/
-def pcSc : String := "pc.m"
+def pcSc : String := lv "pc.m" 0
 /-- Scalar: the round count, a compile-time constant (`= j`). -/
-def pcJr : String := "pc.n"
+def pcJr : String := lv "pc.n" 0
 /-- Scalar: the schedule's batch width. -/
-def pcMw : String := "pc.q"
+def pcMw : String := lv "pc.q" 0
 /-- Scalar: the colour writer's row base. -/
-def pcW : String := "pc.w"
+def pcW : String := lv "pc.w" 0
 /-- Scalar: the colour writer's distance cursor. -/
-def pcDd : String := "pc.s"
+def pcDd : String := lv "pc.s" 0
 /-- Scalar: the colour writer's carrier cursor. -/
-def pcVv : String := "pc.u"
+def pcVv : String := lv "pc.u" 0
 /-- Scalar: the isolation's output slot count. -/
-def pcNo : String := "pc.y"
+def pcNo : String := lv "pc.y" 0
 
 /-- **The pre-isolation child's name family**: the level-`(j+1)` regions
 with the CSR pair routed through the pass's own scratch. This is the
@@ -811,4 +820,126 @@ theorem prepScr_out {S : Setup L} {ℓp hbf : ℕ → ℕ} {n₀ j : ℕ} {σ σ
 
 end Descriptor
 
+/-! ## §6 The name discipline, discharged
+
+The nine stage contracts between them ask for about sixty
+disequalities, five `Nodup`/`Pairwise` bundles, a `ProfNames.Ok`, and
+eight `∉ <stage scalars>` clauses. At the pool of §1 every one of them
+is either a **base clash** between two four-character `lv` bases or a
+**level clash** at one base, so the whole discipline is
+`lv_ne_of_base_ne` / `lv_ne_of_level_ne` / `lv_notMem` and `decide`.
+
+This section discharges it once, so that the composition never has to
+argue about a name again. -/
+
+section NameDiscipline
+
+variable {L : ℕ}
+
+/-- The level's own five regions are pairwise distinct — the
+`hnd5`/`hnd5P` side condition of `restrictCom_specW`,
+`supportsCom_specW`, `isolateCom_specW`, `profilesCom_specW` and
+`arenaStW_recol_frame`. -/
+theorem arenaNames_nodup5 (k : ℕ) :
+    ([(arenaNames k).off, (arenaNames k).tgt, (arenaNames k).col,
+      (arenaNames k).up, (arenaNames k).hist] : List String).Nodup := by
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
+    List.nodup_nil, and_true, not_or]
+  refine ⟨⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_⟩, ⟨?_, ?_⟩, ?_⟩ <;>
+    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+
+/-- The same at the pass's intermediate family — the pre-isolation
+child, whose CSR pair is the pass's own scratch. -/
+theorem prepMid_nodup5 (j : ℕ) :
+    ([(prepMid j).off, (prepMid j).tgt, (prepMid j).col, (prepMid j).up,
+      (prepMid j).hist] : List String).Nodup := by
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
+    List.nodup_nil, and_true, not_or]
+  refine ⟨⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_⟩, ⟨?_, ?_⟩, ?_⟩ <;>
+    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+
+/-- `restrictCom_specW`'s `hpair`: the child's five output regions and
+the rank scratch, pairwise distinct. -/
+theorem prep_restrict_pairwise (j : ℕ) :
+    ([(prepMid j).off, (prepMid j).tgt, (prepMid j).col, (prepMid j).up,
+      (prepMid j).hist, pcRa j] : List String).Pairwise (· ≠ ·) := by
+  show ([(prepMid j).off, (prepMid j).tgt, (prepMid j).col, (prepMid j).up,
+    (prepMid j).hist, pcRa j] : List String).Nodup
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
+    List.nodup_nil, and_true, not_or]
+  refine ⟨⟨?_, ?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_⟩, ⟨?_, ?_⟩,
+    ?_⟩ <;>
+    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+
+/-- `restrictCom_specW`'s `hdisj`: the child's output regions and the
+rank scratch miss the parent's regions and the cluster region. The only
+non-base clashes are `col`/`up`/`hist` at levels `j+1` versus `j`. -/
+theorem prep_restrict_disj (j : ℕ) :
+    ∀ x ∈ ([(prepMid j).off, (prepMid j).tgt, (prepMid j).col,
+        (prepMid j).up, (prepMid j).hist, pcRa j] : List String),
+      ∀ y ∈ ([(arenaNames j).off, (arenaNames j).tgt, (arenaNames j).col,
+        (arenaNames j).up, (arenaNames j).hist, pcLa] : List String),
+      x ≠ y := by
+  intro x hx y hy
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hx hy
+  rcases hx with rfl | rfl | rfl | rfl | rfl | rfl <;>
+    rcases hy with rfl | rfl | rfl | rfl | rfl | rfl <;>
+      first
+        | exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+        | exact lv_ne_of_level_ne (by rfl) (by omega)
+
+/-- The cluster region misses the parent's five — `restrictCom_specW`'s
+`hla5`. -/
+theorem prep_la_notMem5 (j : ℕ) :
+    pcLa ∉ ([(arenaNames j).off, (arenaNames j).tgt, (arenaNames j).col,
+      (arenaNames j).up, (arenaNames j).hist] : List String) := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
+    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+
+/-- The BFS distance region misses the child's five —
+`bfsCom_specW`'s `hda5` and `supportsCom_specW`'s. -/
+theorem prep_da_notMem5 (j : ℕ) :
+    pcDa ∉ ([(prepMid j).off, (prepMid j).tgt, (prepMid j).col,
+      (prepMid j).up, (prepMid j).hist] : List String) := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
+    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+
+/-- The supports pass's parent region misses the child's five. -/
+theorem prep_pa_notMem5 (j : ℕ) :
+    pcPa ∉ ([(prepMid j).off, (prepMid j).tgt, (prepMid j).col,
+      (prepMid j).up, (prepMid j).hist] : List String) := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
+    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+
+/-- The batch bit region misses the child's five — `isolateCom_specW`'s
+`hba5`. -/
+theorem prep_bb_notMem5 (j : ℕ) :
+    pcBb ∉ ([(prepMid j).off, (prepMid j).tgt, (prepMid j).col,
+      (prepMid j).up, (prepMid j).hist] : List String) := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
+    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+
+/-- The isolation's two output regions miss the pre-isolation family —
+`isolateCom_specW`'s `hoaO5`/`htaO5`. The clash with the pass's own
+CSR pair is a base clash; with `col`/`up`/`hist` of level `j+1` it is a
+base clash too, because the outputs are `sa.o`/`sa.t` at that level. -/
+theorem prep_oaO_notMem5 (j : ℕ) :
+    (arenaNames (j + 1)).off ∉ ([(prepMid j).off, (prepMid j).tgt,
+      (prepMid j).col, (prepMid j).up, (prepMid j).hist] : List String) := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
+    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+
+theorem prep_taO_notMem5 (j : ℕ) :
+    (arenaNames (j + 1)).tgt ∉ ([(prepMid j).off, (prepMid j).tgt,
+      (prepMid j).col, (prepMid j).up, (prepMid j).hist] : List String) := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
+    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+
+end NameDiscipline
 end Lax3Proofs.Prog
