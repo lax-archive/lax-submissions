@@ -39,7 +39,8 @@ translation.
 
 `mc_computesInTime_of_solveSpec` then lands the axiom's exact
 `ComputesInTime` shape on the axiom's exact admissible set `mcD`
-(verbatim), at time `mcLayout.const · (12·|x| + Ks x + 2)`. The `Sat`
+(verbatim), at time `mcLayout.const · (12·|x| + Ks x + 2)` — a constant
+that does not see the layout's `temps` (`mcLayout_const_eq`). The `Sat`
 form of the value function is produced here from the obligation's
 `unrolledMC` form through the landed semantic chain
 (`Unroll.unrolledMC_eq_MC` + `Headline.headlineSetup_mc_correct`) —
@@ -64,8 +65,8 @@ continuation map.
 **Binder order (the campaign's most-repeated gate).** The axiom's
 `∃ p` precedes `∀ n G w`: one program for the whole class. This
 theorem is stated at a fixed `(n, G, w)` because `ComputesInTime` is,
-but every piece of program data — `solveCom`, `eS`, `eA`, `ord`, `c`,
-`q`, `Ks` — is a parameter the caller fixes *before* `n`, `G`, `w`,
+but every piece of program data — `solveCom`, `eS`, `eA`, `t`, `ord`,
+`c`, `q`, `Ks` — is a parameter the caller fixes *before* `n`, `G`, `w`,
 and the compiled program and the time bound mention none of them. F7
 therefore instantiates all of them once from `(C, hC, φ, ε)` (the
 `SolveSpec` discharge must be uniform in `(n, G, w)` — item 2 of the
@@ -165,16 +166,25 @@ def mcCom (solveCom : Com) : Com :=
   .seq parseCom (.seq solveCom (writeScalar "verdict"))
 
 /-- The front end compiles under the skeleton layout, whatever the
-extension. -/
-theorem parseCom_ok (eS eA : List String) : Com.Ok (mcLayout eS eA) parseCom := by
-  simp [parseCom, readScalars, readArr, Lax13Proofs.Reasoning.Lib.Fill.put,
-    mcLayout, Com.Ok, Cond.Ok, condExpr, Expr.Ok]
+extension, as soon as the layout has the two temporaries the parse's
+own array scans need. The landed proof is replayed at `t = 2` and
+transported upward by `mcLayout_com_ok_mono` — `Com.Ok` is monotone in
+`temps`, so nothing about the front end changes when F7 deepens the
+layout for the root evaluation. -/
+theorem parseCom_ok (eS eA : List String) {t : ℕ} (ht : 2 ≤ t) :
+    Com.Ok (mcLayout eS eA t) parseCom :=
+  mcLayout_com_ok_mono ht (by
+    simp [parseCom, readScalars, readArr, Lax13Proofs.Reasoning.Lib.Fill.put,
+      mcLayout, Com.Ok, Cond.Ok, condExpr, Expr.Ok])
 
-/-- The pipeline compiles as soon as the solve stages do. -/
-theorem mcCom_ok {eS eA : List String} {solveCom : Com}
-    (h : Com.Ok (mcLayout eS eA) solveCom) :
-    Com.Ok (mcLayout eS eA) (mcCom solveCom) :=
-  ⟨parseCom_ok eS eA, h, by simp [writeScalar, mcLayout, Com.Ok, Expr.Ok]⟩
+/-- The pipeline compiles as soon as the solve stages do. The epilogue
+`writeScalar "verdict"` needs one temporary (`Com.Ok (.write e)` asks
+`0 < L.temps`), the front end two; both are under `2 ≤ t`. -/
+theorem mcCom_ok {eS eA : List String} {t : ℕ} {solveCom : Com} (ht : 2 ≤ t)
+    (h : Com.Ok (mcLayout eS eA t) solveCom) :
+    Com.Ok (mcLayout eS eA t) (mcCom solveCom) :=
+  ⟨parseCom_ok eS eA ht, h, by
+    simp [writeScalar, mcLayout, Com.Ok, Expr.Ok]; omega⟩
 
 /-! ## §2 The named obligation -/
 
@@ -213,29 +223,31 @@ admissible set verbatim, conditional on the one named obligation
 the front end, the epilogue, the semantic chain to `Sat`, the
 word-size condition — is discharged here.
 
-The remaining hypotheses are, in F7-discharge order: `hq`/`hqc`/
-`hspan` (constants: the schedule's `q`, the axiom's `c` absorbing the
-span), `hextOff`/`hextTgt` (the two pre-sized parse arrays),
+The remaining hypotheses are, in F7-discharge order: `hq`/`hqc`/`ht`/
+`hspan` (constants: the schedule's `q`, the layout's temporaries `t`,
+the axiom's `c` absorbing the span — `t` enters `hspan` additively and
+`Layout.const` not at all), `hextOff`/`hextTgt` (the two pre-sized
+parse arrays),
 `hokS`/`hnw` (the solve command mentions only layout names and never
 writes the tape), and `hsolve` (the obligation). -/
 theorem mc_computesInTime_of_solveSpec
     (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
-    (c w q : ℕ) (eS eA : List String) (ext : List ℕ → String → ℕ)
+    (c w q : ℕ) (eS eA : List String) (t : ℕ) (ext : List ℕ → String → ℕ)
     (solveCom : Com) (Ks : List ℕ → ℕ)
-    (hq : 1 ≤ q) (hqc : q ≤ c)
-    (hspan : 11 + eS.length + (2 + eA.length) * q ≤ c)
+    (hq : 1 ≤ q) (hqc : q ≤ c) (ht : 2 ≤ t)
+    (hspan : 9 + t + eS.length + (2 + eA.length) * q ≤ c)
     (hextOff : ∀ x ∈ mcD n G c w, ext x "off" = vertexCount x + 1)
     (hextTgt : ∀ x ∈ mcD n G c w, ext x "tgt" = 2 * edgeCount x)
-    (hokS : Com.Ok (mcLayout eS eA) solveCom) (hnw : solveCom.NoWrite)
+    (hokS : Com.Ok (mcLayout eS eA t) solveCom) (hnw : solveCom.NoWrite)
     (hsolve : SolveSpec C hC φ ord G c w q ext solveCom Ks) :
     Lax13.RamComputes.ComputesInTime w
-      (compileProgram (mcLayout eS eA) (mcCom solveCom))
+      (compileProgram (mcLayout eS eA t) (mcCom solveCom))
       (mcD n G c w)
       (fun _ => if Lax3.FirstOrder.Sat G Fin.elim0 φ then [1] else [0])
-      (fun x => (mcLayout eS eA).const * mcK Ks x) := by
-  refine computesInTime_of_spec (mcCom_ok hokS) (mcD_entry_lt_mcB hq) ?_
-    (mcLayout_fitsWords eS eA hq hqc hspan)
+      (fun x => (mcLayout eS eA t).const * mcK Ks x) := by
+  refine computesInTime_of_spec (mcCom_ok ht hokS) (mcD_entry_lt_mcB hq) ?_
+    (mcLayout_fitsWords eS eA t hq hqc hspan)
   intro x hx
   obtain ⟨henc, hside⟩ := hx
   refine ⟨ext x, ?_⟩

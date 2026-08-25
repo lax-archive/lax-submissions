@@ -8,11 +8,16 @@ import Lax3.ModelChecking
 
 `ProgCodegen.mc_computesInTime_of_solveSpec` lands the endorsed axiom's
 `ComputesInTime`, on the axiom's admissible set verbatim, at the machine
-budget `(mcLayout eS eA).const · mcK Ks x`, conditional on eight named
-hypotheses. This file spends the last three of them —
-`hq`/`hqc`/`hspan`, the constants — closes the `∃ p c T` and proves the
-axiom's *real* time bound, taking only `SolveSpec` and the ledger
-bridge as hypotheses.
+budget `(mcLayout eS eA t).const · mcK Ks x`, conditional on nine named
+hypotheses. This file spends the constants — `hq`/`hqc`/`hspan` —
+closes the `∃ p c T` and proves the axiom's *real* time bound, taking
+only `SolveSpec` and the ledger bridge as hypotheses.
+
+The layout's temporaries `t` ride through untouched: `Layout.const`
+does not mention `temps` (`mcLayout_const_eq`), so the machine constant
+`K` below — and with it the whole time bound and its exponent — is the
+same at every `t`; `t` is paid for once, additively, inside the axiom's
+constant `c` through `hspan`.
 
 ## What the close actually needs, and in which direction
 
@@ -48,7 +53,7 @@ to be collected before the discharge. They are collected in
 
 `c`, by contrast, is chosen here, after everything:
 
-    f7c := c₀ + q + (11 + |eS| + (2 + |eA|)·q) + ⌈f7cR⌉₊
+    f7c := c₀ + q + (9 + t + |eS| + (2 + |eA|)·q) + ⌈f7cR⌉₊
 
 — the discharger's own constant, the `hqc` bound, the `hspan` span, and
 the ceiling of the real constant the time bound needs. Adding rather
@@ -63,7 +68,7 @@ gives, at one `cf ≥ 1`, a **single** `T_ch : List ℕ → ℕ` with
 every encoding of it — uniformly in `n`, `G`, the coloring and
 `htabF`. The bridge turns that into a bound on `Ks`, and
 
-    f7T x := (mcLayout eS eA).const · (12·|x| + cB·(T_ch x + |x| + 1) + 2)
+    f7T x := (mcLayout eS eA t).const · (12·|x| + cB·(T_ch x + |x| + 1) + 2)
 
 is then a function of `x` alone, above the machine's budget on every
 admissible input and below `c·(|x|+1)^{1+ε}` on every input at all.
@@ -229,13 +234,13 @@ admissible set is the axiom's set-builder verbatim, and the word-size
 side condition is per-`(n, G, w)` inside, as the axiom states it. -/
 theorem f7close_exists_of_solveSpec
     (C : GraphClass) (hC : NowhereDense C) (φ : FO 0) (ε : ℝ) (hε : 0 < ε)
-    (q c₀ : ℕ) (eS eA : List String) (ext : List ℕ → String → ℕ)
+    (q c₀ : ℕ) (eS eA : List String) (t : ℕ) (ext : List ℕ → String → ℕ)
     (solveCom : Com) (Ks : List ℕ → ℕ) (ℓp : ℕ → ℕ)
     (htabF : (n : ℕ) → (j : ℕ) →
       (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
       Fin A.N → Fin (ℓp j) → List (Fin A.N))
-    (hq : 1 ≤ q)
-    (hokS : Com.Ok (mcLayout eS eA) solveCom) (hnw : solveCom.NoWrite)
+    (hq : 1 ≤ q) (ht : 2 ≤ t)
+    (hokS : Com.Ok (mcLayout eS eA t) solveCom) (hnw : solveCom.NoWrite)
     (hextOff : ∀ (n : ℕ) (G : SimpleGraph (Fin n)) (w : ℕ), C n G →
       ∀ x ∈ mcD n G c₀ w, ext x "off" = vertexCount x + 1)
     (hextTgt : ∀ (n : ℕ) (G : SimpleGraph (Fin n)) (w : ℕ), C n G →
@@ -257,14 +262,14 @@ theorem f7close_exists_of_solveSpec
   obtain ⟨cf, c', Tch, hcf1, hc'0, hTch, hledger, -⟩ :=
     exists_mcChargeMS_T_bucket_coverColumn C hC φ hε ℓp
   obtain ⟨cB, hcB⟩ := hbr
-  set K : ℕ := (mcLayout eS eA).const with hK
+  set K : ℕ := (mcLayout eS eA t).const with hK
   -- the advertised time bound: a function of `x` alone
   set T : List ℕ → ℕ := fun x => K * (12 * x.length + cB * (Tch x + x.length + 1) + 2)
     with hT
   -- the real constant it needs, and the axiom's constant
   set cR : ℝ := (K : ℝ) * (14 + (cB : ℝ)) + (K : ℝ) * (cB : ℝ) * c' with hcR
-  refine ⟨compileProgram (mcLayout eS eA) (mcCom solveCom),
-    c₀ + q + (11 + eS.length + (2 + eA.length) * q) + ⌈cR⌉₊, T, ?_, ?_⟩
+  refine ⟨compileProgram (mcLayout eS eA t) (mcCom solveCom),
+    c₀ + q + (9 + t + eS.length + (2 + eA.length) * q) + ⌈cR⌉₊, T, ?_, ?_⟩
   · -- the real-valued bound: linear overhead never inflates the exponent
     intro x
     set P : ℝ := ((x.length : ℝ) + 1) ^ (1 + ε) with hP
@@ -290,22 +295,22 @@ theorem f7close_exists_of_solveSpec
     have hceil : cR ≤ (⌈cR⌉₊ : ℝ) := Nat.le_ceil _
     have hPnn : (0 : ℝ) ≤ P := le_trans zero_le_one hP1
     have hcle : ((⌈cR⌉₊ : ℕ) : ℝ)
-        ≤ ((c₀ + q + (11 + eS.length + (2 + eA.length) * q) + ⌈cR⌉₊ : ℕ) : ℝ) := by
+        ≤ ((c₀ + q + (9 + t + eS.length + (2 + eA.length) * q) + ⌈cR⌉₊ : ℕ) : ℝ) := by
       exact_mod_cast Nat.le_add_left _ _
     calc (T x : ℝ) ≤ cR * P := hstep
       _ ≤ (⌈cR⌉₊ : ℝ) * P := mul_le_mul_of_nonneg_right hceil hPnn
-      _ ≤ ((c₀ + q + (11 + eS.length + (2 + eA.length) * q) + ⌈cR⌉₊ : ℕ) : ℝ) * P :=
+      _ ≤ ((c₀ + q + (9 + t + eS.length + (2 + eA.length) * q) + ⌈cR⌉₊ : ℕ) : ℝ) * P :=
           mul_le_mul_of_nonneg_right hcle hPnn
   · -- the machine, per `(n, G, w)`
     intro n G w hG
-    set c : ℕ := c₀ + q + (11 + eS.length + (2 + eA.length) * q) + ⌈cR⌉₊ with hc
+    set c : ℕ := c₀ + q + (9 + t + eS.length + (2 + eA.length) * q) + ⌈cR⌉₊ with hc
     have hc₀c : c₀ ≤ c := by omega
     have hqc : q ≤ c := by omega
-    have hspan : 11 + eS.length + (2 + eA.length) * q ≤ c := by omega
+    have hspan : 9 + t + eS.length + (2 + eA.length) * q ≤ c := by omega
     have hmach := mc_computesInTime_of_solveSpec C hC φ
       (selOrderingRoutine (fun m => bucketSel m)
         (3 * (Headline.headlineSetup C hC φ).R))
-      G c w q eS eA ext solveCom Ks hq hqc hspan
+      G c w q eS eA t ext solveCom Ks hq hqc ht hspan
       (fun x hx => hextOff n G w hG x (f7_mcD_mono_c hc₀c hx))
       (fun x hx => hextTgt n G w hG x (f7_mcD_mono_c hc₀c hx))
       hokS hnw
@@ -372,13 +377,13 @@ that is inhabited exactly when the graph has an encoding admissible at
 the word length, which is the axiom's own condition. -/
 def F7Package (C : GraphClass) (hC : NowhereDense C) (φ : FO 0) (ε : ℝ) :
     Prop :=
-  ∃ (q c₀ : ℕ) (eS eA : List String) (ext : List ℕ → String → ℕ)
+  ∃ (q c₀ : ℕ) (eS eA : List String) (t : ℕ) (ext : List ℕ → String → ℕ)
     (solveCom : Com) (Ks : List ℕ → ℕ) (ℓp : ℕ → ℕ)
     (htabF : (n : ℕ) → (j : ℕ) →
       (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
       Fin A.N → Fin (ℓp j) → List (Fin A.N)),
-    1 ≤ q ∧
-    Com.Ok (mcLayout eS eA) solveCom ∧ solveCom.NoWrite ∧
+    1 ≤ q ∧ 2 ≤ t ∧
+    Com.Ok (mcLayout eS eA t) solveCom ∧ solveCom.NoWrite ∧
     (∀ (n : ℕ) (G : SimpleGraph (Fin n)) (w : ℕ), C n G →
       ∀ x ∈ mcD n G c₀ w, ext x "off" = vertexCount x + 1) ∧
     (∀ (n : ℕ) (G : SimpleGraph (Fin n)) (w : ℕ), C n G →
@@ -399,10 +404,10 @@ theorem f7close_modelChecking
       0 < ε → F7Package C hC φ ε) :
     F7Goal := by
   intro C hC φ ε hε
-  obtain ⟨q, c₀, eS, eA, ext, solveCom, Ks, ℓp, htabF, hq, hokS, hnw,
+  obtain ⟨q, c₀, eS, eA, t, ext, solveCom, Ks, ℓp, htabF, hq, ht, hokS, hnw,
     hextOff, hextTgt, hsolve, hbr⟩ := h C hC φ ε hε
-  exact f7close_exists_of_solveSpec C hC φ ε hε q c₀ eS eA ext solveCom Ks
-    ℓp htabF hq hokS hnw hextOff hextTgt hsolve hbr
+  exact f7close_exists_of_solveSpec C hC φ ε hε q c₀ eS eA t ext solveCom Ks
+    ℓp htabF hq ht hokS hnw hextOff hextTgt hsolve hbr
 
 /-! ## §6 The leaf's axiom profile -/
 

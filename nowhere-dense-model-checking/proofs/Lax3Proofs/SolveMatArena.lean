@@ -251,10 +251,13 @@ def matCom : Com :=
         (.assign "k" (.add (.var "k") (.lit 1)))))
 
 /-- `matCom` compiles under the skeleton layout as soon as the
-extension lists carry its names. -/
-theorem matCom_ok {eS eA : List String} (hk : "k" ∈ eS) (hup : "up" ∈ eA) :
-    Com.Ok (mcLayout eS eA) matCom := by
-  simp [matCom, mcLayout, Com.Ok, Cond.Ok, condExpr, Expr.Ok, hk, hup]
+extension lists carry its names and the layout has one temporary (the
+scan's `.store` and its `<` guard each need `0 < temps`; nothing here
+nests). -/
+theorem matCom_ok {eS eA : List String} {t : ℕ} (ht : 0 < t)
+    (hk : "k" ∈ eS) (hup : "up" ∈ eA) :
+    Com.Ok (mcLayout eS eA t) matCom := by
+  simp [matCom, mcLayout, Com.Ok, Cond.Ok, condExpr, Expr.Ok, hk, hup, ht]
 
 /-- `matCom` never writes the output tape. -/
 theorem matCom_noWrite : matCom.NoWrite := by

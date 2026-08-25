@@ -165,6 +165,7 @@ import Lax3Proofs.SolveF7Seam
 import Lax3Proofs.SolveF7Close
 import Lax3Proofs.SolveF7CloseQ
 import Lax3Proofs.SolveF7CloseCompose
+import Lax3Proofs.SolveF7Temps
 
 -- The proofs package of submission Lax3.
 --

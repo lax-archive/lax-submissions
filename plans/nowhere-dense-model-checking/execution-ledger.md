@@ -75,6 +75,83 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-26 — `hokS` becomes satisfiable, `F7Bridge` is discharged, and `hdom` disappears
+
+Both repairs landed, plus a third defect found and fixed in the same pass.
+
+**(1) `mcLayout eS eA t`.** The parameterization went exactly as specified —
+`hspan` becomes `9 + t + |eS| + (2+|eA|)·q ≤ c` (the literal `11` was `2` temps
+plus `9` parse scalars), `parseCom_ok` and `mcCom_ok` at `2 ≤ t`. Every changed
+statement is a strict generalization: `t := 2` recovers the landed one verbatim,
+and `f7close_modelChecking`'s conclusion is untouched — the
+`example : F7Goal := …exists_almostLinearTime_program_modelChecking` still
+checks. The cost claim was **proved rather than assumed**:
+`mcLayout_const_eq : (mcLayout eS eA t).const = (mcLayout eS eA t').const` by
+`rfl`, depending on **no axioms**, so `t` enters only `hspan`, additively, with
+`c` chosen last. New generic machinery worth naming: `Ok` is monotone in `temps`
+(`expr_ok_mono_temps`/`cond_ok_mono_temps`/`com_ok_mono_temps`), so every landed
+compilability proof replays at its own depth and transports up.
+
+**And `hokS` is now satisfiable, at a schedule constant.** `f7Temps S av :=
+max 2 (exprTemps (bcExpr av (top S)))`, whose *type* carries the claim —
+`{L} → Setup L → (ScatterSentence L → Expr) → ℕ`, no carrier, no graph, no word.
+`exprTemps_bcExpr_le` shows the layout depth is the sentence's own left-nesting
+height plus the compiled reads' depth, both fixed with `eS`/`eA` before the
+input. Anti-vacuity is exact: `f7_bcExpr_ok_at_three` compiles at `t = 3` the
+*same* term the no-go theorem refutes at `t = 2`.
+
+**(2) `F7Bridge` discharged** (`f7_bridge_bucket`), and both halves of my
+correction were checked rather than taken on trust. `cf` **is** produced before
+`n`/`G` (confirmed by `#check`). `b7Cb`'s internals **are** schedule-only — the
+`#check` output shows every one of `b7ScatC`/`b7EdgeC`/`b7Cen`/`b7BotA`/`b7M`/
+`topEvalCost` taking only `{L}`, a `Setup L`, `ℓp` and ℕs. But `Kc` did sit
+inside additively and is `Θ(n+m)`, exactly as relayed. **`crl` was *not* a
+problem** — `hKrl` is already a rate (`Krl x ≤ crl·(|x|+1)`), so my message was
+half wrong there. Repaired as sketched: both stage figures now ride the `|x|+1`
+factor the right-hand side already carries, and the change *generalizes* the old
+theorem (`ckc := Kc` recovers it).
+
+**The top scatter is linear in the input at a schedule-only rate** — the question
+I told the worker to stop on if it failed. `f7_topScatK_le` gives
+`topScatK N ns atoms ≤ f7ScatRate atoms · (N + ns + 1)` with `f7ScatRate` reading
+only the atoms' `r` and `t`, and `f7_carrier_slots_le` turns `N + ns + 1` into
+`|x| + 1` off `EncodesGraph`. What is *not* proved is `∑ v, G.degree v =
+2·edgeCount x`; that is `TopScatterAll`'s own column and enters as an inequality.
+
+**A fourth defect, in the worker's own file, and the reason `hdom` is gone.**
+`f7close_of_closed_scr` had `Kc : ℕ` **hoisted in front of `∀ n G w`** — with the
+real stage that makes its own hypothesis unsatisfiable, the same quantifier
+disease one level down. Generalizing it to a graph-indexed `Kctop` exposed a real
+tension: `hdom` gives `graph-indexed ≤ Ks` while `F7Bridge` needs `Ks ≤ cB·(…)`,
+the **opposite** direction, so no one-sided `hdom` can supply both. The
+resolution is that **the word already determines the graph**: `EncodesGraph` pins
+`n = vertexCount x` and adjacency via `adj_iff`, so `f7_encodes_congr` (no
+`Classical.choice`) gives `f7Decode_eq` as an *equality* and `f7Ks_eq` prices the
+pipeline exactly. **`hdom` is discharged, not carried** — it is absent from the
+final composition.
+
+**One more obstruction nobody had mentioned**: `F7Bridge`'s `∀ cf` is not free,
+since the landed cover column holds at the produced `cf₀` and no smaller. It is
+only a constant factor — `coverCFSel` depends on `cf` through `⌈cf·N^δ⌉₊` alone
+and `sweepCharge` is *affine* in `D` — so `b7c_chargeTotal_coverCFSel_le_mul`
+makes `ccov := ⌈cf₀⌉₊·(a+b+c)` work at every `cf ≥ 1`, uniformly.
+
+**What remains in `f7close_of_closed_scr_bucket`**: `hclosed` (which
+`f7s_solveSpec_closed_scr` already reduces to **`FrameStepAllScr` alone**),
+`hKrl` (the sibling's `f7s_Krl_le` at `crl = 81`), `hKc` (the arithmetic is here;
+the `ns` identification is `TopScatterAll`'s column), and `hokS`/`hnw` (reduced
+to `rootLoadCom`, `chainCom`, `scatCom` and the read names at `t = f7Temps S av`).
+No `hdom`, no `hbr`.
+
+Elaboration 3–8 s across all eight files. One operational note from the worker's
+worktree — which predates the string-length fix — is now moot: touching
+`ProgCodegenLayout` invalidated `SolveMachPrepComp2` at 1501 s and OOM-killed
+twice at 15 GB. In the main checkout that file is 9 s.
+
+Left alone deliberately: `SolveMatTop.lean`'s layout note still says "`mcLayout`'s
+base `temps = 2`", stale but compiling, in a file the concurrent top-scatter work
+touches.
+
 ### 2026-08-26 — the 30-minute gate was `rfl` on a string length; the package now builds in 64 s
 
 **Both standing hypotheses about the elaboration cost were wrong, and only the

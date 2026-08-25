@@ -150,8 +150,9 @@ theorem b7c_KsChargeBridge_bucket
     (htabF : (j : ℕ) →
       (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
       Fin A.N → Fin (ℓp j) → List (Fin A.N))
-    (Krl : List ℕ → ℕ) (Kc crl : ℕ) (av : ScatterSentence 0 → Expr)
-    (hKrl : ∀ x ∈ mcD n G cw ww, Krl x ≤ crl * (x.length + 1)) :
+    (Krl : List ℕ → ℕ) (Kc crl ckc : ℕ) (av : ScatterSentence 0 → Expr)
+    (hKrl : ∀ x ∈ mcD n G cw ww, Krl x ≤ crl * (x.length + 1))
+    (hKc : ∀ x ∈ mcD n G cw ww, Kc ≤ ckc * (x.length + 1)) :
     ∃ (cf c' : ℝ) (T : List ℕ → ℕ), 1 ≤ cf ∧ 0 ≤ c' ∧
       (∀ x : List ℕ, (T x : ℝ) ≤ c' * ((x.length : ℝ) + 1) ^ (1 + ε)) ∧
       (∀ (col : Coloring n 0) (x : List ℕ), EncodesGraph x n G →
@@ -183,18 +184,87 @@ theorem b7c_KsChargeBridge_bucket
   refine ⟨cf, c', T, hcf1, hc'0, hT,
     fun col x hx => hledger n G hG col htabF x hx, ?_⟩
   refine b7_KsChargeBridge C hC φ _ G cw ww Kq ℓp _ htabF _ _ _ Krl Kc av
-    (b7BotK (Headline.headlineSetup C hC φ) Kq) (a + b + c) 6 crl
+    (b7BotK (Headline.headlineSetup C hC φ) Kq) (a + b + c) 6 crl ckc
     (chainAdm (Headline.headlineSetup C hC φ) G)
     (headlineSetup_chainAdm_root C hC φ G)
     (headlineSetup_chainAdm_admChild C hC φ _ G)
     (fun _ => rfl)
     (b7_botK_le (Headline.headlineSetup C hC φ) Kq)
     (fun i A hi hAdm hbot => ?_) (fun i A hbot => ?_)
-    (fun k i A => by omega) hKrl
+    (fun k i A => by omega) hKrl hKc
   · refine le_trans
       (hcol n G hG i A (ardIsContained_of_chainAdm hi hAdm hbot) a b c) ?_
     exact Nat.mul_le_mul_left (a + b + c) (by omega)
   · exact b7c_peelK_le_bot a b c _ A _ hbot
+
+/-! ## §3 The cover column across the cover constant
+
+`SolveF7Close.F7Bridge` asks for the bridge at **every** `cf ≥ 1`, not
+only at the one `exists_mcChargeMS_T_bucket_coverColumn` produces — the
+axiom's `T` is fixed before `n` and `G`, so the constant may not depend
+on the graph, and quantifying `cf` universally is the cheapest way to
+keep the bridge independent of which `cf` the ledger side ends up
+choosing.  That is *not* free: the landed cover column holds at the
+produced `cf₀` and at no smaller one, because the weak-colouring bound
+`⌈cf₀·N^δ⌉₊` is what the peel is priced against.
+
+It is, however, only a constant factor.  `coverCFSel` depends on `cf`
+through the single number `D = ⌈cf·N^δ⌉₊`, and `Impl.sweepCharge` is
+*affine* in `D`, so the whole column scales: at `1 ≤ cf`,
+
+    chargeTotal (coverCFSel sel S cf₀ δ j A)
+      ≤ ⌈cf₀⌉₊ · chargeTotal (coverCFSel sel S cf δ j A),
+
+and `⌈cf₀⌉₊` is a schedule constant.  §3 proves exactly that, so the
+bridge's `ccov` may be taken `⌈cf₀⌉₊·(a+b+c)` once and for all. -/
+
+/-- `⌈cf₀·N^δ⌉₊ ≤ ⌈cf₀⌉₊ · ⌈cf·N^δ⌉₊` whenever `1 ≤ cf` and `0 ≤ δ` —
+the degree parameter at the ledger's own cover constant, against the
+degree parameter at any admissible one. -/
+theorem b7c_ceil_le_mul {cf₀ cf δ : ℝ} (hcf : 1 ≤ cf) (hδ : 0 ≤ δ) (N : ℕ) :
+    ⌈cf₀ * (N : ℝ) ^ δ⌉₊ ≤ ⌈cf₀⌉₊ * ⌈cf * (N : ℝ) ^ δ⌉₊ := by
+  have hp : (0 : ℝ) ≤ (N : ℝ) ^ δ := Real.rpow_nonneg (Nat.cast_nonneg N) δ
+  have hc0 : (0 : ℝ) ≤ (⌈cf₀⌉₊ : ℝ) := Nat.cast_nonneg _
+  refine Nat.ceil_le.mpr ?_
+  push_cast
+  calc cf₀ * (N : ℝ) ^ δ ≤ (⌈cf₀⌉₊ : ℝ) * (N : ℝ) ^ δ :=
+        mul_le_mul_of_nonneg_right (Nat.le_ceil _) hp
+    _ ≤ (⌈cf₀⌉₊ : ℝ) * (cf * (N : ℝ) ^ δ) :=
+        mul_le_mul_of_nonneg_left (le_mul_of_one_le_left hp hcf) hc0
+    _ ≤ (⌈cf₀⌉₊ : ℝ) * (⌈cf * (N : ℝ) ^ δ⌉₊ : ℝ) :=
+        mul_le_mul_of_nonneg_left (Nat.le_ceil _) hc0
+
+/-- **The sweep column is affine in the degree parameter**, so scaling
+`D` scales the column: no cluster figure and no edge figure moves. -/
+theorem b7c_sweepCharge_le_mul {m : ℕ} (H : SimpleGraph (Fin m))
+    [DecidableRel H.Adj] (π : Equiv.Perm (Fin m)) (rc D D' K : ℕ)
+    (h1K : 1 ≤ K) (hD : D ≤ K * D') :
+    Impl.sweepCharge H π rc D ≤ K * Impl.sweepCharge H π rc D' := by
+  rw [Impl.sweepCharge, Impl.sweepCharge, Finset.mul_sum]
+  refine Finset.sum_le_sum fun v _ => ?_
+  set cl := (Impl.sweepCluster H π rc v).ncard with hcl
+  set E := ∑ w ∈ Impl.Ngt H π v, Impl.dlt H π w with hE
+  have h1 : cl * D ≤ K * (cl * D') :=
+    calc cl * D ≤ cl * (K * D') := Nat.mul_le_mul le_rfl hD
+      _ = K * (cl * D') := by ring
+  have h2 : E ≤ K * E := Nat.le_mul_of_pos_left _ (by omega)
+  calc cl * D + E ≤ K * (cl * D') + K * E := Nat.add_le_add h1 h2
+    _ = K * (cl * D' + E) := by ring
+
+open Classical in
+/-- **The cover column at the ledger's `cf₀`, against the column at any
+`cf ≥ 1`** — a schedule constant apart.  This is what lets `F7Bridge`'s
+`∀ cf` be met from a cover bound proved at one `cf₀`. -/
+theorem b7c_chargeTotal_coverCFSel_le_mul (sel : ∀ m : ℕ, MinDegSel m)
+    (S : Setup L) {cf₀ cf δ : ℝ} (hcf₀ : 1 ≤ cf₀) (hcf : 1 ≤ cf) (hδ : 0 ≤ δ)
+    (j : ℕ) (A : Arena (S.pal j) n₀) :
+    chargeTotal (coverCFSel sel S cf₀ δ j A)
+      ≤ ⌈cf₀⌉₊ * chargeTotal (coverCFSel sel S cf δ j A) := by
+  have h1K : 1 ≤ ⌈cf₀⌉₊ := Nat.one_le_ceil_iff.mpr (by linarith)
+  rw [coverCFSel, coverCFSel, chargeTotal_coverCSel, chargeTotal_coverCSel,
+    Nat.mul_add]
+  exact Nat.add_le_add (Nat.le_mul_of_pos_left _ (by omega))
+    (b7c_sweepCharge_le_mul _ _ _ _ _ _ h1K (b7c_ceil_le_mul hcf hδ A.N))
 
 /-! ## §3 Axiom profile -/
 

@@ -20,9 +20,22 @@ with `S := Headline.headlineSetup C hC φ`, and the constant `cB`
 exhibited (`b7Cb`).  The whole comparison rests on one node→root
 induction (`b7_chainKB_le`) and one subtree bound below the edgeless
 nodes (`b7_chainKB_bot`).  `cB` is a *schedule* constant: every figure
-in `b7Cb`/`b7M`/`b7BotA`/`b7Cen`/`b7EdgeC`/`b7ScatC` reads only `S.R`,
-`S.width`, `S.pal`, `S.depth`, `ℓp`, the level families `ℱ_j` and their
-scatter atoms — no carrier and no input word.
+in `b7Cb`/`b7M`/`b7BotA`/`b7Cen`/`b7EdgeC`/`b7ScatC`/`b7BotK` reads only
+`S.R`, `S.width`, `S.pal`, `S.depth`, `ℓp`, the level families `ℱ_j` and
+their scatter atoms — no carrier and no input word.  Their *types* carry
+the claim: none of those definitions takes a carrier `n₀` or an arena.
+
+**The two stage budgets that are not constants, and how they enter.**
+`Krl x` (the root load) and `Kc` (the top scatter) are genuinely input
+sized — `Krl x = Θ(|x|)` and `Kc = Θ(n + m)` at the real stages — so
+neither may sit inside `cB` if `cB` is to be fixed before `n` and `G`
+(which is exactly what `SolveF7Close.F7Bridge` demands and what the
+landed `SolveChain.KsChargeBridge`, whose `∃ cB` sits *inside* the fixed
+`(n, G)`, does not).  They are therefore asked for at a *rate*: `hKrl`
+gives `Krl x ≤ crl · (|x| + 1)` and `hKc` gives `Kc ≤ ckc · (|x| + 1)`,
+and it is `crl` and `ckc` that enter `b7Cb`.  The bridge's right-hand
+side already carries the `|x| + 1` factor, so this costs nothing;
+`ckc := Kc` recovers the older additive form verbatim.
 
 The companion `SolveF7BridgeCover` instantiates the cover slot at the
 machine's own peel budget and leaves `hKrl` as the single hypothesis.
@@ -950,10 +963,22 @@ theorem b7_driver_le_mc (S : Setup L) (ord : CoverSpec.OrderingRoutine)
   rw [mcChargeMS, chargeTotal_add]
   omega
 
-/-- **The bridge's constant**, exhibited. -/
-noncomputable def b7Cb (S : Setup L) (ℓp : ℕ → ℕ) (M₀ ccov cglue crl Kc : ℕ)
+/-- **The bridge's constant**, exhibited.
+
+`ckc` and `crl` are the *rate* constants of the two input-sized stage
+budgets — the top scatter's `Kc` and the root load's `Krl x`, each asked
+for at `≤ · (|x| + 1)`.  They enter here, not the budgets themselves:
+the bridge's right-hand side already carries a `|x| + 1` factor, so an
+input-sized stage figure rides that factor instead of sitting inside the
+constant.  This is what makes `b7Cb` a figure of the schedule alone —
+`b7M`, `b7BotA`/`b7BotB`, `b7Cen`, `b7EdgeC`/`b7ScatC`, `b7BotK` and
+`topEvalCost` take no carrier and no arena — and hence usable at
+`SolveF7Close.F7Bridge`, where the constant is fixed **before** `n` and
+`G`.  Taking `ckc := Kc` recovers the earlier additive form, since
+`Kc ≤ Kc * (|x| + 1)` always; nothing is lost. -/
+noncomputable def b7Cb (S : Setup L) (ℓp : ℕ → ℕ) (M₀ ccov cglue crl ckc : ℕ)
     (av : ScatterSentence L → Expr) : ℕ :=
-  11 + crl + b7M S ℓp M₀ ccov cglue + 6 + Kc + topEvalCost S av
+  11 + crl + ckc + b7M S ℓp M₀ ccov cglue + 6 + topEvalCost S av
 
 open Classical in
 /-- **`SolveChain.KsChargeBridge`, discharged** at `KB := chainKB`
@@ -989,7 +1014,7 @@ assumed:
 
 `M₀` is discharged by §8 (`b7_botK_le`); `b7_KsChargeBridge_linear`
 below exhibits the whole bundle at concrete non-zero budgets. -/
-theorem b7_KsChargeBridge (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
+theorem b7_Ks_le (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
     (c w Kq : ℕ) (ℓp hbf : ℕ → ℕ)
     (htabF : (j : ℕ) →
@@ -1001,7 +1026,7 @@ theorem b7_KsChargeBridge (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     (Kglue : (k j : ℕ) →
       Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
     (Krl : List ℕ → ℕ) (Kc : ℕ) (av : ScatterSentence 0 → Expr)
-    (M₀ ccov cglue crl : ℕ)
+    (M₀ ccov cglue crl ckc : ℕ)
     (Adm : (j : ℕ) →
       Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
     (hAdmRoot : Adm 0 (rootArena G (Impl.trivialColoring n)))
@@ -1024,15 +1049,18 @@ theorem b7_KsChargeBridge (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     (hKglue : ∀ (k i : ℕ)
       (A : Arena ((Headline.headlineSetup C hC φ).pal i) n),
       Kglue k i A ≤ cglue * (A.N + 1))
-    (hKrl : ∀ x ∈ mcD n G c w, Krl x ≤ crl * (x.length + 1)) :
-    KsChargeBridge C hC φ ord G c w ℓp htabF covC
-      (fun x => matK x + (Krl x +
+    (hKrl : ∀ x ∈ mcD n G c w, Krl x ≤ crl * (x.length + 1))
+    (hKc : ∀ x ∈ mcD n G c w, Kc ≤ ckc * (x.length + 1)) :
+    ∀ x ∈ mcD n G c w,
+      matK x + (Krl x +
         (chainKB (Headline.headlineSetup C hC φ) ord Kq ℓp hbf Kcov Kglue
             (Headline.headlineSetup C hC φ).depth 0
             (rootArena G (Impl.trivialColoring n)) +
-          (Kc + topEvalCost (Headline.headlineSetup C hC φ) av)))) := by
+          (Kc + topEvalCost (Headline.headlineSetup C hC φ) av)))
+      ≤ b7Cb (Headline.headlineSetup C hC φ) ℓp M₀ ccov cglue crl ckc av
+        * (chargeTotal (mcChargeMS (Headline.headlineSetup C hC φ) ord ℓp htabF
+            covC G (Impl.trivialColoring n)) + x.length + 1) := by
   classical
-  refine ⟨b7Cb (Headline.headlineSetup C hC φ) ℓp M₀ ccov cglue crl Kc av, ?_⟩
   intro x hx
   -- `Headline.headlineSetup C hC φ` occurs in the *types* of `htabF`, `covC`,
   -- `Kcov`, `Kglue`, so it must not be abstracted by `set` (that reverts and
@@ -1045,19 +1073,20 @@ theorem b7_KsChargeBridge (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
   have hmc := b7_driver_le_mc (Headline.headlineSetup C hC φ) ord ℓp htabF covC
     G (Impl.trivialColoring n)
   have hkrl := hKrl x hx
+  have hkc := hKc x hx
   -- beta-reduce the budget applied to the input
   show matK x + (Krl x +
       (chainKB (Headline.headlineSetup C hC φ) ord Kq ℓp hbf Kcov Kglue
           (Headline.headlineSetup C hC φ).depth 0
           (rootArena G (Impl.trivialColoring n)) +
         (Kc + topEvalCost (Headline.headlineSetup C hC φ) av)))
-    ≤ b7Cb (Headline.headlineSetup C hC φ) ℓp M₀ ccov cglue crl Kc av
+    ≤ b7Cb (Headline.headlineSetup C hC φ) ℓp M₀ ccov cglue crl ckc av
       * (chargeTotal (mcChargeMS (Headline.headlineSetup C hC φ) ord ℓp htabF
           covC G (Impl.trivialColoring n)) + x.length + 1)
   set M := b7M (Headline.headlineSetup C hC φ) ℓp M₀ ccov cglue with hMdef
-  set cB := b7Cb (Headline.headlineSetup C hC φ) ℓp M₀ ccov cglue crl Kc av
+  set cB := b7Cb (Headline.headlineSetup C hC φ) ℓp M₀ ccov cglue crl ckc av
     with hcBdef
-  have hcB : cB = 11 + crl + M + 6 + Kc
+  have hcB : cB = 11 + crl + ckc + M + 6
       + topEvalCost (Headline.headlineSetup C hC φ) av := hcBdef
   set CT := chargeTotal (mcChargeMS (Headline.headlineSetup C hC φ) ord ℓp
     htabF covC G (Impl.trivialColoring n)) with hCT
@@ -1068,13 +1097,69 @@ theorem b7_KsChargeBridge (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
   have h1 : M * CTd ≤ cB * CT :=
     (Nat.mul_le_mul_left _ hmc).trans (Nat.mul_le_mul_right _ hMcB)
   have e1 : crl * (x.length + 1) = crl * x.length + crl := by ring
+  have e1c : ckc * (x.length + 1) = ckc * x.length + ckc := by ring
   have e2 : cB * (CT + x.length + 1) = cB * CT + cB * x.length + cB := by ring
-  have e3 : (11 + crl) * x.length = 11 * x.length + crl * x.length := by ring
-  have h2 : (11 + crl) * x.length ≤ cB * x.length :=
+  have e3 : (11 + crl + ckc) * x.length
+      = 11 * x.length + crl * x.length + ckc * x.length := by ring
+  have h2 : (11 + crl + ckc) * x.length ≤ cB * x.length :=
     Nat.mul_le_mul_right _ (by omega)
   have hmat : matK x = 11 * x.length + 6 := rfl
   rw [hmat]
   omega
+
+open Classical in
+/-- **`SolveChain.KsChargeBridge`, discharged** — `b7_Ks_le` packaged
+into the landed existential.  The constant it exhibits is `b7Cb`, and
+`b7Cb` mentions neither the carrier nor the graph, so this same witness
+serves `SolveF7Close.F7Bridge`, where the constant must be fixed before
+`n` and `G` (`SolveF7CloseCompose.f7_bridge_bucket`). -/
+theorem b7_KsChargeBridge (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
+    (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
+    (c w Kq : ℕ) (ℓp hbf : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (covC : (j : ℕ) →
+      Arena ((Headline.headlineSetup C hC φ).pal j) n → ACost String ℕ)
+    (Kcov : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
+    (Kglue : (k j : ℕ) →
+      Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
+    (Krl : List ℕ → ℕ) (Kc : ℕ) (av : ScatterSentence 0 → Expr)
+    (M₀ ccov cglue crl ckc : ℕ)
+    (Adm : (j : ℕ) →
+      Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (hAdmRoot : Adm 0 (rootArena G (Impl.trivialColoring n)))
+    (hAdmChild : ∀ (j : ℕ)
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n),
+      Adm j A → ¬ A.G = ⊥ → ∀ u : Fin A.N,
+        Adm (j + 1) (childArena (Headline.headlineSetup C hC φ) A
+          ((ord A.N A.G).order) u))
+    (hhbf : ∀ i, hbf i = 2 * (Headline.headlineSetup C hC φ).R + 1)
+    (hbotK : ∀ i : ℕ, i ≤ (Headline.headlineSetup C hC φ).depth →
+      ∀ A : Arena ((Headline.headlineSetup C hC φ).pal i) n,
+      botComK A.N ((Headline.headlineSetup C hC φ).pal i) Kq
+          (levelFml (Headline.headlineSetup C hC φ) i)
+        ≤ M₀ * (A.N + 1))
+    (hKcov : ∀ (i : ℕ) (A : Arena ((Headline.headlineSetup C hC φ).pal i) n),
+      i ≤ (Headline.headlineSetup C hC φ).depth → Adm i A → ¬ A.G = ⊥ →
+      Kcov i A ≤ ccov * (chargeTotal (covC i A) + A.N + 1))
+    (hKcovBot : ∀ (i : ℕ) (A : Arena ((Headline.headlineSetup C hC φ).pal i) n),
+      A.G = ⊥ → Kcov i A ≤ ccov * (A.N + 1))
+    (hKglue : ∀ (k i : ℕ)
+      (A : Arena ((Headline.headlineSetup C hC φ).pal i) n),
+      Kglue k i A ≤ cglue * (A.N + 1))
+    (hKrl : ∀ x ∈ mcD n G c w, Krl x ≤ crl * (x.length + 1))
+    (hKc : ∀ x ∈ mcD n G c w, Kc ≤ ckc * (x.length + 1)) :
+    KsChargeBridge C hC φ ord G c w ℓp htabF covC
+      (fun x => matK x + (Krl x +
+        (chainKB (Headline.headlineSetup C hC φ) ord Kq ℓp hbf Kcov Kglue
+            (Headline.headlineSetup C hC φ).depth 0
+            (rootArena G (Impl.trivialColoring n)) +
+          (Kc + topEvalCost (Headline.headlineSetup C hC φ) av)))) :=
+  ⟨b7Cb (Headline.headlineSetup C hC φ) ℓp M₀ ccov cglue crl ckc av,
+    b7_Ks_le C hC φ ord G c w Kq ℓp hbf htabF covC Kcov Kglue Krl Kc av
+      M₀ ccov cglue crl ckc Adm hAdmRoot hAdmChild hhbf hbotK hKcov hKcovBot
+      hKglue hKrl hKc⟩
 
 open Classical in
 /-- **The unrestricted form** — `Adm := fun _ _ => True`, i.e. the cover
@@ -1094,7 +1179,7 @@ theorem b7_KsChargeBridge_all (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     (Kglue : (k j : ℕ) →
       Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
     (Krl : List ℕ → ℕ) (Kc : ℕ) (av : ScatterSentence 0 → Expr)
-    (M₀ ccov cglue crl : ℕ)
+    (M₀ ccov cglue crl ckc : ℕ)
     (hhbf : ∀ i, hbf i = 2 * (Headline.headlineSetup C hC φ).R + 1)
     (hbotK : ∀ i : ℕ, i ≤ (Headline.headlineSetup C hC φ).depth →
       ∀ A : Arena ((Headline.headlineSetup C hC φ).pal i) n,
@@ -1108,7 +1193,8 @@ theorem b7_KsChargeBridge_all (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     (hKglue : ∀ (k i : ℕ)
       (A : Arena ((Headline.headlineSetup C hC φ).pal i) n),
       Kglue k i A ≤ cglue * (A.N + 1))
-    (hKrl : ∀ x ∈ mcD n G c w, Krl x ≤ crl * (x.length + 1)) :
+    (hKrl : ∀ x ∈ mcD n G c w, Krl x ≤ crl * (x.length + 1))
+    (hKc : ∀ x ∈ mcD n G c w, Kc ≤ ckc * (x.length + 1)) :
     KsChargeBridge C hC φ ord G c w ℓp htabF covC
       (fun x => matK x + (Krl x +
         (chainKB (Headline.headlineSetup C hC φ) ord Kq ℓp hbf Kcov Kglue
@@ -1116,8 +1202,8 @@ theorem b7_KsChargeBridge_all (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
             (rootArena G (Impl.trivialColoring n)) +
           (Kc + topEvalCost (Headline.headlineSetup C hC φ) av)))) :=
   b7_KsChargeBridge C hC φ ord G c w Kq ℓp hbf htabF covC Kcov Kglue Krl Kc av
-    M₀ ccov cglue crl (fun _ _ => True) trivial (fun _ _ _ _ _ => trivial)
-    hhbf hbotK (fun i A _ _ _ => hKcov i A) hKcovBot hKglue hKrl
+    M₀ ccov cglue crl ckc (fun _ _ => True) trivial (fun _ _ _ _ _ => trivial)
+    hhbf hbotK (fun i A _ _ _ => hKcov i A) hKcovBot hKglue hKrl hKc
 
 open Classical in
 /-- **Anti-vacuity for the hypothesis bundle**: at the *concrete*
@@ -1148,14 +1234,14 @@ theorem b7_KsChargeBridge_linear (C : GraphClass) (hC : NowhereDense C)
             (rootArena G (Impl.trivialColoring n)) +
           (Kc + topEvalCost (Headline.headlineSetup C hC φ) av)))) :=
   b7_KsChargeBridge C hC φ ord G c w Kq ℓp _ htabF covC _ _ _ Kc av
-    (b7BotK (Headline.headlineSetup C hC φ) Kq) 1 1 1
+    (b7BotK (Headline.headlineSetup C hC φ) Kq) 1 1 1 Kc
     (chainAdm (Headline.headlineSetup C hC φ) G)
     (headlineSetup_chainAdm_root C hC φ G)
     (headlineSetup_chainAdm_admChild C hC φ ord G)
     (fun _ => rfl)
     (b7_botK_le (Headline.headlineSetup C hC φ) Kq)
     (fun i A _ _ _ => by omega) (fun i A _ => by omega) (fun k i A => by omega)
-    (fun x _ => by omega)
+    (fun x _ => by omega) (fun x _ => Nat.le_mul_of_pos_right _ (by omega))
 
 /-! ## §10 Axiom profile -/
 
@@ -1172,6 +1258,7 @@ theorem b7_KsChargeBridge_linear (C : GraphClass) (hC : NowhereDense C)
 #print axioms b7_chainKB_le
 #print axioms b7_botK_le
 #print axioms b7_driver_le_mc
+#print axioms b7_Ks_le
 #print axioms b7_KsChargeBridge
 #print axioms b7_KsChargeBridge_all
 #print axioms b7_KsChargeBridge_linear
