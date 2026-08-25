@@ -67,7 +67,7 @@ recursive occurrence sits under a lambda in the `nxK` slot, exactly as
 unconditionally. That deviation from `frameK` is forced, and it is a
 finding about `frameK`, not about the chain:
 
-> `blockSpec_leaf_guard`'s `hKB` (`SolveChain:418`) asks for
+> `blockSpec_leaf_guard`'s `hKB` (`SolveChain` §5) asks for
 > `4 + max (botComK A.N …) (KElse A) ≤ KB (k+1) j A` **at every `A`**,
 > the edgeless ones included — the guarded command pays `Spec.ite`'s
 > `max` before the test is evaluated. `frameK` returns exactly
@@ -80,19 +80,21 @@ finding about `frameK`, not about the chain:
 > precisely the arenas the frame body ever runs on.
 
 The two landed budget obligations are then definitional:
-`chainKB_bot_hKB` is `botBlock_spec`'s `hKB` (`SolveChain:386`) and
-`chainKB_guard_hKB` is `blockSpec_leaf_guard`'s (`SolveChain:418`), at
+`chainKB_bot_hKB` is `botBlock_spec`'s `hKB` and
+`chainKB_guard_hKB` is `blockSpec_leaf_guard`'s (both `SolveChain` §5), at
 `KElse := frameElseK …`. `chainKB_botBlock_spec` runs the first through
 `botBlock_spec` end to end, so the fit is a typechecked instantiation
 and not a shape match.
 
 ## What is *not* here
 
-`KsChargeBridge` (`SolveChain:705`) is a separate leaf. The
+`KsChargeBridge` (`SolveChain` §7) is a separate leaf. The
 compatibility audit of this `KB` against it is in the report, not in
-the file; the one part of it that is a Lean statement here is
-`centreK_add_nxK` (the recursion slot enters `centreK` additively), the
-step the node→root induction needs.
+the file; what *is* stated here is the arithmetic that audit needs —
+`centreK_add_nxK` (the recursion slot enters `centreK` additively), and
+§10's `childN_eq_one_of_bot` / `childArena_G_eq_bot_of_bot`, which bound
+the subtrees the pinned `KB` descends into where
+`ProgCharge.frameChargeMS`'s own recursion stops.
 -/
 
 set_option autoImplicit false
@@ -442,7 +444,7 @@ theorem chainKB_succ (k j : ℕ) (A : Arena (S.pal j) n₀) :
           (fun A' => chainKB S ord Kq ℓp hbf Kcov Kglue k (j + 1) A')) := rfl
 
 open Classical in
-/-- **`botBlock_spec`'s `hKB` (`SolveChain:386`), discharged** — at the
+/-- **`botBlock_spec`'s `hKB` (`SolveChain` §5), discharged** — at the
 pinned family the leaf block's budget is the bottom block's budget on
 the nose. -/
 theorem chainKB_bot_hKB (j : ℕ) :
@@ -452,7 +454,7 @@ theorem chainKB_bot_hKB (j : ℕ) :
   fun _ => le_rfl
 
 open Classical in
-/-- **`blockSpec_leaf_guard`'s `hKB` (`SolveChain:418`), discharged** at
+/-- **`blockSpec_leaf_guard`'s `hKB` (`SolveChain` §5), discharged** at
 `KElse := frameElseK …` — the guard's `4 + max` is what the pinned
 family is built out of. -/
 theorem chainKB_guard_hKB (k j : ℕ) :
@@ -518,7 +520,7 @@ variable
 include hq hn0B hNLB h2LB hTB hnd hoff htgt hup hhist hnN hnS hnd5 hscr in
 open Classical in
 /-- **The bottom block at the pinned parameters** — `botBlock_spec`
-(`SolveChain:385`) with `Adm := chainAdm` and `KB := chainKB`, its
+(`SolveChain` §5) with `Adm := chainAdm` and `KB := chainKB`, its
 budget hypothesis discharged by `chainKB_bot_hKB`. -/
 theorem chainKB_botBlock_spec :
     BlockSpec B S ord ℓp htabF hbf nmF (chainAdm S G₀)
@@ -533,7 +535,7 @@ theorem chainKB_botBlock_spec :
 include hq hn0B hNLB h2LB hTB hnd hoff htgt hup hhist hnN hnS hnd5 hscr in
 open Classical in
 /-- **The guarded non-leaf block at the pinned parameters** —
-`blockSpec_leaf_guard` (`SolveChain:410`) with `Adm := chainAdm`,
+`blockSpec_leaf_guard` (`SolveChain` §5) with `Adm := chainAdm`,
 `KB := chainKB` and `KElse := frameElseK`: as soon as a frame body
 meets `frameElseK`'s advertised budget on edged arenas, the guarded
 block meets the pinned `KB`. Nothing about the body is assumed beyond
@@ -564,10 +566,13 @@ end BotFit
 
 The one arithmetic fact the ledger comparison (`KsChargeBridge`, a
 separate leaf) needs from this file: `centreK`'s `nxK` argument is a
-plain summand, so the per-centre budget splits into "this node's five
+plain summand, so the per-centre budget splits into "this node's own
 stages" plus "the child's whole budget" — which is what lets the
-node→root induction charge the five stages against
-`centreChargeMS`'s five columns and hand the rest to the recursion. -/
+node→root induction charge the stages against `centreChargeMS`'s
+columns (`restrictC`, `supportsC` — which carries *both* `bfsK` and
+`supportsK`, since the ledger prices the shared BFS inside the supports
+column — `profilesCMS`, `isolateC`, and `"frame.scatter"`) and hand the
+rest to the recursion. -/
 
 open Classical in
 theorem centreK_add_nxK (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
