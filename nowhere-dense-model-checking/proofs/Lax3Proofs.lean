@@ -133,6 +133,7 @@ import Lax3Proofs.SolveAugFratCom
 import Lax3Proofs.SolveAugTrans
 import Lax3Proofs.SolveAugEmit
 import Lax3Proofs.SolveAugCompose
+import Lax3Proofs.SolveAugFrameProg
 
 -- The proofs package of submission Lax3.
 --
