@@ -32,6 +32,15 @@ mechanics it would otherwise owe live here.
 `SolveGlueStep`'s residual (b), at the canonical loop `centreLoopB
 bodyB` — from `CentreStepAll` plus the word bound, the length-only
 `Scr` transport, and the counter's membership in the level's name pool.
+
+The length-only transport is the one hypothesis here that a scratch
+descriptor carrying content cannot satisfy
+(`SolveMachPrepSeam.rankScr_not_length_only`), and the counter bump
+never needed it. `clInv_setVar_ctr_scr`, `centreLoop_of_stepScr`,
+`centreLoopAll_of_stepAllScr` and `frameStepAll_of_cover_stepScr` are
+the same four objects at `SolveChain` §3b's `ScrFrame` instead — same
+loop, same budget, and the exit now hands on the level's descriptor
+(`BlockPostScr`), which the invariant already carried.
 -/
 
 namespace Lax3Proofs.Prog

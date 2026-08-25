@@ -41,6 +41,14 @@ survives to `u + 1`. This file discharges (ii) and (iii) and names (i):
   `centreBody prepC readC` from the two named machine passes
   (`ChildLoadAll`, `ReadRowsAll`) plus `SolveStep`'s F7-suppliable
   hypotheses.
+* Both of those cross the pass with `hscrLen`, the length-only
+  descriptor transport `SolveMachPrepSeam.rankScr_not_length_only`
+  refutes. **`centreRead_of_rowsScr`**, **`centreReadAll_of_rowsScr`**
+  and **`centreStepAll_of_prep_rowsScr`** are the same three
+  conclusions with `hscrLen` replaced by `SolveChain` §3b's `ScrFrame`
+  plus the syntactic `ScrFree` — the readback writes no name the
+  descriptor reads. `ReadRows` itself is untouched, so
+  `SolveMachReadRun`'s discharge of `ReadRowsAll` serves both.
 
 No cost is restated: `ReadRows` carries `KR` itself.
 -/
