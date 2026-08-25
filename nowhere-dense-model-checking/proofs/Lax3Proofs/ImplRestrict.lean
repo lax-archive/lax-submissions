@@ -118,55 +118,12 @@ open Lax3Proofs.CoverEdgeSum (graphWeight)
 
 variable {n : ℕ}
 
-/-! ### §1a The enumeration: local names for a vertex set -/
+/-! ### §1a The enumeration: local names for a vertex set
 
-/-- The enumeration embedding of §6.1's "rank `S` to get local names":
-the local carrier `Fin S.ncard` into the parent carrier, through the
-same `Driver.setEquiv` the driver's compaction bijection uses — so the
-identities to `preG`/`childArena` below are definitional. -/
-noncomputable def restrictEmb (S : Set (Fin n)) : Fin S.ncard ↪ Fin n :=
-  (Driver.setEquiv S).toEmbedding.trans (Function.Embedding.subtype _)
-
-@[simp] theorem restrictEmb_apply (S : Set (Fin n)) (a : Fin S.ncard) :
-    restrictEmb S a = ((Driver.setEquiv S) a : Fin n) := rfl
-
-theorem restrictEmb_mem (S : Set (Fin n)) (a : Fin S.ncard) :
-    restrictEmb S a ∈ S := ((Driver.setEquiv S) a).2
-
-open Classical in
-/-- The partial inverse of the enumeration: a parent name to its local
-name if it has one — the reverse index the scratch array realizes. -/
-noncomputable def toLocal (S : Set (Fin n)) (x : Fin n) : Option (Fin S.ncard) :=
-  if h : x ∈ S then some ((Driver.setEquiv S).symm ⟨x, h⟩) else none
-
-theorem toLocal_eq_none (S : Set (Fin n)) {x : Fin n} (hx : x ∉ S) :
-    toLocal S x = none := by
-  rw [toLocal, dif_neg hx]
-
-theorem restrictEmb_toLocal (S : Set (Fin n)) {x : Fin n} (hx : x ∈ S)
-    {a : Fin S.ncard} (h : toLocal S x = some a) : restrictEmb S a = x := by
-  rw [toLocal, dif_pos hx] at h
-  obtain rfl := Option.some_injective _ h
-  show ((Driver.setEquiv S) ((Driver.setEquiv S).symm ⟨x, hx⟩) : Fin n) = x
-  rw [Equiv.apply_symm_apply]
-
-open Classical in
-/-- The filtered list, read back at parent names, is exactly the stored
-list's intersection with `S`, in order — "intersect the stored lists
-with `S`" as a list identity. -/
-theorem map_restrictEmb_filterMap_toLocal (S : Set (Fin n)) (l : List (Fin n)) :
-    (l.filterMap (toLocal S)).map (fun b => (restrictEmb S b : Fin n))
-      = l.filter fun x => decide (x ∈ S) := by
-  induction l with
-  | nil => rfl
-  | cons x l ih =>
-    rw [List.filterMap_cons, List.filter_cons]
-    by_cases hx : x ∈ S
-    · have hsome : toLocal S x = some ((Driver.setEquiv S).symm ⟨x, hx⟩) := by
-        rw [toLocal, dif_pos hx]
-      rw [hsome, if_pos (by simpa using hx), List.map_cons, ih,
-        restrictEmb_toLocal S hx hsome]
-    · rw [toLocal_eq_none S hx, if_neg (by simpa using hx), ih]
+`restrictEmb`, `toLocal` and their four identities now live in
+`DriverArena` (relocated verbatim, same namespace and spelling): the
+driver's `childArena` inherits its channel columns by exactly this
+`filterMap (toLocal …)`, so the definitions must sit below it. -/
 
 /-! ### §1b The machine arena and `restrict` -/
 

@@ -69,8 +69,8 @@ noncomputable def centreProgMS (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀
   -- one BFS from the connector on `B₀`, supports materialized (§4, D6)
   NRest.bindT (NRest.spec
       (fun DT : (Fin B₀.N → ℕ) × (Fin B₀.N → Option (List (Fin B₀.N))) =>
-        Impl.BallTable B₀.G (centreChild S A π u) S.R DT.1 ∧
-          DT.2 = Impl.bfsSupports B₀.G DT.1 S.R)
+        Impl.BallTable B₀.G (centreChild S A π u) (2 * S.R) DT.1 ∧
+          DT.2 = Impl.bfsSupports B₀.G DT.1 (2 * S.R))
       fun _ => liftACost (supportsC S j A π u)) fun _DT =>
   -- the `m + L` profile BFS calls (multi-source), at `B₀` — BEFORE
   -- isolation (hazard 1 unchanged: the seam is stated at `preG`)
@@ -89,7 +89,7 @@ noncomputable def centreProgMS (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀
       (liftACost (isolateC S j A htab π u))) fun _ =>
   -- the recursion slot, at the child assembled from the computed pieces
   NRest.bindT (nxProg ⟨childN S A π u, B₁.G, colC, B₁.up,
-      (A.up u, SimpleGraph.map A.up A.G) :: A.hist⟩) fun Tu =>
+      (A.up u, SimpleGraph.map A.up A.G) :: A.hist, childChan S A π u⟩) fun Tu =>
   -- the guarded scatter counts for this child (§5 lines 25–26)
   NRest.consume (NRest.returnT Tu)
     (liftACost (ACost.cost "frame.scatter" (scatterCost S j A π u Tu)))

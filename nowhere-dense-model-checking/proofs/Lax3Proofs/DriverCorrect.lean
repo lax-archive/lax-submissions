@@ -59,11 +59,30 @@ edges. `inv_root` starts it, `inv_child` carries it through one descent
 fuel of `tablesAux` never runs out on an arena with edges, and the leaf
 really is `BotTables`' regime.
 
+`Inv` carries two clauses about the **channel** itself, which is what
+makes §5 line 19's batch computable (`DriverArena`'s `chan` field):
+
+* every channel row is at most `2R + 1` long — §4's stored-list bound,
+  what makes the batch fit the pad;
+* every recorded round has a channel **column** `col` whose row at `w`
+  cuts down every walk from that round's connector to `w`: there is a
+  walk `er.vtx → up w` of length `≤ 2R` in the round's arena whose
+  support, intersected with this node's names, lies inside `up '' (chan
+  w col)`.
+
+The second clause is `reachedS_descend`'s `hwalk` with the batch named
+by the channel instead of by `SplitterWin.pathSet`. It is stated
+*unconditionally* — no `WithinDist` guard — because that is both true
+here and easier to re-establish at the child: the new column is one
+BFS from `centreChild` in `B₀` (`exists_walk_childChan_new`), and the
+old columns are inherited by `MArena.restrict`'s filter
+(`mem_childChan_old_iff`).
+
 The width hypothesis `1 + j·(2R+1) ≤ width` of `inv_child` is §3's
 `m = ℓ·(2R+1)` at depth `j ≤ ℓ−1` (hazard 2: the batch always fits the
-pad, by `genSet_ncard_le`); the descent supplies `reachedS_descend`'s
-`hwalk` from `pathSet_subset_genSet` — the recorded supports ARE the
-batch, which is D6's channel consumed abstractly.
+pad, by `batchSet_ncard_le` off the row bound); the descent supplies
+`reachedS_descend`'s `hwalk` from the walk clause — the recorded
+supports ARE the batch, which is D6's channel consumed abstractly.
 
 An isolated centre is the one descent that records no round: its cluster
 is a single vertex, the child is edgeless (`childArena_G_eq_bot_of_
@@ -258,29 +277,52 @@ theorem mc_correct (S : Setup L) (ord : CoverSpec.OrderingRoutine) {n : ℕ}
 /-! ### The `ReachedS` invariant: the recursion fits the budget -/
 
 /-- **§5 line 8's precondition, abstractly** (E6: the record lives at
-the ROOT carrier and is never re-typed). The channel has exactly one
-entry per level; and — as long as the node still has an edge — the
-channel is the trace of a genuine play of the cluster-restricted game
-whose reached arena is this node's arena, mapped to the root. -/
+the ROOT carrier and is never re-typed). Four clauses:
+
+1. the channel has exactly one entry per level;
+2. **every stored channel row is at most `2R + 1` long** — §4's
+   stored-list bound, which is what makes the batch fit the pad
+   (`batchSet_ncard_le`);
+3. as long as the node still has an edge, the channel is the trace of a
+   genuine play of the cluster-restricted game whose reached arena is
+   this node's arena, mapped to the root;
+4. **every recorded round has a channel column that carries its walk**:
+   some `col < hist.length` is such that, at every vertex `w`, there is
+   a walk from the round's connector to `up w` of length `≤ 2R` in the
+   round's arena whose support, cut down to this node's names, lies
+   inside `up '' (chan w col)`.
+
+Clause 4 is `reachedS_descend`'s `hwalk` with the batch named by the
+*channel* rather than by `SplitterWin.pathSet` — the whole point of the
+repair, since `pathSet` is a `Classical.choose`-picked walk support and
+no program can output it. It is stated unconditionally (no `WithinDist`
+guard); that is true here and is what makes it re-establishable at the
+child from one BFS plus inheritance. -/
 def Inv (S : Setup L) {Λ : ℕ} (G₀ : SimpleGraph (Fin n₀)) (j : ℕ)
     (A : Arena Λ n₀) : Prop :=
   A.hist.length = j ∧
+  (∀ (w : Fin A.N) (e : ℕ), (A.chan w e).length ≤ 2 * S.R + 1) ∧
   (A.G = ⊥ ∨
     ∃ rounds : List (ReachedS.RoundS n₀),
       (∀ e ∈ rounds, (e.vtx, e.arena) ∈ A.hist) ∧
       rounds.length = j ∧
-      ReachedS.ReachedS (2 * S.R) G₀ rounds (SimpleGraph.map (⇑A.up) A.G))
+      ReachedS.ReachedS (2 * S.R) G₀ rounds (SimpleGraph.map (⇑A.up) A.G) ∧
+      (∀ er ∈ rounds, ∃ col < A.hist.length, ∀ w : Fin A.N,
+        ∃ p : er.arena.Walk er.vtx (A.up w), p.length ≤ 2 * S.R ∧
+          {z | z ∈ p.support} ∩ Set.range ⇑A.up
+            ⊆ ⇑A.up '' {z | z ∈ A.chan w col}))
 
 /-- The root arena satisfies the invariant with the empty record. -/
 theorem inv_root (S : Setup L) {n : ℕ} (G : SimpleGraph (Fin n))
     (col : Coloring n L) : Inv S G 0 (rootArena G col) := by
-  refine ⟨rfl, Or.inr ⟨[], by simp, rfl, ?_⟩⟩
-  have h : SimpleGraph.map (⇑(rootArena G col).up) (rootArena G col).G = G := by
-    have hid : ⇑(Function.Embedding.refl (Fin n)) = id := rfl
-    show SimpleGraph.map (⇑(Function.Embedding.refl (Fin n))) G = G
-    rw [hid, SimpleGraph.map_id]
-  rw [h]
-  exact ReachedS.ReachedS.nil
+  refine ⟨rfl, fun _ _ => by simp [rootArena], Or.inr ⟨[], by simp, rfl, ?_, ?_⟩⟩
+  · have h : SimpleGraph.map (⇑(rootArena G col).up) (rootArena G col).G = G := by
+      have hid : ⇑(Function.Embedding.refl (Fin n)) = id := rfl
+      show SimpleGraph.map (⇑(Function.Embedding.refl (Fin n))) G = G
+      rw [hid, SimpleGraph.map_id]
+    rw [h]
+    exact ReachedS.ReachedS.nil
+  · simp
 
 /-- **§5 line 10's leaf test is exhaustive** — the payoff of the
 invariant: at depth `ℓ = N(2s+2)` (the UQW round budget at game radius
@@ -291,7 +333,7 @@ theorem eq_bot_of_inv_depth (S : Setup L) {Λ : ℕ} {G₀ : SimpleGraph (Fin n�
     (hQ : Lax3Proofs.UqwInstantiation.SplitterMargin G₀ N s S.R)
     (hd : S.depth = N (2 * s + 2))
     (h : Inv S G₀ S.depth A) : A.G = ⊥ := by
-  obtain ⟨-, hbot | ⟨rounds, -, hlen, hR⟩⟩ := h
+  obtain ⟨-, -, hbot | ⟨rounds, -, hlen, hR, -⟩⟩ := h
   · exact hbot
   · have hlt := ReachedS.reachedS_length_lt hQ hR
     omega
@@ -333,12 +375,42 @@ theorem childArena_G_eq_bot_of_isolated (S : Setup L) {Λ : ℕ} (A : Arena Λ n
   rw [hab] at hadj
   exact SimpleGraph.irrefl _ hadj
 
-/-- The batch always fits the pad (hazard 2): the batch on the child
-carrier injects into `genSet`, whose size `genSet_ncard_le` bounds by
-`1 + j·(2R+1)`. -/
+/-- **The batch always fits the pad** (hazard 2): the batch on the child
+carrier injects into `batchRoot`, which is the injective image of
+`batchPar` — the connector plus at most `hist.length` channel rows, each
+of length at most `2R + 1`.
+
+The bound `1 + hist.length·(2R+1)` is **unchanged** from the `genSet`
+spelling: it is `hwidth`'s and `Driver.mkSetup_width_le`'s figure, and
+§3's schedule `m = ℓ(2R+1)` is sized by it. -/
 theorem batchSet_ncard_le (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
-    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) :
+    (π : Equiv.Perm (Fin A.N)) (u : Fin A.N)
+    (hchan : ∀ (w : Fin A.N) (e : ℕ), (A.chan w e).length ≤ 2 * S.R + 1) :
     (batchSet S A π u).ncard ≤ 1 + A.hist.length * (2 * S.R + 1) := by
+  classical
+  -- the batch at the node's own names, as an explicit finset
+  set Bf : Finset (Fin A.N) :=
+    insert u ((Finset.range A.hist.length).biUnion
+      fun e => (A.chan u e).toFinset) with hBf
+  have hpar : batchPar A u = (Bf : Set (Fin A.N)) := by
+    ext z
+    simp only [hBf, batchPar, Set.mem_union, Set.mem_singleton_iff, Set.mem_setOf_eq,
+      Finset.coe_insert, Set.mem_insert_iff, Finset.coe_biUnion, Finset.mem_coe,
+      Finset.mem_range, Set.mem_iUnion, List.coe_toFinset, exists_prop]
+  have hcard : Bf.card ≤ 1 + A.hist.length * (2 * S.R + 1) := by
+    have hb : ((Finset.range A.hist.length).biUnion
+          fun e => (A.chan u e).toFinset).card
+        ≤ ∑ e ∈ Finset.range A.hist.length, (A.chan u e).toFinset.card :=
+      Finset.card_biUnion_le
+    have hs : ∑ e ∈ Finset.range A.hist.length, (A.chan u e).toFinset.card
+        ≤ A.hist.length * (2 * S.R + 1) := by
+      refine le_trans (Finset.sum_le_sum fun e _ =>
+        le_trans (List.toFinset_card_le _) (hchan u e)) ?_
+      rw [Finset.sum_const, Finset.card_range, smul_eq_mul]
+    have hins := Finset.card_insert_le u
+      ((Finset.range A.hist.length).biUnion fun e => (A.chan u e).toFinset)
+    rw [hBf]
+    omega
   have hinj : Set.InjOn (fun a => A.up ((childEquiv S A π u) a : Fin A.N))
       (batchSet S A π u) := by
     intro a _ b _ hab
@@ -346,11 +418,13 @@ theorem batchSet_ncard_le (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
     have h2 := Subtype.ext h1
     exact (childEquiv S A π u).injective h2
   have hmap : ∀ a ∈ batchSet S A π u,
-      A.up ((childEquiv S A π u) a : Fin A.N) ∈ batchRoot S A u := fun a ha => ha
-  calc (batchSet S A π u).ncard ≤ (batchRoot S A u).ncard :=
+      A.up ((childEquiv S A π u) a : Fin A.N) ∈ batchRoot A u := fun a ha => ha
+  calc (batchSet S A π u).ncard ≤ (batchRoot A u).ncard :=
         Set.ncard_le_ncard_of_injOn _ hmap hinj (Set.toFinite _)
-    _ ≤ 1 + A.hist.length * (2 * S.R + 1) :=
-        Lax3Proofs.SplitterWin.genSet_ncard_le (2 * S.R) A.hist (A.up u)
+    _ = (batchPar A u).ncard :=
+        Set.ncard_image_of_injective (batchPar A u) A.up.injective
+    _ = Bf.card := by rw [hpar, Set.ncard_coe_finset]
+    _ ≤ 1 + A.hist.length * (2 * S.R + 1) := hcard
 
 /-- **The restrict∘isolate identity** (§5 line 8's re-expression): the
 arena `reachedS_descend` reaches — restrict the mapped node arena to the
@@ -439,28 +513,47 @@ hypothesis is §3's `m = ℓ(2R+1)` at this depth: it makes the pad exact
 (`range_pad`), so the isolated set is exactly the batch. An isolated
 centre yields an edgeless child (record clause vacuous); a centre with
 an edge extends the record by `reachedS_descend`, with `hwalk` supplied
-by `pathSet_subset_genSet` and the reached arena re-expressed by
-`map_childArena_eq`. -/
+by the invariant's own channel clause and the reached arena re-expressed
+by `map_childArena_eq`.
+
+The two channel clauses are re-established the way the machine actually
+maintains the channel: the row bound by `childChan_length_le`, and the
+walk clause by **one** new column — a BFS from `centreChild` in `B₀` at
+radius `2R` (`exists_walk_childChan_new`; the radius is `2R` because
+the cluster is the wreach fibre at `2R`) — with every older column
+*inherited* through `MArena.restrict`'s filter
+(`mem_childChan_old_iff`). -/
 theorem inv_child (S : Setup L) {Λ : ℕ} {G₀ : SimpleGraph (Fin n₀)} {j : ℕ}
     {A : Arena Λ n₀} (π : Equiv.Perm (Fin A.N)) (u : Fin A.N)
     (hInv : Inv S G₀ j A) (hbot : A.G ≠ ⊥)
     (hwidth : 1 + j * (2 * S.R + 1) ≤ S.width) :
     Inv S G₀ (j + 1) (childArena S A π u) := by
-  obtain ⟨hlen, hrec⟩ := hInv
+  classical
+  obtain ⟨hlen, hchan, hrec⟩ := hInv
   have hlen' : (childArena S A π u).hist.length = j + 1 := by
     rw [childArena_hist, List.length_cons, hlen]
-  refine ⟨hlen', ?_⟩
-  obtain ⟨rounds, hmem, hrlen, hR⟩ := hrec.resolve_left hbot
+  -- names shared by both branches
+  set e := childEquiv S A π u with hedef
+  have hupc : ∀ a : Fin (childArena S A π u).N,
+      (childArena S A π u).up a = A.up ((e a : Fin A.N)) := fun _ => rfl
+  -- clause 1 at the child: the new column is `descendCol`, the old ones
+  -- are the parent's rows filtered
+  have hchan' : ∀ (a : Fin (childArena S A π u).N) (c : ℕ),
+      ((childArena S A π u).chan a c).length ≤ 2 * S.R + 1 := by
+    intro a c
+    rw [childArena_chan]
+    exact childChan_length_le S A π u hchan a c
+  refine ⟨hlen', hchan', ?_⟩
+  obtain ⟨rounds, hmem, hrlen, hR, hchanW⟩ := hrec.resolve_left hbot
   by_cases hu : ∃ z, A.G.Adj u z
   · -- the centre has an edge: extend the record by one descent
     refine Or.inr ?_
     -- the batch fits, so the pad is exact
     have hfits : (batchSet S A π u).ncard ≤ S.width :=
-      (batchSet_ncard_le S A π u).trans (by rw [hlen]; exact hwidth)
+      (batchSet_ncard_le S A π u hchan).trans (by rw [hlen]; exact hwidth)
     have hpad : Set.range (batchFn S A π u) = batchSet S A π u :=
       range_pad (centreChild_mem_batchSet S A π u) hfits
     -- names
-    set e := childEquiv S A π u with hedef
     set Ximg : Set (Fin n₀) := ⇑A.up '' cluster S A π u with hXdef
     set W : Set (Fin n₀) :=
       (fun a => A.up ((e a : Fin A.N))) '' Set.range (batchFn S A π u) with hWdef
@@ -484,28 +577,30 @@ theorem inv_child (S : Setup L) {Λ : ℕ} {G₀ : SimpleGraph (Fin n₀)} {j : 
         exact centreChild_mem_batchSet S A π u
       · show A.up ((e (centreChild S A π u) : Fin A.N)) = A.up u
         rw [centreChild, ← hedef, Equiv.apply_symm_apply]
+    -- `hwalk` is now the invariant's own channel clause: the round's
+    -- column cuts the walk down to the channel row, and every channel
+    -- row of `u` at a round column is inside the batch.
     have hwalk : ∀ er ∈ rounds,
         WithinDist er.arena (2 * S.R) er.vtx (A.up u) →
         ∃ p : er.arena.Walk er.vtx (A.up u), p.length ≤ 2 * S.R ∧
           {z | z ∈ p.support} ∩ Ximg ⊆ W := by
-      intro er her hwd
-      obtain ⟨p, hplen, hpset⟩ := Lax3Proofs.SplitterWin.pathSet_spec hwd
+      intro er her _
+      obtain ⟨col, hcol, hcolw⟩ := hchanW er her
+      obtain ⟨p, hplen, hpsub⟩ := hcolw u
       refine ⟨p, hplen, ?_⟩
-      rw [← hpset]
       rintro z ⟨hzp, x', hx', rfl⟩
-      -- `z` is a recorded support vertex inside the cluster: it is in the batch
-      have hzgen : A.up x' ∈ batchRoot S A u :=
-        Lax3Proofs.SplitterWin.pathSet_subset_genSet
-          (e := (er.vtx, er.arena)) (hmem er her) _ hzp
-      refine ⟨e.symm ⟨x', hx'⟩, ?_, ?_⟩
+      obtain ⟨y, hy, hyx⟩ := hpsub ⟨hzp, ⟨x', rfl⟩⟩
+      have hyx' : y = x' := A.up.injective hyx
+      subst hyx'
+      refine ⟨e.symm ⟨y, hx'⟩, ?_, ?_⟩
       · rw [hpad]
-        show A.up ((e (e.symm ⟨x', hx'⟩) : Fin A.N)) ∈ batchRoot S A u
+        show A.up ((e (e.symm ⟨y, hx'⟩) : Fin A.N)) ∈ batchRoot A u
         rw [Equiv.apply_symm_apply]
-        exact hzgen
-      · show A.up ((e (e.symm ⟨x', hx'⟩) : Fin A.N)) = A.up x'
+        exact ⟨y, chan_subset_batchPar A u hcol hy, rfl⟩
+      · show A.up ((e (e.symm ⟨y, hx'⟩) : Fin A.N)) = A.up y
         rw [Equiv.apply_symm_apply]
     obtain ⟨Sgen, hstep⟩ := ReachedS.reachedS_descend hR hv hXball hWX hself hwalk
-    refine ⟨⟨A.up u, SimpleGraph.map (⇑A.up) A.G, Ximg, Sgen⟩ :: rounds, ?_, ?_, ?_⟩
+    refine ⟨⟨A.up u, SimpleGraph.map (⇑A.up) A.G, Ximg, Sgen⟩ :: rounds, ?_, ?_, ?_, ?_⟩
     · intro er her
       rw [childArena_hist]
       rcases List.mem_cons.mp her with rfl | her'
@@ -514,6 +609,63 @@ theorem inv_child (S : Setup L) {Λ : ℕ} {G₀ : SimpleGraph (Fin n₀)} {j : 
     · rw [List.length_cons, hrlen]
     · rw [← map_childArena_eq S A π u]
       exact hstep
+    · -- the walk clause at the child
+      intro er her
+      rcases List.mem_cons.mp her with rfl | her'
+      · -- this round: the column the supports pass just wrote
+        refine ⟨A.hist.length, ?_, fun a => ?_⟩
+        · rw [childArena_hist, List.length_cons]
+          omega
+        · obtain ⟨q, hqlen, hqsup⟩ := exists_walk_childChan_new S A π u a
+          -- push `q` from `B₀` into the root-mapped parent arena
+          have hadj : ∀ x y : Fin (childN S A π u), (preG S A π u).Adj x y →
+              (SimpleGraph.map (⇑A.up) A.G).Adj (A.up ((e x : Fin A.N)))
+                (A.up ((e y : Fin A.N))) := by
+            intro x y hxy
+            exact (SimpleGraph.map_adj _ _ _ _).mpr ⟨_, _, hxy, rfl, rfl⟩
+          set φ : preG S A π u →g SimpleGraph.map (⇑A.up) A.G :=
+            ⟨fun x => A.up ((e x : Fin A.N)), fun {x y} h => hadj x y h⟩ with hφ
+          have htgt : φ (centreChild S A π u) = A.up u := by
+            show A.up ((e (centreChild S A π u) : Fin A.N)) = A.up u
+            rw [centreChild, ← hedef, Equiv.apply_symm_apply]
+          have hlenq : ((q.map φ).copy rfl htgt).reverse.length ≤ 2 * S.R := by
+            rw [SimpleGraph.Walk.length_reverse, SimpleGraph.Walk.length_copy,
+              SimpleGraph.Walk.length_map]
+            exact hqlen
+          have hsupq : ∀ z, z ∈ ((q.map φ).copy rfl htgt).reverse.support →
+              ∃ b, b ∈ childChan S A π u a A.hist.length ∧
+                A.up ((e b : Fin A.N)) = z := by
+            intro z hz
+            rw [SimpleGraph.Walk.support_reverse, List.mem_reverse,
+              SimpleGraph.Walk.support_copy, SimpleGraph.Walk.support_map,
+              List.mem_map] at hz
+            obtain ⟨b, hb, rfl⟩ := hz
+            rw [hqsup] at hb
+            exact ⟨b, hb, rfl⟩
+          refine ⟨((q.map φ).copy rfl htgt).reverse, hlenq, ?_⟩
+          rintro z ⟨hzp, -⟩
+          obtain ⟨b, hb, rfl⟩ := hsupq z hzp
+          exact ⟨b, by rw [childArena_chan]; exact hb, rfl⟩
+      · -- an older round: the parent's column, inherited through the filter
+        obtain ⟨col, hcol, hcolw⟩ := hchanW er her'
+        have hcolne : col ≠ A.hist.length := by omega
+        refine ⟨col, ?_, fun a => ?_⟩
+        · rw [childArena_hist, List.length_cons]
+          omega
+        · obtain ⟨p, hplen, hpsub⟩ := hcolw ((e a : Fin A.N))
+          refine ⟨p, hplen, ?_⟩
+          rintro z ⟨hzp, b, rfl⟩
+          rw [hupc b] at hzp ⊢
+          obtain ⟨y, hy, hyx⟩ := hpsub ⟨hzp, ⟨_, rfl⟩⟩
+          have hyx' : y = (e b : Fin A.N) := A.up.injective hyx
+          subst hyx'
+          obtain ⟨b', hb', hbb'⟩ :=
+            (mem_childChan_old_iff S A π u hcolne a ((e b : Fin A.N))).mpr
+              ⟨hy, (e b).2⟩
+          refine ⟨b', ?_, ?_⟩
+          · rw [childArena_chan]
+            exact hb'
+          · rw [hupc b', hbb']
   · -- isolated centre: the child is edgeless
     exact Or.inl (childArena_G_eq_bot_of_isolated S A π
       (fun z hz => hu ⟨z, hz⟩))

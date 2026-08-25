@@ -332,8 +332,8 @@ open Classical in
 open Classical in
 @[simp] theorem chargeTotal_supportsC (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) :
     chargeTotal (supportsC S j A π u)
-      = (2 * Impl.gsize (preG S A π u) + S.R + 2)
-        + (S.R + 2) * (2 * Impl.gsize (preG S A π u)) :=
+      = (2 * Impl.gsize (preG S A π u) + 2 * S.R + 2)
+        + (2 * S.R + 2) * (2 * Impl.gsize (preG S A π u)) :=
   chargeTotal_cost (by decide) _
 
 open Classical in
@@ -382,8 +382,8 @@ theorem chargeTotal_centreChargeMS (S : Setup L) (j : ℕ) (A : Arena (S.pal j) 
     (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) :
     chargeTotal (centreChargeMS S j A ℓp htab nx nxC π u)
       = Impl.childCharge A.G (S.pal j) ℓp S.R (cluster S A π u)
-        + (((2 * Impl.gsize (preG S A π u) + S.R + 2)
-            + (S.R + 2) * (2 * Impl.gsize (preG S A π u)))
+        + (((2 * Impl.gsize (preG S A π u) + 2 * S.R + 2)
+            + (2 * S.R + 2) * (2 * Impl.gsize (preG S A π u)))
           + (Impl.profilesChargeMS (preG S A π u) S.width (relPal (S.pal j)) S.R
             + (Impl.isolateCharge ((Impl.ofArena A htab).restrict (cluster S A π u))
               + (chargeTotal (nxC (childArena S A π u))
@@ -454,9 +454,9 @@ supports, profiles (MS), isolate and scatter columns, their per-vertex
 constants, the readback, and the node allocation. -/
 noncomputable def nodeConst (S : Setup L) (j ℓp : ℕ) : ℕ :=
   (S.pal j + ℓp * (2 * S.R + 1) + 2)
-    + (2 * (S.R + 3) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1) + 2
+    + (2 * (2 * S.R + 3) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1) + 2
         + 2 * scatterBudget S j)
-    + ((S.R + 2) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1))
+    + ((2 * S.R + 2) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1))
     + (F S j).length + 4
 
 open Classical in
@@ -500,9 +500,10 @@ theorem frameChargeMS_chargeTotal_le (S : Setup L)
   set d : ℕ := ⌈c * (A.N : ℝ) ^ δ⌉₊ with hddef
   -- abbreviations for the schedule constants of this level
   set Kr : ℕ := S.pal j + ℓp * (2 * S.R + 1) + 2 with hKrdef
-  set Kc : ℕ := 2 * (S.R + 3) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1) + 2
+  set Kc : ℕ := 2 * (2 * S.R + 3) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1) + 2
     + 2 * scatterBudget S j with hKcdef
-  set Kq : ℕ := (S.R + 2) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1) with hKqdef
+  set Kq : ℕ := (2 * S.R + 2) + 6 * (S.width + relPal (S.pal j)) * (S.R + 1)
+    with hKqdef
   -- §1 the ℕ ledger, column by column
   have htot : chargeTotal (frameChargeMS S ord j A ℓp htab nx covC nxC)
       = chargeTotal covC + (A.N
@@ -519,15 +520,15 @@ theorem frameChargeMS_chargeTotal_le (S : Setup L)
     (Fin.sum_univ_def _).symm
   -- §2 per-centre columns against the cluster weight
   have hsup : ∀ u : Fin A.N,
-      (2 * Impl.gsize (preG S A π u) + S.R + 2)
-        + (S.R + 2) * (2 * Impl.gsize (preG S A π u))
-      ≤ 2 * (S.R + 3) * clusterWeight A.G (cluster S A π u) + (S.R + 2) := by
+      (2 * Impl.gsize (preG S A π u) + 2 * S.R + 2)
+        + (2 * S.R + 2) * (2 * Impl.gsize (preG S A π u))
+      ≤ 2 * (2 * S.R + 3) * clusterWeight A.G (cluster S A π u) + (2 * S.R + 2) := by
     intro u
     have hg := gsize_preG_le S A π u
-    calc (2 * Impl.gsize (preG S A π u) + S.R + 2)
-          + (S.R + 2) * (2 * Impl.gsize (preG S A π u))
-        = 2 * (S.R + 3) * Impl.gsize (preG S A π u) + (S.R + 2) := by ring
-      _ ≤ 2 * (S.R + 3) * clusterWeight A.G (cluster S A π u) + (S.R + 2) :=
+    calc (2 * Impl.gsize (preG S A π u) + 2 * S.R + 2)
+          + (2 * S.R + 2) * (2 * Impl.gsize (preG S A π u))
+        = 2 * (2 * S.R + 3) * Impl.gsize (preG S A π u) + (2 * S.R + 2) := by ring
+      _ ≤ 2 * (2 * S.R + 3) * clusterWeight A.G (cluster S A π u) + (2 * S.R + 2) :=
           Nat.add_le_add_right (Nat.mul_le_mul_left _ hg) _
   have hpro : ∀ u : Fin A.N,
       Impl.profilesChargeMS (preG S A π u) S.width (relPal (S.pal j)) S.R

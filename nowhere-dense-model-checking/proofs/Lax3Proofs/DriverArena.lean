@@ -3,6 +3,7 @@ import Lax3Proofs.CoverSpec
 import Lax3Proofs.CoverCentres
 import Lax3Proofs.ClusterPaths
 import Lax3Proofs.SplitterWin
+import Lax3Proofs.DriverBfsTree
 
 /-!
 # The abstract arena and the driver (E9, deliverable 2)
@@ -29,11 +30,23 @@ abstracted:
   it is `childEquiv` composed with the cluster inclusion.)
 * `hist` — D6's downward channel, abstracted: the list of
   `(connector, arena)` pairs of the ancestor rounds, at root names,
-  newest first. §4's per-vertex support lists are the *materialization*
-  of this data (the supports of `SplitterWin.genSet`'s chosen walks);
-  the abstract driver reads the batch off `genSet` directly, which is
-  the same set §5 line 19 computes (`algorithm-v2.md` §3, "the batch is
-  legal, by a landed lemma").
+  newest first.
+* `chan` — D6's downward channel *as the machine stores it*: per vertex
+  and per ancestor round (indexed by `ℕ`, the round's column; only
+  columns `< hist.length` carry a round), the recorded support names of
+  that round's walk, **at this node's own carrier**. This is §4's
+  per-vertex `hist` table, and it is what §5 line 19's batch is read
+  off (`batchPar`).
+
+  The field is what makes line 19 *computable*. Reading the batch off
+  `SplitterWin.genSet` instead — the previous spelling — takes the
+  support of a `Classical.choose`-picked walk, and the child-building
+  pass must produce the batch **exactly** (`profilesCom_specW` requires
+  the batch region to already hold `batchFn`'s values), so no program
+  could ever hit it. The channel is the one thing the pass does compute:
+  `supportsCom_specW` writes exactly one column per call, and
+  `MArena.restrict` carries every other column down filtered. Hence
+  `childArena`'s inherit-and-patch channel below.
 
 `own` is not carried: abstractly the writing child of a vertex `v` is
 *defined* to be the child of `centre v` (`ctr` of the cover layer), and
@@ -55,21 +68,28 @@ cover routine returns:
   before isolation. Measuring them in the isolated graph would give `∅`
   for every distance `≥ 1` and the rewrite would be unsound, not lossy
   (the plan row's first hazard; `Isolate.lean:751-757`).
-* `batchRoot` — line 19's batch at root names:
-  `genSet (2R) hist (up u)`, the connector plus one recorded
-  walk-support per ancestor round; `batchSet` is its trace on the child
-  carrier; `batchFn` **pads it to exactly `width`** (`m`) by repeating
-  the connector (the plan row's second hazard: the `iso` palette is
-  sized by the schedule, not by the actual batch, and
-  `genSet_ncard_le` + `m = ℓ(2R+1)` make the pad close the difference —
-  `range_pad`).
+* `batchPar` — line 19's batch at the node's own names: the connector
+  `u`, plus every name stored in `u`'s channel row at a round column;
+  `batchRoot` is its image at root names, `batchSet` its trace on the
+  child carrier; `batchFn` **pads it to exactly `width`** (`m`) by
+  repeating the connector (the plan row's second hazard: the `iso`
+  palette is sized by the schedule, not by the actual batch, and the
+  `≤ 2R+1` channel-row bound + `m = ℓ(2R+1)` make the pad close the
+  difference — `range_pad`, `batchSet_ncard_le`).
 * `childArena` — carrier `Fin childN`, graph
   `deleteVerts preG (range batchFn)` (line 21, isolation *after* the
   profiles), colors `childCol` (marker = everything, since after
   compaction the cluster is the whole carrier; then the two profile slot
   families of the schedule's `isoEnc` layout), `up` composed through the
   cluster inclusion, `hist` extended by this round's
-  `(up u, map up A.G)` pair.
+  `(up u, map up A.G)` pair, and `chan` **inherit-and-patch**: column
+  `hist.length` — this round's — is the gradient-walk table
+  `descendCol` of a BFS from `centreChild` in `preG` at radius `2R`
+  (verbatim what `supportsCom_specW` leaves), every older column the
+  parent's, filtered onto the cluster (verbatim what `MArena.restrict`
+  leaves). One BFS per node, not one per round: the far ancestors'
+  connectors are edge-isolated in the current arena, so recomputing
+  their columns here would return `{u}` and nothing else.
 
 ## The driver
 
@@ -92,8 +112,8 @@ schedule are `True` — §5 line 14's *uninitialised table*, never read.
 local sentence atoms of `top` evaluated as compile-time constants
 (`localConst`, L1).
 
-Everything is `noncomputable` (`Classical.choose` in the schedule, in
-the compaction bijection and in `genSet`'s chosen walks); what this
+Everything is `noncomputable` (`Classical.choose` in the schedule and
+in the compaction bijection); what this
 file delivers is the *algorithm's structure* — which routine is called
 where, on which data — with each routine consumed through its spec.
 The correctness chain and the cost accounting are the satellite files
@@ -158,6 +178,83 @@ theorem mem_range_pad {k mb : ℕ} {X : Set (Fin k)} {x₀ : Fin k} (hx : x₀ �
     (hle : X.ncard ≤ mb) : x₀ ∈ Set.range (pad (mb := mb) X x₀) :=
   (range_pad hx hle).symm ▸ hx
 
+end Lax3Proofs.Driver
+
+/-! ### The enumeration's partial inverse
+
+`restrictEmb` and `toLocal` — §6.1's "rank `S` to get local names" and
+its reverse index — were `ImplRestrict` §1a; they are here, **verbatim
+and in their own namespace**, because `childArena`'s inherited channel
+columns are `MArena.restrict`'s `filterMap (toLocal …)` on the nose and
+the driver must now name them. Nothing changed but the position in the
+import graph. -/
+
+namespace Lax3Proofs.Impl
+
+variable {n : ℕ}
+
+/-- The enumeration embedding of §6.1's "rank `S` to get local names":
+the local carrier `Fin S.ncard` into the parent carrier, through the
+same `Driver.setEquiv` the driver's compaction bijection uses — so the
+identities to `preG`/`childArena` below are definitional. -/
+noncomputable def restrictEmb (S : Set (Fin n)) : Fin S.ncard ↪ Fin n :=
+  (Driver.setEquiv S).toEmbedding.trans (Function.Embedding.subtype _)
+
+@[simp] theorem restrictEmb_apply (S : Set (Fin n)) (a : Fin S.ncard) :
+    restrictEmb S a = ((Driver.setEquiv S) a : Fin n) := rfl
+
+theorem restrictEmb_mem (S : Set (Fin n)) (a : Fin S.ncard) :
+    restrictEmb S a ∈ S := ((Driver.setEquiv S) a).2
+
+open Classical in
+/-- The partial inverse of the enumeration: a parent name to its local
+name if it has one — the reverse index the scratch array realizes. -/
+noncomputable def toLocal (S : Set (Fin n)) (x : Fin n) : Option (Fin S.ncard) :=
+  if h : x ∈ S then some ((Driver.setEquiv S).symm ⟨x, h⟩) else none
+
+theorem toLocal_eq_none (S : Set (Fin n)) {x : Fin n} (hx : x ∉ S) :
+    toLocal S x = none := by
+  rw [toLocal, dif_neg hx]
+
+theorem restrictEmb_toLocal (S : Set (Fin n)) {x : Fin n} (hx : x ∈ S)
+    {a : Fin S.ncard} (h : toLocal S x = some a) : restrictEmb S a = x := by
+  rw [toLocal, dif_pos hx] at h
+  obtain rfl := Option.some_injective _ h
+  show ((Driver.setEquiv S) ((Driver.setEquiv S).symm ⟨x, hx⟩) : Fin n) = x
+  rw [Equiv.apply_symm_apply]
+
+open Classical in
+/-- The filtered list, read back at parent names, is exactly the stored
+list's intersection with `S`, in order — "intersect the stored lists
+with `S`" as a list identity. -/
+theorem map_restrictEmb_filterMap_toLocal (S : Set (Fin n)) (l : List (Fin n)) :
+    (l.filterMap (toLocal S)).map (fun b => (restrictEmb S b : Fin n))
+      = l.filter fun x => decide (x ∈ S) := by
+  induction l with
+  | nil => rfl
+  | cons x l ih =>
+    rw [List.filterMap_cons, List.filter_cons]
+    by_cases hx : x ∈ S
+    · have hsome : toLocal S x = some ((Driver.setEquiv S).symm ⟨x, hx⟩) := by
+        rw [toLocal, dif_pos hx]
+      rw [hsome, if_pos (by simpa using hx), List.map_cons, ih,
+        restrictEmb_toLocal S hx hsome]
+    · rw [toLocal_eq_none S hx, if_neg (by simpa using hx), ih]
+
+/-- Filtering a channel row never lengthens it — with §4's `≤ 2R+1`
+bound on the stored lists, the child's rows keep it. -/
+theorem length_filterMap_toLocal_le (S : Set (Fin n)) (l : List (Fin n)) :
+    (l.filterMap (toLocal S)).length ≤ l.length :=
+  List.length_filterMap_le _ _
+
+end Lax3Proofs.Impl
+
+namespace Lax3Proofs.Driver
+
+open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
+open Lax12.UniformQuasiWideness Lax12.ColoringNumbers
+open Lax3Proofs.LocalityFun Lax3Proofs.WalkDistance
+
 /-! ### The arena -/
 
 variable {L : ℕ}
@@ -177,6 +274,11 @@ structure Arena (Λ n₀ : ℕ) where
   /-- D6's downward channel, abstractly: the `(connector, arena)` pair
   of each ancestor round, at root names, newest first. -/
   hist : List (Fin n₀ × SimpleGraph (Fin n₀))
+  /-- D6's downward channel, **as §4 stores it**: per vertex and per
+  round column, that round's recorded walk-support names, at this
+  node's own carrier. `ℕ`-indexed — only columns `< hist.length` carry
+  a round, and the padding beyond is never read. -/
+  chan : Fin N → ℕ → List (Fin N)
 
 variable {n₀ : ℕ}
 
@@ -240,21 +342,38 @@ at the appended slot. -/
 noncomputable def childColR : Coloring (childN S A π u) (relPal Λ) :=
   relColoring (childCol0 S A π u) Set.univ
 
-/-- §5 line 19's batch, at ROOT names: the connector plus one recorded
-walk-support per ancestor round. This is `SplitterWin.genSet`, which is
-literally the set line 19 writes (`algorithm-v2.md` §3). -/
-noncomputable def batchRoot : Set (Fin n₀) :=
-  Lax3Proofs.SplitterWin.genSet (2 * S.R) A.hist (A.up u)
+/-- **§5 line 19's batch, at the node's own names**: the connector `u`,
+plus every name the channel stores in `u`'s row at a round column.
+Columns `≥ hist.length` carry no round and are not read.
+
+This is the set the machine's line 19 *computes*: the channel rows are
+exactly the arrays `supportsCom_specW` writes and `MArena.restrict`
+carries down. The previous spelling — `SplitterWin.genSet`, the union of
+`Classical.choose`-picked walk supports — is the same *kind* of set
+(one recorded walk-support per ancestor round) but no program can output
+it, and `profilesCom_specW` needs the batch region to hold `batchFn`'s
+values exactly. `genSet` remains live where it belongs, in `ReachedS`,
+proving Splitter wins. -/
+def batchPar : Set (Fin A.N) :=
+  {u} ∪ {z | ∃ e < A.hist.length, z ∈ A.chan u e}
+
+theorem self_mem_batchPar : u ∈ batchPar A u := Or.inl rfl
+
+theorem chan_subset_batchPar {e : ℕ} (he : e < A.hist.length) {z : Fin A.N}
+    (hz : z ∈ A.chan u e) : z ∈ batchPar A u := Or.inr ⟨e, he, hz⟩
+
+/-- The batch at ROOT names — the shape the splitter record consumes. -/
+def batchRoot : Set (Fin n₀) := ⇑A.up '' batchPar A u
 
 /-- The batch's trace on the child carrier. -/
 noncomputable def batchSet : Set (Fin (childN S A π u)) :=
-  {a | A.up ((childEquiv S A π u) a : Fin A.N) ∈ batchRoot S A u}
+  {a | A.up ((childEquiv S A π u) a : Fin A.N) ∈ batchRoot A u}
 
 theorem centreChild_mem_batchSet : centreChild S A π u ∈ batchSet S A π u := by
   show A.up ((childEquiv S A π u) ((childEquiv S A π u).symm ⟨u, _⟩) : Fin A.N)
-      ∈ batchRoot S A u
+      ∈ batchRoot A u
   rw [Equiv.apply_symm_apply]
-  exact Lax3Proofs.SplitterWin.self_mem_genSet _ _ _
+  exact ⟨u, self_mem_batchPar A u, rfl⟩
 
 /-- §5 line 19's `pad_m`: the batch as a function on exactly `width`
 slots (hazard 2 — the `iso` palette is sized by the schedule, and the
@@ -273,6 +392,40 @@ noncomputable def childCol : Coloring (childN S A π u) (isoPal (relPal Λ) S.wi
     (fun j a => {z | WithinDist (preG S A π u) (a : ℕ) z (batchFn S A π u j)})
     (fun c b => {z | ∃ y ∈ childColR S A π u c, WithinDist (preG S A π u) (b : ℕ) z y})
 
+open Classical in
+/-- **The canonical ball table of this round's BFS**: the truncated
+distance table from the centre's own child name in `B₀`, at radius
+`2R`. `bfsCom` can leave no other table (`ballTable_eq_ballDist`), and
+the radius is `2R` because the cluster is the wreach fibre at `2R`
+(`SolveFrameStages.supportsCom_specW`: "the frame-step discharger
+instantiates `2R` here, never `S.R`"). -/
+noncomputable def childDist : Fin (childN S A π u) → ℕ :=
+  Lax3Proofs.Prog.ballDist (preG S A π u) (centreChild S A π u) (2 * S.R)
+
+open Classical in
+/-- **The child's channel, inherit-and-patch** (§5 line 17/23): column
+`hist.length` — this round's — is the gradient-walk table the supports
+pass writes (`descendCol` of `childDist` in `B₀` at radius `2R`,
+verbatim `supportsCom_specW`'s deliverable); every older column is the
+parent's row at the parent name, filtered onto the cluster and
+renumbered (verbatim `MArena.restrict`'s `hist` field).
+
+One BFS per node, from `centreChild`, is all the pass can afford and
+all it needs: `ClusterPaths.exists_walk_support_subset_fiber` puts
+every child vertex within `2R` of the centre inside `B₀`, so this
+column is a genuine `descend` at every vertex, never `[]`. Recomputing
+the *ancestors'* columns here instead would return nothing — their
+connectors are edge-isolated in the current arena — which is the
+vacuity §5 ⟨A⟩ recorded. -/
+noncomputable def childChan :
+    Fin (childN S A π u) → ℕ → List (Fin (childN S A π u)) :=
+  fun a e =>
+    if e = A.hist.length then
+      Lax3Proofs.Prog.descendCol (preG S A π u) (childDist S A π u) (2 * S.R) a
+    else
+      (A.chan ((childEquiv S A π u) a : Fin A.N) e).filterMap
+        (Lax3Proofs.Impl.toLocal (cluster S A π u))
+
 /-- **The child arena** of centre `u` (§5 lines 15–23): the cluster's
 carrier, the restricted graph with the batch isolated, the profile
 colors, the composite renaming, and the extended channel. -/
@@ -283,6 +436,7 @@ noncomputable def childArena : Arena (isoPal (relPal Λ) S.width S.R) n₀ where
   up := ((childEquiv S A π u).toEmbedding.trans
     (Function.Embedding.subtype _)).trans A.up
   hist := (A.up u, SimpleGraph.map A.up A.G) :: A.hist
+  chan := childChan S A π u
 
 @[simp] theorem childArena_N : (childArena S A π u).N = childN S A π u := rfl
 
@@ -294,6 +448,145 @@ noncomputable def childArena : Arena (isoPal (relPal Λ) S.width S.R) n₀ where
 
 @[simp] theorem childArena_hist :
     (childArena S A π u).hist = (A.up u, SimpleGraph.map A.up A.G) :: A.hist := rfl
+
+@[simp] theorem childArena_chan :
+    (childArena S A π u).chan = childChan S A π u := rfl
+
+@[simp] theorem childArena_up_apply (a : Fin (childArena S A π u).N) :
+    (childArena S A π u).up a = A.up ((childEquiv S A π u) a : Fin A.N) := rfl
+
+open Classical in
+theorem childChan_new (a : Fin (childN S A π u)) :
+    childChan S A π u a A.hist.length
+      = Lax3Proofs.Prog.descendCol (preG S A π u) (childDist S A π u) (2 * S.R) a :=
+  if_pos rfl
+
+open Classical in
+theorem childChan_old {e : ℕ} (he : e ≠ A.hist.length) (a : Fin (childN S A π u)) :
+    childChan S A π u a e
+      = (A.chan ((childEquiv S A π u) a : Fin A.N) e).filterMap
+          (Lax3Proofs.Impl.toLocal (cluster S A π u)) :=
+  if_neg he
+
+/-! #### The channel column's three facts
+
+Everything `DriverCorrect` needs about `childChan`: the new column is a
+real `descend` (so the batch is not degenerate), it fits the `2R+1`
+schedule bound, and an inherited column is the parent's row cut down to
+the cluster. -/
+
+/-- **The cluster has radius `2R` inside `B₀`**: every child vertex is
+within `2R` of the centre's own child name, *in `preG`* — cluster
+path-closure (`ClusterPaths.exists_walk_induce_fiber`), transported
+along the compaction bijection. This is what makes one BFS from
+`centreChild` cover the whole child carrier. -/
+theorem withinDist_preG_centreChild (a : Fin (childN S A π u)) :
+    WithinDist (preG S A π u) (2 * S.R) (centreChild S A π u) a := by
+  refine withinDist_symm ?_
+  obtain ⟨q, hq⟩ := Lax3Proofs.ClusterPaths.exists_walk_induce_fiber
+    (G := A.G) (π := π) (r := 2 * S.R) (u := u)
+    (w := ((childEquiv S A π u) a : Fin A.N)) ((childEquiv S A π u) a).2
+  have hadj : ∀ x y : ↥(cluster S A π u), (A.G.induce (cluster S A π u)).Adj x y →
+      (preG S A π u).Adj ((childEquiv S A π u).symm x)
+        ((childEquiv S A π u).symm y) := by
+    intro x y hxy
+    show A.G.Adj ((childEquiv S A π u) ((childEquiv S A π u).symm x) : Fin A.N)
+      ((childEquiv S A π u) ((childEquiv S A π u).symm y) : Fin A.N)
+    rw [Equiv.apply_symm_apply, Equiv.apply_symm_apply]
+    exact hxy
+  refine ⟨SimpleGraph.Walk.copy
+    (q.map (⟨fun x => (childEquiv S A π u).symm x, fun {x y} h => hadj x y h⟩ :
+      (A.G.induce (cluster S A π u)) →g preG S A π u))
+    (by
+      show (childEquiv S A π u).symm ((childEquiv S A π u) a) = a
+      rw [Equiv.symm_apply_apply]) rfl, ?_⟩
+  rw [SimpleGraph.Walk.length_copy, SimpleGraph.Walk.length_map]
+  exact hq
+
+open Classical in
+/-- The centre's BFS reaches every child vertex within the horizon —
+the `descendCol` guard is always satisfied. -/
+theorem childDist_le (a : Fin (childN S A π u)) :
+    childDist S A π u a ≤ 2 * S.R :=
+  ((Lax3Proofs.Prog.ballDist_ballTable (preG S A π u) (centreChild S A π u)
+    (2 * S.R)) a (2 * S.R) le_rfl).mpr (mem_ball.mpr (withinDist_preG_centreChild S A π u a))
+
+open Classical in
+/-- **The new column is a genuine recorded walk**, at every child
+vertex: `descend`'s gradient list, which `Impl.descend_spec` certifies
+is the support of a walk of length `≤ 2R` from the vertex to the
+centre, inside `B₀`. -/
+theorem exists_walk_childChan_new (a : Fin (childN S A π u)) :
+    ∃ p : (preG S A π u).Walk a (centreChild S A π u),
+      p.length ≤ 2 * S.R ∧
+        p.support = childChan S A π u a A.hist.length := by
+  obtain ⟨w, hwlen, hwsup⟩ :=
+    Lax3Proofs.Impl.descend_spec
+      (Lax3Proofs.Prog.ballDist_ballTable (preG S A π u) (centreChild S A π u)
+        (2 * S.R)) a (childDist_le S A π u a)
+  refine ⟨w, ?_, ?_⟩
+  · rw [hwlen]; exact childDist_le S A π u a
+  · rw [hwsup, childChan_new, Lax3Proofs.Prog.descendCol_of_reached
+      (childDist_le S A π u a)]
+    rfl
+
+open Classical in
+/-- **Every channel row fits `2R + 1`** — the new column by
+`descendCol_length_le`, the inherited ones because filtering never
+lengthens a list. -/
+theorem childChan_length_le (hchan : ∀ (w : Fin A.N) (e : ℕ),
+      (A.chan w e).length ≤ 2 * S.R + 1)
+    (a : Fin (childN S A π u)) (e : ℕ) :
+    (childChan S A π u a e).length ≤ 2 * S.R + 1 := by
+  by_cases he : e = A.hist.length
+  · subst he
+    rw [childChan_new]
+    exact Lax3Proofs.Prog.descendCol_length_le
+      (Lax3Proofs.Prog.ballDist_ballTable (preG S A π u) (centreChild S A π u)
+        (2 * S.R)) a
+  · rw [childChan_old S A π u he]
+    exact le_trans (Lax3Proofs.Impl.length_filterMap_toLocal_le _ _)
+      (hchan _ e)
+
+open Classical in
+/-- **An inherited column is the parent's row cut down to the cluster**
+— `MArena.restrict`'s `hist` field, read at parent names
+(`map_restrictEmb_filterMap_toLocal`). -/
+theorem mem_childChan_old_iff {e : ℕ} (he : e ≠ A.hist.length)
+    (a : Fin (childN S A π u)) (x : Fin A.N) :
+    (∃ b ∈ childChan S A π u a e, ((childEquiv S A π u) b : Fin A.N) = x)
+      ↔ (x ∈ A.chan ((childEquiv S A π u) a : Fin A.N) e ∧ x ∈ cluster S A π u) := by
+  classical
+  have h := Lax3Proofs.Impl.map_restrictEmb_filterMap_toLocal
+    (cluster S A π u) (A.chan ((childEquiv S A π u) a : Fin A.N) e)
+  rw [childChan_old S A π u he]
+  constructor
+  · rintro ⟨b, hb, rfl⟩
+    have hmem : ((childEquiv S A π u) b : Fin A.N) ∈
+        (A.chan ((childEquiv S A π u) a : Fin A.N) e).filter
+          (fun z => decide (z ∈ cluster S A π u)) := by
+      rw [← h]
+      exact List.mem_map.mpr ⟨b, hb, rfl⟩
+    exact ⟨(List.mem_filter.mp hmem).1, ((childEquiv S A π u) b).2⟩
+  · rintro ⟨hx1, hx2⟩
+    have hmem : x ∈ (A.chan ((childEquiv S A π u) a : Fin A.N) e).filter
+        (fun z => decide (z ∈ cluster S A π u)) :=
+      List.mem_filter.mpr ⟨hx1, decide_eq_true hx2⟩
+    rw [← h, List.mem_map] at hmem
+    exact hmem
+
+/-- The child's root names are exactly the cluster's. -/
+theorem range_childArena_up :
+    Set.range ⇑(childArena S A π u).up = ⇑A.up '' cluster S A π u := by
+  ext x
+  constructor
+  · rintro ⟨a, rfl⟩
+    exact ⟨((childEquiv S A π u) a : Fin A.N), ((childEquiv S A π u) a).2, rfl⟩
+  · rintro ⟨y, hy, rfl⟩
+    exact ⟨(childEquiv S A π u).symm ⟨y, hy⟩, by
+      show A.up ((childEquiv S A π u) ((childEquiv S A π u).symm ⟨y, hy⟩) : Fin A.N)
+        = A.up y
+      rw [Equiv.apply_symm_apply]⟩
 
 end Child
 
@@ -340,6 +633,7 @@ def rootArena {n : ℕ} (G : SimpleGraph (Fin n)) (col : Coloring n L) : Arena L
   col := col
   up := Function.Embedding.refl _
   hist := []
+  chan := fun _ _ => []
 
 /-- **§5's `MC`** (lines 1–6): evaluate `top` with its local sentence
 atoms as compile-time constants (L1, `localConst`) and its scatter atoms

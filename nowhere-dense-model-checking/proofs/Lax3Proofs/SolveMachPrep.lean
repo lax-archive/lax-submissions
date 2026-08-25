@@ -21,9 +21,22 @@ the machine's own assembly:
   campaign's oldest hazard);
 * a renaming region at `restrict`'s composite `up`;
 * a channel region at the **supports-written `descendCol` table** —
-  one `supportsCom_specW` call per round `e`, each recomputing column
-  `e` as the gradient-walk lists of that round's ball table at radius
-  `2R` in `preG`.
+  **one** `supportsCom_specW` call, writing column `hist.length` (this
+  round's) as the gradient-walk lists of the ball table at radius `2R`
+  from `centreChild` in `preG`, with every older column carried down
+  by `restrictCom_specW`'s filter.
+
+  *Correction (2026-08-24).* This bullet used to read "one
+  `supportsCom_specW` call **per round** `e`, each recomputing column
+  `e`". No landed object requires that, `supportsCom_specW`'s own
+  postcondition makes it impossible for far ancestors (it writes
+  exactly one column and inherits the rest), and it is *false* as a
+  description of what the pass can do: an ancestor round's connector is
+  edge-isolated in the current arena (`ReachedS.selfS`, `isolatedS`),
+  so a BFS from it reaches nothing and the recomputed column would be
+  empty. `Driver.childChan` (`DriverArena`) is the inherit-and-patch
+  channel the driver now *defines*, and it is the shape `chanF` must
+  have.
 
 This file discharges the **assembly seam** between that machine shape
 and `ChildLoad`'s verbatim conclusion, so that the remaining work is
@@ -57,12 +70,15 @@ supports-written `descendCol` table — and F7 must instantiate
 `htabF (j+1)` to exactly that. Two facts make the instantiation
 well-defined:
 
-* **The table is canonical** (§1): `ballDist H s d` is *the* truncated
-  distance table — `ballTable_eq_ballDist` shows any table satisfying
-  `Impl.BallTable` with the `≤ d+1` bound (verbatim `bfsCom_specW`'s
-  deliverable) equals it — so the per-round columns the pass stores are
-  `descendTab H d src` (§2) regardless of which run produced them
-  (`descendCol_eq_descendTab`).
+* **The table is canonical** (§1, now `DriverBfsTree` §3):
+  `ballDist H s d` is *the* truncated distance table —
+  `ballTable_eq_ballDist` shows any table satisfying `Impl.BallTable`
+  with the `≤ d+1` bound (verbatim `bfsCom_specW`'s deliverable) equals
+  it — so the column the pass writes is fixed regardless of which run
+  produced it. `descendTab`/`descendCol_eq_descendTab` (§2) state this
+  for an arbitrary indexed family of sources; the driver's own
+  instance is the single new column of `Driver.childChan`, whose ball
+  table is `Driver.childDist`.
 * **`preG` is recoverable from the child arena alone** (§2,
   `preG_eq_comap_childUp`): the pre-isolation graph the walks live in
   is the comap of the channel head's root-mapped parent graph along the
@@ -80,10 +96,11 @@ well-defined:
 * The batch is the **padded** `batchFn` (width exactly `S.width`,
   duplicates included) — the `ProfileTablesMS` witness is indexed by
   `Fin S.width`, one table per padded slot.
-* The supports rounds recompute **every** column in `preG` (one
-  `supportsCom_specW` call per round; within one call the other
-  columns are inherited) — `chanF` is one table family for all rounds,
-  not a per-round patch.
+* The supports pass writes **exactly one** column — this round's, at
+  index `hist.length` — and inherits every older one through
+  `restrict`'s `filterMap (toLocal …)`. That is `Driver.childChan`, and
+  `chanF` must be it. (Recomputing the ancestors' columns here is not
+  merely unnecessary but vacuous; see the correction above.)
 -/
 
 namespace Lax3Proofs.Prog
@@ -100,70 +117,10 @@ variable {L n₀ : ℕ}
 
 /-! ## §1 The canonical truncated distance table -/
 
-open Classical in
-/-- **The canonical truncated distance table** of one source at cap
-`d`: the least radius reaching `v`, or `d + 1` beyond the horizon —
-the unique table `bfsCom` can leave (`ballTable_eq_ballDist`). -/
-noncomputable def ballDist {N : ℕ} (H : SimpleGraph (Fin N)) (s : Fin N)
-    (d : ℕ) (v : Fin N) : ℕ :=
-  if v ∈ ball H d s then sInf {k | v ∈ ball H k s} else d + 1
-
-open Classical in
-/-- The canonical table respects the horizon bound — the `≤ d + 1`
-clause of `bfsCom_specW`'s deliverable. -/
-theorem ballDist_le {N : ℕ} (H : SimpleGraph (Fin N)) (s : Fin N) (d : ℕ)
-    (v : Fin N) : ballDist H s d v ≤ d + 1 := by
-  rw [ballDist]
-  by_cases hv : v ∈ ball H d s
-  · rw [if_pos hv]
-    exact le_trans (Nat.sInf_le hv) (Nat.le_succ d)
-  · rw [if_neg hv]
-
-open Classical in
-/-- The canonical table is a `BallTable` — the other half of
-`bfsCom_specW`'s deliverable. -/
-theorem ballDist_ballTable {N : ℕ} (H : SimpleGraph (Fin N)) (s : Fin N)
-    (d : ℕ) : Impl.BallTable H s d (ballDist H s d) := by
-  intro v k hk
-  by_cases hv : v ∈ ball H d s
-  · rw [ballDist, if_pos hv]
-    constructor
-    · intro hle
-      have hmem : v ∈ ball H (sInf {k | v ∈ ball H k s}) s :=
-        Nat.sInf_mem (⟨d, hv⟩ : {k | v ∈ ball H k s}.Nonempty)
-      exact ball_mono_radius H s hle hmem
-    · intro hkm
-      exact Nat.sInf_le hkm
-  · rw [ballDist, if_neg hv]
-    constructor
-    · intro h
-      exact absurd hk (by omega)
-    · intro hkm
-      exact absurd (ball_mono_radius H s hk hkm) hv
-
-open Classical in
-/-- **Uniqueness**: any table satisfying `BallTable` with the horizon
-bound — verbatim what `bfsCom_specW` leaves in the distance region —
-*is* the canonical table. This is what makes the pass's stored channel
-independent of the run that produced it. -/
-theorem ballTable_eq_ballDist {N : ℕ} {H : SimpleGraph (Fin N)}
-    {s : Fin N} {d : ℕ} {D : Fin N → ℕ} (hD : Impl.BallTable H s d D)
-    (hle : ∀ v, D v ≤ d + 1) : D = ballDist H s d := by
-  funext v
-  by_cases hv : v ∈ ball H d s
-  · rw [ballDist, if_pos hv]
-    have h1 : D v ≤ d := (hD v d le_rfl).mpr hv
-    have h2 : v ∈ ball H (D v) s := (hD v (D v) h1).mp le_rfl
-    have h3 : sInf {k | v ∈ ball H k s} ≤ D v := Nat.sInf_le h2
-    have hmem : v ∈ ball H (sInf {k | v ∈ ball H k s}) s :=
-      Nat.sInf_mem (⟨d, hv⟩ : {k | v ∈ ball H k s}.Nonempty)
-    have h4 : D v ≤ sInf {k | v ∈ ball H k s} :=
-      (hD v _ (le_trans h3 h1)).mpr hmem
-    omega
-  · rw [ballDist, if_neg hv]
-    have h1 : ¬ D v ≤ d := fun h => hv ((hD v d le_rfl).mp h)
-    have h2 := hle v
-    omega
+/-! `ballDist`, `ballDist_le`, `ballDist_ballTable` and
+`ballTable_eq_ballDist` now live in `DriverBfsTree` §3 (relocated
+verbatim, same namespace and spelling) so that `Driver.childArena`'s
+channel can be defined by them. -/
 
 /-! ## §2 The pass's channel table, canonically -/
 
@@ -269,7 +226,7 @@ stage lifts actually hand over: the windowed contract at the assembled
 `machChild`, its `ProfileTablesMS` witness carried existentially (the
 discharger holds it as `profilesCom_specW`'s postcondition), and the
 channel at the explicit table family `chanF` (the discharger's — the
-supports-written `descendTab`, §2). -/
+inherit-and-patch `Driver.childChan`, canonical by §1). -/
 def ChildLoadParts (B : ℕ) (S : Setup L) (ord : CoverSpec.OrderingRoutine)
     (ℓp : ℕ → ℕ)
     (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
