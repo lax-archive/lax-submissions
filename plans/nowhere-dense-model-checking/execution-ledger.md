@@ -75,6 +75,73 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — the fraternal peel: the landed peel composed, and a pricing identity
+
+`AugRoundIn`'s hidden obligation is discharged. `fratPeelAt_fratPeelCom` leaves
+`RankAt sg (selRank (bucketSel n) (fratGraph D))` — **`StepEmitIn`'s exact
+predicate** — from the fraternal `CsrPrefix`, at
+`fratPeelCom = bldAdjCom ; bucketPeelCom`. **The landed peel composed; no
+second peel was written** — which is what the packet required the worker to
+stop and ask about rather than duplicate a 3,000-line program.
+
+**The budget closes at *equality*, not an estimate.** `fratPeelK n nf =
+394n + 176nf + 64`, and `Run.mono` shuts it exactly:
+`(81n + 58nf + 24) + (313n + 118·slotCount + 40)` with
+`nf = slotCount (fratGraph D)` by `graphCsr_ns_eq_slotCount`. That identity
+*is* the pricing argument — the fraternal CSR's slot count **is** the figure
+the peel is charged at, so there is nothing to estimate. Lands in
+`augRoundBudget`'s `kn` and `kf`; `ka` and `kt` unused. Linear in the carrier,
+so the `R+1` repetitions do not multiply.
+
+**Correction to a supervisor brief.** It said `AdjBuildAt` is "directly usable
+on fresh arrays". The `winA` trap indeed does not apply — but `AdjBuildAt` is
+still **not** usable here, for a *second* reason: its precondition is
+`GraphCsr`, which pins `|o| = N+1` and `|t| = ns` **exactly**, while
+`fratCsrAt_fratCom` allocates at `fratPairCount D ≥ nf` and delivers only the
+`≤`-sized `CsrPrefix`. The route is one level down — `bldAdj_spec` via
+`srcCsr_of_graphCsr`. **Fifth occurrence** of an exact-length clause invisible
+in the contract text.
+
+**For the composer**: the peel needs `n·n + n` cells in `sk`. The round already
+carries an `n·n` region (`FratCsrAt`'s mark matrix `mk`, proved restored to
+all-zero) — but `n·n ≠ n·n + n`, so `mk` must be widened by `n` or a separate
+allocation named. Time stays linear; only the space is quadratic.
+
+### 2026-08-25 — `PeelGroupIn` discharged in full, and a nine-times-recorded drift finally cleaned
+
+`peelGroupIn_grCom` concludes `PeelGroupIn` **verbatim**, every clause intact,
+at `peelK 153 61 0` — **no edge term**, since the grouping never reads the
+graph. **No residual left open.** `bgr = 61` is tight (17 + 22 + 22: exactly
+the three passes over the mass); `agr` carries a folded constant and is slack
+by ~`49/N`.
+
+Two design points worth keeping: `cur` needs **no zeroing pass**, because `od`
+is a bijection over ranks so every carrier cell is written once; and the second
+sort needs **no second offset array**, because the first scatter leaves
+`cnt[v]` at the bucket's *end* while the running pointer is its start.
+
+**Cross-leaf constraint for the composition**: `Sgr` is a binding requirement
+on the **sweep** half and is invisible in `PeelGroupIn`'s text — it cannot
+mention the arena, so no scratch length can be stated in `A.N` or the mass. It
+is instantiated against the log's own arrays (`|lm| ≤ |cm|`, `|lm| ≤ |sb|`,
+`|co| ≤ |cnt|`, `|co| ≤ |cur|`), arena-free and exactly strong enough.
+`PeelSweepIn` must leave it true. Checked separately: **`ClusterCsr` pins no
+exact length** — both allocation clauses are `≤` — so it imposes nothing
+hidden downstream.
+
+**And the drift is cleaned.** `SolveBlocksRestrict`'s Finding 1 still said
+`Driver.setEquiv` was `Classical`-chosen and flagged the `orderIsoOfFin` repin
+as *future work*. The repin landed at `DriverArena.lean:140`, and the paragraph
+had gone stale — the tenth instance of docstring-versus-object drift in this
+campaign, and the first one caused by our own landing rather than inherited.
+Corrected in place with a `⟨RESOLVED⟩` tag, keeping the reasoning because it
+still explains why `ClusterList` exists. **`restrictEmb` is the sorted
+enumeration and that is now a theorem** (`setEquiv_strictMono`,
+`ncard_lt_setEquiv`) — which is precisely what makes `SolveSweepGroup`'s second
+counting sort stable *by construction* and `SolveMachPrepBatch`'s
+"running count is the slot" invariant true. Two landed proofs depend on the
+fact the docstring was still denying.
+
 ### 2026-08-25 — the peel BFS: a hazard turned structural
 
 `PeelBfsIn`'s program, both of its constraints as **theorems**, the clean-up

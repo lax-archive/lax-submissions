@@ -129,6 +129,7 @@ import Lax3Proofs.SolveSweepMdPeel
 import Lax3Proofs.SolveSweepPeel
 import Lax3Proofs.SolveSweepRun
 import Lax3Proofs.SolveSweepBfs
+import Lax3Proofs.SolveSweepGroup
 import Lax3Proofs.SolveSweepBucket
 import Lax3Proofs.SolveSweepSelPeel
 import Lax3Proofs.SolveSweepBucketProg
@@ -136,6 +137,7 @@ import Lax3Proofs.SolveSweepBucketRound
 import Lax3Proofs.SolveSweepOrder
 import Lax3Proofs.SolveAugFrat
 import Lax3Proofs.SolveAugFratCom
+import Lax3Proofs.SolveAugFratPeel
 import Lax3Proofs.SolveAugTrans
 import Lax3Proofs.SolveAugEmit
 import Lax3Proofs.SolveAugEmitCom

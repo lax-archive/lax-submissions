@@ -82,23 +82,27 @@ scanned; a kept row is filtered by the batch bits.
 ## Two seam findings (loudly)
 
 1. **`Driver.setEquiv` is `Classical`-chosen, not the sorted
-   enumeration.** `ImplRestrict`'s docstring calls `restrictEmb` "the
-   sorted enumeration", but the theorem (`DriverArena.setEquiv`, built
-   from `Finset.equivFin`, i.e. `Trunc.out`) pins **no** concrete
-   order — its own docstring says `Classical`-chosen. Consequence: no
-   machine program can *compute* the abstract local names, so the
-   enumeration must enter as **data**. `ClusterList la S σ` is that
-   seam: the cluster region is preconditioned to hold `restrictEmb S`'s
-   order, and the program realizes the renaming by reading it. The
-   cover slot therefore owes the cluster *in the child's enumeration
-   order* (the "bit-vectors alongside the order" of the head file's
-   item (b)); since its own sweep discovers members in some concrete
-   order, the campaign will need either to repin `setEquiv` to the
-   monotone enumeration (`Finset.orderIsoOfFin`; then an ascending
-   member list discharges `ClusterList` by a lemma, and this file needs
-   no change) or to thread an enumeration parameter through the driver
-   layer. Flagged for the supervisor; not fixable from this file's
-   ownership.
+   enumeration.** ⟨RESOLVED 2026-08-25 — the repin landed; this
+   paragraph is kept because the reasoning still explains why
+   `ClusterList` exists.⟩ When this file was written,
+   `DriverArena.setEquiv` was built from `Finset.equivFin` (i.e.
+   `Trunc.out`) and pinned **no** concrete order, so no machine program
+   could *compute* the abstract local names and the enumeration had to
+   enter as **data**. `ClusterList la S σ` is that seam: the cluster
+   region is preconditioned to hold `restrictEmb S`'s order, and the
+   program realizes the renaming by reading it.
+
+   The alternative this paragraph offered — repin `setEquiv` to the
+   monotone enumeration `Finset.orderIsoOfFin` — **is what happened**
+   (`DriverArena.lean:140`), and it needed no change here, exactly as
+   predicted. `setEquiv_strictMono` and `ncard_lt_setEquiv`
+   (`SolveMachPrepRun`) are the theorems, and they are what let an
+   ascending member list discharge the ascending-row demand by *scan
+   order* instead of a comparison sort — which is what makes
+   `SolveSweepGroup`'s second counting sort stable-by-construction and
+   `SolveMachPrepBatch`'s "the running count is the slot" invariant
+   true. **`restrictEmb` is the sorted enumeration, and that is now a
+   theorem rather than a docstring claim.**
 2. **`ArenaSt`'s exact-length `Csr` forces per-child region sizes.**
    `Csr` demands `σ.arrs off = arrOf (N+1) _` — exact length — and IMP+
    array lengths are immutable (`Env.setArr` preserves them). So the
