@@ -75,6 +75,73 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — the prep composition's side conditions, and a third invisible binding requirement
+
+`ChildLoadPartsScrAll` is **not** discharged, and the leaf says so — no wiring
+theorem was written either, so nothing in the branch is labelled a discharge
+that isn't one. What it delivered instead is everything the fourteen `Spec.seq`
+steps will need, and one finding that changes the residual's shape.
+
+**Finding — `ChildLoadPartsScr` relates `B` to nothing.** It quantifies
+internally over every `k j A u` and states no word bound, while every one of the
+nine stage contracts demands them (`restrictCom_specW` alone wants `A.N < B`,
+`A.N² < B`, `n₀ < B`, `A.N·Λc < B`, `A.N·ℓp·(hb+1) < B`; `profilesCom_specW`
+five more). **This is the `AdjDeleteIn` shape a third time** — "quantifies over
+every `N` and relates none to `B`", the defect that made `AdjDeleteIn` outright
+false. The worker did **not** claim falsity here, and was right not to:
+`ChildLoadPartsScrAll` is parametric in `Scr`, and `Scr := fun _ _ => False`
+makes it vacuously true, so falsity is a claim about the *instantiation*, not
+the definition. The repair is `PrepWB S ℓp hbf n₀ B` — four clauses at the
+**root** carrier and the schedule only, hence uniform in `j`, `A`, `u` as the
+residual's internal quantifiers require — with thirteen derived per-stage bounds
+and `prepWB_exists` proving it satisfiable. At `B = mcB q x` it is a lower bound
+on the schedule constant `q`, not a new obligation on the input.
+
+**The allocation audit is the leaf's real content**: nineteen lemmas deriving
+*every* allocation clause of *every* stage from `prepScr` alone, at each stage's
+own data-dependent dimension. Two clauses would otherwise have been missed — the
+child colour region must carry both `restrictCom_specW`'s `X.ncard · S.pal j`
+**and** `colWriteCom`'s `childN · S.pal (j+1)`, the second being the larger,
+which is *why* `PrepAlloc` is sized at the child's palette; and the batch index
+region's clause is an **equality**, so a longer allocation would break it. The
+recurring trap discharged as an audit rather than asserted.
+
+**A third invisible binding requirement**: `clusterRowCom_spec` asks that every
+cover offset fit a word, and nobody upstream states it.
+`prep_clusterCsr_offset_le` gets it from `ClusterCsr`'s partial-sum structure
+(offsets `≤ N²`) and closes it against `PrepWB`.
+
+Also landed: the four stage scalar pools and the profiles stage's `ProfNames.Ok`
+at the pass's family (21 clauses, uniform in batch width and class count), and
+two stages fully instantiated at `prepC`'s own names with every side condition
+discharged (`prep_restrictStage`: 13 name clauses, 5 word bounds, 7 allocations;
+`prep_mkBatchStage`: 32 disequalities plus the index-region equality). Budgets
+untouched — the wrappers carry the landed contracts' verbatim, and no `A.N` term
+is introduced.
+
+**Two costs recorded, both now leaves rather than notes.**
+(i) `SolveMachPrepComp2` takes **21 minutes** to elaborate and
+`SolveMachPrepComp` about 7 — a tax on every future gate. Suspect: `open
+Classical in` on statements mentioning `SimpleGraph.degree`, where instance
+search with `Classical.propDecidable` in scope is expensive; the ~120 `by decide`
+string side conditions are *not* the hot spot.
+(ii) **`prepC` has no `warrs` lemma and none can be assembled from landed
+material**: `clusterRowCom`, `centreIdxCom` and `mkBatchCom` have no
+`warrs`/`wvars` lemmas at all — their `Spec` postconditions carry the frame
+instead. A chain can thread the frame through postconditions, but the closed-form
+"`prepC` writes only these arrays" that `prepScr_out`'s `hdeep` and
+`ChildLoadPartsScr`'s two frame clauses want needs those three added first. That
+is the concrete blocker for the discharge.
+
+**Supervisor error, second of its kind.** I checkpointed the interrupted
+predecessor's file and reported it clean. It did **not compile** — three `Nodup`
+bundles whose `simp only` set left a trailing `∧ ¬False`, so `refine` handed
+`lv_ne_of_base_ne` a conjunction and its `by rfl` unified two base
+metavariables into `?m ≠ ?m`. Fixed by adding `not_false_eq_true` to three
+goal-side simp sets. Together with the `sorryAx` miss earlier today: **a
+checkpoint is not evidence of anything until it builds.** I will not describe an
+interrupted worker's file as clean again without compiling it.
+
 ### 2026-08-25 — `AugRoundIn` DISCHARGED, and F7's `q` gets a number
 
 `augRoundIn_ardRoundCom` (`SolveAugRoundIn.lean`, 1961 lines) concludes
