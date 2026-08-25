@@ -75,6 +75,56 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — `AugSymCsrIn` discharged, and the precondition proved satisfiable in full
+
+`augSymCsrIn_symCom` (`SolveAugSymMerge.lean`, 1932 lines) meets `AugSymCsrIn`
+verbatim at `(tn, ta, tc) = (90, 80, 60)`, spending `87·N + 76·a + 51`. Five
+sweeps, of which **the middle three are the landed `tpCom`** — the transpose is
+reused, not rewritten, the same call the fraternal peel made. Through
+`augSymIn_of_symCsr_build` this is `augSymBudget` at `(171, 196, 84)`, and
+`sn ≤ 3k`, `sa ≤ 5k` hold for every `k ≥ 57` against the base passes' `k = 475`.
+No `N²`. **This closes F6c12-5a-ii: all four of the frame's small passes are
+discharged.**
+
+The exact-length requirement is met exactly as the supervisor decision said it
+could be, **with no landed residual restated**: `symCsrSizes_exact` turns the
+descriptor into the two exact figures, and `symCsr_ns_le` closes the
+`ns ≤ 2·arcCount D` clause on the nose. Two facts had to be proved for want of a
+landed form: `InNCsr → TrInCsr` (the transpose's contract is windowed while
+`augStInN` is exact-length; the only non-mechanical clause is `inj`, which is the
+rows' `Nodup` read as injectivity), and `N + arcCount D ≤ N·N`, which is what
+makes the word obligation follow from `sq_lt_mcB` alone.
+
+**Sent back once, for the check this campaign keeps failing.** The first version
+had no anti-vacuity witness: `Srd`, `Smp`, `Ssw` were parameters constrained only
+through implications, so `Srd := fun _ _ => False` satisfied every hypothesis
+while making the discharge true and empty — and `Srd j σ` is also a conjunct of
+`AugSymCsrIn`'s own precondition. The correction is **stronger than what was
+asked**. `exists_symPre`: from *any* state satisfying `ArenaStW` and `augStInN`,
+there is one satisfying those **and** `symSrd`, obtained by allocating only the
+nine regions the descriptor names — `soO`/`stO` at exactly the `N+1` and `2a`
+demanded — with every scalar, both tapes and every other array unchanged, and
+the reallocation's frame returned so the residual's remaining clauses survive
+too. So the precondition is satisfiable **in full**, and the descriptor imposes
+no constraint linking the two figures beyond cells `σ` already carries. That is
+the checked form of the ledger's reason for not restating the residual at a
+windowed `SrcCsr` — previously an argument in a report, now an object.
+
+Named and *not* discharged: `exists_symPre` is conditional on the machine holding
+an in-neighbour CSR of the **final** orientation with its arc count in `nA j` —
+`AugRoundIn`'s postcondition at `i = R`, a sibling's residual. What §11
+establishes is that the merge's own demand adds nothing to it.
+
+**Second name collision in two landings.** `two_mul_arcCount_le_sq` already
+existed in `SolveAugOrient` — and the two are *different statements*: the landed
+one is about `baseOr G π`, this one about an arbitrary `Orientation N`, i.e.
+strictly more general. Renamed to `two_mul_arcCount_le_sq_orient` at landing.
+Cleanup candidate, not urgent: `SolveAugOrient`'s specific form is an instance of
+the general one and could be derived from it. Both collisions were invisible to
+their workers for the same reason, so the packet rule is now in force —
+**build the root module, not just your own** — and the supervisor scans new
+declaration names against the package before rebuilding.
+
 ### 2026-08-25 — w30 dispatched: `CovPeelIn` is composable for the first time
 
 Both halves of the peel are now in one tree, and the chain
