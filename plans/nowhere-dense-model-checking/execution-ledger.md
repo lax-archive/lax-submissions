@@ -75,6 +75,71 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-26 — `CoverAllIn` closes down to `CovAugAdjSelIn`, and three augmentation seams are proved not to close
+
+`covAllJoin_coverAllIn` (`SolveCoverAllJoin.lean`, 840 lines) discharges
+`CoverAllIn` **verbatim** at `selOrderingRoutine bucketSel R`, with **exactly two
+surviving hypotheses**: `1 ≤ q` and `CovAugAdjSelIn`. Every name bundle of both
+inputs is discharged at concrete bases, and `covAllJoin_augRoundIn` restates the
+round at the *real* `Smp`/`Ssw` (the landed `_std` pins them at `True`, which a
+composition cannot use), so the rounds are not a seam.
+
+Budget for the whole cover stage, coefficients stated:
+`Kord = augChainCost 545 554 113 · 1025 455 588 305 287 · 484 432 124` — the
+bucket peel folds into the augmentation's own shape via
+`slotCount (D.toGraph) = 2·arcCount D` — and `Ksw = peelK (12R+362) 154 192`.
+All eight gates of `augChainCost_le_selChainCharge` hold at `k = 545`, giving
+`≤ f·m^{1+δ} + (238+287R)` on a nowhere dense class, one δ inside §7's envelope;
+the sweep closes at `(12R+708)·chargeTotal (coverCFSel …)`. Every figure is
+`A.N`, `arcCount`, `fratPairCount`, `transPairCount`, `clusterMass` or
+`peelEdgeWork`. No term quadratic in the carrier.
+
+**And then it declined to force the composition, with proofs.**
+`covAugAdjSelIn_of_base_rounds_sym` cannot be instantiated from the landed
+leaves: three shared parameters are over-determined.
+
+1. **`coverAllBase_hSbd_unsatisfiable`** — `augBasePeelIn_bucketPeelBuild` *pins*
+`Sbd` to three length clauses against the **root** carrier `n`, while
+`augBaseOrientIn_orCom`'s `hSbd` asks the same `Sbd` to bound `io`/`it`/`cn`
+against `σ.vars (arenaNames j).nN`, which it never constrains. A state whose
+carrier cell exceeds every array refutes it — **unconditionally, for every choice
+of the six names**. The three base leaves have no common `Sbd`.
+
+2. **`coverAllBase_hSrd_not_ardSrd`** — `augBaseOrientIn_orCom`'s `hSrd` duty is
+handed only an agreement-off-three-names clause and **no length clause**, while
+`ardSrd` sizes `io j` and `it j` at `ardCap`. So for *every* `Sbd` satisfiable at
+even one state, the duty fails. Repair is one line: add
+`(∀ b, |σ'.arrs b| = |σ.arrs b|)` to `hSrd`/`hSmp`/`hSsw` — **the theorem's own
+proof already has it** as `hlen` from `specArrsLength` and uses it two lines
+later, and its sibling already passes it. **This also refutes a claim I made in
+the w38 packet**: I said `Sbd` was a free parameter of `augBaseOrientIn_orCom`
+and hence satisfiable by choice. It is not — (1) pins it. Recorded so the next
+worker does not inherit the error.
+
+3. **`coverAllSym_srd_forces_constant` / `_no_emission`** — the sharpest of the
+three. `augSymCsrIn_symComW`'s `hSrd` asks the *round invariant* `Srd` for
+`|σ.arrs (stO j)| = 2·σ.vars (nA j)`, an **equality**, because `AugSymCsrIn`'s
+postcondition is a bare `GraphCsr`. But `ardCopyCom` advances `nA` each round and
+no run changes a length, so `AugRoundIn` at `augStInNW` plus that `hSrd`
+**proves** `arcCount (chain i) = arcCount (greedyStep …)` and hence, via
+`arcCount_greedyStep`, that **every round emits no fraternal and no transitive
+edge** — at every input, level, admissible non-edgeless arena and round. The
+augmentation would be vacuous. Same shape as `augRd_augStInN_forces_constant`,
+one level up.
+
+So the exact-length trap has now appeared **eight** times, and (3) is the first
+instance where the demanded figure *moves over the loop that must maintain it* —
+which is what makes it lethal rather than inconvenient. That is the question to
+ask at every future occurrence: is the demanded figure stable over the loop?
+
+w39 dispatched off w38's branch (so it sees these no-go theorems as its
+specification) to repair all three and finish `CovAugAdjSelIn`. Its packet
+carries the correction to my `Sbd` claim, and requires that repair (3) be
+**re-tested against the no-go theorem** — if the caller's obligation still forces
+a constant emitted graph, the repair is not a repair.
+
+Elaboration 11 s cold. Axioms clean on all fourteen results.
+
 ### 2026-08-26 — both seam residuals discharged, and `SolveSpec` now needs `FrameStepAllScr` ALONE
 
 `SolveF7Seam.lean` (997 lines) discharges `RootLoadSpec` and `TopScatterAll`
