@@ -141,6 +141,28 @@ def FrameStepAll (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     FrameStep (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp htabF hbf
       arenaNames Adm KB Scr LS LA frameBody
 
+/-- **Residual 1 at the strengthened contract**: verbatim
+`FrameStepAll` with `FrameStep` replaced by `FrameStepScr` — the body
+may use the inner block's restored scratch descriptor and must restore
+its own level's. This is the form the closure needs once `hscrLen0`
+goes: `BlockPost` carries no `Scr` conjunct, so the descriptor can only
+reach the top scatter stage if every block hands it over
+(`SolveChain` §3b). -/
+def FrameStepAllScr (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
+    (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
+    (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (KB : (k j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
+    (Scr : ℕ → Env → Prop) (LS LA : ℕ → List String)
+    (frameBody : ℕ → Com → Com) : Prop :=
+  ∀ x ∈ mcD n G c w,
+    FrameStepScr (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp htabF hbf
+      arenaNames Adm KB Scr LS LA frameBody
+
 /-- **Residual 3a, named**: the root load — from the materialized root
 (`MatIn`) to the level-0 `BlockPre` at the root arena, verbatim
 `solveSpec_of_chain`'s `hload`. Its discharge is a CSR copy into the
@@ -163,9 +185,14 @@ def RootLoadSpec (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
 
 /-- **Residual 3b, named**: the top scatter — `TopScatterSpec` at every
 admissible input, from the root block's postcondition *plus the top
-stage's length-only scratch descriptor* `Scr` (the closure instantiates
-it at the level-0 descriptor `Scr 0`, which the root load establishes
-and the chain preserves — `TopScatterSpec`'s docstring), verbatim
+stage's scratch descriptor* `Scr` (the closure instantiates it at the
+level-0 descriptor `Scr 0`, which the root load establishes). How it
+reaches the stage depends on which closure is used: `solveSpec_closed`
+transports it by length preservation (`hscrLen0`), which is closed to
+any descriptor carrying content
+(`SolveMachPrepSeam.rankScr_not_length_only`); `solveSpec_closed_scr`
+takes it from the root block's own restored postcondition instead. The
+statement here is the same either way — verbatim
 `solveSpec_of_chain`'s `htop`. -/
 def TopScatterAll (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
@@ -302,6 +329,131 @@ theorem solveSpec_closed
       intro A hdiag _ _
       exact absurd (by omega : j = (Headline.headlineSetup C hC φ).depth) hj
   exact (chainCom_blockSpec (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp
+    htabF hbf arenaNames Adm KB Scr LS LA frameBody
+    (canonBotB (Headline.headlineSetup C hC φ) Kq) hbot (hstep x hx)
+    (Headline.headlineSetup C hC φ).depth 0).1
+
+open Classical in
+/-- **`SolveSpec`, closed at the canonical names — with no length-only
+transport.** Verbatim `solveSpec_closed`: the same command, the same
+budget, the same conclusion. Two hypotheses change and nothing else:
+
+* `hscrLen0` is **gone**. It was the closure's only bridge from the
+  chain's postcondition (`BlockPost`, which says nothing about `Scr`)
+  to the top scatter stage's `Scr 0`, and it bridged by length
+  preservation — inconsistent with any descriptor carrying the
+  child-building pass's clean-scratch clause
+  (`SolveMachPrepSeam.rankScr_not_length_only`).
+* residual 1 is consumed at `FrameStepAllScr`, and the leaf block is
+  discharged through `botBlock_specScr`, so every block of the chain
+  restores the level's descriptor and the top stage receives it
+  directly.
+
+What that costs the caller is exactly the descriptor's honest
+transport data: its per-level read pools `LV`/`LR`, the frame law
+`ScrFrame` those pools satisfy, and the two disjointness facts saying
+the leaf block writes none of them. No length-only clause is asked for
+at any level. -/
+theorem solveSpec_closed_scr
+    (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
+    (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
+    (c w q : ℕ) (ext : List ℕ → String → ℕ)
+    (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (KB : (k j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
+    (Scr : ℕ → Env → Prop) (LS LA LV LR : ℕ → List String)
+    (frameBody : ℕ → Com → Com)
+    (rootLoadCom scatCom : Com) (av : ScatterSentence 0 → Expr)
+    (Krl : List ℕ → ℕ) (Kc Kq : ℕ)
+    (hq : 1 ≤ q)
+    (hextUp : ∀ x ∈ mcD n G c w, ext x "up" = vertexCount x)
+    (hAdmRoot : Adm 0 (rootArena G (Impl.trivialColoring n)))
+    (hdep0 : (Headline.headlineSetup C hC φ).depth = 0 → G = ⊥)
+    -- the descriptor's honest transport, in place of `hscrLen0`
+    (hfr : ScrFrame Scr LV LR)
+    (hLVbt : ∀ i, ∀ y ∈ LV i, y ∉ btScalars)
+    (hLRbot : ∀ j i, j ≤ i → ∀ a ∈ LR i,
+      a ∉ ([botNa j, botFa j, botEa j, botXa j, (arenaNames j).tab] :
+        List String))
+    -- the bottom level's schedule-rank and word-size bookkeeping
+    (hKq : ∀ β ∈ levelFml (Headline.headlineSetup C hC φ)
+      (Headline.headlineSetup C hC φ).depth, qdepth β ≤ Kq)
+    (hB : ∀ x ∈ mcD n G c w,
+      n < mcB q x ∧
+      n * (Headline.headlineSetup C hC φ).pal
+        (Headline.headlineSetup C hC φ).depth < mcB q x ∧
+      2 ^ (Headline.headlineSetup C hC φ).pal
+        (Headline.headlineSetup C hC φ).depth * (Kq + 1) < mcB q x ∧
+      n * (levelFml (Headline.headlineSetup C hC φ)
+        (Headline.headlineSetup C hC φ).depth).length < mcB q x)
+    -- the bottom level's scratch descriptor and budget fit
+    (hscr : ∀ σ, Scr (Headline.headlineSetup C hC φ).depth σ →
+      (σ.arrs (botNa (Headline.headlineSetup C hC φ).depth)).length
+        = 2 ^ (Headline.headlineSetup C hC φ).pal
+            (Headline.headlineSetup C hC φ).depth ∧
+      (σ.arrs (botFa (Headline.headlineSetup C hC φ).depth)).length
+        = 2 ^ (Headline.headlineSetup C hC φ).pal
+            (Headline.headlineSetup C hC φ).depth * (Kq + 1) ∧
+      (σ.arrs (botEa (Headline.headlineSetup C hC φ).depth)).length
+        = Kq + 1 ∧
+      (σ.arrs (botXa (Headline.headlineSetup C hC φ).depth)).length
+        = Kq + 1)
+    (hKB0 : ∀ A : Arena ((Headline.headlineSetup C hC φ).pal
+        (Headline.headlineSetup C hC φ).depth) n,
+      botComK A.N ((Headline.headlineSetup C hC φ).pal
+          (Headline.headlineSetup C hC φ).depth) Kq
+          (levelFml (Headline.headlineSetup C hC φ)
+            (Headline.headlineSetup C hC φ).depth)
+        ≤ KB 0 (Headline.headlineSetup C hC φ).depth A)
+    -- the name pools carry the leaf's names
+    (hLS : ∀ j, ∀ y ∈ btScalars, y ∈ LS j)
+    (hLA : ∀ j, ∀ a ∈ ([botNa j, botFa j, botEa j, botXa j,
+      (arenaNames j).tab] : List String), a ∈ LA j)
+    -- the three named residuals
+    (hstep : FrameStepAllScr C hC φ ord G c w q ℓp htabF hbf Adm KB Scr LS LA
+      frameBody)
+    (hload : RootLoadSpec C hC φ G c w q ext ℓp htabF hbf Scr rootLoadCom Krl)
+    (htop : TopScatterAll C hC φ ord G c w q ℓp htabF hbf (Scr 0) scatCom
+      av Kc) :
+    SolveSpec C hC φ ord G c w q ext
+      (.seq matCom
+        (.seq rootLoadCom
+          (.seq (chainCom frameBody (canonBotB (Headline.headlineSetup C hC φ) Kq)
+              (Headline.headlineSetup C hC φ).depth 0)
+            (topCom scatCom (Headline.headlineSetup C hC φ) av))))
+      (fun x => matK x + (Krl x +
+        (KB (Headline.headlineSetup C hC φ).depth 0
+            (rootArena G (Impl.trivialColoring n)) +
+          (Kc + topEvalCost (Headline.headlineSetup C hC φ) av)))) := by
+  refine solveSpec_of_chain_scr C hC φ ord G c w q ext ℓp htabF hbf arenaNames
+    Adm KB Scr frameBody (canonBotB (Headline.headlineSetup C hC φ) Kq)
+    rootLoadCom scatCom av Krl Kc hq hextUp hAdmRoot hdep0 ?_ hload htop
+  -- the chain's contract at the root, at the strengthened postcondition
+  intro x hx
+  obtain ⟨hn0B, hNLB, h2LB, hTB⟩ := hB x hx
+  have hbot : ∀ j, BlockSpecScr (mcB q x) (Headline.headlineSetup C hC φ) ord
+      ℓp htabF hbf arenaNames Adm KB Scr 0 j
+      (canonBotB (Headline.headlineSetup C hC φ) Kq j) ∧
+      OwnedFrom LS LA j (canonBotB (Headline.headlineSetup C hC φ) Kq j) := by
+    intro j
+    refine ⟨?_, botBlock_owned LS LA arenaNames j Kq _ (hLS j) (hLA j)⟩
+    by_cases hj : j = (Headline.headlineSetup C hC φ).depth
+    · subst hj
+      exact botBlock_specScr (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp
+        htabF hbf arenaNames Adm KB Scr _ Kq hKq hn0B hNLB h2LB hTB
+        (canon_nd _) (canon_off _) (canon_tgt _) (canon_up _) (canon_hist _)
+        (canon_nN _) (canon_nS _) (canon_nd5 _) hscr LV LR hfr
+        (fun i _ y hy => hLVbt i y hy) (fun i hi a ha => hLRbot _ i hi a ha)
+        hKB0
+    · -- off the bottom of the diagonal the contract is vacuous: fuel
+      -- `0` forces `j = depth`
+      intro A hdiag _ _
+      exact absurd (by omega : j = (Headline.headlineSetup C hC φ).depth) hj
+  exact (chainCom_blockSpecScr (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp
     htabF hbf arenaNames Adm KB Scr LS LA frameBody
     (canonBotB (Headline.headlineSetup C hC φ) Kq) hbot (hstep x hx)
     (Headline.headlineSetup C hC φ).depth 0).1

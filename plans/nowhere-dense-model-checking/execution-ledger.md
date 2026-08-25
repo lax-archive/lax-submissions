@@ -75,6 +75,69 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — `hscrLen` is gone from all five remaining sites, and the landed closure is retired
+
+W34, seven files, no landed statement edited in place — verified, not taken on
+report: the diff across the six landed files has 30 deleted lines and every one
+is a docstring line. All new material sits beside the old under `…Scr`/`…_scr`
+names, so `solveSpec_of_chain` and `KsChargeBridge` are untouched for W36.
+
+New vocabulary in `SolveChain` §3b: per-level descriptor read pools `LV`/`LR`;
+`ScrAgree`, `ScrFree` (syntactic — "this command writes no name the level-`j`
+descriptor reads"), `ScrFrame` (`rankScr_frame`'s shape, lifted), `ScrStep`, and
+`specScr`, the `specArrsLength` analogue that transports a descriptor with
+*content*. Sites 1, 2 and 4 close on `ScrFrame` plus a `ScrFree` side condition;
+sites 3 and 5 need `ScrStep` and `BlockPostScr`.
+
+**My own correction to the packet was itself wrong, and this is the finding.**
+I told W34 that site 3 (the inner block) was free via `Run.frame` plus
+write-ownership from `j+1`. It is not: the inner block writes level `(j+1)`'s
+rank scratch — its own prep does — so nothing frames the deeper half of `Scr j`.
+The only route is to take that half from the block's *own restored* `Scr (j+1)`,
+which exists only once `BlockPost` gains the conjunct. **Sites 3 and 5 are one
+problem**, `BlockPostScr` is load-bearing twice, and that is why `ScrStep` exists
+as a second premise rather than everything running through `ScrFrame`. Two
+supervisor errors in a row on the same seam — the first was calling the clause a
+trade-off, the second was pricing the inner block free. Both were errors of
+*assuming a frame*, and both were caught only by someone writing the proof.
+
+**The landed closure is retired.** `solveSpec_closed` / `solveSpec_of_chain` are
+not vacuous — a purely length-based `Scr` satisfies `hscrLen0` — but
+`rankScrTower_refutes_len` shows **no** descriptor implying `RankScr` at the
+level's own window can, and the prep segment needs exactly that clause. So
+`solveSpec_closed_scr` is the closure this campaign uses from here; the landed
+one stands, unused, at an instantiation that cannot arise.
+
+**The open question from the sixth-site entry is answered: `canonBotB` does
+restore level-`depth`'s rank scratch — trivially, by never touching it.**
+`warrs_botCom ⊆ [na, fa, ea, xa, tab]` and `wvars_botCom ⊆ btScalars`, so
+`botBlock_specScr` costs two `decide`-able disjointness hypotheses and no stage
+was strengthened. The root load is cheap too: at its exit
+`σ.vars (arenaNames i).nN = 0` for `i > 0`, so the tower's deeper clauses are
+`take 0 = []`.
+
+Satisfiability is a checked object, in the new `SolveScrFrameSat.lean`:
+`RankScrTower`, inhabited at every window size, proved to satisfy `ScrFrame`,
+`ScrStep`, the prep segment's `hscrDown` and `restrictCom_specW`'s content
+precondition — **and to fail `hscrLen`**, which is the point. It also survives
+conjunction with any allocation-clause family, which is where `hscr`/`htabLen`
+live. `hfreshV` turns out free from the landed `hfreshS`, the carrier cell being
+already in `levelScalars`.
+
+Five docstrings were wrong and are fixed (`SolveChain`'s header,
+`TopScatterSpec`'s, `solveSpec_of_chain`'s, `SolveGlueStep`'s header,
+`TopScatterAll`'s) — the eleventh through fifteenth drifts recorded, all caught
+before landing. W34 also read a sibling's in-flight file unprompted and found a
+stale paragraph contradicting a docstring ninety lines below it; relayed to its
+author rather than patched at landing.
+
+Left open deliberately, and named: `centreStepAll_of_prep_rowsScr` takes
+`CentrePrepAll`, not `ChildLoadAll`, because the only in-file bridge still takes
+`hscrLen` and its replacement is downstream in the import order. The join
+`ChildLoadPartsScrAll → CentrePrepAll → CentreStepAllScr → FrameStepAllScr →
+solveSpec_closed_scr` belongs in a file importing `SolveMachPrepSeam` — relayed
+to W35, whose file is exactly that.
+
 ### 2026-08-25 — `AugSymCsrIn` discharged, and the precondition proved satisfiable in full
 
 `augSymCsrIn_symCom` (`SolveAugSymMerge.lean`, 1932 lines) meets `AugSymCsrIn`
