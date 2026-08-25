@@ -75,6 +75,35 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — `PeelSweepIn` reduced to one centre's BFS
+
+`peelSweepIn_of_bfs` discharges `PeelSweepIn` — every clause intact — from a
+**single** named residual **`PeelBfsIn`**: *one centre's BFS*, not the sweep.
+The rest is a real program (`sweepInitCom ; while i < nn { v := od[i] ; bfC ;
+delAdjCom ; i++ }`), with the deletion half the landed `delAdjCom` at
+`AdjDeleteInW` and the loop's region invariant walking `DelAdjSt … (peelSet π
+i)` up a rank per turn through `peelSet_succ`. `peelBudget_le` applies verbatim,
+so the sweep closes at `O(N·D²)`.
+
+**`bsw = bbf + 54` is tight against the landed delete** — `54` *is*
+`AdjDeleteInW`'s per-edge-copy charge, and it reaches the mass term only via
+`curDeg_at_deletion_le_cluster`, which is exactly where `1 ≤ S.R` is spent
+(explicit hypothesis, not hidden). `csw = cbf`: the edge term is the BFS's
+alone — nothing outside `bfC` reads an adjacency cell.
+
+`PeelBfsIn`'s pre/post are the **same `SweepSt` at consecutive mark indices**,
+so its discharger gets one obligation per clause and no loop overhead. It was
+handed three state-level lemmas built for it — **`centre_eq_iff_first_hit`**
+(the *converse* of `centre_eq_of_hit_first`: a marking pass must know it marks
+nothing **extra**), `ctrPart_succ`, `logPart_succ` — plus `arena_sq_lt_mcB`.
+
+**Fourth occurrence of the invisible-allocation trap**, and the sharpest yet:
+`ClusterLog`'s `offL N ≤ (σ.arrs lm).length` binds whoever establishes
+`PeelSweepIn`'s precondition, and nothing in `CovPeelIn`'s text says so. Worse,
+since `Spl : ℕ → Env → Prop` **cannot mention `A`**, it *cannot* be stated as
+`clusterMass ≤ |lm|`; it has to go in as `n·n ≤ |lm|` with `peelOff_le_sq`.
+Any other discharger of this residual must solve it the same way.
+
 ### 2026-08-25 — residual 1's real blocker: a content clause with nowhere to live
 
 The prep composition is **one seam** from discharge, and the seam is not
