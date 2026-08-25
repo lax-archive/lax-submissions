@@ -1237,6 +1237,47 @@ theorem mkBatchCom_spec {cN ℓp hb rounds mb : ℕ}
   · intro b
     rw [hlen5 b, hlen4 b, hlen3 b, hlen2 b, hlen1 b]
 
+/-! ### The builder's write set, in closed form
+
+`mkBatchCom_spec` above carries the frame in its postcondition, which
+threads through a chain but cannot be read off a composite command.
+These give the write set itself, in the shapes `Spec.frameA` and
+`Spec.frameV` consume — the shape `warrs_restrictCom` and
+`warrs_colWriteCom` already take for the other stages. -/
+
+/-- **The builder's array surface**: the bit region and the index
+region. The channel region `ha` is read, never written — which is why
+the builder may run before the supports pass patches a column of it. -/
+theorem warrs_mkBatchCom (ha bb bi cc cn jr mw ec ic ln bs av sc : String)
+    (ℓp hb : ℕ) :
+    (mkBatchCom ha bb bi cc cn jr mw ec ic ln bs av sc ℓp hb).warrs
+      = [bb, bb, bb, bi, bi] := rfl
+
+/-- The membership side condition `Spec.frameA` is consumed with. -/
+theorem mkBatchCom_notMem_warrs {ha bb bi cc cn jr mw ec ic ln bs av sc
+    b : String} {ℓp hb : ℕ} (h1 : b ≠ bb) (h2 : b ≠ bi) :
+    b ∉ (mkBatchCom ha bb bi cc cn jr mw ec ic ln bs av sc ℓp hb).warrs := by
+  rw [warrs_mkBatchCom]
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  exact ⟨h1, h1, h1, h2, h2⟩
+
+/-- **The builder's scalar surface**: its own six scratch cells. The
+connector `cc`, the carrier cell `cn`, the round count `jr` and the
+width `mw` are read, never written. -/
+theorem wvars_mkBatchCom (ha bb bi cc cn jr mw ec ic ln bs av sc : String)
+    (ℓp hb : ℕ) :
+    (mkBatchCom ha bb bi cc cn jr mw ec ic ln bs av sc ℓp hb).wvars
+      = [av, av, ec, bs, ln, ic, ic, ec, sc, av, sc, av, sc] := rfl
+
+/-- The membership side condition `Spec.frameV` is consumed with. -/
+theorem mkBatchCom_notMem_wvars {ha bb bi cc cn jr mw ec ic ln bs av sc
+    y : String} {ℓp hb : ℕ} (h1 : y ≠ av) (h2 : y ≠ ec) (h3 : y ≠ bs)
+    (h4 : y ≠ ln) (h5 : y ≠ ic) (h6 : y ≠ sc) :
+    y ∉ (mkBatchCom ha bb bi cc cn jr mw ec ic ln bs av sc ℓp hb).wvars := by
+  rw [wvars_mkBatchCom]
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  exact ⟨h1, h1, h2, h3, h4, h5, h5, h2, h6, h1, h6, h1, h6⟩
+
 end Phases
 
 

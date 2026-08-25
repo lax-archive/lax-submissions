@@ -710,4 +710,36 @@ theorem isolateCom_notMem_warrs (nmI : ArenaNames) (oaO taO nsO ba : String)
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
   exact ⟨h1, h2, h1⟩
 
+/-! ### The connector scan's write set, in closed form
+
+`centreIdxCom_spec` (§1) carries its frame in the postcondition, which
+threads through a chain but cannot be read off a composite command.
+These give the write set itself, in the shapes `Spec.frameA` and
+`Spec.frameV` consume. -/
+
+/-- **The scan writes no array at all**: it reads the cluster list and
+counts into a scalar. -/
+theorem warrs_centreIdxCom (la cu ck cc ct : String) :
+    (centreIdxCom la cu ck cc ct).warrs = [] := rfl
+
+/-- Hence the array frame is unconditional. -/
+theorem centreIdxCom_notMem_warrs (la cu ck cc ct : String) (b : String) :
+    b ∉ (centreIdxCom la cu ck cc ct).warrs := by
+  rw [warrs_centreIdxCom]
+  simp
+
+/-- **The scan's scalar surface**: the count and the counter. The
+connector cell `cu` and the length cell `ck` are read, never
+written. -/
+theorem wvars_centreIdxCom (la cu ck cc ct : String) :
+    (centreIdxCom la cu ck cc ct).wvars = [cc, ct, cc, ct] := rfl
+
+/-- The membership side condition `Spec.frameV` is consumed with. -/
+theorem centreIdxCom_notMem_wvars {la cu ck cc ct y : String}
+    (h1 : y ≠ cc) (h2 : y ≠ ct) :
+    y ∉ (centreIdxCom la cu ck cc ct).wvars := by
+  rw [wvars_centreIdxCom]
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  exact ⟨h1, h2, h1, h2⟩
+
 end Lax3Proofs.Prog

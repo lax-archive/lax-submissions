@@ -356,7 +356,7 @@ theorem arenaNames_arrays_ne_of_level_ne {j k : ℕ} (hjk : j ≠ k)
     or_false] at ha hb
   rcases ha with rfl | rfl | rfl | rfl | rfl | rfl <;>
     rcases hb with rfl | rfl | rfl | rfl | rfl | rfl <;>
-    exact lv_ne_of_level_ne (by rfl) hjk
+    exact lv_ne_of_level_ne (by decide) hjk
 
 /-- The scalar cells of different levels never collide. -/
 theorem arenaNames_scalars_ne_of_level_ne {j k : ℕ} (hjk : j ≠ k)
@@ -365,7 +365,7 @@ theorem arenaNames_scalars_ne_of_level_ne {j k : ℕ} (hjk : j ≠ k)
   simp only [levelScalars, arenaNames, List.mem_cons, List.not_mem_nil,
     or_false] at ha hb
   rcases ha with rfl | rfl <;> rcases hb with rfl | rfl <;>
-    exact lv_ne_of_level_ne (by rfl) hjk
+    exact lv_ne_of_level_ne (by decide) hjk
 
 /-- The six array bases of one level, in region order. -/
 def arenaBases : List String := ["sa.o", "sa.t", "sa.c", "sa.u", "sa.h", "sa.b"]

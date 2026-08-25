@@ -226,7 +226,7 @@ theorem rankScrLV_notMem_bt (i : ℕ) : ∀ y ∈ rankScrLV i, y ∉ btScalars :
 /-- The loop counter is not the carrier cell of **any** level — the
 `lv` mechanism's fact at two levels, `ctrName_ne_nN`'s generalisation. -/
 theorem ctrName_ne_nN' (j i : ℕ) : ctrName j ≠ (arenaNames i).nN :=
-  lv_ne_of_base_ne (by rfl) (by decide) j i
+  lv_ne_of_base_ne (by decide) (by decide) j i
 
 /-- `hctrLV`, for this witness. -/
 theorem rankScrLV_ne_ctr (j i : ℕ) (_ : j ≤ i) : ctrName j ∉ rankScrLV i := by

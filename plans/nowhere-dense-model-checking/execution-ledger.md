@@ -75,6 +75,84 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-26 — the 30-minute gate was `rfl` on a string length; the package now builds in 64 s
+
+**Both standing hypotheses about the elaboration cost were wrong, and only the
+profiler settled it.** Jan's was that ~21-minute elaborations are inherent to the
+Isabelle-style refinement idiom. Mine, inherited from the file's author, was
+`open Classical in` over statements mentioning `SimpleGraph.degree`, with
+instance search re-deriving decidability under `Classical.propDecidable`. The
+per-file numbers refuted Jan's (2245-line refinement files at 17 s against
+978-line ones at 1236 s), but they said nothing about *which* construct was
+paying, and I let a plausible mechanism stand unmeasured for several landings.
+
+The profile: elaboration 947 ms, typeclass inference 467 ms, tactic execution
+29.7 s, **type checking 1460 s**. The cost is entirely **kernel defeq**, in one
+idiom — `lv_ne_of_base_ne (by rfl) …`, whose `by rfl` discharges
+`s.length = t.length` at two distinct four-character string literals.
+
+| goal | proof | time |
+|---|---|---|
+| `("sv.n" : String).length = ("sv.m" : String).length` | `by rfl` | **103 s** |
+| same | `by decide` | 3 s |
+| `("sv.n" : String).length = 4` | `by rfl` | 4 s |
+| `("sv.n" : String) ≠ "sv.m"` | `by decide` | 3 s |
+
+So the kernel will unfold `String.length` against a literal in seconds, but
+proving two such lengths *equal to each other* by `rfl` costs ~104 s **per
+declaration**. Cross-checks rule out both prior hypotheses outright: every
+`SimpleGraph.degree` / `Set.ncard` / `open Classical` statement in the file type
+checks in **106 ms**, and the eight `lv_notMem (by decide)` pool lemmas cost
+**828 ms** together — while the seven "arena cells, pairwise" lemmas timed out at
+200 s with `rfl` and take **3 s** with `decide`.
+
+Fix: `(by rfl)` → `(by decide)` at `lv_ne_of_base_ne` / `lv_ne_lit` /
+`lv_ne_of_level_ne`. `lv_inj (by rfl)` is left alone — both bases are the *same*
+literal there, so that `rfl` is syntactic and free. No statement changed.
+
+| | before | after |
+|---|---|---|
+| `SolveMachPrepComp2` | 1236 s | **9 s** |
+| `SolveMachPrepComp` | 576 s | **7 s** |
+| whole package | ~30 min gate | **64 s / 3565 jobs** |
+
+The worker also found the same pathology in three files outside its ownership —
+`SolveBlocks` **228 s → 5 s**, `SolveGlueLoop` 25 s → 4 s, `SolveScrFrameSat`
+17 s → 4 s — and measured them on patched scratch copies rather than editing
+them. Applied at this landing by the supervisor; a package-wide grep now finds
+**no remaining occurrence** of the idiom.
+
+**Lesson, and it is about supervision rather than Lean.** I was right that the
+cost was localized and wrong about why, and I put the wrong mechanism into three
+successive packets as "the standing suspect". A measurement that distinguishes
+two hypotheses is cheap next to the four landings that ran at 30 minutes each.
+Profile before propagating a diagnosis.
+
+**Task 2 — the concrete blocker is gone.** Twelve write-set lemmas in the landed
+`warrs_restrictCom` shape, all `rfl`: `clusterRowCom` writes `[la]`,
+`mkBatchCom` writes the bit and index regions, and **`centreIdxCom` writes no
+array at all**. With them, `warrs_prepC` gives the closed form the residual's
+frame clauses want, and the three corollaries follow — `prepC_frame_deep`
+(`prepScr_out`'s `hdeep`), `prepC_frame_level`, `prepC_frame_cover`.
+
+**Task 3 — all nine stages wrapped, the chain not.** `SolveMachPrepComp3.lean`
+(708 lines) wraps the seven remaining stages at `prepC`'s own names, BFS and
+supports at `2·S.R` (never `S.R`), profiles at the pre-isolation child and the
+**parent's** palette. `ChildLoadPartsScrAll` is **not** discharged — the fourteen
+`Spec.seq` steps and their `hmid` obligations remain, and no partial or restated
+version was landed in their place.
+
+**Fourth invisible binding requirement of this pass: `PrepCoverNames`.**
+`ChildLoadPartsScr` takes the cover's array names `ca`, `co`, `cm` as parameters
+and relates them to nothing, yet its own postcondition demands the pass leave all
+three untouched and `clusterRowCom_spec` asks for `la ≠ cm` outright — so the
+**first** stage is unreachable without it. Named as a `Prop` bundle with
+`prepCoverNames_exists` witnessing satisfiability, alongside two further
+hypotheses put on their stages rather than buried (`2·S.R + 1 ≤ hbf j`, which is
+not a landed pin, and the colour writer's `Dp`/`Dc` triple).
+
+138 top-level theorems checked with `#print axioms`: zero `sorryAx`.
+
 ### 2026-08-26 — `CoverAllIn` closes down to `CovAugAdjSelIn`, and three augmentation seams are proved not to close
 
 `covAllJoin_coverAllIn` (`SolveCoverAllJoin.lean`, 840 lines) discharges

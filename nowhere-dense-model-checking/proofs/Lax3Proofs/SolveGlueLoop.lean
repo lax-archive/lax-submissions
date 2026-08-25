@@ -92,10 +92,10 @@ def CLInv (S : Setup L) (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
 /-- The counter cell is fresh against the level's two arena cells —
 the `lv` mechanism's, no hypothesis owed. -/
 theorem ctrName_ne_nN (j : ℕ) : ctrName j ≠ (arenaNames j).nN :=
-  lv_ne_of_base_ne (by rfl) (by decide) j j
+  lv_ne_of_base_ne (by decide) (by decide) j j
 
 theorem ctrName_ne_nS (j : ℕ) : ctrName j ≠ (arenaNames j).nS :=
-  lv_ne_of_base_ne (by rfl) (by decide) j j
+  lv_ne_of_base_ne (by decide) (by decide) j j
 
 /-- **The invariant is insensitive to the counter cell**: every
 component reads arrays and the two (distinct) arena cells only — the

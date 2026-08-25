@@ -846,7 +846,7 @@ theorem arenaNames_nodup5 (k : ℕ) :
   simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
     List.nodup_nil, and_true, not_or, not_false_eq_true]
   refine ⟨⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_⟩, ⟨?_, ?_⟩, ?_⟩ <;>
-    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+    exact lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- The same at the pass's intermediate family — the pre-isolation
 child, whose CSR pair is the pass's own scratch. -/
@@ -856,7 +856,7 @@ theorem prepMid_nodup5 (j : ℕ) :
   simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
     List.nodup_nil, and_true, not_or, not_false_eq_true]
   refine ⟨⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_⟩, ⟨?_, ?_⟩, ?_⟩ <;>
-    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+    exact lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `restrictCom_specW`'s `hpair`: the child's five output regions and
 the rank scratch, pairwise distinct. -/
@@ -869,7 +869,7 @@ theorem prep_restrict_pairwise (j : ℕ) :
     List.nodup_nil, and_true, not_or, not_false_eq_true]
   refine ⟨⟨?_, ?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_⟩, ⟨?_, ?_⟩,
     ?_⟩ <;>
-    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+    exact lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `restrictCom_specW`'s `hdisj`: the child's output regions and the
 rank scratch miss the parent's regions and the cluster region. The only
@@ -885,8 +885,8 @@ theorem prep_restrict_disj (j : ℕ) :
   rcases hx with rfl | rfl | rfl | rfl | rfl | rfl <;>
     rcases hy with rfl | rfl | rfl | rfl | rfl | rfl <;>
       first
-        | exact lv_ne_of_base_ne (by rfl) (by decide) _ _
-        | exact lv_ne_of_level_ne (by rfl) (by omega)
+        | exact lv_ne_of_base_ne (by decide) (by decide) _ _
+        | exact lv_ne_of_level_ne (by decide) (by omega)
 
 /-- The cluster region misses the parent's five — `restrictCom_specW`'s
 `hla5`. -/
@@ -895,7 +895,7 @@ theorem prep_la_notMem5 (j : ℕ) :
       (arenaNames j).up, (arenaNames j).hist] : List String) := by
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
   refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
-    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+    exact lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- The BFS distance region misses the child's five —
 `bfsCom_specW`'s `hda5` and `supportsCom_specW`'s. -/
@@ -904,7 +904,7 @@ theorem prep_da_notMem5 (j : ℕ) :
       (prepMid j).up, (prepMid j).hist] : List String) := by
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
   refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
-    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+    exact lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- The supports pass's parent region misses the child's five. -/
 theorem prep_pa_notMem5 (j : ℕ) :
@@ -912,7 +912,7 @@ theorem prep_pa_notMem5 (j : ℕ) :
       (prepMid j).up, (prepMid j).hist] : List String) := by
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
   refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
-    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+    exact lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- The batch bit region misses the child's five — `isolateCom_specW`'s
 `hba5`. -/
@@ -921,7 +921,7 @@ theorem prep_bb_notMem5 (j : ℕ) :
       (prepMid j).up, (prepMid j).hist] : List String) := by
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
   refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
-    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+    exact lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- The isolation's two output regions miss the pre-isolation family —
 `isolateCom_specW`'s `hoaO5`/`htaO5`. The clash with the pass's own
@@ -932,14 +932,14 @@ theorem prep_oaO_notMem5 (j : ℕ) :
       (prepMid j).col, (prepMid j).up, (prepMid j).hist] : List String) := by
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
   refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
-    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+    exact lv_ne_of_base_ne (by decide) (by decide) _ _
 
 theorem prep_taO_notMem5 (j : ℕ) :
     (arenaNames (j + 1)).tgt ∉ ([(prepMid j).off, (prepMid j).tgt,
       (prepMid j).col, (prepMid j).up, (prepMid j).hist] : List String) := by
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
   refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
-    exact lv_ne_of_base_ne (by rfl) (by decide) _ _
+    exact lv_ne_of_base_ne (by decide) (by decide) _ _
 
 end NameDiscipline
 end Lax3Proofs.Prog

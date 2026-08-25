@@ -906,6 +906,39 @@ theorem clusterRowCom_spec {B N : ℕ} {Xf : Fin N → Set (Fin N)}
     tauto
   · exact run_arrs_length_eq (hrunA.seq (hrunB.seq hrunC))
 
+/-! ### The copy's write set, in closed form
+
+`clusterRowCom_spec` above carries the frame *in its postcondition*,
+which threads through a chain but cannot be read off a composite
+command. These four lemmas give the write set itself, in the two shapes
+`Spec.frameA`/`Spec.frameV` and `Run.frame_arr`/`Run.frame_var` consume
+— the shape `warrs_colWriteCom` and `warrs_restrictCom` already take
+for the other stages. -/
+
+/-- **The copy's array surface**: the cluster scratch, and nothing
+else. Both CSR regions of the cover output are read, never written. -/
+theorem warrs_clusterRowCom (co cm la cu cb ck ct : String) :
+    (clusterRowCom co cm la cu cb ck ct).warrs = [la] := rfl
+
+/-- The membership side condition `Spec.frameA` is consumed with. -/
+theorem clusterRowCom_notMem_warrs {co cm la cu cb ck ct b : String}
+    (h : b ≠ la) : b ∉ (clusterRowCom co cm la cu cb ck ct).warrs := by
+  rw [warrs_clusterRowCom]
+  simpa using h
+
+/-- **The copy's scalar surface**: the row base, the row length and the
+counter. The connector cell `cu` is read, never written. -/
+theorem wvars_clusterRowCom (co cm la cu cb ck ct : String) :
+    (clusterRowCom co cm la cu cb ck ct).wvars = [cb, ck, ct, ct] := rfl
+
+/-- The membership side condition `Spec.frameV` is consumed with. -/
+theorem clusterRowCom_notMem_wvars {co cm la cu cb ck ct y : String}
+    (h1 : y ≠ cb) (h2 : y ≠ ck) (h3 : y ≠ ct) :
+    y ∉ (clusterRowCom co cm la cu cb ck ct).wvars := by
+  rw [wvars_clusterRowCom]
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  exact ⟨h1, h2, h3, h3⟩
+
 end ClusterRow
 
 /-! ## §9 Part 2, item 2: what the batch builder must hit -/

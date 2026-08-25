@@ -127,6 +127,7 @@ import Lax3Proofs.SolveMachPrepAll
 import Lax3Proofs.SolveMachPrepSeam
 import Lax3Proofs.SolveMachPrepComp
 import Lax3Proofs.SolveMachPrepComp2
+import Lax3Proofs.SolveMachPrepComp3
 import Lax3Proofs.SolveScrFrameSat
 import Lax3Proofs.SolveSweepAdj
 import Lax3Proofs.SolveSweepStep

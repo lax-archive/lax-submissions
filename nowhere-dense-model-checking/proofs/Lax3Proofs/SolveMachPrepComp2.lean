@@ -369,110 +369,110 @@ theorem prep_no_notMem_rs : pcNo ∉ rsScalars := lv_notMem (by decide) 0
 /-- The level's own two cells differ — `restrictCom_specW`'s `hCns`,
 and `arenaStW_setVar_nS`'s `hnn`. -/
 theorem prep_nN_ne_nS (k : ℕ) : (arenaNames k).nN ≠ (arenaNames k).nS :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `restrictCom_specW`'s `hPn1`: the two levels' carrier cells differ
 by their level tag. -/
 theorem prep_pnN_ne_cnN (j : ℕ) :
     (arenaNames j).nN ≠ (arenaNames (j + 1)).nN :=
-  lv_ne_of_level_ne (by rfl) (by omega)
+  lv_ne_of_level_ne (by decide) (by omega)
 
 /-- `restrictCom_specW`'s `hPn2`. -/
 theorem prep_pnN_ne_cnS (j : ℕ) :
     (arenaNames j).nN ≠ (arenaNames (j + 1)).nS :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `restrictCom_specW`'s `hPs1`. -/
 theorem prep_pnS_ne_cnN (j : ℕ) :
     (arenaNames j).nS ≠ (arenaNames (j + 1)).nN :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `restrictCom_specW`'s `hPs2`. -/
 theorem prep_pnS_ne_cnS (j : ℕ) :
     (arenaNames j).nS ≠ (arenaNames (j + 1)).nS :=
-  lv_ne_of_level_ne (by rfl) (by omega)
+  lv_ne_of_level_ne (by decide) (by omega)
 
 /-- `isolateCom_specW`'s `hs2`. -/
 theorem prep_no_ne_nN (j : ℕ) : pcNo ≠ (arenaNames (j + 1)).nN :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `isolateCom_specW`'s `hs3`. -/
 theorem prep_no_ne_nS (j : ℕ) : pcNo ≠ (arenaNames (j + 1)).nS :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-! ### The cluster-row copy and the connector scan -/
 
 /-- `clusterRowCom_spec`'s `hct_ck` and `centreIdxCom_centreChild`'s. -/
-theorem prep_ct_ne_rsk : pcCt ≠ "rs.k" := lv_ne_lit (by rfl) (by decide) 0
+theorem prep_ct_ne_rsk : pcCt ≠ "rs.k" := lv_ne_lit (by decide) (by decide) 0
 
 /-- `clusterRowCom_spec`'s `hct_cb`. -/
-theorem prep_ct_ne_cb : pcCt ≠ pcCb := lv_ne_of_base_ne (by rfl) (by decide) _ _
+theorem prep_ct_ne_cb : pcCt ≠ pcCb := lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `clusterRowCom_spec`'s `hcb_ck`. -/
-theorem prep_cb_ne_rsk : pcCb ≠ "rs.k" := lv_ne_lit (by rfl) (by decide) 0
+theorem prep_cb_ne_rsk : pcCb ≠ "rs.k" := lv_ne_lit (by decide) (by decide) 0
 
 /-- `clusterRowCom_spec`'s `hcu_cb`. -/
 theorem prep_ctr_ne_cb (j : ℕ) : ctrName j ≠ pcCb :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `centreIdxCom_centreChild`'s `hct_cu`. -/
 theorem prep_ct_ne_ctr (j : ℕ) : pcCt ≠ ctrName j :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `centreIdxCom_centreChild`'s `hct_cc`. -/
-theorem prep_ct_ne_cc : pcCt ≠ pcCc := lv_ne_of_base_ne (by rfl) (by decide) _ _
+theorem prep_ct_ne_cc : pcCt ≠ pcCc := lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `centreIdxCom_centreChild`'s `hcc_ck`. -/
-theorem prep_cc_ne_rsk : pcCc ≠ "rs.k" := lv_ne_lit (by rfl) (by decide) 0
+theorem prep_cc_ne_rsk : pcCc ≠ "rs.k" := lv_ne_lit (by decide) (by decide) 0
 
 /-- `centreIdxCom_centreChild`'s `hcc_cu`. -/
 theorem prep_cc_ne_ctr (j : ℕ) : pcCc ≠ ctrName j :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-! ### The BFS, the supports pass and the isolation -/
 
 /-- `bfsCom_specW`'s `hot`, at the pre-isolation family. -/
-theorem prep_ti_ne_oi : pcTi ≠ pcOi := lv_ne_of_base_ne (by rfl) (by decide) _ _
+theorem prep_ti_ne_oi : pcTi ≠ pcOi := lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `supportsCom_specW`'s `hda_pa`. -/
-theorem prep_da_ne_pa : pcDa ≠ pcPa := lv_ne_of_base_ne (by rfl) (by decide) _ _
+theorem prep_da_ne_pa : pcDa ≠ pcPa := lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `isolateCom_specW`'s `hoaO_ba`. -/
 theorem prep_isoOff_ne_bb (j : ℕ) : (arenaNames (j + 1)).off ≠ pcBb :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `isolateCom_specW`'s `htaO_ba`. -/
 theorem prep_isoTgt_ne_bb (j : ℕ) : (arenaNames (j + 1)).tgt ≠ pcBb :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- `isolateCom_specW`'s `htaO_oaO`. -/
 theorem prep_isoTgt_ne_isoOff (j : ℕ) :
     (arenaNames (j + 1)).tgt ≠ (arenaNames (j + 1)).off :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-! ### The colour writer's three cursors -/
 
-theorem prep_dd_ne_w : pcDd ≠ pcW := lv_ne_of_base_ne (by rfl) (by decide) _ _
-theorem prep_dd_ne_vv : pcDd ≠ pcVv := lv_ne_of_base_ne (by rfl) (by decide) _ _
-theorem prep_w_ne_vv : pcW ≠ pcVv := lv_ne_of_base_ne (by rfl) (by decide) _ _
+theorem prep_dd_ne_w : pcDd ≠ pcW := lv_ne_of_base_ne (by decide) (by decide) _ _
+theorem prep_dd_ne_vv : pcDd ≠ pcVv := lv_ne_of_base_ne (by decide) (by decide) _ _
+theorem prep_w_ne_vv : pcW ≠ pcVv := lv_ne_of_base_ne (by decide) (by decide) _ _
 
 theorem prep_vv_ne_nN (j : ℕ) : pcVv ≠ (arenaNames (j + 1)).nN :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 theorem prep_w_ne_nN (j : ℕ) : pcW ≠ (arenaNames (j + 1)).nN :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 theorem prep_dd_ne_nN (j : ℕ) : pcDd ≠ (arenaNames (j + 1)).nN :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-- The two table families miss the colour region — `colWriteCom`'s
 per-table freshness, and the half of `colWrite_tables_of_profiles` that
 is not `rfl`. -/
 theorem prep_pd_ne_col (j : ℕ) (t : ℕ) :
     pcPd t ≠ (arenaNames (j + 1)).col :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 theorem prep_pu_ne_col (j : ℕ) (c : ℕ) :
     pcPu c ≠ (arenaNames (j + 1)).col :=
-  lv_ne_of_base_ne (by rfl) (by decide) _ _
+  lv_ne_of_base_ne (by decide) (by decide) _ _
 
 /-! ### The profiles stage -/
 
@@ -480,45 +480,45 @@ theorem prep_pu_ne_col (j : ℕ) (c : ℕ) :
 three read-only regions it is handed beside. -/
 theorem prep_bi_notMem3 (j : ℕ) :
     pcBi ∉ ([pcOi, pcTi, (arenaNames (j + 1)).col] : List String) :=
-  prep_notMem3 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
+  prep_notMem3 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
 
 /-- `profilesCom_specW`'s `hxbP`: the two regions the stage never reads
 are the ones the *pass* still needs intact. -/
 theorem prep_xb_notMemP (j : ℕ) :
     pcXb ∉ ([(arenaNames (j + 1)).up, (arenaNames (j + 1)).hist] :
       List String) :=
-  prep_notMem2 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
+  prep_notMem2 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
 
 /-- `profilesCom_specW`'s `hvoP`. -/
 theorem prep_vo_notMemP (j : ℕ) :
     pcVo ∉ ([(arenaNames (j + 1)).up, (arenaNames (j + 1)).hist] :
       List String) :=
-  prep_notMem2 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
+  prep_notMem2 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
 
 /-- `profilesCom_specW`'s `hpdP`. -/
 theorem prep_pd_notMemP (j t : ℕ) :
     pcPd t ∉ ([(arenaNames (j + 1)).up, (arenaNames (j + 1)).hist] :
       List String) :=
-  prep_notMem2 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
+  prep_notMem2 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
 
 /-- `profilesCom_specW`'s `hvtP`. -/
 theorem prep_vt_notMemP (j c : ℕ) :
     pcVt c ∉ ([(arenaNames (j + 1)).up, (arenaNames (j + 1)).hist] :
       List String) :=
-  prep_notMem2 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
+  prep_notMem2 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
 
 /-- `profilesCom_specW`'s `hpuP`. -/
 theorem prep_pu_notMemP (j c : ℕ) :
     pcPu c ∉ ([(arenaNames (j + 1)).up, (arenaNames (j + 1)).hist] :
       List String) :=
-  prep_notMem2 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
+  prep_notMem2 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
 
 /-- **`profilesCom_specW`'s whole name bundle**, at the pass's family —
 twenty-one clauses, every one a base clash or an `lv` injectivity, and
@@ -526,39 +526,39 @@ uniform in the batch width and class count. This is the single largest
 side condition the composition owes. -/
 theorem prep_profNames_ok (j mb Lp : ℕ) : ProfNames.Ok (prepProfNames j) mb Lp
     where
-  xb_ro := prep_notMem4 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-  vo_ro := prep_notMem4 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-  pd_ro := fun _ _ => prep_notMem4 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-  vt_ro := fun _ _ => prep_notMem4 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-  pu_ro := fun _ _ => prep_notMem4 (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-    (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-  xb_vo := lv_ne_of_base_ne (by rfl) (by decide) _ _
-  pd_xb := fun _ _ => lv_ne_of_base_ne (by rfl) (by decide) _ _
-  pd_vo := fun _ _ => lv_ne_of_base_ne (by rfl) (by decide) _ _
-  vt_xb := fun _ _ => lv_ne_of_base_ne (by rfl) (by decide) _ _
-  vt_vo := fun _ _ => lv_ne_of_base_ne (by rfl) (by decide) _ _
-  pu_xb := fun _ _ => lv_ne_of_base_ne (by rfl) (by decide) _ _
-  pu_vo := fun _ _ => lv_ne_of_base_ne (by rfl) (by decide) _ _
+  xb_ro := prep_notMem4 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  vo_ro := prep_notMem4 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  pd_ro := fun _ _ => prep_notMem4 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  vt_ro := fun _ _ => prep_notMem4 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  pu_ro := fun _ _ => prep_notMem4 (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+    (lv_ne_of_base_ne (by decide) (by decide) _ _)
+  xb_vo := lv_ne_of_base_ne (by decide) (by decide) _ _
+  pd_xb := fun _ _ => lv_ne_of_base_ne (by decide) (by decide) _ _
+  pd_vo := fun _ _ => lv_ne_of_base_ne (by decide) (by decide) _ _
+  vt_xb := fun _ _ => lv_ne_of_base_ne (by decide) (by decide) _ _
+  vt_vo := fun _ _ => lv_ne_of_base_ne (by decide) (by decide) _ _
+  pu_xb := fun _ _ => lv_ne_of_base_ne (by decide) (by decide) _ _
+  pu_vo := fun _ _ => lv_ne_of_base_ne (by decide) (by decide) _ _
   pd_inj := fun _ _ _ _ h => (lv_inj (by rfl) h).2
   pu_inj := fun _ _ _ _ h => (lv_inj (by rfl) h).2
   vt_inj := fun _ _ _ _ h => (lv_inj (by rfl) h).2
-  vt_pu := fun _ _ _ _ => lv_ne_of_base_ne (by rfl) (by decide) _ _
-  pd_pu := fun _ _ _ _ => lv_ne_of_base_ne (by rfl) (by decide) _ _
-  pd_vt := fun _ _ _ _ => lv_ne_of_base_ne (by rfl) (by decide) _ _
+  vt_pu := fun _ _ _ _ => lv_ne_of_base_ne (by decide) (by decide) _ _
+  pd_pu := fun _ _ _ _ => lv_ne_of_base_ne (by decide) (by decide) _ _
+  pd_vt := fun _ _ _ _ => lv_ne_of_base_ne (by decide) (by decide) _ _
   nN_scr := prep_nN_notMem_prof (j + 1)
   nS_scr := prep_nS_notMem_prof (j + 1)
 
@@ -922,38 +922,38 @@ theorem prep_mkBatchStage {S : Setup L} {ℓp : ℕ → ℕ}
           have := prep_childN_le S A π u
           omega)
       (prepWB_width hwb) (prepWB_chanChild hwb (le_of_lt hj) A π u)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)
-      (lv_ne_of_base_ne (by rfl) (by decide) _ _)).pre
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)
+      (lv_ne_of_base_ne (by decide) (by decide) _ _)).pre
     (fun σ hσ =>
       ⟨hσ.1, hσ.2.1, hσ.2.2.1, hσ.2.2.2.1, hσ.2.2.2.2.1,
         prepScr_bb_len S ℓp hbf j π u hσ.2.2.2.2.2,
