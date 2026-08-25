@@ -75,6 +75,38 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-25 — the peel BFS: a hazard turned structural
+
+`PeelBfsIn`'s program, both of its constraints as **theorems**, the clean-up
+with its accounting (`bfsClear_spec` at `14·cnt + 6`), the state step
+(`sweepSt_step_of_bfs`), the frame and the scratch descriptor
+(`bfsClean_hSsc`, meeting `peelSweepIn_of_bfs`'s `hSsc` verbatim) are landed.
+**Not discharged**: the induction over levels identifying the reached list with
+the ball, and with it the `Run` accounting. The constants `abf = 12R + 44`,
+`bbf = 39`, `cbf = 76` are **read off the program text, not proved** — the file
+says so; the one proved figure is the clean-up's.
+
+**The design decision worth keeping.** `.lit (2 * S.R)` **cannot be evaluated
+at `mcB q x`** — nothing in `mcD`/`mcB` bounds `S.R` by `|x|` — so a level
+counter would have created an *undischargeable word-bound obligation*. The
+levels are therefore **unrolled**: `iterCom R (level true) ; iterCom R (level
+false)`, with `0` and `1` the only literals. Consequence: **constraint 1 ("do
+not expand the final level"), on which the entire edge budget rests, stops
+being a guard the program must respect and becomes structural** — there is no
+pass left that *could* expand distance `2R`. A failure mode removed rather
+than defended against.
+
+Two further decisions: **`Lib.Queue` is unusable here** — its relation pins the
+*whole* backing array while `lm` holds every earlier row below the current
+base — so the reached list **is** the log row `lm[b .. b+cnt)`, which is also
+what lets constraint 2's clean-up walk what it just emitted instead of scanning
+the carrier; and visited marks live in **`co`**, the only free carrier-sized
+array in `SweepSt`, legal exactly because `hSsc`'s frame list omits it.
+
+`hR : 1 ≤ S.R` is confirmed **genuinely load-bearing, not defensive**: at
+`R = 0` the `2R-1` and `2R` radii collide and `cluster_eq_expand_of_ball` is
+**false**. That is GKS's silent side condition, now explicit in two places.
+
 ### 2026-08-25 — `PeelSweepIn` reduced to one centre's BFS
 
 `peelSweepIn_of_bfs` discharges `PeelSweepIn` — every clause intact — from a
