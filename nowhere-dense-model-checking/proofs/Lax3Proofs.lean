@@ -51,6 +51,7 @@ import Lax3Proofs.RefineBfsProbe
 -- The abstract algorithm (E9): section 5's driver over the abstract
 -- arena -- schedule, arena and recursion, correctness, cost.
 import Lax3Proofs.DriverSchedule
+import Lax3Proofs.DriverBfsTree
 import Lax3Proofs.DriverArena
 import Lax3Proofs.DriverCorrect
 import Lax3Proofs.DriverCost
@@ -123,7 +124,10 @@ import Lax3Proofs.SolveSweepMdPeel
 import Lax3Proofs.SolveSweepPeel
 import Lax3Proofs.SolveSweepBucket
 import Lax3Proofs.SolveSweepSelPeel
+import Lax3Proofs.SolveSweepBucketProg
 import Lax3Proofs.SolveSweepOrder
+import Lax3Proofs.SolveAugFrat
+import Lax3Proofs.SolveAugTrans
 
 -- The proofs package of submission Lax3.
 --
