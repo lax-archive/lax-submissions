@@ -22,12 +22,22 @@ named propositions, so the continuation map narrows:
 * **`coverElse`** — the else branch's shape: the cover stage in front
   of the centre loop. `frameElse_of_cover_loop` discharges the seam —
   the landed `CoverStageSpec` (its `Spec` consumed verbatim), the
-  scratch-descriptor plumbing (`Scr` is length-only, so it crosses the
-  cover by `specArrsLength` alone), the table-allocation survival, and
-  the write discipline of the composition — reducing `FrameElse` to
+  scratch-descriptor plumbing, the table-allocation survival, and the
+  write discipline of the composition — reducing `FrameElse` to
   **`CentreLoop`**: from the cover's outputs (`CtrArr` at
   `Driver.centre`, `ClusterCsr` at `Driver.cluster`) to the level's
   `BlockPost`, the per-centre pipeline.
+
+  The landed version crosses the cover with `hscrLen`, i.e. by
+  `specArrsLength` and a length-only `Scr`; that transport is
+  inconsistent with a descriptor carrying the child-building pass's
+  clean-scratch clause (`SolveMachPrepSeam.rankScr_not_length_only`).
+  **`frameElse_of_cover_loopScr`** is the same theorem at the
+  strengthened contract with `hscrLen` replaced by `ScrFrame` plus the
+  syntactic `ScrFree` — the cover writes no name the descriptor reads
+  — and **`frameStep_of_elseScr`**/**`frameStepAll_of_cover_loopScr`**
+  carry that through the guard to `FrameStepAllScr`, the form
+  `solveSpec_closed_scr` consumes.
 
 * **`frameStepAll_of_cover_loop`** — the headline: `FrameStepAll`
   (verbatim `SolveFrameBridge`'s residual 1, for the canonical body
@@ -200,6 +210,91 @@ theorem frameStep_of_else (B : ℕ) (S : Setup L)
   · intro A hd _ _
     exact absurd hd hdiag
 
+/-- **The else residual, with the level's descriptor restored** —
+verbatim `FrameElse` at the strengthened contract on both sides: the
+inner block is consumed at `BlockSpecScr` (so the parent's descriptor
+can cross the recursion window by `ScrStep`), and the branch leaves
+`BlockPostScr`. -/
+def FrameElseScr (B : ℕ) (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop)
+    (KB : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ) (Scr : ℕ → Env → Prop)
+    (LS LA : ℕ → List String) (elseB : ℕ → Com → Com)
+    (KE : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ) : Prop :=
+  ∀ (k j : ℕ) (nxCom : Com),
+    BlockSpecScr B S ord ℓp htabF hbf arenaNames Adm KB Scr k (j + 1) nxCom →
+    OwnedFrom LS LA (j + 1) nxCom →
+    (∀ A : Arena (S.pal j) n₀, j + (k + 1) = S.depth → Adm j A →
+      ¬ A.G = ⊥ →
+      Spec B (BlockPre S j (hbf j) A (htabF j A) (Scr j) (arenaNames j))
+        (elseB j nxCom)
+        (fun _ σ' => BlockPostScr S ord (k + 1) j (hbf j) A (htabF j A)
+          (Scr j) (arenaNames j) σ')
+        (KE k j A)) ∧
+    OwnedFrom LS LA j (elseB j nxCom)
+
+open Classical in
+/-- **The frame step at the strengthened contract, from the else
+residual** — verbatim `frameStep_of_else` through
+`blockSpec_leaf_guardScr`. The leaf branch restores the descriptor
+because `botCom` writes nothing the descriptor reads (the two new
+disjointness hypotheses); the else branch restores it because its own
+residual says so. No length-only clause anywhere. -/
+theorem frameStep_of_elseScr (B : ℕ) (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop)
+    (KB : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ) (Scr : ℕ → Env → Prop)
+    (LS LA LV LR : ℕ → List String) (elseB : ℕ → Com → Com)
+    (KE : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ) (Kq : ℕ)
+    (hKq : ∀ j, j < S.depth → ∀ β ∈ levelFml S j, qdepth β ≤ Kq)
+    (hn0B : n₀ < B) (hn0B2 : n₀ * n₀ < B)
+    (hNLB : ∀ j, j < S.depth → n₀ * S.pal j < B)
+    (h2LB : ∀ j, j < S.depth → 2 ^ S.pal j * (Kq + 1) < B)
+    (hTB : ∀ j, j < S.depth → n₀ * (levelFml S j).length < B)
+    (hscr : ∀ j, j < S.depth → ∀ σ, Scr j σ →
+      (σ.arrs (botNa j)).length = 2 ^ S.pal j ∧
+      (σ.arrs (botFa j)).length = 2 ^ S.pal j * (Kq + 1) ∧
+      (σ.arrs (botEa j)).length = Kq + 1 ∧
+      (σ.arrs (botXa j)).length = Kq + 1)
+    -- the descriptor's frame law and the leaf block's disjointness
+    (hfr : ScrFrame Scr LV LR)
+    (hLVbt : ∀ i, ∀ y ∈ LV i, y ∉ btScalars)
+    (hLRbot : ∀ j i, j ≤ i → ∀ a ∈ LR i,
+      a ∉ ([botNa j, botFa j, botEa j, botXa j, (arenaNames j).tab] :
+        List String))
+    (hKB : ∀ k j, j < S.depth → ∀ A : Arena (S.pal j) n₀,
+      4 + max (botComK A.N (S.pal j) Kq (levelFml S j)) (KE k j A)
+        ≤ KB (k + 1) j A)
+    (hLS : ∀ j, ∀ y ∈ btScalars, y ∈ LS j)
+    (hLA : ∀ j, ∀ a ∈ ([botNa j, botFa j, botEa j, botXa j,
+      (arenaNames j).tab] : List String), a ∈ LA j)
+    (helse : FrameElseScr B S ord ℓp htabF hbf Adm KB Scr LS LA elseB KE) :
+    FrameStepScr B S ord ℓp htabF hbf arenaNames Adm KB Scr LS LA
+      (guardBody S Kq elseB) := by
+  intro k j nxCom hnx hown
+  obtain ⟨helseSpec, helseOwn⟩ := helse k j nxCom hnx hown
+  have hbotOwn : OwnedFrom LS LA j (canonBotB S Kq j) :=
+    botBlock_owned LS LA arenaNames j Kq S (hLS j) (hLA j)
+  refine ⟨?_, OwnedFrom.ite hbotOwn helseOwn⟩
+  by_cases hdiag : j + (k + 1) = S.depth
+  · have hj : j < S.depth := by omega
+    exact blockSpec_leaf_guardScr B S ord ℓp htabF hbf arenaNames Adm KB Scr
+      j Kq (hKq j hj) hn0B (hNLB j hj) (h2LB j hj) (hTB j hj)
+      (canon_nd j) (canon_off j) (canon_tgt j) (canon_up j) (canon_hist j)
+      (canon_nN j) (canon_nS j) (canon_nd5 j) (hscr j hj) LV LR
+      k hn0B2 hfr (fun i _ y hy => hLVbt i y hy)
+      (fun i hi a ha => hLRbot j i hi a ha) (elseB j nxCom) (KE k j)
+      (fun A hd hAdm hbot => helseSpec A hd hAdm hbot)
+      (fun A => hKB k j hj A)
+  · intro A hd _ _
+    exact absurd hd hdiag
+
 /-! ## §3 The else branch's shape: cover, then the centre loop -/
 
 /-- **The else branch's shape**: the level's cover stage in front of
@@ -313,6 +408,96 @@ theorem frameElse_of_cover_loop (B : ℕ) (S : Setup L)
   · -- the cover's postcondition lands in the loop's precondition
     rintro σ σ' ⟨hA, htab, hscrσ⟩ ⟨⟨hA', hctr, hcsr⟩, hlen⟩
     refine ⟨⟨hA', ?_, hscrLen j σ σ' hscrσ hlen⟩, hctr, hcsr⟩
+    rw [hlen ((arenaNames j).tab)]
+    exact htab
+
+/-- **The centre loop, with the level's descriptor restored** —
+verbatim `CentreLoop` at the strengthened contract on both sides. -/
+def CentreLoopScr (B : ℕ) (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop)
+    (KB : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ) (Scr : ℕ → Env → Prop)
+    (LS LA : ℕ → List String) (ca co cm : ℕ → String)
+    (loopB : ℕ → Com → Com)
+    (KL : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ) : Prop :=
+  ∀ (k j : ℕ) (nxCom : Com),
+    BlockSpecScr B S ord ℓp htabF hbf arenaNames Adm KB Scr k (j + 1) nxCom →
+    OwnedFrom LS LA (j + 1) nxCom →
+    (∀ A : Arena (S.pal j) n₀, j + (k + 1) = S.depth → Adm j A →
+      ¬ A.G = ⊥ →
+      Spec B
+        (fun σ =>
+          BlockPre S j (hbf j) A (htabF j A) (Scr j) (arenaNames j) σ ∧
+          CtrArr (ca j) (centre S A ((ord A.N A.G).order)) σ ∧
+          ClusterCsr (co j) (cm j) (cluster S A ((ord A.N A.G).order)) σ)
+        (loopB j nxCom)
+        (fun _ σ' => BlockPostScr S ord (k + 1) j (hbf j) A (htabF j A)
+          (Scr j) (arenaNames j) σ')
+        (KL k j A)) ∧
+    OwnedFrom LS LA j (loopB j nxCom)
+
+open Classical in
+/-- **The else residual from the cover and the loop, without the
+length-only transport.** Verbatim `frameElse_of_cover_loop` at the
+strengthened contract, with `hscrLen` replaced by exactly what the
+cover stage can honestly be asked for: the descriptor's frame law
+(`hfr`) plus the *syntactic* fact that the cover writes no name any
+descriptor of level `≥ j` reads (`hcovFree`).
+
+The cover's landed contract `CoverStageSpec` frames nothing — it is a
+plain `Spec` whose postcondition names only the arena, the assignment
+region and the cluster CSR — so nothing in it says the level's scratch
+survives. `hcovFree` is the missing clause, and it is the honest one:
+the sweep has no business writing any level's rank scratch or carrier
+cell, and `Com.wvars`/`Com.warrs` decide the question at the call site,
+with no semantic obligation on the sweep at all. -/
+theorem frameElse_of_cover_loopScr (B : ℕ) (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop)
+    (KB : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ) (Scr : ℕ → Env → Prop)
+    (LS LA LV LR : ℕ → List String) (ca co cm : ℕ → String)
+    (Scv : ℕ → Env → Prop) (covC : ℕ → Com) (loopB : ℕ → Com → Com)
+    (Kcov : (j : ℕ) → Arena (S.pal j) n₀ → ℕ)
+    (KL : (k j : ℕ) → Arena (S.pal j) n₀ → ℕ)
+    -- the level's scratch descriptor carries the cover's needs …
+    (hscrCov : ∀ j σ, Scr j σ →
+      n₀ ≤ (σ.arrs (ca j)).length ∧ n₀ + 1 ≤ (σ.arrs (co j)).length ∧
+      Scv j σ)
+    -- … and crosses the stage by its frame law, the stage writing
+    -- nothing it reads
+    (hfr : ScrFrame Scr LV LR)
+    (hcovFree : ∀ j, ScrFree LV LR j (covC j))
+    -- the cover obeys the write discipline (its discharger's, syntactic)
+    (hcovOwn : ∀ j, OwnedFrom LS LA j (covC j))
+    -- the two residuals
+    (hcov : CoverAll B S ord ℓp htabF hbf Adm ca co cm Scv covC Kcov)
+    (hloop : CentreLoopScr B S ord ℓp htabF hbf Adm KB Scr LS LA ca co cm
+      loopB KL) :
+    FrameElseScr B S ord ℓp htabF hbf Adm KB Scr LS LA (coverElse covC loopB)
+      (fun k j A => Kcov j A + KL k j A) := by
+  intro k j nxCom hnx hown
+  obtain ⟨hloopSpec, hloopOwn⟩ := hloop k j nxCom hnx hown
+  refine ⟨?_, OwnedFrom.seq (hcovOwn j) hloopOwn⟩
+  intro A hdiag hAdm hbot
+  have hj : j < S.depth := by omega
+  have hcv := specScr (Scr := Scr) (LV := LV) (LR := LR) (j := j) hfr
+    (hcovFree j) (hcov j hj A hAdm hbot)
+  refine Spec.seq (hcv.pre ?_) (hloopSpec A hdiag hAdm hbot) ?_
+    (fun _ _ _ _ _ h => h)
+  · -- the block precondition lands in the cover's
+    rintro σ ⟨hA, htab, hscrσ⟩
+    obtain ⟨h1, h2, h3⟩ := hscrCov j σ hscrσ
+    have hle : A.N ≤ n₀ := arenaN_le A
+    exact ⟨hA, le_trans hle h1, le_trans (by omega) h2, h3⟩
+  · -- the cover's postcondition lands in the loop's precondition
+    rintro σ σ' ⟨hA, htab, hscrσ⟩ ⟨⟨hA', hctr, hcsr⟩, hlen, hscr'⟩
+    refine ⟨⟨hA', ?_, hscr' hscrσ⟩, hctr, hcsr⟩
     rw [hlen ((arenaNames j).tab)]
     exact htab
 
@@ -436,5 +621,100 @@ theorem frameStepAll_of_cover_loop (C : GraphClass) (hC : NowhereDense C)
   exact frameElse_of_cover_loop (mcB q x) (Headline.headlineSetup C hC φ)
     ord ℓp htabF hbf Adm KB Scr LS LA ca co cm Scv covC loopB Kcov KL
     hscrCov hscrLen hcovOwn (hcov x hx) (hloop x hx)
+
+/-- Residual (b) at the strengthened contract, quantified per
+admissible input. -/
+def CentreLoopAllScr (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
+    (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
+    (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (KB : (k j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
+    (Scr : ℕ → Env → Prop) (LS LA : ℕ → List String)
+    (ca co cm : ℕ → String) (loopB : ℕ → Com → Com)
+    (KL : (k j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ) :
+    Prop :=
+  ∀ x ∈ mcD n G c w,
+    CentreLoopScr (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp htabF hbf
+      Adm KB Scr LS LA ca co cm loopB KL
+
+open Classical in
+/-- **Residual 1 at the strengthened contract, from the cover and the
+loop** — verbatim `frameStepAll_of_cover_loop` with `hscrLen` gone.
+What replaces it is the descriptor's own frame law and three
+disjointness facts: the cover stage and the leaf block write no name
+any descriptor of level `≥ j` reads. Every one of those is syntactic;
+none of them is a transport along lengths. -/
+theorem frameStepAll_of_cover_loopScr (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) (ord : CoverSpec.OrderingRoutine) {n : ℕ}
+    (G : SimpleGraph (Fin n)) (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (KB : (k j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
+    (Scr : ℕ → Env → Prop) (LS LA LV LR : ℕ → List String)
+    (ca co cm : ℕ → String) (Scv : ℕ → Env → Prop)
+    (covC : ℕ → Com) (loopB : ℕ → Com → Com)
+    (Kcov : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
+    (KL : (k j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → ℕ)
+    (Kq : ℕ)
+    (hKq : ∀ j, j < (Headline.headlineSetup C hC φ).depth →
+      ∀ β ∈ levelFml (Headline.headlineSetup C hC φ) j, qdepth β ≤ Kq)
+    (hB : ∀ x ∈ mcD n G c w, n < mcB q x ∧ n * n < mcB q x)
+    (hBlev : ∀ x ∈ mcD n G c w,
+      ∀ j, j < (Headline.headlineSetup C hC φ).depth →
+      n * (Headline.headlineSetup C hC φ).pal j < mcB q x ∧
+      2 ^ (Headline.headlineSetup C hC φ).pal j * (Kq + 1) < mcB q x ∧
+      n * (levelFml (Headline.headlineSetup C hC φ) j).length < mcB q x)
+    (hscr : ∀ j, j < (Headline.headlineSetup C hC φ).depth → ∀ σ, Scr j σ →
+      (σ.arrs (botNa j)).length
+        = 2 ^ (Headline.headlineSetup C hC φ).pal j ∧
+      (σ.arrs (botFa j)).length
+        = 2 ^ (Headline.headlineSetup C hC φ).pal j * (Kq + 1) ∧
+      (σ.arrs (botEa j)).length = Kq + 1 ∧
+      (σ.arrs (botXa j)).length = Kq + 1)
+    (hscrCov : ∀ j σ, Scr j σ →
+      n ≤ (σ.arrs (ca j)).length ∧ n + 1 ≤ (σ.arrs (co j)).length ∧
+      Scv j σ)
+    -- the descriptor's frame law, and what the two stages must miss
+    (hfr : ScrFrame Scr LV LR)
+    (hLVbt : ∀ i, ∀ y ∈ LV i, y ∉ btScalars)
+    (hLRbot : ∀ j i, j ≤ i → ∀ a ∈ LR i,
+      a ∉ ([botNa j, botFa j, botEa j, botXa j, (arenaNames j).tab] :
+        List String))
+    (hcovFree : ∀ j, ScrFree LV LR j (covC j))
+    (hKB : ∀ k j, j < (Headline.headlineSetup C hC φ).depth →
+      ∀ A : Arena ((Headline.headlineSetup C hC φ).pal j) n,
+      4 + max (botComK A.N ((Headline.headlineSetup C hC φ).pal j) Kq
+          (levelFml (Headline.headlineSetup C hC φ) j))
+        (Kcov j A + KL k j A) ≤ KB (k + 1) j A)
+    (hLS : ∀ j, ∀ y ∈ btScalars, y ∈ LS j)
+    (hLA : ∀ j, ∀ a ∈ ([botNa j, botFa j, botEa j, botXa j,
+      (arenaNames j).tab] : List String), a ∈ LA j)
+    (hcovOwn : ∀ j, OwnedFrom LS LA j (covC j))
+    (hcov : CoverAllIn C hC φ ord G c w q ℓp htabF hbf Adm ca co cm Scv
+      covC Kcov)
+    (hloop : CentreLoopAllScr C hC φ ord G c w q ℓp htabF hbf Adm KB Scr LS LA
+      ca co cm loopB KL) :
+    FrameStepAllScr C hC φ ord G c w q ℓp htabF hbf Adm KB Scr LS LA
+      (guardBody (Headline.headlineSetup C hC φ) Kq
+        (coverElse covC loopB)) := by
+  intro x hx
+  obtain ⟨h1, h2⟩ := hB x hx
+  refine frameStep_of_elseScr (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp
+    htabF hbf Adm KB Scr LS LA LV LR (coverElse covC loopB)
+    (fun k j A => Kcov j A + KL k j A) Kq hKq h1 h2
+    (fun j hj => (hBlev x hx j hj).1)
+    (fun j hj => (hBlev x hx j hj).2.1)
+    (fun j hj => (hBlev x hx j hj).2.2)
+    hscr hfr hLVbt hLRbot hKB hLS hLA ?_
+  exact frameElse_of_cover_loopScr (mcB q x) (Headline.headlineSetup C hC φ)
+    ord ℓp htabF hbf Adm KB Scr LS LA LV LR ca co cm Scv covC loopB Kcov KL
+    hscrCov hfr hcovFree hcovOwn (hcov x hx) (hloop x hx)
 
 end Lax3Proofs.Prog
