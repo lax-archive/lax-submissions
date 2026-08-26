@@ -409,7 +409,7 @@ noncomputable def centreProg (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀)
       (liftACost (isolateC S j A htab π u))) fun _ =>
   -- the recursion slot, at the child assembled from the computed pieces
   NRest.bindT (nxProg ⟨childN S A π u, B₁.G, colC, B₁.up,
-      (A.up u, SimpleGraph.map A.up A.G) :: A.hist⟩) fun Tu =>
+      (A.up u, histGraph S A π u) :: A.hist⟩) fun Tu =>
   -- the guarded scatter counts for this child (§5 lines 25–26)
   NRest.consume (NRest.returnT Tu)
     (liftACost (ACost.cost "frame.scatter" (scatterCost S j A π u Tu)))
@@ -432,7 +432,7 @@ theorem mkChild_eq (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀)
       colC,
       (((Impl.ofArena A htab).restrict (cluster S A π u)).isolate
         (Set.range (batchFn S A π u))).up,
-      (A.up u, SimpleGraph.map A.up A.G) :: A.hist⟩ : Arena (S.pal (j + 1)) n₀)
+      (A.up u, histGraph S A π u) :: A.hist⟩ : Arena (S.pal (j + 1)) n₀)
       = childArena S A π u := by
   subst hcolC
   rfl

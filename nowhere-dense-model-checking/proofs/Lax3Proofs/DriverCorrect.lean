@@ -51,7 +51,12 @@ buys termination-in-budget, which is the second statement.
 `hist` is the trace of a genuine play `rounds` of the cluster-restricted
 splitter game **at the root carrier** (E6: the record is never
 re-typed), with one recorded round per level as long as the arena has
-edges. `inv_root` starts it, `inv_child` carries it through one descent
+edges — each round contributing its connector together with its arena
+**restricted to its own recorded cluster** (`deleteVerts e.arena
+e.resᶜ` = `histGraph` at the pushed round; F6c12p), plus the
+path-closure fact that every current carrier vertex is within `2R` of
+the connector in that restricted graph. `inv_root` starts it,
+`inv_child` carries it through one descent
 (`ReachedS.reachedS_descend` + the restrict∘isolate identity
 `map_childArena_eq`), and `eq_bot_of_inv_depth` is the payoff — §5 line
 10's leaf test is exhaustive: **at depth `ℓ` the arena is edgeless**
@@ -62,8 +67,13 @@ really is `BotTables`' regime.
 The width hypothesis `1 + j·(2R+1) ≤ width` of `inv_child` is §3's
 `m = ℓ·(2R+1)` at depth `j ≤ ℓ−1` (hazard 2: the batch always fits the
 pad, by `genSet_ncard_le`); the descent supplies `reachedS_descend`'s
-`hwalk` from `pathSet_subset_genSet` — the recorded supports ARE the
-batch, which is D6's channel consumed abstractly.
+`hwalk` from `pathSet_spec` at the recorded restricted graph — armed by
+the invariant's own path-closure clause, transferred into the round's
+arena support-for-support — and `pathSet_subset_genSet` puts the
+support in the batch: the recorded supports ARE the batch, which is
+D6's channel consumed abstractly, now canonically (the walks are the
+min-parent gradient walks of `Lax3Proofs.BatchCanon`, computable by one
+cluster-sized BFS per round).
 
 An isolated centre is the one descent that records no round: its cluster
 is a single vertex, the child is edgeless (`childArena_G_eq_bot_of_
@@ -261,13 +271,29 @@ theorem mc_correct (S : Setup L) (ord : CoverSpec.OrderingRoutine) {n : ℕ}
 the ROOT carrier and is never re-typed). The channel has exactly one
 entry per level; and — as long as the node still has an edge — the
 channel is the trace of a genuine play of the cluster-restricted game
-whose reached arena is this node's arena, mapped to the root. -/
+whose reached arena is this node's arena, mapped to the root.
+
+The trace clause (F6c12p): each recorded round contributes to the
+channel its connector together with its arena **restricted to its own
+recorded cluster** — `deleteVerts e.arena e.resᶜ`, a function of the
+round's own data, which is `histGraph` at the round the descent pushes
+— and, by the path-closure of wreach clusters, every vertex of the
+current carrier is within `2R` of the connector IN that restricted
+graph. The second half is what arms `pathSet_spec` at descent time
+without any fresh look at the round's full arena: the canonical batch
+walks live in the restricted graphs the channel records, which one
+cluster-sized BFS per round computed (§5 line 17), and they transfer
+into the round's full arena support-for-support, which is all
+`reachedS_descend`'s `hwalk` asks. -/
 def Inv (S : Setup L) {Λ : ℕ} (G₀ : SimpleGraph (Fin n₀)) (j : ℕ)
     (A : Arena Λ n₀) : Prop :=
   A.hist.length = j ∧
   (A.G = ⊥ ∨
     ∃ rounds : List (ReachedS.RoundS n₀),
-      (∀ e ∈ rounds, (e.vtx, e.arena) ∈ A.hist) ∧
+      (∀ e ∈ rounds,
+        (e.vtx, deleteVerts e.arena e.resᶜ) ∈ A.hist ∧
+        ∀ a : Fin A.N,
+          WithinDist (deleteVerts e.arena e.resᶜ) (2 * S.R) e.vtx (A.up a)) ∧
       rounds.length = j ∧
       ReachedS.ReachedS (2 * S.R) G₀ rounds (SimpleGraph.map (⇑A.up) A.G))
 
@@ -439,8 +465,10 @@ hypothesis is §3's `m = ℓ(2R+1)` at this depth: it makes the pad exact
 (`range_pad`), so the isolated set is exactly the batch. An isolated
 centre yields an edgeless child (record clause vacuous); a centre with
 an edge extends the record by `reachedS_descend`, with `hwalk` supplied
-by `pathSet_subset_genSet` and the reached arena re-expressed by
-`map_childArena_eq`. -/
+by `pathSet_spec` at the recorded restricted graph — armed by the
+invariant's path-closure clause and transferred into the round's arena
+support-for-support — plus `pathSet_subset_genSet`, and the reached
+arena re-expressed by `map_childArena_eq`. -/
 theorem inv_child (S : Setup L) {Λ : ℕ} {G₀ : SimpleGraph (Fin n₀)} {j : ℕ}
     {A : Arena Λ n₀} (π : Equiv.Perm (Fin A.N)) (u : Fin A.N)
     (hInv : Inv S G₀ j A) (hbot : A.G ≠ ⊥)
@@ -488,15 +516,25 @@ theorem inv_child (S : Setup L) {Λ : ℕ} {G₀ : SimpleGraph (Fin n₀)} {j : 
         WithinDist er.arena (2 * S.R) er.vtx (A.up u) →
         ∃ p : er.arena.Walk er.vtx (A.up u), p.length ≤ 2 * S.R ∧
           {z | z ∈ p.support} ∩ Ximg ⊆ W := by
-      intro er her hwd
-      obtain ⟨p, hplen, hpset⟩ := Lax3Proofs.SplitterWin.pathSet_spec hwd
-      refine ⟨p, hplen, ?_⟩
-      rw [← hpset]
+      intro er her _
+      obtain ⟨hpair, hnear⟩ := hmem er her
+      -- the canonical walk lives in the RECORDED restricted graph — the
+      -- invariant's path-closure clause arms it, no fresh look at the
+      -- round's full arena needed …
+      obtain ⟨p, hplen, hpset⟩ := Lax3Proofs.SplitterWin.pathSet_spec (hnear u)
+      -- … and it transfers into the round's arena, support for support
+      have hedges : ∀ ed ∈ p.edges, ed ∈ er.arena.edgeSet := fun ed hed =>
+        SimpleGraph.edgeSet_mono (deleteVerts_le er.arena _)
+          (p.edges_subset_edgeSet hed)
+      refine ⟨p.transfer er.arena hedges, ?_, ?_⟩
+      · rw [SimpleGraph.Walk.length_transfer]
+        exact hplen
+      rw [SimpleGraph.Walk.support_transfer, ← hpset]
       rintro z ⟨hzp, x', hx', rfl⟩
       -- `z` is a recorded support vertex inside the cluster: it is in the batch
       have hzgen : A.up x' ∈ batchRoot S A u :=
         Lax3Proofs.SplitterWin.pathSet_subset_genSet
-          (e := (er.vtx, er.arena)) (hmem er her) _ hzp
+          (e := (er.vtx, deleteVerts er.arena er.resᶜ)) hpair _ hzp
       refine ⟨e.symm ⟨x', hx'⟩, ?_, ?_⟩
       · rw [hpad]
         show A.up ((e (e.symm ⟨x', hx'⟩) : Fin A.N)) ∈ batchRoot S A u
@@ -509,8 +547,25 @@ theorem inv_child (S : Setup L) {Λ : ℕ} {G₀ : SimpleGraph (Fin n₀)} {j : 
     · intro er her
       rw [childArena_hist]
       rcases List.mem_cons.mp her with rfl | her'
-      · exact List.mem_cons_self ..
-      · exact List.mem_cons_of_mem _ (hmem er her')
+      · -- the descent's own round: its restricted arena IS the recorded
+        -- `histGraph`, and the path-closure of wreach clusters puts
+        -- every child vertex within `2R` of the connector in it
+        refine ⟨List.mem_cons_self .., fun a => ?_⟩
+        obtain ⟨p, hplen, hpsub⟩ :=
+          Lax3Proofs.ClusterPaths.exists_walk_support_subset_fiber
+            ((childEquiv S A π u) a).2
+        obtain ⟨q, hqlen, hqsup⟩ := Lax3Proofs.ArenaTransport.exists_walk_push A.up p
+        have hqX : ∀ z ∈ q.support, z ∉ Ximgᶜ := by
+          intro z hz
+          obtain ⟨w, hw, rfl⟩ := hqsup z hz
+          rw [Set.notMem_compl_iff]
+          exact ⟨w, hpsub w hw, rfl⟩
+        obtain ⟨q', hq'⟩ := exists_walk_deleteVerts q hqX
+        exact withinDist_symm
+          ⟨q', le_trans (le_of_eq hq') (le_trans (le_of_eq hqlen) hplen)⟩
+      · obtain ⟨hpair, hnear⟩ := hmem er her'
+        exact ⟨List.mem_cons_of_mem _ hpair,
+          fun a => hnear ((childEquiv S A π u) a : Fin A.N)⟩
     · rw [List.length_cons, hrlen]
     · rw [← map_childArena_eq S A π u]
       exact hstep

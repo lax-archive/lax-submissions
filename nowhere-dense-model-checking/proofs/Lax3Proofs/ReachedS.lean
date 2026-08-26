@@ -454,7 +454,7 @@ theorem splitterWins_of_reachedS {N : ℕ → ℕ} {s : ℕ}
     rw [splitterWins_succ_iff]
     refine Or.inr fun v => ?_
     by_cases hv : ∃ u, A.Adj v u
-    · -- the chosen batch of `SplitterWin`, recorded at the full ball
+    · -- the canonical batch of `SplitterWin`, recorded at the full ball
       classical
       set l : List (Round n) := rounds.map (fun e => (e.vtx, e.arena)) with hl
       set S : Set (Fin n) := genSet r l v with hS

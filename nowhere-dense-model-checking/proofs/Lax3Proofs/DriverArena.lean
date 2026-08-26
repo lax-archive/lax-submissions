@@ -27,13 +27,15 @@ abstracted:
   re-typed, so the arena carries the composite embedding rather than the
   one-step parent map. (The one-step map to the parent is recoverable:
   it is `childEquiv` composed with the cluster inclusion.)
-* `hist` — D6's downward channel, abstracted: the list of
-  `(connector, arena)` pairs of the ancestor rounds, at root names,
+* `hist` — D6's downward channel, abstracted: per ancestor round, the
+  connector together with the round's arena **restricted to the round's
+  own cluster** (`histGraph` — §5 line 17's `B₀`, at root names),
   newest first. §4's per-vertex support lists are the *materialization*
-  of this data (the supports of `SplitterWin.genSet`'s chosen walks);
-  the abstract driver reads the batch off `genSet` directly, which is
-  the same set §5 line 19 computes (`algorithm-v2.md` §3, "the batch is
-  legal, by a landed lemma").
+  of this data (the supports of `SplitterWin.genSet`'s canonical
+  gradient walks, computed in exactly these restricted graphs —
+  F6c12p); the abstract driver reads the batch off `genSet` directly,
+  which is the same set §5 line 19 computes (`algorithm-v2.md` §3, "the
+  batch is legal, by a landed lemma").
 
 `own` is not carried: abstractly the writing child of a vertex `v` is
 *defined* to be the child of `centre v` (`ctr` of the cover layer), and
@@ -69,7 +71,8 @@ cover routine returns:
   compaction the cluster is the whole carrier; then the two profile slot
   families of the schedule's `isoEnc` layout), `up` composed through the
   cluster inclusion, `hist` extended by this round's
-  `(up u, map up A.G)` pair.
+  `(up u, histGraph)` pair — the cluster-restricted round graph, the
+  one §5 line 17's BFS walks in (F6c12p).
 
 ## The driver
 
@@ -92,8 +95,10 @@ schedule are `True` — §5 line 14's *uninitialised table*, never read.
 local sentence atoms of `top` evaluated as compile-time constants
 (`localConst`, L1).
 
-Everything is `noncomputable` (`Classical.choose` in the schedule, in
-the compaction bijection and in `genSet`'s chosen walks); what this
+Everything is `noncomputable` (`Classical.choose` in the schedule; the
+compaction bijection and `genSet`'s recorded walks are the order-pinned
+canonical ones — noncomputable but extensionally determined, F6c2 and
+F6c12p); what this
 file delivers is the *algorithm's structure* — which routine is called
 where, on which data — with each routine consumed through its spec.
 The correctness chain and the cost accounting are the satellite files
@@ -119,6 +124,19 @@ noncomputable def setEquiv {k : ℕ} (X : Set (Fin k)) : Fin X.ncard ≃ ↥X :=
   ((finCongr (Set.ncard_eq_toFinset_card X (Set.toFinite X))).trans
       ((Set.toFinite X).toFinset.orderIsoOfFin rfl).toEquiv).trans
     (Equiv.setCongr (Set.Finite.coe_toFinset (Set.toFinite X)))
+
+/-- **The sorted enumeration is strictly monotone** (F6c12p): the
+machine-seam transport of the canonical batch walks
+(`BatchCanon.pathList_map`) runs along order-embeddings, and this is
+the per-level piece every `childArena.up` composes. -/
+theorem setEquiv_coe_strictMono {k : ℕ} (X : Set (Fin k)) :
+    StrictMono fun a => ((setEquiv X a : ↥X) : Fin k) := by
+  intro a b hab
+  have h := ((Set.toFinite X).toFinset.orderIsoOfFin rfl).strictMono
+    (a := finCongr (Set.ncard_eq_toFinset_card X (Set.toFinite X)) a)
+    (b := finCongr (Set.ncard_eq_toFinset_card X (Set.toFinite X)) b)
+    (by rw [Fin.lt_def]; exact hab)
+  exact Subtype.coe_lt_coe.mpr h
 
 /-- Padding a set to a fixed width: list its elements through `setEquiv`
 and repeat the designated element `x₀` beyond them. -/
@@ -174,8 +192,10 @@ structure Arena (Λ n₀ : ℕ) where
   /-- This vertex's name at the ROOT (the composite of the `up` maps —
   the record is never re-typed, E6). -/
   up : Fin N ↪ Fin n₀
-  /-- D6's downward channel, abstractly: the `(connector, arena)` pair
-  of each ancestor round, at root names, newest first. -/
+  /-- D6's downward channel, abstractly: per ancestor round, the
+  connector together with the round's arena restricted to the round's
+  own cluster (`histGraph` — the graph the recorded supports walk in),
+  at root names, newest first. -/
   hist : List (Fin n₀ × SimpleGraph (Fin n₀))
 
 variable {n₀ : ℕ}
@@ -273,16 +293,80 @@ noncomputable def childCol : Coloring (childN S A π u) (isoPal (relPal Λ) S.wi
     (fun j a => {z | WithinDist (preG S A π u) (a : ℕ) z (batchFn S A π u j)})
     (fun c b => {z | ∃ y ∈ childColR S A π u c, WithinDist (preG S A π u) (b : ℕ) z y})
 
+/-- **§5 line 17's recorded round graph**: the round's arena restricted
+to the round's own cluster, at ROOT names. This is the graph the
+recorded supports walk in — one BFS from the centre inside `B₀ =
+A[X_u]` computes them at cluster cost (D6's channel; wreach clusters
+are path-closed, so every cluster vertex is within `2R` of the centre
+HERE, not merely in the full arena), and a walk of this graph is a walk
+of the round's full arena, which is all the game asks
+(`reachedS_descend`). Recording the restricted graph — rather than the
+full `map A.up A.G` the round is played in — is what makes the
+canonical `pathSet` batch machine-computable at cluster cost (F6c12p;
+`Lax3Proofs.BatchCanon`'s module docstring holds the investigation). -/
+noncomputable def histGraph : SimpleGraph (Fin n₀) :=
+  deleteVerts (SimpleGraph.map A.up A.G) ((⇑A.up '' cluster S A π u)ᶜ)
+
+/-- The recorded round graph is the pushforward of `preG` along the
+child's composite renaming — the machine seam: supports recorded at
+level names in `B₀ = preG` map verbatim to the recorded root-name graph
+(`BatchCanon.pathList_map` along `childArena_up_strictMono`). -/
+theorem histGraph_eq_map :
+    histGraph S A π u
+      = SimpleGraph.map (((childEquiv S A π u).toEmbedding.trans
+          (Function.Embedding.subtype _)).trans A.up) (preG S A π u) := by
+  ext x y
+  rw [histGraph, Lax3Proofs.SplitterBasics.deleteVerts_adj]
+  constructor
+  · rintro ⟨hadj, hx, hy⟩
+    rw [Set.notMem_compl_iff] at hx hy
+    obtain ⟨x', hx', hxe⟩ := hx
+    obtain ⟨y', hy', hye⟩ := hy
+    obtain ⟨a', b', hab, hax, hby⟩ := (SimpleGraph.map_adj _ _ _ _).mp hadj
+    have hax' : a' = x' := A.up.injective (hax.trans hxe.symm)
+    have hby' : b' = y' := A.up.injective (hby.trans hye.symm)
+    subst hax'
+    subst hby'
+    refine (SimpleGraph.map_adj _ _ _ _).mpr
+      ⟨(childEquiv S A π u).symm ⟨a', hx'⟩, (childEquiv S A π u).symm ⟨b', hy'⟩,
+        ?_, ?_, ?_⟩
+    · show A.G.Adj
+        ((childEquiv S A π u) ((childEquiv S A π u).symm ⟨a', hx'⟩) : Fin A.N)
+        ((childEquiv S A π u) ((childEquiv S A π u).symm ⟨b', hy'⟩) : Fin A.N)
+      rw [Equiv.apply_symm_apply, Equiv.apply_symm_apply]
+      exact hab
+    · show A.up
+        ((childEquiv S A π u) ((childEquiv S A π u).symm ⟨a', hx'⟩) : Fin A.N) = x
+      rw [Equiv.apply_symm_apply]
+      exact hxe
+    · show A.up
+        ((childEquiv S A π u) ((childEquiv S A π u).symm ⟨b', hy'⟩) : Fin A.N) = y
+      rw [Equiv.apply_symm_apply]
+      exact hye
+  · intro h
+    obtain ⟨a, b, hab, hax, hby⟩ := (SimpleGraph.map_adj _ _ _ _).mp h
+    have hax' : A.up ((childEquiv S A π u) a : Fin A.N) = x := hax
+    have hby' : A.up ((childEquiv S A π u) b : Fin A.N) = y := hby
+    have hadj : A.G.Adj ((childEquiv S A π u) a : Fin A.N)
+        ((childEquiv S A π u) b : Fin A.N) := hab
+    refine ⟨(SimpleGraph.map_adj _ _ _ _).mpr ⟨_, _, hadj, hax', hby'⟩, ?_, ?_⟩
+    · rw [Set.notMem_compl_iff]
+      exact ⟨_, ((childEquiv S A π u) a).2, hax'⟩
+    · rw [Set.notMem_compl_iff]
+      exact ⟨_, ((childEquiv S A π u) b).2, hby'⟩
+
 /-- **The child arena** of centre `u` (§5 lines 15–23): the cluster's
 carrier, the restricted graph with the batch isolated, the profile
-colors, the composite renaming, and the extended channel. -/
+colors, the composite renaming, and the extended channel — the channel
+entry records the round's connector together with `histGraph`, the
+cluster-restricted round graph its supports walk in (F6c12p). -/
 noncomputable def childArena : Arena (isoPal (relPal Λ) S.width S.R) n₀ where
   N := childN S A π u
   G := deleteVerts (preG S A π u) (Set.range (batchFn S A π u))
   col := childCol S A π u
   up := ((childEquiv S A π u).toEmbedding.trans
     (Function.Embedding.subtype _)).trans A.up
-  hist := (A.up u, SimpleGraph.map A.up A.G) :: A.hist
+  hist := (A.up u, histGraph S A π u) :: A.hist
 
 @[simp] theorem childArena_N : (childArena S A π u).N = childN S A π u := rfl
 
@@ -293,7 +377,15 @@ noncomputable def childArena : Arena (isoPal (relPal Λ) S.width S.R) n₀ where
 @[simp] theorem childArena_col : (childArena S A π u).col = childCol S A π u := rfl
 
 @[simp] theorem childArena_hist :
-    (childArena S A π u).hist = (A.up u, SimpleGraph.map A.up A.G) :: A.hist := rfl
+    (childArena S A π u).hist = (A.up u, histGraph S A π u) :: A.hist := rfl
+
+/-- The child's composite renaming is strictly monotone whenever the
+node's is: the sorted compaction enumeration into the subtype
+inclusion, then the node's own map (F6c12p — the machine-seam
+transport `BatchCanon.pathList_map` runs along these). -/
+theorem childArena_up_strictMono (hA : StrictMono A.up) :
+    StrictMono (childArena S A π u).up := fun _ _ hab =>
+  hA (setEquiv_coe_strictMono (cluster S A π u) hab)
 
 end Child
 
@@ -340,6 +432,13 @@ def rootArena {n : ℕ} (G : SimpleGraph (Fin n)) (col : Coloring n L) : Arena L
   col := col
   up := Function.Embedding.refl _
   hist := []
+
+/-- The root renaming is strictly monotone — it is the identity
+(F6c12p: the base of the `up`-chain the machine-seam transport runs
+along; `childArena_up_strictMono` is the step). -/
+theorem rootArena_up_strictMono {n : ℕ} (G : SimpleGraph (Fin n))
+    (col : Coloring n L) : StrictMono (rootArena G col).up :=
+  fun _ _ h => h
 
 /-- **§5's `MC`** (lines 1–6): evaluate `top` with its local sentence
 atoms as compile-time constants (L1, `localConst`) and its scatter atoms

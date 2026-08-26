@@ -8,11 +8,11 @@ program-facing form of `Lax3Proofs.SplitterWin`.
 # Why this file exists
 
 `Lax3Proofs.SplitterWin` fixes Splitter's strategy once and for all with
-`pathSet`, a `Classical.choice` walk of length at most `r` between two
-vertices of one arena. The model-checking program cannot make that
-choice: it computes its own shortest paths, by breadth-first search in
-the arena it currently holds, and the walk it ends up with is whatever
-its search found.
+`pathSet` — at this file's writing a `Classical.choice` walk of length
+at most `r` between two vertices of one arena. The model-checking
+program cannot make that choice: it computes its own shortest paths, by
+breadth-first search in the arena it currently holds, and the walk it
+ends up with is whatever its search found.
 
 Nor can the program's walk be *named* by a function of the arena and the
 two vertices, which is what an oracle interface would ask for. What a
@@ -24,6 +24,14 @@ joined by two walks of length two, and which one comes back is decided by
 the order of the block structure's rows on one side and by
 `Classical.choice` on the other. So a game whose move at a round is a
 *function* of the position cannot be the game the program plays.
+
+(F6c12p later canonicalized `pathSet` — it is now the min-index-parent
+gradient walk of `Lax3Proofs.BatchCanon`, extensionally determined, so
+a machine pass *can* be proved to store exactly its support. The
+recorded game below is unchanged by that repair and remains the
+interface the driver's invariant consumes: its rounds record data, not
+functions of the position, and nothing here depends on which regime
+produced the recorded sets.)
 
 It does not have to be. No proof of `SplitterWin` ever looks at *which*
 walk `pathSet` returned; the whole development is deduced from the facts
@@ -58,7 +66,7 @@ there. The size *is* what makes a recorded round a legal move of the
 game, and that is where it appears — `splitterWins_of_reachedR` bounds
 the batches of the rounds it plays itself, and its continuation is
 `SplitterWin`'s own `pathSet` strategy, which is where the recorded game
-and the chosen one meet.
+and the canonical one meet.
 
 # What is here
 
@@ -186,7 +194,7 @@ the round's own connector, and — for every earlier round whose arena puts
 its connector within `r` of the new one — the support of a walk of length
 at most `r` between them in that arena.
 
-This is `SplitterWin.Reached` with the chosen walks replaced by recorded
+This is `SplitterWin.Reached` with the canonical walks replaced by recorded
 ones; moves on isolated vertices are again not recorded, since they end
 the play at once (`nextArenaR_eq_bot_of_isolated`). -/
 inductive ReachedR (r : ℕ) (G : SimpleGraph (Fin n)) :
@@ -448,13 +456,13 @@ the remaining round budget. From a reachable position with `b` rounds
 still to play and `N (2·s + 2) − b` rounds recorded, Splitter wins within
 `b` rounds: at budget zero the play would have `N (2·s + 2)` recorded
 rounds, which `no_full_survivalR` excludes; with a round left, Splitter
-plays `SplitterWin`'s own chosen batch — a legal recorded round, and the
-one place a *choice* of walks is needed — and playing an isolated vertex
+plays `SplitterWin`'s own canonical batch — a legal recorded round, and the
+one place the strategy's own walks are needed — and playing an isolated vertex
 ends the play at once.
 
 The continuation is `SplitterWin.genSet` at the recorded history read as
 a list of `SplitterWin.Round`s, which is where the size of a batch is
-paid for: one vertex plus one chosen walk of at most `r + 1` vertices per
+paid for: one vertex plus one canonical walk of at most `r + 1` vertices per
 recorded round. -/
 theorem splitterWins_of_reachedR {N : ℕ → ℕ} {s : ℕ}
     (hQ : ∀ P : Set (Fin n), N (2 * s + 2) ≤ P.ncard →
@@ -473,7 +481,7 @@ theorem splitterWins_of_reachedR {N : ℕ → ℕ} {s : ℕ}
     rw [splitterWins_succ_iff]
     refine Or.inr fun v => ?_
     by_cases hv : ∃ u, A.Adj v u
-    · -- the chosen batch of `SplitterWin`, recorded
+    · -- the canonical batch of `SplitterWin`, recorded
       classical
       set l : List (Round n) := rounds.map (fun e => (e.vtx, e.arena)) with hl
       set S : Set (Fin n) := genSet r l v with hS
