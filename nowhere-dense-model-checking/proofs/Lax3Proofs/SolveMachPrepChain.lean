@@ -122,7 +122,7 @@ theorem prepScr_frameC {S : Setup L} {ℓp hbf : ℕ → ℕ} {n₀ j : ℕ}
     prepScr S ℓp hbf n₀ j σ' :=
   prepScr_out h hlen (fun i hi => hra i (le_of_lt hi))
     (rankScr_frame (prepScr_rank h) (hra j le_rfl) (hnN j))
-    (fun i => by rw [hnN i]; exact h.2.2.2.1 i)
+    (fun i hi => by rw [hnN i]; exact h.2.2.2.1 i hi)
 
 end Descriptor
 
@@ -1533,7 +1533,7 @@ theorem prepChain4 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
       (lv_ne_of_base_ne (by decide) (by decide) _ _)]
     exact hcc
   · refine prepScr_out hscr hlen hdeep (rankScr_of_take hAWp htake)
-      (fun i => ?_)
+      (fun i hij => ?_)
     by_cases hi : i = j + 1
     · subst hi
       rw [hnN]
@@ -1541,7 +1541,7 @@ theorem prepChain4 (S : Setup L) (ord : CoverSpec.OrderingRoutine)
     · rw [hvp ((arenaNames i).nN) (prep_nN_notMem_rs i)
         (lv_ne_of_level_ne (by decide) hi)
         (lv_ne_of_base_ne (by decide) (by decide) _ _)]
-      exact hscr.2.2.2.1 i
+      exact hscr.2.2.2.1 i hij
 
 open Classical in
 /-- **Steps 3–14** — the restrict stage's three schedule cells, then

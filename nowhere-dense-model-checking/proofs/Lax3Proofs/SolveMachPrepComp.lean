@@ -763,16 +763,22 @@ the allocations:
   are outside the pass's write set, so this rides `Run`'s frame;
 * **this** level's rank scratch is clean on this level's carrier window
   — verbatim `restrictCom_specW`'s content pre- and postcondition;
-* every level's carrier cell is below the root's carrier — the one
-  scalar fact that lets `hscrDown` shrink a deep clean window to the
-  child's, and a fact the pass re-establishes (`childN ≤ A.N ≤ n₀`);
+* every carrier cell **from `j` down** is below the root's carrier —
+  the one scalar fact that lets `hscrDown` shrink a deep clean window
+  to the child's, and a fact the pass re-establishes
+  (`childN ≤ A.N ≤ n₀`). It is stated at `j ≤ i`, never at every `i`:
+  `SolveChain`'s `ScrAgree` hands a descriptor agreement on the read
+  pools of levels `≥ j` only, so a clause about a *shallower* level's
+  cell would put the descriptor outside `ScrFrame`
+  (`SolveMachPrepChainTop.prepScr_scrFrame`) for nothing, since nothing
+  reads it there;
 * the batch index region is at length exactly `S.width`. -/
 def prepScr (S : Setup L) (ℓp hbf : ℕ → ℕ) (n₀ : ℕ) : ℕ → Env → Prop :=
   fun j σ =>
     (∀ i, j ≤ i → PrepAlloc S ℓp hbf n₀ i σ) ∧
     (∀ i, j < i → (σ.arrs (pcRa i)).take n₀ = arrOf n₀ (fun _ => 0)) ∧
     RankScr (pcRa j) (arenaNames j).nN σ ∧
-    (∀ i, σ.vars (arenaNames i).nN ≤ n₀) ∧
+    (∀ i, j ≤ i → σ.vars (arenaNames i).nN ≤ n₀) ∧
     BatchWidthScr pcBi S.width σ
 
 /-- **`hscrDown`, discharged for the concrete descriptor.** The deep
@@ -784,8 +790,9 @@ theorem prepScr_down (S : Setup L) (ℓp hbf : ℕ → ℕ) (n₀ j : ℕ) (σ :
     (h : prepScr S ℓp hbf n₀ j σ) : prepScr S ℓp hbf n₀ (j + 1) σ := by
   obtain ⟨halloc, hdeep, -, hcell, hbw⟩ := h
   refine ⟨fun i hi => halloc i (by omega), fun i hi => hdeep i (by omega),
-    ?_, hcell, hbw⟩
-  exact take_eq_arrOf_of_le (hdeep (j + 1) (by omega)) (hcell (j + 1))
+    ?_, fun i hi => hcell i (by omega), hbw⟩
+  exact take_eq_arrOf_of_le (hdeep (j + 1) (by omega))
+    (hcell (j + 1) (by omega))
 
 /-- **`htabLen`, discharged for the concrete descriptor**: the child's
 table region is allocated at the root's carrier times the child level's
@@ -822,7 +829,7 @@ theorem prepScr_out {S : Setup L} {ℓp hbf : ℕ → ℕ} {n₀ j : ℕ} {σ σ
     (hlen : ∀ b, (σ'.arrs b).length = (σ.arrs b).length)
     (hdeep : ∀ i, j < i → σ'.arrs (pcRa i) = σ.arrs (pcRa i))
     (hrank : RankScr (pcRa j) (arenaNames j).nN σ')
-    (hcell : ∀ i, σ'.vars (arenaNames i).nN ≤ n₀) :
+    (hcell : ∀ i, j ≤ i → σ'.vars (arenaNames i).nN ≤ n₀) :
     prepScr S ℓp hbf n₀ j σ' := by
   obtain ⟨halloc, hdp, -, -, hbw⟩ := h
   refine ⟨fun i hi => prepAlloc_len (halloc i hi) hlen, ?_, hrank, hcell, ?_⟩
