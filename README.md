@@ -325,6 +325,24 @@ The CLI comes preconfigured for the live deployment: since 0.1.2 the
 baked-in defaults are the live server and database (`LAX_SERVER_URL` and
 `LAX_DB_URL` still override them if you ever need to).
 
+For an isolated interactive environment, the Docker launcher bind-mounts
+this checkout read/write and starts Codex by default:
+
+```sh
+.claude/docker-dev.sh             # Codex
+.claude/docker-dev.sh claude      # Claude Code instead
+.claude/docker-dev.sh bash        # plain shell
+```
+
+The image contains Codex, Claude Code, `lax`, and the repository's `uvx`-based
+Lean MCP tooling. Its separate persistent home volume holds the container's
+own logins, elan toolchain, and warm mathlib store; no host credentials are
+mounted. The first launch provisions the project environment and needs
+roughly 10 GB, while later launches reuse it.
+In Codex's first-run login UI, choose device-code authentication for the
+headless container. Run with `--rebuild` to refresh the image and CLIs, or
+`--help` for the remaining options.
+
 The archive website is at <http://167.233.125.220:8080>; the database (one
 `lax-N` folder per submission, `record.json` + `build-output.json`) is
 cloned to `~/.lax/lax-database` by `lax pull-db` — the record's `source` is
