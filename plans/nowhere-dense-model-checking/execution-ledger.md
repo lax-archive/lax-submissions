@@ -82,12 +82,30 @@ here independently):
   subquadratically (it shipped `86N²+43N+14` and blamed the statement; the
   lazy-heap route in the F6c12 row meets the pinned tie-break at
   quasi-linear cost — the budget parameter was always free).
-- **Deferred to the KB/F7 boundary, to verify then**: `KsChargeBridge`
-  binder order (∃cB inside fixed (n,G) allegedly yields no uniform `T`);
-  `frameK` short by 4 on edgeless arenas under `Spec.ite`'s max; `mcLayout`
-  `temps = 2` too small for `bcExpr` towers; `Adm := Inv` needing the
-  `j ≤ depth` guard; length-only `Scr` transport vs content-carrying
-  descriptors (`hscrLen` consumers). None blocks the six programs.
+- **KB/F7-boundary claims, VERIFIED against this tree** (same session,
+  before w60 returned): (i) `KsChargeBridge` (SolveChain:705) does put
+  `∃ cB` inside fixed `(n,G,c,w)` — but nothing landed consumes the def;
+  F7 proves a uniform variant (∃cB outermost) from the same per-stage
+  comparison lemmas. `exists_mcChargeMS_T` (ProgCharge:1314) is already
+  uniform (`∃ cf c' T` before `∀ n G`) but pinned at
+  `timedGreedyRoutine (3R)` — the KB wave must re-instantiate it at
+  `mdOrderingRoutine R` (its `steps := 0` makes the `IsCoverOrdering.time`
+  clause free; the machine ordering's real cost rides the `covC` column,
+  which must be shown ≤ `coverCF`'s shape). (ii) `blockSpec_leaf_guard`'s
+  `hKB` (SolveChain:418) demands `4 + max(botComK, KElse A) ≤ KB` at EVERY
+  `A`; `frameK` returns bare `botComK` on `⊥` — so F7 pins `KB` at the
+  guard-corrected majorant, never `frameK` verbatim (the frameK docstring's
+  suggestion is stale). (iii) `mcLayout` hard-codes `temps := 2`
+  (ProgCodegenLayout:69) and its own docstring plans the extension; if the
+  readback's row towers exceed depth 2, F7 parametrizes/bumps `temps` and
+  replays the codegen cone — contained. (iv) `inv_child`
+  (DriverCorrect:444) needs `hwidth : 1 + j·(2R+1) ≤ S.width`, so F7's
+  `Adm` is the **guarded** Inv form (`j ≤ depth → Inv`), making
+  `hAdmChild` vacuous past depth and real below it. (v) The alleged
+  `Scr`-content inconsistency does not arise in this lineage: rank/cover
+  content rides named regions (`ra`/`ca`/`co`/`cm` clauses), `Scr` stays
+  pure-length; `solveSpec_closed`'s `hscr` exact-length demands are
+  length-facts and transport. None blocks the six programs.
 - **Adopted as packet hazards**: `(by decide)` not `(by rfl)` for
   string-literal defeq (~100s/decl vs ~3s, measured there); the
   exact-length trap ("is the demanded figure stable over the loop?");
