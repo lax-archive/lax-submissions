@@ -2,6 +2,23 @@ import Lax3Proofs.SolveSweepStep
 import Lax3Proofs.SolveBfs
 
 /-!
+STATE OF THE LEAF (2026-08-27, wave w61, quota stop — file compiles, 0 sorries):
+PROVED: full program text (§2); mate-swap deletion `peel_delete_turn` /
+`peelDelTurnB_spec` / `peelDelB_spec`; seed `peelSeedB_spec`; expansion
+`peelExpandB_spec` / `peelExpand_loop`; the potential-priced BFS pop loop
+`peelBfs_loop` (64·peelDeg + 128·|fibre| + 4); reset `peelResetB_spec`;
+and the full rank step `peelStepB_spec` (SwInv i → SwInv (i+1), cost
+64·peelDeg i + 187·|pfibR i| + 57) including the bfs_exact/ctr-based
+first-hit-mark correctness.  REMAINS: `peelInitB` prologue spec; sweep
+loop over ranks (Spec.while_potential, tail-sum Σ stepK — mirror
+centreLoop_of_step in SolveGlueLoop); regroup passes P1–P7 (counts →
+prefix → scatter via cntBelow/restrictEmb of §6) closing `CtrArr` +
+`ClusterCsr`; budget bridge peelK ≤ c₁·Impl.sweepCharge + c₂·N + c₃
+(peelDeg ≤ 2·Σ dlt double count + curdeg_le_pfib, needs 1 ≤ R); core
+theorem over (B,N,G,π,R); headline `covPeelIn_peelCom` at Spl := peelScr,
+plC := peelCom-family, Kpl := peelK — one F7-suppliable word-room
+hypothesis (mcB q x lower bound) expected at the headline.
+
 # F6c12 — `CovPeelIn`: the GKS peeling sweep, discharged
 
 `SolveSweepStep` names `CovPeelIn`: from the built deletable adjacency
@@ -4509,6 +4526,305 @@ theorem peelResetB_spec (hsq : N * N + N + 4 < B) (hRB : 2 * R + 2 < B)
     rw [hk'] at hp1
     omega
   · omega
+
+open Classical in
+/-- **One rank of the sweep**: seed, BFS to exhaustion, reset the
+touched levels, record the segment end, advance the mass, delete the
+centre.  The sweep invariant advances one rank; the cost is the
+scanned-edge account plus the fibre. -/
+theorem peelStepB_spec
+    (hNB : N < B) (hsq : N * N + N + 4 < B) (hRB : 2 * R + 2 < B)
+    (hr : 1 ≤ R)
+    (hca_dd : ca ≠ plDd) (hca_rw : ca ≠ plRw) (hca_re : ca ≠ plRe)
+    (hod_ca : od ≠ ca) (hod_dd : od ≠ plDd) (hod_rw : od ≠ plRw)
+    (hod_re : od ≠ plRe)
+    (hra_ca : ra ≠ ca) (hra_dd : ra ≠ plDd) (hra_rw : ra ≠ plRw)
+    (hra_re : ra ≠ plRe)
+    (hao_ca : ao ≠ ca) (hao_dd : ao ≠ plDd) (hao_rw : ao ≠ plRw)
+    (hao_re : ao ≠ plRe)
+    (haj_ca : aj ≠ ca) (haj_dd : aj ≠ plDd) (haj_rw : aj ≠ plRw)
+    (haj_re : aj ≠ plRe)
+    (hdg_ca : dg ≠ ca) (hdg_dd : dg ≠ plDd) (hdg_rw : dg ≠ plRw)
+    (hdg_re : dg ≠ plRe)
+    (hmt_ca : mt ≠ ca) (hmt_dd : mt ≠ plDd) (hmt_rw : mt ≠ plRw)
+    (hmt_re : mt ≠ plRe)
+    (haj_ao : aj ≠ ao) (hdg_ao : dg ≠ ao) (hmt_ao : mt ≠ ao)
+    (haj_dg : aj ≠ dg) (haj_mt : aj ≠ mt) (hdg_mt : dg ≠ mt)
+    (hod_aj : od ≠ aj) (hod_dg : od ≠ dg) (hod_mt : od ≠ mt)
+    (hra_aj : ra ≠ aj) (hra_dg : ra ≠ dg) (hra_mt : ra ≠ mt)
+    {i : ℕ} (hi : i < N) :
+    Spec B
+      (fun σ => SwInv ca ra ao aj dg mt od G π R i σ ∧ σ.vars "pl.i" = i)
+      (peelStepB R ca ao aj dg mt od)
+      (fun _ σ' => SwInv ca ra ao aj dg mt od G π R (i + 1) σ' ∧
+        σ'.vars "pl.i" = i)
+      (64 * peelDeg G π R i + 187 * (pfibR G π R i).ncard + 57) := by
+  classical
+  rintro σ0 ⟨hSw, hvi0⟩
+  set u : Fin N := π.symm ⟨i, hi⟩ with huEq
+  have hπu : ((π u : Fin N) : ℕ) = i := by rw [huEq, Equiv.apply_symm_apply]
+  -- seed
+  obtain ⟨σ1, hrs, hPB1⟩ :=
+    (peelSeedB_spec hNB hsq hRB hca_dd hca_rw hca_re hod_ca hod_dd hod_rw
+      hra_ca hra_dd hra_rw hao_ca hao_dd hao_rw haj_ca haj_dd haj_rw
+      hdg_ca hdg_dd hdg_rw hmt_ca hmt_dd hmt_rw hi).run ⟨hSw, hvi0⟩
+  -- the BFS
+  obtain ⟨σ2, hrb, hPB2, hhteq⟩ :=
+    (peelBfs_loop hNB hsq hRB hca_dd hca_rw hca_re hod_ca hod_dd hod_rw
+      hra_ca hra_dd hra_rw hao_ca hao_dd hao_rw haj_ca haj_dd haj_rw
+      hdg_ca hdg_dd hdg_rw hmt_ca hmt_dd hmt_rw hi).run hPB1
+  obtain ⟨hvn2, hvi2, hvu2, hvb2, hvm2, hhl2, hhle2, hcnt2, hord2, hrank2,
+    hadj2, hcaL2, hddL2, hrwL2, hreL2, hreV2, hsegs2, hanch2, hdbd2, hach2,
+    hqseg2, hmono2, hreach2, hpopped2, hcaOld2, hcaNew2⟩ := id hPB2
+  -- the exact truncated level table at exhaustion
+  have hrel : ∀ s w : Fin N, (σ2.arrs plDd).getD ((s : ℕ)) 0 < 2 * R →
+      (deleteVerts G (peelSet π i)).Adj s w →
+      (σ2.arrs plDd).getD ((w : ℕ)) 0 ≤
+        (σ2.arrs plDd).getD ((s : ℕ)) 0 + 1 := by
+    intro s w hs hadjsw
+    obtain ⟨p, hp1, hp2, hp3⟩ := hqseg2.2.1 s (le_of_lt hs)
+    have hp3' : (σ2.arrs plRw).getD p 0 = (s : ℕ) := hp3
+    have hpN : (σ2.arrs plRw).getD p 0 < N := by rw [hp3']; exact s.isLt
+    have hph : p < σ2.vars "pl.h" := by rw [hhteq]; exact hp2
+    have h := hpopped2 p hp1 hph hpN (by rw [hp3']; exact hs) w (by
+      have hFin : (⟨(σ2.arrs plRw).getD p 0, hpN⟩ : Fin N) = s :=
+        Fin.ext hp3'
+      rw [hFin]
+      exact hadjsw)
+    rw [hp3'] at h
+    exact h
+  have hexact := bfs_exact (H := deleteVerts G (peelSet π i)) (u := u)
+    (D := fun z => (σ2.arrs plDd).getD z 0) (r := 2 * R) hanch2 hach2 hrel
+  have hpfib : pfibR G π R i =
+      ball (deleteVerts G (peelSet π i)) (2 * R) u := by
+    rw [pfibR_eq G π R hi, ← huEq, pfib_eq_ball, hπu]
+  have hlist_eq : {z : Fin N | (σ2.arrs plDd).getD ((z : ℕ)) 0 ≤ 2 * R}
+      = pfibR G π R i := by
+    ext v
+    rw [Set.mem_setOf_eq, hpfib]
+    exact hexact (2 * R) le_rfl v
+  have hcard := SegAt.card hqseg2
+  rw [hlist_eq] at hcard
+  have ht2 : σ2.vars "pl.t" = mval G π R (i + 1) := by
+    rw [mval_succ]
+    omega
+  have hub : mval G π R (i + 1) ≤ N * N := by
+    have h1 : mval G π R (i + 1) ≤ (i + 1) * N := mval_le G π R
+    have h2 : (i + 1) * N ≤ N * N :=
+      Nat.mul_le_mul (Nat.succ_le_of_lt hi) le_rfl
+    omega
+  have hmv_le : mval G π R i ≤ mval G π R (i + 1) :=
+    mval_mono G π R (Nat.le_succ i)
+  -- the reset, with its frame
+  have hpre3 : σ2.vars "pl.b" = mval G π R i ∧
+      σ2.vars "pl.t" = mval G π R (i + 1) ∧
+      N ≤ (σ2.arrs plDd).length ∧ N * N ≤ (σ2.arrs plRw).length ∧
+      (∀ p, mval G π R i ≤ p → p < mval G π R (i + 1) →
+        (σ2.arrs plRw).getD p 0 < N) ∧
+      (∀ z, z < N → (σ2.arrs plDd).getD z 0 ≤ 2 * R + 1) ∧
+      (∀ z, z < N → (σ2.arrs plDd).getD z 0 ≤ 2 * R →
+        ∃ p, mval G π R i ≤ p ∧ p < mval G π R (i + 1) ∧
+          (σ2.arrs plRw).getD p 0 = z) := by
+    refine ⟨hvb2, ht2, hddL2, hrwL2, ?_, hdbd2, ?_⟩
+    · intro p hp1 hp2
+      obtain ⟨hz, -⟩ := hqseg2.1 p hp1 (by rw [ht2]; exact hp2)
+      exact hz
+    · intro z hz hle
+      obtain ⟨p, hp1, hp2, hp3⟩ := hqseg2.2.1 ⟨z, hz⟩ hle
+      exact ⟨p, hp1, by rw [← ht2]; exact hp2, hp3⟩
+  obtain ⟨σ3, hrr, ⟨hsen3, hddL3⟩, hfv3, hfa3, -, -⟩ :=
+    ((peelResetB_spec (B := B) (b₀ := mval G π R i)
+      (t₀ := mval G π R (i + 1)) hsq hRB hmv_le hub).frame).run hpre3
+  have hfv3' : ∀ y, y ≠ "pl.k" → σ3.vars y = σ2.vars y := by
+    intro y hy
+    refine hfv3 y ?_
+    simp [peelResetB, Com.wvars, hy]
+  have hfa3' : ∀ a', a' ≠ plDd → σ3.arrs a' = σ2.arrs a' := by
+    intro a' ha'
+    refine hfa3 a' ?_
+    simp [peelResetB, Com.warrs, ha']
+  have h3i : σ3.vars "pl.i" = i := by
+    rw [hfv3' "pl.i" (by decide)]; exact hvi2
+  have h3t : σ3.vars "pl.t" = mval G π R (i + 1) := by
+    rw [hfv3' "pl.t" (by decide)]; exact ht2
+  have h3reL : N + 1 ≤ (σ3.arrs plRe).length := by
+    rw [hfa3' plRe (by decide)]
+    exact hreL2
+  -- the segment end
+  set σ4 : Env := σ3.setArr plRe (i + 1) (mval G π R (i + 1)) with hσ4
+  have hr4 : Run B (.store plRe (.add (.var "pl.i") (.lit 1))
+      (.var "pl.t")) σ3 σ4 5 := by
+    have hidx : (Expr.add (.var "pl.i") (.lit 1)).evalB B σ3
+        = some (i + 1) := by
+      have h := evalB_incr (B := B) (x := "pl.i") (σ := σ3)
+        (by rw [h3i]; omega)
+      rwa [h3i] at h
+    have hval : (Expr.var "pl.t").evalB B σ3
+        = some (mval G π R (i + 1)) := by
+      have h := evalB_var (B := B) (x := "pl.t") (σ := σ3)
+        (by rw [h3t]; omega)
+      rwa [h3t] at h
+    have h := Run.store (B := B) (a := plRe) (idx := i + 1)
+      (v := mval G π R (i + 1)) (hi := hidx) (he := hval)
+      (hidx := by omega)
+    exact h.mono (by simp)
+  -- the mass advance
+  set σ5 : Env := σ4.setVar "pl.m" (mval G π R (i + 1)) with hσ5
+  have h4t : σ4.vars "pl.t" = mval G π R (i + 1) := by
+    rw [hσ4]
+    simp only [vars_setArr]
+    exact h3t
+  have hr5 : Run B (.assign "pl.m" (.var "pl.t")) σ4 σ5 2 := by
+    have h := Run.assign (B := B) (x := "pl.m")
+      (h := evalB_var (x := "pl.t") (σ := σ4) (by rw [h4t]; omega))
+    rw [h4t] at h
+    exact h.mono (by simp)
+  -- state facts carried to the deletion
+  have hv54 : ∀ y, y ≠ "pl.m" → σ5.vars y = σ3.vars y := by
+    intro y hy
+    rw [hσ5]
+    simp only [vars_setVar]
+    rw [if_neg hy, hσ4]
+    simp only [vars_setArr]
+  have ha54 : ∀ a', a' ≠ plRe → σ5.arrs a' = σ3.arrs a' := by
+    intro a' ha'
+    rw [hσ5, hσ4]
+    simp only [arrs_setVar, arrs_setArr]
+    rw [if_neg ha']
+  have h5u : σ5.vars "pl.u" = (u : ℕ) := by
+    rw [hv54 "pl.u" (by decide), hfv3' "pl.u" (by decide)]
+    exact hvu2
+  have hDel5 : DelAdjSt ao aj dg mt G (peelSet π i) σ5 :=
+    hadj2.of_eq ((ha54 ao hao_re).trans (hfa3' ao hao_dd))
+      ((ha54 aj haj_re).trans (hfa3' aj haj_dd))
+      ((ha54 dg hdg_re).trans (hfa3' dg hdg_dd))
+      ((ha54 mt hmt_re).trans (hfa3' mt hmt_dd))
+  -- the deletion, with its frame
+  obtain ⟨σ6, hrd, hDel6, hfv6, hfa6, -, -⟩ :=
+    ((peelDelB_spec (u := u) hNB hsq haj_ao hdg_ao hmt_ao haj_dg haj_mt
+      hdg_mt (symm_not_peeled π hi)).frame).run ⟨hDel5, h5u⟩
+  have hfa6' : ∀ a', a' ≠ aj → a' ≠ mt → a' ≠ dg →
+      σ6.arrs a' = σ5.arrs a' := by
+    intro a' h1 h2 h3
+    refine hfa6 a' ?_
+    simp [peelDelB, peelDelTurnB, Com.warrs, h1, h2, h3]
+  have hArr : ∀ a', a' ≠ plDd → a' ≠ plRe → a' ≠ aj → a' ≠ mt → a' ≠ dg →
+      σ6.arrs a' = σ2.arrs a' := by
+    intro a' h1 h2 h3 h4 h5
+    rw [hfa6' a' h3 h4 h5, ha54 a' h2]
+    exact hfa3' a' h1
+  have h6i : σ6.vars "pl.i" = i := by
+    rw [hfv6 "pl.i" (by simp [peelDelB, peelDelTurnB, Com.wvars]),
+      hv54 "pl.i" (by decide), hfv3' "pl.i" (by decide)]
+    exact hvi2
+  have h6n : σ6.vars "pl.n" = N := by
+    rw [hfv6 "pl.n" (by simp [peelDelB, peelDelTurnB, Com.wvars]),
+      hv54 "pl.n" (by decide), hfv3' "pl.n" (by decide)]
+    exact hvn2
+  have h6m : σ6.vars "pl.m" = mval G π R (i + 1) := by
+    rw [hfv6 "pl.m" (by simp [peelDelB, peelDelTurnB, Com.wvars]), hσ5]
+    simp
+  -- the level region and the segment record after the walk
+  have hDd6arr : σ6.arrs plDd = σ3.arrs plDd :=
+    (hfa6' plDd (Ne.symm haj_dd) (Ne.symm hmt_dd) (Ne.symm hdg_dd)).trans
+      (ha54 plDd (by decide))
+  have hRe6arr : σ6.arrs plRe
+      = (σ3.arrs plRe).set (i + 1) (mval G π R (i + 1)) := by
+    rw [hfa6' plRe (Ne.symm haj_re) (Ne.symm hmt_re) (Ne.symm hdg_re),
+      hσ5, hσ4]
+    simp only [arrs_setVar, arrs_setArr, eq_self_iff_true, if_true]
+  have hRw6arr : σ6.arrs plRw = σ2.arrs plRw :=
+    hArr plRw (by decide) (by decide) (Ne.symm haj_rw) (Ne.symm hmt_rw)
+      (Ne.symm hdg_rw)
+  -- the new segment
+  have hseg_i : SegAt (fun p => (σ2.arrs plRw).getD p 0) (mval G π R i)
+      (mval G π R (i + 1)) (pfibR G π R i) := by
+    have h := hqseg2
+    rw [ht2, hlist_eq] at h
+    exact h
+  -- the assignment region advances
+  have hCa6arr : σ6.arrs ca = σ2.arrs ca :=
+    hArr ca hca_dd hca_re (Ne.symm haj_ca) (Ne.symm hmt_ca) (Ne.symm hdg_ca)
+  have hCa6 : ∀ v : Fin N, (σ6.arrs ca).getD ((v : ℕ)) 0 =
+      if ((π (pctr G π R v) : ℕ)) < i + 1
+        then ((pctr G π R v : Fin N) : ℕ) else N := by
+    intro v
+    rw [hCa6arr]
+    by_cases hlt : ((π (pctr G π R v) : ℕ)) < i
+    · rw [if_pos (by omega)]
+      exact hcaOld2 v hlt
+    · rcases hcaNew2 v hlt with ⟨hddv, hcav⟩ | ⟨hddv, hcav⟩
+      · -- freshly discovered within radius `R`: the centre is `u`
+        have hball : v ∈ ball (deleteVerts G (peelSet π i)) R u :=
+          (hexact R (by omega) v).mp hddv
+        have hwr : u ∈ wreach G π R v := by
+          rw [Impl.mem_wreach_iff_mem_peeledBall, ← peelSet_rank π u, hπu]
+          exact hball
+        have hle' : ((π (pctr G π R v) : Fin N) : ℕ) ≤ i := by
+          have h : ((π (pctr G π R v) : Fin N) : ℕ) ≤ ((π u : Fin N) : ℕ) :=
+            CoverCentres.ctr_le_of_mem_wreach hwr
+          rw [hπu] at h
+          exact h
+        have hctr : pctr G π R v = u :=
+          π.injective (Fin.ext (by rw [hπu]; omega))
+        rw [if_pos (by omega), hctr]
+        exact hcav
+      · -- beyond radius `R`: not this rank's centre, still unassigned
+        have hnot : ¬ ((π (pctr G π R v) : ℕ)) < i + 1 := by
+          intro hlt'
+          have hctr : pctr G π R v = u :=
+            π.injective (Fin.ext (by rw [hπu]; omega))
+          have hwr : u ∈ wreach G π R v := by
+            rw [← hctr]
+            exact CoverCentres.ctr_mem_wreach G π R v
+          rw [Impl.mem_wreach_iff_mem_peeledBall, ← peelSet_rank π u, hπu]
+            at hwr
+          exact hddv ((hexact R (by omega) v).mpr hwr)
+        rw [if_neg hnot]
+        exact hcav
+  -- the deletion account closes into the fibre
+  have hcur : ((deleteVerts G (peelSet π i)).neighborSet u).ncard
+      ≤ (pfibR G π R i).ncard := by
+    have h := curdeg_le_pfib G π R hr u
+    rw [hπu] at h
+    rw [pfibR_eq G π R hi, ← huEq]
+    exact h
+  -- assemble
+  refine ⟨σ6, ?_, ⟨h6n, h6m, by omega, ?_, ?_, ?_, ?_, hCa6, ?_, ?_, ?_,
+    ?_, ?_, ?_⟩, h6i⟩
+  · -- the run, at the step budget
+    have hms := mval_succ G π R i
+    exact (hrs.seq (hrb.seq (hrr.seq (hr4.seq (hr5.seq hrd))))).mono
+      (by omega)
+  · exact ordArr_of_eq hord2
+      (hArr od hod_dd hod_re hod_aj hod_mt hod_dg)
+  · exact rankArr_of_eq hrank2
+      (hArr ra hra_dd hra_re hra_aj hra_mt hra_dg)
+  · rw [peelSet_succ π hi]
+    exact hDel6
+  · rw [hCa6arr]
+    exact hcaL2
+  · rw [hDd6arr]
+    exact hddL3
+  · intro z hz
+    rw [hDd6arr]
+    exact hsen3 z hz
+  · rw [hRw6arr]
+    exact hrwL2
+  · rw [hRe6arr, List.length_set]
+    exact h3reL
+  · intro i' hi'
+    rw [hRe6arr, getD_set (σ3.arrs plRe) (mval G π R (i + 1)) i' (by omega)]
+    by_cases hii : i' = i + 1
+    · rw [if_pos hii, hii]
+    · rw [if_neg hii, hfa3' plRe (by decide)]
+      exact hreV2 i' (by omega)
+  · intro i' hi'
+    rw [hRw6arr]
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hi' with h | h
+    · exact hsegs2 i' h
+    · rw [h]
+      exact hseg_i
 
 end SweepMachine
 
