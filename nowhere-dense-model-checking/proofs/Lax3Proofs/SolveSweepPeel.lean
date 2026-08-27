@@ -3648,35 +3648,94 @@ theorem pbfs_of_eq {i : ℕ} {u : Fin N} {σ σ' : Env}
     hddL, hrwL, hreL, hreV, hsegs, hanch, hdbd, hach, hqseg, hmono, hreach,
     hpopped, hcaOld, hcaNew⟩ := h
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-    (try rw [harrs]) <;>
-    first
-      | (rw [hv "pl.n" (by simp)]; exact hvn)
-      | (rw [hv "pl.i" (by simp)]; exact hvi)
-      | (rw [hv "pl.u" (by simp)]; exact hvu)
-      | (rw [hv "pl.b" (by simp)]; exact hvb)
-      | (rw [hv "pl.m" (by simp)]; exact hvm)
-      | (rw [hv "pl.h" (by simp)]; exact hhl)
-      | (rw [hv "pl.h" (by simp), hv "pl.t" (by simp)]; exact hht)
-      | (rw [hv "pl.t" (by simp)]; exact hcnt)
-      | exact hord
-      | exact hrank
-      | exact hadj
-      | exact hcaL
-      | exact hddL
-      | exact hrwL
-      | exact hreL
-      | exact hreV
-      | exact hsegs
-      | exact hanch
-      | exact hdbd
-      | exact hach
-      | (rw [hv "pl.t" (by simp)]; exact hqseg)
-      | (rw [hv "pl.t" (by simp)]; exact hmono)
-      | (rw [hv "pl.h" (by simp), hv "pl.t" (by simp)]; exact hreach)
-      | (rw [hv "pl.h" (by simp)]; exact hpopped)
-      | exact hcaOld
-      | exact hcaNew
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [hv "pl.n" (by simp)]; exact hvn
+  · rw [hv "pl.i" (by simp)]; exact hvi
+  · rw [hv "pl.u" (by simp)]; exact hvu
+  · rw [hv "pl.b" (by simp)]; exact hvb
+  · rw [hv "pl.m" (by simp)]; exact hvm
+  · rw [hv "pl.h" (by simp)]; exact hhl
+  · rw [hv "pl.h" (by simp), hv "pl.t" (by simp)]; exact hht
+  · rw [hv "pl.t" (by simp), harrs]; exact hcnt
+  · exact ordArr_of_eq hord (ha od)
+  · exact rankArr_of_eq hrank (ha ra)
+  · exact hadj.of_eq (ha ao) (ha aj) (ha dg) (ha mt)
+  · rw [harrs]; exact hcaL
+  · rw [harrs]; exact hddL
+  · rw [harrs]; exact hrwL
+  · rw [harrs]; exact hreL
+  · rw [harrs]; exact hreV
+  · rw [harrs]; exact hsegs
+  · rw [harrs]; exact hanch
+  · rw [harrs]; exact hdbd
+  · rw [harrs]; exact hach
+  · rw [harrs, hv "pl.t" (by simp)]; exact hqseg
+  · rw [harrs, hv "pl.t" (by simp)]; exact hmono
+  · rw [harrs, hv "pl.h" (by simp), hv "pl.t" (by simp)]; exact hreach
+  · rw [harrs, hv "pl.h" (by simp)]; exact hpopped
+  · rw [harrs]; exact hcaOld
+  · rw [harrs]; exact hcaNew
+
+/-- **The head bump**: `PBfs` survives `pl.h := pl.h + 1` when the
+window is nonempty and the outgoing head's row — where expandable — is
+fully relaxed. -/
+theorem pbfs_bump {i : ℕ} {u : Fin N} {σ σ' : Env}
+    (h : PBfs ca ra ao aj dg mt od G π R i u σ)
+    (hv : ∀ y, y ∈ (["pl.n", "pl.i", "pl.u", "pl.b", "pl.m",
+      "pl.t"] : List String) → σ'.vars y = σ.vars y)
+    (ha : ∀ b', σ'.arrs b' = σ.arrs b')
+    (hh' : σ'.vars "pl.h" = σ.vars "pl.h" + 1)
+    (hlt : σ.vars "pl.h" < σ.vars "pl.t")
+    (hpop : ∀ hp : (σ.arrs plRw).getD (σ.vars "pl.h") 0 < N,
+      (σ.arrs plDd).getD ((σ.arrs plRw).getD (σ.vars "pl.h") 0) 0 < 2 * R →
+      ∀ w : Fin N, (deleteVerts G (peelSet π i)).Adj
+        ⟨(σ.arrs plRw).getD (σ.vars "pl.h") 0, hp⟩ w →
+      (σ.arrs plDd).getD ((w : ℕ)) 0 ≤
+        (σ.arrs plDd).getD ((σ.arrs plRw).getD (σ.vars "pl.h") 0) 0 + 1) :
+    PBfs ca ra ao aj dg mt od G π R i u σ' := by
+  have harrs : σ'.arrs = σ.arrs := funext ha
+  obtain ⟨hvn, hvi, hvu, hvb, hvm, hhl, hht, hcnt, hord, hrank, hadj, hcaL,
+    hddL, hrwL, hreL, hreV, hsegs, hanch, hdbd, hach, hqseg, hmono, hreach,
+    hpopped, hcaOld, hcaNew⟩ := h
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [hv "pl.n" (by simp)]; exact hvn
+  · rw [hv "pl.i" (by simp)]; exact hvi
+  · rw [hv "pl.u" (by simp)]; exact hvu
+  · rw [hv "pl.b" (by simp)]; exact hvb
+  · rw [hv "pl.m" (by simp)]; exact hvm
+  · rw [hh']; omega
+  · rw [hh', hv "pl.t" (by simp)]; omega
+  · rw [hv "pl.t" (by simp), harrs]; exact hcnt
+  · exact ordArr_of_eq hord (ha od)
+  · exact rankArr_of_eq hrank (ha ra)
+  · exact hadj.of_eq (ha ao) (ha aj) (ha dg) (ha mt)
+  · rw [harrs]; exact hcaL
+  · rw [harrs]; exact hddL
+  · rw [harrs]; exact hrwL
+  · rw [harrs]; exact hreL
+  · rw [harrs]; exact hreV
+  · rw [harrs]; exact hsegs
+  · rw [harrs]; exact hanch
+  · rw [harrs]; exact hdbd
+  · rw [harrs]; exact hach
+  · rw [harrs, hv "pl.t" (by simp)]; exact hqseg
+  · rw [harrs, hv "pl.t" (by simp)]; exact hmono
+  · rw [harrs, hh', hv "pl.t" (by simp)]
+    intro hlt' p hp1 hp2
+    have h1 := hreach hlt p hp1 hp2
+    have h2 := hmono (σ.vars "pl.h") (σ.vars "pl.h" + 1) hhl (Nat.le_succ _)
+      hlt'
+    omega
+  · rw [harrs, hh']
+    intro p hp1 hp2 hp hplt w hadjw
+    rcases Nat.lt_or_ge p (σ.vars "pl.h") with hcase | hcase
+    · exact hpopped p hp1 hcase hp hplt w hadjw
+    · have hpe : p = σ.vars "pl.h" := by omega
+      subst hpe
+      exact hpop hp hplt w hadjw
+  · rw [harrs]; exact hcaOld
+  · rw [harrs]; exact hcaNew
 
 open Classical in
 /-- **The BFS loop**: pop until the queue empties.  Priced by the queue
@@ -3779,7 +3838,677 @@ theorem peelBfs_loop
       _ = ∑ z' ∈ Xf.filter
             (fun z' => (σ.arrs plDd).getD z'.val 0 ≤ 2 * R), wtv z'.val :=
           Finset.sum_image hvinj
-  sorry
+  -- any vertex set holds at most `N` vertices
+  have hncN : ∀ X : Set (Fin N), X.ncard ≤ N := by
+    intro X
+    calc X.ncard ≤ (Set.univ : Set (Fin N)).ncard :=
+          Set.ncard_le_ncard (Set.subset_univ _) (Set.toFinite _)
+      _ = N := by simp [Set.ncard_univ]
+  -- the two cursors stay inside the slot space
+  have hvarB : ∀ σ : Env, PBfs ca ra ao aj dg mt od G π R i u σ →
+      σ.vars "pl.h" ≤ σ.vars "pl.t" ∧ σ.vars "pl.t" ≤ N * N := by
+    intro σ hPB
+    obtain ⟨-, -, -, -, -, -, hht, hcnt, -, -, -, -, -, -, -, -, -, -, -, -,
+      -, -, -, -, -, -⟩ := hPB
+    refine ⟨hht, ?_⟩
+    rw [hcnt]
+    have h1 := hncN {z : Fin N | (σ.arrs plDd).getD ((z : ℕ)) 0 ≤ 2 * R}
+    have h2 : mval G π R i ≤ i * N := mval_le G π R
+    have h3 : (i + 1) * N ≤ N * N :=
+      Nat.mul_le_mul (Nat.succ_le_of_lt hi) le_rfl
+    have h4 : (i + 1) * N = i * N + N := by ring
+    omega
+  have hbsize : (Cond.lt (Expr.var "pl.h") (Expr.var "pl.t")).size = 3 := by
+    simp
+  have hbsize2 : (Cond.lt (Expr.var "pl.d") (Expr.lit (2 * R))).size = 3 := by
+    simp
+  -- the queue potential: undiscovered weight plus window weight
+  set Φ : Env → ℕ := fun σ =>
+    (∑ z' ∈ Xf.filter
+        (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1), wtv z'.val) +
+    ∑ p ∈ Finset.Ico (σ.vars "pl.h") (σ.vars "pl.t"),
+      wtv ((σ.arrs plRw).getD p 0) with hΦ
+  refine (Spec.while_potential
+    (fun σ => PBfs ca ra ao aj dg mt od G π R i u σ) Φ ?_ ?_
+    (fun _ hσ => hσ) ?_).post ?_
+  · -- the condition always evaluates
+    intro σ hPB
+    obtain ⟨hle, hub⟩ := hvarB σ hPB
+    exact evalB_condLt_vars (by omega) (by omega)
+  · -- one pop pays for itself out of the potential
+    intro σ hPB htrue
+    obtain ⟨hle0, hub0⟩ := hvarB σ hPB
+    have hlt : σ.vars "pl.h" < σ.vars "pl.t" := by
+      have heval := evalB_condLt (B := B) (σ := σ)
+        (evalB_var (x := "pl.h") (by omega))
+        (evalB_var (x := "pl.t") (by omega))
+      rw [heval] at htrue
+      simpa using htrue
+    obtain ⟨hvn, hvi, hvu, hvb, hvm, hhl, hht, hcnt, hord, hrank, hadj, hcaL,
+      hddL, hrwL, hreL, hreV, hsegs, hanch, hdbd, hach, hqseg, hmono, hreach,
+      hpopped, hcaOld, hcaNew⟩ := id hPB
+    -- the popped vertex
+    set zval : ℕ := (σ.arrs plRw).getD (σ.vars "pl.h") 0 with hzval
+    obtain ⟨hzN0, hzmem0⟩ := hqseg.1 (σ.vars "pl.h") hhl hlt
+    have hzN : zval < N := by rw [hzval]; exact hzN0
+    have hdz2R : (σ.arrs plDd).getD zval 0 ≤ 2 * R := by
+      rw [hzval]; exact hzmem0
+    have hachz := hach zval hzN hdz2R
+    have hznp : (⟨zval, hzN⟩ : Fin N) ∉ peelSet π i :=
+      not_mem_of_withinDist_deleteVerts hachz (symm_not_peeled π hi)
+    -- the two anchor reads
+    have hidx1 : σ.vars "pl.h" < (σ.arrs plRw).length := by omega
+    have hr1 : Run B (.assign "pl.z" (.get plRw (.var "pl.h"))) σ
+        (σ.setVar "pl.z" zval) 3 := by
+      have h := Run.assign (B := B) (x := "pl.z")
+        (h := evalB_get (a := plRw) (i := Expr.var "pl.h")
+          (evalB_var (by omega))
+          (getElem?_of_getD hidx1 hzval.symm) (by omega))
+      exact h.mono (by simp)
+    have h1z : (σ.setVar "pl.z" zval).vars "pl.z" = zval := by
+      simp
+    have hr2 : Run B (.assign "pl.d" (.get plDd (.var "pl.z")))
+        (σ.setVar "pl.z" zval)
+        ((σ.setVar "pl.z" zval).setVar "pl.d"
+          ((σ.arrs plDd).getD zval 0)) 3 := by
+      have hez : (Expr.var "pl.z").evalB B (σ.setVar "pl.z" zval)
+          = some zval := by
+        have h := evalB_var (B := B) (x := "pl.z")
+          (σ := σ.setVar "pl.z" zval) (by rw [h1z]; omega)
+        rwa [h1z] at h
+      have h := Run.assign (B := B) (x := "pl.d")
+        (h := evalB_get (a := plDd) (i := Expr.var "pl.z") hez
+          (getElem?_of_getD (l := σ.arrs plDd) (by omega) rfl) (by omega))
+      exact h.mono (by simp)
+    set σ₂ : Env := (σ.setVar "pl.z" zval).setVar "pl.d"
+      ((σ.arrs plDd).getD zval 0) with hσ₂
+    have h2d : σ₂.vars "pl.d" = (σ.arrs plDd).getD zval 0 := by
+      rw [hσ₂]; simp
+    have h2z : σ₂.vars "pl.z" = zval := by
+      rw [hσ₂]; simp
+    have h2h : σ₂.vars "pl.h" = σ.vars "pl.h" := by
+      rw [hσ₂]; simp
+    -- the window's bottom element
+    have hbot : (∑ p ∈ Finset.Ico (σ.vars "pl.h") (σ.vars "pl.t"),
+          wtv ((σ.arrs plRw).getD p 0))
+        = wtv zval + ∑ p ∈ Finset.Ico (σ.vars "pl.h" + 1) (σ.vars "pl.t"),
+            wtv ((σ.arrs plRw).getD p 0) := by
+      rw [Finset.sum_eq_sum_Ico_succ_bot hlt, hzval]
+    have hΦσ : Φ σ = (∑ z' ∈ Xf.filter
+          (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1), wtv z'.val) +
+        ∑ p ∈ Finset.Ico (σ.vars "pl.h") (σ.vars "pl.t"),
+          wtv ((σ.arrs plRw).getD p 0) := by
+      simp only [hΦ]
+    by_cases hexp : (σ.arrs plDd).getD zval 0 < 2 * R
+    · -- expansion: the head's row is scanned
+      obtain ⟨offF₀, hoff0, hoffstep, haoL, haoV, hajL, hmtL, hdgL, hdead,
+        hdeg, hsound, hcomp⟩ := hadj
+      have hoffz : offF₀ zval ≤ offF₀ N :=
+        offF_mono hoffstep N le_rfl zval (le_of_lt hzN)
+      have hoffsq : offF₀ N ≤ N * N := offF_le_sq hoff0 hoffstep
+      have hgdeg : (σ.arrs dg).getD zval 0
+          = ((deleteVerts G (peelSet π i)).neighborSet ⟨zval, hzN⟩).ncard :=
+        hdeg ⟨zval, hzN⟩ hznp
+      have hgN : (σ.arrs dg).getD zval 0 ≤ N := by
+        rw [hgdeg]; exact ncard_neighborSet_le_card _
+      -- the three row reads
+      have hez2 : (Expr.var "pl.z").evalB B σ₂ = some zval := by
+        have h := evalB_var (B := B) (x := "pl.z") (σ := σ₂)
+          (by rw [h2z]; omega)
+        rwa [h2z] at h
+      have hr3 : Run B (.assign "pl.a" (.get ao (.var "pl.z"))) σ₂
+          (σ₂.setVar "pl.a" (offF₀ zval)) 3 := by
+        have h := Run.assign (B := B) (x := "pl.a")
+          (h := evalB_get (a := ao) (i := Expr.var "pl.z") hez2
+            (getElem?_of_getD (l := σ.arrs ao) (by omega)
+              (haoV zval (le_of_lt hzN)))
+            (by omega))
+        exact h.mono (by simp)
+      have h3z : (σ₂.setVar "pl.a" (offF₀ zval)).vars "pl.z" = zval := by
+        simp [h2z]
+      have hez3 : (Expr.var "pl.z").evalB B (σ₂.setVar "pl.a" (offF₀ zval))
+          = some zval := by
+        have h := evalB_var (B := B) (x := "pl.z")
+          (σ := σ₂.setVar "pl.a" (offF₀ zval)) (by rw [h3z]; omega)
+        rwa [h3z] at h
+      have hr4 : Run B (.assign "pl.g" (.get dg (.var "pl.z")))
+          (σ₂.setVar "pl.a" (offF₀ zval))
+          ((σ₂.setVar "pl.a" (offF₀ zval)).setVar "pl.g"
+            ((σ.arrs dg).getD zval 0)) 3 := by
+        have h := Run.assign (B := B) (x := "pl.g")
+          (h := evalB_get (a := dg) (i := Expr.var "pl.z") hez3
+            (getElem?_of_getD (l := σ.arrs dg) (by omega) rfl) (by omega))
+        exact h.mono (by simp)
+      have hr5 : Run B (.assign "pl.j" (.lit 0))
+          ((σ₂.setVar "pl.a" (offF₀ zval)).setVar "pl.g"
+            ((σ.arrs dg).getD zval 0))
+          (((σ₂.setVar "pl.a" (offF₀ zval)).setVar "pl.g"
+            ((σ.arrs dg).getD zval 0)).setVar "pl.j" 0) 2 :=
+        (Run.assign (evalB_lit (by omega))).mono (by simp)
+      set σ₅ : Env := ((σ₂.setVar "pl.a" (offF₀ zval)).setVar "pl.g"
+        ((σ.arrs dg).getD zval 0)).setVar "pl.j" 0 with hσ₅
+      have h5z : σ₅.vars "pl.z" = zval := by
+        rw [hσ₅]; simp [h2z]
+      have h5d : σ₅.vars "pl.d" = (σ.arrs plDd).getD zval 0 := by
+        rw [hσ₅]; simp [h2d]
+      have h5a : σ₅.vars "pl.a" = offF₀ zval := by
+        rw [hσ₅]; simp
+      have h5g : σ₅.vars "pl.g" = (σ.arrs dg).getD zval 0 := by
+        rw [hσ₅]; simp
+      have h5j : σ₅.vars "pl.j" = 0 := by
+        rw [hσ₅]; simp
+      have h5h : σ₅.vars "pl.h" = σ.vars "pl.h" := by
+        rw [hσ₅]; simp [h2h]
+      have h5t : σ₅.vars "pl.t" = σ.vars "pl.t" := by
+        rw [hσ₅, hσ₂]; simp
+      have h5arr : ∀ b', σ₅.arrs b' = σ.arrs b' := fun _ => rfl
+      -- the expansion state at the entry of the row scan
+      have hI5 : EInv ca ra ao aj dg mt od G π R i u ⟨zval, hzN⟩ offF₀ σ₅ := by
+        refine ⟨pbfs_of_eq hPB ?_ h5arr, ?_, ?_, ?_, ?_, ?_, hexp, ?_, ?_, ?_⟩
+        · intro y hy
+          simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+          rcases hy with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+            (rw [hσ₅, hσ₂]; simp)
+        · rw [h5z]
+        · show σ₅.vars "pl.d" = (σ₅.arrs plDd).getD zval 0
+          rw [h5d, h5arr plDd]
+        · rw [h5a]
+        · show σ₅.vars "pl.g" = (σ₅.arrs dg).getD zval 0
+          rw [h5g, h5arr dg]
+        · rw [h5j]
+          exact Nat.zero_le _
+        · rw [h5h, h5t]
+          exact hlt
+        · rw [h5h]
+          exact hzval.symm
+        · rw [h5j]
+          intro s hs
+          exact absurd hs (Nat.not_lt_zero s)
+      obtain ⟨σw, hrun_w, hIw, hwjg, hstab, hmonot, hwg, hwh, hsen⟩ :=
+        peelExpand_loop hNB hsq hRB hca_dd hca_rw hca_re hod_ca hod_dd hod_rw
+          hra_ca hra_dd hra_rw hao_ca hao_dd hao_rw haj_ca haj_dd haj_rw
+          hdg_ca hdg_dd hdg_rw hmt_ca hmt_dd hmt_rw hoff0 hoffstep hi
+          ((σ.arrs dg).getD zval 0) σ₅ hI5 (by simp [h5g, h5j])
+      rw [h5t] at hstab hmonot
+      rw [h5h] at hwh
+      rw [h5g] at hwg
+      simp only [h5arr] at hstab hsen
+      obtain ⟨hPBw, hwz, hwd, hwa, hwgv, hwjle, hwdlt, hwhtl, hwfh,
+        hwrelax⟩ := hIw
+      have hltw : σw.vars "pl.h" < σw.vars "pl.t" := by
+        rw [hwh]
+        exact lt_of_lt_of_le hlt hmonot
+      -- the full relaxation of the popped head's row
+      have hpop : ∀ hp : (σw.arrs plRw).getD (σw.vars "pl.h") 0 < N,
+          (σw.arrs plDd).getD
+            ((σw.arrs plRw).getD (σw.vars "pl.h") 0) 0 < 2 * R →
+          ∀ w' : Fin N, (deleteVerts G (peelSet π i)).Adj
+            ⟨(σw.arrs plRw).getD (σw.vars "pl.h") 0, hp⟩ w' →
+          (σw.arrs plDd).getD ((w' : ℕ)) 0 ≤
+            (σw.arrs plDd).getD
+              ((σw.arrs plRw).getD (σw.vars "pl.h") 0) 0 + 1 := by
+        intro hp hplt w' hadjw
+        have hFin : (⟨(σw.arrs plRw).getD (σw.vars "pl.h") 0, hp⟩ : Fin N)
+            = ⟨zval, hzN⟩ := Fin.ext hwfh
+        rw [hFin] at hadjw
+        obtain ⟨-, -, -, -, -, -, -, -, -, -, hadjW, -, -, -, -, -, -, -, -,
+          -, -, -, -, -, -, -⟩ := id hPBw
+        obtain ⟨offF₁, hoff0₁, hstep₁, -, -, -, -, -, -, -, -, hcomp₁⟩ :=
+          hadjW
+        obtain ⟨t₁, ht₁, hajt₁⟩ := hcomp₁ ⟨zval, hzN⟩ hznp w' hadjw
+        have hoffeq : offF₁ zval = offF₀ zval :=
+          offF_unique hoff0₁ hoff0 hstep₁ hoffstep zval (le_of_lt hzN)
+        have ht₁' : t₁ < σw.vars "pl.j" := by
+          rw [hwjg, hwgv]
+          exact ht₁
+        have hval : (σw.arrs aj).getD (offF₀ zval + t₁) 0 = ((w' : Fin N) : ℕ) := by
+          rw [← hoffeq]
+          exact hajt₁
+        have h := hwrelax t₁ ht₁' w' hval
+        rw [hwfh]
+        exact h
+      have hPBf : PBfs ca ra ao aj dg mt od G π R i u
+          (σw.setVar "pl.h" (σw.vars "pl.h" + 1)) := by
+        refine pbfs_bump hPBw ?_ (fun _ => rfl) (by simp) hltw hpop
+        intro y hy
+        simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+        rcases hy with rfl | rfl | rfl | rfl | rfl | rfl <;> simp
+      have hcondT : (Cond.lt (.var "pl.d") (.lit (2 * R))).evalB B σ₂
+          = some true := by
+        have h := evalB_condLt (B := B) (σ := σ₂)
+          (evalB_var (x := "pl.d") (by rw [h2d]; omega))
+          (evalB_lit (n := 2 * R) (by omega))
+        rw [h2d] at h
+        rw [h]
+        simp only [Option.some.injEq, decide_eq_true_eq]
+        exact hexp
+      have hr6 : Run B (.assign "pl.h" (.add (.var "pl.h") (.lit 1))) σw
+          (σw.setVar "pl.h" (σw.vars "pl.h" + 1)) 4 := by
+        have h := Run.assign (B := B) (x := "pl.h")
+          (h := evalB_incr (x := "pl.h") (σ := σw) (by rw [hwh]; omega))
+        exact h.mono (by simp)
+      have hbody : Run B (.seq (.assign "pl.a" (.get ao (.var "pl.z")))
+          (.seq (.assign "pl.g" (.get dg (.var "pl.z")))
+            (.seq (.assign "pl.j" (.lit 0))
+              (.while (.lt (.var "pl.j") (.var "pl.g"))
+                (peelExpandB R ca aj)))) ) σ₂ σw
+          (3 + (3 + (2 + (44 * ((σ.arrs dg).getD zval 0) + 4)))) :=
+        hr3.seq (hr4.seq (hr5.seq hrun_w))
+      refine ⟨σw.setVar "pl.h" (σw.vars "pl.h" + 1),
+        44 * ((σ.arrs dg).getD zval 0) + 26, ?_, hPBf, ?_⟩
+      · exact (hr1.seq (hr2.seq ((Run.ite_true hcondT hbody).seq hr6))).mono
+          (by simp only [hbsize2]; omega)
+      · -- the payment: the popped weight covers the scan
+        rw [hbsize]
+        have hΦf : Φ (σw.setVar "pl.h" (σw.vars "pl.h" + 1))
+            = (∑ z' ∈ Xf.filter
+                (fun z' => (σw.arrs plDd).getD z'.val 0 = 2 * R + 1),
+                wtv z'.val) +
+              ∑ p ∈ Finset.Ico (σ.vars "pl.h" + 1) (σw.vars "pl.t"),
+                wtv ((σw.arrs plRw).getD p 0) := by
+          simp only [hΦ]
+          rw [show (σw.setVar "pl.h" (σw.vars "pl.h" + 1)).vars "pl.h"
+              = σ.vars "pl.h" + 1 from by simp [hwh],
+            show (σw.setVar "pl.h" (σw.vars "pl.h" + 1)).vars "pl.t"
+              = σw.vars "pl.t" from by simp]
+          try rfl
+        have hsplitW : (∑ p ∈ Finset.Ico (σ.vars "pl.h" + 1)
+              (σw.vars "pl.t"), wtv ((σw.arrs plRw).getD p 0))
+            = (∑ p ∈ Finset.Ico (σ.vars "pl.h" + 1) (σ.vars "pl.t"),
+                wtv ((σw.arrs plRw).getD p 0)) +
+              ∑ p ∈ Finset.Ico (σ.vars "pl.t") (σw.vars "pl.t"),
+                wtv ((σw.arrs plRw).getD p 0) :=
+          (Finset.sum_Ico_consecutive _ (by omega) hmonot).symm
+        have hstabW : (∑ p ∈ Finset.Ico (σ.vars "pl.h" + 1) (σ.vars "pl.t"),
+              wtv ((σw.arrs plRw).getD p 0))
+            = ∑ p ∈ Finset.Ico (σ.vars "pl.h" + 1) (σ.vars "pl.t"),
+              wtv ((σ.arrs plRw).getD p 0) := by
+          refine Finset.sum_congr rfl ?_
+          intro p hp
+          rw [Finset.mem_Ico] at hp
+          rw [hstab p hp.2]
+        have hA'A : Xf.filter
+              (fun z' => (σw.arrs plDd).getD z'.val 0 = 2 * R + 1)
+            ⊆ Xf.filter
+              (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1) := by
+          intro a ha
+          rw [Finset.mem_filter] at ha ⊢
+          exact ⟨ha.1, hsen _ ha.2⟩
+        have hAsplit : (∑ z' ∈ (Xf.filter
+              (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1) \
+              Xf.filter
+              (fun z' => (σw.arrs plDd).getD z'.val 0 = 2 * R + 1)),
+              wtv z'.val) +
+            (∑ z' ∈ Xf.filter
+              (fun z' => (σw.arrs plDd).getD z'.val 0 = 2 * R + 1),
+              wtv z'.val)
+            = ∑ z' ∈ Xf.filter
+              (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1),
+              wtv z'.val :=
+          Finset.sum_sdiff hA'A
+        -- the appended segment rides inside the newly discovered weight
+        have hnew : (∑ p ∈ Finset.Ico (σ.vars "pl.t") (σw.vars "pl.t"),
+              wtv ((σw.arrs plRw).getD p 0))
+            ≤ ∑ z' ∈ (Xf.filter
+                (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1) \
+                Xf.filter
+                (fun z' => (σw.arrs plDd).getD z'.val 0 = 2 * R + 1)),
+              wtv z'.val := by
+          obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -,
+            hachW, hqsegW, -, -, -, -, -⟩ := id hPBw
+          obtain ⟨hqsW, hqcW, hqiW⟩ := hqsegW
+          obtain ⟨hqs0, hqc0, hqi0⟩ := id hqseg
+          have hmem : ∀ p, σ.vars "pl.t" ≤ p → p < σw.vars "pl.t" →
+              ∃ hzp : (σw.arrs plRw).getD p 0 < N,
+                (⟨(σw.arrs plRw).getD p 0, hzp⟩ : Fin N) ∈
+                  (Xf.filter
+                    (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1) \
+                  Xf.filter
+                    (fun z' => (σw.arrs plDd).getD z'.val 0 = 2 * R + 1)) := by
+            intro p hp1 hp2
+            have hmv : mval G π R i ≤ p :=
+              le_trans (le_trans hhl (le_of_lt hlt)) hp1
+            obtain ⟨hzp, hlstp⟩ := hqsW p hmv hp2
+            refine ⟨hzp, ?_⟩
+            have hlstp' : (σw.arrs plDd).getD
+                ((σw.arrs plRw).getD p 0) 0 ≤ 2 * R := hlstp
+            have hold : (σ.arrs plDd).getD
+                ((σw.arrs plRw).getD p 0) 0 = 2 * R + 1 := by
+              by_contra hne
+              have hle : (σ.arrs plDd).getD
+                  ((σw.arrs plRw).getD p 0) 0 ≤ 2 * R := by
+                have := hdbd ((σw.arrs plRw).getD p 0) hzp
+                omega
+              obtain ⟨q, hq1, hq2, hq3⟩ :=
+                hqc0 ⟨(σw.arrs plRw).getD p 0, hzp⟩ hle
+              have hq3' : (σ.arrs plRw).getD q 0
+                  = ((⟨(σw.arrs plRw).getD p 0, hzp⟩ : Fin N) : ℕ) := hq3
+              have hqw : (σw.arrs plRw).getD q 0
+                  = (σw.arrs plRw).getD p 0 := by
+                rw [hstab q hq2, hq3']
+              have := hqiW q p hq1 (lt_of_lt_of_le hq2 hmonot) hmv hp2 hqw
+              omega
+            rw [Finset.mem_sdiff, Finset.mem_filter, Finset.mem_filter]
+            refine ⟨⟨?_, hold⟩, ?_⟩
+            · exact hlistXf σw hachW ⟨(σw.arrs plRw).getD p 0, hzp⟩ hlstp'
+            · rintro ⟨-, hbad⟩
+              have hbad' : (σw.arrs plDd).getD
+                  ((σw.arrs plRw).getD p 0) 0 = 2 * R + 1 := hbad
+              omega
+          have hinj2 : Set.InjOn (fun p => (σw.arrs plRw).getD p 0)
+              ↑(Finset.Ico (σ.vars "pl.t") (σw.vars "pl.t")) := by
+            intro p hp q hq hpq
+            rw [Finset.mem_coe, Finset.mem_Ico] at hp hq
+            exact hqiW p q
+              (le_trans (le_trans hhl (le_of_lt hlt)) hp.1) hp.2
+              (le_trans (le_trans hhl (le_of_lt hlt)) hq.1) hq.2 hpq
+          have hvinj2 : Set.InjOn (fun z' : Fin N => z'.val)
+              ↑(Xf.filter
+                  (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1) \
+                Xf.filter
+                  (fun z' => (σw.arrs plDd).getD z'.val 0 = 2 * R + 1)) :=
+            fun a _ b _ hab => Fin.ext hab
+          have hsub2 : (Finset.Ico (σ.vars "pl.t") (σw.vars "pl.t")).image
+                (fun p => (σw.arrs plRw).getD p 0)
+              ⊆ (Xf.filter
+                  (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1) \
+                Xf.filter
+                  (fun z' => (σw.arrs plDd).getD z'.val 0 = 2 * R + 1)).image
+                (fun z' : Fin N => z'.val) := by
+            intro c hc
+            rw [Finset.mem_image] at hc
+            obtain ⟨p, hp, rfl⟩ := hc
+            rw [Finset.mem_Ico] at hp
+            obtain ⟨hzp, hmemp⟩ := hmem p hp.1 hp.2
+            rw [Finset.mem_image]
+            exact ⟨⟨(σw.arrs plRw).getD p 0, hzp⟩, hmemp, rfl⟩
+          calc (∑ p ∈ Finset.Ico (σ.vars "pl.t") (σw.vars "pl.t"),
+                wtv ((σw.arrs plRw).getD p 0))
+              = ∑ c ∈ (Finset.Ico (σ.vars "pl.t") (σw.vars "pl.t")).image
+                  (fun p => (σw.arrs plRw).getD p 0), wtv c :=
+                (Finset.sum_image hinj2).symm
+            _ ≤ ∑ c ∈ (Xf.filter
+                  (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1) \
+                Xf.filter
+                  (fun z' => (σw.arrs plDd).getD z'.val 0 = 2 * R + 1)).image
+                  (fun z' : Fin N => z'.val), wtv c :=
+                Finset.sum_le_sum_of_subset hsub2
+            _ = _ := Finset.sum_image hvinj2
+        -- the popped head's weight
+        have hwval : wtv zval = 64 * ((σ.arrs dg).getD zval 0) + 128 := by
+          have hzball : (⟨zval, hzN⟩ : Fin N) ∈ ball H (2 * R - 1) u :=
+            mem_ball.mpr (withinDist_mono_radius (by omega) hachz)
+          have h := hwtvF ⟨zval, hzN⟩
+          rw [if_pos hzball] at h
+          rw [show ((⟨zval, hzN⟩ : Fin N) : ℕ) = zval from rfl] at h
+          rw [h, hgdeg]
+          try rfl
+        rw [hΦσ, hΦf, hbot, hsplitW, hstabW]
+        omega
+    · -- no expansion: the head's level is already `2R`
+      have hcondF : (Cond.lt (.var "pl.d") (.lit (2 * R))).evalB B σ₂
+          = some false := by
+        have h := evalB_condLt (B := B) (σ := σ₂)
+          (evalB_var (x := "pl.d") (by rw [h2d]; omega))
+          (evalB_lit (n := 2 * R) (by omega))
+        rw [h2d] at h
+        rw [h]
+        simp only [Option.some.injEq, decide_eq_false_iff_not]
+        exact hexp
+      have hr6' : Run B (.assign "pl.h" (.add (.var "pl.h") (.lit 1))) σ₂
+          (σ₂.setVar "pl.h" (σ.vars "pl.h" + 1)) 4 := by
+        have h := Run.assign (B := B) (x := "pl.h")
+          (h := evalB_incr (x := "pl.h") (σ := σ₂) (by rw [h2h]; omega))
+        rw [h2h] at h
+        exact h.mono (by simp)
+      have hPBf : PBfs ca ra ao aj dg mt od G π R i u
+          (σ₂.setVar "pl.h" (σ.vars "pl.h" + 1)) := by
+        refine pbfs_bump hPB ?_ (fun _ => rfl) (by simp) hlt ?_
+        · intro y hy
+          simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
+          rcases hy with rfl | rfl | rfl | rfl | rfl | rfl <;>
+            (rw [hσ₂]; simp)
+        · intro hp hplt w' hadjw
+          rw [← hzval] at hplt
+          exact absurd hplt hexp
+      have hΦ3 : Φ (σ₂.setVar "pl.h" (σ.vars "pl.h" + 1))
+          = (∑ z' ∈ Xf.filter
+              (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1),
+              wtv z'.val) +
+            ∑ p ∈ Finset.Ico (σ.vars "pl.h" + 1) (σ.vars "pl.t"),
+              wtv ((σ.arrs plRw).getD p 0) := by
+        simp only [hΦ]
+        rw [show (σ₂.setVar "pl.h" (σ.vars "pl.h" + 1)).vars "pl.h"
+            = σ.vars "pl.h" + 1 from by simp,
+          show (σ₂.setVar "pl.h" (σ.vars "pl.h" + 1)).vars "pl.t"
+            = σ.vars "pl.t" from by rw [hσ₂]; simp]
+        try rfl
+      refine ⟨σ₂.setVar "pl.h" (σ.vars "pl.h" + 1), 15, ?_, hPBf, ?_⟩
+      · exact (hr1.seq (hr2.seq
+          ((Run.ite_false hcondF Run.skip).seq hr6'))).mono
+          (by simp only [hbsize2]; omega)
+      · rw [hbsize, hΦσ, hΦ3, hbot]
+        have h128 := hwtv128 zval
+        omega
+  · -- the potential at entry is the budget
+    intro σ hPB
+    rw [hbsize]
+    obtain ⟨-, -, -, -, -, hhl, -, -, -, -, -, -, -, -, -, -, -, -, -, -,
+      -, -, -, -, -, -⟩ := id hPB
+    have hwin := himage σ hPB (σ.vars "pl.h") hhl
+    have hsplit : (∑ z' ∈ Xf.filter
+          (fun z' => (σ.arrs plDd).getD z'.val 0 ≤ 2 * R), wtv z'.val) +
+        (∑ z' ∈ Xf.filter
+          (fun z' => ¬ (σ.arrs plDd).getD z'.val 0 ≤ 2 * R), wtv z'.val)
+        = ∑ z' ∈ Xf, wtv z'.val :=
+      Finset.sum_filter_add_sum_filter_not Xf
+        (fun z' => (σ.arrs plDd).getD z'.val 0 ≤ 2 * R)
+        (fun z' => wtv z'.val)
+    have hunv : (∑ z' ∈ Xf.filter
+          (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1), wtv z'.val)
+        ≤ ∑ z' ∈ Xf.filter
+          (fun z' => ¬ (σ.arrs plDd).getD z'.val 0 ≤ 2 * R), wtv z'.val := by
+      refine Finset.sum_le_sum_of_subset ?_
+      intro a ha
+      rw [Finset.mem_filter] at ha ⊢
+      refine ⟨ha.1, ?_⟩
+      omega
+    have hpeel : peelDeg G π R i = ∑ z ∈ (Set.toFinite (ball H (2 * R - 1)
+        u)).toFinset, (H.neighborSet z).ncard := by
+      simp only [peelDeg]
+      rw [dif_pos hi]
+      try rfl
+    have hfilter : Xf.filter (fun z' => z' ∈ ball H (2 * R - 1) u)
+        = (Set.toFinite (ball H (2 * R - 1) u)).toFinset := by
+      ext a
+      simp only [Finset.mem_filter, Set.Finite.mem_toFinset]
+      constructor
+      · rintro ⟨-, hb⟩
+        exact hb
+      · intro hb
+        refine ⟨?_, hb⟩
+        rw [hXf, Set.Finite.mem_toFinset, hpfib]
+        exact ball_mono_radius H u (by omega) hb
+    have hXsum : (∑ z' ∈ Xf, wtv z'.val)
+        = 64 * peelDeg G π R i + 128 * (pfibR G π R i).ncard := by
+      calc (∑ z' ∈ Xf, wtv z'.val)
+          = ∑ z' ∈ Xf, ((if z' ∈ ball H (2 * R - 1) u
+              then 64 * (H.neighborSet z').ncard else 0) + 128) :=
+            Finset.sum_congr rfl (fun z' _ => hwtvF z')
+        _ = (∑ z' ∈ Xf, if z' ∈ ball H (2 * R - 1) u
+              then 64 * (H.neighborSet z').ncard else 0) +
+            ∑ _z' ∈ Xf, 128 := Finset.sum_add_distrib
+        _ = (∑ z' ∈ Xf.filter (fun z' => z' ∈ ball H (2 * R - 1) u),
+              64 * (H.neighborSet z').ncard) + Xf.card * 128 := by
+            rw [← Finset.sum_filter, Finset.sum_const, smul_eq_mul]
+        _ = 64 * peelDeg G π R i + 128 * (pfibR G π R i).ncard := by
+            rw [hfilter, ← Finset.mul_sum, ← hpeel, hXfcard]
+            ring
+    have hΦσ : Φ σ = (∑ z' ∈ Xf.filter
+          (fun z' => (σ.arrs plDd).getD z'.val 0 = 2 * R + 1), wtv z'.val) +
+        ∑ p ∈ Finset.Ico (σ.vars "pl.h") (σ.vars "pl.t"),
+          wtv ((σ.arrs plRw).getD p 0) := by
+      simp only [hΦ]
+    rw [hΦσ]
+    omega
+  · -- the exit: the two cursors have met
+    rintro σ σ' - ⟨hPB', hfalse⟩
+    refine ⟨hPB', ?_⟩
+    obtain ⟨hle, hub⟩ := hvarB σ' hPB'
+    have heval := evalB_condLt (B := B) (σ := σ')
+      (evalB_var (x := "pl.h") (by omega))
+      (evalB_var (x := "pl.t") (by omega))
+    rw [heval] at hfalse
+    have hnlt : ¬ σ'.vars "pl.h" < σ'.vars "pl.t" := by
+      simpa using hfalse
+    omega
+
+/-- **The touched-cell reset**: walk the emitted segment and re-sentinel
+each member's level — `O(|X_u|)`, never `O(N)`.  Every listed cell lies
+in the window, so after the walk the level region is all-sentinel
+again. -/
+theorem peelResetB_spec (hsq : N * N + N + 4 < B) (hRB : 2 * R + 2 < B)
+    {b₀ t₀ : ℕ} (hbt : b₀ ≤ t₀) (ht : t₀ ≤ N * N) :
+    Spec B
+      (fun σ => σ.vars "pl.b" = b₀ ∧ σ.vars "pl.t" = t₀ ∧
+        N ≤ (σ.arrs plDd).length ∧ N * N ≤ (σ.arrs plRw).length ∧
+        (∀ p, b₀ ≤ p → p < t₀ → (σ.arrs plRw).getD p 0 < N) ∧
+        (∀ z, z < N → (σ.arrs plDd).getD z 0 ≤ 2 * R + 1) ∧
+        (∀ z, z < N → (σ.arrs plDd).getD z 0 ≤ 2 * R →
+          ∃ p, b₀ ≤ p ∧ p < t₀ ∧ (σ.arrs plRw).getD p 0 = z))
+      (peelResetB R)
+      (fun _ σ' => (∀ z, z < N → (σ'.arrs plDd).getD z 0 = 2 * R + 1) ∧
+        N ≤ (σ'.arrs plDd).length)
+      (12 * (t₀ - b₀) + 6) := by
+  classical
+  -- the walk's invariant: listed cells lie ahead of the cursor
+  set I : Env → Prop := fun ρ =>
+    ρ.vars "pl.b" = b₀ ∧ ρ.vars "pl.t" = t₀ ∧
+    b₀ ≤ ρ.vars "pl.k" ∧ ρ.vars "pl.k" ≤ t₀ ∧
+    N ≤ (ρ.arrs plDd).length ∧ N * N ≤ (ρ.arrs plRw).length ∧
+    (∀ p, b₀ ≤ p → p < t₀ → (ρ.arrs plRw).getD p 0 < N) ∧
+    (∀ z, z < N → (ρ.arrs plDd).getD z 0 ≤ 2 * R + 1) ∧
+    (∀ z, z < N → (ρ.arrs plDd).getD z 0 ≤ 2 * R →
+      ∃ p, ρ.vars "pl.k" ≤ p ∧ p < t₀ ∧ (ρ.arrs plRw).getD p 0 = z)
+    with hI
+  have hbody : Spec B (fun ρ => I ρ ∧ ρ.vars "pl.k" < t₀)
+      (.seq (.store plDd (.get plRw (.var "pl.k")) (.lit (2 * R + 1)))
+        (.assign "pl.k" (.add (.var "pl.k") (.lit 1))))
+      (fun ρ ρ' => I ρ' ∧ ρ'.vars "pl.k" = ρ.vars "pl.k" + 1) 8 := by
+    rintro ρ ⟨hIρ, hklt⟩
+    rw [hI] at hIρ
+    obtain ⟨hb', ht', hbk, hkt, hddL', hrwL', hsound', hbound', hcompl'⟩ :=
+      hIρ
+    have hrwk : (ρ.arrs plRw).getD (ρ.vars "pl.k") 0 < N :=
+      hsound' _ hbk hklt
+    have hidx : ρ.vars "pl.k" < (ρ.arrs plRw).length := by omega
+    have hs1 : Run B (.store plDd (.get plRw (.var "pl.k"))
+        (.lit (2 * R + 1))) ρ
+        (ρ.setArr plDd ((ρ.arrs plRw).getD (ρ.vars "pl.k") 0)
+          (2 * R + 1)) 4 := by
+      have h := Run.store (B := B) (a := plDd)
+        (hi := evalB_get (a := plRw) (i := Expr.var "pl.k")
+          (evalB_var (by omega)) (getElem?_of_getD hidx rfl) (by omega))
+        (he := evalB_lit (n := 2 * R + 1) (by omega))
+        (hidx := by omega)
+      exact h.mono (by simp)
+    have hva : (ρ.setArr plDd ((ρ.arrs plRw).getD (ρ.vars "pl.k") 0)
+        (2 * R + 1)).vars "pl.k" = ρ.vars "pl.k" := by simp
+    have hs2 : Run B (.assign "pl.k" (.add (.var "pl.k") (.lit 1)))
+        (ρ.setArr plDd ((ρ.arrs plRw).getD (ρ.vars "pl.k") 0) (2 * R + 1))
+        ((ρ.setArr plDd ((ρ.arrs plRw).getD (ρ.vars "pl.k") 0)
+          (2 * R + 1)).setVar "pl.k" (ρ.vars "pl.k" + 1)) 4 := by
+      have h := Run.assign (B := B) (x := "pl.k")
+        (h := evalB_incr (x := "pl.k")
+          (σ := ρ.setArr plDd ((ρ.arrs plRw).getD (ρ.vars "pl.k") 0)
+            (2 * R + 1))
+          (by rw [hva]; omega))
+      rw [hva] at h
+      exact h.mono (by simp)
+    refine ⟨_, (hs1.seq hs2).mono (by omega), ?_, by simp⟩
+    rw [hI]
+    have harr : ∀ b', b' ≠ plDd →
+        ((ρ.setArr plDd ((ρ.arrs plRw).getD (ρ.vars "pl.k") 0)
+          (2 * R + 1)).setVar "pl.k" (ρ.vars "pl.k" + 1)).arrs b'
+        = ρ.arrs b' := by
+      intro b' hb'
+      simp [hb']
+    have hdd : ∀ z, (((ρ.setArr plDd ((ρ.arrs plRw).getD (ρ.vars "pl.k") 0)
+          (2 * R + 1)).setVar "pl.k" (ρ.vars "pl.k" + 1)).arrs plDd).getD z 0
+        = if z = (ρ.arrs plRw).getD (ρ.vars "pl.k") 0 then 2 * R + 1
+          else (ρ.arrs plDd).getD z 0 := by
+      intro z
+      simp only [arrs_setVar, arrs_setArr, eq_self_iff_true, if_true]
+      exact getD_set (ρ.arrs plDd) (2 * R + 1) z (by omega)
+    refine ⟨by simp [hb'], by simp [ht'], by simp; omega, by simp; omega,
+      ?_, ?_, ?_, ?_, ?_⟩
+    · simp only [arrs_setVar, arrs_setArr, eq_self_iff_true, if_true]
+      rw [List.length_set]
+      exact hddL'
+    · rw [harr plRw (by decide)]
+      exact hrwL'
+    · intro p hp1 hp2
+      rw [harr plRw (by decide)]
+      exact hsound' p hp1 hp2
+    · intro z hz
+      rw [hdd z]
+      by_cases hzk : z = (ρ.arrs plRw).getD (ρ.vars "pl.k") 0
+      · rw [if_pos hzk]
+      · rw [if_neg hzk]
+        exact hbound' z hz
+    · intro z hz hle
+      rw [hdd z] at hle
+      by_cases hzk : z = (ρ.arrs plRw).getD (ρ.vars "pl.k") 0
+      · rw [if_pos hzk] at hle
+        omega
+      · rw [if_neg hzk] at hle
+        obtain ⟨p, hp1, hp2, hp3⟩ := hcompl' z hz hle
+        refine ⟨p, ?_, hp2, by rw [harr plRw (by decide)]; exact hp3⟩
+        have hsv : ((ρ.setArr plDd ((ρ.arrs plRw).getD (ρ.vars "pl.k") 0)
+            (2 * R + 1)).setVar "pl.k" (ρ.vars "pl.k" + 1)).vars "pl.k"
+            = ρ.vars "pl.k" + 1 := by simp
+        rw [hsv]
+        rcases Nat.eq_or_lt_of_le hp1 with heq | hlt'
+        · exfalso
+          apply hzk
+          rw [← hp3, ← heq]
+        · omega
+  intro σ hσ
+  obtain ⟨hb, htv, hddL, hrwL, hsound, hbound, hcompl⟩ := hσ
+  have hr0 : Run B (.assign "pl.k" (.var "pl.b")) σ
+      (σ.setVar "pl.k" b₀) 2 := by
+    have h := Run.assign (B := B) (x := "pl.k")
+      (h := evalB_var (x := "pl.b") (σ := σ) (by omega))
+    rw [hb] at h
+    exact h.mono (by simp)
+  have hI0 : I (σ.setVar "pl.k" b₀) ∧ (σ.setVar "pl.k" b₀).vars "pl.k"
+      = b₀ := by
+    refine ⟨?_, by simp⟩
+    rw [hI]
+    refine ⟨by simp [hb], by simp [htv], by simp, by simp [hbt], hddL, hrwL,
+      hsound, hbound, ?_⟩
+    intro z hz hle
+    obtain ⟨p, hp1, hp2, hp3⟩ := hcompl z hz hle
+    exact ⟨p, by simp; omega, hp2, hp3⟩
+  obtain ⟨σ', hr1, hI', hk'⟩ := (Spec.forRange
+    (P := fun ρ => I ρ ∧ ρ.vars "pl.k" = b₀) "pl.k" "pl.t" I t₀ 8
+    (12 * (t₀ - b₀) + 4)
+    (fun ρ hρ => by rw [hI] at hρ; omega)
+    (fun ρ hρ => by rw [hI] at hρ; omega)
+    (fun ρ hρ => by rw [hI] at hρ; exact hρ.2.1)
+    (fun ρ hρ => by rw [hI] at hρ; omega)
+    hbody (fun ρ hρ => hρ.1)
+    (fun ρ hρ => by rw [hρ.2]; try omega)).run hI0
+  rw [hI] at hI'
+  obtain ⟨-, -, -, -, hddL', -, -, hbound', hcompl'⟩ := hI'
+  refine ⟨σ', (hr0.seq hr1).mono (by omega), ?_, hddL'⟩
+  intro z hz
+  have hb' := hbound' z hz
+  by_cases hle : (σ'.arrs plDd).getD z 0 ≤ 2 * R
+  · obtain ⟨p, hp1, hp2, -⟩ := hcompl' z hz hle
+    rw [hk'] at hp1
+    omega
+  · omega
 
 end SweepMachine
 
