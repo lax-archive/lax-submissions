@@ -850,7 +850,7 @@ noncomputable def prepK (S : Setup L) (ord : CoverSpec.OrderingRoutine)
     let cns := ∑ v : Fin (childN S A π ⟨u, h⟩),
       (preG S A π ⟨u, h⟩).degree v
     20                                                      -- row bounds
-    + (9 * A.N + 6)                                         -- zero
+    + (11 * A.N + 6)                                        -- zero
     + (30 * k + 6)                                          -- row pass
     + 20                                                    -- centre
     + ((30 + 30 * (hbf j + 1)) * ℓp j + 20)                 -- batch trace
@@ -861,7 +861,7 @@ noncomputable def prepK (S : Setup L) (ord : CoverSpec.OrderingRoutine)
     + (20 + bfsK k cns (2 * S.R))                           -- bfs
     + (30 + supportsK k cns (2 * S.R))                      -- supports
     + profilesK S.width (S.pal j + 1) k cns S.R             -- profiles
-    + ((30 * (isoPal (relPal (S.pal j)) S.width S.R) + 5) * k + 6)
+    + ((30 * (isoPal (relPal (S.pal j)) S.width S.R) + 9) * k + 6)
                                                             -- colour write
     + isolateK k cns                                        -- isolate
     + 30                                                    -- seq slack
