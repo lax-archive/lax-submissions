@@ -2749,7 +2749,14 @@ theorem peelExpandB_spec
       (peelExpandB R ca aj)
       (fun σ σ' =>
         EInv ca ra ao aj dg mt od G π R i (π.symm ⟨i, hi⟩) z offF σ' ∧
-        σ'.vars "pl.j" = σ.vars "pl.j" + 1)
+        σ'.vars "pl.j" = σ.vars "pl.j" + 1 ∧
+        (∀ p, p < σ.vars "pl.t" →
+          (σ'.arrs plRw).getD p 0 = (σ.arrs plRw).getD p 0) ∧
+        σ.vars "pl.t" ≤ σ'.vars "pl.t" ∧
+        σ'.vars "pl.g" = σ.vars "pl.g" ∧
+        σ'.vars "pl.h" = σ.vars "pl.h" ∧
+        (∀ c, (σ'.arrs plDd).getD c 0 = 2 * R + 1 →
+          (σ.arrs plDd).getD c 0 = 2 * R + 1))
       40 := by
   rintro σ ⟨⟨hPB, hvz, hvd, hva, hvg, hjle, hdlt, hht0, hfh, hrelax⟩, hjg⟩
   obtain ⟨hvn, hvi, hvu, hvb, hvm, hhl, hht, hcnt, hord, hrank, hadj, hcaL,
@@ -2854,7 +2861,11 @@ theorem peelExpandB_spec
       simp
     have hwlist : (σ.arrs plDd).getD ((w : ℕ)) 0 ≤ 2 * R := by omega
     refine ⟨σf, (hr1.seq (hr2.seq hr3)).mono (by omega), ⟨?_, ?_, ?_, ?_, ?_,
-      ?_, ?_, ?_, ?_, ?_⟩, by rw [hσf]; simp [← hjj]⟩
+      ?_, ?_, ?_, ?_, ?_⟩, by rw [hσf]; simp [← hjj],
+      fun p _ => by rw [hfarrs plRw], le_of_eq (hfvars "pl.t" (by decide)
+        (by decide)).symm, hfvars "pl.g" (by decide) (by decide),
+      hfvars "pl.h" (by decide) (by decide),
+      fun c hc => by rw [hfarrs plDd] at hc; exact hc⟩
     · -- PBfs untouched
       refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
@@ -2954,7 +2965,7 @@ theorem peelExpandB_spec
     -- a. the level write
     have hadz : σa.vars "pl.d" = dz := by rw [hσa]; simpa using hvd
     have hrb1 : Run B (.store plDd (.var "pl.w") (.add (.var "pl.d") (.lit 1)))
-        σa (σa.setArr plDd ((w : ℕ)) (dz + 1)) 6 := by
+        σa (σa.setArr plDd ((w : ℕ)) (dz + 1)) 5 := by
       have hev : (Expr.add (.var "pl.d") (.lit 1)).evalB B σa
           = some (dz + 1) := by
         have := evalB_bin (B := B) (op := .add) (e := .var "pl.d")
@@ -2997,7 +3008,14 @@ theorem peelExpandB_spec
           (σc.arrs ca).getD ((w : ℕ)) 0 = (σ.arrs ca).getD ((w : ℕ)) 0) →
         ∃ σ', Run B (peelExpandB R ca aj) σ σ' 40 ∧
           (EInv ca ra ao aj dg mt od G π R i u z offF σ' ∧
-            σ'.vars "pl.j" = σ.vars "pl.j" + 1) := by
+            σ'.vars "pl.j" = σ.vars "pl.j" + 1 ∧
+            (∀ p, p < σ.vars "pl.t" →
+              (σ'.arrs plRw).getD p 0 = (σ.arrs plRw).getD p 0) ∧
+            σ.vars "pl.t" ≤ σ'.vars "pl.t" ∧
+            σ'.vars "pl.g" = σ.vars "pl.g" ∧
+            σ'.vars "pl.h" = σ.vars "pl.h" ∧
+            (∀ c, (σ'.arrs plDd).getD c 0 = 2 * R + 1 →
+              (σ.arrs plDd).getD c 0 = 2 * R + 1)) := by
       intro σc hrc hcother hcvars hcne hclen hcmark hckeep
       -- c. the append
       have hct : σc.vars "pl.t" = t0 := by
@@ -3080,7 +3098,9 @@ theorem peelExpandB_spec
       have hfrw : σf.arrs plRw = (σ.arrs plRw).set t0 ((w : ℕ)) := by
         rw [hσf, hσe]
         simp only [arrs_setVar]
-        rw [hσd, hcrw]
+        rw [hσd]
+        simp only [arrs_setArr, if_pos rfl, if_true]
+        rw [hcrw]
       have hfrwD : ∀ c, (σf.arrs plRw).getD c 0 =
           if c = t0 then ((w : ℕ)) else (σ.arrs plRw).getD c 0 := by
         intro c
@@ -3099,7 +3119,6 @@ theorem peelExpandB_spec
         rw [hfddD]
         by_cases hz' : (z' : ℕ) = (w : ℕ)
         · rw [if_pos hz']
-          simp only [hzlist]
           constructor
           · intro _
             exact Or.inl (Fin.ext hz')
@@ -3123,7 +3142,16 @@ theorem peelExpandB_spec
         simpa using h1
       -- assemble
       refine ⟨σf, ?_, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, by
-        rw [hfj, ← hjj]⟩
+        rw [hfj, ← hjj], fun p hp => by rw [hfrwD, if_neg (by rw [← ht0] at hp; omega)],
+        by rw [hft, ← ht0]; omega, hfvars "pl.g" (by decide) (by decide) (by decide),
+        hfvars "pl.h" (by decide) (by decide) (by decide),
+        fun c hc => by
+          rw [hfddD] at hc
+          by_cases hcw : c = (w : ℕ)
+          · rw [if_pos hcw] at hc
+            omega
+          · rw [if_neg hcw] at hc
+            exact hc⟩
       · -- the run
         have hite : Run B (.ite (.eq (.get plDd (.var "pl.w"))
             (.lit (2 * R + 1)))
@@ -3211,99 +3239,124 @@ theorem peelExpandB_spec
             exact hach z' hz' hle
         · -- the queue segment gains `w` at its end
           rw [hft, hsetins]
-          obtain ⟨hqs, hqc, hqi⟩ := hqseg
+          obtain ⟨hqs, hqc, hqi⟩ := id hqseg
+          have hvalt : (σf.arrs plRw).getD t0 0 = (w : ℕ) := by
+            rw [hfrwD, if_pos rfl]
+          have hvalo : ∀ p', p' ≠ t0 →
+              (σf.arrs plRw).getD p' 0 = (σ.arrs plRw).getD p' 0 := by
+            intro p' hp'
+            rw [hfrwD, if_neg hp']
           refine ⟨?_, ?_, ?_⟩
           · intro p hbp hpe
-            try simp only []
-            rw [hfrwD]
             by_cases hpt : p = t0
-            · rw [if_pos hpt]
+            · subst hpt
+              simp only [hvalt]
               exact ⟨hwN, Set.mem_insert w _⟩
-            · rw [if_neg hpt]
+            · simp only [hvalo p hpt]
               obtain ⟨hz, hmem⟩ := hqs p hbp (by omega)
               exact ⟨hz, Set.mem_insert_of_mem w hmem⟩
           · intro z' hz'
             rcases Set.mem_insert_iff.mp hz' with rfl | hz'
-            · refine ⟨t0, ?_, by omega, ?_⟩
-              · rw [← hcnt]
-                exact hht.trans (le_refl _) |>.trans (le_refl _) |> fun _ =>
-                  le_trans hhl hht
-              · try simp only []
-                rw [hfrwD, if_pos rfl]
+            · exact ⟨t0, le_trans hhl hht, by omega, by simp only [hvalt]⟩
             · obtain ⟨p, hbp, hpt, hfp⟩ := hqc z' hz'
               refine ⟨p, hbp, by omega, ?_⟩
-              try simp only []
-              rw [hfrwD, if_neg (by omega)]
+              simp only [hvalo p (by omega)]
               exact hfp
           · intro p q hbp hpe hbq hqe hpq
-            try simp only [] at hpq
-            rw [hfrwD, hfrwD] at hpq
+            simp only [] at hpq
             by_cases hpt : p = t0 <;> by_cases hqt : q = t0
             · rw [hpt, hqt]
-            · rw [if_pos hpt, if_neg hqt] at hpq
+            · subst hpt
+              rw [hvalt, hvalo q hqt] at hpq
               obtain ⟨hz, hmem⟩ := hqs q hbq (by omega)
-              exact absurd hpq.symm (hwdd_ne _ hmem |> fun h hc =>
-                h (hc ▸ rfl))
-            · rw [if_neg hpt, if_pos hqt] at hpq
+              exact absurd hpq.symm (hwdd_ne ⟨_, hz⟩ hmem)
+            · subst hqt
+              rw [hvalt, hvalo p hpt] at hpq
               obtain ⟨hz, hmem⟩ := hqs p hbp (by omega)
-              exact absurd hpq (hwdd_ne _ hmem |> fun h hc => h (hc ▸ rfl))
-            · rw [if_neg hpt, if_neg hqt] at hpq
+              exact absurd hpq (hwdd_ne ⟨_, hz⟩ hmem)
+            · rw [hvalo p hpt, hvalo q hqt] at hpq
               exact hqi p q hbp (by omega) hbq (by omega) hpq
         · -- levels stay monotone along the stream
           intro p q hbp hpq hqt
           rw [hft] at hqt
-          try simp only []
-          rw [hfrwD, hfrwD]
+          have hvalt : (σf.arrs plRw).getD t0 0 = (w : ℕ) := by
+            rw [hfrwD, if_pos rfl]
+          have hvalo : ∀ p', p' ≠ t0 →
+              (σf.arrs plRw).getD p' 0 = (σ.arrs plRw).getD p' 0 := by
+            intro p' hp'
+            rw [hfrwD, if_neg hp']
+          have hddo : ∀ (c : ℕ), c < N → (σ.arrs plDd).getD c 0 ≤ 2 * R →
+              (σf.arrs plDd).getD c 0 = (σ.arrs plDd).getD c 0 := by
+            intro c hc hcl
+            rw [hfddD, if_neg (hwdd_ne ⟨c, hc⟩ hcl)]
+          have hwv : (σf.arrs plDd).getD ((w : ℕ)) 0 = dz + 1 := by
+            rw [hfddD, if_pos rfl]
           by_cases hqt0 : q = t0
-          · rw [if_pos hqt0, hfddD, if_pos rfl]
+          · subst hqt0
+            rw [hvalt, hwv]
             by_cases hpt0 : p = t0
-            · rw [if_pos hpt0, hfddD, if_pos rfl]
-            · rw [if_neg hpt0]
-              have hplt : p < t0 := by omega
+            · subst hpt0
+              rw [hvalt, hwv]
+            · have hplt : p < t0 := by omega
               obtain ⟨hz, hmem⟩ := hqseg.1 p hbp hplt
-              rw [hfddD, if_neg (hwdd_ne ⟨_, hz⟩ hmem)]
-              have := hreach hht0 p hbp hplt
-              rw [hfh] at this
-              rw [← hdz] at this
+              rw [hvalo p hpt0, hddo _ hz hmem]
+              have hr := hreach hht0 p hbp hplt
+              rw [hfh] at hr
               omega
-          · rw [if_neg hqt0]
-            have hqlt : q < t0 := by omega
+          · have hqlt : q < t0 := by omega
             have hplt : p < t0 := by omega
             obtain ⟨hzp, hmemp⟩ := hqseg.1 p hbp hplt
             obtain ⟨hzq, hmemq⟩ := hqseg.1 q (le_trans hbp hpq) hqlt
-            rw [if_neg (by omega), hfddD, hfddD,
-              if_neg (hwdd_ne ⟨_, hzp⟩ hmemp),
-              if_neg (hwdd_ne ⟨_, hzq⟩ hmemq)]
+            rw [hvalo p (by omega), hvalo q (by omega),
+              hddo _ hzp hmemp, hddo _ hzq hmemq]
             exact hmono p q hbp hpq hqlt
         · -- the window stays within one level of its head
           intro hht' p hbp hpt
           rw [hft] at hpt
           rw [hfvars "pl.h" (by decide) (by decide) (by decide)] at hht' ⊢
-          try simp only []
-          rw [hfrwD, hfrwD,
-            if_neg (show ¬ (σ.vars "pl.h" = t0) by omega)]
+          have hvalt : (σf.arrs plRw).getD t0 0 = (w : ℕ) := by
+            rw [hfrwD, if_pos rfl]
+          have hvalo : ∀ p', p' ≠ t0 →
+              (σf.arrs plRw).getD p' 0 = (σ.arrs plRw).getD p' 0 := by
+            intro p' hp'
+            rw [hfrwD, if_neg hp']
+          have hddo : ∀ (c : ℕ), c < N → (σ.arrs plDd).getD c 0 ≤ 2 * R →
+              (σf.arrs plDd).getD c 0 = (σ.arrs plDd).getD c 0 := by
+            intro c hc hcl
+            rw [hfddD, if_neg (hwdd_ne ⟨c, hc⟩ hcl)]
+          have hwv : (σf.arrs plDd).getD ((w : ℕ)) 0 = dz + 1 := by
+            rw [hfddD, if_pos rfl]
+          have hvalh : (σf.arrs plRw).getD (σ.vars "pl.h") 0 = (z : ℕ) := by
+            rw [hvalo _ (by omega)]
+            exact hfh
+          rw [hvalh, hddo _ z.isLt (by rw [← hdz]; exact hzlist), ← hdz]
           by_cases hpt0 : p = t0
-          · rw [if_pos hpt0, hfddD, if_pos rfl, hfh, hfddD,
-              if_neg (hwdd_ne z (by rw [← hdz]; exact hzlist))]
-            rw [← hdz]
-            omega
-          · rw [if_neg hpt0]
-            have hplt : p < t0 := by omega
+          · subst hpt0
+            rw [hvalt, hwv]
+          · have hplt : p < t0 := by omega
             obtain ⟨hzp, hmemp⟩ := hqseg.1 p hbp hplt
-            rw [hfddD, if_neg (hwdd_ne ⟨_, hzp⟩ hmemp), hfddD, hfh,
-              if_neg (hwdd_ne z (by rw [← hdz]; exact hzlist))]
-            have := hreach hht0 p hbp hplt
-            rw [hfh] at this
-            exact this
+            rw [hvalo p hpt0, hddo _ hzp hmemp]
+            have hr := hreach hht0 p hbp hplt
+            rw [hfh] at hr
+            exact hr
         · -- the popped prefix stays relaxed
           intro p hbp hph hp hlt w' hadj'
           rw [hfvars "pl.h" (by decide) (by decide) (by decide)] at hph
-          try simp only [] at hp hlt hadj' ⊢
-          have hplt : p < t0 := lt_of_lt_of_le hph (by rw [← ht0]; exact hht)
-          rw [hfrwD, if_neg (by omega)] at hp hlt hadj' ⊢
+          have hplt : p < t0 := lt_of_lt_of_le hph hht
+          have hvalo : (σf.arrs plRw).getD p 0 = (σ.arrs plRw).getD p 0 := by
+            rw [hfrwD, if_neg (by omega)]
+          have hp' : (σ.arrs plRw).getD p 0 < N := by
+            rw [← hvalo]
+            exact hp
+          have hFin : (⟨(σf.arrs plRw).getD p 0, hp⟩ : Fin N)
+              = ⟨(σ.arrs plRw).getD p 0, hp'⟩ := Fin.ext hvalo
+          rw [hFin] at hadj'
           obtain ⟨hzp, hmemp⟩ := hqseg.1 p hbp hplt
-          rw [hfddD, if_neg (hwdd_ne ⟨_, hzp⟩ hmemp)] at hlt ⊢
-          have hold := hpopped p hbp hph hp hlt w' hadj'
+          have hddp : (σf.arrs plDd).getD ((σ.arrs plRw).getD p 0) 0
+              = (σ.arrs plDd).getD ((σ.arrs plRw).getD p 0) 0 := by
+            rw [hfddD, if_neg (hwdd_ne ⟨_, hzp⟩ hmemp)]
+          rw [hvalo, hddp] at hlt ⊢
+          have hold := hpopped p hbp hph hp' hlt w' hadj'
           rw [hfddD]
           by_cases hw' : (w' : ℕ) = (w : ℕ)
           · rw [if_pos hw']
@@ -3354,29 +3407,26 @@ theorem peelExpandB_spec
       · rw [hfvars "pl.h" (by decide) (by decide) (by decide), hft]
         omega
       · rw [hfvars "pl.h" (by decide) (by decide) (by decide)]
-        try simp only []
-        rw [hfrwD, if_neg (by
-          have := hht
-          rw [← ht0] at this
-          omega)]
+        rw [hfrwD, if_neg (by omega : ¬ (σ.vars "pl.h" = t0))]
         exact hfh
       · -- the processed prefix grew
         intro s hs w' hAJ'
         rw [hfj] at hs
         rw [hfarrs aj haj_ca haj_dd haj_rw] at hAJ'
-        rw [hfddD, if_neg (hwdd_ne z (by rw [← hdz]; exact hzlist)), hfddD]
+        have hddz : (σf.arrs plDd).getD ((z : ℕ)) 0 = dz := by
+          rw [hfddD, if_neg (hwdd_ne z (by rw [← hdz]; exact hzlist)), ← hdz]
+        rw [hddz]
         rcases Nat.lt_succ_iff_lt_or_eq.mp hs with h | rfl
         · have hold := hrelax s h w' hAJ'
+          rw [hfddD]
           by_cases hw' : (w' : ℕ) = (w : ℕ)
           · rw [if_pos hw']
-            omega
           · rw [if_neg hw']
             exact hold
-        · have hww' : w' = w := by
-            have := hAJ'.symm.trans hAJc
-            exact Fin.ext (by rw [← this])
-          subst hww'
-          rw [if_pos rfl]
+        · have hval : (w' : ℕ) = (w : ℕ) := by
+            rw [← hAJ']
+            exact hAJc
+          rw [hfddD, if_pos hval]
     -- discharge the join: the two mark branches
     have hbd : σb.vars "pl.d" = dz := by rw [hσb]; simpa using hadz
     have hmkEv : (Cond.lt (.lit R) (.add (.var "pl.d") (.lit 1))).evalB B σb
@@ -3397,7 +3447,13 @@ theorem peelExpandB_spec
         rw [hmkEv]
         congr 1
         simpa using hmk
-      exact hmark_join σb ((Run.ite_true hmkT Run.skip).mono (by simp))
+      have hrmark : Run B (.ite (.lt (.lit R) (.add (.var "pl.d") (.lit 1)))
+          .skip
+          (.ite (.eq (.get ca (.var "pl.w")) (.var "pl.n"))
+            (.store ca (.var "pl.w") (.var "pl.u"))
+            .skip)) σb σb 14 :=
+        (Run.ite_true hmkT Run.skip).mono (by simp)
+      exact hmark_join σb hrmark
         (fun _ _ => rfl) rfl
         (fun v hv => by rw [hbca]) (by rw [hbca])
         (fun hc _ => absurd hmk (by omega)) (fun _ => by rw [hbca])
@@ -3433,8 +3489,13 @@ theorem peelExpandB_spec
           rw [hcondEv2]
           congr 1
           simpa using hne
-        exact hmark_join σb ((Run.ite_false hmkF
-          ((Run.ite_false hcF Run.skip).mono (by simp))).mono (by simp))
+        have hrmark : Run B (.ite (.lt (.lit R) (.add (.var "pl.d") (.lit 1)))
+            .skip
+            (.ite (.eq (.get ca (.var "pl.w")) (.var "pl.n"))
+              (.store ca (.var "pl.w") (.var "pl.u"))
+              .skip)) σb σb 14 :=
+          (Run.ite_false hmkF (Run.ite_false hcF Run.skip)).mono (by simp)
+        exact hmark_join σb hrmark
           (fun _ _ => rfl) rfl (fun v hv => by rw [hbca]) (by rw [hbca])
           (fun _ hc => absurd hwm hc) (fun _ => by rw [hbca])
       · -- unassigned: lay the mark
@@ -3455,9 +3516,13 @@ theorem peelExpandB_spec
             (by simp)
           rw [hbca]
           exact lt_of_lt_of_le hwN hcaL
-        refine hmark_join (σb.setArr ca ((w : ℕ)) ((u : ℕ)))
-          ((Run.ite_false hmkF ((Run.ite_true hcT hstca).mono
-            (by simp))).mono (by simp))
+        have hrmark : Run B (.ite (.lt (.lit R) (.add (.var "pl.d") (.lit 1)))
+            .skip
+            (.ite (.eq (.get ca (.var "pl.w")) (.var "pl.n"))
+              (.store ca (.var "pl.w") (.var "pl.u"))
+              .skip)) σb (σb.setArr ca ((w : ℕ)) ((u : ℕ))) 14 :=
+          (Run.ite_false hmkF (Run.ite_true hcT hstca)).mono (by simp)
+        refine hmark_join (σb.setArr ca ((w : ℕ)) ((u : ℕ))) hrmark
           (fun b' hb' => by simp only [arrs_setArr, if_neg hb']) rfl
           (fun v hv => by
             simp only [arrs_setArr, if_pos rfl, if_true]
@@ -3473,6 +3538,230 @@ theorem peelExpandB_spec
             rcases hor with h | h
             · exact absurd h (by omega)
             · exact absurd h hwm)
+
+/-- The cached row length is bounded by the carrier. -/
+theorem EInv_g_le {i : ℕ} {u z : Fin N} {offF : ℕ → ℕ} {σ : Env}
+    (hI : EInv ca ra ao aj dg mt od G π R i u z offF σ)
+    (hu : u ∉ peelSet π i) :
+    σ.vars "pl.g" ≤ N := by
+  obtain ⟨hPB, hvz, hvd, hva, hvg, hjle, hdlt, hht0, hfh, hrelax⟩ := hI
+  obtain ⟨hvn, hvi, hvu, hvb, hvm, hhl, hht, hcnt, hord, hrank, hadj, hcaL,
+    hddL, hrwL, hreL, hreV, hsegs, hanch, hdbd, hach, hqseg, hmono, hreach,
+    hpopped, hcaOld, hcaNew⟩ := hPB
+  have hach_z : WithinDist (deleteVerts G (peelSet π i))
+      ((σ.arrs plDd).getD ((z : ℕ)) 0) u z := by
+    have h := hach ((z : ℕ)) z.isLt (le_of_lt hdlt)
+    rw [Fin.eta] at h
+    exact h
+  have hznp : z ∉ peelSet π i :=
+    not_mem_of_withinDist_deleteVerts hach_z hu
+  obtain ⟨offF', -, -, -, -, -, -, -, -, hdeg', -, -⟩ := hadj
+  rw [hvg, hdeg' z hznp]
+  refine le_trans (Set.ncard_le_ncard ?_ (Set.toFinite _))
+    (ncard_neighborSet_le_card (H := G) z)
+  intro w' hw'
+  exact (deleteVerts_le G _) hw'
+
+/-- **The expansion loop**: run the live prefix to its end.  Fuel
+induction, carrying the stream stability the queue potential's
+bookkeeping reads. -/
+theorem peelExpand_loop
+    (hNB : N < B) (hsq : N * N + N + 4 < B) (hRB : 2 * R + 2 < B)
+    (hca_dd : ca ≠ plDd) (hca_rw : ca ≠ plRw) (hca_re : ca ≠ plRe)
+    (hod_ca : od ≠ ca) (hod_dd : od ≠ plDd) (hod_rw : od ≠ plRw)
+    (hra_ca : ra ≠ ca) (hra_dd : ra ≠ plDd) (hra_rw : ra ≠ plRw)
+    (hao_ca : ao ≠ ca) (hao_dd : ao ≠ plDd) (hao_rw : ao ≠ plRw)
+    (haj_ca : aj ≠ ca) (haj_dd : aj ≠ plDd) (haj_rw : aj ≠ plRw)
+    (hdg_ca : dg ≠ ca) (hdg_dd : dg ≠ plDd) (hdg_rw : dg ≠ plRw)
+    (hmt_ca : mt ≠ ca) (hmt_dd : mt ≠ plDd) (hmt_rw : mt ≠ plRw)
+    {offF : ℕ → ℕ} (h0 : offF 0 = 0)
+    (hstepF : ∀ v : Fin N, offF ((v : ℕ) + 1) =
+      offF ((v : ℕ)) + (G.neighborSet v).ncard)
+    {i : ℕ} (hi : i < N) {z : Fin N} :
+    ∀ (fuel : ℕ) (σ : Env),
+      EInv ca ra ao aj dg mt od G π R i (π.symm ⟨i, hi⟩) z offF σ →
+      σ.vars "pl.g" - σ.vars "pl.j" = fuel →
+      ∃ σ', Run B (.while (.lt (.var "pl.j") (.var "pl.g"))
+          (peelExpandB R ca aj)) σ σ' (44 * fuel + 4) ∧
+        EInv ca ra ao aj dg mt od G π R i (π.symm ⟨i, hi⟩) z offF σ' ∧
+        σ'.vars "pl.j" = σ'.vars "pl.g" ∧
+        (∀ p, p < σ.vars "pl.t" →
+          (σ'.arrs plRw).getD p 0 = (σ.arrs plRw).getD p 0) ∧
+        σ.vars "pl.t" ≤ σ'.vars "pl.t" ∧
+        σ'.vars "pl.g" = σ.vars "pl.g" ∧
+        σ'.vars "pl.h" = σ.vars "pl.h" ∧
+        (∀ c, (σ'.arrs plDd).getD c 0 = 2 * R + 1 →
+          (σ.arrs plDd).getD c 0 = 2 * R + 1) := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro σ hI hf
+      have hgN : σ.vars "pl.g" ≤ N := EInv_g_le hI (symm_not_peeled π hi)
+      have hjle : σ.vars "pl.j" ≤ σ.vars "pl.g" := hI.2.2.2.2.2.1
+      have hjg : σ.vars "pl.j" = σ.vars "pl.g" := by omega
+      have hcondF : (Cond.lt (.var "pl.j") (.var "pl.g")).evalB B σ
+          = some false := by
+        rw [evalB_condLt (evalB_var (by omega)) (evalB_var (by omega))]
+        congr 1
+        simp [hjg]
+      exact ⟨σ, (Run.while_false hcondF).mono (by simp), hI, hjg,
+        fun _ _ => rfl, le_rfl, rfl, rfl, fun _ hc => hc⟩
+  | succ n ih =>
+      intro σ hI hf
+      have hgN : σ.vars "pl.g" ≤ N := EInv_g_le hI (symm_not_peeled π hi)
+      have hjlt : σ.vars "pl.j" < σ.vars "pl.g" := by omega
+      have hcondT : (Cond.lt (.var "pl.j") (.var "pl.g")).evalB B σ
+          = some true := by
+        rw [evalB_condLt (evalB_var (by omega)) (evalB_var (by omega))]
+        congr 1
+        simp [hjlt]
+      obtain ⟨σ₁, hr1, hI₁, hj₁, hstab₁, hmono₁, hg₁, hh₁, hsen₁⟩ :=
+        (peelExpandB_spec hNB hsq hRB hca_dd hca_rw hca_re hod_ca hod_dd
+          hod_rw hra_ca hra_dd hra_rw hao_ca hao_dd hao_rw haj_ca haj_dd
+          haj_rw hdg_ca hdg_dd hdg_rw hmt_ca hmt_dd hmt_rw h0 hstepF hi).run
+          ⟨hI, hjlt⟩
+      obtain ⟨σ', hr', hI', hjg', hstab', hmono', hg', hh', hsen'⟩ :=
+        ih σ₁ hI₁ (by rw [hg₁, hj₁]; omega)
+      refine ⟨σ', ?_, hI', hjg', ?_, le_trans hmono₁ hmono',
+        by rw [hg', hg₁], by rw [hh', hh₁], fun c hc => hsen₁ c (hsen' c hc)⟩
+      · obtain ⟨k1, hk1, hb1⟩ := hr1
+        obtain ⟨k', hk', hb'⟩ := hr'
+        refine ⟨1 + 3 + k1 + k', by omega, ?_⟩
+        have hsize : (Cond.lt (Expr.var "pl.j") (Expr.var "pl.g")).size = 3 :=
+          by simp
+        rw [show (1 + 3 + k1 + k' : ℕ)
+          = 1 + (Cond.lt (Expr.var "pl.j") (Expr.var "pl.g")).size + k1 + k'
+          from by rw [hsize]]
+        exact .while_true hcondT hb1 hb'
+      · intro p hp
+        rw [hstab' p (lt_of_lt_of_le hp hmono₁), hstab₁ p hp]
+
+/-- `PBfs` transports along agreement on its cells and arrays. -/
+theorem pbfs_of_eq {i : ℕ} {u : Fin N} {σ σ' : Env}
+    (h : PBfs ca ra ao aj dg mt od G π R i u σ)
+    (hv : ∀ y, y ∈ (["pl.n", "pl.i", "pl.u", "pl.b", "pl.m", "pl.h",
+      "pl.t"] : List String) → σ'.vars y = σ.vars y)
+    (ha : ∀ b', σ'.arrs b' = σ.arrs b') :
+    PBfs ca ra ao aj dg mt od G π R i u σ' := by
+  have harrs : σ'.arrs = σ.arrs := funext ha
+  obtain ⟨hvn, hvi, hvu, hvb, hvm, hhl, hht, hcnt, hord, hrank, hadj, hcaL,
+    hddL, hrwL, hreL, hreV, hsegs, hanch, hdbd, hach, hqseg, hmono, hreach,
+    hpopped, hcaOld, hcaNew⟩ := h
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+    (try rw [harrs]) <;>
+    first
+      | (rw [hv "pl.n" (by simp)]; exact hvn)
+      | (rw [hv "pl.i" (by simp)]; exact hvi)
+      | (rw [hv "pl.u" (by simp)]; exact hvu)
+      | (rw [hv "pl.b" (by simp)]; exact hvb)
+      | (rw [hv "pl.m" (by simp)]; exact hvm)
+      | (rw [hv "pl.h" (by simp)]; exact hhl)
+      | (rw [hv "pl.h" (by simp), hv "pl.t" (by simp)]; exact hht)
+      | (rw [hv "pl.t" (by simp)]; exact hcnt)
+      | exact hord
+      | exact hrank
+      | exact hadj
+      | exact hcaL
+      | exact hddL
+      | exact hrwL
+      | exact hreL
+      | exact hreV
+      | exact hsegs
+      | exact hanch
+      | exact hdbd
+      | exact hach
+      | (rw [hv "pl.t" (by simp)]; exact hqseg)
+      | (rw [hv "pl.t" (by simp)]; exact hmono)
+      | (rw [hv "pl.h" (by simp), hv "pl.t" (by simp)]; exact hreach)
+      | (rw [hv "pl.h" (by simp)]; exact hpopped)
+      | exact hcaOld
+      | exact hcaNew
+
+open Classical in
+/-- **The BFS loop**: pop until the queue empties.  Priced by the queue
+potential — the weight of a vertex is its live degree when it can still
+be expanded, plus a constant — so the loop's total is the scanned-edge
+budget plus the fibre's size, never a full pass. -/
+theorem peelBfs_loop
+    (hNB : N < B) (hsq : N * N + N + 4 < B) (hRB : 2 * R + 2 < B)
+    (hca_dd : ca ≠ plDd) (hca_rw : ca ≠ plRw) (hca_re : ca ≠ plRe)
+    (hod_ca : od ≠ ca) (hod_dd : od ≠ plDd) (hod_rw : od ≠ plRw)
+    (hra_ca : ra ≠ ca) (hra_dd : ra ≠ plDd) (hra_rw : ra ≠ plRw)
+    (hao_ca : ao ≠ ca) (hao_dd : ao ≠ plDd) (hao_rw : ao ≠ plRw)
+    (haj_ca : aj ≠ ca) (haj_dd : aj ≠ plDd) (haj_rw : aj ≠ plRw)
+    (hdg_ca : dg ≠ ca) (hdg_dd : dg ≠ plDd) (hdg_rw : dg ≠ plRw)
+    (hmt_ca : mt ≠ ca) (hmt_dd : mt ≠ plDd) (hmt_rw : mt ≠ plRw)
+    {i : ℕ} (hi : i < N) :
+    Spec B (fun σ => PBfs ca ra ao aj dg mt od G π R i (π.symm ⟨i, hi⟩) σ)
+      (.while (.lt (.var "pl.h") (.var "pl.t")) (peelPopB R ca ao aj dg))
+      (fun _ σ' => PBfs ca ra ao aj dg mt od G π R i (π.symm ⟨i, hi⟩) σ' ∧
+        σ'.vars "pl.h" = σ'.vars "pl.t")
+      (64 * peelDeg G π R i + 128 * (pfibR G π R i).ncard + 4) := by
+  classical
+  set u : Fin N := π.symm ⟨i, hi⟩ with hu
+  have hπu : ((π u : Fin N) : ℕ) = i := by rw [hu, Equiv.apply_symm_apply]
+  set H := deleteVerts G (peelSet π i) with hH
+  have hpfib : pfibR G π R i = ball H (2 * R) u := by
+    rw [pfibR_eq G π R hi, ← hu, pfib_eq_ball, hπu, hH]
+  set Xf : Finset (Fin N) := (Set.toFinite (pfibR G π R i)).toFinset with hXf
+  have hXfcard : Xf.card = (pfibR G π R i).ncard := by
+    rw [hXf, ← Set.ncard_eq_toFinset_card]
+  set wtv : ℕ → ℕ := fun c =>
+    if hc : c < N then
+      (if (⟨c, hc⟩ : Fin N) ∈ ball H (2 * R - 1) u
+        then 64 * (H.neighborSet ⟨c, hc⟩).ncard else 0) + 128
+    else 128 with hwtv
+  have hwtv128 : ∀ c, 128 ≤ wtv c := by
+    intro c
+    rw [hwtv]
+    split <;> omega
+  have hwtvF : ∀ z' : Fin N, wtv ((z' : ℕ)) =
+      (if z' ∈ ball H (2 * R - 1) u
+        then 64 * (H.neighborSet z').ncard else 0) + 128 := by
+    intro z'
+    rw [hwtv]
+    simp only [z'.isLt, dif_pos, Fin.eta]
+  -- mid-run facts: the listed set sits inside the fibre
+  have hlistXf : ∀ (σ : Env),
+      (∀ z, (hz : z < N) → (σ.arrs plDd).getD z 0 ≤ 2 * R →
+        WithinDist H ((σ.arrs plDd).getD z 0) u ⟨z, hz⟩) →
+      ∀ z' : Fin N, (σ.arrs plDd).getD ((z' : ℕ)) 0 ≤ 2 * R → z' ∈ Xf := by
+    intro σ hach z' hz'
+    rw [hXf, Set.Finite.mem_toFinset, hpfib]
+    have h := hach ((z' : ℕ)) z'.isLt hz'
+    rw [Fin.eta] at h
+    exact mem_ball.mpr (withinDist_mono_radius hz' h)
+  -- the window's weight rides inside the listed set's weight
+  have himage : ∀ (σ : Env),
+      PBfs ca ra ao aj dg mt od G π R i u σ →
+      ∀ lo, mval G π R i ≤ lo →
+      (∑ p ∈ Finset.Ico lo (σ.vars "pl.t"),
+        wtv ((σ.arrs plRw).getD p 0)) ≤
+        ∑ z' ∈ Xf.filter
+          (fun z' => (σ.arrs plDd).getD ((z' : ℕ)) 0 ≤ 2 * R),
+          wtv ((z' : ℕ)) := by
+    intro σ hPB lo hlo
+    obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, hach,
+      hqseg, -, -, -, -, -⟩ := hPB
+    obtain ⟨hqs, hqc, hqi⟩ := hqseg
+    have hinj : Set.InjOn (fun p => (σ.arrs plRw).getD p 0)
+        ↑(Finset.Ico lo (σ.vars "pl.t")) := by
+      intro p hp q hq hpq
+      rw [Finset.mem_coe, Finset.mem_Ico] at hp hq
+      exact hqi p q (le_trans hlo hp.1) hp.2 (le_trans hlo hq.1) hq.2 hpq
+    rw [← Finset.sum_image hinj]
+    refine Finset.sum_le_sum_of_subset ?_
+    intro c hc
+    rw [Finset.mem_image] at hc
+    obtain ⟨p, hp, rfl⟩ := hc
+    rw [Finset.mem_Ico] at hp
+    obtain ⟨hz, hmem⟩ := hqs p (le_trans hlo hp.1) hp.2
+    have hlst : (σ.arrs plDd).getD ((σ.arrs plRw).getD p 0) 0 ≤ 2 * R := hmem
+    refine Finset.mem_image.mpr ⟨⟨(σ.arrs plRw).getD p 0, hz⟩, ?_, rfl⟩
+    rw [Finset.mem_filter]
+    exact ⟨hlistXf σ hach _ hlst, hlst⟩
+  sorry
 
 end SweepMachine
 

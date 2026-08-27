@@ -3594,12 +3594,14 @@ theorem mdPeelCore_spec (mt : String)
     have hnsq := nsOf_add_le F
     set L' := Nat.log 2 (N + nsOf F + 1) with hL'
     set keyAt : ℕ → ℕ := fun t => (σ₀.arrs dg).getD t 0 * N + t with hkeyAt
+    have hkeyApp : ∀ t, keyAt t = (σ₀.arrs dg).getD t 0 * N + t :=
+      fun _ => rfl
     have hkeyAtlt : ∀ t, t < N → keyAt t < N * N := by
       intro t ht
       have hc := hcellBase t ht
       have hb := baseDeg_lt F ht
       have h1 : keyAt t < ((σ₀.arrs dg).getD t 0 + 1) * N := by
-        rw [hkeyAt, Nat.succ_mul]
+        rw [hkeyApp t, Nat.succ_mul]
         omega
       have h2 : ((σ₀.arrs dg).getD t 0 + 1) * N ≤ N * N :=
         Nat.mul_le_mul_right N (by omega)
@@ -3631,8 +3633,6 @@ theorem mdPeelCore_spec (mt : String)
             = some ((τ.arrs dg).getD (τ.vars iv) 0) := by
           refine evB_get (evB_var rfl (by omega)) ?_ rfl (by omega)
           rw [hτdg]
-          have := hτlen dg
-          rw [hτlen dg]
           omega
         have hm := evalB_bin (op := .mul) hg (evB_var hτnN (by omega))
           (show Bop.mul.apply ((τ.arrs dg).getD (τ.vars iv) 0) N < B by
@@ -3655,7 +3655,7 @@ theorem mdPeelCore_spec (mt : String)
       have h1arr : ∀ b, τ₁.arrs b = τ.arrs b := fun b => by
         rw [hτ₁, arrs_setVar]
       have hH₁ : HeapSt hp hsv (τ.vars iv) fh τ₁ :=
-        hτH.of_eq (h1arr hp) (by rw [hτ₁, vars_setVar, if_neg (Ne.symm s_k)])
+        hτH.of_eq (h1arr hp) (by rw [hτ₁, vars_setVar, if_neg s_k])
       have hfB : ∀ t, t < τ.vars iv → fh t < B := by
         intro t ht
         have hmem : fh t ∈ (Multiset.range (τ.vars iv)).map keyAt := by
@@ -3709,22 +3709,22 @@ theorem mdPeelCore_spec (mt : String)
         exact hτlen b
     have hev0 : (Expr.lit 0).evalB B σ₀ = some 0 := evalB_lit (by omega)
     set σa := σ₀.setVar hsv 0 with hσa
+    have hivv0 : (σa.setVar iv 0).vars iv = 0 := by
+      rw [vars_setVar, if_pos rfl]
     have hIa : Iinit (σa.setVar iv 0) := by
-      refine ⟨fun _ => 0, ?_, ?_, ⟨?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_⟩
+      refine ⟨fun _ => 0, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
       · rw [vars_setVar, if_neg n_i, hσa, vars_setVar, if_neg n_s, hnN₀]
-      · rw [vars_setVar, if_pos rfl]
+      · rw [hivv0]
         omega
-      · rw [vars_setVar, if_neg s_i, hσa, vars_setVar, if_pos rfl,
-          vars_setVar, if_pos rfl]
-      · rw [vars_setVar, if_pos rfl]
-        omega
-      · intro t ht
-        rw [vars_setVar, if_pos rfl] at ht
-        omega
-      · intro t h0 ht
-        rw [vars_setVar, if_pos rfl] at ht
-        omega
-      · rw [vars_setVar, if_pos rfl]
+      · rw [hivv0]
+        refine ⟨?_, ?_, ?_, ?_⟩
+        · rw [vars_setVar, if_neg s_i, hσa, vars_setVar, if_pos rfl]
+        · exact Nat.zero_le _
+        · intro t ht
+          exact absurd ht (Nat.not_lt_zero t)
+        · intro t h0 ht
+          exact absurd ht (Nat.not_lt_zero t)
+      · rw [hivv0]
         simp [hMul]
       · rw [arrs_setVar, hσa, arrs_setVar]
       · rw [arrs_setVar, hσa, arrs_setVar]
@@ -3784,9 +3784,7 @@ theorem mdPeelCore_spec (mt : String)
               (Multiset.mem_range.mp ht') heq).2
           have hcellu : keyAt (u : ℕ)
               = (nbrsIn F (peelLive F 0) u).card * N + (u : ℕ) := by
-            rw [hkeyAt, peelLive_zero]
-            have h := hcell₀ u
-            rw [h]
+            rw [hkeyApp, peelLive_zero, hcell₀ u]
           have hmem : (nbrsIn F (peelLive F 0) u).card * N + (u : ℕ)
               ∈ (Multiset.range N).map keyAt := by
             refine Multiset.mem_map.mpr ⟨(u : ℕ),
@@ -3803,8 +3801,7 @@ theorem mdPeelCore_spec (mt : String)
             exact baseDeg_lt F htN
           · intro hmem
             rw [peelLive_zero]
-            have h := hcell₀ ⟨t, htN⟩
-            omega
+            exact le_of_eq (hcell₀ ⟨t, htN⟩).symm
           · intro hdead
             exact absurd (by
               rw [peelLive_zero]
@@ -3816,7 +3813,6 @@ theorem mdPeelCore_spec (mt : String)
             refine Finset.sum_congr rfl fun t ht => ?_
             exact hcellBase t (Finset.mem_range.mp ht)
           rw [hsum]
-          omega
     have hstepO : ∀ τ, OuterI F nNm ao aj dg ra hp hsv rc aoL ajL τ →
         (Cond.lt (.lit 0) (.var rc)).evalB B τ = some true →
         ∃ τ' K, Run B
@@ -3922,5 +3918,207 @@ theorem mdPeelCore_spec (mt : String)
       hy5, hy6, hy7, hy8, hy9, hy10, hy11]
 
 end Core
+
+
+/-! ## §3 The residual, instantiated -/
+
+section Residual
+
+/-- The peel's heap region at level `j`. Base length 4, like every
+level-tagged family. -/
+def mpHeap (j : ℕ) : String := lv "mp.h" j
+
+/-- The peel's eleven scratch scalars at level `j`, in the core's
+frame order. -/
+def mpWrittenVars (j : ℕ) : List String :=
+  [lv "mp.s" j, lv "mp.t" j, lv "mp.x" j, lv "mp.y" j, lv "mp.k" j,
+    lv "mp.d" j, lv "mp.v" j, lv "mp.z" j, lv "mp.i" j, lv "mp.r" j,
+    lv "mp.w" j]
+
+/-- The arrays the peel writes at level `j`: the heap scratch, the
+degree region (consumed) and the rank output. -/
+def mpWrittenArrs (dgO ra : ℕ → String) (j : ℕ) : List String :=
+  [mpHeap j, dgO j, ra j]
+
+/-- **The peel scratch descriptor**: room for the rank output (`N`
+cells) and the heap (`N² + N` cells), both against the level's
+carrier cell — the only allocations the pass needs beyond the
+ordering seam's own regions. -/
+def mpSmp (ra : ℕ → String) (j : ℕ) (σ : Env) : Prop :=
+  σ.vars (arenaNames j).nN ≤ (σ.arrs (ra j)).length ∧
+    σ.vars (arenaNames j).nN * σ.vars (arenaNames j).nN
+      + σ.vars (arenaNames j).nN ≤ (σ.arrs (mpHeap j)).length
+
+/-- `mpSmp` transports along the carrier cell and the two lengths —
+the shape a pass that writes neither proves from its frame data
+(w62's augmentation leaf consumes this). -/
+theorem mpSmp_of_eq {ra : ℕ → String} {j : ℕ} {σ σ' : Env}
+    (h : mpSmp ra j σ)
+    (hn : σ'.vars (arenaNames j).nN = σ.vars (arenaNames j).nN)
+    (hra : (σ'.arrs (ra j)).length = (σ.arrs (ra j)).length)
+    (hhp : (σ'.arrs (mpHeap j)).length = (σ.arrs (mpHeap j)).length) :
+    mpSmp ra j σ' := by
+  rw [mpSmp, hn, hra, hhp]
+  exact h
+
+/-- The peel program at level `j`: the parametric core at the level's
+carrier cell, the region names of the ordering seam, and the `mp`
+scratch family. -/
+def mpPeelC (aoO ajO dgO ra : ℕ → String) (j : ℕ) : Com :=
+  mdPeelCom (arenaNames j).nN (aoO j) (ajO j) (dgO j) (ra j) (mpHeap j)
+    (lv "mp.s" j) (lv "mp.t" j) (lv "mp.x" j) (lv "mp.y" j) (lv "mp.k" j)
+    (lv "mp.d" j) (lv "mp.v" j) (lv "mp.z" j) (lv "mp.i" j) (lv "mp.r" j)
+    (lv "mp.w" j)
+
+/-- Distinct bases of one common length stay `Nodup` after tagging. -/
+theorem nodup_lv (bases : List String) (j : ℕ)
+    (h4 : ∀ s ∈ bases, s.length = 4) (hnd : bases.Nodup) :
+    (bases.map (lv · j)).Nodup :=
+  hnd.map_on fun s hs t ht heq => by
+    by_contra hne
+    exact lv_ne_of_base_ne ((h4 s hs).trans (h4 t ht).symm) hne j j heq
+
+/-- A base outside a base list stays outside after tagging. -/
+theorem lv_notMem {s : String} {bases : List String} (j : ℕ)
+    (hlen : ∀ t ∈ bases, t.length = s.length) (hs : s ∉ bases) :
+    lv s j ∉ bases.map (lv · j) := by
+  intro hmem
+  obtain ⟨t, ht, heq⟩ := List.mem_map.mp hmem
+  obtain ⟨rfl, -⟩ := lv_inj (hlen t ht) heq
+  exact hs ht
+
+/-- `nsOf` is the packet's degree sum: `∑ v, |N_F(v)|`. -/
+theorem nsOf_eq_sum_ncard {N : ℕ} (F : SimpleGraph (Fin N)) :
+    nsOf F = ∑ v : Fin N, (F.neighborSet v).ncard := by
+  rw [nsOf, ← Fin.sum_univ_eq_sum_range]
+  exact Finset.sum_congr rfl fun v _ => baseDeg_eq F v
+
+set_option maxHeartbeats 800000 in
+/-- **The residual, discharged**: `CovMdPeelIn` — verbatim, at the
+concrete peel `mpPeelC`, the scratch `mpSmp` and the budget
+`KmdPeel A.N (nsOf (mdChain A.G R).toGraph)` (that is
+`100·(A.N + ns)·(log₂ (A.N + ns + 1) + 1) + 100·A.N + 100` at the
+augmented degree sum `ns`, by `nsOf_eq_sum_ncard`) — from hypotheses
+of the F7-suppliable kinds only: `1 ≤ q` (the value bound's constant
+is positive, as in `SolveCovLoad`), one `Nodup` of the level's array
+names (the heap scratch, the seam's four regions and the arena's
+five — scalars need no hypothesis: the carrier cell and the `mp`
+family are concrete `lv` names), and the sweep scratch's transport
+along the peel's frame. -/
+theorem covMdPeelIn_mdPeelCom (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) (R : ℕ) {n : ℕ} (G : SimpleGraph (Fin n))
+    (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (ca co : ℕ → String) (ra : ℕ → String) (aoO ajO dgO mtO : ℕ → String)
+    (Ssw : ℕ → Env → Prop)
+    (hq : 1 ≤ q)
+    (hnames : ∀ j, ([mpHeap j, ra j, dgO j, aoO j, ajO j,
+      (arenaNames j).off, (arenaNames j).tgt, (arenaNames j).col,
+      (arenaNames j).up, (arenaNames j).hist] : List String).Nodup)
+    (hSswT : ∀ j σ σ', Ssw j σ →
+      (∀ a, a ∉ mpWrittenArrs dgO ra j → σ'.arrs a = σ.arrs a) →
+      (∀ b, (σ'.arrs b).length = (σ.arrs b).length) →
+      (∀ y, y ∉ mpWrittenVars j → σ'.vars y = σ.vars y) →
+      Ssw j σ') :
+    CovMdPeelIn C hC φ R G c w q ℓp htabF hbf Adm ca co ra aoO ajO dgO mtO
+      (mpSmp ra) Ssw (mpPeelC aoO ajO dgO ra)
+      (fun _j A => KmdPeel A.N (nsOf (mdChain A.G R).toGraph)) := by
+  intro x hx j hj A _hAdm _hG
+  -- the word bound: `(A.N + 2)² ≤ (|x| + 1)² ≤ q·(|x| + 1)²`
+  have hNn : A.N ≤ n := by
+    have h := Fintype.card_le_of_embedding A.up
+    simpa using h
+  have hlen := hx.1.length_eq
+  have hB : A.N * A.N + 4 * A.N + 4 ≤ mcB q x := by
+    have h1 : A.N + 2 ≤ x.length + 1 := by omega
+    have h2 : (A.N + 2) * (A.N + 2) ≤ (x.length + 1) * (x.length + 1) :=
+      Nat.mul_le_mul h1 h1
+    have h3 : (x.length + 1) * (x.length + 1) ≤ mcB q x := by
+      rw [mcB, pow_two]
+      exact Nat.le_mul_of_pos_left _ hq
+    have h4 : A.N * A.N + 4 * A.N + 4 = (A.N + 2) * (A.N + 2) := by ring
+    omega
+  -- the scalar names: all concrete, `Nodup` by the `lv` mechanism
+  have hnods : ([(arenaNames j).nN, lv "mp.s" j, lv "mp.t" j, lv "mp.x" j,
+      lv "mp.y" j, lv "mp.k" j, lv "mp.d" j, lv "mp.v" j, lv "mp.z" j,
+      lv "mp.i" j, lv "mp.r" j, lv "mp.w" j] : List String).Nodup := by
+    have h := nodup_lv ["sv.n", "mp.s", "mp.t", "mp.x", "mp.y", "mp.k",
+      "mp.d", "mp.v", "mp.z", "mp.i", "mp.r", "mp.w"] j (by decide)
+      (by decide)
+    simpa [arenaNames] using h
+  have hnNfree := (List.nodup_cons.mp hnods).1
+  have hnSfree : (arenaNames j).nS ∉
+      ([lv "mp.s" j, lv "mp.t" j, lv "mp.x" j, lv "mp.y" j, lv "mp.k" j,
+        lv "mp.d" j, lv "mp.v" j, lv "mp.z" j, lv "mp.i" j, lv "mp.r" j,
+        lv "mp.w" j] : List String) := by
+    have h := lv_notMem (s := "sv.m") (bases := ["mp.s", "mp.t", "mp.x",
+      "mp.y", "mp.k", "mp.d", "mp.v", "mp.z", "mp.i", "mp.r", "mp.w"]) j
+      (by decide) (by decide)
+    simpa [arenaNames] using h
+  -- the array names: the hypothesis bundle, destructured
+  have harr : ([mpHeap j, ra j, dgO j, aoO j, ajO j] : List String).Nodup :=
+    (hnames j).sublist (List.take_sublist 5 _)
+  have hnj := hnames j
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
+    not_or, List.nodup_nil, and_true, not_false_eq_true] at hnj
+  obtain ⟨⟨h_r, h_d, h_ao, h_aj, h_o, h_t, h_c, h_u, h_h⟩,
+    ⟨r_d, r_ao, r_aj, r_o, r_t, r_c, r_u, r_h⟩,
+    ⟨d_ao, d_aj, d_o, d_t, d_c, d_u, d_h⟩,
+    ⟨ao_aj, ao_o, ao_t, ao_c, ao_u, ao_h⟩, ⟨aj_o, aj_t, aj_c, aj_u, aj_h⟩,
+    ⟨o_t, o_c, o_u, o_h⟩, ⟨t_c, t_u, t_h⟩, ⟨c_u, c_h⟩, u_h⟩ := hnj
+  have hofree : (arenaNames j).off ∉
+      ([mpHeap j, dgO j, ra j] : List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨Ne.symm h_o, Ne.symm d_o, Ne.symm r_o⟩
+  have htfree : (arenaNames j).tgt ∉
+      ([mpHeap j, dgO j, ra j] : List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨Ne.symm h_t, Ne.symm d_t, Ne.symm r_t⟩
+  have hcfree : (arenaNames j).col ∉
+      ([mpHeap j, dgO j, ra j] : List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨Ne.symm h_c, Ne.symm d_c, Ne.symm r_c⟩
+  have hufree : (arenaNames j).up ∉
+      ([mpHeap j, dgO j, ra j] : List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨Ne.symm h_u, Ne.symm d_u, Ne.symm r_u⟩
+  have hhfree : (arenaNames j).hist ∉
+      ([mpHeap j, dgO j, ra j] : List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨Ne.symm h_h, Ne.symm d_h, Ne.symm r_h⟩
+  -- the core, at the residual's graph and bound
+  have hcore := mdPeelCore_spec (B := mcB q x) (N := A.N)
+    (F := (mdChain A.G R).toGraph) (nNm := (arenaNames j).nN)
+    (ao := aoO j) (aj := ajO j) (dg := dgO j) (ra := ra j) (hp := mpHeap j)
+    (hsv := lv "mp.s" j) (tv := lv "mp.t" j) (xv := lv "mp.x" j)
+    (yv := lv "mp.y" j) (kv := lv "mp.k" j) (dv := lv "mp.d" j)
+    (vv := lv "mp.v" j) (zv := lv "mp.z" j) (iv := lv "mp.i" j)
+    (rc := lv "mp.r" j) (wv := lv "mp.w" j) (mtO j) hnods harr hB
+  refine (hcore.pre ?_).post ?_
+  · rintro σ ⟨hAr, hDel, -, -, hSmp, -⟩
+    have hnN : σ.vars (arenaNames j).nN = A.N := hAr.n_eq
+    refine ⟨hDel, hnN, ?_, ?_⟩
+    · rw [← hnN]
+      exact hSmp.1
+    · rw [← hnN]
+      exact hSmp.2
+  · rintro σ σ' ⟨hAr, -, hca, hco, -, hSsw⟩ ⟨⟨hraL', hraV⟩, hfa, hfv, hlens⟩
+    refine ⟨?_, ⟨hraL', fun v => (hraV v).trans (mdPerm_val _ v).symm⟩,
+      ?_, ?_, ?_⟩
+    · exact arenaStW_of_eq hAr (hfv _ hnNfree) (hfv _ hnSfree)
+        (hfa _ hofree) (hfa _ htfree) (hfa _ hcfree) (hfa _ hufree)
+        (hfa _ hhfree)
+    · rw [hlens (ca j)]
+      exact hca
+    · rw [hlens (co j)]
+      exact hco
+    · exact hSswT j σ σ' hSsw (fun a ha => hfa a ha) hlens
+        (fun y hy => hfv y hy)
+
+end Residual
 
 end Lax3Proofs.Prog
