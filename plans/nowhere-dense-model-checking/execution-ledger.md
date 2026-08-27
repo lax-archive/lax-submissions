@@ -59,6 +59,64 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-27 ~07:10Z — RESUME POINT: quota at 95%, freeze imminent
+
+Jan's standing directives at the wall: **no new workers** (only existing
+ones finish; correction rounds to the same agents are fine), worker
+dispatches default to **Opus** when new ones are next authorized (Fable
+only for supervision, a leaf Opus fails twice, and the F7 assembly).
+
+**Landed and pushed** (origin/main = the session branch
+`claude/ndmc-continuation-6eulbi`, tip `c929499`): F6c12p (`9c66491` +
+root-registration `a0c505e`), ReadRowsAll (`60ac2ab`), CovAdjBuildIn
+(`c929499`). Three of six F6c12 program residuals remain, all in flight
+at the freeze, every file checkpoint-pushed on its worktree branch:
+
+- **CovPeelIn** — `worktree-w61`,
+  `…/w61/…/Lax3Proofs/SolveSweepPeel.lean`, 3768 lines, 1 sorry,
+  last active 06:57Z. Late phase (seed/init specs after the sweep
+  invariant machinery); headline not yet stated.
+- **CovMdPeelIn** — `worktree-w61`, `…/SolveSweepMdPeel.lean`,
+  4124 lines, **0 sorries**, active 07:07Z. Likely nearest its gates
+  (heap kit + invariant + potential all present).
+- **ChildLoadPartsAll** — `worktree-w62`, `…/SolveMachPrepRun.lean`,
+  3472 lines, 1 sorry, active 07:07Z. Stage composition + write-set
+  lemmas present; the htabF-pinning seam appeared to resolve without a
+  design round (unconfirmed until its report).
+
+**To resume, same session** (freeze-then-thaw, like last night): the
+three workers resume via SendMessage to their agent ids — PEEL
+`a9fef27b57d0825b7`, MDPEEL `ab66a9d6acecb7e7e`, PREP
+`a3a22ad1d408b4ea6` — message: "resume your leaf from your file's
+current on-disk state; finish to your packet's gates; report." A
+supervisor wake (trig_0195uDseGWiQ3moMJsVvKeQ8, 07:57Z) queues and
+delivers on thaw; its instructions carry the no-new-workers directive.
+
+**To resume, fresh session**: cold-start per `/ndmc` (this ledger +
+`git log`), fetch the three worktree branches, and for each unfinished
+leaf either finish it in-session or dispatch ONE worker (Opus) per leaf
+with: the file's current state as the starting point, the residual's
+def location (F6c12 row above), the w60-packet hazards (this log,
+2026-08-26 entry), and the gates (module `lake build`, zero sorry,
+`lean_verify` at the landed baseline, verbatim conclusion + only
+F7-suppliable extra hypotheses). Landing recipe per boundary: copy file
+to main, register the module in `Lax3Proofs.lean` (the audit demands
+the exact mirror), `lake build` in the proofs dir, `lax build --only
+proofs nowhere-dense-model-checking` FROM THE REPO ROOT, ledger row,
+commit, push `claude/ndmc-continuation-6eulbi` and `main`.
+
+**After the three land, in order** (each awaiting Jan's go-ahead per
+the no-new-workers directive): (a) CovAugAdjIn — w63, Opus; consumes
+CovAdjBuildIn's build kit + CovMdPeelIn's parametric peel core; spec in
+the F6c12 row; the augmentation rounds mirror `mdChain`
+(SolveSweepOrder:333, `greedyStep` CoverRoutine:212, `fratGraph`
+Augmentation:178). (b) KB pin + uniform `KsChargeBridge` +
+`exists_mcChargeMS_T` re-instantiated at `mdOrderingRoutine R` — the
+verified five-point checklist is in this log's 2026-08-26 entry.
+(c) F7 — guarded-Inv Adm, canonical htabF + hhtab, `solveSpec_closed`'s
+bookkeeping quartet, `mcLayout.temps` bump if the row towers need it,
+the ∃-close at the `conclusion:` header.
+
 ### 2026-08-27 — the spend-limit freeze, F6c12p lands, ReadRowsAll lands
 
 The account hit its monthly spend limit at ~20:32Z on the 26th: all four
