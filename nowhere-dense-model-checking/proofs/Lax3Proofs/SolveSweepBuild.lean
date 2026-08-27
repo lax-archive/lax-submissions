@@ -211,8 +211,8 @@ private theorem run_incr {B : ℕ} {iv : String} {σ : Env} {k : ℕ}
   have h1 : (Expr.var iv).evalB B σ = some (σ.vars iv) :=
     evalB_var (B := B) (by omega)
   rw [hk] at h1
-  have h := evalB_bin (B := B) (op := .add) h1 (evalB_lit (B := B) (by omega))
-    (by simpa using hkB)
+  have h := evalB_bin (B := B) (op := .add) h1
+    (evalB_lit (B := B) (n := 1) (by omega)) (by simpa using hkB)
   simpa using h
 
 /-! ## §3 The placement bookkeeping: triggers and counts
@@ -729,7 +729,7 @@ variable (hstep : ∀ i, i < N → off i ≤ off (i + 1)) (h0 : off 0 = 0)
   (h_iv_uv : iv ≠ uv) (h_iv_wv : iv ≠ wv) (h_uv_wv : uv ≠ wv)
   (h_iv_nS : iv ≠ nS) (h_uv_nS : uv ≠ nS) (h_wv_nS : wv ≠ nS)
 
-include hstep h0 hlast htlt hnd hadj hoffstep htL htLlen haoL haoLen hNB hnsB
+include hstep hlast htlt hnd hadj hoffstep htL htLlen haoL haoLen hNB hnsB
   h_t_aj h_t_mt h_t_dg h_ao_aj h_ao_mt h_ao_dg h_aj_mt h_aj_dg h_mt_dg
   h_iv_uv h_iv_wv h_uv_wv h_iv_nS h_uv_nS h_wv_nS in
 /-- **One turn of the edge pass**, in `ownerScan_spec`'s step form:
@@ -1484,6 +1484,730 @@ private theorem bldTurn_step :
     · rw [hσ'_iv, hσ'_uv]
       omega
 
+include hstep h0 hlast htlt hnd hadj hoffstep htL htLlen haoL haoLen hNB hnsB
+  h_t_aj h_t_mt h_t_dg h_ao_aj h_ao_mt h_ao_dg h_aj_mt h_aj_dg h_mt_dg
+  h_iv_uv h_iv_wv h_uv_wv h_iv_nS h_uv_nS h_wv_nS in
+/-- **The edge pass**: from zeroed cursors, one owner-advancing scan
+of the slot space places every edge — the invariant lands at `j = ns`
+with every count full. Budget: `66` per slot, `11` per row, plus the
+scan tax and the two pointer zeroings. -/
+private theorem bldEdgePass_spec :
+    Spec B
+      (fun σ => σ.vars nS = ns ∧ σ.arrs t = tL ∧ σ.arrs ao = aoL ∧
+        ns ≤ (σ.arrs aj).length ∧ ns ≤ (σ.arrs mt).length ∧
+        N ≤ (σ.arrs dg).length ∧
+        ∀ v : Fin N, (σ.arrs dg).getD (v : ℕ) 0 = 0)
+      (bldEdgePass t ao aj dg mt iv uv wv nS)
+      (fun _ σ' => BInv t ao aj dg mt iv uv nS G off tgt ns tL aoL σ' ∧
+        σ'.vars iv = ns)
+      (70 * ns + 15 * N + 8) := by
+  intro σ0 hσ0
+  obtain ⟨hnS0, htA0, haoA0, hajL0, hmtL0, hdgL0, hdg0⟩ := hσ0
+  have h1 : Run B (.assign uv (.lit 0)) σ0 (σ0.setVar uv 0) 2 :=
+    (Run.assign (evalB_lit (B := B) (by omega))).mono (by simp)
+  have h2 : Run B (.assign iv (.lit 0)) (σ0.setVar uv 0)
+      ((σ0.setVar uv 0).setVar iv 0) 2 :=
+    (Run.assign (evalB_lit (B := B) (by omega))).mono (by simp)
+  set σ2 := (σ0.setVar uv 0).setVar iv 0 with hσ2_def
+  have h2uv : σ2.vars uv = 0 := by
+    rw [hσ2_def]
+    simp [Ne.symm h_iv_uv]
+  have h2iv : σ2.vars iv = 0 := by rw [hσ2_def]; simp
+  have h2nS : σ2.vars nS = ns := by
+    rw [hσ2_def]
+    simp [Ne.symm h_iv_nS, Ne.symm h_uv_nS, hnS0]
+  have h2arrs : σ2.arrs = σ0.arrs := by rw [hσ2_def]; rfl
+  have hI2 : BInv t ao aj dg mt iv uv nS G off tgt ns tL aoL σ2 := by
+    refine ⟨h2nS, by rw [h2arrs]; exact htA0, by rw [h2arrs]; exact haoA0,
+      by rw [h2uv]; omega, by rw [h2iv]; omega,
+      by rw [h2uv, h2iv, h0], by rw [h2uv, h2iv]; intro; omega,
+      by rw [h2arrs]; exact hajL0, by rw [h2arrs]; exact hmtL0,
+      by rw [h2arrs]; exact hdgL0, ?_, ?_, ?_⟩
+    · intro v
+      rw [h2arrs, h2iv, hdg0 v, cnt_zero]
+    · intro v t' ht'
+      rw [h2iv, cnt_zero] at ht'
+      exact absurd ht' (Nat.not_lt_zero t')
+    · intro v w' htr'
+      rw [h2iv] at htr'
+      obtain ⟨-, p, -, -, hp, -⟩ := htr'
+      exact absurd hp (Nat.not_lt_zero p)
+  obtain ⟨σ', K, hscan, hI', hiv', hK⟩ :=
+    Csr.ownerScan_run B N ns 66 11 iv nS uv (bldTurn t ao aj dg mt iv uv wv)
+      (BInv t ao aj dg mt iv uv nS G off tgt ns tL aoL) hnsB
+      (fun τ hτ => ⟨hτ.hnS, hτ.hj, hτ.hu⟩)
+      (bldTurn_step hstep hlast htlt hnd hadj hoffstep htL htLlen haoL
+        haoLen hNB hnsB h_t_aj h_t_mt h_t_dg h_ao_aj h_ao_mt h_ao_dg h_aj_mt
+        h_aj_dg h_mt_dg h_iv_uv h_iv_wv h_uv_wv h_iv_nS h_uv_nS h_wv_nS) hI2
+  rw [h2iv, h2uv] at hK
+  exact ⟨σ', (h1.seq (h2.seq hscan)).mono (by omega), hI', hiv'⟩
+
 end EdgePass
 
+/-! ## §5 The three flat passes, and the core -/
+
+/-- **Pass 1**: the CSR offsets copied into `ao` — the loop for
+`i < N`, then the closing cell. -/
+private theorem bldOffCopy_spec (B N ns : ℕ) (o ao iv nN : String)
+    (off : ℕ → ℕ) (hoff_le : ∀ i, i ≤ N → off i ≤ ns)
+    (h_ao_o : ao ≠ o) (h_iv_nN : iv ≠ nN)
+    (hNB : N + 1 < B) (hnsB : ns < B) :
+    Spec B
+      (fun σ => σ.arrs o = arrOf (N + 1) off ∧ σ.vars nN = N ∧
+        N + 1 ≤ (σ.arrs ao).length)
+      (bldOffCopy o ao iv nN)
+      (fun _ σ' => ∀ i, i ≤ N → (σ'.arrs ao).getD i 0 = off i)
+      (12 * N + 10) := by
+  set I : Env → Prop := fun σ => σ.arrs o = arrOf (N + 1) off ∧
+    σ.vars nN = N ∧ N + 1 ≤ (σ.arrs ao).length ∧
+    (∀ k, k < σ.vars iv → (σ.arrs ao).getD k 0 = off k) ∧ σ.vars iv ≤ N
+    with hI_def
+  have hbody : Spec B (fun σ => I σ ∧ σ.vars iv < N)
+      (.seq (.store ao (.var iv) (.get o (.var iv)))
+        (.assign iv (.add (.var iv) (.lit 1))))
+      (fun σ σ' => I σ' ∧ σ'.vars iv = σ.vars iv + 1) 8 := by
+    refine Spec.of_exists fun σ hσ => ?_
+    obtain ⟨⟨hoA, hnN, hlen, hpref, hle⟩, hlt⟩ := hσ
+    set k := σ.vars iv with hk_def
+    have h1 : (Expr.var iv).evalB B σ = some (σ.vars iv) :=
+      evalB_var (B := B) (by omega)
+    rw [← hk_def] at h1
+    have hread : (Expr.get o (.var iv)).evalB B σ = some (off k) := by
+      refine evalB_get h1 ?_ (by have := hoff_le k (by omega); omega)
+      rw [hoA]
+      exact getElem?_arrOf off (by omega)
+    have hs : Run B (.store ao (.var iv) (.get o (.var iv))) σ
+        (σ.setArr ao k (off k)) 4 :=
+      (Run.store h1 hread (by omega)).mono (by simp)
+    have hbiv : (σ.setArr ao k (off k)).vars iv = k := hk_def.symm
+    have hinc := run_incr (B := B) hbiv (by omega)
+    set E := (σ.setArr ao k (off k)).setVar iv (k + 1) with hE_def
+    have hE_o : E.arrs o = σ.arrs o := by
+      rw [hE_def]
+      simp [Ne.symm h_ao_o]
+    have hE_ao : E.arrs ao = (σ.arrs ao).set k (off k) := by
+      rw [hE_def]
+      simp
+    have hE_iv : E.vars iv = k + 1 := by rw [hE_def]; simp
+    have hE_nN : E.vars nN = N := by
+      rw [hE_def]
+      simp [Ne.symm h_iv_nN, hnN]
+    refine ⟨E, 8, (hs.seq hinc).mono (by omega), le_rfl,
+      ⟨by rw [hE_o]; exact hoA, hE_nN, by rw [hE_ao]; simpa using hlen,
+        ?_, by rw [hE_iv]; omega⟩, by rw [hE_iv, hk_def]⟩
+    intro k' hk'
+    rw [hE_iv] at hk'
+    rw [hE_ao]
+    rcases Nat.lt_or_ge k' k with hlt' | hge'
+    · rw [getD_set_ne (by omega)]
+      exact hpref k' hlt'
+    · obtain rfl : k' = k := by omega
+      exact getD_set_self (by omega)
+  have hloop := Spec.forRangeZero (B := B) iv nN I N 8 (by omega)
+    (fun σ hI => hI.2.2.2.2) (fun σ hI => hI.2.1) hbody
+  have hstore : Spec B (fun σ => I σ ∧ σ.vars iv = N)
+      (.store ao (.var nN) (.get o (.var nN)))
+      (fun _ σ' => ∀ i, i ≤ N → (σ'.arrs ao).getD i 0 = off i) 4 := by
+    refine Spec.of_exists fun σ hσ => ?_
+    obtain ⟨⟨hoA, hnN, hlen, hpref, hle⟩, hivN⟩ := hσ
+    have h1 : (Expr.var nN).evalB B σ = some (σ.vars nN) :=
+      evalB_var (B := B) (by omega)
+    rw [hnN] at h1
+    have hread : (Expr.get o (.var nN)).evalB B σ = some (off N) := by
+      refine evalB_get h1 ?_ (by have := hoff_le N le_rfl; omega)
+      rw [hoA]
+      exact getElem?_arrOf off (by omega)
+    refine ⟨σ.setArr ao N (off N), 4,
+      (Run.store h1 hread (by omega)).mono (by simp), le_rfl, ?_⟩
+    intro i hi
+    have hE : (σ.setArr ao N (off N)).arrs ao = (σ.arrs ao).set N (off N) := by
+      simp
+    rw [hE]
+    rcases Nat.lt_or_ge i N with hiN | hiN
+    · rw [getD_set_ne (by omega)]
+      exact hpref i (by rw [hivN]; exact hiN)
+    · obtain rfl : i = N := by omega
+      exact getD_set_self (by omega)
+  refine ((Spec.seq hloop hstore ?_ ?_).pre ?_).mono (by omega)
+  · rintro σ σ' - hq
+    exact hq
+  · rintro σ σ' σ'' - - hq
+    exact hq
+  · intro σ hσ
+    obtain ⟨hoA, hnN, hlen⟩ := hσ
+    refine ⟨hoA, ?_, hlen, ?_, ?_⟩
+    · show (σ.setVar iv 0).vars nN = N
+      simp [Ne.symm h_iv_nN, hnN]
+    · intro k hk
+      have h0' : (σ.setVar iv 0).vars iv = 0 := by simp
+      rw [h0'] at hk
+      exact absurd hk (Nat.not_lt_zero k)
+    · show (σ.setVar iv 0).vars iv ≤ N
+      simp
+/-- **Pass 2**: the cursors zeroed. -/
+private theorem bldDegZero_spec (B N : ℕ) (dg iv nN : String)
+    (h_iv_nN : iv ≠ nN) (hNB : N + 1 < B) :
+    Spec B (fun σ => σ.vars nN = N ∧ N ≤ (σ.arrs dg).length)
+      (bldDegZero dg iv nN)
+      (fun _ σ' => ∀ v : Fin N, (σ'.arrs dg).getD (v : ℕ) 0 = 0)
+      (11 * N + 6) := by
+  set I : Env → Prop := fun σ => σ.vars nN = N ∧ N ≤ (σ.arrs dg).length ∧
+    (∀ k, k < σ.vars iv → (σ.arrs dg).getD k 0 = 0) ∧ σ.vars iv ≤ N
+    with hI_def
+  have hbody : Spec B (fun σ => I σ ∧ σ.vars iv < N)
+      (.seq (.store dg (.var iv) (.lit 0))
+        (.assign iv (.add (.var iv) (.lit 1))))
+      (fun σ σ' => I σ' ∧ σ'.vars iv = σ.vars iv + 1) 7 := by
+    refine Spec.of_exists fun σ hσ => ?_
+    obtain ⟨⟨hnN, hlen, hpref, hle⟩, hlt⟩ := hσ
+    set k := σ.vars iv with hk_def
+    have h1 : (Expr.var iv).evalB B σ = some (σ.vars iv) :=
+      evalB_var (B := B) (by omega)
+    rw [← hk_def] at h1
+    have hs : Run B (.store dg (.var iv) (.lit 0)) σ (σ.setArr dg k 0) 3 :=
+      (Run.store h1 (evalB_lit (B := B) (by omega)) (by omega)).mono (by simp)
+    have hbiv : (σ.setArr dg k 0).vars iv = k := hk_def.symm
+    have hinc := run_incr (B := B) hbiv (by omega)
+    set E := (σ.setArr dg k 0).setVar iv (k + 1) with hE_def
+    have hE_dg : E.arrs dg = (σ.arrs dg).set k 0 := by
+      rw [hE_def]
+      simp
+    have hE_iv : E.vars iv = k + 1 := by rw [hE_def]; simp
+    have hE_nN : E.vars nN = N := by
+      rw [hE_def]
+      simp [Ne.symm h_iv_nN, hnN]
+    refine ⟨E, 7, (hs.seq hinc).mono (by omega), le_rfl,
+      ⟨hE_nN, by rw [hE_dg]; simpa using hlen, ?_, by rw [hE_iv]; omega⟩,
+      by rw [hE_iv, hk_def]⟩
+    intro k' hk'
+    rw [hE_iv] at hk'
+    rw [hE_dg]
+    rcases Nat.lt_or_ge k' k with hlt' | hge'
+    · rw [getD_set_ne (by omega)]
+      exact hpref k' hlt'
+    · obtain rfl : k' = k := by omega
+      exact getD_set_self (by omega)
+  have hloop := Spec.forRangeZero (B := B) iv nN I N 7 (by omega)
+    (fun σ hI => hI.2.2.2) (fun σ hI => hI.1) hbody
+  refine ((hloop.pre ?_).post ?_).mono (by omega)
+  · intro σ hσ
+    obtain ⟨hnN, hlen⟩ := hσ
+    refine ⟨?_, hlen, ?_, ?_⟩
+    · show (σ.setVar iv 0).vars nN = N
+      simp [Ne.symm h_iv_nN, hnN]
+    · intro k hk
+      have h0' : (σ.setVar iv 0).vars iv = 0 := by simp
+      rw [h0'] at hk
+      exact absurd hk (Nat.not_lt_zero k)
+    · show (σ.setVar iv 0).vars iv ≤ N
+      simp
+  · rintro σ σ' - ⟨⟨-, -, hpref, -⟩, hivN⟩ v
+    exact hpref (v : ℕ) (by rw [hivN]; exact v.isLt)
+
+/-- **Pass 4**: the rank array inverted into the order region. -/
+private theorem bldOrdInv_spec (B N : ℕ) (ra od iv nN : String)
+    (π : Equiv.Perm (Fin N)) (raL : List ℕ)
+    (hraL : ∀ v : Fin N, raL.getD (v : ℕ) 0 = ((π v : Fin N) : ℕ))
+    (hraLen : N ≤ raL.length)
+    (h_od_ra : od ≠ ra) (h_iv_nN : iv ≠ nN) (hNB : N + 1 < B) :
+    Spec B
+      (fun σ => σ.vars nN = N ∧ σ.arrs ra = raL ∧ N ≤ (σ.arrs od).length)
+      (bldOrdInv ra od iv nN)
+      (fun _ σ' => OrdArr od π σ')
+      (12 * N + 6) := by
+  set I : Env → Prop := fun σ => σ.vars nN = N ∧ σ.arrs ra = raL ∧
+    N ≤ (σ.arrs od).length ∧
+    (∀ v : Fin N, (v : ℕ) < σ.vars iv →
+      (σ.arrs od).getD ((π v : Fin N) : ℕ) 0 = (v : ℕ)) ∧ σ.vars iv ≤ N
+    with hI_def
+  have hbody : Spec B (fun σ => I σ ∧ σ.vars iv < N)
+      (.seq (.store od (.get ra (.var iv)) (.var iv))
+        (.assign iv (.add (.var iv) (.lit 1))))
+      (fun σ σ' => I σ' ∧ σ'.vars iv = σ.vars iv + 1) 8 := by
+    refine Spec.of_exists fun σ hσ => ?_
+    obtain ⟨⟨hnN, hraA, hlen, hpref, hle⟩, hlt⟩ := hσ
+    set k := σ.vars iv with hk_def
+    have hkN : k < N := hlt
+    set vk : Fin N := ⟨k, hkN⟩ with hvk_def
+    have hvk_val : (vk : ℕ) = k := rfl
+    have h1 : (Expr.var iv).evalB B σ = some (σ.vars iv) :=
+      evalB_var (B := B) (by omega)
+    rw [← hk_def] at h1
+    have hrv := hraL vk
+    rw [hvk_val] at hrv
+    have hidx : (Expr.get ra (.var iv)).evalB B σ
+        = some ((π vk : Fin N) : ℕ) := by
+      refine evalB_get h1 ?_ (by have := (π vk).isLt; omega)
+      rw [hraA, getElem?_of_getD (by omega), hrv]
+    have hs : Run B (.store od (.get ra (.var iv)) (.var iv)) σ
+        (σ.setArr od ((π vk : Fin N) : ℕ) k) 4 :=
+      (Run.store hidx h1 (by have := (π vk).isLt; omega)).mono (by simp)
+    have hbiv : (σ.setArr od ((π vk : Fin N) : ℕ) k).vars iv = k := hk_def.symm
+    have hinc := run_incr (B := B) hbiv (by omega)
+    set E := (σ.setArr od ((π vk : Fin N) : ℕ) k).setVar iv (k + 1) with hE_def
+    have hE_od : E.arrs od = (σ.arrs od).set ((π vk : Fin N) : ℕ) k := by
+      rw [hE_def]
+      simp
+    have hE_ra : E.arrs ra = raL := by
+      rw [hE_def]
+      simp [Ne.symm h_od_ra, hraA]
+    have hE_iv : E.vars iv = k + 1 := by rw [hE_def]; simp
+    have hE_nN : E.vars nN = N := by
+      rw [hE_def]
+      simp [Ne.symm h_iv_nN, hnN]
+    refine ⟨E, 8, (hs.seq hinc).mono (by omega), le_rfl,
+      ⟨hE_nN, hE_ra, by rw [hE_od]; simpa using hlen, ?_,
+        by rw [hE_iv]; omega⟩, by rw [hE_iv, hk_def]⟩
+    intro v hv
+    rw [hE_iv] at hv
+    rw [hE_od]
+    by_cases hveq : v = vk
+    · subst hveq
+      rw [getD_set_self (by have := (π vk).isLt; omega)]
+    · have hne : ((π vk : Fin N) : ℕ) ≠ ((π v : Fin N) : ℕ) := by
+        intro hc
+        exact hveq (π.injective (Fin.ext hc)).symm
+      rw [getD_set_ne hne]
+      exact hpref v (by omega)
+  have hloop := Spec.forRangeZero (B := B) iv nN I N 8 (by omega)
+    (fun σ hI => hI.2.2.2.2) (fun σ hI => hI.1) hbody
+  refine ((hloop.pre ?_).post ?_).mono (by omega)
+  · intro σ hσ
+    obtain ⟨hnN, hraA, hlen⟩ := hσ
+    refine ⟨?_, hraA, hlen, ?_, ?_⟩
+    · show (σ.setVar iv 0).vars nN = N
+      simp [Ne.symm h_iv_nN, hnN]
+    · intro v hv
+      have h0' : (σ.setVar iv 0).vars iv = 0 := by simp
+      rw [h0'] at hv
+      exact absurd hv (Nat.not_lt_zero _)
+    · show (σ.setVar iv 0).vars iv ≤ N
+      simp
+  · rintro σ σ' - ⟨⟨-, -, hlen, hpref, -⟩, hivN⟩
+    refine ⟨hlen, fun i => ?_⟩
+    have h := hpref (π.symm i) (by rw [hivN]; exact (π.symm i).isLt)
+    rw [Equiv.apply_symm_apply] at h
+    exact h
+
+open Classical in
+/-- **The core spec**: from the CSR pair, the two cells, the rank
+array and raw allocations for the five output regions, the program
+leaves the order region and the deletable adjacency region at the
+empty deleted set, in `O(N + ns)`. -/
+private theorem bldCore_spec (B N ns : ℕ)
+    (o t ra ao aj dg mt od iv uv wv nN nS : String)
+    (G : SimpleGraph (Fin N)) (π : Equiv.Perm (Fin N))
+    (hW : ([ao, aj, dg, mt, od] : List String).Nodup)
+    (hWr : ∀ a ∈ ([ao, aj, dg, mt, od] : List String), a ≠ o ∧ a ≠ t ∧ a ≠ ra)
+    (hV : ([iv, uv, wv] : List String).Nodup)
+    (hVr : ∀ y ∈ ([iv, uv, wv] : List String), y ≠ nN ∧ y ≠ nS)
+    (hNB : N + 1 < B) (hnsB : ns < B) :
+    Spec B
+      (fun σ => GraphCsr o t G ns σ ∧ σ.vars nN = N ∧ σ.vars nS = ns ∧
+        RankArr ra π σ ∧
+        N + 1 ≤ (σ.arrs ao).length ∧ ns ≤ (σ.arrs aj).length ∧
+        N ≤ (σ.arrs dg).length ∧ ns ≤ (σ.arrs mt).length ∧
+        N ≤ (σ.arrs od).length)
+      (bldCoreCom o t ra ao aj dg mt od iv uv wv nN nS)
+      (fun _ σ' => OrdArr od π σ' ∧ DelAdjSt ao aj dg mt G ∅ σ')
+      (bldCoreK N ns) := by
+  -- the names, unpacked
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
+    List.nodup_nil, and_true, not_or] at hW hV
+  obtain ⟨⟨h_ao_aj, h_ao_dg, h_ao_mt, h_ao_od⟩, ⟨h_aj_dg, h_aj_mt, h_aj_od⟩,
+    ⟨h_dg_mt, h_dg_od⟩, h_mt_od, -⟩ := hW
+  obtain ⟨⟨h_iv_uv, h_iv_wv⟩, h_uv_wv, -⟩ := hV
+  obtain ⟨hao_o, hao_t, hao_ra⟩ := hWr ao (by simp)
+  obtain ⟨haj_o, haj_t, haj_ra⟩ := hWr aj (by simp)
+  obtain ⟨hdg_o, hdg_t, hdg_ra⟩ := hWr dg (by simp)
+  obtain ⟨hmt_o, hmt_t, hmt_ra⟩ := hWr mt (by simp)
+  obtain ⟨hod_o, hod_t, hod_ra⟩ := hWr od (by simp)
+  obtain ⟨hiv_nN, hiv_nS⟩ := hVr iv (by simp)
+  obtain ⟨huv_nN, huv_nS⟩ := hVr uv (by simp)
+  obtain ⟨hwv_nN, hwv_nS⟩ := hVr wv (by simp)
+  intro σ0 hσ0
+  obtain ⟨⟨off, tgt, hcsr, h0, hnd, hadjR⟩, hnN0, hnS0, hraR, haoL0, hajL0,
+    hdgL0, hmtL0, hodL0⟩ := hσ0
+  have hstep : ∀ i, i < N → off i ≤ off (i + 1) := hcsr.2.2.1
+  have hlast : off N = ns := hcsr.2.2.2.1
+  have htlt : ∀ p, p < ns → tgt p < N := hcsr.2.2.2.2
+  have hoA : σ0.arrs o = arrOf (N + 1) off := hcsr.1
+  have htA : σ0.arrs t = arrOf ns tgt := hcsr.2.1
+  have hoffstep : ∀ v : Fin N,
+      off ((v : ℕ) + 1) = off (v : ℕ) + (G.neighborSet v).ncard :=
+    off_step_ncard hstep hnd hadjR
+  have hoff_le : ∀ i, i ≤ N → off i ≤ ns := by
+    intro i hi
+    have := off_mono hstep N le_rfl i hi
+    omega
+  -- pass 1: the offsets
+  obtain ⟨σ1, hrun1, haoPref⟩ :=
+    (bldOffCopy_spec B N ns o ao iv nN off hoff_le hao_o hiv_nN hNB hnsB).run
+      ⟨hoA, hnN0, haoL0⟩
+  have hf1 : ∀ b, b ≠ ao → σ1.arrs b = σ0.arrs b := by
+    intro b hb
+    refine hrun1.frame_arr b ?_
+    simp [bldOffCopy, Com.warrs, hb]
+  have hfv1 : ∀ y, y ≠ iv → σ1.vars y = σ0.vars y := by
+    intro y hy
+    refine hrun1.frame_var y ?_
+    simp [bldOffCopy, Com.wvars, hy]
+  have hlen1 : ∀ b, (σ1.arrs b).length = (σ0.arrs b).length :=
+    run_arrs_length_eq hrun1
+  -- pass 2: the cursors
+  obtain ⟨σ2, hrun2, hdgZ⟩ :=
+    (bldDegZero_spec B N dg iv nN hiv_nN hNB).run
+      ⟨by rw [hfv1 nN (Ne.symm hiv_nN)]; exact hnN0,
+        by rw [hlen1 dg]; exact hdgL0⟩
+  have hf2 : ∀ b, b ≠ dg → σ2.arrs b = σ1.arrs b := by
+    intro b hb
+    refine hrun2.frame_arr b ?_
+    simp [bldDegZero, Com.warrs, hb]
+  have hfv2 : ∀ y, y ≠ iv → σ2.vars y = σ1.vars y := by
+    intro y hy
+    refine hrun2.frame_var y ?_
+    simp [bldDegZero, Com.wvars, hy]
+  have hlen2 : ∀ b, (σ2.arrs b).length = (σ1.arrs b).length :=
+    run_arrs_length_eq hrun2
+  -- pass 3: the edges
+  set tL := arrOf ns tgt with htL_def
+  set aoL := σ1.arrs ao with haoL_def
+  have htLget : ∀ p, p < ns → tL.getD p 0 = tgt p := fun p hp =>
+    getD_arrOf tgt hp
+  have htLlen : ns ≤ tL.length := by rw [htL_def, length_arrOf]
+  have haoLlen : N + 1 ≤ aoL.length := by
+    rw [haoL_def, hlen1]
+    exact haoL0
+  obtain ⟨σ3, hrun3, hI3, hiv3⟩ :=
+    (bldEdgePass_spec hstep h0 hlast htlt hnd hadjR hoffstep htLget htLlen
+      haoPref haoLlen hNB hnsB (Ne.symm haj_t) (Ne.symm hmt_t) (Ne.symm hdg_t)
+      h_ao_aj h_ao_mt h_ao_dg h_aj_mt h_aj_dg (Ne.symm h_dg_mt)
+      h_iv_uv h_iv_wv h_uv_wv hiv_nS huv_nS hwv_nS).run
+      ⟨by rw [hfv2 nS (Ne.symm hiv_nS), hfv1 nS (Ne.symm hiv_nS)]; exact hnS0,
+        by rw [hf2 t (Ne.symm hdg_t), hf1 t (Ne.symm hao_t)]; exact htA,
+        hf2 ao h_ao_dg,
+        by rw [hlen2 aj, hlen1 aj]; exact hajL0,
+        by rw [hlen2 mt, hlen1 mt]; exact hmtL0,
+        by rw [hlen2 dg, hlen1 dg]; exact hdgL0, hdgZ⟩
+  have hf3 : ∀ b, b ≠ aj → b ≠ mt → b ≠ dg → σ3.arrs b = σ2.arrs b := by
+    intro b hb1 hb2 hb3
+    refine hrun3.frame_arr b ?_
+    simp [bldEdgePass, bldTurn, bldPlace, Csr.scan, Com.warrs, hb1, hb2, hb3]
+  have hfv3 : ∀ y, y ≠ iv → y ≠ uv → y ≠ wv → σ3.vars y = σ2.vars y := by
+    intro y hy1 hy2 hy3
+    refine hrun3.frame_var y ?_
+    simp [bldEdgePass, bldTurn, bldPlace, Csr.scan, Com.wvars, hy1, hy2, hy3]
+  have hlen3 : ∀ b, (σ3.arrs b).length = (σ2.arrs b).length :=
+    run_arrs_length_eq hrun3
+  -- pass 4: the rank inversion
+  set raL := σ0.arrs ra with hraL_def
+  have hraLget : ∀ v : Fin N, raL.getD (v : ℕ) 0 = ((π v : Fin N) : ℕ) :=
+    hraR.2
+  have hraLlen : N ≤ raL.length := hraR.1
+  obtain ⟨σ4, hrun4, hOrd⟩ :=
+    (bldOrdInv_spec B N ra od iv nN π raL hraLget hraLlen hod_ra hiv_nN
+      hNB).run
+      ⟨by rw [hfv3 nN (Ne.symm hiv_nN) (Ne.symm huv_nN) (Ne.symm hwv_nN),
+          hfv2 nN (Ne.symm hiv_nN), hfv1 nN (Ne.symm hiv_nN)]; exact hnN0,
+        by rw [hf3 ra (Ne.symm haj_ra) (Ne.symm hmt_ra) (Ne.symm hdg_ra),
+          hf2 ra (Ne.symm hdg_ra), hf1 ra (Ne.symm hao_ra)],
+        by rw [hlen3 od, hlen2 od, hlen1 od]; exact hodL0⟩
+  have hf4 : ∀ b, b ≠ od → σ4.arrs b = σ3.arrs b := by
+    intro b hb
+    refine hrun4.frame_arr b ?_
+    simp [bldOrdInv, Com.warrs, hb]
+  -- the deletable region, from the invariant at the end of the scan
+  have hall : ∀ v w : Fin N, G.Adj v w → Trig G off tgt ns v w :=
+    fun v w h => trig_at_ns hstep hlast hadjR h
+  have hDel3 : DelAdjSt ao aj dg mt G ∅ σ3 := by
+    refine ⟨off, h0, hoffstep, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · rw [hI3.haoA]
+      exact haoLlen
+    · intro i hi
+      rw [hI3.haoA]
+      exact haoPref i hi
+    · rw [hlast]
+      exact hI3.hajL
+    · rw [hlast]
+      exact hI3.hmtL
+    · exact hI3.hdgL
+    · intro v hv
+      exact absurd hv (Set.notMem_empty v)
+    · intro v _
+      rw [Impl.deleteVerts_empty, hI3.hdg v, hiv3, cnt_eq_ncard_of_all hall v]
+    · intro v _ t' ht'
+      rw [hI3.hdg v] at ht'
+      obtain ⟨w, htr, hcell, s, hs, hmtc, hcell', hmtc'⟩ :=
+        hI3.hsound v t' ht'
+      refine ⟨w, ?_, hcell, s, ?_, hmtc, hcell', hmtc'⟩
+      · rw [Impl.deleteVerts_empty]
+        exact trig_adj htr
+      · rw [hI3.hdg w]
+        exact hs
+    · intro v _ w hadj'
+      rw [Impl.deleteVerts_empty] at hadj'
+      have htr : Trig G off tgt (σ3.vars iv) v w := by
+        rw [hiv3]
+        exact hall v w hadj'
+      obtain ⟨t', ht', hcell⟩ := hI3.hcomp v w htr
+      refine ⟨t', ?_, hcell⟩
+      rw [hI3.hdg v]
+      exact ht'
+  have hDel : DelAdjSt ao aj dg mt G ∅ σ4 :=
+    DelAdjSt.of_eq hDel3 (hf4 ao h_ao_od) (hf4 aj h_aj_od) (hf4 dg h_dg_od)
+      (hf4 mt h_mt_od)
+  exact ⟨σ4, (hrun1.seq (hrun2.seq (hrun3.seq hrun4))).mono
+    (by rw [bldCoreK]; omega), hOrd, hDel⟩
+
+/-! ## §6 The headline: `CovAdjBuildIn`, discharged -/
+
+private theorem ncard_neighborSet_eq_degree {N : ℕ} (G : SimpleGraph (Fin N))
+    [DecidableRel G.Adj] (v : Fin N) :
+    (G.neighborSet v).ncard = G.degree v := by
+  rw [Set.ncard_eq_toFinset_card', SimpleGraph.degree]
+  congr 1
+
+open Classical in
+/-- **F6c11b residual (1b-i), discharged verbatim**: the counting-trick
+build pass — the concrete program family `bldCom` at the closed-form
+budget `70·Σ_v |N(v)| + 50·N + 30` — materializes the deletable
+adjacency region of the level arena's graph at the empty deleted set
+and inverts the rank array into the order region, from hypotheses only
+of the F7-suppliable kinds: `1 ≤ q`, pairwise distinctness among the
+quantified name families (listed), and the abstract transport `hSplT`
+for the peel scratch — its name lists are `bldWrittenArrs` /
+`bldWrittenVars`, exactly what the program writes. The scratch
+descriptor is the length-only `bldSbd`. -/
+theorem covAdjBuildIn_bldCom (C : GraphClass) (hC : NowhereDense C)
+    (φ : FO 0) (ord : CoverSpec.OrderingRoutine) {n : ℕ}
+    (G : SimpleGraph (Fin n)) (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (ca co : ℕ → String) (ra : ℕ → String) (ao aj dg mt od : ℕ → String)
+    (iv uv wv : String) (Spl : ℕ → Env → Prop)
+    (hq : 1 ≤ q)
+    (hW : ∀ j, ([ao j, aj j, dg j, mt j, od j] : List String).Nodup)
+    (hWr : ∀ j, ∀ a ∈ ([ao j, aj j, dg j, mt j, od j] : List String),
+      a ≠ (arenaNames j).off ∧ a ≠ (arenaNames j).tgt ∧
+      a ≠ (arenaNames j).col ∧ a ≠ (arenaNames j).up ∧
+      a ≠ (arenaNames j).hist ∧ a ≠ ra j)
+    (hV : ([iv, uv, wv] : List String).Nodup)
+    (hVr : ∀ j, ∀ y ∈ ([iv, uv, wv] : List String),
+      y ≠ (arenaNames j).nN ∧ y ≠ (arenaNames j).nS)
+    (hraA : ∀ j, ra j ≠ (arenaNames j).off ∧ ra j ≠ (arenaNames j).tgt)
+    (hSplT : ∀ j σ σ', Spl j σ →
+      (∀ a, a ∉ bldWrittenArrs ao aj dg mt od j → σ'.arrs a = σ.arrs a) →
+      (∀ b, (σ'.arrs b).length = (σ.arrs b).length) →
+      (∀ y, y ∉ bldWrittenVars iv uv wv j → σ'.vars y = σ.vars y) →
+      Spl j σ') :
+    CovAdjBuildIn C hC φ ord G c w q ℓp htabF hbf Adm ca co ra ao aj dg mt od
+      (bldSbd ao aj dg mt od) Spl (bldCom ra ao aj dg mt od iv uv wv)
+      (fun _j A => 70 * (∑ v : Fin A.N, (A.G.neighborSet v).ncard)
+        + 50 * A.N + 30) := by
+  intro x hx j hj A hAdm hbot
+  classical
+  set nm := arenaNames j with hnm_def
+  set π := (ord A.N A.G).order with hπ_def
+  -- the level's own name distinctness
+  have hnd6 := arenaNames_arrays_nodup j
+  simp only [levelArrays, List.nodup_cons, List.mem_cons, List.not_mem_nil,
+    or_false, not_or] at hnd6
+  have hot : nm.tgt ≠ nm.off := Ne.symm hnd6.1.1
+  -- the word room
+  have henc : EncodesGraph x n G := hx.1
+  have h3 : 3 ≤ x.length := three_le_length henc
+  have hxB : x.length + 1 < mcB q x := length_add_one_lt_mcB h3 hq
+  have hlen := henc.length_eq
+  intro σ hσ
+  obtain ⟨hAW, hraR, hca, hco, hSbd, hSpl⟩ := hσ
+  have hnN : σ.vars nm.nN = A.N := hAW.n_eq
+  set ns := σ.vars nm.nS with hns_def
+  have hNn : A.N ≤ n := hAW.st.N_le_root
+  have hNB : A.N + 1 < mcB q x := by omega
+  have hns_sq : ns ≤ A.N * A.N := hAW.ns_le_sq
+  have hnsB : ns < mcB q x := by
+    have h1 : A.N ≤ x.length := by omega
+    have h2 : A.N * A.N ≤ x.length * x.length := Nat.mul_le_mul h1 h1
+    have h3' : (x.length + 1) * (x.length + 1)
+        = x.length * x.length + 2 * x.length + 1 := by ring
+    have h4 : (x.length + 1) * (x.length + 1) ≤ mcB q x := by
+      rw [mcB, pow_two]
+      exact Nat.le_mul_of_pos_left _ hq
+    omega
+  -- the window: the CSR pair at the arena's dimensions
+  set ws : String → Option ℕ := fun b =>
+    if b = nm.off then some (A.N + 1)
+    else if b = nm.tgt then some ns
+    else none with hws_def
+  have hws_off : ws nm.off = some (A.N + 1) := if_pos rfl
+  have hws_tgt : ws nm.tgt = some ns := by
+    show (if nm.tgt = nm.off then _ else _) = _
+    rw [if_neg hot, if_pos rfl]
+  have hws_none : ∀ b, b ≠ nm.off → b ≠ nm.tgt → ws b = none := by
+    intro b h1 h2
+    show (if b = nm.off then _ else _) = _
+    rw [if_neg h1, if_neg h2]
+  set aws := arenaWs nm ((Headline.headlineSetup C hC φ).pal j) (ℓp j)
+    (hbf j) A.N ns with haws_def
+  have haws_off : aws nm.off = some (A.N + 1) := arenaWs_off
+  have haws_tgt : aws nm.tgt = some ns := arenaWs_tgt hot
+  have hFits : FitsW ws σ := by
+    intro b m hbm
+    by_cases h1 : b = nm.off
+    · subst h1
+      rw [hws_off] at hbm
+      cases hbm
+      exact hAW.fits _ _ haws_off
+    by_cases h2 : b = nm.tgt
+    · subst h2
+      rw [hws_tgt] at hbm
+      cases hbm
+      exact hAW.fits _ _ haws_tgt
+    · rw [hws_none b h1 h2] at hbm
+      cases hbm
+  -- the name families at this level
+  have hWj := hW j
+  have hVj := hV
+  have hraj := hraA j
+  have hW_off : ∀ a ∈ ([ao j, aj j, dg j, mt j, od j] : List String),
+      a ≠ nm.off := fun a ha => (hWr j a ha).1
+  have hW_tgt : ∀ a ∈ ([ao j, aj j, dg j, mt j, od j] : List String),
+      a ≠ nm.tgt := fun a ha => (hWr j a ha).2.1
+  have hW_ra : ∀ a ∈ ([ao j, aj j, dg j, mt j, od j] : List String),
+      a ≠ ra j := fun a ha => (hWr j a ha).2.2.2.2.2
+  -- unwindowed arrays pass through the truncation
+  have hwin_id : ∀ b, b ≠ nm.off → b ≠ nm.tgt →
+      (winA ws σ).arrs b = σ.arrs b := fun b h1 h2 =>
+    arrs_winA_none (hws_none b h1 h2) σ
+  -- the truncation satisfies the core precondition
+  have hcsr : GraphCsr nm.off nm.tgt A.G ns (winA ws σ) :=
+    graphCsr_of_eq hAW.st.csr
+      (arrs_winA_congr (hws_off.trans haws_off.symm) σ)
+      (arrs_winA_congr (hws_tgt.trans haws_tgt.symm) σ)
+  have hraW : RankArr (ra j) π (winA ws σ) := by
+    obtain ⟨hL, hVv⟩ := hraR
+    refine ⟨?_, fun v => ?_⟩
+    · rw [hwin_id (ra j) hraj.1 hraj.2]
+      exact hL
+    · rw [hwin_id (ra j) hraj.1 hraj.2]
+      exact hVv v
+  obtain ⟨hSb1, hSb2, hSb3, hSb4, hSb5⟩ := hSbd
+  -- the core, through the window
+  obtain ⟨σ', hrun, hfit', hQ, hlenEq, htails⟩ :=
+    (specWindow (bldCore_spec (mcB q x) A.N ns nm.off nm.tgt (ra j) (ao j)
+      (aj j) (dg j) (mt j) (od j) iv uv wv nm.nN nm.nS A.G π hWj
+      (fun a ha => ⟨hW_off a ha, hW_tgt a ha, hW_ra a ha⟩) hVj (hVr j)
+      hNB hnsB) ws) σ
+      ⟨hFits, hcsr, hnN, rfl, hraW,
+        by rw [hwin_id (ao j) (hW_off _ (by simp)) (hW_tgt _ (by simp))]
+           rw [← hnN]; exact hSb1,
+        by rw [hwin_id (aj j) (hW_off _ (by simp)) (hW_tgt _ (by simp))]
+           exact hSb2,
+        by rw [hwin_id (dg j) (hW_off _ (by simp)) (hW_tgt _ (by simp))]
+           rw [← hnN]; exact hSb3,
+        by rw [hwin_id (mt j) (hW_off _ (by simp)) (hW_tgt _ (by simp))]
+           exact hSb4,
+        by rw [hwin_id (od j) (hW_off _ (by simp)) (hW_tgt _ (by simp))]
+           rw [← hnN]; exact hSb5⟩
+  obtain ⟨hOrd, hDel⟩ := hQ
+  -- the frame of the padded run
+  have hwarrs : ∀ b, b ∉ ([ao j, aj j, dg j, mt j, od j] : List String) →
+      σ'.arrs b = σ.arrs b := by
+    intro b hb
+    refine hrun.frame_arr b fun hmem => hb ?_
+    exact warrs_bldCoreCom nm.off nm.tgt (ra j) (ao j) (aj j) (dg j) (mt j)
+      (od j) iv uv wv nm.nN nm.nS hmem
+  have hwvars : ∀ y, y ∉ ([iv, uv, wv] : List String) →
+      σ'.vars y = σ.vars y := by
+    intro y hy
+    refine hrun.frame_var y fun hmem => hy ?_
+    exact wvars_bldCoreCom nm.off nm.tgt (ra j) (ao j) (aj j) (dg j) (mt j)
+      (od j) iv uv wv nm.nN nm.nS hmem
+  have hnN_keep : σ'.vars nm.nN = σ.vars nm.nN := by
+    refine hwvars nm.nN ?_
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨Ne.symm (hVr j iv (by simp)).1, Ne.symm (hVr j uv (by simp)).1,
+      Ne.symm (hVr j wv (by simp)).1⟩
+  have hnS_keep : σ'.vars nm.nS = σ.vars nm.nS := by
+    refine hwvars nm.nS ?_
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨Ne.symm (hVr j iv (by simp)).2, Ne.symm (hVr j uv (by simp)).2,
+      Ne.symm (hVr j wv (by simp)).2⟩
+  have hkeep : ∀ b, b ≠ ao j → b ≠ aj j → b ≠ dg j → b ≠ mt j → b ≠ od j →
+      σ'.arrs b = σ.arrs b := by
+    intro b h1 h2 h3 h4 h5
+    refine hwarrs b ?_
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨h1, h2, h3, h4, h5⟩
+  have hW_col : ∀ a ∈ ([ao j, aj j, dg j, mt j, od j] : List String),
+      a ≠ nm.col := fun a ha => (hWr j a ha).2.2.1
+  have hW_up : ∀ a ∈ ([ao j, aj j, dg j, mt j, od j] : List String),
+      a ≠ nm.up := fun a ha => (hWr j a ha).2.2.2.1
+  have hW_hist : ∀ a ∈ ([ao j, aj j, dg j, mt j, od j] : List String),
+      a ≠ nm.hist := fun a ha => (hWr j a ha).2.2.2.2.1
+  have hkeep_off : σ'.arrs nm.off = σ.arrs nm.off :=
+    hkeep nm.off (Ne.symm (hW_off _ (by simp))) (Ne.symm (hW_off _ (by simp)))
+      (Ne.symm (hW_off _ (by simp))) (Ne.symm (hW_off _ (by simp)))
+      (Ne.symm (hW_off _ (by simp)))
+  have hkeep_tgt : σ'.arrs nm.tgt = σ.arrs nm.tgt :=
+    hkeep nm.tgt (Ne.symm (hW_tgt _ (by simp))) (Ne.symm (hW_tgt _ (by simp)))
+      (Ne.symm (hW_tgt _ (by simp))) (Ne.symm (hW_tgt _ (by simp)))
+      (Ne.symm (hW_tgt _ (by simp)))
+  have hkeep_col : σ'.arrs nm.col = σ.arrs nm.col :=
+    hkeep nm.col (Ne.symm (hW_col _ (by simp))) (Ne.symm (hW_col _ (by simp)))
+      (Ne.symm (hW_col _ (by simp))) (Ne.symm (hW_col _ (by simp)))
+      (Ne.symm (hW_col _ (by simp)))
+  have hkeep_up : σ'.arrs nm.up = σ.arrs nm.up :=
+    hkeep nm.up (Ne.symm (hW_up _ (by simp))) (Ne.symm (hW_up _ (by simp)))
+      (Ne.symm (hW_up _ (by simp))) (Ne.symm (hW_up _ (by simp)))
+      (Ne.symm (hW_up _ (by simp)))
+  have hkeep_hist : σ'.arrs nm.hist = σ.arrs nm.hist :=
+    hkeep nm.hist (Ne.symm (hW_hist _ (by simp)))
+      (Ne.symm (hW_hist _ (by simp))) (Ne.symm (hW_hist _ (by simp)))
+      (Ne.symm (hW_hist _ (by simp))) (Ne.symm (hW_hist _ (by simp)))
+  have hkeep_ra : σ'.arrs (ra j) = σ.arrs (ra j) :=
+    hkeep (ra j) (Ne.symm (hW_ra _ (by simp))) (Ne.symm (hW_ra _ (by simp)))
+      (Ne.symm (hW_ra _ (by simp))) (Ne.symm (hW_ra _ (by simp)))
+      (Ne.symm (hW_ra _ (by simp)))
+  -- the budget, in the arena's own currency
+  have hns_eq : ns = ∑ v : Fin A.N, A.G.degree v := hAW.st.csr.ns_eq_sum_degree
+  have hsum : (∑ v : Fin A.N, A.G.degree v)
+      = ∑ v : Fin A.N, (A.G.neighborSet v).ncard :=
+    Finset.sum_congr rfl fun v _ => (ncard_neighborSet_eq_degree A.G v).symm
+  refine ⟨σ', hrun.mono (by
+    rw [bldCoreK]
+    show 70 * ns + 50 * A.N + 30
+      ≤ 70 * (∑ v : Fin A.N, (A.G.neighborSet v).ncard) + 50 * A.N + 30
+    omega), ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- the windowed arena contract survives
+    exact arenaStW_of_eq hAW hnN_keep hnS_keep hkeep_off hkeep_tgt hkeep_col
+      hkeep_up hkeep_hist
+  · -- the rank array survives
+    obtain ⟨hL, hVv⟩ := hraR
+    exact ⟨by rw [hkeep_ra]; exact hL, fun v => by rw [hkeep_ra]; exact hVv v⟩
+  · -- the order region, read off the truncation
+    obtain ⟨hL, hVv⟩ := hOrd
+    have he : (winA ws σ').arrs (od j) = σ'.arrs (od j) :=
+      arrs_winA_none (hws_none (od j) (hW_off _ (by simp))
+        (hW_tgt _ (by simp))) σ'
+    exact ⟨by rw [← he]; exact hL, fun i => by rw [← he]; exact hVv i⟩
+  · -- the deletable region, read off the truncation
+    refine DelAdjSt.of_eq hDel ?_ ?_ ?_ ?_ <;>
+      exact (arrs_winA_none (hws_none _ (hW_off _ (by simp))
+        (hW_tgt _ (by simp))) σ').symm
+  · rw [hlenEq (ca j)]
+    exact hca
+  · rw [hlenEq (co j)]
+    exact hco
+  · -- the peel scratch, transported
+    refine hSplT j σ σ' hSpl ?_ hlenEq ?_
+    · intro a ha
+      exact hwarrs a ha
+    · intro y hy
+      exact hwvars y hy
+
 end Lax3Proofs.Prog
+
