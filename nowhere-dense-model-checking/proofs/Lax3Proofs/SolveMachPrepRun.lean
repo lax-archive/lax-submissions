@@ -108,6 +108,21 @@ theorem zero_lt_childN (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
     (π : Equiv.Perm (Fin A.N)) (u : Fin A.N) : 0 < childN S A π u :=
   (Set.ncard_pos (Set.toFinite _)).mpr ⟨u, self_mem_cluster S A π u⟩
 
+/-- Row-major row disjointness: a cell of row `v` is a cell of row `w`
+only for `v = w`. -/
+theorem rowCell_inj {F v w i m : ℕ} (hi : i < F) (hm : m < F)
+    (h : v * F + i = w * F + m) : v = w := by
+  rcases Nat.lt_trichotomy v w with hvw | hvw | hvw
+  · exfalso
+    have : (v + 1) * F ≤ w * F := Nat.mul_le_mul_right F hvw
+    rw [Nat.succ_mul] at this
+    omega
+  · exact hvw
+  · exfalso
+    have : (w + 1) * F ≤ v * F := Nat.mul_le_mul_right F hvw
+    rw [Nat.succ_mul] at this
+    omega
+
 open Classical in
 /-- One centre's row of the cluster CSR, with the next offset and the
 `N²` bound: `co[u] = base`, `co[u+1] = base + |X_u|`, the row fits the
@@ -149,6 +164,81 @@ theorem clusterRow_read {co cm : String} {N : ℕ}
     have := hgrow ((u : ℕ) + 1) u.2
     have h2 : ((u : ℕ) + 1) * N ≤ N * N := Nat.mul_le_mul_right N u.2
     omega
+
+/-- `Forall₂` respects append. -/
+theorem forall₂_append' {α β : Type*} {R : α → β → Prop} {l₁ l₂ : List α}
+    {u₁ u₂ : List β} (h₁ : List.Forall₂ R l₁ u₁)
+    (h₂ : List.Forall₂ R l₂ u₂) :
+    List.Forall₂ R (l₁ ++ l₂) (u₁ ++ u₂) := by
+  induction h₁ with
+  | nil => exact h₂
+  | cons h hrest ih => exact List.Forall₂.cons h ih
+
+/-- Pairing two maps of one index list under a pointwise relation. -/
+theorem forall₂_map_map {α β γ : Type*} {P : β → γ → Prop} (f : α → β)
+    (g : α → γ) : ∀ (l : List α), (∀ x ∈ l, P (f x) (g x)) →
+    List.Forall₂ P (l.map f) (l.map g)
+  | [], _ => List.Forall₂.nil
+  | x :: l, h =>
+    List.Forall₂.cons (h x (List.mem_cons_self ..))
+      (forall₂_map_map f g l fun z hz => h z (List.mem_cons_of_mem _ hz))
+
+open Classical in
+/-- An all-zero prefix, in the `take`/`arrOf` shape the restrict stage
+reads. -/
+theorem take_eq_arrOf_zero {l : List ℕ} {N : ℕ} (hN : N ≤ l.length)
+    (h : ∀ p, p < N → l.getD p 0 = 0) :
+    l.take N = arrOf N (fun _ => 0) := by
+  refine List.ext_getElem (by simp [hN]) ?_
+  intro i h1 h2
+  rw [List.length_take] at h1
+  have hiN : i < N := by omega
+  have hil : i < l.length := by omega
+  have hgd := h i hiN
+  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hil] at hgd
+  simp only [Option.getD_some] at hgd
+  rw [List.getElem_take]
+  have h3 : (arrOf N (fun _ => 0))[i] = 0 := by
+    have := getD_arrOf (n := N) (fun _ => 0) hiN
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h2] at this
+    simpa using this
+  rw [h3]
+  exact hgd
+
+/-- The degree sum of a graph on `Fin N` is at most `N²`. -/
+theorem degSum_le_sq {N : ℕ} (G : SimpleGraph (Fin N))
+    [DecidableRel G.Adj] : (∑ v : Fin N, G.degree v) ≤ N * N := by
+  calc (∑ v : Fin N, G.degree v)
+      ≤ ∑ _v : Fin N, N := by
+        refine Finset.sum_le_sum ?_
+        intro v _
+        have h2 := Finset.card_le_card
+          (Finset.subset_univ (G.neighborFinset v))
+        rw [Finset.card_univ, Fintype.card_fin] at h2
+        rw [SimpleGraph.card_neighborFinset_eq_degree] at h2
+        exact h2
+    _ = N * N := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+          smul_eq_mul]
+
+/-- **The channel contract, reindexed** across equal round counts and
+word depths: the stride arithmetic is plain and the per-cell lists are
+pointwise equal, so the stored region satisfies the contract at either
+indexing. -/
+theorem histArr_reindex {aN : String} {N ℓ1 ℓ2 hb1 hb2 : ℕ}
+    (hℓ : ℓ2 = ℓ1) (hhb : hb2 = hb1)
+    {h1 : Fin N → Fin ℓ1 → List (Fin N)}
+    {h2 : Fin N → Fin ℓ2 → List (Fin N)}
+    (hfun : ∀ (v : Fin N) (p : Fin ℓ2),
+      h2 v p = h1 v ⟨(p : ℕ), by omega⟩)
+    {σ : Env} (h : HistArr aN ℓ1 hb1 h1 σ) : HistArr aN ℓ2 hb2 h2 σ := by
+  subst hℓ
+  subst hhb
+  have hfun' : h2 = h1 := by
+    funext v p
+    rw [hfun v p]
+  rw [hfun']
+  exact h
 
 /-! ## §1 The seam lemmas: the F6c12p kit and the machine kit are one
 
@@ -588,52 +678,125 @@ def prepSupportsCom (j : ℕ) (R2 lpj hbj : ℕ) : Com :=
               (supportsCom "cp.o" "cp.t" "cp.d" "cp.p"
                 (arenaNames (j + 1)).hist))))))
 
-open Classical in
+/-- The `pd`-slot index pairs, in writer order. -/
+def pdIdx (S : Setup L) : List (Fin S.width × Fin (S.R + 1)) :=
+  (List.finRange S.width).flatMap fun b : Fin S.width =>
+    (List.finRange (S.R + 1)).map fun a : Fin (S.R + 1) => (b, a)
+
+/-- The `pu`-slot index pairs, in writer order. -/
+def puIdx (S : Setup L) (j : ℕ) :
+    List (Fin (relPal (S.pal j)) × Fin (S.R + 1)) :=
+  (List.finRange (relPal (S.pal j))).flatMap
+    fun c : Fin (relPal (S.pal j)) =>
+    (List.finRange (S.R + 1)).map fun b : Fin (S.R + 1) => (c, b)
+
+/-- One old-colour writer. -/
+def colWOld (S : Setup L) (j : ℕ) (c : Fin (S.pal j)) : Com :=
+  Com.store (arenaNames (j + 1)).col
+    (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
+      (.lit ((isoOld (Λ := relPal (S.pal j)) (mb := S.width)
+        (cap := S.R) c.castSucc) : ℕ)))
+    (.get "cp.c"
+      (.add (.mul (.var "cp.i") (.lit (S.pal j))) (.lit (c : ℕ))))
+
+/-- The marker writer. -/
+def colWMarker (S : Setup L) (j : ℕ) : Com :=
+  Com.store (arenaNames (j + 1)).col
+    (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
+      (.lit ((isoOld (Λ := relPal (S.pal j)) (mb := S.width)
+        (cap := S.R) (Fin.last (S.pal j))) : ℕ)))
+    (.lit 1)
+
+/-- One batch-profile writer. -/
+def colWPd (S : Setup L) (j : ℕ) (p : Fin S.width × Fin (S.R + 1)) : Com :=
+  Com.ite (.lt (.lit ((p.2 : ℕ)))
+      (.get (lv "cq.d" ((p.1 : ℕ))) (.var "cp.i")))
+    (Com.store (arenaNames (j + 1)).col
+      (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
+        (.lit ((isoPd (Λ := relPal (S.pal j)) (mb := S.width)
+          (cap := S.R) p.1 p.2) : ℕ)))
+      (.lit 0))
+    (Com.store (arenaNames (j + 1)).col
+      (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
+        (.lit ((isoPd (Λ := relPal (S.pal j)) (mb := S.width)
+          (cap := S.R) p.1 p.2) : ℕ)))
+      (.lit 1))
+
+/-- One colour-profile writer. -/
+def colWPu (S : Setup L) (j : ℕ)
+    (p : Fin (relPal (S.pal j)) × Fin (S.R + 1)) : Com :=
+  Com.ite (.lt (.lit ((p.2 : ℕ) + 1))
+      (.get (lv "cq.u" ((p.1 : ℕ))) (.var "cp.i")))
+    (Com.store (arenaNames (j + 1)).col
+      (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
+        (.lit ((isoPu (Λ := relPal (S.pal j)) (mb := S.width)
+          (cap := S.R) p.1 p.2) : ℕ)))
+      (.lit 0))
+    (Com.store (arenaNames (j + 1)).col
+      (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
+        (.lit ((isoPu (Λ := relPal (S.pal j)) (mb := S.width)
+          (cap := S.R) p.1 p.2) : ℕ)))
+      (.lit 1))
+
 /-- §5k — the per-row colour writers: one store per slot of the
-`(j+1)` palette — old colours read off the pre-isolation colour rows,
-the marker constant `1`, the `pd`/`pu` slots thresholded off the
-profile tables. -/
-noncomputable def colWriters (S : Setup L) (j : ℕ) : List Com :=
-  ((List.finRange (S.pal j)).map fun c : Fin (S.pal j) =>
-    Com.store (arenaNames (j + 1)).col
-      (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
-        (.lit ((isoOld (mb := S.width) (cap := S.R) c.castSucc :
-          Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)))
-      (.get "cp.c"
-        (.add (.mul (.var "cp.i") (.lit (S.pal j))) (.lit (c : ℕ)))))
-  ++ ([Com.store (arenaNames (j + 1)).col
-      (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
-        (.lit ((isoOld (mb := S.width) (cap := S.R) (Fin.last (S.pal j)) :
-          Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)))
-      (.lit 1)])
-  ++ ((List.finRange S.width).flatMap fun b : Fin S.width =>
-      (List.finRange (S.R + 1)).map fun a : Fin (S.R + 1) =>
-        Com.ite (.lt (.lit (a : ℕ)) (.get (lv "cq.d" (b : ℕ)) (.var "cp.i")))
-          (Com.store (arenaNames (j + 1)).col
-            (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
-              (.lit ((isoPd (Λ := relPal (S.pal j)) b a :
-                Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)))
-            (.lit 0))
-          (Com.store (arenaNames (j + 1)).col
-            (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
-              (.lit ((isoPd (Λ := relPal (S.pal j)) b a :
-                Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)))
-            (.lit 1)))
-  ++ ((List.finRange (relPal (S.pal j))).flatMap
-      fun c : Fin (relPal (S.pal j)) =>
-      (List.finRange (S.R + 1)).map fun b : Fin (S.R + 1) =>
-        Com.ite (.lt (.lit ((b : ℕ) + 1))
-            (.get (lv "cq.u" (c : ℕ)) (.var "cp.i")))
-          (Com.store (arenaNames (j + 1)).col
-            (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
-              (.lit ((isoPu (mb := S.width) c b :
-                Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)))
-            (.lit 0))
-          (Com.store (arenaNames (j + 1)).col
-            (.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
-              (.lit ((isoPu (mb := S.width) c b :
-                Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)))
-            (.lit 1)))
+`(j+1)` palette — old colours read off the pre-isolation rows, the
+marker constant, the `pd`/`pu` slots thresholded off the profile
+tables. -/
+def colWriters (S : Setup L) (j : ℕ) : List Com :=
+  ((List.finRange (S.pal j)).map (colWOld S j))
+  ++ [colWMarker S j]
+  ++ ((pdIdx S).map (colWPd S j))
+  ++ ((puIdx S j).map (colWPu S j))
+
+/-- The writers' slots, in writer order. -/
+def colSlots (S : Setup L) (j : ℕ) :
+    List (Fin (isoPal (relPal (S.pal j)) S.width S.R)) :=
+  ((List.finRange (S.pal j)).map fun c =>
+    isoOld (Λ := relPal (S.pal j)) (mb := S.width) (cap := S.R) c.castSucc)
+  ++ [isoOld (Λ := relPal (S.pal j)) (mb := S.width) (cap := S.R)
+      (Fin.last (S.pal j))]
+  ++ ((pdIdx S).map fun p =>
+      isoPd (Λ := relPal (S.pal j)) (mb := S.width) (cap := S.R) p.1 p.2)
+  ++ ((puIdx S j).map fun p =>
+      isoPu (Λ := relPal (S.pal j)) (mb := S.width) (cap := S.R) p.1 p.2)
+
+/-- **Every slot has a writer**: the four chunks enumerate the whole
+isolation palette. -/
+theorem colSlots_covers (S : Setup L) (j : ℕ)
+    (d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) :
+    d ∈ colSlots S j := by
+  have hd : isoEnc (relPal (S.pal j)) S.width S.R
+      ((isoEnc (relPal (S.pal j)) S.width S.R).symm d) = d :=
+    Equiv.apply_symm_apply _ _
+  rcases hs : (isoEnc (relPal (S.pal j)) S.width S.R).symm d with
+    c' | (⟨b, a⟩ | ⟨c, b⟩)
+  · -- an old slot: `castSucc` or the marker, by `lastCases`
+    rw [hs] at hd
+    induction c' using Fin.lastCases with
+    | last =>
+      refine List.mem_append_left _ (List.mem_append_left _
+        (List.mem_append_right _ ?_))
+      rw [List.mem_singleton, ← hd]
+      rfl
+    | cast c =>
+      refine List.mem_append_left _ (List.mem_append_left _
+        (List.mem_append_left _ ?_))
+      rw [List.mem_map]
+      exact ⟨c, List.mem_finRange c, hd⟩
+  · rw [hs] at hd
+    refine List.mem_append_left _ (List.mem_append_right _ ?_)
+    rw [List.mem_map]
+    refine ⟨(b, a), ?_, hd⟩
+    rw [pdIdx, List.mem_flatMap]
+    exact ⟨b, List.mem_finRange b,
+      List.mem_map.mpr ⟨a, List.mem_finRange a, rfl⟩⟩
+  · rw [hs] at hd
+    refine List.mem_append_right _ ?_
+    rw [List.mem_map]
+    refine ⟨(c, b), ?_, hd⟩
+    rw [puIdx, List.mem_flatMap]
+    exact ⟨c, List.mem_finRange c,
+      List.mem_map.mpr ⟨b, List.mem_finRange b, rfl⟩⟩
 
 /-- One row of the colour write, sequenced. -/
 noncomputable def colRowCom (S : Setup L) (j : ℕ) : Com :=
@@ -709,12 +872,13 @@ noncomputable def prepK (S : Setup L) (ord : CoverSpec.OrderingRoutine)
 theorem warrs_colWriters {S : Setup L} {j : ℕ} :
     ∀ c ∈ colWriters S j, ∀ b ∈ c.warrs, b = (arenaNames (j + 1)).col := by
   intro c hc
-  simp only [colWriters, List.mem_append, List.mem_map, List.mem_flatMap,
+  simp only [colWriters, List.mem_append, List.mem_map,
     List.mem_singleton] at hc
-  rcases hc with ((⟨x, -, rfl⟩ | rfl) | ⟨x, -, ⟨y, -, rfl⟩⟩) | ⟨x, -, ⟨y, -, rfl⟩⟩ <;>
+  rcases hc with ((⟨x, -, rfl⟩ | rfl) | ⟨x, -, rfl⟩) | ⟨x, -, rfl⟩ <;>
     · intro b hb
-      simp only [Com.warrs, List.mem_append, List.mem_singleton,
-        List.not_mem_nil, or_false] at hb
+      simp only [colWOld, colWMarker, colWPd, colWPu, Com.warrs,
+        List.mem_append, List.mem_singleton, List.not_mem_nil,
+        or_false] at hb
       first
         | exact hb
         | (rcases hb with hb | hb <;> exact hb)
@@ -738,10 +902,10 @@ theorem warrs_colRowCom {S : Setup L} {j : ℕ} :
 theorem wvars_colWriters {S : Setup L} {j : ℕ} :
     ∀ c ∈ colWriters S j, c.wvars = [] := by
   intro c hc
-  simp only [colWriters, List.mem_append, List.mem_map, List.mem_flatMap,
+  simp only [colWriters, List.mem_append, List.mem_map,
     List.mem_singleton] at hc
-  rcases hc with ((⟨x, -, rfl⟩ | rfl) | ⟨x, -, ⟨y, -, rfl⟩⟩) | ⟨x, -, ⟨y, -, rfl⟩⟩ <;>
-    simp [Com.wvars]
+  rcases hc with ((⟨x, -, rfl⟩ | rfl) | ⟨x, -, rfl⟩) | ⟨x, -, rfl⟩ <;>
+    simp [colWOld, colWMarker, colWPd, colWPu, Com.wvars]
 
 theorem wvars_colRowCom {S : Setup L} {j : ℕ} :
     (colRowCom S j).wvars = [] := by
@@ -2479,7 +2643,8 @@ def ColRowPre (B : ℕ) (σ : Env) : Prop :=
   a * S.pal (j + 1) + S.pal (j + 1) < B ∧ a * S.pal j + S.pal j < B ∧
   1 < B ∧
   (∀ b' : Fin S.width, Dp b' ⟨a, ha⟩ < B) ∧
-  (∀ c : Fin (relPal (S.pal j)), Dc c (Fin.castSucc ⟨a, ha⟩) < B)
+  (∀ c : Fin (relPal (S.pal j)), Dc c (Fin.castSucc ⟨a, ha⟩) < B) ∧
+  S.R + 2 < B ∧ a < B
 
 open Classical in
 /-- `ColRowPre` survives a store into the colour region (it reads
@@ -2491,9 +2656,10 @@ theorem colRowPre_setArr {B : ℕ} {σ : Env} (h : ColRowPre S j f0 Dp Dc a ha B
     (p v : ℕ) :
     ColRowPre S j f0 Dp Dc a ha B
       (σ.setArr (arenaNames (j + 1)).col p v) := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13⟩ := h
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14,
+    h15⟩ := h
   refine ⟨by rw [vars_setArr]; exact h1, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    h9, h10, h11, h12, h13⟩
+    h9, h10, h11, h12, h13, h14, h15⟩
   · intro c
     rw [arrs_setArr, if_neg (Ne.symm hcol1)]
     exact h2 c
@@ -2515,156 +2681,183 @@ theorem colRowPre_setArr {B : ℕ} {σ : Env} (h : ColRowPre S j f0 Dp Dc a ha B
     exact h8 c
 
 open Classical in
-/-- **Every writer writes its slot's bit**: each element of the writer
-list runs from any `ColRowPre` state to the same state with one colour
-cell set to that slot's `recordProfilesMS` bit, within the uniform
-per-writer budget. -/
-theorem colWriters_step {B : ℕ} :
-    ∀ w ∈ colWriters S j,
-      ∃ d : Fin (isoPal (relPal (S.pal j)) S.width S.R),
+/-- **Every writer writes its slot's bit**: pointwise down the parallel
+slot list, each writer runs from any `ColRowPre` state to the same
+state with its slot's colour cell set to that slot's
+`recordProfilesMS` bit, within the uniform per-writer budget. -/
+theorem colWriters_forall₂ {B : ℕ} :
+    List.Forall₂
+      (fun w (dd : Fin (isoPal (relPal (S.pal j)) S.width S.R)) =>
         ∀ σ, ColRowPre S j f0 Dp Dc a ha B σ →
           Run B w σ
             (σ.setArr (arenaNames (j + 1)).col
-              (a * S.pal (j + 1) + (d : ℕ))
-              (colBit S j f0 Dp Dc a ha d)) 30 := by
-  intro w hw
-  simp only [colWriters, List.mem_append, List.mem_map, List.mem_flatMap,
-    List.mem_singleton] at hw
-  have hpal1 : S.pal (j + 1) = isoPal (relPal (S.pal j)) S.width S.R := rfl
-  rcases hw with ((⟨c, -, rfl⟩ | rfl) | ⟨b', -, ⟨a', -, rfl⟩⟩)
-    | ⟨c, -, ⟨b', -, rfl⟩⟩
+              (a * S.pal (j + 1) + (dd : ℕ))
+              (colBit S j f0 Dp Dc a ha dd)) 30)
+      (colWriters S j) (colSlots S j) := by
+  rw [colWriters, colSlots]
+  refine forall₂_append' (forall₂_append' (forall₂_append'
+    (forall₂_map_map _ _ _ ?_)
+    (List.Forall₂.cons ?_ List.Forall₂.nil))
+    (forall₂_map_map _ _ _ ?_))
+    (forall₂_map_map _ _ _ ?_)
   · -- an old colour: copy the cell
-    refine ⟨isoOld (mb := S.width) (cap := S.R) c.castSucc, ?_⟩
+    intro c _hc
+    set d := isoOld (Λ := relPal (S.pal j)) (mb := S.width) (cap := S.R)
+      c.castSucc with hd_def
     intro σ hσ
-    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13⟩ := hσ
-    set d := isoOld (mb := S.width) (cap := S.R) c.castSucc with hd_def
+    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13,
+      h14, h15⟩ := hσ
+    have hdlt : ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)
+        < S.pal (j + 1) := d.2
+    have hprodB : a * S.pal (j + 1) < B :=
+      lt_of_le_of_lt (Nat.le_add_right _ _) h9
+    have hsumB : a * S.pal (j + 1) + (d : ℕ) < B :=
+      lt_trans (Nat.add_lt_add_left hdlt _) h9
+    have hv : (Expr.var "cp.i").evalB B σ = some a := by
+      rw [← h1]
+      exact evalB_var (by rw [h1]; omega)
     have hidx : (Expr.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
-        (.lit ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)))
-          .evalB B σ = some (a * S.pal (j + 1) + (d : ℕ)) := by
-      have hdlt : ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)
-          < S.pal (j + 1) := by
-        rw [hpal1]
-        exact d.2
-      have hv : (Expr.var "cp.i").evalB B σ = some a := by
-        rw [← h1]
-        exact evalB_var (by rw [h1]; omega)
+        (.lit ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ))).evalB
+          B σ = some (a * S.pal (j + 1) + (d : ℕ)) := by
       have hm := evalB_bin (op := .mul) hv
-        (evalB_lit (n := S.pal (j + 1)) (by omega))
-        (by rw [Bop.apply_mul]
-            have : a * S.pal (j + 1) ≤ a * S.pal (j + 1) + S.pal (j + 1) :=
-              by omega
-            omega)
+        (evalB_lit (n := S.pal (j + 1))
+          (lt_of_le_of_lt (Nat.le_add_left _ _) h9))
+        (by rw [Bop.apply_mul]; exact hprodB)
       rw [Bop.apply_mul] at hm
-      have hadd := evalB_bin (op := .add) hm (evalB_lit (by omega))
-        (by rw [Bop.apply_add]; omega)
+      have hadd := evalB_bin (op := .add) hm
+        (evalB_lit (n := ((d : Fin (isoPal (relPal (S.pal j)) S.width
+          S.R)) : ℕ))
+          (lt_trans hdlt (lt_of_le_of_lt (Nat.le_add_left _ _) h9)))
+        (by rw [Bop.apply_add]; exact hsumB)
       rwa [Bop.apply_add] at hadd
+    have hbit : colBit S j f0 Dp Dc a ha d
+        = if (⟨a, ha⟩ : Fin kk) ∈ f0 c then 1 else 0 := by
+      rw [colBit]
+      refine if_congr ?_ rfl rfl
+      rw [hd_def, Impl.recordProfilesMS_old, relColoring_castSucc]
+    have hclt : (c : ℕ) < S.pal j := c.2
     have hval : (Expr.get "cp.c"
-        (.add (.mul (.var "cp.i") (.lit (S.pal j))) (.lit (c : ℕ))))
-          .evalB B σ
-        = some (colBit S j f0 Dp Dc a ha d) := by
-      have hv : (Expr.var "cp.i").evalB B σ = some a := by
-        rw [← h1]
-        exact evalB_var (by rw [h1]; omega)
-      have hclt : (c : ℕ) < S.pal j := c.2
+        (.add (.mul (.var "cp.i") (.lit (S.pal j))) (.lit (c : ℕ)))).evalB
+          B σ = some (colBit S j f0 Dp Dc a ha d) := by
+      have hprodB2 : a * S.pal j < B :=
+        lt_of_le_of_lt (Nat.le_add_right _ _) h10
+      have hsumB2 : a * S.pal j + (c : ℕ) < B :=
+        lt_trans (Nat.add_lt_add_left hclt _) h10
       have hm := evalB_bin (op := .mul) hv
-        (evalB_lit (n := S.pal j) (by omega))
-        (by rw [Bop.apply_mul]
-            have : a * S.pal j ≤ a * S.pal j + S.pal j := by omega
-            omega)
+        (evalB_lit (n := S.pal j)
+          (lt_of_le_of_lt (Nat.le_add_left _ _) h10))
+        (by rw [Bop.apply_mul]; exact hprodB2)
       rw [Bop.apply_mul] at hm
-      have hadd := evalB_bin (op := .add) hm (evalB_lit (by omega))
-        (by rw [Bop.apply_add]; omega)
+      have hadd := evalB_bin (op := .add) hm
+        (evalB_lit (n := (c : ℕ)) (by omega))
+        (by rw [Bop.apply_add]; exact hsumB2)
       rw [Bop.apply_add] at hadd
-      have hbit : colBit S j f0 Dp Dc a ha d
-          = if (⟨a, ha⟩ : Fin kk) ∈ f0 c then 1 else 0 := by
-        rw [colBit, hd_def, Impl.recordProfilesMS_old, relColoring_castSucc]
-      refine evalB_get hadd (getElemQ_of_getD (by omega) ?_) ?_
+      have hlt6 : a * S.pal j + (c : ℕ) < (σ.arrs "cp.c").length := by
+        omega
+      refine evalB_get hadd (getElemQ_of_getD hlt6 ?_) ?_
       · rw [hbit]
         exact h2 c
       · rw [hbit]
         split <;> omega
     refine (Run.store hidx hval (by omega)).mono (by simp)
   · -- the marker
-    refine ⟨isoOld (mb := S.width) (cap := S.R) (Fin.last (S.pal j)), ?_⟩
+    set d := isoOld (Λ := relPal (S.pal j)) (mb := S.width) (cap := S.R)
+      (Fin.last (S.pal j)) with hd_def
     intro σ hσ
-    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13⟩ := hσ
-    set d := isoOld (mb := S.width) (cap := S.R) (Fin.last (S.pal j))
-      with hd_def
+    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13,
+      h14, h15⟩ := hσ
+    have hdlt : ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)
+        < S.pal (j + 1) := d.2
+    have hprodB : a * S.pal (j + 1) < B :=
+      lt_of_le_of_lt (Nat.le_add_right _ _) h9
+    have hsumB : a * S.pal (j + 1) + (d : ℕ) < B :=
+      lt_trans (Nat.add_lt_add_left hdlt _) h9
+    have hv : (Expr.var "cp.i").evalB B σ = some a := by
+      rw [← h1]
+      exact evalB_var (by rw [h1]; omega)
     have hidx : (Expr.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
-        (.lit ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)))
-          .evalB B σ = some (a * S.pal (j + 1) + (d : ℕ)) := by
-      have hdlt : ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)
-          < S.pal (j + 1) := by
-        rw [hpal1]
-        exact d.2
-      have hv : (Expr.var "cp.i").evalB B σ = some a := by
-        rw [← h1]
-        exact evalB_var (by rw [h1]; omega)
+        (.lit ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ))).evalB
+          B σ = some (a * S.pal (j + 1) + (d : ℕ)) := by
       have hm := evalB_bin (op := .mul) hv
-        (evalB_lit (n := S.pal (j + 1)) (by omega))
-        (by rw [Bop.apply_mul]
-            have : a * S.pal (j + 1) ≤ a * S.pal (j + 1) + S.pal (j + 1) :=
-              by omega
-            omega)
+        (evalB_lit (n := S.pal (j + 1))
+          (lt_of_le_of_lt (Nat.le_add_left _ _) h9))
+        (by rw [Bop.apply_mul]; exact hprodB)
       rw [Bop.apply_mul] at hm
-      have hadd := evalB_bin (op := .add) hm (evalB_lit (by omega))
-        (by rw [Bop.apply_add]; omega)
+      have hadd := evalB_bin (op := .add) hm
+        (evalB_lit (n := ((d : Fin (isoPal (relPal (S.pal j)) S.width
+          S.R)) : ℕ))
+          (lt_trans hdlt (lt_of_le_of_lt (Nat.le_add_left _ _) h9)))
+        (by rw [Bop.apply_add]; exact hsumB)
       rwa [Bop.apply_add] at hadd
+    have hmem : (⟨a, ha⟩ : Fin kk) ∈
+        Impl.recordProfilesMS S.R (relColoring f0 Set.univ) Dp Dc d := by
+      rw [hd_def, Impl.recordProfilesMS_old, relColoring_last]
+      exact Set.mem_univ _
     have hbit : colBit S j f0 Dp Dc a ha d = 1 := by
-      rw [colBit, hd_def, Impl.recordProfilesMS_old, relColoring_last,
-        if_pos (Set.mem_univ _)]
+      rw [colBit, if_pos hmem]
     have hval : (Expr.lit 1).evalB B σ
         = some (colBit S j f0 Dp Dc a ha d) := by
       rw [hbit]
       exact evalB_lit (by omega)
     refine (Run.store hidx hval (by omega)).mono (by simp)
   · -- a batch-distance slot: threshold the pd table
-    refine ⟨isoPd (Λ := relPal (S.pal j)) b' a', ?_⟩
+    intro p _hp
+    set b' := p.1 with hb'_def
+    set a' := p.2 with ha'_def
+    set d := isoPd (Λ := relPal (S.pal j)) (mb := S.width) (cap := S.R)
+      b' a' with hd_def
     intro σ hσ
-    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13⟩ := hσ
-    set d := isoPd (Λ := relPal (S.pal j)) (mb := S.width) (cap := S.R) b' a'
-      with hd_def
+    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13,
+      h14, h15⟩ := hσ
     have hdlt : ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)
-        < S.pal (j + 1) := by
-      rw [hpal1]
-      exact d.2
+        < S.pal (j + 1) := d.2
+    have hprodB : a * S.pal (j + 1) < B :=
+      lt_of_le_of_lt (Nat.le_add_right _ _) h9
+    have hsumB : a * S.pal (j + 1) + (d : ℕ) < B :=
+      lt_trans (Nat.add_lt_add_left hdlt _) h9
+    have hv : (Expr.var "cp.i").evalB B σ = some a := by
+      rw [← h1]
+      exact evalB_var (by rw [h1]; omega)
     have hidx : (Expr.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
-        (.lit ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)))
-          .evalB B σ = some (a * S.pal (j + 1) + (d : ℕ)) := by
-      have hv : (Expr.var "cp.i").evalB B σ = some a := by
-        rw [← h1]
-        exact evalB_var (by rw [h1]; omega)
+        (.lit ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ))).evalB
+          B σ = some (a * S.pal (j + 1) + (d : ℕ)) := by
       have hm := evalB_bin (op := .mul) hv
-        (evalB_lit (n := S.pal (j + 1)) (by omega))
-        (by rw [Bop.apply_mul]
-            have : a * S.pal (j + 1) ≤ a * S.pal (j + 1) + S.pal (j + 1) :=
-              by omega
-            omega)
+        (evalB_lit (n := S.pal (j + 1))
+          (lt_of_le_of_lt (Nat.le_add_left _ _) h9))
+        (by rw [Bop.apply_mul]; exact hprodB)
       rw [Bop.apply_mul] at hm
-      have hadd := evalB_bin (op := .add) hm (evalB_lit (by omega))
-        (by rw [Bop.apply_add]; omega)
+      have hadd := evalB_bin (op := .add) hm
+        (evalB_lit (n := ((d : Fin (isoPal (relPal (S.pal j)) S.width
+          S.R)) : ℕ))
+          (lt_trans hdlt (lt_of_le_of_lt (Nat.le_add_left _ _) h9)))
+        (by rw [Bop.apply_add]; exact hsumB)
       rwa [Bop.apply_add] at hadd
     have hread : (Expr.get (lv "cq.d" (b' : ℕ)) (.var "cp.i")).evalB B σ
         = some (Dp b' ⟨a, ha⟩) := by
-      have hv : (Expr.var "cp.i").evalB B σ = some a := by
-        rw [← h1]
-        exact evalB_var (by rw [h1]; omega)
       exact evalB_get hv (getElemQ_of_getD (h7 b') (h3 b')) (h12 b')
     have hcond := evalB_condLt (evalB_lit (n := (a' : ℕ))
-      (by have := h12 b'; omega)) hread
+      (by have := a'.2; omega)) hread
     have hbit : colBit S j f0 Dp Dc a ha d
         = if Dp b' ⟨a, ha⟩ ≤ (a' : ℕ) then 1 else 0 := by
-      rw [colBit, hd_def, Impl.recordProfilesMS_pd]
-      simp only [Set.mem_setOf_eq]
+      rw [colBit]
+      refine if_congr ?_ rfl rfl
+      rw [hd_def, Impl.recordProfilesMS_pd]
+      exact Iff.rfl
     by_cases hth : (a' : ℕ) < Dp b' ⟨a, ha⟩
     · have hcondT : (Cond.lt (.lit (a' : ℕ))
           (.get (lv "cq.d" (b' : ℕ)) (.var "cp.i"))).evalB B σ
           = some true := by
         rw [hcond]
         simp [hth]
+      have hbit0 : colBit S j f0 Dp Dc a ha d = 0 := by
+        rw [hbit]
+        split
+        · rename_i hcase
+          exact absurd hcase (Nat.not_le.mpr hth)
+        · rfl
       have hval : (Expr.lit 0).evalB B σ
           = some (colBit S j f0 Dp Dc a ha d) := by
-        rw [hbit, if_neg (by omega)]
+        rw [hbit0]
         exact evalB_lit (by omega)
       exact (Run.ite_true hcondT
         (Run.store hidx hval (by omega))).mono (by simp)
@@ -2673,59 +2866,78 @@ theorem colWriters_step {B : ℕ} :
           = some false := by
         rw [hcond]
         simp [hth]
+      have hbit1 : colBit S j f0 Dp Dc a ha d = 1 := by
+        rw [hbit]
+        split
+        · rfl
+        · rename_i hcase
+          exact absurd (Nat.not_lt.mp hth) hcase
       have hval : (Expr.lit 1).evalB B σ
           = some (colBit S j f0 Dp Dc a ha d) := by
-        rw [hbit, if_pos (by omega)]
+        rw [hbit1]
         exact evalB_lit (by omega)
       exact (Run.ite_false hcondF
         (Run.store hidx hval (by omega))).mono (by simp)
   · -- a colour-distance slot: threshold the pu table
-    refine ⟨isoPu (mb := S.width) c b', ?_⟩
+    intro p _hp
+    set c := p.1 with hc_def
+    set b' := p.2 with hb'_def
+    set d := isoPu (Λ := relPal (S.pal j)) (mb := S.width) (cap := S.R)
+      c b' with hd_def
     intro σ hσ
-    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13⟩ := hσ
-    set d := isoPu (Λ := relPal (S.pal j)) (mb := S.width) (cap := S.R) c b'
-      with hd_def
+    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13,
+      h14, h15⟩ := hσ
     have hdlt : ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)
-        < S.pal (j + 1) := by
-      rw [hpal1]
-      exact d.2
+        < S.pal (j + 1) := d.2
+    have hprodB : a * S.pal (j + 1) < B :=
+      lt_of_le_of_lt (Nat.le_add_right _ _) h9
+    have hsumB : a * S.pal (j + 1) + (d : ℕ) < B :=
+      lt_trans (Nat.add_lt_add_left hdlt _) h9
+    have hv : (Expr.var "cp.i").evalB B σ = some a := by
+      rw [← h1]
+      exact evalB_var (by rw [h1]; omega)
     have hidx : (Expr.add (.mul (.var "cp.i") (.lit (S.pal (j + 1))))
-        (.lit ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)))
-          .evalB B σ = some (a * S.pal (j + 1) + (d : ℕ)) := by
-      have hv : (Expr.var "cp.i").evalB B σ = some a := by
-        rw [← h1]
-        exact evalB_var (by rw [h1]; omega)
+        (.lit ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ))).evalB
+          B σ = some (a * S.pal (j + 1) + (d : ℕ)) := by
       have hm := evalB_bin (op := .mul) hv
-        (evalB_lit (n := S.pal (j + 1)) (by omega))
-        (by rw [Bop.apply_mul]
-            have : a * S.pal (j + 1) ≤ a * S.pal (j + 1) + S.pal (j + 1) :=
-              by omega
-            omega)
+        (evalB_lit (n := S.pal (j + 1))
+          (lt_of_le_of_lt (Nat.le_add_left _ _) h9))
+        (by rw [Bop.apply_mul]; exact hprodB)
       rw [Bop.apply_mul] at hm
-      have hadd := evalB_bin (op := .add) hm (evalB_lit (by omega))
-        (by rw [Bop.apply_add]; omega)
+      have hadd := evalB_bin (op := .add) hm
+        (evalB_lit (n := ((d : Fin (isoPal (relPal (S.pal j)) S.width
+          S.R)) : ℕ))
+          (lt_trans hdlt (lt_of_le_of_lt (Nat.le_add_left _ _) h9)))
+        (by rw [Bop.apply_add]; exact hsumB)
       rwa [Bop.apply_add] at hadd
     have hread : (Expr.get (lv "cq.u" (c : ℕ)) (.var "cp.i")).evalB B σ
         = some (Dc c (Fin.castSucc ⟨a, ha⟩)) := by
-      have hv : (Expr.var "cp.i").evalB B σ = some a := by
-        rw [← h1]
-        exact evalB_var (by rw [h1]; omega)
       exact evalB_get hv (getElemQ_of_getD (h8 c) (h4 c)) (h13 c)
     have hcond := evalB_condLt (evalB_lit (n := (b' : ℕ) + 1)
-      (by have := h13 c; omega)) hread
+      (by have := b'.2; omega)) hread
     have hbit : colBit S j f0 Dp Dc a ha d
         = if Dc c (Fin.castSucc ⟨a, ha⟩) ≤ (b' : ℕ) + 1 then 1 else 0 := by
-      rw [colBit, hd_def, Impl.recordProfilesMS_pu]
-      simp only [Set.mem_setOf_eq]
+      rw [colBit]
+      refine if_congr ?_ rfl rfl
+      rw [hd_def, Impl.recordProfilesMS_pu]
+      exact Iff.rfl
     by_cases hth : (b' : ℕ) + 1 < Dc c (Fin.castSucc ⟨a, ha⟩)
     · have hcondT : (Cond.lt (.lit ((b' : ℕ) + 1))
           (.get (lv "cq.u" (c : ℕ)) (.var "cp.i"))).evalB B σ
           = some true := by
         rw [hcond]
-        simp [hth]
+        exact congrArg some (decide_eq_true hth)
+      have hbit0 : colBit S j f0 Dp Dc a ha d = 0 := by
+        rw [hbit]
+        split
+        · rename_i hcase
+          exact absurd hcase
+            (show ¬ Dc c (Fin.castSucc ⟨a, ha⟩) ≤ (b' : ℕ) + 1 from
+              Nat.not_le.mpr hth)
+        · rfl
       have hval : (Expr.lit 0).evalB B σ
           = some (colBit S j f0 Dp Dc a ha d) := by
-        rw [hbit, if_neg (by omega)]
+        rw [hbit0]
         exact evalB_lit (by omega)
       exact (Run.ite_true hcondT
         (Run.store hidx hval (by omega))).mono (by simp)
@@ -2733,13 +2945,375 @@ theorem colWriters_step {B : ℕ} :
           (.get (lv "cq.u" (c : ℕ)) (.var "cp.i"))).evalB B σ
           = some false := by
         rw [hcond]
-        simp [hth]
+        exact congrArg some (decide_eq_false hth)
+      have hbit1 : colBit S j f0 Dp Dc a ha d = 1 := by
+        rw [hbit]
+        split
+        · rfl
+        · rename_i hcase
+          exact absurd
+            (show Dc c (Fin.castSucc ⟨a, ha⟩) ≤ (b' : ℕ) + 1 from
+              Nat.not_lt.mp hth) hcase
       have hval : (Expr.lit 1).evalB B σ
           = some (colBit S j f0 Dp Dc a ha d) := by
-        rw [hbit, if_pos (by omega)]
+        rw [hbit1]
         exact evalB_lit (by omega)
       exact (Run.ite_false hcondF
         (Run.store hidx hval (by omega))).mono (by simp)
+
+open Classical in
+/-- **The writer list, composed**: every slot named in the parallel
+list ends at its bit; unnamed cells, other arrays and every scalar are
+untouched. Duplicated slots are harmless — every writer of a slot
+writes that slot's bit. -/
+theorem writersRun {B : ℕ} {colC : String} {base : ℕ}
+    {bit : ℕ → ℕ} {P : Env → Prop}
+    (hP : ∀ σ, P σ → ∀ p v, P (σ.setArr colC p v)) :
+    ∀ {l : List Com} {D : List ℕ},
+      List.Forall₂ (fun w dd => ∀ σ, P σ →
+        Run B w σ (σ.setArr colC (base + dd) (bit dd)) 30) l D →
+      ∀ σ, P σ →
+        ∃ σ', Run B (l.foldr .seq .skip) σ σ' (30 * l.length + 1) ∧
+          (∀ dd ∈ D, base + dd < (σ.arrs colC).length →
+            (σ'.arrs colC).getD (base + dd) 0 = bit dd) ∧
+          (∀ p2, (∀ dd ∈ D, p2 ≠ base + dd) →
+            (σ'.arrs colC).getD p2 0 = (σ.arrs colC).getD p2 0) ∧
+          (∀ b, b ≠ colC → σ'.arrs b = σ.arrs b) ∧
+          (∀ b, (σ'.arrs b).length = (σ.arrs b).length) ∧
+          σ'.vars = σ.vars := by
+  intro l D hF
+  induction hF with
+  | nil =>
+    intro σ hσ
+    refine ⟨σ, ?_, ?_, fun _ _ => rfl, fun _ _ => rfl, fun _ => rfl, rfl⟩
+    · show Run B .skip σ σ (30 * ([] : List Com).length + 1)
+      exact Run.skip.mono (by simp)
+    · intro dd hdd
+      simp at hdd
+  | @cons w dd l' D' hw hrest ih =>
+    intro σ hσ
+    obtain ⟨σ', hr', hcell', hkeep', hoth', hlen', hvars'⟩ :=
+      ih (σ.setArr colC (base + dd) (bit dd)) (hP σ hσ _ _)
+    refine ⟨σ', ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · show Run B (.seq w (l'.foldr .seq .skip)) σ σ'
+        (30 * (w :: l').length + 1)
+      refine ((hw σ hσ).seq hr').mono ?_
+      simp only [List.length_cons]
+      omega
+    · -- named cells hold their bits
+      intro dd0 hdd0 hroom
+      rcases List.mem_cons.mp hdd0 with rfl | hdd0'
+      · by_cases hmem : dd0 ∈ D'
+        · refine hcell' dd0 hmem ?_
+          rw [length_arrs_setArr]
+          exact hroom
+        · have hne : ∀ dd' ∈ D', base + dd0 ≠ base + dd' := by
+            intro dd' hdd' hcontra
+            exact hmem (by
+              have : dd0 = dd' := by omega
+              rw [this]
+              exact hdd')
+          rw [hkeep' _ hne, arrs_setArr, if_pos rfl,
+            getD_set_self hroom]
+      · refine hcell' dd0 hdd0' ?_
+        rw [length_arrs_setArr]
+        exact hroom
+    · -- unnamed cells untouched
+      intro p2 hp2
+      rw [hkeep' p2 (fun dd' hdd' =>
+        hp2 dd' (List.mem_cons_of_mem _ hdd')), arrs_setArr, if_pos rfl,
+        getD_set_ne (hp2 dd (List.mem_cons_self ..))]
+    · intro b hb
+      rw [hoth' b hb, arrs_setArr, if_neg hb]
+    · intro b
+      rw [hlen' b, length_arrs_setArr]
+    · rw [hvars', vars_setArr]
+
+/-- `Forall₂` against a mapped right list. -/
+theorem forall₂_map_right' {α β γ : Type*} {P : α → γ → Prop} (g : β → γ) :
+    ∀ {l : List α} {u : List β},
+      List.Forall₂ (fun x y => P x (g y)) l u →
+      List.Forall₂ P l (u.map g) := by
+  intro l u h
+  induction h with
+  | nil => exact List.Forall₂.nil
+  | cons h hrest ih => exact List.Forall₂.cons h ih
+
+/-- The writer list has one writer per palette slot. -/
+theorem length_colWriters (S : Setup L) (j : ℕ) :
+    (colWriters S j).length = S.pal (j + 1) := by
+  have h1 : (pdIdx S).length = S.width * (S.R + 1) := by
+    rw [pdIdx, List.length_flatMap]
+    have heq : (List.map (fun b : Fin S.width =>
+        (List.map (fun a : Fin (S.R + 1) => (b, a))
+          (List.finRange (S.R + 1))).length) (List.finRange S.width))
+        = List.replicate S.width (S.R + 1) := by
+      rw [show (fun b : Fin S.width =>
+          (List.map (fun a : Fin (S.R + 1) => (b, a))
+            (List.finRange (S.R + 1))).length)
+          = fun _ : Fin S.width => S.R + 1 from
+        funext fun b => by rw [List.length_map, List.length_finRange]]
+      rw [List.map_const', List.length_finRange]
+    rw [heq, List.sum_replicate, smul_eq_mul]
+  have h2 : (puIdx S j).length = relPal (S.pal j) * (S.R + 1) := by
+    rw [puIdx, List.length_flatMap]
+    have heq : (List.map (fun c : Fin (relPal (S.pal j)) =>
+        (List.map (fun b : Fin (S.R + 1) => (c, b))
+          (List.finRange (S.R + 1))).length)
+          (List.finRange (relPal (S.pal j))))
+        = List.replicate (relPal (S.pal j)) (S.R + 1) := by
+      rw [show (fun c : Fin (relPal (S.pal j)) =>
+          (List.map (fun b : Fin (S.R + 1) => (c, b))
+            (List.finRange (S.R + 1))).length)
+          = fun _ : Fin (relPal (S.pal j)) => S.R + 1 from
+        funext fun c => by rw [List.length_map, List.length_finRange]]
+      rw [List.map_const', List.length_finRange]
+    rw [heq, List.sum_replicate, smul_eq_mul]
+  simp only [colWriters, List.length_append, List.length_map,
+    List.length_finRange, List.length_singleton, h1, h2]
+  show S.pal j + 1 + S.width * (S.R + 1) + relPal (S.pal j) * (S.R + 1)
+    = isoPal (relPal (S.pal j)) S.width S.R
+  rw [isoPal, relPal]
+  ring
+
+open Classical in
+/-- **One row of the colour region, written**: from the row-state
+precondition, the writer sequence lands the whole row at
+`recordProfilesMS`'s bits — every slot covered, everything else
+untouched. -/
+theorem colRow_run {B : ℕ} (a : ℕ) (ha : a < kk)
+    (hcol1 : (arenaNames (j + 1)).col ≠ "cp.c")
+    (hcol2 : ∀ i, (arenaNames (j + 1)).col ≠ lv "cq.d" i)
+    (hcol3 : ∀ i, (arenaNames (j + 1)).col ≠ lv "cq.u" i)
+    (σ : Env) (hσ : ColRowPre S j f0 Dp Dc a ha B σ) :
+    ∃ σ', Run B (colRowCom S j) σ σ'
+        (30 * (colWriters S j).length + 1) ∧
+      (∀ d : Fin (isoPal (relPal (S.pal j)) S.width S.R),
+        (σ'.arrs (arenaNames (j + 1)).col).getD
+            (a * S.pal (j + 1) + (d : ℕ)) 0
+          = colBit S j f0 Dp Dc a ha d) ∧
+      (∀ p2, (∀ d : Fin (isoPal (relPal (S.pal j)) S.width S.R),
+          p2 ≠ a * S.pal (j + 1) + (d : ℕ)) →
+        (σ'.arrs (arenaNames (j + 1)).col).getD p2 0
+          = (σ.arrs (arenaNames (j + 1)).col).getD p2 0) ∧
+      (∀ b, b ≠ (arenaNames (j + 1)).col → σ'.arrs b = σ.arrs b) ∧
+      (∀ b, (σ'.arrs b).length = (σ.arrs b).length) ∧
+      σ'.vars = σ.vars := by
+  set bitN : ℕ → ℕ := fun dd =>
+    if h : dd < isoPal (relPal (S.pal j)) S.width S.R then
+      colBit S j f0 Dp Dc a ha ⟨dd, h⟩ else 0 with hbitN_def
+  have hF : List.Forall₂ (fun w dd => ∀ σ, ColRowPre S j f0 Dp Dc a ha B σ →
+      Run B w σ (σ.setArr (arenaNames (j + 1)).col
+        (a * S.pal (j + 1) + dd) (bitN dd)) 30)
+      (colWriters S j) ((colSlots S j).map (·.val)) := by
+    refine forall₂_map_right' _ ?_
+    refine ((colWriters_forall₂ S j f0 Dp Dc a ha (B := B))).imp ?_
+    intro w d h σ2 hσ2
+    have hb : bitN (d : ℕ) = colBit S j f0 Dp Dc a ha d := by
+      rw [hbitN_def]
+      simp only [d.2, dif_pos]
+    rw [hb]
+    exact h σ2 hσ2
+  obtain ⟨σ', hr, hcell, hkeep, hoth, hlen, hvars⟩ :=
+    writersRun (colC := (arenaNames (j + 1)).col)
+      (base := a * S.pal (j + 1)) (bit := bitN)
+      (P := ColRowPre S j f0 Dp Dc a ha B)
+      (fun σ2 hσ2 p v => colRowPre_setArr S j f0 Dp Dc a ha hσ2
+        hcol1 hcol2 hcol3 p v)
+      hF σ hσ
+  have hroom : ∀ d : Fin (isoPal (relPal (S.pal j)) S.width S.R),
+      a * S.pal (j + 1) + (d : ℕ)
+        < (σ.arrs (arenaNames (j + 1)).col).length := by
+    intro d
+    have h5 := hσ.2.2.2.2.1
+    have hd : ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)
+        < S.pal (j + 1) := d.2
+    omega
+  refine ⟨σ', by rw [colRowCom]; exact hr, ?_, ?_, hoth, hlen, hvars⟩
+  · intro d
+    have hmem : ((d : Fin (isoPal (relPal (S.pal j)) S.width S.R)) : ℕ)
+        ∈ (colSlots S j).map (·.val) :=
+      List.mem_map.mpr ⟨d, colSlots_covers S j d, rfl⟩
+    have h := hcell (d : ℕ) hmem (hroom d)
+    rw [h, hbitN_def]
+    simp only [d.2, dif_pos]
+  · intro p2 hp2
+    refine hkeep p2 ?_
+    intro dd hdd
+    obtain ⟨d, -, rfl⟩ := List.mem_map.mp hdd
+    exact hp2 d
+
+open Classical in
+/-- **§5k's colour write**: per carrier row, the writer sequence — the
+whole `(j+1)` colour window lands at `recordProfilesMS`'s bits. -/
+theorem prepCol_spec {B : ℕ} (hkkB : kk < B)
+    (hcol1 : (arenaNames (j + 1)).col ≠ "cp.c")
+    (hcol2 : ∀ i, (arenaNames (j + 1)).col ≠ lv "cq.d" i)
+    (hcol3 : ∀ i, (arenaNames (j + 1)).col ≠ lv "cq.u" i)
+    (hnN1 : (arenaNames (j + 1)).nN ≠ "cp.i") :
+    Spec B
+      (fun σ => σ.vars (arenaNames (j + 1)).nN = kk ∧
+        (∀ a, ∀ ha : a < kk, ∀ c : Fin (S.pal j),
+          (σ.arrs "cp.c").getD (a * S.pal j + (c : ℕ)) 0
+            = if (⟨a, ha⟩ : Fin kk) ∈ f0 c then 1 else 0) ∧
+        (∀ a, ∀ ha : a < kk, ∀ b' : Fin S.width,
+          (σ.arrs (lv "cq.d" (b' : ℕ))).getD a 0 = Dp b' ⟨a, ha⟩) ∧
+        (∀ a, ∀ ha : a < kk, ∀ c : Fin (relPal (S.pal j)),
+          (σ.arrs (lv "cq.u" (c : ℕ))).getD a 0
+            = Dc c (Fin.castSucc ⟨a, ha⟩)) ∧
+        kk * S.pal (j + 1) ≤ (σ.arrs (arenaNames (j + 1)).col).length ∧
+        kk * S.pal j ≤ (σ.arrs "cp.c").length ∧
+        (∀ b' : Fin S.width, kk ≤ (σ.arrs (lv "cq.d" (b' : ℕ))).length) ∧
+        (∀ c : Fin (relPal (S.pal j)),
+          kk ≤ (σ.arrs (lv "cq.u" (c : ℕ))).length) ∧
+        kk * S.pal (j + 1) < B ∧ kk * S.pal j < B ∧ 1 < B ∧
+        S.R + 2 < B ∧
+        (∀ a : Fin kk, ∀ b' : Fin S.width, Dp b' a ≤ S.R + 1) ∧
+        (∀ c : Fin (relPal (S.pal j)), ∀ v : Fin (kk + 1),
+          Dc c v ≤ S.R + 2))
+      (prepColCom S j)
+      (fun σ σ' =>
+        (∀ a, ∀ ha : a < kk,
+          ∀ d : Fin (isoPal (relPal (S.pal j)) S.width S.R),
+          (σ'.arrs (arenaNames (j + 1)).col).getD
+              (a * S.pal (j + 1) + (d : ℕ)) 0
+            = colBit S j f0 Dp Dc a ha d) ∧
+        (∀ b, b ≠ (arenaNames (j + 1)).col → σ'.arrs b = σ.arrs b) ∧
+        (∀ b, (σ'.arrs b).length = (σ.arrs b).length) ∧
+        (∀ y, y ≠ "cp.i" → σ'.vars y = σ.vars y))
+      ((30 * (colWriters S j).length + 9) * kk + 6) := by
+  intro σ0 hσ0
+  obtain ⟨hnN0, hcc0, hpd0, hpu0, hcolL0, hccL0, hpdL0, hpuL0, hkpB, hkjB,
+    h1B, hRB, hDpB, hDcB⟩ := hσ0
+  set IC : Env → Prop := fun σ =>
+    σ.vars (arenaNames (j + 1)).nN = kk ∧ σ.vars "cp.i" ≤ kk ∧
+    (∀ a, ∀ ha : a < kk, a < σ.vars "cp.i" →
+      ∀ d : Fin (isoPal (relPal (S.pal j)) S.width S.R),
+      (σ.arrs (arenaNames (j + 1)).col).getD
+          (a * S.pal (j + 1) + (d : ℕ)) 0
+        = colBit S j f0 Dp Dc a ha d) ∧
+    (∀ b, b ≠ (arenaNames (j + 1)).col → σ.arrs b = σ0.arrs b) ∧
+    (∀ b, (σ.arrs b).length = (σ0.arrs b).length) ∧
+    (∀ y, y ≠ "cp.i" → σ.vars y = σ0.vars y) with hIC_def
+  have hbody : Spec B (fun σ => IC σ ∧ σ.vars "cp.i" < kk)
+      (.seq (colRowCom S j)
+        (.assign "cp.i" (.add (.var "cp.i") (.lit 1))))
+      (fun σ σ' => IC σ' ∧ σ'.vars "cp.i" = σ.vars "cp.i" + 1)
+      (30 * (colWriters S j).length + 5) := by
+    rintro σ ⟨⟨hnN, hile, hrows, hoth, hlen, hvars⟩, hlt⟩
+    set a := σ.vars "cp.i" with ha_def
+    -- the row-state precondition, transported off the entry facts
+    have hpre : ColRowPre S j f0 Dp Dc a hlt B σ := by
+      have hccσ : σ.arrs "cp.c" = σ0.arrs "cp.c" := hoth _ (Ne.symm hcol1)
+      have hpdσ : ∀ i, σ.arrs (lv "cq.d" i) = σ0.arrs (lv "cq.d" i) :=
+        fun i => hoth _ (Ne.symm (hcol2 i))
+      have hpuσ : ∀ i, σ.arrs (lv "cq.u" i) = σ0.arrs (lv "cq.u" i) :=
+        fun i => hoth _ (Ne.symm (hcol3 i))
+      have hpal_pos : (0 : ℕ) < S.pal (j + 1) := by
+        show 0 < isoPal (relPal (S.pal j)) S.width S.R
+        rw [isoPal, relPal]
+        omega
+      have haux1 : a * S.pal (j + 1) + S.pal (j + 1) ≤ kk * S.pal (j + 1) := by
+        have h := Nat.mul_le_mul_right (S.pal (j + 1))
+          (Nat.succ_le_of_lt hlt)
+        rw [Nat.succ_mul] at h
+        exact h
+      have haux2 : a * S.pal j + S.pal j ≤ kk * S.pal j := by
+        have h := Nat.mul_le_mul_right (S.pal j) (Nat.succ_le_of_lt hlt)
+        rw [Nat.succ_mul] at h
+        exact h
+      refine ⟨rfl, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, h1B, ?_, ?_, ?_,
+        by omega⟩
+      · intro c
+        rw [hccσ]
+        exact hcc0 a hlt c
+      · intro b'
+        rw [hpdσ]
+        exact hpd0 a hlt b'
+      · intro c
+        rw [hpuσ]
+        exact hpu0 a hlt c
+      · rw [hlen]
+        omega
+      · rw [hccσ]
+        omega
+      · intro b'
+        rw [hpdσ]
+        exact lt_of_lt_of_le hlt (hpdL0 b')
+      · intro c
+        rw [hpuσ]
+        exact lt_of_lt_of_le hlt (hpuL0 c)
+      · omega
+      · omega
+      · intro b'
+        have := hDpB ⟨a, hlt⟩ b'
+        omega
+      · intro c
+        have := hDcB c (Fin.castSucc ⟨a, hlt⟩)
+        omega
+      · exact hRB
+    obtain ⟨σ1, hr1, hcells1, hkeep1, hoth1, hlen1, hvars1⟩ :=
+      colRow_run S j f0 Dp Dc a hlt hcol1 hcol2 hcol3 σ hpre
+    have hi1 : σ1.vars "cp.i" = a := by rw [hvars1]
+    have hbump : (Expr.add (.var "cp.i") (.lit 1)).evalB B σ1
+        = some (a + 1) := by
+      have hv : (Expr.var "cp.i").evalB B σ1 = some a := by
+        rw [← hi1]
+        exact evalB_var (by rw [hi1]; omega)
+      have h := evalB_bin (op := .add) hv (evalB_lit (n := 1) (by omega))
+        (by rw [Bop.apply_add]; omega)
+      rwa [Bop.apply_add] at h
+    refine ⟨σ1.setVar "cp.i" (a + 1),
+      (hr1.seq (Run.assign hbump)).mono (by simp), ?_, ?_⟩
+    · refine ⟨?_, by rw [vars_setVar, if_pos rfl]; omega, ?_, ?_, ?_, ?_⟩
+      · rw [vars_setVar, if_neg hnN1, hvars1]
+        exact hnN
+      · -- rows below the bumped counter
+        intro a2 ha2 ha2lt d
+        rw [vars_setVar, if_pos rfl] at ha2lt
+        rw [arrs_setVar]
+        by_cases ha2a : a2 = a
+        · subst ha2a
+          exact hcells1 d
+        · have h := hkeep1 (a2 * S.pal (j + 1) + (d : ℕ)) ?_
+          · rw [h]
+            exact hrows a2 ha2 (by omega) d
+          · intro d2 hcontra
+            have hd2 : ((d2 : Fin (isoPal (relPal (S.pal j)) S.width
+                S.R)) : ℕ) < S.pal (j + 1) := d2.2
+            have hd1 : ((d : Fin (isoPal (relPal (S.pal j)) S.width
+                S.R)) : ℕ) < S.pal (j + 1) := d.2
+            exact ha2a (rowCell_inj hd1 hd2 hcontra)
+      · intro b hb
+        rw [arrs_setVar, hoth1 b hb]
+        exact hoth b hb
+      · intro b
+        rw [arrs_setVar, hlen1 b]
+        exact hlen b
+      · intro y hy
+        rw [vars_setVar, if_neg hy, hvars1]
+        exact hvars y hy
+    · rw [vars_setVar, if_pos rfl]
+  obtain ⟨σ', hrun, hIC', hi'⟩ :=
+    (Spec.forRangeZero "cp.i" (arenaNames (j + 1)).nN IC kk
+      (30 * (colWriters S j).length + 5) hkkB
+      (fun σ hσ => hσ.2.1) (fun σ hσ => hσ.1) hbody) σ0
+      (show IC (σ0.setVar "cp.i" 0) by
+        refine ⟨by rw [vars_setVar, if_neg hnN1]; exact hnN0,
+          by rw [vars_setVar, if_pos rfl]; omega, ?_,
+          fun b _ => by rw [arrs_setVar],
+          fun b => by rw [arrs_setVar],
+          fun y hy => by rw [vars_setVar, if_neg hy]⟩
+        intro a2 ha2 ha2lt d
+        rw [vars_setVar, if_pos rfl] at ha2lt
+        omega)
+  obtain ⟨-, -, hrows', hoth', hlen', hvars'⟩ := hIC'
+  refine ⟨σ', hrun.mono (by
+    have h9 : 30 * (colWriters S j).length + 5 + 4
+        = 30 * (colWriters S j).length + 9 := by omega
+    rw [h9]), ?_, hoth', hlen', hvars'⟩
+  intro a2 ha2 d
+  exact hrows' a2 ha2 (by rw [hi']; exact ha2) d
 
 end ColourWrite
 
@@ -2814,5 +3388,85 @@ theorem wvars_prepCom {S : Setup L} {ℓp hbf : ℕ → ℕ} {co cm : ℕ → St
     rcases wvars_isolateCom_subset _ _ _ _ _ y hy with h | h
     · left; simp only [prepScalars, List.mem_append]; tauto
     · right; right; exact h
+
+/-! ## §7 The pass, assembled -/
+
+open Classical in
+/-- **`ChildLoadParts`, discharged**: at any word bound `B` covering
+the stated shapes, the pass `prepCom` satisfies the named machine
+residual at the canonical channel `prepChan` and the budget `prepK` —
+from the constant-`ℓp` discipline, the channel-pinning seam, the batch
+width fit, the scratch descriptor's length clauses, and name freshness
+(module docstring). -/
+theorem childLoadParts_of (B : ℕ) (S : Setup L)
+    (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop)
+    (Scr : ℕ → Env → Prop) (ca co cm : ℕ → String)
+    -- the constant-`ℓp` discipline (F7 owns both parameters)
+    (hlpEq : ∀ j, j + 1 ≤ S.depth → ℓp (j + 1) = ℓp j)
+    (hhbEq : ∀ j, j + 1 ≤ S.depth → hbf (j + 1) = hbf j)
+    (hlpRoom : ∀ j, j + 1 ≤ S.depth → j < ℓp j)
+    (hhbR : ∀ j, j + 1 ≤ S.depth → 2 * S.R + 1 ≤ hbf j)
+    -- the admissible history shape and the channel-pinning seam
+    (hAdmLen : ∀ j (A : Arena (S.pal j) n₀), Adm j A → A.hist.length = j)
+    (hpin : ∀ j (A : Arena (S.pal j) n₀), Adm j A →
+      ∀ (v : Fin A.N) (e : Fin (ℓp j)) (he : (e : ℕ) < A.hist.length)
+        (z : Fin A.N),
+        z ∈ htabF j A v e ↔ (A.up z) ∈ Lax3Proofs.SplitterWin.pathSet
+          (A.hist[(e : ℕ)]).2 (2 * S.R) (A.hist[(e : ℕ)]).1 (A.up v))
+    (hpinE : ∀ j (A : Arena (S.pal j) n₀), Adm j A →
+      ∀ (v : Fin A.N) (e : Fin (ℓp j)), A.hist.length ≤ (e : ℕ) →
+        htabF j A v e = [])
+    -- the batch fits the width
+    (hwidth : ∀ j, j + 1 ≤ S.depth → 1 + j * (2 * S.R + 1) ≤ S.width)
+    -- word bounds
+    (h1B : 1 < B) (hn0B : n₀ < B) (hn0nB : n₀ * n₀ < B)
+    (hn02B : n₀ + 2 < B) (hbig1 : n₀ * n₀ + 2 * n₀ + 1 < B)
+    (hdepthB : S.depth < B) (hRB : 2 * S.R + 3 < B) (hwB : S.width < B)
+    (hlpB : ∀ j ≤ S.depth, ℓp j < B)
+    (hhbB : ∀ j ≤ S.depth, hbf j + 1 < B)
+    (hhistB : ∀ j ≤ S.depth, n₀ * ℓp j * (hbf j + 1) < B)
+    (hpalB : ∀ j ≤ S.depth, n₀ * S.pal j < B)
+    -- the scratch descriptor's length clauses
+    (hscrA : ∀ j' σ, Scr j' σ →
+      n₀ ≤ (σ.arrs "cp.l").length ∧ n₀ ≤ (σ.arrs "cp.r").length ∧
+      n₀ ≤ (σ.arrs "cp.b").length ∧ n₀ ≤ (σ.arrs "cp.d").length ∧
+      n₀ ≤ (σ.arrs "cp.p").length ∧ n₀ ≤ (σ.arrs "cp.x").length ∧
+      n₀ + 2 ≤ (σ.arrs "cp.v").length ∧
+      (σ.arrs "cp.w").length = S.width ∧
+      n₀ + 1 ≤ (σ.arrs "cp.o").length ∧
+      n₀ * n₀ ≤ (σ.arrs "cp.t").length ∧
+      n₀ * S.pal j' ≤ (σ.arrs "cp.c").length ∧
+      (∀ i, i < S.width → n₀ ≤ (σ.arrs (lv "cq.d" i)).length) ∧
+      (∀ c, c < S.pal j' →
+        n₀ * n₀ + 2 * n₀ ≤ (σ.arrs (lv "cq.v" c)).length) ∧
+      (∀ c, c < S.pal j' + 1 → n₀ + 1 ≤ (σ.arrs (lv "cq.u" c)).length))
+    (hscrLvl : ∀ j', j' + 1 ≤ S.depth → ∀ σ, Scr j' σ →
+      n₀ + 1 ≤ (σ.arrs (arenaNames (j' + 1)).off).length ∧
+      n₀ * n₀ ≤ (σ.arrs (arenaNames (j' + 1)).tgt).length ∧
+      n₀ * S.pal (j' + 1) ≤ (σ.arrs (arenaNames (j' + 1)).col).length ∧
+      n₀ ≤ (σ.arrs (arenaNames (j' + 1)).up).length ∧
+      n₀ * ℓp j' * (hbf j' + 1)
+        ≤ (σ.arrs (arenaNames (j' + 1)).hist).length)
+    -- cover-name freshness
+    (hcovA : ∀ jc j', ca jc ∉ levelArrays j' ∧ co jc ∉ levelArrays j' ∧
+      cm jc ∉ levelArrays j')
+    (hcovP : ∀ jc, (ca jc ∉ prepArrays ∧ co jc ∉ prepArrays ∧
+        cm jc ∉ prepArrays) ∧
+      ∀ i, (ca jc ≠ lv "cq.d" i ∧ ca jc ≠ lv "cq.v" i ∧
+          ca jc ≠ lv "cq.u" i) ∧
+        (co jc ≠ lv "cq.d" i ∧ co jc ≠ lv "cq.v" i ∧
+          co jc ≠ lv "cq.u" i) ∧
+        (cm jc ≠ lv "cq.d" i ∧ cm jc ≠ lv "cq.v" i ∧
+          cm jc ≠ lv "cq.u" i)) :
+    ChildLoadParts B S ord ℓp htabF hbf Adm Scr ca co cm
+      (prepCom S ℓp hbf co cm)
+      (prepChan S ord ℓp htabF)
+      (fun _ j A u => prepK S ord ℓp hbf j A u) := by
+  intro k j A hdiag hAdm hbot u
+  sorry
 
 end Lax3Proofs.Prog
