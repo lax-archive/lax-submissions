@@ -64,6 +64,59 @@ flat scan of `N²` pairs each with an inner scan of the `N` witnesses
 (`agRounds_spec`: the arc matrix holds `(mdChain A.G i).inN` pointwise)
 is an induction on `R` rather than a loop invariant.
 
+## STATE OF THE LEAF (wave w63, incomplete — read this first)
+
+**Green and proved** (§1–§6, no `sorry`): the bit/counter calculus
+(`agBit`, `agCnt`); the builder's abstract layer (`agMat`, `agKey`,
+`agPre`, `agOffF`, `agPart`, and the bridge `agDelAdjSt_of_part` from
+the partial region to `DelAdjSt … ∅`); the branchless predicate
+expressions and their `evalB` lemmas; **the two scan rules the whole
+file rests on** — `agSumRun` (inner accumulate `av := Σ e`) and
+`agScanRun`/`agBndRun`/`agNRun` (flat store scan writing `dst[pv]`);
+every program of §4; and the decode/cell-read bodies of §5–§6
+(`agDecRun`, `agEvalCell`, `agDecStoreRun`).
+
+**Remaining, in order.** (1) `agGrCom` spec — CSR into `agFm` via the
+row-window probe `agGrE`; (2) the builder: `agOffCom` (needs
+`agOffF H v = Σ_{q < v·N} m[q]`, one `Finset.range` split),
+`agDgZCom`, then **the placement scan** — the only bespoke loop, whose
+invariant is `agPart aj dg mt H (agPre H k)`, stepped by
+`agPre_succ_place` / `agPre_succ_skip` (freshness of the two written
+slots comes from `agOffF_slot`); (3) `agBaseCom` at `mem_baseOr` +
+`mdPerm_val`; (4) `agFratCom` at `fratGraph_adj`; (5) the
+`mdPeelCore_spec` call sites — `hp := agHp`, `ra := agRa`,
+`(ao,aj,dg,mt) := (aoO,ajO,dgO,mtO) j`, side conditions `hnods`/`harr`
+off `agScalars_nodup` and `hB : N²+4N+4 ≤ mcB q x` (copy
+`covMdPeelIn_mdPeelCom`:4030-4044); (6) `agStepCom` at
+`mem_greedyStep`; (7) `agSymCom` + a second builder call for the
+headline; (8) the round induction `agRounds R` (structural on `R`, not
+a machine loop) and the headline `covAugAdjIn_agCom` through
+`specWindow` (copy `covAdjBuildIn_bldCom`:2040-2130 verbatim).
+
+**Discoveries a successor must not re-derive.**
+* Arc convention: `u ∈ D.inN v` *is* the arc `u → v`;
+  `TransLink D u v = ∃ w, u ∈ inN w ∧ w ∈ inN v` (so `u → w → v`) and
+  `FratLink D u v = ∃ w, u ∈ inN w ∧ v ∈ inN w` — **`FratLink` is
+  symmetric**, so `mem_greedyStep`'s `FratLink D v u` needs no fourth
+  accumulator: three inner scans suffice (`agStepBody`).
+* `mem_greedyStep` is automatically false on the diagonal (it demands
+  both `(Trans ∨ Frat)` and `¬(Trans ∨ Frat)` when `σ u < σ v` fails),
+  so the branchless step formula needs no `u = v` special case.
+* `mdPeelCore_spec` leaves `mt` entirely unconstrained (the peel never
+  reads mates) — but `DelAdjSt` itself demands *consistent* mates, so
+  the builder must still cross them; the counting-trick placement that
+  writes both directed copies at once does it in `O(1)` per edge.
+* Truncated `Nat` subtraction makes every comparison branchless:
+  `1 - x = agBit (x = 0)` for **all** `x`, `1 - (1 - x) = agBit (0 < x)`,
+  `1 - (a + 1 - b) = agBit (a < b)`. Only the placement needs an `ite`.
+* `Sag` may only speak of `σ` and `j`, so its length clauses must be
+  stated against `σ.vars (arenaNames j).nN` (copy `mpSmp`'s shape), and
+  it is `Sag` — not the residual's precondition — that must supply the
+  allocation of the four output regions `aoO/ajO/dgO/mtO`.
+* The intermediate `fratGraph` builds may reuse `(aoO,ajO,dgO,mtO) j`
+  as scratch: the postcondition only constrains the final state, and
+  the peel consuming `dgO` between rounds is harmless.
+
 ## The statement's shape
 
 `covAugAdjIn_agCom` takes only F7-suppliable hypotheses: `1 ≤ q` (the
@@ -1124,6 +1177,8 @@ private theorem agEvalCell {B N : ℕ} (a xv yv nN : String) (ρ : Env) (x y : �
       = some ((ρ.arrs a).getD (x * N + y) 0) := by
   have hlt : x * N + y < N * N :=
     agPair_lt (⟨x, hxN⟩ : Fin N) (⟨y, hyN⟩ : Fin N)
+  have hN1 : 0 < N := by omega
+  have hNle : N ≤ N * N := Nat.le_mul_of_pos_left N hN1
   have hxv := evalB_var (B := B) (x := xv) (σ := ρ) (by rw [hx]; omega)
   have hnv := evalB_var (B := B) (x := nN) (σ := ρ) (by rw [hn]; omega)
   have hyv := evalB_var (B := B) (x := yv) (σ := ρ) (by rw [hy]; omega)
@@ -1150,7 +1205,7 @@ private theorem agDecStoreRun {B N : ℕ} (dst pv uv vv nN : String) (e : Expr)
   have hdec := agDecRun (B := B) (N := N) pv uv vv nN hup hun hsqB τ hn hp
   set ρ := (τ.setVar uv (τ.vars pv / N)).setVar vv (τ.vars pv % N) with hρ
   have hρp : ρ.vars pv = τ.vars pv := by
-    rw [hρ, agVs_ne _ hvp, agVs_ne _ hup]
+    rw [hρ, agVs_ne _ (Ne.symm hvp), agVs_ne _ (Ne.symm hup)]
   have hρa : ∀ a, ρ.arrs a = τ.arrs a := by
     intro a; rw [hρ, agVs_arrs, agVs_arrs]
   have hstore : Run B (.store dst (.var pv) e) ρ
@@ -1158,7 +1213,7 @@ private theorem agDecStoreRun {B N : ℕ} (dst pv uv vv nN : String) (e : Expr)
     refine (Run.store ?_ he ?_).mono (by simp [Expr.size])
     · rw [← hρp]
       exact evalB_var (B := B) (by rw [hρp]; omega)
-    · rw [hρp, hρa]
+    · rw [hρa]
       exact hlen
   refine ⟨ρ.setArr dst (τ.vars pv) val, (hdec.seq hstore).mono (by omega),
     ?_, ?_, ?_⟩
