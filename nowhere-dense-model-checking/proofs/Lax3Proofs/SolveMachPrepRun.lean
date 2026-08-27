@@ -240,6 +240,154 @@ theorem histArr_reindex {aN : String} {N ℓ1 ℓ2 hb1 hb2 : ℕ}
   rw [hfun']
   exact h
 
+/-- A tagged name never equals a plain name of its base's length unless
+it is the base itself at level `0` — the one-shot form of `lv_not_mem`
+for a single disequality. -/
+theorem lv_ne_lit {s t : String} (hlen : t.length = s.length) (hst : s ≠ t)
+    (j : ℕ) : lv s j ≠ t := by
+  intro h
+  have h1 := congrArg String.length h
+  rw [lv_length, hlen] at h1
+  have hj : j = 0 := by omega
+  subst hj
+  exact hst h
+
+open Classical in
+/-- Isolation never adds edges: the degree sum only drops. -/
+theorem degSum_deleteVerts_le {N : ℕ} (G : SimpleGraph (Fin N))
+    (W : Set (Fin N)) :
+    (∑ v : Fin N, (Lax12.UniformQuasiWideness.deleteVerts G W).degree v)
+      ≤ ∑ v : Fin N, G.degree v := by
+  refine Finset.sum_le_sum fun v _ => ?_
+  have hsub : (Lax12.UniformQuasiWideness.deleteVerts G W).neighborFinset v
+      ⊆ G.neighborFinset v := by
+    intro w hw
+    rw [SimpleGraph.mem_neighborFinset] at hw ⊢
+    exact hw.1
+  calc (Lax12.UniformQuasiWideness.deleteVerts G W).degree v
+      = ((Lax12.UniformQuasiWideness.deleteVerts G W).neighborFinset v).card :=
+        (SimpleGraph.card_neighborFinset_eq_degree _ _).symm
+    _ ≤ (G.neighborFinset v).card := Finset.card_le_card hsub
+    _ = G.degree v := SimpleGraph.card_neighborFinset_eq_degree _ _
+
+/-- **The windowed contract, recast** across equal round counts and
+word depths at fixed carrier, graph, colours and renaming: the region
+data is identical cell for cell, so the contract holds at either
+indexing (the level boundary's `ℓp (j+1) = ℓp j` transport). -/
+theorem arenaStW_cast {nm : ArenaNames} {Λ n₀ kk ℓ1 ℓ2 hb1 hb2 : ℕ}
+    (hℓ : ℓ2 = ℓ1) (hhb : hb2 = hb1)
+    {G : SimpleGraph (Fin kk)} {col : Coloring kk Λ} {up : Fin kk ↪ Fin n₀}
+    {h1 : Fin kk → Fin ℓ1 → List (Fin kk)}
+    {h2 : Fin kk → Fin ℓ2 → List (Fin kk)}
+    (hfun : ∀ (v : Fin kk) (p : Fin ℓ2), h2 v p = h1 v ⟨(p : ℕ), by omega⟩)
+    {σ : Env}
+    (h : ArenaStW nm hb1 (⟨kk, G, col, up, h1⟩ : Impl.MArena Λ n₀ ℓ1) σ) :
+    ArenaStW nm hb2 (⟨kk, G, col, up, h2⟩ : Impl.MArena Λ n₀ ℓ2) σ := by
+  subst hℓ
+  subst hhb
+  have h2eq : h2 = h1 := by
+    funext v p
+    rw [hfun v p]
+  rw [h2eq]
+  exact h
+
+open Classical in
+/-- **Retargeting the colour region**: a windowed arena whose colour
+rows move to a fresh region at a new palette — the CSR pair, the
+renaming and the channel carry over unchanged, the new colour region
+enters by its allocation length and bit facts. -/
+theorem arenaStW_retarget_col {nm : ArenaNames} {Λ1 Λ2 n₀ ℓpc : ℕ} {hb : ℕ}
+    {A : Impl.MArena Λ1 n₀ ℓpc} {σ : Env}
+    (h : ArenaStW nm hb A σ) (colN : String) (col2 : Coloring A.N Λ2)
+    (hnd : ([nm.off, nm.tgt, nm.col, nm.up, nm.hist] : List String).Nodup)
+    (hcolN : colN ∉ ([nm.off, nm.tgt, nm.up, nm.hist] : List String))
+    (hL : A.N * Λ2 ≤ (σ.arrs colN).length)
+    (hbits : ∀ (v : Fin A.N) (c : Fin Λ2),
+      (σ.arrs colN).getD ((v : ℕ) * Λ2 + (c : ℕ)) 0
+        = if v ∈ col2 c then 1 else 0) :
+    ArenaStW { nm with col := colN } hb
+      (⟨A.N, A.G, col2, A.up, A.hist⟩ : Impl.MArena Λ2 n₀ ℓpc) σ := by
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
+    List.nodup_nil, and_true, not_or] at hnd
+  obtain ⟨⟨hot', hoc, hou, hoh⟩, ⟨htc, htu, hth⟩, ⟨hcu, hch⟩, huh, -⟩ := hnd
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hcolN
+  obtain ⟨hcolN_o, hcolN_t, hcolN_u, hcolN_h⟩ := hcolN
+  set ns := σ.vars nm.nS with hns_def
+  set ws1 := arenaWs nm Λ1 ℓpc hb A.N ns with hws1_def
+  set ws2 := arenaWs { nm with col := colN } Λ2 ℓpc hb A.N ns with hws2_def
+  -- the new assignment's five values
+  have hw2_off : ws2 nm.off = some (A.N + 1) := arenaWs_off
+  have hw2_tgt : ws2 nm.tgt = some ns := arenaWs_tgt (Ne.symm hot')
+  have hw2_col : ws2 colN = some (A.N * Λ2) :=
+    arenaWs_col (nm := { nm with col := colN }) hcolN_o hcolN_t
+  have hw2_up : ws2 nm.up = some A.N :=
+    arenaWs_up (nm := { nm with col := colN }) (Ne.symm hou) (Ne.symm htu)
+      (Ne.symm hcolN_u)
+  have hw2_hist : ws2 nm.hist = some (A.N * ℓpc * (hb + 1)) :=
+    arenaWs_hist (nm := { nm with col := colN }) (Ne.symm hoh) (Ne.symm hth)
+      (Ne.symm hcolN_h) (Ne.symm huh)
+  -- the old assignment's matching values
+  have hw1_off : ws1 nm.off = some (A.N + 1) := arenaWs_off
+  have hw1_tgt : ws1 nm.tgt = some ns := arenaWs_tgt (Ne.symm hot')
+  have hw1_up : ws1 nm.up = some A.N :=
+    arenaWs_up (Ne.symm hou) (Ne.symm htu) (Ne.symm hcu)
+  have hw1_hist : ws1 nm.hist = some (A.N * ℓpc * (hb + 1)) :=
+    arenaWs_hist (Ne.symm hoh) (Ne.symm hth) (Ne.symm hch) (Ne.symm huh)
+  have hfit2 : FitsW ws2 σ := by
+    intro b m hbm
+    rcases arenaWs_some_elim hbm with rfl | rfl | h3 | rfl | rfl
+    · rw [hw2_off] at hbm
+      cases hbm
+      exact h.fits _ _ hw1_off
+    · rw [hw2_tgt] at hbm
+      cases hbm
+      exact h.fits _ _ hw1_tgt
+    · rw [show ({ nm with col := colN } : ArenaNames).col = colN from rfl]
+        at h3
+      subst h3
+      rw [hw2_col] at hbm
+      cases hbm
+      exact hL
+    · rw [hw2_up] at hbm
+      cases hbm
+      exact h.fits _ _ hw1_up
+    · rw [hw2_hist] at hbm
+      cases hbm
+      exact h.fits _ _ hw1_hist
+  refine ⟨hfit2, ?_⟩
+  have htr : ∀ (b : String), ws2 b = ws1 b →
+      (winA ws2 σ).arrs b = (winA ws1 σ).arrs b :=
+    fun b hb2 => arrs_winA_congr hb2 σ
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · -- the carrier cell
+    show σ.vars nm.nN = A.N
+    exact h.st.n_eq
+  · -- the CSR pair
+    refine graphCsr_of_eq h.st.csr ?_ ?_
+    · exact htr _ (hw2_off.trans hw1_off.symm)
+    · exact htr _ (hw2_tgt.trans hw1_tgt.symm)
+  · -- the new colour region
+    constructor
+    · exact length_arrs_winA hw2_col hL
+    · intro v c
+      have hpos : (v : ℕ) * Λ2 + (c : ℕ) < A.N * Λ2 := by
+        have h1 : (v : ℕ) * Λ2 + (c : ℕ) < ((v : ℕ) + 1) * Λ2 := by
+          rw [Nat.succ_mul]
+          omega
+        have h2 : ((v : ℕ) + 1) * Λ2 ≤ A.N * Λ2 :=
+          Nat.mul_le_mul_right Λ2 v.2
+        omega
+      rw [arrs_winA_some hw2_col, getD_take_of_lt hpos]
+      exact hbits v c
+  · -- the renaming
+    have heq := htr _ (hw2_up.trans hw1_up.symm)
+    exact ⟨by rw [heq]; exact h.st.up.1, fun v => by rw [heq]; exact h.st.up.2 v⟩
+  · -- the channel
+    have heq := htr _ (hw2_hist.trans hw1_hist.symm)
+    refine ⟨by rw [heq]; exact h.st.hist.1, fun v p => ?_⟩
+    obtain ⟨h1, h2, h3⟩ := h.st.hist.2 v p
+    exact ⟨h1, by rw [heq]; exact h2, fun i hi => by rw [heq]; exact h3 i hi⟩
+
 /-! ## §1 The seam lemmas: the F6c12p kit and the machine kit are one
 
 `BatchCanon.cdist`/`cdescend` (the abstract canonical batch kit) and
@@ -566,6 +714,15 @@ def prepPN (j : ℕ) : ProfNames :=
   ⟨"cp.o", "cp.t", "cp.c", "cp.w", "cp.x", "cp.v",
     (arenaNames (j + 1)).nN, "cp.m", lv "cq.d", lv "cq.v", lv "cq.u"⟩
 
+/-- The isolate stage's output retarget lands on the canonical `(j+1)`
+family on the nose. -/
+theorem prepNmI_update (j : ℕ) :
+    ({ (prepNmI j) with
+        off := (arenaNames (j + 1)).off
+        tgt := (arenaNames (j + 1)).tgt
+        nS := (arenaNames (j + 1)).nS } : ArenaNames)
+      = arenaNames (j + 1) := rfl
+
 /-- §5a — the centre's row bounds off the cover CSR: the row base into
 `cp.s`, the cluster size into `cp.n`. -/
 def prepRowBoundsCom (coj ctr : String) : Com :=
@@ -866,6 +1023,40 @@ noncomputable def prepK (S : Setup L) (ord : CoverSpec.OrderingRoutine)
     + isolateK k cns                                        -- isolate
     + 30                                                    -- seq slack
   else 0
+
+open Classical in
+/-- `prepK` at a carrier member, the guard discharged — the closed form
+the assembly's final cost bound rewrites to. -/
+theorem prepK_coe (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    (ℓp hbf : ℕ → ℕ) (j : ℕ) (A : Arena (S.pal j) n₀) (u : Fin A.N) :
+    prepK S ord ℓp hbf j A (u : ℕ)
+      = 20 + (11 * A.N + 6)
+        + (30 * childN S A ((ord A.N A.G).order) u + 6)
+        + 20
+        + ((30 + 30 * (hbf j + 1)) * ℓp j + 20)
+        + ((30 * childN S A ((ord A.N A.G).order) u + 6)
+            + (12 * S.width + 20))
+        + (14 * childN S A ((ord A.N A.G).order) u + 20)
+        + (20 + restrictK
+            (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) u))
+            (childN S A ((ord A.N A.G).order) u) (S.pal j) (ℓp j) (hbf j))
+        + (20 + bfsK (childN S A ((ord A.N A.G).order) u)
+            (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R))
+        + (30 + supportsK (childN S A ((ord A.N A.G).order) u)
+            (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R))
+        + profilesK S.width (S.pal j + 1)
+            (childN S A ((ord A.N A.G).order) u)
+            (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (preG S A ((ord A.N A.G).order) u).degree v) S.R
+        + ((30 * (isoPal (relPal (S.pal j)) S.width S.R) + 9)
+            * childN S A ((ord A.N A.G).order) u + 6)
+        + isolateK (childN S A ((ord A.N A.G).order) u)
+            (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (preG S A ((ord A.N A.G).order) u).degree v)
+        + 30 := by
+  rw [prepK, dif_pos u.2]
 
 /-! ## §6b The write sets -/
 
@@ -3391,6 +3582,7 @@ theorem wvars_prepCom {S : Setup L} {ℓp hbf : ℕ → ℕ} {co cm : ℕ → St
 
 /-! ## §7 The pass, assembled -/
 
+set_option maxHeartbeats 4000000 in
 open Classical in
 /-- **`ChildLoadParts`, discharged**: at any word bound `B` covering
 the stated shapes, the pass `prepCom` satisfies the named machine
@@ -3467,6 +3659,839 @@ theorem childLoadParts_of (B : ℕ) (S : Setup L)
       (prepChan S ord ℓp htabF)
       (fun _ j A u => prepK S ord ℓp hbf j A u) := by
   intro k j A hdiag hAdm hbot u
+  -- ### the ambient objects and bounds
+  have hj1 : j + 1 ≤ S.depth := by omega
+  set π : Equiv.Perm (Fin A.N) := (ord A.N A.G).order with hπ_def
+  set clu : Set (Fin A.N) := cluster S A π u with hclu_def
+  set kk : ℕ := childN S A π u with hkk_def
+  have hkclu : kk = clu.ncard := rfl
+  set kc : Fin kk := centreChild S A π u with hkc_def
+  set Gpre : SimpleGraph (Fin kk) := preG S A π u with hGpre_def
+  have huA : u ∈ clu := self_mem_cluster S A π u
+  have huN : (u : ℕ) < A.N := u.2
+  have hlpEq' : ℓp (j + 1) = ℓp j := hlpEq j hj1
+  have hhbEq' : hbf (j + 1) = hbf j := hhbEq j hj1
+  have hjlt : j < ℓp j := hlpRoom j hj1
+  have hRhb : 2 * S.R + 1 ≤ hbf j := hhbR j hj1
+  have hAL : A.hist.length = j := hAdmLen j A hAdm
+  have hkN : kk ≤ A.N := set_ncard_le_card clu
+  have hkpos : 0 < kk := zero_lt_childN S A π u
+  have hNn0 : A.N ≤ n₀ := by
+    have := Fintype.card_le_of_embedding A.up
+    simpa using this
+  have hn0pos : 0 < n₀ := by
+    have := (Fin.pos_iff_nonempty.mpr ⟨u⟩ : 0 < A.N)
+    omega
+  have hNB : A.N < B := by omega
+  have hNNB : A.N * A.N < B :=
+    lt_of_le_of_lt (Nat.mul_le_mul hNn0 hNn0) hn0nB
+  have hkB : kk < B := by omega
+  have hkkB : kk * kk < B :=
+    lt_of_le_of_lt (Nat.mul_le_mul (le_trans hkN hNn0) (le_trans hkN hNn0))
+      hn0nB
+  have huB : (u : ℕ) < B := by omega
+  have hlpjB : ℓp j < B := hlpB j (by omega)
+  have hhbjB : hbf j + 1 < B := hhbB j (by omega)
+  have hhistjB : A.N * ℓp j * (hbf j + 1) < B :=
+    lt_of_le_of_lt
+      (Nat.mul_le_mul (Nat.mul_le_mul_right _ hNn0) le_rfl)
+      (hhistB j (by omega))
+  have hpaljB : A.N * S.pal j < B :=
+    lt_of_le_of_lt (Nat.mul_le_mul_right _ hNn0) (hpalB j (by omega))
+  have hpalj1B : kk * S.pal (j + 1) < B :=
+    lt_of_le_of_lt (Nat.mul_le_mul_right _ (le_trans hkN hNn0))
+      (hpalB (j + 1) hj1)
+  -- the pass-scalar freshness kit for the level counter
+  have hctrn : ∀ s ∈ (["cp.s", "cp.n", "cp.i", "cp.j", "cp.k", "cp.y",
+      "cp.g", "cp.e", "cp.z"] : List String), ctrName j ≠ s := by
+    intro s hs
+    fin_cases hs <;> exact lv_ne_lit (by decide) (by decide) j
+  -- ### the precondition, unpacked
+  intro σ0 hpre
+  obtain ⟨⟨⟨hAW0, htabL0, hscr0⟩, hctrA0, hcsr0, -⟩, hctr0⟩ := hpre
+  clear hctrA0
+  rw [← hπ_def] at hcsr0
+  obtain ⟨hscr_l, hscr_r, hscr_b, hscr_d, hscr_p, hscr_x, hscr_v, hscr_w,
+    hscr_o, hscr_t, hscr_c, hscr_qd, hscr_qv, hscr_qu⟩ := hscrA j σ0 hscr0
+  obtain ⟨hlvl_off, hlvl_tgt, hlvl_col, hlvl_up, hlvl_hist⟩ :=
+    hscrLvl j hj1 σ0 hscr0
+  -- ### the parent channel row `u`, read off the windowed contract
+  set WL : ℕ → List ℕ := fun e =>
+    if he : e < ℓp j then
+      List.map (fun z : Fin A.N => (z : ℕ)) (htabF j A u ⟨e, he⟩)
+    else [] with hWL_def
+  have hWLe : ∀ e, ∀ he : e < ℓp j,
+      WL e = List.map (fun z : Fin A.N => (z : ℕ)) (htabF j A u ⟨e, he⟩) := by
+    intro e he
+    rw [hWL_def]
+    exact dif_pos he
+  have hhist_no : (arenaNames j).hist ≠ (arenaNames j).off :=
+    lv_ne_of_base_ne (by decide) (by decide) j j
+  have hhist_nt : (arenaNames j).hist ≠ (arenaNames j).tgt :=
+    lv_ne_of_base_ne (by decide) (by decide) j j
+  have hhist_nc : (arenaNames j).hist ≠ (arenaNames j).col :=
+    lv_ne_of_base_ne (by decide) (by decide) j j
+  have hhist_nu : (arenaNames j).hist ≠ (arenaNames j).up :=
+    lv_ne_of_base_ne (by decide) (by decide) j j
+  have hw_hist : arenaWs (arenaNames j) (S.pal j) (ℓp j) (hbf j)
+      (Impl.ofArena A (htabF j A)).N (σ0.vars (arenaNames j).nS)
+      (arenaNames j).hist
+        = some ((Impl.ofArena A (htabF j A)).N * ℓp j * (hbf j + 1)) :=
+    arenaWs_hist hhist_no hhist_nt hhist_nc hhist_nu
+  have hhistL0 : A.N * ℓp j * (hbf j + 1)
+      ≤ (σ0.arrs (arenaNames j).hist).length := hAW0.fits _ _ hw_hist
+  have hblock : ∀ e, e < ℓp j →
+      ((u : ℕ) * ℓp j + e) * (hbf j + 1) + (hbf j + 1)
+        ≤ A.N * ℓp j * (hbf j + 1) := by
+    intro e he
+    have h1 : (u : ℕ) * ℓp j + e + 1 ≤ A.N * ℓp j := by
+      have h2 : (u : ℕ) * ℓp j + e + 1 ≤ (u : ℕ) * ℓp j + ℓp j := by omega
+      have h3 : (u : ℕ) * ℓp j + ℓp j = ((u : ℕ) + 1) * ℓp j :=
+        (Nat.succ_mul _ _).symm
+      have h4 : ((u : ℕ) + 1) * ℓp j ≤ A.N * ℓp j :=
+        Nat.mul_le_mul_right _ (by omega)
+      omega
+    calc ((u : ℕ) * ℓp j + e) * (hbf j + 1) + (hbf j + 1)
+        = ((u : ℕ) * ℓp j + e + 1) * (hbf j + 1) := (Nat.succ_mul _ _).symm
+      _ ≤ A.N * ℓp j * (hbf j + 1) := Nat.mul_le_mul_right _ h1
+  have hWlen : ∀ e, e < ℓp j → (WL e).length ≤ hbf j := by
+    intro e he
+    rw [hWLe e he, List.length_map]
+    exact (hAW0.st.hist.2 u ⟨e, he⟩).1
+  have hWval : ∀ e, e < ℓp j → ∀ x ∈ WL e, x < A.N := by
+    intro e he x hx
+    rw [hWLe e he, List.mem_map] at hx
+    obtain ⟨z, -, rfl⟩ := hx
+    exact z.2
+  have hWfacts : ∀ e, ∀ he : e < ℓp j,
+      (σ0.arrs (arenaNames j).hist).getD
+          (((u : ℕ) * ℓp j + e) * (hbf j + 1)) 0 = (WL e).length ∧
+        ∀ i : ℕ, ∀ hi : i < (WL e).length,
+          (σ0.arrs (arenaNames j).hist).getD
+              (((u : ℕ) * ℓp j + e) * (hbf j + 1) + 1 + i) 0
+            = (WL e)[i]'hi := by
+    intro e he
+    obtain ⟨hlen_e, hcell0_e, hcells_e⟩ := hAW0.st.hist.2 u ⟨e, he⟩
+    have hwin : (winA (arenaWs (arenaNames j) (S.pal j) (ℓp j) (hbf j)
+        (Impl.ofArena A (htabF j A)).N (σ0.vars (arenaNames j).nS)) σ0).arrs
+          (arenaNames j).hist
+        = (σ0.arrs (arenaNames j).hist).take
+            ((Impl.ofArena A (htabF j A)).N * ℓp j * (hbf j + 1)) :=
+      arrs_winA_some hw_hist σ0
+    rw [hwin] at hcell0_e hcells_e
+    have heq1 : (WL e).length = (htabF j A u ⟨e, he⟩).length := by
+      rw [hWLe e he, List.length_map]
+    constructor
+    · have hbridge := getD_take_of_lt (l := σ0.arrs (arenaNames j).hist)
+        (show ((u : ℕ) * ℓp j + e) * (hbf j + 1)
+            < A.N * ℓp j * (hbf j + 1) from by
+          have := hblock e he
+          omega) 0
+      exact hbridge.symm.trans (hcell0_e.trans heq1.symm)
+    · intro i hi
+      have hi' : i < (htabF j A u ⟨e, he⟩).length := heq1 ▸ hi
+      have heq2 : (WL e)[i]'hi = ((htabF j A u ⟨e, he⟩)[i]'hi' : ℕ) := by
+        simp only [hWLe e he, List.getElem_map]
+      have hbridge := getD_take_of_lt (l := σ0.arrs (arenaNames j).hist)
+        (show ((u : ℕ) * ℓp j + e) * (hbf j + 1) + 1 + i
+            < A.N * ℓp j * (hbf j + 1) from by
+          have h1 := hblock e he
+          have h2 : i < (htabF j A u ⟨e, he⟩).length := hi'
+          have h3 : (htabF j A u ⟨e, he⟩).length ≤ hbf j := hlen_e
+          omega) 0
+      exact hbridge.symm.trans ((hcells_e i hi').trans heq2.symm)
+  -- ### §P1 the row bounds off the cover CSR
+  obtain ⟨base, hco_u, hco_u1, hbase_cm, hbase_sq, hcoL, hrow⟩ :=
+    clusterRow_read hcsr0 u
+  rw [← hclu_def] at hco_u1 hbase_cm hbase_sq hrow
+  have hbaseB : base < B := by omega
+  have hbkB : base + kk < B := by
+    rw [hkclu]
+    omega
+  have hvctr0 : (Expr.var (ctrName j)).evalB B σ0 = some ((u : ℕ)) := by
+    rw [← hctr0]
+    exact evalB_var (by rw [hctr0]; exact huB)
+  have hread1 : (Expr.get (co j) (.var (ctrName j))).evalB B σ0
+      = some base :=
+    evalB_get hvctr0 (getElemQ_of_getD (by omega) hco_u) hbaseB
+  set σA := σ0.setVar "cp.s" base with hσA_def
+  have hrA : Run B (.assign "cp.s" (.get (co j) (.var (ctrName j)))) σ0 σA 3 :=
+    Run.assign hread1
+  have hctrA : σA.vars (ctrName j) = (u : ℕ) := by
+    rw [hσA_def, vars_setVar, if_neg (hctrn "cp.s" (by decide))]
+    exact hctr0
+  have hread2 : (Expr.sub (.get (co j) (.add (.var (ctrName j)) (.lit 1)))
+      (.var "cp.s")).evalB B σA = some kk := by
+    have hvctrA : (Expr.var (ctrName j)).evalB B σA = some ((u : ℕ)) := by
+      rw [← hctrA]
+      exact evalB_var (by rw [hctrA]; exact huB)
+    have hadd : (Expr.add (.var (ctrName j)) (.lit 1)).evalB B σA
+        = some ((u : ℕ) + 1) := by
+      have h := evalB_bin (op := .add) hvctrA (evalB_lit (n := 1) (by omega))
+        (by rw [Bop.apply_add]; omega)
+      rwa [Bop.apply_add] at h
+    have hgetu1 : (Expr.get (co j) (.add (.var (ctrName j)) (.lit 1))).evalB
+        B σA = some (base + kk) := by
+      refine evalB_get hadd ?_ (by omega)
+      rw [hσA_def, arrs_setVar]
+      refine getElemQ_of_getD (by omega) ?_
+      rw [hkclu]
+      exact hco_u1
+    have hvs : (Expr.var "cp.s").evalB B σA = some base := by
+      have hsv : σA.vars "cp.s" = base := by
+        rw [hσA_def, vars_setVar, if_pos rfl]
+      rw [← hsv]
+      exact evalB_var (by rw [hsv]; exact hbaseB)
+    have h := evalB_bin (op := .sub) hgetu1 hvs
+      (by rw [Bop.apply_sub]; omega)
+    rw [Bop.apply_sub] at h
+    rw [show base + kk - base = kk from by omega] at h
+    exact h
+  set σB := σA.setVar "cp.n" kk with hσB_def
+  have hrB : Run B (.assign "cp.n"
+      (.sub (.get (co j) (.add (.var (ctrName j)) (.lit 1)))
+        (.var "cp.s"))) σA σB 7 :=
+    Run.assign hread2
+  have hrP1 : Run B (prepRowBoundsCom (co j) (ctrName j)) σ0 σB 10 :=
+    (hrA.seq hrB).mono (by omega)
+  -- σB facts
+  have hB_arrs : σB.arrs = σ0.arrs := by
+    rw [hσB_def, hσA_def]
+    funext b
+    rw [arrs_setVar, arrs_setVar]
+  have hB_vars : ∀ y, y ≠ "cp.s" → y ≠ "cp.n" → σB.vars y = σ0.vars y := by
+    intro y h1 h2
+    rw [hσB_def, vars_setVar, if_neg h2, hσA_def, vars_setVar, if_neg h1]
+  have hB_s : σB.vars "cp.s" = base := by
+    rw [hσB_def, vars_setVar, if_neg (by decide), hσA_def, vars_setVar,
+      if_pos rfl]
+  have hB_n : σB.vars "cp.n" = kk := by
+    rw [hσB_def, vars_setVar, if_pos rfl]
+  -- ### §P2 the rank-scratch zero pass
+  obtain ⟨σ2, hrP2, hz2, harr2, hlen2, hvar2⟩ :=
+    (prepZero_spec (B := B) (N := A.N) (nNj := (arenaNames j).nN) hNB
+      (lv_ne_lit (by decide) (by decide) j)) σB
+      ⟨by
+        rw [hB_vars (arenaNames j).nN (lv_ne_lit (by decide) (by decide) j)
+          (lv_ne_lit (by decide) (by decide) j)]
+        exact hAW0.n_eq,
+       by rw [hB_arrs]; omega⟩
+  -- ### §P3 the cluster-row pass
+  have hcm_la : cm j ≠ "cp.l" := by
+    intro h
+    exact absurd (h ▸ (by decide : ("cp.l" : String) ∈ prepArrays))
+      (hcovP j).1.2.2
+  have hcm_ra : cm j ≠ "cp.r" := by
+    intro h
+    exact absurd (h ▸ (by decide : ("cp.r" : String) ∈ prepArrays))
+      (hcovP j).1.2.2
+  have hcm_bb : cm j ≠ "cp.b" := by
+    intro h
+    exact absurd (h ▸ (by decide : ("cp.b" : String) ∈ prepArrays))
+      (hcovP j).1.2.2
+  obtain ⟨σ3, hrP3, hla3, hmk3, hz3, hbb3, harr3, hlen3, hvar3⟩ :=
+    (prepRow_spec (B := B) (N := A.N) (cmj := cm j) clu base hNB hNNB
+      hbase_sq hcm_la hcm_ra hcm_bb) σ2
+      ⟨by rw [hvar2 "cp.s" (by decide), hB_s],
+       by rw [hvar2 "cp.n" (by decide), hB_n]; exact hkclu,
+       by
+        rw [harr2 (cm j) hcm_ra, hB_arrs]
+        exact hbase_cm,
+       fun t ht => by
+        rw [harr2 (cm j) hcm_ra, hB_arrs]
+        exact hrow t ht,
+       by
+        rw [harr2 "cp.l" (by decide), hB_arrs, ← hkclu]
+        omega,
+       by
+        rw [harr2 "cp.b" (by decide), hB_arrs, ← hkclu]
+        omega,
+       by rw [hlen2 "cp.r", hB_arrs]; omega,
+       hz2⟩
+  -- ### §P4 the centre's own name and bit
+  obtain ⟨σ4, hrP4, hz4, hbit4, hbito4, harr4, hlen4, hvar4⟩ :=
+    (prepCentre_spec (B := B) (N := A.N) (ctr := ctrName j) clu u huA hNB
+      (hctrn "cp.z" (by decide))) σ3
+      ⟨by
+        rw [hvar3 (ctrName j) (hctrn "cp.i" (by decide)),
+          hvar2 (ctrName j) (hctrn "cp.i" (by decide)),
+          hB_vars (ctrName j) (hctrn "cp.s" (by decide))
+            (hctrn "cp.n" (by decide))]
+        exact hctr0,
+       by rw [hlen3 "cp.r", hlen2 "cp.r", hB_arrs]; omega,
+       by rw [hlen3 "cp.b", hlen2 "cp.b", hB_arrs, ← hkclu]; omega,
+       fun t ht => hmk3 t ht⟩
+  set t0 : Fin clu.ncard := (setEquiv clu).symm ⟨u, huA⟩ with ht0_def
+  have hkct0 : ((kc : Fin kk) : ℕ) = ((t0 : Fin clu.ncard) : ℕ) := rfl
+  have hembt0 : Impl.restrictEmb clu t0 = u := by
+    rw [Impl.restrictEmb_apply, ht0_def, Equiv.apply_symm_apply]
+  have hemb_inj : ∀ x : Fin clu.ncard, Impl.restrictEmb clu x = u →
+      x = t0 := by
+    intro x hx
+    have h1 : ((setEquiv clu) x : ↥clu) = ⟨u, huA⟩ := Subtype.ext hx
+    rw [ht0_def, ← h1, Equiv.symm_apply_apply]
+  -- ### §P5 the batch trace over the channel row
+  have hhist_cp : ∀ s ∈ (["cp.s", "cp.n", "cp.i", "cp.j", "cp.k", "cp.y",
+      "cp.g", "cp.e", "cp.z", "cp.l", "cp.r", "cp.b", "cp.w", "cp.d",
+      "cp.p", "cp.x", "cp.v", "cp.o", "cp.t", "cp.c", "cp.m"] : List String),
+      (arenaNames j).hist ≠ s := by
+    intro s hs
+    fin_cases hs <;> exact lv_ne_lit (by decide) (by decide) j
+  have hhist_arr4 : σ4.arrs (arenaNames j).hist
+      = σ0.arrs (arenaNames j).hist := by
+    rw [harr4 (arenaNames j).hist (hhist_cp "cp.b" (by decide)),
+      harr3 (arenaNames j).hist (hhist_cp "cp.l" (by decide))
+        (hhist_cp "cp.r" (by decide)) (hhist_cp "cp.b" (by decide)),
+      harr2 (arenaNames j).hist (hhist_cp "cp.r" (by decide)), hB_arrs]
+  obtain ⟨σ5, hrP5, hbit5, harr5, hlen5, hvar5⟩ :=
+    (prepBatch_spec (B := B) (N := A.N) (ℓpj := ℓp j) (hbj := hbf j)
+      (histj := (arenaNames j).hist) (ctr := ctrName j) clu (u : ℕ) WL hNB
+      hlpjB hhbjB hhistjB huN hWlen hWval
+      (hctrn "cp.i" (by decide)) (hctrn "cp.j" (by decide))
+      (hctrn "cp.k" (by decide)) (hctrn "cp.y" (by decide))
+      (hctrn "cp.g" (by decide)) (hctrn "cp.e" (by decide))
+      (hhist_cp "cp.b" (by decide))) σ4
+      ⟨by
+        rw [hvar4 (ctrName j) (hctrn "cp.z" (by decide)),
+          hvar3 (ctrName j) (hctrn "cp.i" (by decide)),
+          hvar2 (ctrName j) (hctrn "cp.i" (by decide)),
+          hB_vars (ctrName j) (hctrn "cp.s" (by decide))
+            (hctrn "cp.n" (by decide))]
+        exact hctr0,
+       by rw [hhist_arr4]; exact hhistL0,
+       fun e he => by
+        rw [hhist_arr4]
+        exact ⟨(hWfacts e he).1, (hWfacts e he).2⟩,
+       by rw [hlen4 "cp.r", hlen3 "cp.r", hlen2 "cp.r", hB_arrs]; omega,
+       by
+        rw [hlen4 "cp.b", hlen3 "cp.b", hlen2 "cp.b", hB_arrs, ← hkclu]
+        omega,
+       fun t ht => by
+        rw [harr4 "cp.r" (by decide)]
+        exact hmk3 t ht,
+       fun p hp hne => by
+        rw [harr4 "cp.r" (by decide)]
+        exact hz3 p hp hne,
+       fun t ht => by
+        by_cases hteq : t = ((t0 : Fin clu.ncard) : ℕ)
+        · subst hteq
+          right
+          exact hbit4
+        · left
+          rw [hbito4 t hteq]
+          exact hbb3 t ht⟩
+  -- the bits now hold the batch indicator
+  have hbatch_pin : {t : Fin kk |
+      Impl.restrictEmb clu t = u ∨
+        ∃ e : Fin (ℓp j), Impl.restrictEmb clu t ∈ htabF j A u e}
+      = batchSet S A π u :=
+    marks_eq_batchSet S A π u (htabF j A)
+      (fun e he z => hpin j A hAdm u e he z)
+      (fun e hle => hpinE j A hAdm u e hle)
+      (by rw [hAL]; omega)
+  have hbits5 : ∀ t, ∀ ht : t < clu.ncard,
+      (σ5.arrs "cp.b").getD t 0
+        = if (⟨t, ht⟩ : Fin kk) ∈ batchSet S A π u then 1 else 0 := by
+    intro t ht
+    rw [hbit5 t ht]
+    refine if_congr ?_ rfl rfl
+    rw [← hbatch_pin]
+    show ((σ4.arrs "cp.b").getD t 0 = 1 ∨
+        ∃ e, e < ℓp j ∧ ((Impl.restrictEmb clu ⟨t, ht⟩ : Fin A.N) : ℕ) ∈ WL e)
+      ↔ (Impl.restrictEmb clu ⟨t, ht⟩ = u ∨
+        ∃ e : Fin (ℓp j), Impl.restrictEmb clu ⟨t, ht⟩ ∈ htabF j A u e)
+    constructor
+    · rintro (h1 | ⟨e, he, hmem⟩)
+      · left
+        by_cases hteq : t = ((t0 : Fin clu.ncard) : ℕ)
+        · have hx : (⟨t, ht⟩ : Fin clu.ncard) = t0 := Fin.ext hteq
+          calc Impl.restrictEmb clu ⟨t, ht⟩
+              = Impl.restrictEmb clu t0 := congrArg _ hx
+            _ = u := hembt0
+        · rw [hbito4 t hteq, hbb3 t ht] at h1
+          exact absurd h1 (by omega)
+      · right
+        rw [hWLe e he, List.mem_map] at hmem
+        obtain ⟨z, hz, hze⟩ := hmem
+        refine ⟨⟨e, he⟩, ?_⟩
+        rwa [show z = Impl.restrictEmb clu ⟨t, ht⟩ from Fin.ext hze] at hz
+    · rintro (h1 | ⟨e, hmem⟩)
+      · left
+        have hx : (⟨t, ht⟩ : Fin clu.ncard) = t0 := hemb_inj ⟨t, ht⟩ h1
+        rw [show t = ((t0 : Fin clu.ncard) : ℕ) from congrArg Fin.val hx]
+        exact hbit4
+      · right
+        refine ⟨(e : ℕ), e.2, ?_⟩
+        rw [hWLe (e : ℕ) e.2, List.mem_map]
+        exact ⟨Impl.restrictEmb clu ⟨t, ht⟩, hmem, rfl⟩
+  -- ### §P6 the padded width array
+  have hMw : (batchSet S A π u).ncard ≤ S.width :=
+    (batchSet_ncard_le S A π u).trans (by rw [hAL]; exact hwidth j hj1)
+  obtain ⟨σ6, hrP6, hwc6, harr6, hlen6, hvar6⟩ :=
+    (prepWidth_spec (B := B) (k := kk) (width := S.width)
+      (batchSet S A π u) ((t0 : Fin clu.ncard) : ℕ) hkB hwB hMw t0.2) σ5
+      ⟨by
+        rw [hvar5 "cp.n" (by decide) (by decide) (by decide) (by decide)
+            (by decide) (by decide),
+          hvar4 "cp.n" (by decide), hvar3 "cp.n" (by decide),
+          hvar2 "cp.n" (by decide), hB_n],
+       by
+        rw [hvar5 "cp.z" (by decide) (by decide) (by decide) (by decide)
+            (by decide) (by decide)]
+        exact hz4,
+       by
+        rw [hlen5 "cp.w", hlen4 "cp.w", hlen3 "cp.w", hlen2 "cp.w", hB_arrs]
+        exact hscr_w,
+       by
+        rw [hlen5 "cp.b", hlen4 "cp.b", hlen3 "cp.b", hlen2 "cp.b", hB_arrs]
+        omega,
+       fun t ht => hbits5 t ht⟩
+  -- ### §P7 the mark clear
+  have hvar65 : ∀ y : String,
+      (∀ s ∈ (["cp.s", "cp.n", "cp.i", "cp.j", "cp.k", "cp.y", "cp.g",
+        "cp.e", "cp.z"] : List String), y ≠ s) →
+      σ6.vars y = σ0.vars y := by
+    intro y hy
+    rw [hvar6 y (hy "cp.i" (by decide)) (hy "cp.k" (by decide))
+        (hy "cp.e" (by decide)),
+      hvar5 y (hy "cp.i" (by decide)) (hy "cp.j" (by decide))
+        (hy "cp.k" (by decide)) (hy "cp.y" (by decide))
+        (hy "cp.g" (by decide)) (hy "cp.e" (by decide)),
+      hvar4 y (hy "cp.z" (by decide)), hvar3 y (hy "cp.i" (by decide)),
+      hvar2 y (hy "cp.i" (by decide)),
+      hB_vars y (hy "cp.s" (by decide)) (hy "cp.n" (by decide))]
+  have harr60 : ∀ b : String, b ≠ "cp.r" → b ≠ "cp.w" → b ≠ "cp.b" →
+      b ≠ "cp.l" → σ6.arrs b = σ0.arrs b := by
+    intro b h1 h2 h3 h4
+    rw [harr6 b h2, harr5 b h3, harr4 b h3, harr3 b h4 h1 h3, harr2 b h1,
+      hB_arrs]
+  have hcp_s6 : σ6.vars "cp.s" = base := by
+    rw [hvar6 "cp.s" (by decide) (by decide) (by decide),
+      hvar5 "cp.s" (by decide) (by decide) (by decide) (by decide)
+        (by decide) (by decide),
+      hvar4 "cp.s" (by decide), hvar3 "cp.s" (by decide),
+      hvar2 "cp.s" (by decide), hB_s]
+  have hcp_n6 : σ6.vars "cp.n" = clu.ncard := by
+    rw [hvar6 "cp.n" (by decide) (by decide) (by decide),
+      hvar5 "cp.n" (by decide) (by decide) (by decide) (by decide)
+        (by decide) (by decide),
+      hvar4 "cp.n" (by decide), hvar3 "cp.n" (by decide),
+      hvar2 "cp.n" (by decide), hB_n]
+    exact hkclu
+  obtain ⟨σ7, hrP7, hz7, harr7, hlen7, hvar7⟩ :=
+    (prepClear_spec (B := B) (N := A.N) (cmj := cm j) clu base hNB hNNB
+      hbase_sq hcm_ra) σ6
+      ⟨hcp_s6,
+       hcp_n6,
+       by
+        rw [harr60 (cm j) hcm_ra (by
+            intro h
+            exact absurd (h ▸ (by decide : ("cp.w" : String) ∈ prepArrays))
+              (hcovP j).1.2.2) hcm_bb hcm_la]
+        exact hbase_cm,
+       fun t ht => by
+        rw [harr60 (cm j) hcm_ra (by
+            intro h
+            exact absurd (h ▸ (by decide : ("cp.w" : String) ∈ prepArrays))
+              (hcovP j).1.2.2) hcm_bb hcm_la]
+        exact hrow t ht,
+       by
+        rw [harr6 "cp.r" (by decide), harr5 "cp.r" (by decide),
+          harr4 "cp.r" (by decide), hlen3 "cp.r", hlen2 "cp.r", hB_arrs]
+        omega,
+       fun p hp hne => by
+        rw [harr6 "cp.r" (by decide), harr5 "cp.r" (by decide),
+          harr4 "cp.r" (by decide)]
+        exact hz3 p hp hne⟩
+  -- ### §P8 the restrict stage
+  -- the four input cells
+  have hcp_n7 : σ7.vars "cp.n" = clu.ncard := by
+    rw [hvar7 "cp.n" (by decide)]
+    exact hcp_n6
+  have hpaljB' : S.pal j < B := by
+    have h1 : S.pal j ≤ n₀ * S.pal j := Nat.le_mul_of_pos_left _ hn0pos
+    have h2 := hpalB j (by omega)
+    omega
+  have hrK : Run B (.assign "rs.k" (.var "cp.n"))
+      σ7 (σ7.setVar "rs.k" clu.ncard) 2 := by
+    refine Run.assign ?_
+    rw [← hcp_n7]
+    exact evalB_var (by rw [hcp_n7, ← hkclu]; omega)
+  have hrL : Run B (.assign "rs.l" (.lit (S.pal j)))
+      (σ7.setVar "rs.k" clu.ncard)
+      ((σ7.setVar "rs.k" clu.ncard).setVar "rs.l" (S.pal j)) 2 :=
+    Run.assign (evalB_lit hpaljB')
+  have hrPp : Run B (.assign "rs.p" (.lit (ℓp j)))
+      ((σ7.setVar "rs.k" clu.ncard).setVar "rs.l" (S.pal j))
+      (((σ7.setVar "rs.k" clu.ncard).setVar "rs.l" (S.pal j)).setVar
+        "rs.p" (ℓp j)) 2 :=
+    Run.assign (evalB_lit hlpjB)
+  have hrH : Run B (.assign "rs.h" (.lit (hbf j)))
+      (((σ7.setVar "rs.k" clu.ncard).setVar "rs.l" (S.pal j)).setVar
+        "rs.p" (ℓp j))
+      ((((σ7.setVar "rs.k" clu.ncard).setVar "rs.l" (S.pal j)).setVar
+        "rs.p" (ℓp j)).setVar "rs.h" (hbf j)) 2 :=
+    Run.assign (evalB_lit (by omega))
+  set σ8p := ((((σ7.setVar "rs.k" clu.ncard).setVar "rs.l"
+    (S.pal j)).setVar "rs.p" (ℓp j)).setVar "rs.h" (hbf j)) with hσ8p_def
+  have h8p_arrs : σ8p.arrs = σ7.arrs := by
+    rw [hσ8p_def]
+    funext b
+    rw [arrs_setVar, arrs_setVar, arrs_setVar, arrs_setVar]
+  have h8p_vars : ∀ y : String, y ≠ "rs.k" → y ≠ "rs.l" → y ≠ "rs.p" →
+      y ≠ "rs.h" → σ8p.vars y = σ7.vars y := by
+    intro y h1 h2 h3 h4
+    rw [hσ8p_def, vars_setVar, if_neg h4, vars_setVar, if_neg h3,
+      vars_setVar, if_neg h2, vars_setVar, if_neg h1]
+  -- the (j)-regions and cells never moved
+  have harr70 : ∀ b : String, b ≠ "cp.r" → b ≠ "cp.w" → b ≠ "cp.b" →
+      b ≠ "cp.l" → σ8p.arrs b = σ0.arrs b := by
+    intro b h1 h2 h3 h4
+    rw [h8p_arrs, harr7 b h1, harr60 b h1 h2 h3 h4]
+  have hvar70 : ∀ y : String,
+      (∀ s ∈ (["cp.s", "cp.n", "cp.i", "cp.j", "cp.k", "cp.y", "cp.g",
+        "cp.e", "cp.z", "rs.k", "rs.l", "rs.p", "rs.h"] : List String),
+        y ≠ s) →
+      σ8p.vars y = σ0.vars y := by
+    intro y hy
+    rw [h8p_vars y (hy "rs.k" (by decide)) (hy "rs.l" (by decide))
+        (hy "rs.p" (by decide)) (hy "rs.h" (by decide)),
+      hvar7 y (hy "cp.i" (by decide)),
+      hvar6 y (hy "cp.i" (by decide)) (hy "cp.k" (by decide))
+        (hy "cp.e" (by decide)),
+      hvar5 y (hy "cp.i" (by decide)) (hy "cp.j" (by decide))
+        (hy "cp.k" (by decide)) (hy "cp.y" (by decide))
+        (hy "cp.g" (by decide)) (hy "cp.e" (by decide)),
+      hvar4 y (hy "cp.z" (by decide)), hvar3 y (hy "cp.i" (by decide)),
+      hvar2 y (hy "cp.i" (by decide)),
+      hB_vars y (hy "cp.s" (by decide)) (hy "cp.n" (by decide))]
+  have hAW8 : ArenaStW (arenaNames j) (hbf j) (Impl.ofArena A (htabF j A))
+      σ8p := by
+    refine arenaStW_of_eq hAW0 ?_ ?_ ?_ ?_ ?_ ?_ ?_
+    · exact hvar70 (arenaNames j).nN
+        (fun s hs => by fin_cases hs <;>
+          exact lv_ne_lit (by decide) (by decide) j)
+    · exact hvar70 (arenaNames j).nS
+        (fun s hs => by fin_cases hs <;>
+          exact lv_ne_lit (by decide) (by decide) j)
+    · exact harr70 (arenaNames j).off (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+    · exact harr70 (arenaNames j).tgt (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+    · exact harr70 (arenaNames j).col (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+    · exact harr70 (arenaNames j).up (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+    · exact harr70 (arenaNames j).hist (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+        (lv_ne_lit (by decide) (by decide) j)
+  -- the restrict stage's name kit
+  have hdisj8 : ∀ x ∈ (["cp.o", "cp.t", "cp.c", lv "sa.u" (j + 1),
+      lv "sa.h" (j + 1), "cp.r"] : List String),
+      ∀ y ∈ ([lv "sa.o" j, lv "sa.t" j, lv "sa.c" j, lv "sa.u" j,
+        lv "sa.h" j, "cp.l"] : List String),
+      x ≠ y := by
+    intro x hx y hy
+    fin_cases hx <;> fin_cases hy <;>
+      first
+        | decide
+        | exact Ne.symm (lv_ne_lit (by decide) (by decide) j)
+        | exact lv_ne_lit (by decide) (by decide) (j + 1)
+        | exact lv_ne_of_level_ne (by decide) (by omega)
+  have hpair8 : (["cp.o", "cp.t", "cp.c", lv "sa.u" (j + 1),
+      lv "sa.h" (j + 1), "cp.r"] : List String).Pairwise (· ≠ ·) := by
+    refine List.Pairwise.cons ?_ (List.Pairwise.cons ?_
+      (List.Pairwise.cons ?_ (List.Pairwise.cons ?_
+        (List.Pairwise.cons ?_ (List.pairwise_singleton _ _)))))
+    all_goals intro y hy
+    all_goals fin_cases hy
+    all_goals
+      first
+        | decide
+        | exact Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1))
+        | exact lv_ne_lit (by decide) (by decide) (j + 1)
+        | exact lv_ne_of_base_ne (by decide) (by decide) (j + 1) (j + 1)
+  have hnd5P8 : ([(arenaNames j).off, (arenaNames j).tgt,
+      (arenaNames j).col, (arenaNames j).up, (arenaNames j).hist] :
+      List String).Nodup :=
+    List.Nodup.sublist (List.sublist_append_left _ _)
+      (arenaNames_arrays_nodup j)
+  have hla58 : "cp.l" ∉ ([(arenaNames j).off, (arenaNames j).tgt,
+      (arenaNames j).col, (arenaNames j).up, (arenaNames j).hist] :
+      List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨Ne.symm (lv_ne_lit (by decide) (by decide) j),
+      Ne.symm (lv_ne_lit (by decide) (by decide) j),
+      Ne.symm (lv_ne_lit (by decide) (by decide) j),
+      Ne.symm (lv_ne_lit (by decide) (by decide) j),
+      Ne.symm (lv_ne_lit (by decide) (by decide) j)⟩
+  have hkn0 : clu.ncard ≤ n₀ :=
+    le_trans (le_of_eq hkclu.symm) (le_trans hkN hNn0)
+  obtain ⟨σ8, hrR8, hAWc8, hnsC8, hAWp8, hnsP8, hcl8, hrsk8, hraL8,
+    hraC8⟩ :=
+    (restrictCom_specW (B := B) (A := Impl.ofArena A (htabF j A)) (S := clu)
+      (nmP := arenaNames j) (nmC := prepNmR j) (la := "cp.l") (ra := "cp.r")
+      hNB hNNB hn0B hpaljB hhistjB hdisj8 hpair8
+      (show lv "sv.n" (j + 1) ∉ rsScalars from
+        lv_not_mem (by decide) (by decide) (j + 1))
+      (show ("cp.m" : String) ∉ rsScalars by decide)
+      (show lv "sv.n" (j + 1) ≠ "cp.m" from
+        lv_ne_lit (by decide) (by decide) (j + 1))
+      (show lv "sv.n" j ∉ rsScalars from
+        lv_not_mem (by decide) (by decide) j)
+      (show lv "sv.m" j ∉ rsScalars from
+        lv_not_mem (by decide) (by decide) j)
+      (show lv "sv.n" j ≠ lv "sv.n" (j + 1) from
+        lv_ne_of_level_ne (by decide) (by omega))
+      (show lv "sv.n" j ≠ "cp.m" from lv_ne_lit (by decide) (by decide) j)
+      (show lv "sv.m" j ≠ lv "sv.n" (j + 1) from
+        lv_ne_of_level_ne (by decide) (by omega))
+      (show lv "sv.m" j ≠ "cp.m" from lv_ne_lit (by decide) (by decide) j)
+      hnd5P8 hla58) σ8p
+      ⟨hAW8,
+       ⟨by
+          rw [h8p_arrs, harr7 "cp.l" (by decide), harr6 "cp.l" (by decide),
+            harr5 "cp.l" (by decide), harr4 "cp.l" (by decide),
+            hlen3 "cp.l", hlen2 "cp.l", hB_arrs]
+          exact le_trans hkn0 hscr_l,
+        fun t ht => by
+          rw [h8p_arrs, harr7 "cp.l" (by decide), harr6 "cp.l" (by decide),
+            harr5 "cp.l" (by decide), harr4 "cp.l" (by decide)]
+          exact hla3 t ht⟩,
+       by
+        rw [hσ8p_def, vars_setVar, if_neg (by decide), vars_setVar,
+          if_neg (by decide), vars_setVar, if_neg (by decide), vars_setVar,
+          if_pos rfl]
+        rfl,
+       by
+        rw [hσ8p_def, vars_setVar, if_neg (by decide), vars_setVar,
+          if_neg (by decide), vars_setVar, if_pos rfl],
+       by
+        rw [hσ8p_def, vars_setVar, if_neg (by decide), vars_setVar,
+          if_pos rfl],
+       by rw [hσ8p_def, vars_setVar, if_pos rfl],
+       by
+        show A.N ≤ (σ8p.arrs "cp.r").length
+        rw [h8p_arrs, hlen7 "cp.r", hlen6 "cp.r", hlen5 "cp.r",
+          hlen4 "cp.r", hlen3 "cp.r", hlen2 "cp.r", hB_arrs]
+        omega,
+       by
+        show (σ8p.arrs "cp.r").take A.N = arrOf A.N (fun _ => 0)
+        refine take_eq_arrOf_zero ?_ ?_
+        · rw [h8p_arrs, hlen7 "cp.r", hlen6 "cp.r", hlen5 "cp.r",
+            hlen4 "cp.r", hlen3 "cp.r", hlen2 "cp.r", hB_arrs]
+          omega
+        · intro p hp
+          rw [h8p_arrs]
+          exact hz7 p hp,
+       by
+        show clu.ncard + 1 ≤ (σ8p.arrs "cp.o").length
+        rw [harr70 "cp.o" (by decide) (by decide) (by decide) (by decide)]
+        omega,
+       by
+        show (∑ v : Fin ((Impl.ofArena A (htabF j A)).restrict clu).N,
+            ((Impl.ofArena A (htabF j A)).restrict clu).G.degree v)
+          ≤ (σ8p.arrs "cp.t").length
+        have hdeg : (∑ v : Fin ((Impl.ofArena A (htabF j A)).restrict
+            clu).N, ((Impl.ofArena A (htabF j A)).restrict clu).G.degree v)
+            ≤ clu.ncard * clu.ncard :=
+          degSum_le_sq _
+        have hct : n₀ * n₀ ≤ (σ8p.arrs "cp.t").length := by
+          rw [harr70 "cp.t" (by decide) (by decide) (by decide) (by decide)]
+          exact hscr_t
+        have hle2 : clu.ncard * clu.ncard ≤ n₀ * n₀ :=
+          Nat.mul_le_mul hkn0 hkn0
+        omega,
+       by
+        show clu.ncard * S.pal j ≤ (σ8p.arrs "cp.c").length
+        rw [harr70 "cp.c" (by decide) (by decide) (by decide) (by decide)]
+        exact le_trans (Nat.mul_le_mul_right _ hkn0) hscr_c,
+       by
+        show clu.ncard ≤ (σ8p.arrs (arenaNames (j + 1)).up).length
+        rw [harr70 (arenaNames (j + 1)).up
+          (lv_ne_lit (by decide) (by decide) (j + 1))
+          (lv_ne_lit (by decide) (by decide) (j + 1))
+          (lv_ne_lit (by decide) (by decide) (j + 1))
+          (lv_ne_lit (by decide) (by decide) (j + 1))]
+        exact le_trans hkn0 hlvl_up,
+       by
+        show clu.ncard * ℓp j * (hbf j + 1)
+          ≤ (σ8p.arrs (arenaNames (j + 1)).hist).length
+        rw [harr70 (arenaNames (j + 1)).hist
+          (lv_ne_lit (by decide) (by decide) (j + 1))
+          (lv_ne_lit (by decide) (by decide) (j + 1))
+          (lv_ne_lit (by decide) (by decide) (j + 1))
+          (lv_ne_lit (by decide) (by decide) (j + 1))]
+        exact le_trans
+          (Nat.mul_le_mul (Nat.mul_le_mul_right _ hkn0) le_rfl) hlvl_hist⟩
+  -- ### §P9 the BFS at radius `2R` from the centre's child name
+  set APc : Impl.MArena (S.pal j) n₀ (ℓp j) :=
+    (Impl.ofArena A (htabF j A)).restrict clu with hAPc_def
+  set cns : ℕ := ∑ v : Fin APc.N, APc.G.degree v with hcns_def
+  have hcluB : clu.ncard < B := hkclu ▸ hkB
+  have hclusqB : clu.ncard * clu.ncard < B := by
+    have := hkkB
+    rw [hkclu] at this
+    exact this
+  have hcnsB : cns < B := by
+    have h1 : cns ≤ clu.ncard * clu.ncard := degSum_le_sq _
+    have h2 : clu.ncard * clu.ncard ≤ n₀ * n₀ := Nat.mul_le_mul hkn0 hkn0
+    omega
+  -- the frame across the restrict stage
+  have hfrR : ∀ y : String, y ∉ rsScalars → y ≠ (arenaNames (j + 1)).nN →
+      y ≠ "cp.m" → σ8.vars y = σ8p.vars y := by
+    intro y h1 h2 h3
+    refine hrR8.frame_var y ?_
+    intro hmem
+    rcases wvars_restrictCom_subset _ _ _ _ y hmem with h | h | h
+    · exact h1 h
+    · exact h2 h
+    · exact h3 h
+  have hfaR : ∀ b : String, b ≠ "cp.r" → b ≠ "cp.o" → b ≠ "cp.t" →
+      b ≠ "cp.c" → b ≠ (arenaNames (j + 1)).up →
+      b ≠ (arenaNames (j + 1)).hist → σ8.arrs b = σ8p.arrs b := by
+    intro b h1 h2 h3 h4 h5 h6
+    refine hrR8.frame_arr b ?_
+    rw [warrs_restrictCom]
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨h1, h2, h3, h2, h4, h5, h6, h6, h1⟩
+  have hcpn8 : σ8.vars "cp.n" = clu.ncard := by
+    rw [hfrR "cp.n" (by decide)
+        (Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1))) (by decide),
+      h8p_vars "cp.n" (by decide) (by decide) (by decide) (by decide)]
+    exact hcp_n7
+  have hcpm8 : σ8.vars "cp.m" = cns := hnsC8
+  have hcpz8 : σ8.vars "cp.z" = ((t0 : Fin clu.ncard) : ℕ) := by
+    rw [hfrR "cp.z" (by decide)
+        (Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1))) (by decide),
+      h8p_vars "cp.z" (by decide) (by decide) (by decide) (by decide),
+      hvar7 "cp.z" (by decide),
+      hvar6 "cp.z" (by decide) (by decide) (by decide),
+      hvar5 "cp.z" (by decide) (by decide) (by decide) (by decide)
+        (by decide) (by decide)]
+    exact hz4
+  have ht0B : ((t0 : Fin clu.ncard) : ℕ) < B := by
+    have := t0.2
+    omega
+  -- the four input cells
+  have hrb1 : Run B (.assign "bf.n" (.var "cp.n")) σ8
+      (σ8.setVar "bf.n" clu.ncard) 2 := by
+    refine Run.assign ?_
+    rw [← hcpn8]
+    exact evalB_var (by rw [hcpn8]; exact hcluB)
+  have hrb2 : Run B (.assign "bf.m" (.var "cp.m"))
+      (σ8.setVar "bf.n" clu.ncard)
+      ((σ8.setVar "bf.n" clu.ncard).setVar "bf.m" cns) 2 := by
+    refine Run.assign ?_
+    have hv : (σ8.setVar "bf.n" clu.ncard).vars "cp.m" = cns := by
+      rw [vars_setVar, if_neg (by decide)]
+      exact hcpm8
+    rw [← hv]
+    exact evalB_var (by rw [hv]; exact hcnsB)
+  have hrb3 : Run B (.assign "bf.r" (.lit (2 * S.R)))
+      ((σ8.setVar "bf.n" clu.ncard).setVar "bf.m" cns)
+      (((σ8.setVar "bf.n" clu.ncard).setVar "bf.m" cns).setVar "bf.r"
+        (2 * S.R)) 2 :=
+    Run.assign (evalB_lit (by omega))
+  have hrb4 : Run B (.assign "bf.v" (.var "cp.z"))
+      (((σ8.setVar "bf.n" clu.ncard).setVar "bf.m" cns).setVar "bf.r"
+        (2 * S.R))
+      ((((σ8.setVar "bf.n" clu.ncard).setVar "bf.m" cns).setVar "bf.r"
+        (2 * S.R)).setVar "bf.v" ((t0 : Fin clu.ncard) : ℕ)) 2 := by
+    refine Run.assign ?_
+    have hv : (((σ8.setVar "bf.n" clu.ncard).setVar "bf.m" cns).setVar
+        "bf.r" (2 * S.R)).vars "cp.z" = ((t0 : Fin clu.ncard) : ℕ) := by
+      rw [vars_setVar, if_neg (by decide), vars_setVar, if_neg (by decide),
+        vars_setVar, if_neg (by decide)]
+      exact hcpz8
+    rw [← hv]
+    exact evalB_var (by rw [hv]; exact ht0B)
+  set σ9p : Env := (((σ8.setVar "bf.n" clu.ncard).setVar "bf.m" cns).setVar
+    "bf.r" (2 * S.R)).setVar "bf.v" ((t0 : Fin clu.ncard) : ℕ) with hσ9p_def
+  have h9p_arrs : σ9p.arrs = σ8.arrs := by
+    rw [hσ9p_def]
+    funext b
+    rw [arrs_setVar, arrs_setVar, arrs_setVar, arrs_setVar]
+  have h9p_vars : ∀ y : String, y ≠ "bf.n" → y ≠ "bf.m" → y ≠ "bf.r" →
+      y ≠ "bf.v" → σ9p.vars y = σ8.vars y := by
+    intro y h1 h2 h3 h4
+    rw [hσ9p_def, vars_setVar, if_neg h4, vars_setVar, if_neg h3,
+      vars_setVar, if_neg h2, vars_setVar, if_neg h1]
+  have hAW9p : ArenaStW (prepNmR j) (hbf j) APc σ9p := by
+    refine arenaStW_of_eq hAWc8 ?_ ?_ ?_ ?_ ?_ ?_ ?_
+    · exact h9p_vars (prepNmR j).nN
+        (show lv "sv.n" (j + 1) ≠ "bf.n" from
+          lv_ne_lit (by decide) (by decide) (j + 1))
+        (show lv "sv.n" (j + 1) ≠ "bf.m" from
+          lv_ne_lit (by decide) (by decide) (j + 1))
+        (show lv "sv.n" (j + 1) ≠ "bf.r" from
+          lv_ne_lit (by decide) (by decide) (j + 1))
+        (show lv "sv.n" (j + 1) ≠ "bf.v" from
+          lv_ne_lit (by decide) (by decide) (j + 1))
+    · exact h9p_vars (prepNmR j).nS
+        (show ("cp.m" : String) ≠ "bf.n" by decide)
+        (show ("cp.m" : String) ≠ "bf.m" by decide)
+        (show ("cp.m" : String) ≠ "bf.r" by decide)
+        (show ("cp.m" : String) ≠ "bf.v" by decide)
+    · rw [h9p_arrs]
+    · rw [h9p_arrs]
+    · rw [h9p_arrs]
+    · rw [h9p_arrs]
+    · rw [h9p_arrs]
+  have hda5R : ("cp.d" : String) ∉ ([(prepNmR j).off, (prepNmR j).tgt,
+      (prepNmR j).col, (prepNmR j).up, (prepNmR j).hist] : List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨show ("cp.d" : String) ≠ "cp.o" by decide,
+      show ("cp.d" : String) ≠ "cp.t" by decide,
+      show ("cp.d" : String) ≠ "cp.c" by decide,
+      show ("cp.d" : String) ≠ lv "sa.u" (j + 1) from
+        Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1)),
+      show ("cp.d" : String) ≠ lv "sa.h" (j + 1) from
+        Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1))⟩
+  obtain ⟨σ9, hrB9, hAW9, hns9, hlen9, hdle9, hBT9⟩ :=
+    (bfsCom_specW (B := B) (A := APc) (nm := prepNmR j) (da := "cp.d")
+      (d := 2 * S.R) (t0 : Fin APc.N) hcluB hclusqB
+      (show 2 * S.R + 2 < B by omega)
+      (show ("cp.t" : String) ≠ "cp.o" by decide) hda5R
+      (show lv "sv.n" (j + 1) ∉ bfScalars from
+        lv_not_mem (by decide) (by decide) (j + 1))
+      (show ("cp.m" : String) ∉ bfScalars by decide)) σ9p
+      ⟨hAW9p,
+       by
+        rw [hσ9p_def, vars_setVar, if_neg (by decide), vars_setVar,
+          if_neg (by decide), vars_setVar, if_neg (by decide), vars_setVar,
+          if_pos rfl]
+        rfl,
+       by
+        have hL : σ9p.vars "bf.m" = cns := by
+          rw [hσ9p_def, vars_setVar, if_neg (by decide), vars_setVar,
+            if_neg (by decide), vars_setVar, if_pos rfl]
+        have hR : σ9p.vars "cp.m" = cns := by
+          rw [h9p_vars "cp.m" (by decide) (by decide) (by decide)
+            (by decide)]
+          exact hcpm8
+        exact hL.trans hR.symm,
+       by
+        rw [hσ9p_def, vars_setVar, if_neg (by decide), vars_setVar,
+          if_pos rfl],
+       by rw [hσ9p_def, vars_setVar, if_pos rfl],
+       by
+        rw [h9p_arrs,
+          hfaR "cp.d" (by decide) (by decide) (by decide) (by decide)
+            (Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1)))
+            (Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1))),
+          h8p_arrs, harr7 "cp.d" (by decide), harr60 "cp.d" (by decide)
+            (by decide) (by decide) (by decide)]
+        exact le_trans hkn0 hscr_d⟩
   sorry
 
 end Lax3Proofs.Prog
