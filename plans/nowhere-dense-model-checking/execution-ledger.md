@@ -59,6 +59,56 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-08-27 ~11:30Z — RESUME POINT 2: wrap-up at the second quota wall
+
+Jan ordered all workers to wrap up NOW; all three parked at green,
+sorry-free, checkpoint-pushed states with STATE-OF-THE-LEAF headers in
+their files. Landed today in total: **F6c12p + four of six program
+residuals** (ReadRowsAll `60ac2ab`, CovAdjBuildIn `c929499`,
+CovMdPeelIn `c8fba66`; F6c12p `9c66491`+`a0c505e`). The three parks:
+
+- **CovPeelIn** (`worktree-w61`, `SolveSweepPeel.lean`, 4833 lines,
+  0 sorries): the per-rank sweep step is fully PROVED
+  (`peelStepB_spec`: SwInv i → SwInv (i+1) at `64·peelDeg + 187·|fibre|
+  + 57`, amortized BFS pop loop, O(touched) reset, first-hit = centre
+  via `1 ≤ R` [hypothesis `hr`]). Remains: `peelInitB` prologue, the
+  rank loop (tail-sum potential, mirror `centreLoop_of_step`), regroup
+  P1–P7 to `CtrArr`/`ClusterCsr` (`cntBelow`/`restrictEmb` counting
+  lemmas already proved), `peelK ≤ c₁·sweepCharge + …` bridge, headline.
+  ~One worker-session.
+- **ChildLoadPartsAll** (`worktree-w62`, `SolveMachPrepRun.lean`,
+  ~4860 lines, 0 sorries): **the htabF-pinning crux is RESOLVED**
+  (`hpin`/`hpinE`/`hAdmLen`, F7-suppliable; mirror-seam lemmas
+  `cdist_eq_ballDist`/`cdescend_eq_descend` proved in-file);
+  `childLoadParts_of` concludes verbatim `ChildLoadParts` conditional on
+  ONE flagged non-F7 hypothesis **`htail`** — the
+  supports→profiles→colWrite→isolate tail as a Spec from the proved
+  mid-state `PrepMid`; every ingredient is in-file, composition work
+  only. Then the `ChildLoadPartsAll` headline (mirror `readRowsAll_of`)
+  + consumer example. ⚠ Ruling needed (Jan/supervisor): `prepK` carries
+  an honest `11N+6` per-centre rank-zeroing term (Σ = N² per level)
+  because restrict's clean-scratch pre can't come from length-only Scr;
+  removing it needs a cleanliness clause through `CLInv` (landed-file
+  change). Decide absorb-vs-amend at the KB bridge.
+- **CovAugAdjIn** (`worktree-w63`, `SolveSweepAug.lean`, 1226 lines,
+  0 sorries, Opus): foundation only — bit/scan calculus, the
+  edge-placement bridge `agDelAdjSt_of_part`, nine program defs, name
+  kit. ⚠ Design flag (supervisor): it pinned a DENSE N×N matrix
+  representation — Θ(N²) per round, the same budget shape that broke
+  the opus lineage; RE-SCOPE to in-list demand enumeration
+  (`Σ_w indeg(w)²`) before resuming; §1–§3 and the builder bridge
+  survive that change. Discoveries recorded in its header (arc
+  direction, FratLink symmetry, three accumulators, branchless
+  comparisons, `Sag` must supply the four output allocations).
+
+Resume order when quota returns: (1) finish PREP (htail + headline —
+nearest), (2) finish PEEL, (3) re-scope + finish AUG, (4) KB pin +
+uniform bridge + `exists_mcChargeMS_T` at `mdOrderingRoutine` (fold in
+the prepK-N² ruling), (5) F7 (Fable). Workers per Jan: Opus for the
+scaffolded finishes, same-session agent ids in RESUME POINT 1 below
+(PEEL/PREP) — AUG's Opus agent parked at a natural interface, a fresh
+Opus worker from the file header is equally fine.
+
 ### 2026-08-27 ~07:10Z — RESUME POINT: quota at 95%, freeze imminent
 
 Jan's standing directives at the wall: **no new workers** (only existing
