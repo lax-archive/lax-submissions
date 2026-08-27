@@ -3714,14 +3714,15 @@ theorem peelBfs_loop
     else 128 with hwtv
   have hwtv128 : ∀ c, 128 ≤ wtv c := by
     intro c
-    rw [hwtv]
-    split <;> omega
+    simp only [hwtv]
+    split
+    · exact Nat.le_add_left _ _
+    · exact le_rfl
   have hwtvF : ∀ z' : Fin N, wtv ((z' : ℕ)) =
       (if z' ∈ ball H (2 * R - 1) u
         then 64 * (H.neighborSet z').ncard else 0) + 128 := by
     intro z'
-    rw [hwtv]
-    simp only [z'.isLt, dif_pos, Fin.eta]
+    simp only [hwtv, z'.isLt, dif_pos, Fin.eta]
   -- mid-run facts: the listed set sits inside the fibre
   have hlistXf : ∀ (σ : Env),
       (∀ z, (hz : z < N) → (σ.arrs plDd).getD z 0 ≤ 2 * R →
@@ -3739,8 +3740,8 @@ theorem peelBfs_loop
       (∑ p ∈ Finset.Ico lo (σ.vars "pl.t"),
         wtv ((σ.arrs plRw).getD p 0)) ≤
         ∑ z' ∈ Xf.filter
-          (fun z' => (σ.arrs plDd).getD ((z' : ℕ)) 0 ≤ 2 * R),
-          wtv ((z' : ℕ)) := by
+          (fun z' => (σ.arrs plDd).getD z'.val 0 ≤ 2 * R),
+          wtv z'.val := by
     intro σ hPB lo hlo
     obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, hach,
       hqseg, -, -, -, -, -⟩ := hPB
@@ -3750,17 +3751,34 @@ theorem peelBfs_loop
       intro p hp q hq hpq
       rw [Finset.mem_coe, Finset.mem_Ico] at hp hq
       exact hqi p q (le_trans hlo hp.1) hp.2 (le_trans hlo hq.1) hq.2 hpq
-    rw [← Finset.sum_image hinj]
-    refine Finset.sum_le_sum_of_subset ?_
-    intro c hc
-    rw [Finset.mem_image] at hc
-    obtain ⟨p, hp, rfl⟩ := hc
-    rw [Finset.mem_Ico] at hp
-    obtain ⟨hz, hmem⟩ := hqs p (le_trans hlo hp.1) hp.2
-    have hlst : (σ.arrs plDd).getD ((σ.arrs plRw).getD p 0) 0 ≤ 2 * R := hmem
-    refine Finset.mem_image.mpr ⟨⟨(σ.arrs plRw).getD p 0, hz⟩, ?_, rfl⟩
-    rw [Finset.mem_filter]
-    exact ⟨hlistXf σ hach _ hlst, hlst⟩
+    have hvinj : Set.InjOn (fun z' : Fin N => z'.val)
+        ↑(Xf.filter (fun z' => (σ.arrs plDd).getD z'.val 0 ≤ 2 * R)) :=
+      fun a _ b _ hab => Fin.ext hab
+    have hsub : (Finset.Ico lo (σ.vars "pl.t")).image
+          (fun p => (σ.arrs plRw).getD p 0) ⊆
+        (Xf.filter (fun z' => (σ.arrs plDd).getD z'.val 0 ≤ 2 * R)).image
+          (fun z' : Fin N => z'.val) := by
+      intro c hc
+      rw [Finset.mem_image] at hc
+      obtain ⟨p, hp, rfl⟩ := hc
+      rw [Finset.mem_Ico] at hp
+      obtain ⟨hz, hmem⟩ := hqs p (le_trans hlo hp.1) hp.2
+      have hlst : (σ.arrs plDd).getD ((σ.arrs plRw).getD p 0) 0 ≤ 2 * R := hmem
+      rw [Finset.mem_image]
+      refine ⟨⟨(σ.arrs plRw).getD p 0, hz⟩, ?_, rfl⟩
+      rw [Finset.mem_filter]
+      exact ⟨hlistXf σ hach _ hlst, hlst⟩
+    calc ∑ p ∈ Finset.Ico lo (σ.vars "pl.t"), wtv ((σ.arrs plRw).getD p 0)
+        = ∑ c ∈ (Finset.Ico lo (σ.vars "pl.t")).image
+            (fun p => (σ.arrs plRw).getD p 0), wtv c :=
+          (Finset.sum_image hinj).symm
+      _ ≤ ∑ c ∈ (Xf.filter
+            (fun z' => (σ.arrs plDd).getD z'.val 0 ≤ 2 * R)).image
+            (fun z' : Fin N => z'.val), wtv c :=
+          Finset.sum_le_sum_of_subset hsub
+      _ = ∑ z' ∈ Xf.filter
+            (fun z' => (σ.arrs plDd).getD z'.val 0 ≤ 2 * R), wtv z'.val :=
+          Finset.sum_image hvinj
   sorry
 
 end SweepMachine

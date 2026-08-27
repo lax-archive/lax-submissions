@@ -4061,7 +4061,9 @@ theorem covMdPeelIn_mdPeelCom (C : GraphClass) (hC : NowhereDense C)
     simpa [arenaNames] using h
   -- the array names: the hypothesis bundle, destructured
   have harr : ([mpHeap j, ra j, dgO j, aoO j, ajO j] : List String).Nodup :=
-    (hnames j).sublist (List.take_sublist 5 _)
+    (hnames j).sublist (List.take_sublist 5 [mpHeap j, ra j, dgO j, aoO j,
+      ajO j, (arenaNames j).off, (arenaNames j).tgt, (arenaNames j).col,
+      (arenaNames j).up, (arenaNames j).hist])
   have hnj := hnames j
   simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
     not_or, List.nodup_nil, and_true, not_false_eq_true] at hnj
