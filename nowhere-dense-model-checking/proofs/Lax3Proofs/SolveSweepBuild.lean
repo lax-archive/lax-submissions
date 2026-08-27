@@ -203,6 +203,18 @@ private theorem getD_set_ne {l : List ℕ} {i k v : ℕ} (h : i ≠ k) :
   · rw [List.getD_eq_default _ _ (by simpa using hk),
       List.getD_eq_default _ _ (by simpa using hk)]
 
+/-- The counter bump, the shape every pass's loop body ends in. -/
+private theorem run_incr {B : ℕ} {iv : String} {σ : Env} {k : ℕ}
+    (hk : σ.vars iv = k) (hkB : k + 1 < B) :
+    Run B (.assign iv (.add (.var iv) (.lit 1))) σ (σ.setVar iv (k + 1)) 4 := by
+  refine (Run.assign ?_).mono (by simp)
+  have h1 : (Expr.var iv).evalB B σ = some (σ.vars iv) :=
+    evalB_var (B := B) (by omega)
+  rw [hk] at h1
+  have h := evalB_bin (B := B) (op := .add) h1 (evalB_lit (B := B) (by omega))
+    (by simpa using hkB)
+  simpa using h
+
 /-! ## §3 The placement bookkeeping: triggers and counts
 
 The scan walks the slot space left to right. The *trigger* of an
@@ -751,20 +763,26 @@ private theorem bldTurn_step :
       have := off_mono hstep N le_rfl (u + 1) (by omega)
       omega
     omega
+  have huvB : σ.vars uv < B := by omega
+  have hivB : σ.vars iv < B := by omega
+  have hu1eval : (Expr.add (.var uv) (.lit 1)).evalB B σ = some (u + 1) := by
+    have h1 : (Expr.var uv).evalB B σ = some (σ.vars uv) :=
+      evalB_var (B := B) huvB
+    rw [← hu_def] at h1
+    have h2 : (Expr.lit 1).evalB B σ = some 1 := evalB_lit (B := B) (by omega)
+    have h := evalB_bin (B := B) (op := .add) h1 h2
+      (by simpa using show u + 1 < B by omega)
+    simpa using h
   have hguard_rd : (Expr.get ao (.add (.var uv) (.lit 1))).evalB B σ
       = some (off (u + 1)) := by
-    refine evalB_get (k := u + 1) ?_ ?_ hoffu1B
-    · have h := evalB_bin (op := .add) (evalB_var (x := uv) (σ := σ)
-        (by rw [← hu_def]; omega)) (evalB_lit (n := 1) (by omega))
-        (by rw [← hu_def]; simpa using by omega)
-      rw [← hu_def] at h
-      simpa using h
-    · rw [hI.haoA, getElem?_of_getD (by omega), haoL (u + 1) (by omega)]
+    refine evalB_get hu1eval ?_ hoffu1B
+    rw [hI.haoA, getElem?_of_getD (by omega), haoL (u + 1) (by omega)]
   have hguard : (Cond.lt (.var iv) (.get ao (.add (.var uv) (.lit 1)))).evalB
       B σ = some (decide (j < off (u + 1))) := by
-    refine evalB_condLt ?_ hguard_rd
-    rw [← hj_def]
-    exact evalB_var (by rw [← hj_def]; omega)
+    have h1 : (Expr.var iv).evalB B σ = some (σ.vars iv) :=
+      evalB_var (B := B) hivB
+    rw [← hj_def] at h1
+    exact evalB_condLt h1 hguard_rd
   have hguard_size : (Cond.lt (.var iv)
       (.get ao (.add (.var uv) (.lit 1)))).size = 6 := by simp
   by_cases hslot : j < off (u + 1)
@@ -785,10 +803,10 @@ private theorem bldTurn_step :
     set σa := σ.setVar wv wn with hσa_def
     have ha_iv : σa.vars iv = j := by
       rw [hσa_def]
-      simp [Ne.symm h_iv_wv, hj_def]
+      simp [h_iv_wv, hj_def]
     have ha_uv : σa.vars uv = u := by
       rw [hσa_def]
-      simp [Ne.symm h_uv_wv, hu_def]
+      simp [h_uv_wv, hu_def]
     have ha_wv : σa.vars wv = wn := by rw [hσa_def]; simp
     have ha_arrs : σa.arrs = σ.arrs := by rw [hσa_def]; rfl
     -- the fire test
@@ -882,7 +900,7 @@ private theorem bldTurn_step :
           σ1 (σ1.setArr aj pw u) 7 := by
         refine (Run.store (idx := pw) (v := u) ?_ ?_ ?_).mono (by simp)
         · rw [hpw_def]
-          refine evalB_pos (by rw [h1_other ao (Ne.symm h_ao_aj), hI.haoA])
+          refine evalB_pos (by rw [h1_other ao h_ao_aj, hI.haoA])
             (by rw [h1_vars, ha_wv]) (by omega) (by omega)
             (haoL wn (by omega)) hoffwB ?_ ?_ hcwB (by omega)
           · rw [h1_other dg (Ne.symm h_aj_dg), hdgw]
@@ -911,19 +929,19 @@ private theorem bldTurn_step :
           σ2 (σ2.setArr mt pu pw) 11 := by
         refine (Run.store (idx := pu) (v := pw) ?_ ?_ ?_).mono (by simp)
         · rw [hpu_def]
-          refine evalB_pos (by rw [h2_other ao (Ne.symm h_ao_mt), hI.haoA])
+          refine evalB_pos (by rw [h2_other ao h_ao_aj, hI.haoA])
             (by rw [h2_vars, ha_uv]) (by omega) (by omega)
             (haoL u (by omega)) hoffuB ?_ ?_ hcuB (by omega)
-          · rw [h2_other dg (Ne.symm h_mt_dg), hdgu]
-          · rw [h2_other dg (Ne.symm h_mt_dg)]
+          · rw [h2_other dg (Ne.symm h_aj_dg), hdgu]
+          · rw [h2_other dg (Ne.symm h_aj_dg)]
             have := hI.hdgL
             omega
         · rw [hpw_def]
-          refine evalB_pos (by rw [h2_other ao (Ne.symm h_ao_mt), hI.haoA])
+          refine evalB_pos (by rw [h2_other ao h_ao_aj, hI.haoA])
             (by rw [h2_vars, ha_wv]) (by omega) (by omega)
             (haoL wn (by omega)) hoffwB ?_ ?_ hcwB (by omega)
-          · rw [h2_other dg (Ne.symm h_mt_dg), hdgw]
-          · rw [h2_other dg (Ne.symm h_mt_dg)]
+          · rw [h2_other dg (Ne.symm h_aj_dg), hdgw]
+          · rw [h2_other dg (Ne.symm h_aj_dg)]
             have := hI.hdgL
             omega
         · rw [h2_other mt (Ne.symm h_aj_mt)]
@@ -948,8 +966,7 @@ private theorem bldTurn_step :
           σ3 (σ3.setArr mt pw pu) 11 := by
         refine (Run.store (idx := pw) (v := pu) ?_ ?_ ?_).mono (by simp)
         · rw [hpw_def]
-          refine evalB_pos (by rw [h3_other ao (Ne.symm h_ao_aj)
-              (Ne.symm h_ao_mt), hI.haoA])
+          refine evalB_pos (by rw [h3_other ao h_ao_aj h_ao_mt, hI.haoA])
             (by rw [h3_vars, ha_wv]) (by omega) (by omega)
             (haoL wn (by omega)) hoffwB ?_ ?_ hcwB (by omega)
           · rw [h3_other dg (Ne.symm h_aj_dg) (Ne.symm h_mt_dg), hdgw]
@@ -957,8 +974,7 @@ private theorem bldTurn_step :
             have := hI.hdgL
             omega
         · rw [hpu_def]
-          refine evalB_pos (by rw [h3_other ao (Ne.symm h_ao_aj)
-              (Ne.symm h_ao_mt), hI.haoA])
+          refine evalB_pos (by rw [h3_other ao h_ao_aj h_ao_mt, hI.haoA])
             (by rw [h3_vars, ha_uv]) (by omega) (by omega)
             (haoL u (by omega)) hoffuB ?_ ?_ hcuB (by omega)
           · rw [h3_other dg (Ne.symm h_aj_dg) (Ne.symm h_mt_dg), hdgu]
@@ -974,7 +990,7 @@ private theorem bldTurn_step :
         simp [arrs_setArr, h3_mt]
       have h4_aj : σ4.arrs aj = ((σ.arrs aj).set pu wn).set pw u := by
         rw [hσ4_def]
-        simp [arrs_setArr, Ne.symm h_aj_mt, h3_aj]
+        simp [arrs_setArr, h_aj_mt, h3_aj]
       have h4_other : ∀ b, b ≠ aj → b ≠ mt → σ4.arrs b = σ.arrs b := by
         intro b hb1 hb2
         rw [hσ4_def]
@@ -1040,10 +1056,10 @@ private theorem bldTurn_step :
         simp [arrs_setArr, h5_dg]
       have h6_aj : σ6.arrs aj = ((σ.arrs aj).set pu wn).set pw u := by
         rw [hσ6_def]
-        simp [arrs_setArr, Ne.symm h_aj_dg, h5_aj]
+        simp [arrs_setArr, h_aj_dg, h5_aj]
       have h6_mt : σ6.arrs mt = ((σ.arrs mt).set pu pw).set pw pu := by
         rw [hσ6_def]
-        simp [arrs_setArr, Ne.symm h_mt_dg, h5_mt]
+        simp [arrs_setArr, h_mt_dg, h5_mt]
       have h6_other : ∀ b, b ≠ aj → b ≠ mt → b ≠ dg → σ6.arrs b = σ.arrs b := by
         intro b hb1 hb2 hb3
         rw [hσ6_def]
@@ -1066,7 +1082,7 @@ private theorem bldTurn_step :
       set σ' := σ6.setVar iv (j + 1) with hσ'_def
       -- the assembled run
       have hplace : Run B (bldPlace ao aj dg mt uv wv) σa σ6 48 := by
-        have h := ((((hs1.seq hs2).seq hs3).seq hs4).seq hs5).seq hs6
+        have h := hs1.seq (hs2.seq (hs3.seq (hs4.seq (hs5.seq hs6))))
         exact (h.mono (by omega)).congr rfl
       have hinner : Run B
           (.ite (.lt (.var wv) (.var uv)) (bldPlace ao aj dg mt uv wv) .skip)
@@ -1083,9 +1099,8 @@ private theorem bldTurn_step :
           σ σ' 59 :=
         (hread.seq (hinner.seq hs7)).mono (by omega)
       have hrun : Run B (bldTurn t ao aj dg mt iv uv wv) σ σ' 66 := by
-        refine ((Run.ite_true hguardT hbranch).mono ?_)
+        refine (Run.ite_true hguardT hbranch).mono ?_
         rw [hguard_size]
-        omega
       -- the new counts
       obtain ⟨hcnt_u, hcnt_w, hcnt_o⟩ :=
         cnt_succ_place (G := G) hstep hnd hadj hju' hjhi' hwtgt hwu'
@@ -1125,31 +1140,31 @@ private theorem bldTurn_step :
       have haj_pu : (σ'.arrs aj).getD pu 0 = wn := by
         rw [hσ'_def]
         show (σ6.arrs aj).getD pu 0 = wn
-        rw [h6_aj, getD_set_ne (Ne.symm hpupw), getD_set_self]
-        rw [List.length_set]
-        have := hI.hajL
-        omega
+        rw [h6_aj, getD_set_ne (Ne.symm hpupw),
+          getD_set_self (show pu < (σ.arrs aj).length by
+            have := hI.hajL
+            omega)]
       have haj_pw : (σ'.arrs aj).getD pw 0 = u := by
         rw [hσ'_def]
         show (σ6.arrs aj).getD pw 0 = u
-        rw [h6_aj, getD_set_self]
-        rw [List.length_set]
-        have := hI.hajL
-        omega
+        rw [h6_aj, getD_set_self (by
+          rw [List.length_set]
+          have := hI.hajL
+          omega)]
       have hmt_pu : (σ'.arrs mt).getD pu 0 = pw := by
         rw [hσ'_def]
         show (σ6.arrs mt).getD pu 0 = pw
-        rw [h6_mt, getD_set_ne (Ne.symm hpupw), getD_set_self]
-        rw [List.length_set]
-        have := hI.hmtL
-        omega
+        rw [h6_mt, getD_set_ne (Ne.symm hpupw),
+          getD_set_self (show pu < (σ.arrs mt).length by
+            have := hI.hmtL
+            omega)]
       have hmt_pw : (σ'.arrs mt).getD pw 0 = pu := by
         rw [hσ'_def]
         show (σ6.arrs mt).getD pw 0 = pu
-        rw [h6_mt, getD_set_self]
-        rw [List.length_set]
-        have := hI.hmtL
-        omega
+        rw [h6_mt, getD_set_self (by
+          rw [List.length_set]
+          have := hI.hmtL
+          omega)]
       have hdg' : ∀ v : Fin N,
           (σ'.arrs dg).getD (v : ℕ) 0 = cntP G off tgt (j + 1) v := by
         intro v
@@ -1163,14 +1178,14 @@ private theorem bldTurn_step :
         · subst hv
           rw [huF_val, getD_set_ne (show wn ≠ u by omega),
             getD_set_self (show u < (σ.arrs dg).length by
-              have := hI.hdgL; omega), hcnt_u]
+              have := hI.hdgL; omega)]
           omega
         · by_cases hv' : v = wF
           · subst hv'
             rw [hwF_val, getD_set_self (by
               rw [List.length_set]
               have := hI.hdgL
-              omega), hcnt_w]
+              omega)]
             omega
           · have hvu : (v : ℕ) ≠ u := fun hc => hv (Fin.ext hc)
             have hvw : (v : ℕ) ≠ wn := fun hc => hv' (Fin.ext hc)
@@ -1214,16 +1229,20 @@ private theorem bldTurn_step :
         rw [h6_other ao h_ao_aj h_ao_mt h_ao_dg]
         exact hI.haoA
       refine ⟨σ', 66, hrun, ?_, ?_, ?_, ?_, ?_⟩
-      · refine { hnS := hσ'_nS, htA := harr_t', haoA := harr_ao',
-          hu := (by rw [hσ'_uv]; exact hI.hu),
-          hj := (by rw [hσ'_iv]; omega),
-          hlo := (by rw [hσ'_uv, hσ'_iv]; have := hI.hlo; omega),
-          hhi := (by rw [hσ'_uv, hσ'_iv]; intro; omega),
-          hajL := (by rw [hlen_aj']; exact hI.hajL),
-          hmtL := (by rw [hlen_mt']; exact hI.hmtL),
-          hdgL := (by rw [hlen_dg']; exact hI.hdgL),
-          hdg := (by rw [hσ'_iv]; exact hdg'),
-          hsound := ?_, hcomp := ?_ }
+      · refine ⟨hσ'_nS, harr_t', harr_ao',
+          by rw [hσ'_uv]; exact hI.hu,
+          by rw [hσ'_iv]; omega,
+          by
+            have h := hI.hlo
+            rw [← hu_def, ← hj_def] at h
+            rw [hσ'_uv, hσ'_iv]
+            omega,
+          by rw [hσ'_uv, hσ'_iv]; intro; omega,
+          by rw [hlen_aj']; exact hI.hajL,
+          by rw [hlen_mt']; exact hI.hmtL,
+          by rw [hlen_dg']; exact hI.hdgL,
+          by rw [hσ'_iv]; exact hdg',
+          ?_, ?_⟩
         · -- soundness with a consistent mate, per live slot
           simp only [hσ'_iv]
           intro v t' ht'
@@ -1309,7 +1328,6 @@ private theorem bldTurn_step :
       · rw [hσ'_iv]
         omega
       · rw [hσ'_uv]
-        omega
       · left
         rw [hσ'_iv]
         omega
@@ -1347,7 +1365,6 @@ private theorem bldTurn_step :
       have hrun : Run B (bldTurn t ao aj dg mt iv uv wv) σ σ' 19 := by
         refine (Run.ite_true hguardT hbranch).mono ?_
         rw [hguard_size]
-        omega
       have hσ'_iv : σ'.vars iv = j + 1 := by rw [hσ'_def]; simp
       have hσ'_uv : σ'.vars uv = u := by
         rw [hσ'_def]
@@ -1367,17 +1384,21 @@ private theorem bldTurn_step :
           cntP G off tgt (j + 1) v = cntP G off tgt j v :=
         cnt_succ_skip hstep hju' hjhi' hge'
       refine ⟨σ', 19, hrun, ?_, ?_, ?_, ?_, ?_⟩
-      · refine { hnS := hσ'_nS,
-          htA := (by rw [hσ'_arrs]; exact hI.htA),
-          haoA := (by rw [hσ'_arrs]; exact hI.haoA),
-          hu := (by rw [hσ'_uv]; exact hI.hu),
-          hj := (by rw [hσ'_iv]; omega),
-          hlo := (by rw [hσ'_uv, hσ'_iv]; have := hI.hlo; omega),
-          hhi := (by rw [hσ'_uv, hσ'_iv]; intro; omega),
-          hajL := (by rw [hσ'_arrs]; exact hI.hajL),
-          hmtL := (by rw [hσ'_arrs]; exact hI.hmtL),
-          hdgL := (by rw [hσ'_arrs]; exact hI.hdgL),
-          hdg := ?_, hsound := ?_, hcomp := ?_ }
+      · refine ⟨hσ'_nS,
+          by rw [hσ'_arrs]; exact hI.htA,
+          by rw [hσ'_arrs]; exact hI.haoA,
+          by rw [hσ'_uv]; exact hI.hu,
+          by rw [hσ'_iv]; omega,
+          by
+            have h := hI.hlo
+            rw [← hu_def, ← hj_def] at h
+            rw [hσ'_uv, hσ'_iv]
+            omega,
+          by rw [hσ'_uv, hσ'_iv]; intro; omega,
+          by rw [hσ'_arrs]; exact hI.hajL,
+          by rw [hσ'_arrs]; exact hI.hmtL,
+          by rw [hσ'_arrs]; exact hI.hdgL,
+          ?_, ?_, ?_⟩
         · intro v
           rw [hσ'_arrs, hσ'_iv, hcnt' v]
           exact hI.hdg v
@@ -1396,7 +1417,6 @@ private theorem bldTurn_step :
       · rw [hσ'_iv]
         omega
       · rw [hσ'_uv]
-        omega
       · left
         rw [hσ'_iv]
         omega
@@ -1404,7 +1424,8 @@ private theorem bldTurn_step :
         omega
   · -- the row's end: advance the owner
     have hjeq : j = off (u + 1) := by
-      have := hI.hhi huN
+      have h := hI.hhi huN
+      rw [← hu_def, ← hj_def] at h
       omega
     have hguardF : (Cond.lt (.var iv)
         (.get ao (.add (.var uv) (.lit 1)))).evalB B σ = some false := by
@@ -1412,19 +1433,12 @@ private theorem bldTurn_step :
       congr 1
       simpa using hslot
     have hassign : Run B (.assign uv (.add (.var uv) (.lit 1))) σ
-        (σ.setVar uv (u + 1)) 4 := by
-      refine (Run.assign ?_).mono (by simp)
-      have h1 : (Expr.var uv).evalB B σ = some u := by
-        rw [← hu_def]
-        exact evalB_var (by rw [← hu_def]; omega)
-      have h := evalB_bin (op := .add) h1 (evalB_lit (n := 1) (by omega))
-        (by simpa using by omega)
-      simpa using h
+        (σ.setVar uv (u + 1)) 4 :=
+      (Run.assign hu1eval).mono (by simp)
     set σ' := σ.setVar uv (u + 1) with hσ'_def
     have hrun : Run B (bldTurn t ao aj dg mt iv uv wv) σ σ' 11 := by
       refine (Run.ite_false hguardF hassign).mono ?_
       rw [hguard_size]
-      omega
     have hσ'_iv : σ'.vars iv = j := by
       rw [hσ'_def]
       simp only [vars_setVar, if_neg h_iv_uv]
@@ -1436,33 +1450,32 @@ private theorem bldTurn_step :
       exact hI.hnS
     have hσ'_arrs : σ'.arrs = σ.arrs := by rw [hσ'_def]; rfl
     refine ⟨σ', 11, hrun, ?_, ?_, ?_, ?_, ?_⟩
-    · refine { hnS := hσ'_nS,
-        htA := (by rw [hσ'_arrs]; exact hI.htA),
-        haoA := (by rw [hσ'_arrs]; exact hI.haoA),
-        hu := (by rw [hσ'_uv]; omega),
-        hj := (by rw [hσ'_iv]; omega),
-        hlo := (by rw [hσ'_uv, hσ'_iv]; omega),
-        hhi := ?_,
-        hajL := (by rw [hσ'_arrs]; exact hI.hajL),
-        hmtL := (by rw [hσ'_arrs]; exact hI.hmtL),
-        hdgL := (by rw [hσ'_arrs]; exact hI.hdgL),
-        hdg := (by intro v; rw [hσ'_arrs, hσ'_iv]; exact hI.hdg v),
-        hsound := (by
+    · refine ⟨hσ'_nS,
+        by rw [hσ'_arrs]; exact hI.htA,
+        by rw [hσ'_arrs]; exact hI.haoA,
+        by rw [hσ'_uv]; omega,
+        by rw [hσ'_iv]; omega,
+        by rw [hσ'_uv, hσ'_iv]; omega,
+        ?_,
+        by rw [hσ'_arrs]; exact hI.hajL,
+        by rw [hσ'_arrs]; exact hI.hmtL,
+        by rw [hσ'_arrs]; exact hI.hdgL,
+        by intro v; rw [hσ'_arrs, hσ'_iv]; exact hI.hdg v,
+        by
           intro v t' ht'
           rw [hσ'_iv] at ht'
           simp only [hσ'_iv, hσ'_arrs]
-          exact hI.hsound v t' ht'),
-        hcomp := (by
+          exact hI.hsound v t' ht',
+        by
           intro v w' htr'
           rw [hσ'_iv] at htr'
           simp only [hσ'_iv, hσ'_arrs]
-          exact hI.hcomp v w' htr') }
-      · rw [hσ'_uv, hσ'_iv]
-        intro hu1
-        have hs2 := hstep (u + 1) hu1
-        omega
-    · rw [hσ'_iv]
+          exact hI.hcomp v w' htr'⟩
+      rw [hσ'_uv, hσ'_iv]
+      intro hu1
+      have hs2 := hstep (u + 1) hu1
       omega
+    · rw [hσ'_iv]
     · rw [hσ'_uv]
       omega
     · right
