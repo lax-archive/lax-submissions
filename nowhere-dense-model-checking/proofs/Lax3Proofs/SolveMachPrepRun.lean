@@ -7,6 +7,21 @@ import Lax3Proofs.SolveSeamTop
 /-!
 # F6c13 — the child-building machine pass, discharged
 
+STATE OF THE LEAF (2026-08-27, time-boxed stop): `childLoadParts_of`
+concludes the verbatim `ChildLoadParts` shape sorry-free, with §P1–§P9
+(batch assembly, restrict, BFS at `2R`) fully composed and ONE flagged
+NON-F7 hypothesis `htail` (§7): the supports→profiles→colour→isolate
+tail from the mid-state contract `PrepMid` (§6e). Every `htail`
+ingredient is landed in THIS file (`supportsCom_specW`,
+`profilesCom_specW`, `prepCol_spec`, `isolateCom_specW`, the §1 seam
+lemmas, `arenaStW_retarget_col`/`arenaStW_cast`, `prepNmI_update`);
+next steps: discharge `htail` by the §P8/§P9 pattern (assigns + lift +
+retarget + isolate + `arenaStW_cast` at `hlpEq'`/`hhbEq'`), then
+instantiate the `ChildLoadPartsAll` headline at `headlineSetup`/`mcB`
+following `SolveSegReadRun.readRowsAll_of`. The htabF-pinning seam
+(`hpin`/`hpinE`, the leaf's crux) is RESOLVED — consumed in §P5's
+`marks_eq_batchSet`; F7 discharges it from its canonical `htabF`.
+
 `SolveMachPrep` named **`ChildLoadPartsAll`** — the per-centre machine
 pass that builds the child of centre `u`: from the loop invariant at
 `u` (counter at `u`), leave the level-`(j+1)` regions holding the
@@ -3580,6 +3595,50 @@ theorem wvars_prepCom {S : Setup L} {ℓp hbf : ℕ → ℕ} {co cm : ℕ → St
     · left; simp only [prepScalars, List.mem_append]; tauto
     · right; right; exact h
 
+/-! ## §6e The mid-state contract (the P1–P9 milestone) -/
+
+open Classical in
+/-- **The mid-state contract**: what the discharged §P1–§P9 prefix of
+the pass (row bounds, rank zero, cluster row, centre bit, batch trace,
+width array, clear, restrict, BFS at `2R`) leaves at the supports
+stage's door — the pre-isolation child at the scratch names, the two
+size cells, the canonical `2R`-ball table in the distance scratch, the
+padded batch in the width scratch, the batch indicator in the bit
+scratch, and the allocation room the four remaining stages consume. -/
+def PrepMid (S : Setup L) (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ) (j : ℕ) (A : Arena (S.pal j) n₀) (u : Fin A.N)
+    (σ : Env) : Prop :=
+  ArenaStW (prepNmR j) (hbf j)
+    ((Impl.ofArena A (htabF j A)).restrict
+      (cluster S A ((ord A.N A.G).order) u)) σ ∧
+  σ.vars "cp.n" = (cluster S A ((ord A.N A.G).order) u).ncard ∧
+  σ.vars "cp.m" = (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+    (preG S A ((ord A.N A.G).order) u).degree v) ∧
+  (∀ v : Fin (childN S A ((ord A.N A.G).order) u),
+    (σ.arrs "cp.d").getD (v : ℕ) 0
+      = ballDist (preG S A ((ord A.N A.G).order) u)
+          (centreChild S A ((ord A.N A.G).order) u) (2 * S.R) v) ∧
+  (∀ p : Fin S.width,
+    (σ.arrs "cp.w").getD (p : ℕ) 0
+      = ((batchFn S A ((ord A.N A.G).order) u p :
+          Fin (childN S A ((ord A.N A.G).order) u)) : ℕ)) ∧
+  (∀ t : ℕ, ∀ ht : t < childN S A ((ord A.N A.G).order) u,
+    (σ.arrs "cp.b").getD t 0
+      = if (⟨t, ht⟩ : Fin (childN S A ((ord A.N A.G).order) u))
+          ∈ batchSet S A ((ord A.N A.G).order) u then 1 else 0) ∧
+  n₀ ≤ (σ.arrs "cp.b").length ∧ n₀ ≤ (σ.arrs "cp.d").length ∧
+  n₀ ≤ (σ.arrs "cp.p").length ∧ n₀ ≤ (σ.arrs "cp.x").length ∧
+  n₀ + 2 ≤ (σ.arrs "cp.v").length ∧
+  (σ.arrs "cp.w").length = S.width ∧
+  (∀ i, i < S.width → n₀ ≤ (σ.arrs (lv "cq.d" i)).length) ∧
+  (∀ c, c < S.pal j → n₀ * n₀ + 2 * n₀ ≤ (σ.arrs (lv "cq.v" c)).length) ∧
+  (∀ c, c < S.pal j + 1 → n₀ + 1 ≤ (σ.arrs (lv "cq.u" c)).length) ∧
+  n₀ + 1 ≤ (σ.arrs (arenaNames (j + 1)).off).length ∧
+  n₀ * n₀ ≤ (σ.arrs (arenaNames (j + 1)).tgt).length ∧
+  n₀ * S.pal (j + 1) ≤ (σ.arrs (arenaNames (j + 1)).col).length
+
 /-! ## §7 The pass, assembled -/
 
 set_option maxHeartbeats 4000000 in
@@ -3588,8 +3647,15 @@ open Classical in
 the stated shapes, the pass `prepCom` satisfies the named machine
 residual at the canonical channel `prepChan` and the budget `prepK` —
 from the constant-`ℓp` discipline, the channel-pinning seam, the batch
-width fit, the scratch descriptor's length clauses, and name freshness
-(module docstring). -/
+width fit, the scratch descriptor's length clauses, name freshness
+(module docstring) — **and one flagged NON-F7 residual `htail`**: the
+supports→profiles→colour→isolate tail of the stage composition, from
+the mid-state contract `PrepMid` the discharged §P1–§P9 prefix leaves
+(the leaf ran out of wall clock at the BFS boundary; every ingredient
+of `htail` is a landed stage lift — `supportsCom_specW`,
+`profilesCom_specW`, `prepCol_spec`, `isolateCom_specW` — composed the
+same way the prefix composes its stages, so `htail` is dischargeable
+from THIS file's own §6c/§6d inventory, not new mathematics). -/
 theorem childLoadParts_of (B : ℕ) (S : Setup L)
     (ord : CoverSpec.OrderingRoutine) (ℓp : ℕ → ℕ)
     (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
@@ -3653,7 +3719,39 @@ theorem childLoadParts_of (B : ℕ) (S : Setup L)
         (co jc ≠ lv "cq.d" i ∧ co jc ≠ lv "cq.v" i ∧
           co jc ≠ lv "cq.u" i) ∧
         (cm jc ≠ lv "cq.d" i ∧ cm jc ≠ lv "cq.v" i ∧
-          cm jc ≠ lv "cq.u" i)) :
+          cm jc ≠ lv "cq.u" i))
+    -- ⚠ NON-F7 residual (docstring): the four-stage tail, from the
+    -- discharged prefix's mid-state contract.
+    (htail : ∀ j : ℕ, j + 1 ≤ S.depth → ∀ A : Arena (S.pal j) n₀,
+      Adm j A → ∀ u : Fin A.N,
+      Spec B (PrepMid S ord ℓp htabF hbf j A u)
+        (.seq (prepSupportsCom j (2 * S.R) (ℓp j) (hbf j))
+          (.seq (profilesCom (prepPN j) S.width (S.pal j) S.R)
+            (.seq (prepColCom S j) (prepIsolateCom j))))
+        (fun _ σ' =>
+          ∃ (Dp : Fin S.width →
+                Fin (childN S A ((ord A.N A.G).order) u) → ℕ)
+            (Dc : Fin (relPal (S.pal j)) →
+                Fin (childN S A ((ord A.N A.G).order) u + 1) → ℕ),
+            Impl.ProfileTablesMS (preG S A ((ord A.N A.G).order) u)
+              (batchFn S A ((ord A.N A.G).order) u)
+              (childColR S A ((ord A.N A.G).order) u) S.R Dp Dc ∧
+            ArenaStW (arenaNames (j + 1)) (hbf (j + 1))
+              (machChild S A ((ord A.N A.G).order) u Dp Dc
+                (prepChan S ord ℓp htabF j A u)) σ')
+        ((30 + supportsK (childN S A ((ord A.N A.G).order) u)
+            (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+              (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R))
+          + profilesK S.width (S.pal j + 1)
+              (childN S A ((ord A.N A.G).order) u)
+              (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v) S.R
+          + ((30 * (isoPal (relPal (S.pal j)) S.width S.R) + 9)
+              * childN S A ((ord A.N A.G).order) u + 6)
+          + isolateK (childN S A ((ord A.N A.G).order) u)
+              (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+                (preG S A ((ord A.N A.G).order) u).degree v)
+          + 30)) :
     ChildLoadParts B S ord ℓp htabF hbf Adm Scr ca co cm
       (prepCom S ℓp hbf co cm)
       (prepChan S ord ℓp htabF)
@@ -4492,6 +4590,270 @@ theorem childLoadParts_of (B : ℕ) (S : Setup L)
           h8p_arrs, harr7 "cp.d" (by decide), harr60 "cp.d" (by decide)
             (by decide) (by decide) (by decide)]
         exact le_trans hkn0 hscr_d⟩
-  sorry
+  -- ### the mid-state contract, and the flagged tail
+  have hfrB : ∀ y : String, y ∉ bfScalars → σ9.vars y = σ9p.vars y := by
+    intro y h1
+    refine hrB9.frame_var y ?_
+    intro hmem
+    exact h1 (wvars_bfsCom_subset _ _ _ y hmem)
+  have hfaB : ∀ b : String, b ≠ "cp.d" → σ9.arrs b = σ9p.arrs b := by
+    intro b h1
+    refine hrB9.frame_arr b ?_
+    rw [warrs_bfsCom]
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨h1, h1, h1⟩
+  have hcpn9 : σ9.vars "cp.n" = clu.ncard := by
+    rw [hfrB "cp.n" (by decide),
+      h9p_vars "cp.n" (by decide) (by decide) (by decide) (by decide)]
+    exact hcpn8
+  have hcpm9 : σ9.vars "cp.m" = cns := by
+    have h2 : σ9p.vars (prepNmR j).nS = cns := by
+      rw [h9p_vars (prepNmR j).nS
+        (show ("cp.m" : String) ≠ "bf.n" by decide)
+        (show ("cp.m" : String) ≠ "bf.m" by decide)
+        (show ("cp.m" : String) ≠ "bf.r" by decide)
+        (show ("cp.m" : String) ≠ "bf.v" by decide)]
+      exact hcpm8
+    exact hns9.trans h2
+  have hlen90 : ∀ b, (σ9.arrs b).length = (σ0.arrs b).length := by
+    intro b
+    rw [hlen9 b, h9p_arrs, run_arrs_length_eq hrR8 b, h8p_arrs, hlen7 b,
+      hlen6 b, hlen5 b, hlen4 b, hlen3 b, hlen2 b, hB_arrs]
+  have hw9 : σ9.arrs "cp.w" = σ6.arrs "cp.w" := by
+    rw [hfaB "cp.w" (by decide), h9p_arrs,
+      hfaR "cp.w" (by decide) (by decide) (by decide) (by decide)
+        (Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1)))
+        (Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1))),
+      h8p_arrs, harr7 "cp.w" (by decide)]
+  have hb9 : σ9.arrs "cp.b" = σ5.arrs "cp.b" := by
+    rw [hfaB "cp.b" (by decide), h9p_arrs,
+      hfaR "cp.b" (by decide) (by decide) (by decide) (by decide)
+        (Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1)))
+        (Ne.symm (lv_ne_lit (by decide) (by decide) (j + 1))),
+      h8p_arrs, harr7 "cp.b" (by decide), harr6 "cp.b" (by decide)]
+  have hDeq : (fun v : Fin APc.N => (σ9.arrs "cp.d").getD (v : ℕ) 0)
+      = ballDist APc.G (t0 : Fin APc.N) (2 * S.R) :=
+    ballTable_eq_ballDist hBT9 hdle9
+  have hwcells9 : ∀ p : Fin S.width, (σ9.arrs "cp.w").getD (p : ℕ) 0
+      = ((batchFn S A π u p : Fin kk) : ℕ) := by
+    intro p
+    rw [hw9, hwc6 (p : ℕ) p.2]
+    by_cases h : (p : ℕ) < (batchSet S A π u).ncard
+    · rw [dif_pos h]
+      have hbfn : batchFn S A π u p
+          = (((setEquiv (batchSet S A π u)) ⟨(p : ℕ), h⟩ :
+              ↥(batchSet S A π u)) : Fin kk) := by
+        show pad (batchSet S A π u) (centreChild S A π u) p = _
+        unfold pad
+        rw [dif_pos h]
+      rw [hbfn]
+    · rw [dif_neg h]
+      have hbfn : batchFn S A π u p = centreChild S A π u := by
+        show pad (batchSet S A π u) (centreChild S A π u) p = _
+        unfold pad
+        rw [dif_neg h]
+      rw [hbfn]
+      exact hkct0.symm
+  have hMid : PrepMid S ord ℓp htabF hbf j A u σ9 := by
+    refine ⟨hAW9, hcpn9, hcpm9, fun v => congrFun hDeq v, hwcells9,
+      fun t ht => by rw [hb9]; exact hbits5 t ht,
+      ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · rw [hlen90 "cp.b"]; exact hscr_b
+    · rw [hlen90 "cp.d"]; exact hscr_d
+    · rw [hlen90 "cp.p"]; exact hscr_p
+    · rw [hlen90 "cp.x"]; exact hscr_x
+    · rw [hlen90 "cp.v"]; exact hscr_v
+    · rw [hlen90 "cp.w"]; exact hscr_w
+    · intro i hi
+      rw [hlen90 (lv "cq.d" i)]
+      exact hscr_qd i hi
+    · intro c hc
+      rw [hlen90 (lv "cq.v" c)]
+      exact hscr_qv c hc
+    · intro c hc
+      rw [hlen90 (lv "cq.u" c)]
+      exact hscr_qu c hc
+    · rw [hlen90 (arenaNames (j + 1)).off]
+      exact hlvl_off
+    · rw [hlen90 (arenaNames (j + 1)).tgt]
+      exact hlvl_tgt
+    · rw [hlen90 (arenaNames (j + 1)).col]
+      exact hlvl_col
+  obtain ⟨σF, hrT, hQF⟩ := htail j hj1 A hAdm u σ9 hMid
+  obtain ⟨Dp, Dc, hPT, hAWF⟩ := hQF
+  -- ### the whole pass, composed, and the postcondition
+  have hrR8' : Run B (restrictCom (arenaNames j) (prepNmR j) "cp.l" "cp.r")
+      σ8p σ8
+      (restrictK (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) u))
+        (childN S A ((ord A.N A.G).order) u) (S.pal j) (ℓp j) (hbf j)) :=
+    hrR8
+  have hrB9' : Run B (bfsCom (prepNmR j).off (prepNmR j).tgt "cp.d") σ9p σ9
+      (bfsK (childN S A ((ord A.N A.G).order) u)
+        (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+          (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)) := hrB9
+  have hrAll := hrP1.seq (hrP2.seq (hrP3.seq (hrP4.seq (hrP5.seq
+    (hrP6.seq (hrP7.seq ((hrK.seq (hrL.seq (hrPp.seq (hrH.seq
+      hrR8')))).seq ((hrb1.seq (hrb2.seq (hrb3.seq (hrb4.seq
+        hrB9')))).seq hrT))))))))
+  have hrAll' : Run B (prepCom S ℓp hbf co cm j) σ0 σF _ := hrAll
+  refine ⟨σF, hrAll'.mono ?_, ⟨Dp, Dc, hPT, hAWF⟩, ?_, ?_,
+    fun b => run_arrs_length_eq hrAll' b⟩
+  · -- the budget
+    show _ ≤ prepK S ord ℓp hbf j A ((u : Fin A.N) : ℕ)
+    rw [prepK_coe S ord ℓp hbf j A u]
+    have e1 : childN S A ((ord A.N A.G).order) u = clu.ncard := rfl
+    have e4 : kk = clu.ncard := hkclu
+    have e5 : restrictK
+        (Impl.degSum A.G (cluster S A ((ord A.N A.G).order) u))
+        (childN S A ((ord A.N A.G).order) u) (S.pal j) (ℓp j) (hbf j)
+        = restrictK (Impl.degSum (Impl.ofArena A (htabF j A)).G clu)
+            clu.ncard (S.pal j) (ℓp j) (hbf j) := rfl
+    have e6 : bfsK (childN S A ((ord A.N A.G).order) u)
+        (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+          (preG S A ((ord A.N A.G).order) u).degree v) (2 * S.R)
+        = bfsK APc.N (∑ v : Fin APc.N, APc.G.degree v) (2 * S.R) := rfl
+    have m1 : (26 * hbf j + 26) * ℓp j ≤ (30 + 30 * (hbf j + 1)) * ℓp j :=
+      Nat.mul_le_mul_right _ (by omega)
+    omega
+  · -- the scalar frame
+    intro y hy
+    simp only [levelScalars, List.mem_cons, List.not_mem_nil, or_false]
+      at hy
+    refine hrAll'.frame_var y ?_
+    intro hmem
+    rcases wvars_prepCom y hmem with h | h | h
+    · rcases hy with rfl | rfl | rfl
+      · exact lv_not_mem (by decide) (by decide) j h
+      · exact lv_not_mem (by decide) (by decide) j h
+      · exact lv_not_mem (by decide) (by decide) j h
+    · rcases hy with rfl | rfl | rfl
+      · exact lv_ne_of_base_ne (by decide) (by decide) j (j + 1) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j (j + 1) h
+    · rcases hy with rfl | rfl | rfl
+      · exact lv_ne_of_base_ne (by decide) (by decide) j (j + 1) h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j (j + 1) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+  · -- the array frame
+    intro a ha
+    simp only [levelArrays, List.mem_cons, List.not_mem_nil, or_false]
+      at ha
+    refine hrAll'.frame_arr a ?_
+    intro hmem
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · rcases warrs_prepCom _ hmem with h | h | h | h | h | h | ⟨i, h⟩
+        | ⟨i, h⟩ | ⟨i, h⟩
+      · exact (hcovP j).1.1 h
+      · exact absurd (show ca j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).1
+      · exact absurd (show ca j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).1
+      · exact absurd (show ca j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).1
+      · exact absurd (show ca j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).1
+      · exact absurd (show ca j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).1
+      · exact ((hcovP j).2 i).1.1 h
+      · exact ((hcovP j).2 i).1.2.1 h
+      · exact ((hcovP j).2 i).1.2.2 h
+    · rcases warrs_prepCom _ hmem with h | h | h | h | h | h | ⟨i, h⟩
+        | ⟨i, h⟩ | ⟨i, h⟩
+      · exact (hcovP j).1.2.1 h
+      · exact absurd (show co j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).2.1
+      · exact absurd (show co j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).2.1
+      · exact absurd (show co j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).2.1
+      · exact absurd (show co j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).2.1
+      · exact absurd (show co j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).2.1
+      · exact ((hcovP j).2 i).2.1.1 h
+      · exact ((hcovP j).2 i).2.1.2.1 h
+      · exact ((hcovP j).2 i).2.1.2.2 h
+    · rcases warrs_prepCom _ hmem with h | h | h | h | h | h | ⟨i, h⟩
+        | ⟨i, h⟩ | ⟨i, h⟩
+      · exact (hcovP j).1.2.2 h
+      · exact absurd (show cm j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).2.2
+      · exact absurd (show cm j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).2.2
+      · exact absurd (show cm j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).2.2
+      · exact absurd (show cm j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).2.2
+      · exact absurd (show cm j ∈ levelArrays (j + 1) by
+          rw [h]; simp [levelArrays]) (hcovA j (j + 1)).2.2
+      · exact ((hcovP j).2 i).2.2.1 h
+      · exact ((hcovP j).2 i).2.2.2.1 h
+      · exact ((hcovP j).2 i).2.2.2.2 h
+    · rcases warrs_prepCom _ hmem with h | h | h | h | h | h | ⟨i, h⟩
+        | ⟨i, h⟩ | ⟨i, h⟩
+      · exact lv_not_mem (by decide) (by decide) j h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+    · rcases warrs_prepCom _ hmem with h | h | h | h | h | h | ⟨i, h⟩
+        | ⟨i, h⟩ | ⟨i, h⟩
+      · exact lv_not_mem (by decide) (by decide) j h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+    · rcases warrs_prepCom _ hmem with h | h | h | h | h | h | ⟨i, h⟩
+        | ⟨i, h⟩ | ⟨i, h⟩
+      · exact lv_not_mem (by decide) (by decide) j h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+    · rcases warrs_prepCom _ hmem with h | h | h | h | h | h | ⟨i, h⟩
+        | ⟨i, h⟩ | ⟨i, h⟩
+      · exact lv_not_mem (by decide) (by decide) j h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+    · rcases warrs_prepCom _ hmem with h | h | h | h | h | h | ⟨i, h⟩
+        | ⟨i, h⟩ | ⟨i, h⟩
+      · exact lv_not_mem (by decide) (by decide) j h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+    · rcases warrs_prepCom _ hmem with h | h | h | h | h | h | ⟨i, h⟩
+        | ⟨i, h⟩ | ⟨i, h⟩
+      · exact lv_not_mem (by decide) (by decide) j h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_level_ne (by decide) (by omega) h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
+      · exact lv_ne_of_base_ne (by decide) (by decide) j i h
 
 end Lax3Proofs.Prog
