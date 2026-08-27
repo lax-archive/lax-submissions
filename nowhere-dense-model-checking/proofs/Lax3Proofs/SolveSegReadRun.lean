@@ -315,7 +315,7 @@ theorem warrs_topAtomCom {nm : ArenaNames} {pa ma da tsb : String}
   intro b hb
   simp only [topAtomCom, topGlueCom, topColCom, topBitCom, Com.warrs,
     Fill.warrs_put, warrs_scatterCom, List.append_nil, List.nil_append,
-    List.mem_append, List.mem_cons, List.mem_singleton,
+    List.mem_append, List.mem_cons,
     List.not_mem_nil, or_false] at hb
   tauto
 
@@ -328,7 +328,7 @@ theorem warrs_topAtomsCom {nm : ArenaNames} {pa ma da tsb : String}
   induction l with
   | nil =>
     intro i b hb
-    simp [topAtomsCom, Com.warrs] at hb
+    simp [topAtomsCom] at hb
   | cons σa rest ih =>
     intro i b hb
     simp only [topAtomsCom, Com.warrs, List.mem_append] at hb
@@ -341,8 +341,8 @@ theorem wvars_topAtomCom {nm : ArenaNames} {pa ma da tsb : String}
     ∀ y ∈ (topAtomCom nm pa ma da tsb F i bi r t).wvars, y ∈ gsScalars := by
   intro y hy
   simp only [topAtomCom, topGlueCom, topColCom, topBitCom, Com.wvars,
-    Fill.wvars_put, List.append_nil, List.nil_append, List.mem_append,
-    List.mem_cons, List.mem_singleton, List.not_mem_nil, or_false] at hy
+    Fill.wvars_put, List.append_nil, List.mem_append,
+    List.mem_cons, List.not_mem_nil, or_false] at hy
   rcases hy with (rfl | rfl | rfl | rfl) | (rfl | rfl) | hy
   · decide
   · decide
@@ -360,7 +360,7 @@ theorem wvars_topAtomsCom {nm : ArenaNames} {pa ma da tsb : String}
   induction l with
   | nil =>
     intro i y hy
-    simp [topAtomsCom, Com.wvars] at hy
+    simp [topAtomsCom] at hy
   | cons σa rest ih =>
     intro i y hy
     simp only [topAtomsCom, Com.wvars, List.mem_append] at hy
@@ -373,7 +373,7 @@ theorem warrs_rowStores {tb ct tsb : String} {S : Setup L} {j : ℕ} :
       ∀ b ∈ (rowStores tb ct tsb S j l i).warrs, b = tb := by
   intro l
   induction l with
-  | nil => intro i b hb; simp [rowStores, Com.warrs] at hb
+  | nil => intro i b hb; simp [rowStores] at hb
   | cons γ rest ih =>
     intro i b hb
     simp only [rowStores, Com.warrs, List.mem_append,
@@ -387,7 +387,7 @@ theorem wvars_rowStores {tb ct tsb : String} {S : Setup L} {j : ℕ} :
       (rowStores tb ct tsb S j l i).wvars = [] := by
   intro l
   induction l with
-  | nil => intro i; simp [rowStores, Com.wvars]
+  | nil => intro i; simp [rowStores]
   | cons γ rest ih =>
     intro i
     simp [rowStores, Com.wvars, ih (i + 1)]
@@ -897,8 +897,8 @@ theorem rowBody_spec {B : ℕ} (S : Setup L) (ord : CoverSpec.OrderingRoutine)
       congrArg Fin.val
         (childEquiv_symm_restrictEmb S A ((ord A.N A.G).order) u hlt hvtmem)
     -- the row store
-    have hrs := rowStores_spec S ord hvu hlt hidx hchoice h1B hANB hNF0B
-      (lt_of_le_of_lt hcNle hANB)
+    have hrs := rowStores_spec (k := k) S ord hvu hlt hidx hchoice h1B
+      hANB hNF0B (lt_of_le_of_lt hcNle hANB)
       hcNF1B hMB hct_tb htsb_tb (F S j) 0 (fun γ h => h)
       (by rw [levelFml_length]; omega)
     obtain ⟨τb, hr2, hnew, hkeep, hoth, hlen2, hvars2⟩ :=
@@ -935,6 +935,7 @@ theorem rowBody_spec {B : ℕ} (S : Setup L) (ord : CoverSpec.OrderingRoutine)
         intro b hb
         simp only [arrs_setVar]
         rw [hoth b hb]
+        simp only [arrs_setVar]
       have harr_tb : (τb.setVar "rb.i" (τ.vars "rb.i" + 1)).arrs
           (arenaNames j).tab = τb.arrs (arenaNames j).tab := by
         simp
@@ -976,10 +977,11 @@ theorem rowBody_spec {B : ℕ} (S : Setup L) (ord : CoverSpec.OrderingRoutine)
           rw [harr_tb, hkeep _ ?_]
           · exact hdone p hp hplt' hcen m hm
           · intro m' hm' heq
-            have := row_cell_inj hm
-              (by rw [← levelFml_length]; exact hm')
-              (by rw [Nat.zero_add] at heq ⊢; exact heq)
-            exact hvne (Fin.val_injective this)
+            have hmF : m' < (levelFml S j).length := by
+              rw [levelFml_length]
+              exact hm'
+            rw [Nat.zero_add] at heq
+            exact hvne (Fin.val_injective (row_cell_inj hm hmF heq))
         · -- the freshly stored row
           subst hpe
           have h2 := hnew m (by rw [← levelFml_length]; exact hm)
@@ -1004,9 +1006,11 @@ theorem rowBody_spec {B : ℕ} (S : Setup L) (ord : CoverSpec.OrderingRoutine)
         rw [harr_tb, hkeep _ ?_]
         · exact hnotc v hvne m hm
         · intro m' hm' heq
-          exact hvvt (Fin.val_injective (row_cell_inj hm
-            (by rw [← levelFml_length]; exact hm')
-            (by rw [Nat.zero_add] at heq ⊢; exact heq)))
+          have hmF : m' < (levelFml S j).length := by
+            rw [levelFml_length]
+            exact hm'
+          rw [Nat.zero_add] at heq
+          exact hvvt (Fin.val_injective (row_cell_inj hm hmF heq))
       · -- not-yet-scanned rows untouched
         intro p hp hple m hm
         rw [vars_setVar, if_pos rfl] at hple
@@ -1020,9 +1024,11 @@ theorem rowBody_spec {B : ℕ} (S : Setup L) (ord : CoverSpec.OrderingRoutine)
         rw [harr_tb, hkeep _ ?_]
         · exact hnotyet p hp (by omega) m hm
         · intro m' hm' heq
-          exact hvne (Fin.val_injective (row_cell_inj hm
-            (by rw [← levelFml_length]; exact hm')
-            (by rw [Nat.zero_add] at heq ⊢; exact heq)))
+          have hmF : m' < (levelFml S j).length := by
+            rw [levelFml_length]
+            exact hm'
+          rw [Nat.zero_add] at heq
+          exact hvne (Fin.val_injective (row_cell_inj hm hmF heq))
   · -- the assignment does not own the entry: skip
     have hfalse : (Cond.eq (.get caj (.var "rb.v"))
         (.var (ctrName j))).evalB B (τ.setVar "rb.v" (vt : ℕ))
@@ -1090,5 +1096,454 @@ theorem rowBody_spec {B : ℕ} (S : Setup L) (ord : CoverSpec.OrderingRoutine)
         rw [vars_setVar, if_pos rfl] at hple
         rw [harr]
         exact hnotyet p hp (by omega) m hm
+
+/-! ## §6 The pass, assembled -/
+
+open Classical in
+/-- **`ReadRows`, discharged**: at any word bound `B` covering the
+carrier, its square, the two adjacent levels' table rows and the
+level's atom data, the pass `readSegCom` satisfies the named residual
+at budget `readSegK` — from the choice seam, the scratch descriptor's
+length clauses, and name freshness. -/
+theorem readRows_of (B : ℕ) (S : Setup L) (ord : CoverSpec.OrderingRoutine)
+    (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) → (A : Arena (S.pal j) n₀) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena (S.pal j) n₀ → Prop)
+    (Scr : ℕ → Env → Prop) (ca co cm : ℕ → String)
+    (pa ma da tsb : String)
+    (hchoice : S.choice = greedyChoice)
+    (h1B : 1 < B) (hn0B : n₀ < B) (hn0nB : n₀ * n₀ < B)
+    (hFB : ∀ j', j' ≤ S.depth → n₀ * (levelFml S j').length < B)
+    (hMBd : ∀ j', j' + 1 ≤ S.depth → (levelAtoms S j').length < B)
+    (hatomB : ∀ j', j' + 1 ≤ S.depth → ∀ σa ∈ levelAtoms S j',
+      σa.r + 2 < B ∧ σa.t < B)
+    (hscrT : ∀ j' σ, Scr j' σ → n₀ ≤ (σ.arrs pa).length ∧
+      n₀ ≤ (σ.arrs ma).length ∧ n₀ ≤ (σ.arrs da).length ∧
+      (levelAtoms S j').length ≤ (σ.arrs tsb).length)
+    (hpaA : ∀ j', pa ∉ levelArrays j') (hmaA : ∀ j', ma ∉ levelArrays j')
+    (hdaA : ∀ j', da ∉ levelArrays j') (htsbA : ∀ j', tsb ∉ levelArrays j')
+    (hpaC : ∀ j', pa ≠ ca j' ∧ pa ≠ co j' ∧ pa ≠ cm j')
+    (hmaC : ∀ j', ma ≠ ca j' ∧ ma ≠ co j' ∧ ma ≠ cm j')
+    (hdaC : ∀ j', da ≠ ca j' ∧ da ≠ co j' ∧ da ≠ cm j')
+    (htsbC : ∀ j', tsb ≠ ca j' ∧ tsb ≠ co j' ∧ tsb ≠ cm j')
+    (hda_ma : da ≠ ma) (hda_pa : da ≠ pa) (hma_pa : ma ≠ pa)
+    (htsb_pa : tsb ≠ pa) (htsb_ma : tsb ≠ ma) (htsb_da : tsb ≠ da)
+    (hccm_tab : ∀ j', ca j' ≠ (arenaNames j').tab ∧
+      co j' ≠ (arenaNames j').tab ∧ cm j' ≠ (arenaNames j').tab) :
+    ReadRows B S ord ℓp htabF hbf Adm Scr ca co cm
+      (fun j => readSegCom (ca j) (co j) (cm j) pa ma da tsb S j)
+      (fun _ j A u => readSegK S ord (arenaNames (j + 1)).tab tsb j A u) := by
+  intro k j A hdiag hAdm hbot u
+  have hj1 : j + 1 ≤ S.depth := by omega
+  -- the scratch names' freshness, spelled out at the two levels
+  have hpaAj := hpaA j
+  have hmaAj := hmaA j
+  have hdaAj := hdaA j
+  have htsbAj := htsbA j
+  have hpaA1 := hpaA (j + 1)
+  have hmaA1 := hmaA (j + 1)
+  have hdaA1 := hdaA (j + 1)
+  have htsbA1 := htsbA (j + 1)
+  simp only [levelArrays, List.mem_cons, List.not_mem_nil, or_false,
+    not_or] at hpaAj hmaAj hdaAj htsbAj hpaA1 hmaA1 hdaA1 htsbA1
+  obtain ⟨hpa_o1, hpa_t1, hpa_c1, hpa_u1, hpa_h1, hpa_b1⟩ := hpaA1
+  obtain ⟨hma_o1, hma_t1, hma_c1, hma_u1, hma_h1, hma_b1⟩ := hmaA1
+  obtain ⟨hda_o1, hda_t1, hda_c1, hda_u1, hda_h1, hda_b1⟩ := hdaA1
+  obtain ⟨htsb_o1, htsb_t1, htsb_c1, htsb_u1, htsb_h1, htsb_b1⟩ := htsbA1
+  have hpa5 : pa ∉ ([(arenaNames (j + 1)).off, (arenaNames (j + 1)).tgt,
+      (arenaNames (j + 1)).col, (arenaNames (j + 1)).up,
+      (arenaNames (j + 1)).hist] : List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨hpa_o1, hpa_t1, hpa_c1, hpa_u1, hpa_h1⟩
+  have hma5 : ma ∉ ([(arenaNames (j + 1)).off, (arenaNames (j + 1)).tgt,
+      (arenaNames (j + 1)).col, (arenaNames (j + 1)).up,
+      (arenaNames (j + 1)).hist] : List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨hma_o1, hma_t1, hma_c1, hma_u1, hma_h1⟩
+  have hda5 : da ∉ ([(arenaNames (j + 1)).off, (arenaNames (j + 1)).tgt,
+      (arenaNames (j + 1)).col, (arenaNames (j + 1)).up,
+      (arenaNames (j + 1)).hist] : List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨hda_o1, hda_t1, hda_c1, hda_u1, hda_h1⟩
+  have htsb5 : tsb ∉ ([(arenaNames (j + 1)).off, (arenaNames (j + 1)).tgt,
+      (arenaNames (j + 1)).col, (arenaNames (j + 1)).up,
+      (arenaNames (j + 1)).hist] : List String) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨htsb_o1, htsb_t1, htsb_c1, htsb_u1, htsb_h1⟩
+  -- the bounds, specialized to this arena and its child
+  have hNle : A.N ≤ n₀ := arenaN_le A
+  have hANB : A.N < B := lt_of_le_of_lt hNle hn0B
+  have hANNB : A.N * A.N < B :=
+    lt_of_le_of_lt (Nat.mul_le_mul hNle hNle) hn0nB
+  have hcNlen : childN S A ((ord A.N A.G).order) u ≤ n₀ :=
+    arenaN_le (childArena S A ((ord A.N A.G).order) u)
+  have hcNle : childN S A ((ord A.N A.G).order) u ≤ A.N := ncard_le_card _
+  have hcNB : childN S A ((ord A.N A.G).order) u < B :=
+    lt_of_le_of_lt hcNle hANB
+  have hcNNB : childN S A ((ord A.N A.G).order) u
+      * childN S A ((ord A.N A.G).order) u < B :=
+    lt_of_le_of_lt (Nat.mul_le_mul hcNlen hcNlen) hn0nB
+  have hcNF1B : childN S A ((ord A.N A.G).order) u
+      * (levelFml S (j + 1)).length < B :=
+    lt_of_le_of_lt (Nat.mul_le_mul_right _ hcNlen) (hFB (j + 1) hj1)
+  have hNF0B : A.N * (levelFml S j).length < B :=
+    lt_of_le_of_lt (Nat.mul_le_mul_right _ hNle) (hFB j (by omega))
+  have hMB : (levelAtoms S j).length < B := hMBd j hj1
+  have huB : (u : ℕ) < B := lt_trans u.2 hANB
+  have hctr_rbb : ctrName j ≠ "rb.b" :=
+    lv_ne_of_base_ne (by decide) (by decide) j 0
+  have hctr_rbs : ctrName j ≠ "rb.s" :=
+    lv_ne_of_base_ne (by decide) (by decide) j 0
+  have hctr_rbi : ctrName j ≠ "rb.i" :=
+    lv_ne_of_base_ne (by decide) (by decide) j 0
+  intro σ0 hpre
+  obtain ⟨hCL, hctr0, hBP⟩ := hpre
+  obtain ⟨⟨hAj, htabL0, hscr0⟩, hctrA0, hcsr0, -⟩ := hCL
+  obtain ⟨hAc, hTc⟩ := hBP
+  obtain ⟨hpaL0, hmaL0, hdaL0, htsbL0⟩ := hscrT j σ0 hscr0
+  -- §A the atoms stage, through the landed top-seam machinery
+  have hstage := (topAtomsCom_spec (B := B)
+      (A := Impl.ofArena (childArena S A ((ord A.N A.G).order) u)
+        (htabF (j + 1) (childArena S A ((ord A.N A.G).order) u)))
+      (nm := arenaNames (j + 1)) (hb := hbf (j + 1))
+      (Fl := levelFml S (j + 1))
+      (T := Unroll.unrollAux S ord k (j + 1)
+        (childArena S A ((ord A.N A.G).order) u))
+      (pa := pa) (ma := ma) (da := da) (tsb := tsb)
+      (levelAtoms S j).length
+      (fun σa => memIdx (levelFml S (j + 1)) σa.β)
+      hcNB hcNNB hcNF1B hMB h1B
+      (show (arenaNames (j + 1)).tgt ≠ (arenaNames (j + 1)).off from
+        lv_ne_of_base_ne (by decide) (by decide) (j + 1) (j + 1))
+      hda5 hma5 hpa5 hda_ma hda_pa hma_pa
+      (show (arenaNames (j + 1)).nN ∉ gsScalars from
+        lv_not_mem (by decide) (by decide) (j + 1))
+      (show (arenaNames (j + 1)).nS ∉ gsScalars from
+        lv_not_mem (by decide) (by decide) (j + 1))
+      (Ne.symm hpa_b1) (Ne.symm hma_b1) (Ne.symm hda_b1)
+      htsb_pa htsb_ma htsb_da htsb_b1 htsb5
+      (levelAtoms S j) 0 (le_of_eq (Nat.zero_add _))
+      (fun σa hmem =>
+        ⟨⟨memIdx_lt (levelAtoms_beta_mem hmem),
+          getElem_memIdx (levelAtoms_beta_mem hmem)⟩,
+          hatomB j hj1 σa hmem⟩)).frame
+  obtain ⟨σ1, hr1, ⟨⟨hAW1, hTc1, hpaL1, hmaL1, hdaL1, htsbL1⟩,
+      hcells1, -, hlen1⟩, hfv1, hfa1, -, -⟩ :=
+    hstage σ0 ⟨hAc, hTc, le_trans hcNlen hpaL0, le_trans hcNlen hmaL0,
+      le_trans hcNlen hdaL0, htsbL0⟩
+  -- the stage's frames
+  have hfa1' : ∀ b, b ≠ pa → b ≠ ma → b ≠ da → b ≠ tsb →
+      σ1.arrs b = σ0.arrs b := by
+    intro b h1 h2 h3 h4
+    refine hfa1 b (fun hmem => ?_)
+    rcases warrs_topAtomsCom _ _ b hmem with rfl | rfl | rfl | rfl
+    · exact h1 rfl
+    · exact h2 rfl
+    · exact h3 rfl
+    · exact h4 rfl
+  have hfv1' : ∀ y, y ∉ gsScalars → σ1.vars y = σ0.vars y := fun y hy =>
+    hfv1 y (fun hmem => hy (wvars_topAtomsCom _ _ y hmem))
+  have hctr1 : σ1.vars (ctrName j) = (u : ℕ) := by
+    rw [hfv1' _ (show ctrName j ∉ gsScalars from
+      lv_not_mem (by decide) (by decide) j)]
+    exact hctr0
+  have htabEq1 : σ1.arrs (arenaNames j).tab = σ0.arrs (arenaNames j).tab :=
+    hfa1' _ (Ne.symm hpaAj.2.2.2.2.2) (Ne.symm hmaAj.2.2.2.2.2)
+      (Ne.symm hdaAj.2.2.2.2.2) (Ne.symm htsbAj.2.2.2.2.2)
+  have hcaEq1 : σ1.arrs (ca j) = σ0.arrs (ca j) :=
+    hfa1' _ (Ne.symm (hpaC j).1) (Ne.symm (hmaC j).1)
+      (Ne.symm (hdaC j).1) (Ne.symm (htsbC j).1)
+  have hcoEq1 : σ1.arrs (co j) = σ0.arrs (co j) :=
+    hfa1' _ (Ne.symm (hpaC j).2.1) (Ne.symm (hmaC j).2.1)
+      (Ne.symm (hdaC j).2.1) (Ne.symm (htsbC j).2.1)
+  have hcmEq1 : σ1.arrs (cm j) = σ0.arrs (cm j) :=
+    hfa1' _ (Ne.symm (hpaC j).2.2) (Ne.symm (hmaC j).2.2)
+      (Ne.symm (hdaC j).2.2) (Ne.symm (htsbC j).2.2)
+  have hctrA1 : CtrArr (ca j) (centre S A ((ord A.N A.G).order)) σ1 :=
+    ctrArr_of_eq hctrA0 hcaEq1
+  have hcsr1 : ClusterCsr (co j) (cm j)
+      (cluster S A ((ord A.N A.G).order)) σ1 :=
+    clusterCsr_of_eq hcsr0 hcoEq1 hcmEq1
+  have htabL1 : A.N * (levelFml S j).length
+      ≤ (σ1.arrs (arenaNames j).tab).length := by
+    rw [htabEq1]
+    exact htabL0
+  have hslot1 : SlotBits tsb S ord k j A u σ1 := by
+    intro m hm
+    have h := hcells1 m hm
+    rwa [Nat.zero_add] at h
+  -- §B the row bounds off the cover CSR
+  obtain ⟨base, hbase_r, hnext_r, hcmfit, hbaseNN, hcoL, hrow⟩ :=
+    clusterCsr_row_bounds hcsr1 u
+  have hbB : base < B := by omega
+  have e1 : (Expr.get (co j) (.var (ctrName j))).evalB B σ1 = some base := by
+    have hv : (Expr.var (ctrName j)).evalB B σ1 = some (u : ℕ) := by
+      rw [← hctr1]
+      exact evalB_var (by rw [hctr1]; exact huB)
+    exact evalB_get hv
+      (getElem?_of_getD (lt_of_lt_of_le (Nat.lt_succ_of_lt u.2) hcoL)
+        hbase_r) hbB
+  have e2 : (Expr.sub (.get (co j) (.add (.var (ctrName j)) (.lit 1)))
+      (.var "rb.b")).evalB B (σ1.setVar "rb.b" base)
+      = some (childN S A ((ord A.N A.G).order) u) := by
+    have hctrb : (σ1.setVar "rb.b" base).vars (ctrName j) = (u : ℕ) := by
+      rw [vars_setVar, if_neg hctr_rbb]
+      exact hctr1
+    have hv : (Expr.var (ctrName j)).evalB B (σ1.setVar "rb.b" base)
+        = some (u : ℕ) := by
+      rw [← hctrb]
+      exact evalB_var (by rw [hctrb]; exact huB)
+    have hadd := evalB_bin (op := .add) hv (evalB_lit h1B)
+      (by rw [Bop.apply_add]; have := u.2; omega)
+    rw [Bop.apply_add] at hadd
+    have hgetn : (Expr.get (co j) (.add (.var (ctrName j))
+        (.lit 1))).evalB B (σ1.setVar "rb.b" base)
+        = some (base + (cluster S A ((ord A.N A.G).order) u).ncard) := by
+      refine evalB_get hadd (getElem?_of_getD ?_ hnext_r) (by omega)
+      exact lt_of_lt_of_le (by have := u.2; omega) hcoL
+    have hvb : (Expr.var "rb.b").evalB B (σ1.setVar "rb.b" base)
+        = some base := by
+      have h : (σ1.setVar "rb.b" base).vars "rb.b" = base := by simp
+      rw [← h]
+      exact evalB_var (by rw [h]; exact hbB)
+    have hsub := evalB_bin (op := .sub) hgetn hvb
+      (by rw [Bop.apply_sub]; omega)
+    rw [Bop.apply_sub, Nat.add_sub_cancel_left] at hsub
+    exact hsub
+  -- §C the row scan
+  have hbody := rowBody_spec S ord k j A u σ1 base hchoice h1B hANB hANNB
+    hNF0B hcNF1B hMB (hccm_tab j).1 (hccm_tab j).2.2 htsbAj.2.2.2.2.2
+    hctrA1 hbaseNN hcmfit hrow htabL1 htsbL1
+  have hloop := Spec.forRangeZero (B := B) "rb.i" "rb.s"
+    (RowLoopInv S ord k j A u (ca j) (cm j) tsb base σ1)
+    (childN S A ((ord A.N A.G).order) u)
+    (14 + rowStoresK (arenaNames (j + 1)).tab tsb S j (F S j)) hcNB
+    (fun τ hτ => hτ.2.2.2.1) (fun τ hτ => hτ.2.2.1) hbody
+  obtain ⟨σ3, hr3, hI3, hi3⟩ := hloop
+    ((σ1.setVar "rb.b" base).setVar "rb.s"
+      (childN S A ((ord A.N A.G).order) u))
+    (by
+      refine ⟨?_, ?_, ?_, ?_, tableBitsW_of_eq hTc1 rfl,
+        slotBits_of_eq hslot1 rfl, rfl, rfl, fun b => rfl, ?_,
+        fun v hv m hm => rfl, fun p hp hle m hm => rfl⟩
+      · rw [vars_setVar, if_neg hctr_rbi, vars_setVar, if_neg hctr_rbs,
+          vars_setVar, if_neg hctr_rbb]
+        exact hctr1
+      · rw [vars_setVar, if_neg (by decide), vars_setVar,
+          if_neg (by decide), vars_setVar, if_pos rfl]
+      · rw [vars_setVar, if_neg (by decide), vars_setVar, if_pos rfl]
+      · rw [vars_setVar, if_pos rfl]
+        exact Nat.zero_le _
+      · intro p hp hplt hcen m hm
+        rw [vars_setVar, if_pos rfl] at hplt
+        exact absurd hplt (Nat.not_lt_zero p))
+  obtain ⟨hc3, hb3, hs3, hle3, hT3, hsl3, hca3, hcm3, hlen3,
+    hd1, hd2a, hd2b⟩ := hI3
+  -- §D assembled
+  have hrTot := hr1.seq ((Run.assign e1).seq ((Run.assign e2).seq hr3))
+  refine ⟨σ3, hrTot.mono ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- the cost
+    show topScatK (childN S A ((ord A.N A.G).order) u)
+        (∑ v : Fin (childN S A ((ord A.N A.G).order) u),
+          (childArena S A ((ord A.N A.G).order) u).G.degree v)
+        (levelAtoms S j)
+      + (3 + (7 + ((14 + rowStoresK (arenaNames (j + 1)).tab tsb S j
+          (F S j) + 4) * childN S A ((ord A.N A.G).order) u + 6)))
+      ≤ readSegK S ord (arenaNames (j + 1)).tab tsb j A (u : ℕ)
+    rw [readSegK_coe]
+    omega
+  · -- clause 1: the centre's rows at the recursive clause's bits
+    intro v hv i hi
+    have hmem : v ∈ cluster S A ((ord A.N A.G).order) u :=
+      hv ▸ mem_cluster_centre S A ((ord A.N A.G).order) v
+    have hre : Impl.restrictEmb (cluster S A ((ord A.N A.G).order) u)
+        ⟨(((childEquiv S A ((ord A.N A.G).order) u).symm ⟨v, hmem⟩ :
+            Fin (childN S A ((ord A.N A.G).order) u)) : ℕ),
+          ((childEquiv S A ((ord A.N A.G).order) u).symm ⟨v, hmem⟩).2⟩
+        = v :=
+      restrictEmb_childEquiv_symm S A ((ord A.N A.G).order) u hmem
+    have h := hd1
+      (((childEquiv S A ((ord A.N A.G).order) u).symm ⟨v, hmem⟩ :
+        Fin (childN S A ((ord A.N A.G).order) u)) : ℕ)
+      ((childEquiv S A ((ord A.N A.G).order) u).symm ⟨v, hmem⟩).2
+      (by rw [hi3]
+          exact ((childEquiv S A ((ord A.N A.G).order) u).symm
+            ⟨v, hmem⟩).2)
+      (by rw [hre]; exact hv) i hi
+    rw [hre] at h
+    exact h
+  · -- clause 2: every other row's cells untouched
+    intro v hv i hi
+    rw [hd2a v hv i hi, htabEq1]
+  · -- clause 3: the level's cells untouched
+    intro y hy
+    refine hrTot.frame_var y (fun hmem => ?_)
+    have h := wvars_readSegCom y hmem
+    simp only [List.mem_cons, levelScalars, List.not_mem_nil,
+      or_false] at hy
+    rcases hy with rfl | rfl | rfl
+    · exact absurd h (show ctrName j ∉ rbScalars from
+        lv_not_mem (by decide) (by decide) j)
+    · exact absurd h (show (arenaNames j).nN ∉ rbScalars from
+        lv_not_mem (by decide) (by decide) j)
+    · exact absurd h (show (arenaNames j).nS ∉ rbScalars from
+        lv_not_mem (by decide) (by decide) j)
+  · -- clause 4: the cover's arrays and the five regions untouched
+    have hnotw : ∀ a, a ≠ pa → a ≠ ma → a ≠ da → a ≠ tsb →
+        a ≠ (arenaNames j).tab → σ3.arrs a = σ0.arrs a := by
+      intro a h1 h2 h3 h4 h5
+      refine hrTot.frame_arr a (fun hmem => ?_)
+      rcases warrs_readSegCom a hmem with rfl | rfl | rfl | rfl | rfl
+      · exact h1 rfl
+      · exact h2 rfl
+      · exact h3 rfl
+      · exact h4 rfl
+      · exact h5 rfl
+    intro a ha
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact hnotw _ (Ne.symm (hpaC j).1) (Ne.symm (hmaC j).1)
+        (Ne.symm (hdaC j).1) (Ne.symm (htsbC j).1) (hccm_tab j).1
+    · exact hnotw _ (Ne.symm (hpaC j).2.1) (Ne.symm (hmaC j).2.1)
+        (Ne.symm (hdaC j).2.1) (Ne.symm (htsbC j).2.1) (hccm_tab j).2.1
+    · exact hnotw _ (Ne.symm (hpaC j).2.2) (Ne.symm (hmaC j).2.2)
+        (Ne.symm (hdaC j).2.2) (Ne.symm (htsbC j).2.2) (hccm_tab j).2.2
+    · exact hnotw _ (Ne.symm hpaAj.1) (Ne.symm hmaAj.1)
+        (Ne.symm hdaAj.1) (Ne.symm htsbAj.1)
+        (lv_ne_of_base_ne (by decide) (by decide) j j)
+    · exact hnotw _ (Ne.symm hpaAj.2.1) (Ne.symm hmaAj.2.1)
+        (Ne.symm hdaAj.2.1) (Ne.symm htsbAj.2.1)
+        (lv_ne_of_base_ne (by decide) (by decide) j j)
+    · exact hnotw _ (Ne.symm hpaAj.2.2.1) (Ne.symm hmaAj.2.2.1)
+        (Ne.symm hdaAj.2.2.1) (Ne.symm htsbAj.2.2.1)
+        (lv_ne_of_base_ne (by decide) (by decide) j j)
+    · exact hnotw _ (Ne.symm hpaAj.2.2.2.1) (Ne.symm hmaAj.2.2.2.1)
+        (Ne.symm hdaAj.2.2.2.1) (Ne.symm htsbAj.2.2.2.1)
+        (lv_ne_of_base_ne (by decide) (by decide) j j)
+    · exact hnotw _ (Ne.symm hpaAj.2.2.2.2.1) (Ne.symm hmaAj.2.2.2.2.1)
+        (Ne.symm hdaAj.2.2.2.2.1) (Ne.symm htsbAj.2.2.2.2.1)
+        (lv_ne_of_base_ne (by decide) (by decide) j j)
+  · -- clause 5: no reallocation
+    intro b
+    rw [hlen3 b, hlen1 b]
+
+/-! ## §7 The headline: `ReadRowsAll`, discharged -/
+
+open Classical in
+/-- **The read segment's machine residual, discharged**: verbatim
+`ReadRowsAll` at the program family `readSegCom` and the budget
+`readSegK`, from F7-suppliable hypotheses only — `1 ≤ q`, the word
+bounds per admissible input, the scratch descriptor's length clauses,
+and name freshness. The choice seam is `headlineSetup_choice`. -/
+theorem readRowsAll_of (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
+    (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
+    (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (Scr : ℕ → Env → Prop) (ca co cm : ℕ → String)
+    (pa ma da tsb : String)
+    (hq : 1 ≤ q)
+    -- the word bounds, per admissible input
+    (hB : ∀ x ∈ mcD n G c w, n < mcB q x ∧ n * n < mcB q x)
+    (hFB : ∀ x ∈ mcD n G c w,
+      ∀ j ≤ (Headline.headlineSetup C hC φ).depth,
+      n * (levelFml (Headline.headlineSetup C hC φ) j).length < mcB q x)
+    (hMB : ∀ x ∈ mcD n G c w,
+      ∀ j, j + 1 ≤ (Headline.headlineSetup C hC φ).depth →
+      (levelAtoms (Headline.headlineSetup C hC φ) j).length < mcB q x)
+    (hatomB : ∀ x ∈ mcD n G c w,
+      ∀ j, j + 1 ≤ (Headline.headlineSetup C hC φ).depth →
+      ∀ σa ∈ levelAtoms (Headline.headlineSetup C hC φ) j,
+      σa.r + 2 < mcB q x ∧ σa.t < mcB q x)
+    -- the scratch descriptor's four length clauses
+    (hscrT : ∀ j σ, Scr j σ → n ≤ (σ.arrs pa).length ∧
+      n ≤ (σ.arrs ma).length ∧ n ≤ (σ.arrs da).length ∧
+      (levelAtoms (Headline.headlineSetup C hC φ) j).length
+        ≤ (σ.arrs tsb).length)
+    -- the scratch names, fresh against every level's family
+    (hpaA : ∀ j, pa ∉ levelArrays j) (hmaA : ∀ j, ma ∉ levelArrays j)
+    (hdaA : ∀ j, da ∉ levelArrays j) (htsbA : ∀ j, tsb ∉ levelArrays j)
+    (hpaC : ∀ j, pa ≠ ca j ∧ pa ≠ co j ∧ pa ≠ cm j)
+    (hmaC : ∀ j, ma ≠ ca j ∧ ma ≠ co j ∧ ma ≠ cm j)
+    (hdaC : ∀ j, da ≠ ca j ∧ da ≠ co j ∧ da ≠ cm j)
+    (htsbC : ∀ j, tsb ≠ ca j ∧ tsb ≠ co j ∧ tsb ≠ cm j)
+    (hda_ma : da ≠ ma) (hda_pa : da ≠ pa) (hma_pa : ma ≠ pa)
+    (htsb_pa : tsb ≠ pa) (htsb_ma : tsb ≠ ma) (htsb_da : tsb ≠ da)
+    -- the cover's names, fresh against the level's table
+    (hccm_tab : ∀ j, ca j ≠ (arenaNames j).tab ∧
+      co j ≠ (arenaNames j).tab ∧ cm j ≠ (arenaNames j).tab) :
+    ReadRowsAll C hC φ ord G c w q ℓp htabF hbf Adm Scr ca co cm
+      (fun j => readSegCom (ca j) (co j) (cm j) pa ma da tsb
+        (Headline.headlineSetup C hC φ) j)
+      (fun _ j A u => readSegK (Headline.headlineSetup C hC φ) ord
+        (arenaNames (j + 1)).tab tsb j A u) :=
+  fun x hx =>
+    readRows_of (mcB q x) (Headline.headlineSetup C hC φ) ord ℓp htabF
+      hbf Adm Scr ca co cm pa ma da tsb
+      (headlineSetup_choice C hC φ)
+      (one_lt_mcB (three_le_length hx.1) hq)
+      (hB x hx).1 (hB x hx).2 (hFB x hx) (hMB x hx) (hatomB x hx)
+      hscrT hpaA hmaA hdaA htsbA hpaC hmaC hdaC htsbC
+      hda_ma hda_pa hma_pa htsb_pa htsb_ma htsb_da hccm_tab
+
+open Classical in
+/-- **Consumer fit, witnessed at compile time**: the headline's
+conclusion sits verbatim in `centreReadAll_of_rows`'s `hrows` slot —
+the landed consumer concludes `CentreReadAll` at this file's program
+and budget with no adaptation. -/
+example (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
+    (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
+    (c w q : ℕ) (ℓp : ℕ → ℕ)
+    (htabF : (j : ℕ) →
+      (A : Arena ((Headline.headlineSetup C hC φ).pal j) n) →
+      Fin A.N → Fin (ℓp j) → List (Fin A.N))
+    (hbf : ℕ → ℕ)
+    (Adm : (j : ℕ) → Arena ((Headline.headlineSetup C hC φ).pal j) n → Prop)
+    (Scr : ℕ → Env → Prop) (ca co cm : ℕ → String)
+    (pa ma da tsb : String)
+    (hscrLen : ∀ j σ σ', Scr j σ →
+      (∀ b, (σ'.arrs b).length = (σ.arrs b).length) → Scr j σ')
+    (hq : 1 ≤ q)
+    (hB : ∀ x ∈ mcD n G c w, n < mcB q x ∧ n * n < mcB q x)
+    (hFB : ∀ x ∈ mcD n G c w,
+      ∀ j ≤ (Headline.headlineSetup C hC φ).depth,
+      n * (levelFml (Headline.headlineSetup C hC φ) j).length < mcB q x)
+    (hMB : ∀ x ∈ mcD n G c w,
+      ∀ j, j + 1 ≤ (Headline.headlineSetup C hC φ).depth →
+      (levelAtoms (Headline.headlineSetup C hC φ) j).length < mcB q x)
+    (hatomB : ∀ x ∈ mcD n G c w,
+      ∀ j, j + 1 ≤ (Headline.headlineSetup C hC φ).depth →
+      ∀ σa ∈ levelAtoms (Headline.headlineSetup C hC φ) j,
+      σa.r + 2 < mcB q x ∧ σa.t < mcB q x)
+    (hscrT : ∀ j σ, Scr j σ → n ≤ (σ.arrs pa).length ∧
+      n ≤ (σ.arrs ma).length ∧ n ≤ (σ.arrs da).length ∧
+      (levelAtoms (Headline.headlineSetup C hC φ) j).length
+        ≤ (σ.arrs tsb).length)
+    (hpaA : ∀ j, pa ∉ levelArrays j) (hmaA : ∀ j, ma ∉ levelArrays j)
+    (hdaA : ∀ j, da ∉ levelArrays j) (htsbA : ∀ j, tsb ∉ levelArrays j)
+    (hpaC : ∀ j, pa ≠ ca j ∧ pa ≠ co j ∧ pa ≠ cm j)
+    (hmaC : ∀ j, ma ≠ ca j ∧ ma ≠ co j ∧ ma ≠ cm j)
+    (hdaC : ∀ j, da ≠ ca j ∧ da ≠ co j ∧ da ≠ cm j)
+    (htsbC : ∀ j, tsb ≠ ca j ∧ tsb ≠ co j ∧ tsb ≠ cm j)
+    (hda_ma : da ≠ ma) (hda_pa : da ≠ pa) (hma_pa : ma ≠ pa)
+    (htsb_pa : tsb ≠ pa) (htsb_ma : tsb ≠ ma) (htsb_da : tsb ≠ da)
+    (hccm_tab : ∀ j, ca j ≠ (arenaNames j).tab ∧
+      co j ≠ (arenaNames j).tab ∧ cm j ≠ (arenaNames j).tab) :
+    CentreReadAll C hC φ ord G c w q ℓp htabF hbf Adm Scr ca co cm
+      (fun j => readSegCom (ca j) (co j) (cm j) pa ma da tsb
+        (Headline.headlineSetup C hC φ) j)
+      (fun _ j A u => readSegK (Headline.headlineSetup C hC φ) ord
+        (arenaNames (j + 1)).tab tsb j A u) :=
+  centreReadAll_of_rows C hC φ ord G c w q ℓp htabF hbf Adm Scr ca co cm
+    _ _ hscrLen
+    (readRowsAll_of C hC φ ord G c w q ℓp htabF hbf Adm Scr ca co cm
+      pa ma da tsb hq hB hFB hMB hatomB hscrT hpaA hmaA hdaA htsbA
+      hpaC hmaC hdaC htsbC hda_ma hda_pa hma_pa htsb_pa htsb_ma htsb_da
+      hccm_tab)
 
 end Lax3Proofs.Prog

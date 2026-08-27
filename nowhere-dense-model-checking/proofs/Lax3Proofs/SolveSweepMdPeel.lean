@@ -222,17 +222,15 @@ theorem hMul_pop {n : ℕ} (hn : 0 < n) (f : ℕ → ℕ) :
       Multiset.range_zero, Multiset.map_zero, Multiset.erase_cons_head]
   · have h0m : (0 : ℕ) ∈ Multiset.range m := Multiset.mem_range.mpr hm
     have hnd : (Multiset.range m).Nodup := Multiset.nodup_range m
-    have hdec : Multiset.range m = 0 ::ₘ (Multiset.range m).erase 0 :=
-      (Multiset.cons_erase h0m).symm
+    set R := (Multiset.range m).erase 0 with hRdef
+    have hdec : Multiset.range m = 0 ::ₘ R := (Multiset.cons_erase h0m).symm
     have hupd0 : upd f 0 (f m) 0 = f m := by rw [upd_apply, if_pos rfl]
-    have hR : ∀ s ∈ (Multiset.range m).erase 0, upd f 0 (f m) s = f s := by
+    have hR : ∀ s ∈ R, upd f 0 (f m) s = f s := by
       intro s hs
       rw [upd_apply, if_neg (hnd.mem_erase_iff.mp hs).1]
-    have hL : hMul m (upd f 0 (f m))
-        = f m ::ₘ ((Multiset.range m).erase 0).map f := by
+    have hL : hMul m (upd f 0 (f m)) = f m ::ₘ R.map f := by
       rw [hMul, hdec, Multiset.map_cons, hupd0, Multiset.map_congr rfl hR]
-    have hRHS : hMul (m + 1) f
-        = f 0 ::ₘ (f m ::ₘ ((Multiset.range m).erase 0).map f) := by
+    have hRHS : hMul (m + 1) f = f 0 ::ₘ (f m ::ₘ R.map f) := by
       rw [hMul_succ, hMul, hdec, Multiset.map_cons, Multiset.cons_swap]
     rw [hL, hRHS, Multiset.erase_cons_head]
 
@@ -324,19 +322,20 @@ def heapPushCom (kv : String) : Com :=
 (stopping sets the position to the size, which fails the loop
 condition). -/
 def heapDownBody : Com :=
-  .seq (.assign xv (.add (.mul (.lit 2) (.var tv)) (.lit 1)))
-    (.seq (.ite (.lt (.add (.mul (.lit 2) (.var tv)) (.lit 2)) (.var hs))
+  .seq
+    (.seq (.assign xv (.add (.mul (.lit 2) (.var tv)) (.lit 1)))
+      (.ite (.lt (.add (.mul (.lit 2) (.var tv)) (.lit 2)) (.var hs))
         (.ite (.lt (.get hp (.add (.mul (.lit 2) (.var tv)) (.lit 2)))
             (.get hp (.var xv)))
           (.assign xv (.add (.mul (.lit 2) (.var tv)) (.lit 2)))
           .skip)
-        .skip)
-      (.ite (.lt (.get hp (.var xv)) (.get hp (.var tv)))
-        (.seq (.assign yv (.get hp (.var tv)))
-          (.seq (.store hp (.var tv) (.get hp (.var xv)))
-            (.seq (.store hp (.var xv) (.var yv))
-              (.assign tv (.var xv)))))
-        (.assign tv (.var hs))))
+        .skip))
+    (.ite (.lt (.get hp (.var xv)) (.get hp (.var tv)))
+      (.seq (.assign yv (.get hp (.var tv)))
+        (.seq (.store hp (.var tv) (.get hp (.var xv)))
+          (.seq (.store hp (.var xv) (.var yv))
+            (.assign tv (.var xv)))))
+      (.assign tv (.var hs)))
 
 /-- **Pop**: overwrite the root with the last cell, shrink, sift down.
 The caller reads the root before popping — there is no separate peek
@@ -640,8 +639,8 @@ private theorem downBody_step {m : ℕ} {M : Multiset ℕ} (hmB : 2 * m + 4 < B)
     · show 2 * t < B; omega
     · show 2 * t + 2 < B; omega
   -- the choice of the smaller child, uniformly
-  obtain ⟨σ₂, K₁, hrun₁₂, hK₁, h2tv, h2hs, h2arr, x, h2xv, hxlo', hxhi',
-      hxmin1, hxmin2⟩ :
+  obtain ⟨σ₂, K₁, hrun₁₂, hK₁, h2tv, h2hs, h2arr, x, h2xv, hxlo', hxup',
+      hxhi', hxmin1, hxmin2⟩ :
       ∃ σ₂ K₁, Run B (.seq (.assign xv (.add (.mul (.lit 2) (.var tv)) (.lit 1)))
           (.ite (.lt (.add (.mul (.lit 2) (.var tv)) (.lit 2)) (.var hs))
             (.ite (.lt (.get hp (.add (.mul (.lit 2) (.var tv)) (.lit 2)))
@@ -650,7 +649,7 @@ private theorem downBody_step {m : ℕ} {M : Multiset ℕ} (hmB : 2 * m + 4 < B)
               .skip)
             .skip)) σ σ₂ K₁ ∧ K₁ ≤ 30 ∧
         σ₂.vars tv = t ∧ σ₂.vars hs = m ∧ σ₂.arrs hp = σ.arrs hp ∧
-        ∃ x, σ₂.vars xv = x ∧ 2 * t + 1 ≤ x ∧ x < m ∧
+        ∃ x, σ₂.vars xv = x ∧ 2 * t + 1 ≤ x ∧ x ≤ 2 * t + 2 ∧ x < m ∧
           g x ≤ g (2 * t + 1) ∧ (2 * t + 2 < m → g x ≤ g (2 * t + 2)) := by
     by_cases h22 : 2 * t + 2 < m
     · have hcT : (Cond.lt (.add (.mul (.lit 2) (.var tv)) (.lit 2))
@@ -673,7 +672,7 @@ private theorem downBody_step {m : ℕ} {M : Multiset ℕ} (hmB : 2 * m + 4 < B)
         refine ⟨σ₁.setVar xv (2 * t + 2), _,
           Run.seq (Run.assign hxEval) (Run.ite_true hcT
             (Run.ite_true hcT2 (Run.assign h122))), ?_, ?_, ?_, ?_,
-          2 * t + 2, ?_, by omega, h22, ?_, ?_⟩
+          2 * t + 2, ?_, by omega, le_rfl, h22, ?_, ?_⟩
         · simp only [Expr.size, Cond.size]; omega
         · rw [vars_setVar, if_neg htx, h1tv]
         · rw [vars_setVar, if_neg hhx, h1hs]
@@ -688,7 +687,7 @@ private theorem downBody_step {m : ℕ} {M : Multiset ℕ} (hmB : 2 * m + 4 < B)
         refine ⟨σ₁, _,
           Run.seq (Run.assign hxEval) (Run.ite_true hcT
             (Run.ite_false hcF2 Run.skip)), ?_, h1tv, h1hs, h1arr,
-          2 * t + 1, h1xv, le_rfl, ht1m, le_rfl, ?_⟩
+          2 * t + 1, h1xv, le_rfl, by omega, ht1m, le_rfl, ?_⟩
         · simp only [Expr.size, Cond.size]; omega
         · intro _; exact le_of_not_gt hless
     · -- no right child
@@ -697,7 +696,7 @@ private theorem downBody_step {m : ℕ} {M : Multiset ℕ} (hmB : 2 * m + 4 < B)
         rw [evalB_condLt h122 (evB_var h1hs hmB'), decide_eq_false h22]
       refine ⟨σ₁, _,
         Run.seq (Run.assign hxEval) (Run.ite_false hcF Run.skip), ?_,
-        h1tv, h1hs, h1arr, 2 * t + 1, h1xv, le_rfl, ht1m, le_rfl, ?_⟩
+        h1tv, h1hs, h1arr, 2 * t + 1, h1xv, le_rfl, by omega, ht1m, le_rfl, ?_⟩
       · simp only [Expr.size, Cond.size]; omega
       · intro hc; exact absurd hc h22
   have hxB : x < B := by omega
@@ -791,7 +790,7 @@ private theorem downBody_step {m : ℕ} {M : Multiset ℕ} (hmB : 2 * m + 4 < B)
           exact le_of_lt hlt
         · rcases eq_or_ne s t with rfl | hst
           · -- the edge into the old position: the compensation pays
-            have hpart_t : hPar t ≠ t := (hPar_lt hs0).ne
+            have hpart_t : hPar s ≠ s := (hPar_lt hs0).ne
             rw [hg'o _ hpart_t hsparx, hg't]
             exact (hii hs0 htm').2 x (by omega) hxhi' hparx
           · rcases eq_or_ne (hPar s) t with hspart | hspart
@@ -859,6 +858,532 @@ private theorem downBody_step {m : ℕ} {M : Multiset ℕ} (hmB : 2 * m + 4 < B)
       rw [h3tv, htv]
       omega
 
+include hht hhx hhy htx hty hxy in
+/-- **The push contract**: from a heap of content `hMul n f` with one
+free cell and the key `k` in `kv`, leave a heap of content
+`k ::ₘ hMul n f`; only `hp` and the four working scalars are touched,
+and no array changes length. -/
+theorem heapPush_spec {n k : ℕ} {f : ℕ → ℕ} (kv : String)
+    (hnB : 2 * n + 2 < B) (hkB : k < B) (hfB : ∀ t < n, f t < B) :
+    Spec B (fun σ => HeapSt hp hs n f σ ∧ σ.vars kv = k ∧
+        n + 1 ≤ (σ.arrs hp).length)
+      (heapPushCom hp hs tv xv yv kv)
+      (fun σ σ' => (∃ g, HeapSt hp hs (n + 1) g σ' ∧
+          hMul (n + 1) g = k ::ₘ hMul n f) ∧
+        (∀ b, b ≠ hp → σ'.arrs b = σ.arrs b) ∧
+        (∀ y, y ≠ hs → y ≠ tv → y ≠ xv → y ≠ yv → σ'.vars y = σ.vars y) ∧
+        (∀ b, (σ'.arrs b).length = (σ.arrs b).length))
+      (28 * Nat.log 2 (n + 1) + 13) := by
+  have hcore : Spec B (fun σ => HeapSt hp hs n f σ ∧ σ.vars kv = k ∧
+        n + 1 ≤ (σ.arrs hp).length)
+      (heapPushCom hp hs tv xv yv kv)
+      (fun _ σ' => ∃ g, HeapSt hp hs (n + 1) g σ' ∧
+        hMul (n + 1) g = k ::ₘ hMul n f)
+      (28 * Nat.log 2 (n + 1) + 13) := by
+    refine Spec.of_exists ?_
+    rintro σ ⟨hH, hkv, hlen1⟩
+    obtain ⟨hsize, hlen0, hreads, hprop⟩ := hH
+    have hnB' : n < B := by omega
+    have hstoreEv : (Expr.var kv).evalB B σ = some k := evB_var hkv hkB
+    have hhsEv : (Expr.var hs).evalB B σ = some n := evB_var hsize hnB'
+    have hrange : n < (σ.arrs hp).length := by omega
+    set σ₁ := σ.setArr hp n k with hσ₁
+    have h1hs : σ₁.vars hs = n := by rw [hσ₁, vars_setArr, hsize]
+    have h1arr : σ₁.arrs hp = (σ.arrs hp).set n k := by
+      rw [hσ₁, arrs_setArr, if_pos rfl]
+    set σ₂ := σ₁.setVar tv n with hσ₂
+    have h2hs : σ₂.vars hs = n := by rw [hσ₂, vars_setVar, if_neg hht, h1hs]
+    set σ₃ := σ₂.setVar hs (n + 1) with hσ₃
+    have h3tv : σ₃.vars tv = n := by
+      rw [hσ₃, vars_setVar, if_neg (Ne.symm hht), hσ₂, vars_setVar, if_pos rfl]
+    have h3arr : σ₃.arrs hp = (σ.arrs hp).set n k := by
+      rw [hσ₃, arrs_setVar, hσ₂, arrs_setVar, h1arr]
+    -- the appended state satisfies the sift invariant at the top index
+    set g₀ := upd f n k with hg₀
+    have hg₀n : g₀ n = k := by rw [hg₀, upd_apply, if_pos rfl]
+    have hg₀o : ∀ s, s ≠ n → g₀ s = f s := by
+      intro s h1
+      rw [hg₀, upd_apply, if_neg h1]
+    have hInv₃ : UpInv (B := B) hp hs tv n k f σ₃ := by
+      refine ⟨n, g₀, h3tv, by omega, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+      · rw [hσ₃, vars_setVar, if_pos rfl]
+      · rw [h3arr, List.length_set]; exact hlen1
+      · intro s hs'
+        rw [h3arr]
+        rcases eq_or_ne s n with rfl | hsn
+        · rw [getD_set_self hrange, hg₀n]
+        · rw [getD_set_ne hsn, hreads s (by omega), hg₀o s hsn]
+      · rw [hMul_succ, hg₀n, hMul_congr (fun s hs' => hg₀o s (by omega))]
+      · intro s hs'
+        rcases eq_or_ne s n with rfl | hsn
+        · rw [hg₀n]; exact hkB
+        · rw [hg₀o s hsn]; exact hfB s (by omega)
+      · intro s hs0 hsn hst
+        have hsn' : s < n := by omega
+        have hps : hPar s < s := hPar_lt hs0
+        rw [hg₀o s (by omega), hg₀o _ (by omega)]
+        exact hprop s hs0 hsn'
+      · intro hn0 s hs0 hsn hpars
+        rw [hPar] at hpars
+        omega
+    have hbody := upBody_step hp hs tv xv yv hht hhx hhy htx hty hxy
+      (n := n) (k := k) (f := f) hnB
+    have hdefU : ∀ τ, UpInv (B := B) hp hs tv n k f τ →
+        ∃ v, (Cond.lt (.lit 0) (.var tv)).evalB B τ = some v := by
+      rintro τ ⟨t', g', h'tv, h'tn, -⟩
+      exact ⟨_, evalB_condLt (evalB_lit (show (0:ℕ) < B by omega))
+        (evB_var h'tv (show t' < B by omega))⟩
+    have hKU : ∀ τ, τ = σ₃ →
+        (1 + (Cond.lt (.lit 0) (.var tv)).size + 24)
+            * Nat.log 2 (τ.vars tv + 1) + 1
+          + (Cond.lt (.lit 0) (.var tv)).size
+        ≤ 28 * Nat.log 2 (n + 1) + 4 := by
+      rintro τ rfl
+      rw [h3tv]
+      simp only [Cond.size, Expr.size]
+      omega
+    have hwhile := Spec.while_count (B := B) (K := 28 * Nat.log 2 (n + 1) + 4)
+      (P := fun τ => τ = σ₃)
+      (UpInv (B := B) hp hs tv n k f)
+      (fun τ => Nat.log 2 (τ.vars tv + 1)) 24 hdefU hbody
+      (fun τ hτ => hτ ▸ hInv₃) hKU
+    obtain ⟨σ', hrunW, hI', hcondF⟩ := hwhile.run rfl
+    obtain ⟨t', g', h'tv, h'tn, h'hs, h'len, h'read, h'cont, h'gB, h'i, h'ii⟩ :=
+      hI'
+    have ht'0 : t' = 0 := by
+      have h2 := evalB_condLt (B := B)
+        (evalB_lit (show (0:ℕ) < B by omega))
+        (evB_var h'tv (show t' < B by omega))
+      rw [hcondF] at h2
+      have h4 := of_decide_eq_false (Option.some.inj h2).symm
+      omega
+    have hev2 : (Expr.var hs).evalB B σ₁ = some n := evB_var h1hs hnB'
+    have hev3 : (Expr.add (.var hs) (.lit 1)).evalB B σ₂ = some (n + 1) :=
+      evalB_bin (evB_var h2hs hnB') (evalB_lit (by omega))
+        (show n + 1 < B by omega)
+    refine ⟨σ', _, Run.seq (Run.store hhsEv hstoreEv hrange)
+      (Run.seq (Run.assign hev2) (Run.seq (Run.assign hev3) hrunW)), ?_,
+      g', ⟨h'hs, h'len, h'read, ?_⟩, h'cont⟩
+    · simp only [Expr.size]
+      omega
+    · intro s hs0 hsn
+      exact h'i s hs0 hsn (by omega)
+  have h2 := (hcore.arrLengths).frame
+  refine h2.post ?_
+  rintro σ σ' - ⟨⟨hq, hlens⟩, hfv, hfa, -, -⟩
+  refine ⟨hq, ?_, ?_, hlens⟩
+  · intro b hb
+    refine hfa b ?_
+    simp [heapPushCom, heapUpBody, Com.warrs, hb]
+  · intro y h1 h2 h3 h4
+    refine hfv y ?_
+    simp [heapPushCom, heapUpBody, Com.wvars, h1, h2, h3, h4]
+
+include hht hhx hhy htx hty hxy in
+/-- **The pop contract**: from a nonempty heap of content `hMul n f`,
+remove one copy of the root's key `f 0` — a minimum of the content, by
+`HeapSt.root_le_mem` — leaving a heap of the erased content; only `hp`
+and the four working scalars are touched, and no array changes
+length. -/
+theorem heapPop_spec {n : ℕ} {f : ℕ → ℕ}
+    (hnB : 2 * n + 2 < B) (hn : 0 < n) (hfB : ∀ t < n, f t < B) :
+    Spec B (fun σ => HeapSt hp hs n f σ)
+      (heapPopCom hp hs tv xv yv)
+      (fun σ σ' => (∃ g, HeapSt hp hs (n - 1) g σ' ∧
+          hMul (n - 1) g = (hMul n f).erase (f 0)) ∧
+        (∀ b, b ≠ hp → σ'.arrs b = σ.arrs b) ∧
+        (∀ y, y ≠ hs → y ≠ tv → y ≠ xv → y ≠ yv → σ'.vars y = σ.vars y) ∧
+        (∀ b, (σ'.arrs b).length = (σ.arrs b).length))
+      (56 * Nat.log 2 (n + 1) + 20) := by
+  have hcore : Spec B (fun σ => HeapSt hp hs n f σ)
+      (heapPopCom hp hs tv xv yv)
+      (fun _ σ' => ∃ g, HeapSt hp hs (n - 1) g σ' ∧
+        hMul (n - 1) g = (hMul n f).erase (f 0))
+      (56 * Nat.log 2 (n + 1) + 20) := by
+    refine Spec.of_exists ?_
+    rintro σ ⟨hsize, hlen0, hreads, hprop⟩
+    have hnB' : n < B := by omega
+    set m := n - 1 with hm
+    -- the prefix: shrink, fetch the last cell, overwrite the root
+    have hev1 : (Expr.sub (.var hs) (.lit 1)).evalB B σ = some m :=
+      evalB_bin (evB_var hsize hnB') (evalB_lit (by omega))
+        (show n - 1 < B by omega)
+    set σ₁ := σ.setVar hs m with hσ₁
+    have h1hs : σ₁.vars hs = m := by rw [hσ₁, vars_setVar, if_pos rfl]
+    have h1arr : σ₁.arrs hp = σ.arrs hp := by rw [hσ₁, arrs_setVar]
+    have hev2 : (Expr.get hp (.var hs)).evalB B σ₁ = some (f m) := by
+      refine evB_get (evB_var h1hs (by omega)) ?_ ?_ (hfB m (by omega))
+      · rw [h1arr]; omega
+      · rw [h1arr]; exact hreads m (by omega)
+    set σ₂ := σ₁.setVar yv (f m) with hσ₂
+    have h2yv : σ₂.vars yv = f m := by rw [hσ₂, vars_setVar, if_pos rfl]
+    have h2hs : σ₂.vars hs = m := by
+      rw [hσ₂, vars_setVar, if_neg hhy, h1hs]
+    have h2arr : σ₂.arrs hp = σ.arrs hp := by rw [hσ₂, arrs_setVar, h1arr]
+    have hev3i : (Expr.lit 0).evalB B σ₂ = some 0 := evalB_lit (by omega)
+    have hev3 : (Expr.var yv).evalB B σ₂ = some (f m) :=
+      evB_var h2yv (hfB m (by omega))
+    have hr3 : 0 < (σ₂.arrs hp).length := by rw [h2arr]; omega
+    set σ₃ := σ₂.setArr hp 0 (f m) with hσ₃
+    have h3arr : σ₃.arrs hp = (σ.arrs hp).set 0 (f m) := by
+      rw [hσ₃, arrs_setArr, if_pos rfl, h2arr]
+    set σ₄ := σ₃.setVar tv 0 with hσ₄
+    set g₀ := upd f 0 (f m) with hg₀
+    have hg₀0 : g₀ 0 = f m := by rw [hg₀, upd_apply, if_pos rfl]
+    have hg₀o : ∀ s, s ≠ 0 → g₀ s = f s := by
+      intro s h1
+      rw [hg₀, upd_apply, if_neg h1]
+    have hInv₄ : DownInv (B := B) hp hs tv m ((hMul n f).erase (f 0)) σ₄ := by
+      refine ⟨0, g₀, ?_, by omega, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+      · rw [hσ₄, vars_setVar, if_pos rfl]
+      · rw [hσ₄, vars_setVar, if_neg hht, hσ₃, vars_setArr, h2hs]
+      · rw [hσ₄, arrs_setVar, h3arr, List.length_set]; omega
+      · intro s hs'
+        rw [hσ₄, arrs_setVar, h3arr]
+        rcases eq_or_ne s 0 with rfl | hs0
+        · rw [getD_set_self (by omega), hg₀0]
+        · rw [getD_set_ne hs0, hreads s (by omega), hg₀o s hs0]
+      · rw [hg₀, hm]
+        exact hMul_pop hn f
+      · intro s hs'
+        rcases eq_or_ne s 0 with rfl | hs0
+        · rw [hg₀0]; exact hfB m (by omega)
+        · rw [hg₀o s hs0]; exact hfB s (by omega)
+      · intro s hs0 hsm hpars
+        have hps : hPar s < s := hPar_lt hs0
+        rw [hg₀o s (by omega), hg₀o _ hpars]
+        exact hprop s hs0 (by omega)
+      · intro h0
+        exact absurd h0 (lt_irrefl 0)
+    have hbody := downBody_step hp hs tv xv yv hht hhx hhy htx hty hxy
+      (m := m) (M := (hMul n f).erase (f 0)) (show 2 * m + 4 < B by omega)
+    have hdefD : ∀ τ, DownInv (B := B) hp hs tv m ((hMul n f).erase (f 0)) τ →
+        ∃ v, (Cond.lt (.add (.mul (.lit 2) (.var tv)) (.lit 1))
+          (.var hs)).evalB B τ = some v := by
+      rintro τ ⟨t', g', h'tv, h'tm, h'hs, -⟩
+      refine ⟨_, evalB_condLt (evalB_bin (evalB_bin (evalB_lit (by omega))
+        (evB_var h'tv (by omega)) ?_) (evalB_lit (by omega)) ?_)
+        (evB_var h'hs (by omega))⟩
+      · show 2 * t' < B; omega
+      · show 2 * t' + 1 < B; omega
+    have h4tv : σ₄.vars tv = 0 := by rw [hσ₄, vars_setVar, if_pos rfl]
+    have hKD : ∀ τ, τ = σ₄ →
+        (1 + (Cond.lt (.add (.mul (.lit 2) (.var tv)) (.lit 1))
+            (.var hs)).size + 48)
+            * (Nat.log 2 (m + 1) - Nat.log 2 (τ.vars tv + 1)) + 1
+          + (Cond.lt (.add (.mul (.lit 2) (.var tv)) (.lit 1)) (.var hs)).size
+        ≤ 56 * Nat.log 2 (m + 1) + 8 := by
+      rintro τ rfl
+      rw [h4tv]
+      have h01 : Nat.log 2 (0 + 1) = 0 := Nat.log_one_right 2
+      rw [h01]
+      simp only [Cond.size, Expr.size]
+      omega
+    have hwhile := Spec.while_count (B := B)
+      (K := 56 * Nat.log 2 (m + 1) + 8) (P := fun τ => τ = σ₄)
+      (DownInv (B := B) hp hs tv m ((hMul n f).erase (f 0)))
+      (fun τ => Nat.log 2 (m + 1) - Nat.log 2 (τ.vars tv + 1)) 48 hdefD hbody
+      (fun τ hτ => hτ ▸ hInv₄) hKD
+    obtain ⟨σ', hrunW, hI', hcondF⟩ := hwhile.run rfl
+    obtain ⟨t', g', h'tv, h'tm, h'hs, h'len, h'read, h'cont, h'gB, h'i, h'ii⟩ :=
+      hI'
+    have hcEv : (Expr.add (.mul (.lit 2) (.var tv)) (.lit 1)).evalB B σ'
+        = some (2 * t' + 1) := by
+      refine evalB_bin (evalB_bin (evalB_lit (by omega))
+        (evB_var h'tv (by omega)) ?_) (evalB_lit (by omega)) ?_
+      · show 2 * t' < B; omega
+      · show 2 * t' + 1 < B; omega
+    have hstop : ¬ (2 * t' + 1 < m) := by
+      have h2 := evalB_condLt hcEv (evB_var h'hs (by omega))
+      rw [hcondF] at h2
+      exact of_decide_eq_false (Option.some.inj h2).symm
+    have hrun₄ := Run.seq (Run.assign hev1) (Run.seq (Run.assign hev2)
+      (Run.seq (Run.store hev3i hev3 hr3) (Run.seq (Run.assign
+        (evalB_lit (show (0:ℕ) < B by omega))) hrunW)))
+    have hlog : Nat.log 2 (m + 1) ≤ Nat.log 2 (n + 1) :=
+      Nat.log_mono_right (by omega)
+    refine ⟨σ', _, hrun₄, ?_, g', ⟨h'hs, h'len, h'read, ?_⟩, h'cont⟩
+    · simp only [Expr.size]
+      omega
+    · intro s hs0 hsm
+      refine h'i s hs0 hsm ?_
+      rw [hPar]
+      omega
+  have h2 := (hcore.arrLengths).frame
+  refine h2.post ?_
+  rintro σ σ' - ⟨⟨hq, hlens⟩, hfv, hfa, -, -⟩
+  refine ⟨hq, ?_, ?_, hlens⟩
+  · intro b hb
+    refine hfa b ?_
+    simp [heapPopCom, heapDownBody, Com.warrs, hb]
+  · intro y h1 h2 h3 h4
+    refine hfv y ?_
+    simp [heapPopCom, heapDownBody, Com.wvars, h1, h2, h3, h4]
+
 end HeapOps
+
+/-! ## §2 The parametric peel core
+
+### §2a The abstract peel sequence and its bridges -/
+
+section PeelAbstract
+
+variable {N : ℕ}
+
+open Classical in
+/-- The live sets of the pinned peel: start at the full carrier, erase
+the pinned minimum-degree vertex each round. -/
+noncomputable def peelLive (F : SimpleGraph (Fin N)) : ℕ → Finset (Fin N)
+  | 0 => Finset.univ
+  | i + 1 => if h : (peelLive F i).Nonempty
+      then (peelLive F i).erase (minDegVert F (peelLive F i) h) else ∅
+
+@[simp] theorem peelLive_zero (F : SimpleGraph (Fin N)) :
+    peelLive F 0 = Finset.univ := rfl
+
+theorem peelLive_succ (F : SimpleGraph (Fin N)) {i : ℕ}
+    (h : (peelLive F i).Nonempty) :
+    peelLive F (i + 1) = (peelLive F i).erase (minDegVert F (peelLive F i) h) := by
+  rw [peelLive, dif_pos h]
+
+theorem peelLive_card (F : SimpleGraph (Fin N)) :
+    ∀ i, i ≤ N → (peelLive F i).card = N - i := by
+  intro i
+  induction i with
+  | zero => intro _; simp
+  | succ k ih =>
+      intro hk
+      have hcard : (peelLive F k).card = N - k := ih (by omega)
+      have hne : (peelLive F k).Nonempty := by
+        rw [← Finset.card_pos, hcard]
+        omega
+      rw [peelLive_succ F hne,
+        Finset.card_erase_of_mem (minDegVert_mem F _ hne), hcard]
+      omega
+
+theorem peelLive_nonempty (F : SimpleGraph (Fin N)) {i : ℕ} (hi : i < N) :
+    (peelLive F i).Nonempty := by
+  rw [← Finset.card_pos, peelLive_card F i (by omega)]
+  omega
+
+/-- On the live set, the stage ranking agrees with the global one. -/
+theorem mdRankAux_peelLive (F : SimpleGraph (Fin N)) :
+    ∀ i, i ≤ N → ∀ u ∈ peelLive F i,
+      mdRankAux F (peelLive F i) u = mdRank F u := by
+  intro i
+  induction i with
+  | zero => intro _ u _; rfl
+  | succ k ih =>
+      intro hk u hu
+      have hne : (peelLive F k).Nonempty := peelLive_nonempty F (by omega)
+      rw [peelLive_succ F hne] at hu
+      obtain ⟨hune, humem⟩ := Finset.mem_erase.mp hu
+      rw [peelLive_succ F hne, ← if_neg (α := ℕ) hune
+          (b := mdRankAux F ((peelLive F k).erase
+            (minDegVert F (peelLive F k) hne)) u)
+          (a := (peelLive F k).card - 1),
+        ← mdRankAux_of_nonempty F hne u]
+      exact ih (by omega) u humem
+
+/-- The pinned pick of round `i` has global rank `N - i - 1`. -/
+theorem mdRank_pick (F : SimpleGraph (Fin N)) {i : ℕ} (hi : i < N)
+    (hne : (peelLive F i).Nonempty) :
+    mdRank F (minDegVert F (peelLive F i) hne) = N - i - 1 := by
+  have h1 := mdRankAux_peelLive F i (by omega) _ (minDegVert_mem F _ hne)
+  rw [← h1, mdRankAux_of_nonempty F hne, if_pos rfl,
+    peelLive_card F i (by omega)]
+
+theorem peelLive_last (F : SimpleGraph (Fin N)) : peelLive F N = ∅ := by
+  rw [← Finset.card_eq_zero, peelLive_card F N le_rfl]
+  omega
+
+/-- Erasing a vertex from the live set erases it from every live
+neighbourhood. -/
+theorem nbrsIn_erase (F : SimpleGraph (Fin N)) (S : Finset (Fin N))
+    (v u : Fin N) : nbrsIn F (S.erase v) u = (nbrsIn F S u).erase v := by
+  classical
+  ext w
+  rw [mem_nbrsIn, Finset.mem_erase, Finset.mem_erase, mem_nbrsIn]
+  tauto
+
+/-- A live degree is below the carrier size. -/
+theorem card_nbrsIn_lt (F : SimpleGraph (Fin N)) (S : Finset (Fin N))
+    (u : Fin N) : (nbrsIn F S u).card < N := by
+  classical
+  have hsub : nbrsIn F S u ⊆ Finset.univ.erase u := by
+    intro w hw
+    obtain ⟨-, hadj⟩ := mem_nbrsIn.mp hw
+    exact Finset.mem_erase.mpr ⟨F.ne_of_adj hadj, Finset.mem_univ w⟩
+  calc (nbrsIn F S u).card ≤ (Finset.univ.erase u).card :=
+        Finset.card_le_card hsub
+    _ = N - 1 := by
+        rw [Finset.card_erase_of_mem (Finset.mem_univ u), Finset.card_univ,
+          Fintype.card_fin]
+    _ < N := by
+        have : 0 < N := Fin.pos u
+        omega
+
+/-- A live vertex adjacent to a live vertex has positive live degree. -/
+theorem card_nbrsIn_pos {F : SimpleGraph (Fin N)} {S : Finset (Fin N)}
+    {v u : Fin N} (hv : v ∈ S) (hadj : F.Adj v u) :
+    0 < (nbrsIn F S u).card :=
+  Finset.card_pos.mpr ⟨v, mem_nbrsIn.mpr ⟨hv, hadj⟩⟩
+
+/-- **The pinned choice is the encoded-key minimum**: with keys
+`deg * N + index`, the lexicographic (degree, smallest index) choice is
+the numeric minimum over the live set. -/
+theorem minDegVert_key_le (F : SimpleGraph (Fin N)) (S : Finset (Fin N))
+    (hne : S.Nonempty) :
+    ∀ u ∈ S, (nbrsIn F S (minDegVert F S hne)).card * N
+        + (minDegVert F S hne : ℕ)
+      ≤ (nbrsIn F S u).card * N + (u : ℕ) := by
+  classical
+  intro u hu
+  set v := minDegVert F S hne with hv
+  have hvN : (v : ℕ) < N := v.isLt
+  have hle : (nbrsIn F S v).card ≤ (nbrsIn F S u).card := by
+    rw [hv, card_nbrsIn_minDegVert F S hne]
+    exact Finset.inf'_le _ hu
+  rcases lt_or_eq_of_le hle with hlt | heq
+  · have h1 : (nbrsIn F S v).card * N + (v : ℕ)
+        < ((nbrsIn F S v).card + 1) * N := by
+      rw [Nat.succ_mul]
+      omega
+    have h2 : ((nbrsIn F S v).card + 1) * N ≤ (nbrsIn F S u).card * N :=
+      Nat.mul_le_mul_right N (by omega)
+    omega
+  · have humem : u ∈ S.filter fun w => (nbrsIn F S w).card
+        = S.inf' hne fun w => (nbrsIn F S w).card := by
+      refine Finset.mem_filter.mpr ⟨hu, ?_⟩
+      rw [← heq, hv, card_nbrsIn_minDegVert F S hne]
+    have hmin : v ≤ u := Finset.min'_le _ u humem
+    have : (v : ℕ) ≤ (u : ℕ) := hmin
+    omega
+
+/-- The base degree of an index, as a total function. -/
+noncomputable def baseDeg (F : SimpleGraph (Fin N)) (t : ℕ) : ℕ :=
+  if h : t < N then (F.neighborSet ⟨t, h⟩).ncard else 0
+
+theorem baseDeg_eq (F : SimpleGraph (Fin N)) (u : Fin N) :
+    baseDeg F (u : ℕ) = (F.neighborSet u).ncard := by
+  rw [baseDeg, dif_pos u.isLt]
+
+/-- The degree sum of the region's base graph — the budget currency of
+the peel (`nsAug` at the residual's instance). -/
+noncomputable def nsOf (F : SimpleGraph (Fin N)) : ℕ :=
+  ∑ t ∈ Finset.range N, baseDeg F t
+
+theorem baseDeg_lt (F : SimpleGraph (Fin N)) {t : ℕ} (ht : t < N) :
+    baseDeg F t < N := by
+  rw [baseDeg, dif_pos ht]
+  have h := SimpleGraph.degree_lt_card_verts F (⟨t, ht⟩ : Fin N)
+  rw [Fintype.card_fin] at h
+  have heq : (F.neighborSet (⟨t, ht⟩ : Fin N)).ncard
+      = F.degree (⟨t, ht⟩ : Fin N) := by
+    rw [SimpleGraph.degree, ← Set.ncard_coe_finset]
+    congr 1
+    ext w
+    simp [SimpleGraph.mem_neighborFinset]
+  omega
+
+theorem nsOf_le (F : SimpleGraph (Fin N)) : nsOf F ≤ N * N := by
+  calc nsOf F ≤ ∑ _t ∈ Finset.range N, N :=
+        Finset.sum_le_sum fun t ht =>
+          le_of_lt (baseDeg_lt F (Finset.mem_range.mp ht))
+    _ = N * N := by rw [Finset.sum_const, Finset.card_range, smul_eq_mul]
+
+/-- The region's offsets are the partial base-degree sums. -/
+theorem offF_eq_sum {F : SimpleGraph (Fin N)} {offF : ℕ → ℕ}
+    (h0 : offF 0 = 0)
+    (hstep : ∀ v : Fin N, offF ((v : ℕ) + 1)
+      = offF (v : ℕ) + (F.neighborSet v).ncard) :
+    ∀ i, i ≤ N → offF i = ∑ t ∈ Finset.range i, baseDeg F t := by
+  intro i
+  induction i with
+  | zero => intro _; simpa using h0
+  | succ k ih =>
+      intro hk
+      have hkN : k < N := hk
+      rw [hstep ⟨k, hkN⟩, ih (by omega), Finset.sum_range_succ]
+      congr 1
+      rw [baseDeg, dif_pos hkN]
+
+/-- The live-neighbourhood count at the full carrier is the base
+degree. -/
+theorem card_nbrsIn_univ (F : SimpleGraph (Fin N)) (u : Fin N) :
+    (nbrsIn F Finset.univ u).card = (F.neighborSet u).ncard := by
+  classical
+  rw [← Set.ncard_coe_finset]
+  congr 1
+  ext w
+  simp only [Finset.coe_filter, Set.mem_setOf_eq, mem_nbrsIn, Finset.mem_univ,
+    true_and, Finset.mem_coe, SimpleGraph.mem_neighborSet]
+  exact ⟨fun h => h.symm, fun h => h.symm⟩
+
+end PeelAbstract
+
+/-! ### §2b The programs -/
+
+/-- Decode the root: read the key, split it, test the recorded degree
+against the current cell, and record the verdict in `zv`. -/
+def chkCom (nNm dg hp kv dv vv zv : String) : Com :=
+  .seq (.assign kv (.get hp (.lit 0)))
+    (.seq (.assign dv (.div (.var kv) (.var nNm)))
+      (.seq (.assign vv (.sub (.var kv) (.mul (.var dv) (.var nNm))))
+        (.ite (.eq (.get dg (.var vv)) (.var dv))
+          (.assign zv (.lit 0)) (.assign zv (.lit 1)))))
+
+/-- One slot of the victim's base row: if the target is live, decrement
+its degree and push the fresh entry. -/
+def rowBody (nNm aj dg hp hsv tv xv yv kv iv wv : String) : Com :=
+  .seq (.assign wv (.get aj (.var iv)))
+    (.seq (.ite (.lt (.lit 0) (.get dg (.var wv)))
+        (.seq (.assign xv (.sub (.get dg (.var wv)) (.lit 1)))
+          (.seq (.store dg (.var wv) (.var xv))
+            (.seq (.assign kv (.add (.mul (.var xv) (.var nNm)) (.var wv)))
+              (heapPushCom hp hsv tv xv yv kv))))
+        .skip)
+      (.assign iv (.add (.var iv) (.lit 1))))
+
+/-- One round: discard stale tops, then use the valid top — write its
+rank, consume its entry, scan its base row, kill its degree cell. -/
+def roundCom (nNm ao aj dg ra hp hsv tv xv yv kv dv vv zv iv rc wv :
+    String) : Com :=
+  .seq (chkCom nNm dg hp kv dv vv zv)
+    (.seq (.while (.eq (.var zv) (.lit 1))
+        (.seq (heapPopCom hp hsv tv xv yv) (chkCom nNm dg hp kv dv vv zv)))
+      (.seq (.store ra (.var vv) (.sub (.var rc) (.lit 1)))
+        (.seq (.assign rc (.sub (.var rc) (.lit 1)))
+          (.seq (heapPopCom hp hsv tv xv yv)
+            (.seq (.ite (.lt (.lit 0) (.get dg (.var vv)))
+                (.seq (.assign iv (.get ao (.var vv)))
+                  (.while (.lt (.var iv) (.get ao (.add (.var vv) (.lit 1))))
+                    (rowBody nNm aj dg hp hsv tv xv yv kv iv wv)))
+                .skip)
+              (.store dg (.var vv) (.lit 0)))))))
+
+/-- One initial push: the vertex at the counter, at its base degree. -/
+def initBody (nNm dg hp hsv tv xv yv kv iv : String) : Com :=
+  .seq (.assign kv (.add (.mul (.get dg (.var iv)) (.var nNm)) (.var iv)))
+    (.seq (heapPushCom hp hsv tv xv yv kv)
+      (.assign iv (.add (.var iv) (.lit 1))))
+
+/-- **The min-degree peel**: empty the heap, push every vertex at its
+base degree, then run the counted rounds. -/
+def mdPeelCom (nNm ao aj dg ra hp hsv tv xv yv kv dv vv zv iv rc wv :
+    String) : Com :=
+  .seq (.assign hsv (.lit 0))
+    (.seq (.seq (.assign iv (.lit 0))
+        (.while (.lt (.var iv) (.var nNm))
+          (initBody nNm dg hp hsv tv xv yv kv iv)))
+      (.seq (.assign rc (.var nNm))
+        (.while (.lt (.lit 0) (.var rc))
+          (roundCom nNm ao aj dg ra hp hsv tv xv yv kv dv vv zv iv rc wv))))
+
+/-- **The peel budget**, in the residual's own currency: quasi-linear
+in the carrier plus the degree sum. Constants honest, not
+optimized. -/
+def KmdPeel (N ns : ℕ) : ℕ :=
+  100 * (N + ns) * (Nat.log 2 (N + ns + 1) + 1) + 100 * N + 100
 
 end Lax3Proofs.Prog

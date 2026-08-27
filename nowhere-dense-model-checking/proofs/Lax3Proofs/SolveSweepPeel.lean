@@ -742,6 +742,7 @@ theorem peel_delete_turn
   have hWTsucc : W ∈ Tset wfun (t + 1) := mem_Tset_succ.mpr (Or.inr rfl)
   obtain ⟨y, hHtWy, hAJlast, s'', hs''lt, hMTlast, hAJys, hMTys⟩ :=
     hsound W hWdead hWex (gv - 1) (by omega)
+  rw [show offF ((W : ℕ)) = offF (wfun t) from rfl] at hAJlast hMTlast hMTys
   set lastv := offF (wfun t) + (gv - 1) with hlastv
   set ysv := offF (y : ℕ) + s'' with hysv
   have hydead : y ∉ dead := hHtdead hHtWy
@@ -808,10 +809,500 @@ theorem peel_delete_turn
       (delStar H₀ u (Tset wfun (t + 1))).Adj v x ↔
         Ht.Adj v x ∧ ¬(v = u ∧ (x : ℕ) = wfun t) ∧ ¬(x = u ∧ (v : ℕ) = wfun t) :=
     fun {v x} => delStar_Tset_succ_adj
-  -- ===== the case split: is the mate slot the last slot? =====
-  refine ⟨pv, gv, AJ lastv, ysv, hMTut, hAJut, rfl, hg1, hgN, rfl, hMTlast,
-    hpvlt, hysvlt, hlastlt', hyvN, hne_ut, hwN t ht, hpvne_ysv, hpv_lo, ?_, ?_⟩
-  all_goals sorry
+  -- ===== the shared toolkit =====
+  have hexOf : ∀ {v : Fin N}, v ≠ u → v ∉ ({u} : Set (Fin N)) :=
+    fun {v} h hc => h (Set.mem_singleton_iff.mp hc)
+  have hneOf : ∀ {v : Fin N}, v ∉ ({u} : Set (Fin N)) → v ≠ u :=
+    fun {v} hv hc => hv (Set.mem_singleton_iff.mpr hc)
+  have hwdead : ∀ s (hs : s < dgu), (⟨wfun s, hwN s hs⟩ : Fin N) ∉ dead :=
+    fun s hs => ((deleteVerts_adj).mp (hwadj s hs)).2.2
+  have hltW : ∀ {c : ℕ}, c < gv → c < (G.neighborSet W).ncard :=
+    fun {c} h => lt_of_lt_of_le h hgleG
+  have hDGleU : ∀ (x : Fin N), x ∉ dead → ∀ {c : ℕ}, c < DG ((x : ℕ)) →
+      c < (G.neighborSet x).ncard := by
+    intro x hx c hc
+    by_cases hxu : x = u
+    · subst hxu
+      rw [hdgu] at hc
+      exact lt_of_lt_of_le hc hdguG
+    · exact lt_of_lt_of_le hc (hDGle x hx hxu)
+  have htG : t < (G.neighborSet u).ncard := lt_of_lt_of_le ht hdguG
+  -- the pointwise evaluators of the update functions
+  have hAJe : ∀ c, AJ' c = if c = pv then AJ lastv else AJ c := fun _ => rfl
+  have hMTe : ∀ c, MT' c = if c = ysv then pv else if c = pv then ysv else MT c :=
+    fun _ => rfl
+  have hDGe : ∀ c, DG' c = if c = wfun t then gv - 1 else DG c := fun _ => rfl
+  -- the two clause families that do not depend on the mate-slot split
+  have hDEAD : ∀ v : Fin N, v ∈ dead → DG' ((v : ℕ)) = 0 := by
+    intro v hv
+    rw [hDGe, if_neg fun hc => hWdead (hvalW hc ▸ hv)]
+    exact hdead v hv
+  have hDEG : ∀ v : Fin N, v ∉ dead → v ∉ ({u} : Set (Fin N)) →
+      DG' ((v : ℕ)) =
+        ((delStar H₀ u (Tset wfun (t + 1))).neighborSet v).ncard := by
+    intro v hv hvex
+    rw [hDGe]
+    by_cases hvW : v = W
+    · rw [if_pos (by rw [hvW]; exact hWval), hvW, hdegW']
+    · rw [if_neg fun hc => hvW (hvalW hc), hnb_ne (hneOf hvex) hvW]
+      exact hdeg v hv hvex
+  -- ===== the two main deliverables, split on whether the mate slot is
+  -- the last live slot of the target row =====
+  have hmain :
+      PAdjF (delStar H₀ u (Tset wfun (t + 1))) dead {u} offF AJ' MT' DG' ∧
+      URowF u offF wfun AJ' MT' DG' dgu (t + 1) := by
+    by_cases hsp : s' = gv - 1
+    -- ========== CASE A: the mate slot is the last slot ==========
+    · have hpl : pv = lastv := by rw [hpv, hlastv, hsp]
+      have hyuv : (y : ℕ) = (u : ℕ) := by rw [← hAJlast, ← hpl, hAJp]
+      have hysv_ut : ysv = offF ((u : ℕ)) + s'' := by rw [hysv, hyuv]
+      have hs''t : s'' = t := by
+        have h2 : MT pv = ysv := by rw [hpl]; exact hMTlast
+        rw [hysv_ut] at h2
+        rw [hMTp] at h2
+        omega
+      have hysv_t : ysv = offF ((u : ℕ)) + t := by rw [hysv_ut, hs''t]
+      -- the AJ update is the identity, the pv-branch of MT is idle
+      have hAJid : ∀ c, AJ' c = AJ c := by
+        intro c
+        rw [hAJe c]
+        by_cases hc : c = pv
+        · rw [if_pos hc, hc, hpl]
+        · rw [if_neg hc]
+      have hMTid : ∀ c, MT' c = if c = ysv then pv else MT c := by
+        intro c
+        rw [hMTe c]
+        by_cases hc : c = ysv
+        · rw [if_pos hc, if_pos hc]
+        · rw [if_neg hc, if_neg hc]
+          by_cases hcp : c = pv
+          · rw [if_pos hcp, hcp, hpl, hMTlast]
+          · rw [if_neg hcp]
+      refine ⟨⟨hDEAD, hDEG, ?_, ?_⟩, ?_⟩
+      · -- soundness
+        intro v hv hvex s hs
+        rw [hDGe] at hs
+        by_cases hvW : v = W
+        · subst hvW
+          rw [if_pos hWval] at hs
+          rw [hWval]
+          obtain ⟨x, hadjx, hAJx, s₂, hs₂, hMTx, hAJb, hMTb⟩ :=
+            hsound W hWdead hWex s (by rw [hWval, ← hgv]; omega)
+          rw [hWval] at hAJx hMTx hAJb hMTb
+          have hxdead : x ∉ dead := hHtdead hadjx
+          have hxW : x ≠ W := (SimpleGraph.Adj.ne hadjx).symm
+          have hxu : x ≠ u := by
+            intro hc
+            have heq : AJ (offF (wfun t) + s) = AJ (offF (wfun t) + s') := by
+              rw [hAJx, ← hpv, hAJp, hc]
+            have := hP.rowInj hWdead hWex
+              (show s < DG ((W : ℕ)) by rw [hWval, ← hgv]; omega)
+              (show s' < DG ((W : ℕ)) by rw [hWval, ← hgv]; omega)
+              (by rw [hWval]; exact heq)
+            omega
+          refine ⟨x, ?_, ?_, s₂, ?_, ?_, ?_, ?_⟩
+          · exact delStar_Tset_succ_adj.mpr ⟨hadjx,
+              fun hc => hWu hc.1, fun hc => hxu hc.1⟩
+          · rw [hAJid]
+            exact hAJx
+          · rw [hDGe, if_neg fun hc => hxW (hvalW hc)]
+            exact hs₂
+          · rw [hMTid, if_neg (show offF (wfun t) + s ≠ ysv from by
+              rw [hysv_t]
+              exact hrne W u hWu (hltW (by omega)) htG)]
+            exact hMTx
+          · rw [hAJid]
+            exact hAJb
+          · rw [hMTid, if_neg (show offF ((x : ℕ)) + s₂ ≠ ysv from by
+              rw [hysv_t]
+              exact hrne x u hxu (hDGleU x hxdead hs₂) htG)]
+            exact hMTb
+        · rw [if_neg fun hc => hvW (hvalW hc)] at hs
+          obtain ⟨x, hadjx, hAJx, s₂, hs₂, hMTx, hAJb, hMTb⟩ :=
+            hsound v hv hvex s hs
+          have hxdead : x ∉ dead := hHtdead hadjx
+          have hvu : v ≠ u := hneOf hvex
+          have hvG : s < (G.neighborSet v).ncard :=
+            lt_of_lt_of_le hs (hDGle v hv hvu)
+          refine ⟨x, ?_, ?_, s₂, ?_, ?_, ?_, ?_⟩
+          · exact delStar_Tset_succ_adj.mpr ⟨hadjx,
+              fun hc => hvu hc.1, fun hc => hvW (hvalW hc.2)⟩
+          · rw [hAJid]
+            exact hAJx
+          · rw [hDGe]
+            by_cases hxWv : (x : ℕ) = wfun t
+            · rw [if_pos hxWv]
+              have hs₂g : s₂ < gv := by rw [hgv, ← hxWv]; exact hs₂
+              have hne : s₂ ≠ gv - 1 := by
+                intro hc
+                have hcell : offF ((x : ℕ)) + s₂ = lastv := by
+                  rw [hxWv, hlastv, hc]
+                rw [hcell, hAJlast] at hAJb
+                exact hvu (Fin.ext ((hAJb.symm.trans hyuv)))
+              omega
+            · rw [if_neg hxWv]
+              exact hs₂
+          · rw [hMTid, if_neg (show offF ((v : ℕ)) + s ≠ ysv from by
+              rw [hysv_t]
+              exact hrne v u hvu hvG htG)]
+            exact hMTx
+          · rw [hAJid]
+            exact hAJb
+          · rw [hMTid, if_neg (show offF ((x : ℕ)) + s₂ ≠ ysv from by
+              rw [hysv_t]
+              by_cases hxu : x = u
+              · subst hxu
+                intro hc
+                have hst : s₂ = t := by omega
+                rw [hst, hAJut] at hAJb
+                exact hvW (hvalW hAJb.symm)
+              · exact hrne x u hxu (hDGleU x hxdead hs₂) htG)]
+            exact hMTb
+      · -- completeness
+        intro v hv hvex x hadj'
+        have hadjt : Ht.Adj v x := (delStar_Tset_succ_adj.mp hadj').1
+        obtain ⟨s, hslt, hAJx⟩ := hcomp v hv hvex x hadjt
+        rw [hDGe]
+        by_cases hvW : v = W
+        · subst hvW
+          rw [if_pos hWval]
+          rw [hWval] at hAJx ⊢
+          have hxu : x ≠ u := by
+            intro hc
+            exact (delStar_Tset_succ_adj.mp hadj').2.2 ⟨hc, hWval⟩
+          have hslt' : s < gv := by rw [hgv, ← hWval]; exact hslt
+          have hne : s ≠ gv - 1 := by
+            intro hc
+            have hcell : offF (wfun t) + s = pv := by
+              rw [hc, hpv, hsp]
+            rw [hcell, hAJp] at hAJx
+            exact hxu (Fin.ext hAJx.symm)
+          refine ⟨s, by omega, ?_⟩
+          rw [hAJid]
+          exact hAJx
+        · rw [if_neg fun hc => hvW (hvalW hc)]
+          refine ⟨s, hslt, ?_⟩
+          rw [hAJid]
+          exact hAJx
+      · -- the u-row clauses, advanced
+        intro s hts hsd
+        obtain ⟨hAJus, s₄, hs₄, hMTus, hAJm, hMTm⟩ := hU s (by omega) hsd
+        have hsW : wfun s ≠ wfun t := fun h => by
+          have := hwinj s hsd t ht h
+          omega
+        have hsu : u ≠ (⟨wfun s, hwN s hsd⟩ : Fin N) := (hwadj s hsd).ne
+        have hs₄G : s₄ < (G.neighborSet (⟨wfun s, hwN s hsd⟩ : Fin N)).ncard :=
+          lt_of_lt_of_le hs₄ (hDGle _ (hwdead s hsd) hsu.symm)
+        refine ⟨?_, s₄, ?_, ?_, ?_, ?_⟩
+        · rw [hAJid]
+          exact hAJus
+        · rw [hDGe, if_neg hsW]
+          exact hs₄
+        · rw [hMTid, if_neg (show offF ((u : ℕ)) + s ≠ ysv from by
+            rw [hysv_t]
+            omega)]
+          exact hMTus
+        · rw [hAJid]
+          exact hAJm
+        · rw [hMTid, if_neg (show offF (wfun s) + s₄ ≠ ysv from by
+            rw [hysv_t]
+            exact hrne ⟨wfun s, hwN s hsd⟩ u hsu.symm hs₄G htG)]
+          exact hMTm
+    -- ========== CASE B: a genuine swap ==========
+    · have hpl : pv ≠ lastv := by
+        rw [hpv, hlastv]
+        omega
+      have hyu : y ≠ u := by
+        intro hc
+        have heq : AJ lastv = AJ pv := by rw [hAJlast, hAJp, hc]
+        have := hP.rowInj hWdead hWex
+          (show gv - 1 < DG ((W : ℕ)) by rw [hWval, ← hgv]; omega)
+          (show s' < DG ((W : ℕ)) by rw [hWval, ← hgv]; omega)
+          (by exact heq)
+        exact hsp this.symm
+      have hyuv : (y : ℕ) ≠ (u : ℕ) := fun h => hyu (Fin.ext h)
+      refine ⟨⟨hDEAD, hDEG, ?_, ?_⟩, ?_⟩
+      · -- soundness
+        intro v hv hvex s hs
+        rw [hDGe] at hs
+        by_cases hvW : v = W
+        · subst hvW
+          rw [if_pos hWval] at hs
+          rw [hWval]
+          by_cases hss : s = s'
+          · -- the vacated slot now holds the moved copy
+            subst hss
+            refine ⟨y, ?_, ?_, s'', ?_, ?_, ?_, ?_⟩
+            · exact delStar_Tset_succ_adj.mpr ⟨hHtWy,
+                fun hc => hWu hc.1, fun hc => hyu hc.1⟩
+            · rw [hAJe, if_pos (show offF (wfun t) + s = pv from by
+                rw [hpv])]
+              exact hAJlast
+            · rw [hDGe, if_neg fun hc => hyW (hvalW hc)]
+              exact hs''lt
+            · rw [hMTe,
+                if_neg (show offF (wfun t) + s ≠ ysv from by
+                  rw [hpv] at hs ⊢
+                  exact fun hc => hpvne_ysv (hpv.trans (hpv ▸ hc))),
+                if_pos (show offF (wfun t) + s = pv from by rw [hpv])]
+              exact hysv
+            · rw [hAJe, if_neg (show offF ((y : ℕ)) + s'' ≠ pv from
+                fun hc => hpvne_ysv ((hysv.trans hc.symm).symm).symm)]
+              exact hAJys
+            · rw [hMTe, if_pos (show offF ((y : ℕ)) + s'' = ysv from hysv.symm)]
+              exact hpv.symm
+          · -- an untouched slot of the target row
+            obtain ⟨x, hadjx, hAJx, s₂, hs₂, hMTx, hAJb, hMTb⟩ :=
+              hsound W hWdead hWex s (by rw [hWval, ← hgv]; omega)
+            rw [hWval] at hAJx hMTx hAJb hMTb
+            have hxdead : x ∉ dead := hHtdead hadjx
+            have hxW : x ≠ W := (SimpleGraph.Adj.ne hadjx).symm
+            have hxu : x ≠ u := by
+              intro hc
+              apply hss
+              refine hP.rowInj hWdead hWex
+                (show s < DG ((W : ℕ)) by rw [hWval, ← hgv]; omega)
+                (show s' < DG ((W : ℕ)) by rw [hWval, ← hgv]; omega) ?_
+              rw [hWval, hAJx, ← hpv, hAJp, hc]
+            have hxy : x ≠ y := by
+              intro hc
+              have heq : AJ (offF (wfun t) + s) = AJ (offF (wfun t) + (gv - 1)) := by
+                rw [hAJx, hc, ← hlastv, hAJlast]
+              have := hP.rowInj hWdead hWex
+                (show s < DG ((W : ℕ)) by rw [hWval, ← hgv]; omega)
+                (show gv - 1 < DG ((W : ℕ)) by rw [hWval, ← hgv]; omega)
+                (by rw [hWval]; exact heq)
+              omega
+            refine ⟨x, ?_, ?_, s₂, ?_, ?_, ?_, ?_⟩
+            · exact delStar_Tset_succ_adj.mpr ⟨hadjx,
+                fun hc => hWu hc.1, fun hc => hxu hc.1⟩
+            · rw [hAJe, if_neg (show offF (wfun t) + s ≠ pv from by
+                rw [hpv]; omega)]
+              exact hAJx
+            · rw [hDGe, if_neg fun hc => hxW (hvalW hc)]
+              exact hs₂
+            · rw [hMTe,
+                if_neg (show offF (wfun t) + s ≠ ysv from by
+                  rw [hysv]
+                  exact hrne W y hyW.symm (hltW (by omega)) hs''G),
+                if_neg (show offF (wfun t) + s ≠ pv from by rw [hpv]; omega)]
+              exact hMTx
+            · rw [hAJe, if_neg (show offF ((x : ℕ)) + s₂ ≠ pv from by
+                rw [hpv, ← hWval]
+                exact hrne x W hxW (hDGleU x hxdead hs₂) hs'G)]
+              exact hAJb
+            · rw [hMTe,
+                if_neg (show offF ((x : ℕ)) + s₂ ≠ ysv from by
+                  rw [hysv]
+                  exact hrne x y hxy (hDGleU x hxdead hs₂) hs''G),
+                if_neg (show offF ((x : ℕ)) + s₂ ≠ pv from by
+                  rw [hpv, ← hWval]
+                  exact hrne x W hxW (hDGleU x hxdead hs₂) hs'G)]
+              exact hMTb
+        · -- a row away from the target
+          rw [if_neg fun hc => hvW (hvalW hc)] at hs
+          obtain ⟨x, hadjx, hAJx, s₂, hs₂, hMTx, hAJb, hMTb⟩ :=
+            hsound v hv hvex s hs
+          have hxdead : x ∉ dead := hHtdead hadjx
+          have hvu : v ≠ u := hneOf hvex
+          have hvG : s < (G.neighborSet v).ncard :=
+            lt_of_lt_of_le hs (hDGle v hv hvu)
+          by_cases hmoved : (v : ℕ) = (y : ℕ) ∧ s = s''
+          · -- the partner of the moved copy: its mate follows the move
+            obtain ⟨hvy, hss''⟩ := hmoved
+            have hcell : offF ((v : ℕ)) + s = ysv := by
+              rw [hysv, hvy, hss'']
+            have hxWv : (x : ℕ) = wfun t := by
+              have h1 : AJ ysv = (x : ℕ) := by rw [← hcell]; exact hAJx
+              rw [hAJys] at h1
+              rw [← h1, hWval]
+            refine ⟨x, ?_, ?_, s', ?_, ?_, ?_, ?_⟩
+            · exact delStar_Tset_succ_adj.mpr ⟨hadjx,
+                fun hc => hvu hc.1, fun hc => hvW (hvalW hc.2)⟩
+            · rw [hAJe, if_neg (show offF ((v : ℕ)) + s ≠ pv from by
+                rw [hcell]
+                exact fun hc => hpvne_ysv hc.symm)]
+              exact hAJx
+            · rw [hDGe, hxWv, if_pos rfl]
+              have : s' < gv := hs'g
+              omega
+            · rw [hMTe, if_pos hcell]
+              rw [hxWv, hpv]
+            · rw [hxWv, hAJe, if_pos (show offF (wfun t) + s' = pv from hpv.symm)]
+              rw [hAJlast, ← hAJys, hcell]
+              exact hAJx.symm ▸ (by rw [← hcell]; exact hAJx)
+            · rw [hxWv, hMTe,
+                if_neg (show offF (wfun t) + s' ≠ ysv from
+                  fun hc => hpvne_ysv (hpv.trans hc)),
+                if_pos (show offF (wfun t) + s' = pv from hpv.symm)]
+              rw [hcell]
+          · -- everything about this slot is untouched
+            refine ⟨x, ?_, ?_, s₂, ?_, ?_, ?_, ?_⟩
+            · exact delStar_Tset_succ_adj.mpr ⟨hadjx,
+                fun hc => hvu hc.1, fun hc => hvW (hvalW hc.2)⟩
+            · rw [hAJe, if_neg (show offF ((v : ℕ)) + s ≠ pv from by
+                rw [hpv, ← hWval]
+                exact hrne v W hvW hvG hs'G)]
+              exact hAJx
+            · rw [hDGe]
+              by_cases hxWv : (x : ℕ) = wfun t
+              · rw [if_pos hxWv]
+                have hs₂g : s₂ < gv := by rw [hgv, ← hxWv]; exact hs₂
+                have hne : s₂ ≠ gv - 1 := by
+                  intro hc
+                  have hcell : offF ((x : ℕ)) + s₂ = lastv := by
+                    rw [hxWv, hlastv, hc]
+                  rw [hcell, hAJlast] at hAJb
+                  rw [hcell, hMTlast] at hMTb
+                  refine hmoved ⟨hAJb.symm, ?_⟩
+                  rw [hysv] at hMTb
+                  rw [← hAJb] at hMTb
+                  omega
+                omega
+              · rw [if_neg hxWv]
+                exact hs₂
+            · rw [hMTe,
+                if_neg (show offF ((v : ℕ)) + s ≠ ysv from by
+                  by_cases hvy : (v : ℕ) = (y : ℕ)
+                  · rw [hysv, hvy]
+                    intro hc
+                    exact hmoved ⟨hvy, by omega⟩
+                  · rw [hysv]
+                    exact hrne v y (fun h => hvy (congrArg Fin.val h)) hvG hs''G),
+                if_neg (show offF ((v : ℕ)) + s ≠ pv from by
+                  rw [hpv, ← hWval]
+                  exact hrne v W hvW hvG hs'G)]
+              exact hMTx
+            · rw [hAJe, if_neg (show offF ((x : ℕ)) + s₂ ≠ pv from by
+                by_cases hxWv : (x : ℕ) = wfun t
+                · rw [hxWv, hpv]
+                  intro hc
+                  have hs₂s : s₂ = s' := by omega
+                  have hcell : offF ((x : ℕ)) + s₂ = pv := by
+                    rw [hxWv, hpv, hs₂s]
+                  rw [hcell, hAJp] at hAJb
+                  exact hvu (Fin.ext hAJb.symm)
+                · rw [hpv, ← hWval]
+                  exact hrne x W (fun h => hxWv (by rw [h]; exact hWval))
+                    (hDGleU x hxdead hs₂) hs'G)]
+              exact hAJb
+            · rw [hMTe,
+                if_neg (show offF ((x : ℕ)) + s₂ ≠ ysv from by
+                  by_cases hxyv : (x : ℕ) = (y : ℕ)
+                  · rw [hysv, hxyv]
+                    intro hc
+                    have hs₂s : s₂ = s'' := by omega
+                    have hcell : offF ((x : ℕ)) + s₂ = ysv := by
+                      rw [hysv, hxyv, hs₂s]
+                    rw [hcell, hAJys] at hAJb
+                    exact hvW (hvalW (by rw [← hAJb]; exact hWval.symm ▸ rfl))
+                  · rw [hysv]
+                    exact hrne x y (fun h => hxyv (congrArg Fin.val h))
+                      (hDGleU x hxdead hs₂) hs''G),
+                if_neg (show offF ((x : ℕ)) + s₂ ≠ pv from by
+                  by_cases hxWv : (x : ℕ) = wfun t
+                  · rw [hxWv, hpv]
+                    intro hc
+                    have hs₂s : s₂ = s' := by omega
+                    have hcell : offF ((x : ℕ)) + s₂ = pv := by
+                      rw [hxWv, hpv, hs₂s]
+                    rw [hcell, hAJp] at hAJb
+                    exact hvu (Fin.ext hAJb.symm)
+                  · rw [hpv, ← hWval]
+                    exact hrne x W (fun h => hxWv (by rw [h]; exact hWval))
+                      (hDGleU x hxdead hs₂) hs'G)]
+              exact hMTb
+      · -- completeness
+        intro v hv hvex x hadj'
+        have hadjt : Ht.Adj v x := (delStar_Tset_succ_adj.mp hadj').1
+        obtain ⟨s, hslt, hAJx⟩ := hcomp v hv hvex x hadjt
+        rw [hDGe]
+        by_cases hvW : v = W
+        · subst hvW
+          rw [if_pos hWval]
+          rw [hWval] at hAJx ⊢
+          have hxu : x ≠ u := by
+            intro hc
+            exact (delStar_Tset_succ_adj.mp hadj').2.2 ⟨hc, hWval⟩
+          have hslt' : s < gv := by rw [hgv, ← hWval]; exact hslt
+          have hss' : s ≠ s' := by
+            intro hc
+            have hcell : offF (wfun t) + s = pv := by rw [hc, hpv]
+            rw [hcell, hAJp] at hAJx
+            exact hxu (Fin.ext hAJx.symm)
+          by_cases hslast : s = gv - 1
+          · -- the copy moved into the vacated slot
+            refine ⟨s', by omega, ?_⟩
+            rw [hAJe, if_pos (show offF (wfun t) + s' = pv from hpv.symm)]
+            rw [← hlastv] at hAJx
+            rw [hslast] at hAJx
+            exact hAJx
+          · refine ⟨s, by omega, ?_⟩
+            rw [hAJe, if_neg (show offF (wfun t) + s ≠ pv from by
+              rw [hpv]; omega)]
+            exact hAJx
+        · rw [if_neg fun hc => hvW (hvalW hc)]
+          have hvu : v ≠ u := hneOf hvex
+          have hvG : s < (G.neighborSet v).ncard :=
+            lt_of_lt_of_le hslt (hDGle v hv hvu)
+          refine ⟨s, hslt, ?_⟩
+          rw [hAJe, if_neg (show offF ((v : ℕ)) + s ≠ pv from by
+            rw [hpv, ← hWval]
+            exact hrne v W hvW hvG hs'G)]
+          exact hAJx
+      · -- the u-row clauses, advanced
+        intro s hts hsd
+        obtain ⟨hAJus, s₄, hs₄, hMTus, hAJm, hMTm⟩ := hU s (by omega) hsd
+        have hsW : wfun s ≠ wfun t := fun h => by
+          have := hwinj s hsd t ht h
+          omega
+        have hsu : u ≠ (⟨wfun s, hwN s hsd⟩ : Fin N) := (hwadj s hsd).ne
+        have hs₄G : s₄ < (G.neighborSet (⟨wfun s, hwN s hsd⟩ : Fin N)).ncard :=
+          lt_of_lt_of_le hs₄ (hDGle _ (hwdead s hsd) hsu.symm)
+        have hsdgu : s < (G.neighborSet u).ncard := lt_of_lt_of_le hsd hdguG
+        refine ⟨?_, s₄, ?_, ?_, ?_, ?_⟩
+        · rw [hAJe, if_neg (show offF ((u : ℕ)) + s ≠ pv from by
+            rw [hpv, ← hWval]
+            exact hrne u W huW hsdgu hs'G)]
+          exact hAJus
+        · rw [hDGe, if_neg hsW]
+          exact hs₄
+        · rw [hMTe,
+            if_neg (show offF ((u : ℕ)) + s ≠ ysv from by
+              rw [hysv]
+              exact hrne u y hyu.symm hsdgu hs''G),
+            if_neg (show offF ((u : ℕ)) + s ≠ pv from by
+              rw [hpv, ← hWval]
+              exact hrne u W huW hsdgu hs'G)]
+          exact hMTus
+        · rw [hAJe, if_neg (show offF (wfun s) + s₄ ≠ pv from by
+            rw [hpv, ← hWval]
+            exact hrne ⟨wfun s, hwN s hsd⟩ W
+              (fun h => hsW (by rw [← congrArg Fin.val h]; exact hWval.symm ▸ rfl))
+              hs₄G hs'G)]
+          exact hAJm
+        · rw [hMTe,
+            if_neg (show offF (wfun s) + s₄ ≠ ysv from by
+              by_cases hsy : wfun s = (y : ℕ)
+              · rw [hysv, hsy]
+                intro hc
+                have hs₄s : s₄ = s'' := by omega
+                have hcell : offF (wfun s) + s₄ = ysv := by
+                  rw [hysv, hsy, hs₄s]
+                rw [hcell, hAJys] at hAJm
+                exact hne_ut (by rw [← hAJm]; exact hWval.symm ▸ rfl)
+              · rw [hysv]
+                exact hrne ⟨wfun s, hwN s hsd⟩ y
+                  (fun h => hsy (congrArg Fin.val h)) hs₄G hs''G),
+            if_neg (show offF (wfun s) + s₄ ≠ pv from by
+              rw [hpv, ← hWval]
+              exact hrne ⟨wfun s, hwN s hsd⟩ W
+                (fun h => hsW (by rw [← congrArg Fin.val h]; exact hWval.symm ▸ rfl))
+                hs₄G hs'G)]
+          exact hMTm
+  exact ⟨pv, gv, AJ lastv, ysv, hMTut, hAJut, rfl, hg1, hgN, rfl, hMTlast,
+    hpvlt, hysvlt, hlastlt', hyvN, hne_ut, hwN t ht, hpvne_ysv, hpv_lo,
+    hmain.1, hmain.2⟩
 
 end DeleteTurn
 
