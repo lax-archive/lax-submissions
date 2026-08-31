@@ -2,6 +2,7 @@ import Lax3.NowhereDenseSplitter
 import Lax12.NowhereDenseUQW
 import Lax3Proofs.SplitterBasics
 import Lax3Proofs.WalkDistance
+import Lax3Proofs.DriverBatchCanon
 import Mathlib.Data.Finset.Sort
 
 /-!
@@ -20,8 +21,10 @@ separator bound `s`. The bounds are `ℓ = N (2·s + 2)` rounds and
 # The strategy
 
 Splitter maintains, towards every vertex Connector has played, a walk of
-length at most `r` — chosen once and for all by `pathSet`, in the arena
-that earlier round was played in — and in each round isolates the
+length at most `r` — the canonical gradient walk `pathSet`, determined
+once and for all in the arena that earlier round was played in
+(`Lax3Proofs.BatchCanon`, F6c12p: choice-free, so a machine pass can be
+proved to store it) — and in each round isolates the
 vertices of those walks that are still in the current ball, together with
 Connector's new vertex (`genSet`, cut down to the ball by `batch`). That
 is one vertex plus one path of at most `r + 1` vertices per round played,
@@ -142,37 +145,37 @@ theorem eq_of_mem_ball_of_isolated (hv : ∀ z, ¬ G.Adj v z) (hx : x ∈ ball G
   | nil => rfl
   | cons h _ => exact absurd h (hv _)
 
-/-! ### The strategy's chosen paths -/
+/-! ### The strategy's canonical paths -/
 
-open Classical in
-/-- A chosen short walk from `u` to `v`, as the set of its vertices: the
-support of some walk of length at most `r` if there is one, and the empty
-set otherwise. This is the path the strategy maintains towards an earlier
-Connector vertex. -/
+variable [Fintype V] [LinearOrder V]
+
+/-- The canonical short walk from `u` to `v`, as the set of its
+vertices: the support of `Lax3Proofs.BatchCanon.pathList` — the
+min-parent gradient walk of the canonical truncated distance table —
+when `v` is within distance `r` of `u`, and the empty set otherwise.
+This is the path the strategy maintains towards an earlier Connector
+vertex. It is choice-free and extensionally determined (F6c12p), which
+is what lets a machine pass be proved to store exactly this set. -/
 noncomputable def pathSet (G : SimpleGraph V) (r : ℕ) (u v : V) : Set V :=
-  if h : WithinDist G r u v then {z | z ∈ (withinDist_iff.mp h).choose.support} else ∅
+  {z | z ∈ Lax3Proofs.BatchCanon.pathList G r u v}
 
-/-- The chosen path is the support of a genuine walk of length at most
-`r` whenever there is one. -/
+/-- The canonical path is the support of a genuine walk of length at
+most `r` whenever there is one. -/
 theorem pathSet_spec (h : WithinDist G r u v) :
-    ∃ p : G.Walk u v, p.length ≤ r ∧ pathSet G r u v = {z | z ∈ p.support} := by
-  classical
-  exact ⟨(withinDist_iff.mp h).choose, (withinDist_iff.mp h).choose_spec,
-    by simp only [pathSet, dif_pos h]⟩
+    ∃ p : G.Walk u v, p.length ≤ r ∧ pathSet G r u v = {z | z ∈ p.support} :=
+  Lax3Proofs.BatchCanon.pathList_spec h
 
-/-- The chosen path has at most `r + 1` vertices. -/
+/-- The canonical path has at most `r + 1` vertices. -/
 theorem pathSet_ncard_le (G : SimpleGraph V) (r : ℕ) (u v : V) :
     (pathSet G r u v).ncard ≤ r + 1 := by
   classical
-  by_cases h : WithinDist G r u v
-  · obtain ⟨p, hp, hset⟩ := pathSet_spec h
-    have hcoe : {z | z ∈ p.support} = (p.support.toFinset : Set V) := by ext z; simp
-    rw [hset, hcoe, Set.ncard_coe_finset]
-    calc p.support.toFinset.card ≤ p.support.length := List.toFinset_card_le _
-      _ = p.length + 1 := p.length_support
-      _ ≤ r + 1 := by omega
-  · have : pathSet G r u v = ∅ := by simp only [pathSet, dif_neg h]
-    simp [this]
+  have hcoe : pathSet G r u v
+      = ((Lax3Proofs.BatchCanon.pathList G r u v).toFinset : Set V) := by
+    ext z
+    simp [pathSet]
+  rw [hcoe, Set.ncard_coe_finset]
+  exact le_trans (List.toFinset_card_le _)
+    (Lax3Proofs.BatchCanon.pathList_length_le G r u v)
 
 end Generic
 

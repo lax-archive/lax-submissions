@@ -53,10 +53,228 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 | F6c10a | `CentrePrepAll` + `CentreReadAll` | done (part) | w19 | 945aeef | the seams PROVED: `unrollAux_succ_of_ne_bot` (recursive table = `RowEval` after the leaf guard), `tablePartial_succ`, `bcExprA` full evaluation (compiled row = `RowEval`'s bit under `1 < B`), atom membership in `levelFml (j+1)`; `centreStepAll_of_childLoad_rows` concludes verbatim `CentreStepAll` from TWO machine residuals — **`ChildLoadAll`** (restrict→bfs 2R→supports→profilesMS→isolate chain + glue, delivering the windowed contract at `Impl.ofArena childArena` with `htabF (j+1)`, level-`j` names untouched) and **`ReadRowsAll`** (write exactly the centre-`u` rows at `RowEval`'s bits). F7 notes: channel content per child arena; descriptor tower guarded to `j+1 ≤ depth`. Remainder → F6c11 |
 | F6c10b | `CoverAllIn` + `RootCsrLoadAll` | done (part) | w20 | d7f22ca | **`RootCsrLoadAll` DISCHARGED outright** (`rootCsrLoadAll_csrLoadCom`: row-stamped mark-array dedup, O(n+m) at `70|x|+20`; scope findings — `adj_iff` is an iff ⇒ no self-loops, both directions present, dedup only). `CoverAllIn` split at its own seam: `coverAllIn_of_order_sweep` verbatim from **`CovOrderIn`** (rank array of `ord`'s order) + **`CovSweepIn`** (rank array → `CoverStageSpec` post). Findings: ordering must be computed inside `covC`; **`timedGreedyRoutine` NOT machine-matchable** (choice-picked `elimRank`) — headline binds `∃ ord`, F7 instantiates a machine-defined min-degree peel (attains `elimBound`, sInf clauses stay provable; residuals parametric in `ord`); peeled BFS must be a frontier-queue over a **deletable adjacency structure** (full-pass rounds bust `sweepCharge`). Remainder → F6c11 |
 | F6c11 | the four machine passes | done (part) | w21+w22 | a2e8b61 | w21: `machChild_eq_ofArena` + `ChildLoadParts` + `htabF` canonicity kit + readback bit bridges (see w21 note in log). w22: `DelAdjSt` (deletable adjacency, full bridge algebra; deletion priced at CURRENT degree inside `sweepCharge`), `covSweepIn_of_build_peel` verbatim from **`CovAdjBuildIn`**+**`CovPeelIn`**; **`mdOrderingRoutine R`** — the machine ordering (min-degree peel, `mdRank` replacing the choice-picked `elimRank`) with the FULL six-clause `AugChainData` proved (`mdRank_backDegLE` resolves clauses 5–6: optimal elimination of the AUGMENTED graph); `covOrderIn_of_aug_mdPeel` verbatim from **`CovAugAdjIn`**+**`CovMdPeelIn`**. Remaining SIX program residuals → F6c12 |
-| F6c12 | the six machine programs | ready | — | — | per-centre: (1) `ChildLoadPartsAll` (`SolveMachPrep`: stage composition + glue at `machChild`), (2) `ReadRowsAll` (`SolveSegRead`: programs+frames only — bit bridges landed); cover: (3) `CovAdjBuildIn` (O(N+ns) build + rank inversion into `OrdArr`), (4) `CovPeelIn` (queue-BFS peel over `DelAdjSt` to `CtrArr`/`ClusterCsr`; `Lib.Queue`), (5) `CovAugAdjIn` (augmentation rounds leaving `DelAdjSt` of the augmented graph — E12's priced obligation), (6) `CovMdPeelIn` (min-degree peel to `RankArr` of `mdOrderingRoutine`); then KB pin + `KsChargeBridge`, then F7 (repin `ord := mdOrderingRoutine R`, owes `time` as before — F5's `coverOrderingTime_of_nowhereDense` used `timedGreedyRoutine`, check transfer or rerun at `mdOrderingRoutine`) |
+| F6c12 | the six machine programs | wip | w60 | — | per-centre: (1) `ChildLoadPartsAll` (`SolveMachPrep`: stage composition + glue at `machChild`) — **waits on F6c12p** (the batch is `Classical.choose`-picked, see row below), (2) `ReadRowsAll` — **DONE** (w60 worker, landed with this row's edit): `SolveSegReadRun.lean` (~1540 lines), headline `readRowsAll_of` verbatim + a compile-time consumer-fit `example` through `centreReadAll_of_rows`; axioms = the landed `topScatterAll_of` baseline; extra hypotheses all F7-suppliable kinds with precedents (hq, depth-guarded word bounds, Scr length clauses, name freshness incl. `hccm_tab`); budget `readSegK` closed-form (atoms × (column copy + scatterK) + cluster-row states × row-eval); cover: (3) `CovAdjBuildIn` — **DONE** (w60 worker, landed with this row's edit): `SolveSweepBuild.lean` (2213 lines), headline `covAdjBuildIn_bldCom` verbatim, `Sbd := bldSbd` length-only, `Spl` universal via the `hSplT` transport; owner-advancing CSR scan places both directed copies and crosses the mates in one step (no row-sortedness assumed — `GraphCsr` promises none); budget `70·ns + 50·N + 30`; axioms = the landed consumer's set, (4) `CovPeelIn` (queue-BFS peel over `DelAdjSt` to `CtrArr`/`ClusterCsr`; rows must land **ascending** per `ClusterCsr` — emit in discovery order, then one global two-pass stable counting sort, never per-centre sorting) — **w60**, (5) `CovAugAdjIn` (augmentation rounds leaving `DelAdjSt` of the augmented graph; each `mdChain` round embeds a full `mdRank (fratGraph ·)` peel, so this **consumes (3)+(6)'s kits — w62**), (6) `CovMdPeelIn` — **DONE** (w60 worker, landed with this row's edit): `SolveSweepMdPeel.lean` (~4130 lines), headline `covMdPeelIn_mdPeelCom` verbatim at the lazy-heap route (first valid pop = `minDegVert` via exactly-one-witness-entry + encoded-key minimality; ranks down from N−1, `mdPerm_val` definitional); **parametric core `mdPeelCore_spec`** exported for the aug leaf (any F, any names, `N²+4N+4 ≤ B`); budget `KmdPeel N ns = 100(N+ns)(log₂(N+ns+1)+1)+100N+100` with `nsOf_eq_sum_ncard` = the pinned nsAug currency; hypotheses hq + one Nodup bundle + hSswT; axioms = the landed consumer's set. Supervisor corrections at landing (the w13 pattern): `rowBody`→`mpRowBody` (collided with SolveSegReadRun's), `getD_set_self/ne` privatized (BUILD's are private), and the two Run-length lemmas relocated from `_root_.Lax13Proofs.*` into the package namespace (`bigStep_length_arrs`/`spec_arrLengths` — the audit rejects foreign-namespace decls); then KB pin + `KsChargeBridge`, then F7. NOTE: `SolveSweepAdj` §3's free-standing `AdjBuildIn`/`AdjDeleteIn` contracts are **defective as stated** (quantify over every `N` with no relation to `B`; IMP+ has no length primitive) — the six residuals do not consume them; workers bypass, sizes come from the arena's named cells |
+| F6c12p | canonicalize the batch (the ⟨D⟩ repair) | done | w61 | 9c66491 | **Finding (statement gap, the 7th read-the-theorem instance)**: `DriverArena.batchRoot = SplitterWin.genSet`, whose `pathSet` is `(withinDist_iff.mp h).choose.support` — a choice-picked walk no program can be proved to output; `childArena.G = deleteVerts preG (range batchFn)` and `childCol` both depend on it, so residual (1) is undischargeable as reachable-from-machine. §5 l.19 always meant *recorded* supports. Governing obligation: `DriverCorrect:487`'s `hwalk` — per round `er ∈ hist` with `WithinDist er.arena (2R) er.vtx (A.up u)`, a walk **in `er.arena` (the round graph)** whose `Ximg`-trace lies in the batch; current-graph or `preG`-graph walks do NOT discharge it as stated (round graphs are supersets — walks don't transport down). Two candidate repairs, worker investigates then implements: **(α)** repin `SplitterWin.pathSet` itself to the canonical min-index-parent gradient walk (needs `[LinearOrder V]`; `pathSet_spec`/`ncard_le`/`genSet` statements unchanged, consumers re-elaborate verbatim; machine later reads per-level persisted 2R ball/parent tables of each round graph — mirrors the landed `ballDist`/`descendTab` w21 kit, `up` maps are StrictMono by the sorted `setEquiv` chain so min-index parents commute with the root renaming); **(α′)** same but first check whether `reachedS_descend`'s proof can take walks in a graph between current and round (hypothesis-weakening = theorem-strengthening, legitimate) — if yes the channel's own `preG` walks serve and the machine side is free; **(A)** record the supports in the object (a `chan` field on `Arena`, `Inv` clause for round-graph validity — heavier cascade through E9/E10 arena constructions; the machine `MArena` already has `chan`). **LANDED as (α)+: canonical min-parent gradient `pathSet` (new kit `DriverBatchCanon`, mirror of `Prog.ballDist`/`Impl.parents`/`Impl.descend`, with `IsBallTable` uniqueness and the StrictMono transport `pathList_map`) AND the channel records the graph the walks live in** — `childArena.hist` pushes `(A.up u, histGraph)`, `histGraph = deleteVerts (map A.up A.G) (A.up '' cluster)ᶜ = map childUp preG` (§5 l.17's `B₀`; `histGraph_eq_map`); `Inv`'s trace clause pairs rounds with `(e.vtx, deleteVerts e.arena e.resᶜ)` + the path-closure fact (every current carrier vertex within 2R of the connector THERE — E1's `exists_walk_support_subset_fiber` at birth), `hwalk` discharged via `pathSet_spec` + `Walk.transfer`. (α′) refuted in the object (recorded connectors are edge-isolated in later arenas — `selfS`/`isolatedS`); full-round-graph (α) refuted on cost (per-child carrier-wide BFS = D6's rejected shape). Five consumed statements byte-identical; games untouched; `Unroll` verbatim; full build green, zero sorry, key theorems at bare `[propext, Classical.choice, Quot.sound]`. Machine story for ChildLoadPartsAll: batch = channel row u (+u), new column = one BFS+gradient in `B₀`, old columns filter-down through restrict; owes the mechanical mirrors `Prog.ballDist = cdist`, `Impl.descend = cdescend`. Doc drift deferred to that leaf: SolveMachPrep §2's per-round-recompute narrative, SolveMatFrame:72's `S.R` cap prose |
 | F7 | discharge the endorsed axiom | waiting | — | — | needs F6c10a+b, then KB pin + `KsChargeBridge`; `Adm` must be `Inv`-based (w17 finding); then: `Adm` at the run tree (`mkSetup_memLeaf_eq_bot`), instantiate `SolveSpec` via `solveSpec_closed`, `q`/`c` per `hspan`, `temps ≥` boolean depth, `T x := L.const·mcK`, reconcile `Ks` with `exists_mcChargeMS_T`, ∃-close with the `conclusion:` header |
 
 ## Campaign log
+
+### 2026-08-27 ~11:30Z — RESUME POINT 2: wrap-up at the second quota wall
+
+Jan ordered all workers to wrap up NOW; all three parked at green,
+sorry-free, checkpoint-pushed states with STATE-OF-THE-LEAF headers in
+their files. Landed today in total: **F6c12p + four of six program
+residuals** (ReadRowsAll `60ac2ab`, CovAdjBuildIn `c929499`,
+CovMdPeelIn `c8fba66`; F6c12p `9c66491`+`a0c505e`). The three parks:
+
+- **CovPeelIn** (`worktree-w61`, `SolveSweepPeel.lean`, 4833 lines,
+  0 sorries): the per-rank sweep step is fully PROVED
+  (`peelStepB_spec`: SwInv i → SwInv (i+1) at `64·peelDeg + 187·|fibre|
+  + 57`, amortized BFS pop loop, O(touched) reset, first-hit = centre
+  via `1 ≤ R` [hypothesis `hr`]). Remains: `peelInitB` prologue, the
+  rank loop (tail-sum potential, mirror `centreLoop_of_step`), regroup
+  P1–P7 to `CtrArr`/`ClusterCsr` (`cntBelow`/`restrictEmb` counting
+  lemmas already proved), `peelK ≤ c₁·sweepCharge + …` bridge, headline.
+  ~One worker-session.
+- **ChildLoadPartsAll** (`worktree-w62`, `SolveMachPrepRun.lean`,
+  ~4860 lines, 0 sorries): **the htabF-pinning crux is RESOLVED**
+  (`hpin`/`hpinE`/`hAdmLen`, F7-suppliable; mirror-seam lemmas
+  `cdist_eq_ballDist`/`cdescend_eq_descend` proved in-file);
+  `childLoadParts_of` concludes verbatim `ChildLoadParts` conditional on
+  ONE flagged non-F7 hypothesis **`htail`** — the
+  supports→profiles→colWrite→isolate tail as a Spec from the proved
+  mid-state `PrepMid`; every ingredient is in-file, composition work
+  only. Then the `ChildLoadPartsAll` headline (mirror `readRowsAll_of`)
+  + consumer example. ⚠ Ruling needed (Jan/supervisor): `prepK` carries
+  an honest `11N+6` per-centre rank-zeroing term (Σ = N² per level)
+  because restrict's clean-scratch pre can't come from length-only Scr;
+  removing it needs a cleanliness clause through `CLInv` (landed-file
+  change). Decide absorb-vs-amend at the KB bridge.
+- **CovAugAdjIn** (`worktree-w63`, `SolveSweepAug.lean`, 1226 lines,
+  0 sorries, Opus): foundation only — bit/scan calculus, the
+  edge-placement bridge `agDelAdjSt_of_part`, nine program defs, name
+  kit. ⚠ Design flag (supervisor): it pinned a DENSE N×N matrix
+  representation — Θ(N²) per round, the same budget shape that broke
+  the opus lineage; RE-SCOPE to in-list demand enumeration
+  (`Σ_w indeg(w)²`) before resuming; §1–§3 and the builder bridge
+  survive that change. Discoveries recorded in its header (arc
+  direction, FratLink symmetry, three accumulators, branchless
+  comparisons, `Sag` must supply the four output allocations).
+
+Resume order when quota returns: (1) finish PREP (htail + headline —
+nearest), (2) finish PEEL, (3) re-scope + finish AUG, (4) KB pin +
+uniform bridge + `exists_mcChargeMS_T` at `mdOrderingRoutine` (fold in
+the prepK-N² ruling), (5) F7 (Fable). Workers per Jan: Opus for the
+scaffolded finishes, same-session agent ids in RESUME POINT 1 below
+(PEEL/PREP) — AUG's Opus agent parked at a natural interface, a fresh
+Opus worker from the file header is equally fine.
+
+### 2026-08-27 ~07:10Z — RESUME POINT: quota at 95%, freeze imminent
+
+Jan's standing directives at the wall: **no new workers** (only existing
+ones finish; correction rounds to the same agents are fine), worker
+dispatches default to **Opus** when new ones are next authorized (Fable
+only for supervision, a leaf Opus fails twice, and the F7 assembly).
+
+**Landed and pushed** (origin/main = the session branch
+`claude/ndmc-continuation-6eulbi`, tip `c929499`): F6c12p (`9c66491` +
+root-registration `a0c505e`), ReadRowsAll (`60ac2ab`), CovAdjBuildIn
+(`c929499`). Three of six F6c12 program residuals remain, all in flight
+at the freeze, every file checkpoint-pushed on its worktree branch:
+
+- **CovPeelIn** — `worktree-w61`,
+  `…/w61/…/Lax3Proofs/SolveSweepPeel.lean`, 3768 lines, 1 sorry,
+  last active 06:57Z. Late phase (seed/init specs after the sweep
+  invariant machinery); headline not yet stated.
+- **CovMdPeelIn** — `worktree-w61`, `…/SolveSweepMdPeel.lean`,
+  4124 lines, **0 sorries**, active 07:07Z. Likely nearest its gates
+  (heap kit + invariant + potential all present).
+- **ChildLoadPartsAll** — `worktree-w62`, `…/SolveMachPrepRun.lean`,
+  3472 lines, 1 sorry, active 07:07Z. Stage composition + write-set
+  lemmas present; the htabF-pinning seam appeared to resolve without a
+  design round (unconfirmed until its report).
+
+**To resume, same session** (freeze-then-thaw, like last night): the
+three workers resume via SendMessage to their agent ids — PEEL
+`a9fef27b57d0825b7`, MDPEEL `ab66a9d6acecb7e7e`, PREP
+`a3a22ad1d408b4ea6` — message: "resume your leaf from your file's
+current on-disk state; finish to your packet's gates; report." A
+supervisor wake (trig_0195uDseGWiQ3moMJsVvKeQ8, 07:57Z) queues and
+delivers on thaw; its instructions carry the no-new-workers directive.
+
+**To resume, fresh session**: cold-start per `/ndmc` (this ledger +
+`git log`), fetch the three worktree branches, and for each unfinished
+leaf either finish it in-session or dispatch ONE worker (Opus) per leaf
+with: the file's current state as the starting point, the residual's
+def location (F6c12 row above), the w60-packet hazards (this log,
+2026-08-26 entry), and the gates (module `lake build`, zero sorry,
+`lean_verify` at the landed baseline, verbatim conclusion + only
+F7-suppliable extra hypotheses). Landing recipe per boundary: copy file
+to main, register the module in `Lax3Proofs.lean` (the audit demands
+the exact mirror), `lake build` in the proofs dir, `lax build --only
+proofs nowhere-dense-model-checking` FROM THE REPO ROOT, ledger row,
+commit, push `claude/ndmc-continuation-6eulbi` and `main`.
+
+**After the three land, in order** (each awaiting Jan's go-ahead per
+the no-new-workers directive): (a) CovAugAdjIn — w63, Opus; consumes
+CovAdjBuildIn's build kit + CovMdPeelIn's parametric peel core; spec in
+the F6c12 row; the augmentation rounds mirror `mdChain`
+(SolveSweepOrder:333, `greedyStep` CoverRoutine:212, `fratGraph`
+Augmentation:178). (b) KB pin + uniform `KsChargeBridge` +
+`exists_mcChargeMS_T` re-instantiated at `mdOrderingRoutine R` — the
+verified five-point checklist is in this log's 2026-08-26 entry.
+(c) F7 — guarded-Inv Adm, canonical htabF + hhtab, `solveSpec_closed`'s
+bookkeeping quartet, `mcLayout.temps` bump if the row towers need it,
+the ∃-close at the `conclusion:` header.
+
+### 2026-08-27 — the spend-limit freeze, F6c12p lands, ReadRowsAll lands
+
+The account hit its monthly spend limit at ~20:32Z on the 26th: all four
+program workers died mid-flight and the session froze until ~05:07Z.
+Nothing was lost — every in-flight file was checkpoint-pushed on its
+worktree branch before and after the cutoff, and the container survived.
+Two boundaries landed around the freeze:
+
+- **F6c12p** (`9c66491` + row flip `22cbd15`): the batch canonicalized.
+  The worker's investigation beat the packet's map — (α′) refuted on a
+  real obstruction (recorded connectors are edge-isolated in later
+  arenas), full-round-graph (α) rejected as cost-dead (per-child
+  carrier-wide BFS, D6's rejected shape) — landing on §5 l.17's own
+  answer: canonical min-parent gradient walks in the
+  **cluster-restricted round graph**, recorded in the channel
+  (`histGraph = map childUp preG`, `histGraph_eq_map`), the game bridge
+  closed by E1's path-closure through a STRENGTHENED `Inv` (each round
+  paired with its restricted graph + a carrier-wide 2R clause). Five
+  game-API statements byte-identical; StrictMono `up`-chain +
+  `pathList_map` = the machine transport; `DriverBatchCanon` (526 lines)
+  mirrors the machine's own `ballDist`/`parents`/`descend` kit. Key
+  theorems at bare `[propext, Classical.choice, Quot.sound]`.
+  Post-landing fix `a0c505e`: the root module must import exactly the
+  package's modules — the supervisor's registration step, missed once
+  ("imported transitively" does not satisfy the audit). Doc drift owed:
+  `SolveMachPrep` §2's per-round-recompute narrative and
+  `SolveMatFrame:72`'s `S.R` cap prose describe the pre-repair channel
+  discipline (residuals parametric, nothing broken; the machine-pass
+  leaf aims at write-once-filter-down at 2R).
+- **ReadRowsAll** (residual (2), landed with this entry): see the F6c12
+  row. Review basis: verbatim conclusion + machine-checked consumer fit
+  + axiom baseline + build/audit replay on main.
+
+Process notes: three of five w60 workers resolved their packet paths
+from the dispatching shell's cwd and wrote into the w61 worktree —
+harmless (disjoint files; the supervisor lands per-file), fixed forward
+by absolute-paths + verify-pwd packet lines. Gate-script readings: pipe
+the gate through nothing — `leaf-gate.sh | tail` reports the pipe's exit
+code, not the gate's. The remaining three workers (BUILD at a parse
+cascade, PEEL mid-invariant, MDPEEL entering §2a) resumed from their
+transcripts at ~05:10Z; w62 `ChildLoadPartsAll` dispatches on the
+F6c12p base.
+
+### 2026-08-26 — the fable lineage resumes at `783eb34`; waves jump to w60
+
+Fresh session, Jan's instruction: continue from the last fable commit
+(`783eb34`, this lineage's tip and `origin/main`). A parallel lineage
+(`origin/claude/ndmc-1om1vl` + `worktree-w26…w41`/`wip-w2x` branches,
+2026-08-24/26, waves w23–w51) worked the same six residuals; Jan rated it
+unreliable and it is **not merged** — none of its commits are ancestors of
+this line. To keep wave ids globally unique this lineage resumes at **w60**.
+A read-only survey of that branch was distilled into warnings (its residual
+*definitions* match `783eb34` byte-for-byte; its `concepts/` and pins are
+untouched; several of its findings about landed material were re-verified
+here independently):
+
+- **Verified here, real**: the ⟨D⟩ batch gap (F6c12p row — checked against
+  `SplitterWin.pathSet`/`DriverArena.batchRoot` in this tree); the §3
+  `AdjBuildIn`/`AdjDeleteIn` contract defect (checked — no `N`↔`B`
+  relation, and IMP+ has no length primitive, `Imp.lean`); `ClusterCsr`
+  rows are ascending-sorted (its peel must sort — checked, the def says
+  `restrictEmb`'s enumeration).
+- **Rejected**: its claim that `CovMdPeelIn` is undischargeable
+  subquadratically (it shipped `86N²+43N+14` and blamed the statement; the
+  lazy-heap route in the F6c12 row meets the pinned tie-break at
+  quasi-linear cost — the budget parameter was always free).
+- **KB/F7-boundary claims, VERIFIED against this tree** (same session,
+  before w60 returned): (i) `KsChargeBridge` (SolveChain:705) does put
+  `∃ cB` inside fixed `(n,G,c,w)` — but nothing landed consumes the def;
+  F7 proves a uniform variant (∃cB outermost) from the same per-stage
+  comparison lemmas. `exists_mcChargeMS_T` (ProgCharge:1314) is already
+  uniform (`∃ cf c' T` before `∀ n G`) but pinned at
+  `timedGreedyRoutine (3R)` — the KB wave must re-instantiate it at
+  `mdOrderingRoutine R` (its `steps := 0` makes the `IsCoverOrdering.time`
+  clause free; the machine ordering's real cost rides the `covC` column,
+  which must be shown ≤ `coverCF`'s shape). (ii) `blockSpec_leaf_guard`'s
+  `hKB` (SolveChain:418) demands `4 + max(botComK, KElse A) ≤ KB` at EVERY
+  `A`; `frameK` returns bare `botComK` on `⊥` — so F7 pins `KB` at the
+  guard-corrected majorant, never `frameK` verbatim (the frameK docstring's
+  suggestion is stale). (iii) `mcLayout` hard-codes `temps := 2`
+  (ProgCodegenLayout:69) and its own docstring plans the extension; if the
+  readback's row towers exceed depth 2, F7 parametrizes/bumps `temps` and
+  replays the codegen cone — contained. (iv) `inv_child`
+  (DriverCorrect:444) needs `hwidth : 1 + j·(2R+1) ≤ S.width`, so F7's
+  `Adm` is the **guarded** Inv form (`j ≤ depth → Inv`), making
+  `hAdmChild` vacuous past depth and real below it. (v) The alleged
+  `Scr`-content inconsistency does not arise in this lineage: rank/cover
+  content rides named regions (`ra`/`ca`/`co`/`cm` clauses), `Scr` stays
+  pure-length; `solveSpec_closed`'s `hscr` exact-length demands are
+  length-facts and transport. None blocks the six programs.
+- **Adopted as packet hazards**: `(by decide)` not `(by rfl)` for
+  string-literal defeq (~100s/decl vs ~3s, measured there); the
+  exact-length trap ("is the demanded figure stable over the loop?");
+  two-state maintenance lemmas for loop descriptors, never single-state
+  inhabitation.
+
+Environment note: fresh container; capture blobs for word-ram and lax-3
+exceed the proxy's single-read tolerance — fetched with resumable curl,
+digest-verified, installed; drift replay from the 2026-08-07 captures.
+That branch's sessions may still be live (a `worktree-w40` checkpoint is
+dated 2026-08-26); they push only to their own branches.
+
+**Wave w60 dispatched**: CovAdjBuildIn (`SolveSweepBuild.lean`), CovPeelIn
+(`SolveSweepPeel.lean`), CovMdPeelIn (`SolveSweepMdPeel.lean`), ReadRowsAll
+(`SolveSegReadRun.lean`) — four workers, one worktree, disjoint new files.
+**Wave w61**: F6c12p solo in its own worktree (it edits landed files;
+full-build gate; lands after w60). w62 next: CovAugAdjIn on (3)+(6)'s kits,
+ChildLoadPartsAll on F6c12p.
 
 ### 2026-08-18 — wave 12 dispatched: F6d + the two BFS-free F6c runs
 
