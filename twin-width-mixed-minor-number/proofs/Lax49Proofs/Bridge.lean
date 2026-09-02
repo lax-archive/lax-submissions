@@ -344,7 +344,7 @@ theorem redDegree_eq_of_faithful [DecidableEq V]
 partition-based contraction sequence of the same width. -/
 def submittedOfSource [Fintype V] [DecidableEq V] {d : ℕ}
     (S : TwinWidth.SimpleGraph.ContractionSequence G d) :
-    Lax48.TwinWidth.ContractionSequence G d where
+    Lax48.TwinWidth.PartitionSequence G d where
   stepCount := S.stepCount
   partition i := (S.state i).bags
   starts := S.starts.1
@@ -419,7 +419,7 @@ theorem isPartitionFamily_merge [DecidableEq V] {P : Finset (Finset V)}
 /-- Every partition of a submitted contraction sequence is a partition
 family. -/
 theorem isPartitionFamily_partition [Fintype V] [DecidableEq V] {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) :
+    (S : Lax48.TwinWidth.PartitionSequence G d) :
     ∀ i, i ≤ S.stepCount → IsPartitionFamily (S.partition i) := by
   intro i
   induction i with
@@ -459,17 +459,17 @@ theorem faithful_stateOf {P : Finset (Finset V)} (hP : IsPartitionFamily P) :
 /-- The partitions of a submitted sequence, held constant after the final
 step so that every index carries a partition family. -/
 def clampedPartition [Fintype V] [DecidableEq V] {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) (i : ℕ) :
+    (S : Lax48.TwinWidth.PartitionSequence G d) (i : ℕ) :
     Finset (Finset V) :=
   if i ≤ S.stepCount then S.partition i else S.partition S.stepCount
 
 theorem clampedPartition_of_le [Fintype V] [DecidableEq V] {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) {i : ℕ}
+    (S : Lax48.TwinWidth.PartitionSequence G d) {i : ℕ}
     (hi : i ≤ S.stepCount) : clampedPartition S i = S.partition i :=
   if_pos hi
 
 theorem isPartitionFamily_clampedPartition [Fintype V] [DecidableEq V] {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) (i : ℕ) :
+    (S : Lax48.TwinWidth.PartitionSequence G d) (i : ℕ) :
     IsPartitionFamily (clampedPartition S i) := by
   unfold clampedPartition
   split
@@ -479,7 +479,7 @@ theorem isPartitionFamily_clampedPartition [Fintype V] [DecidableEq V] {d : ℕ}
 /-- A submitted contraction sequence induces a source trigraph contraction
 sequence of the same width. -/
 def sourceOfSubmitted [Fintype V] [DecidableEq V] {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) :
+    (S : Lax48.TwinWidth.PartitionSequence G d) :
     TwinWidth.SimpleGraph.ContractionSequence G d where
   stepCount := S.stepCount
   state i := stateOf G (clampedPartition S i)
