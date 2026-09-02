@@ -29,7 +29,8 @@ verbatim to `refinement-tower/` (lax-62, `Lax62Proofs.Refine.*`,
 `Lax3Proofs`. The tower's plans stay under `word-ram/refinement-tower/`
 and `word-ram/tower-expansion/` at their old paths and module names.
 The draft resubmission cascade that follows is one command,
-`.claude/resubmit-cascade.sh` (repins via `.claude/repin.sh`).
+`.claude/resubmit-cascade.sh` (repins via `.claude/repin.sh`); it also
+refreshes the pin-only-stale sparsity-lectures and monadic-dependence drafts.
 
 Everything else is closed — most recently
 `word-ram/refinement-tower-plan.md` (P0–P8 in three sessions; closing

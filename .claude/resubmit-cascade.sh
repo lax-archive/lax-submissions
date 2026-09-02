@@ -9,9 +9,14 @@
 #
 # Order (each folder depends only on those before it):
 #   word-ram (Lax13)
+#   sparsity-lectures (Lax12)                            — pin-only refresh: requires Lax14,
+#                                                          whose record moved under it
 #   ram-linear-time (Lax11), refinement-tower (Lax62)   — both require Lax13
+#   monadic-dependence-neighborhood-complexity (Lax5)    — pin-only refresh: requires Lax12, Lax14
 #   vertex-cover-ladder (Lax15)                          — requires Lax11, Lax13
-#   nowhere-dense-model-checking (Lax3)                  — requires Lax11, Lax13, Lax62 (+ Lax12, Lax14)
+#   nowhere-dense-model-checking (Lax3)                  — requires Lax11, Lax12, Lax13, Lax14, Lax62
+# finite-ramsey and the two twin-width submissions match their records and
+# depend on nothing that moves; they are not in the list.
 #
 # Extra flags for `lax submit` (e.g. --allow-dirty) go in LAX_SUBMIT_FLAGS.
 # Requires a clean, committed, pushed tree at the start except for what the
@@ -19,7 +24,7 @@
 set -euo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 cd "$root"
-default=(word-ram ram-linear-time refinement-tower vertex-cover-ladder nowhere-dense-model-checking)
+default=(word-ram sparsity-lectures ram-linear-time refinement-tower monadic-dependence-neighborhood-complexity vertex-cover-ladder nowhere-dense-model-checking)
 order=("${@:-${default[@]}}")
 [ $# -eq 0 ] && order=("${default[@]}")
 for sub in "${order[@]}"; do
