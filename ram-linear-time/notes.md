@@ -10,7 +10,7 @@ submission page.
   certificate, with the whole word read but only two of its arrays
   used; the noncomputable type table and the existential-over-programs
   shape of the statement; the strength-reduced table indexing, which
-  keeps multiplication out of the compiled program altogether; the
+  keeps every data-dependent multiplication out of the compiled program; the
   `#eval` stand-in table and what it does and does not establish; the
   constant as a tower that is never estimated; the three things the
   word length has to hold, the size of the table among them;

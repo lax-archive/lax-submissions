@@ -77,11 +77,10 @@ potential: adjacency slots not yet scanned, queue capacity not yet used,
 queue entries not yet expanded, vertices not yet swept. Because the
 potential is global the searches are counted together rather than one at
 a time, which is what the amortization needs. The constant that comes
-out is 2604, where the compiled program, run on the small graphs it was
-tested on, takes about a hundred steps per input number. The factor of
-twenty-five between them is deliberate, and so is the slack at every
-level below: nothing in the tower argues for a tight constant, and the
-statement asks only for some constant.
+out is 840, well above what the compiled program takes per input number
+on the small graphs it was tested on. The gap is deliberate, and so is
+the slack at every level below: nothing in the tower argues for a tight
+constant, and the statement asks only for some constant.
 
 Courcelle's theorem is proved the way it is proved on paper, with the
 machine kept out of the mathematics until the mathematics is finished.
@@ -106,8 +105,10 @@ memory in a prologue, and makes one left-to-right pass in which each
 node costs a fixed number of array accesses, independent of the size of
 the table — and the row bases of the table are themselves an array, so
 that indexing it is two reads and an addition: the compiled driver is
-checked, mechanically, to contain no multiplication, division or shift,
-so the theorem leans on none of the word RAM's stronger instructions. Instantiating the fold with the type table and adding
+checked, mechanically, to contain no division, no shift, and no
+multiplication other than the compiler's address stride — a product
+with a fixed layout constant, which is `k − 1` additions — so the
+theorem leans on none of the word RAM's stronger instructions. Instantiating the fold with the type table and adding
 an epilogue that turns the root's value into $1$ or $0$ gives the
 driver. Its constant is a tower in the sentence and the width, because
 the table is, and it is never estimated; but the tower is paid once,
@@ -121,7 +122,7 @@ One more theorem is proved here without being stated here. The proof
 package contains the textbook bounded search tree of Downey and
 Fellows — vertex cover decided within $c\,2^k(|x|+1)$ steps, written in
 the same while-language and costed by the same loop rule, with the
-constant 33300 — but its statement is the base rung of the vertex cover
+constant 9000 — but its statement is the base rung of the vertex cover
 ladder and lives on the surface of *Vertex Cover Below Two to the k*,
 the submission that lowers the base of the exponential twice and
 carries all three rungs together. That submission requires this proof
