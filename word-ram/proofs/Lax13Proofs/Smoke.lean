@@ -57,8 +57,8 @@ def dom : Set (List ℕ) := {x : List ℕ | ∃ xs, x = xs.length :: xs}
 theorem com_ok : Com.Ok layout com := by
   simp [com, body, cond, layout, Com.Ok, Cond.Ok, condExpr, Expr.Ok]
 
-theorem const_eq : layout.const = 22 := by
-  simp [Layout.const, Layout.idxLen, layout]
+theorem const_eq : layout.const = 10 := by
+  simp [Layout.const]
 
 /-- The loop invariant: the counter has the input still to be read left
 to go, what was written is what was read, and both the counter's target
@@ -126,10 +126,10 @@ theorem solves : Solves layout com dom (fun x => x.tail)
     · rw [hout]; simp [hσ₀, initEnv]
 
 /-- **Echo, end to end.** The compiled machine program copies a
-length-prefixed input to the output within `242 * (|x| + 1)` steps, at
+length-prefixed input to the output within `110 * (|x| + 1)` steps, at
 every word length at which the total of the input fits. -/
-theorem prog_computesInTime {w : ℕ} (hw : ∀ x ∈ dom, x.sum + 5 ≤ 2 ^ w) :
-    ComputesInTime w prog dom (fun x => x.tail) (fun x => 242 * (x.length + 1)) := by
+theorem prog_computesInTime {w : ℕ} (hw : ∀ x ∈ dom, x.sum + 7 ≤ 2 ^ w) :
+    ComputesInTime w prog dom (fun x => x.tail) (fun x => 110 * (x.length + 1)) := by
   refine computesInTime_of_solves solves
     (fun x hx => fitsWords_of_max_le (by omega)
       (by have := hw x hx; simp [Layout.span, layout]; omega))
@@ -168,8 +168,8 @@ def dom : Set (List ℕ) := {x : List ℕ | ∃ xs, x = xs.length :: xs}
 theorem com_ok : Com.Ok layout com := by
   simp [com, body, cond, layout, Com.Ok, Cond.Ok, condExpr, Expr.Ok]
 
-theorem const_eq : layout.const = 22 := by
-  simp [Layout.const, Layout.idxLen, layout]
+theorem const_eq : layout.const = 10 := by
+  simp [Layout.const]
 
 /-- The loop invariant: the counter has the input still to be read left
 to go, the sum of what was read is already in `s`, and nothing was
@@ -244,10 +244,10 @@ theorem solves : Solves layout com dom (fun x => [x.tail.sum])
       rw [hout, hs]; simp [hσ₀, initEnv]
 
 /-- **Sum, end to end.** The compiled machine program writes the sum of a
-length-prefixed input within `286 * (|x| + 1)` steps, at every word
+length-prefixed input within `130 * (|x| + 1)` steps, at every word
 length at which the total of the input fits. -/
-theorem prog_computesInTime {w : ℕ} (hw : ∀ x ∈ dom, x.sum + 6 ≤ 2 ^ w) :
-    ComputesInTime w prog dom (fun x => [x.tail.sum]) (fun x => 286 * (x.length + 1)) := by
+theorem prog_computesInTime {w : ℕ} (hw : ∀ x ∈ dom, x.sum + 8 ≤ 2 ^ w) :
+    ComputesInTime w prog dom (fun x => [x.tail.sum]) (fun x => 130 * (x.length + 1)) := by
   refine computesInTime_of_solves solves
     (fun x hx => fitsWords_of_max_le (by omega)
       (by have := hw x hx; simp [Layout.span, layout]; omega))
@@ -280,8 +280,8 @@ def dom (b : ℕ) : Set (List ℕ) := {x : List ℕ | ∃ a, x = [a] ∧ a * a +
 theorem com_ok : Com.Ok layout com := by
   simp [com, layout, Com.Ok, Expr.Ok]
 
-theorem const_eq : layout.const = 22 := by
-  simp [Layout.const, Layout.idxLen, layout]
+theorem const_eq : layout.const = 10 := by
+  simp [Layout.const]
 
 theorem solves {b : ℕ} (hb : 1 < b) :
     Solves layout com (dom b) (fun x => [x.headI * x.headI, x.headI * 2])
@@ -301,11 +301,11 @@ theorem solves {b : ℕ} (hb : 1 < b) :
     simp [initEnv]
 
 /-- **Square, end to end.** The compiled machine program writes the
-square and the double of its input within 198 steps, at every word length
+square and the double of its input within 90 steps, at every word length
 at which the bound fits. -/
-theorem prog_computesInTime {b w : ℕ} (hb : 1 < b) (hw : b + 3 ≤ 2 ^ w) :
+theorem prog_computesInTime {b w : ℕ} (hb : 1 < b) (hw : b + 5 ≤ 2 ^ w) :
     ComputesInTime w prog (dom b) (fun x => [x.headI * x.headI, x.headI * 2])
-      (fun _ => 198) := by
+      (fun _ => 90) := by
   refine computesInTime_of_solves (solves hb)
     (fun x _ => fitsWords_of_max_le hb (by simp [Layout.span, layout]; omega))
     (fun x _ => by rw [const_eq])

@@ -133,7 +133,11 @@ Bounds, Spec, Frame, Tactic and the whole `Refine/` tower are untouched
   `compileExpr e 0; write 0`; `read x` → `read (varAddr x)`; `ite`/`while`
   as now with `jzero 0`; `compileProgram L c = compile L c 0 ++ [.halt]`.
 - **Constant.** `Layout.const` becomes a numeral; record the value here when
-  the proof settles it.
+  the proof settles it. **Settled 2026-09-02: `Layout.const = 10`,**
+  independent of the layout (`Layout.idxLen = 4`). Ten is what the equality
+  condition forces: `condExpr (eq e f)` compiles both differences, and a
+  variable read is two instructions against one unit of IMP+ cost, so
+  `bsize ≤ 10 · b.size`; every other construct needs at most five.
 
 ## 4. Knock-on inventory
 

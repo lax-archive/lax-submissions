@@ -14,10 +14,13 @@ does not occur in this file at all. That is the whole point of the
 tower — functional correctness and cost are proved on clean
 natural-number arithmetic, and the word length enters exactly once, at
 the boundary, through the value bound of `Bounds` and the simulation
-theorem. The operators mirror the machine's instructions at the level
-of numbers: subtraction is truncated, division rounds down with
+theorem. The operators are the standard word-RAM operations at the
+level of numbers: subtraction is truncated, division rounds down with
 `x / 0 = 0`, the bitwise operations are those of `Nat`, and the shifts
-are multiplication and division by a power of two.
+are multiplication and division by a power of two. Six of them are
+machine instructions; the other three — `or`, `xor` and `shiftr` — are
+lowered by the compiler to fixed blocks of three or four instructions,
+so the choice of operators here is not a choice about the machine.
 
 Three design points carry the weight.
 
@@ -49,9 +52,11 @@ so that it is bounded below by the number of steps of the compiled
 machine program divided by a program-dependent constant.
 
 The binary operators are collected into one type `Bop` rather than
-given one `Expr` constructor each: they all evaluate the same way, all
-compile the same way, and all are proved correct by the same argument,
-so a single `bin` node turns nine cases into one everywhere downstream.
+given one `Expr` constructor each: they all evaluate the same way and
+compile to one block each, so a single `bin` node turns nine cases into
+one everywhere downstream, and the six that are machine instructions
+are told apart from the three that are lowered in exactly one place,
+the compiler's `binCode`.
 The nine familiar names are available as abbreviations, so `.add e f`
 still writes a sum.
 -/

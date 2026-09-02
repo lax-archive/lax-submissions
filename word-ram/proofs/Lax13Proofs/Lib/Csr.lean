@@ -886,7 +886,7 @@ two slots belong to row `0`, the third to row `1`, the fourth to row
 read twice. -/
 def demoRun : Option (List ℕ × ℕ) := runOut 16 4000 prog (Lax13.Ram.initState []) 0
 
-#guard demoRun = some ([0, 1, 0, 2, 1, 0, 2, 1], 301)
+#guard demoRun = some ([0, 1, 0, 2, 1, 0, 2, 1], 310)
 
 end Demo
 
