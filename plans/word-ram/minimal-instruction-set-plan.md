@@ -155,13 +155,22 @@ Unchanged from the audit; summarised.
   arithmetic shifts. No `Ram.Instr`/`Op` site exists anywhere else (checked
   2026-09-02).
 - **ram-linear-time (Lax11)**: proofs only — `const_eq` in `CCMain`, `VCMain`,
-  `TreeFoldMain`, `CourcelleMain` (all become the same numeral), headline
-  witnesses (`2604`, …) and span docstrings; repin `Lax13`.
+  `TreeFoldMain`, `CourcelleMain` (all `10`), headline witnesses
+  (`2604 → 840`, `33300 → 9000`, …), span docstrings, step-count gates
+  recomputed with identical outputs; repin `Lax13` at resubmission.
+  **LANDED 2026-09-02 @ 6d973f7.** One checked claim changed: the Courcelle
+  driver's "no multiplication anywhere" gate is false on the new compiler
+  (`idxCode` multiplies the index by the array count) and became
+  `noDataDependentWide` — no division, no shift, and every `mul` is the
+  compiler's stride multiplication by the compile-time constant
+  `arrays.length`. `abstract.md` and `notes.md` say the same.
 - **vertex-cover-ladder (Lax15)**: proofs only — two `const_eq`, witnesses
   `90300`, `318500`, `33300` and docstrings; repin `Lax13`, `Lax11`.
 - **nowhere-dense-model-checking (Lax3)**: `ProgCodegenLayout.lean`
-  (`mcLayout_span_le`, `+1`), `SolveMatTop.lean` docstring; constants are
-  symbolic. Repin all four requires. Run after the ND-MC pause.
+  (`mcLayout_span_le`, span constant `11 → 13`), `ProgCodegen.lean`
+  (`mc_computesInTime_of_solveSpec` threads the same `hspan` sum),
+  `SolveMatTop.lean` docstring; constants are symbolic. Repin all four
+  requires at resubmission. **LANDED 2026-09-02 @ ca76b56.**
 - **Unaffected**: Lax12, Lax14, Lax5, both twin-width submissions.
 - Headline statements everywhere quantify `∃ (p : Program) (c : ℕ)`, so no
   downstream concept changes.
