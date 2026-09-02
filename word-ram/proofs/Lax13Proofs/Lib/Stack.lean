@@ -436,7 +436,7 @@ theorem demoWatched_ok :
 `7` off, and the second peek must see `5`. -/
 def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax13.Ram.initState []) 0
 
-#guard demoRun = some ([7, 7, 5], 64)
+#guard demoRun = some ([7, 7, 5], 82)
 
 /-! And the same arithmetic on the other side of the abstraction. -/
 

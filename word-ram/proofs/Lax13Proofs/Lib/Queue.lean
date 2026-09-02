@@ -585,7 +585,7 @@ drain must write the two entries out **in the order they went in** —
 which is the whole difference from `Stack`'s example. -/
 def demoRun : Option (List ℕ × ℕ) := runOut 16 2000 prog (Lax13.Ram.initState []) 0
 
-#guard demoRun = some ([5, 5, 7], 90)
+#guard demoRun = some ([5, 5, 7], 111)
 
 /-! And the same arithmetic on the other side of the abstraction: the
 queue after the two pushes, what the front reads, and what is left after

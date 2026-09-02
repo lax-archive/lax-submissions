@@ -51,6 +51,12 @@ theorem setCell_self {w a v : ℕ} (m : ℕ → ℕ) (ha : a < 2 ^ w) (hv : v < 
     setCell w m a v a = v := by
   rw [setCell_eq, Nat.mod_eq_of_lt ha, if_pos rfl, Nat.mod_eq_of_lt hv]
 
+/-- Reading back a cell just written, without a bound on the value: the
+truncation is what remains. -/
+theorem setCell_self_mod {w a : ℕ} (m : ℕ → ℕ) (v : ℕ) (ha : a < 2 ^ w) :
+    setCell w m a v a = v % 2 ^ w := by
+  rw [setCell_eq, Nat.mod_eq_of_lt ha, if_pos rfl]
+
 /-- A write to a word address leaves every other cell alone. -/
 theorem setCell_of_ne {w a b : ℕ} (m : ℕ → ℕ) (v : ℕ) (ha : a < 2 ^ w) (hb : b ≠ a) :
     setCell w m a v b = m b := by
@@ -290,12 +296,29 @@ theorem add_eq_lor_add_land (a b : ℕ) : a + b = (a ||| b) + (a &&& b) := by
         have h6 := Nat.mod_two_eq_zero_or_one b
         omega
 
+/-! The compiler works with `Nat.land`, `Nat.lor` and `Nat.xor`, which
+is what the concept's `Instr.effect` and the reference language's
+`Bop.apply` are written with, so the identities are stated in that form;
+the bit-level proofs above are in the notation `Nat.testBit`'s simp set
+speaks. -/
+
+theorem land_le_left (a b : ℕ) : Nat.land a b ≤ a := Nat.and_le_left
+
+theorem land_le_right (a b : ℕ) : Nat.land a b ≤ b := Nat.and_le_right
+
+theorem lor_lt_two_pow {a b n : ℕ} (ha : a < 2 ^ n) (hb : b < 2 ^ n) :
+    Nat.lor a b < 2 ^ n := Nat.or_lt_two_pow ha hb
+
 /-- **Disjunction from `and`, `sub` and `add`.** This is the three
 instruction block `and t b c; sub t c t; add a b t` of the concept's
 notes, read as an equation. -/
-theorem lor_eq_add_sub_land (a b : ℕ) : (a ||| b) = a + (b - (a &&& b)) := by
+theorem lor_eq_add_sub_land (a b : ℕ) : Nat.lor a b = a + (b - Nat.land a b) := by
+  have hland : (a &&& b) = Nat.land a b := rfl
+  have hlor : (a ||| b) = Nat.lor a b := rfl
   have h := add_eq_lor_add_land a b
   have hb : a &&& b ≤ b := Nat.and_le_right
+  rw [hland, hlor] at h
+  rw [hland] at hb
   omega
 
 /-- Exclusive or is the disjunction minus the conjunction. -/
@@ -316,9 +339,13 @@ theorem xor_add_land (a b : ℕ) : (a ^^^ b) + (a &&& b) = a ||| b := by
 instruction block `and t b c; sub u c t; add u b u; sub a u t` of the
 concept's notes, read as an equation. -/
 theorem xor_eq_sub_add_sub_land (a b : ℕ) :
-    (a ^^^ b) = (a + (b - (a &&& b))) - (a &&& b) := by
+    Nat.xor a b = (a + (b - Nat.land a b)) - Nat.land a b := by
+  have hland : (a &&& b) = Nat.land a b := rfl
+  have hlor : (a ||| b) = Nat.lor a b := rfl
+  have hxor : (a ^^^ b) = Nat.xor a b := rfl
   have h := xor_add_land a b
-  rw [← lor_eq_add_sub_land]
+  rw [hland, hlor, hxor] at h
+  have h' := lor_eq_add_sub_land a b
   omega
 
 /-- **The right shift from `set`, `shiftl` and `div`.** A shift

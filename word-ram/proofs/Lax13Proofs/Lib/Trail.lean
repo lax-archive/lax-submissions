@@ -497,7 +497,7 @@ empty and the saved height is `0`. Both cells must read `1` before the
 unwind and `0` after it. -/
 def demoRun : Option (List ℕ × ℕ) := runOut 16 4000 prog (Lax13.Ram.initState []) 0
 
-#guard demoRun = some ([1, 1, 0, 0], 143)
+#guard demoRun = some ([1, 1, 0, 0], 165)
 
 /-! And the arithmetic on the other side of the abstraction: a trail
 holding `[1, 3]`, an indicator with those two cells set, and the

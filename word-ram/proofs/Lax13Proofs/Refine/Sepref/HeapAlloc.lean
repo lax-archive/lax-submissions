@@ -103,8 +103,8 @@ Two consequences are theorems here, not comments:
 ## Exhaustion is global, and is not restated here (D-A3)
 
 The program-level condition already exists: `Layout.FitsWords B w`
-(`Compile.lean:85`), whose `span` clause is `L.span B ≤ 2 ^ w` with
-`L.span B = L.temps + L.scalars.length + L.arrays.length * B`, and the
+(`Compile.lean`), whose `span` clause is `L.span B ≤ 2 ^ w` with
+`L.span B = L.temps + 2 + L.scalars.length + L.arrays.length * B`, and the
 array lengths are existential per input (`Codegen/Cash.lean:389`,
 `solves_of_spec`). **This file authors no second exhaustion condition** —
 a per-operation copy is precisely the rule-5 violation the phase exists

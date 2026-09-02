@@ -777,10 +777,10 @@ The conclusion is over `Mid`, so what fits is the high-water mark and
 not the end state. -/
 theorem fits_of_peak_linear {c : Com} {p len a : ℕ} (hpk : PeakLe c p) (hlin : p ≤ a * len) :
     ∃ (w B : ℕ) (L : Layout),
-      2 ^ w ≤ 2 * (a * len + 10) ∧ L.FitsWords B w ∧
+      2 ^ w ≤ 2 * (a * len + 12) ∧ L.FitsWords B w ∧
         L.scalars = probeScalars ∧ L.arrays = [heapName] ∧ L.temps = 0 ∧
         ∀ s s' : State, Mid c s s' → hpOf s = 0 → hpOf s' < B := by
-  obtain ⟨w, hw1, hw2⟩ := exists_pow_between (m := p + 10) (by omega)
+  obtain ⟨w, hw1, hw2⟩ := exists_pow_between (m := p + 12) (by omega)
   refine ⟨w, p + 2, ⟨probeScalars, [heapName], 0⟩, ?_, ⟨by omega, by omega, ?_⟩,
     rfl, rfl, rfl, ?_⟩
   · omega
@@ -797,7 +797,7 @@ linear in `|x|`, the reusing engine's *peak* fits at a word length whose
 `2 ^ w` is linear in `|x|` — for every `turns` and every `levels`. -/
 theorem reuse_fits_linear (setup aw turns levels len a : ℕ) (hlin : setup + aw ≤ a * len) :
     ∃ (w B : ℕ) (L : Layout),
-      2 ^ w ≤ 2 * (a * len + 10) ∧ L.FitsWords B w ∧
+      2 ^ w ≤ 2 * (a * len + 12) ∧ L.FitsWords B w ∧
         L.scalars = probeScalars ∧ L.arrays = [heapName] ∧ L.temps = 0 ∧
         ∀ s s' : State, Mid (reuseSkel setup aw turns levels) s s' → hpOf s = 0 →
           hpOf s' < B :=
@@ -1202,7 +1202,7 @@ the word lengths C0's domain admits, and nothing else. -/
 theorem fits_at_a_free_word_length (T : ℕ) :
     ∃ (w B : ℕ) (L : Layout), T < B ∧ L.FitsWords B w ∧
       L.scalars = probeScalars ∧ L.arrays = [heapName] := by
-  obtain ⟨w, hw1, -⟩ := exists_pow_between (m := T + 10) (by omega)
+  obtain ⟨w, hw1, -⟩ := exists_pow_between (m := T + 12) (by omega)
   refine ⟨w, T + 2, ⟨probeScalars, [heapName], 0⟩, by omega, ⟨by omega, by omega, ?_⟩, rfl, rfl⟩
   show Layout.span _ (T + 2) ≤ 2 ^ w
   simp only [Layout.span, probeScalars, List.length_cons, List.length_nil]
@@ -1232,14 +1232,14 @@ refutation kills *every* admissible `w`, so the positive side has to
 exhibit one, not merely some `w` of its own choosing. -/
 theorem reuse_fits_at_admissible_word (c n setup aw turns levels : ℕ) :
     ∃ (w B : ℕ) (L : Layout),
-      2 ^ w ≤ 2 * max (c * (2 * n + 4)) (setup + aw + 10) ∧
+      2 ^ w ≤ 2 * max (c * (2 * n + 4)) (setup + aw + 12) ∧
       (∀ v ∈ probeWord n, c * ((probeWord n).length + v + 1) ≤ 2 ^ w) ∧
       L.FitsWords B w ∧ L.scalars = probeScalars ∧ L.arrays = [heapName] ∧
       ∀ s s' : State, Mid (reuseSkel setup aw turns levels) s s' → hpOf s = 0 →
         hpOf s' < B := by
   obtain ⟨w, hw1, hw2⟩ :=
-    exists_pow_between (m := max (c * (2 * n + 4)) (setup + aw + 10)) (by omega)
-  have hspan : setup + aw + 10 ≤ 2 ^ w := le_trans (le_max_right _ _) hw1
+    exists_pow_between (m := max (c * (2 * n + 4)) (setup + aw + 12)) (by omega)
+  have hspan : setup + aw + 12 ≤ 2 ^ w := le_trans (le_max_right _ _) hw1
   have hdom : c * (2 * n + 4) ≤ 2 ^ w := le_trans (le_max_left _ _) hw1
   refine ⟨w, setup + aw + 2, ⟨probeScalars, [heapName], 0⟩, hw2, ?_,
     ⟨by omega, by omega, ?_⟩, rfl, rfl, ?_⟩
@@ -1263,7 +1263,7 @@ are opposite. -/
 theorem reuse_fits_where_fresh_cannot (c n setup aw turns levels : ℕ) (hc : 0 < c)
     (hcross : 4 * c * (n + 2) ≤ turns * levels * aw) :
     (∃ (w B : ℕ) (L : Layout),
-        2 ^ w ≤ 2 * max (c * (2 * n + 4)) (setup + aw + 10) ∧
+        2 ^ w ≤ 2 * max (c * (2 * n + 4)) (setup + aw + 12) ∧
         (∀ v ∈ probeWord n, c * ((probeWord n).length + v + 1) ≤ 2 ^ w) ∧
         L.FitsWords B w ∧
         ∀ s s' : State, Mid (reuseSkel setup aw turns levels) s s' → hpOf s = 0 →
@@ -1758,7 +1758,7 @@ theorem nested_fits_iff (setup aw turns levels w : ℕ) (hturns : 0 < turns) :
     (∃ (B : ℕ) (L : Layout), L.scalars = probeScalars ∧ L.arrays = [heapName] ∧
         L.temps = 0 ∧ L.FitsWords B w ∧
         ∀ s' : State, Mid (nestedSkel setup aw turns levels) entryState s' → hpOf s' < B)
-      ↔ max (setup + levels * aw + 9) 10 ≤ 2 ^ w := by
+      ↔ max (setup + levels * aw + 11) 12 ≤ 2 ^ w := by
   constructor
   · rintro ⟨B, L, hsc, har, htm, hfit, hall⟩
     obtain ⟨s', hmid, hh⟩ :=
@@ -1792,14 +1792,14 @@ descending driver is inside the budget: the same fair comparison
 `reuse_fits_at_admissible_word` makes. -/
 theorem nested_fits_at_admissible_word (c n setup aw turns levels : ℕ) :
     ∃ (w B : ℕ) (L : Layout),
-      2 ^ w ≤ 2 * max (c * (2 * n + 4)) (setup + levels * aw + 10) ∧
+      2 ^ w ≤ 2 * max (c * (2 * n + 4)) (setup + levels * aw + 12) ∧
       (∀ v ∈ probeWord n, c * ((probeWord n).length + v + 1) ≤ 2 ^ w) ∧
       L.FitsWords B w ∧ L.scalars = probeScalars ∧ L.arrays = [heapName] ∧
       ∀ s s' : State, Mid (nestedSkel setup aw turns levels) s s' → hpOf s = 0 →
         hpOf s' < B := by
   obtain ⟨w, hw1, hw2⟩ :=
-    exists_pow_between (m := max (c * (2 * n + 4)) (setup + levels * aw + 10)) (by omega)
-  have hspan : setup + levels * aw + 10 ≤ 2 ^ w := le_trans (le_max_right _ _) hw1
+    exists_pow_between (m := max (c * (2 * n + 4)) (setup + levels * aw + 12)) (by omega)
+  have hspan : setup + levels * aw + 12 ≤ 2 ^ w := le_trans (le_max_right _ _) hw1
   have hdom : c * (2 * n + 4) ≤ 2 ^ w := le_trans (le_max_left _ _) hw1
   refine ⟨w, setup + levels * aw + 2, ⟨probeScalars, [heapName], 0⟩, hw2, ?_,
     ⟨by omega, by omega, ?_⟩, rfl, rfl, ?_⟩
@@ -1818,7 +1818,7 @@ theorem nested_fits_at_admissible_word (c n setup aw turns levels : ℕ) :
 -- an arena both linear in `n` and a *constant* depth `3`, the peak is
 -- below what C0's domain already grants — so bounded depth costs no word
 -- length at all beyond the domain's own.
-#guard 10 ^ 20 + 3 * 10 ^ 20 + 10 ≤ 10 ^ 9 * (2 * 10 ^ 20 + 4)
+#guard 10 ^ 20 + 3 * 10 ^ 20 + 12 ≤ 10 ^ 9 * (2 * 10 ^ 20 + 4)
 
 open Lax13Proofs.Compile in
 /-- **Control B — depth growing with `n` is refuted, at every admissible

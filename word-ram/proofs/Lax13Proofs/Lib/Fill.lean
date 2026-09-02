@@ -321,7 +321,7 @@ theorem demoWatched_ok : Lax13Proofs.Compile.Com.Ok layout (demoWatched "ar" "i"
 counter into each cell, so the three readings must be `0`, `1`, `2`. -/
 def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax13.Ram.initState []) 0
 
-#guard demoRun = some ([0, 1, 2], 94)
+#guard demoRun = some ([0, 1, 2], 108)
 
 /-! And the arithmetic on the other side of the abstraction: three turns
 of a fill with the identity. -/

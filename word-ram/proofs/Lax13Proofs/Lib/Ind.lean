@@ -394,7 +394,7 @@ theorem demoWatched_ok : Lax13Proofs.Compile.Com.Ok layout (demoWatched "mk" "i"
 the empty set, so the first reading must be one and the second zero. -/
 def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax13.Ram.initState []) 0
 
-#guard demoRun = some ([1, 0], 32)
+#guard demoRun = some ([1, 0], 43)
 
 /-! And the arithmetic the example turns on, on the other side of the
 abstraction: marking cell two of a four-cell indicator, reading it, and
