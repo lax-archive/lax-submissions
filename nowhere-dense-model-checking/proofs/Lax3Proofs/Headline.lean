@@ -355,7 +355,7 @@ block: comparable in size to the whole `Impl*` family it composes
 
 **(b) Codegen to a `Lax13.Ram.Program`.** The landed exit is
 `computesInTime_of_spec`
-(`word-ram/proofs/Lax13Proofs/Refine/Codegen/Cash.lean:408-419`): from
+(`word-ram/proofs/Lax62Proofs/Refine/Codegen/Cash.lean:408-419`): from
 `Com.Ok`, an input bound `∀ x ∈ D, ∀ v ∈ x, v < B x`, a
 `Reasoning.Spec` for the IMP+ command, and `Layout.FitsWords (B x) w`,
 it yields exactly the axiom's `ComputesInTime w (compileProgram L c) D
@@ -392,7 +392,7 @@ static layout of (a) fits in `2^w` cells, which is exactly what the
 *squared* form was endorsed for; `Unroll.lean`'s layout paragraph does
 the arithmetic, `ModelChecking.lean`'s deviation note records the
 design decision). The probe for the space side of the tower is
-`word-ram/proofs/Lax13Proofs/Refine/Sepref/SpaceBudgetProbe.lean`.
+`word-ram/proofs/Lax62Proofs/Refine/Sepref/SpaceBudgetProbe.lean`.
 Estimate: bookkeeping against (a)'s layout, small once (a) exists.
 
 **(e) The `T : List ℕ → ℕ` bound.** The axiom's `T` is ℕ-valued with

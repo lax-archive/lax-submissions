@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.Rules
+import Lax62Proofs.Refine.Sepref.Rules
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Sepref signature normalization and composition
@@ -32,7 +33,7 @@ The concrete half of `hfref` remains `κa → κb × Com`, per P4/D-m in
 chosen destination name explicit.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -508,4 +509,4 @@ theorem fixed_hnr_cannot_imply_hfref :
 
 end SignatureGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

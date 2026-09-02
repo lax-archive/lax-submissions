@@ -33,7 +33,7 @@ feed, and the search loop that consults them are all in
 (judgment calls D-y … D-af) for the whole of wave C.
 -/
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 /-- The source's `named_simpset fri_prepare_simps` (`Frame_Infer.thy`):
 the normalization set `start_tac` runs before frame inference begins —
@@ -69,4 +69,4 @@ per-op rules in their source-shaped, pure-side-condition form; P4's
 `hn_refine` layer is the intended consumer. -/
 register_label_attr vcg_rules
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

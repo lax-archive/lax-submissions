@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Intf.Set
+import Lax62Proofs.Refine.Iicf.Intf.Set
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Multiset interface
@@ -23,9 +24,9 @@ Deletion, subtraction, membership, and count retain both source uniqueness
 hypotheses; no diagonal weakening is used in their generic rules.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 variable {α β : Type}
@@ -549,16 +550,16 @@ run_cmd do
 
 /-! ## Kernel-three guards -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.rel_mset_sub' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.rel_mset_sub' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms rel_mset_sub
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.op_mset_count_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.op_mset_count_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms op_mset_count_fref
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.op_mset_pick_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.op_mset_pick_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms op_mset_pick_fref
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

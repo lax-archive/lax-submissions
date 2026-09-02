@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Iicf.Intf.Matrix
-import Lax13Proofs.Refine.Iicf.IicfArray
+import Lax62Proofs.Refine.Iicf.Intf.Matrix
+import Lax62Proofs.Refine.Iicf.IicfArray
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Row-major array matrices
@@ -22,9 +23,9 @@ The source's SepLogicTime/enat scalar bounds (`3*N*M+3` for tabulation,
 provenance.  They are not equated with this IR's vector-valued `ECost`.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 def amtxIndex (M i j : ℕ) : ℕ := i * M + j
@@ -620,20 +621,20 @@ budget. -/
 
 /-! ## Kernel-three gates -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.amtx1Rel_singleValued' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.amtx1Rel_singleValued' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms amtx1Rel_singleValued
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.amtxSetOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.amtxSetOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms amtxSetOp_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.amtxGet_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.amtxGet_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms amtxGet_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.amtxTabulateOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.amtxTabulateOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms amtxTabulateOp_refines
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

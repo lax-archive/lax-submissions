@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Autoref.Attrs
+import Lax62Proofs.Refine.Autoref.Attrs
 
 /-!
 The tag layer: term protection, annotation, and interface types.
@@ -192,7 +192,7 @@ counterpart to defeat.
 
 universe u v
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-! ### General protection tags (`Autoref_Tagging.thy`) -/
 
@@ -418,4 +418,4 @@ example (x y : α) (I : Interface) (h : ID_OP x y I) : x = y := by simpa using h
 
 end Sanity
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

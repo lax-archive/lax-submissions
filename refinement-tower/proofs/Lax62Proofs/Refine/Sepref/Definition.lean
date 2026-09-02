@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.Tool
+import Lax62Proofs.Refine.Sepref.Tool
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The synthesis command: the port of `thys/sepref/Sepref_Definition.thy`,
@@ -72,7 +73,7 @@ engine. `SYNTH` remains the marker naming the intent.
 
 open Lean Elab Meta
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -101,7 +102,7 @@ def parseHfref? (e : Expr) : Option Expr :=
   | (``Membership.mem, #[_, _, _, coll, elem]) =>
       match coll.consumeMData.getAppFnArgs, elem.consumeMData.getAppFnArgs with
       | (n, #[_, _, _, _, _, _, _]), (``Prod.mk, #[_, _, f, _]) =>
-          if n == `Lax13Proofs.Refine.Sepref.hfref then some f else none
+          if n == `Lax62Proofs.Refine.Sepref.hfref then some f else none
       | _, _ => none
   | _ => none
 
@@ -458,9 +459,9 @@ abstract term and failed later — are listed in full, as in control 2. -/
 /--
 info: sepref: phase 'trans' (priority 80) failed.
 sepref: no rule translates
-  Lax13Proofs.Refine.Sepref.SynthGate.mopMystery n
+  Lax62Proofs.Refine.Sepref.SynthGate.mopMystery n
 under the ownership
-  Lax13Proofs.Refine.Sepref.junkCell "r" ∗ Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn n "n"
+  Lax62Proofs.Refine.Sepref.junkCell "r" ∗ Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn n "n"
 combinator rules: none is stated at this abstract term (4 tried).
 operator rules: none is stated at this abstract term (8 tried).
 -/
@@ -478,26 +479,26 @@ should add. -/
 /--
 info: sepref: phase 'trans' (priority 80) failed.
 sepref: no rule translates
-  Lax13Proofs.Refine.Sepref.mopBinop Lax13Proofs.Imp.Bop.add a b
+  Lax62Proofs.Refine.Sepref.mopBinop Lax13Proofs.Imp.Bop.add a b
 under the ownership
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn a "a" ∗
-    Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn b "b"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn a "a" ∗
+    Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn b "b"
 The precondition owns no scratch cell; a destination-taking rule needs `junkCell "t1"` in it.
 combinator rules: none is stated at this abstract term (4 tried).
 operator rules (6 more are stated at other abstract terms):
-Lax13Proofs.Refine.Sepref.hnr_mop_binop: the rule's precondition conjuncts
-  Lax13Proofs.Refine.Sepref.junkCell "r"
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn a ?y
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn b ?z
+Lax62Proofs.Refine.Sepref.hnr_mop_binop: the rule's precondition conjuncts
+  Lax62Proofs.Refine.Sepref.junkCell "r"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn a ?y
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn b ?z
 could not all be matched against the goal's
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn a "a"
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn b "b"
-Lax13Proofs.Refine.Sepref.hnr_mop_binop_self: the rule's precondition conjuncts
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn a "r"
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn b ?z
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn a "a"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn b "b"
+Lax62Proofs.Refine.Sepref.hnr_mop_binop_self: the rule's precondition conjuncts
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn a "r"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn b ?z
 could not all be matched against the goal's
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn a "a"
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn b "b"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn a "a"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn b "b"
 -/
 #guard_msgs in
 #sepref_synth (a b : ℕ) :
@@ -513,9 +514,9 @@ driver's envelope does not wrap it twice. -/
 /--
 info: sepref: phase 'check_EVAL' (priority 40) failed.
 an `EVAL` tag survived the combinator phase:
-  Lax13Proofs.Refine.Sepref.EVAL $ᵃ fun y =>
-    Lax13Proofs.Refine.Sepref.PROTECT2 (HAdd.hAdd $ᵃ y $ᵃ Lax13Proofs.Refine.Sepref.PR_CONST 1)
-      Lax13Proofs.Refine.Sepref.DUMMY
+  Lax62Proofs.Refine.Sepref.EVAL $ᵃ fun y =>
+    Lax62Proofs.Refine.Sepref.PROTECT2 (HAdd.hAdd $ᵃ y $ᵃ Lax62Proofs.Refine.Sepref.PR_CONST 1)
+      Lax62Proofs.Refine.Sepref.DUMMY
 no `sepref_monadify_comb` equation applies to it.
 Either the operation needs a combinator equation, or the tagged
 application's head is an abstraction (the source's
@@ -534,4 +535,4 @@ application's head is an abstraction (the source's
 
 end SynthGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

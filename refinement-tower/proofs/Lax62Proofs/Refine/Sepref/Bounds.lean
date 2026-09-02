@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Sepref.Definition
-import Lax13Proofs.Refine.Codegen.Cash
+import Lax62Proofs.Refine.Sepref.Definition
+import Lax62Proofs.Refine.Codegen.Cash
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # `BRefine` — the bounds half of a synthesis (promoted), and its tooling
@@ -15,7 +16,7 @@ measured the tool debts this file pays.
 
 **T2/D-a — the core is promoted here; the spike re-exports.** Every
 name keeps its spike-era full identifier
-(`Lax13Proofs.Refine.Sepref.WordSpike.*`): the ND-MC satellites import
+(`Lax62Proofs.Refine.Sepref.WordSpike.*`): the ND-MC satellites import
 the spike path and `open … WordSpike`, and the promotion must not move
 a single consumer. So this file declares into the same `WordSpike`
 namespace and the spike imports it; nothing else changes. §1–§2 are
@@ -85,7 +86,7 @@ manufacturable). The driver is MetaM code, exempt, and covered by
 keeping every consumer green plus the gate examples it emits here.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -1090,4 +1091,4 @@ end BoundsGate
 
 end WordSpike
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

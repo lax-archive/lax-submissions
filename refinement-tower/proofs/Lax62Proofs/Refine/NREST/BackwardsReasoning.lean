@@ -1,5 +1,5 @@
-import Lax13Proofs.Refine.NREST.Combinators
-import Lax13Proofs.Refine.NREST.TimeRefinement
+import Lax62Proofs.Refine.NREST.Combinators
+import Lax62Proofs.Refine.NREST.TimeRefinement
 
 /-!
 Backwards reasoning for `NREST`: the `gwp` predicate transformer and the
@@ -300,7 +300,7 @@ itself, including `gwp_bindT`, the hardest ported statement. The first
 two `#guard`s are the recorded counterexample of delta B1.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 variable {α β γ κ : Type}
 
@@ -1888,4 +1888,4 @@ theorem demoLoop_spec (n : ℕ) :
 
 end Sanity
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

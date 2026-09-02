@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.Definition
+import Lax62Proofs.Refine.Sepref.Definition
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 P4's acceptance: two abstract programs, written at the user layer,
@@ -102,7 +103,7 @@ what `mergeSolve` reconciles. Fallback: a `mop_skip` at `ir.skip` with
 an in-place rule would replace it, at the price of one more rule.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -478,11 +479,11 @@ theorem fcLoop_user (xs : List ℕ) (t : ℕ) :
       (timerefine irE (fcUser xs t)) :=
   hnRefine_ref (fcLoop' xs t) (fc_exchange xs t)
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Acceptance.fcLoop' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Acceptance.fcLoop' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms fcLoop
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Acceptance.fcLoop_user' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Acceptance.fcLoop_user' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms fcLoop_user
 
@@ -655,15 +656,15 @@ theorem rvLoop_array (xs : List ℕ) :
     conj_entails_mono (natAssn_entails_junkCell a.1 e.1)
       (conj_entails_mono (natAssn_entails_junkCell a.2.1 e.2.1) (entails_refl _))
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Acceptance.rvLoop' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Acceptance.rvLoop' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms rvLoop
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Acceptance.rvLoop_user' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Acceptance.rvLoop_user' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms rvLoop_user
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Acceptance.rvLoop_array' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Acceptance.rvLoop_array' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms rvLoop_array
 
@@ -684,36 +685,36 @@ names `junkCell "t1"` exactly.) -/
 /--
 info: sepref: phase 'trans' (priority 80) failed.
 sepref: no rule translates
-  Lax13Proofs.Refine.Sepref.mopAget xs i
+  Lax62Proofs.Refine.Sepref.mopAget xs i
 under the ownership
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.arrayAssn xs "A" ∗
-    Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn i "i"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.arrayAssn xs "A" ∗
+    Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn i "i"
 The precondition owns no scratch cell; a destination-taking rule needs `junkCell "t2"` in it.
 combinator rules (2 more are stated at other abstract terms):
-Lax13Proofs.Refine.Sepref.hnr_bind: applied, but a sub-program stalled: sepref: no rule translates
-  Lax13Proofs.Refine.NRest.assert (i < xs.length)
+Lax62Proofs.Refine.Sepref.hnr_bind: applied, but a sub-program stalled: sepref: no rule translates
+  Lax62Proofs.Refine.NRest.assert (i < xs.length)
 under the ownership
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.arrayAssn xs "A" ∗
-    Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn i "i"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.arrayAssn xs "A" ∗
+    Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn i "i"
 The precondition owns no scratch cell; a destination-taking rule needs `junkCell "t1"` in it.
 combinator rules: none is stated at this abstract term (4 tried).
 operator rules: none is stated at this abstract term (8 tried).
-Lax13Proofs.Refine.Sepref.hnr_seq: applied, but a sub-program stalled: sepref: no rule translates
-  Lax13Proofs.Refine.NRest.assert (i < xs.length)
+Lax62Proofs.Refine.Sepref.hnr_seq: applied, but a sub-program stalled: sepref: no rule translates
+  Lax62Proofs.Refine.NRest.assert (i < xs.length)
 under the ownership
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.arrayAssn xs "A" ∗
-    Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn i "i"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.arrayAssn xs "A" ∗
+    Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn i "i"
 The precondition owns no scratch cell; a destination-taking rule needs `junkCell "t1"` in it.
 combinator rules: none is stated at this abstract term (4 tried).
 operator rules: none is stated at this abstract term (8 tried).
 operator rules (7 more are stated at other abstract terms):
-Lax13Proofs.Refine.Sepref.hnr_mop_aget: the rule's precondition conjuncts
-  Lax13Proofs.Refine.Sepref.junkCell "t1"
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.arrayAssn xs ?a
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn i ?i
+Lax62Proofs.Refine.Sepref.hnr_mop_aget: the rule's precondition conjuncts
+  Lax62Proofs.Refine.Sepref.junkCell "t1"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.arrayAssn xs ?a
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn i ?i
 could not all be matched against the goal's
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.arrayAssn xs "A"
-  Lax13Proofs.Refine.Sepref.hnCtxt Lax13Proofs.Refine.Sepref.natAssn i "i"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.arrayAssn xs "A"
+  Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn i "i"
 -/
 #guard_msgs in
 #sepref_synth (xs : List ℕ) (i : ℕ) :
@@ -767,4 +768,4 @@ could not all be matched against the goal's
 
 end Acceptance
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

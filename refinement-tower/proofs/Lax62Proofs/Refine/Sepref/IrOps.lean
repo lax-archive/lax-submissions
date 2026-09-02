@@ -1,7 +1,8 @@
-import Lax13Proofs.Refine.Sepref.Attrs
-import Lax13Proofs.Refine.Sepref.Basic
-import Lax13Proofs.Refine.NREST.Combinators
-import Lax13Proofs.Refine.NREST.TimeRefinement
+import Lax62Proofs.Refine.Sepref.Attrs
+import Lax62Proofs.Refine.Sepref.Basic
+import Lax62Proofs.Refine.NREST.Combinators
+import Lax62Proofs.Refine.NREST.TimeRefinement
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The ir-currency operation layer: the abstract `mop_…` operations of the
@@ -99,7 +100,7 @@ monotonicity, `mono2` for `monadicWhileBody`, and the pure-guard
 unfolding; moving them is a backlog item with no proof content.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -818,4 +819,4 @@ theorem hnr_mop_aset_wrong_currency :
 
 end Gate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

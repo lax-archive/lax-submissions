@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Iicf.IicfArray
-import Lax13Proofs.Refine.Iicf.UnionFindAbstract
+import Lax62Proofs.Refine.Iicf.IicfArray
+import Lax62Proofs.Refine.Iicf.UnionFindAbstract
 import Mathlib.Data.Nat.Bitwise
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Timed loop-form union-find
@@ -27,10 +28,10 @@ writes.  Thus its cost is a vector over the actual IR currencies, rather than
 the scalar source constant.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf.UnionFindTime
+namespace Lax62Proofs.Refine.Sepref.Iicf.UnionFindTime
 
 open Ir NRest
-open Lax13Proofs.Refine.Iicf.UnionFind
+open Lax62Proofs.Refine.Iicf.UnionFind
 
 set_option autoImplicit true
 
@@ -3125,40 +3126,40 @@ theorem compare_false_while_cost :
 
 /-! ## Kernel-three guards -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_range_init' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_range_init' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_range_init
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.UnionFindTime.ufArrays_init_wf' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.UnionFindTime.ufArrays_init_wf' depends on axioms: [propext,
  Classical.choice,
  Quot.sound] -/
 #guard_msgs in
 #print axioms ufArrays_init_wf
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_ufInit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_ufInit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_ufInit
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_ufFind' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_ufFind' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_ufFind
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_ufCompress' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_ufCompress' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_ufCompress
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_ufCompare' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_ufCompare' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_ufCompare
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_ufUnion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.UnionFindTime.hnr_ufUnion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_ufUnion
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.UnionFindTime.unionFindTimedImplementation' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.UnionFindTime.unionFindTimedImplementation' depends on axioms: [propext,
  Classical.choice,
  Quot.sound] -/
 #guard_msgs in
 #print axioms unionFindTimedImplementation
 
-end Lax13Proofs.Refine.Sepref.Iicf.UnionFindTime
+end Lax62Proofs.Refine.Sepref.Iicf.UnionFindTime

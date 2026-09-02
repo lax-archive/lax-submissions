@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Sepref.Definition
-import Lax13Proofs.Refine.Sepref.Signature
+import Lax62Proofs.Refine.Sepref.Definition
+import Lax62Proofs.Refine.Sepref.Signature
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Signature-driven Sepref synthesis
@@ -17,7 +18,7 @@ registration are supplied by `Register.lean`; they remain orthogonal to this
 proof-producing conversion.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -119,4 +120,4 @@ sepref_synth widePhaseFromSignature :
 
 end SignaturePrepGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

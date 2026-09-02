@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Impl.ArrayListAppendSynth
+import Lax62Proofs.Refine.Iicf.Impl.ArrayListAppendSynth
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # `butlast` then `append`, as one command
@@ -118,9 +119,9 @@ untouched and unaffected — `dynRate` domination is stated about
 guard as a term here.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 /-! ## 1. The heap `butlast` preserves what the append dispatch needs -/
@@ -248,7 +249,7 @@ theorem arlHButlastAppendRaw_eq (s : ArrayList) (x : ℕ) (hwf : s.Wf) :
             (arlAppendTotal (arlHButlastExecState s) x).capacity)))
         arlHButlastAppendCost := by
   rw [arlHButlastAppendRaw, arlHButlastExecSpec_def,
-    Lax13Proofs.Refine.Iicf.bindT_unit]
+    Lax62Proofs.Refine.Iicf.bindT_unit]
   show NRest.consume (arlHAppendExecSpec (arlHButlastExecState s) x) arlHButlastCost = _
   rw [arlHAppendExecSpec, arlHAppendMachineN_space _ (arlHButlast_lt hwf),
     NRest.consume_consume, arlHButlastAppendCost_split]
@@ -312,7 +313,7 @@ completion rather than faulting (the precedent is ledger E38's controls). -/
 
 namespace ArrayListButlastAppendGate
 
-open Lax13Proofs.Refine.Ir.Gate (costVector readVars readArrs)
+open Lax62Proofs.Refine.Ir.Gate (costVector readVars readArrs)
 
 /-! ### Refute first: the pure model, before any program -/
 
@@ -552,28 +553,28 @@ end ArrayListButlastAppendGate
 
 /-! ## 7. Axiom gate -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlast_tight' does not depend on any axioms -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlast_tight' does not depend on any axioms -/
 #guard_msgs in
 #print axioms arlHButlast_tight
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlast_lt' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlast_lt' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHButlast_lt
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlastAppend_dispatch' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlastAppend_dispatch' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHButlastAppend_dispatch
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlastAppendRaw_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlastAppendRaw_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHButlastAppendRaw_eq
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlastAppend_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlastAppend_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHButlastAppend_exec_hnr
 
 /--
-info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlastAppendExecSpec_refines' depends on axioms: [propext,
+info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlastAppendExecSpec_refines' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
@@ -606,4 +607,4 @@ theorem arlHButlastAppend_leaves_the_cost_story_unchanged (s : ArrayList) (x : �
       arlIrAdvertisedCost + arlIrPotential s :=
   arlHAppendMachine_amortized_ir s x hwf ht
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

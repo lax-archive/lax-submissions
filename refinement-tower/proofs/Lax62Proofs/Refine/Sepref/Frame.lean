@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Sepref.Constraints
-import Lax13Proofs.Refine.Sepref.CombRules
-import Lax13Proofs.Refine.Ir.SepSolver
+import Lax62Proofs.Refine.Sepref.Constraints
+import Lax62Proofs.Refine.Sepref.CombRules
+import Lax62Proofs.Refine.Ir.SepSolver
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Frame inference and branch merging: the port of
@@ -128,7 +129,7 @@ and is proved in `Sepref/Basic.lean`.
 
 open Lean Elab Meta
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -929,4 +930,4 @@ example : True := by
 
 end FrameGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

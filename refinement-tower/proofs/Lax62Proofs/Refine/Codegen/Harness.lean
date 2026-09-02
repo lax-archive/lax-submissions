@@ -1,4 +1,5 @@
 import Lax13Proofs.Lib.Fill
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The I/O harness: the prelude and the epilogue an IR program is wrapped
@@ -86,7 +87,7 @@ has no `write` in it, so the second is `by decide` at every call site,
 and the harness owes the output tape to nobody else.
 -/
 
-namespace Lax13Proofs.Codegen
+namespace Lax62Proofs.Codegen
 
 open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Reasoning.Lib
 
@@ -728,4 +729,4 @@ fail only here. -/
 
 end Gate
 
-end Lax13Proofs.Codegen
+end Lax62Proofs.Codegen

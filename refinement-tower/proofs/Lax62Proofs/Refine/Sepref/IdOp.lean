@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Autoref.Phases
+import Lax62Proofs.Refine.Autoref.Phases
 
 /-!
 # Sepref phase one: operation identification
@@ -105,7 +105,7 @@ tokenizer conflict is not hypothetical but certain.
 `:::ᵢ` are the source's spellings for `intf_type` and `CTYPE_ANNOT`, and
 they are also — in *Autoref*'s theories, which the source never imports
 alongside these — the spellings of `CONST_INTF` and `i_ANNOT`. Ours are
-declared `scoped` to `Lax13Proofs.Refine.Sepref`, so a wave-C module
+declared `scoped` to `Lax62Proofs.Refine.Sepref`, so a wave-C module
 that legitimately needs both layers gets both notations in scope and
 Lean's overload resolution separates them by the second argument's sort
 (an `Interface` *value* for Autoref's, a `Sort` for Sepref's). Recorded
@@ -193,7 +193,7 @@ open Lean Meta Elab
 
 universe u v w
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 /-! ## Proper protection of terms
 
@@ -1005,4 +1005,4 @@ stuck states (1), depth-first order:
 
 end Gate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

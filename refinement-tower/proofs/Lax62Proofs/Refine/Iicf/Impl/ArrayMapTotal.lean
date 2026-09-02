@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Iicf.Intf.Map
-import Lax13Proofs.Refine.Iicf.IicfArray
+import Lax62Proofs.Refine.Iicf.Intf.Map
+import Lax62Proofs.Refine.Iicf.IicfArray
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Partial dense array map
@@ -20,9 +21,9 @@ array.  No allocation, deallocation, pointer export, or zero-cost placeholder
 is claimed.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 def amt1Rel (N : ℕ) : Set (List ℕ × (ℕ → Option ℕ)) :=
@@ -383,16 +384,16 @@ caller-owned operation has a positive exact cost above. -/
 
 /-! ## Kernel-three gates -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.amt1Rel_domain_bound' depends on axioms: [propext] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.amt1Rel_domain_bound' depends on axioms: [propext] -/
 #guard_msgs in
 #print axioms amt1Rel_domain_bound
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.amtLookupOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.amtLookupOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms amtLookupOp_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.amtInit_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.amtInit_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms amtInit_exec_hnr
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

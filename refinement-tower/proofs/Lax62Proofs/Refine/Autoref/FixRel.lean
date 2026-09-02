@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Autoref.IdOps
+import Lax62Proofs.Refine.Autoref.IdOps
 
 /-!
 Phase three: relator fixing (`fix_rel`, priority 22).
@@ -186,7 +186,7 @@ found.
 
 open Lean Meta Elab
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-! ### Priority tags (`Autoref_Fix_Rel.thy` §2.1) -/
 
@@ -525,4 +525,4 @@ def fixRelPhase : Phase where
 
 end Autoref
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

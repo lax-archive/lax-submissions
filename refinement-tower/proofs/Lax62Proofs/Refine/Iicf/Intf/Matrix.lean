@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Iicf.Intf.Set
-import Lax13Proofs.Refine.NREST.Foreach
+import Lax62Proofs.Refine.Iicf.Intf.Set
+import Lax62Proofs.Refine.NREST.Foreach
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Matrix interface and finite pointwise implementations
@@ -28,9 +29,9 @@ The source pattern and generic-locale registrations are therefore accounted
 for without cloning Isabelle-only term-pattern or code-generator machinery.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 variable {α β σ : Type}
@@ -676,16 +677,16 @@ run_cmd do
 
 /-! ## Kernel-three guards -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.matrixGrid_divmod' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.matrixGrid_divmod' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms matrixGrid_divmod
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.mtxUnopFold_refine' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.mtxUnopFold_refine' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms mtxUnopFold_refine
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.mtxCmpFold_refine' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.mtxCmpFold_refine' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms mtxCmpFold_refine
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

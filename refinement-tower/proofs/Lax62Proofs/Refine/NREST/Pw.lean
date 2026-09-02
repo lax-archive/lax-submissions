@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.NREST.Basic
+import Lax62Proofs.Refine.NREST.Basic
 
 /-!
 Pointwise reasoning about `NRest`, and the monad laws.
@@ -50,7 +50,7 @@ here): `withBot_map_add` (`WithBot.map (t + ·) = (↑t + ·)`),
 `ℕ∞` discharge rests on.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 variable {α β δ γ κ : Type}
 
@@ -564,4 +564,4 @@ theorem bindT_assoc_acost (M : NRest α (ACost κ ℕ∞))
 
 end NRest
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

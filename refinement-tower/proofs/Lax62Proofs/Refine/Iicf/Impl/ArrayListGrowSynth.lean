@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Impl.ArrayListCash
+import Lax62Proofs.Refine.Iicf.Impl.ArrayListCash
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The cursor-setup block, and growth as one synthesized command
@@ -150,9 +151,9 @@ file pretends otherwise.
 `ArrayListCash.lean`'s compiled `arlAppendOp_refines_unchanged`.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 /-! ## 1. The cursor-setup block and the copy loop -/
@@ -472,7 +473,7 @@ theorem arlGrowPushRaw_eq (s : ArrayList) (x : ℕ) (h : s.Wf) (hcap : 0 < s.cap
     arlGrowPushRaw s x = NRest.consume (NRest.returnT (arlPushGrown s x).buffer)
       (allocCost (2 * s.capacity) + arlGrowPushCost s.length) := by
   obtain ⟨-, hlc, hcb⟩ := h
-  rw [arlGrowPushRaw, mopAlloc_def, Lax13Proofs.Refine.Iicf.bindT_unit, mopGrowPush,
+  rw [arlGrowPushRaw, mopAlloc_def, Lax62Proofs.Refine.Iicf.bindT_unit, mopGrowPush,
     NRest.assert_pos (⟨by omega, by simpa using by omega⟩ :
       s.length ≤ s.buffer.length ∧ s.length < (List.replicate (2 * s.capacity) 0).length),
     NRest.returnT_bindT, NRest.consume_consume, arlGrowCopy_value]
@@ -482,7 +483,7 @@ theorem arlGrowRaw_eq (s : ArrayList) (h : s.Wf) :
     arlGrowRaw s = NRest.consume (NRest.returnT (arlGrow s).buffer)
       (allocCost (2 * s.capacity) + arlGrowBlockCost s.length) := by
   obtain ⟨-, hlc, hcb⟩ := h
-  rw [arlGrowRaw, mopAlloc_def, Lax13Proofs.Refine.Iicf.bindT_unit, mopGrowBlock,
+  rw [arlGrowRaw, mopAlloc_def, Lax62Proofs.Refine.Iicf.bindT_unit, mopGrowBlock,
     NRest.assert_pos (⟨by omega, by simpa using by omega⟩ :
       s.length ≤ s.buffer.length ∧ s.length ≤ (List.replicate (2 * s.capacity) 0).length),
     NRest.returnT_bindT, NRest.consume_consume, arlGrowCopy_value]
@@ -514,7 +515,7 @@ theorem arlBlitSetupN_toE : arlBlitSetupN.toE = arlSetupCost := by
 
 namespace GrowGate
 
-open Lax13Proofs.Refine.Ir.Gate (costVector readVars readArrs)
+open Lax62Proofs.Refine.Ir.Gate (costVector readVars readArrs)
 
 /-- The emitted body of the copy loop. -/
 private def gateLoop : Com :=
@@ -787,36 +788,36 @@ end GrowGate
 
 /-! ## 6. Axiom hygiene -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlGrowBlock_triple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlGrowBlock_triple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlGrowBlock_triple
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hnr_mop_growBlock' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hnr_mop_growBlock' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_growBlock
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hnr_mop_growPush' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hnr_mop_growPush' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_growPush
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlGrowSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlGrowSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlGrowSynth
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlGrowPushSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlGrowPushSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlGrowPushSynth
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlGrowRaw_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlGrowRaw_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlGrowRaw_eq
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlGrowPushRaw_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlGrowPushRaw_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlGrowPushRaw_eq
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlBlitSetupN_toE' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlBlitSetupN_toE' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlBlitSetupN_toE
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

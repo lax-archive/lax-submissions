@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.SignatureNorm
+import Lax62Proofs.Refine.Sepref.SignatureNorm
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Goal-directed signature composition
@@ -21,7 +22,7 @@ both source composition branches are present, while strict normalization is
 limited to the source-supported assertion/product/pure/identity laws.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 open Lean Elab Meta Tactic
@@ -306,4 +307,4 @@ example : True := by
 
 end SignatureToolGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Impl.MSArrayList
+import Lax62Proofs.Refine.Iicf.Impl.MSArrayList
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Indexed fixed-capacity array lists
@@ -11,9 +12,9 @@ position array.  Both buffers are caller-owned.  Thus source empty-size is a
 pure model/establishment boundary, never an allocation or replicate HNR rule.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 abbrev IndexedArrayList := MSArrayList × List ℕ
@@ -1029,7 +1030,7 @@ theorem ialPackRaw_eq (buffer : List ℕ) (n cap : ℕ) (qp : List ℕ) :
       (NRest.returnT ((buffer, (n, cap)), qp))
       (irUnit Currency.skip + (irUnit Currency.skip + irUnit Currency.skip)) := by
   simp [ialPackRaw, mopPair_def,
-    Lax13Proofs.Refine.Iicf.bindT_unit, NRest.consume_consume]
+    Lax62Proofs.Refine.Iicf.bindT_unit, NRest.consume_consume]
 
 theorem ialSwapRaw_eq (buffer qp : List ℕ) (n cap i j : ℕ)
     (hi : i < buffer.length) (hj : j < buffer.length)
@@ -1043,7 +1044,7 @@ theorem ialSwapRaw_eq (buffer qp : List ℕ) (n cap i j : ℕ)
   simp [ialSwapRaw, ialSwapExecSpec, ialSwapCost, ialPackRaw,
     mopAget_def, mopAset_def, NRest.assert_pos hi, NRest.assert_pos hj,
     hqj0, hqi0,
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def,
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def,
     NRest.consume_consume]
   ac_rfl
 
@@ -1067,7 +1068,7 @@ theorem ialButlastRaw_eq (N : ℕ) (buffer qp : List ℕ) (n cap : ℕ)
   simp [ialButlastRaw, ialButlastExecSpec, ialButlastCost, ialPackRaw,
     marlPred, mopBinop_def, Imp.Bop.apply_sub, binopCurrency_sub, mopAget_def,
     mopAset_def, NRest.assert_pos hi, hq0,
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def,
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def,
     NRest.consume_consume]
   ac_rfl
 
@@ -1078,7 +1079,7 @@ theorem ialAppendRaw_eq (buffer qp : List ℕ) (n cap k : ℕ)
   simp [ialAppendRaw, ialAppendExecSpec, ialAppendCost, ialPackRaw,
     mopCopy_def, mopAset_def, mopBinop_def, Imp.Bop.apply_add,
     binopCurrency_add, NRest.assert_pos hn, NRest.assert_pos hk,
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def,
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def,
     NRest.consume_consume]
   ac_rfl
 
@@ -1097,13 +1098,13 @@ theorem ialContainsRaw_eq (N : ℕ) (qp : List ℕ) (k : ℕ)
         simpa [List.getElem?_eq_getElem hkq, getElem!_pos, hkq] using hp
       simp [ialContainsRaw, ialContainsExecSpec, ialContainsCost, hk, hp0,
         irIf_true, mopAget_def, NRest.assert_pos hkq, mopConstN,
-        Lax13Proofs.Refine.Iicf.bindT_unit, NRest.consume_consume]
+        Lax62Proofs.Refine.Iicf.bindT_unit, NRest.consume_consume]
       ac_rfl
     · have hp0 : ¬ qp[k]?.getD 0 < N := by
         simpa [List.getElem?_eq_getElem hkq, getElem!_pos, hkq] using hp
       simp [ialContainsRaw, ialContainsExecSpec, ialContainsCost, hk, hp0,
         irIf_true, irIf_false, mopAget_def, NRest.assert_pos hkq, mopConstN,
-        Lax13Proofs.Refine.Iicf.bindT_unit, NRest.consume_consume]
+        Lax62Proofs.Refine.Iicf.bindT_unit, NRest.consume_consume]
       ac_rfl
   · simp [ialContainsRaw, ialContainsExecSpec, ialContainsCost, hk,
       irIf_false, mopConstN, NRest.consume_consume]
@@ -1475,15 +1476,15 @@ run_cmd do
 
 /-! ## Kernel-three gates -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.IalInvar.swap' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.IalInvar.swap' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms IalInvar.swap
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.ialAppend_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.ialAppend_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms ialAppend_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.ialContains_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.ialContains_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms ialContains_exec_hnr
 
@@ -1502,4 +1503,4 @@ def ialExample : IndexedArrayList :=
 #guard ialSwap ialExample 0 1 =
   some (⟨[3, 1, 0, 0, 0], 2, 5⟩, [5, 1, 5, 0, 5])
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

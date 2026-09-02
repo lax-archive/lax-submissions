@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.HeapAlloc
+import Lax62Proofs.Refine.Sepref.HeapAlloc
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Element-level ownership: the exclusive-or (EO) array layer.
@@ -125,7 +126,7 @@ recoverable there), which is the evidence behind D-B1a; and offering
 premise is what makes it bite.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -947,38 +948,38 @@ sepref_synth eoUpdSynth (p j : ℕ) (xs : List (Option ℕ)) (e : ℕ) :
 The four laws and the two registered rules, on the three standard
 axioms and nothing else. -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.loAssn_replicate_none' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.loAssn_replicate_none' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms loAssn_replicate_none
 
-/-- info: 'Lax13Proofs.Refine.Sepref.loAssn_all_none' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.loAssn_all_none' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms loAssn_all_none
 
-/-- info: 'Lax13Proofs.Refine.Sepref.loAssn_extract' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.loAssn_extract' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms loAssn_extract
 
-/-- info: 'Lax13Proofs.Refine.Sepref.loAssn_insert' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.loAssn_insert' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms loAssn_insert
 
-/-- info: 'Lax13Proofs.Refine.Sepref.hnr_mop_oarray_extract' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.hnr_mop_oarray_extract' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_oarray_extract
 
-/-- info: 'Lax13Proofs.Refine.Sepref.hnr_mop_oarray_upd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.hnr_mop_oarray_upd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_oarray_upd
 
-/-- info: 'Lax13Proofs.Refine.Sepref.HeapEOGate.eoExtractSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.HeapEOGate.eoExtractSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms eoExtractSynth
 
-/-- info: 'Lax13Proofs.Refine.Sepref.HeapEOGate.eoUpdSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.HeapEOGate.eoUpdSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms eoUpdSynth
 
 end HeapEOGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

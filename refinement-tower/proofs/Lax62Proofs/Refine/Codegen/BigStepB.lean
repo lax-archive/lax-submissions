@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Ir.Semantics
+import Lax62Proofs.Refine.Ir.Semantics
 import Lax13Proofs.Bounds
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Bounded IR runs: the mirror at the IR of IMP+'s own `BigStepB`.
@@ -68,7 +69,7 @@ strictly stronger invariant with no consumer, and it would have to be
 carried by the harness for no reason.
 -/
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 open Lax13Proofs.Imp (fit fit_self fit_eq_some)
 
@@ -569,4 +570,4 @@ theorem bigStepB_smallGuard :
 
 end BoundGate
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

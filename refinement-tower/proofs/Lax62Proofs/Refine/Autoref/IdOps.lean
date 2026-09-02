@@ -1,5 +1,5 @@
-import Lax13Proofs.Refine.Autoref.Phases
-import Lax13Proofs.Refine.Autoref.Relators
+import Lax62Proofs.Refine.Autoref.Phases
+import Lax62Proofs.Refine.Autoref.Relators
 
 /-!
 Phases one and two: operation identification (`id_op`, priority 10) and
@@ -255,7 +255,7 @@ open Lean Meta Elab
 
 universe u v w
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-! ### The interface annotation (`Autoref_Id_Ops.thy` §1.1) -/
 
@@ -712,4 +712,4 @@ def roiPhase : Phase where
 
 end Autoref
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

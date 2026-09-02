@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Sepref.Tool
-import Lax13Proofs.Refine.Sepref.Definition
+import Lax62Proofs.Refine.Sepref.Tool
+import Lax62Proofs.Refine.Sepref.Definition
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # T1 PROBE ARTIFACT — the P2/2B/D-a reproducers
@@ -19,10 +20,10 @@ Stages:
 Every synthesis below is `#sepref_synth` (report-only).
 -/
 
-namespace Lax13Proofs.Refine.T1Probe
+namespace Lax62Proofs.Refine.T1Probe
 
-open Lax13Proofs.Refine.Sepref
-open Lax13Proofs.Refine NRest Ir
+open Lax62Proofs.Refine.Sepref
+open Lax62Proofs.Refine NRest Ir
 
 /-! ## Local ops (the 2B restatements, verbatim) -/
 
@@ -223,4 +224,4 @@ set_option maxHeartbeats 2000000 in
       arrayAssn ×ₐ arrayAssn ×ₐ natAssn ×ₐ natAssn ×ₐ natAssn ×ₐ natAssn)
     (w11 n (a1, a2, a3, a4, a5, a6, a7, 0, k2, k3, k4))
 
-end Lax13Proofs.Refine.T1Probe
+end Lax62Proofs.Refine.T1Probe

@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.NREST.Automation
+import Lax62Proofs.Refine.NREST.Automation
 import Lean.Meta.Tactic.Grind.Cases
 import Lean.Meta.Tactic.Grind.CasesMatch
 
@@ -14,7 +14,7 @@ not recursively search a program, split arbitrary expressions, or extend the
 separate refinement-condition generator.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 namespace NRest
 
 open Lean Elab Tactic Meta
@@ -102,13 +102,13 @@ example : progress
 
 end Gates
 
-/-- info: 'Lax13Proofs.Refine.NRest.vcgSplitGwpGate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.vcgSplitGwpGate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms vcgSplitGwpGate
 
-/-- info: 'Lax13Proofs.Refine.NRest.vcgSplitProgressGate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.vcgSplitProgressGate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms vcgSplitProgressGate
 
 end NRest
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

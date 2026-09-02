@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Sepref.HeapAlloc
-import Lax13Proofs.Refine.Ir.SepSolver
+import Lax62Proofs.Refine.Sepref.HeapAlloc
+import Lax62Proofs.Refine.Ir.SepSolver
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The range-copy loop — `dst[0..n) := src[0..n)`
@@ -124,7 +125,7 @@ the emitted term by kernel computation, so synthesis cannot use this rule to
 place an allocation inside a loop: there is no allocation in it to place.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -543,7 +544,7 @@ theorem blitPre_self_false (p : ℕ) (v w : Val) (xs zs : List Val) :
 
 namespace BlitGate
 
-open Lax13Proofs.Refine.Ir.Gate (costVector readVars readArrs)
+open Lax62Proofs.Refine.Ir.Gate (costVector readVars readArrs)
 open Plausible
 
 /-! ### The list level, by computation -/
@@ -699,16 +700,16 @@ end BlitGate
 
 /-! ## 6. Axiom hygiene -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.blit_triple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.blit_triple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms blit_triple
 
-/-- info: 'Lax13Proofs.Refine.Sepref.hnr_mop_blit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.hnr_mop_blit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_blit
 
-/-- info: 'Lax13Proofs.Refine.Sepref.blitCost_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.blitCost_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms blitCost_eq
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

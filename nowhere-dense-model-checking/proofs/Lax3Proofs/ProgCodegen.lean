@@ -1,5 +1,5 @@
 import Lax3Proofs.ProgCodegenLayout
-import Lax13Proofs.Refine.Codegen.Cash
+import Lax62Proofs.Refine.Codegen.Cash
 import Lax3Proofs.Headline
 
 /-!
@@ -14,7 +14,7 @@ needs a compiled `Lax13.Ram.Program` with
       (fun _ => if Sat G Fin.elim0 φ then [1] else [0]) T.
 
 The tower's exit is `computesInTime_of_spec`
-(`word-ram/proofs/Lax13Proofs/Refine/Codegen/Cash.lean:408-419`): a
+(`word-ram/proofs/Lax62Proofs/Refine/Codegen/Cash.lean:408-419`): a
 `Com.Ok` layout check, an entry bound (`hinp`), one `Reasoning.Spec`
 from `initEnv` to the output tape, and `FitsWords` (`hfit`). This file
 assembles the pipeline at that exit **once**, so that everything still
@@ -151,8 +151,8 @@ the axiom's statement.
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Codegen Lax13Proofs.Compile
-open Lax13Proofs.Refine.Codegen (computesInTime_of_spec)
+open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax62Proofs.Codegen Lax13Proofs.Compile
+open Lax62Proofs.Refine.Codegen (computesInTime_of_spec)
 open Lax11.GraphEncoding
 open Lax12.GraphClasses Lax12.NowhereDenseClasses
 open Lax3.FirstOrder (FO)

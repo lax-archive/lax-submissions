@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Codegen.Harness
+import Lax62Proofs.Refine.Codegen.Harness
 import Lax3Proofs.ImplFrontEnd
 
 /-!
@@ -17,7 +17,7 @@ of `ProgCodegen.lean`'s skeleton.
 ## The program
 
 `parseCom` is harness material and nothing else
-(`word-ram/proofs/Lax13Proofs/Refine/Codegen/Harness.lean`): read the
+(`word-ram/proofs/Lax62Proofs/Refine/Codegen/Harness.lean`): read the
 two header cells (`readScalars`), materialize the two counted scans'
 lengths (`n+1` offsets, `2m` targets) into cells by one assignment
 each, and run `readArr` twice. The arrays are pre-sized by `ext` —
@@ -63,7 +63,7 @@ the `hinp`/`FitsWords` pair.
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Codegen
+open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax62Proofs.Codegen
 open Lax11.GraphEncoding
 
 /-! ## §1 The word, split into its three zones -/

@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Sepref.Register
-import Lax13Proofs.Refine.Sepref.SignatureTool
+import Lax62Proofs.Refine.Sepref.Register
+import Lax62Proofs.Refine.Sepref.SignatureTool
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Interface operation and implementation declarations
@@ -26,7 +27,7 @@ never invoke metaprogramming or `FCOMP` themselves.
 
 open Lean Elab Meta
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -319,7 +320,7 @@ run_cmd do
   unless rules.contains ``counterRead_impl do
     throwError "sepref_decl_impl gate: generated theorem was not registered"
 
-/-- info: 'Lax13Proofs.Refine.Sepref.IntfUtilGate.counterRead_impl' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.IntfUtilGate.counterRead_impl' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms counterRead_impl
 
@@ -327,4 +328,4 @@ end
 
 end IntfUtilGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

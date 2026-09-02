@@ -67,7 +67,7 @@ discharging program's text (`greedyScatterCost_zero` prices it —
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Codegen
+open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax62Proofs.Codegen
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax3Proofs.Driver
 open Lax3Proofs.LocalityFun

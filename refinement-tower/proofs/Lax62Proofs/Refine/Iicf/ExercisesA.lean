@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.IicfTrailArray
+import Lax62Proofs.Refine.Iicf.IicfTrailArray
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # P6 wave A acceptance — the exercises
@@ -20,7 +21,7 @@ Neither program mentions an assertion, a frame, a cell permutation, a
 `sepref_synth` line each.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -67,7 +68,7 @@ noncomputable def bumpProg (xs : List ℕ) : NRest (List ℕ) ECost :=
 -- only scratch, reused by the fill's loop index and the read's
 -- destination.
 /--
-info: sepref_synth Lax13Proofs.Refine.Sepref.Iicf.ExercisesA.bumpSynth:
+info: sepref_synth Lax62Proofs.Refine.Sepref.Iicf.ExercisesA.bumpSynth:
   (fillCom "i" "A" "z" "one" "n").seq
     ((Com.aget "i" "A" "z").seq ((Com.binop Imp.Bop.add "i" "i" "one").seq (Com.aset "A" "z" "i")))
 -/
@@ -100,7 +101,7 @@ theorem bumpCost_aget : (bumpCost 3).toFun Currency.aget = 1 := by decide +kerne
 theorem bumpCost_aset : (bumpCost 3).toFun Currency.aset = 4 := by decide +kernel
 theorem bumpCost_while : (bumpCost 3).toFun Currency.«while» = 4 := by decide +kernel
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.ExercisesA.bumpSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.ExercisesA.bumpSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bumpSynth
 
@@ -127,7 +128,7 @@ noncomputable def twoRounds (dflt n : ℕ) (s : List ℕ × ℕ) (i j v : ℕ) :
             NRest.bindT (mop_tset n s₅ i v) fun s₆ => mop_treset dflt n s₆
 
 /--
-info: sepref_synth Lax13Proofs.Refine.Sepref.Iicf.ExercisesA.twoRoundsSynth:
+info: sepref_synth Lax62Proofs.Refine.Sepref.Iicf.ExercisesA.twoRoundsSynth:
   (tsetCom "A" "T" "t" "I" "V" "one").seq
     ((tsetCom "A" "T" "t" "J2" "V" "one").seq
       ((tsetCom "A" "T" "t" "I" "V" "one").seq
@@ -143,7 +144,7 @@ sepref_synth twoRoundsSynth (dflt n : ℕ) (s : List ℕ × ℕ) (i j v : ℕ) :
     _ _ ("A", "T", "t") (trailAssn dflt n)
     (twoRounds dflt n s i j v)
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.ExercisesA.twoRoundsSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.ExercisesA.twoRoundsSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms twoRoundsSynth
 
@@ -222,4 +223,4 @@ end ExercisesA
 
 end Iicf
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

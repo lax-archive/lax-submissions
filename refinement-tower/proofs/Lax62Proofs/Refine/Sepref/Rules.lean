@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Sepref.Basic
-import Lax13Proofs.Refine.NREST.DataRefinement
+import Lax62Proofs.Refine.Sepref.Basic
+import Lax62Proofs.Refine.NREST.DataRefinement
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 `fref` / `hfref` / `hr_comp` / `FCOMP`: the port of the composition layer
@@ -95,7 +96,7 @@ not a reusable object here. `const_dep_bind` is its consumer test.
   tower-expansion P1.A's `SignatureNorm.lean`.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -741,4 +742,4 @@ theorem depS_entails_witnessless :
 
 end Gate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

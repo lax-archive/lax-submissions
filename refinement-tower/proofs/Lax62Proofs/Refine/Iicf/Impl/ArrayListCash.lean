@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Impl.ArrayListGrow
+import Lax62Proofs.Refine.Iicf.Impl.ArrayListGrow
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Cashing the array list's amortized headline into machine currencies
@@ -102,9 +103,9 @@ statements in `ArrayList.lean` are untouched: they are the source-shaped
 layer, and this file is additive.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 /-! ## 1. A nine-currency executable cost vector
@@ -684,51 +685,51 @@ theorem arlAppendOp_refines_unchanged :
 
 /-! ## 8. Axiom gates -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.dynRate_wf' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.dynRate_wf' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms dynRate_wf
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlAppendMachineN_dominated' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlAppendMachineN_dominated' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlAppendMachineN_dominated
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlAppendMachineCost_le_exchange' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlAppendMachineCost_le_exchange' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs in
 #print axioms arlAppendMachineCost_le_exchange
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlGrowth_covers_alloc_and_blit' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlGrowth_covers_alloc_and_blit' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs in
 #print axioms arlGrowth_covers_alloc_and_blit
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlAppend_amortized_ir' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlAppend_amortized_ir' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlAppend_amortized_ir
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlAppendMachine_amortized_ir' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlAppendMachine_amortized_ir' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs in
 #print axioms arlAppendMachine_amortized_ir
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlAppendMachineRaw_le_amortized' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlAppendMachineRaw_le_amortized' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs in
 #print axioms arlAppendMachineRaw_le_amortized
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlAppendOp_refines_unchanged' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlAppendOp_refines_unchanged' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs in
 #print axioms arlAppendOp_refines_unchanged
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

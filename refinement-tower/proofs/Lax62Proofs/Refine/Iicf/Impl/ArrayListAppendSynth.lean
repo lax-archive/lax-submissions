@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Impl.ArrayListHeap
+import Lax62Proofs.Refine.Iicf.Impl.ArrayListHeap
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The append dispatch, and end-to-end append
@@ -154,9 +155,9 @@ still deleted — and `arlHAppend_leaves_append_unchanged` re-checks
 `ArrayListHeap.lean` are all unedited: this file is additive.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 /-! ## 1. Tightness -/
@@ -614,10 +615,10 @@ theorem arlHAppendInPlaceRaw_eq (p : ℕ) (buffer : List Val) (n cap x : ℕ)
       NRest.assert_pos (show p ≤ p + n ∧ p + n - p < buffer.length from
         ⟨Nat.le_add_right _ _, by omega⟩),
       NRest.returnT_bindT, Nat.add_sub_cancel_left]
-  rw [arlHAppendInPlaceRaw, mopHaddr_def, Lax13Proofs.Refine.Iicf.bindT_unit, hset,
-    Lax13Proofs.Refine.Iicf.bindT_unit, arlSucc_rest, Lax13Proofs.Refine.Iicf.bindT_unit,
-    arlBlockMove_def, Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def,
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def, arlHInPlaceCost]
+  rw [arlHAppendInPlaceRaw, mopHaddr_def, Lax62Proofs.Refine.Iicf.bindT_unit, hset,
+    Lax62Proofs.Refine.Iicf.bindT_unit, arlSucc_rest, Lax62Proofs.Refine.Iicf.bindT_unit,
+    arlBlockMove_def, Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def,
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def, arlHInPlaceCost]
   simp only [NRest.consume_consume]
   congr 1
   abel
@@ -627,13 +628,13 @@ theorem arlHAppendGrowRaw_eq (s : ArrayList) (x : ℕ) (hwf : s.Wf) :
       NRest.consume (NRest.returnT ((arlPushGrown s x).buffer, (s.length + 1, 2 * s.capacity)))
         (arlHGrowCost s.capacity s.length) := by
   obtain ⟨hc, hlc, hcb⟩ := hwf
-  rw [arlHAppendGrowRaw, mopAlloc_def, Lax13Proofs.Refine.Iicf.bindT_unit, mopGrowPush,
+  rw [arlHAppendGrowRaw, mopAlloc_def, Lax62Proofs.Refine.Iicf.bindT_unit, mopGrowPush,
     NRest.assert_pos (⟨by omega, by simpa using by omega⟩ :
       s.length ≤ s.buffer.length ∧ s.length < (List.replicate (2 * s.capacity) 0).length),
-    NRest.returnT_bindT, Lax13Proofs.Refine.Iicf.bindT_unit, arlSucc_rest,
-    Lax13Proofs.Refine.Iicf.bindT_unit, arlHNewCap_def,
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def,
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def, arlGrowCopy_value, arlHGrowCost]
+    NRest.returnT_bindT, Lax62Proofs.Refine.Iicf.bindT_unit, arlSucc_rest,
+    Lax62Proofs.Refine.Iicf.bindT_unit, arlHNewCap_def,
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def,
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def, arlGrowCopy_value, arlHGrowCost]
   simp only [NRest.consume_consume]
   congr 1
   abel
@@ -646,7 +647,7 @@ theorem arlHAppendRaw_eq (sp : ℕ) (s : ArrayList) (x : ℕ) (hwf : s.Wf) (ht :
   have hmul : mopBinop .mul s.capacity 2
       = NRest.consume (NRest.returnT (s.capacity * 2)) (irUnit Currency.mul) := by
     rw [mopBinop_def, Imp.Bop.apply_mul, binopCurrency_mul]
-  rw [arlHAppendRaw, hmul, Lax13Proofs.Refine.Iicf.bindT_unit]
+  rw [arlHAppendRaw, hmul, Lax62Proofs.Refine.Iicf.bindT_unit]
   by_cases h : s.length < s.capacity
   · obtain ⟨hc, hlc, hcb⟩ := hwf
     have hval : arlAppendTotal s x = ⟨s.buffer.set s.length x, s.length + 1, s.capacity⟩ :=
@@ -741,7 +742,7 @@ heap address, so a mutilated program runs to completion instead of faulting
 
 namespace ArrayListAppendGate
 
-open Lax13Proofs.Refine.Ir.Gate (costVector readVars readArrs)
+open Lax62Proofs.Refine.Ir.Gate (costVector readVars readArrs)
 
 /-! ### Refute first: the pure model, before any program -/
 
@@ -1014,35 +1015,35 @@ end ArrayListAppendGate
 
 /-! ## 11. Axiom gate -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hnr_arlBlockMove' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hnr_arlBlockMove' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_arlBlockMove
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHAppendMerge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHAppendMerge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHAppendMerge
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHAppend_dispatch' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHAppend_dispatch' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHAppend_dispatch
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHAppendRaw_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHAppendRaw_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHAppendRaw_eq
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHAppend_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHAppend_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHAppend_exec_hnr
 
 /--
-info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHAppendMachine_amortized_ir' depends on axioms: [propext,
+info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHAppendMachine_amortized_ir' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs in
 #print axioms arlHAppendMachine_amortized_ir
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlAppendTotal_tight' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlAppendTotal_tight' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms arlAppendTotal_tight
 
@@ -1059,4 +1060,4 @@ theorem arlHAppend_leaves_append_unchanged :
         (fun _ => Set.diagonal ℕ →ᵣ NRest.nrestRel arrayListRel) :=
   arlAppendOp_refines_unchanged
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

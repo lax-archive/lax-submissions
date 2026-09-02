@@ -1,6 +1,6 @@
-import Lax13Proofs.Refine.NREST.Foreach
-import Lax13Proofs.Refine.Autoref.Param
-import Lax13Proofs.Refine.Autoref.Tool
+import Lax62Proofs.Refine.NREST.Foreach
+import Lax62Proofs.Refine.Autoref.Param
+import Lax62Proofs.Refine.Autoref.Tool
 
 /-!
 # Autoref rules for member-list iteration
@@ -11,7 +11,7 @@ counterpart is distinct; `nfoldli` itself is exposed through the normal
 `autoref_rules` database at the full currency-vector NREST relation.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 open NRest
 
@@ -113,20 +113,20 @@ theorem sorted_list_result_gate :
   · exact two_members_listSetRel
   · simp
 
-/-- info: 'Lax13Proofs.Refine.autoref_nfoldli' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.autoref_nfoldli' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms autoref_nfoldli
 
-/-- info: 'Lax13Proofs.Refine.LIST_FOREACHPrimeE_param' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.LIST_FOREACHPrimeE_param' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms LIST_FOREACHPrimeE_param
 
-/-- info: 'Lax13Proofs.Refine.two_members_listSetRel' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.two_members_listSetRel' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms two_members_listSetRel
 
-/-- info: 'Lax13Proofs.Refine.sorted_list_result_gate' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.sorted_list_result_gate' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms sorted_list_result_gate
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

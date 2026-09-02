@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Ir.Triples
+import Lax62Proofs.Refine.Ir.Triples
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The heap ownership view: range ownership for arrays.
@@ -92,7 +93,7 @@ program-level index cell holding `p + j`. That is the source's
 prescribe for us — an offset bound rather than pointer compatibility.
 -/
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 /-! ## 1. The range assertion
 
@@ -595,4 +596,4 @@ example : irTriple (¤¤Currency.aset 1 ∗ (1 ↦ₕ [6, 7]) ∗ "i" ↦ᵥ 2 �
 
 end HeapGate
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

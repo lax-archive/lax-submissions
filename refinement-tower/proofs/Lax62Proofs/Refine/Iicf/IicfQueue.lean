@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.IicfStack
+import Lax62Proofs.Refine.Iicf.IicfStack
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # IICF: one-shot FIFO queue over three fixed cells
@@ -42,7 +43,7 @@ mention no literal, so a queue exercise synthesizes a *closed* program
 even at a symbolic capacity.
 -/
 
-namespace Lax13Proofs.Refine.Iicf
+namespace Lax62Proofs.Refine.Iicf
 
 open Sepref Ir NRest
 
@@ -577,22 +578,22 @@ theorem queueDrain' (cap : ℕ) (q₀ : ℕ × List ℕ) :
       (irWhileIT qDrainI qDrainBf qDrainF (0, q₀)) :=
   queueDrain cap q₀ qDrain_variant
 
-/-- info: 'Lax13Proofs.Refine.Iicf.hnr_mop_enq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.hnr_mop_enq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_enq
 
-/-- info: 'Lax13Proofs.Refine.Iicf.hnr_mop_deq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.hnr_mop_deq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_deq
 
-/-- info: 'Lax13Proofs.Refine.Iicf.QExercise.queueFill'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.QExercise.queueFill'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms queueFill'
 
-/-- info: 'Lax13Proofs.Refine.Iicf.QExercise.queueDrain'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.QExercise.queueDrain'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms queueDrain'
 
 end QExercise
 
-end Lax13Proofs.Refine.Iicf
+end Lax62Proofs.Refine.Iicf

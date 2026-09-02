@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Ir.Semantics
+import Lax62Proofs.Refine.Ir.Semantics
 import Lax13Proofs.Reasoning
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The embedding of the IR into IMP+, and the state agreement it preserves.
@@ -65,9 +66,9 @@ keeps the name the record uses, and avoids introducing a one-off
 structure whose constructor no consumer would ever name.
 -/
 
-namespace Lax13Proofs.Refine.Codegen
+namespace Lax62Proofs.Refine.Codegen
 
-open Lax13Proofs.Refine.Ir
+open Lax62Proofs.Refine.Ir
 
 /-! ### The translation -/
 
@@ -268,4 +269,4 @@ example : embed Ir.Gate.countdown =
 
 end Gate
 
-end Lax13Proofs.Refine.Codegen
+end Lax62Proofs.Refine.Codegen

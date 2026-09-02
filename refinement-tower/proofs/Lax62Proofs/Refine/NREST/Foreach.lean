@@ -1,5 +1,5 @@
-import Lax13Proofs.Refine.NREST.Combinators
-import Lax13Proofs.Refine.NREST.DataRefinement
+import Lax62Proofs.Refine.NREST.Combinators
+import Lax62Proofs.Refine.NREST.DataRefinement
 
 /-!
 # Currency-carrying list folds and FOREACH
@@ -15,7 +15,7 @@ carries its own currency vector. Consequently a walk over a member list is
 charged by that list's length, never by an ambient carrier size.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace NRest
 
@@ -296,7 +296,7 @@ theorem walk_exact :
 #guard (2 • visitCost).toFun "member" = 2
 #guard (2 • visitCost).toFun "carrier" = 0
 
-/-- info: 'Lax13Proofs.Refine.NRest.ForeachGate.walk_exact' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.ForeachGate.walk_exact' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms walk_exact
 
@@ -304,4 +304,4 @@ end ForeachGate
 
 end NRest
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

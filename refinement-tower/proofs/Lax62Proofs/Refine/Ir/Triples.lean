@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Ir.Wp
+import Lax62Proofs.Refine.Ir.Wp
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The IR's credit-carrying Hoare triples, one per operation.
@@ -77,7 +78,7 @@ per-iteration discipline: `credits_add` splits one iteration's price off
 the balance the invariant carries.
 -/
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 /-! ## 1. The two triple forms -/
 
@@ -554,4 +555,4 @@ theorem wp_const_no_credits (Q : Unit → State × ECost → Prop) :
 
 end Gate
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

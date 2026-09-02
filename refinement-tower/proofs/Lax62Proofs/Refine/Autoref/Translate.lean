@@ -1,5 +1,5 @@
-import Lax13Proofs.Refine.Autoref.FixRel
-import Lax13Proofs.Refine.Autoref.Solver
+import Lax62Proofs.Refine.Autoref.FixRel
+import Lax62Proofs.Refine.Autoref.Solver
 
 /-!
 Phase four: syntax-directed translation (`trans`, priority 30).
@@ -220,7 +220,7 @@ open Lean Meta Elab
 
 universe u
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-! ### Default translation rules (`Autoref_Translate.thy` §4.1) -/
 
@@ -676,4 +676,4 @@ elab "autoref_side" : tactic => do
   sideSolve g
   Tactic.replaceMainGoal []
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

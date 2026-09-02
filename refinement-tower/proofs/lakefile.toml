@@ -1,0 +1,34 @@
+name = "Lax62Proofs"
+defaultTargets = ["Lax62Proofs"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
+
+[[require]]
+name = "Lax62"
+path = "../concepts"
+
+
+# the word RAM: the machine and timed computation of submission Lax13
+[[require]]
+name = "Lax13"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "d35ba57ad420ce6a6d3c763aa7f6a4a8be1d406d"
+subDir = "word-ram/concepts"
+
+# the word RAM's verified compilation pipeline (IMP+, compiler, simulation
+# theorem, reasoning layer), reused as proved theorems -- the tower is built
+# on top of it (deliberate proofs-package dependency)
+[[require]]
+name = "Lax13Proofs"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "d35ba57ad420ce6a6d3c763aa7f6a4a8be1d406d"
+subDir = "word-ram/proofs"
+
+[[lean_lib]]
+name = "Lax62Proofs"

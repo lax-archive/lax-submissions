@@ -132,11 +132,25 @@ for name in sorted(packages):
                 "dir": "../concepts", "configFile": "lakefile.toml"})
             continue
         source = (record(dep) or {}).get("source")
+        pinned = declared.get(dep)
+        if source is None and not (pinned and "git" in pinned):
+            # reached transitively (a LaxN through its LaxNProofs, or the
+            # other way round): borrow the sibling package's pin
+            sibling = dep[:-len("Proofs")] if dep.endswith("Proofs") else dep + "Proofs"
+            pinned = declared.get(sibling)
+        if source is None and pinned and "git" in pinned:
+            # not submitted yet (record absent or in state `init`): keep the
+            # lakefile's own pin in the manifest so lake accepts the workspace,
+            # and redirect to the sibling all the same; `lax build` still
+            # rejects the pin until the dependency is submitted and repinned
+            problems.append(f"{name}: {dep} has no archive source yet — manifest "
+                            f"keeps the lakefile's pin, override points at the sibling")
+            source = {"repository": pinned["git"], "commit": pinned["rev"],
+                      "folder": pinned.get("subDir", "").rsplit("/", 1)[0]}
         if source is None:
             problems.append(f"{name}: {dep} has no archive record — left as is")
             continue
         subdir = f"{source['folder']}/{packages[dep]['kind']}"
-        pinned = declared.get(dep)
         if pinned and "git" in pinned and (
                 pinned["git"] != source["repository"]
                 or pinned["rev"] != source["commit"]

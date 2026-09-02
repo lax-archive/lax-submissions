@@ -73,7 +73,7 @@ export REPO_ROOT="$root"
 # reports by name.
 
 step "archive database"
-if lax pull-db >&2; then
+if lax sync >&2; then  # `lax pull-db` before CLI 0.1.31
   note "records at $HOME/.lax/lax-database"
 else
   note "WARNING: pull-db failed; cross-submission pins cannot be resolved"

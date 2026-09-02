@@ -1,6 +1,6 @@
 import Mathlib.Data.Finset.Interval
 import Mathlib.Data.List.GetD
-import Lax13Proofs.Refine.Asymptotics.OneDimensionalOperations
+import Lax62Proofs.Refine.Asymptotics.OneDimensionalOperations
 
 /-!
 # Pure union-find theory
@@ -34,10 +34,10 @@ Source table (all selected rows):
 open Set Filter
 open scoped Topology
 
-namespace Lax13Proofs.Refine.Iicf.UnionFind
+namespace Lax62Proofs.Refine.Iicf.UnionFind
 
 open Asymptotics
-open Lax13Proofs.Refine.Asymptotics1D
+open Lax62Proofs.Refine.Asymptotics1D
 
 set_option autoImplicit true
 
@@ -1121,28 +1121,28 @@ private example : ufaUnion [0, 1] 1 0 = [0, 0] := by
 
 /-! ## Kernel-three guards for the completed boundary -/
 
-/-- info: 'Lax13Proofs.Refine.Iicf.UnionFind.perSupsetUnion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.UnionFind.perSupsetUnion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms perSupsetUnion
 
-/-- info: 'Lax13Proofs.Refine.Iicf.UnionFind.repOfStep' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.UnionFind.repOfStep' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms repOfStep
 
-/-- info: 'Lax13Proofs.Refine.Iicf.UnionFind.ufaUnionCorrect' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.UnionFind.ufaUnionCorrect' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms ufaUnionCorrect
 
-/-- info: 'Lax13Proofs.Refine.Iicf.UnionFind.ufaCompressCorrect' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.UnionFind.ufaCompressCorrect' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms ufaCompressCorrect
 
-/-- info: 'Lax13Proofs.Refine.Iicf.UnionFind.heightOfUnion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.UnionFind.heightOfUnion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms heightOfUnion
 
-/-- info: 'Lax13Proofs.Refine.Iicf.UnionFind.heightOfLeHeightUb' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.UnionFind.heightOfLeHeightUb' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms heightOfLeHeightUb
 
-end Lax13Proofs.Refine.Iicf.UnionFind
+end Lax62Proofs.Refine.Iicf.UnionFind

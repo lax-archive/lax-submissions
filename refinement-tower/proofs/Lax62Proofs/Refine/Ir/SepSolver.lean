@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Ir.Attrs
-import Lax13Proofs.Refine.Ir.Triples
+import Lax62Proofs.Refine.Ir.Attrs
+import Lax62Proofs.Refine.Ir.Triples
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Frame inference: the `ENTAILS` / `FRAME` / `FRAME_INFER` calculus and its
@@ -196,7 +197,7 @@ without leaving a failing declaration in the environment.
 
 open Lean Elab Meta Tactic
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 /-! ## 1. The tags
 
@@ -1382,4 +1383,4 @@ above are read against a run that succeeded. -/
 
 end Gate
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

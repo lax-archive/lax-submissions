@@ -64,7 +64,7 @@ and their instances) stay in `BackwardsReasoning.lean`, which is where
 `NREST_Type_Classes.thy` puts them.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-! ### HOL's `minus` class, and why it cannot be mathlib's `Sub`
 
@@ -314,4 +314,4 @@ amounts live in `ℕ∞`, so a specification may name an unbounded cost
 without leaving the carrier. -/
 abbrev ECost := ACost String ℕ∞
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

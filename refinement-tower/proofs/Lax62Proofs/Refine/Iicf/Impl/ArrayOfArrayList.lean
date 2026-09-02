@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Iicf.Impl.MSArrayList
-import Lax13Proofs.Refine.Iicf.Intf.ListList
+import Lax62Proofs.Refine.Iicf.Impl.MSArrayList
+import Lax62Proofs.Refine.Iicf.Intf.ListList
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Array of array lists
@@ -16,9 +17,9 @@ nested-list refinement is semantic; executable rules begin only after a
 selected row's ordinary array/metadata ownership has been supplied.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 structure ArrayOfArrayList where
@@ -636,7 +637,7 @@ theorem aalRowPopRaw_eq (buffer : List ℕ) (n cap : ℕ)
   have hi : n - 1 < buffer.length := by omega
   simp [aalRowPopRaw, aalRowPopExecSpec, aalRowPopCost, marlPred,
     mopBinop_def, Imp.Bop.apply_sub, binopCurrency_sub, mopAget_def,
-    NRest.assert_pos hi, Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def,
+    NRest.assert_pos hi, Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def,
     NRest.consume_consume, three_nsmul]
   ac_rfl
 
@@ -953,16 +954,16 @@ executable rule and therefore no invented zero-cost placeholder. -/
 
 /-! ## Kernel-three gates -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.aalRel1_singleValued' does not depend on any axioms -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.aalRel1_singleValued' does not depend on any axioms -/
 #guard_msgs in
 #print axioms aalRel1_singleValued
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.aalPushOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.aalPushOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms aalPushOp_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.aalRowPop_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.aalRowPop_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms aalRowPop_exec_hnr
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

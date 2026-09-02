@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Iicf.Intf.Map
-import Lax13Proofs.Refine.Iicf.IicfArray
+import Lax62Proofs.Refine.Iicf.Intf.Map
+import Lax62Proofs.Refine.Iicf.IicfArray
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Fixed-capacity array map
@@ -17,9 +18,9 @@ owned presence array with zero and preserves the value array, whose contents
 are semantically irrelevant while entries are absent.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 structure ArrayMap where
@@ -644,16 +645,16 @@ above. -/
 
 /-! ## Kernel-three gates -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.am1Rel_singleValued' depends on axioms: [propext] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.am1Rel_singleValued' depends on axioms: [propext] -/
 #guard_msgs in
 #print axioms am1Rel_singleValued
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.amUpdateOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.amUpdateOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms amUpdateOp_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.amEmpty_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.amEmpty_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms amEmpty_exec_hnr
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Autoref.Attrs
+import Lax62Proofs.Refine.Autoref.Attrs
 import Mathlib.Data.List.Forall2
 
 /-!
@@ -129,7 +129,7 @@ yet — `@[relator_props]` on `br_singleValued` (the source's
 `[refine_rel_defs]`).
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 variable {α β δ γ ε ζ : Type}
 
@@ -410,7 +410,7 @@ The checks include negative controls throughout: a non-related pair
 must be *rejected*, or the harness is proving nothing.
 
 Naming note: `ofBRel`, not `ofRel`. The gates all share the namespace
-`Lax13Proofs.Refine.Sanity`, and `NREST/DataRefinement.lean`'s gate —
+`Lax62Proofs.Refine.Sanity`, and `NREST/DataRefinement.lean`'s gate —
 which is *downstream* of this file and must not be edited — already owns
 `Sanity.ofRel` for its `Fin 3` tables. -/
 
@@ -689,4 +689,4 @@ def ofPair (q : Bool × Bool) : Bool → Bool := fun b => if b then q.2 else q.1
 
 end Sanity
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

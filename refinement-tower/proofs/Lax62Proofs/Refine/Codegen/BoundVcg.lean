@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Codegen.BigStepB
+import Lax62Proofs.Refine.Codegen.BigStepB
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The bounds pass: a verification-condition generator for
@@ -81,7 +82,7 @@ never sees it, and `B = 2 ^ w` is what the machine boundary supplies
 anyway.
 -/
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 /-! ### The goal -/
 
@@ -413,4 +414,4 @@ theorem no_runs_bigConst :
 
 end VcgGate
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

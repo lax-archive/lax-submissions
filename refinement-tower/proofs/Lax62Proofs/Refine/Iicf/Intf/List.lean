@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Intf.Set
+import Lax62Proofs.Refine.Iicf.Intf.Set
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # List interface
@@ -27,9 +28,9 @@ corresponding Lean operation each; duplicating a registration would add no
 semantic rule.  No operation beyond the active source family is introduced.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 variable {α β : Type}
@@ -819,16 +820,16 @@ run_cmd do
 
 /-! ## Kernel-three guards -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.listRel_index' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.listRel_index' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms listRel_index
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.swap_param' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.swap_param' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms swap_param
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.op_list_pop_last_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.op_list_pop_last_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms op_list_pop_last_fref
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

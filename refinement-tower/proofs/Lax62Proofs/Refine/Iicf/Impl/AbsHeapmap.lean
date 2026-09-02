@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Iicf.Impl.AbsHeap
-import Lax13Proofs.Refine.Iicf.Intf.PrioMap
+import Lax62Proofs.Refine.Iicf.Impl.AbsHeap
+import Lax62Proofs.Refine.Iicf.Intf.PrioMap
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Abstract heap maps
@@ -12,9 +13,9 @@ This file is deliberately independent of imperative arrays, separation
 assertions, IR commands, and cost models.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 variable {K V P : Type}
@@ -1510,12 +1511,12 @@ run_cmd do
     unless rules.contains n do
       throwError "abs-heapmap fref gate: missing rule {n}"
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.heapmapInvariant_remove' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.heapmapInvariant_remove' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms heapmapInvariant_remove
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hmPopMinOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hmPopMinOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hmPopMinOp_refines
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

@@ -70,7 +70,7 @@ open Lax12.GraphClasses Lax12.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
 open Lax12.UniformQuasiWideness (deleteVerts)
-open Lax13Proofs.Codegen (getD_eq_getElem)
+open Lax62Proofs.Codegen (getD_eq_getElem)
 
 /-! ## §1 The program -/
 

@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.Rules
+import Lax62Proofs.Refine.Sepref.Rules
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Flattening laws for iterated dependent signature composition.
@@ -15,7 +16,7 @@ introduction/elimination gate for the sound flat form, and a counterexample
 to independent relational composition.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir
 
@@ -217,4 +218,4 @@ theorem naive_independent_flattening_is_false :
 
 end IndependentCompositionCounterexample
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

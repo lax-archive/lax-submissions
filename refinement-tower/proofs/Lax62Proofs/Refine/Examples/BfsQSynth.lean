@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Codegen.Cash
-import Lax13Proofs.Refine.Examples.BfsQ
-import Lax13Proofs.Refine.NREST.FlattenCurrencies
+import Lax62Proofs.Refine.Codegen.Cash
+import Lax62Proofs.Refine.Examples.BfsQ
+import Lax62Proofs.Refine.NREST.FlattenCurrencies
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # P7 wave B — the queue BFS at the synthesis layer
@@ -79,7 +80,7 @@ constraint on program shape is gone, and with it the only motive for
 `Sepref/Translate.lean`'s `apply_assumption` fallback (P7/D-bh).
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace BfsQSynth
 
@@ -470,23 +471,23 @@ did not evaluate to `true`
 
 /-! ## 9. Axioms -/
 
-/-- info: 'Lax13Proofs.Refine.BfsQSynth.bfsQSynth'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQSynth.bfsQSynth'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bfsQSynth'
 
-/-- info: 'Lax13Proofs.Refine.BfsQSynth.fillSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQSynth.fillSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms fillSynth
 
-/-- info: 'Lax13Proofs.Refine.BfsQSynth.drain_variant'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQSynth.drain_variant'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms drain_variant'
 
-/-- info: 'Lax13Proofs.Refine.BfsQSynth.bfsQS_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQSynth.bfsQS_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bfsQS_correct
 
-/-- info: 'Lax13Proofs.Refine.BfsQSynth.hnr_mop_succ' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQSynth.hnr_mop_succ' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_succ
 
@@ -1391,7 +1392,7 @@ theorem flatCost_cash_bfsQTotal (n ns : ℕ) :
   push_cast
   ring
 
-/-- info: 'Lax13Proofs.Refine.BfsQSynth.flatCost_cash_bfsQTotal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQSynth.flatCost_cash_bfsQTotal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms flatCost_cash_bfsQTotal
 
@@ -1622,7 +1623,7 @@ end Export
 #guard ¬ ((Ir.evalFuel 4000 bfsQSynth_impl (demoState 3 0 1)).map
   (fun p => decide (Codegen.cash p.2 ≤ 100)) = some true)
 
-/-- info: 'Lax13Proofs.Refine.BfsQSynth.bfsQ_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQSynth.bfsQ_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bfsQ_spec
 
@@ -1712,4 +1713,4 @@ end Export
 
 end BfsQSynth
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

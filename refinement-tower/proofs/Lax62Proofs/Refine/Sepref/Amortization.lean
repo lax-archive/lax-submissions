@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Sepref.Basic
-import Lax13Proofs.Refine.NREST.BackwardsReasoning
-import Lax13Proofs.Refine.NREST.TimeRefinement
+import Lax62Proofs.Refine.Sepref.Basic
+import Lax62Proofs.Refine.NREST.BackwardsReasoning
+import Lax62Proofs.Refine.NREST.TimeRefinement
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Generic vector amortization
@@ -28,7 +29,7 @@ Resource subtraction is always the source operation `-ᵣ`; in particular,
 `⊤ -ᵣ ⊤ = ⊤`.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 open Classical
 
@@ -476,48 +477,48 @@ end Sepref
 
 /-! ## Kernel-three axiom guards -/
 
-/-- info: 'Lax13Proofs.Refine.NRest.nofailT_reclaim' depends on axioms: [propext, choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.nofailT_reclaim' depends on axioms: [propext, choice, Quot.sound] -/
 #guard_msgs in
 #print axioms NRest.nofailT_reclaim
 
-/-- info: 'Lax13Proofs.Refine.NRest.reclaim_spec' depends on axioms: [propext, choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.reclaim_spec' depends on axioms: [propext, choice, Quot.sound] -/
 #guard_msgs in
 #print axioms NRest.reclaim_spec
 
-/-- info: 'Lax13Proofs.Refine.NRest.reclaim_spec_le' depends on axioms: [propext, choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.reclaim_spec_le' depends on axioms: [propext, choice, Quot.sound] -/
 #guard_msgs in
 #print axioms NRest.reclaim_spec_le
 
-/-- info: 'Lax13Proofs.Refine.NRest.timerefine_reclaim' depends on axioms: [propext, choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.timerefine_reclaim' depends on axioms: [propext, choice, Quot.sound] -/
 #guard_msgs in
 #print axioms NRest.timerefine_reclaim
 
-/-- info: 'Lax13Proofs.Refine.ACost.exists_liftACost_eq' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.ACost.exists_liftACost_eq' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms ACost.exists_liftACost_eq
 
-/-- info: 'Lax13Proofs.Refine.Sepref.invalidAssn_augmentAmorAssn' depends on axioms: [propext, choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.invalidAssn_augmentAmorAssn' depends on axioms: [propext, choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Sepref.invalidAssn_augmentAmorAssn
 
-/-- info: 'Lax13Proofs.Refine.Sepref.wpTimeFrame' depends on axioms: [propext, choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.wpTimeFrame' depends on axioms: [propext, choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Sepref.wpTimeFrame
 
-/-- info: 'Lax13Proofs.Refine.Sepref.hnRefineI2' depends on axioms: [propext, choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.hnRefineI2' depends on axioms: [propext, choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Sepref.hnRefineI2
 
-/-- info: 'Lax13Proofs.Refine.Sepref.hnRefine_paydayReverse' depends on axioms: [propext, choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.hnRefine_paydayReverse' depends on axioms: [propext, choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Sepref.hnRefine_paydayReverse
 
-/-- info: 'Lax13Proofs.Refine.Sepref.hnRefine_reclaim' depends on axioms: [propext, choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.hnRefine_reclaim' depends on axioms: [propext, choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Sepref.hnRefine_reclaim
 
-/-- info: 'Lax13Proofs.Refine.Sepref.hnRefine_amortization' depends on axioms: [propext, choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.hnRefine_amortization' depends on axioms: [propext, choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Sepref.hnRefine_amortization
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

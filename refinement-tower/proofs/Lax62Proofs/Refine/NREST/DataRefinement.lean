@@ -1,5 +1,5 @@
-import Lax13Proofs.Refine.NREST.Sanity
-import Lax13Proofs.Refine.Autoref.Relators
+import Lax62Proofs.Refine.NREST.Sanity
+import Lax62Proofs.Refine.Autoref.Relators
 
 /-!
 Data refinement for `NRest`: the concretisation operator `⇓R`.
@@ -109,7 +109,7 @@ and the `_sv` lemmas of *this* source file cannot be stated without
 them. P1 therefore defined them here and recorded that P2 should move
 them rather than restate them; **P2 wave A did the move**, with every
 fully qualified name unchanged, and this file now reaches them through
-`import Lax13Proofs.Refine.Autoref.Relators`. Nothing stated below
+`import Lax62Proofs.Refine.Autoref.Relators`. Nothing stated below
 changed.
 
 **S3 — `Id` is `Set.diagonal`.** Isabelle's `Id = {(a,a)|a}` is
@@ -163,7 +163,7 @@ of the general `concFun_chain`. Everything the source states inside
 is not ported.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 variable {α β δ γ κ : Type}
 
@@ -812,4 +812,4 @@ instance instSampleableExtSRel : SampleableExt SRel where
 
 end Sanity
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

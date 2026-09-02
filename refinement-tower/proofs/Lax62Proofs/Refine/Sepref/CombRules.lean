@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.IrOps
+import Lax62Proofs.Refine.Sepref.IrOps
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The derived control-flow rules: `hnr_If` and the loop rule.
@@ -92,7 +93,7 @@ topped up. They are `Wp.lean`'s `leCostECost_cash_add` /
 rule's proof does arithmetic inline.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -889,4 +890,4 @@ theorem dv_vacuous {κ : Type} (s : ℕ) (Γ Γ' : Assn) (c : Com) (d : κ) (R :
 
 end Gate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

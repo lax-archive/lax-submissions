@@ -1,6 +1,6 @@
 import Lax11.GraphEncoding
 import Lax3Proofs.DriverArena
-import Lax13Proofs.Refine.Cost.ACost
+import Lax62Proofs.Refine.Cost.ACost
 
 /-!
 # The CSR front end (F2) — parsing the endorsed axiom's input word
@@ -88,7 +88,7 @@ namespace Lax3Proofs.Impl
 
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs (Coloring)
-open Lax13Proofs.Refine (ACost)
+open Lax62Proofs.Refine (ACost)
 
 /-! ### §1 The parse -/
 

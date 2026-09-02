@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Sepref.IrOps
-import Lax13Proofs.Refine.NREST.BackwardsReasoning
+import Lax62Proofs.Refine.Sepref.IrOps
+import Lax62Proofs.Refine.NREST.BackwardsReasoning
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The VCG at the IR's loop, and the cost algebra a linear budget needs
@@ -46,7 +47,7 @@ gives up exactly `(a - a') • A + (b - b') • B` — is not `abel`; it is
 `Nat.add_mul` and `omega`, once.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -224,4 +225,4 @@ theorem wfR2_nsmul {κ : Type} (a : ℕ) {A : ACost κ ℕ} (h : NRest.wfR2 A) :
   simp only [Set.mem_setOf_eq, ACost.toFun_nsmul, smul_eq_mul] at hk ⊢
   exact fun hc => hk (by rw [hc, Nat.mul_zero])
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

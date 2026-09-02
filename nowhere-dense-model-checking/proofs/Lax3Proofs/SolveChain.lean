@@ -102,7 +102,7 @@ open Lax12.GraphClasses Lax12.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
 open Lax3Proofs.LocalityFun
-open Lax13Proofs.Refine (ACost)
+open Lax62Proofs.Refine (ACost)
 
 variable {L n₀ : ℕ}
 

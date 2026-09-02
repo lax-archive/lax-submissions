@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Asymptotics.Recurrences
-import Lax13Proofs.Refine.Examples.BfsQ
-import Lax13Proofs.Refine.Examples.IntrosortBudget
+import Lax62Proofs.Refine.Asymptotics.Recurrences
+import Lax62Proofs.Refine.Examples.BfsQ
+import Lax62Proofs.Refine.Examples.IntrosortBudget
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Asymptotic consumer demonstrations
@@ -19,11 +20,11 @@ Consumer provenance (two rows):
 open Filter
 open scoped Topology
 
-namespace Lax13Proofs.Refine.AsymptoticConsumers
+namespace Lax62Proofs.Refine.AsymptoticConsumers
 
 open Asymptotics
-open Lax13Proofs.Refine.Asymptotics1D
-open Lax13Proofs.Refine.Asymptotics2D
+open Lax62Proofs.Refine.Asymptotics1D
+open Lax62Proofs.Refine.Asymptotics2D
 
 /-! ## The seven-coordinate BFS cash projection -/
 
@@ -133,12 +134,12 @@ theorem introsortCash_isBigO :
 
 /-! ## Kernel-three guards -/
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticConsumers.bfsQCash_isBigO' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.AsymptoticConsumers.bfsQCash_isBigO' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bfsQCash_isBigO
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticConsumers.introsortCash_isBigO' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.AsymptoticConsumers.introsortCash_isBigO' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms introsortCash_isBigO
 
-end Lax13Proofs.Refine.AsymptoticConsumers
+end Lax62Proofs.Refine.AsymptoticConsumers

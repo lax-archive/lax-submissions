@@ -100,7 +100,7 @@ multiplies by the machine's `L.const`.
 namespace Lax3Proofs.Prog
 
 open scoped SimpleGraph
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences
 open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ColoringNumbers
 open Lax3Proofs.Driver

@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Iicf.Intf.PrioBag
-import Lax13Proofs.Refine.Iicf.Intf.List
+import Lax62Proofs.Refine.Iicf.Intf.PrioBag
+import Lax62Proofs.Refine.Iicf.Intf.List
 import Mathlib.Data.List.GetD
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Abstract binary heaps on lists
@@ -20,9 +21,9 @@ Lean counterpart needed to keep source `val_of` total outside its validity
 precondition.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 variable {α κ : Type}
@@ -1508,16 +1509,16 @@ run_cmd do
     unless rules.contains n do
       throwError "abstract-heap fref gate: missing rule {n}"
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.heap_root_min' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.heap_root_min' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms heap_root_min
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.heapRepair_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.heapRepair_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms heapRepair_correct
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.absHeapPopMinOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.absHeapPopMinOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms absHeapPopMinOp_refines
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

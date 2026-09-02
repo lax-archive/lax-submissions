@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.NREST.Foreach
+import Lax62Proofs.Refine.NREST.Foreach
 
 /-!
 # RECT-compatible nested for combinators
@@ -9,7 +9,7 @@ recursive one-, two-, and three-index traversals equal nested `nfoldli`
 walks over `[0..<n+1]`; Lean's `List.range (n + 1)` is that interval.
 -/
 
-namespace Lax13Proofs.Refine.NRest
+namespace Lax62Proofs.Refine.NRest
 
 variable {σ : Type}
 
@@ -139,10 +139,10 @@ theorem cube_shape :
         (List.range 2) 0 := by
   simpa using forRec3_eq (fun a i j k => returnT (step a i j k)) 0 1
 
-/-- info: 'Lax13Proofs.Refine.NRest.ForGate.cube_shape' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.ForGate.cube_shape' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms cube_shape
 
 end ForGate
 
-end Lax13Proofs.Refine.NRest
+end Lax62Proofs.Refine.NRest

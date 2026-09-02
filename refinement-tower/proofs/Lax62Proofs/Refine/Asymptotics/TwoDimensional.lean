@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Asymptotics.OneDimensionalOperations
+import Lax62Proofs.Refine.Asymptotics.OneDimensionalOperations
 import Mathlib.Order.Filter.AtTopBot.Prod
 
 /-!
@@ -43,10 +43,10 @@ nineteen theorems):
 open Filter
 open scoped Topology
 
-namespace Lax13Proofs.Refine.Asymptotics2D
+namespace Lax62Proofs.Refine.Asymptotics2D
 
 open Asymptotics
-open Lax13Proofs.Refine.Asymptotics1D
+open Lax62Proofs.Refine.Asymptotics1D
 
 /-! ## Product-filter faces -/
 
@@ -326,52 +326,52 @@ private theorem thetaMultiplicationGate :
 
 /-! ## Kernel-three axiom guards -/
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.eventNonnegPolylog2' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.eventNonnegPolylog2' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms eventNonnegPolylog2
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.stableBigO2Mul' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.stableBigO2Mul' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms stableBigO2Mul
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.stableBigO2Add' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.stableBigO2Add' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms stableBigO2Add
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.stablePolylog2' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.stablePolylog2' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms stablePolylog2
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.eventMono2Mul' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.eventMono2Mul' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms eventMono2Mul
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.eventMono2Add' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.eventMono2Add' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms eventMono2Add
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.bigO2E' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.bigO2E' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigO2E
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.bigOmega2E' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.bigOmega2E' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigOmega2E
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.multBivariateI' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.multBivariateI' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms multBivariateI
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.oO_o' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.oO_o' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms oO_o
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.Oo_o' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.Oo_o' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Oo_o
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.multThetaBivariate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.multThetaBivariate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms multThetaBivariate
 
-end Lax13Proofs.Refine.Asymptotics2D
+end Lax62Proofs.Refine.Asymptotics2D

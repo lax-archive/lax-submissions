@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Sepref.Attrs
-import Lax13Proofs.Refine.Sepref.Basic
-import Lax13Proofs.Refine.Autoref.Solver
+import Lax62Proofs.Refine.Sepref.Attrs
+import Lax62Proofs.Refine.Sepref.Basic
+import Lax62Proofs.Refine.Autoref.Solver
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Deferred constraints: the port of `thys/sepref/Sepref_Constraints.thy`.
@@ -71,7 +72,7 @@ open Lean Elab Meta
 
 universe u
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir
 
@@ -343,7 +344,7 @@ end Solver
 
 namespace ConstraintsGate
 
-open Lax13Proofs.Refine.Sepref.Constraints
+open Lax62Proofs.Refine.Sepref.Constraints
 
 /-- Positive: a pure relation's purity is decided by the safe rules. -/
 example : CONSTRAINT isPure (pureAssn ({(0, 0)} : Set (ℕ × ℕ))) := by solve_constraint
@@ -378,4 +379,4 @@ run_cmd Elab.Command.liftTermElabM do
 
 end ConstraintsGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.Frame
+import Lax62Proofs.Refine.Sepref.Frame
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The translate phase: the port of `thys/sepref/Sepref_Translate.thy`.
@@ -153,7 +154,7 @@ bounds obligations to solve).
 
 open Lean Elab Meta
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -938,7 +939,7 @@ database order except `hnr_seq`, which moves to the back. It stays in
 the database because it is the rule that applies with no `IMP` premise
 at all, and a caller reading a synthesis proof should still see it
 where it is the honest one. -/
-def combLast : Array Name := #[``Lax13Proofs.Refine.Sepref.hnr_seq]
+def combLast : Array Name := #[``Lax62Proofs.Refine.Sepref.hnr_seq]
 
 mutual
 
@@ -979,7 +980,7 @@ partial def sideDispatchCore (cfg : Cfg) (fuel : Nat) (g : MVarId) : TermElabM U
   match ty.getAppFnArgs.1 with
   | ``hnRefine => transGoal cfg fuel g
   | ``MERGE => mergeSolve g
-  | ``Lax13Proofs.Refine.Sepref.CONSTRAINT => Constraints.constraintTac g
+  | ``Lax62Proofs.Refine.Sepref.CONSTRAINT => Constraints.constraintTac g
   | ``CondRefine => condSolve g
   | ``RECOVER_PURE => recoverPure g
   | ``entails =>
@@ -1289,4 +1290,4 @@ example : True := by
 
 end TranslateGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

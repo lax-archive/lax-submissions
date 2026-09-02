@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.NREST.BackwardsReasoning
+import Lax62Proofs.Refine.NREST.BackwardsReasoning
 import Mathlib.Combinatorics.SimpleGraph.Walk.Operations
 import Mathlib.Combinatorics.SimpleGraph.Finite
 import Mathlib.Combinatorics.SimpleGraph.DegreeSum
@@ -146,7 +146,7 @@ identified with the sentinel once the cap sits below the diameter, and
 `d = 1` sample on a graph of diameter `3` is in the gate.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace Bfs
 
@@ -1048,4 +1048,4 @@ end Sanity
 
 end Bfs
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

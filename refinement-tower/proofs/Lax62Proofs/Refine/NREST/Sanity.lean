@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.NREST.Pw
+import Lax62Proofs.Refine.NREST.Pw
 
 /-!
 The executable gate for the NREST layer.
@@ -30,7 +30,7 @@ is a counterexample to the law itself.
 Nothing here is used by any other module; it is a gate, not a library.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 open Plausible
 
@@ -266,4 +266,4 @@ instance instSampleableExtSRest : SampleableExt SRest where
 
 end Sanity
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

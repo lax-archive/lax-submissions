@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Autoref.BindingsHOL
+import Lax62Proofs.Refine.Autoref.BindingsHOL
 
 /-!
 P2's acceptance: the tutorial's derivations, reproduced mechanically.
@@ -164,7 +164,7 @@ The reproductions call the pipeline plainly and let a failure fail;
 that really does fail.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace AutorefTutorial
 
@@ -431,15 +431,15 @@ info: rel_inf: ANNOT (OP 4) (rel_annot natRel)
 ---
 info: phase 'rel_inf' (priority 20) succeeded
 ---
-info: fix_rel: CONSTRAINT 4 natRel solved by Lax13Proofs.Refine.autoref_nat_lit
+info: fix_rel: CONSTRAINT 4 natRel solved by Lax62Proofs.Refine.autoref_nat_lit
 ---
 info: phase 'fix_rel' (priority 22) succeeded
 ---
-info: trans: ANNOT (OP 4) (rel_annot natRel) by Lax13Proofs.Refine.autoref_nat_lit
+info: trans: ANNOT (OP 4) (rel_annot natRel) by Lax62Proofs.Refine.autoref_nat_lit
 ---
 info: phase 'trans' (priority 30) succeeded
 ---
-info: autoref_synth Lax13Proofs.Refine.AutorefTutorial.accept_trace:
+info: autoref_synth Lax62Proofs.Refine.AutorefTutorial.accept_trace:
   concrete
   4
   relator
@@ -482,7 +482,7 @@ at the relator
   ?_ →ᵣ ?_
 no rule's conclusion matched it.
 Side conditions that went unmet along the way:
-Lax13Proofs.Refine.autoref_hd: tagged_solver: the highest-priority solver for tag 'Lax13Proofs.Refine.PRECOND_tag' failed; candidates in priority order: PRECOND (priority 0); 'tagged_solver_full' would try the rest. The solver failed with: tagged_solver: solver PRECOND (priority 0) ran on tag 'Lax13Proofs.Refine.PRECOND_tag' but did not close the goal; use 'tagged_solver_step' to keep what it produced
+Lax62Proofs.Refine.autoref_hd: tagged_solver: the highest-priority solver for tag 'Lax62Proofs.Refine.PRECOND_tag' failed; candidates in priority order: PRECOND (priority 0); 'tagged_solver_full' would try the rest. The solver failed with: tagged_solver: solver PRECOND (priority 0) ran on tag 'Lax62Proofs.Refine.PRECOND_tag' but did not close the goal; use 'tagged_solver_step' to keep what it produced
 (26 rules were available: 0 from the call site, 26 from the autoref_rules databases)
 -/
 #guard_msgs in
@@ -504,7 +504,7 @@ no rule fixes the relator of the operator
   List.append
 at the relator
   ?_ →ᵣ ?_ →ᵣ Set.diagonal (List String)
-26 rules were considered (26 of them in the autoref_rules database, 0 supplied at the call site); 1 match the operator but not the relator: Lax13Proofs.Refine.autoref_append
+26 rules were considered (26 of them in the autoref_rules database, 0 supplied at the call site); 1 match the operator but not the relator: Lax62Proofs.Refine.autoref_append
 goal at this phase:
   (["a"] ++ ["b"],
       ANNOT (OP List.append) (rel_annot (?_ →ᵣ ?_ →ᵣ Set.diagonal (List String))) $ᵃ
@@ -523,4 +523,4 @@ example : ∃ (γ : Type) (c : γ) (R : Set (γ × List String)), (c, ["a"] ++ [
 
 end AutorefTutorial
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.IicfStack
+import Lax62Proofs.Refine.Iicf.IicfStack
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # IICF: CSR graphs over two fixed arrays — the thin instance
@@ -43,7 +44,7 @@ is the whole reason the thin design works: a read-only composite never
 has to be taken apart by the frame matcher.
 -/
 
-namespace Lax13Proofs.Refine.Iicf
+namespace Lax62Proofs.Refine.Iicf
 
 open Sepref Ir NRest
 
@@ -403,26 +404,26 @@ theorem csrRowWalk' (n : ℕ) (g : List ℕ × List ℕ) (e s₀ : ℕ) (he : e 
       (irWhileIT walkI (walkBf e) (walkF g) (s₀, 0)) :=
   csrRowWalk n g e s₀ (walk_variant g e he)
 
-/-- info: 'Lax13Proofs.Refine.Iicf.hnr_mop_rowStart' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.hnr_mop_rowStart' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_rowStart
 
-/-- info: 'Lax13Proofs.Refine.Iicf.hnr_mop_rowEnd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.hnr_mop_rowEnd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_rowEnd
 
-/-- info: 'Lax13Proofs.Refine.Iicf.hnr_mop_slotTarget' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.hnr_mop_slotTarget' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_slotTarget
 
-/-- info: 'Lax13Proofs.Refine.Iicf.CsrExercise.csrDegree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.CsrExercise.csrDegree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms csrDegree
 
-/-- info: 'Lax13Proofs.Refine.Iicf.CsrExercise.csrRowWalk'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.CsrExercise.csrRowWalk'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms csrRowWalk'
 
 end CsrExercise
 
-end Lax13Proofs.Refine.Iicf
+end Lax62Proofs.Refine.Iicf

@@ -1,5 +1,5 @@
-import Lax13Proofs.Refine.NREST.AutomationAttrs
-import Lax13Proofs.Refine.NREST.BackwardsReasoning
+import Lax62Proofs.Refine.NREST.AutomationAttrs
+import Lax62Proofs.Refine.NREST.BackwardsReasoning
 
 /-!
 Cost-side-condition automation for `NRest`.
@@ -19,7 +19,7 @@ action (`n • C`).  The two lemmas `ACost.nsmul_add` and
 collection.  No dead `costmult` vocabulary is introduced.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace ACost
 
@@ -353,17 +353,17 @@ example (n : ℕ) :
 
 end Gates
 
-/-- info: 'Lax13Proofs.Refine.NRest.mixedCurrencyGate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.mixedCurrencyGate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms mixedCurrencyGate
 
-/-- info: 'Lax13Proofs.Refine.NRest.upperBoundSynthesisGate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.upperBoundSynthesisGate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms upperBoundSynthesisGate
 
-/-- info: 'Lax13Proofs.Refine.NRest.debugCurrencyGate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.debugCurrencyGate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms debugCurrencyGate
 
 end NRest
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

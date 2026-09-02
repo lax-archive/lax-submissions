@@ -97,7 +97,7 @@ top of the root `driverCharge`.
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax12.GraphClasses Lax12.NowhereDenseClasses
 open Lax3.FirstOrder (FO)

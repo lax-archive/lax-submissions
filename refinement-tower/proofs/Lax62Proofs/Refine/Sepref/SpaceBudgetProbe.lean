@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Sepref.HeapAlloc
+import Lax62Proofs.Refine.Sepref.HeapAlloc
 import Lax13Proofs.Compile
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The compiled space-budget probe (ledger E29, leaf P4.5.D)
@@ -125,7 +126,7 @@ landed triples.
 There is no `sorry` and no named unproved `Prop` in this file.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.SpaceBudget
+namespace Lax62Proofs.Refine.Sepref.SpaceBudget
 
 open Ir
 
@@ -2016,4 +2017,4 @@ example (aw k old hp : ℕ) :
 #print axioms reuse_fits_at_admissible_word
 #print axioms reuse_fits_where_fresh_cannot
 
-end Lax13Proofs.Refine.Sepref.SpaceBudget
+end Lax62Proofs.Refine.Sepref.SpaceBudget

@@ -1,5 +1,6 @@
 import Mathlib.Combinatorics.Colex
-import Lax13Proofs.Refine.Iicf.IicfStack
+import Lax62Proofs.Refine.Iicf.IicfStack
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # IICF: bitmask sets over one scalar cell
@@ -55,7 +56,7 @@ Lax13Proofs tree is `Mathlib.Combinatorics.Colex`, for that single
 `@[simp]` lemma.
 -/
 
-namespace Lax13Proofs.Refine.Iicf
+namespace Lax62Proofs.Refine.Iicf
 
 open Sepref Ir NRest
 
@@ -546,30 +547,30 @@ theorem bmCount' (S : Finset ℕ) (n : ℕ) :
       (irWhileIT bmCountI (bmCountBf n) (bmCountF S) (0, 0)) :=
   bmCount S n (bmCount_variant S n)
 
-/-- info: 'Lax13Proofs.Refine.Iicf.hnr_mop_bmEmpty' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.hnr_mop_bmEmpty' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_bmEmpty
 
-/-- info: 'Lax13Proofs.Refine.Iicf.hnr_mop_bmInsert' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.hnr_mop_bmInsert' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_bmInsert
 
-/-- info: 'Lax13Proofs.Refine.Iicf.hnr_mop_bmMem' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.hnr_mop_bmMem' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_bmMem
 
-/-- info: 'Lax13Proofs.Refine.Iicf.BmExercise.bmFill'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.BmExercise.bmFill'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bmFill'
 
-/-- info: 'Lax13Proofs.Refine.Iicf.BmExercise.bmCount'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.BmExercise.bmCount'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bmCount'
 
-/-- info: 'Lax13Proofs.Refine.Iicf.BmExercise.bmBranch' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.BmExercise.bmBranch' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bmBranch
 
 end BmExercise
 
-end Lax13Proofs.Refine.Iicf
+end Lax62Proofs.Refine.Iicf

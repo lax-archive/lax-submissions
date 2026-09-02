@@ -40,7 +40,7 @@ entry (`frameChargeMS_toFun_eq` — F3c's users' lemma).
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax3Proofs.Driver
 open Lax3Proofs.LocalityFun

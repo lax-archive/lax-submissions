@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Impl.ArrayMap
+import Lax62Proofs.Refine.Iicf.Impl.ArrayMap
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Cardinality-carrying array map
@@ -22,9 +23,9 @@ not equated with this IR's vector-valued `ECost`.  The executable costs below
 are instead derived exactly from the synthesized IR commands.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 structure ArrayMapMap where
@@ -706,16 +707,16 @@ budgets. -/
 
 /-! ## Kernel-three gates -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.amm1Rel_singleValued' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.amm1Rel_singleValued' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms amm1Rel_singleValued
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.ammUpdateOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.ammUpdateOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms ammUpdateOp_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.ammEmpty_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.ammEmpty_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms ammEmpty_exec_hnr
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

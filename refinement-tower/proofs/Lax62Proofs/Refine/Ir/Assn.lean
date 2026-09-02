@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Ir.Semantics
+import Lax62Proofs.Refine.Ir.Semantics
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The IR's separation algebra and its assertion language.
@@ -104,7 +105,7 @@ compose, and credit assertions with different balances are different
 assertions.
 -/
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 /-! ## 1. The separation-algebra class stack
 
@@ -1328,4 +1329,4 @@ example : irSTATE (("x" ↦ᵥ 3) ∗ (□ : Assn))
 
 end Gate
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

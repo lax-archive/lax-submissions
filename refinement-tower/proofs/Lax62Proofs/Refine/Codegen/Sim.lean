@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Codegen.Embed
-import Lax13Proofs.Refine.Codegen.BigStepB
+import Lax62Proofs.Refine.Codegen.Embed
+import Lax62Proofs.Refine.Codegen.BigStepB
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The simulation theorem: an IR run compiles into an IMP+ run, and the
@@ -72,9 +73,9 @@ lemma about IR costs is therefore needed anywhere: `cash` is additive
 (`cash_cost_*`), and those two facts carry the whole induction.
 -/
 
-namespace Lax13Proofs.Refine.Codegen
+namespace Lax62Proofs.Refine.Codegen
 
-open Lax13Proofs.Refine.Ir
+open Lax62Proofs.Refine.Ir
 
 /-! ### The price map -/
 
@@ -416,4 +417,4 @@ theorem no_bigStepB_embed_bigGuard :
 
 end Gate
 
-end Lax13Proofs.Refine.Codegen
+end Lax62Proofs.Refine.Codegen

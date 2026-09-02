@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Sepref.SignaturePrep
-import Lax13Proofs.Refine.Sepref.Attrs
+import Lax62Proofs.Refine.Sepref.SignaturePrep
+import Lax62Proofs.Refine.Sepref.Attrs
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Sepref operation registration and assertion interfaces
@@ -18,7 +19,7 @@ control for that substitution.
 
 open Lean Elab Meta
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -169,4 +170,4 @@ end
 
 end RegisterGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

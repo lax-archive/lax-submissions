@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Sepref.Bounds
-import Lax13Proofs.Refine.Examples.BfsQ
+import Lax62Proofs.Refine.Sepref.Bounds
+import Lax62Proofs.Refine.Examples.BfsQ
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The T2 probe: a two-level bounds pass, and the pinned bind
@@ -46,12 +47,12 @@ family, ~150 lines per engine) reduces the same way: each op is one
 database hit, and the only hand lines left are the invariant facts.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.BoundsProbe
+namespace Lax62Proofs.Refine.Sepref.BoundsProbe
 
-open Lax13Proofs.Refine
-open Lax13Proofs.Refine.Sepref Lax13Proofs.Refine.Sepref.WordSpike
-open Lax13Proofs.Refine.Ir Lax13Proofs.Refine.NRest
-open Lax13Proofs.Refine.BfsQ (get!_set)
+open Lax62Proofs.Refine
+open Lax62Proofs.Refine.Sepref Lax62Proofs.Refine.Sepref.WordSpike
+open Lax62Proofs.Refine.Ir Lax62Proofs.Refine.NRest
+open Lax62Proofs.Refine.BfsQ (get!_set)
 open Lax13Proofs.Imp (Bop)
 
 /-! ## 1. The counting-pass shape, replicated
@@ -365,7 +366,7 @@ did not evaluate to `true`
 
 /-! ### Axioms -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.BoundsProbe.pb_bpre' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.Sepref.BoundsProbe.pb_bpre' depends on axioms: [propext,
 Classical.choice,
 Quot.sound] -/
 #guard_msgs in
@@ -457,4 +458,4 @@ sepref_synth pinProbe (h₀ : ℕ) :
 
 end Pin
 
-end Lax13Proofs.Refine.Sepref.BoundsProbe
+end Lax62Proofs.Refine.Sepref.BoundsProbe

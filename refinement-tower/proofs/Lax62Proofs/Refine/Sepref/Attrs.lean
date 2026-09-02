@@ -40,7 +40,7 @@ declarations into `Autoref/Attrs.lean` and delete this file; no rule
 statement changes, only the import line of the two consumers.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 /-- The source's `named_theorems sepref_fr_rules` (`Sepref_Translate.thy`):
 the *frame-based* rule set — one `hn_refine` rule per abstract operation,
@@ -199,4 +199,4 @@ insertion order. Read and written through `Sepref/Constraints.lean`'s
 `Constraints.*` API, never directly. -/
 initialize constraintSlotRef : IO.Ref (Option (Array MVarId)) ← IO.mkRef none
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

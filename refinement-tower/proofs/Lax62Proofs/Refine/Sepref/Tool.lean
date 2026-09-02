@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Sepref.Translate
-import Lax13Proofs.Refine.Sepref.IdOp
-import Lax13Proofs.Refine.Sepref.Monadify
+import Lax62Proofs.Refine.Sepref.Translate
+import Lax62Proofs.Refine.Sepref.IdOp
+import Lax62Proofs.Refine.Sepref.Monadify
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The Sepref tool: the port of `thys/sepref/Sepref_Tool.thy`.
@@ -120,7 +121,7 @@ open Lean Elab Meta
 
 universe u
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -247,11 +248,11 @@ payload sits. -/
 def stripTags (e : Expr) : MetaM Expr :=
   Meta.transform e (post := fun x => do
     match x.getAppFnArgs with
-    | (``Lax13Proofs.Refine.APP, #[_, _, f, a]) => return .done (mkApp f a)
+    | (``Lax62Proofs.Refine.APP, #[_, _, f, a]) => return .done (mkApp f a)
     | (``APP', #[_, _, f, a]) => return .done (mkApp f a)
-    | (``Lax13Proofs.Refine.PROTECT, #[_, y]) => return .done y
-    | (``Lax13Proofs.Refine.OP, #[_, y]) => return .done y
-    | (``Lax13Proofs.Refine.ANNOT, #[_, y, _]) => return .done y
+    | (``Lax62Proofs.Refine.PROTECT, #[_, y]) => return .done y
+    | (``Lax62Proofs.Refine.OP, #[_, y]) => return .done y
+    | (``Lax62Proofs.Refine.ANNOT, #[_, y, _]) => return .done y
     | (``PROTECT2, #[_, y, _]) => return .done y
     | (``PR_CONST, #[_, y]) => return .done y
     | (``UNPROTECT, #[_, y]) => return .done y
@@ -558,4 +559,4 @@ def seprefPhaseList : String :=
   String.intercalate " → "
     (Tool.seprefPipeline.map (fun p => s!"{p.name}({p.prio})")).toList
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

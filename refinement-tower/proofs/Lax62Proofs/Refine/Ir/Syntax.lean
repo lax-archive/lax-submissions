@@ -1,4 +1,5 @@
 import Lax13Proofs.Imp
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The IR: deep three-address syntax over named cells.
@@ -101,7 +102,7 @@ evaluation (so `n` iterations charge `n + 1`), which is the shape of
 IMP+'s own `1 + b.size` per test.
 -/
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 /-- An IR value: a clean, unbounded natural number, exactly as IMP+
 (design record §6). The word bound is *not* here — it enters once, at
@@ -319,4 +320,4 @@ operations, and shifts by a count used as written. -/
 #guard binopCurrency .shiftr = "ir.shiftr"
 #guard Currency.aset = "ir.aset"
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

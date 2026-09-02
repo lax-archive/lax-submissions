@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Autoref.Translate
+import Lax62Proofs.Refine.Autoref.Translate
 
 /-!
 The tool: the four phases registered in the source's priority order, the
@@ -169,7 +169,7 @@ collapses too, for the reason `Autoref/Phases.lean` delta P5 gives.
 Wave B2 already made `$ᵃ` / `:::` / `::#` global notation
 (`Autoref/Tagging.lean` delta T3) rather than locale-scoped, because
 Lean's notation is namespace-scoped and the tags live in
-`Lax13Proofs.Refine`, which a consumer opens deliberately. The source's
+`Lax62Proofs.Refine`, which a consumer opens deliberately. The source's
 `hide_const (open)` has no counterpart and needs none: `OP`, `APP` and
 friends are already qualified names in a helper-only namespace.
 `CAST` is ported with its `[autoref_itype]` fact — the source records
@@ -193,7 +193,7 @@ tutorial's acceptance examples". Nothing here consults it either.
 
 open Lean Meta Elab
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-! ### The casting tag (`Autoref_Tool.thy` §7.5) -/
 
@@ -410,4 +410,4 @@ elab_rules : command
           logInfo m!"autoref_synth {declName}:\n  concrete{indentExpr cVal}\n  \
             relator{indentExpr RVal}"
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

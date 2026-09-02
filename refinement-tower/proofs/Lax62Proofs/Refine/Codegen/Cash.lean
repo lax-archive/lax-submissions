@@ -1,8 +1,9 @@
-import Lax13Proofs.Refine.Codegen.Sim
-import Lax13Proofs.Refine.Codegen.Harness
-import Lax13Proofs.Refine.Codegen.BoundVcg
-import Lax13Proofs.Refine.Sepref.IrOps
+import Lax62Proofs.Refine.Codegen.Sim
+import Lax62Proofs.Refine.Codegen.Harness
+import Lax62Proofs.Refine.Codegen.BoundVcg
+import Lax62Proofs.Refine.Sepref.IrOps
 import Lax13Proofs.Transfer
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The cashing theorem: from a synthesized `hnRefine` to a statement the
@@ -98,9 +99,9 @@ know. A scalar destination discharges it with `ptoVar_vars` and
 stated once so that a call site is one line either way.
 -/
 
-namespace Lax13Proofs.Refine.Codegen
+namespace Lax62Proofs.Refine.Codegen
 
-open Lax13Proofs.Refine.Ir Lax13Proofs.Refine.Sepref
+open Lax62Proofs.Refine.Ir Lax62Proofs.Refine.Sepref
 
 /-! ## 1. Pricing a balance
 
@@ -464,4 +465,4 @@ end Refute
 #print axioms solves_of_spec
 #print axioms cash_le_ecash
 
-end Lax13Proofs.Refine.Codegen
+end Lax62Proofs.Refine.Codegen

@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.IntfUtil
+import Lax62Proofs.Refine.Sepref.IntfUtil
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # P6 conventions — how a collection is written in this tower
@@ -100,7 +101,7 @@ about an `irWhileIT`. The bridge is one value lemma per looping op
 `hnRefine_res_cast` below.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -260,4 +261,4 @@ theorem releasable_arrayAssn (n : ℕ) :
 
 end Iicf
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

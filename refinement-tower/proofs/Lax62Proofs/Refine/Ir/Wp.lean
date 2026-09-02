@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Ir.Assn
-import Lax13Proofs.Refine.NREST.BackwardsReasoning
+import Lax62Proofs.Refine.Ir.Assn
+import Lax62Proofs.Refine.NREST.BackwardsReasoning
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The generic weakest-precondition layer, the cost framework, and the IR's
@@ -82,7 +83,7 @@ only `wp_while_unfold` (its `llc_while_unfold`) and the well-founded
 wp-level rule `wp_while_wf` the separation-logic rule is built from.
 -/
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 /-! ## 1. `generic_wp_defs` and `generic_wp`
 
@@ -612,4 +613,4 @@ theorem wp_while_wf {τ : Type} {r : τ → τ → Prop} (hwf : WellFounded r)
       obtain ⟨t', hrt, hJ'⟩ := hq
       exact ih t' hrt hJ'
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

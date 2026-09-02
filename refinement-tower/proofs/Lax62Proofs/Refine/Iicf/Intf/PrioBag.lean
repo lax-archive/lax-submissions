@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Intf.Multiset
+import Lax62Proofs.Refine.Iicf.Intf.Multiset
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Priority-bag interface
@@ -15,9 +16,9 @@ that boundary is represented directly: `prioPopMin_param` and
 below fix one priority function and use `IsBelowId` only at registration.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 variable {α β κ μ : Type}
@@ -272,16 +273,16 @@ run_cmd do
 
 /-! ## Kernel-three guards -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.prioPopMin_param' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.prioPopMin_param' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms prioPopMin_param
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.op_prio_pop_min_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.op_prio_pop_min_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms op_prio_pop_min_fref
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.op_prio_peek_min_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.op_prio_peek_min_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms op_prio_peek_min_fref
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

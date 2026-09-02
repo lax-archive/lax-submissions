@@ -3,7 +3,7 @@ import Lax3Proofs.ImplRestrict
 import Lax3Proofs.ImplProfiles
 import Lax3Proofs.ImplScatter
 import Lax3Proofs.ImplBot
-import Lax13Proofs.Refine.NREST.Foreach
+import Lax62Proofs.Refine.NREST.Foreach
 
 /-!
 # F3 — one frame of the driver, as an NREST program
@@ -14,7 +14,7 @@ recursion abstracted into the oracle `next`. The machine routines a
 frame calls are all landed with specs and charges (`Impl*`); what did
 not exist is their **sequenced composition** as one cost-carrying
 program in the refinement tower's monad
-(`Lax13Proofs.Refine.NREST`). This file is that composition.
+(`Lax62Proofs.Refine.NREST`). This file is that composition.
 
 ## The program (§5 lines 10–28, one node)
 
@@ -148,7 +148,7 @@ read off the landed charges rather than the docstrings:
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax3Proofs.Driver
 open Lax3Proofs.LocalityFun

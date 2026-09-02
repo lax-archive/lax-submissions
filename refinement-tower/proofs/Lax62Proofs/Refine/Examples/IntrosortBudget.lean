@@ -1,6 +1,7 @@
 import Mathlib.Data.Nat.Log
-import Lax13Proofs.Refine.NREST.Automation
-import Lax13Proofs.Refine.NREST.FlattenCurrencies
+import Lax62Proofs.Refine.NREST.Automation
+import Lax62Proofs.Refine.NREST.FlattenCurrencies
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The currency-vector budget spine of the pinned introsort example.
@@ -34,10 +35,10 @@ scalar theorem exchanges through that finite rate and then uses P3.A's
 `flatCurrs`/`flatCost` boundary.
 -/
 
-namespace Lax13Proofs.Refine.IntrosortBudget
+namespace Lax62Proofs.Refine.IntrosortBudget
 
-open Lax13Proofs.Refine
-open Lax13Proofs.Refine.NRest
+open Lax62Proofs.Refine
+open Lax62Proofs.Refine.NRest
 
 /-! ## Source-shaped constructors and phase accounts -/
 
@@ -320,16 +321,16 @@ source currency price zero. -/
 theorem localIRCash_drops_source_load_gate :
     flatCost (timerefineA cashExchangeRate (phaseCost [("load", 1)])) = 0 := by
   rw [flatCost_timerefineA_cashExchangeRate]
-  simp [phaseCost, Lax13Proofs.Refine.Codegen.ecash,
-    Lax13Proofs.Refine.Ir.Currency.all,
-    Lax13Proofs.Refine.Ir.Currency.skip, Lax13Proofs.Refine.Ir.Currency.const,
-    Lax13Proofs.Refine.Ir.Currency.copy, Lax13Proofs.Refine.Ir.Currency.aget,
-    Lax13Proofs.Refine.Ir.Currency.aset, Lax13Proofs.Refine.Ir.Currency.ite,
-    Lax13Proofs.Refine.Ir.Currency.«while», Lax13Proofs.Refine.Ir.Currency.add,
-    Lax13Proofs.Refine.Ir.Currency.sub, Lax13Proofs.Refine.Ir.Currency.mul,
-    Lax13Proofs.Refine.Ir.Currency.div, Lax13Proofs.Refine.Ir.Currency.and,
-    Lax13Proofs.Refine.Ir.Currency.or, Lax13Proofs.Refine.Ir.Currency.xor,
-    Lax13Proofs.Refine.Ir.Currency.shiftl, Lax13Proofs.Refine.Ir.Currency.shiftr]
+  simp [phaseCost, Lax62Proofs.Refine.Codegen.ecash,
+    Lax62Proofs.Refine.Ir.Currency.all,
+    Lax62Proofs.Refine.Ir.Currency.skip, Lax62Proofs.Refine.Ir.Currency.const,
+    Lax62Proofs.Refine.Ir.Currency.copy, Lax62Proofs.Refine.Ir.Currency.aget,
+    Lax62Proofs.Refine.Ir.Currency.aset, Lax62Proofs.Refine.Ir.Currency.ite,
+    Lax62Proofs.Refine.Ir.Currency.«while», Lax62Proofs.Refine.Ir.Currency.add,
+    Lax62Proofs.Refine.Ir.Currency.sub, Lax62Proofs.Refine.Ir.Currency.mul,
+    Lax62Proofs.Refine.Ir.Currency.div, Lax62Proofs.Refine.Ir.Currency.and,
+    Lax62Proofs.Refine.Ir.Currency.or, Lax62Proofs.Refine.Ir.Currency.xor,
+    Lax62Proofs.Refine.Ir.Currency.shiftl, Lax62Proofs.Refine.Ir.Currency.shiftr]
 
 /-! ## Source `project_all`: exchange once, then flatten -/
 
@@ -397,20 +398,20 @@ theorem introsortBudget_cash (ltCurr : String) (n : ℕ) :
 
 /-! ## Axiom gates -/
 
-/-- info: 'Lax13Proofs.Refine.IntrosortBudget.topLevel_to_expanded' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.IntrosortBudget.topLevel_to_expanded' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms topLevel_to_expanded
 
-/-- info: 'Lax13Proofs.Refine.IntrosortBudget.introsortBudget_normal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.IntrosortBudget.introsortBudget_normal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms introsortBudget_normal
 
-/-- info: 'Lax13Proofs.Refine.IntrosortBudget.introsortSpine_consumes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.IntrosortBudget.introsortSpine_consumes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms introsortSpine_consumes
 
-/-- info: 'Lax13Proofs.Refine.IntrosortBudget.introsortBudget_cash' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.IntrosortBudget.introsortBudget_cash' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms introsortBudget_cash
 
-end Lax13Proofs.Refine.IntrosortBudget
+end Lax62Proofs.Refine.IntrosortBudget

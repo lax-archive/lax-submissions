@@ -78,7 +78,7 @@ value.
 
 namespace Lax3Proofs.Impl
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Lax3.ColoredGraphs (WithinDist ball)
 open Lax12.UniformQuasiWideness (deleteVerts)
 open Lax3Proofs.WalkDistance

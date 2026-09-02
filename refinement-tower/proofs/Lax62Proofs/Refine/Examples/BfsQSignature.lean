@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Examples.BfsQSynth
-import Lax13Proofs.Refine.Sepref.Register
+import Lax62Proofs.Refine.Examples.BfsQSynth
+import Lax62Proofs.Refine.Sepref.Register
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # P1.B acceptance: queue BFS from an `hfref` signature
@@ -10,7 +11,7 @@ functions.  There is no hand-written `hnRefine` goal.  The byte-for-byte
 program equality at the end is the campaign's SIG-6 closure test.
 -/
 
-namespace Lax13Proofs.Refine.BfsQSynth
+namespace Lax62Proofs.Refine.BfsQSynth
 
 open Bfs BfsQ Sepref Ir NRest Codegen
 
@@ -61,7 +62,7 @@ existing synthesis, so this checks more than extensional refinement. -/
 #guard bfsQFromSignature_impl () =
   (("dist", "q", "head", "tl"), bfsQSynth_impl)
 
-/- info: 'Lax13Proofs.Refine.BfsQSynth.bfsQFromSignature' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/- info: 'Lax62Proofs.Refine.BfsQSynth.bfsQFromSignature' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #print axioms bfsQFromSignature
 
-end Lax13Proofs.Refine.BfsQSynth
+end Lax62Proofs.Refine.BfsQSynth

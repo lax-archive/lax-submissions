@@ -9,7 +9,7 @@ imports this file, populates both collections, and implements the tactics
 that consume them.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-- Normalization rules for cost vectors and exchange expressions. -/
 register_simp_attr norm_cost
@@ -17,4 +17,4 @@ register_simp_attr norm_cost
 /-- Normalization rules for compositions of exchange rates. -/
 register_simp_attr norm_pp
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

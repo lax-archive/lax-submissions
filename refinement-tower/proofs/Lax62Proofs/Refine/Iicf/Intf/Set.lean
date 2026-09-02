@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Basic
+import Lax62Proofs.Refine.Iicf.Basic
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Set interface
@@ -32,9 +33,9 @@ relator existed in the imported tower, so it is defined here rather than
 replacing the source contracts by diagonal relations.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 variable {α β : Type}
@@ -497,16 +498,16 @@ run_cmd do
 
 /-! ## Kernel-three guards -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.setRel_inter' does not depend on any axioms -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.setRel_inter' does not depend on any axioms -/
 #guard_msgs in
 #print axioms setRel_inter
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.op_set_member_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.op_set_member_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms op_set_member_fref
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.op_set_pick_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.op_set_pick_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms op_set_pick_fref
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

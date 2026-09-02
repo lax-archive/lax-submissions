@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Impl.ArrayListGrowSynth
+import Lax62Proofs.Refine.Iicf.Impl.ArrayListGrowSynth
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The array list, re-seated on the heap
@@ -169,9 +170,9 @@ composed and used *by name*, never registered, in the idiom
 disappears from the *result* assertion, not from `Γ`.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 /-! ## 1. The heap-backed representation -/
@@ -583,7 +584,7 @@ private theorem mopHaset_add (p : ℕ) (xs : List ℕ) (i v : ℕ) (hi : i < xs.
 
 theorem arlHGetRaw_eq (p : ℕ) (buffer : List ℕ) (i : ℕ) (hi : i < buffer.length) :
     arlHGetRaw p buffer i = NRest.consume (NRest.returnT buffer[i]!) arlHGetCost := by
-  rw [arlHGetRaw, arlHGetCost, mopHaddr_def, Lax13Proofs.Refine.Iicf.bindT_unit,
+  rw [arlHGetRaw, arlHGetCost, mopHaddr_def, Lax62Proofs.Refine.Iicf.bindT_unit,
     mopHaget_add p buffer i hi, NRest.consume_consume, add_comm]
 
 theorem arlHLastRaw_eq (p : ℕ) (buffer : List ℕ) (n : ℕ)
@@ -591,17 +592,17 @@ theorem arlHLastRaw_eq (p : ℕ) (buffer : List ℕ) (n : ℕ)
     arlHLastRaw p buffer n =
       NRest.consume (NRest.returnT buffer[n - 1]!) arlHLastCost := by
   have hi : n - 1 < buffer.length := by omega
-  rw [arlHLastRaw, arlHLastCost, mopBinop_def, Lax13Proofs.Refine.Iicf.bindT_unit,
+  rw [arlHLastRaw, arlHLastCost, mopBinop_def, Lax62Proofs.Refine.Iicf.bindT_unit,
     Imp.Bop.apply_sub, binopCurrency_sub, mopHaddr_def,
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopHaget_add p buffer (n - 1) hi,
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopHaget_add p buffer (n - 1) hi,
     NRest.consume_consume, NRest.consume_consume]
 
 theorem arlHSetRaw_eq (p : ℕ) (buffer : List ℕ) (n cap i x : ℕ) (hi : i < buffer.length) :
     arlHSetRaw p buffer n cap i x =
       NRest.consume (NRest.returnT (buffer.set i x, (n, cap))) arlHSetCost := by
-  rw [arlHSetRaw, arlHSetCost, mopHaddr_def, Lax13Proofs.Refine.Iicf.bindT_unit,
-    mopHaset_add p buffer i x hi, Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def,
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def, NRest.consume_consume,
+  rw [arlHSetRaw, arlHSetCost, mopHaddr_def, Lax62Proofs.Refine.Iicf.bindT_unit,
+    mopHaset_add p buffer i x hi, Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def,
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def, NRest.consume_consume,
     NRest.consume_consume, NRest.consume_consume, two_nsmul]
   congr 1
   abel
@@ -612,14 +613,14 @@ theorem arlHSwapRaw_eq (p : ℕ) (buffer : List ℕ) (n cap i j : ℕ)
       (NRest.returnT
         ((buffer.set i buffer[j]!).set j buffer[i]!, (n, cap))) arlHSwapCost := by
   have hj' : j < (buffer.set i buffer[j]!).length := by simpa using hj
-  rw [arlHSwapRaw, arlHSwapCost, mopHaddr_def, Lax13Proofs.Refine.Iicf.bindT_unit,
-    mopHaddr_def, Lax13Proofs.Refine.Iicf.bindT_unit,
-    mopHaget_add p buffer i hi, Lax13Proofs.Refine.Iicf.bindT_unit,
-    mopHaget_add p buffer j hj, Lax13Proofs.Refine.Iicf.bindT_unit,
-    mopHaset_add p buffer i buffer[j]! hi, Lax13Proofs.Refine.Iicf.bindT_unit,
+  rw [arlHSwapRaw, arlHSwapCost, mopHaddr_def, Lax62Proofs.Refine.Iicf.bindT_unit,
+    mopHaddr_def, Lax62Proofs.Refine.Iicf.bindT_unit,
+    mopHaget_add p buffer i hi, Lax62Proofs.Refine.Iicf.bindT_unit,
+    mopHaget_add p buffer j hj, Lax62Proofs.Refine.Iicf.bindT_unit,
+    mopHaset_add p buffer i buffer[j]! hi, Lax62Proofs.Refine.Iicf.bindT_unit,
     mopHaset_add p (buffer.set i buffer[j]!) j buffer[i]! hj',
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def,
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def]
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def,
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def]
   simp only [NRest.consume_consume, two_nsmul]
   congr 1
   abel
@@ -658,8 +659,8 @@ theorem arlHButlastExecSpec_def (buffer : List ℕ) (n cap : ℕ) :
 theorem arlHButlastRaw_eq (buffer : List ℕ) (n cap : ℕ) :
     arlHButlastRaw buffer n cap = arlHButlastExecSpec buffer n cap := by
   rw [arlHButlastRaw, arlHButlastExecSpec, arlHButlastCost, arlPred, mopBinop_def,
-    Imp.Bop.apply_sub, binopCurrency_sub, Lax13Proofs.Refine.Iicf.bindT_unit,
-    mopPair_def, Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def,
+    Imp.Bop.apply_sub, binopCurrency_sub, Lax62Proofs.Refine.Iicf.bindT_unit,
+    mopPair_def, Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def,
     NRest.consume_consume, NRest.consume_consume, two_nsmul]
   congr 1
   abel
@@ -926,7 +927,7 @@ of the header's table is measured rather than asserted. -/
 
 namespace ArrayListHeapGate
 
-open Lax13Proofs.Refine.Ir.Gate (costVector readVars readArrs)
+open Lax62Proofs.Refine.Ir.Gate (costVector readVars readArrs)
 
 /-- Eleven heap cells.  The live block is `[5, 6, 7, 8]` based at `3`; every
 cell outside it is distinctive junk that must not move. -/
@@ -1313,60 +1314,60 @@ end ArrayListHeapGate
 
 /-! ## 7. Axiom gate -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hnr_mop_haget' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hnr_mop_haget' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_haget
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hnr_mop_haset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hnr_mop_haset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_haset
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hnr_mop_haddr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hnr_mop_haddr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_haddr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHGet_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHGet_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHGet_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHLast_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHLast_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHLast_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHSet_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHSet_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHSet_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHSwap_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHSwap_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHSwap_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlast_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlast_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHButlast_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlastRaw_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlastRaw_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHButlastRaw_eq
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlastExecState_refines' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlastExecState_refines' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHButlastExecState_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlastCost_add_shrink' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlastCost_add_shrink' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHButlastCost_add_shrink
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlHButlastN_toE' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlHButlastN_toE' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlHButlastN_toE
 
 /--
-info: 'Lax13Proofs.Refine.Sepref.Iicf.heapArrayListAssn_entails_packed' depends on axioms: [propext,
+info: 'Lax62Proofs.Refine.Sepref.Iicf.heapArrayListAssn_entails_packed' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs in
 #print axioms heapArrayListAssn_entails_packed
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

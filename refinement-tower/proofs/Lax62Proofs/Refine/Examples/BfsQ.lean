@@ -1,7 +1,8 @@
-import Lax13Proofs.Refine.Examples.Bfs
-import Lax13Proofs.Refine.NREST.Automation
-import Lax13Proofs.Refine.Sepref.IrLoop
-import Lax13Proofs.Refine.Sepref.Definition
+import Lax62Proofs.Refine.Examples.Bfs
+import Lax62Proofs.Refine.NREST.Automation
+import Lax62Proofs.Refine.Sepref.IrLoop
+import Lax62Proofs.Refine.Sepref.Definition
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # P7 wave A — the queue-based masked depth-capped search
@@ -124,7 +125,7 @@ the padding anyway — but it is a real difference from `CsrWide`'s
 `∀ p < ns, tgt p < V`, and it is the residual of finding F-a.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace BfsQ
 
@@ -1844,23 +1845,23 @@ end Reached
 
 /-! ## 9. Axioms -/
 
-/-- info: 'Lax13Proofs.Refine.BfsQ.bfsQTotal_normal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQ.bfsQTotal_normal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bfsQTotal_normal
 
-/-- info: 'Lax13Proofs.Refine.BfsQ.bfsQ_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQ.bfsQ_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bfsQ_correct
 
-/-- info: 'Lax13Proofs.Refine.BfsQ.drain_variant' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQ.drain_variant' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms drain_variant
 
-/-- info: 'Lax13Proofs.Refine.BfsQ.scan_variant' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQ.scan_variant' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms scan_variant
 
-/-- info: 'Lax13Proofs.Refine.BfsQ.fill_variant' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQ.fill_variant' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms fill_variant
 
@@ -1935,4 +1936,4 @@ end Reached
 
 end BfsQ
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

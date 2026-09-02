@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.IicfArray
+import Lax62Proofs.Refine.Iicf.IicfArray
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Trail-backed touched-only arrays — the D5 default array
@@ -60,7 +61,7 @@ free — the entry state satisfies it by the assertion, and preserving it
 is the induction step of the value lemma anyway.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -199,7 +200,7 @@ noncomputable def tsetRaw (xs tr : List ℕ) (k i v : ℕ) :
         NRest.bindT (mopPair tr' k') fun p => mopPair xs' p
 
 /--
-info: sepref_synth Lax13Proofs.Refine.Sepref.Iicf.tsetSynth:
+info: sepref_synth Lax62Proofs.Refine.Sepref.Iicf.tsetSynth:
   (Com.aset T t I).seq ((Com.binop Imp.Bop.add t t one).seq ((Com.aset A I V).seq (Com.skip.seq Com.skip)))
 -/
 #guard_msgs in
@@ -260,7 +261,7 @@ noncomputable def resetF (dflt : ℕ) (tr : List ℕ) :
 def resetV : List ℕ × ℕ → ℕ := fun s => s.2
 
 /--
-info: sepref_synth Lax13Proofs.Refine.Sepref.Iicf.resetSynth:
+info: sepref_synth Lax62Proofs.Refine.Sepref.Iicf.resetSynth:
   Com.while (Cond.lt (Operand.lit 0) (Operand.cell t))
     ((Com.binop Imp.Bop.sub P t one).seq
       ((Com.aget J T P).seq ((Com.aset A J D).seq ((Com.binop Imp.Bop.sub t t one).seq Com.skip))))
@@ -632,15 +633,15 @@ is false -/
 #guard_msgs in
 example : (trailResetCost (List.replicate 8 0, 2)).toFun Currency.aset = 8 := by decide +kernel
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hnr_mop_treset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hnr_mop_treset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_treset
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hnr_mop_tset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hnr_mop_tset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_tset
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hnr_mop_tget' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hnr_mop_tget' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_tget
 
@@ -672,7 +673,7 @@ noncomputable def tinitProg (dflt : ℕ) (xs : List ℕ) : NRest (List ℕ × �
   NRest.bindT (mop_array_fill xs dflt) fun ys => mopPair ys 0
 
 /--
-info: sepref_synth Lax13Proofs.Refine.Sepref.Iicf.tinitSynth:
+info: sepref_synth Lax62Proofs.Refine.Sepref.Iicf.tinitSynth:
   (fillCom i A D one N).seq Com.skip
 -/
 #guard_msgs in
@@ -724,4 +725,4 @@ theorem hnr_trail_init (dflt n : ℕ) (A T t i D N one : String) :
 
 end Iicf
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

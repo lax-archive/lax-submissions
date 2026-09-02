@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Examples.BfsQSynth
-import Lax13Proofs.Refine.Iicf.IicfTrailArray
+import Lax62Proofs.Refine.Examples.BfsQSynth
+import Lax62Proofs.Refine.Iicf.IicfTrailArray
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The re-entrant queue BFS — a turn whose price is the touched set (wave B4b)
@@ -118,7 +119,7 @@ to it. The same is true of `q`: the turn's precondition asks nothing of
 its contents.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace BfsQTrail
 
@@ -1160,31 +1161,31 @@ theorem hcSynth' (n sent tl : ℕ) (Q : List ℕ) (s : HSt) (hQ : Q.length = n) 
 
 /-! ## 10. Axioms -/
 
-/-- info: 'Lax13Proofs.Refine.BfsQTrail.drainLoop_touched' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQTrail.drainLoop_touched' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms drainLoop_touched
 
-/-- info: 'Lax13Proofs.Refine.BfsQTrail.hcRun_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQTrail.hcRun_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hcRun_spec
 
-/-- info: 'Lax13Proofs.Refine.BfsQTrail.searchQ_touched' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQTrail.searchQ_touched' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms searchQ_touched
 
-/-- info: 'Lax13Proofs.Refine.BfsQTrail.turnQ_touched' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQTrail.turnQ_touched' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms turnQ_touched
 
-/-- info: 'Lax13Proofs.Refine.BfsQTrail.turnQ_bounded' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQTrail.turnQ_bounded' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms turnQ_bounded
 
-/-- info: 'Lax13Proofs.Refine.BfsQTrail.turnsQ_touched' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQTrail.turnsQ_touched' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms turnsQ_touched
 
-/-- info: 'Lax13Proofs.Refine.BfsQTrail.cash_turnCost' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.BfsQTrail.cash_turnCost' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms cash_turnCost
 
@@ -1271,4 +1272,4 @@ and re-measure. -/
 
 end BfsQTrail
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Iicf.Basic
-import Lax13Proofs.Refine.Sepref.Amortization
+import Lax62Proofs.Refine.Iicf.Basic
+import Lax62Proofs.Refine.Sepref.Amortization
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Dynamic arrays: abstract amortization and a bounded no-allocation adapter
@@ -33,7 +34,7 @@ The cost used in proofs is vector-valued.  `PushCost` is its executable mirror;
 `PushCost.toECost` embeds it into A1's `ECost` without scalarization.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
 open Ir NRest
 
@@ -1057,36 +1058,36 @@ noncomputable def boundedPushSpec (s : BoundedArray) (x : ℕ) :
 
 /-! ## Kernel-three guards -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.sourcePush_active' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.sourcePush_active' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms sourcePush_active
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.sourcePush_amortized_cost' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.sourcePush_amortized_cost' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms sourcePush_amortized_cost
 
 /--
-info: 'Lax13Proofs.Refine.Sepref.Iicf.sourcePush_public_amortized_costN' depends on axioms: [propext,
+info: 'Lax62Proofs.Refine.Sepref.Iicf.sourcePush_public_amortized_costN' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs in
 #print axioms sourcePush_public_amortized_costN
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.sourcePushRaw_le_amortized' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.sourcePushRaw_le_amortized' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms sourcePushRaw_le_amortized
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.boundedPush_some_active' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.boundedPush_some_active' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms boundedPush_some_active
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.boundedPush_full' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.boundedPush_full' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms boundedPush_full
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.boundedExec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.boundedExec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms boundedExec_hnr
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

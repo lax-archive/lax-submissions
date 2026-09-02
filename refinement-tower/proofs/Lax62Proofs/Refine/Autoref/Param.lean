@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Autoref.Relators
+import Lax62Proofs.Refine.Autoref.Relators
 
 /-!
 Parametricity rules, the `@[param]` database, and the `parametricity`
@@ -243,7 +243,7 @@ non-total relation, so that a check about a rule's conclusion has
 content and a mismatched premise is visibly rejected.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 variable {α β γ δ ε ζ : Type}
 
@@ -788,7 +788,7 @@ negative controls.
 *proved* agreement — the wave A pattern — which is what makes a `#guard`
 here a `#guard` about `listRel`/`optionRel` themselves.
 
-Naming note: this gate shares the namespace `Lax13Proofs.Refine.Sanity`
+Naming note: this gate shares the namespace `Lax62Proofs.Refine.Sanity`
 with the gates of `Relators.lean`, `DataRefinement.lean` and the NREST
 files, none of which may be edited; every name below is fresh. -/
 
@@ -1097,4 +1097,4 @@ example {R : Set (α × β)} (eq : α → α → Bool) (eq' : β → β → Bool
 
 end Sanity
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

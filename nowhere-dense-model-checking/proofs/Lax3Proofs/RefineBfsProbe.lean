@@ -1,10 +1,10 @@
-import Lax13Proofs.Refine.Examples.Bfs
+import Lax62Proofs.Refine.Examples.Bfs
 import Lax3Proofs.WalkDistance
 
 /-!
 # The `Refine` tower probe (E11, §8 step 5)
 
-`Lax13Proofs.Refine.Examples.Bfs` is the tower's P1 acceptance program:
+`Lax62Proofs.Refine.Examples.Bfs` is the tower's P1 acceptance program:
 masked depth-capped BFS, specified as one `NRest.spec` and refined
 abstract-to-abstract with the cost riding the refinement ordering
 (`bfsAlg_correct : bfsAlg G M s d ≤ bfsSpec G M s d`). Its module
@@ -104,7 +104,7 @@ same seam as this file, and about as wide.
 
 namespace Lax3Proofs.RefineBfsProbe
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Lax3.ColoredGraphs (WithinDist ball)
 open Lax12.UniformQuasiWideness (deleteVerts)
 open Lax3Proofs.WalkDistance (mem_ball)

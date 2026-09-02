@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.IrOps
+import Lax62Proofs.Refine.Sepref.IrOps
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Shared in-place counter ops (T1/D-c; T2 additions below)
@@ -23,9 +24,9 @@ accumulator out of its cell and the merge junks it).
 shared annex (same pattern as `Translate.lean` hosting `mopPair`).
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
-open Lax13Proofs.Refine NRest Ir
+open Lax62Proofs.Refine NRest Ir
 
 /-- In-place increment: `x := x + 1`, from a cell holding `1`. -/
 noncomputable def mopSucc (m : ℕ) : NRest ℕ ECost := mopBinop .add m 1
@@ -151,4 +152,4 @@ did not evaluate to `true`
 
 end Gate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

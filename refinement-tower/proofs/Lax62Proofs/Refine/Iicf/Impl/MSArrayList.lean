@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Impl.ArrayList
+import Lax62Proofs.Refine.Iicf.Impl.ArrayList
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Fixed-maximum-size array lists
@@ -18,9 +19,9 @@ length increment; butlast only decrements length.  In particular neither path
 uses dynamic growth or shrink branches.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 abbrev MSArrayList := BoundedArray
@@ -436,7 +437,7 @@ theorem marlAppendRaw_eq (buffer : List ℕ) (n cap x : ℕ)
     (hi : n < buffer.length) :
     marlAppendRaw buffer n cap x = marlAppendExecSpec buffer n cap x := by
   simp [marlAppendRaw, marlAppendExecSpec, marlAppendCost, mopAset_def,
-    NRest.assert_pos hi, Lax13Proofs.Refine.Iicf.bindT_unit, mopBinop_def,
+    NRest.assert_pos hi, Lax62Proofs.Refine.Iicf.bindT_unit, mopBinop_def,
     Imp.Bop.apply_add, binopCurrency_add, mopPair_def, NRest.consume_consume,
     two_nsmul]
   ac_rfl
@@ -445,7 +446,7 @@ theorem marlButlastRaw_eq (buffer : List ℕ) (n cap : ℕ) :
     marlButlastRaw buffer n cap = marlButlastExecSpec buffer n cap := by
   simp [marlButlastRaw, marlButlastExecSpec, marlButlastCost, marlPred,
     mopBinop_def, Imp.Bop.apply_sub, binopCurrency_sub,
-    Lax13Proofs.Refine.Iicf.bindT_unit, mopPair_def, NRest.consume_consume,
+    Lax62Proofs.Refine.Iicf.bindT_unit, mopPair_def, NRest.consume_consume,
     two_nsmul]
 
 sepref_synth marlAppendSynth (A len cap value one : String)
@@ -692,16 +693,16 @@ executable DB because its source implementation allocates. -/
 
 /-! ## Kernel-three gates -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.isMSArrayList_singleValued' does not depend on any axioms -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.isMSArrayList_singleValued' does not depend on any axioms -/
 #guard_msgs in
 #print axioms isMSArrayList_singleValued
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.marlAppend_some_refines' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.marlAppend_some_refines' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms marlAppend_some_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.marlAppend_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.marlAppend_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms marlAppend_exec_hnr
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

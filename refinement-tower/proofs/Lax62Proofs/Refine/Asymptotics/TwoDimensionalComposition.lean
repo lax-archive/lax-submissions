@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Asymptotics.TwoDimensional
+import Lax62Proofs.Refine.Asymptotics.TwoDimensional
 
 /-!
 # Two-dimensional composition and normalization
@@ -29,10 +29,10 @@ Source-to-Lean table (12 live declarations and one substrate exclusion):
 open Filter
 open scoped Topology
 
-namespace Lax13Proofs.Refine.Asymptotics2D
+namespace Lax62Proofs.Refine.Asymptotics2D
 
 open Asymptotics
-open Lax13Proofs.Refine.Asymptotics1D
+open Lax62Proofs.Refine.Asymptotics1D
 
 private theorem eventuallyProductAtTopIff {P : ℕ × ℕ → Prop} :
     (∀ᶠ p in productAtTop, P p) ↔
@@ -306,28 +306,28 @@ private theorem polylogMultiplicationGate (p : ℕ × ℕ) :
 
 /-! ## Kernel-three axiom guards -/
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.bigO2ComposeBoth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.bigO2ComposeBoth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigO2ComposeBoth
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.bigOmega2ComposeBoth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.bigOmega2ComposeBoth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigOmega2ComposeBoth
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.bigTheta2ComposeBoth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.bigTheta2ComposeBoth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigTheta2ComposeBoth
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.polylog2Compare' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.polylog2Compare' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms polylog2Compare
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.landauNorms2' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.landauNorms2' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms landauNorms2
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics2D.polylogLittleOmegaOne' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics2D.polylogLittleOmegaOne' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms polylogLittleOmegaOne
 
-end Lax13Proofs.Refine.Asymptotics2D
+end Lax62Proofs.Refine.Asymptotics2D

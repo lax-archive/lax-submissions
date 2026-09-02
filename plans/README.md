@@ -21,6 +21,16 @@ and brief files here, not at the root.
 | `word-ram/minimal-instruction-set-plan.md` | the canonical word RAM: accumulator out, Cook–Reckhow register-transfer form in (`cell ← f(cells)`), fifteen instructions that generate the standard unit-cost operation set in O(1) with no `w`-dependent prologue (`and`, `not`, `shiftl` for the bits; `or`/`xor`/`shiftr`/mod/comparisons derived in ≤ 4 steps). IMP+ keeps its nine operators, the compiler lowers three; only `Layout.const` (now array-count independent) and downstream proof-side constants move; concept change forces the Lax13 → Lax11 → {Lax15, Lax3} draft resubmission cascade. Rev 2 ACTIVE 2026-09-02 on Jan's decisions; W1 (word-ram) dispatched in worktree `ram1`. |
 | `pcp-theorem/pcp-plan.md` | the PCP theorem by Dinur gap amplification — the first formal hardness artifact in any assistant. Machine-free Amplification Theorem as the P7 flagship (explicit size-linear gap-doubling transformation on constraint graphs, no machine model anywhere); PCP proper at P8 over the word RAM with tower-verified reduction cost. Five-submission ladder: `constraint-graphs/`, `spectral-expanders/`, `linearity-testing/`, `gap-amplification/`, `pcp-theorem/`. Rev 1 PROPOSAL 2026-07-29, queued behind the RAM campaigns (flag 2 resolved by Jan same day: waits until the dust settles on tower + ND-MC RAM) — flags 1, 3, 4 (charter scope, NP-over-RAM surface, split) open. |
 
+**2026-09-02 — the refinement tower is its own submission.** The
+`Refine/` tree of `word-ram/proofs/Lax13Proofs/` (NREST, Autoref, IR +
+separation logic, Sepref, IICF, asymptotics, codegen; ~85k lines) moved
+verbatim to `refinement-tower/` (lax-62, `Lax62Proofs.Refine.*`,
+`Lax62Proofs.Codegen`), which requires `Lax13Proofs` and is required by
+`Lax3Proofs`. The tower's plans stay under `word-ram/refinement-tower/`
+and `word-ram/tower-expansion/` at their old paths and module names.
+The draft resubmission cascade that follows is one command,
+`.claude/resubmit-cascade.sh` (repins via `.claude/repin.sh`).
+
 Everything else is closed — most recently
 `word-ram/refinement-tower-plan.md` (P0–P8 in three sessions; closing
 verdict and adoption analysis in `word-ram/refinement-tower/p8-verdict.md`,

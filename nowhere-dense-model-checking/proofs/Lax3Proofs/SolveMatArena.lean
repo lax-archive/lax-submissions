@@ -66,7 +66,7 @@ whenever the extension lists carry `"k"` and `"up"`.
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Codegen
+open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax62Proofs.Codegen
 open Lax13Proofs.Compile
 open Lax11.GraphEncoding
 

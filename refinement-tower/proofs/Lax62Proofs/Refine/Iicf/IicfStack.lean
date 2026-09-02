@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.Definition
+import Lax62Proofs.Refine.Sepref.Definition
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # IICF: bounded stack over two fixed cells
@@ -95,7 +96,7 @@ the postcondition), which is what lets the fill exercise push the loop
 counter and then increment it in place.
 -/
 
-namespace Lax13Proofs.Refine.Iicf
+namespace Lax62Proofs.Refine.Iicf
 
 open Sepref Ir NRest
 
@@ -688,19 +689,19 @@ theorem stackDrain' (s₀ : List ℕ) :
       (natAssn ×ₐ stackAssn 8) (irWhileIT drainI drainBf drainF (0, s₀)) :=
   stackDrain s₀ drain_variant
 
-/-- info: 'Lax13Proofs.Refine.Iicf.hnr_mop_push' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.hnr_mop_push' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_push
 
-/-- info: 'Lax13Proofs.Refine.Iicf.hnr_mop_pop' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.hnr_mop_pop' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_pop
 
-/-- info: 'Lax13Proofs.Refine.Iicf.Exercise.stackFill'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.Exercise.stackFill'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms stackFill'
 
-/-- info: 'Lax13Proofs.Refine.Iicf.Exercise.stackDrain'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Iicf.Exercise.stackDrain'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms stackDrain'
 
@@ -754,4 +755,4 @@ Recorded here because `IicfStack.lean` is the wave's lead file.
   conjuncts, P6/D-br's universally quantified bind result) were all
   worked around in P6-B's own files. -/
 
-end Lax13Proofs.Refine.Iicf
+end Lax62Proofs.Refine.Iicf

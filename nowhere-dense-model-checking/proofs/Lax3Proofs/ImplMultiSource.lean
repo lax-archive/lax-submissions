@@ -86,7 +86,7 @@ call (`callCostV_le_callCostMS`) and the batch call too
 
 namespace Lax3Proofs.Impl
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Lax3.ColoredGraphs
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.Driver

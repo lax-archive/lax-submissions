@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Ir.Syntax
-import Lax13Proofs.Refine.Cost.ACost
+import Lax62Proofs.Refine.Ir.Syntax
+import Lax62Proofs.Refine.Cost.ACost
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The IR's states and its cost-indexed big-step semantics.
@@ -109,7 +110,7 @@ out-of-bounds `aget` has no derivation at all, and a wrong cost is
 rejected (by determinism, not merely by the evaluator).
 -/
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 /-- The IR's cost: a finite bundle of currencies, the source's
 `cost = (string, nat) acost` (judgment call D-e). The ℕ∞-valued `ECost`
@@ -893,4 +894,4 @@ theorem countdown_no_wrong_cost {s' : State} {κ : Cost}
 
 end Gate
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.NREST.Foreach
-import Lax13Proofs.Refine.Sepref.Tool
-import Lax13Proofs.Refine.Sepref.Definition
+import Lax62Proofs.Refine.NREST.Foreach
+import Lax62Proofs.Refine.Sepref.Tool
+import Lax62Proofs.Refine.Sepref.Definition
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Sepref lowering for currency-vector member iteration
@@ -13,7 +14,7 @@ masked index walk over a member array; the carrier is framed read-only and
 never supplies the loop bound.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open NRest Ir
 
@@ -84,7 +85,7 @@ noncomputable def memberWalk (members carrier : List ℕ) (kend : ℕ) (s₀ : M
 /-! ## Synthesis -/
 
 /--
-info: sepref_synth Lax13Proofs.Refine.Sepref.memberWalkSynth:
+info: sepref_synth Lax62Proofs.Refine.Sepref.memberWalkSynth:
   Com.while (Cond.lt (Operand.cell "k") (Operand.cell "kend"))
     ((Com.aget "u" "members" "k").seq
       ((Com.aget "w" "carrier" "u").seq
@@ -174,12 +175,12 @@ theorem compiled_abstract_walk :
 #guard totalCost.toFun Currency.skip = 2
 #guard totalCost.toFun Currency.«while» = 3
 
-/-- info: 'Lax13Proofs.Refine.Sepref.memberWalkSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.memberWalkSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms memberWalkSynth
 
 /--
-info: 'Lax13Proofs.Refine.Sepref.MemberWalkGate.compiled_abstract_walk' depends on axioms: [propext,
+info: 'Lax62Proofs.Refine.Sepref.MemberWalkGate.compiled_abstract_walk' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
@@ -189,4 +190,4 @@ info: 'Lax13Proofs.Refine.Sepref.MemberWalkGate.compiled_abstract_walk' depends 
 
 end MemberWalkGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

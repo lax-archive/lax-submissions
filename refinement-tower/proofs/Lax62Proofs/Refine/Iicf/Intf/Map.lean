@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.Intf.Set
+import Lax62Proofs.Refine.Iicf.Intf.Set
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Map interface
@@ -33,9 +34,9 @@ constraints inside a comment.  Those constraints are intentionally not
 added here: the active source definition constrains keys only.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 variable {κ κ' ν ν' : Type}
@@ -504,16 +505,16 @@ run_cmd do
 
 /-! ## Kernel-three guards -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.mapRel_diagonal' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.mapRel_diagonal' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms mapRel_diagonal
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.mapRel_update' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.mapRel_update' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms mapRel_update
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.op_map_the_lookup_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.op_map_the_lookup_fref' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms op_map_the_lookup_fref
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

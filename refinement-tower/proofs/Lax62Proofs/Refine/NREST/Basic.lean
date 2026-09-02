@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Cost.ACost
+import Lax62Proofs.Refine.Cost.ACost
 
 /-!
 The NREST monad: nondeterministic results carrying a resource valuation.
@@ -60,7 +60,7 @@ Per design record §10.2 both parameters stay in `Type`; no universe
 polymorphism until a consumer forces it.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-- A nondeterministic computation returning `α` and paying in `γ`.
 `fail` is the source's `FAILi`, the top element that a violated
@@ -472,4 +472,4 @@ noncomputable abbrev failT {α γ : Type} [CompleteLattice γ] : NRest α γ := 
 /-- The source's `SUCCEEDT`: the computation with no results at all. -/
 noncomputable abbrev succeedT {α γ : Type} [CompleteLattice γ] : NRest α γ := ⊥
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

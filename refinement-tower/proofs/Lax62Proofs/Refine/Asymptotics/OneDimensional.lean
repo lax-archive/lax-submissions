@@ -56,7 +56,7 @@ Source-to-Lean table (38 declarations: 5 definitions and 33 theorems):
 open Filter
 open scoped Topology
 
-namespace Lax13Proofs.Refine.Asymptotics1D
+namespace Lax62Proofs.Refine.Asymptotics1D
 
 open Asymptotics
 
@@ -471,56 +471,56 @@ private theorem bigOAndOmegaExtractorGate :
 
 /-! ## Kernel-three axiom guards -/
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.polylogCompare' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.polylogCompare' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms polylogCompare
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.stablePolylog' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.stablePolylog' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms stablePolylog
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.stableBigOAdd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.stableBigOAdd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms stableBigOAdd
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.eventMonoPolylog' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.eventMonoPolylog' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms eventMonoPolylog
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.eventMonoAdd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.eventMonoAdd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms eventMonoAdd
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.bigOmegaI' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.bigOmegaI' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigOmegaI
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.bigOmegaE' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.bigOmegaE' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigOmegaE
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.bigOENat' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.bigOENat' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigOENat
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.bigOmegaENat' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.bigOmegaENat' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigOmegaENat
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.fsmallReal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.fsmallReal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms fsmallReal
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.fsmallEventually' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.fsmallEventually' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms fsmallEventually
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.fsmall' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.fsmall' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms fsmall
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.fbig' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.fbig' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms fbig
 
-end Lax13Proofs.Refine.Asymptotics1D
+end Lax62Proofs.Refine.Asymptotics1D

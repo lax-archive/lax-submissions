@@ -38,3 +38,8 @@ with a cost potential and compositional value bounds. The word length
 enters that pipeline exactly once, at its boundary, so an algorithm is
 verified on clean unbounded natural-number semantics and lands as a
 running-time claim about this machine.
+The refinement framework built on that pipeline — the port of the
+Isabelle NREST/Autoref/Sepref stack through which algorithms verified
+against abstract specifications descend to this machine — is the
+separate submission *A Refinement Framework for the Word RAM*, which
+requires this proof package.

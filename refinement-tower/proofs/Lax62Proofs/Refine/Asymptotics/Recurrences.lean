@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Asymptotics.TwoDimensionalComposition
+import Lax62Proofs.Refine.Asymptotics.TwoDimensionalComposition
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Computability.AkraBazzi.AkraBazzi
 
@@ -39,11 +39,11 @@ definitions are compiler artifacts, not additional source rows.
 open Filter
 open scoped Topology
 
-namespace Lax13Proofs.Refine.AsymptoticsRecurrences
+namespace Lax62Proofs.Refine.AsymptoticsRecurrences
 
 open Asymptotics
-open Lax13Proofs.Refine.Asymptotics1D
-open Lax13Proofs.Refine.Asymptotics2D
+open Lax62Proofs.Refine.Asymptotics1D
+open Lax62Proofs.Refine.Asymptotics2D
 
 /-! Mathlib endpoints relevant to fixed-shrink recurrences, documented rather
 than duplicated here. -/
@@ -494,58 +494,58 @@ private theorem generalizedPairGate {f g G : ℕ → ℝ} {N : ℕ} {C : ℝ}
 
 /-! ## Kernel-three axiom guards -/
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticsRecurrences.bigOLinearRecurrenceGeneral' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.AsymptoticsRecurrences.bigOLinearRecurrenceGeneral' depends on axioms: [propext,
  Classical.choice,
  Quot.sound] -/
 #guard_msgs in
 #print axioms bigOLinearRecurrenceGeneral
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticsRecurrences.bigOLinearRecurrence' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.AsymptoticsRecurrences.bigOLinearRecurrence' depends on axioms: [propext,
  Classical.choice,
  Quot.sound] -/
 #guard_msgs in
 #print axioms bigOLinearRecurrence
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticsRecurrences.bigOmegaLinearRecurrenceGeneral' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.AsymptoticsRecurrences.bigOmegaLinearRecurrenceGeneral' depends on axioms: [propext,
  Classical.choice,
  Quot.sound] -/
 #guard_msgs in
 #print axioms bigOmegaLinearRecurrenceGeneral
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticsRecurrences.bigOmegaLinearRecurrence' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.AsymptoticsRecurrences.bigOmegaLinearRecurrence' depends on axioms: [propext,
  Classical.choice,
  Quot.sound] -/
 #guard_msgs in
 #print axioms bigOmegaLinearRecurrence
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticsRecurrences.bigThetaLinearRecurrenceConst' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.AsymptoticsRecurrences.bigThetaLinearRecurrenceConst' depends on axioms: [propext,
  Classical.choice,
  Quot.sound] -/
 #guard_msgs in
 #print axioms bigThetaLinearRecurrenceConst
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticsRecurrences.bigThetaLinearRecurrence' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.AsymptoticsRecurrences.bigThetaLinearRecurrence' depends on axioms: [propext,
  Classical.choice,
  Quot.sound] -/
 #guard_msgs in
 #print axioms bigThetaLinearRecurrence
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticsRecurrences.bigThetaLinearRecurrenceLog' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.AsymptoticsRecurrences.bigThetaLinearRecurrenceLog' depends on axioms: [propext,
  Classical.choice,
  Quot.sound] -/
 #guard_msgs in
 #print axioms bigThetaLinearRecurrenceLog
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticsRecurrences.bivariateBigO' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.AsymptoticsRecurrences.bivariateBigO' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bivariateBigO
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticsRecurrences.bivariateBigOmega' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.AsymptoticsRecurrences.bivariateBigOmega' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bivariateBigOmega
 
-/-- info: 'Lax13Proofs.Refine.AsymptoticsRecurrences.bivariateTheta' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.AsymptoticsRecurrences.bivariateTheta' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bivariateTheta
 
-end Lax13Proofs.Refine.AsymptoticsRecurrences
+end Lax62Proofs.Refine.AsymptoticsRecurrences

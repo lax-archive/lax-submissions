@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.NREST.Rec
+import Lax62Proofs.Refine.NREST.Rec
 
 /-!
 The derived program combinators: monadic `if`, `whileT`, and `FOREACH`.
@@ -172,7 +172,7 @@ into an exact value for `whileT` itself. Plausible then samples loop
 bodies against the approximants.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace NRest
 
@@ -600,4 +600,4 @@ point is taken of, so a counterexample below is a counterexample to
 
 end Sanity
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

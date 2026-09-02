@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.Signature
+import Lax62Proofs.Refine.Sepref.Signature
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The source's signature-normalization and uniform-time side conditions from
@@ -9,7 +10,7 @@ inside a nested comment immediately before `hr_comp_assoc` (lines 452--472)
 and therefore declares no theorem or constraint rule.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -224,4 +225,4 @@ theorem oneTime_multivalued_gate :
     exact Bool.false_ne_true (hsv () false true trivial trivial)
   · exact one_time_attains_sup (oneTime_spec (fun _ : Bool => True) 0)
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

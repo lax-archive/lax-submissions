@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.NREST.DataRefinement
+import Lax62Proofs.Refine.NREST.DataRefinement
 
 /-!
 Currency refinement for `NRest`: the exchange operator `⇓C`.
@@ -196,7 +196,7 @@ generation convenience); `Sum_any_mono`, `finite_support_mult`,
 ported, or which mathlib supplies).
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 variable {α γ κ κ' κ'' : Type}
 
@@ -1078,4 +1078,4 @@ instance instSampleableExtSRestC : SampleableExt SRestC where
 
 end Sanity
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

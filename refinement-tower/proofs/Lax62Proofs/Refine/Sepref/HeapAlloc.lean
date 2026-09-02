@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Sepref.IrOps
-import Lax13Proofs.Refine.Sepref.Definition
-import Lax13Proofs.Refine.Ir.Heap
+import Lax62Proofs.Refine.Sepref.IrOps
+import Lax62Proofs.Refine.Sepref.Definition
+import Lax62Proofs.Refine.Ir.Heap
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The costed bump allocator, `free`, and their registered refinement rules.
@@ -124,7 +125,7 @@ program is compiled under. Nothing below takes a `Layout` argument and
 this file does not import `Compile`.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -985,4 +986,4 @@ sepref_synth freeSynth (xs : List Val) :
 
 end AllocGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

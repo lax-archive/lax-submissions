@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Autoref.Tagging
+import Lax62Proofs.Refine.Autoref.Tagging
 
 /-!
 The side-condition solver registry: solvers keyed by tag, dispatched by
@@ -203,7 +203,7 @@ file checks those functions' output verbatim.
 
 open Lean Elab Meta Tactic
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace TaggedSolver
 
@@ -501,8 +501,8 @@ example : Demo.DemoGoal 3 := by
 -- it fired on, which is why the expected output has a second line —
 -- welcome, in a trace.)
 /--
-info: tagged_solver: the highest-priority solver for tag 'Lax13Proofs.Refine.Demo.DemoGoal' failed; candidates in priority order: demo_high (priority 100), demo_low (priority 50); 'tagged_solver_full' would try the rest. The solver failed with: demo_high only closes DemoGoal 0
-⊢ Lax13Proofs.Refine.Demo.DemoGoal 3
+info: tagged_solver: the highest-priority solver for tag 'Lax62Proofs.Refine.Demo.DemoGoal' failed; candidates in priority order: demo_high (priority 100), demo_low (priority 50); 'tagged_solver_full' would try the rest. The solver failed with: demo_high only closes DemoGoal 0
+⊢ Lax62Proofs.Refine.Demo.DemoGoal 3
 -/
 #guard_msgs in
 example : Demo.DemoGoal 3 := by
@@ -512,7 +512,7 @@ example : Demo.DemoGoal 3 := by
 -- (c) The failure message on an unhandled tag names the tag, and offers
 -- the tags that do have solvers.
 /--
-info: tagged_solver: no solver is registered for tag 'Lax13Proofs.Refine.Demo.UntaggedGoal'; registered tags: Lax13Proofs.Refine.Demo.DemoGoal, Lax13Proofs.Refine.Demo.DemoStep
+info: tagged_solver: no solver is registered for tag 'Lax62Proofs.Refine.Demo.UntaggedGoal'; registered tags: Lax62Proofs.Refine.Demo.DemoGoal, Lax62Proofs.Refine.Demo.DemoStep
 -/
 #guard_msgs in
 #eval show CoreM Unit from do
@@ -524,13 +524,13 @@ example : Demo.UntaggedGoal 3 := by
 
 -- The `pretty_solvers` branch of `explain`, for a tag that does have
 -- solvers.
-/-- info: tagged_solver: solvers for tag 'Lax13Proofs.Refine.Demo.DemoGoal', in priority order: demo_high (priority 100), demo_low (priority 50) -/
+/-- info: tagged_solver: solvers for tag 'Lax62Proofs.Refine.Demo.DemoGoal', in priority order: demo_high (priority 100), demo_low (priority 50) -/
 #guard_msgs in
 #eval show CoreM Unit from do
   IO.println (← explain ``Demo.DemoGoal)
 
 -- `lookup_solver`, and the fields that came back out of the registry.
-/-- info: some (demo_low, trigger Lax13Proofs.Refine.Demo.DemoGoal, priority 50) -/
+/-- info: some (demo_low, trigger Lax62Proofs.Refine.Demo.DemoGoal, priority 50) -/
 #guard_msgs in
 #eval show CoreM Unit from do
   match ← lookup `demo_low with
@@ -552,7 +552,7 @@ example : Demo.UntaggedGoal 3 := by
 -- goals `demo_step` produced are rolled back before it is reported:
 -- `tagged_solver_step` below starts from the unsplit goal.
 /--
-info: tagged_solver: the highest-priority solver for tag 'Lax13Proofs.Refine.Demo.DemoStep' failed; candidates in priority order: demo_step (priority 10); 'tagged_solver_full' would try the rest. The solver failed with: tagged_solver: solver demo_step (priority 10) ran on tag 'Lax13Proofs.Refine.Demo.DemoStep' but did not close the goal; use 'tagged_solver_step' to keep what it produced
+info: tagged_solver: the highest-priority solver for tag 'Lax62Proofs.Refine.Demo.DemoStep' failed; candidates in priority order: demo_step (priority 10); 'tagged_solver_full' would try the rest. The solver failed with: tagged_solver: solver demo_step (priority 10) ran on tag 'Lax62Proofs.Refine.Demo.DemoStep' but did not close the goal; use 'tagged_solver_step' to keep what it produced
 -/
 #guard_msgs in
 example : Demo.DemoStep 3 := by
@@ -567,4 +567,4 @@ example : Demo.DemoGoal 0 := by tagged_solver_step
 
 end Gate
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

@@ -1,6 +1,6 @@
-import Lax13Proofs.Refine.Sepref.IdOp
-import Lax13Proofs.Refine.NREST.Combinators
-import Lax13Proofs.Refine.NREST.Pw
+import Lax62Proofs.Refine.Sepref.IdOp
+import Lax62Proofs.Refine.NREST.Combinators
+import Lax62Proofs.Refine.NREST.Pw
 
 /-!
 # Sepref phase two: monadify
@@ -187,7 +187,7 @@ open Lean Meta Elab
 
 universe u v
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 /-! ## The marker constants -/
 
@@ -1170,4 +1170,4 @@ example :
 
 end MonadifyGate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

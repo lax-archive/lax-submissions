@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Sepref.Bounds
+import Lax62Proofs.Refine.Sepref.Bounds
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The `wordAssn` spike (ND-MC rebase P0.2)
@@ -55,7 +56,7 @@ against the abstract program rather than against `Ir.State` — is real,
 is built here as `BRefine`, and does not need `wordAssn`.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -638,4 +639,4 @@ end Gate
 
 end WordSpike
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

@@ -1,5 +1,5 @@
-import Lax13Proofs.Refine.Autoref.Tool
-import Lax13Proofs.Refine.Autoref.Param
+import Lax62Proofs.Refine.Autoref.Tool
+import Lax62Proofs.Refine.Autoref.Param
 
 /-!
 The pure-HOL operator bindings: the `autoref_rules` database, the
@@ -182,7 +182,7 @@ open Lean Meta Elab
 
 universe u
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-! ### The `autoref_rules` database: wave B1's bindings, tagged
 (delta B6)
@@ -450,4 +450,4 @@ example : STRUCT_EQ_tag (fun l l' : List ℕ => decide (l = l'))
 
 end Sanity
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

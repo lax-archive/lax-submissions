@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.NREST.TimeRefinement
-import Lax13Proofs.Refine.Codegen.Cash
+import Lax62Proofs.Refine.NREST.TimeRefinement
+import Lax62Proofs.Refine.Codegen.Cash
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Currency flattening at the cash boundary.
@@ -20,7 +21,7 @@ to the existing `Codegen.ecash`; this is the single intended collapse of a
 currency vector.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace NRest
 
@@ -321,20 +322,20 @@ theorem collapseCash_eq (m : NRest α ECost) :
 
 /-! ## Axiom guards -/
 
-/-- info: 'Lax13Proofs.Refine.NRest.flatCurrs_bindT' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.flatCurrs_bindT' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms flatCurrs_bindT
 
-/-- info: 'Lax13Proofs.Refine.NRest.flatCost_timerefineA_cashExchangeRate' depends on axioms: [propext,
+/-- info: 'Lax62Proofs.Refine.NRest.flatCost_timerefineA_cashExchangeRate' depends on axioms: [propext,
  Classical.choice,
  Quot.sound] -/
 #guard_msgs in
 #print axioms flatCost_timerefineA_cashExchangeRate
 
-/-- info: 'Lax13Proofs.Refine.NRest.collapseCash_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.NRest.collapseCash_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms collapseCash_eq
 
 end NRest
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

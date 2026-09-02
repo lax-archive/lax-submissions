@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Examples.BfsQSynth
-import Lax13Proofs.Refine.Sepref.Examples.WordAssnSpike
+import Lax62Proofs.Refine.Examples.BfsQSynth
+import Lax62Proofs.Refine.Sepref.Examples.WordAssnSpike
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The spike's measurement: the BFS fill loop's bounds pass, re-derived
@@ -55,7 +56,7 @@ remaining ratio lives. The fragment measured is the one that needs none
 of them.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace BfsQBounded
 
@@ -289,4 +290,4 @@ splitting, tool integration), plus: no `BRefine` rule for `mopPair`/the
 
 end BfsQBounded
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

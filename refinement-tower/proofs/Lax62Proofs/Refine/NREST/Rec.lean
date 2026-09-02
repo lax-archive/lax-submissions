@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.NREST.Sanity
+import Lax62Proofs.Refine.NREST.Sanity
 
 /-!
 General recursion for `NREST`: the `RECT` fixed point.
@@ -105,7 +105,7 @@ become `flatOrd`/`funOrd` by the usual casing.
 with `⊤` (`FAILT`) outside the guard — not a nicer or better-behaved
 fixed point. `gfp` here is HOL's `gfp f = Sup {u. u ≤ f u}`; mathlib's
 `OrderHom.gfp` is *the same formula* on a bundled monotone map, so
-`Lax13Proofs.Refine.gfp` below is the unbundled spelling of it and
+`Lax62Proofs.Refine.gfp` below is the unbundled spelling of it and
 `gfp_unfold` is `OrderHom.map_gfp`. This is the mathlib gap filled
 locally: mathlib has no unbundled `gfp` taking the monotonicity as a
 separate hypothesis, and `RECT`'s definition needs one because the
@@ -183,7 +183,7 @@ non-accessible states is the post-fixed point that pushes divergence
 into `FAILT`, and that is what retires `LOOP_VARIANT`.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-! ### The flat orderings
 
@@ -804,4 +804,4 @@ theorem RECT_bodyLoop (s : Fin 3) : RECT bodyLoop s = NRest.fail := by
 
 end Sanity
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

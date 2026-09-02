@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Codegen.Cash
-import Lax13Proofs.Refine.Sepref.Examples.Acceptance
+import Lax62Proofs.Refine.Codegen.Cash
+import Lax62Proofs.Refine.Sepref.Examples.Acceptance
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 P5's acceptance: P4's two toy programs, landed at `ComputesInTime`.
@@ -61,10 +62,10 @@ not need to be: `Transfer`'s word-length hypothesis is
 sharper `B` and re-runs §3 with the same invariants.
 -/
 
-namespace Lax13Proofs.Refine.Codegen
+namespace Lax62Proofs.Refine.Codegen
 
-open Lax13Proofs.Refine.Ir Lax13Proofs.Refine.Sepref Lax13Proofs.Refine.Sepref.Acceptance
-open Lax13Proofs.Codegen Lax13Proofs.Reasoning Lax13Proofs.Reasoning.Lib
+open Lax62Proofs.Refine.Ir Lax62Proofs.Refine.Sepref Lax62Proofs.Refine.Sepref.Acceptance
+open Lax62Proofs.Codegen Lax13Proofs.Reasoning Lax13Proofs.Reasoning.Lib
 open Lax13Proofs.Imp Lax13Proofs.Compile
 
 namespace EndToEnd
@@ -392,7 +393,7 @@ theorem fc_program_spec (ys : List ℕ) (t : ℕ) :
   have hnB : ys.length < fcB ([t, ys.length] ++ ys) := by have := hb.len; omega
   have hres : fcCountOf ys t < fcB ([t, ys.length] ++ ys) := by
     have := fcCountOf_le ys t; have := hb.len; omega
-  refine (Lax13Proofs.Codegen.marshal_scalarsArr_scalar _ (fcExt ys) ["t", "n"] "A" "cnt" "n"
+  refine (Lax62Proofs.Codegen.marshal_scalarsArr_scalar _ (fcExt ys) ["t", "n"] "A" "cnt" "n"
     "tp" "acc" [t, ys.length] ys fcBody (20 * ys.length + 6) (fcCountOf ys t)
     (by simp) rfl (by simp) (by simp) (by simp) (by decide) (by decide) (by decide)
     (by simp [fcExt]) hnB hb.ent (by simp [fcBody, Imp.Com.NoWrite, noWrite_embed]) hres
@@ -813,7 +814,7 @@ theorem rv_program_spec (ys : List ℕ) :
     rw [rvOutFn_length]; exact hnB
   have hresB : ∀ v ∈ rvOutFn ys, v < fcB ([ys.length] ++ ys) :=
     rvIter_bound h0 _ _ hb.ent
-  refine (Lax13Proofs.Codegen.marshal_scalarsArr_arr _ (rvExt ys) ["n"] "A" "cnt" "n" "tp"
+  refine (Lax62Proofs.Codegen.marshal_scalarsArr_arr _ (rvExt ys) ["n"] "A" "cnt" "n" "tp"
     "A" "jj" "n" [ys.length] ys (rvOutFn ys) rvBody (26 * (ys.length - 1) + 10)
     (by simp) rfl (by simp) (by simp) (by simp) (by decide) (by decide) (by decide)
     (by simp [rvExt]) hnB hb.ent (by decide) hresN hresB
@@ -1014,4 +1015,4 @@ end Gate
 
 end EndToEnd
 
-end Lax13Proofs.Refine.Codegen
+end Lax62Proofs.Refine.Codegen

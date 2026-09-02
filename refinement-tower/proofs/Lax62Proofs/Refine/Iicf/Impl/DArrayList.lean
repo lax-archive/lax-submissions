@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Iicf.IicfDynamicArray
-import Lax13Proofs.Refine.Iicf.Intf.List
+import Lax62Proofs.Refine.Iicf.IicfDynamicArray
+import Lax62Proofs.Refine.Iicf.Intf.List
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Dynamic-array lists
@@ -24,9 +25,9 @@ caller-owned establishment boundary.  Push has two honest surfaces:
 No scalar source bound is transplanted into the IR cost algebra.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 /-! ## Source constants and synthesis-experiment disposition -/
@@ -275,16 +276,16 @@ still pays two metadata copies; no whole-operation zero placeholder exists. -/
 
 /-! ## Kernel-three gates -/
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.dyn_da' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.dyn_da' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms dyn_da
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.daPush_some_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.daPush_some_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms daPush_some_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.daPush_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.daPush_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms daPush_exec_hnr
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

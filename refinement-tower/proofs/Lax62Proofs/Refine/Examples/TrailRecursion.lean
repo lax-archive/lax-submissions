@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Iicf.ExercisesA
+import Lax62Proofs.Refine.Iicf.ExercisesA
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Recursive per-arena passes over a trail array — deviation D5's exercise
@@ -127,7 +128,7 @@ three times for two distinct cells — and it is why `ArenaOk` requires
 upper bound for distinct cells and the exact write count.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace TrailRecursion
 
@@ -354,7 +355,7 @@ visible — and then the whole driver, nested loops and all, in a single
 `sepref_synth`. -/
 
 /--
-info: sepref_synth Lax13Proofs.Refine.TrailRecursion.innerSynth:
+info: sepref_synth Lax62Proofs.Refine.TrailRecursion.innerSynth:
   Com.while (Cond.lt (Operand.cell "k") (Operand.cell "kend"))
     ((Com.aget "u" "mem" "k").seq
       ((tgetCom "w" "A" "u").seq
@@ -863,27 +864,27 @@ theorem trail_touched_only_bound (n arenas : ℕ) :
 
 /-! ### 7.4 Axioms -/
 
-/-- info: 'Lax13Proofs.Refine.TrailRecursion.clusterSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.TrailRecursion.clusterSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms clusterSynth
 
-/-- info: 'Lax13Proofs.Refine.TrailRecursion.innerSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.TrailRecursion.innerSynth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms innerSynth
 
-/-- info: 'Lax13Proofs.Refine.TrailRecursion.clusterLoop_value' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.TrailRecursion.clusterLoop_value' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms clusterLoop_value
 
-/-- info: 'Lax13Proofs.Refine.TrailRecursion.clusterCost_touched_only' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.TrailRecursion.clusterCost_touched_only' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms clusterCost_touched_only
 
-/-- info: 'Lax13Proofs.Refine.TrailRecursion.clusterProg_value' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.TrailRecursion.clusterProg_value' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms clusterProg_value
 
-/-- info: 'Lax13Proofs.Refine.TrailRecursion.clusterSynth_touched_only' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.TrailRecursion.clusterSynth_touched_only' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms clusterSynth_touched_only
 
@@ -943,4 +944,4 @@ theorem trail_touched_only_bound (n arenas : ℕ) :
 
 end TrailRecursion
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

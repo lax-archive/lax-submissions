@@ -95,7 +95,7 @@ distance region and every other region are frame).
 namespace Lax3Proofs.Prog
 
 open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Reasoning.Lib
-open Lax13Proofs.Codegen (arrOf_getD getD_eq_getElem)
+open Lax62Proofs.Codegen (arrOf_getD getD_eq_getElem)
 open Lax3Proofs.Impl (parents descend bfsSupports BallTable parents_nonempty
   length_descend)
 

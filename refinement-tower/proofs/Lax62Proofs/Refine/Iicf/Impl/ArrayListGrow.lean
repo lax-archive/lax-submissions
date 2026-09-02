@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Iicf.Impl.ArrayList
-import Lax13Proofs.Refine.Sepref.HeapAlloc
-import Lax13Proofs.Refine.Sepref.HeapCopy
+import Lax62Proofs.Refine.Iicf.Impl.ArrayList
+import Lax62Proofs.Refine.Sepref.HeapAlloc
+import Lax62Proofs.Refine.Sepref.HeapCopy
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The array list's growth step, on the P4.5 allocator
@@ -93,9 +94,9 @@ right default for append — append is the growing operation, and the abstract
 layer is where the source states it unconditionally.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 /-! ## The copy -/
@@ -179,8 +180,8 @@ theorem arlGrowSpec_eq (s : ArrayList) (h : s.Wf) :
       s.length, 2 * s.capacity⟩ : ArrayList) = arlGrow s := by
     rw [hblit_replicate, hactive]
     rfl
-  rw [arlGrowSpec, mopAlloc_def, Lax13Proofs.Refine.Iicf.bindT_unit, mopBlit_def,
-    Lax13Proofs.Refine.Iicf.bindT_unit, hstate, NRest.consume_consume,
+  rw [arlGrowSpec, mopAlloc_def, Lax62Proofs.Refine.Iicf.bindT_unit, mopBlit_def,
+    Lax62Proofs.Refine.Iicf.bindT_unit, hstate, NRest.consume_consume,
     arlCopyCost_eq_blitCost]
 
 /-- Growth never fails.  The whole point. -/
@@ -277,16 +278,16 @@ theorem arlCopyCost_zero_while : (arlCopyCost 0).toFun Currency.«while» = 1 :=
   rw [arlCopyCost_zero]
   simp [irUnit]
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlGrowSpec_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlGrowSpec_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlGrowSpec_eq
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlGrowAlloc_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlGrowAlloc_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlGrowAlloc_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.arlGrowCopy_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.arlGrowCopy_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms arlGrowCopy_hnr
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

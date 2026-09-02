@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Iicf.Basic
-import Lax13Proofs.Refine.Examples.ArrayFill
+import Lax62Proofs.Refine.Iicf.Basic
+import Lax62Proofs.Refine.Examples.ArrayFill
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Plain arrays — the interface completions (design record §"The structures" 1)
@@ -63,7 +64,7 @@ state). An interface op that returned a pair would push that
 implementation detail onto every consumer.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -172,7 +173,7 @@ noncomputable def fillProg (val : ℕ) (xs : List ℕ) : NRest (ℕ × List ℕ)
       irWhileIT (fillI xs.length) (fillBf xs.length) (fillF val) s₀
 
 /--
-info: sepref_synth Lax13Proofs.Refine.Sepref.Iicf.fillLoop:
+info: sepref_synth Lax62Proofs.Refine.Sepref.Iicf.fillLoop:
   (Com.const i 0).seq
     (Com.skip.seq
       (Com.while (Cond.lt (Operand.cell i) (Operand.cell n))
@@ -341,10 +342,10 @@ is false -/
 #guard_msgs in
 example : (fillCost 3).toFun Currency.aset = 4 := by decide +kernel
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.hnr_mop_array_fill' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.hnr_mop_array_fill' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms hnr_mop_array_fill
 
 end Iicf
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

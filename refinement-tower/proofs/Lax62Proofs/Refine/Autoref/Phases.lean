@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Autoref.Tagging
+import Lax62Proofs.Refine.Autoref.Tagging
 
 /-!
 The phase driver: a priority-ordered pipeline of passes over one
@@ -169,7 +169,7 @@ addition, not a loss: each phase's own message is still its own.
 
 open Lean Meta Elab
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 namespace Autoref
 
@@ -402,4 +402,4 @@ def untag (e : Expr) : MetaM Expr := do
 
 end Autoref
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

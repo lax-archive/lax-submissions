@@ -1,5 +1,6 @@
-import Lax13Proofs.Refine.Iicf.Impl.AbsHeap
-import Lax13Proofs.Refine.Iicf.Impl.ArrayList
+import Lax62Proofs.Refine.Iicf.Impl.AbsHeap
+import Lax62Proofs.Refine.Iicf.Impl.ArrayList
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Array-list implementation of priority heaps
@@ -34,9 +35,9 @@ exactly the conditional insert it had.  Re-seating this structure onto
 behind P4.5; nothing here was weakened or strengthened to make P5.E land.
 -/
 
-namespace Lax13Proofs.Refine.Sepref.Iicf
+namespace Lax62Proofs.Refine.Sepref.Iicf
 
-open Lax13Proofs.Refine
+open Lax62Proofs.Refine
 open Ir NRest
 
 /-! ## Composed representation -/
@@ -2348,56 +2349,56 @@ run_cmd do
     unless frs.contains n do
       throwError "impl-heap executable gate: missing rule {n}"
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapInsertOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapInsertOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapInsertOp_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapUpdate_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapUpdate_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapUpdate_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapSwim_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapSwim_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapSwim_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapSink_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapSink_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapSink_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapInsert_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapInsert_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapInsert_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapPopMin_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapPopMin_exec_hnr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapPopMin_exec_hnr
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapPopMinOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapPopMinOp_refines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapPopMinOp_refines
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapSwimLoopSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapSwimLoopSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapSwimLoopSpec_run
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapSwimExecSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapSwimExecSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapSwimExecSpec_run
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapSinkLoopSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapSinkLoopSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapSinkLoopSpec_run
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapSinkExecSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapSinkExecSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapSinkExecSpec_run
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapInsertExecSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapInsertExecSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapInsertExecSpec_run
 
-/-- info: 'Lax13Proofs.Refine.Sepref.Iicf.implHeapPopMinExecSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Sepref.Iicf.implHeapPopMinExecSpec_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms implHeapPopMinExecSpec_run
 
-end Lax13Proofs.Refine.Sepref.Iicf
+end Lax62Proofs.Refine.Sepref.Iicf

@@ -50,5 +50,14 @@ git = "https://github.com/lax-archive/lax-submissions"
 rev = "becb5782d64a8587b9cd3f53269c1ce35cdb1ff0"
 subDir = "sparsity-lectures/proofs"
 
+# the refinement tower (NREST, Autoref, Sepref, IICF, codegen) of
+# submission Lax62's proofs, built on Lax13's pipeline and consumed the
+# same way
+[[require]]
+name = "Lax62Proofs"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "0000000000000000000000000000000000000000"
+subDir = "refinement-tower/proofs"
+
 [[lean_lib]]
 name = "Lax3Proofs"

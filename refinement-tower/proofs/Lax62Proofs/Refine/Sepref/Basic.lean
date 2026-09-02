@@ -1,6 +1,7 @@
-import Lax13Proofs.Refine.Ir.Triples
-import Lax13Proofs.Refine.NREST.Pw
-import Lax13Proofs.Refine.Autoref.Relators
+import Lax62Proofs.Refine.Ir.Triples
+import Lax62Proofs.Refine.NREST.Pw
+import Lax62Proofs.Refine.Autoref.Relators
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The Sepref refinement judgment `hnRefine` on the word-RAM IR: the port of
@@ -133,7 +134,7 @@ carrier; ours is `AState` (`Assn = AState → Prop`), i.e. `purePart` of
   under P4/D-d; the merge calculus of §5 is what survives of them.
 -/
 
-namespace Lax13Proofs.Refine.Sepref
+namespace Lax62Proofs.Refine.Sepref
 
 open Ir NRest
 
@@ -961,4 +962,4 @@ theorem merge_junk_not_emp : ¬ MERGE (□ : Assn) (junkCell "x") □ := by
 
 end Gate
 
-end Lax13Proofs.Refine.Sepref
+end Lax62Proofs.Refine.Sepref

@@ -99,7 +99,7 @@ record's field documentation is here because the record is; its
 justification against the source's `type solver` is there.
 -/
 
-namespace Lax13Proofs.Refine
+namespace Lax62Proofs.Refine
 
 /-- The source's `named_theorems relator_props` (`Relators.thy`):
 structural facts about relators — monotonicity, single-valuedness, and
@@ -267,4 +267,4 @@ initialize taggedSolverExt :
 
 end SolverRegistry
 
-end Lax13Proofs.Refine
+end Lax62Proofs.Refine

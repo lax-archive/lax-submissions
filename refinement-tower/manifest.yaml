@@ -1,0 +1,169 @@
+specVersion: "1"
+id: lax-62
+leanVersion: "v4.30.0"
+mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
+title: "A Refinement Framework for the Word RAM"
+authors:
+  - name: Jan Dreier
+  - name: Claude Fable 5 (Anthropic)
+bibEntries:
+  - |
+    @inproceedings{LammichTuerk2012,
+      author    = {Lammich, Peter and Tuerk, Thomas},
+      title     = {Applying Data Refinement for Monadic Programs to
+                   {H}opcroft's Algorithm},
+      booktitle = {Interactive Theorem Proving (ITP 2012)},
+      series    = {LNCS},
+      volume    = {7406},
+      pages     = {166--182},
+      publisher = {Springer},
+      year      = {2012},
+      doi       = {10.1007/978-3-642-32347-8_13}
+    }
+  - |
+    @inproceedings{Lammich2013,
+      author    = {Lammich, Peter},
+      title     = {Automatic Data Refinement},
+      booktitle = {Interactive Theorem Proving (ITP 2013)},
+      series    = {LNCS},
+      volume    = {7998},
+      pages     = {84--99},
+      publisher = {Springer},
+      year      = {2013},
+      doi       = {10.1007/978-3-642-39634-2_9}
+    }
+  - |
+    @inproceedings{Lammich2015,
+      author    = {Lammich, Peter},
+      title     = {Refinement to {I}mperative/{HOL}},
+      booktitle = {Interactive Theorem Proving (ITP 2015)},
+      series    = {LNCS},
+      volume    = {9236},
+      pages     = {253--269},
+      publisher = {Springer},
+      year      = {2015},
+      doi       = {10.1007/978-3-319-22102-1_17}
+    }
+  - |
+    @article{Lammich2019,
+      author  = {Lammich, Peter},
+      title   = {Refinement to {I}mperative {HOL}},
+      journal = {Journal of Automated Reasoning},
+      volume  = {62},
+      number  = {4},
+      pages   = {481--503},
+      year    = {2019},
+      doi     = {10.1007/s10817-017-9437-1}
+    }
+  - |
+    @inproceedings{LammichLLVM2019,
+      author    = {Lammich, Peter},
+      title     = {Generating Verified {LLVM} from {I}sabelle/{HOL}},
+      booktitle = {Interactive Theorem Proving (ITP 2019)},
+      series    = {LIPIcs},
+      volume    = {141},
+      pages     = {22:1--22:19},
+      publisher = {Schloss Dagstuhl},
+      year      = {2019},
+      doi       = {10.4230/LIPIcs.ITP.2019.22}
+    }
+  - |
+    @inproceedings{HaslbeckLammich2019,
+      author    = {Haslbeck, Maximilian P. L. and Lammich, Peter},
+      title     = {Refinement with Time -- Refining the Run-Time of
+                   Algorithms in {I}sabelle/{HOL}},
+      booktitle = {Interactive Theorem Proving (ITP 2019)},
+      series    = {LIPIcs},
+      volume    = {141},
+      pages     = {20:1--20:18},
+      publisher = {Schloss Dagstuhl},
+      year      = {2019},
+      doi       = {10.4230/LIPIcs.ITP.2019.20}
+    }
+  - |
+    @inproceedings{HaslbeckLammich2021,
+      author    = {Haslbeck, Maximilian P. L. and Lammich, Peter},
+      title     = {For a Few Dollars More: Verified Fine-Grained Algorithm
+                   Analysis Down to {LLVM}},
+      booktitle = {Programming Languages and Systems (ESOP 2021)},
+      series    = {LNCS},
+      volume    = {12648},
+      pages     = {292--319},
+      publisher = {Springer},
+      year      = {2021},
+      doi       = {10.1007/978-3-030-72019-3_11}
+    }
+  - |
+    @article{HaslbeckLammich2022,
+      author  = {Haslbeck, Maximilian P. L. and Lammich, Peter},
+      title   = {For a Few Dollars More: Verified Fine-Grained Algorithm
+                 Analysis Down to {LLVM}},
+      journal = {ACM Transactions on Programming Languages and Systems},
+      volume  = {44},
+      number  = {3},
+      pages   = {14:1--14:36},
+      year    = {2022},
+      doi     = {10.1145/3486169}
+    }
+  - |
+    @phdthesis{Haslbeck2021,
+      author = {Haslbeck, Maximilian P. L.},
+      title  = {Verified Quantitative Analysis of Imperative Algorithms},
+      school = {Technische Universit{\"a}t M{\"u}nchen},
+      year   = {2021}
+    }
+  - |
+    @inproceedings{ZhanHaslbeck2018,
+      author    = {Zhan, Bohua and Haslbeck, Maximilian P. L.},
+      title     = {Verifying Asymptotic Time Complexity of Imperative
+                   Programs in {I}sabelle},
+      booktitle = {Automated Reasoning (IJCAR 2018)},
+      series    = {LNCS},
+      volume    = {10900},
+      pages     = {532--548},
+      publisher = {Springer},
+      year      = {2018},
+      doi       = {10.1007/978-3-319-94205-6_35}
+    }
+  - |
+    @inproceedings{KleinKolanskiBoyton2012,
+      author    = {Klein, Gerwin and Kolanski, Rafal and Boyton, Andrew},
+      title     = {Mechanised Separation Algebra},
+      booktitle = {Interactive Theorem Proving (ITP 2012)},
+      series    = {LNCS},
+      volume    = {7406},
+      pages     = {332--337},
+      publisher = {Springer},
+      year      = {2012},
+      doi       = {10.1007/978-3-642-32347-8_23}
+    }
+  - |
+    @article{ChargueraudPottier2019,
+      author  = {Chargu{\'e}raud, Arthur and Pottier, Fran{\c{c}}ois},
+      title   = {Verifying the Correctness and Amortized Complexity of a
+                 Union-Find Implementation in Separation Logic with Time
+                 Credits},
+      journal = {Journal of Automated Reasoning},
+      volume  = {62},
+      number  = {3},
+      pages   = {331--365},
+      year    = {2019},
+      doi     = {10.1007/s10817-017-9431-7}
+    }
+  - |
+    @misc{IsabelleLLVMTime,
+      author       = {Haslbeck, Maximilian P. L. and Lammich, Peter},
+      title        = {isabelle\_llvm\_time: the {ESOP} 2021 artifact},
+      howpublished = {\url{https://github.com/lammich/isabelle_llvm_time},
+                      commit 42dd7f5},
+      year         = {2021}
+    }
+  - |
+    @misc{AFPRefinement,
+      author       = {Lammich, Peter and Haslbeck, Maximilian P. L.},
+      title        = {{AFP} entries {Refine\_Monadic}, {Automatic\_Refinement},
+                      {Refine\_Imperative\_HOL} and {NREST}},
+      howpublished = {Archive of Formal Proofs,
+                      \url{https://www.isa-afp.org}, Isabelle2025-2},
+      year         = {2026}
+    }

@@ -1,4 +1,5 @@
-import Lax13Proofs.Refine.Ir.SepSolver
+import Lax62Proofs.Refine.Ir.SepSolver
+open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 P3's acceptance: hand-proved credit-carrying triples for array get, set
@@ -84,7 +85,7 @@ The `GC` form is exercised separately, on the set program, so that
 `irHtriple_frame` and the solver's `GC`-absorption path are covered too.
 -/
 
-namespace Lax13Proofs.Refine.Ir
+namespace Lax62Proofs.Refine.Ir
 
 namespace Examples
 
@@ -355,7 +356,7 @@ falsifiable. -/
 
 namespace Gate
 
-open Lax13Proofs.Refine.Ir.Gate (costVector readVars readArrs)
+open Lax62Proofs.Refine.Ir.Gate (costVector readVars readArrs)
 
 /-- Three zeroes, and the four cells the loop needs. -/
 def fillDemoState : State :=
@@ -525,4 +526,4 @@ end Gate
 
 end Examples
 
-end Lax13Proofs.Refine.Ir
+end Lax62Proofs.Refine.Ir

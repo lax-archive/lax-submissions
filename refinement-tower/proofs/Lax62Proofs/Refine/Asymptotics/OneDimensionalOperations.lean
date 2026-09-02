@@ -1,4 +1,4 @@
-import Lax13Proofs.Refine.Asymptotics.OneDimensional
+import Lax62Proofs.Refine.Asymptotics.OneDimensional
 
 /-!
 # One-dimensional asymptotic operations and normalization
@@ -51,7 +51,7 @@ Source-to-Lean table (32 live declarations and four exclusions):
 open Filter
 open scoped Topology
 
-namespace Lax13Proofs.Refine.Asymptotics1D
+namespace Lax62Proofs.Refine.Asymptotics1D
 
 open Asymptotics
 
@@ -544,52 +544,52 @@ private theorem concreteNormalizationGate :
 
 /-! ## Kernel-three axiom guards -/
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.bigOmegaCompose' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.bigOmegaCompose' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigOmegaCompose
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.bigOCompose' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.bigOCompose' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigOCompose
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.bigThetaCompose' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.bigThetaCompose' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigThetaCompose
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.bigThetaComposeLinear' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.bigThetaComposeLinear' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigThetaComposeLinear
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.asymBoundDiv' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.asymBoundDiv' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms asymBoundDiv
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.asymBoundDiff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.asymBoundDiff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms asymBoundDiff
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.ceilingTheta' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.ceilingTheta' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms ceilingTheta
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.log2Asym' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.log2Asym' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms log2Asym
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.abcdLog' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.abcdLog' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms abcdLog
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.thetaAdd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.thetaAdd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms thetaAdd
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.bigThetaAdd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.bigThetaAdd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigThetaAdd
 
-/-- info: 'Lax13Proofs.Refine.Asymptotics1D.bigThetaMul' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Lax62Proofs.Refine.Asymptotics1D.bigThetaMul' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms bigThetaMul
 
-end Lax13Proofs.Refine.Asymptotics1D
+end Lax62Proofs.Refine.Asymptotics1D
