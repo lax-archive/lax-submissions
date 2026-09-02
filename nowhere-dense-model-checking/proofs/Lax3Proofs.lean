@@ -1,5 +1,6 @@
 -- The locality theorem of arXiv:2606.23180 and its normal form.
 import Lax3Proofs.WalkDistance
+import Lax3Proofs.ScatterChoices
 import Lax3Proofs.Horizon
 import Lax3Proofs.SyntaxLemmas
 import Lax3Proofs.SemLocal

@@ -31,7 +31,7 @@ the identity to the abstract layer the driver (`DriverArena`) consumes.
   `greedyScatter_eq_min` (`= min t (greedySet).ncard`, §4's advertised
   value), `le_greedyScatter_iff` (decides the driver's atom
   `t ≤ greedyChoice.size` — the identity to
-  `ScatterSentences.greedyChoice`/`greedySet`), and
+  `ScatterChoices.greedyChoice`/`greedySet`), and
   `greedyScatterCost_le : ≤ t·(n + W)` with
   `greedyScatterCost_zero : … = 0` — the `t = 0` guard as the cost
   statement it is.

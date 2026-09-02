@@ -1,5 +1,6 @@
 import Lax3Proofs.SyntaxLemmas
 import Lax3Proofs.SemLocal
+import Mathlib.Data.Finset.Preimage
 
 /-!
 The source's separation lemma (arXiv:2606.23180, `lem:far-ltp`): a

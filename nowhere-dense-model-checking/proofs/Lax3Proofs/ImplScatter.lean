@@ -1,5 +1,6 @@
 import Lax3.ScatterSentences
 import Lax3Proofs.WalkDistance
+import Lax3Proofs.ScatterChoices
 
 /-!
 # `greedyScatter` — the guarded early-stop sweep (E12, §6.5)
@@ -22,7 +23,7 @@ return picked
 
 * `sweep` — the *unguarded* sweep over the canonical ascending order
   `List.finRange n`, and `mem_sweep_iff`/`length_sweep`: the sweep picks
-  exactly `Lax3.ScatterSentences.greedySet` (the abstract driver's
+  exactly `Lax3Proofs.ScatterChoices.greedySet` (the abstract driver's
   scatter set), so its count is `greedyChoice.size` — the identity to
   the abstract layer, at the set and at the number.
 * `greedyScatter` — the guarded early-stop form, with the `t = 0` guard
@@ -64,8 +65,8 @@ The sweep runs over the *canonical ascending order* on `Fin n`, because
 `greedySet`'s recursion `GreedyMem` is stated in that order. §4 D3
 records that the choice of order is *not* load-bearing for the driver —
 any order gives *a* maximal scattered set — but the identity proved here
-is to the canonical-order `greedySet`, which is the set the endorsed
-`greedyChoice` counts.
+is to the canonical-order `greedySet`, which is the set the canonical
+scatter choice `greedyChoice` counts.
 -/
 
 namespace Lax3Proofs.Impl
@@ -95,7 +96,7 @@ noncomputable def sweep (G : SimpleGraph (Fin n)) (r : ℕ) (X : Set (Fin n)) :
   sweepAcc G r X [] (List.finRange n)
 
 /-- The greedy recursion, unfolded once (the equation of
-`ScatterSentences.GreedyMem`). -/
+`ScatterChoices.GreedyMem`). -/
 theorem greedyMem_iff (G : SimpleGraph (Fin n)) (r : ℕ) (X : Set (Fin n)) (v : Fin n) :
     GreedyMem G r X v ↔
       v ∈ X ∧ ∀ u : Fin n, u < v → GreedyMem G r X u → ¬ WithinDist G r u v := by
@@ -175,8 +176,8 @@ theorem sweepAcc_spec (G : SimpleGraph (Fin n)) (r : ℕ) (X : Set (Fin n)) :
           · exact hbelow u w (by simp [huv, hu]) (List.mem_cons_of_mem _ hw)
 
 /-- **The sweep picks exactly the greedy set** — the identity of the
-routine's picked list with `ScatterSentences.greedySet`, the set the
-endorsed `greedyChoice` counts. -/
+routine's picked list with `ScatterChoices.greedySet`, the set the
+canonical scatter choice `greedyChoice` counts. -/
 theorem mem_sweep_iff (G : SimpleGraph (Fin n)) (r : ℕ) (X : Set (Fin n)) (v : Fin n) :
     v ∈ sweep G r X ↔ v ∈ greedySet G r X :=
   (sweepAcc_spec G r X (List.finRange n) [] (List.sortedLT_iff_pairwise.mp (List.sortedLT_finRange n))
@@ -261,7 +262,8 @@ theorem greedyScatter_eq_min (G : SimpleGraph (Fin n)) (r : ℕ) (X : Set (Fin n
       scatterAux_eq_min G r X t (List.finRange n) [] (by simpa using ht)]
     exact congrArg _ (length_sweep G r X)
 
-/-- The endorsed `greedyChoice` counts the greedy set — definitionally. -/
+/-- The canonical scatter choice `greedyChoice` counts the greedy set —
+definitionally. -/
 theorem greedyChoice_size_eq (G : SimpleGraph (Fin n)) (r : ℕ) (X : Set (Fin n)) :
     greedyChoice.size G r X = (greedySet G r X).ncard := rfl
 

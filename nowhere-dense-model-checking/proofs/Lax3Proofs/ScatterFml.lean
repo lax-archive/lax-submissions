@@ -2,6 +2,7 @@ import Lax3.NormalForm
 import Lax3Proofs.SyntaxLemmas
 import Lax3Proofs.SemLocal
 import Lax3Proofs.ScatterCore
+import Mathlib.Data.Nat.Lattice
 
 /-!
 Correctness of `Lax3.NormalForm.scatterFml`, the source's scatter
@@ -51,6 +52,39 @@ open Lax3Proofs.SyntaxLemmas Lax3Proofs.SemLocal Lax3Proofs.ScatterCore
 open Lax12.UniformQuasiWideness
 
 variable {L n : ℕ}
+
+/-! ### The maximum-size scatter choice
+
+`Lax3.ScatterSentences.ScatterChoice` is a parameter of the concept
+surface: every statement about scatter sentences holds for every choice,
+and the surface names none. The source's "maximum size" choice is a
+construction, so it lives here, next to the theory that consumes it; the
+greedy choice is `Lax3Proofs.ScatterChoices.greedyChoice`. -/
+
+/-- The source's "maximum size" choice: the largest cardinality of an
+`r`-scattered subset of `X`. A subset of that size is inclusion-wise
+maximal, since no scattered set can properly contain it. -/
+noncomputable def maxChoice : ScatterChoice where
+  size := fun {n} G r X =>
+    sSup {c | ∃ S : Set (Fin n), S ⊆ X ∧ DistIndependent G r S ∧ S.ncard = c}
+  spec := by
+    intro n G r X
+    set C : Set ℕ := {c | ∃ S : Set (Fin n), S ⊆ X ∧ DistIndependent G r S ∧ S.ncard = c}
+    have hne : C.Nonempty :=
+      ⟨0, ∅, Set.empty_subset _, Set.pairwise_empty _, Set.ncard_empty _⟩
+    have hbdd : BddAbove C := by
+      refine ⟨n, ?_⟩
+      rintro c ⟨S, -, -, rfl⟩
+      calc S.ncard ≤ (Set.univ : Set (Fin n)).ncard :=
+            Set.ncard_le_ncard (Set.subset_univ S) Set.finite_univ
+        _ = n := by simp
+    obtain ⟨S, hSX, hSind, hScard⟩ := Nat.sSup_mem hne hbdd
+    refine ⟨S, hSX, ⟨⟨hSX, hSind⟩, ?_⟩, hScard⟩
+    rintro T ⟨hTX, hTind⟩ hST
+    have hT : T.ncard ∈ C := ⟨T, hTX, hTind, rfl⟩
+    have hle : T.ncard ≤ S.ncard := hScard ▸ le_csSup hbdd hT
+    exact (Set.eq_of_subset_of_ncard_le hST hle).symm.subset
+
 
 /-! ### Unfolding the concept-side definitions
 

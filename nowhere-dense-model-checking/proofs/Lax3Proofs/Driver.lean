@@ -2,6 +2,7 @@ import Lax3Proofs.DriverSchedule
 import Lax3Proofs.DriverArena
 import Lax3Proofs.DriverCorrect
 import Lax3Proofs.DriverCost
+import Lax3Proofs.ScatterChoices
 
 /-!
 # E9 — the abstract algorithm (§8 step 4): the file family's head
