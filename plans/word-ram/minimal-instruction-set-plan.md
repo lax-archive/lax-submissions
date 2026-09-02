@@ -120,15 +120,16 @@ Bounds, Spec, Frame, Tactic and the whole `Refine/` tower are untouched
   `get a i` → `compileExpr i d; set (d+1) q; mul d d (d+1); set (d+1) (arrBase a);
   add d d (d+1); load d d` (the old `q − 1` repeated additions are gone, so
   `idxLen` is a numeral and `Layout.const` **no longer depends on the number
-  of arrays**); `bin op e f` → `compileExpr e d; compileExpr f (d+1); op d d (d+1)`
-  for the six machine operators; `or`, `xor`, `shiftr` end in the 3–4
-  instruction blocks of §2 with `t = d + 2` and, for `xor`, `u = d + 1` (the
-  second operand's cell, dead after its last read).
+  of arrays**); `bin op e f` → `compileExpr f d; compileExpr e (d+1); op d (d+1) d`
+  for the six machine operators (second operand first, into `d`, as the
+  frozen `Expr.Ok` clause `Ok f d ∧ Ok e (d+1)` dictates); `or`, `xor`,
+  `shiftr` end in the 3–4 instruction blocks of §2 with `t = d + 2` and, for
+  `xor`, the spare `u` being cell `d` itself, dead after its last read.
 - **Conditions.** `condExpr` (monus trick) is unchanged; a compiled condition
   leaves its value in cell `0`, followed by `jzero 0 l`.
 - **Commands.** `assign x e` → `compileExpr e 0; set 1 (varAddr x); store 1 0`
-  (`Com.Ok` gains `0 < L.temps` for `assign`; every existing layout has
-  `temps ≥ 2`, so downstream `simp [Com.Ok]` proofs close as before);
+  (cells `0` and `1` lie inside the `temps + 2` reserve at every layout, so
+  `Com.Ok` is byte-identical to before — no extra conjunct was needed);
   `store a i e` → index into `0`, `e` into `1`, `store 0 1`; `write e` →
   `compileExpr e 0; write 0`; `read x` → `read (varAddr x)`; `ite`/`while`
   as now with `jzero 0`; `compileProgram L c = compile L c 0 ++ [.halt]`.
@@ -173,7 +174,9 @@ action or needs his go-ahead; repo work lands on `main` independently.
 
 ## 6. Execution
 
-1. **W1 — word-ram** (worktree `ram1`, one worker): `Ram.lean`,
+1. **W1 — word-ram** — **LANDED 2026-09-02 @ 05eb63a** (3286 jobs green,
+   `lax build` audit clean, `Transfer.lean` zero diff, `Ok` byte-identical,
+   supervisor polish of the concept header). Was: (worktree `ram1`, one worker): `Ram.lean`,
    `abstract.md`, `Machine.lean`, `Compile.lean`, `Simulation.lean`, and the
    mechanical updates listed in §4 inside `word-ram/proofs`. Gates: both
    packages `lake build` green; `lax build --only proofs word-ram` namespace
