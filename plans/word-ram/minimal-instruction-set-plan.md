@@ -164,8 +164,12 @@ Unchanged from the audit; summarised.
   `noDataDependentWide` — no division, no shift, and every `mul` is the
   compiler's stride multiplication by the compile-time constant
   `arrays.length`. `abstract.md` and `notes.md` say the same.
-- **vertex-cover-ladder (Lax15)**: proofs only — two `const_eq`, witnesses
-  `90300`, `318500`, `33300` and docstrings; repin `Lax13`, `Lax11`.
+- **vertex-cover-ladder (Lax15)**: proofs only — two `const_eq` (`10`),
+  witnesses `90300 → 21000`, `318500 → 65000`, `33300 → 9000`, 52 step-count
+  gates recomputed with identical answers, `abstract.md`/`notes.md`
+  constants; repin `Lax13`, `Lax11` at resubmission. **LANDED 2026-09-02 @
+  cb63a18** (replayed against the landed Lax11 before landing). All code
+  leaves of the cascade are now on `main`; only §5 remains.
 - **nowhere-dense-model-checking (Lax3)**: `ProgCodegenLayout.lean`
   (`mcLayout_span_le`, span constant `11 → 13`), `ProgCodegen.lean`
   (`mc_computesInTime_of_solveSpec` threads the same `hspan` sum),
