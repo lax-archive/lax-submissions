@@ -35,8 +35,11 @@ This is the machine the modern analysis of algorithms is stated on. Its
 format is that of Cook and Reckhow (*Time bounded random access
 machines*, JCSS 7, 1973): memory cells are the only storage, an
 instruction is `cell ← f(cells)`, literals enter through one instruction
-and indirection through two. Its numbers are bounded rather than its
-instruction set, which is the discipline of Fredman and Willard
+and indirection through two. The format is theirs; the carrier is not:
+their cells hold signed integers, subtract exactly and branch on a
+positive cell, where this machine holds words, truncates subtraction at
+zero and branches on a zero cell, the choices the word model makes.
+Its numbers are bounded rather than its instruction set, which is the discipline of Fredman and Willard
 (*Surpassing the information theoretic bound with fusion trees*, JCSS
 47, 1993) and of Hagerup (*Sorting and searching on the word RAM*,
 STACS 1998): cells hold `w`-bit words, `w` is large enough to address
@@ -77,11 +80,14 @@ comparison is `sub` followed by `jzero`. The complement is
 `2 ^ w - 1 - m[b]`, the one value that depends on the word length other
 than through truncation; with `and` and `shiftl` beside it, every
 bitwise operation and both shifts take a number of instructions
-independent of `w`. A program measures `w` itself, by counting the
-doublings of a cell from `1` until it wraps to zero, so the model needs
-no instruction reporting the word length and one program serves every
-word length. The remaining standard operations are derived at constant
-cost; with `t` and `u` cells the program spares:
+independent of `w`. No instruction reports the word length: no
+operation the literature charges one time unit for needs `w` as a
+number, only the all-ones word `2 ^ w - 1` as a mask, which is `not` of
+a zero cell, and a program that instead counted the doublings of a cell
+from `1` until it wraps to zero would spend `w` steps, which no time
+bound stated over all word lengths absorbs. One program therefore
+serves every word length. The remaining standard operations are derived
+at constant cost; with `t` and `u` cells the program spares:
 
 | operation | instructions | count |
 |---|---|---|
@@ -133,9 +139,11 @@ the model.
 
 namespace Lax13.Ram
 
-/-- An instruction. The first cell named is the one written, and every
-other number naming a cell is read; `set` is the only instruction
-carrying a literal, and `jump`, `jzero` carry a program address. -/
+/-- An instruction. Every number naming a cell is read, except that
+the first one names the cell written by `set`, `load`, `read` and the
+arithmetic instructions, and the cell holding the address written by
+`store`; `set` is the only instruction carrying a literal, and `jump`,
+`jzero` carry a program address. -/
 inductive Instr
   /-- Set cell `a` to the literal `n`. -/
   | set (a n : ℕ)
