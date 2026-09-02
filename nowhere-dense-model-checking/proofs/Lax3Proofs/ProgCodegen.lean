@@ -224,7 +224,7 @@ theorem mc_computesInTime_of_solveSpec
     (c w q : ℕ) (eS eA : List String) (ext : List ℕ → String → ℕ)
     (solveCom : Com) (Ks : List ℕ → ℕ)
     (hq : 1 ≤ q) (hqc : q ≤ c)
-    (hspan : 11 + eS.length + (2 + eA.length) * q ≤ c)
+    (hspan : 13 + eS.length + (2 + eA.length) * q ≤ c)
     (hextOff : ∀ x ∈ mcD n G c w, ext x "off" = vertexCount x + 1)
     (hextTgt : ∀ x ∈ mcD n G c w, ext x "tgt" = 2 * edgeCount x)
     (hokS : Com.Ok (mcLayout eS eA) solveCom) (hnw : solveCom.NoWrite)
