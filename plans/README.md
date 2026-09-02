@@ -18,6 +18,7 @@ and brief files here, not at the root.
 
 | plan | what |
 |------|------|
+| `word-ram/minimal-instruction-set-plan.md` | shrink `Lax13.Ram.Instr` from 18 to 13 instructions by dropping everything the rest simulates at constant cost (`halt`, `jgtz` free; `or`, `xor`, `shiftr` as 6–7-step compiler blocks over two reserved scratch cells). IMP+ keeps its nine operators; only `Layout.const` and the downstream proof-side constants move; concept change forces the Lax13 → Lax11 → {Lax15, Lax3} draft resubmission cascade. Rev 1 PROPOSAL 2026-09-02, five decision flags for Jan. |
 | `pcp-theorem/pcp-plan.md` | the PCP theorem by Dinur gap amplification — the first formal hardness artifact in any assistant. Machine-free Amplification Theorem as the P7 flagship (explicit size-linear gap-doubling transformation on constraint graphs, no machine model anywhere); PCP proper at P8 over the word RAM with tower-verified reduction cost. Five-submission ladder: `constraint-graphs/`, `spectral-expanders/`, `linearity-testing/`, `gap-amplification/`, `pcp-theorem/`. Rev 1 PROPOSAL 2026-07-29, queued behind the RAM campaigns (flag 2 resolved by Jan same day: waits until the dust settles on tower + ND-MC RAM) — flags 1, 3, 4 (charter scope, NP-over-RAM surface, split) open. |
 
 Everything else is closed — most recently
