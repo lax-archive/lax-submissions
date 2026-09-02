@@ -372,10 +372,10 @@ theorem redDegree_eq_of_faithful [DecidableEq V]
 /-! ## From source sequences to submitted sequences -/
 
 /-- The bag families of a source contraction sequence form a submitted
-partition-based contraction sequence of the same width. -/
+partition sequence of the same width. -/
 def submittedOfSource [Fintype V] [DecidableEq V] {d : ℕ}
     (S : TwinWidth.SimpleGraph.ContractionSequence G d) :
-    Lax48.TwinWidth.ContractionSequence G d where
+    Lax48.TwinWidth.PartitionSequence G d where
   stepCount := S.stepCount
   partition i := (S.state i).bags
   starts := S.starts.1
@@ -449,10 +449,10 @@ theorem isPartitionFamily_merge [DecidableEq V] {P : Finset (Finset V)}
     · exact ⟨C, Finset.mem_insert_of_mem
         (Finset.mem_erase.mpr ⟨hCB, Finset.mem_erase.mpr ⟨hCA, hC⟩⟩), hvC⟩
 
-/-- Every partition of a submitted contraction sequence is a partition
+/-- Every partition of a submitted partition sequence is a partition
 family. -/
 theorem isPartitionFamily_partition [Fintype V] [DecidableEq V] {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) :
+    (S : Lax48.TwinWidth.PartitionSequence G d) :
     ∀ i, i ≤ S.stepCount → IsPartitionFamily (S.partition i) := by
   intro i
   induction i with
@@ -492,27 +492,27 @@ theorem faithful_stateOf {P : Finset (Finset V)} (hP : IsPartitionFamily P) :
 /-- The partitions of a submitted sequence, held constant after the final
 step so that every index carries a partition family. -/
 def clampedPartition [Fintype V] [DecidableEq V] {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) (i : ℕ) :
+    (S : Lax48.TwinWidth.PartitionSequence G d) (i : ℕ) :
     Finset (Finset V) :=
   if i ≤ S.stepCount then S.partition i else S.partition S.stepCount
 
 theorem clampedPartition_of_le [Fintype V] [DecidableEq V] {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) {i : ℕ}
+    (S : Lax48.TwinWidth.PartitionSequence G d) {i : ℕ}
     (hi : i ≤ S.stepCount) : clampedPartition S i = S.partition i :=
   if_pos hi
 
 theorem isPartitionFamily_clampedPartition [Fintype V] [DecidableEq V] {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) (i : ℕ) :
+    (S : Lax48.TwinWidth.PartitionSequence G d) (i : ℕ) :
     IsPartitionFamily (clampedPartition S i) := by
   unfold clampedPartition
   split
   · exact isPartitionFamily_partition S i ‹_›
   · exact isPartitionFamily_partition S S.stepCount le_rfl
 
-/-- A submitted contraction sequence induces a source trigraph contraction
+/-- A submitted partition sequence induces a source trigraph contraction
 sequence of the same width. -/
 def sourceOfSubmitted [Fintype V] [DecidableEq V] {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) :
+    (S : Lax48.TwinWidth.PartitionSequence G d) :
     TwinWidth.SimpleGraph.ContractionSequence G d where
   stepCount := S.stepCount
   state i := stateOf G (clampedPartition S i)
@@ -684,12 +684,12 @@ theorem redDegree_image {V V' : Type} [DecidableEq V] [DecidableEq V']
     exact ⟨Finset.mem_image_of_mem _ hB, fun h => hne (hinj h),
       fun h => hnh ((homogeneous_image e A B).mp h)⟩
 
-/-- Relabel a submitted contraction sequence along a graph isomorphism. -/
-def mapIsoContractionSequence {V V' : Type}
+/-- Relabel a submitted partition sequence along a graph isomorphism. -/
+def mapIsoPartitionSequence {V V' : Type}
     [Fintype V] [DecidableEq V] [Fintype V'] [DecidableEq V']
     {G : SimpleGraph V} {G' : SimpleGraph V'} (e : G ≃g G') {d : ℕ}
-    (S : Lax48.TwinWidth.ContractionSequence G d) :
-    Lax48.TwinWidth.ContractionSequence G' d where
+    (S : Lax48.TwinWidth.PartitionSequence G d) :
+    Lax48.TwinWidth.PartitionSequence G' d where
   stepCount := S.stepCount
   partition i := (S.partition i).image (Finset.image e.toEquiv)
   starts := by rw [S.starts, image_singletonPartition]
@@ -756,7 +756,7 @@ theorem exists_treewidth_le_and_two_pow_lt_twinWidth (k : ℕ) :
   · have hnot : ¬ Lax48.TwinWidth.HasTwinWidthAtMost G' (2 ^ k) := by
       rintro ⟨S'⟩
       have hsource : TwinWidth.SimpleGraph.HasTwinWidthAtMost G₀ (2 ^ k) :=
-        ⟨sourceOfSubmitted (mapIsoContractionSequence hiso.symm S')⟩
+        ⟨sourceOfSubmitted (mapIsoPartitionSequence hiso.symm S')⟩
       exact
         TwinWidth.SimpleGraph.BonnetDepres.bonnetDepres_not_hasTwinWidthAtMost_two_pow
           k hsource
