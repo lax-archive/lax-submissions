@@ -179,11 +179,61 @@ Unchanged from the audit; summarised.
 - Headline statements everywhere quantify `∃ (p : Program) (c : ℕ)`, so no
   downstream concept changes.
 
-## 5. Resubmission cascade
+## 5. Resubmission cascade — TODO (parked 2026-09-02 evening, resume 2026-09-03)
 
-Lax13 → Lax11 → {Lax15, Lax3}, all drafts (`state: draft` in
-`~/.lax/lax-database/lax-N/record.json`). `lax submit` per draft is Jan's
-action or needs his go-ahead; repo work lands on `main` independently.
+**What happened.** Jan registered lax-13 on 2026-09-02 14:43 UTC from
+`92ae2d6` (the Cook–Reckhow machine, before the text fixes below).
+Registered records are immutable: `.claude/resubmit-cascade.sh` stopped at
+its first step with "lax-13 is registered and cannot be changed", no repin
+commit and no submission was made. Three concept-text fixes from the
+2026-09-02 review are on `main` @ `7603776` (pushed) and therefore not in
+the archive: the `Instr` docstring no longer claims the first cell named is
+always the one written (`store`, `jzero`, `write` broke that); the
+"a program measures `w` itself" sentence is replaced by the real reason no
+instruction reports `w` (only the mask `2 ^ w - 1` is ever needed, and an
+`O(w)` prologue is not absorbed by any bound stated over all `w`); the
+Cook–Reckhow attribution now says which choices are not theirs (words,
+monus, `jzero` against their signed integers, exact subtraction and
+branch-on-positive). Content of the folder otherwise equals the record.
+
+**Jan's decision (2026-09-02, verbal): publish as a superseding revision.**
+Archive mechanism (`lax print instructions`, "Additional Info"): a new
+submission created by `lax init` whose `manifest.yaml` carries
+`supersedes: lax-13`; the link becomes permanent when the successor
+registers; the predecessor must be registered (it is), an owner of it must
+own the successor (`jan3er`), and a record can have only one successor.
+
+Steps, none started:
+
+1. `lax init <folder> --title "The Word RAM"` — opens a GitHub issue in
+   `lax-archive/lax` and allocates `lax-N`. Pick the folder name first
+   (`word-ram` is bound to lax-13 by its record; the successor needs its own
+   folder or `word-ram` moves and a note says where lax-13's source was).
+2. Copy `word-ram/` into it; rename package, `lean_lib`, module paths and
+   namespaces `Lax13` → `LaxN` / `Lax13Proofs` → `LaxNProofs` (spec
+   "Namespaces": the concept namespace is the id); add `supersedes: lax-13`;
+   keep authors, bibEntries, abstract. `lake build` both packages,
+   `lax build` for the namespace audit, `lax submit`.
+3. Dependents lax-11, lax-62, lax-15, lax-3 all pin lax-13 by rev and import
+   `Lax13.*`. Two options, Jan's call: leave them on the registered lax-13
+   (registration will want registered dependencies, and the fix is text
+   only), or repin to `lax-N` and rename every import and qualified name —
+   a mechanical wave across four submissions, which then resubmit in the
+   cascade order. Either way, drop `word-ram` from the cascade script's
+   default order (a registered folder can never pass its idempotency check)
+   and insert the successor folder before `ram-linear-time`.
+4. Register the successor only with fresh explicit consent
+   ([[submission-freeze-consent]] in memory applies; registration is what
+   makes the supersedes link permanent).
+
+**Jan's second request (2026-09-02, mid-abort): "also delete lax-13 (has
+ram as dependency), we no longer need it".** Not done, and needs
+clarification before anything is run: lax-13 *is* the word RAM, and the
+spec allows deletion only from the init or draft state — a registered record
+cannot be deleted at all, and four drafts currently depend on it. If the
+target was a draft that *has the RAM as a dependency*, the candidates are
+lax-11 (ram-linear-time), lax-62 (refinement-tower), lax-15, lax-3; confirm
+the id. `lax delete` is permanent and asks for confirmation in the CLI.
 
 ## 6. Execution
 
