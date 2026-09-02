@@ -12,19 +12,17 @@ other storage. Input arrives on a read-only input tape and output is
 written on a write-only output tape. A program is a finite sequence of
 instructions, executed in order unless a jump instruction changes the
 program counter. Every instruction names the cells it works on: it sets
-a cell to a literal, copies into a cell the contents of the cell whose
-address another cell holds, or copies a cell into the cell whose address
-another cell holds; it sets a cell to the sum, the difference, the
-product, the quotient, the bitwise conjunction or the left shift of two
-cells, or to the bitwise complement of one; it jumps unconditionally or
-on a cell being zero; it halts; or it reads the next input number into a
-cell or writes a cell to the output.
+a cell to a literal; it reads or writes a cell through the address held
+in another cell; it sets a cell to the sum, the difference, the product,
+the quotient, the bitwise conjunction or the left shift of two cells, or
+to the bitwise complement of one; it jumps unconditionally or if a cell
+is zero; it halts; or it reads the next input number into a cell or
+writes a cell to the output tape.
 
 All arithmetic is arithmetic on words: every value the machine produces
 is taken modulo `2 ^ w`, and every address is taken modulo `2 ^ w`.
-Subtraction is the exception a machine on unsigned words needs, and is
-truncated at zero rather than wrapping. Division is integer division,
-with `x / 0 = 0`.
+Subtraction is truncated at zero rather than wrapping. Division is
+integer division, with `x / 0 = 0`.
 
 The machine starts with all memory cells zero, the whole input word on
 the input tape and the output tape empty; it halts having written the
