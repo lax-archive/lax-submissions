@@ -57,7 +57,7 @@ is borrowed from elsewhere.
   the concept's proposition and is discharged by the required theorem
   `Lax11Proofs.VCMain.exists_fptTime_program_vertexCover`, with the
   identity check that the two are the same proposition. The driver, the
-  invariant, the potential and the constant 33300 are that submission's
+  invariant, the potential and the constant 9000 are that submission's
   and are not restated here; its conclusion annotation carries the short
   account and points at the full one.
 
@@ -99,7 +99,7 @@ help itself to` and `# Attribution`.
   the length of the input.
 - `Main.lean` — the loop as one application of the loop rule, the read
   phase and the `write`, the compiler, and the theorem, with an identity
-  check against the concept's proposition. Achieved constant 90300.
+  check against the concept's proposition. Achieved constant 21000.
 
 ## The branching rung, layer by layer
 
@@ -140,7 +140,7 @@ conclusion annotation is in `proofs/Lax15Proofs/Main3.lean`.
   solver at the leaf and `SideInv` carrying the three interface facts
   (`"n"`, and the extents of `vis` and `q`) that `Rep` is silent about.
 - `Main3.lean` — the loop rule, the assembly on the reused read phase,
-  the theorem, and the identity check. Achieved constant 318500.
+  the theorem, and the identity check. Achieved constant 65000.
 
 ## The one-line story of the potential
 

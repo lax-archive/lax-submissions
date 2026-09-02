@@ -125,18 +125,19 @@ disjoint edges with every slot doubled it would search a $2^k$ tree on an
 instance the correct program answers without a single branch. The
 smallest witness, a nine-number word encoding one edge, is kept in the
 proof package as a machine-checked standing warning, and both improved
-drivers compare targets. The constants that come out are 33300 for the
-$2^k$ program ($37$ machine steps per statement of the compiled
-program, times $900$ statements per $2^k$ per input letter; six
-arrays), 90300 for the Fibonacci program ($43\times 2100$; eight
-arrays) and 318500 for the branching program ($49\times 6500$; ten
-arrays, so one index computation is twelve instructions). That is a
+drivers compare targets. The constants that come out are 9000 for the
+$2^k$ program ($10$ machine steps per statement of the compiled
+program, times $900$ statements per $2^k$ per input letter), 21000 for
+the Fibonacci program ($10\times 2100$) and 65000 for the branching
+program ($10\times 6500$); the compiler's ten steps per statement are
+the same for every layout, since an array index is four instructions
+whatever the number of arrays. That is a
 ladder in both directions: each rung buys a smaller base by paying a
 larger constant, and nothing at any level was fought for. On small
 shared instances the cheaper constant wins — the
 $2^k$ driver beats both on a triangle — and where the base bites the
 order reverses: on the seven-cycle at $k=3$ the Fibonacci program takes
-17937 steps and the branching program 7016, and on five disjoint edges
-with every slot doubled the $2^k$ driver takes 52554 steps where the
-Fibonacci one takes 4572. The claim is about the exponent, not about the
+13999 steps and the branching program 5234, and on five disjoint edges
+with every slot doubled the $2^k$ driver takes 42655 steps where the
+Fibonacci one takes 3710. The claim is about the exponent, not about the
 constant.
