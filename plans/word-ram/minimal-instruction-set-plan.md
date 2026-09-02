@@ -226,14 +226,14 @@ Steps, none started:
    ([[submission-freeze-consent]] in memory applies; registration is what
    makes the supersedes link permanent).
 
-**Jan's second request (2026-09-02, mid-abort): "also delete lax-13 (has
-ram as dependency), we no longer need it".** Not done, and needs
-clarification before anything is run: lax-13 *is* the word RAM, and the
-spec allows deletion only from the init or draft state — a registered record
-cannot be deleted at all, and four drafts currently depend on it. If the
-target was a draft that *has the RAM as a dependency*, the candidates are
-lax-11 (ram-linear-time), lax-62 (refinement-tower), lax-15, lax-3; confirm
-the id. `lax delete` is permanent and asks for confirmation in the CLI.
+**Also from Jan (2026-09-02): delete lax-15, vertex-cover-ladder — "we no
+longer need it".** Not done yet; it is the last step of this todo, after the
+successor is submitted. lax-15 is a draft at `d4afd03`, nothing in the repo
+requires it (only its own lakefiles mention `Lax15`), so `lax delete
+vertex-cover-ladder` is admissible; it retires the id permanently and asks
+for confirmation in the CLI. Afterwards remove `vertex-cover-ladder/` from
+the tree and from the cascade script's default order, and mark
+`plans/vertex-cover-ladder/` closed.
 
 ## 6. Execution
 
