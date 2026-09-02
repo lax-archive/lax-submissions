@@ -14,7 +14,10 @@ distinguished *r*-scattered set of the vertices satisfying a
 one-variable formula β has at least *t* elements. Which scattered set
 is distinguished is the content of a *scatter choice*: for each graph,
 radius and vertex set it names a number that is the size of *some*
-inclusion-wise maximal *r*-scattered subset of that set.
+inclusion-wise maximal *r*-scattered subset of that set. The maximum
+size of a scattered subset of the set, and the size the greedy process
+produces when it runs through the vertices in order and takes every
+vertex it can, are both scatter choices.
 
 The locality theorem of `Lax3.Locality` rewrites a formula into a
 boolean combination of local formulas and scatter sentences. Scatter
@@ -52,13 +55,6 @@ being a scattered subset of the given set.
 Over `Fin n` every vertex set is finite, so the source's value ∞ — for
 structures with arbitrarily large scattered subsets — cannot arise and
 is not carried; `ScatterChoice.size` is ℕ-valued.
-
-The source's two choices — the maximum size of a scattered subset,
-and the size the canonical-order greedy process produces when it runs
-through the vertices in order and takes every vertex it can — are
-constructed in this submission's proof package, which is where
-`ScatterChoice` is shown inhabited and where both are used to
-instantiate `Lax3.Locality.locality`.
 
 The distance rank of a scatter sentence is the source's condition
 (2)/(eq:scatter-radius) verbatim, with the bound *t* ≤ *k* + *q* stated
