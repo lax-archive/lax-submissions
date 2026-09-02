@@ -18,7 +18,7 @@ path = "../concepts"
 [[require]]
 name = "Lax14"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "d35ba57ad420ce6a6d3c763aa7f6a4a8be1d406d"
+rev = "f017a6ca6b805d45f7f472f82d1075300e15fb53"
 subDir = "finite-ramsey/concepts"
 
 [[lean_lib]]
