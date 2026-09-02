@@ -19,14 +19,14 @@ path = "../concepts"
 [[require]]
 name = "Lax12"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "becb5782d64a8587b9cd3f53269c1ce35cdb1ff0"
+rev = "adeee8fcd52a11c46077d34657feaf48f2df7dae"
 subDir = "sparsity-lectures/concepts"
 
 # finite Ramsey theorems: the Ramsey statements of submission Lax14
 [[require]]
 name = "Lax14"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "d35ba57ad420ce6a6d3c763aa7f6a4a8be1d406d"
+rev = "f017a6ca6b805d45f7f472f82d1075300e15fb53"
 subDir = "finite-ramsey/concepts"
 
 [[lean_lib]]
