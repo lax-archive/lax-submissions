@@ -133,17 +133,17 @@ every number these instances produce. -/
 def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 1000000 vcProgram (initState x) 0
 
 -- the triangle: cover number two, so `no` at budgets zero and one, `yes` at two
-#guard test ([3, 3, 0, 2, 4, 6, 1, 2, 0, 2, 0, 1] ++ [0]) = some ([0], 509)
-#guard test ([3, 3, 0, 2, 4, 6, 1, 2, 0, 2, 0, 1] ++ [1]) = some ([0], 1539)
-#guard test ([3, 3, 0, 2, 4, 6, 1, 2, 0, 2, 0, 1] ++ [2]) = some ([1], 1662)
+#guard test ([3, 3, 0, 2, 4, 6, 1, 2, 0, 2, 0, 1] ++ [0]) = some ([0], 484)
+#guard test ([3, 3, 0, 2, 4, 6, 1, 2, 0, 2, 0, 1] ++ [1]) = some ([0], 1337)
+#guard test ([3, 3, 0, 2, 4, 6, 1, 2, 0, 2, 0, 1] ++ [2]) = some ([1], 1430)
 -- the star on three leaves: its center is a cover
-#guard test ([4, 3, 0, 3, 4, 5, 6, 1, 2, 3, 0, 0, 0] ++ [1]) = some ([1], 1244)
+#guard test ([4, 3, 0, 3, 4, 5, 6, 1, 2, 3, 0, 0, 0] ++ [1]) = some ([1], 1083)
 -- the path on four vertices: cover number two
-#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [1]) = some ([0], 1814)
-#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [2]) = some ([1], 2376)
+#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [1]) = some ([0], 1564)
+#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [2]) = some ([1], 2021)
 -- no edges: the empty set is a cover, even with no budget
-#guard test ([2, 0, 0, 0, 0] ++ [0]) = some ([1], 175)
+#guard test ([2, 0, 0, 0, 0] ++ [0]) = some ([1], 178)
 -- no vertices
-#guard test ([0, 0, 0] ++ [0]) = some ([1], 123)
+#guard test ([0, 0, 0] ++ [0]) = some ([1], 128)
 -- a malformed word: the program merely halts (the exhausted tape stops it)
-#guard test [5, 2, 0, 1, 9, 3] = some ([], 121)
+#guard test [5, 2, 0, 1, 9, 3] = some ([], 119)

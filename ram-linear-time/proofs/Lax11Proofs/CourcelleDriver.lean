@@ -308,26 +308,45 @@ def runDriver (T : Table) (acp : ℕ → ℕ) (x : List ℕ) : Option (List ℕ)
 #guard runDriver edgeTable acpEdge CourcelleSmoke.instanceWord = some [1]
 #guard runDriver edgeTable acpNoEdge CourcelleSmoke.instanceWord = some [0]
 
-/-! ### No multiplication anywhere in the compiled program
+/-! ### No data-dependent wide operation in the compiled program
 
 The fold indexes a square table, which is where a multiplication would
 naturally appear, and a linear-time claim on a unit-cost machine that
 leans on unit-cost multiplication is at risk of being an artifact of the
-model. The row bases are materialized instead, so the program is
-addition, subtraction and control only. That is a property of the
-program text, and the program text is the same for every table — only
-the lengths of the four store prologues depend on it — so it is checked
-here by evaluation rather than asserted in an annotation. -/
+model. The row bases are materialized instead, so the algorithm is
+addition, subtraction and control only.
 
-/-- The instructions whose unit cost a strict reading of the model would
-object to. -/
-def isWideInstr : Instr → Bool
-  | .mul _ => true
-  | .div _ => true
-  | .shiftl _ => true
-  | .shiftr _ => true
-  | _ => false
+What survives of that in the program text is exactly one multiplication
+per array access, and it is not the algorithm's: `Layout.idxCode`
+multiplies the index by the *number of arrays* — a compile-time
+constant, the stride of the interleaved array block — which is `k − 1`
+additions for a fixed layout, independent of the input and of the word
+length. So the check below is that there is no division and no shift at
+all, and that every `mul` in the program is such a stride
+multiplication: the instruction directly after the `set` that puts
+`layout.arrays.length` into its scratch cell, which is the only shape
+the compiler emits. Nothing the machine multiplies depends on the
+table, and nothing depends on the instance.
 
-#guard ((driverProgram edgeTable acpEdge).filter isWideInstr).isEmpty
+That is a property of the program text, and the program text is the same
+for every table — only the lengths of the four store prologues depend on
+it — so it is checked here by evaluation rather than asserted in an
+annotation. -/
+
+/-- The program has no division and no shift, and its only
+multiplications are the address strides of `Layout.idxCode`: a `mul`
+whose scratch operand was just `set` to `L.arrays.length`. A `mul` in
+any other position — in particular at the very start of the program,
+where nothing precedes it — is rejected. -/
+def noDataDependentWide (L : Layout) : Program → Bool
+  | [] => true
+  | .div _ _ _ :: _ => false
+  | .shiftl _ _ _ :: _ => false
+  | .mul _ _ _ :: _ => false
+  | .set c q :: .mul _ _ c' :: rest =>
+      (c' == c && q == L.arrays.length) && noDataDependentWide L rest
+  | _ :: rest => noDataDependentWide L rest
+
+#guard noDataDependentWide layout (driverProgram edgeTable acpEdge)
 
 end Lax11Proofs.Courcelle
