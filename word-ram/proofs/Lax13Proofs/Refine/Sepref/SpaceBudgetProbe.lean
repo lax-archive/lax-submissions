@@ -755,9 +755,9 @@ theorem peak_ownedSkel (setup aw turns levels : ℕ) :
 
 /-! ## 6. Cashing the peak into a word length
 
-`Layout.FitsWords B w` (`Compile.lean:85`) has three clauses: `1 < B`,
+`Layout.FitsWords B w` (`Compile.lean`) has three clauses: `1 < B`,
 `B ≤ 2 ^ w`, and `L.span B ≤ 2 ^ w` with
-`L.span B = L.temps + L.scalars.length + L.arrays.length * B`.  A peak
+`L.span B = L.temps + 2 + L.scalars.length + L.arrays.length * B`.  A peak
 bound linear in `|x|` therefore fits at a word length whose `2 ^ w` is
 linear in `|x|` — which is exactly the resource C0's domain admits, and
 exactly what §9 shows the fresh discipline cannot have. -/
