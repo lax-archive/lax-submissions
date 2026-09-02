@@ -151,20 +151,20 @@ every number these graphs produce. -/
 def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 100000 ccProgram (initState x) 0
 
 -- no vertices
-#guard test [0, 0, 0] = some ([], 97)
+#guard test [0, 0, 0] = some ([], 109)
 -- one vertex, no edges
-#guard test [1, 0, 0, 0] = some ([0], 292)
+#guard test [1, 0, 0, 0] = some ([0], 304)
 -- two vertices, the edge between them
-#guard test [2, 1, 0, 1, 2, 1, 0] = some ([0, 0], 634)
+#guard test [2, 1, 0, 1, 2, 1, 0] = some ([0, 0], 646)
 -- two vertices, no edge
-#guard test [2, 0, 0, 0, 0] = some ([0, 1], 487)
+#guard test [2, 0, 0, 0, 0] = some ([0, 1], 499)
 -- three vertices, the edge 1-2
-#guard test [3, 1, 0, 0, 1, 2, 2, 1] = some ([0, 1, 1], 829)
+#guard test [3, 1, 0, 0, 1, 2, 2, 1] = some ([0, 1, 1], 841)
 -- four vertices, the edges 0-2 and 1-3: two components, interleaved
-#guard test [4, 2, 0, 1, 2, 3, 4, 2, 3, 0, 1] = some ([0, 1, 0, 1], 1171)
+#guard test [4, 2, 0, 1, 2, 3, 4, 2, 3, 0, 1] = some ([0, 1, 0, 1], 1183)
 -- five vertices, the path 0-1-2-3 and an isolated vertex
-#guard test [5, 3, 0, 1, 3, 5, 6, 6, 1, 0, 2, 1, 3, 2] = some ([0, 0, 0, 0, 4], 1513)
+#guard test [5, 3, 0, 1, 3, 5, 6, 6, 1, 0, 2, 1, 3, 2] = some ([0, 0, 0, 0, 4], 1525)
 -- four vertices, a triangle and an isolated vertex
-#guard test [4, 3, 0, 2, 4, 6, 6, 1, 2, 0, 2, 0, 1] = some ([0, 0, 0, 3], 1327)
+#guard test [4, 3, 0, 2, 4, 6, 6, 1, 2, 0, 2, 0, 1] = some ([0, 0, 0, 3], 1339)
 
 end Lax11Proofs.CC

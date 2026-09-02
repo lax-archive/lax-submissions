@@ -120,15 +120,16 @@ Bounds, Spec, Frame, Tactic and the whole `Refine/` tower are untouched
   `get a i` → `compileExpr i d; set (d+1) q; mul d d (d+1); set (d+1) (arrBase a);
   add d d (d+1); load d d` (the old `q − 1` repeated additions are gone, so
   `idxLen` is a numeral and `Layout.const` **no longer depends on the number
-  of arrays**); `bin op e f` → `compileExpr e d; compileExpr f (d+1); op d d (d+1)`
-  for the six machine operators; `or`, `xor`, `shiftr` end in the 3–4
-  instruction blocks of §2 with `t = d + 2` and, for `xor`, `u = d + 1` (the
-  second operand's cell, dead after its last read).
+  of arrays**); `bin op e f` → `compileExpr f d; compileExpr e (d+1); op d (d+1) d`
+  for the six machine operators (second operand first, into `d`, as the
+  frozen `Expr.Ok` clause `Ok f d ∧ Ok e (d+1)` dictates); `or`, `xor`,
+  `shiftr` end in the 3–4 instruction blocks of §2 with `t = d + 2` and, for
+  `xor`, the spare `u` being cell `d` itself, dead after its last read.
 - **Conditions.** `condExpr` (monus trick) is unchanged; a compiled condition
   leaves its value in cell `0`, followed by `jzero 0 l`.
 - **Commands.** `assign x e` → `compileExpr e 0; set 1 (varAddr x); store 1 0`
-  (`Com.Ok` gains `0 < L.temps` for `assign`; every existing layout has
-  `temps ≥ 2`, so downstream `simp [Com.Ok]` proofs close as before);
+  (cells `0` and `1` lie inside the `temps + 2` reserve at every layout, so
+  `Com.Ok` is byte-identical to before — no extra conjunct was needed);
   `store a i e` → index into `0`, `e` into `1`, `store 0 1`; `write e` →
   `compileExpr e 0; write 0`; `read x` → `read (varAddr x)`; `ite`/`while`
   as now with `jzero 0`; `compileProgram L c = compile L c 0 ++ [.halt]`.
@@ -154,13 +155,22 @@ Unchanged from the audit; summarised.
   arithmetic shifts. No `Ram.Instr`/`Op` site exists anywhere else (checked
   2026-09-02).
 - **ram-linear-time (Lax11)**: proofs only — `const_eq` in `CCMain`, `VCMain`,
-  `TreeFoldMain`, `CourcelleMain` (all become the same numeral), headline
-  witnesses (`2604`, …) and span docstrings; repin `Lax13`.
+  `TreeFoldMain`, `CourcelleMain` (all `10`), headline witnesses
+  (`2604 → 840`, `33300 → 9000`, …), span docstrings, step-count gates
+  recomputed with identical outputs; repin `Lax13` at resubmission.
+  **LANDED 2026-09-02 @ 6d973f7.** One checked claim changed: the Courcelle
+  driver's "no multiplication anywhere" gate is false on the new compiler
+  (`idxCode` multiplies the index by the array count) and became
+  `noDataDependentWide` — no division, no shift, and every `mul` is the
+  compiler's stride multiplication by the compile-time constant
+  `arrays.length`. `abstract.md` and `notes.md` say the same.
 - **vertex-cover-ladder (Lax15)**: proofs only — two `const_eq`, witnesses
   `90300`, `318500`, `33300` and docstrings; repin `Lax13`, `Lax11`.
 - **nowhere-dense-model-checking (Lax3)**: `ProgCodegenLayout.lean`
-  (`mcLayout_span_le`, `+1`), `SolveMatTop.lean` docstring; constants are
-  symbolic. Repin all four requires. Run after the ND-MC pause.
+  (`mcLayout_span_le`, span constant `11 → 13`), `ProgCodegen.lean`
+  (`mc_computesInTime_of_solveSpec` threads the same `hspan` sum),
+  `SolveMatTop.lean` docstring; constants are symbolic. Repin all four
+  requires at resubmission. **LANDED 2026-09-02 @ ca76b56.**
 - **Unaffected**: Lax12, Lax14, Lax5, both twin-width submissions.
 - Headline statements everywhere quantify `∃ (p : Program) (c : ℕ)`, so no
   downstream concept changes.
@@ -173,7 +183,9 @@ action or needs his go-ahead; repo work lands on `main` independently.
 
 ## 6. Execution
 
-1. **W1 — word-ram** (worktree `ram1`, one worker): `Ram.lean`,
+1. **W1 — word-ram** — **LANDED 2026-09-02 @ 05eb63a** (3286 jobs green,
+   `lax build` audit clean, `Transfer.lean` zero diff, `Ok` byte-identical,
+   supervisor polish of the concept header). Was: (worktree `ram1`, one worker): `Ram.lean`,
    `abstract.md`, `Machine.lean`, `Compile.lean`, `Simulation.lean`, and the
    mechanical updates listed in §4 inside `word-ram/proofs`. Gates: both
    packages `lake build` green; `lax build --only proofs word-ram` namespace

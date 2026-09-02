@@ -43,8 +43,8 @@ has entries — `x.length ≥ 3`), and every entry is `≤ x.length`
   `1 ≤ q`;
 * `B ≤ 2^w` (`mcB_le_two_pow`): `q·(|x|+1)² ≤ c·(|x|+1)² ≤ 2^w`;
 * `span ≤ 2^w` (`mcLayout_span_le`): the compiled span is
-  `temps + #scalars + #arrays·B = 11 + |eS| + (2+|eA|)·q·(|x|+1)²
-  ≤ (11 + |eS| + (2+|eA|)·q)·(|x|+1)² ≤ c·(|x|+1)² ≤ 2^w` by
+  `temps + 2 + #scalars + #arrays·B = 13 + |eS| + (2+|eA|)·q·(|x|+1)²
+  ≤ (13 + |eS| + (2+|eA|)·q)·(|x|+1)² ≤ c·(|x|+1)² ≤ 2^w` by
   `hspan` — the quadratic side condition paying for the array
   stride, which is the arithmetic reason the axiom's exponent is
   `2` and not `1` (`ModelChecking.lean`'s deviation note).
@@ -65,7 +65,9 @@ the verdict cell) and its two arrays, extended by the solve stages'
 scalar and array names. Two temporaries — the depth the parse's and
 the epilogue's expressions need; a solve stage needing deeper
 expression nesting extends the base the same way (a bigger `temps`
-only shifts the constant in `hspan`). -/
+only shifts the constant in `hspan`). The compiler reserves
+`temps + 2` cells (the two spare cells the lowered bitwise operators
+work in), so the span's constant is `2 + 2 + 9 = 13`. -/
 def mcLayout (eS eA : List String) : Layout :=
   ⟨["n", "m", "np1", "mm", "i", "t", "j", "u", "verdict"] ++ eS,
     ["off", "tgt"] ++ eA, 2⟩
@@ -139,29 +141,29 @@ theorem mcB_le_two_pow (hqc : q ≤ c) :
   le_trans (Nat.mul_le_mul_right _ hqc) (c_mul_sq_le_two_pow x hx)
 
 /-- The span fits the word: the compiled layout addresses
-`11 + |eS| + (2+|eA|)·mcB q x` cells, and `hspan` folds the whole
+`13 + |eS| + (2+|eA|)·mcB q x` cells, and `hspan` folds the whole
 constant under the side condition's `c`. -/
 theorem mcLayout_span_le (eS eA : List String)
-    (hspan : 11 + eS.length + (2 + eA.length) * q ≤ c) :
+    (hspan : 13 + eS.length + (2 + eA.length) * q ≤ c) :
     ∀ x ∈ mcD n G c w, (mcLayout eS eA).span (mcB q x) ≤ 2 ^ w := by
   intro x hx
   have hs1 : 1 ≤ (x.length + 1) ^ 2 := Nat.one_le_pow _ _ (by omega)
   have hlay : (mcLayout eS eA).span (mcB q x)
-      = 11 + eS.length + (2 + eA.length) * (q * (x.length + 1) ^ 2) := by
+      = 13 + eS.length + (2 + eA.length) * (q * (x.length + 1) ^ 2) := by
     simp only [mcLayout, Layout.span, List.length_append, List.length_cons,
       List.length_nil, mcB]
     ring
-  have hle : 11 + eS.length + (2 + eA.length) * (q * (x.length + 1) ^ 2)
-      ≤ (11 + eS.length + (2 + eA.length) * q) * (x.length + 1) ^ 2 :=
-    calc 11 + eS.length + (2 + eA.length) * (q * (x.length + 1) ^ 2)
-        ≤ (11 + eS.length) * (x.length + 1) ^ 2
+  have hle : 13 + eS.length + (2 + eA.length) * (q * (x.length + 1) ^ 2)
+      ≤ (13 + eS.length + (2 + eA.length) * q) * (x.length + 1) ^ 2 :=
+    calc 13 + eS.length + (2 + eA.length) * (q * (x.length + 1) ^ 2)
+        ≤ (13 + eS.length) * (x.length + 1) ^ 2
             + (2 + eA.length) * q * (x.length + 1) ^ 2 :=
           Nat.add_le_add (Nat.le_mul_of_pos_right _ (by omega))
             (le_of_eq (mul_assoc _ _ _).symm)
-      _ = (11 + eS.length + (2 + eA.length) * q) * (x.length + 1) ^ 2 := by ring
+      _ = (13 + eS.length + (2 + eA.length) * q) * (x.length + 1) ^ 2 := by ring
   calc (mcLayout eS eA).span (mcB q x)
-      = 11 + eS.length + (2 + eA.length) * (q * (x.length + 1) ^ 2) := hlay
-    _ ≤ (11 + eS.length + (2 + eA.length) * q) * (x.length + 1) ^ 2 := hle
+      = 13 + eS.length + (2 + eA.length) * (q * (x.length + 1) ^ 2) := hlay
+    _ ≤ (13 + eS.length + (2 + eA.length) * q) * (x.length + 1) ^ 2 := hle
     _ ≤ c * (x.length + 1) ^ 2 := Nat.mul_le_mul_right _ hspan
     _ ≤ 2 ^ w := c_mul_sq_le_two_pow x hx
 
@@ -174,7 +176,7 @@ inequality folding the layout's constants under the axiom's `c` —
 live frames and their constants", as one line. -/
 theorem mcLayout_fitsWords (eS eA : List String)
     (hq : 1 ≤ q) (hqc : q ≤ c)
-    (hspan : 11 + eS.length + (2 + eA.length) * q ≤ c) :
+    (hspan : 13 + eS.length + (2 + eA.length) * q ≤ c) :
     ∀ x ∈ mcD n G c w, (mcLayout eS eA).FitsWords (mcB q x) w := by
   intro x hx
   obtain ⟨henc, hside⟩ := hx

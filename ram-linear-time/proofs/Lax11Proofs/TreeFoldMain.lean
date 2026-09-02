@@ -209,13 +209,12 @@ theorem foldCom_run {B : ℕ} {T : Table} (hT : T.Wf) (hTB : T.Fits B) {x : List
 
 /-! ### The schema, at the machine
 
-The layout has six arrays, so an index computation is eight
-instructions and the machine pays thirty-seven steps per unit of IMP+
-cost. -/
+An index computation is four instructions whatever the number of
+arrays, so the machine pays ten steps per unit of IMP+ cost. -/
 
-/-- The machine pays thirty-seven steps per unit of IMP+ cost. -/
-theorem const_eq : layout.const = 37 := by
-  simp [Layout.const, Layout.idxLen, layout]
+/-- The machine pays ten steps per unit of IMP+ cost, whatever the
+layout. -/
+theorem const_eq : layout.const = 10 := rfl
 
 /-- What the pipeline asks of the schema: on every encoded tree it
 computes the root's value, at sixty units per entry of the word plus the
@@ -224,7 +223,7 @@ the word, its largest entry and the size of the table. -/
 theorem foldCom_solves {T : Table} (hT : T.Wf) (N : ℕ) (par lab : ℕ → ℕ) (w : ℕ) :
     Solves layout (foldCom T)
       {x | EncodesTree x N par lab T.L ∧
-        ∀ v ∈ x, 37 * (60 + tableCost T) * (x.length + v + 1) ≤ 2 ^ w}
+        ∀ v ∈ x, 10 * (60 + tableCost T) * (x.length + v + 1) ≤ 2 ^ w}
       (fun _ => [val T par lab (N - 1)]) (foldBound T)
       (fun x => 60 * (x.length + 1) + tableCost T) where
   ok := foldCom_ok T
@@ -259,10 +258,10 @@ theorem exists_linearTime_program_treeFold {T : Table} (hT : T.Wf) :
       ComputesInTime w p
         {x | EncodesTree x N par lab T.L ∧ ∀ v ∈ x, c * (x.length + v + 1) ≤ 2 ^ w}
         (fun _ => [val T par lab (N - 1)]) (fun x => c * (x.length + 1)) := by
-  refine ⟨foldProgram T, 37 * (60 + tableCost T), fun N par lab w =>
+  refine ⟨foldProgram T, 10 * (60 + tableCost T), fun N par lab w =>
     computesInTime_of_solves (foldCom_solves hT N par lab w) ?_ ?_⟩
   · rintro x ⟨hx, hw⟩
-    set c := 37 * (60 + tableCost T) with hc
+    set c := 10 * (60 + tableCost T) with hc
     have hne : x ≠ [] := by rw [hx.2.1]; simp
     have hlen1 : 1 ≤ x.length := List.length_pos_of_ne_nil hne
     have hmax := hw _ (maxEntry_mem hne)
@@ -278,14 +277,14 @@ theorem exists_linearTime_program_treeFold {T : Table} (hT : T.Wf) :
     omega
   · rintro x -
     rw [const_eq]
-    calc 37 * (60 * (x.length + 1) + tableCost T)
-        ≤ 37 * ((60 + tableCost T) * (x.length + 1)) := by
+    calc 10 * (60 * (x.length + 1) + tableCost T)
+        ≤ 10 * ((60 + tableCost T) * (x.length + 1)) := by
           refine Nat.mul_le_mul_left _ ?_
           have h₁ : tableCost T ≤ tableCost T * (x.length + 1) :=
             Nat.le_mul_of_pos_right _ (by omega)
           rw [Nat.add_mul]
           omega
-      _ = 37 * (60 + tableCost T) * (x.length + 1) := by rw [Nat.mul_assoc]
+      _ = 10 * (60 + tableCost T) * (x.length + 1) := by rw [Nat.mul_assoc]
 
 /-! ### The encoding, checked
 

@@ -15,9 +15,10 @@ predicate and handed to `computesInTime_of_solves`, which discharges the
 compiler, the layout invariant and the machine in one step; the accept
 bit is turned into the sentence by `MsoTable.acceptVal_val`.
 
-The constant is a monster and is meant to be. It is `46` machine steps
-per unit of IMP+ cost — nine arrays make one index computation eleven
-instructions long — times a hundred per entry of the input word, plus
+The constant is a monster and is meant to be. It is `10` machine steps
+per unit of IMP+ cost — an index computation is four instructions
+whatever the number of arrays — times a hundred per entry of the input
+word, plus
 three times the size of the four tables. The last term is where the
 tower in the sentence and the width lives: the table has one row and
 one column per `q`-type of a `k`-labelled region, so it is a constant of
@@ -279,13 +280,13 @@ theorem driverCom_run {B : ℕ} {T : Table} (hT : T.Wf) (hTB : T.Fits B) {acp : 
 /-! ### The theorem
 
 The table of `MsoTable.lean` at `q = rank φ`, the accepting set of C9
-as the last of the four arrays, and the constant `46` machine steps per
+as the last of the four arrays, and the constant `10` machine steps per
 unit of IMP+ cost. -/
 
-/-- The machine pays forty-six steps per unit of IMP+ cost: nine arrays
-make one index computation eleven instructions long. -/
-theorem const_eq : layout.const = 46 := by
-  simp [Layout.const, Layout.idxLen, layout]
+/-- The machine pays ten steps per unit of IMP+ cost, whatever the
+layout: an index computation is four instructions however many arrays
+there are. -/
+theorem const_eq : layout.const = 10 := rfl
 
 open Classical in
 /-- The accepting-set array of the driver: `1` at the number of a type
@@ -304,7 +305,7 @@ length of the word, its largest entry and the size of the tables. -/
 theorem driverCom_solves (φ : MSO 0 0) (k n : ℕ) (G : SimpleGraph (Fin n)) (w : ℕ) :
     Solves layout (driverCom (table (rank φ) k) (acpArr (rank φ) k φ))
       {x | EncodesModelCheckingInstance x n G k ∧
-        ∀ v ∈ x, 46 * (100 + driverCost (table (rank φ) k)) * (x.length + v + 1) ≤ 2 ^ w}
+        ∀ v ∈ x, 10 * (100 + driverCost (table (rank φ) k)) * (x.length + v + 1) ≤ 2 ^ w}
       (fun _ => if Sat G Fin.elim0 Fin.elim0 φ then [1] else [0])
       (driverBound (table (rank φ) k))
       (fun x => 100 * (x.length + 1) + driverCost (table (rank φ) k)) where
@@ -386,14 +387,14 @@ The epilogue is one `write` of `acp[acc[N-1]]`, which is in range
 because the root's value is the number of a type.
 
 `computesInTime_of_solves` discharges the compiler, the layout invariant
-and the machine, charging `layout.const = 46` machine steps per unit of
+and the machine, charging `layout.const = 10` machine steps per unit of
 IMP+ cost. The array extents are chosen per input, as that lemma allows.
 
 # Where the constant comes from
 
-The bound is `46 * (100 + driverCost (table q k))` per entry of the
-input word. The first factor is the layout — nine arrays, so one array
-access compiles to eleven instructions — and the hundred is the driver's
+The bound is `10 * (100 + driverCost (table q k))` per entry of the
+input word. The first factor is the compiler — an array access compiles
+to four instructions, whatever the layout — and the hundred is the driver's
 own per-entry cost, every loop bounded loosely and nothing fought over.
 The third term is the price of materializing the four tables, three
 units per entry, and it is where the tower lives: the type table has one
@@ -448,9 +449,9 @@ statement nothing, because the constant is chosen after the sentence and
 the width bound, and `tableSpan_le_driverCost` says the constant that
 pays for materializing the table already pays for holding its indices.
 
-So the compiled program needs `11 + 9 * driverBound` cells to be words,
+So the compiled program needs `13 + 9 * driverBound` cells to be words,
 and the statement's hypothesis — that
-`46 * (100 + driverCost) * (|x| + v + 1)` is a word for every entry `v`
+`10 * (100 + driverCost) * (|x| + v + 1)` is a word for every entry `v`
 — gives that at the largest entry, with a margin nobody has to compute.
 
 # Formalization notes
@@ -599,11 +600,11 @@ theorem exists_linearTime_program_modelChecking :
           (fun x => c * (x.length + 1)) := by
   intro φ k
   refine ⟨driverProgram (table (rank φ) k) (acpArr (rank φ) k φ),
-    46 * (100 + driverCost (table (rank φ) k)), fun n G w =>
+    10 * (100 + driverCost (table (rank φ) k)), fun n G w =>
       computesInTime_of_solves (driverCom_solves φ k n G w) ?_ ?_⟩
   · rintro x ⟨hx, hw⟩
     set T := table (rank φ) k with hTdef
-    set c := 46 * (100 + driverCost T) with hc
+    set c := 10 * (100 + driverCost T) with hc
     -- the word has to hold the bound and the cells the layout addresses
     have hne : x ≠ [] := by
       obtain ⟨_, _, _, _, _, hxeq, _⟩ := instance_tape hx
@@ -623,13 +624,13 @@ theorem exists_linearTime_program_modelChecking :
   · rintro x -
     rw [const_eq]
     set T := table (rank φ) k with hTdef
-    calc 46 * (100 * (x.length + 1) + driverCost T)
-        ≤ 46 * ((100 + driverCost T) * (x.length + 1)) := by
+    calc 10 * (100 * (x.length + 1) + driverCost T)
+        ≤ 10 * ((100 + driverCost T) * (x.length + 1)) := by
           refine Nat.mul_le_mul_left _ ?_
           have h₁ : driverCost T ≤ driverCost T * (x.length + 1) :=
             Nat.le_mul_of_pos_right _ (by omega)
           rw [Nat.add_mul]
           omega
-      _ = 46 * (100 + driverCost T) * (x.length + 1) := by rw [Nat.mul_assoc]
+      _ = 10 * (100 + driverCost T) * (x.length + 1) := by rw [Nat.mul_assoc]
 
 end Lax11Proofs.Courcelle
