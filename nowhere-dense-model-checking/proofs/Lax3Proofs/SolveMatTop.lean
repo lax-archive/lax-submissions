@@ -43,9 +43,10 @@ way F6 parameterized `SolveSpec`:
   postcondition shape verbatim.
 
 **Layout note (for F7's `Com.Ok` discharge).** `bcExpr` is one nested
-expression, and `Expr.Ok` demands `depth < L.temps` at every inner
-node; `mcLayout`'s base `temps = 2` will not compile a deep
-combination. This is the extension `ProgCodegenLayout`'s docstring
+expression, and `Expr.Ok` demands `depth < L.temps` at every node
+with a subexpression (the compiler works in the `temps + 2` cells the
+layout reserves); `mcLayout`'s base `temps = 2` will not compile a
+deep combination. This is the extension `ProgCodegenLayout`'s docstring
 already provides for ("a bigger `temps` only shifts the constant in
 `hspan`"): F7 instantiates the layout with `temps ≥` the compiled
 combination's depth — a constant of the schedule, fixed with `eS`/`eA`
