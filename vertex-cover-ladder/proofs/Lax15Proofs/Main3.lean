@@ -24,9 +24,10 @@ reads the stored budget–phase pairs off `stkB` and `stkP` below `top`,
 totally, and `potN3` is a function of those pairs alone, so the crossing
 is rung A's `framesOf_eq` and nothing more.
 
-The ten arrays of the layout cost the machine `49` steps per unit of
-IMP+ cost, and the run itself costs at most `6500 · branchCount k` per
-entry of the input word. The product `318500` is the constant of the
+The layout costs the machine `10` steps per unit of IMP+ cost — the
+compiler's constant, the same for every layout — and the run itself
+costs at most `6500 · branchCount k` per entry of the input word. The
+product `65000` is the constant of the
 statement, and no part of it was fought over: `1610` for a turn of the
 outer loop and `4` for its test make `1614`, times the four units of
 `pot3` that the initial budget is worth, is `6456`, and the rest is
@@ -155,10 +156,10 @@ def vcf3Ext (n m : ℕ) (a : String) : ℕ :=
   else if a = "q" then n
   else n + 1
 
-/-- The machine pays forty-nine steps per unit of IMP+ cost: ten arrays
-make one index computation twelve instructions long. -/
-theorem const3_eq : vcf3Layout.const = 49 := by
-  simp [Layout.const, Layout.idxLen, vcf3Layout]
+/-- The machine pays ten steps per unit of IMP+ cost: the compiler's
+constant does not depend on the layout, since an array access is four
+instructions whatever the number of arrays. -/
+theorem const3_eq : vcf3Layout.const = 10 := rfl
 
 /-- The proofs-side leaf count and the concept's are the same function:
 the two definitions were written with the same four equations. -/
@@ -367,7 +368,7 @@ entry of the input word, with every value it produces below the length
 of that word plus the parameter. -/
 theorem vcf3Com_solves (n : ℕ) (G : SimpleGraph (Fin n)) (k w : ℕ) :
     Solves vcf3Layout vcf3Com
-      {x | EncodesParamInstance x n G k ∧ 318500 * (x.length + k + 1) ≤ 2 ^ w}
+      {x | EncodesParamInstance x n G k ∧ 65000 * (x.length + k + 1) ≤ 2 ^ w}
       (fun _ => if G.vertexCoverNum ≤ (k : ℕ∞) then [1] else [0])
       (fun x => x.length + k)
       (fun x => 6500 * branchCount k * (x.length + 1)) where
@@ -386,8 +387,8 @@ conclusion: Lax15.VertexCoverBranch.exists_branchTime_program_vertexCover
 Vertex cover is decided in `branchCount k` time: `vcf3Program` decides,
 on every graph in compressed sparse row form followed by the parameter
 `k`, whether the graph has a vertex cover of at most `k` vertices,
-within `318500 * branchCount k * (|x| + 1)` machine steps, at every word
-length at which `318500 * (|x| + k + 1)` fits into a word.
+within `65000 * branchCount k * (|x| + 1)` machine steps, at every word
+length at which `65000 * (|x| + k + 1)` fits into a word.
 
 # Proof strategy
 
@@ -451,9 +452,10 @@ exactly once, as the potential of the initial configuration:
 `pot3 ⟨[], 0, k, 0⟩ = 4·branchCount k − 2`.
 
 `computesInTime_of_solves` discharges the compiler, the layout invariant
-and the machine in one step, charging `vcf3Layout.const = 49` machine
-steps per unit of IMP+ cost — ten arrays, so one index computation is
-twelve instructions. The array extents are chosen per input, as that
+and the machine in one step, charging `vcf3Layout.const = 10` machine
+steps per unit of IMP+ cost — the compiler's constant, which is the same
+for every layout, since an array access is four instructions whatever
+the number of arrays. The array extents are chosen per input, as that
 lemma allows: `vcf3Ext n m` declares `off ↦ n+1`, `tgt ↦ 2m`, and
 `mark`, `vis`, `q ↦ n`, with the trail and the four stacks `↦ n+1`,
 which is what frame health permits, since the frames mark disjoint
@@ -533,7 +535,7 @@ theorem exists_branchTime_program_vertexCover :
         {x | EncodesParamInstance x n G k ∧ c * (x.length + k + 1) ≤ 2 ^ w}
         (fun _ => if G.vertexCoverNum ≤ (k : ℕ∞) then [1] else [0])
         (fun x => c * Lax15.VertexCoverBranch.branchCount k * (x.length + 1)) := by
-  refine ⟨vcf3Program, 318500, fun n G k w =>
+  refine ⟨vcf3Program, 65000, fun n G k w =>
     computesInTime_of_solves (vcf3Com_solves n G k w) ?_ ?_⟩
   · rintro x ⟨⟨g, rfl, hg⟩, hw⟩
     have hglen := hg.length_eq

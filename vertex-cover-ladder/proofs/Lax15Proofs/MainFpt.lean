@@ -23,8 +23,8 @@ Vertex cover is fixed-parameter tractable with the parameter dependence
 written into the bound: `vcProgram` decides, on every graph in
 compressed sparse row form followed by the parameter `k`, whether the
 graph has a vertex cover of at most `k` vertices, within
-`33300 * 2 ^ k * (|x| + 1)` machine steps, at every word length at
-which `33300 * (|x| + k + 1)` fits into a word.
+`9000 * 2 ^ k * (|x| + 1)` machine steps, at every word length at
+which `9000 * (|x| + k + 1)` fits into a word.
 
 # Proof strategy
 
@@ -46,9 +46,9 @@ alternatives the frames still owe; the cost is one amortized potential,
 budget `b` plus slack per frame, which every transition strictly
 decreases, so the whole tree is paid for by a single application of the
 loop rule and the factor `2 ^ k` enters exactly once, as the potential
-of the initial configuration. The constant is `33300 = 37 · 900`:
-thirty-seven machine steps per statement of the compiled program, times
-nine hundred statements per `2 ^ k` per input letter.
+of the initial configuration. The constant is `9000 = 10 · 900`: ten
+machine steps per statement of the compiled program, times nine hundred
+statements per `2 ^ k` per input letter.
 
 The full account — where the constant comes from, where the word
 length is paid for, and what the program is allowed to help itself

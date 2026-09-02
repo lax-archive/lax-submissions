@@ -337,36 +337,36 @@ def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 3000000 vcfProgr
 -- The `no` pushes vertex `0`, reaches the matching leaf with `ro = 1 > 0`,
 -- flips to the neighbourhood `{1, 2}` (infeasible, `d = 2 > 1`), pops and
 -- exhausts the stack: T4, T2, T7, T8, T5.
-#guard test ([3, 3, 0, 2, 4, 6, 1, 2, 0, 2, 0, 1] ++ [1]) = some ([0], 3030)
-#guard test ([3, 3, 0, 2, 4, 6, 1, 2, 0, 2, 0, 1] ++ [2]) = some ([1], 2415)
+#guard test ([3, 3, 0, 2, 4, 6, 1, 2, 0, 2, 0, 1] ++ [1]) = some ([0], 2433)
+#guard test ([3, 3, 0, 2, 4, 6, 1, 2, 0, 2, 0, 1] ++ [2]) = some ([1], 1953)
 -- the path on four vertices: cover number two
-#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [1]) = some ([0], 3120)
-#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [2]) = some ([1], 2505)
+#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [1]) = some ([0], 2518)
+#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [2]) = some ([1], 2038)
 -- the star on three leaves: its center is a cover, found on the first push
-#guard test ([4, 3, 0, 3, 4, 5, 6, 1, 2, 3, 0, 0, 0] ++ [1]) = some ([1], 2357)
+#guard test ([4, 3, 0, 3, 4, 5, 6, 1, 2, 3, 0, 0, 0] ++ [1]) = some ([1], 1899)
 -- the four-cycle: cover number two. At budget one the second descend finds
 -- a branching vertex with no budget left, which is the `¬ Ok M 0` leaf (T3)
-#guard test ([4, 4, 0, 2, 4, 6, 8, 1, 3, 0, 2, 1, 3, 2, 0] ++ [1]) = some ([0], 3862)
-#guard test ([4, 4, 0, 2, 4, 6, 8, 1, 3, 0, 2, 1, 3, 2, 0] ++ [2]) = some ([1], 4294)
+#guard test ([4, 4, 0, 2, 4, 6, 8, 1, 3, 0, 2, 1, 3, 2, 0] ++ [1]) = some ([0], 3103)
+#guard test ([4, 4, 0, 2, 4, 6, 8, 1, 3, 0, 2, 1, 3, 2, 0] ++ [2]) = some ([1], 3410)
 -- the five-cycle: cover number three. At budget two the search pushes twice,
 -- fails, flips the inner frame infeasibly, pops it, and flips the outer one
 -- *feasibly* — the only instance here that exercises T6, the flip that
 -- returns to descend with the neighbourhood marked
-#guard test ([5, 5, 0, 2, 4, 6, 8, 10, 1, 4, 0, 2, 1, 3, 2, 4, 3, 0] ++ [2]) = some ([0], 7990)
-#guard test ([5, 5, 0, 2, 4, 6, 8, 10, 1, 4, 0, 2, 1, 3, 2, 4, 3, 0] ++ [3]) = some ([1], 5483)
+#guard test ([5, 5, 0, 2, 4, 6, 8, 10, 1, 4, 0, 2, 1, 3, 2, 4, 3, 0] ++ [2]) = some ([0], 6292)
+#guard test ([5, 5, 0, 2, 4, 6, 8, 10, 1, 4, 0, 2, 1, 3, 2, 4, 3, 0] ++ [3]) = some ([1], 4360)
 -- two disjoint edges: the matching leaf decides both budgets with no push
 -- at all, on the residual owner count alone (T2 then T5, and T1)
-#guard test ([4, 2, 0, 1, 2, 3, 4, 1, 0, 3, 2] ++ [1]) = some ([0], 1142)
-#guard test ([4, 2, 0, 1, 2, 3, 4, 1, 0, 3, 2] ++ [2]) = some ([1], 1107)
+#guard test ([4, 2, 0, 1, 2, 3, 4, 1, 0, 3, 2] ++ [1]) = some ([0], 970)
+#guard test ([4, 2, 0, 1, 2, 3, 4, 1, 0, 3, 2] ++ [2]) = some ([1], 937)
 -- the complete graph on four vertices: cover number three
-#guard test ([4, 6, 0, 3, 6, 9, 12, 1, 2, 3, 0, 2, 3, 0, 1, 3, 0, 1, 2] ++ [2]) = some ([0], 7512)
-#guard test ([4, 6, 0, 3, 6, 9, 12, 1, 2, 3, 0, 2, 3, 0, 1, 3, 0, 1, 2] ++ [3]) = some ([1], 6127)
+#guard test ([4, 6, 0, 3, 6, 9, 12, 1, 2, 3, 0, 2, 3, 0, 1, 3, 0, 1, 2] ++ [2]) = some ([0], 5891)
+#guard test ([4, 6, 0, 3, 6, 9, 12, 1, 2, 3, 0, 2, 3, 0, 1, 3, 0, 1, 2] ++ [3]) = some ([1], 4824)
 -- no edges: the empty set is a cover, even with no budget
 #guard test ([2, 0, 0, 0, 0] ++ [0]) = some ([1], 200)
 -- no vertices
-#guard test ([0, 0, 0] ++ [0]) = some ([1], 144)
+#guard test ([0, 0, 0] ++ [0]) = some ([1], 150)
 -- a malformed word: the program merely halts (the exhausted tape stops it)
-#guard test [5, 2, 0, 1, 9, 3] = some ([], 129)
+#guard test [5, 2, 0, 1, 9, 3] = some ([], 119)
 
 /-! #### The repeat-encoding regressions
 
@@ -379,38 +379,38 @@ uncapped slot count would see two residual edges where there is one and
 answer `no` at budget one. Both counts below are the capped ones, so the
 two words answer on the matching leaf without a single push. -/
 
-#guard test ([2, 2, 0, 2, 4, 1, 1, 0, 0] ++ [0]) = some ([0], 1028)
-#guard test ([2, 2, 0, 2, 4, 1, 1, 0, 0] ++ [1]) = some ([1], 993)
+#guard test ([2, 2, 0, 2, 4, 1, 1, 0, 0] ++ [0]) = some ([0], 862)
+#guard test ([2, 2, 0, 2, 4, 1, 1, 0, 0] ++ [1]) = some ([1], 829)
 
 /-! The same doubling on a matching of `e` disjoint edges, at the two
 budgets `e - 1` and `e`, is the family the slot-counting scan would search
 a `2^k` tree on. The step counts are linear in the input, and flat per
-input letter — 127, 134, 136 steps per letter at `e = 3, 5, 8` — with no
+input letter — 103, 109, 112 steps per letter at `e = 3, 5, 8` — with no
 sign of the budget in them: the program never pushes a frame on these
 instances. Lax11's `2^k` driver, which branches on an edge and cannot see
-that the graph is a matching, takes 6934 steps on the first of them and
-52554 on the second, against 2800 and 4572 here. -/
+that the graph is a matching, takes 5755 steps on the first of them and
+42655 on the second, against 2286 and 3710 here. -/
 
 -- three disjoint edges, every slot doubled
 #guard test ([6, 6, 0, 2, 4, 6, 8, 10, 12, 1, 1, 0, 0, 3, 3, 2, 2, 5, 5, 4, 4] ++ [2])
-  = some ([0], 2800)
+  = some ([0], 2286)
 #guard test ([6, 6, 0, 2, 4, 6, 8, 10, 12, 1, 1, 0, 0, 3, 3, 2, 2, 5, 5, 4, 4] ++ [3])
-  = some ([1], 2765)
+  = some ([1], 2253)
 -- five disjoint edges, every slot doubled
 #guard test ([10, 10, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20,
     1, 1, 0, 0, 3, 3, 2, 2, 5, 5, 4, 4, 7, 7, 6, 6, 9, 9, 8, 8] ++ [4])
-  = some ([0], 4572)
+  = some ([0], 3710)
 #guard test ([10, 10, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20,
     1, 1, 0, 0, 3, 3, 2, 2, 5, 5, 4, 4, 7, 7, 6, 6, 9, 9, 8, 8] ++ [5])
-  = some ([1], 4537)
+  = some ([1], 3677)
 -- eight disjoint edges, every slot doubled
 #guard test ([16, 16, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
     1, 1, 0, 0, 3, 3, 2, 2, 5, 5, 4, 4, 7, 7, 6, 6, 9, 9, 8, 8,
     11, 11, 10, 10, 13, 13, 12, 12, 15, 15, 14, 14] ++ [7])
-  = some ([0], 7230)
+  = some ([0], 5846)
 #guard test ([16, 16, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
     1, 1, 0, 0, 3, 3, 2, 2, 5, 5, 4, 4, 7, 7, 6, 6, 9, 9, 8, 8,
     11, 11, 10, 10, 13, 13, 12, 12, 15, 15, 14, 14] ++ [8])
-  = some ([1], 7195)
+  = some ([1], 5813)
 
 end Lax15Proofs.VC

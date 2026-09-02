@@ -449,9 +449,9 @@ def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 3000000 vcf3Prog
 -- neighbours, so the first descend branches — this is the instance that
 -- exercises the new threshold against rung A's.
 #guard test ([4, 6, 0, 3, 6, 9, 12, 1, 2, 3, 0, 2, 3, 0, 1, 3, 0, 1, 2] ++ [2])
-  = some ([0], 7442)
+  = some ([0], 5459)
 #guard test ([4, 6, 0, 3, 6, 9, 12, 1, 2, 3, 0, 2, 3, 0, 1, 3, 0, 1, 2] ++ [3])
-  = some ([1], 6628)
+  = some ([1], 4884)
 
 -- **K₅** — `n = 5`, `m = 10`, every degree four, offsets `0,4,8,12,16,20`.
 -- Cover number `5 - 1 = 4`: three vertices leave a `K₂` uncovered.
@@ -461,10 +461,10 @@ def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 3000000 vcf3Prog
 -- four.
 #guard test ([5, 10, 0, 4, 8, 12, 16, 20,
     1, 2, 3, 4, 0, 2, 3, 4, 0, 1, 3, 4, 0, 1, 2, 4, 0, 1, 2, 3] ++ [3])
-  = some ([0], 14649)
+  = some ([0], 10588)
 #guard test ([5, 10, 0, 4, 8, 12, 16, 20,
     1, 2, 3, 4, 0, 2, 3, 4, 0, 1, 3, 4, 0, 1, 2, 4, 0, 1, 2, 3] ++ [4])
-  = some ([1], 12846)
+  = some ([1], 9331)
 
 -- **K₁,₄** — the star, centre `0`, leaves `1,2,3,4`; `n = 5`, `m = 4`,
 -- offsets `0,4,5,6,7,8`. `{0}` covers all four edges, so `yes` at `1`.
@@ -473,7 +473,7 @@ def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 3000000 vcf3Prog
 -- vertices: the solver sweeps four singleton components, each of cost
 -- zero, and answers at `s = 0 ≤ 0`.
 #guard test ([5, 4, 0, 4, 5, 6, 7, 8, 1, 2, 3, 4, 0, 0, 0, 0] ++ [1])
-  = some ([1], 4511)
+  = some ([1], 3319)
 
 -- **C₇** — the seven-cycle `0-1-…-6-0`; `n = 7`, `m = 7`, every degree
 -- two. Cover number `⌈7/2⌉ = 4`: `{0,2,4,6}` meets all seven edges
@@ -485,10 +485,10 @@ def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 3000000 vcf3Prog
 -- edges, `s = ⌈7/2⌉ = 4`.
 #guard test ([7, 7, 0, 2, 4, 6, 8, 10, 12, 14,
     1, 6, 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 0] ++ [3])
-  = some ([0], 7016)
+  = some ([0], 5234)
 #guard test ([7, 7, 0, 2, 4, 6, 8, 10, 12, 14,
     1, 6, 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 0] ++ [4])
-  = some ([1], 6981)
+  = some ([1], 5201)
 
 -- **C₄ + C₆**, disjoint — `n = 10`, `m = 10`; the four-cycle on
 -- `0,1,2,3` and the six-cycle on `4,…,9`. Cover number
@@ -498,10 +498,10 @@ def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 3000000 vcf3Prog
 -- if the toggle were not reset at each root.
 #guard test ([10, 10, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20,
     1, 3, 0, 2, 1, 3, 2, 0, 5, 9, 4, 6, 5, 7, 6, 8, 7, 9, 8, 4] ++ [4])
-  = some ([0], 9944)
+  = some ([0], 7393)
 #guard test ([10, 10, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20,
     1, 3, 0, 2, 1, 3, 2, 0, 5, 9, 4, 6, 5, 7, 6, 8, 7, 9, 8, 4] ++ [5])
-  = some ([1], 9909)
+  = some ([1], 7360)
 
 -- **triangle + P₃ + C₄** — `n = 10`, `m = 9`: the triangle on `0,1,2`,
 -- the two-edge path `3-4-5`, the four-cycle on `6,7,8,9`; offsets
@@ -512,17 +512,17 @@ def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 3000000 vcf3Prog
 -- that makes the halving a *ceiling*.
 #guard test ([10, 9, 0, 2, 4, 6, 7, 9, 10, 12, 14, 16, 18,
     1, 2, 0, 2, 0, 1, 4, 3, 5, 4, 7, 9, 6, 8, 7, 9, 8, 6] ++ [4])
-  = some ([0], 9236)
+  = some ([0], 6868)
 #guard test ([10, 9, 0, 2, 4, 6, 7, 9, 10, 12, 14, 16, 18,
     1, 2, 0, 2, 0, 1, 4, 3, 5, 4, 7, 9, 6, 8, 7, 9, 8, 6] ++ [5])
-  = some ([1], 9201)
+  = some ([1], 6835)
 
 -- **P₄** — the path `0-1-2-3`; `n = 4`, `m = 3`. Cover number two:
 -- `{1,2}` covers, and one vertex covers at most two of the three edges.
 -- `no` at `1`, `yes` at `2`. Pure solver again, one component of three
 -- edges, `s = ⌈3/2⌉ = 2`.
-#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [1]) = some ([0], 3358)
-#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [2]) = some ([1], 3323)
+#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [1]) = some ([0], 2527)
+#guard test ([4, 3, 0, 1, 3, 5, 6, 1, 0, 2, 1, 3, 2] ++ [2]) = some ([1], 2494)
 
 -- **the bull** — the triangle `0,1,2` with a pendant `3` at `0` and a
 -- pendant `4` at `1`; `n = 5`, `m = 5`, offsets `0,3,6,8,9,10`. `{0,1}`
@@ -536,9 +536,9 @@ def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 3000000 vcf3Prog
 -- `{1,2,3}` with `d = 3 > 1` — infeasible — and the pop empties the
 -- stack for the `no`.
 #guard test ([5, 5, 0, 3, 6, 8, 9, 10, 1, 2, 3, 0, 2, 4, 0, 1, 0, 1] ++ [1])
-  = some ([0], 6618)
+  = some ([0], 4839)
 #guard test ([5, 5, 0, 3, 6, 8, 9, 10, 1, 2, 3, 0, 2, 4, 0, 1, 0, 1] ++ [2])
-  = some ([1], 5804)
+  = some ([1], 4264)
 
 -- **2K₂ with every slot doubled** — `n = 4`, `m = 4`, offsets
 -- `0,2,4,6,8`, targets `1,1 | 0,0 | 3,3 | 2,2`: two disjoint edges,
@@ -550,64 +550,66 @@ def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 3000000 vcf3Prog
 -- is counted once, at `u = 0 < 1 = w`, and the repeat is skipped
 -- before it reaches the toggle, so `s = 1 + 1 = 2` and not four.
 #guard test ([4, 4, 0, 2, 4, 6, 8, 1, 1, 0, 0, 3, 3, 2, 2] ++ [1])
-  = some ([0], 3780)
+  = some ([0], 2820)
 #guard test ([4, 4, 0, 2, 4, 6, 8, 1, 1, 0, 0, 3, 3, 2, 2] ++ [2])
-  = some ([1], 3745)
+  = some ([1], 2787)
 
 -- **the repeating word of `Repeats.lean`** — `[2,2,0,2,4,1,1,0,0]`, the
 -- one edge on two vertices with both blocks naming their neighbour
 -- twice; `encodesGraph_repeatWord` proves it is a legitimate encoding.
 -- Cover number one. `no` at `0`, `yes` at `1`: one component, one edge,
 -- `s = ⌈1/2⌉ = 1`.
-#guard test ([2, 2, 0, 2, 4, 1, 1, 0, 0] ++ [0]) = some ([0], 1974)
-#guard test ([2, 2, 0, 2, 4, 1, 1, 0, 0] ++ [1]) = some ([1], 1939)
+#guard test ([2, 2, 0, 2, 4, 1, 1, 0, 0] ++ [0]) = some ([0], 1500)
+#guard test ([2, 2, 0, 2, 4, 1, 1, 0, 0] ++ [1]) = some ([1], 1467)
 
 -- **no edges** — two vertices, no edges: the empty set is a cover, so
 -- `yes` even at budget zero. Two singleton components, `s = 0`.
-#guard test ([2, 0, 0, 0, 0] ++ [0]) = some ([1], 712)
+#guard test ([2, 0, 0, 0, 0] ++ [0]) = some ([1], 580)
 -- **no vertices** — the root sweep does not run at all.
-#guard test ([0, 0, 0] ++ [0]) = some ([1], 172)
+#guard test ([0, 0, 0] ++ [0]) = some ([1], 180)
 -- **a malformed word**: the program merely halts (the exhausted tape
 -- stops it in the read phase).
-#guard test [5, 2, 0, 1, 9, 3] = some ([], 137)
+#guard test [5, 2, 0, 1, 9, 3] = some ([], 119)
 
 /-! #### Against rung A
 
 The same instances on `vcfCom`, where they are not already guarded in
 `Program.lean`. The picture is the one the two recurrences predict, with
 a constant against rung B: the solver is a second pass over the graph
-where rung A's matching leaf was fused into the branching scan, and the
-layout has ten arrays rather than eight, so every array access costs
-more machine steps.
+where rung A's matching leaf was fused into the branching scan. The two
+extra arrays of rung B's layout cost nothing per access — the compiler
+charges four instructions for an array index whatever the number of
+arrays — so the whole difference is that second pass.
 
 Rung B wins outright exactly where the branching bites and its leaf is
 strictly stronger. On `C₇` — every degree two, so rung A branches to a
 depth its Fibonacci tree pays for while rung B answers at the first
-leaf — it is `17937` against `7016` at `k = 3` and `9776` against `6981`
+leaf — it is `13999` against `5234` at `k = 3` and `7714` against `5201`
 at `k = 4`. On the `K`-family the two effects nearly cancel at these
-sizes: `K₄` is `7512/6127` (A) against `7442/6628` (B), `K₅` is
-`14782/12437` (A) against `14649/12846` (B) — rung B ahead on the `no`,
-behind on the `yes`, since both programs push the same three times and
-rung B pays for the solver at the leaf. Where there is nothing to branch
-on and the leaf is a matching, rung A's fused count is simply cheaper:
-`P₄` is `3120/2505` against `3358/3323`, the repeating word `1028/993`
-against `1974/1939`, and the doubled `2K₂` `1914/1879` against
-`3780/3745`. None of this is the asymptotics; it is the constant, and
-the asymptotics is what the concept states. -/
+sizes: `K₄` is `5891/4824` (A) against `5459/4884` (B) — rung B ahead on
+the `no`, behind on the `yes`, since both programs push the same number
+of times and rung B pays for the solver at the leaf — and `K₅` is
+`11451/9657` (A) against `10588/9331` (B), where the deeper tree tips
+both answers to rung B. Where there is nothing to branch on and the leaf
+is a matching, rung A's fused count is simply cheaper: `P₄` is
+`2518/2038` against `2820/2787`, the repeating word `862/829` against
+`1500/1467`, and the doubled `2K₂` `1574/1541` against `2527/2494`. None
+of this is the asymptotics; it is the constant, and the asymptotics is
+what the concept states. -/
 
 #guard VC.test ([5, 10, 0, 4, 8, 12, 16, 20,
     1, 2, 3, 4, 0, 2, 3, 4, 0, 1, 3, 4, 0, 1, 2, 4, 0, 1, 2, 3] ++ [3])
-  = some ([0], 14782)
+  = some ([0], 11451)
 #guard VC.test ([5, 10, 0, 4, 8, 12, 16, 20,
     1, 2, 3, 4, 0, 2, 3, 4, 0, 1, 3, 4, 0, 1, 2, 4, 0, 1, 2, 3] ++ [4])
-  = some ([1], 12437)
+  = some ([1], 9657)
 #guard VC.test ([7, 7, 0, 2, 4, 6, 8, 10, 12, 14,
-    1, 6, 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 0] ++ [3]) = some ([0], 17937)
+    1, 6, 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 0] ++ [3]) = some ([0], 13999)
 #guard VC.test ([7, 7, 0, 2, 4, 6, 8, 10, 12, 14,
-    1, 6, 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 0] ++ [4]) = some ([1], 9776)
+    1, 6, 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 0] ++ [4]) = some ([1], 7714)
 #guard VC.test ([4, 4, 0, 2, 4, 6, 8, 1, 1, 0, 0, 3, 3, 2, 2] ++ [1])
-  = some ([0], 1914)
+  = some ([0], 1574)
 #guard VC.test ([4, 4, 0, 2, 4, 6, 8, 1, 1, 0, 0, 3, 3, 2, 2] ++ [2])
-  = some ([1], 1879)
+  = some ([1], 1541)
 
 end Lax15Proofs.VC3

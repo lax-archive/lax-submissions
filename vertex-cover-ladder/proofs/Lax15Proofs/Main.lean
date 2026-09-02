@@ -24,10 +24,11 @@ the only place where the choice of `Config.lean`'s potential pays off —
 `potN` reads exactly those two arrays and nothing else, so the crossing
 is one `List.ext_getElem`.
 
-The eight arrays of the layout cost the machine `43` steps per unit of
-IMP+ cost, and the run itself costs at most `2100 · fib (k+2)` per entry
-of the input word. The product `90300` is the constant of the statement,
-and no part of it was fought over.
+The layout costs the machine `10` steps per unit of IMP+ cost — the
+compiler's constant, the same for every layout — and the run itself
+costs at most `2100 · fib (k+2)` per entry of the input word. The
+product `21000` is the constant of the statement, and no part of it was
+fought over.
 -/
 
 namespace Lax15Proofs.VC
@@ -171,10 +172,10 @@ finds. -/
 def vcfExt (n m : ℕ) (a : String) : ℕ :=
   if a = "tgt" then 2 * m else if a = "mark" then n else n + 1
 
-/-- The machine pays forty-three steps per unit of IMP+ cost: eight
-arrays make one index computation ten instructions long. -/
-theorem const_eq : vcfLayout.const = 43 := by
-  simp [Layout.const, Layout.idxLen, vcfLayout]
+/-- The machine pays ten steps per unit of IMP+ cost: the compiler's
+constant does not depend on the layout, since an array access is four
+instructions whatever the number of arrays. -/
+theorem const_eq : vcfLayout.const = 10 := rfl
 
 /-- Every entry of an instance word is below the length of the word
 plus the parameter: the graph block's entries are smaller than the
@@ -374,7 +375,7 @@ input word, with every value it produces below the length of that word
 plus the parameter. -/
 theorem vcfCom_solves (n : ℕ) (G : SimpleGraph (Fin n)) (k w : ℕ) :
     Solves vcfLayout vcfCom
-      {x | EncodesParamInstance x n G k ∧ 90300 * (x.length + k + 1) ≤ 2 ^ w}
+      {x | EncodesParamInstance x n G k ∧ 21000 * (x.length + k + 1) ≤ 2 ^ w}
       (fun _ => if G.vertexCoverNum ≤ (k : ℕ∞) then [1] else [0])
       (fun x => x.length + k)
       (fun x => 2100 * Nat.fib (k + 2) * (x.length + 1)) where
@@ -393,8 +394,8 @@ conclusion: Lax15.VertexCover.exists_fibTime_program_vertexCover
 Vertex cover is decided in Fibonacci-of-`k` time: `vcfProgram` decides,
 on every graph in compressed sparse row form followed by the parameter
 `k`, whether the graph has a vertex cover of at most `k` vertices,
-within `90300 * fib (k + 2) * (|x| + 1)` machine steps, at every word
-length at which `90300 * (|x| + k + 1)` fits into a word.
+within `21000 * fib (k + 2) * (|x| + 1)` machine steps, at every word
+length at which `21000 * (|x| + k + 1)` fits into a word.
 
 # Proof strategy
 
@@ -437,9 +438,10 @@ and the pop are bounded by a row and by the trail. The factor
 configuration: `pot ⟨[], 0, k, 0⟩ = 4·fib (k + 2) − 2`.
 
 `computesInTime_of_solves` discharges the compiler, the layout
-invariant and the machine in one step, charging `vcfLayout.const = 43`
-machine steps per unit of IMP+ cost — eight arrays, so one index
-computation is ten instructions. The array extents are chosen per input,
+invariant and the machine in one step, charging `vcfLayout.const = 10`
+machine steps per unit of IMP+ cost — the compiler's constant, which is
+the same for every layout, since an array access is four instructions
+whatever the number of arrays. The array extents are chosen per input,
 as that lemma allows: `vcfExt n m` declares `off ↦ n+1`, `tgt ↦ 2m`,
 `mark ↦ n`, and the trail and the four stacks `↦ n+1`, which is what
 frame health permits, since the frames mark disjoint nonempty sets of
@@ -458,8 +460,8 @@ the two quantities that are not are the parameter itself and the
 budgets stored in the frames, which lie between `0` and `k`. So the
 whole run needs the single hypothesis `|x| + k ≤ B`, and the compiled
 program needs in addition that the cells the layout addresses are
-words, which is `30 + 8(|x| + k)`. The statement's hypothesis, that
-`90300(|x| + k + 1)` is a word, gives both with room to spare.
+words, which is `32 + 8(|x| + k)`. The statement's hypothesis, that
+`21000(|x| + k + 1)` is a word, gives both with room to spare.
 
 What the hypothesis deliberately does *not* say is that the running
 time fits into a word. `fib (k + 2)` counts the leaves of the search
@@ -519,7 +521,7 @@ theorem exists_fibTime_program_vertexCover :
         {x | EncodesParamInstance x n G k ∧ c * (x.length + k + 1) ≤ 2 ^ w}
         (fun _ => if G.vertexCoverNum ≤ (k : ℕ∞) then [1] else [0])
         (fun x => c * Nat.fib (k + 2) * (x.length + 1)) := by
-  refine ⟨vcfProgram, 90300, fun n G k w =>
+  refine ⟨vcfProgram, 21000, fun n G k w =>
     computesInTime_of_solves (vcfCom_solves n G k w) ?_ ?_⟩
   · rintro x ⟨⟨g, rfl, hg⟩, hw⟩
     have hglen := hg.length_eq
