@@ -179,7 +179,7 @@ Unchanged from the audit; summarised.
 - Headline statements everywhere quantify `∃ (p : Program) (c : ℕ)`, so no
   downstream concept changes.
 
-## 5. Resubmission cascade — TODO (parked 2026-09-02 evening, resume 2026-09-03)
+## 5. Resubmission cascade — DONE 2026-09-03: published as lax-67
 
 **What happened.** Jan registered lax-13 on 2026-09-02 14:43 UTC from
 `92ae2d6` (the Cook–Reckhow machine, before the text fixes below).
@@ -196,35 +196,52 @@ Cook–Reckhow attribution now says which choices are not theirs (words,
 monus, `jzero` against their signed integers, exact subtraction and
 branch-on-positive). Content of the folder otherwise equals the record.
 
-**Jan's decision (2026-09-02, verbal): publish as a superseding revision.**
-Archive mechanism (`lax print instructions`, "Additional Info"): a new
-submission created by `lax init` whose `manifest.yaml` carries
-`supersedes: lax-13`; the link becomes permanent when the successor
-registers; the predecessor must be registered (it is), an owner of it must
-own the successor (`jan3er`), and a record can have only one successor.
+**Jan's decision (2026-09-02, verbal; reaffirmed 2026-09-03): publish as a
+superseding revision, and repin the dependents onto it.** Archive mechanism
+(`lax print instructions`, "Additional Info"): a new submission created by
+`lax init` whose `manifest.yaml` carries `supersedes: lax-13`; the link
+becomes permanent when the successor registers; the predecessor must be
+registered (it is), an owner of it must own the successor (`jan3er`), and a
+record can have only one successor.
 
-Steps, none started:
+Executed 2026-09-03 @ `483f38b`:
 
-1. `lax init <folder> --title "The Word RAM"` — opens a GitHub issue in
-   `lax-archive/lax` and allocates `lax-N`. Pick the folder name first
-   (`word-ram` is bound to lax-13 by its record; the successor needs its own
-   folder or `word-ram` moves and a note says where lax-13's source was).
-2. Copy `word-ram/` into it; rename package, `lean_lib`, module paths and
-   namespaces `Lax13` → `LaxN` / `Lax13Proofs` → `LaxNProofs` (spec
-   "Namespaces": the concept namespace is the id); add `supersedes: lax-13`;
-   keep authors, bibEntries, abstract. `lake build` both packages,
-   `lax build` for the namespace audit, `lax submit`.
-3. Dependents lax-11, lax-62, lax-15, lax-3 all pin lax-13 by rev and import
-   `Lax13.*`. Two options, Jan's call: leave them on the registered lax-13
-   (registration will want registered dependencies, and the fix is text
-   only), or repin to `lax-N` and rename every import and qualified name —
-   a mechanical wave across four submissions, which then resubmit in the
-   cascade order. Either way, drop `word-ram` from the cascade script's
-   default order (a registered folder can never pass its idempotency check)
-   and insert the successor folder before `ram-linear-time`.
-4. Register the successor only with fresh explicit consent
-   ([[submission-freeze-consent]] in memory applies; registration is what
-   makes the supersedes link permanent).
+1. `lax init _successor --title "The Word RAM"` reserved **lax-67**; the
+   scaffold was discarded and only the id kept.
+2. The successor **took over the `word-ram/` folder** — lax-13's source
+   stays retrievable at `92ae2d6`, and the tree carries one live word RAM
+   rather than two near-identical copies. `manifest.yaml` now reads
+   `id: lax-67` / `supersedes: lax-13`; authors, bibEntries and abstract are
+   unchanged.
+3. The spec makes the concept namespace the submission id, so `Lax13` →
+   `Lax67` and `Lax13Proofs` → `Lax67Proofs` renamed throughout: 2 module
+   directories and 2 root modules moved, package/`lean_lib`/`defaultTargets`
+   names in both lakefiles, every `namespace`/`end`, and the 28
+   name-quotation literals in `Lax67Proofs/Tactic.lean` — those are `Name`
+   literals resolved at elaboration, so a missed one would have silently
+   stopped `run_vcg` from matching rather than failing the build.
+4. Jan chose the second of §5's two options: the dependents move too. The
+   rename is a pure token swap in `ram-linear-time` (Lax11, 96 occ),
+   `refinement-tower` (Lax62, 146 occ) and
+   `nowhere-dense-model-checking` (Lax3, 118 occ) — imports, `open` lines,
+   qualified names, prose and `[[require]]` names; no identifier embedded
+   `13` in any other way. `lax-15` was already gone (below), so it needed
+   nothing. `README.md` prose followed; `NIGHTLOG.md` and the rest of
+   `plans/` keep `Lax13` as historical record.
+5. `word-ram/concepts` and `word-ram/proofs` build green and
+   `lax build word-ram` passes the namespace audit (2 concepts, 2m25s). Its
+   one warning — whether an owner of lax-13 owns lax-67 could not be checked
+   locally — is for the archive to decide at registration.
+6. `.claude/resubmit-cascade.sh`'s default order keeps `word-ram` in first
+   place, now as Lax67; the folder is a draft again, so the idempotency
+   check works on it. The cascade then repins Lax11, Lax62 and Lax3 to the
+   lax-67 record and resubmits them, with `sparsity-lectures` and
+   `monadic-dependence-neighborhood-complexity` folded in for their own
+   abstract edits.
+
+Registration of lax-67 is **not** done and needs fresh explicit consent
+([[submission-freeze-consent]] in memory); registration is what makes the
+supersedes link permanent.
 
 **Done 2026-09-03: lax-15, vertex-cover-ladder, deleted** on Jan's
 instruction ("we no longer need it", 2026-09-02). `lax delete
