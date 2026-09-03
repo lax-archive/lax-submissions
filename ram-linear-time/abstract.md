@@ -1,131 +1,47 @@
-This submission is a catch-all home for algorithmic experiments in
-Lean: running-time claims about concrete algorithms, stated on the
-word RAM — the machine of the archive's model submission *The Word
-RAM*, which this one requires — and measured by the machine's own step
-count. The input encodings are fixed once, and the submission grows by
-theorems. Every statement has the same elementary shape — there are a
+This submission collects running-time theorems about concrete
+algorithms, stated on the word RAM of the archive's model submission
+*The Word RAM* — which it requires — and measured by the machine's own
+step count. Every statement has the same elementary shape: there are a
 program and a constant such that, at every word length $w$, on every
-admissible input, admissibility including an explicit fitting
-inequality against $2^w$, the machine halts within an explicit bound,
-having written the answer — and nothing in it is asymptotic: a
-linear-time claim is the bound $c(|x|+1)$, a fixed-parameter claim is
-the bound $c\,2^k(|x|+1)$, and every uniformity claim — over the
-graph, over the parameter, over the word length — is carried by the
-order of the quantifiers.
+admissible input — admissibility including an explicit fitting
+inequality against $2^w$ — the machine halts within an explicit bound,
+having written the answer. Nothing is asymptotic: a linear-time claim
+is the bound $c(|x|+1)$, and every uniformity claim, over the input,
+over a parameter, over the word length, is carried by the order of the
+quantifiers.
 
-Two theorems are stated. The first is that the connected components
-of a graph can be computed in linear time: there are one program and
-one constant $c$ such that, given any graph in compressed sparse row
-form as a word $x$ of natural numbers, the machine halts within
-$c(|x|+1)$ steps having labelled every vertex by the least vertex of
-its connected component. The second is Courcelle's theorem in the
-Courcelle–Makowsky–Rotics form: for every sentence of monadic
-second-order logic and every width bound $k$ there are one program and
-one constant $c$ such that, given any graph in compressed sparse row
-form followed by a $k$-expression that evaluates to it, the machine
-halts within $c(|x|+1)$ steps having written $1$ if the sentence holds
-in the graph and $0$ if it does not.
+Two theorems are stated. The connected components of a graph can be
+computed in linear time: given any graph in compressed sparse row form
+as a word $x$, one program halts within $c(|x|+1)$ steps having
+labelled every vertex by the least vertex of its component. Courcelle's
+theorem holds in the Courcelle–Makowsky–Rotics form: for every sentence
+of monadic second-order logic and every width bound $k$ there are a
+program and a constant $c$ such that, given a graph in compressed
+sparse row form followed by a $k$-expression evaluating to it, the
+machine halts within $c(|x|+1)$ steps having decided the sentence. The
+surface also fixes the encodings these are stated on: the compressed
+sparse row form of a graph with nothing precomputed, monadic
+second-order logic on graphs, $k$-expressions, the instance encoding
+pairing a graph with a $k$-expression, and the parameterized instance
+format that appends one parameter entry to a graph.
 
-The machine model carries the whole weight of such statements, and it
-is deliberately not this submission's: the word RAM and the notion of
-computing a function within a time bound are the two concepts of *The
-Word RAM*, argued there once for every submission that states running
-times. The concept surface here has seven review units. Five
-definitions: the compressed sparse row encoding of a graph, in the
-dumb form in which an algorithm actually receives it, with nothing
-precomputed, no sortedness assumed and repetitions permitted; the
-instance format that appends a single parameter entry to that block,
-on which the vertex cover ladder of *Vertex Cover Below Two to the k*
-is stated; monadic
-second-order logic on graphs, with quantification over vertices and
-over sets of vertices, its variables counted rather than named so that
-satisfaction needs no substitution; $k$-expressions, which build a
-graph from labelled single vertices by disjoint union, edge addition
-between two label classes, and relabelling; and the instance encoding
-that hands a graph together with a $k$-expression for it to the
-machine, the numbering of the operations included. Two theorems: the
-two statements above.
-
-Both obligations are discharged in the proof package, and the
-tower they are discharged through is not this submission's either. The
-structured while-language with named scalars and arrays whose
-semantics carries the number of statements executed as a cost, the
-compiler laying its variables out in the machine's memory, the
-simulation theorem bounding the machine's step count by a constant
-multiple of that cost with the constant depending on the layout alone,
-and the reasoning layer in which an algorithm is verified without
-compiled code ever appearing — one rule per construct, and a loop rule
-taking an invariant together with a cost potential, so that
-termination and the running-time bound are a single obligation and
-amortized arguments are direct — all live in the proof package of *The
-Word RAM* and are reused here by requiring it, a dependency on proved
-theorems that the kernel checks like any others and that adds nothing
-to the axioms, which remain the background ones alone. The word RAM
-adds one obligation to that discipline: alongside its cost, every
-algorithm accounts for the values it holds, so that the same
-derivation that yields the running time also shows no intermediate
-value outgrows a word — which is where the fitting conditions in the
-statements come from, each chosen for what the machine holds rather
-than for what a proof would find convenient.
-
-The components algorithm is the textbook sweep of breadth-first
-searches, written in that language and verified against a pure model of
-the search state, so that the graph reasoning — a set closed under
-adjacency contains the whole component of any vertex it contains — is
-done on the graph and never on the machine. Its entire cost is one
-potential: adjacency slots not yet scanned, queue capacity not yet used,
-queue entries not yet expanded, vertices not yet swept. Because the
-potential is global the searches are counted together rather than one at
-a time, which is what the amortization needs. The constant that comes
-out is 840, well above what the compiled program takes per input number
-on the small graphs it was tested on. The gap is deliberate, and so is
-the slack at every level below: nothing in the tower argues for a tight
-constant, and the statement asks only for some constant.
-
-Courcelle's theorem is proved the way it is proved on paper, with the
-machine kept out of the mathematics until the mathematics is finished.
-That mathematics is an Ehrenfeucht–Fraïssé type algebra: a finite space
-of types for each quantifier rank, the type of a subset of an ambient
-graph under an assignment of marked vertices and sets, adequacy — equal
-types satisfy the same sentences of that rank — and a composition lemma
-saying that types are preserved when two regions of one graph are glued
-along an overlap that is marked on both sides and crossed by no edge
-outside it. That lemma is proved at every rank and across two different
-ambient graphs at once, which is what lets the four operations of a
-$k$-expression be handled uniformly: disjoint union is the composition
-lemma at the empty overlap, and edge addition, relabelling and vertex
-creation are three inductions of the same shape. From these the value
-table of the fold is extracted by finiteness and choice — nothing
-computes it, and the theorem does not ask anything to.
-
-The program is a generic bottom-up fold, verified once against a table
-it knows nothing about: it reads a tree given by a parent array whose
-children are numbered before their parents, materializes the table into
-memory in a prologue, and makes one left-to-right pass in which each
-node costs a fixed number of array accesses, independent of the size of
-the table — and the row bases of the table are themselves an array, so
-that indexing it is two reads and an addition: the compiled driver is
-checked, mechanically, to contain no division, no shift, and no
-multiplication other than the compiler's address stride — a product
-with a fixed layout constant, which is `k − 1` additions — so the
-theorem leans on none of the word RAM's stronger instructions. Instantiating the fold with the type table and adding
-an epilogue that turns the root's value into $1$ or $0$ gives the
-driver. Its constant is a tower in the sentence and the width, because
-the table is, and it is never estimated; but the tower is paid once,
-before the input is read, and the input-dependent part of the cost is a
-fixed number of steps per entry. The $k$-expression is input rather than
-something the program computes; the formalization notes on the theorem
-say plainly what that leaves open, as they do for everything else the
-statement decides rather than proves.
-
-One more theorem is proved here without being stated here. The proof
-package contains the textbook bounded search tree of Downey and
-Fellows — vertex cover decided within $c\,2^k(|x|+1)$ steps, written in
-the same while-language and costed by the same loop rule, with the
-constant 9000 — but its statement is the base rung of the vertex cover
-ladder and lives on the surface of *Vertex Cover Below Two to the k*,
-the submission that lowers the base of the exponential twice and
-carries all three rungs together. That submission requires this proof
-package and discharges its base rung with the theorem proved here; what
-remains on this surface is the instance format the whole ladder is
-stated on, the graph block with the parameter appended.
+Both theorems are discharged through the verified pipeline of *The Word
+RAM*: algorithms are written in its structured while-language, costed
+by its loop rule with an invariant and a cost potential, and carried to
+the machine by its simulation theorem, so the derivation that yields
+the running time also shows that no intermediate value outgrows a
+word — which is where the fitting conditions come from. The components
+algorithm is the textbook sweep of breadth-first searches, verified
+against a pure model of the search state under a single global
+potential, so that the searches are amortized together. Courcelle's
+theorem is proved as on paper, with the machine kept out of the
+mathematics until the mathematics is finished: an Ehrenfeucht–Fraïssé
+type algebra with adequacy and a composition lemma for gluing along a
+marked, edge-free overlap handles the four operations of a
+$k$-expression uniformly; the value table of the fold is extracted by
+finiteness and choice; and a generic bottom-up fold, verified once
+against a table it knows nothing about, evaluates it in a fixed number
+of steps per input entry after a prologue that pays for the table
+once. The proof package also contains the bounded search tree of
+Downey and Fellows, deciding vertex cover within $c\,2^k(|x|+1)$ steps
+over the parameterized instance format.
