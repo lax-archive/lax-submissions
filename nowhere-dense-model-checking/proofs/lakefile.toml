@@ -18,21 +18,21 @@ path = "../concepts"
 [[require]]
 name = "Lax12"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "adeee8fcd52a11c46077d34657feaf48f2df7dae"
+rev = "64babe2ab72ace7dbc9db26c2aefc0b2d2fb6d69"
 subDir = "sparsity-lectures/concepts"
 
 # the word RAM: the machine and timed computation of submission Lax67
 [[require]]
 name = "Lax67"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "92ae2d6275d09b856c02d6f851755590fdcb30ed"
+rev = "6238874189453158698301e7127fb4f7d9bf0858"
 subDir = "word-ram/concepts"
 
 # graph encodings (CSR) of submission Lax11
 [[require]]
 name = "Lax11"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "adeee8fcd52a11c46077d34657feaf48f2df7dae"
+rev = "a41a8de28c0b3e3a604ae9adb16117949f948184"
 subDir = "ram-linear-time/concepts"
 
 # the IMP+ toolkit (Spec, run_vcg, Lib) of submission Lax67's proofs,
@@ -40,14 +40,14 @@ subDir = "ram-linear-time/concepts"
 [[require]]
 name = "Lax67Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "92ae2d6275d09b856c02d6f851755590fdcb30ed"
+rev = "6238874189453158698301e7127fb4f7d9bf0858"
 subDir = "word-ram/proofs"
 
 # the sparsity proof modules (Densification pattern and friends)
 [[require]]
 name = "Lax12Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "adeee8fcd52a11c46077d34657feaf48f2df7dae"
+rev = "64babe2ab72ace7dbc9db26c2aefc0b2d2fb6d69"
 subDir = "sparsity-lectures/proofs"
 
 # the refinement tower (NREST, Autoref, Sepref, IICF, codegen) of
@@ -56,7 +56,7 @@ subDir = "sparsity-lectures/proofs"
 [[require]]
 name = "Lax62Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "3639289680141e252c0cfc3c3f29071815391ffd"
+rev = "5704aabc200158c0f04e9772817f98bf693a2bcb"
 subDir = "refinement-tower/proofs"
 
 [[lean_lib]]

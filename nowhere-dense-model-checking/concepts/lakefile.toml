@@ -14,21 +14,21 @@ rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
 [[require]]
 name = "Lax12"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "adeee8fcd52a11c46077d34657feaf48f2df7dae"
+rev = "64babe2ab72ace7dbc9db26c2aefc0b2d2fb6d69"
 subDir = "sparsity-lectures/concepts"
 
 # the word RAM: the machine and timed computation of submission Lax67
 [[require]]
 name = "Lax67"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "92ae2d6275d09b856c02d6f851755590fdcb30ed"
+rev = "6238874189453158698301e7127fb4f7d9bf0858"
 subDir = "word-ram/concepts"
 
 # graph encodings (CSR) of submission Lax11
 [[require]]
 name = "Lax11"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "adeee8fcd52a11c46077d34657feaf48f2df7dae"
+rev = "a41a8de28c0b3e3a604ae9adb16117949f948184"
 subDir = "ram-linear-time/concepts"
 
 [[lean_lib]]
