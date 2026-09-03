@@ -11,47 +11,30 @@ many distinct traces vertex neighborhoods leave on a set of vertices, and
 the submission ends with that consequence: nowhere dense classes have
 almost linear neighborhood complexity.
 
-The concept surface has fifteen review units, eight definitions and seven
-theorems. The definitions: graph classes over the canonical finite vertex
-types $\mathrm{Fin}\ n$; depth-$r$ minors via shallow-minor models, and
-nowhere denseness; the edge density of shallow minors, per graph as
-$|E(H)| \le d\,|V(H)|$ and per class as $|E(H)| \le c\,m^{1+\varepsilon}$;
-depth-$r$ topological minors — an injective choice of principal vertices
-joined by internally disjoint walks of length at most $2r+1$ — with their
-density bound; the generalized coloring numbers $\mathrm{wcol}_r$ and
-$\mathrm{scol}_r$ as minima over vertex orderings of the largest weak
-respectively strong $r$-reachability count, with the subpolynomial bound
-predicate $m^{o(1)}$; $r$-admissibility, via families of short paths from
-a vertex to smaller vertices that are disjoint apart from their common
-start; uniform quasi-wideness, the existence for each radius of a bounded
-separator after whose deletion every large vertex set contains a large
-distance-$r$ independent subset; and neighborhood complexity, the number
-of distinct traces $N(v) \cap A$ that the vertices of a graph leave on a
-vertex set $A$, with the class-level predicate $|A|^{1+o(1)}$. The
-theorems: nowhere dense classes are uniformly quasi-wide (Lemma 3.4 of
-Chapter 4 of the notes) and have subpolynomial shallow-minor density
-(Theorem 3.1 of Chapter 1); a depth-$r$ topological edge-density bound $d$
-gives $\mathrm{adm}_{r+1} \le 1 + 6(r+1)d^3$ (Lemma 3.2 of Chapter 2);
+The concept surface has fifteen review units. Eight definitions: graph
+classes over the finite vertex types $\mathrm{Fin}\ n$; shallow minors
+and nowhere denseness; the edge density of shallow minors; shallow
+topological minors with their density bound; the generalized coloring
+numbers $\mathrm{wcol}_r$ and $\mathrm{scol}_r$; $r$-admissibility;
+uniform quasi-wideness; and neighborhood complexity, the number of
+distinct traces $N(v) \cap A$ on a vertex set $A$. Seven theorems: nowhere
+dense classes are uniformly quasi-wide (Lemma 3.4 of Chapter 4 of the
+notes) and have subpolynomial shallow-minor density (Theorem 3.1 of
+Chapter 1); a depth-$r$ topological edge-density bound $d$ gives
+$\mathrm{adm}_{r+1} \le 1 + 6(r+1)d^3$ (Lemma 3.2 of Chapter 2);
 $\mathrm{scol}_r \le 1 + (\mathrm{adm}_r - 1)^r$ (Lemma 2.5);
 $\mathrm{wcol}_r \le 1 + r\,(\mathrm{scol}_r - 1)^r$ (Lemma 2.6); nowhere
-dense classes have subpolynomial weak coloring numbers, uniformly over
-subgraphs of members (Theorem 3.4 of Chapter 2); and nowhere dense classes
-have almost linear neighborhood complexity. All parameters are infima of
-explicit sets of naturals, and the two links of the coloring-number chain
-are separate theorems, each citable on its own.
+dense classes have subpolynomial weak coloring numbers (Theorem 3.4 of
+Chapter 2); and nowhere dense classes have almost linear neighborhood
+complexity. All parameters are infima of explicit sets of naturals.
 
-The proofs port the development accompanying the lecture notes: a
-Ramsey-theoretic extraction of distance-independent sets for
-quasi-wideness, a Chernoff-based densification argument for the density
-theorem, and the tree-counting and path-routing arguments for the
-coloring-number chain. The proof network is laid out on the archive rather
-than folded into single derivations: the weak-coloring-number theorem is a
-glue proof composing the four theorem concepts before it; the
-neighborhood-complexity theorem assumes that statement and contributes the
-radius-1 trace counting, the VC-dimension bound from $K_{t,t}$-freeness,
-the localization to a polynomially small witness set, and the exponent
-rescaling; and the quasi-wideness proof assumes the two Ramsey statements
-of the submission *Finite Ramsey Theorems for Pairs and Tuples*.
+The proofs port the development accompanying the lecture notes. The proof
+network is laid out on the archive rather than folded into single
+derivations: the weak-coloring-number theorem is a glue proof composing
+the four theorem concepts before it, the neighborhood-complexity theorem
+assumes that statement and adds the radius-1 trace counting, and the
+quasi-wideness proof assumes the two Ramsey statements of the submission
+*Finite Ramsey Theorems for Pairs and Tuples*.
 
 Except for the neighborhood-complexity theorem, all material is from the
 lecture notes *Sparsity* of Michał Pilipczuk and Sebastian Siebertz,
