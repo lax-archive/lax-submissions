@@ -25,9 +25,3 @@ the two-colour case, the Erdős–Szekeres neighbourhood-splitting
 induction; the tuple statement by Erdős–Rado chain building for
 strict-monotone tuples, followed by factoring an arbitrary tuple through
 its rank pattern and iterating over the finitely many patterns.
-
-The proofs are ported from the proof package of the submission *Almost
-linear neighborhood complexity of monadically dependent graph classes*.
-This submission requires nothing but mathlib and is intended as an
-assumption target: Ramsey's theorem is the archetypal statement other
-submissions cite rather than reprove.
