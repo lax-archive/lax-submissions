@@ -11,7 +11,7 @@ structurally.
 IMP+ is the *unbounded* reference semantics: its values are natural
 numbers, nothing is ever reduced modulo `2 ^ w`, and the word length
 does not occur in this file at all. That is the whole point of the
-tower — functional correctness and cost are proved on clean
+pipeline — functional correctness and cost are proved on clean
 natural-number arithmetic, and the word length enters exactly once, at
 the boundary, through the value bound of `Bounds` and the simulation
 theorem. The operators are the standard word-RAM operations at the
@@ -26,7 +26,7 @@ Three design points carry the weight.
 
 *Aliasing is impossible by construction.* An environment maps names to
 values and names to arrays, so distinct names denote disjoint objects
-and no statement anywhere in the tower has to reason about overlap.
+and no statement anywhere in the pipeline has to reason about overlap.
 This is what replaces separation logic.
 
 *Out-of-bounds access is stuck, not defaulted.* Expression evaluation

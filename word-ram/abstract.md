@@ -21,25 +21,3 @@ model and its sources, the truncation rule and what follows from it,
 the constant-cost derivations of the remaining standard operations —
 disjunction, exclusive or, the right shift, the remainder and the
 comparisons — and the machine's halting behaviour and time measure.
-
-Statements about algorithms are then made downstream, over these two
-concepts, in a fixed shape: one program is quantified before the word
-length, so that a claim is about a single program uniform in `w` and
-no advice can be smuggled in, and the hypotheses on the word length
-are explicit inequalities against `2 ^ w` rather than logarithms.
-The proof package discharges nothing — there is nothing to discharge —
-and instead carries a reusable verified pipeline for the submissions
-that will: a structured while-language with named scalars and arrays
-whose big-step semantics counts the statements it executes, a compiler
-into machine code, a simulation theorem bounding the machine's step
-count by a constant multiple of that cost provided every intermediate
-value fits into a word, and a reasoning layer of Hoare-style rules
-with a cost potential and compositional value bounds. The word length
-enters that pipeline exactly once, at its boundary, so an algorithm is
-verified on clean unbounded natural-number semantics and lands as a
-running-time claim about this machine.
-The refinement framework built on that pipeline — the port of the
-Isabelle NREST/Autoref/Sepref stack through which algorithms verified
-against abstract specifications descend to this machine — is the
-separate submission *A Refinement Framework for the Word RAM*, which
-requires this proof package.

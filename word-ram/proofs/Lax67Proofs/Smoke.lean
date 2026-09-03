@@ -3,7 +3,7 @@ import Lax67Proofs.Transfer
 /-!
 The pipeline, end to end, on three programs.
 
-These are tests of the tower, not of the algorithms. Each of the three
+These are tests of the pipeline, not of the algorithms. Each of the three
 states one `Solves` predicate — layout, cost and value bound — and cashes
 it in for a `ComputesInTime` of the concept by one application of the
 transfer theorem, so that the hypothesis bundle is known to be

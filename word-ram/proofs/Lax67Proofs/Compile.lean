@@ -50,7 +50,7 @@ which cannot disturb cell `d`, and then one block reading `d + 1` and
 is that one instruction; `or`, `xor` and `shiftr` are lowered to the
 three- and four-instruction blocks the concept's notes tabulate, whose
 correctness is the three identities of `Machine.lean`. This is what
-`binCode` is, and it is the only place in the tower where the difference
+`binCode` is, and it is the only place in the pipeline where the difference
 between the reference language's operators and the machine's shows.
 
 Conditions leave *zero exactly when they hold* in cell `0`, so both are
