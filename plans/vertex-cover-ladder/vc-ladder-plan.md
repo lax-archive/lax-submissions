@@ -1,5 +1,7 @@
 # Vertex cover ladder — plan, rev 1
 
+**CLOSED 2026-09-03 — lax-15 deleted from the archive and `vertex-cover-ladder/` removed from the tree (last at `b80cc51`); the three rungs remain in git history.**
+
 Goal: discharge `Lax11.VertexCover.exists_fptTime_program_vertexCover`
 (the `2^k` bounded search tree) on the existing Lax11 tower, building
 the branching idioms so that later rungs (`φ^k`, `1.4656^k`, …) are

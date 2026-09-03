@@ -226,14 +226,13 @@ Steps, none started:
    ([[submission-freeze-consent]] in memory applies; registration is what
    makes the supersedes link permanent).
 
-**Also from Jan (2026-09-02): delete lax-15, vertex-cover-ladder — "we no
-longer need it".** Not done yet; it is the last step of this todo, after the
-successor is submitted. lax-15 is a draft at `d4afd03`, nothing in the repo
-requires it (only its own lakefiles mention `Lax15`), so `lax delete
-vertex-cover-ladder` is admissible; it retires the id permanently and asks
-for confirmation in the CLI. Afterwards remove `vertex-cover-ladder/` from
-the tree and from the cascade script's default order, and mark
-`plans/vertex-cover-ladder/` closed.
+**Done 2026-09-03: lax-15, vertex-cover-ladder, deleted** on Jan's
+instruction ("we no longer need it", 2026-09-02). `lax delete
+vertex-cover-ladder` retired the id permanently; `vertex-cover-ladder/` is
+removed from the tree (last present at `b80cc51`) and from the cascade
+script's default order; `plans/vertex-cover-ladder/` is closed history. The
+2^k bounded search tree proof it stated stays in `Lax11Proofs` (VC*.lean)
+without a statement on any surface.
 
 ## 6. Execution
 

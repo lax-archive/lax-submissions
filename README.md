@@ -47,25 +47,7 @@ Submission directories currently in this repository:
   Courcelle–Makowsky–Rotics model checking on bounded cliquewidth,
   discharged via a verified IMP+ compiler on Lax13's word RAM. Also
   home of the graph encoding, of the parameterized instance format, and
-  of the proof of the vertex-cover ladder's 2^k base rung, whose
-  statement lives in Lax15.
-- `vertex-cover-ladder/` — **Lax15**: the vertex cover ladder — three
-  theorem concepts, all discharged, and one definition. The base rung is
-  the textbook 2^k bounded search tree (stated here, proved in Lax11's
-  proof package and required as proved theorems); the second decides
-  vertex cover on the word RAM within `c · fib(k+2) · (|x|+1)` steps,
-  dropping the base of the exponential from 2 to the golden ratio by
-  branching on a vertex of residual degree at least two rather than on
-  an edge; the third, within `c · branchCount k · (|x|+1)` for the
-  surface's own `branchCount` — the leaf count of a `b ↦ (b−1, b−3)`
-  split, base the real root of `x³ = x² + 1` ≈ 1.4656 — by branching
-  only at residual degree three and solving the max-degree-two leaf
-  exactly. Builds on the Lax11 draft — the graph encoding and instance
-  format are imported, so the admissible set is character for character
-  the same and all three bounds are claims about the same inputs, each
-  rung sharpening the one below rather than replacing it — and on
-  Lax13's word RAM, whose machine, compiler and loop rule carry the
-  proofs.
+  of a proof of the textbook 2^k bounded search tree for vertex cover.
 
 These submissions are the reference implementations of everything below. When in
 doubt, open them and imitate. The normative rule set is the Lax spec
@@ -141,7 +123,7 @@ packages require mathlib at the pin. The proof package requires its own
 concept package via `path = "../concepts"` — the only `path` require the
 spec allows. A dependency on another submission pins the **exact**
 repository, commit, and subfolder of that submission's current record — see
-`vertex-cover-ladder/concepts/lakefile.toml` for a live example. A sibling
+`ram-linear-time/concepts/lakefile.toml` for a live example. A sibling
 `path` require reaching another submission of this repository is rejected:
 rev-pinning every cross-submission edge is what makes a submission's commit
 pin its whole source closure. For the local build loop, redirect those pins

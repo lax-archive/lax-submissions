@@ -5,7 +5,7 @@
 #
 #   .claude/resubmit-cascade.sh              # the whole cascade; steps already
 #                                            # archived at this content are skipped
-#   .claude/resubmit-cascade.sh vertex-cover-ladder nowhere-dense-model-checking
+#   .claude/resubmit-cascade.sh monadic-dependence-neighborhood-complexity nowhere-dense-model-checking
 #                                            # resume from a later step
 #
 # Order (each folder depends only on those before it):
@@ -14,7 +14,6 @@
 #                                                          whose record moved under it
 #   ram-linear-time (Lax11), refinement-tower (Lax62)   — both require Lax13
 #   monadic-dependence-neighborhood-complexity (Lax5)    — pin-only refresh: requires Lax12, Lax14
-#   vertex-cover-ladder (Lax15)                          — requires Lax11, Lax13
 #   nowhere-dense-model-checking (Lax3)                  — requires Lax11, Lax12, Lax13, Lax14, Lax62
 # finite-ramsey and the two twin-width submissions match their records and
 # depend on nothing that moves; they are not in the list.
@@ -37,7 +36,7 @@ source = json.load(open(path)).get("source") if os.path.isfile(path) else None
 print(source["commit"] if source and source.get("folder") == folder else "")
 PY2
 }
-default=(word-ram sparsity-lectures ram-linear-time refinement-tower monadic-dependence-neighborhood-complexity vertex-cover-ladder nowhere-dense-model-checking)
+default=(word-ram sparsity-lectures ram-linear-time refinement-tower monadic-dependence-neighborhood-complexity nowhere-dense-model-checking)
 order=("${@:-${default[@]}}")
 [ $# -eq 0 ] && order=("${default[@]}")
 for sub in "${order[@]}"; do
