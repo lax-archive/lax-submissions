@@ -18,5 +18,5 @@ name = "Lax5"
 [[require]]
 name = "Lax12"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "64babe2ab72ace7dbc9db26c2aefc0b2d2fb6d69"
+rev = "6c3e5208bc23359d6050d56545133db024bc5585"
 subDir = "sparsity-lectures/concepts"
