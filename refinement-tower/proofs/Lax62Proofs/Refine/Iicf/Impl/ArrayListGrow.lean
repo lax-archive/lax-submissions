@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Iicf.Impl.ArrayList
 import Lax62Proofs.Refine.Sepref.HeapAlloc
 import Lax62Proofs.Refine.Sepref.HeapCopy
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The array list's growth step, on the P4.5 allocator

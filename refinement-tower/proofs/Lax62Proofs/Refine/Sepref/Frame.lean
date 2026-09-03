@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Sepref.Constraints
 import Lax62Proofs.Refine.Sepref.CombRules
 import Lax62Proofs.Refine.Ir.SepSolver
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Frame inference and branch merging: the port of

@@ -1,5 +1,5 @@
 import Lax11.ConnectedComponents
-import Lax13Proofs.Frame
+import Lax67Proofs.Frame
 
 /-!
 The driver: connected components, as an IMP+ program.
@@ -31,8 +31,8 @@ express, and why the while rule takes a potential.
 
 namespace Lax11Proofs.CC
 
-open Lax13.Ram Lax13.RamComputes Lax11.GraphEncoding Lax11.ConnectedComponents
-open Lax13Proofs.Imp Lax13Proofs.Compile Lax13Proofs.Reasoning
+open Lax67.Ram Lax67.RamComputes Lax11.GraphEncoding Lax11.ConnectedComponents
+open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning
 
 /-! ### The program -/
 

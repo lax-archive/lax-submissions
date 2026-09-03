@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Sepref.HeapAlloc
-import Lax13Proofs.Compile
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+import Lax67Proofs.Compile
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The compiled space-budget probe (ledger E29, leaf P4.5.D)
@@ -763,7 +763,7 @@ bound linear in `|x|` therefore fits at a word length whose `2 ^ w` is
 linear in `|x|` — which is exactly the resource C0's domain admits, and
 exactly what §9 shows the fresh discipline cannot have. -/
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- Every positive number is between a power of two and its double.
 (`BridgeSeamProbe.exists_pow_between`, re-derived: the tower may not
 import the consumer.) -/
@@ -772,7 +772,7 @@ theorem exists_pow_between {m : ℕ} (hm : 0 < m) : ∃ w : ℕ, m ≤ 2 ^ w ∧
   rw [pow_succ, mul_comm]
   exact Nat.mul_le_mul_left 2 (Nat.pow_log_le_self 2 (by omega))
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **A peak bound linear in `|x|` fits into words linear in `|x|`.**
 The conclusion is over `Mid`, so what fits is the high-water mark and
 not the end state. -/
@@ -792,7 +792,7 @@ theorem fits_of_peak_linear {c : Com} {p len a : ℕ} (hpk : PeakLe c p) (hlin :
     have := hpk hm
     omega
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **The positive headline.**  Whenever the setup and the arena are
 linear in `|x|`, the reusing engine's *peak* fits at a word length whose
 `2 ^ w` is linear in `|x|` — for every `turns` and every `levels`. -/
@@ -1090,7 +1090,7 @@ theorem mem_probeWord {n v : ℕ} (h : v ∈ probeWord n) : v = n ∨ v = 0 := b
   · exact Or.inl rfl
   · exact Or.inr (List.eq_of_mem_replicate h)
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **The smallest admissible word length, and how small it is.**  C0's
 domain admits every `w` above `c * (|x| + max x + 1)`, and the statement
 quantifies over all of them — so the smallest is in scope, and there
@@ -1108,7 +1108,7 @@ theorem admissible_word_small (c n : ℕ) (hc : 0 < c) :
   · calc 2 ^ w ≤ 2 * (c * (2 * n + 4)) := hw2
       _ = 4 * c * (n + 2) := by ring
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- The refutation, once, over any program that reaches a bump pointer
 past the crossover. -/
 theorem no_word_size_of_reaches {com : Com} {c n T : ℕ}
@@ -1126,7 +1126,7 @@ theorem no_word_size_of_reaches {com : Com} {c n T : ℕ}
       _ ≤ 4 * c * (n + 2) := hw
   exact absurd hbad (lt_irrefl _)
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **The refutation.**  For every constant `c` and every instance past
 that constant's crossover, C0's own domain admits a word length `w` at
 which the compile layout's fits-words condition and the space budget —
@@ -1152,7 +1152,7 @@ theorem no_word_size_for_fresh (c n setup aw turns levels : ℕ) (hc : 0 < c)
   obtain ⟨s', κ, hrun, -, hh⟩ := run_freshSkel setup aw turns levels hs ht
   exact ⟨s', Mid.done hrun, by rw [hh, hhp]; exact Nat.le_add_left _ _⟩
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **The same refutation, aimed at the program a final-`hp` bound
 cannot see.**  `wastefulCom K` allocates `K` and frees it all, so by
 `final_hp_is_not_peak` its *final* bump pointer is exactly where it
@@ -1194,7 +1194,7 @@ Finding 3 of the ND-MC seam probe carries three; so does this. -/
 -- which is the point: linear fresh allocation is not refuted.
 #guard ¬ (4 * 10 ^ 9 * (10 ^ 20 + 2) ≤ 10 ^ 20 * 1 * 1)
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **Second negative control**: the fits-words condition is satisfiable
 at *whatever* bound the fresh discipline needs — including
 `T = turns * levels * aw` — as soon as the word length is free.  So what
@@ -1209,7 +1209,7 @@ theorem fits_at_a_free_word_length (T : ℕ) :
   simp only [Layout.span, probeScalars, List.length_cons, List.length_nil]
   omega
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **Fourth control: the refutation's own hypotheses are inhabited.**
 At the entry state, past the crossover, the fresh skeleton is refuted at
 every admissible word length — no `Good`/`hpOf`/counter hypothesis is
@@ -1225,7 +1225,7 @@ theorem no_word_size_for_fresh_at_entry (c n setup aw turns levels : ℕ) (hc : 
   exact ⟨w, hadm, fun L B hfit =>
     hkill L B entryState good_entryState hpOf_entryState t_entryState hfit⟩
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **The reusing skeleton fits at a word length that is itself
 admissible for the domain**, and that word length is linear in `|x|` as
 long as `c` and the setup are.  This is the fair comparison: the fresh
@@ -1255,7 +1255,7 @@ theorem reuse_fits_at_admissible_word (c n setup aw turns levels : ℕ) :
     have := peak_reuseSkel setup aw turns levels hm
     omega
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **Third control, and the one that makes the probe bite.**  At the
 *very* parameters where the fresh discipline is refuted, the reusing
 discipline fits — at a word length the domain admits.  The two skeletons
@@ -1745,7 +1745,7 @@ the peak is both bounded (`peak_nestedSkel`) and attained
 (`nested_peak_attained`), so the following is an `↔` and not an
 implication. -/
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **The descending skeleton fits the probe's layout at word length `w`
 iff `2 ^ w` covers `setup + levels * aw` plus the layout's own
 constant.**  `→` is the attainment, `←` is the peak bound; `turns`
@@ -1786,7 +1786,7 @@ theorem nested_fits_iff (setup aw turns levels w : ℕ) (hturns : 0 < turns) :
 
 The `↔` cuts both ways, so the leaf can fail — and does, on one side. -/
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **Control A — bounded depth fits, at a word length the domain
 admits.**  A fixed sentence and a fixed `ε` fix `levels`, and then the
 descending driver is inside the budget: the same fair comparison
@@ -1821,7 +1821,7 @@ theorem nested_fits_at_admissible_word (c n setup aw turns levels : ℕ) :
 -- length at all beyond the domain's own.
 #guard 10 ^ 20 + 3 * 10 ^ 20 + 12 ≤ 10 ^ 9 * (2 * 10 ^ 20 + 4)
 
-open Lax13Proofs.Compile in
+open Lax67Proofs.Compile in
 /-- **Control B — depth growing with `n` is refuted, at every admissible
 word length.**  This is the one that earns the leaf: the descending
 driver is *not* automatically safe.  What it must maintain is exactly

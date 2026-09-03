@@ -40,7 +40,7 @@ block leaf never re-reads the parse.
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Imp Lax13Proofs.Reasoning
+open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax12.GraphClasses Lax12.NowhereDenseClasses
 open Lax3.FirstOrder (FO)

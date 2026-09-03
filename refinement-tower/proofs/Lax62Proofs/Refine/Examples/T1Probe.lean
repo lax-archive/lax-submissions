@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Sepref.Tool
 import Lax62Proofs.Refine.Sepref.Definition
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # T1 PROBE ARTIFACT — the P2/2B/D-a reproducers

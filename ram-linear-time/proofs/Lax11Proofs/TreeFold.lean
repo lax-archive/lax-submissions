@@ -39,7 +39,7 @@ per-node work is two array reads.
 
 namespace Lax11Proofs.TreeFold
 
-open Lax13.Ram Lax13Proofs.Imp Lax13Proofs.Compile Lax13Proofs.Reasoning
+open Lax67.Ram Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning
 open Lax11Proofs.CC (readLoop)
 
 /-! ### The table

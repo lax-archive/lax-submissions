@@ -1,4 +1,4 @@
-import Lax13Proofs.Simulation
+import Lax67Proofs.Simulation
 
 /-!
 The reasoning kit: how an algorithm is actually proved in this stack.
@@ -45,9 +45,9 @@ special case, an invariant and a variant, for the loops where that
 suffices.
 -/
 
-namespace Lax13Proofs.Reasoning
+namespace Lax67Proofs.Reasoning
 
-open Lax13Proofs.Imp Lax13Proofs.Compile
+open Lax67Proofs.Imp Lax67Proofs.Compile
 
 /-! ### Reading an updated environment
 
@@ -440,7 +440,7 @@ syntactically evident which ones do. So it is stated once, for all
 commands that contain no `write`, and no invariant has to carry it. -/
 
 /-- The command contains no `write`. -/
-def _root_.Lax13Proofs.Imp.Com.NoWrite : Com → Prop
+def _root_.Lax67Proofs.Imp.Com.NoWrite : Com → Prop
   | .skip => True
   | .assign _ _ => True
   | .store _ _ _ => True
@@ -458,14 +458,14 @@ splitter of its match — *in this package*. They are created on first
 use, in the module that uses them, and the use is `simp [Com.NoWrite]`
 in whatever algorithm proof invokes `BigStep.out_eq`; done there, in
 another package, it leaves that package holding declarations named
-under `Lax13Proofs`, which the archive's namespace rule rejects. Asking
+under `Lax67Proofs`, which the archive's namespace rule rejects. Asking
 here is enough: every later `simp [Com.NoWrite]` finds the equations
 among its imports and creates nothing. -/
-theorem _root_.Lax13Proofs.Imp.Com.noWrite_skip : Com.skip.NoWrite := by
+theorem _root_.Lax67Proofs.Imp.Com.noWrite_skip : Com.skip.NoWrite := by
   simp [Com.NoWrite]
 
 /-- A command that contains no `write` leaves the output tape alone. -/
-theorem _root_.Lax13Proofs.Imp.BigStep.out_eq {c : Com} {σ σ' : Env} {k : ℕ}
+theorem _root_.Lax67Proofs.Imp.BigStep.out_eq {c : Com} {σ σ' : Env} {k : ℕ}
     (h : BigStep c σ σ' k) : c.NoWrite → σ'.out = σ.out := by
   induction h with
   | skip => intro _; rfl
@@ -483,4 +483,4 @@ theorem Run.out_eq {B : ℕ} {c : Com} {σ σ' : Env} {K : ℕ} (h : Run B c σ 
     (hc : c.NoWrite) : σ'.out = σ.out := by
   obtain ⟨_, _, hbs⟩ := h.bigStep; exact hbs.out_eq hc
 
-end Lax13Proofs.Reasoning
+end Lax67Proofs.Reasoning

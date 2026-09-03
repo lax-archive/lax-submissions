@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Iicf.IicfArray
 import Lax62Proofs.Refine.Iicf.UnionFindAbstract
 import Mathlib.Data.Nat.Bitwise
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Timed loop-form union-find

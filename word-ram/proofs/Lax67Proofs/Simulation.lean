@@ -1,5 +1,5 @@
-import Lax13Proofs.Compile
-import Lax13Proofs.Machine
+import Lax67Proofs.Compile
+import Lax67Proofs.Machine
 
 /-!
 The simulation theorem: a terminating IMP+ run whose values all stay
@@ -45,9 +45,9 @@ leaves is stated separately, as `s'.mem d = v`, and the frame condition
 is what carries it forward.
 -/
 
-namespace Lax13Proofs.Simulation
+namespace Lax67Proofs.Simulation
 
-open Lax13.Ram Lax13Proofs.Imp Lax13Proofs.Compile Lax13Proofs.Machine
+open Lax67.Ram Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Machine
 
 /-- The machine state `s` represents the environment `σ`. -/
 structure Represents (L : Layout) (σ : Env) (s : State) : Prop where
@@ -925,4 +925,4 @@ example :
   exact ⟨t, le_trans ht (by norm_num [Layout.const, Expr.size]),
     by simpa [initEnv] using hrun⟩
 
-end Lax13Proofs.Simulation
+end Lax67Proofs.Simulation

@@ -95,7 +95,7 @@ atom plus a column extraction). Both are `Spec`-shaped hypotheses of
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Imp Lax13Proofs.Reasoning
+open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax12.GraphClasses Lax12.NowhereDenseClasses

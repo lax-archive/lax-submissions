@@ -1,7 +1,7 @@
 import Lax11Proofs.CCGraph
 import Lax11Proofs.CCPhases
-import Lax13Proofs.Lib.Csr
-import Lax13Proofs.Lib.Queue
+import Lax67Proofs.Lib.Csr
+import Lax67Proofs.Lib.Queue
 
 /-!
 The search: scanning one block, emptying the queue, and the sweep over
@@ -54,9 +54,9 @@ it. That, and not the reads, is what the length of this file is.
 
 namespace Lax11Proofs.CC
 
-open Lax13.Ram Lax11.GraphEncoding Lax11.ConnectedComponents
-open Lax13Proofs.Imp Lax13Proofs.Compile Lax13Proofs.Reasoning
-open Lax13Proofs.Reasoning.Lib
+open Lax67.Ram Lax11.GraphEncoding Lax11.ConnectedComponents
+open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning
+open Lax67Proofs.Reasoning.Lib
 
 variable {x : List ℕ} {B n m u head tail : ℕ} {G : SimpleGraph (Fin n)} {O T L Q : ℕ → ℕ}
 

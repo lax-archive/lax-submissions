@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Sepref.Attrs
 import Lax62Proofs.Refine.Sepref.Basic
 import Lax62Proofs.Refine.Autoref.Solver
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Deferred constraints: the port of `thys/sepref/Sepref_Constraints.thy`.

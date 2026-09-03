@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Sepref.IrOps
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The derived control-flow rules: `hnr_If` and the loop rule.

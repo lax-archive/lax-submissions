@@ -14,9 +14,9 @@ name = "Lax62"
 path = "../concepts"
 
 
-# the word RAM: the machine and timed computation of submission Lax13
+# the word RAM: the machine and timed computation of submission Lax67
 [[require]]
-name = "Lax13"
+name = "Lax67"
 git = "https://github.com/lax-archive/lax-submissions"
 rev = "92ae2d6275d09b856c02d6f851755590fdcb30ed"
 subDir = "word-ram/concepts"
@@ -25,7 +25,7 @@ subDir = "word-ram/concepts"
 # theorem, reasoning layer), reused as proved theorems -- the tower is built
 # on top of it (deliberate proofs-package dependency)
 [[require]]
-name = "Lax13Proofs"
+name = "Lax67Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
 rev = "92ae2d6275d09b856c02d6f851755590fdcb30ed"
 subDir = "word-ram/proofs"

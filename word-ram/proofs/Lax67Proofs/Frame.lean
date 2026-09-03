@@ -1,4 +1,4 @@
-import Lax13Proofs.Reasoning
+import Lax67Proofs.Reasoning
 
 /-!
 The frame rule: what a run *cannot* have changed, read off its syntax.
@@ -34,7 +34,7 @@ is wanted for names the command never mentions, and for those the crude
 answer is already exact.
 -/
 
-namespace Lax13Proofs.Imp
+namespace Lax67Proofs.Imp
 
 /-- The scalar variables a command may assign to. Both branches of an
 `ite` count, and the body of a `while` counts once. -/
@@ -121,7 +121,7 @@ instance : DecidablePred Com.NoWrite := Com.decNoWrite
 their equation lemmas and match splitters are created on first use.
 Downstream a first use is `simp [Com.wvars]` inside some algorithm
 proof, and creating them there leaves *that* package holding
-declarations named under `Lax13Proofs`, which the archive's namespace
+declarations named under `Lax67Proofs`, which the archive's namespace
 rule rejects. These three trivial statements ask for them here; every
 later `simp` finds them among its imports and creates nothing. This is
 the standing kit rule, and it applies to every match-defined function
@@ -133,11 +133,11 @@ this kit ever exports. -/
 
 @[simp] theorem Com.not_reads_skip : ¬ Com.skip.reads := by simp [Com.reads]
 
-end Lax13Proofs.Imp
+end Lax67Proofs.Imp
 
-namespace Lax13Proofs.Reasoning
+namespace Lax67Proofs.Reasoning
 
-open Lax13Proofs.Imp
+open Lax67Proofs.Imp
 
 /-! ### The three frame theorems
 
@@ -147,7 +147,7 @@ stated on `BigStep` — where the induction lives — and then on `Run`,
 which is what an algorithm proof has in hand. -/
 
 /-- A run leaves every scalar the command cannot assign to alone. -/
-theorem _root_.Lax13Proofs.Imp.BigStep.vars_eq {c : Com} {σ σ' : Env} {k : ℕ}
+theorem _root_.Lax67Proofs.Imp.BigStep.vars_eq {c : Com} {σ σ' : Env} {k : ℕ}
     (h : BigStep c σ σ' k) {y : String} (hy : y ∉ c.wvars) : σ'.vars y = σ.vars y := by
   induction h with
   | skip => rfl
@@ -166,7 +166,7 @@ theorem _root_.Lax13Proofs.Imp.BigStep.vars_eq {c : Com} {σ σ' : Env} {k : ℕ
   | write _ => rfl
 
 /-- A run leaves every array the command cannot store into alone. -/
-theorem _root_.Lax13Proofs.Imp.BigStep.arrs_eq {c : Com} {σ σ' : Env} {k : ℕ}
+theorem _root_.Lax67Proofs.Imp.BigStep.arrs_eq {c : Com} {σ σ' : Env} {k : ℕ}
     (h : BigStep c σ σ' k) {a : String} (ha : a ∉ c.warrs) : σ'.arrs a = σ.arrs a := by
   induction h with
   | skip => rfl
@@ -186,7 +186,7 @@ theorem _root_.Lax13Proofs.Imp.BigStep.arrs_eq {c : Com} {σ σ' : Env} {k : ℕ
 
 /-- A run of a command containing no `read` leaves the input tape
 alone. -/
-theorem _root_.Lax13Proofs.Imp.BigStep.inp_eq {c : Com} {σ σ' : Env} {k : ℕ}
+theorem _root_.Lax67Proofs.Imp.BigStep.inp_eq {c : Com} {σ σ' : Env} {k : ℕ}
     (h : BigStep c σ σ' k) (hr : ¬ c.reads) : σ'.inp = σ.inp := by
   induction h with
   | skip => rfl
@@ -236,7 +236,7 @@ theorem Run.frame_var_sub {B : ℕ} {c : Com} {σ σ' : Env} {K : ℕ} (h : Run 
 /-- A name framed off a command differs from every name the command
 assigns to. This is how a frame hypothesis meets a lemma stated in
 disequalities: `notMem_wvars_ne hy (by decide) : y ≠ "j"`. -/
-theorem _root_.Lax13Proofs.Imp.notMem_wvars_ne {c : Com} {y z : String}
+theorem _root_.Lax67Proofs.Imp.notMem_wvars_ne {c : Com} {y z : String}
     (hy : y ∉ c.wvars) (hz : z ∈ c.wvars) : y ≠ z :=
   fun h => hy (h.symm ▸ hz)
 
@@ -252,4 +252,4 @@ theorem Run.frame_arrs_eqOn {B : ℕ} {c : Com} {σ σ' : Env} {K : ℕ} (h : Ru
     (hc : c.warrs = []) : σ'.arrs = σ.arrs :=
   funext fun a => h.frame_arr a (by simp [hc])
 
-end Lax13Proofs.Reasoning
+end Lax67Proofs.Reasoning

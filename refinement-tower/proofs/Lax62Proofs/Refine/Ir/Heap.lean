@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Ir.Triples
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The heap ownership view: range ownership for arrays.

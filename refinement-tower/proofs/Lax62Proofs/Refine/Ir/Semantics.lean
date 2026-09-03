@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Ir.Syntax
 import Lax62Proofs.Refine.Cost.ACost
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The IR's states and its cost-indexed big-step semantics.
@@ -22,7 +22,7 @@ is no `M`, no `mres`, no exception carrier and no `NTERM`: a *deep*
   `BigStep c s s' κ`, which is what makes P5's verified codegen (**D3**)
   a statement about a *term* rather than about a printer's output.
 
-This mirrors IMP+ exactly, on purpose: `Lax13Proofs.Imp.BigStep` has the
+This mirrors IMP+ exactly, on purpose: `Lax67Proofs.Imp.BigStep` has the
 same shape (`Com → Env → Env → ℕ → Prop`), the same constructor names
 where the constructs coincide (`skip`, `seq`, `ite_true`, `ite_false`,
 `while_true`, `while_false`), and the same "out-of-bounds access is

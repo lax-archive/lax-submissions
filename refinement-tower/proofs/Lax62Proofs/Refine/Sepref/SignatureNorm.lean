@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Sepref.Signature
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The source's signature-normalization and uniform-time side conditions from

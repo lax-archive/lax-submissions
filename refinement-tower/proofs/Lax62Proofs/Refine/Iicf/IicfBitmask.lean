@@ -1,6 +1,6 @@
 import Mathlib.Combinatorics.Colex
 import Lax62Proofs.Refine.Iicf.IicfStack
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # IICF: bitmask sets over one scalar cell
@@ -52,7 +52,7 @@ membership with no boolean cell anywhere.
 plus `Nat.mem_bitIndices`; `bmVal_insert` and `bmVal_mem` follow by
 `Nat.eq_of_testBit_eq` and `Nat.testBit_div_two_pow`. Nothing was
 hand-proved that mathlib already had; the one new import in the
-Lax13Proofs tree is `Mathlib.Combinatorics.Colex`, for that single
+Lax67Proofs tree is `Mathlib.Combinatorics.Colex`, for that single
 `@[simp]` lemma.
 -/
 

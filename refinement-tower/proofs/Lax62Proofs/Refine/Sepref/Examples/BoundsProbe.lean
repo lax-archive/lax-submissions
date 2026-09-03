@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Sepref.Bounds
 import Lax62Proofs.Refine.Examples.BfsQ
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The T2 probe: a two-level bounds pass, and the pinned bind
@@ -53,7 +53,7 @@ open Lax62Proofs.Refine
 open Lax62Proofs.Refine.Sepref Lax62Proofs.Refine.Sepref.WordSpike
 open Lax62Proofs.Refine.Ir Lax62Proofs.Refine.NRest
 open Lax62Proofs.Refine.BfsQ (get!_set)
-open Lax13Proofs.Imp (Bop)
+open Lax67Proofs.Imp (Bop)
 
 /-! ## 1. The counting-pass shape, replicated
 

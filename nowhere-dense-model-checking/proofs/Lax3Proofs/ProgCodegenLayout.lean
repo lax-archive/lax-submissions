@@ -1,5 +1,5 @@
 import Lax3Proofs.ProgCodegenParse
-import Lax13Proofs.Transfer
+import Lax67Proofs.Transfer
 
 /-!
 # F6b — the layout, the value bound, and the word-size condition spent
@@ -56,7 +56,7 @@ has entries — `x.length ≥ 3`), and every entry is `≤ x.length`
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Compile Lax11.GraphEncoding
+open Lax67Proofs.Compile Lax11.GraphEncoding
 
 /-! ## §1 The three numbers -/
 

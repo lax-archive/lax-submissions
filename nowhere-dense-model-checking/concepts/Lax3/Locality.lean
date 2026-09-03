@@ -45,7 +45,7 @@ this submission consumes, together with the fact that a Lean function
 on an inductive syntax is by construction an algorithm. Stating
 effectiveness in the existential form ("there is a computable map …")
 would add a machine model to a statement about logic, and the machine
-model this submission uses is the word RAM of submission Lax13, which
+model this submission uses is the word RAM of submission Lax67, which
 enters at the headline theorem and not before.
 
 The statement is an `axiom` on this concept surface and is proved in

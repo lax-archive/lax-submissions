@@ -1,4 +1,4 @@
-import Lax13Proofs.Lib.Basic
+import Lax67Proofs.Lib.Basic
 
 /-!
 A first-in-first-out queue: one backing array holding the entries in
@@ -79,9 +79,9 @@ that condition's truth, which is the `simp at hc; omega` both consumers
 open their step proof with.
 -/
 
-namespace Lax13Proofs.Reasoning.Lib
+namespace Lax67Proofs.Reasoning.Lib
 
-open Lax13Proofs.Imp
+open Lax67Proofs.Imp
 
 variable {B cap V h t i v : ℕ} {a hd tl x r y b : String} {f : ℕ → ℕ} {σ : Env}
 
@@ -566,24 +566,24 @@ def demoWatched (a hd tl x y r : String) : Com :=
                 (.seq (front a hd r) (.seq (.write (.var r)) (advance hd)))))))))
 
 /-- Five scalars, one queue array, three temporaries. -/
-def layout : Lax13Proofs.Compile.Layout := ⟨["hd", "tl", "x", "y", "r"], ["q"], 3⟩
+def layout : Lax67Proofs.Compile.Layout := ⟨["hd", "tl", "x", "y", "r"], ["q"], 3⟩
 
 /-- The machine program. -/
-def prog : Lax13.Ram.Program :=
-  Lax13Proofs.Compile.compileProgram layout (demoWatched "q" "hd" "tl" "x" "y" "r")
+def prog : Lax67.Ram.Program :=
+  Lax67Proofs.Compile.compileProgram layout (demoWatched "q" "hd" "tl" "x" "y" "r")
 
 /-- The layout covers the block, so the compilation is the one the
 simulation theorem is about and not an accident. -/
 theorem demoWatched_ok :
-    Lax13Proofs.Compile.Com.Ok layout (demoWatched "q" "hd" "tl" "x" "y" "r") := by
-  simp [demoWatched, push, front, advance, drain, layout, Lax13Proofs.Compile.Com.Ok,
-    Lax13Proofs.Compile.Cond.Ok, Lax13Proofs.Compile.condExpr, Lax13Proofs.Compile.Expr.Ok]
+    Lax67Proofs.Compile.Com.Ok layout (demoWatched "q" "hd" "tl" "x" "y" "r") := by
+  simp [demoWatched, push, front, advance, drain, layout, Lax67Proofs.Compile.Com.Ok,
+    Lax67Proofs.Compile.Cond.Ok, Lax67Proofs.Compile.condExpr, Lax67Proofs.Compile.Expr.Ok]
 
 /-- Run it: the machine's memory starts zeroed, so both pointers start
 at `0` and the queue starts empty. The front must read `5`, and the
 drain must write the two entries out **in the order they went in** —
 which is the whole difference from `Stack`'s example. -/
-def demoRun : Option (List ℕ × ℕ) := runOut 16 2000 prog (Lax13.Ram.initState []) 0
+def demoRun : Option (List ℕ × ℕ) := runOut 16 2000 prog (Lax67.Ram.initState []) 0
 
 #guard demoRun = some ([5, 5, 7], 111)
 
@@ -599,4 +599,4 @@ end Demo
 
 end Queue
 
-end Lax13Proofs.Reasoning.Lib
+end Lax67Proofs.Reasoning.Lib

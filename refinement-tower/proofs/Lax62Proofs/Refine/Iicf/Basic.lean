@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Sepref.IntfUtil
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # P6 conventions — how a collection is written in this tower

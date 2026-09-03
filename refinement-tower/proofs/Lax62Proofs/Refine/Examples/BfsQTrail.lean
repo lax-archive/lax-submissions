@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Examples.BfsQSynth
 import Lax62Proofs.Refine.Iicf.IicfTrailArray
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The re-entrant queue BFS — a turn whose price is the touched set (wave B4b)

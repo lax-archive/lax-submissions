@@ -2,8 +2,8 @@ import Lax62Proofs.Refine.Codegen.Sim
 import Lax62Proofs.Refine.Codegen.Harness
 import Lax62Proofs.Refine.Codegen.BoundVcg
 import Lax62Proofs.Refine.Sepref.IrOps
-import Lax13Proofs.Transfer
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+import Lax67Proofs.Transfer
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The cashing theorem: from a synthesized `hnRefine` to a statement the
@@ -413,7 +413,7 @@ theorem computesInTime_of_spec {L : Compile.Layout} {c : Imp.Com} {D : Set (List
       Reasoning.Spec (B x) (fun σ => σ = Imp.initEnv ext x) c
         (fun _ σ' => σ'.out = f x) (K x))
     (hfit : ∀ x ∈ D, L.FitsWords (B x) w) :
-    Lax13.RamComputes.ComputesInTime w (Compile.compileProgram L c) D f
+    Lax67.RamComputes.ComputesInTime w (Compile.compileProgram L c) D f
       (fun x => L.const * K x) :=
   (solves_of_spec hok hinp hspec).computesInTime hfit
 

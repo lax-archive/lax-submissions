@@ -77,7 +77,7 @@ rank array, as the residual demands.
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Imp Lax13Proofs.Reasoning
+open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax12.GraphClasses Lax12.NowhereDenseClasses
@@ -179,7 +179,7 @@ theorem hMul_congr {n : ℕ} {f g : ℕ → ℕ} (h : ∀ t < n, f t = g t) :
 theorem hMul_succ (n : ℕ) (f : ℕ → ℕ) : hMul (n + 1) f = f n ::ₘ hMul n f := by
   rw [hMul, hMul, Multiset.range_succ, Multiset.map_cons]
 
-open Lax13Proofs.Reasoning.Lib in
+open Lax67Proofs.Reasoning.Lib in
 /-- Swapping two prefix cells leaves the content multiset alone. -/
 theorem hMul_swap {n ti xi : ℕ} (hti : ti < n) (hxi : xi < n) (hne : ti ≠ xi)
     (f : ℕ → ℕ) : hMul n (upd (upd f ti (f xi)) xi (f ti)) = hMul n f := by
@@ -209,7 +209,7 @@ theorem hMul_swap {n ti xi : ℕ} (hti : ti < n) (hxi : xi < n) (hne : ti ≠ xi
   rw [Multiset.map_cons, Multiset.map_cons, Multiset.map_cons, Multiset.map_cons,
     hgt, hgx, Multiset.map_congr rfl hgR, Multiset.cons_swap]
 
-open Lax13Proofs.Reasoning.Lib in
+open Lax67Proofs.Reasoning.Lib in
 /-- Overwriting the root with the last cell and shrinking removes one
 copy of the root's key from the content. -/
 theorem hMul_pop {n : ℕ} (hn : 0 < n) (f : ℕ → ℕ) :
@@ -282,7 +282,7 @@ theorem HeapSt.of_eq {hp hs : String} {n : ℕ} {f : ℕ → ℕ} {σ σ' : Env}
 
 section HeapOps
 
-open Lax13Proofs.Reasoning.Lib
+open Lax67Proofs.Reasoning.Lib
 
 variable {B : ℕ} (hp hs tv xv yv : String)
 

@@ -1,4 +1,4 @@
-import Lax13.RamComputes
+import Lax67.RamComputes
 import Lax11.GraphEncoding
 import Mathlib.Combinatorics.SimpleGraph.VertexCover
 
@@ -33,7 +33,7 @@ consumer was built.
 
 namespace Lax11.VertexCover
 
-open Lax13.Ram Lax13.RamComputes Lax11.GraphEncoding
+open Lax67.Ram Lax67.RamComputes Lax11.GraphEncoding
 
 /-- The word `x` presents the graph `G` on `n` vertices together with
 the parameter `k`: a compressed sparse row block encoding `G`, followed

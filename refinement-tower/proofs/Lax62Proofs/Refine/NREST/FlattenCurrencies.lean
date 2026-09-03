@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.NREST.TimeRefinement
 import Lax62Proofs.Refine.Codegen.Cash
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Currency flattening at the cash boundary.

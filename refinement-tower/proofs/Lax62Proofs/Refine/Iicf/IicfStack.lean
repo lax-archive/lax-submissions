@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Sepref.Definition
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # IICF: bounded stack over two fixed cells

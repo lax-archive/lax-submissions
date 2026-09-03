@@ -353,7 +353,7 @@ alignment `dcost` was designed for). This is the largest remaining
 block: comparable in size to the whole `Impl*` family it composes
 (estimate: several worker-days, thousands of lines).
 
-**(b) Codegen to a `Lax13.Ram.Program`.** The landed exit is
+**(b) Codegen to a `Lax67.Ram.Program`.** The landed exit is
 `computesInTime_of_spec`
 (`word-ram/proofs/Lax62Proofs/Refine/Codegen/Cash.lean:408-419`): from
 `Com.Ok`, an input bound `∀ x ∈ D, ∀ v ∈ x, v < B x`, a

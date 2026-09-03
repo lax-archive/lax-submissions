@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Sepref.IrOps
 import Lax62Proofs.Refine.Sepref.Definition
 import Lax62Proofs.Refine.Ir.Heap
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The costed bump allocator, `free`, and their registered refinement rules.
@@ -33,7 +33,7 @@ reproduce.
 `cost ''malloc'' n`, because a real LLVM `malloc` costs proportionally to
 the block it hands back. Ours is `irUnit copy + irUnit add` — two IR
 steps, *independent of `n`*. That is a **substrate** deviation, not an
-optimisation: `Lax13/Ram.lean`'s cells already exist and already hold
+optimisation: `Lax67/Ram.lean`'s cells already exist and already hold
 zero (`Imp.lean:305`, "an array costs nothing, since the machine's memory
 starts zeroed"), so we are not doing the source's work faster, we are on
 a machine where that work does not exist. `allocCost` is a function of

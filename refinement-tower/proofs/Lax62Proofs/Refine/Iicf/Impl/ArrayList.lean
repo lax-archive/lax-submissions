@@ -2,7 +2,7 @@ import Lax62Proofs.Refine.Iicf.IicfDynamicArray
 import Lax62Proofs.Refine.Iicf.IicfArray
 import Lax62Proofs.Refine.Iicf.IicfStack
 import Lax62Proofs.Refine.Iicf.Intf.List
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Array-backed lists on caller-owned bounded storage

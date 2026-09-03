@@ -1,5 +1,5 @@
 import Lax11Proofs.CC
-import Lax13Proofs.Lib.Fill
+import Lax67Proofs.Lib.Fill
 
 /-!
 The three straight phases of the driver: reading the input word into an
@@ -19,7 +19,7 @@ all. What is left of a phase is its body, and `run_vcg` walks all three
 of those, tape operations included.
 
 What a phase leaves alone is not stated: which names a command may touch
-is syntactic, and `Lax13Proofs.Frame` decides it, so a caller recovers a
+is syntactic, and `Lax67Proofs.Frame` decides it, so a caller recovers a
 frame condition from the run the conclusion already carries at the price
 of one `by decide`. `readLoop`'s input tape is the exception — it is
 consumed, so what is left of it is a conclusion. And the value bound `B`
@@ -29,8 +29,8 @@ is a counter inside its array, a number just read, or one already there.
 
 namespace Lax11Proofs.CC
 
-open Lax13.Ram Lax13Proofs.Imp Lax13Proofs.Compile Lax13Proofs.Reasoning
-open Lax13Proofs.Reasoning.Lib
+open Lax67.Ram Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning
+open Lax67Proofs.Reasoning.Lib
 
 /-! ### Reading a block of the tape into an array -/
 

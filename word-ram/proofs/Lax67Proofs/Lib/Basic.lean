@@ -1,5 +1,5 @@
-import Lax13Proofs.Tactic
-import Lax13Proofs.Compile
+import Lax67Proofs.Tactic
+import Lax67Proofs.Compile
 
 /-!
 The two pieces every module of the data-structure library needs, and
@@ -18,9 +18,9 @@ specifications say is also *seen*; that is house discipline everywhere
 else in this repo and there is no reason for the kit to be exempt.
 -/
 
-namespace Lax13Proofs.Reasoning.Lib
+namespace Lax67Proofs.Reasoning.Lib
 
-open Lax13Proofs.Imp
+open Lax67Proofs.Imp
 
 /-! ### Updating a cell function -/
 
@@ -55,7 +55,7 @@ theorem upd_le {f : ℕ → ℕ} {k v c i : ℕ} (hv : v ≤ c) (hf : f i ≤ c)
 
 /-! ### The worked-example driver -/
 
-open Lax13.Ram in
+open Lax67.Ram in
 /-- Run `p` at word length `w` from `s` until it halts, taking at most
 `fuel` steps, and report the output tape together with the number of
 steps taken. `none` means the fuel ran out. -/
@@ -70,16 +70,16 @@ def runOut (w : ℕ) : ℕ → Program → State → ℕ → Option (List ℕ ×
 splitters are created on first use. These two statements ask for them
 here, per the standing kit rule of `Frame.lean`: a downstream
 `simp [runOut]` then finds them among its imports and creates nothing
-named under `Lax13Proofs` in a consumer package. -/
+named under `Lax67Proofs` in a consumer package. -/
 
-@[simp] theorem runOut_zero (w : ℕ) (p : Lax13.Ram.Program) (s : Lax13.Ram.State) (k : ℕ) :
+@[simp] theorem runOut_zero (w : ℕ) (p : Lax67.Ram.Program) (s : Lax67.Ram.State) (k : ℕ) :
     runOut w 0 p s k = none := by simp [runOut]
 
-theorem runOut_succ (w fuel : ℕ) (p : Lax13.Ram.Program) (s : Lax13.Ram.State) (k : ℕ) :
+theorem runOut_succ (w fuel : ℕ) (p : Lax67.Ram.Program) (s : Lax67.Ram.State) (k : ℕ) :
     runOut w (fuel + 1) p s k =
-      match Lax13.Ram.step w p s with
+      match Lax67.Ram.step w p s with
       | none => some (s.out, k)
       | some s' => runOut w fuel p s' (k + 1) := by
   simp [runOut]
 
-end Lax13Proofs.Reasoning.Lib
+end Lax67Proofs.Reasoning.Lib

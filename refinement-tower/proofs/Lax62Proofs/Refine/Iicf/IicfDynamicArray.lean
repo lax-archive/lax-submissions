@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Iicf.Basic
 import Lax62Proofs.Refine.Sepref.Amortization
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Dynamic arrays: abstract amortization and a bounded no-allocation adapter

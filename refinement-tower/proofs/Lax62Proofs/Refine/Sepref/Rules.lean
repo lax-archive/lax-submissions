@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Sepref.Basic
 import Lax62Proofs.Refine.NREST.DataRefinement
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 `fref` / `hfref` / `hr_comp` / `FCOMP`: the port of the composition layer

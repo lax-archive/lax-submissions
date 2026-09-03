@@ -1,4 +1,4 @@
-import Lax13.Ram
+import Lax67.Ram
 import Mathlib.Tactic
 
 /-!
@@ -33,9 +33,9 @@ concept's notes tabulate. Each is `#guard`ed on small cases before it is
 proved.
 -/
 
-namespace Lax13Proofs.Machine
+namespace Lax67Proofs.Machine
 
-open Lax13.Ram
+open Lax67.Ram
 
 /-- There is at least one word. -/
 theorem two_pow_pos (w : ℕ) : 0 < 2 ^ w := by positivity
@@ -406,4 +406,4 @@ theorem fits_self (q r : Program) : Fits (q ++ r) 0 q := by
   intro i hi
   simpa using List.getElem?_append_left (l₂ := r) hi
 
-end Lax13Proofs.Machine
+end Lax67Proofs.Machine

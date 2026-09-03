@@ -36,7 +36,7 @@ submission page.
   annotation of `proofs/Lax11Proofs/CCMain.lean`, and the graph
   encoding carries its own notes in `concepts/Lax11/`. The machine
   itself and the timed-computation predicate are not this submission's
-  concepts at all: they are the word RAM of `Lax13`, and their notes
+  concepts at all: they are the word RAM of `Lax67`, and their notes
   are there.
 - **The vertex cover material** is split between two submissions. The
   `2^k` statement is the base rung of the ladder in

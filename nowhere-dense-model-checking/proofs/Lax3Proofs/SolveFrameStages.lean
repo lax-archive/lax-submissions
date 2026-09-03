@@ -42,7 +42,7 @@ Every budget is the landed one; no landed proof is re-entered.
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Imp Lax13Proofs.Reasoning Lax13Proofs.Reasoning.Lib
+open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
 
 /-! ## §0 Transports the lifts share -/
 

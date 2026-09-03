@@ -137,7 +137,7 @@ which is definable downstream over this same machine, with no change to
 the model.
 -/
 
-namespace Lax13.Ram
+namespace Lax67.Ram
 
 /-- An instruction. Every number naming a cell is read, except that
 the first one names the cell written by `set`, `load`, `read` and the
@@ -295,4 +295,4 @@ its output tape. -/
 def RunsTo (w : ℕ) (p : Program) (x y : List ℕ) (t : ℕ) : Prop :=
   ∃ s : State, run w p t (initState x) = some s ∧ step w p s = none ∧ s.out = y
 
-end Lax13.Ram
+end Lax67.Ram

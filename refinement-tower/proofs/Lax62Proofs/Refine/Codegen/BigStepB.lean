@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Ir.Semantics
-import Lax13Proofs.Bounds
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+import Lax67Proofs.Bounds
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Bounded IR runs: the mirror at the IR of IMP+'s own `BigStepB`.
@@ -71,7 +71,7 @@ carried by the harness for no reason.
 
 namespace Lax62Proofs.Refine.Ir
 
-open Lax13Proofs.Imp (fit fit_self fit_eq_some)
+open Lax67Proofs.Imp (fit fit_self fit_eq_some)
 
 /-! ### Bounded operand and condition evaluation
 

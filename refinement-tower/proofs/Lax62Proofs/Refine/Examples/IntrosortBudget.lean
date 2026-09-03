@@ -1,7 +1,7 @@
 import Mathlib.Data.Nat.Log
 import Lax62Proofs.Refine.NREST.Automation
 import Lax62Proofs.Refine.NREST.FlattenCurrencies
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The currency-vector budget spine of the pinned introsort example.

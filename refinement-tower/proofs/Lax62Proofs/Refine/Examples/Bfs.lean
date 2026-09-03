@@ -35,7 +35,7 @@ degenerate case without a clause of its own.
 
 ## The package constraint (design.md §10.4, adjusted)
 
-`Lax13Proofs` depends on the `Lax13` concepts and mathlib, and on
+`Lax67Proofs` depends on the `Lax67` concepts and mathlib, and on
 nothing else; it cannot import the ND-MC packages, so it cannot name
 `Lax3.ColoredGraphs.WithinDist` or `Lax3Proofs.RamBfs.masked`. The
 vocabulary here is therefore mathlib's — `SimpleGraph (Fin n)`,

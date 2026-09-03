@@ -113,7 +113,7 @@ O(1)`. It does not need a paper this repository lacks.
 program: this leaf is a statement leaf and does not build one. `E12`, the
 `Arena` implementation (`execution-plan.md:306-315`), is expected to instantiate
 `OrderingRoutine` with the actual `cover` implementation and read `steps` off
-`Lax13`'s timed computation — at which point `IsCoverOrdering.data` becomes a
+`Lax67`'s timed computation — at which point `IsCoverOrdering.data` becomes a
 correctness proof about the program and `IsCoverOrdering.time` becomes the one
 surviving hypothesis, in the same shape, about its running time.
 -/

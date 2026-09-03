@@ -1,4 +1,4 @@
-import Lax13Proofs.Frame
+import Lax67Proofs.Frame
 
 /-!
 Specifications: what a phase of a program does, as an object that
@@ -44,9 +44,9 @@ allows, read off the syntax. A composed phase therefore never
 re-establishes a frame condition: it inherits one for the `seq` it is.
 -/
 
-namespace Lax13Proofs.Reasoning
+namespace Lax67Proofs.Reasoning
 
-open Lax13Proofs.Imp
+open Lax67Proofs.Imp
 
 variable {B : ℕ} {P P' : Env → Prop} {Q Q' R : Env → Env → Prop} {c d : Com} {K K' : ℕ}
 
@@ -345,4 +345,4 @@ theorem Spec.forRangeZero (x m : String) (I : Env → Prop) (N Kb : ℕ) (hNB : 
   exact ⟨σ', (Run.seq (Run.assign (v := 0) (by simp; omega)) hrun).mono (by simp; omega),
     hI', hxN'⟩
 
-end Lax13Proofs.Reasoning
+end Lax67Proofs.Reasoning

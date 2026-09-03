@@ -1,4 +1,4 @@
-import Lax13Proofs.Lib.Basic
+import Lax67Proofs.Lib.Basic
 
 /-!
 An array filled cell by cell by a counter: the array, a scalar counting
@@ -35,9 +35,9 @@ the counter: a fill says nothing about where it has not been yet, so the
 caller's precondition is only that the array has the right length.
 -/
 
-namespace Lax13Proofs.Reasoning.Lib
+namespace Lax67Proofs.Reasoning.Lib
 
-open Lax13Proofs.Imp
+open Lax67Proofs.Imp
 
 variable {B n i j k v : ℕ} {a b x y m : String} {g F : ℕ → ℕ} {σ : Env}
 
@@ -305,21 +305,21 @@ def demoWatched (a x m : String) : Com :=
         (.seq (.write (.get a (.lit 1))) (.write (.get a (.lit 2))))))
 
 /-- Two scalars, one array, two temporaries. -/
-def layout : Lax13Proofs.Compile.Layout := ⟨["i", "m"], ["ar"], 2⟩
+def layout : Lax67Proofs.Compile.Layout := ⟨["i", "m"], ["ar"], 2⟩
 
 /-- The machine program. -/
-def prog : Lax13.Ram.Program :=
-  Lax13Proofs.Compile.compileProgram layout (demoWatched "ar" "i" "m")
+def prog : Lax67.Ram.Program :=
+  Lax67Proofs.Compile.compileProgram layout (demoWatched "ar" "i" "m")
 
 /-- The layout covers the block, so the compilation is the one the
 simulation theorem is about and not an accident. -/
-theorem demoWatched_ok : Lax13Proofs.Compile.Com.Ok layout (demoWatched "ar" "i" "m") := by
-  simp [demoWatched, demo, put, layout, Lax13Proofs.Compile.Com.Ok,
-    Lax13Proofs.Compile.Cond.Ok, Lax13Proofs.Compile.condExpr, Lax13Proofs.Compile.Expr.Ok]
+theorem demoWatched_ok : Lax67Proofs.Compile.Com.Ok layout (demoWatched "ar" "i" "m") := by
+  simp [demoWatched, demo, put, layout, Lax67Proofs.Compile.Com.Ok,
+    Lax67Proofs.Compile.Cond.Ok, Lax67Proofs.Compile.condExpr, Lax67Proofs.Compile.Expr.Ok]
 
 /-- Run it: the machine's memory starts zeroed, and the pass writes the
 counter into each cell, so the three readings must be `0`, `1`, `2`. -/
-def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax13.Ram.initState []) 0
+def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax67.Ram.initState []) 0
 
 #guard demoRun = some ([0, 1, 2], 108)
 
@@ -332,4 +332,4 @@ end Demo
 
 end Fill
 
-end Lax13Proofs.Reasoning.Lib
+end Lax67Proofs.Reasoning.Lib

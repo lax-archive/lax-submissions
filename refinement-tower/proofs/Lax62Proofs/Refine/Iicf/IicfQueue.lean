@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Iicf.IicfStack
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # IICF: one-shot FIFO queue over three fixed cells

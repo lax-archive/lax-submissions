@@ -7,7 +7,7 @@ Two halves.
 
 ## Half 1 — the unroll
 
-Lax13's machine has no call stack, so §5's depth-`ℓ` recursion must be
+Lax67's machine has no call stack, so §5's depth-`ℓ` recursion must be
 expressed as `ℓ+1` depth-indexed levels. At the abstract layer that
 means: factor `tablesAux` into
 
@@ -69,7 +69,7 @@ node's actual sizes — saves only the gap between per-depth actual and
 per-depth maximum, a constant factor at best: the depth-`j` peak is
 genuinely `Θ(n²)` in the worst case at every depth (the cover output
 does not telescope), so no exponent improves. And it costs an
-allocator/free-pointer discipline that Lax13's RAM does not have and
+allocator/free-pointer discipline that Lax67's RAM does not have and
 that E12 would have to build and verify. Constants are free (§3) and
 the squared side condition already pays for the static worst case.
 

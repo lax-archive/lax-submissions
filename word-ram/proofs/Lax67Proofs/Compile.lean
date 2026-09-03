@@ -1,5 +1,5 @@
-import Lax13.Ram
-import Lax13Proofs.Bounds
+import Lax67.Ram
+import Lax67Proofs.Bounds
 
 /-!
 The compiler from IMP+ to word-machine programs.
@@ -8,7 +8,7 @@ Its whole content is the memory layout, because the machine has no
 structure at all: cells addressed by number, an instruction per cell
 transfer, absolute jumps. Three regions, all at statically known
 addresses since the machine's memory starts empty
-(`Lax13.Ram.initState`):
+(`Lax67.Ram.initState`):
 
 * cells `0 … temps+1` hold temporaries, one per nesting depth of the
   expression being evaluated plus the two the deepest one needs beside
@@ -59,9 +59,9 @@ possible without a comparison instruction, and it is the reason the
 model keeps monus.
 -/
 
-namespace Lax13Proofs.Compile
+namespace Lax67Proofs.Compile
 
-open Lax13.Ram Lax13Proofs.Imp
+open Lax67.Ram Lax67Proofs.Imp
 
 /-! ### Layouts -/
 
@@ -321,7 +321,7 @@ asks for them, and they are created *in the module that asks*. Checking
 a concrete program against `Ok` is `simp [Com.Ok, Cond.Ok, Expr.Ok]`,
 and every consumer of this kit does it, so without the three lemmas
 below the first consumer creates the equations; a consumer in another
-package then holds declarations named under `Lax13Proofs`, which the
+package then holds declarations named under `Lax67Proofs`, which the
 archive's namespace rule rejects. Asking here, where the definitions
 live, is enough: a later `simp [Com.Ok]` anywhere finds the equations
 among its imports and creates nothing.
@@ -490,4 +490,4 @@ theorem condExpr_evalB {B : ℕ} {b : Cond} {σ : Env} {r : Bool} (hB : 1 < B)
       rw [fit_self hB, h2]
       exact fit_self (show 1 - (n - m) < B by omega)
 
-end Lax13Proofs.Compile
+end Lax67Proofs.Compile

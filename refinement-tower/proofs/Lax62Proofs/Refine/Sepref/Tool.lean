@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Sepref.Translate
 import Lax62Proofs.Refine.Sepref.IdOp
 import Lax62Proofs.Refine.Sepref.Monadify
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The Sepref tool: the port of `thys/sepref/Sepref_Tool.thy`.

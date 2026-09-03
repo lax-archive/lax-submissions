@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Sepref.Register
 import Lax62Proofs.Refine.Sepref.SignatureTool
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Interface operation and implementation declarations

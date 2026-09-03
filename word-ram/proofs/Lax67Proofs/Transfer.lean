@@ -1,5 +1,5 @@
-import Lax13.RamComputes
-import Lax13Proofs.Reasoning
+import Lax67.RamComputes
+import Lax67Proofs.Reasoning
 
 /-!
 The boundary: from an IMP+ run to a statement about the machine.
@@ -32,10 +32,10 @@ to; `Solves.computesInTime` is the version that takes the product as it
 comes.
 -/
 
-namespace Lax13Proofs.Transfer
+namespace Lax67Proofs.Transfer
 
-open Lax13.Ram Lax13.RamComputes Lax13Proofs.Imp Lax13Proofs.Compile
-open Lax13Proofs.Simulation Lax13Proofs.Reasoning
+open Lax67.Ram Lax67.RamComputes Lax67Proofs.Imp Lax67Proofs.Compile
+open Lax67Proofs.Simulation Lax67Proofs.Reasoning
 
 /-- The obligation the pipeline asks of one program: `c` compiles under
 `L`, admissible inputs have entries below `B`, and on an admissible
@@ -87,4 +87,4 @@ theorem fitsWords_of_max_le {L : Layout} {B w : ℕ} (h1 : 1 < B)
     (h : max B (L.span B) ≤ 2 ^ w) : L.FitsWords B w :=
   ⟨h1, le_trans (le_max_left _ _) h, le_trans (le_max_right _ _) h⟩
 
-end Lax13Proofs.Transfer
+end Lax67Proofs.Transfer

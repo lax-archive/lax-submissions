@@ -42,7 +42,7 @@ the frame-step obligation consumes this `Spec` shape and nothing else.
 
 namespace Lax3Proofs.Prog
 
-open Lax13Proofs.Imp Lax13Proofs.Reasoning
+open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax3Proofs.Driver
 
 /-! ## §1 The output regions -/

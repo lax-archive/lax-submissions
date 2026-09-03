@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Ir.Semantics
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The IR's separation algebra and its assertion language.

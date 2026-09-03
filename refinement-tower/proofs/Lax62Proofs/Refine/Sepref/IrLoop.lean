@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Sepref.IrOps
 import Lax62Proofs.Refine.NREST.BackwardsReasoning
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The VCG at the IR's loop, and the cost algebra a linear budget needs

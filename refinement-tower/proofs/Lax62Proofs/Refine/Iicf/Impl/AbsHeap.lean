@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Iicf.Intf.PrioBag
 import Lax62Proofs.Refine.Iicf.Intf.List
 import Mathlib.Data.List.GetD
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Abstract binary heaps on lists

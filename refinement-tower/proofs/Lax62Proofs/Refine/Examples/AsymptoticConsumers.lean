@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Asymptotics.Recurrences
 import Lax62Proofs.Refine.Examples.BfsQ
 import Lax62Proofs.Refine.Examples.IntrosortBudget
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Asymptotic consumer demonstrations

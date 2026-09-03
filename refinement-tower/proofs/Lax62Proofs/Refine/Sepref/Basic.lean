@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Ir.Triples
 import Lax62Proofs.Refine.NREST.Pw
 import Lax62Proofs.Refine.Autoref.Relators
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The Sepref refinement judgment `hnRefine` on the word-RAM IR: the port of

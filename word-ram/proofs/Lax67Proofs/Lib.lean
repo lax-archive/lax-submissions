@@ -1,10 +1,10 @@
-import Lax13Proofs.Lib.Basic
-import Lax13Proofs.Lib.Ind
-import Lax13Proofs.Lib.Stack
-import Lax13Proofs.Lib.Trail
-import Lax13Proofs.Lib.Queue
-import Lax13Proofs.Lib.Csr
-import Lax13Proofs.Lib.Fill
+import Lax67Proofs.Lib.Basic
+import Lax67Proofs.Lib.Ind
+import Lax67Proofs.Lib.Stack
+import Lax67Proofs.Lib.Trail
+import Lax67Proofs.Lib.Queue
+import Lax67Proofs.Lib.Csr
+import Lax67Proofs.Lib.Fill
 
 /-!
 The data-structure library: one module per structure, each an

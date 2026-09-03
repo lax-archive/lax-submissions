@@ -1,4 +1,4 @@
-import Lax13Proofs.Lib.Basic
+import Lax67Proofs.Lib.Basic
 
 /-!
 Indicator arrays: an array of zeros and ones, standing for the set of
@@ -42,7 +42,7 @@ module writes itself.
    — its operations, its `Pre` and its postconditions, its
    specifications, its derived view and its `Demo` — is declared in
    `Lib.Ind`, so that `Lib.Stack.push` and `Lib.Queue.push` can both
-   exist and a downstream `open Lax13Proofs.Reasoning.Lib` stays
+   exist and a downstream `open Lax67Proofs.Reasoning.Lib` stays
    collision-free. Only genuinely shared infrastructure sits in `Lib`
    itself, which today is `Basic.lean`'s `upd` and `runOut`. The
    abstraction relation is the one exception: it is *named* for the
@@ -126,9 +126,9 @@ index is stated with the index as a parameter of the composite, not
 recovered from an intermediate state.
 -/
 
-namespace Lax13Proofs.Reasoning.Lib
+namespace Lax67Proofs.Reasoning.Lib
 
-open Lax13Proofs.Imp
+open Lax67Proofs.Imp
 
 variable {B n i k : ℕ} {a x r : String} {f : ℕ → ℕ} {σ : Env}
 
@@ -378,21 +378,21 @@ def demoWatched (a x r : String) : Com :=
           (.seq (unmark a x) (.seq (test a x r) (.write (.var r)))))))
 
 /-- Two scalars, one indicator array, two temporaries. -/
-def layout : Lax13Proofs.Compile.Layout := ⟨["i", "r"], ["mk"], 2⟩
+def layout : Lax67Proofs.Compile.Layout := ⟨["i", "r"], ["mk"], 2⟩
 
 /-- The machine program. -/
-def prog : Lax13.Ram.Program :=
-  Lax13Proofs.Compile.compileProgram layout (demoWatched "mk" "i" "r")
+def prog : Lax67.Ram.Program :=
+  Lax67Proofs.Compile.compileProgram layout (demoWatched "mk" "i" "r")
 
 /-- The layout covers the block, so the compilation is the one the
 simulation theorem is about and not an accident. -/
-theorem demoWatched_ok : Lax13Proofs.Compile.Com.Ok layout (demoWatched "mk" "i" "r") := by
-  simp [demoWatched, mark, unmark, test, layout, Lax13Proofs.Compile.Com.Ok,
-    Lax13Proofs.Compile.Expr.Ok]
+theorem demoWatched_ok : Lax67Proofs.Compile.Com.Ok layout (demoWatched "mk" "i" "r") := by
+  simp [demoWatched, mark, unmark, test, layout, Lax67Proofs.Compile.Com.Ok,
+    Lax67Proofs.Compile.Expr.Ok]
 
 /-- Run it: the machine's memory starts zeroed, which is an indicator of
 the empty set, so the first reading must be one and the second zero. -/
-def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax13.Ram.initState []) 0
+def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax67.Ram.initState []) 0
 
 #guard demoRun = some ([1, 0], 43)
 
@@ -408,4 +408,4 @@ end Demo
 
 end Ind
 
-end Lax13Proofs.Reasoning.Lib
+end Lax67Proofs.Reasoning.Lib

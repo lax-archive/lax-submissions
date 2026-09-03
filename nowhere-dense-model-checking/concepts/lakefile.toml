@@ -17,9 +17,9 @@ git = "https://github.com/lax-archive/lax-submissions"
 rev = "adeee8fcd52a11c46077d34657feaf48f2df7dae"
 subDir = "sparsity-lectures/concepts"
 
-# the word RAM: the machine and timed computation of submission Lax13
+# the word RAM: the machine and timed computation of submission Lax67
 [[require]]
-name = "Lax13"
+name = "Lax67"
 git = "https://github.com/lax-archive/lax-submissions"
 rev = "92ae2d6275d09b856c02d6f851755590fdcb30ed"
 subDir = "word-ram/concepts"

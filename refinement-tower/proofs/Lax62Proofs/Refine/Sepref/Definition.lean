@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Sepref.Tool
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The synthesis command: the port of `thys/sepref/Sepref_Definition.thy`,
@@ -479,7 +479,7 @@ should add. -/
 /--
 info: sepref: phase 'trans' (priority 80) failed.
 sepref: no rule translates
-  Lax62Proofs.Refine.Sepref.mopBinop Lax13Proofs.Imp.Bop.add a b
+  Lax62Proofs.Refine.Sepref.mopBinop Lax67Proofs.Imp.Bop.add a b
 under the ownership
   Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn a "a" ∗
     Lax62Proofs.Refine.Sepref.hnCtxt Lax62Proofs.Refine.Sepref.natAssn b "b"

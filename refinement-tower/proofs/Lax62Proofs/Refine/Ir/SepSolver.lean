@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Ir.Attrs
 import Lax62Proofs.Refine.Ir.Triples
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Frame inference: the `ENTAILS` / `FRAME` / `FRAME_INFER` calculus and its

@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.NREST.Foreach
 import Lax62Proofs.Refine.Sepref.Tool
 import Lax62Proofs.Refine.Sepref.Definition
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Sepref lowering for currency-vector member iteration

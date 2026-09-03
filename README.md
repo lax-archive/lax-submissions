@@ -45,7 +45,7 @@ Submission directories currently in this repository:
 - `ram-linear-time/` — **Lax11**: algorithmic experiments on a RAM —
   linear-time claims for connected components and
   Courcelle–Makowsky–Rotics model checking on bounded cliquewidth,
-  discharged via a verified IMP+ compiler on Lax13's word RAM. Also
+  discharged via a verified IMP+ compiler on Lax67's word RAM. Also
   home of the graph encoding, of the parameterized instance format, and
   of a proof of the textbook 2^k bounded search tree for vertex cover.
 

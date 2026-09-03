@@ -2,7 +2,7 @@ import Lax62Proofs.Refine.Sepref.Attrs
 import Lax62Proofs.Refine.Sepref.Basic
 import Lax62Proofs.Refine.NREST.Combinators
 import Lax62Proofs.Refine.NREST.TimeRefinement
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The ir-currency operation layer: the abstract `mop_…` operations of the

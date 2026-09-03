@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Codegen.Cash
 import Lax62Proofs.Refine.Examples.BfsQ
 import Lax62Proofs.Refine.NREST.FlattenCurrencies
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # P7 wave B — the queue BFS at the synthesis layer

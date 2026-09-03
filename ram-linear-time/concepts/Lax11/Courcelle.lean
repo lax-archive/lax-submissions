@@ -1,4 +1,4 @@
-import Lax13.RamComputes
+import Lax67.RamComputes
 import Lax11.Mso
 import Lax11.InstanceEncoding
 
@@ -91,7 +91,7 @@ word length.
 
 namespace Lax11.Courcelle
 
-open Lax13.Ram Lax13.RamComputes Lax11.Mso Lax11.InstanceEncoding
+open Lax67.Ram Lax67.RamComputes Lax11.Mso Lax11.InstanceEncoding
 
 open Classical in
 /-- **Courcelle's theorem** (Courcelle–Makowsky–Rotics form): model

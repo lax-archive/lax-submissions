@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Examples.BfsQSynth
 import Lax62Proofs.Refine.Sepref.Examples.WordAssnSpike
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The spike's measurement: the BFS fill loop's bounds pass, re-derived

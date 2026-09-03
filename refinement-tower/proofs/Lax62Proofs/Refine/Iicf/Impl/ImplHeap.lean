@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Iicf.Impl.AbsHeap
 import Lax62Proofs.Refine.Iicf.Impl.ArrayList
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Array-list implementation of priority heaps

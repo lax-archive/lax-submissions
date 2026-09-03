@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Sepref.Definition
 import Lax62Proofs.Refine.Codegen.Cash
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # `BRefine` — the bounds half of a synthesis (promoted), and its tooling
@@ -700,11 +700,11 @@ def tryClose (g : MVarId) : TermElabM Bool := do
         | assumption
         | decide
         | omega
-        | (simp only [Lax13Proofs.Imp.Bop.apply_add, Lax13Proofs.Imp.Bop.apply_sub,
-             Lax13Proofs.Imp.Bop.apply_mul]
+        | (simp only [Lax67Proofs.Imp.Bop.apply_add, Lax67Proofs.Imp.Bop.apply_sub,
+             Lax67Proofs.Imp.Bop.apply_mul]
            omega)
-        | (simp only [Lax13Proofs.Imp.Bop.apply_add, Lax13Proofs.Imp.Bop.apply_sub,
-             Lax13Proofs.Imp.Bop.apply_mul]
+        | (simp only [Lax67Proofs.Imp.Bop.apply_add, Lax67Proofs.Imp.Bop.apply_sub,
+             Lax67Proofs.Imp.Bop.apply_mul]
            assumption))))
     if rest.isEmpty then
       return true

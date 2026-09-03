@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Iicf.ExercisesA
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Recursive per-arena passes over a trail array — deviation D5's exercise
@@ -930,7 +930,7 @@ theorem trail_touched_only_bound (n arenas : ℕ) :
   `clusterProg_value` and `clusterSynth_touched_only`: all six are
   `[propext, Classical.choice, Quot.sound]` and nothing else.
 
-* **Backlog.** (i) `Lax13Proofs.lean` does not import this module; adding
+* **Backlog.** (i) `Lax67Proofs.lean` does not import this module; adding
   the line is the landing wave's, since this file was written under a
   do-not-edit-existing-files constraint. (ii) §6.4's `clusterProg` is
   costed but not synthesized end to end: `hnr_trail_init`

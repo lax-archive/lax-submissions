@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Sepref.HeapAlloc
 import Lax62Proofs.Refine.Ir.SepSolver
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The range-copy loop — `dst[0..n) := src[0..n)`

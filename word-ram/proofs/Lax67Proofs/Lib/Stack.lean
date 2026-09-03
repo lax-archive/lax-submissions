@@ -1,4 +1,4 @@
-import Lax13Proofs.Lib.Basic
+import Lax67Proofs.Lib.Basic
 
 /-!
 A stack of numbers: a backing array holding the entries bottom-first,
@@ -77,9 +77,9 @@ retrofit wants a tuple-shaped module on top of them is a question for
 P5, which will have the evidence; this module does not guess.
 -/
 
-namespace Lax13Proofs.Reasoning.Lib
+namespace Lax67Proofs.Reasoning.Lib
 
-open Lax13Proofs.Imp
+open Lax67Proofs.Imp
 
 variable {B cap V h h' i v : ℕ} {a t x r y b : String} {f : ℕ → ℕ} {σ : Env}
 
@@ -418,23 +418,23 @@ def demoWatched (a t x y r : String) : Com :=
                   (.seq (peek a t r) (.write (.var r))))))))))
 
 /-- Four scalars, one stack array, two temporaries. -/
-def layout : Lax13Proofs.Compile.Layout := ⟨["t", "x", "y", "r"], ["st"], 2⟩
+def layout : Lax67Proofs.Compile.Layout := ⟨["t", "x", "y", "r"], ["st"], 2⟩
 
 /-- The machine program. -/
-def prog : Lax13.Ram.Program :=
-  Lax13Proofs.Compile.compileProgram layout (demoWatched "st" "t" "x" "y" "r")
+def prog : Lax67.Ram.Program :=
+  Lax67Proofs.Compile.compileProgram layout (demoWatched "st" "t" "x" "y" "r")
 
 /-- The layout covers the block, so the compilation is the one the
 simulation theorem is about and not an accident. -/
 theorem demoWatched_ok :
-    Lax13Proofs.Compile.Com.Ok layout (demoWatched "st" "t" "x" "y" "r") := by
-  simp [demoWatched, push, pop, peek, layout, Lax13Proofs.Compile.Com.Ok,
-    Lax13Proofs.Compile.Expr.Ok]
+    Lax67Proofs.Compile.Com.Ok layout (demoWatched "st" "t" "x" "y" "r") := by
+  simp [demoWatched, push, pop, peek, layout, Lax67Proofs.Compile.Com.Ok,
+    Lax67Proofs.Compile.Expr.Ok]
 
 /-- Run it: the machine's memory starts zeroed, so the count starts at
 `0` and the stack starts empty. The peek must see `7`, the pop must take
 `7` off, and the second peek must see `5`. -/
-def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax13.Ram.initState []) 0
+def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax67.Ram.initState []) 0
 
 #guard demoRun = some ([7, 7, 5], 82)
 
@@ -448,4 +448,4 @@ end Demo
 
 end Stack
 
-end Lax13Proofs.Reasoning.Lib
+end Lax67Proofs.Reasoning.Lib

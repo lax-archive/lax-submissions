@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Iicf.Basic
 import Lax62Proofs.Refine.Examples.ArrayFill
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Plain arrays — the interface completions (design record §"The structures" 1)

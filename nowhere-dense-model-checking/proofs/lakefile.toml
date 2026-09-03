@@ -21,9 +21,9 @@ git = "https://github.com/lax-archive/lax-submissions"
 rev = "adeee8fcd52a11c46077d34657feaf48f2df7dae"
 subDir = "sparsity-lectures/concepts"
 
-# the word RAM: the machine and timed computation of submission Lax13
+# the word RAM: the machine and timed computation of submission Lax67
 [[require]]
-name = "Lax13"
+name = "Lax67"
 git = "https://github.com/lax-archive/lax-submissions"
 rev = "92ae2d6275d09b856c02d6f851755590fdcb30ed"
 subDir = "word-ram/concepts"
@@ -35,10 +35,10 @@ git = "https://github.com/lax-archive/lax-submissions"
 rev = "adeee8fcd52a11c46077d34657feaf48f2df7dae"
 subDir = "ram-linear-time/concepts"
 
-# the IMP+ toolkit (Spec, run_vcg, Lib) of submission Lax13's proofs,
+# the IMP+ toolkit (Spec, run_vcg, Lib) of submission Lax67's proofs,
 # consumed the same way Lax11Proofs consumes it
 [[require]]
-name = "Lax13Proofs"
+name = "Lax67Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
 rev = "92ae2d6275d09b856c02d6f851755590fdcb30ed"
 subDir = "word-ram/proofs"
@@ -51,7 +51,7 @@ rev = "adeee8fcd52a11c46077d34657feaf48f2df7dae"
 subDir = "sparsity-lectures/proofs"
 
 # the refinement tower (NREST, Autoref, Sepref, IICF, codegen) of
-# submission Lax62's proofs, built on Lax13's pipeline and consumed the
+# submission Lax62's proofs, built on Lax67's pipeline and consumed the
 # same way
 [[require]]
 name = "Lax62Proofs"

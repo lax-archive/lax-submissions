@@ -1,5 +1,5 @@
-import Lax13Proofs.Imp
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+import Lax67Proofs.Imp
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The IR: deep three-address syntax over named cells.
@@ -50,7 +50,7 @@ with the conditions taken "over cells and literals", §6's own words.
 **D-a — the nine binary operators are IMP+'s `Bop`, reused, not
 re-declared.** §6 asks for "exactly IMP+'s `Bop`, exactly the machine's
 arithmetic set". The strongest available form of "exactly" is to *be*
-the type: `Com.binop` carries a `Lax13Proofs.Imp.Bop` and the meaning of
+the type: `Com.binop` carries a `Lax67Proofs.Imp.Bop` and the meaning of
 an IR binop is `Imp.Bop.apply`, unchanged, so P5's lowering is
 `assign x (bin op …)` with literally the same `op` and no translation
 table can drift. The cost is one import of the kit's `Imp.lean` into the

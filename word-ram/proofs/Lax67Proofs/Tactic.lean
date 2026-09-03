@@ -1,4 +1,4 @@
-import Lax13Proofs.Spec
+import Lax67Proofs.Spec
 
 /-!
 `run_vcg`: symbolic execution of a concrete `Com`, as a tactic.
@@ -57,9 +57,9 @@ back its postcondition. Handed nothing, the tactic stops at the loop
 with an error naming it, rather than guessing.
 -/
 
-namespace Lax13Proofs.Reasoning
+namespace Lax67Proofs.Reasoning
 
-open Lax13Proofs.Imp
+open Lax67Proofs.Imp
 
 /-! ### The rules the walk emits
 
@@ -381,36 +381,36 @@ partial def evalE (cfg : Cfg) (mv : MVarId) (σ e : Lean.Expr) :
     TacticM (Lean.Expr × Lean.Expr) := mv.withContext do
   let e ← withReducible <| whnf e
   match e.getAppFnArgs with
-  | (``Lax13Proofs.Imp.Expr.lit, #[n]) =>
+  | (``Lax67Proofs.Imp.Expr.lit, #[n]) =>
       let h ← mkSide cfg mv (← natLt n cfg.B)
       return (n, mkAppN (mkConst ``RunStep.eval_lit) #[cfg.B, n, σ, h])
-  | (``Lax13Proofs.Imp.Expr.var, #[x]) =>
-      let v := mkApp2 (mkConst ``Lax13Proofs.Imp.Env.vars) σ x
+  | (``Lax67Proofs.Imp.Expr.var, #[x]) =>
+      let v := mkApp2 (mkConst ``Lax67Proofs.Imp.Env.vars) σ x
       let h ← mkSide cfg mv (← natLt v cfg.B)
       return (v, mkAppN (mkConst ``RunStep.eval_var) #[cfg.B, σ, x, h])
-  | (``Lax13Proofs.Imp.Expr.get, #[a, i]) =>
+  | (``Lax67Proofs.Imp.Expr.get, #[a, i]) =>
       let (k, hi) ← evalE cfg mv σ i
-      let arr := mkApp2 (mkConst ``Lax13Proofs.Imp.Env.arrs) σ a
+      let arr := mkApp2 (mkConst ``Lax67Proofs.Imp.Env.arrs) σ a
       let len ← mkAppM ``List.length #[arr]
       let hk ← mkSide cfg mv (← natLt k len)
       let v ← mkAppM ``List.getD #[arr, k, mkNatLit 0]
       let h ← mkSide cfg mv (← natLt v cfg.B)
       return (v, mkAppN (mkConst ``RunStep.eval_get) #[cfg.B, σ, a, i, k, hi, hk, h])
-  | (``Lax13Proofs.Imp.Expr.bin, #[op, e₁, e₂]) =>
+  | (``Lax67Proofs.Imp.Expr.bin, #[op, e₁, e₂]) =>
       let (m, h₁) ← evalE cfg mv σ e₁
       let (n, h₂) ← evalE cfg mv σ e₂
       let op ← withReducible <| whnf op
       let (rule, v) ← match op.getAppFnArgs with
-        | (``Lax13Proofs.Imp.Bop.add, _) => pure (``RunStep.eval_add, ← mkAppM ``HAdd.hAdd #[m, n])
-        | (``Lax13Proofs.Imp.Bop.sub, _) => pure (``RunStep.eval_sub, ← mkAppM ``HSub.hSub #[m, n])
-        | (``Lax13Proofs.Imp.Bop.mul, _) => pure (``RunStep.eval_mul, ← mkAppM ``HMul.hMul #[m, n])
-        | (``Lax13Proofs.Imp.Bop.div, _) => pure (``RunStep.eval_div, ← mkAppM ``HDiv.hDiv #[m, n])
-        | (``Lax13Proofs.Imp.Bop.and, _) => pure (``RunStep.eval_and, ← mkAppM ``Nat.land #[m, n])
-        | (``Lax13Proofs.Imp.Bop.or, _) => pure (``RunStep.eval_or, ← mkAppM ``Nat.lor #[m, n])
-        | (``Lax13Proofs.Imp.Bop.xor, _) => pure (``RunStep.eval_xor, ← mkAppM ``Nat.xor #[m, n])
-        | (``Lax13Proofs.Imp.Bop.shiftl, _) =>
+        | (``Lax67Proofs.Imp.Bop.add, _) => pure (``RunStep.eval_add, ← mkAppM ``HAdd.hAdd #[m, n])
+        | (``Lax67Proofs.Imp.Bop.sub, _) => pure (``RunStep.eval_sub, ← mkAppM ``HSub.hSub #[m, n])
+        | (``Lax67Proofs.Imp.Bop.mul, _) => pure (``RunStep.eval_mul, ← mkAppM ``HMul.hMul #[m, n])
+        | (``Lax67Proofs.Imp.Bop.div, _) => pure (``RunStep.eval_div, ← mkAppM ``HDiv.hDiv #[m, n])
+        | (``Lax67Proofs.Imp.Bop.and, _) => pure (``RunStep.eval_and, ← mkAppM ``Nat.land #[m, n])
+        | (``Lax67Proofs.Imp.Bop.or, _) => pure (``RunStep.eval_or, ← mkAppM ``Nat.lor #[m, n])
+        | (``Lax67Proofs.Imp.Bop.xor, _) => pure (``RunStep.eval_xor, ← mkAppM ``Nat.xor #[m, n])
+        | (``Lax67Proofs.Imp.Bop.shiftl, _) =>
             pure (``RunStep.eval_shiftl, ← mkAppM ``HMul.hMul #[m, ← mkAppM ``HPow.hPow #[mkNatLit 2, n]])
-        | (``Lax13Proofs.Imp.Bop.shiftr, _) =>
+        | (``Lax67Proofs.Imp.Bop.shiftr, _) =>
             pure (``RunStep.eval_shiftr, ← mkAppM ``HDiv.hDiv #[m, ← mkAppM ``HPow.hPow #[mkNatLit 2, n]])
         | _ => throwError "run_vcg: unrecognized operator {op}"
       let h ← mkSide cfg mv (← natLt v cfg.B)
@@ -466,11 +466,11 @@ involved beyond reading the local context. -/
 private partial def flattenSeq (c : Lean.Expr) : MetaM (Array Lean.Expr) := do
   let c ← whnf c
   match c.getAppFnArgs with
-  | (``Lax13Proofs.Imp.Com.seq, #[c₁, c₂]) => return #[c₁] ++ (← flattenSeq c₂)
+  | (``Lax67Proofs.Imp.Com.seq, #[c₁, c₂]) => return #[c₁] ++ (← flattenSeq c₂)
   | _ => return #[c]
 
 private def mkSeq (a b : Lean.Expr) : Lean.Expr :=
-  mkApp2 (mkConst ``Lax13Proofs.Imp.Com.seq) a b
+  mkApp2 (mkConst ``Lax67Proofs.Imp.Com.seq) a b
 
 /-- The right-nested block of a nonempty list of commands. -/
 private def nestSeq (cs : Array Lean.Expr) : Lean.Expr :=
@@ -566,42 +566,42 @@ partial def exec (cfg : Cfg) (mv : MVarId) (c σ : Lean.Expr) (specs : Array Lea
   if let some r ← useSpec cfg mv c σ specs kont then return r
   let c ← mv.withContext <| whnf c
   match c.getAppFnArgs with
-  | (``Lax13Proofs.Imp.Com.skip, _) =>
+  | (``Lax67Proofs.Imp.Com.skip, _) =>
       let val := mkAppN (mkConst ``RunStep.skip) #[cfg.B, σ]
       let (h, ty, mv) ← mkHave mv `hrun val
       let (σ', K) ← runParts ty
       kont mv σ' K h specs
-  | (``Lax13Proofs.Imp.Com.assign, #[x, e]) =>
+  | (``Lax67Proofs.Imp.Com.assign, #[x, e]) =>
       let (v, he) ← evalE cfg mv σ e
       let val := mkAppN (mkConst ``RunStep.assign) #[cfg.B, σ, x, e, v, he]
       let (h, ty, mv) ← mkHave mv `hrun val
       let (σ', K) ← runParts ty
       kont mv σ' K h specs
-  | (``Lax13Proofs.Imp.Com.store, #[a, i, e]) =>
+  | (``Lax67Proofs.Imp.Com.store, #[a, i, e]) =>
       let (idx, hi) ← evalE cfg mv σ i
       let (v, he) ← evalE cfg mv σ e
-      let arr := mkApp2 (mkConst ``Lax13Proofs.Imp.Env.arrs) σ a
+      let arr := mkApp2 (mkConst ``Lax67Proofs.Imp.Env.arrs) σ a
       let len ← mv.withContext <| mkAppM ``List.length #[arr]
       let hidx ← mkSide cfg mv (← mv.withContext <| natLt idx len)
       let val := mkAppN (mkConst ``RunStep.store) #[cfg.B, σ, a, i, e, idx, v, hi, he, hidx]
       let (h, ty, mv) ← mkHave mv `hrun val
       let (σ', K) ← runParts ty
       kont mv σ' K h specs
-  | (``Lax13Proofs.Imp.Com.read, #[x]) =>
-      let inp := mkApp (mkConst ``Lax13Proofs.Imp.Env.inp) σ
+  | (``Lax67Proofs.Imp.Com.read, #[x]) =>
+      let inp := mkApp (mkConst ``Lax67Proofs.Imp.Env.inp) σ
       let nil ← mv.withContext <| mkAppOptM ``List.nil #[mkConst ``Nat]
       let hne ← mkSide cfg mv (← mv.withContext <| mkAppM ``Ne #[inp, nil]) (← inpTac)
       let val := mkAppN (mkConst ``RunStep.read) #[cfg.B, σ, x, hne]
       let (h, ty, mv) ← mkHave mv `hrun val
       let (σ', K) ← runParts ty
       kont mv σ' K h specs
-  | (``Lax13Proofs.Imp.Com.write, #[e]) =>
+  | (``Lax67Proofs.Imp.Com.write, #[e]) =>
       let (v, he) ← evalE cfg mv σ e
       let val := mkAppN (mkConst ``RunStep.write) #[cfg.B, σ, e, v, he]
       let (h, ty, mv) ← mkHave mv `hrun val
       let (σ', K) ← runParts ty
       kont mv σ' K h specs
-  | (``Lax13Proofs.Imp.Com.seq, #[c₁, c₂]) =>
+  | (``Lax67Proofs.Imp.Com.seq, #[c₁, c₂]) =>
       -- A handed specification about a *prefix* of this block wins over
       -- walking its first command alone: the block is right-nested, so a
       -- specification about two commands is about no node of it.
@@ -614,12 +614,12 @@ partial def exec (cfg : Cfg) (mv : MVarId) (c σ : Lean.Expr) (specs : Array Lea
           let mv₃ ← dropRun mv₃ h₂
           let (σ', K) ← runParts ty
           kont mv₃ σ' K h specs₂
-  | (``Lax13Proofs.Imp.Com.ite, #[b, c₁, c₂]) =>
+  | (``Lax67Proofs.Imp.Com.ite, #[b, c₁, c₂]) =>
       let bw ← mv.withContext <| whnf b
       let (e₁, e₂, trueRule, falseRule, isEq) ← match bw.getAppFnArgs with
-        | (``Lax13Proofs.Imp.Cond.eq, #[e₁, e₂]) =>
+        | (``Lax67Proofs.Imp.Cond.eq, #[e₁, e₂]) =>
             pure (e₁, e₂, ``RunStep.cond_eq_true, ``RunStep.cond_eq_false, true)
-        | (``Lax13Proofs.Imp.Cond.lt, #[e₁, e₂]) =>
+        | (``Lax67Proofs.Imp.Cond.lt, #[e₁, e₂]) =>
             pure (e₁, e₂, ``RunStep.cond_lt_true, ``RunStep.cond_lt_false, false)
         | _ => throwError "run_vcg: cannot evaluate the condition {b}"
       let (m, h₁) ← evalE cfg mv σ e₁
@@ -858,7 +858,7 @@ is the whole proof: the tactic, and one combinator for what it leaves. -/
 
 namespace Example
 
-open Lax13Proofs.Imp
+open Lax67Proofs.Imp
 
 /-- An assignment: one goal, the postcondition in the updated
 environment. -/
@@ -1027,4 +1027,4 @@ example (B : ℕ) (helem : ∀ ρ : Env, (ρ.arrs "a").getD (ρ.vars "i") 0 < B)
 
 end Example
 
-end Lax13Proofs.Reasoning
+end Lax67Proofs.Reasoning

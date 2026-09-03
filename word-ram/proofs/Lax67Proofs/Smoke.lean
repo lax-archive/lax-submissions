@@ -1,4 +1,4 @@
-import Lax13Proofs.Transfer
+import Lax67Proofs.Transfer
 
 /-!
 The pipeline, end to end, on three programs.
@@ -25,10 +25,10 @@ nothing else — the `evalB` obligations of the rules are discharged by
 `simp` together with the functional ones, out of the same facts.
 -/
 
-namespace Lax13Proofs.Smoke
+namespace Lax67Proofs.Smoke
 
-open Lax13.Ram Lax13.RamComputes Lax13Proofs.Imp Lax13Proofs.Compile
-open Lax13Proofs.Reasoning Lax13Proofs.Transfer
+open Lax67.Ram Lax67.RamComputes Lax67Proofs.Imp Lax67Proofs.Compile
+open Lax67Proofs.Reasoning Lax67Proofs.Transfer
 
 /-! ### Echo: copy a length-prefixed input to the output -/
 
@@ -312,4 +312,4 @@ theorem prog_computesInTime {b w : ℕ} (hb : 1 < b) (hw : b + 5 ≤ 2 ^ w) :
 
 end Square
 
-end Lax13Proofs.Smoke
+end Lax67Proofs.Smoke

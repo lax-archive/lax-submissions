@@ -9,12 +9,14 @@
 #                                            # resume from a later step
 #
 # Order (each folder depends only on those before it):
-#   word-ram (Lax13)
+#   word-ram (Lax67)                                     — the superseding revision of the
+#                                                          registered lax-13; lax-13 itself can
+#                                                          never be resubmitted
 #   sparsity-lectures (Lax12)                            — pin-only refresh: requires Lax14,
 #                                                          whose record moved under it
-#   ram-linear-time (Lax11), refinement-tower (Lax62)   — both require Lax13
+#   ram-linear-time (Lax11), refinement-tower (Lax62)   — both require Lax67
 #   monadic-dependence-neighborhood-complexity (Lax5)    — pin-only refresh: requires Lax12, Lax14
-#   nowhere-dense-model-checking (Lax3)                  — requires Lax11, Lax12, Lax13, Lax14, Lax62
+#   nowhere-dense-model-checking (Lax3)                  — requires Lax11, Lax12, Lax14, Lax62, Lax67
 # finite-ramsey and the two twin-width submissions match their records and
 # depend on nothing that moves; they are not in the list.
 #

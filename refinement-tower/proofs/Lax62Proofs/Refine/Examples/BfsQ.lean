@@ -2,7 +2,7 @@ import Lax62Proofs.Refine.Examples.Bfs
 import Lax62Proofs.Refine.NREST.Automation
 import Lax62Proofs.Refine.Sepref.IrLoop
 import Lax62Proofs.Refine.Sepref.Definition
-open Lax13Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # P7 wave A — the queue-based masked depth-capped search
