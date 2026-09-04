@@ -2,7 +2,8 @@ specVersion: "1"
 id: lax-3
 leanVersion: "v4.30.0"
 mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
-title: "First-Order Model Checking on Nowhere Dense Graph Classes in Almost Linear Time"
+title: "First-Order Model Checking on Nowhere Dense Graph Classes in Almost
+  Linear Time"
 authors:
   - name: Jan Dreier
   - name: Claude Fable 5 (Anthropic)
@@ -38,3 +39,6 @@ bibEntries:
                 Chapter~4 compiled 2019-12-12},
       url    = {https://www.mimuw.edu.pl/~mp248287/sparsity2/}
     }
+issue:
+  repositoryId: 1320232165
+  number: 3
