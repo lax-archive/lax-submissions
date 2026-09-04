@@ -6,20 +6,19 @@ array of targets. Row `v` is the stretch of the target array between
 `off v` and `off (v + 1)`.
 
 This is the shape every adjacency list in the repo is stored in, and
-its two scans are the most-copied loops here. The row scan — `j` from
-`off v` to `off (v + 1)`, one slot per turn — is written from scratch
-at `Phases.lean:462` (`rowLoop_run`), `Phases3.lean:1320`
-(`rowScan3_run`) and `CCSearch.lean:301` (Lax11's `scan_run`, the body
-of `expandBody`). The owner-advancing scan — all slots once, with a
-second pointer walking the row that owns the current slot — is written
-from scratch at `Phases.lean:1004` (`descendScan_run`) and
-`VCScan.lean:59` (Lax11's `scan_run`), and the two do not even have the
-same program shape: Lax11 tests `j < off[u+1]` in an `ite` and does one
-thing per turn, Lax15 puts a whole inner `while off[u+1] < j+1` loop in
-front of the slot's work. Both pay with the same two-term potential,
-"so much per slot left, so much per row left", and both spend twenty
-lines getting from that potential to `Run.while_potential`'s
-obligation.
+its two scans are the most-copied loops over it. The row scan — `j`
+from `off v` to `off (v + 1)`, one slot per turn — is what every
+breadth-first search writes from scratch, as at `CCSearch.lean:301`
+(Lax11's `scan_run`, the body of `expandBody`). The owner-advancing
+scan — all slots once, with a second pointer walking the row that owns
+the current slot — is what every search for an uncovered edge writes
+from scratch, as at `VCScan.lean:59` (Lax11's `scan_run`), and it comes
+in two program shapes: a turn that tests `j < off[u+1]` in an `ite` and
+does one thing, as Lax11's does, or a turn that puts a whole inner
+`while off[u+1] < j+1` loop in front of the slot's work. Both pay with
+the same two-term potential, "so much per slot left, so much per row
+left", and each spends twenty lines getting from that potential to
+`Run.while_potential`'s obligation.
 
 ### The relation, and what is deliberately not in it
 
@@ -47,8 +46,7 @@ target is smaller than `V`.
   Both consumers instantiate `V` with `n`.
 * **The offsets need no separate bound**: `off i ≤ ns` follows from
   monotonicity and the extent, so `ns < B` is the only word obligation
-  the offsets carry. Lax11's `hOB` and Lax15's `hOB` are that lemma,
-  hand-written twice.
+  the offsets carry. Lax11's `hOB` is that lemma, hand-written.
 * **No scalar is named in the relation.** It is a statement about two
   arrays, so `Csr.setVar_iff` holds unconditionally — unlike `Stack`'s
   and `Queue`'s, which have to exclude their pointers.
@@ -77,9 +75,9 @@ be the row's length.
 point of the export — the caller never sees it. A turn declares how far
 it moved each pointer and what it cost, in the form
 `K' ≤ Kslot · Δj + Kown · Δu`, and the combinator does the arithmetic.
-That covers both program shapes: Lax11's turn moves one pointer or the
-other, Lax15's moves the owner several times and then the slot once,
-and both are instances of "moved `Δj` and `Δu`, paid `Kslot` and `Kown`
+That covers both program shapes: a turn that moves one pointer or the
+other, as Lax11's does, and a turn that moves the owner several times
+and then the slot once; both are instances of "moved `Δj` and `Δu`, paid `Kslot` and `Kown`
 apiece". The one thing a turn owes beyond its cost is *progress*, since
 a turn that moved nothing would have to be paid for out of nothing.
 
@@ -233,8 +231,8 @@ theorem Csr.owner_lt (hc : Csr o t nv ns V off tgt σ) (hu : u ≤ nv) (hlo : of
     omega
 
 /-- **A slot has only one owner.** Two rows containing the same slot are
-the same row, since the offsets do not decrease. This is Lax15's
-`owner_unique`, which is about offsets and not about graphs. -/
+the same row, since the offsets do not decrease. This is a fact about
+offsets and not about graphs. -/
 theorem Csr.owner_unique (hc : Csr o t nv ns V off tgt σ) {u u' : ℕ}
     (hu : u ≤ nv) (hu' : u' ≤ nv) (h1 : off u ≤ p) (h2 : p < off (u + 1))
     (h3 : off u' ≤ p) (h4 : p < off (u' + 1)) : u = u' := by
@@ -557,8 +555,7 @@ writes it down.
 The body is entirely open, which is what lets the one combinator serve
 both program shapes in the repo: a turn that either passes a slot or
 advances the owner (Lax11's `scanBody`), and a turn that advances the
-owner as often as it must and then passes a slot (Lax15's
-`ownerAdvance; slotStep`). -/
+owner as often as it must and then passes a slot. -/
 theorem ownerScan_spec (B K nv ns Kslot Kown : ℕ) (j m u : String) (c : Com)
     {P : Env → Prop} (I : Env → Prop) (hnsB : ns < B)
     (hIb : ∀ σ, I σ → σ.vars m = ns ∧ σ.vars j ≤ ns ∧ σ.vars u ≤ nv)

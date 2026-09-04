@@ -14,7 +14,7 @@ abstraction relation and its operations exported as `Spec`s with cost.
 the driver their worked examples are checked with. `Lib/Ind.lean` is the
 indicator array, and its header states the shape the remaining modules
 follow. `Lib/Stack.lean` is the search stack of both drivers, and
-`Lib/Trail.lean` the undo trail of Lax15's two rungs, whose `unwind`
+`Lib/Trail.lean` the undo trail of a backtracking search, whose `unwind`
 loop is the first loop the kit exports as a `Spec`. `Lib/Queue.lean` is
 the breadth-first queue of the two search drivers; its `drain` is the
 first loop the kit exports with the *body* left to the caller, since in

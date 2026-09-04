@@ -7,10 +7,9 @@ A straight-line block of IMP+ is proved by hand the same way every time.
 Apply `Run.assign` or `Run.store`, exhibit the value of the expression
 one subexpression at a time, prove each of those values below `B`, chain
 the pieces with `Run.seq`, split on every `ite`, and finish with
-`Run.mono` against the cost the statement announces. `countBlock_spec`
-in Lax15 is five lines of program and was twenty-one lines of proof;
-`seenBlock_spec` is seven lines of program and was fifty-one. None of it
-is mathematics.
+`Run.mono` against the cost the statement announces. Done by hand, a
+five-line block costs twenty lines of proof and a seven-line block
+fifty. None of it is mathematics.
 
 `run_vcg` does the walk. What is left for the reader is exactly the two
 things the walk cannot know: what the block *computed* — one goal per

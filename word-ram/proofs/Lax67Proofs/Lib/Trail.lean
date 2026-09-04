@@ -5,7 +5,8 @@ An undo trail: a log of the cells of a companion array that were set,
 and a height, so that everything logged above a saved height can be put
 back at once.
 
-Both of Lax15's rungs are built on one. A frame of the search marks a
+A backtracking search over a marked vertex set is built on one. A
+frame of the search marks a
 set of vertices, records each of them on the trail, and saves the trail
 height it found; popping the frame runs the height back down to what it
 saved, unmarking as it goes. The loop that does it is this module's `unwind`, and it is the reason the module exists.

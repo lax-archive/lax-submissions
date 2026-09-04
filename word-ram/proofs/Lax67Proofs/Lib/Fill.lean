@@ -7,8 +7,8 @@ counter already holds what it should.
 
 This is what a *pass* over an array leaves behind, and the repo is full
 of them — Lax11's read loop copying the tape into `off` and into `tgt`,
-its `initLab` marking every vertex unvisited, Lax15's two-array
-initialisations. Each of them wrote out the same invariant by hand
+its `initLab` marking every vertex unvisited, every array a search
+initialises. Each of them wrote out the same invariant by hand
 ("`i ≤ n`, and there is a `g` with `arrs a = arrOf n g` and `∀ j < i,
 g j = F j`"), the same one-turn extension of it, and the same reading of
 it at the exit. Here that is proved once.

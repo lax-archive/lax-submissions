@@ -4,10 +4,9 @@ import Lax67Proofs.Lib.Basic
 A first-in-first-out queue: one backing array holding the entries in
 arrival order, and two scalars, a head and a tail.
 
-Both breadth-first searches in the repo are built on one — Lax11's
-components driver (`q` with `head`/`tail`, `CC.lean:60-81`) and Lax15's
-rung-C solver (`q` with `head`/`tl`, `Program3.lean:293-337`) — and the
-two are the same program twice. An enqueue is `q[tail] := w; tail :=
+Every breadth-first search over a CSR graph is built on one — Lax11's
+components driver (`q` with `head`/`tail`, `CC.lean:60-81`) is the
+model — and the program is always the same. An enqueue is `q[tail] := w; tail :=
 tail + 1`; a turn of the search reads `q[head]` at the top of its body
 and does `head := head + 1` at the bottom; and the search itself is
 `while head < tail do body`.
@@ -47,7 +46,7 @@ of them the read at the head and the bump of the head are *not
 adjacent*, and deliberately so — the whole row scan of the dequeued
 vertex sits between them, so that "everything before `head` has been
 expanded" is an invariant of the scan too. Lax11's comment on
-`expandBody` states the reason; rung C's `expandBody3` repeats it.
+`expandBody` states the reason.
 
 So the dequeue ships as its two halves, `front` (read the head
 cell into a scalar, moving nothing) and `advance` (move the head on,
@@ -58,9 +57,9 @@ consumer can use.
 
 ### `drain`, and why it is a combinator with the body left open
 
-`drain hd tl c` is `while head < tail do c`, and both consumers have it
-as a self-contained loop: `CC.drain` and `Program3.drain3`. What they do
-*not* have in common is the body, which in each case is the algorithm —
+`drain hd tl c` is `while head < tail do c`, and a consumer has it as a
+self-contained loop, as `CC.drain` does. What consumers do *not* have
+in common is the body, which in each case is the algorithm —
 a full CSR row scan with enqueues. So the body cannot be the module's,
 and `drain_spec` takes it as a parameter, in the same shape
 `Spec.while_potential` takes it: an invariant, a potential, and a step

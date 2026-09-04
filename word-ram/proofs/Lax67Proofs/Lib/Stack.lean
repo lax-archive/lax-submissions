@@ -4,11 +4,10 @@ import Lax67Proofs.Lib.Basic
 A stack of numbers: a backing array holding the entries bottom-first,
 and a scalar holding how many there are.
 
-This is the shape of every search stack in the repo — Lax11's frame
-stack in the vertex-cover driver (`stkU`, `stkV`, `stkP` with `top`) and
-Lax15's in rung B (`stkV`, `stkB`, `stkT`, `stkP`, again with `top`) —
-and both spell out by hand what a push does to the array and what a pop
-leaves behind. Here that is proved once, and the three operations are
+This is the shape of every search stack over the machine — Lax11's
+frame stack in the vertex-cover driver (`stkU`, `stkV`, `stkP` with
+`top`) is the model — and a driver written by hand spells out what a
+push does to the array and what a pop leaves behind. Here that is proved once, and the three operations are
 exported as specifications over `Com` definitions parameterized in the
 array and the count they touch.
 

@@ -4,10 +4,10 @@ import Lax67Proofs.Lib.Basic
 Indicator arrays: an array of zeros and ones, standing for the set of
 positions it holds a one at.
 
-This is the most-used data structure in the repo — Lax11's `mark` array
-in the vertex-cover driver, its `seen` array in the connected-components
-driver, and both of Lax15's rungs — and every one of them re-derived the
-same three facts: that setting a cell to one is inserting into the set,
+This is the most-used data structure over the machine — Lax11's `mark`
+array in the vertex-cover driver and its `seen` array in the
+connected-components driver are two instances — and every driver written
+by hand re-derives the same three facts: that setting a cell to one is inserting into the set,
 that setting it to zero is erasing, and that reading a cell tells
 membership. Here they are proved once, and the three operations are
 exported as specifications over `Com` definitions parameterized in the
@@ -26,10 +26,9 @@ be slow.
 The set-shaped view is not lost, it is *derived*: `indOf` turns a
 decidable predicate into a cell function, and the lemmas below move an
 insert or an erase across it, including for a `Finset ℕ`. A consumer
-that thinks in sets pairs `Ind a n f σ` with its own reading of `f` —
-which is precisely what Lax15's `Rep` already writes,
-`τ.arrs "mark" = arrOf n MK ∧ Indicator (marked C.frames) MK`, having
-arrived at the same split by hand.
+that thinks in sets pairs `Ind a n f σ` with its own reading of `f`,
+which is the split a hand-written invariant arrives at anyway: the
+array equals `arrOf n MK`, and `MK` indicates the marked set.
 
 ### The shape every `Lib` module follows
 
@@ -229,7 +228,7 @@ theorem upd_indOf_zero (S : ℕ → Prop) [DecidablePred S] (k : ℕ) :
   funext i; by_cases h : i = k <;> simp [indOf, h]
 
 /-- The same for a set carried as a `Finset ℕ`, which is the form
-Lax11's and Lax15's invariants use. -/
+Lax11's invariants use. -/
 theorem upd_indOf_insert (M : Finset ℕ) (k : ℕ) :
     upd (indOf (· ∈ M)) k 1 = indOf (· ∈ insert k M) := by
   funext i; by_cases h : i = k <;> simp [indOf, h]
