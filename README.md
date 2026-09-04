@@ -190,9 +190,11 @@ Proof annotation:
     -/
 
 Unrecognized frontmatter keys are build errors. The `description` (main
-text) and `title` are required for concepts. Write prose as **Markdown, not
-TeX** — docstrings render no math: `*k*`-division, `2^k`, backticks for
-Lean names.
+text) and `title` are required for concepts. Write prose as **Markdown**:
+`*k*`-division, `2^k`, backticks for Lean names. Math that Markdown cannot
+carry — subscripts, longer exponents, fractions — goes in KaTeX, `$…$`
+inline and `$$…$$` displayed; the renderer typesets it in titles, abstracts
+and annotations alike. Raw HTML is escaped, never rendered: no `<sub>`.
 
 ## 4. The styleguide: elegance above all
 
@@ -400,6 +402,6 @@ Notes learned the hard way:
       structure fields, no proofs, docstrings on every declaration
 - [ ] statements phrased over canonical types, parameters via
       `HasXAtMost` + `sInf`/`sSup`
-- [ ] prose is Markdown (no TeX in docstrings); abstract reads like a
+- [ ] prose is Markdown, math beyond it in `$…$`, no raw HTML; abstract reads like a
       paper abstract
 - [ ] generated files untracked; dependency pins match the current records
