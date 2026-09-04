@@ -3,11 +3,11 @@ import Lax65.BonnetDepresGraph
 
 /-!
 ---
-title: Oriented twin-width of G_t
+title: Oriented twin-width of the Bonnet–Déprés graph
 type: lemma
 ---
-Fix a real 0 < *ε* ≤ 1/2 and an integer *t* > 1/*ε*. Then the oriented
-twin-width of *G*<sub>*t*</sub> is at most *t* + 1.
+Fix a real $0 < \varepsilon \le 1/2$ and an integer $t > 1/\varepsilon$. Then the
+oriented twin-width of $G_{t,\varepsilon}$ is at most $t + 1$.
 -/
 
 namespace Lax65.OrientedTwinWidthOfBonnetDepres

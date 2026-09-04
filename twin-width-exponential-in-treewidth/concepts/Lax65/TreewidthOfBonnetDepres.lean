@@ -3,11 +3,11 @@ import Lax65.BonnetDepresGraph
 
 /-!
 ---
-title: Treewidth of G_t
+title: Treewidth of the Bonnet–Déprés graph
 type: lemma
 ---
-Fix a real 0 < *ε* ≤ 1/2 and an integer *t* > 1/*ε*. Then *G*<sub>*t*</sub>
-has treewidth at most *t* + 1.
+Fix a real $0 < \varepsilon \le 1/2$ and an integer $t > 1/\varepsilon$. Then
+$G_{t,\varepsilon}$ has treewidth at most $t + 1$.
 -/
 
 namespace Lax65.TreewidthOfBonnetDepres

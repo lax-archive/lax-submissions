@@ -3,11 +3,11 @@ import Lax65.BonnetDepresGraph
 
 /-!
 ---
-title: Grid number of G_t
+title: Grid number of the Bonnet–Déprés graph
 type: lemma
 ---
-Fix a real 0 < *ε* ≤ 1/2 and an integer *t* > 1/*ε*. Then the grid number of
-*G*<sub>*t*</sub> is at most *t* + 2.
+Fix a real $0 < \varepsilon \le 1/2$ and an integer $t > 1/\varepsilon$. Then the grid
+number of $G_{t,\varepsilon}$ is at most $t + 2$.
 -/
 
 namespace Lax65.GridNumberOfBonnetDepres

@@ -7,14 +7,15 @@ import Lax65.GraphFamily
 title: Twin-width exponential in treewidth, as a family
 type: corollary
 ---
-For every small *ε* > 0, there is a family *F* of graphs with unbounded
-twin-width such that for every *G* ∈ *F*:
-tww(*G*) > 2^{(1−*ε*)(tw(*G*) − 1)}.
+For every small $\varepsilon > 0$, there is a family $\mathcal F$ of graphs
+with unbounded twin-width such that every $G \in \mathcal F$ satisfies
+$\operatorname{tww}(G) > 2^{(1-\varepsilon)(\operatorname{tw}(G) - 1)}$.
 
 # Formalization notes
 
-The statement is made for every *ε* > 0; the paper's "small" signals that the
-bound is only of interest for small *ε*, since it weakens as *ε* grows.
+The statement is made for every $\varepsilon > 0$; the paper's "small"
+signals that the bound is only of interest for small $\varepsilon$, since it
+weakens as $\varepsilon$ grows.
 Treewidth and twin-width are the parameters of the prerequisite submission.
 -/
 

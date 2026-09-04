@@ -3,11 +3,11 @@ import Lax65.BonnetDepresGraph
 
 /-!
 ---
-title: Twin-width of G_t
+title: Twin-width of the Bonnet–Déprés graph
 type: lemma
 ---
-Fix a real 0 < *ε* ≤ 1/2 and an integer *t* > 1/*ε*. Then *G*<sub>*t*</sub>
-has twin-width greater than 2^{(1−*ε*)*t*}.
+Fix a real $0 < \varepsilon \le 1/2$ and an integer $t > 1/\varepsilon$. Then
+$G_{t,\varepsilon}$ has twin-width greater than $2^{(1-\varepsilon)t}$.
 -/
 
 namespace Lax65.TwinWidthOfBonnetDepres

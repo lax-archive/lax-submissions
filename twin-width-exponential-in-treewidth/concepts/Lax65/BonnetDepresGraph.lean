@@ -3,21 +3,21 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 ---
-title: The graph G_{t,ε}
+title: The Bonnet–Déprés graph
 type: definition
 ---
-Fix a real *ε* and an integer *t*, and set
+Fix a real $\varepsilon$ and an integer $t$, and set
 
 $$C_t = \frac{2^{(1-\varepsilon)t}}{\varepsilon}, \qquad
 f(t) = \left\lceil 2 + C_t\, 2^{(1-\varepsilon)t\,(2 + C_t\,(2^{(1-\varepsilon)t} + 1))} \right\rceil .$$
 
-Let *T* be the full 2ᵗ-ary tree of depth *f(t)*, i.e. with root-to-leaf paths
-on *f(t)* edges, and let *X* be a set of *t* vertices, identified with [*t*].
-The vertex set of *G*<sub>*t*,*ε*</sub> is *X* ⊎ *V(T)*. Its edges are such
-that *X* is an independent set, the subgraph on *V(T)* is *T*, the root of
-*T* has no neighbour in *X*, and the 2ᵗ children of every internal node of
-*T* each have a distinct neighbourhood in *X*. This defines a single graph up
-to isomorphism.
+Let $T$ be the full $2^t$-ary tree of depth $f(t)$, i.e. with root-to-leaf
+paths on $f(t)$ edges, and let $X$ be a set of $t$ vertices, identified with
+$[t]$. The vertex set of $G_{t,\varepsilon}$ is $X \uplus V(T)$. Its edges
+are such that $X$ is an independent set, the subgraph on $V(T)$ is $T$, the
+root of $T$ has no neighbour in $X$, and the $2^t$ children of every internal
+node of $T$ each have a distinct neighbourhood in $X$. This defines a single
+graph up to isomorphism.
 
 # Formalization notes
 

@@ -7,16 +7,17 @@ import Lax65.GraphFamily
 title: Adding an apex can almost double twin-width
 type: corollary
 ---
-For every small *ε* > 0, there is a family *F* of graphs with unbounded
-twin-width such that for every *G* ∈ *F*:
-tww(*G*) > (2 − *ε*) tww(*G* − {*v*}), where *v* is a single vertex of *G*.
+For every small $\varepsilon > 0$, there is a family $\mathcal F$ of graphs
+with unbounded twin-width such that every $G \in \mathcal F$ satisfies
+$\operatorname{tww}(G) > (2 - \varepsilon)\operatorname{tww}(G - v)$ for some vertex $v$ of $G$.
 
 # Formalization notes
 
-The vertex *v* depends on *G*: for every member of the family there is a
-vertex whose deletion divides the twin-width by more than 2 − *ε*. The
-statement is made for every *ε* > 0; the paper's "small" signals that the
-bound is only of interest for small *ε*, since it weakens as *ε* grows.
+The vertex $v$ depends on $G$: for every member of the family there is a
+vertex whose deletion divides the twin-width by more than $2 - \varepsilon$.
+The statement is made for every $\varepsilon > 0$; the paper's "small"
+signals that the bound is only of interest for small $\varepsilon$, since it
+weakens as $\varepsilon$ grows.
 Twin-width is the parameter of the prerequisite submission.
 -/
 

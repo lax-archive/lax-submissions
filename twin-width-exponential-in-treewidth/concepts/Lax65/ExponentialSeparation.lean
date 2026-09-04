@@ -7,9 +7,9 @@ import Lax65.FeedbackVertexSet
 title: Twin-width can be exponential in treewidth
 type: theorem
 ---
-For every real 0 < *ε* ≤ 1/2 and integer *t* > 1/*ε*, there is a graph
-*G*<sub>*t*,*ε*</sub> with a feedback vertex set of size *t* and such that
-tww(*G*<sub>*t*,*ε*</sub>) > 2^{(1−*ε*)*t*}.
+For every real $0 < \varepsilon \le 1/2$ and integer $t > 1/\varepsilon$,
+there is a graph $G_{t,\varepsilon}$ with a feedback vertex set of size $t$
+and $\operatorname{tww}(G_{t,\varepsilon}) > 2^{(1-\varepsilon)t}$.
 
 # Formalization notes
 
