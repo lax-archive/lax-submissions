@@ -23,25 +23,24 @@ number.
 
 # Proof strategy
 
-The ported development proves the inequality for a fixed linear order.
+The internal development proves the inequality for a fixed linear order.
 The submitted parameters are minima over vertex permutations, so it is
-enough to run the ported bound under one well-chosen order: take a
+enough to run the internal bound under one well-chosen order: take a
 permutation witnessing `scol G r` and order the vertices by their
-positions under it.  Every vertex strongly reachable in the ported sense
+positions under it.  Every vertex strongly reachable in the internal sense
 is strongly reachable in the submitted sense — a path is a walk — so the
-ported `scol` under that order is at most `scol G r`; and every vertex
-weakly reachable in the submitted sense is weakly reachable in the ported
+internal `scol` under that order is at most `scol G r`; and every vertex
+weakly reachable in the submitted sense is weakly reachable in the internal
 sense — a walk bypasses to a path with a smaller support — so the
 submitted `wcol`, being the minimum over permutations, is at most the
-ported one.  The right-hand side is monotone in the strong coloring
+internal one.  The right-hand side is monotone in the strong coloring
 number, which closes the chain.
 
 # Attribution
 
 The statement is Lemma 2.6 of Chapter 2 of the sparsity lecture notes of
-Pilipczuk and Siebertz (numbering of the 2019/20 edition).  The proof is
-a port of the formalization accompanying those notes, whose per-order
-version is `Lax12Proofs.OrderedParameterBounds.wcol_le_of_scol`.
+Pilipczuk and Siebertz (numbering of the 2019/20 edition).  The internal
+per-order version is `Lax12Proofs.OrderedParameterBounds.wcol_le_of_scol`.
 -/
 theorem wcol_le_of_scol {n : ℕ} (G : SimpleGraph (Fin n)) (r : ℕ) :
     wcol G r ≤ 1 + r * (scol G r - 1) ^ r := by

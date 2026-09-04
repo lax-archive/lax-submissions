@@ -7,7 +7,7 @@ import Mathlib.Data.Finset.Sort
 /-!
 The bridge between the ordered parameters of the submitted concepts,
 which minimize over vertex permutations of `Fin n` and are stated with
-walks, and those of the ported sparsity development, which are stated for
+walks, and those of the internal sparsity development, which are stated for
 a fixed `LinearOrder` instance and with paths.
 
 Every permutation induces a linear order (`orderOfPerm`) and every linear
@@ -107,7 +107,7 @@ section Reach
 variable {m : ℕ} (H : SimpleGraph (Fin m)) (r : ℕ)
 
 /-- Walk-based weak reachability is contained in the path-based weak
-reachability of the ported development, for the rank permutation of the
+reachability of the internal development, for the rank permutation of the
 given order. -/
 theorem wreach_subset_WReach (ord : LinearOrder (Fin m)) (v : Fin m) :
     letI := ord
@@ -128,7 +128,7 @@ theorem wreach_subset_WReach (ord : LinearOrder (Fin m)) (v : Fin m) :
     exact (rankPerm_lt_iff ord _ _).1 (lt_of_le_of_ne (hwMin _ hmemWalk) hne)
 
 /-- Walk-based strong reachability is contained in the path-based strong
-reachability of the ported development, for the rank permutation of the
+reachability of the internal development, for the rank permutation of the
 given order. -/
 theorem sreach_subset_SReach (ord : LinearOrder (Fin m)) (v : Fin m) :
     letI := ord
@@ -150,7 +150,7 @@ theorem sreach_subset_SReach (ord : LinearOrder (Fin m)) (v : Fin m) :
       omega
     exact (rankPerm_lt_iff ord _ _).1 (hwMin _ hmemWalk hnev hneu)
 
-/-- Path-based strong reachability of the ported development is contained
+/-- Path-based strong reachability of the internal development is contained
 in the walk-based strong reachability for the permutation of the given
 order. -/
 theorem SReach_subset_sreach (π : Equiv.Perm (Fin m)) (v : Fin m) :
@@ -171,7 +171,7 @@ end Reach
 
 /-! ### Coloring numbers -/
 
-/-- The concept weak coloring number is at most the ported one, for the
+/-- The concept weak coloring number is at most the internal one, for the
 rank permutation of any order. -/
 theorem wcol_le_catalog {m : ℕ} (ord : LinearOrder (Fin m))
     (H : SimpleGraph (Fin m)) (r : ℕ) :
@@ -187,7 +187,7 @@ theorem wcol_le_catalog {m : ℕ} (ord : LinearOrder (Fin m))
         unfold Lax12Proofs.OrderedParameters.wcol
         exact Finset.le_sup (f := fun x => (WReach H r x).ncard) (Finset.mem_univ v)
 
-/-- The concept strong coloring number is at most the ported one, for the
+/-- The concept strong coloring number is at most the internal one, for the
 rank permutation of any order. -/
 theorem scol_le_catalog {m : ℕ} (ord : LinearOrder (Fin m))
     (H : SimpleGraph (Fin m)) (r : ℕ) :
@@ -203,7 +203,7 @@ theorem scol_le_catalog {m : ℕ} (ord : LinearOrder (Fin m))
         unfold Lax12Proofs.OrderedParameters.scol
         exact Finset.le_sup (f := fun x => (SReach H r x).ncard) (Finset.mem_univ v)
 
-/-- The ported strong coloring number under the order of a permutation is
+/-- The internal strong coloring number under the order of a permutation is
 at most any bound achieved by that permutation in the concept sense. -/
 theorem catalog_scol_le {m : ℕ} (π : Equiv.Perm (Fin m))
     (H : SimpleGraph (Fin m)) (r k : ℕ)
@@ -255,7 +255,7 @@ theorem admFamily_card_lt {π : Equiv.Perm (Fin m)} {r k : ℕ} {v : Fin m}
     exact absurd hlt (lt_irrefl (π v))
   simpa using hnm
 
-/-- Any concept admissible family bounds the ported admissibility of its
+/-- Any concept admissible family bounds the internal admissibility of its
 root from below. -/
 theorem le_admVertex_of_admFamily {ord : LinearOrder (Fin m)} {r k : ℕ} {v : Fin m}
     (F : AdmFamily G (rankPerm ord) r k v) :
@@ -292,7 +292,7 @@ theorem exists_adm_bound (G : SimpleGraph (Fin m)) (r : ℕ) :
     {k | HasAdmAtMost G r k}.Nonempty :=
   ⟨m + 1, 1, fun _ _ hj => Nat.succ_le_succ (le_of_lt (admFamily_card_lt hj.some))⟩
 
-/-- The ported admissibility under the order of a permutation is at most
+/-- The internal admissibility under the order of a permutation is at most
 any bound achieved by that permutation in the concept sense. -/
 theorem catalog_adm_le {π : Equiv.Perm (Fin m)} (G : SimpleGraph (Fin m)) (r k : ℕ)
     (hk : ∀ (v : Fin m) (j : ℕ), Nonempty (AdmFamily G π r j v) → j + 1 ≤ k) :

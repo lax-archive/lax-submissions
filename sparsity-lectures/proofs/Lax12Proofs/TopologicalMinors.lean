@@ -4,7 +4,7 @@ import Mathlib.Data.Sym.Sym2
 import Lax12Proofs.ShallowMinors
 
 /-!
-Shallow topological minor models of the ported sparsity development:
+Shallow topological minor models of the internal sparsity development:
 branch vertices plus routed paths indexed by the edge set, and the
 conversion of a depth-`d` topological minor into a depth-`d` minor.
 -/

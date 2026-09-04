@@ -10,13 +10,13 @@ import Mathlib.Combinatorics.SimpleGraph.Walk.Maps
 /-!
 The bridge between the minor notions of the submitted concepts, which
 range over the canonical carriers `Fin n` and are stated with walks, and
-the minor notions of the ported sparsity development, which range over
+the minor notions of the internal sparsity development, which range over
 arbitrary finite vertex types and are stated with paths.
 
 The shallow-minor direction is a pointwise repackaging in both
 directions: a path is a walk, and a walk bypasses to a path with a
 smaller support.  The topological direction additionally has to move
-between the concept's walks indexed by adjacent *pairs* and the ported
+between the concept's walks indexed by adjacent *pairs* and the internal
 model's routed paths indexed by the *edge set*, which is where the `Sym2`
 plumbing lives.
 
@@ -51,9 +51,9 @@ theorem edgeFinset_card_le_sq {V : Type*} [Fintype V] (H : SimpleGraph V)
     _ ≤ Fintype.card V * (Fintype.card V - 1) := Nat.div_le_self _ 2
     _ ≤ Fintype.card V * Fintype.card V := Nat.mul_le_mul_left _ (Nat.sub_le _ 1)
 
-/-! ### Shallow minors: concept versus ported development -/
+/-! ### Shallow minors: concept versus internal development -/
 
-/-- A ported minor model gives a concept minor model: paths are walks. -/
+/-- An internal minor model gives a concept minor model: paths are walks. -/
 theorem hasShallowMinor_of_isShallowMinor {V W : Type}
     {H : SimpleGraph W} {G : SimpleGraph V} {r : ℕ}
     (h : Lax12Proofs.ShallowMinors.IsShallowMinor H G r) :
@@ -68,7 +68,7 @@ theorem hasShallowMinor_of_isShallowMinor {V W : Type}
              exact ⟨p, hlen, hsupp⟩
            adj := M.branchEdge }⟩
 
-/-- A concept minor model gives a ported minor model: bypassing a walk
+/-- A concept minor model gives an internal minor model: bypassing a walk
 yields a path with a smaller support. -/
 theorem isShallowMinor_of_hasShallowMinor {V W : Type}
     {H : SimpleGraph W} {G : SimpleGraph V} {r : ℕ}
@@ -104,7 +104,7 @@ def closure (C : Lax12.GraphClasses.GraphClass) : Lax12.GraphClasses.GraphClass 
   fun m H => ∃ (n : ℕ) (G : SimpleGraph (Fin n)), C n G ∧ H ⊑ G
 
 /-- The type-polymorphic closure of a submitted class under subgraph
-copies, as a class of the ported development. -/
+copies, as a class of the internal development. -/
 def subgraphClosure (C : Lax12.GraphClasses.GraphClass) :
     Lax12Proofs.ShallowMinors.GraphClass :=
   fun {_} _ _ H => ∃ (n : ℕ) (G : SimpleGraph (Fin n)), C n G ∧ H ⊑ G
@@ -114,7 +114,7 @@ theorem subgraphClosure_self {n : ℕ} {C : Lax12.GraphClasses.GraphClass}
     {G : SimpleGraph (Fin n)} (hG : C n G) : subgraphClosure C G :=
   ⟨n, G, hG, SimpleGraph.IsContained.refl G⟩
 
-/-- Push a ported minor model through a graph copy. -/
+/-- Push an internal minor model through a graph copy. -/
 private theorem isShallowMinor_of_copy {U W V : Type}
     {K : SimpleGraph U} {H : SimpleGraph W} {G : SimpleGraph V} {r : ℕ}
     (f : SimpleGraph.Copy H G) (h : Lax12Proofs.ShallowMinors.IsShallowMinor K H r) :
@@ -157,7 +157,7 @@ theorem nowhereDense_closure {C : Lax12.GraphClasses.GraphClass}
   rintro m H ⟨n, G, hG, hHG⟩ hminor
   exact ht n G hG (hasShallowMinor_of_copy hHG hminor)
 
-/-- Nowhere denseness of a class transfers to the ported formulation for
+/-- Nowhere denseness of a class transfers to the internal formulation for
 the subgraph closure. -/
 theorem isNowhereDense_subgraphClosure {C : Lax12.GraphClasses.GraphClass}
     (h : NowhereDense C) :
@@ -179,12 +179,12 @@ theorem isNowhereDense_subgraphClosure {C : Lax12.GraphClasses.GraphClass}
       have hne : u ≠ v := by simpa using huv
       exact M.adj _ _ (by simpa using fun hc => hne (Fin.castLE_injective hle hc)) }⟩
 
-/-! ### Shallow topological minors: concept versus ported development
+/-! ### Shallow topological minors: concept versus internal development
 
-The concept indexes connecting walks by adjacent *pairs*, the ported
+The concept indexes connecting walks by adjacent *pairs*, the internal
 development by the *edge set* together with a chosen tail.  Both
 translations therefore have to name, for an ordered pair `(u, v)`, the
-edge `s(u, v)` and decide whether its ported tail is `u` or `v`. -/
+edge `s(u, v)` and decide whether its internal tail is `u` or `v`. -/
 
 section Topological
 
@@ -251,7 +251,7 @@ private theorem orientedPath_length (M : ShallowTopologicalMinorModel H G r)
   · rw [SimpleGraph.Walk.length_copy]
   · rw [SimpleGraph.Walk.length_reverse, SimpleGraph.Walk.length_copy]
 
-/-- A ported topological minor model gives a concept topological minor
+/-- An internal topological minor model gives a concept topological minor
 model. -/
 theorem hasShallowTopologicalMinor_of_isShallowTopologicalMinor
     (h : IsShallowTopologicalMinor H G r) : HasShallowTopologicalMinor G r H := by
@@ -292,7 +292,7 @@ theorem hasShallowTopologicalMinor_of_isShallowTopologicalMinor
     exact M.edgePath_interior_disjoint _ _ hne (orientedPath_support M huv hx)
       (orientedPath_support M huv' hx') (hb _) (hb _) (hb _) (hb _)
 
-/-! ### The concept model as a ported model -/
+/-! ### The concept model as an internal model -/
 
 private theorem exists_mem_sym2 (e : Sym2 W) : ∃ w : W, w ∈ e :=
   e.ind fun a b => ⟨a, Sym2.mem_mk_left a b⟩
@@ -302,7 +302,7 @@ private noncomputable def pick (e : Sym2 W) : W := (exists_mem_sym2 e).choose
 
 private theorem pick_mem (e : Sym2 W) : pick e ∈ e := (exists_mem_sym2 e).choose_spec
 
-/-- A concept topological minor model gives a ported topological minor
+/-- A concept topological minor model gives an internal topological minor
 model: the chosen end of an edge orients it, and bypassing the connecting
 walk turns it into a routed path with a smaller support. -/
 theorem isShallowTopologicalMinor_of_hasShallowTopologicalMinor

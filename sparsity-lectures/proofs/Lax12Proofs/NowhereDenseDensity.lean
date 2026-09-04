@@ -23,18 +23,18 @@ edges.
 
 # Proof strategy
 
-The ported development proves the threshold form of the theorem — fewer
+The internal development proves the threshold form of the theorem — fewer
 than `m^(1+ε)` edges once `m` is at least a bound `N` depending on the
 depth and on `ε` — for classes indexed by arbitrary finite vertex types.
 The submitted class is therefore closed under subgraph copies, whose
-ported nowhere denseness follows from the submitted one, and the ported
+internal nowhere denseness follows from the submitted one, and the internal
 theorem is instantiated at a submitted member, which lies in that
-closure.  A submitted minor model becomes a ported one by bypassing its
+closure.  A submitted minor model becomes an internal one by bypassing its
 walks to paths, and the edge counts are matched by
 `Set.ncard_coe_finset`.
 
 Threshold form to constant form: take `c = max 1 (N^2)`.  Above the
-threshold the ported bound already gives `< m^(1+ε) ≤ c * m^(1+ε)`; below
+threshold the internal bound already gives `< m^(1+ε) ≤ c * m^(1+ε)`; below
 it, a graph on `m` vertices has at most `m^2 ≤ N^2 ≤ c` edges while
 `m^(1+ε) ≥ 1`; and at `m = 0` both sides vanish.  This is the equivalence
 the notes themselves record immediately after the theorem.
@@ -43,8 +43,8 @@ the notes themselves record immediately after the theorem.
 
 The statement is Theorem 3.1 of Chapter 1 of the sparsity lecture notes
 of Pilipczuk and Siebertz (numbering of the 2019/20 edition), whose
-presented proof is credited there to Zdeněk Dvořák.  The proof is a port
-of the formalization accompanying those notes, whose threshold version is
+presented proof is credited there to Zdeněk Dvořák.  The internal
+threshold version is
 `Lax12Proofs.DensityOfShallowMinors.nd_subpolynomial_density`.
 -/
 theorem hasSubpolynomialDensity_of_nowhereDense (C : GraphClass)

@@ -6,12 +6,12 @@ import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Fintype.EquivFin
 
 /-!
-Ramsey's theorem in the finite unordered form the ported sparsity
+Ramsey's theorem in the finite unordered form the internal sparsity
 development consumes: two colors (clique versus independent set), then an
 arbitrary finite list of colors.  Nothing is proved here — both lemmas are
 transports of the statements of the `finite-ramsey` submission from its
 canonical `Fin n` carriers to the varying finite vertex types of the
-ported development, along `Fintype.equivFin`.
+internal development, along `Fintype.equivFin`.
 -/
 
 namespace Lax12Proofs.Ramsey

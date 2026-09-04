@@ -4,12 +4,10 @@ import Mathlib.Combinatorics.SimpleGraph.Paths
 import Mathlib.Tactic
 
 /-!
-Shallow minors in the idiom of the ported sparsity development: graph
+Shallow minors in the idiom of the internal sparsity development: graph
 classes over varying finite vertex types, minor models carrying paths,
 nowhere denseness by an excluded-clique bound, and the composition of
-shallow minors (`ShallowReduct`).  This is the merge of the catalog
-modules `Preliminaries`, `ShallowMinor`, `NowhereDense` and
-`ShallowMinorComposition`.
+shallow minors (`ShallowReduct`).
 -/
 
 namespace Lax12Proofs.ShallowMinors

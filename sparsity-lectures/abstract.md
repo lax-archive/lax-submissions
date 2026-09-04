@@ -14,9 +14,8 @@ almost linear neighborhood complexity.
 The concept surface has fifteen review units, eight definitions and
 seven theorems, one per notion and per result of that chain, with the
 notes' explicit bounds and all parameters as infima of explicit sets of
-naturals. The proofs port the development accompanying the lecture notes,
-and the proof network is laid out on the archive rather than folded into
-single derivations: the weak-coloring-number theorem is a glue proof
+naturals. The proof network is laid out on the archive rather than folded
+into single derivations: the weak-coloring-number theorem is a glue proof
 composing the four theorem concepts before it, the neighborhood-complexity
 theorem assumes that statement and adds the radius-1 trace counting, and
 the quasi-wideness proof assumes the two Ramsey statements of the

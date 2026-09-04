@@ -8,7 +8,7 @@ The distance-reduction steps behind uniform quasi-wideness: the odd step
 together halve the radius of a distance-independent set at the cost of a
 bounded separator.  Distance independence and vertex deletion are taken
 from the concept `Lax12.UniformQuasiWideness`; only the type-polymorphic
-uniform quasi-wideness predicate of the ported development, here called
+uniform quasi-wideness predicate of the internal development, here called
 `IsUniformlyQuasiWide`, is redeclared.
 -/
 

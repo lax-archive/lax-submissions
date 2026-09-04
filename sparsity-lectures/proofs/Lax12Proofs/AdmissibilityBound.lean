@@ -24,22 +24,22 @@ at most `1 + 6 * (r+1) * d ^ 3`.
 
 # Proof strategy
 
-The ported development proves exactly this statement, at radius `r + 1`
+The internal development proves exactly this statement, at radius `r + 1`
 with its hypothesis at depth `(r + 1) - 1 = r`, so the discharge is pure
 idiom translation and no weakening step is needed.
 
-Two translations are involved.  On the hypothesis side, the ported
+Two translations are involved.  On the hypothesis side, the internal
 topological minor model routes each *edge* of the minor along a path,
 with a chosen tail and `Sym2` plumbing, while the submitted model carries
 a walk for each adjacent *pair*; the repackaging orients an edge by its
 chosen tail and reverses the walk for the other orientation.  The
 submitted density predicate ranges over minors on the canonical carriers
-`Fin m` only, so the arbitrary finite carrier of the ported hypothesis is
+`Fin m` only, so the arbitrary finite carrier of the internal hypothesis is
 transported along `Fintype.equivFin` and the edge counts are matched by
 `Set.ncard`-to-`edgeFinset` and by invariance of the edge count under a
-graph isomorphism.  On the conclusion side, the ported theorem produces a
+graph isomorphism.  On the conclusion side, the internal theorem produces a
 linear order; its rank permutation witnesses `HasAdmAtMost`, because a
-submitted admissible family of walks bypasses to a ported admissible
+submitted admissible family of walks bypasses to an internal admissible
 family of paths of the same size, and the submitted `adm` — an infimum
 over permutations — is then bounded by `Nat.sInf_le`.
 
@@ -47,8 +47,7 @@ over permutations — is then bounded by `Nat.sInf_le`.
 
 The statement is Lemma 3.2 of Chapter 2 of the sparsity lecture notes of
 Pilipczuk and Siebertz (numbering of the 2019/20 edition), with the
-radius index shifted by one.  The proof is a port of the formalization
-accompanying those notes, whose per-order version is
+radius index shifted by one.  The internal per-order version is
 `Lax12Proofs.AdmByDensity.adm_le_of_topGrad_bound`.
 -/
 theorem adm_le_of_hasTopologicalDensityAtMost {n : ℕ} (G : SimpleGraph (Fin n))

@@ -65,8 +65,8 @@ What remains is real arithmetic.  From `d ≤ (c+1)·m^ε₁` and
 
 The statement is Theorem 3.4 of Chapter 2 of the sparsity lecture notes
 of Pilipczuk and Siebertz (numbering of the 2019/20 edition).  The
-composition reproduces, at the level of the submitted concepts, the
-corresponding derivation of the formalization accompanying those notes.
+composition reproduces that derivation at the level of the submitted
+concepts.
 -/
 theorem hasSubpolynomialWcol_of_nowhereDense (C : GraphClass)
     (hC : NowhereDense C) : HasSubpolynomialWcol C := by

@@ -4,10 +4,9 @@ import Mathlib.Data.Set.Card
 
 /-!
 The generalized coloring numbers and the admissibility of a graph
-equipped with a fixed linear order, in the idiom of the ported sparsity
+equipped with a fixed linear order, in the idiom of the internal sparsity
 development (`Finset.sup` over the vertices rather than an infimum over
-orderings).  This is the merge of the catalog modules `ColoringNumbers`
-and `Admissibility`.
+orderings).
 -/
 
 namespace Lax12Proofs.OrderedParameters

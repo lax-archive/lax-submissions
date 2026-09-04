@@ -22,25 +22,24 @@ The strong `r`-coloring number of a graph is at most
 
 # Proof strategy
 
-The ported development proves the inequality for a fixed linear order.
+The internal development proves the inequality for a fixed linear order.
 The submitted parameters are minima over vertex permutations, so it is
-enough to run the ported bound under one well-chosen order: take a
+enough to run the internal bound under one well-chosen order: take a
 permutation witnessing `adm G r`, order the vertices by their positions
 under it, and observe two inclusions.  First, every admissible family of
-paths in the ported sense is an admissible family of walks in the
-submitted sense, so the ported admissibility under that order is at most
+paths in the internal sense is an admissible family of walks in the
+submitted sense, so the internal admissibility under that order is at most
 `adm G r`.  Second, every vertex strongly reachable in the submitted
-sense is strongly reachable in the ported sense — a walk bypasses to a
+sense is strongly reachable in the internal sense — a walk bypasses to a
 path with a smaller support — so the submitted `scol`, being the minimum
-over permutations, is at most the ported one.  The right-hand side is
+over permutations, is at most the internal one.  The right-hand side is
 monotone in the admissibility, which closes the chain.
 
 # Attribution
 
 The statement is Lemma 2.5 of Chapter 2 of the sparsity lecture notes of
-Pilipczuk and Siebertz (numbering of the 2019/20 edition).  The proof is
-a port of the formalization accompanying those notes, whose per-order
-version is `Lax12Proofs.ScolByAdm.scol_le_one_add_adm_sub_one_pow`.
+Pilipczuk and Siebertz (numbering of the 2019/20 edition).  The internal
+per-order version is `Lax12Proofs.ScolByAdm.scol_le_one_add_adm_sub_one_pow`.
 -/
 theorem scol_le_of_adm {n : ℕ} (G : SimpleGraph (Fin n)) (r : ℕ) :
     scol G r ≤ 1 + (adm G r - 1) ^ r := by

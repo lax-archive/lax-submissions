@@ -10,7 +10,7 @@ The bipartite Ramsey lemma of the sparsity lecture notes (Lemma 3.9) and
 its iterated form (Lemma 3.10): a large side of a bipartite graph yields
 vertices with no common neighbor (outside a small separator), a
 1-subdivided clique, or a high-degree vertex / biclique.  Uses the
-shallow topological minor models from the ported sparsity development.
+shallow topological minor models from the internal sparsity development.
 -/
 
 namespace Lax12Proofs.BipartiteRamsey
