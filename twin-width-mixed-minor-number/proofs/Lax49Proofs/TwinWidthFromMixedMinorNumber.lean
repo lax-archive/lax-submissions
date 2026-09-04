@@ -33,8 +33,8 @@ bound onto the submitted parameters, with the same witness function.
 
 # Attribution
 
-Ported from Édouard Bonnet's formalization of Bonnet–Kim–Thomassé–Watrigant,
-*Twin-width I: Tractable FO Model Checking* (J. ACM 2022).
+Bonnet, Kim, Thomassé and Watrigant, *Twin-width I: Tractable FO Model
+Checking* (J. ACM 2022).
 -/
 theorem exists_twinWidth_bound_of_mixedMinorNumber :
     ∃ f : ℕ → ℕ, ∀ {V : Type} [Fintype V] [DecidableEq V]

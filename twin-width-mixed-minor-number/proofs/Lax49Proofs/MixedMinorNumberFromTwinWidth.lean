@@ -35,8 +35,8 @@ a column fusion. Rewriting with the two parameter equalities of
 
 # Attribution
 
-Ported from Édouard Bonnet's formalization of Bonnet–Kim–Thomassé–Watrigant,
-*Twin-width I: Tractable FO Model Checking* (J. ACM 2022).
+Bonnet, Kim, Thomassé and Watrigant, *Twin-width I: Tractable FO Model
+Checking* (J. ACM 2022).
 -/
 theorem exists_mixedMinorNumber_bound_of_twinWidth :
     ∃ g : ℕ → ℕ, ∀ {V : Type} [Fintype V] [DecidableEq V]

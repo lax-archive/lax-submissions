@@ -23,8 +23,3 @@ The mixed-minor-to-twin-width direction is transported from the mirrored
 Theorem 14 construction, the twin-width-to-mixed direction from the
 leaf-order twin-decomposition, and the headline equivalence is assembled
 from the two directional statements alone.
-
-Ported from [Édouard Bonnet's original formalization][leaning] of twin-width,
-which is MIT-licensed.
-
-[leaning]: https://github.com/EdouardBonnet/leaning
