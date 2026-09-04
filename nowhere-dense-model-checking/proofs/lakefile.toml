@@ -56,7 +56,7 @@ subDir = "sparsity-lectures/proofs"
 [[require]]
 name = "Lax62Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "5704aabc200158c0f04e9772817f98bf693a2bcb"
+rev = "4001304840876b1a2fe56edd86e9d06fc6f2cfda"
 subDir = "refinement-tower/proofs"
 
 [[lean_lib]]
