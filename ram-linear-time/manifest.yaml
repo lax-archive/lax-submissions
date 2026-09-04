@@ -82,3 +82,6 @@ bibEntries:
       year    = {2006},
       doi     = {10.1016/j.jctb.2005.10.006}
     }
+issue:
+  repositoryId: 1320232165
+  number: 11
