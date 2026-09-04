@@ -6,8 +6,7 @@ Basic facts about the component labelling, and sanity checks against
 concrete graphs: the labelling of the complete graph on two vertices is
 `[0, 0]`, that of the edgeless graph on two vertices is `[0, 1]`.
 
-The characterization `label_eq` is the form in which later work will
-use the labelling: it is the least vertex of the component, so it is
+The characterization `label_eq` is the usable form of the labelling: it is the least vertex of the component, so it is
 determined by exhibiting a reachable vertex that is at most every
 reachable vertex.
 -/

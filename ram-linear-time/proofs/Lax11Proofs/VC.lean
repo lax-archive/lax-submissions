@@ -6,7 +6,8 @@ import Lax11Proofs.VCSpec
 The driver: the bounded search tree for vertex cover, as an IMP+
 program.
 
-The algorithm is the plan's. After the read phase — the CSR block into
+The algorithm is the bounded search tree of Downey and Fellows. After
+the read phase — the CSR block into
 `off` and `tgt` exactly as in the components driver, then one more
 `read` for the budget — the machine runs one outer loop over a mode
 scalar: descend (`0`) scans for an uncovered edge and either answers,

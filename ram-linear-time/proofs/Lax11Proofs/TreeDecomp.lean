@@ -9,7 +9,7 @@ This is the pure graph theory of Courcelle's theorem: no programs, no
 logic, no types — only bags, subtrees, and the four facts that make a
 bottom-up fold over a decomposition well founded. Everything is stated
 in the shape the rest of the development needs, which is the *machine's*
-shape (plan decision C6): the nodes are the numbers `0, …, N-1`, the
+shape: the nodes are the numbers `0, …, N-1`, the
 parent map is a function `ℕ → ℕ` with `i < par i` below the root, the
 root is `N - 1` and is its own parent, and the bags are a function
 `ℕ → Finset (Fin n)`. So the same `par` that the tree-fold schema folds
@@ -33,7 +33,7 @@ The objects:
 * `top N bags v` — the highest node whose bag contains `v`, by
   `Nat.findGreatest`, so it computes. Coherence makes it the root of
   `v`'s occurrence set (`Valid.desc_top`), which is the uniqueness that
-  the driver's first label phase needs (plan C7a(a)).
+  a label pass over the decomposition needs.
 * `subtree N par bags t` — the union of the bags in `t`'s subtree, as a
   `Set (Fin n)`, because that is what the type algebra takes as a
   region.
@@ -51,7 +51,7 @@ The four facts, in the order they are used downstream:
 3. `Valid.sibling` — the subtrees of two incomparable nodes meet only
    in both bags, so sibling *interiors* are disjoint.
 4. `Valid.mem_bags_min_top` and `Valid.mem_bags_par_of_edge` — the two
-   coherence lemmas plan C7a owes the label pass: an edge is present at
+   coherence lemmas a label pass over the decomposition needs: an edge is present at
    the lower of its endpoints' top nodes, and an edge inside a bag whose
    top node is elsewhere is also inside the parent's bag. Together they
    are why bag adjacency can be computed in linear total time instead of
@@ -94,7 +94,7 @@ theorem Desc.par_of_ne (h : Desc par s t) (hne : s ≠ t) : Desc par (par s) t :
 
 /-! ### Valid decompositions
 
-The definition, in the numbering the encoding uses (plan C6): children
+The definition, in the numbering the encoding uses: children
 before parents, root `N - 1`, and — the one convention that is a choice
 rather than a fact — the root is its own parent, so that `par` is total
 on the nodes and `Desc` never escapes the tree. It costs no generality
@@ -103,7 +103,7 @@ not below itself, so a self-parenting root has no extra child), and it
 is what the encoded parent array will hold at position `N - 1`. -/
 
 /-- A valid tree decomposition of `G` with `N` nodes: `par` is a rooted
-tree in the C6 numbering, the bags cover the vertices and the edges, and
+tree in the encoding's numbering, the bags cover the vertices and the edges, and
 the occurrences of each vertex are connected. -/
 structure Valid (G : SimpleGraph (Fin n)) (N : ℕ) (par : ℕ → ℕ)
     (bags : ℕ → Finset (Fin n)) : Prop where
@@ -238,7 +238,7 @@ theorem exists_child (hV : Valid G N par bags) (hs : s < N) (hd : Desc par s t)
 
 The occurrence set of a vertex is connected, so it has a highest node,
 and every occurrence is a descendant of it. That node is what the label
-pass computes first (plan C7a(a)); here it is also the handle by which
+pass computes first; here it is also the handle by which
 every set lemma below climbs. -/
 
 end Valid

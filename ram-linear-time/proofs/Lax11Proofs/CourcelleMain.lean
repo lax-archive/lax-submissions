@@ -279,7 +279,7 @@ theorem driverCom_run {B : ℕ} {T : Table} (hT : T.Wf) (hTB : T.Fits B) {acp : 
 
 /-! ### The theorem
 
-The table of `MsoTable.lean` at `q = rank φ`, the accepting set of C9
+The table of `MsoTable.lean` at `q = rank φ`, the accepting set
 as the last of the four arrays, and the constant `10` machine steps per
 unit of IMP+ cost. -/
 
@@ -552,20 +552,13 @@ real table, and that is exactly what `val_eq_typeOf` carries. Plumbing
 is machine-checked, mathematics is proof-carried, and neither is asked
 to vouch for the other.
 
-*`TreeDecomp.lean` is kept, as theory that no longer feeds the theorem.*
-The pivot to cliquewidth stranded a file of tree-decomposition set
-theory: descendants as parent-map iteration, validity and width, the
-tree order, the highest node containing a vertex, subtrees as unions of
-bags, the separation lemma and the edge-placement lemmas. Nothing in the
-proof of the theorem imports it. It is kept anyway, and the argument is
-that it is not scaffolding but a self-contained piece of mathematics
-that happens to be stated in the shape this machine wants — nodes are
-numbers, and the parent map is the same `ℕ → ℕ` the fold sweeps.
-Deleting it would cost a future MSO₂ or treewidth submission its whole
-combinatorial layer for no gain beyond a smaller build; keeping it costs
-one file that imports only mathlib and is imported by nothing. It is
-named here so that no reviewer spends time looking for the place where
-it is used.
+*`TreeDecomp.lean` is imported by nothing in the proof.* It is a
+self-contained file of tree-decomposition theory — descendants as
+parent-map iteration, validity and width, the tree order, the highest
+node containing a vertex, subtrees as unions of bags, the separation
+lemma and the edge-placement lemmas — stated in the numbering the
+encoding uses, and it is named here so that no reviewer spends time
+looking for the place where it is used.
 
 *One device on the trust surface is not textbook.* Everything a reader
 has to check by eye — the machine, what it means to compute within a

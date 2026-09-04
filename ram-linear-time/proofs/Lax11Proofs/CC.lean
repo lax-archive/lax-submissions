@@ -130,8 +130,9 @@ theorem ccCom_ok : Com.Ok layout ccCom := by
 
 /-! ### The program, run
 
-The compiler was checked by evaluation before anything was proved,
-which is how two bugs were found at P1. `runOut` runs the machine to a
+The compiler was checked by evaluation before anything was proved, and
+evaluation caught two compiler errors that no proof had yet been asked
+to find. `runOut` runs the machine to a
 halt and reports the output tape and the number of steps; the graphs
 below are given in the concept's encoding, and the outputs are the
 least-vertex labels. The word length is fixed at sixteen, which is more

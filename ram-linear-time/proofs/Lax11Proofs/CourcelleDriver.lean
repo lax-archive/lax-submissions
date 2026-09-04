@@ -33,8 +33,8 @@ a number naming a type, and whether that type is accepting is a fact
 about the mathematics, not something the program could compute. So the
 accepting set is materialized as one more array — `arrOf T.V` of a
 noncomputable function, exactly like the three tables of the schema —
-and the epilogue is a single `write` of `acp[acc[N-1]]`. Plan decision
-C9, at three lines of program text.
+and the epilogue is a single `write` of `acp[acc[N-1]]`: the accepting
+set, at three lines of program text.
 
 *The program is generic in the table.* `driverCom` takes the table and
 the accepting-set array as data, so it can be instantiated with a

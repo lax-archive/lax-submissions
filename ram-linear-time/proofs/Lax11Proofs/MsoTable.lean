@@ -2,7 +2,7 @@ import Lax11Proofs.MsoCliqueOps
 import Lax11Proofs.TreeFold
 
 /-!
-The type table, and the main induction (plan decision C14).
+The type table, and the main induction.
 
 This is where the two workstreams meet. `TreeFold.lean` built a
 table-driven bottom-up fold over a parent-pointer tree and proved a
@@ -15,7 +15,7 @@ subexpression rooted there.
 
 Four decisions shape the file.
 
-*The table is extracted by choice, never computed* (plan C5). A
+*The table is extracted by choice, never computed.* A
 congruence says "equal types have equal images"; the corresponding
 function on types is obtained from it by `Classical.choice` over the
 set of realizations, and its only property is the one correctness
@@ -48,7 +48,7 @@ expression `e`": the op code matches and the children, in the schema's
 increasing-index order, encode the subexpressions. The main induction
 is structural on `Expr` against that relation. Turning an instance
 word into an `EncExpr` is the encoding work, and it belongs to the
-driver milestone; this file proves the mathematics against the
+driver (`CourcelleMain.lean`); this file proves the mathematics against the
 relation, which is exactly the interface `EncodesTree` already speaks.
 -/
 
@@ -144,7 +144,7 @@ inductive Val (q k : ℕ) where
 instance {q k : ℕ} : Inhabited (Val q k) := ⟨.unionEmpty⟩
 
 /-- The number of a value. Noncomputable (`Fintype.equivFin`), which is
-all C5 ever asked for: the *values* are internal to the fold, only the
+all that is needed: the *values* are internal to the fold, only the
 op codes appear in the input. -/
 noncomputable def enc {q : ℕ} (v : Val q k) : ℕ := (Fintype.equivFin (Val q k) v : ℕ)
 
@@ -368,8 +368,8 @@ theorem typeOf_relabel (q : ℕ) (i j : Fin k) (e : Expr n k) :
   rfl
 
 /-- The label classes of a `⊕` agree with a side's own classes inside
-that side — the one plumbing step the C13 list does not mention, and an
-instance of `typ_congr_inter` (M4). -/
+that side — one plumbing step beside the four congruences, and an
+instance of `typ_congr_inter`. -/
 private theorem cls_union_inter_left {e₁ e₂ : Expr n k} (h : Valid (.union e₁ e₂)) (j : Fin k) :
     ((cls (.union e₁ e₂) j : Finset (Fin n)) : Set (Fin n))
         ∩ ((verts e₁ : Finset (Fin n)) : Set (Fin n))
@@ -517,7 +517,7 @@ theorem sat_congr_typeOf {q : ℕ} (φ : MSO 0 0) (hq : rank φ ≤ q) {n₁ n�
   rw [g₁, g₂]
   exact hf
 
-/-- The accepting set of C9: the types realized by a graph satisfying
+/-- The accepting set: the types realized by a graph satisfying
 `φ`. Defined by an existential, so no choice is needed to state it and
 the driver's accept table is a membership test. -/
 def Accepts (q : ℕ) (φ : MSO 0 0) (t : T q 0 k) : Prop :=

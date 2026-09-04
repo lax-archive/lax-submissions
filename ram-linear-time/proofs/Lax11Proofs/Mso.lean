@@ -15,7 +15,7 @@ What this file adds is the machinery the proofs need and the surface
 does not carry: the `rank` equations, the relativized `SatIn`, and the
 bridge between them.
 
-*Well-scoped de Bruijn* (plan decision C2). `MSO r s` is the type of
+*Well-scoped de Bruijn.* `MSO r s` is the type of
 formulas with `r` free vertex variables and `s` free set variables, so
 `Sat` is total over a pair of environments `Fin r → Fin n` and
 `Fin s → Set (Fin n)`: there is no partial valuation, no default value,
@@ -39,7 +39,7 @@ adequacy needs no shifting anywhere.
 universal quantification are abbreviations at the point of use, not
 syntax: every one of them would add a case to the trusted recursion and
 a case to every induction, and buy nothing that `not`/`and` does not
-already give. `MSO₁` is the whole scope (plan decision C1): quantification
+already give. `MSO₁` is the whole scope: quantification
 over vertices and vertex sets, with adjacency, equality and membership as
 the atoms.
 

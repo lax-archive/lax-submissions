@@ -2,17 +2,17 @@ import Lax11Proofs.MsoComposition
 import Lax11Proofs.CliqueExpr
 
 /-!
-The congruences of the clique-width operations (plan decision C13).
+The congruences of the clique-width operations.
 
 One lemma per operation of a `k`-expression, each saying that the
 operation is a *congruence* for `q`-types: applying it to two boundaried
 regions of equal type — in two different ambient graphs, as always here —
 leaves them of equal type. Together with the type algebra of
 `MsoTypes.lean` and adequacy these are everything the main induction of
-the next milestone needs; the table itself is then extracted from
+`MsoTable.lean` needs; the table itself is then extracted from
 `Fintype` and choice, and nothing below constructs a function on types.
 
-Labels are set parameters (plan C12): a `k`-labelled region is an
+Labels are set parameters: a `k`-labelled region is an
 ambient subset with `r = 0` marks and `s = k` set parameters, so the
 outer statements of the four results have no marks at all. Marks do
 appear inside every proof — the vertex move of the rank recursion adds
@@ -20,15 +20,15 @@ one — which is why each theorem is stated for a general mark tuple and
 proved by the same induction on the rank as everything else in this
 development.
 
-The four results, in the order the plan lists them:
+The four results:
 
 * `typ_disjUnion` — disjoint union `⊕`, the `c = 0` instance of the
   cross-ambient composition lemma `typ_union_congr`. The empty mark
   pool makes the four mark clauses of `Glue` vacuous and disjointness
   makes the two overlap clauses vacuous, so eleven hypotheses collapse
   to the two that matter: the sides are disjoint, and no edge joins
-  them. This is the whole content of the cliquewidth pivot's central
-  claim, and it is nine lines.
+  them. This is the whole content of the disjoint-union case, and it is
+  nine lines.
 * `typ_setRemap` — a new set assignment in which each new parameter is
   the union of a chosen subfamily of the old ones. `typ_relabel` (`ρ`)
   and `typ_forgetAll` (the root's set-forget, which is what lets
@@ -45,10 +45,10 @@ The four results, in the order the plan lists them:
   has a type depending only on which label parameters the vertex lies
   in, not on the ambient graph and not on which vertex it is.
 
-One general fact about `typ` had to be proved on the way, and it is the
-answer to the plan's open question: **`typ` does not depend on edges
-outside the region** (`typ_congr_edges`) is *not* implicit in the M4
-development — `Atomic.of` reads `G.Adj (m i) (m j)` for arbitrary marks,
+One general fact about `typ` had to be proved on the way, and it deserves
+its own statement: **`typ` does not depend on edges
+outside the region** (`typ_congr_edges`) is *not* implicit in
+`MsoTypes.lean` — `Atomic.of` reads `G.Adj (m i) (m j)` for arbitrary marks,
 so the statement is false without the hypothesis that the marks lie in
 `X`, and with it it is the same cheap rank induction as everything else.
 The main induction will need it at every `⊕` node, where the children's
@@ -66,7 +66,7 @@ variable {n n₁ n₂ q r s : ℕ}
 
 /-! ### Only the edges inside the region matter
 
-The fact the plan asked us to check for. It is not a consequence of
+It is not a consequence of
 anything in `MsoTypes.lean`: the diagram of a type records the
 adjacencies of the *marks*, which the definition of `typ` does not
 require to lie in `X`. Under that hypothesis — which every use site
@@ -320,8 +320,8 @@ theorem typ_forgetAll (q : ℕ) {r s n₁ n₂ : ℕ}
 
 The `η` operation: join every vertex of the parameter `A i` to every
 vertex of the parameter `A j`. This is the only one of the four in which
-the ambient graph genuinely changes, and the only one the plan expected
-to have content — the content is entirely at rank `0`, where the new
+the ambient graph genuinely changes, and the only one that carries
+content of its own — the content is entirely at rank `0`, where the new
 adjacency of two marks is built from three atoms the diagram already
 records: their old adjacency, their equality, and their membership in
 the two parameters. Above rank `0` there is nothing but the usual

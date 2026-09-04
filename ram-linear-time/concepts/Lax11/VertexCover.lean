@@ -22,13 +22,12 @@ graph block sits at the same offsets as in every other statement built
 on this encoding.
 
 The format is defined here, next to the encoding it extends, and the
-statements made on it live elsewhere: the vertex cover ladder — the
-2^*k* bounded search tree and the two statements that lower its
-base — is the submission *Vertex Cover Below Two to the k*, which
-imports this format rather than restating it, so that all of its bounds
-are claims about literally the same inputs. The proof of its base rung
-is in this submission's proof package, where the format's first
-consumer was built.
+statements made on it live in the proof packages that import it rather
+than restate it, so that every bound stated over it is a claim about
+literally the same inputs. Its first consumer is in this submission's
+own proof package: the bounded search tree of Downey and Fellows, which
+decides vertex cover within *c* · 2^*k* · (|x|+1) steps over this
+format.
 -/
 
 namespace Lax11.VertexCover

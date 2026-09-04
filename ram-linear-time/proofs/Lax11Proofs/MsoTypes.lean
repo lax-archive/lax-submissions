@@ -13,8 +13,8 @@ vertices and `s` set variables are defined by recursion on `q`: a
 rank-`0` type is the atomic diagram of the marks, and a rank-`q+1` type
 is that diagram together with the *set of* rank-`q` types reachable by
 one vertex move and the set reachable by one set move. A formula of rank
-at most `q` will be shown (next milestone) to depend on nothing else,
-and the family is finite, so the finiteness that a linear-time table
+at most `q` depends on nothing else — that is adequacy, `satIn_congr` in
+`MsoAdequacy.lean` — and the family is finite, so the finiteness that a linear-time table
 needs is a two-line induction rather than a syntactic normal form.
 
 Three decisions shape the file.
@@ -45,7 +45,7 @@ whether some vertex of `X`, or some subset of `X`, has a given type;
 these are classical existentials and are not decided here. Nothing
 downstream needs `typ` to compute — the table of the eventual program is
 finite data extracted from a `Fintype`, and the program is generated
-from that data (plan decision C5). Only `T` itself, and its instances,
+from that data. Only `T` itself, and its instances,
 stay computable.
 
 What is *not* here: the MSO syntax and its semantics, adequacy, the mark
@@ -63,7 +63,7 @@ namespace Lax11Proofs.MsoTypes
 
 Rank `0` is the quantifier-free information about the marks: which pairs
 are adjacent, which pairs are equal, and which mark lies in which set of
-the assignment. MSO₁ has exactly these three atoms (plan decision C1),
+the assignment. MSO₁ has exactly these three atoms,
 so this is the whole atomic layer, and the only place an MSO₂ variant
 would ever touch. -/
 
@@ -208,7 +208,7 @@ noncomputable def Atomic.of (G : SimpleGraph (Fin n)) {r s : ℕ} (m : Fin r →
 
 open Classical in
 /-- The `q`-type of the subset `X` of `G` with marks `m` and set
-assignment `A`. Noncomputable by design (plan decision C5): the two
+assignment `A`. Noncomputable by design: the two
 move components are classical existentials. -/
 noncomputable def typ (G : SimpleGraph (Fin n)) (X : Set (Fin n)) :
     (q : ℕ) → {r s : ℕ} → (Fin r → Fin n) → (Fin s → Set (Fin n)) → T q r s

@@ -5,8 +5,7 @@ Adequacy, and the mark lemmas.
 
 Two theorems, both congruences in the sense of `MsoTypes`' closing
 paragraph — no function on types is ever constructed, here or later; the
-table is extracted at the end from `Fintype` and choice (plan decision
-C5).
+table is extracted at the end from `Fintype` and choice.
 
 *Adequacy* (`satIn_congr`): if two boundaried regions — in two
 *different* ambient graphs — have the same `q`-type, then they satisfy
@@ -31,7 +30,7 @@ them separately would be the same induction three times.
 
 The point of stating both cross-ambient — two graphs `G₁`, `G₂` on
 different vertex counts — is that the composition lemma is cross-ambient
-(plan C3.3, rev 4), so everything it consumes must be. It costs nothing:
+so everything it consumes must be. It costs nothing:
 `T q r s` mentions no graph, so the hypothesis `typ G₁ X₁ q m₁ A₁ =
 typ G₂ X₂ q m₂ A₂` typechecks as it stands.
 -/
@@ -272,7 +271,7 @@ theorem satIn_congr : ∀ {r s : ℕ} (φ : MSO r s) {q : ℕ}, rank φ ≤ q �
 
 /-- Adequacy for the whole graph: the type of the ambient graph as a
 region decides every sentence of rank at most `q`. This is the form the
-driver consumes — the accepting set of C9 is the set of types of rank
+driver consumes — the accepting set is the set of types of rank
 `q = rank φ` whose realizations satisfy `φ`. -/
 theorem sat_congr {r s : ℕ} (φ : MSO r s) {q : ℕ} (hq : rank φ ≤ q)
     {m₁ : Fin r → Fin n₁} {m₂ : Fin r → Fin n₂}

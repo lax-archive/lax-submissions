@@ -6,7 +6,7 @@ import Mathlib.Tactic
 `k`-expressions: the object the theorem takes as input.
 
 Cliquewidth replaces treewidth as the width parameter of this
-development (plan decision C11), so the decomposition the program folds
+development, so the decomposition the program folds
 over is a *`k`-expression*: a term built from labelled single vertices
 by disjoint union, edge addition between two label classes, and
 relabelling. The object itself — the syntax, the evaluator, validity,
@@ -18,7 +18,7 @@ consume. No logic, no types, no programs.
 
 Three decisions shape the surface object, all inherited from the
 ambient-subset style of `MsoTypes.lean` and all aimed at keeping it
-auditable in one sitting (plan C12):
+auditable in one sitting:
 
 *Vertices are named globally by the leaves.* A leaf carries a vertex
 name `v : Fin n`, and the vertex set of a subexpression is the finite

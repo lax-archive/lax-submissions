@@ -3,8 +3,8 @@ import Lax11Proofs.MsoAdequacy
 /-!
 Composition: gluing two regions along their marked overlap.
 
-This is the make-or-break theorem of the type algebra (plan decision
-C3.3, rev 4). Stated as a *congruence*, like everything else here: no
+This is the make-or-break theorem of the type algebra. Stated as a
+*congruence*, like everything else here: no
 function on types is constructed, and no structure is ever glued. Two
 regions `X`, `Y` of one ambient graph, overlapping only in marked
 vertices and with no edges between their private parts, have a union
@@ -18,14 +18,14 @@ tuple `m : Fin c → Fin n`, and the two sides read their own marks off it
 through index maps `σ : Fin a → Fin c` and `τ : Fin b → Fin c`; the
 hypotheses `Glue` collects (marks lie in their region, the pool is
 covered by the two sides, the overlap is marked on both sides, no edges
-between the private parts) are then all statements about the pool. Plan
-C3.3 asks for *concatenated* marks, which is the instance
+between the private parts) are then all statements about the pool. The
+concatenated-marks form is the instance
 `c = a + b, σ = Fin.castAdd, τ = Fin.natAdd` — `typ_append_congr` at the
 end of the file, five lines. The pool form is the one to prove, for two
 reasons: the vertex-move step extends the pool by `Fin.snoc` and both
 sides' index maps then re-index by lemmas that already exist
 (`snoc_comp_liftLast`, `Fin.snoc_comp_castSucc`), so the induction
-contains *no* mark bookkeeping at all; and the sequential fold of C4
+contains *no* mark bookkeeping at all; and the sequential fold of the driver
 grows one pool as it absorbs children, which is the pool form applied
 repeatedly rather than an `Fin.append`-associativity argument each time.
 
@@ -322,7 +322,7 @@ theorem pat_symm (hpat : ∀ i j, m₁ (σ i) = m₁ (τ j) ↔ m₂ (σ i) = m�
 
 /-! ### Composition -/
 
-/-- **Composition, the cross-ambient congruence** (plan C3.3, rev 4).
+/-- **Composition, the cross-ambient congruence.**
 Two regions of one graph that overlap only in marked vertices and have
 no edges between their private parts have a union whose `q`-type is
 determined by their two `q`-types and the overlap pattern — and the
@@ -492,7 +492,7 @@ theorem typ_union_congr :
 
 /-! ### Concatenated marks
 
-The interface plan C3.3 asks for: the two sides keep their own mark
+The concatenated-marks interface: the two sides keep their own mark
 tuples and the union's marks are their concatenation. It is the pool
 form at `c = a + b`, `σ = Fin.castAdd`, `τ = Fin.natAdd`, and it is a
 rewrite away. -/
@@ -515,7 +515,7 @@ theorem Glue.append {mX : Fin a → Fin n} {mY : Fin b → Fin n}
 variable {mX₁ : Fin a → Fin n₁} {mY₁ : Fin b → Fin n₁}
   {mX₂ : Fin a → Fin n₂} {mY₂ : Fin b → Fin n₂}
 
-/-- **Composition, with concatenated marks.** Plan C3.3's shape: each
+/-- **Composition, with concatenated marks.** Each
 side carries its own full mark tuple, the overlap pattern is the
 equality relation between the two tuples' positions, and the union is
 marked by the concatenation. -/
@@ -535,9 +535,9 @@ theorem typ_append_congr (q : ℕ)
   · rw [eX₁, eX₂]; exact hX
   · rw [eY₁, eY₂]; exact hY
 
-/-! ### The milestone's acceptance, and a non-vacuity check
+/-! ### The two lowest ranks, and a non-vacuity check
 
-The two ranks the checkpoint asks for, as instances of the general
+Ranks `0` and `1`, as instances of the general
 theorem. `q = 0` is composition of atomic diagrams; `q = 1` already has
 both move components, and is the case in which the whole shape of the
 induction is visible. -/
