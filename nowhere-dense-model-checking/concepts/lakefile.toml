@@ -21,7 +21,7 @@ subDir = "sparsity-lectures/concepts"
 [[require]]
 name = "Lax67"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "6238874189453158698301e7127fb4f7d9bf0858"
+rev = "9d9639601dea95e60803cfb7db1f6296478dcb42"
 subDir = "word-ram/concepts"
 
 # graph encodings (CSR) of submission Lax11
