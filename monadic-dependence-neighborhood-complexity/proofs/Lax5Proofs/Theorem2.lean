@@ -19,7 +19,8 @@ assumptions:
   - Lax5.WeaklySparseDependent.nowhereDense_of_weaklySparse_of_monadicallyDependent
 ---
 Monadically dependent graph classes have almost linear neighborhood
-complexity: Theorem 2 of DMMPT26.
+complexity: Theorem 2 of Dreier, Mählmann, McCarty, Pilipczuk and
+Toruńczyk.
 
 # Proof strategy
 

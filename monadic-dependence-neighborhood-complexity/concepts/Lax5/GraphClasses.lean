@@ -9,7 +9,7 @@ type: definition
 A graph class is a set of finite simple graphs: for each number of
 vertices *n*, some of the simple graphs on the canonical *n*-element
 vertex type. A graph class is weakly sparse if some complete bipartite
-graph K_{t,t} occurs in no member as a subgraph.
+graph $K_{t,t}$ occurs in no member as a subgraph.
 
 # Formalization notes
 

@@ -296,10 +296,9 @@ assumptions:
   - Lax14.MulticolorRamsey.exists_monochromatic_set
   - Lax14.TupleRamsey.exists_orderType_homogeneous
 ---
-Corollary 6a of DMMPT26 (Mählmann Lemma 13.7): every weakly sparse
-monadically dependent graph class is nowhere dense.  This proves the
-statement of the concept axiom
-`Lax5.WeaklySparseDependent.nowhereDense_of_weaklySparse_of_monadicallyDependent`.
+Every weakly sparse monadically dependent graph class is nowhere dense:
+Corollary 6a of Dreier, Mählmann, McCarty, Pilipczuk and Toruńczyk, by way
+of Lemma 13.7 of Mählmann's thesis.
 
 # Proof strategy
 
