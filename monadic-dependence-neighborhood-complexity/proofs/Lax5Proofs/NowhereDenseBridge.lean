@@ -7,7 +7,7 @@ import Mathlib.Data.Finset.Sort
 
 /-!
 Equivalence of the two nowhere-dense definitions in play: the
-shallow-minor grad bound of the ported sparsity development
+shallow-minor grad bound of the internal sparsity development
 (`IsNowhereDense`) and Mählmann's local, subdivision-based definition
 (`IsLocallyNowhereDense`, Def. 13.1).  The backward direction is the
 substantial one; it extracts a subdivided clique of uniform interior
@@ -28,7 +28,7 @@ that no graph in `𝓒` contains the `r`-subdivided clique of order `N_r`
 (`subdividedClique N_r r`) as a subgraph.
 
 This is Mählmann's local form of nowhere-denseness, distinct from the
-shallow-topological-minor grad bound `IsNowhereDense` of the ported
+shallow-topological-minor grad bound `IsNowhereDense` of the internal
 sparsity development. The two are classically equivalent:
 `isLocallyNowhereDense_iff_isNowhereDense` below. -/
 def IsLocallyNowhereDense (C : GraphClass) : Prop :=

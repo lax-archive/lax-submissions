@@ -14,7 +14,7 @@ Proof layout (thesis Ch. 13, with the forbidden-pattern endpoint replaced
 by an honest transduction):
 
 * Negate nowhere-denseness and cross the encoding bridge: the copy
-  closure of the class is not nowhere dense in the catalog's
+  closure of the class is not nowhere dense in the internal
   shallow-minor sense, so by `isLocallyNowhereDense_iff_isNowhereDense`
   some radius `r` admits `r`-subdivided cliques of every order as
   subgraphs of members.
@@ -47,7 +47,7 @@ private def copyClosure (C : Lax12.GraphClasses.GraphClass) :
   fun {_} _ _ H =>
     ∃ (n : ℕ) (G : SimpleGraph (Fin n)), C n G ∧ H ⊑ G
 
-/-- A submitted shallow-minor model of a clique yields a catalog one:
+/-- A submitted shallow-minor model of a clique yields an internal one:
 walks inside branch sets are replaced by their bypass paths. -/
 private theorem isShallowMinor_of_shallowMinorModel {n t r : ℕ}
     {G : SimpleGraph (Fin n)}
@@ -68,7 +68,7 @@ private theorem isShallowMinor_of_shallowMinorModel {n t r : ℕ}
   · intro u v huv
     exact M.adj u v (by simpa using huv)
 
-/-- Catalog nowhere-denseness of the copy closure transfers back to the
+/-- Internal nowhere-denseness of the copy closure transfers back to the
 submitted shallow-minor formulation. -/
 private theorem nowhereDense_of_isNowhereDense_copyClosure
     (C : Lax12.GraphClasses.GraphClass)

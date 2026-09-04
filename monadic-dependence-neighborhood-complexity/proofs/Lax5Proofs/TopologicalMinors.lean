@@ -4,13 +4,11 @@ import Mathlib.Data.Sym.Sym2
 import Lax5Proofs.ShallowMinors
 
 /-!
-Shallow topological minor models in the idiom of the ported sparsity
+Shallow topological minor models in the idiom of the internal sparsity
 development: branch vertices plus routed paths indexed by the edge set,
 and the conversion of a depth-`d` topological minor into a depth-`d`
-minor.  Re-homed verbatim from the catalog module
-`ShallowTopologicalMinor`, whose own development now lives in the
-`sparsity-lectures` submission; the only consumer left here is
-`Lax5Proofs.NowhereDenseBridge`.
+minor.  Its full development lives in the `sparsity-lectures`
+submission; the only consumer here is `Lax5Proofs.NowhereDenseBridge`.
 -/
 
 namespace Lax5Proofs.TopologicalMinors

@@ -3,14 +3,12 @@ import Mathlib.Combinatorics.SimpleGraph.Walk.Basic
 import Mathlib.Combinatorics.SimpleGraph.Paths
 
 /-!
-Shallow minors in the idiom of the ported sparsity development: graph
+Shallow minors in the idiom of the internal sparsity development: graph
 classes over varying finite vertex types, minor models carrying paths,
-and nowhere denseness by an excluded-clique bound.  Re-homed verbatim
-from the catalog modules `Preliminaries`, `ShallowMinor` and
-`NowhereDense`, whose own development now lives in the
-`sparsity-lectures` submission; what remains here is the vocabulary the
-polymorphic bridge files `Lax5Proofs.NowhereDenseBridge` and
-`Lax5Proofs.Corollary6a` are stated in.
+and nowhere denseness by an excluded-clique bound.  The full
+development lives in the `sparsity-lectures` submission; what is kept
+here is the vocabulary the polymorphic bridge files
+`Lax5Proofs.NowhereDenseBridge` and `Lax5Proofs.Corollary6a` are stated in.
 -/
 
 namespace Lax5Proofs.ShallowMinors
