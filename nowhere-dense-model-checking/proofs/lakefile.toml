@@ -18,7 +18,7 @@ path = "../concepts"
 [[require]]
 name = "Lax12"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "6c3e5208bc23359d6050d56545133db024bc5585"
+rev = "ca1f3841804b50fadfecd06b58c4620a637ada5a"
 subDir = "sparsity-lectures/concepts"
 
 # the word RAM: the machine and timed computation of submission Lax67
@@ -47,7 +47,7 @@ subDir = "word-ram/proofs"
 [[require]]
 name = "Lax12Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "6c3e5208bc23359d6050d56545133db024bc5585"
+rev = "ca1f3841804b50fadfecd06b58c4620a637ada5a"
 subDir = "sparsity-lectures/proofs"
 
 # the refinement tower (NREST, Autoref, Sepref, IICF, codegen) of
