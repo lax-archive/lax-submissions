@@ -18,7 +18,7 @@ truncation is what makes the block right: `2 ^ n % 2 ^ w` is zero for a
 shift distance of `w` or more, and division by zero is zero, which is
 what the shift of a word by that distance is anyway.
 
-The boundedness invariant is threaded through the ported induction
+The boundedness invariant is threaded through the simulation induction
 rather than routed through an auxiliary unbounded machine: there is
 exactly one place per instruction where the bound is needed, the
 hypotheses that supply it (`Layout.FitsWords` and the bounded
