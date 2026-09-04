@@ -302,11 +302,31 @@ of Lemma 13.7 of Mählmann's thesis.
 
 # Proof strategy
 
-As sketched in the module docstring.  The two Ramsey inputs are assumed
-from the `finite-ramsey` submission rather than reproved: the
-monochromatic-subset extraction inside the nowhere-dense bridge is the
-multicolour Ramsey statement, and the order-type homogeneity behind
-Lemma 13.8 is the tuple Ramsey statement. -/
+Suppose `C` is weakly sparse and monadically dependent but not nowhere
+dense. Passing to the closure of the class under graph copies and to
+the shallow-minor formulation, some radius `r` admits `r`-subdivided
+cliques of every order as subgraphs of members. At `r = 0` these are
+cliques, which contain large bicliques, contradicting weak sparseness.
+At `r ≥ 1` a subdivided clique contains a subdivided biclique of half
+the order, and the Ramsey-theoretic extraction of Lemma 13.8 of
+Mählmann's thesis turns those into either large bicliques — again
+contradicting weak sparseness — or *induced* `r'`-subdivided bicliques
+with `1 ≤ r' ≤ r`. A pigeonhole fixes one `r'` occurring at unbounded
+orders, and the star-crossing transduction then transduces all graphs
+from `C`, contradicting monadic dependence.
+
+The two Ramsey inputs are assumed from the *Finite Ramsey* submission
+rather than reproved: the monochromatic-subset extraction inside the
+nowhere-dense bridge is the multicolour Ramsey statement, and the
+order-type homogeneity behind Lemma 13.8 is the tuple Ramsey statement.
+
+# Attribution
+
+Corollary 6a of Dreier, Mählmann, McCarty, Pilipczuk and Toruńczyk,
+*Neighborhood Complexity and Radius-1 Merge-Width in Monadically
+Dependent Graph Classes* (2026). The argument is Lemma 13.7 of
+Mählmann's thesis, through its Lemma 13.8, with the forbidden-pattern
+endpoint replaced by a transduction of all graphs. -/
 theorem nowhereDense_of_weaklySparse_of_monadicallyDependent
     (C : Lax12.GraphClasses.GraphClass) (hs : WeaklySparse C)
     (hd : MonadicallyDependent C) :

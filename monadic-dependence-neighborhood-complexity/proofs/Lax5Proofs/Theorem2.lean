@@ -35,7 +35,10 @@ rather than containing their proofs.
 
 # Attribution
 
-Theorem 2 of DMMPT26 (Appendix A).
+Theorem 2 of Dreier, Mählmann, McCarty, Pilipczuk and Toruńczyk,
+*Neighborhood Complexity and Radius-1 Merge-Width in Monadically
+Dependent Graph Classes* (2026), proved there in Appendix A by the
+VC-dimension sparsification argument.
 -/
 theorem hasAlmostLinearNC_of_monadicallyDependent (C : GraphClass)
     (h : MonadicallyDependent C) : HasAlmostLinearNC C := by

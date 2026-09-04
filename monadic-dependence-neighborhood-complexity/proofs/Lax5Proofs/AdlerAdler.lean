@@ -79,13 +79,38 @@ Nowhere dense graph classes are monadically dependent (Adler–Adler).
 
 # Proof strategy
 
-The quasi-wideness input is not reproved here: uniform quasi-wideness of
-a nowhere dense class is assumed from the `sparsity-lectures` submission,
-whose nowhere-denseness definition is the very one this statement is
-phrased over, so no transport is needed —
-`Lax5Proofs.QuasiWideness` only reshapes the conclusion from `Set` to
-`Finset`.  Everything below it — shattering, local types, ball swapping
-and the pigeonhole — is proved here, as sketched in the module docstring.
+Suppose `C` transduces all graphs. Then it produces every powerset
+bipartite graph, so the edge formula of the transduction *shatters*
+arbitrarily large vertex sets in colored members of `C`: a set `W` and,
+for every Boolean pattern on `W`, a realizer whose trace on `W` is that
+pattern. Uniform quasi-wideness of a nowhere dense class finds inside
+`W`, after deleting a set `S` of at most `s` vertices, a subset of any
+requested size that is pairwise `3^(q+2)`-independent in `G − S`. Color
+every vertex by the rank-bounded local type of its decorated ball in
+`G − S`, the decorations recording the colors and the adjacency to `S`;
+there are boundedly many types, so a pigeonhole yields `s + 4` scattered
+vertices of one type. The realizers of `s + 2` chosen traces are pairwise
+distinct, so one of them avoids `S`, and the ball-swap lemma forces it to
+be `3^q`-close to one of the first two scattered vertices and to one of
+two later ones — two scattered vertices at distance at most
+`2·3^q < 3^(q+2)`, a contradiction.
+
+The quasi-wideness input is not reproved here: it is assumed from the
+*Sparsity Lectures* submission, whose nowhere-denseness definition is
+the very one this statement is phrased over, so no transport is needed
+and `Lax5Proofs.QuasiWideness` only reshapes the conclusion from `Set`
+to `Finset`. Everything below it — shattering, local types, ball
+swapping and the pigeonhole — is proved here.
+
+# Attribution
+
+The theorem is Adler and Adler's, *Interpreting nowhere dense graph
+classes as a classical notion of model theory* (European Journal of
+Combinatorics, 2014), who prove the stronger monadic stability. The
+proof here is the deletion specialization of the flip-breakability
+route: uniform quasi-wideness and a semantic locality argument, with
+rank-bounded local types of decorated balls and a ball-swap
+back-and-forth in place of Gaifman's theorem.
 -/
 theorem monadicallyDependent_of_nowhereDense
     (C : GraphClass)
