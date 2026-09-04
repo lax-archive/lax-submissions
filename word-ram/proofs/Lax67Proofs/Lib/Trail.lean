@@ -8,9 +8,7 @@ back at once.
 Both of Lax15's rungs are built on one. A frame of the search marks a
 set of vertices, records each of them on the trail, and saves the trail
 height it found; popping the frame runs the height back down to what it
-saved, unmarking as it goes. The loop that does it — `unwindLoop` at
-`Lax15Proofs/Phases.lean:254`, proved once there and used by both rungs
-— is this module's `unwind`, and it is the reason the module exists.
+saved, unmarking as it goes. The loop that does it is this module's `unwind`, and it is the reason the module exists.
 
 ### What is logged, and what undoing means
 
@@ -21,7 +19,7 @@ mark array, and the value put back is always `0`, because `0` is what an
 indicator array holds for "not in the set" and a fresh machine array is
 zeroed. A general trail would log (index, old value) pairs and need a
 second array to hold the values; neither consumer has one, and the
-campaign's watch item says to keep the relations cheap. So: one trail
+relations have to stay cheap. So: one trail
 array, one companion, and the undo value is `0`.
 
 The companion is named in the *operations and their specifications*, not

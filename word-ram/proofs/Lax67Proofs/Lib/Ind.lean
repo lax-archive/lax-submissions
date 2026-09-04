@@ -16,10 +16,9 @@ names they touch, so that one proof serves `"mark"`, `"seen"` and
 
 ### The relation, and why it is not a `Finset`
 
-The plan's table describes this module as "`Finset (Fin n)` as a 0/1
-array". It is not, and the reason is the campaign's own watch item:
-an abstraction relation that a downstream `simp` must chew on every
-line has to be cheap, and `Finset`/`Multiset` machinery is not. `Ind a
+One might expect "`Finset (Fin n)` as a 0/1 array". It is not, and the
+reason is that an abstraction relation that a downstream `simp` must
+chew on every line has to be cheap, and `Finset`/`Multiset` machinery is not. `Ind a
 n f σ` is an equation between two lists — `σ.arrs a = arrOf n f` — plus
 a bounded `∀`. Nothing in it decides membership, so nothing in it can
 be slow.

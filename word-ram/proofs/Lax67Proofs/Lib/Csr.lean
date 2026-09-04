@@ -83,10 +83,10 @@ and both are instances of "moved `Δj` and `Δu`, paid `Kslot` and `Kown`
 apiece". The one thing a turn owes beyond its cost is *progress*, since
 a turn that moved nothing would have to be paid for out of nothing.
 
-### Deviations from the plan's P4 text, and what they cost
+### Why the operations are shaped this way
 
-The plan's table names the operations "row scan, full owner-advancing
-scan". Two straight-line operations ship with them, because every one
+The two loops are the row scan and the full owner-advancing scan. Two
+straight-line operations ship with them, because every one
 of the six sites opens with them: `loadRow`, which reads a row's two
 bounds out of the offsets array, and `slot`, which reads the target at
 the pointer. Both remove a read whose obligations a caller would
@@ -116,9 +116,8 @@ has to enter as a unit. Anything reading a scalar that an earlier line
 of the same block wrote is in this position, and the fix is always the
 same — export the pair as one `Spec`.
 
-`Csr.owner_unique` is `Lax15Proofs.Phases.owner_unique` with the graph
-taken out; that copy is left in place, since removing it is a retrofit
-and this phase is not one.
+`Csr.owner_unique` is the consumers' owner-uniqueness lemma with the
+graph taken out.
 -/
 
 namespace Lax67Proofs.Reasoning.Lib

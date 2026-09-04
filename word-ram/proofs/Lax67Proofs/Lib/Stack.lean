@@ -43,8 +43,8 @@ force.
   budget, `2` for a phase bit.
 * **`h`, the height, as a parameter rather than `σ.vars t`.** The height
   is what a specification's postcondition has to *change*, and a
-  composite states it as a parameter — the P3 note's warning: an
-  abstract parameter cannot be recovered from an intermediate state.
+  composite states it as a parameter, since an abstract parameter
+  cannot be recovered from an intermediate state.
 
 ### Pre-loading a read
 
@@ -72,9 +72,9 @@ arrays sharing one count, pushed together. `push` is the single-array
 operation, so a parallel push is not four `push`es — it is one raw
 `.store` per array, which `run_vcg` walks, followed by one bump. The two
 relation lemmas that step is made of are exported for exactly that use:
-`Stack.setTop` for the store and `Stack.raise` for the bump. Whether the
-retrofit wants a tuple-shaped module on top of them is a question for
-P5, which will have the evidence; this module does not guess.
+`Stack.setTop` for the store and `Stack.raise` for the bump. No
+tuple-shaped module is built on top of them; the two lemmas are what a
+parallel push needs.
 -/
 
 namespace Lax67Proofs.Reasoning.Lib
@@ -180,7 +180,7 @@ namespace Stack
 /-! ### The list view
 
 Derived, on top of the relation and never inside it. `toList h f` is the
-stack as the plan's table names it, a `List ℕ` with the top at the end,
+stack as a list, a `List ℕ` with the top at the end,
 and it is literally the backing array cut off at the height. -/
 
 /-- The stack as a list, bottom first. -/

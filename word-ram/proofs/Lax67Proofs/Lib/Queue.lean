@@ -25,31 +25,31 @@ Three points, each forced by the consumers.
 * **The entry bound runs over `i < t`, not over the live window.**
   Neither consumer ever overwrites a cell: the queue is *not* circular
   and is not reset between searches — Lax11's header says so in as many
-  words, and rung C's says it again — so the head simply walks up
+  words — so the head simply walks up
   through the array and the consumed entries stay where they are. Both
   invariants therefore read `∀ i < tail, Q i < n`, and that is what is
   stated here. Cells at or above the tail are unconstrained, exactly as
   in `Stack`.
 * **`h` and `t` are parameters, not `σ.vars hd` and `σ.vars tl`.** They
-  are what an operation's postcondition has to *change*, and the P3
-  note's warning applies: an abstract parameter cannot be recovered from
+  are what an operation's postcondition has to *change*, and an
+  abstract parameter cannot be recovered from
   an intermediate state.
 * **`V`, the entry bound, is `Stack`'s.** A read at the head owes
   `f h < B` and the relation is opaque to the walk's discharger, so the
   bound rides in the relation and the caller supplies `V ≤ B` once.
   Both consumers instantiate it with `n`.
 
-### The operations, and why the plan's `advance` is two
+### The operations, and why a dequeue is two of them
 
-The plan's table names the operations `push`, `advance` and `drain`.
-`push` is verbatim what both consumers write. `advance` is not: in both
+The operations are `push`, `front`, `advance` and `drain`. `push` is
+verbatim what both consumers write. A dequeue is not: in both
 of them the read at the head and the bump of the head are *not
 adjacent*, and deliberately so — the whole row scan of the dequeued
 vertex sits between them, so that "everything before `head` has been
 expanded" is an invariant of the scan too. Lax11's comment on
 `expandBody` states the reason; rung C's `expandBody3` repeats it.
 
-So the plan's `advance` ships as its two halves, `front` (read the head
+So the dequeue ships as its two halves, `front` (read the head
 cell into a scalar, moving nothing) and `advance` (move the head on,
 reading nothing), and a caller whose two halves *are* adjacent writes
 `.seq (front a hd r) (advance hd)` and hands `run_vcg` both
@@ -204,8 +204,7 @@ namespace Queue
 /-! ### The list view
 
 Derived, on top of the relation and never inside it. `toList h t f` is
-the live window, oldest entry first: the queue as the plan's table names
-it. -/
+the live window, oldest entry first: the queue as a list. -/
 
 /-- The live entries, oldest first. -/
 def toList (h t : ℕ) (f : ℕ → ℕ) : List ℕ := arrOf (t - h) (fun i => f (h + i))
@@ -242,7 +241,7 @@ theorem toList_step (h t : ℕ) (f : ℕ → ℕ) (hlt : h < t) :
 
 Four commands: the array, the two pointers and the scalar an entry comes
 from or lands in are all parameters, and `drain`'s body is a parameter
-too. `front` and `advance` are the plan's `advance` in its two halves —
+too. `front` and `advance` are the two halves of a dequeue —
 see this file's header. -/
 
 /-- Put the value of `x` at the back of the queue `a` whose tail is
