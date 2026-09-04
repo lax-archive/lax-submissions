@@ -15,8 +15,8 @@ predecessors along disjoint short paths.
 
 The source lecture notes state this as Lemma 3.2 of Chapter 2 (2019/20
 edition): for every *r* and every graph *G*,
-adm_*r*(*G*) ≤ 1 + 6*r*⌈∇̃_{*r*−1}(*G*)⌉³, where ∇̃ is the topological
-grad.
+$\operatorname{adm}_r(G) \le 1 + 6r\lceil\tilde\nabla_{r-1}(G)\rceil^3$, where
+$\tilde\nabla$ is the topological grad.
 
 # Formalization notes
 
@@ -30,7 +30,7 @@ ranges over exactly the instances *r* ≥ 1 of the notes' form, which are
 all of its instances with a defined hypothesis, and the constant is the
 notes' constant with *r* read as *r*+1.
 
-The natural number *d* plays the notes' ⌈∇̃_{*r*−1}(*G*)⌉: the
+The natural number *d* plays the notes' $\lceil\tilde\nabla_{r-1}(G)\rceil$: the
 hypothesis `HasTopologicalDensityAtMost G r d` says exactly that the
 topological grad of *G* at depth *r* is at most *d*, and the notes
 instantiate their lemma at the ceiling of that grad, the least natural
