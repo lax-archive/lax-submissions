@@ -1,0 +1,29 @@
+specVersion: "1"
+id: lax-242665
+leanVersion: "v4.30.0"
+mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
+title: An Introduction to Lax
+authors:
+  - name: Jan Dreier
+bibEntries:
+  - |
+    @misc{reflowtex,
+      author       = {Pi{\'o}rkowski, Radek},
+      title        = {ReflowTeX: reflowable web rendering of {\LaTeX} sources},
+      howpublished = {\url{https://github.com/radek-p/reflowtex}},
+      year         = {2026}
+    }
+  - |
+    @inproceedings{mathlib2020,
+      author    = {The mathlib Community},
+      title     = {The Lean Mathematical Library},
+      booktitle = {Proceedings of the 9th ACM SIGPLAN International Conference
+                   on Certified Programs and Proofs (CPP 2020)},
+      pages     = {367--381},
+      year      = {2020},
+      doi       = {10.1145/3372885.3373824}
+    }
+paper:
+  folder: paper
+  main: main.tex
+  engine: pdflatex

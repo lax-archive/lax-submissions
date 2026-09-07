@@ -1,0 +1,262 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\renewcommand{\thelemma}{\Alph{lemma}}
+
+% The status badges of the website, as they appear next to a concept:
+% a green "proven" chip and a yellow "open" chip.
+\definecolor{provenbg}{HTML}{E8F5E8}
+\definecolor{provenfg}{HTML}{2D6A2D}
+\definecolor{provenborder}{HTML}{B8DAB8}
+\definecolor{openbg}{HTML}{FFF6DC}
+\definecolor{openfg}{HTML}{7A5A00}
+\definecolor{openborder}{HTML}{E8D9A6}
+\newcommand{\laxbadge}[4]{{\setlength{\fboxsep}{1.5pt}\setlength{\fboxrule}{0.4pt}%
+  \fcolorbox{#3}{#2}{\textcolor{#1}{\scriptsize\sffamily\bfseries #4}}}}
+\newcommand{\laxproven}{\laxbadge{provenfg}{provenbg}{provenborder}{THM\,\checkmark}}
+\newcommand{\laxopen}{\laxbadge{openfg}{openbg}{openborder}{THM\,$\times$}}
+
+\title{An Introduction to Lax}
+\author{Jan Dreier}
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% lax begin lax-242665
+Lax is an archive that links natural-language mathematics with Lean
+formalizations: an ``arXiv for Lean'', where submissions build on each other
+towards a shared body of formalized mathematics. This document is itself a
+Lax submission, made from the features it describes. A submission consists of
+\emph{concepts}, \emph{proofs}, and optionally a \emph{paper}, which we
+introduce in turn, using the prime numbers as a running example.
+% lax end
+\end{abstract}
+
+\section{Concepts}
+
+Lax represents mathematical definitions and claims as so-called
+\emph{concepts}. A concept pairs a natural-language statement, as it would
+appear in a paper, with a faithful encoding of that statement in Lean. This
+section is annotated with two of them, shown on the right.
+
+% lax begin Lax242665.Primes
+\begin{definition}\label{def:prime}
+  A natural number greater than $1$ is \emph{prime} if it is divisible only
+  by $1$ and by itself.
+\end{definition}
+% lax end
+
+% lax begin Lax242665.InfinitelyManyPrimes
+\begin{theorem}[Euclid]\label{thm:euclid}
+  For every natural number $n$ there is a prime $p > n$.
+\end{theorem}
+% lax end
+
+Even if you are not familiar with Lean, try reading the Lean code to see
+whether it encodes the intended meaning. One thing stands out:
+Theorem~\ref{thm:euclid} is stated not as a \texttt{theorem} but as an
+\texttt{axiom}, without a proof. That is Lax's way of separating claims from
+proofs. The correctness of a formal proof is guaranteed by Lean, so with Lax,
+readers only review the one thing Lean can \emph{not} check: whether the Lean
+code faithfully represents the intended mathematics. Concepts are therefore
+written in especially clean and simple Lean code that even non-experts can
+read. Still, mismatches can be subtle, so it is best to get many pairs of eyes
+involved. You can click on each concept to see its full context, including a
+discussion thread where the faithfulness of the encoding can be debated.
+
+Concepts can be reused across submissions, which lets established academic
+practices transfer to Lax: submissions build upon each other, and common
+standards and definitions emerge by an organic selection process. For example,
+this submission introduces prime numbers as a concept and deliberately leaves
+one claim about them open (Lemma~\ref{lem:bertrand} below); a follow-up
+submission can build on it, reuse Definition~\ref{def:prime} unchanged, and
+supply the missing proof. The definition of a prime number is of course
+already in mathlib~\cite{mathlib2020}. For notions that are not, such as
+\href{https://laxarchive.org/lax-48/}{twin-width},
+\href{https://laxarchive.org/lax-12/}{nowhere dense graph classes}, or
+\href{https://laxarchive.org/lax-67/}{the word RAM}, Lax can help the
+community agree on common standards.
+
+\section{Proofs}
+
+Let us now turn towards proofs, such as this one.
+
+% lax begin Lax242665Proofs.InfinitelyManyPrimes.exists_prime_gt
+\begin{proof}[Proof of Theorem~\ref{thm:euclid}]
+  Let $p$ be the smallest prime factor of $n! + 1$. If we had $p \leq n$,
+  then $p$ would divide $n!$, and hence also $(n! + 1) - n! = 1$, which is
+  impossible. So $p > n$.
+\end{proof}
+% lax end
+
+It is annotated on the right with the corresponding Lax proof. A
+natural-language proof serves two purposes: it convinces the reader that a
+claim holds, and it explains why. Lean proofs fully guarantee the former, but
+are not particularly suited for the latter. They can run to enormous length
+and are rarely enlightening even when short. Lax therefore treats formal proofs
+as opaque blobs.
+
+A green badge \laxproven{} next to a concept indicates that it has a complete
+formal proof; a yellow one \laxopen{} indicates that it does not. However, Lax
+does not ensure that the formal proof follows the same argument as the prose,
+or even that the prose is correct. To gain more control over the argument,
+authors may introduce concepts for the important lemmas along the way, thereby
+certifying each step of the informal proof rather than only its conclusion.
+
+Lax thereby tracks which lemmas were used to prove which other lemmas.
+Formally, each proof assumes a set of concepts and derives a target concept.
+This defines a \emph{proof network} whose nodes are concepts and whose
+hyperedges are proofs between them. For example, here
+Lemmas~\ref{lem:odd}~and~\ref{lem:bertrand} are used to derive
+Theorem~\ref{thm:oddprime}.
+
+% lax begin Lax242665.OddPrimes
+\begin{lemma}\label{lem:odd}
+  Every prime other than $2$ is odd.
+\end{lemma}
+% lax end
+
+% lax begin Lax242665Proofs.OddPrimes.odd_of_prime
+\begin{proof}
+  Let $p \neq 2$ be prime. If $p$ were even, then $2$ would divide $p$, so by
+  Definition~\ref{def:prime} we would have $2 = 1$ or $2 = p$; both are
+  impossible.
+\end{proof}
+% lax end
+
+% lax begin Lax242665.BertrandPostulate
+\begin{lemma}[Bertrand's postulate]\label{lem:bertrand}
+  For every natural number $n \geq 1$ there is a prime $p$ with
+  $n < p \leq 2n$.
+\end{lemma}
+% lax end
+
+% lax begin Lax242665.OddPrimeBetween
+\begin{theorem}\label{thm:oddprime}
+  For every natural number $n \geq 2$ there is an odd prime $p$ with
+  $n < p \leq 2n$.
+\end{theorem}
+% lax end
+
+% lax begin Lax242665Proofs.OddPrimeBetween.exists_odd_prime_between
+\begin{proof}
+  By Lemma~\ref{lem:bertrand} there is a prime $p$ with $n < p \leq 2n$.
+  Since $n \geq 2$, we have $p > 2$, so $p$ is odd by Lemma~\ref{lem:odd}.
+\end{proof}
+% lax end
+
+Note that Lemma~\ref{lem:bertrand} is not proven in this submission. A
+follow-up submission may provide a proof, thereby completing the proof of
+Theorem~\ref{thm:oddprime}, after which both are marked as proven
+\laxproven{} on the website. Clicking on a concept shows its proof network
+and its open proof obligations. Providing a concept and proving it can thus be
+separate contributions by separate people.
+
+\section{Papers}
+
+Besides concepts and proofs, a submission may carry a \LaTeX{} document, like
+this one. Comments of the form \texttt{\% lax begin <id>} and
+\texttt{\% lax end} annotate the text with Lax objects, where
+\texttt{<id>} names a concept, a
+proof, or a submission. A normal \LaTeX{} build ignores these comments, so
+you may upload the same document to arXiv and to Lax. Using Radek
+Pi\'orkowski's ReflowTeX library~\cite{reflowtex}, the \TeX{} source is
+rendered for the web as well, reflowed to the reader's screen width beside
+the as-printed PDF.
+
+\section{Submissions}
+
+Lean's mathematics traditionally lives in one curated library,
+mathlib~\cite{mathlib2020}. Lax is a bet on an alternative model: that formal
+mathematics can grow the way informal mathematics always has, as a literature
+of independent papers that build on one another without a central authority.
+
+For this to work, submissions must be stable enough to cite. As on arXiv, a
+registered submission is immutable. This submission, with id
+\texttt{lax-242665}, can be cited via
+\begin{verbatim}
+@misc{lax-242665,
+  author       = {Dreier, Jan},
+  title        = {An Introduction to Lax},
+  year         = {2026},
+  howpublished = {Lax, \url{https://laxarchive.org/lax-242665/}}
+}
+\end{verbatim}
+This also makes it easy to attach a Lax submission to a conference or journal
+paper under review; the author list may be left empty if the review process
+requires anonymity. If changes are needed, you upload a revision under a new
+id that \emph{supersedes} the old one, and the website points readers from the
+old version to the new one.
+
+Immutability has a cost on Lax that it does not have on arXiv. A Lean
+submission can only build on another if both use the same version of mathlib,
+and mathlib evolves over time. Lax therefore declares one recommended
+environment, the \emph{epoch}: a Lean toolchain together with a mathlib
+commit, currently Lean~4.30.0 with mathlib at commit \texttt{c5ea003}.
+Submissions may use any admitted environment (\texttt{lax doctor} lists
+them) and are verified and archived either way, but only submissions in the
+same environment can build on each other. The epoch advances rarely, about
+once a year. When it does, an older submission is brought forward by a
+revision, typically by whoever wants to build on it.
+
+\section{Writing a submission}
+
+The easiest way to get started is the \texttt{lax} command-line tool. Install
+it with
+\begin{verbatim}
+npm install -g lax-archive && lax doctor
+\end{verbatim}
+and, inside an empty folder of a public git repository, run
+\texttt{lax init}. This creates the layout the archive expects:
+\begin{verbatim}
+manifest.yaml     title, authors, environment, and what it builds on
+abstract.md       the summary shown on the submission's page
+LICENSE           Apache 2.0, the license of Lean and mathlib
+concepts/         a Lean package holding the concepts, one module each
+    lakefile.toml
+    ...
+proofs/           a second Lean package holding the proofs
+    lakefile.toml
+    ...
+\end{verbatim}
+Next, a prompt like ``run \texttt{lax print instructions} and formalize the
+following result'' to your favorite coding agent is usually enough to fill
+these folders with concepts and proofs. This may take several sessions,
+depending on the scope of the project. Your agent uses \texttt{lax build} to
+make sure the project is accepted by the archive, and you can run
+\texttt{lax serve} in the project folder to preview a rendering of the work
+in progress. Once you and your agent are happy, run \texttt{lax submit},
+which sends the name of the git repository (together with folder and commit
+hash) to the archive, where it is validated and published. Initially, your
+submission is in draft state and can be freely overwritten by further
+submits. When you are ready, run \texttt{lax register} to make the submission
+permanent and citable, so that others can build upon it.
+
+\begin{thebibliography}{9}
+\bibitem{mathlib2020}
+  The mathlib Community.
+  The Lean Mathematical Library.
+  In \emph{Proceedings of the 9th ACM SIGPLAN International Conference on
+  Certified Programs and Proofs (CPP 2020)}, pages 367--381, 2020.
+\bibitem{reflowtex}
+  Radek Pi\'orkowski.
+  ReflowTeX: reflowable web rendering of \LaTeX{} sources.
+  \url{https://github.com/radek-p/reflowtex}, 2026.
+\end{thebibliography}
+
+\end{document}
