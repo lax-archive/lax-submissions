@@ -1,6 +1,7 @@
 import Mathlib.Combinatorics.SimpleGraph.Basic
 import Mathlib.Data.Nat.Lattice
 import Mathlib.Data.Set.Card
+import Lax12.GraphClasses
 
 /-!
 ---
@@ -21,6 +22,10 @@ traces. On the finite carrier `Fin n` this is the exact number of distinct
 sets `N(v) ∩ A`. Working with `Set` keeps the trace literal and requires no
 decidability instances.
 
+Graph classes use the registered `Lax12.GraphClasses.GraphClass`
+representation. The neighborhood trace count itself remains defined locally
+below.
+
 The paper defines the maximum over sets of size at most `k`. On the finite
 carrier `Fin n`, the natural supremum below is that maximum. The bound is
 required only for positive `k`: at `k = 0`, the empty vertex set has the one
@@ -28,6 +33,8 @@ trace `∅`, so the literal inequality `π_G(0) ≤ c · 0` would be false.
 -/
 
 namespace Lax195003.WelzlOrdersNeighborhoodComplexity
+
+open Lax12.GraphClasses
 
 /-- The number of distinct traces `N(v) ∩ A` that vertex neighborhoods leave
 on the vertex set `A`. -/
@@ -51,8 +58,7 @@ def HasLinearNeighborhoodComplexityWithConstant {n : ℕ}
 /-- One natural constant `c ≥ 1` bounds the neighborhood complexity of every
 graph satisfying the class predicate `C` by `c · k`: the class has linear
 neighborhood complexity. -/
-def HasLinearNeighborhoodComplexity
-    (C : ∀ n : ℕ, SimpleGraph (Fin n) → Prop) : Prop :=
+def HasLinearNeighborhoodComplexity (C : GraphClass) : Prop :=
   ∃ c : ℕ, 1 ≤ c ∧
     ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
       HasLinearNeighborhoodComplexityWithConstant G c

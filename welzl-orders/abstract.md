@@ -21,10 +21,11 @@ time bound, and the requested fraction of bit strings produce an accepted
 output. The theorem instantiates this parameter with `2/3` and is stated for
 graphs in compressed sparse row form with its constants exposed.
 
-The submission reuses rather than restates two registered concepts. The word
+The submission reuses rather than restates three registered concepts. The word
 RAM and its step-count semantics are those of *The Word RAM* (Lax67), and the
 graph input is the compressed sparse row representation of *Algorithmic
-Experiments on a Random Access Machine* (Lax11). This submission defines
+Experiments on a Random Access Machine* (Lax11), while graph classes use the
+representation from *Sparsity Lectures* (Lax12). This submission still defines
 bounded walk distance, neighborhood trace count, the maximum `π_G`, and its
 linear bound directly.
 
