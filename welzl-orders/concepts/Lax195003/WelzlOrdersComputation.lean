@@ -9,11 +9,11 @@ import Mathlib.Data.Nat.Log
 title: Near-linear-time computation of Welzl orders
 type: theorem
 ---
-Let *G* be an *n*-vertex graph whose neighborhoods leave at most
-*c* · |*A*| distinct traces on every nonempty vertex set *A*, for some
-*c* ≥ 1. There is a randomized algorithm which, given *G* and *c*, runs in
-`O((n+m) log n)` time and, with probability at least 2/3, returns a total
-order of the vertices with crossing number at most 12*c*² log² *n*.
+Let *C* be a graph class whose members have neighborhood complexity at most
+*c* · *k*, for one constant *c* ≥ 1 shared by the class. There is a randomized
+algorithm which, given an *n*-vertex graph *G* in *C* and *c*, runs in
+`O((n+m) log n)` time and, with probability at least 2/3, returns a total order
+of the vertices with crossing number at most 12*c*² log² *n*.
 
 This is Theorem 1.3 of Dreier and Kuske, *Near-Linear Time Computation of
 Welzl Orders on Graphs with Linear Neighborhood Complexity* (2026).
@@ -29,9 +29,11 @@ presented by the compressed sparse row encoding of Lax11, and the program runs
 on the registered word RAM of Lax67 through this submission's finite-randomness
 predicate.
 
-The program and the constant `K` precede the graph, the linearity constant,
-the input word and the word length, so one uniform program realizes the whole
-algorithm. Its input is `c :: x` followed by the random tape. The time bound
+The program and the constant `K` precede the graph class, its shared linearity
+constant, the concrete member, the input word and the word length, so one
+uniform program realizes the whole algorithm. Membership `C n G` explicitly
+restricts the encoded inputs to graphs in the class. Its input is `c :: x`
+followed by the random tape. The time bound
 `K · (|x|+1) · (⌈log₂ n⌉+1)` is an elementary form of
 `O((n+m) log n)`: a compressed sparse row word has length `3+n+2m`, up to
 any repetitions present in the representation. The added ones make the bound
@@ -61,20 +63,23 @@ imposing an arbitrary tie-breaking rule absent from the paper.
 namespace Lax195003.WelzlOrdersComputation
 
 open Lax11.GraphEncoding
+open Lax12.GraphClasses
 open Lax67.Ram
 open Lax195003.WelzlOrdersNeighborhoodComplexity
 open Lax195003.WordRamRandomness Lax195003.WelzlOrdersInGraphs
 
 /-- **Near-linear computation of graph Welzl orders** (Dreier–Kuske,
-Theorem 1.3): one randomized word-RAM program, given a graph with neighborhood
-complexity at most `c · k`, returns with probability at least `2/3` an order
-with crossing number at most `12 · c^2 · log₂(n)^2`, within a constant
-multiple of `(n+m) log n` steps. -/
+Theorem 1.3): one randomized word-RAM program, given a member of a graph class
+whose neighborhood complexity is uniformly at most `c · k`, returns with
+probability at least `2/3` an order with crossing number at most
+`12 · c^2 · log₂(n)^2`, within a constant multiple of `(n+m) log n` steps. -/
 axiom exists_nearLinearTime_randomized_welzlOrder_program :
     ∃ (p : Program) (K : ℕ), 1 ≤ K ∧
-      ∀ (c n : ℕ) (G : SimpleGraph (Fin n)), 1 ≤ c →
-        HasLinearNeighborhoodComplexityWithConstant G c →
-        ∀ (w : ℕ) (x : List ℕ), EncodesGraph x n G →
+      ∀ (C : GraphClass) (c : ℕ), 1 ≤ c →
+        (∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
+          HasLinearNeighborhoodComplexityWithConstant G c) →
+        ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
+          ∀ (w : ℕ) (x : List ℕ), EncodesGraph x n G →
           (∀ v ∈ c :: x, K * (x.length + v + 1) ≤ 2 ^ w) →
           let T := K * (x.length + 1) * (Nat.clog 2 n + 1)
           SucceedsWithProbabilityAtLeastInTime

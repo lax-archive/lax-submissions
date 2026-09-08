@@ -1,10 +1,10 @@
 This submission states the graph form of the main result of Jan Dreier and
 Clemens Kuske, *Near-Linear Time Computation of Welzl Orders on Graphs with
-Linear Neighborhood Complexity* (arXiv:2602.14625). Given a graph whose
-neighborhoods leave at most *c* · |*A*| distinct traces on every nonempty
-vertex set *A*, a randomized algorithm computes, with probability at least
-2/3, an ordering crossed at most 12*c*² log² *n* times by every open
-1-neighborhood. Its running time is `O((n+m) log n)` on the word RAM.
+Linear Neighborhood Complexity* (arXiv:2602.14625). Given a member of a graph
+class whose neighborhood complexity is uniformly bounded by *c* · *k*, a
+randomized algorithm computes, with probability at least 2/3, an ordering
+crossed at most 12*c*² log² *n* times by every open 1-neighborhood. Its running
+time is `O((n+m) log n)` on the word RAM.
 
 The concept surface has six review units and starts with Welzl orders
 themselves: the crossing count of a set in a total order and the maximum over
