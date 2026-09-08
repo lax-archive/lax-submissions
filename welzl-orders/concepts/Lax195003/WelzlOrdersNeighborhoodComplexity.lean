@@ -1,5 +1,6 @@
-import Lax12.NeighborhoodComplexity
+import Mathlib.Combinatorics.SimpleGraph.Basic
 import Mathlib.Data.Nat.Lattice
+import Mathlib.Data.Set.Card
 
 /-!
 ---
@@ -15,11 +16,10 @@ graph in the class.
 
 # Formalization notes
 
-The count of distinct traces is the endorsed
-`Lax12.NeighborhoodComplexity.traceCount`; only the maximum over vertex sets
-and the genuinely linear graph and class bounds are introduced here. This is
-deliberately different from Lax12's class-level `HasAlmostLinearNC`, whose
-bound permits an exponent `1 + ε` and a constant depending on `ε`.
+The trace count is defined directly as the natural cardinality of the set of
+traces. On the finite carrier `Fin n` this is the exact number of distinct
+sets `N(v) ∩ A`. Working with `Set` keeps the trace literal and requires no
+decidability instances.
 
 The paper defines the maximum over sets of size at most `k`. On the finite
 carrier `Fin n`, the natural supremum below is that maximum. The bound is
@@ -29,8 +29,11 @@ trace `∅`, so the literal inequality `π_G(0) ≤ c · 0` would be false.
 
 namespace Lax195003.WelzlOrdersNeighborhoodComplexity
 
-open Lax12.GraphClasses
-open Lax12.NeighborhoodComplexity
+/-- The number of distinct traces `N(v) ∩ A` that vertex neighborhoods leave
+on the vertex set `A`. -/
+noncomputable def traceCount {V : Type*} (G : SimpleGraph V)
+    (A : Set V) : ℕ :=
+  {S : Set V | ∃ v : V, S = G.neighborSet v ∩ A}.ncard
 
 /-- The maximum number of distinct neighborhood traces on a vertex set of
 cardinality at most `k`. -/
@@ -46,8 +49,10 @@ def HasLinearNeighborhoodComplexityWithConstant {n : ℕ}
   ∀ k : ℕ, 1 ≤ k → neighborhoodComplexity G k ≤ c * k
 
 /-- One natural constant `c ≥ 1` bounds the neighborhood complexity of every
-graph in the class by `c · k`: the class has linear neighborhood complexity. -/
-def HasLinearNeighborhoodComplexity (C : GraphClass) : Prop :=
+graph satisfying the class predicate `C` by `c · k`: the class has linear
+neighborhood complexity. -/
+def HasLinearNeighborhoodComplexity
+    (C : ∀ n : ℕ, SimpleGraph (Fin n) → Prop) : Prop :=
   ∃ c : ℕ, 1 ≤ c ∧
     ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
       HasLinearNeighborhoodComplexityWithConstant G c

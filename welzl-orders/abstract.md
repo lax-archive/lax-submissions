@@ -21,13 +21,12 @@ time bound, and the requested fraction of bit strings produce an accepted
 output. The theorem instantiates this parameter with `2/3` and is stated for
 graphs in compressed sparse row form with its constants exposed.
 
-The submission reuses rather than restates three registered concepts. The
-word RAM and its step-count semantics are those of *The Word RAM* (Lax67),
-the graph input is the compressed sparse row representation of *Algorithmic
-Experiments on a Random Access Machine* (Lax11), and individual neighborhood
-traces are counted by the definition in *Sparsity Lectures* (Lax12). This
-submission defines bounded walk distance, the maximum `π_G`, and its linear
-bound separately; it does not reuse Lax12's almost-linear class predicate.
+The submission reuses rather than restates two registered concepts. The word
+RAM and its step-count semantics are those of *The Word RAM* (Lax67), and the
+graph input is the compressed sparse row representation of *Algorithmic
+Experiments on a Random Access Machine* (Lax11). This submission defines
+bounded walk distance, neighborhood trace count, the maximum `π_G`, and its
+linear bound directly.
 
 This draft contains the definition and theorem statements only. Its proof
 obligation is intentionally open while the concept files are reviewed and

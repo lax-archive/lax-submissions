@@ -23,12 +23,11 @@ Welzl Orders on Graphs with Linear Neighborhood Complexity* (2026).
 Linear neighborhood complexity is the separate definition
 `Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexity`
 in this submission, together with the per-graph predicate used below. They
-define the graph's shatter function from the endorsed neighborhood trace count
-of *Sparsity Lectures* (Lax12), and require the genuinely linear bound
-`π_G(k) ≤ c · k`; they are not Lax12's almost-linear class predicate. The graph
-is presented by the compressed sparse row encoding of Lax11, and the program
-runs on the registered word RAM of Lax67 through this submission's
-finite-randomness predicate.
+define the neighborhood trace count and the graph's shatter function directly,
+and require the genuinely linear bound `π_G(k) ≤ c · k`. The graph is
+presented by the compressed sparse row encoding of Lax11, and the program runs
+on the registered word RAM of Lax67 through this submission's finite-randomness
+predicate.
 
 The program and the constant `K` precede the graph, the linearity constant,
 the input word and the word length, so one uniform program realizes the whole
