@@ -1,5 +1,5 @@
 import Lax195003.WordRamRandomness
-import Lax195003.WelzlOrders
+import Lax195003.WelzlOrdersInGraphs
 import Lax195003.WelzlOrdersLinearNeighborhoodComplexity
 import Lax11.GraphEncoding
 import Mathlib.Data.Nat.Log
@@ -54,9 +54,9 @@ The output is relational rather than a preselected function of the graph:
 any encoded vertex order meeting the paper's explicit crossing bound for the
 open radius-one neighborhood system is a successful output. Radius one is the
 ordinary open-neighborhood specialization of the general `k`-neighborhood
-Welzl-order definition. Thus the statement preserves the mathematical content
-of a randomized search algorithm without imposing an arbitrary tie-breaking
-rule absent from the paper.
+Welzl-order definition in `Lax195003.WelzlOrdersInGraphs`. Thus the statement
+preserves the mathematical content of a randomized search algorithm without
+imposing an arbitrary tie-breaking rule absent from the paper.
 -/
 
 namespace Lax195003.WelzlOrdersComputation
@@ -64,7 +64,7 @@ namespace Lax195003.WelzlOrdersComputation
 open Lax11.GraphEncoding
 open Lax67.Ram
 open Lax195003.WelzlOrdersLinearNeighborhoodComplexity
-open Lax195003.WordRamRandomness Lax195003.WelzlOrders
+open Lax195003.WordRamRandomness Lax195003.WelzlOrdersInGraphs
 
 /-- **Near-linear computation of graph Welzl orders** (Dreier–Kuske,
 Theorem 1.3): one randomized word-RAM program, given a graph with neighborhood
