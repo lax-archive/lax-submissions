@@ -1,5 +1,5 @@
-import Lax82.WordRamRandomness
-import Lax82.WelzlOrders
+import Lax195003.WordRamRandomness
+import Lax195003.WelzlOrders
 import Lax11.GraphEncoding
 import Lax12.NeighborhoodComplexity
 import Mathlib.Data.Nat.Log
@@ -53,12 +53,12 @@ a randomized search algorithm without imposing an arbitrary tie-breaking
 rule absent from the paper.
 -/
 
-namespace Lax82.WelzlOrdersComputation
+namespace Lax195003.WelzlOrdersComputation
 
 open Lax11.GraphEncoding
 open Lax12.NeighborhoodComplexity
 open Lax67.Ram
-open Lax82.WordRamRandomness Lax82.WelzlOrders
+open Lax195003.WordRamRandomness Lax195003.WelzlOrders
 
 /-- **Near-linear computation of graph Welzl orders** (Dreier–Kuske,
 Theorem 1.3): one randomized word-RAM program, given a graph with neighborhood
@@ -78,4 +78,4 @@ axiom exists_nearLinearTime_randomized_welzlOrder_program :
             (EncodesGraphWelzlOrder G
               (12 * c ^ 2 * (Nat.clog 2 n) ^ 2))
 
-end Lax82.WelzlOrdersComputation
+end Lax195003.WelzlOrdersComputation

@@ -30,7 +30,7 @@ extensions—so a theorem may use its time bound itself as a uniform tape
 length without exposing an implementation-specific random-bit count.
 -/
 
-namespace Lax82.WordRamRandomness
+namespace Lax195003.WordRamRandomness
 
 open Lax67.Ram
 
@@ -50,4 +50,4 @@ noncomputable def SucceedsWithProbabilityAtLeastTwoThirdsInTime
       {ρ : Fin r → Bool | ∃ y : List ℕ, ∃ t ≤ T,
         RunsTo w p (input ++ bitTape ρ) y t ∧ Accept y}.ncard
 
-end Lax82.WordRamRandomness
+end Lax195003.WordRamRandomness

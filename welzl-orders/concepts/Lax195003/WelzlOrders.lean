@@ -39,7 +39,7 @@ that list and satisfying the crossing bound; it does not prescribe which of
 the potentially many good orders an algorithm must choose.
 -/
 
-namespace Lax82.WelzlOrders
+namespace Lax195003.WelzlOrders
 
 /-- A set system on `α`: a family of subsets of the ground set `α`. -/
 abbrev SetSystem (α : Type*) := Set (Set α)
@@ -80,4 +80,4 @@ def EncodesGraphWelzlOrder {n : ℕ} (G : SimpleGraph (Fin n))
   ∃ π : Equiv.Perm (Fin n),
     EncodesOrder y π ∧ IsWelzlOrder (neighborhoodSetSystem G) π k
 
-end Lax82.WelzlOrders
+end Lax195003.WelzlOrders
