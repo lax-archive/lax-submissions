@@ -51,9 +51,11 @@ running-time bound. The random tape has the same length as the time bound;
 unused trailing bits do not affect its uniform success probability.
 
 The output is relational rather than a preselected function of the graph:
-any encoded vertex order meeting the paper's explicit crossing bound is a
-successful output. Thus the statement preserves the mathematical content of
-a randomized search algorithm without imposing an arbitrary tie-breaking
+any encoded vertex order meeting the paper's explicit crossing bound for the
+open radius-one neighborhood system is a successful output. Radius one is the
+ordinary open-neighborhood specialization of the general `k`-neighborhood
+Welzl-order definition. Thus the statement preserves the mathematical content
+of a randomized search algorithm without imposing an arbitrary tie-breaking
 rule absent from the paper.
 -/
 
@@ -79,6 +81,7 @@ axiom exists_nearLinearTime_randomized_welzlOrder_program :
           SucceedsWithProbabilityAtLeastTwoThirdsInTime
             w p (c :: x) T T
             (EncodesGraphWelzlOrder G
+              1
               (12 * c ^ 2 * (Nat.clog 2 n) ^ 2))
 
 end Lax195003.WelzlOrdersComputation

@@ -1,4 +1,4 @@
-import Mathlib.Combinatorics.SimpleGraph.Basic
+import Mathlib.Combinatorics.SimpleGraph.Walk.Basic
 import Mathlib.Data.Nat.Lattice
 import Mathlib.Data.Set.Card
 
@@ -14,9 +14,10 @@ crossing number of the order is the largest crossing count over all sets in
 `𝓕`. A Welzl order of crossing number at most *k* is a total order whose
 crossing number is at most *k*.
 
-For a graph, the relevant set system consists of the open neighborhoods of
-its vertices. A graph Welzl order is therefore crossed at most *k* times by
-every vertex neighborhood.
+For a graph and a radius *k*, the relevant set system consists of the open
+*k*-neighborhoods of its vertices. A graph Welzl order of radius *k* and
+crossing number at most *ℓ* is therefore crossed at most *ℓ* times by every
+*k*-neighborhood.
 
 # Formalization notes
 
@@ -37,6 +38,12 @@ An output order is the list of vertices in increasing position. The graph
 specialization packages only the existence of a permutation represented by
 that list and satisfying the crossing bound; it does not prescribe which of
 the potentially many good orders an algorithm must choose.
+
+The open `k`-neighborhood of `v` consists of the vertices other than `v` that
+are reachable from it by a walk of length at most `k`. Thus radius one
+recovers the ordinary open neighborhood used by the graph theorem, while
+larger radii give the requested `k`-neighborhood systems. The radius and the
+crossing bound are separate arguments.
 -/
 
 namespace Lax195003.WelzlOrders
@@ -63,21 +70,33 @@ def IsWelzlOrder {n : ℕ} (𝓕 : SetSystem (Fin n))
     (π : Equiv.Perm (Fin n)) (k : ℕ) : Prop :=
   crossingNumber 𝓕 π ≤ k
 
-/-- The neighborhood set system of a graph: the open neighborhood of every
-vertex. -/
-def neighborhoodSetSystem {n : ℕ} (G : SimpleGraph (Fin n)) :
+/-- The vertices reachable from `v` by a walk of length at most `k`. -/
+def withinDistance {n : ℕ} (G : SimpleGraph (Fin n))
+    (k : ℕ) (v u : Fin n) : Prop :=
+  ∃ w : G.Walk v u, w.length ≤ k
+
+/-- The open `k`-neighborhood of `v`: vertices other than `v` within walk
+distance `k`. -/
+def kNeighborhood {n : ℕ} (G : SimpleGraph (Fin n))
+    (k : ℕ) (v : Fin n) : Set (Fin n) :=
+  {u | u ≠ v ∧ withinDistance G k v u}
+
+/-- The `k`-neighborhood set system of a graph: the open `k`-neighborhood of
+every vertex. -/
+def kNeighborhoodSetSystem {n : ℕ} (G : SimpleGraph (Fin n)) (k : ℕ) :
     SetSystem (Fin n) :=
-  {X | ∃ v : Fin n, X = G.neighborSet v}
+  {X | ∃ v : Fin n, X = kNeighborhood G k v}
 
 /-- The list encoding of an order: vertices listed from first to last. -/
 def EncodesOrder {n : ℕ} (y : List ℕ) (π : Equiv.Perm (Fin n)) : Prop :=
   y = List.ofFn (fun i : Fin n => (π.symm i).val)
 
-/-- The word `y` encodes a Welzl order of crossing number at most `k` for
-the neighborhood set system of `G`. -/
+/-- The word `y` encodes a Welzl order of crossing number at most
+`crossingBound` for the `radius`-neighborhood set system of `G`. -/
 def EncodesGraphWelzlOrder {n : ℕ} (G : SimpleGraph (Fin n))
-    (k : ℕ) (y : List ℕ) : Prop :=
+    (radius crossingBound : ℕ) (y : List ℕ) : Prop :=
   ∃ π : Equiv.Perm (Fin n),
-    EncodesOrder y π ∧ IsWelzlOrder (neighborhoodSetSystem G) π k
+    EncodesOrder y π ∧
+      IsWelzlOrder (kNeighborhoodSetSystem G radius) π crossingBound
 
 end Lax195003.WelzlOrders
