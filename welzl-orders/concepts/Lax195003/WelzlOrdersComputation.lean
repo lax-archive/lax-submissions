@@ -1,7 +1,7 @@
 import Lax195003.WordRamRandomness
 import Lax195003.WelzlOrders
+import Lax195003.WelzlOrdersLinearNeighborhoodComplexity
 import Lax11.GraphEncoding
-import Lax12.NeighborhoodComplexity
 import Mathlib.Data.Nat.Log
 
 /-!
@@ -20,11 +20,15 @@ Welzl Orders on Graphs with Linear Neighborhood Complexity* (2026).
 
 # Formalization notes
 
-Neighborhood complexity is not redefined: the hypothesis is literally the
-linear bound on `Lax12.NeighborhoodComplexity.traceCount` from the registered
-*Sparsity Lectures* submission. The graph is presented by the compressed
-sparse row encoding of Lax11, and the program runs on the registered word RAM
-of Lax67 through this submission's finite-randomness predicate.
+Linear neighborhood complexity is the separate definition
+`Lax195003.WelzlOrdersLinearNeighborhoodComplexity.HasLinearNeighborhoodComplexity`
+in this submission, together with the per-graph predicate used below. They
+define the graph's shatter function from the endorsed neighborhood trace count
+of *Sparsity Lectures* (Lax12), and require the genuinely linear bound
+`π_G(k) ≤ c · k`; they are not Lax12's almost-linear class predicate. The graph
+is presented by the compressed sparse row encoding of Lax11, and the program
+runs on the registered word RAM of Lax67 through this submission's
+finite-randomness predicate.
 
 The program and the constant `K` precede the graph, the linearity constant,
 the input word and the word length, so one uniform program realizes the whole
@@ -56,8 +60,8 @@ rule absent from the paper.
 namespace Lax195003.WelzlOrdersComputation
 
 open Lax11.GraphEncoding
-open Lax12.NeighborhoodComplexity
 open Lax67.Ram
+open Lax195003.WelzlOrdersLinearNeighborhoodComplexity
 open Lax195003.WordRamRandomness Lax195003.WelzlOrders
 
 /-- **Near-linear computation of graph Welzl orders** (Dreier–Kuske,
@@ -68,8 +72,7 @@ multiple of `(n+m) log n` steps. -/
 axiom exists_nearLinearTime_randomized_welzlOrder_program :
     ∃ (p : Program) (K : ℕ), 1 ≤ K ∧
       ∀ (c n : ℕ) (G : SimpleGraph (Fin n)), 1 ≤ c →
-        (∀ A : Set (Fin n), A.Nonempty →
-          traceCount G A ≤ c * A.ncard) →
+        HasLinearNeighborhoodComplexityWithConstant G c →
         ∀ (w : ℕ) (x : List ℕ), EncodesGraph x n G →
           (∀ v ∈ c :: x, K * (x.length + v + 1) ≤ 2 ^ w) →
           let T := K * (x.length + 1) * (Nat.clog 2 n + 1)
