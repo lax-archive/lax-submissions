@@ -5,8 +5,6 @@ mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
 title: "Near-Linear Time Computation of Welzl Orders on Graphs with Linear
   Neighborhood Complexity"
 authors:
-  - name: Jan Dreier
-    github: jan3er
   - name: Clemens Kuske
     github: clemenskuske
   - name: Codex (OpenAI)
