@@ -1,6 +1,6 @@
 import Lax195003.WordRamRandomness
 import Lax195003.WelzlOrdersInGraphs
-import Lax195003.WelzlOrdersLinearNeighborhoodComplexity
+import Lax195003.WelzlOrdersNeighborhoodComplexity
 import Lax11.GraphEncoding
 import Mathlib.Data.Nat.Log
 
@@ -21,7 +21,7 @@ Welzl Orders on Graphs with Linear Neighborhood Complexity* (2026).
 # Formalization notes
 
 Linear neighborhood complexity is the separate definition
-`Lax195003.WelzlOrdersLinearNeighborhoodComplexity.HasLinearNeighborhoodComplexity`
+`Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexity`
 in this submission, together with the per-graph predicate used below. They
 define the graph's shatter function from the endorsed neighborhood trace count
 of *Sparsity Lectures* (Lax12), and require the genuinely linear bound
@@ -63,7 +63,7 @@ namespace Lax195003.WelzlOrdersComputation
 
 open Lax11.GraphEncoding
 open Lax67.Ram
-open Lax195003.WelzlOrdersLinearNeighborhoodComplexity
+open Lax195003.WelzlOrdersNeighborhoodComplexity
 open Lax195003.WordRamRandomness Lax195003.WelzlOrdersInGraphs
 
 /-- **Near-linear computation of graph Welzl orders** (Dreier–Kuske,

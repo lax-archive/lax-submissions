@@ -3,7 +3,7 @@ import Mathlib.Data.Nat.Lattice
 
 /-!
 ---
-title: Linear neighborhood complexity
+title: Neighborhood complexity
 type: definition
 ---
 The neighborhood complexity `π_G(k)` of a finite graph *G* is the largest
@@ -27,7 +27,7 @@ required only for positive `k`: at `k = 0`, the empty vertex set has the one
 trace `∅`, so the literal inequality `π_G(0) ≤ c · 0` would be false.
 -/
 
-namespace Lax195003.WelzlOrdersLinearNeighborhoodComplexity
+namespace Lax195003.WelzlOrdersNeighborhoodComplexity
 
 open Lax12.GraphClasses
 open Lax12.NeighborhoodComplexity
@@ -52,4 +52,4 @@ def HasLinearNeighborhoodComplexity (C : GraphClass) : Prop :=
     ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
       HasLinearNeighborhoodComplexityWithConstant G c
 
-end Lax195003.WelzlOrdersLinearNeighborhoodComplexity
+end Lax195003.WelzlOrdersNeighborhoodComplexity
