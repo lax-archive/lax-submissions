@@ -1,0 +1,34 @@
+name = "Lax82"
+defaultTargets = ["Lax82"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
+
+# compressed sparse row graph inputs (Lax11)
+[[require]]
+name = "Lax11"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "688029c9426eccb2fc339e3a1f2179cb97116edc"
+subDir = "ram-linear-time/concepts"
+
+# neighborhood trace counting (Lax12)
+[[require]]
+name = "Lax12"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "25a164f8439311426b1033ba7ea21947d829ff88"
+subDir = "sparsity-lectures/concepts"
+
+# the word RAM and its exact step-count semantics (Lax67)
+[[require]]
+name = "Lax67"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "9d9639601dea95e60803cfb7db1f6296478dcb42"
+subDir = "word-ram/concepts"
+
+[[lean_lib]]
+name = "Lax82"
