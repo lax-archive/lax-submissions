@@ -19,14 +19,15 @@ conclusion: Lax242665.InfinitelyManyPrimes.exists_prime_gt
 Euclid's argument: the smallest prime factor `p` of `n! + 1` cannot be at
 most `n`, because then `p` would divide `n!` and hence divide `1`.
 -/
-theorem exists_prime_gt (n : ℕ) : ∃ p, n < p ∧ Lax242665.Primes.Prime p := by
+theorem exists_prime_gt : ∀ n : ℕ, ∃ p : ℕ, Lax242665.Primes.Prime p ∧ n < p := by
+  intro n
   have hne : n.factorial + 1 ≠ 1 := by
     have := Nat.factorial_pos n
     omega
   have hprime : Nat.Prime (Nat.minFac (n.factorial + 1)) := Nat.minFac_prime hne
-  refine ⟨Nat.minFac (n.factorial + 1), ?_, prime_of_natPrime hprime⟩
+  refine ⟨Nat.minFac (n.factorial + 1), prime_of_natPrime hprime, ?_⟩
   by_contra hle
-  push_neg at hle
+  rw [Nat.not_lt] at hle
   have hdvd_fact : Nat.minFac (n.factorial + 1) ∣ n.factorial :=
     hprime.dvd_factorial.mpr hle
   have hdvd_succ : Nat.minFac (n.factorial + 1) ∣ n.factorial + 1 := Nat.minFac_dvd _

@@ -9,7 +9,8 @@ conclusion: Lax242665.OddPrimes.odd_of_prime
 ---
 An even prime is divisible by `2`, so `2` is `1` or the prime itself.
 -/
-theorem odd_of_prime (p : ℕ) (hp : Lax242665.Primes.Prime p) (h2 : p ≠ 2) : Odd p := by
+theorem odd_of_prime : ∀ p : ℕ, Lax242665.Primes.Prime p → p ≠ 2 → Odd p := by
+  intro p hp h2
   obtain ⟨hp1, hdiv⟩ := hp
   rw [Nat.odd_iff]
   by_contra h

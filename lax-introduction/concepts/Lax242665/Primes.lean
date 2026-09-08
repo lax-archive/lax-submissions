@@ -11,9 +11,9 @@ by itself.
 
 namespace Lax242665.Primes
 
-/-- `n` is prime: it is greater than 1, and its only divisors are 1 and `n`
-itself. -/
+/-- `n` is prime: it is greater than 1, and every divisor `d` of `n` is
+`1` or `n` itself. -/
 def Prime (n : ℕ) : Prop :=
-  1 < n ∧ ∀ d, d ∣ n → d = 1 ∨ d = n
+  1 < n ∧ ∀ d : ℕ, d ∣ n → d = 1 ∨ d = n
 
 end Lax242665.Primes

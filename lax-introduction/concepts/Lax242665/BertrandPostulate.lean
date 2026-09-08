@@ -11,8 +11,8 @@ $n < p \leq 2n$.
 
 namespace Lax242665.BertrandPostulate
 
-/-- Between `n` and `2n` there is always a prime. -/
-axiom exists_prime_between (n : ℕ) (hn : 1 ≤ n) :
-    ∃ p, Primes.Prime p ∧ n < p ∧ p ≤ 2 * n
+/-- For every `n ≥ 1` there is a prime `p` with `n < p ≤ 2n`. -/
+axiom exists_prime_between :
+    ∀ n : ℕ, 1 ≤ n → ∃ p : ℕ, Primes.Prime p ∧ n < p ∧ p ≤ 2 * n
 
 end Lax242665.BertrandPostulate

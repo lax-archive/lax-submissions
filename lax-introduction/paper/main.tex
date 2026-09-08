@@ -37,14 +37,15 @@
 \maketitle
 
 \begin{abstract}
-% lax begin lax-242665
 Lax is an archive that links natural-language mathematics with Lean
 formalizations: an ``arXiv for Lean'', where submissions build on each other
-towards a shared body of formalized mathematics. This document is itself a
-Lax submission, made from the features it describes. A submission consists of
-\emph{concepts}, \emph{proofs}, and optionally a \emph{paper}, which we
-introduce in turn, using the prime numbers as a running example.
+towards a shared body of formalized mathematics.
+% lax begin lax-242665
+This document is itself a Lax submission, made from the features it describes.
 % lax end
+A submission consists of \emph{concepts}, \emph{proofs}, and optionally a
+\emph{paper}, which we introduce in turn, using the prime numbers as a running
+example.
 \end{abstract}
 
 \section{Concepts}
@@ -87,10 +88,15 @@ one claim about them open (Lemma~\ref{lem:bertrand} below); a follow-up
 submission can build on it, reuse Definition~\ref{def:prime} unchanged, and
 supply the missing proof. The definition of a prime number is of course
 already in mathlib~\cite{mathlib2020}. For notions that are not, such as
-\href{https://laxarchive.org/lax-48/}{twin-width},
-\href{https://laxarchive.org/lax-12/}{nowhere dense graph classes}, or
-\href{https://laxarchive.org/lax-67/}{the word RAM}, Lax can help the
-community agree on common standards.
+% lax begin Lax48.TwinWidth
+twin-width% lax end
+,
+% lax begin Lax12.NowhereDenseClasses
+nowhere dense graph classes% lax end
+, or
+% lax begin Lax67.Ram
+the word RAM% lax end
+, Lax can help the community agree on common standards.
 
 \section{Proofs}
 
@@ -205,14 +211,12 @@ old version to the new one.
 
 Immutability has a cost on Lax that it does not have on arXiv. A Lean
 submission can only build on another if both use the same version of mathlib,
-and mathlib evolves over time. Lax therefore declares one recommended
-environment, the \emph{epoch}: a Lean toolchain together with a mathlib
-commit, currently Lean~4.30.0 with mathlib at commit \texttt{c5ea003}.
-Submissions may use any admitted environment (\texttt{lax doctor} lists
-them) and are verified and archived either way, but only submissions in the
-same environment can build on each other. The epoch advances rarely, about
-once a year. When it does, an older submission is brought forward by a
-revision, typically by whoever wants to build on it.
+and mathlib evolves over time. Lax therefore declares a \emph{baseline
+version} of mathlib (currently \texttt{v4.30.0}). Submissions may use any
+version and are verified and archived either way, but only submissions on the
+same baseline version can build on each other. The baseline advances rarely.
+When it does, an older submission is brought forward by a revision, typically
+by whoever wants to build on it.
 
 \section{Writing a submission}
 
