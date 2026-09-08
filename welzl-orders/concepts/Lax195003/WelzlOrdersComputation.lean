@@ -78,8 +78,8 @@ axiom exists_nearLinearTime_randomized_welzlOrder_program :
         ∀ (w : ℕ) (x : List ℕ), EncodesGraph x n G →
           (∀ v ∈ c :: x, K * (x.length + v + 1) ≤ 2 ^ w) →
           let T := K * (x.length + 1) * (Nat.clog 2 n + 1)
-          SucceedsWithProbabilityAtLeastTwoThirdsInTime
-            w p (c :: x) T T
+          SucceedsWithProbabilityAtLeastInTime
+            (2 / 3 : ℚ) w p (c :: x) T T
             (EncodesGraphWelzlOrder G
               1
               (12 * c ^ 2 * (Nat.clog 2 n) ^ 2))

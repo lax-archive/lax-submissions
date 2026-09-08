@@ -15,11 +15,11 @@ the graph's neighborhood complexity function and the
 exact linear bound `π_G(k) ≤ c · k`, both for one graph with a specified
 constant and uniformly over a graph class; this is distinct from almost-linear
 neighborhood complexity. Another gives the finite-randomness reading of a
-randomized word-RAM computation: independent uniform random bits are appended
-to the ordinary input, every run respects the time bound, and at least two
-thirds of the bit strings produce an accepted output. The theorem is stated
-for graphs in compressed sparse row form with its constants and success
-probability exposed.
+randomized word-RAM computation with a rational success threshold: independent
+uniform random bits are appended to the ordinary input, every run respects the
+time bound, and the requested fraction of bit strings produce an accepted
+output. The theorem instantiates this parameter with `2/3` and is stated for
+graphs in compressed sparse row form with its constants exposed.
 
 The submission reuses rather than restates three registered concepts. The
 word RAM and its step-count semantics are those of *The Word RAM* (Lax67),
