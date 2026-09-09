@@ -279,6 +279,52 @@ theorem run_one {w : ℕ} {p : Program} {s : State} {ins : Instr} (h : p[s.pc]? 
   show (ins.effect w s).bind (run w p 0) = ins.effect w s
   cases ins.effect w s <;> rfl
 
+/-- The original instruction subset, also allowing `jeof`: these
+instructions can inspect the remaining tape but never the input array. -/
+def IgnoresInputArray : Instr → Prop
+  | .inputLength _ => False
+  | .inputLoad _ _ => False
+  | _ => True
+
+/-- For every instruction in the original subset, replacing only the
+new input-array field commutes with instruction execution. -/
+theorem effect_replace_input {w : ℕ} {i : Instr} (h : IgnoresInputArray i)
+    (s : State) (x : List ℕ) :
+    i.effect w { s with input := x } =
+      (i.effect w s).map (fun t => { t with input := x }) := by
+  cases i <;> simp only [IgnoresInputArray] at h
+  all_goals first
+  | contradiction
+  | rfl
+  | simp only [effect_read_eq, Option.map_map]; rfl
+
+/-- A program without `inputLength` and `inputLoad` has exactly the
+same transition behavior after replacing the original input array. -/
+theorem step_replace_input {w : ℕ} {p : Program}
+    (hp : ∀ i ∈ p, IgnoresInputArray i) (s : State) (x : List ℕ) :
+    step w p { s with input := x } =
+      (step w p s).map (fun t => { t with input := x }) := by
+  rw [step_eq, step_eq]
+  cases hi : p[s.pc]? with
+  | none => rfl
+  | some i =>
+      simpa [hi] using effect_replace_input (w := w) (hp i (List.mem_of_getElem? hi)) s x
+
+/-- The added input-array field is a conservative extension for the
+original instruction subset: every successful-transition count gives
+the same counter, memory, remaining tape, output, and termination result. -/
+theorem run_replace_input {w : ℕ} {p : Program}
+    (hp : ∀ i ∈ p, IgnoresInputArray i) (k : ℕ) (s : State) (x : List ℕ) :
+    run w p k { s with input := x } =
+      (run w p k s).map (fun t => { t with input := x }) := by
+  induction k generalizing s with
+  | zero => rfl
+  | succ k ih =>
+      rw [run_succ, run_succ, step_replace_input hp]
+      cases hs : step w p s with
+      | none => rfl
+      | some t => simpa [hs] using ih t
+
 /-- A successful instruction preserves the original read-only input. -/
 theorem effect_input {w : ℕ} {i : Instr} {s s' : State}
     (h : i.effect w s = some s') : s'.input = s.input := by

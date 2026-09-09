@@ -73,7 +73,9 @@ array itself is read-only input storage, separate from writable memory.
 Subtraction is natural-number monus, so a comparison is `sub` followed
 by `jzero`. Complement is `2 ^ w - 1 - m[b]`. No instruction returns
 the word length. The following operations are derived at constant cost,
-with `t` and `u` distinct scratch cells disjoint from the operands:
+with scratch cells `t` and `u` whose physical addresses modulo `2 ^ w`
+are distinct from each other and from every operand's physical address.
+Distinct natural-number literals alone do not ensure this condition:
 
 | operation | instructions | count |
 |---|---|---|
