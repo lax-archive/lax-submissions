@@ -30,3 +30,8 @@ user's requested retraction/resubmission while retaining lax-67 and lax-11 and
 their namespaces. Reset only after reviewed code is ready. The ordinary delete
 command cannot retract a registered record and retires IDs, so it is not the
 resubmission mechanism. Verify the resulting archive state and published source.
+
+Reviewed refinement-tower boundary: `d2d94e7`. The codegen transfer and its
+end-to-end examples include the final halt once; exact executable counts and
+fuel assertions agree. Internal IR/IMP budgets and specifications are
+unchanged. Concepts, full proofs, and the supervisor's narrow replay passed.
