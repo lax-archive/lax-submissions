@@ -18,7 +18,7 @@ path = "../concepts"
 [[require]]
 name = "Lax67"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "bc4c6e6f09dab6d8a34af65986006b407bf6d63a"
+rev = "512403f000f23689a1c40d8826062d20f1e28f03"
 subDir = "word-ram/concepts"
 
 # the word RAM's verified compilation pipeline, reused as proved
@@ -26,7 +26,7 @@ subDir = "word-ram/concepts"
 [[require]]
 name = "Lax67Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "bc4c6e6f09dab6d8a34af65986006b407bf6d63a"
+rev = "512403f000f23689a1c40d8826062d20f1e28f03"
 subDir = "word-ram/proofs"
 
 [[lean_lib]]

@@ -14,7 +14,7 @@ rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
 [[require]]
 name = "Lax67"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "bc4c6e6f09dab6d8a34af65986006b407bf6d63a"
+rev = "512403f000f23689a1c40d8826062d20f1e28f03"
 subDir = "word-ram/concepts"
 
 [[lean_lib]]
