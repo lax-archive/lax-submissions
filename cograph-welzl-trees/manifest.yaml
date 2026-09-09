@@ -1,0 +1,22 @@
+specVersion: "1"
+id: lax-485480
+leanVersion: "v4.30.0"
+mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
+title: "Welzl Trees of Cographs"
+authors:
+  - name: Clemens Kuske
+    github: clemenskuske
+  - name: Codex (OpenAI)
+bibEntries:
+  - |
+    @inproceedings{Welzl1992,
+      author    = {Welzl, Emo},
+      title     = {On Spanning Trees with Low Crossing Numbers},
+      booktitle = {Data Structures and Efficient Algorithms},
+      series    = {Lecture Notes in Computer Science},
+      volume    = {594},
+      pages     = {233--249},
+      publisher = {Springer},
+      year      = {1992},
+      doi       = {10.1007/3-540-55488-2_30}
+    }

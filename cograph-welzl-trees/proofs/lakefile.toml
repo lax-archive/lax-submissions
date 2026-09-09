@@ -1,0 +1,38 @@
+name = "Lax485480Proofs"
+defaultTargets = ["Lax485480Proofs"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
+
+[[require]]
+name = "Lax485480"
+path = "../concepts"
+
+# Welzl orders and graph neighborhood set systems (lax-195003)
+[[require]]
+name = "Lax195003"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "d684a8ff47b66a64608ba165c63a505a83a55ceb"
+subDir = "welzl-orders/concepts"
+
+# cographs and their logarithmic Welzl-order bounds (lax-214022)
+[[require]]
+name = "Lax214022"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "c1fdbe3c1eb2414f0fa9b430c413645cb16b7577"
+subDir = "cograph-welzl-orders/concepts"
+
+# proof-side list crossing lemmas from the cograph Welzl-order submission
+[[require]]
+name = "Lax214022Proofs"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "c1fdbe3c1eb2414f0fa9b430c413645cb16b7577"
+subDir = "cograph-welzl-orders/proofs"
+
+[[lean_lib]]
+name = "Lax485480Proofs"
