@@ -21,14 +21,14 @@ subDir = "sparsity-lectures/concepts"
 [[require]]
 name = "Lax67"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "9d9639601dea95e60803cfb7db1f6296478dcb42"
+rev = "bc4c6e6f09dab6d8a34af65986006b407bf6d63a"
 subDir = "word-ram/concepts"
 
 # graph encodings (CSR) of submission Lax11
 [[require]]
 name = "Lax11"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "688029c9426eccb2fc339e3a1f2179cb97116edc"
+rev = "418d847240ab3ad89b56e8e1fbd8f3fa02acde16"
 subDir = "ram-linear-time/concepts"
 
 [[lean_lib]]

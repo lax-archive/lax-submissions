@@ -19,8 +19,8 @@ input immutability and old-subset compatibility; audit examples and overflow,
 aliasing, and EOF edges. Concepts and proofs build; key proofs use background
 axioms only. Supervisor reviewed source semantics, preconditions, and costs.
 
-All source migrations are reviewed and landed. Remaining: publish the three
-dependents in dependency order, repinning each to the actual archive record.
+All source migrations are reviewed and landed. Remaining: publish model
+checking, verify the resulting record, and restore its original owner list.
 
 Release mechanism: current lax has a supported maintainer `reset-draft` action;
 the current GitHub account is an authorized maintainer. This implements the
@@ -55,3 +55,9 @@ The original lax-13 and lax-67 owner lists are restored. Ram-linear-time and
 refinement-tower now pin that accepted RAM revision; their full `lax build`
 checks passed against the archive dependencies. Draft-dependency and existing
 proof-package advisories are expected for this coordinated draft resubmission.
+
+Lax-11 and lax-62 accepted source `418d847`, in runs `34348739381` and
+`34348739457` (archive commits `90d2a3e` and `98b54eb`). Their original owner
+lists are restored. Model checking now pins those actual records and `bc4c6e6`
+for RAM. Its complete `lax build` passed against the final archive dependencies:
+12 concepts and 6 proofs inspected, with only the expected dependency advisories.
