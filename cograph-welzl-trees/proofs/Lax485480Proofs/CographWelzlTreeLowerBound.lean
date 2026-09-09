@@ -36,9 +36,11 @@ which is equivalent over the naturals to `ceil(k/2) ≤ c`.
 
 # Attribution
 
-The cograph witnesses are the Crespelle--Gambette ternary construction from
-lax-214022.  The leaf-removal linearization is the standard depth-first
-factor-two conversion from tree cuts to a linear layout.
+Crespelle and Gambette proved the logarithmic contiguity lower bound for
+cographs with complete binary cotrees.  The explicit order witnesses used
+here are imported from lax-214022.  The leaf-removal linearization is the
+standard depth-first factor-two conversion from tree cuts to a linear
+layout, and upgrades their order phenomenon to arbitrary spanning trees.
 -/
 theorem exists_cograph_requiring_treeCrossingNumber_at_least (k : ℕ) :
     ∃ n : ℕ, 3 ^ k ≤ n ∧ n ≤ 4 ^ k ∧
@@ -56,9 +58,5 @@ theorem exists_cograph_requiring_treeCrossingNumber_at_least (k : ℕ) :
   omega
 
 end
-
-end Lax485480Proofs.CographWelzlTreeLowerBound
-
-namespace Lax485480Proofs.CographWelzlTreeLowerBound
 
 end Lax485480Proofs.CographWelzlTreeLowerBound

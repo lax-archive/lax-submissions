@@ -36,8 +36,10 @@ crossing number of the order.
 
 # Attribution
 
-The path construction is the immediate tree form of Welzl's crossing-number
-definition; the cograph order bound is imported from lax-214022.
+The logarithmic cograph-order phenomenon is the contiguity upper bound of
+Crespelle and Gambette.  The path construction is the immediate tree form
+of Welzl's crossing-number definition; its formal order bound is imported
+from lax-214022.
 -/
 theorem exists_welzlTree_crossingNumber_le_four_clog_add_one
     (n : ℕ) (hn : 0 < n) (G : SimpleGraph (Fin n)) (hG : IsCograph G) :

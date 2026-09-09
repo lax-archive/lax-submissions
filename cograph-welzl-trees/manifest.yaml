@@ -9,6 +9,18 @@ authors:
   - name: Codex (OpenAI)
 bibEntries:
   - |
+    @article{CrespelleGambette2014,
+      author  = {Crespelle, Christophe and Gambette, Philippe},
+      title   = {(Nearly-)Tight Bounds on the Contiguity and Linearity of
+                 Cographs},
+      journal = {Theoretical Computer Science},
+      volume  = {522},
+      pages   = {1--12},
+      year    = {2014},
+      doi     = {10.1016/j.tcs.2013.11.036},
+      url     = {https://webusers.i3s.unice.fr/~ccrespelle/publications/J06_CographLinearity.pdf}
+    }
+  - |
     @inproceedings{Welzl1992,
       author    = {Welzl, Emo},
       title     = {On Spanning Trees with Low Crossing Numbers},

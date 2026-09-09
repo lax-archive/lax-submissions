@@ -19,6 +19,12 @@ a leaf changes a row only when its incident tree edge is crossed, and then
 adds at most two crossings.  Hence an order lower bound of *k* gives a tree
 lower bound of `ceil(k/2)`.
 
+Crespelle and Gambette proved the corresponding asymptotic lower bound in
+the equivalent language of cograph contiguity, using cographs with complete
+binary cotrees.  The theorem below records the consequence for arbitrary
+Welzl spanning trees with explicit finite-size constants inherited from the
+preceding formalized order obstruction.
+
 # Formalization notes
 
 The ceiling is expressed in natural arithmetic as `(k + 1) / 2`.  The two

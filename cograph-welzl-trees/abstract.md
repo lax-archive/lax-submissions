@@ -15,3 +15,12 @@ general bridges.  An order is itself a path tree with the same crossing
 number.  In the other direction, repeatedly deleting a leaf of a tree and
 reinserting it beside its neighbor produces an order whose crossing number
 is at most twice that of the tree.
+
+The logarithmic order phenomenon is the contiguity theorem of Crespelle and
+Gambette: they prove logarithmic upper and lower bounds for the number of
+intervals needed to represent all neighborhoods of a cograph in one vertex
+order.  Interval count and the number of membership changes along an order
+are equivalent up to a factor of two and an additive constant.  The present
+submission recasts that result in Welzl's crossing language and shows that
+allowing an arbitrary spanning tree, rather than only an order path, still
+changes the optimum by at most a factor of two.

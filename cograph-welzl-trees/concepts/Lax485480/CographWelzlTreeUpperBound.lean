@@ -16,6 +16,11 @@ A set crosses exactly the same consecutive pairs in the order as it crosses
 edges of this path.  The logarithmic Welzl-order bound for cographs therefore
 transfers without loss to spanning trees.
 
+In the terminology of Crespelle and Gambette, the underlying order theorem
+is their logarithmic upper bound on cograph contiguity: a neighborhood that
+is the union of few intervals has few membership changes along the order.
+The path construction records those changes as crossed tree edges.
+
 # Formalization notes
 
 Positivity is assumed because a tree is connected and hence has a vertex;
