@@ -7,7 +7,7 @@ The theorem, cashed in at the concept surface.
 Everything has been proved by now; what is left is to bundle the run of
 the driver as the pipeline's `Solves` predicate, hand it to the
 transfer theorem, and do the arithmetic of the constant. An array
-access compiles to four instructions whatever the number of arrays, so
+address calculation adds four instructions whatever the number of arrays, so
 the machine pays ten steps per unit of IMP+ cost; the run itself costs
 at most eighty-four per entry of the input word. The product is the
 nonhalting cost. One more instruction terminates the compiled program;
@@ -16,7 +16,7 @@ the constant `841` absorbs it into the linear bound.
 The word length is dealt with in the same step and in the same place.
 The value bound the driver runs under is the length of the input word,
 so the layout spans `19 + 4|x|` cells, and the statement's hypothesis —
-that `841(|x|+1)` is itself a word — is more than that, by a margin
+that `841(|x|+1) ≤ 2 ^ w` — supplies this bound, by a margin
 nobody has to compute.
 -/
 
@@ -53,8 +53,8 @@ conclusion: Lax11.ConnectedComponents.exists_linearTime_program_ccLabels
 Connected components can be computed in linear time on a word random
 access machine: `ccProgram` labels the vertices of every graph given in
 compressed sparse row form by the least vertex of their component,
-within `841 * (|x| + 1)` machine steps, at every word length at which
-that many steps fit into a word.
+within `841 * (|x| + 1)` machine steps, at every word length for which
+`841 * (|x| + 1) ≤ 2 ^ w`.
 
 # Proof strategy
 
@@ -88,8 +88,8 @@ offsets, the queue pointers, the counter of scanned slots — is bounded
 by `n` or by `2m`, hence again by the length. So the whole run needs
 the single hypothesis `|x| ≤ B`, and the compiled program needs in
 addition that the cells the layout addresses are words, which is
-`19 + 4|x| ≤ 2 ^ w`. The statement's hypothesis, that the time bound
-`841(|x| + 1)` is itself a word, gives both with room to spare; it is
+`19 + 4|x| ≤ 2 ^ w`. The statement's hypothesis,
+`841(|x| + 1) ≤ 2 ^ w`, gives both with room to spare; it is
 stated in that form because a bound on the running time is the
 condition a reader of an algorithm expects, and because it is the one
 inequality the machine model actually needs to be told.

@@ -21,7 +21,7 @@ The value bound the driver runs under is the length of the input word
 plus the parameter — the parameter is an entry of the word, so it has
 to be a word, and the stack indices and budgets are below it, while
 everything else is below the length. The statement's hypothesis, that
-`9001(|x| + k + 1)` is a word, gives that bound and the span of the
+`9001(|x| + k + 1) ≤ 2 ^ w`, gives that bound and the span of the
 layout at it, `24 + 6(|x| + k)`, with a margin nobody has to compute.
 It is deliberately not the hypothesis that the *running time* is a
 word: `2 ^ k` is a count of steps, not a number the machine ever holds.
@@ -250,7 +250,7 @@ written into the bound: `vcProgram` decides, on every graph in
 compressed sparse row form followed by the parameter `k`, whether the
 graph has a vertex cover of at most `k` vertices, within
 `9001 * 2 ^ k * (|x| + 1)` machine steps, at every word length at
-which `9001 * (|x| + k + 1)` fits into a word.
+which `9001 * (|x| + k + 1) ≤ 2 ^ w`.
 
 # Proof strategy
 
@@ -305,7 +305,7 @@ parameter itself and the stack pointer and budget, which lie between
 `0` and `k`. So the whole run needs the single hypothesis
 `|x| + k ≤ B`, and the compiled program needs in addition that the
 cells the layout addresses are words, which is `24 + 6(|x| + k)`. The
-statement's hypothesis, that `9001(|x| + k + 1)` is a word, gives both
+statement's hypothesis, `9001(|x| + k + 1) ≤ 2 ^ w`, gives both
 with room to spare.
 
 What the hypothesis deliberately does *not* say is that the running
