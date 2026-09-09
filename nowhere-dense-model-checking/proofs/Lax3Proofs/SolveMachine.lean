@@ -11,6 +11,8 @@ import Lax3Proofs.SolveUniformMachine
 The concrete cover, recursion, memory reservations and actual scalar costs
 are assembled into the endorsed almost-linear-time theorem. Program, common
 word-room constant and time function are fixed before graphs and word lengths.
+The final `halt` adds one to the machine time function; the positive exponent
+allows the same addition to its coefficient without changing the exponent.
 -/
 
 set_option autoImplicit false
@@ -154,13 +156,22 @@ theorem exists_almostLinearTime_program_modelChecking :
   let a := 104 + 2 * topStageCoeff (concreteTopAtoms S) + topEvalCost S (concreteAV S)
   obtain ⟨cf, T, _, hT, htime⟩ :=
     exists_chargeFrameK_inputTime S ord (concreteLp S) hcdeg hf hε (machineStageCoeff S) 10 a
+  have hTplus : ∀ x, ((T x + 1 : ℕ) : ℝ) ≤
+      (cf + 1) * ((x.length : ℝ) + 1) ^ (1 + ε) := by
+    intro x
+    have hpow : (1 : ℝ) ≤ ((x.length : ℝ) + 1) ^ (1 + ε) :=
+      Real.one_le_rpow (by have := Nat.cast_nonneg (α := ℝ) x.length; linarith)
+        (by linarith)
+    simpa only [Nat.cast_add, Nat.cast_one, add_mul, one_mul] using
+      add_le_add (hT x) hpow
   apply exists_machine_of_uniformSolve C hC φ ε ord (concreteWordQ S) (concreteExt S)
     (concreteSolve S (CoverClean.coverCom S.R))
     (fun _ G => concreteSolveK S G (machineKB S))
     (by unfold concreteWordQ; omega)
     (concreteSolve_noWrite S _ (fun j => (CoverClean.cover_tapes S.R j).2))
     (fun _ _ x _ => concreteExt_off S x) (fun _ _ x _ => concreteExt_tgt S x)
-    (fun _ G hG c w => machineSolveSpec C hC φ G hG c w) cf T hT
+    (fun _ G hG c w => machineSolveSpec C hC φ G hG c w) (cf + 1)
+      (fun x => T x + 1) hTplus
   intro n G hG x hx
   have ht := htime n G (Impl.trivialColoring n)
     (canonicalChannels S (concreteLp S))
@@ -172,6 +183,6 @@ theorem exists_almostLinearTime_program_modelChecking :
   have hb := mcK_rootStages_le G (concreteTopAtoms S) (topEvalCost S (concreteAV S))
     (machineKB S S.depth 0 (rootArena G (Impl.trivialColoring n))) hx
   rw [codeLayout_const]
-  exact (Nat.mul_le_mul_left 10 hb).trans ht
+  exact Nat.add_le_add_right ((Nat.mul_le_mul_left 10 hb).trans ht) 1
 
 end Lax3Proofs.ModelChecking

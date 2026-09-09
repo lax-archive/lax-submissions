@@ -152,7 +152,8 @@ theorem layout_fitsWords_mcB (lay : Layout) {n c w q : ℕ}
 
 open Classical in
 /-- Compile the full pipeline with all names and temporary cells inferred from
-its actual syntax. The solve specification is the only execution premise. -/
+its actual syntax. The solve specification is the only execution premise.
+The machine bound includes one instruction for the final `halt`. -/
 theorem mc_auto_computesInTime_of_solveSpec
     (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     (ord : CoverSpec.OrderingRoutine) {n : ℕ} (G : SimpleGraph (Fin n))
@@ -170,7 +171,7 @@ theorem mc_auto_computesInTime_of_solveSpec
       (compileProgram (codeLayout (mcCom solveCom)) (mcCom solveCom))
       (mcD n G c w)
       (fun _ => if Lax3.FirstOrder.Sat G Fin.elim0 φ then [1] else [0])
-      (fun x => (codeLayout (mcCom solveCom)).const * mcK Ks x) := by
+      (fun x => (codeLayout (mcCom solveCom)).const * mcK Ks x + 1) := by
   refine computesInTime_of_spec (codeLayout_ok (mcCom solveCom)) (mcD_entry_lt_mcB hq) ?_
     (layout_fitsWords_mcB (codeLayout (mcCom solveCom)) hq hqc hspan)
   intro x hx
