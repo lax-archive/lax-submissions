@@ -1,0 +1,31 @@
+name = "Lax214022Proofs"
+defaultTargets = ["Lax214022Proofs"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
+
+[[require]]
+name = "Lax214022"
+path = "../concepts"
+
+# Welzl orders and graph neighborhood set systems (lax-195003)
+[[require]]
+name = "Lax195003"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "d684a8ff47b66a64608ba165c63a505a83a55ceb"
+subDir = "welzl-orders/concepts"
+
+# proof-side partition-sequence infrastructure for twin-width (lax-48)
+[[require]]
+name = "Lax48Proofs"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "b999c28492338182ea9d8dfa16e850e011dd16da"
+subDir = "twin-width-treewidth-separation/proofs"
+
+[[lean_lib]]
+name = "Lax214022Proofs"
