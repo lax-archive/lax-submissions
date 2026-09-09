@@ -100,3 +100,12 @@ model-checking lakefiles. Full `lax build` passed in 16m59s (12 concepts and
 6 proofs inspected), with only eight existing dependency advisories. The
 supervisor reviewed the two-file diff and replayed `Lax3Proofs.SolveMachine`;
 all 3567 jobs passed. Sibling overrides report no stale requirements.
+
+Follow-up publication complete: lax-3 accepted
+`3dc030d77f97405fec41e13b2f3fc7bd179dba70` in run `34372715142`, with an
+independent rebuild of 19m32s. Verified all four live draft source tuples,
+all four successful archive runs, all 11 affected dependency requirements,
+and exact restoration of the five original owner lists. The local archive
+database and sibling overrides are refreshed. All follow-up worktrees and
+branches were removed, unrelated work was preserved, and the reviewed changes
+are landed on local main and published on `ram-input-repair`.
