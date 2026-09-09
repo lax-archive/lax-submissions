@@ -70,3 +70,14 @@ exact restoration of the five original owner lists (including lax-13, whose
 ownership was temporarily needed for the existing supersedes claim).
 All code is landed on main and published on `ram-input-repair`; the pre-existing
 unpublished main history and unrelated worktrees were preserved.
+
+Smoke-domain follow-up, 2026-09-09: `542785f` corrects the vacuous Echo and
+Sum machine theorems. Their admissible domains now include the per-input
+`x.sum + 7 ≤ 2^w` and `x.sum + 8 ≤ 2^w` bounds, respectively; each theorem
+holds for every word length on its own domain. Programs, outputs, and the
+110/130 time coefficients are unchanged. Each namespace proves eventual
+admissibility of every length-prefixed input and an initialized execution on
+the nonzero payload `[2, 3]` at four bits. The original impossible universal
+hypotheses were independently refuted in Lean. Only `Smoke.lean` changed;
+concepts and full proofs built, and the supervisor reviewed the complete diff
+and replayed the Smoke target. No downstream caller uses either changed API.
