@@ -19,10 +19,8 @@ input immutability and old-subset compatibility; audit examples and overflow,
 aliasing, and EOF edges. Concepts and proofs build; key proofs use background
 axioms only. Supervisor reviewed source semantics, preconditions, and costs.
 
-Remaining: migrate ram-linear-time and refinement-tower independently, then
-nowhere-dense-model-checking; validate and publish in dependency order, repinning
-each dependent to the actual archive record. Preserve IMP/parser budgets and
-encoded outputs, changing only closed-machine costs and justified witnesses.
+All source migrations are reviewed and landed. Remaining: publish the three
+dependents in dependency order, repinning each to the actual archive record.
 
 Release mechanism: current lax has a supported maintainer `reset-draft` action;
 the current GitHub account is an authorized maintainer. This implements the
@@ -49,3 +47,11 @@ with the extra unit absorbed using the existing positive exponent hypothesis.
 Source programs, internal budgets, domains, outputs, and uniformity are
 unchanged. Concepts and all 3575 proof jobs passed; the supervisor reviewed
 the full diff and replayed the headline theorem.
+
+Archive boundary: lax-11 and lax-67 were reset from registered to draft using
+the supported maintainer action. Lax-67 accepted source `bc4c6e6`, independently
+rebuilt by run `34347162845`, archive commit `40dd3740a24fc096342fc2dbf66e0fd8dea23ee9`.
+The original lax-13 and lax-67 owner lists are restored. Ram-linear-time and
+refinement-tower now pin that accepted RAM revision; their full `lax build`
+checks passed against the archive dependencies. Draft-dependency and existing
+proof-package advisories are expected for this coordinated draft resubmission.
