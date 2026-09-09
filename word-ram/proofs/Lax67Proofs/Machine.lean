@@ -6,7 +6,7 @@ Reasoning kit for the word machine: the equations of the concept's
 definitions, composition of runs, the placement predicate `Fits`, and
 the three bitwise identities the compiler's lowered operators need.
 
-Every equation here is proved by `rfl`. The concept's `step` and
+The raw defining equations are proved by `rfl`. The concept's `step` and
 `Instr.effect` are defined by pattern matching, and `simp`-unfolding
 such a definition creates an auxiliary declaration named after it — in
 the concept's namespace, which this package is not allowed to declare
@@ -14,7 +14,8 @@ into. So the equations are restated here, in this package's namespace,
 and only these are ever used.
 
 The word length appears in two places: every value the machine produces
-carries a `% 2 ^ w`, and every address it uses carries one. The lemmas
+carries a `% 2 ^ w`, and every data-memory address or input index
+carries one. Program addresses are untruncated. The lemmas
 below come in two flavours accordingly — the raw equation, with the
 `_eq` suffix, and the version whose hypothesis is that the addresses are
 words, in which case `Nat.mod_eq_of_lt` removes the reduction.
@@ -64,9 +65,9 @@ theorem setCell_of_ne {w a b : ℕ} (m : ℕ → ℕ) (v : ℕ) (ha : a < 2 ^ w)
 
 /-! ### Instructions
 
-Twelve of the fifteen instructions write one cell, so their effect is
-one `setCell`; the three that do not are the two jumps and `halt`,
-together with the two tape instructions. -/
+An instruction that writes memory uses one `setCell`. Control and
+output instructions preserve memory, and every instruction preserves
+the original input array. -/
 
 theorem effect_set (w a n : ℕ) (s : State) :
     (Instr.set a n).effect w s =
@@ -201,6 +202,28 @@ theorem effect_jzero {w a l : ℕ} {s : State} (ha : a < 2 ^ w) :
       some { s with pc := if s.mem a = 0 then l else s.pc + 1 } := by
   rw [effect_jzero_eq, Nat.mod_eq_of_lt ha]
 
+theorem effect_jeof (w l : ℕ) (s : State) :
+    (Instr.jeof l).effect w s =
+      some { s with pc := if s.inp.isEmpty then l else s.pc + 1 } := rfl
+
+theorem effect_inputLength (w a : ℕ) (s : State) :
+    (Instr.inputLength a).effect w s =
+      some { s with pc := s.pc + 1, mem := setCell w s.mem a s.input.length } := rfl
+
+theorem effect_inputLoad_eq (w a b : ℕ) (s : State) :
+    (Instr.inputLoad a b).effect w s =
+      some { s with
+        pc := s.pc + 1
+        mem := setCell w s.mem a (s.input[s.mem (b % 2 ^ w) % 2 ^ w]?.getD 0) } := rfl
+
+theorem effect_inputLoad {w a b : ℕ} {s : State}
+    (hb : b < 2 ^ w) (hm : s.mem b < 2 ^ w) :
+    (Instr.inputLoad a b).effect w s =
+      some { s with
+        pc := s.pc + 1
+        mem := setCell w s.mem a (s.input[s.mem b]?.getD 0) } := by
+  rw [effect_inputLoad_eq, Nat.mod_eq_of_lt hb, Nat.mod_eq_of_lt hm]
+
 theorem effect_halt (w : ℕ) (s : State) : Instr.halt.effect w s = none := rfl
 
 theorem effect_write_eq (w a : ℕ) (s : State) :
@@ -255,6 +278,96 @@ theorem run_one {w : ℕ} {p : Program} {s : State} {ins : Instr} (h : p[s.pc]? 
   rw [show (1 : ℕ) = 0 + 1 from rfl, run_succ, step_eq, h]
   show (ins.effect w s).bind (run w p 0) = ins.effect w s
   cases ins.effect w s <;> rfl
+
+/-- A successful instruction preserves the original read-only input. -/
+theorem effect_input {w : ℕ} {i : Instr} {s s' : State}
+    (h : i.effect w s = some s') : s'.input = s.input := by
+  cases i <;> simp only [effect_set, effect_load_eq, effect_store_eq, effect_add_eq,
+    effect_sub_eq, effect_mul_eq, effect_div_eq, effect_and_eq, effect_shiftl_eq,
+    effect_not_eq, effect_jump, effect_jzero_eq, effect_jeof, effect_inputLength,
+    effect_inputLoad_eq, effect_halt, effect_read_eq, effect_write_eq] at h
+  all_goals try { cases h <;> rfl }
+  cases hs : s.inp.head? with
+  | none => simp [hs] at h
+  | some v =>
+      simp only [hs, Option.map_some] at h
+      cases h
+      rfl
+
+/-- Every successful transition preserves the original read-only input. -/
+theorem step_input {w : ℕ} {p : Program} {s s' : State}
+    (h : step w p s = some s') : s'.input = s.input := by
+  rw [step_eq] at h
+  cases hp : p[s.pc]? with
+  | none => simp [hp] at h
+  | some i => exact effect_input (by simpa [hp] using h)
+
+/-- Sequential reads, jumps, and writes cannot change indexed input. -/
+theorem run_input {w k : ℕ} {p : Program} {s s' : State}
+    (h : run w p k s = some s') : s'.input = s.input := by
+  induction k generalizing s with
+  | zero => cases h; rfl
+  | succ k ih =>
+      rw [run_succ] at h
+      cases hs : step w p s with
+      | none => simp [hs] at h
+      | some t => exact (ih (by simpa [hs] using h)).trans (step_input hs)
+
+/-- Out-of-range instruction fetch terminates without a charge. -/
+theorem step_none_of_length_le {w : ℕ} {p : Program} {s : State}
+    (h : p.length ≤ s.pc) : step w p s = none := by
+  rw [step_eq, List.getElem?_eq_none (by omega)]
+  rfl
+
+theorem terminalCost_eq (p : Program) (s : State) :
+    terminalCost p s = if s.pc < p.length then 1 else 0 := rfl
+
+/-- A fetched instruction costs one when it terminates. -/
+theorem terminalCost_of_getElem? {p : Program} {s : State} {i : Instr}
+    (h : p[s.pc]? = some i) : terminalCost p s = 1 := by
+  rw [terminalCost_eq, if_pos]
+  exact List.getElem?_eq_some_iff.mp h |>.1
+
+/-- A terminal state cannot make any further successful transition. -/
+theorem run_succ_of_terminal {w : ℕ} {p : Program} {s : State}
+    (h : step w p s = none) (k : ℕ) : run w p (k + 1) s = none := by
+  rw [run_succ, h]; rfl
+
+/-- Determinism fixes both the terminal state and successful-transition
+count, regardless of the proposed bounds. -/
+theorem terminal_run_unique {w k k' : ℕ} {p : Program} {s t t' : State}
+    (h : run w p k s = some t) (ht : step w p t = none)
+    (h' : run w p k' s = some t') (ht' : step w p t' = none) :
+    k = k' ∧ t = t' := by
+  induction k generalizing s k' with
+  | zero =>
+      have heq : s = t := Option.some.inj h
+      subst t
+      cases k' with
+      | zero => exact ⟨rfl, Option.some.inj h'⟩
+      | succ k' => rw [run_succ_of_terminal ht] at h'; contradiction
+  | succ k ih =>
+      cases k' with
+      | zero =>
+          have heq : s = t' := Option.some.inj h'
+          subst t'
+          rw [run_succ_of_terminal ht'] at h
+          contradiction
+      | succ k' =>
+          rw [run_succ] at h h'
+          cases hs : step w p s with
+          | none => simp [hs] at h
+          | some u =>
+              obtain ⟨hk, heq⟩ := ih (by simpa [hs] using h) (by simpa [hs] using h')
+              exact ⟨congrArg Nat.succ hk, heq⟩
+
+/-- A terminating program has a unique complete output and exact charged time. -/
+theorem runsTo_unique {w t t' : ℕ} {p : Program} {x y y' : List ℕ}
+    (h : RunsTo w p x y t) (h' : RunsTo w p x y' t') : y = y' ∧ t = t' := by
+  obtain ⟨k, s, hr, hs, hy, ht⟩ := h
+  obtain ⟨k', s', hr', hs', hy', ht'⟩ := h'
+  obtain ⟨rfl, rfl⟩ := terminal_run_unique hr hs hr' hs'
+  exact ⟨hy.symm.trans hy', ht.trans ht'.symm⟩
 
 /-! ### Bitwise identities
 

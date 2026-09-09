@@ -5,89 +5,75 @@ import Mathlib.Data.List.Basic
 title: The word RAM
 type: definition
 ---
-A word RAM is a random access machine whose cells hold *words*: natural
-numbers below `2 ^ w`, for a word length `w` that is a parameter of the
-model. It has a memory of `2 ^ w` cells, addressed by number, and no
-other storage. Input arrives on a read-only input tape and output is
-written on a write-only output tape. A program is a finite sequence of
-instructions, executed in order unless a jump instruction changes the
-program counter. Every instruction names the cells it works on: it sets
-a cell to a literal; it reads or writes a cell through the address held
-in another cell; it sets a cell to the sum, the difference, the product,
-the quotient, the bitwise conjunction or the left shift of two cells, or
-to the bitwise complement of one; it jumps unconditionally or if a cell
-is zero; it halts; or it reads the next input number into a cell or
-writes a cell to the output tape.
+A word RAM is a random access machine whose writable memory consists of
+`2 ^ w` cells holding natural numbers below `2 ^ w`. The word length
+`w` is a parameter; one finite program serves all word lengths. Input
+is a read-only finite array supplied at initialization, also accessible
+as a sequential tape. Output is an append-only tape. Working memory
+starts at zero and output starts empty.
 
-All arithmetic is arithmetic on words: every value the machine produces
-is taken modulo `2 ^ w`, and every address is taken modulo `2 ^ w`.
-Subtraction is truncated at zero rather than wrapping. Division is
-integer division, with `x / 0 = 0`.
+The input interface has four operations. `read a` consumes the next
+entry of the sequential tape into cell `a`, halting if the tape is
+empty. `jeof l` branches on tape emptiness without consuming input.
+`inputLength a` writes the original input length into cell `a`.
+`inputLoad a b` reads the original input at the index in cell `b` into
+cell `a`, returning zero outside the input. Indexed access never
+consumes the sequential tape, and sequential reads never change the
+original input. Zero is ordinary data, not an end marker. Each operation
+costs one instruction. No length header or other framing is added to
+the supplied list.
 
-The machine starts with all memory cells zero, the whole input word on
-the input tape and the output tape empty; it halts having written the
-output word. The running time is the number of instructions executed,
-each costing one time unit.
+Arithmetic results, input values and lengths, output values, and
+data-memory addresses are reduced modulo `2 ^ w`. Subtraction is
+truncated at zero, and division is integer division with `x / 0 = 0`.
+Input indices are words too. Program labels and the program counter are
+natural numbers and are not reduced modulo `2 ^ w`.
 
 # Formalization notes
 
-This is the machine the modern analysis of algorithms is stated on. Its
-format is that of Cook and Reckhow (*Time bounded random access
-machines*, JCSS 7, 1973): memory cells are the only storage, an
-instruction is `cell ← f(cells)`, literals enter through one instruction
-and indirection through two. The format is theirs; the carrier is not:
-their cells hold signed integers, subtract exactly and branch on a
-positive cell, where this machine holds words, truncates subtraction at
-zero and branches on a zero cell, the choices the word model makes.
-Its numbers are bounded rather than its instruction set, which is the discipline of Fredman and Willard
-(*Surpassing the information theoretic bound with fusion trees*, JCSS
-47, 1993) and of Hagerup (*Sorting and searching on the word RAM*,
-STACS 1998): cells hold `w`-bit words, `w` is large enough to address
-the input — `w ≥ log n`, here always written as an explicit inequality
-against `2 ^ w` at the point of use — and a word operation costs one
-time unit because on words it is one instruction of a real machine.
-Multiplication, division, bitwise operations and shifts are then
-unproblematic, and this is what makes the model the one in which the
-results of the algorithms literature are actually stated. The formats
-in which those results are written down simulate one another with
-constant overhead (van Emde Boas, *Machine models and simulations*,
-Handbook of Theoretical Computer Science A, 1990, §2).
+The register-transfer format follows Cook and Reckhow (*Time bounded
+random access machines*, JCSS 7, 1973): instructions act on numbered
+cells, with indirection through a cell holding an address. Their cells
+hold signed integers, and their sequential input has a distinguished
+zero end marker outside its input alphabet. This definition instead
+uses unsigned words, supplies explicit EOF detection, and additionally
+provides indexed read-only input with its length available in constant
+time. It therefore specifies its own input convention; the interface
+is not an identification with the original Cook--Reckhow input tape.
 
-Truncation is definitional and follows a single rule, applied
-everywhere and with no exceptions: **every value the machine produces
-is reduced modulo `2 ^ w` at the point of production, and every address
-is reduced modulo `2 ^ w` at the point of use.** Values are produced
-into memory, where `setCell` carries the reduction, and onto the output
-tape, where `Instr.effect` writes it out; addresses are used by every
-operand of every instruction, by the address `load` and `store` fetch
-out of a cell, and by `setCell` when it writes. A literal is not
-reduced where it is written down — that would be a second rule — but
-the value it produces is, so an oversized literal is never observable
-except through a word, and only a program's own literals can be
-oversized in the first place, since every value it can read out of
-memory is a word. Two consequences make the rule worth its uniformity:
-every cell the machine can reach holds a word, by construction rather
-than by an invariant to be proved; and the memory, although indexed by
-all of `ℕ`, is touched only at the residues below `2 ^ w`, so it is
-exactly the canonical `2 ^ w`-cell store. For the instructions whose
-results cannot leave the words — truncated subtraction, division,
-conjunction, complement — the reduction does nothing; it is written
-anyway, because a rule without exceptions is easier to review than a
-case distinction.
+Word operations have unit cost, as in the bounded-word models of
+Fredman and Willard (*Surpassing the information theoretic bound with
+fusion trees*, JCSS 47, 1993) and Hagerup (*Sorting and searching on the
+word RAM*, STACS 1998). Comparisons with other word-RAM presentations
+must fix the available operations, input convention, and address-space
+assumptions. Indexed input avoids a compulsory input scan, as in an
+input-array RAM. A simulation that instead starts from sequential input
+and loads an `n`-word array pays an additive `O(n)` cost, giving
+`O(n + T)`, which is `O(T)` only under a suitable lower bound on `T`.
+No unconditional constant-factor model-equivalence claim is made here.
 
-Subtraction is natural-number monus, truncated at zero, so that a
-comparison is `sub` followed by `jzero`. The complement is
-`2 ^ w - 1 - m[b]`, the one value that depends on the word length other
-than through truncation; with `and` and `shiftl` beside it, every
-bitwise operation and both shifts take a number of instructions
-independent of `w`. No instruction reports the word length: no
-operation the literature charges one time unit for needs `w` as a
-number, only the all-ones word `2 ^ w - 1` as a mask, which is `not` of
-a zero cell, and a program that instead counted the doublings of a cell
-from `1` until it wraps to zero would spend `w` steps, which no time
-bound stated over all word lengths absorbs. One program therefore
-serves every word length. The remaining standard operations are derived
-at constant cost; with `t` and `u` cells the program spares:
+`setCell` reduces each value stored and each destination address modulo
+`2 ^ w`. Other data-memory operands and indirect addresses are reduced
+at use; output and input values are reduced too. From initialization,
+every reachable memory cell holds a word. The function representation
+of memory has domain `ℕ`, but execution accesses only the residues below
+`2 ^ w`. Program control is separate: `jump`, `jzero`, and `jeof` use
+untruncated program labels, ordinary advancement increments the full
+program counter, and instruction fetch uses that counter.
+
+Oversized input entries and the length are reduced rather than
+rejected. To recover an entry unchanged requires that entry to be below
+`2 ^ w`; to recover the complete original length with `inputLength`
+requires `x.length < 2 ^ w`. These fitting conditions belong in the
+admissible domain of the theorem that needs them. EOF-based programs
+can process lists whose total length does not fit in a word. Indexed
+reads can address the prefix with indices below `2 ^ w`; the initial
+array itself is read-only input storage, separate from writable memory.
+
+Subtraction is natural-number monus, so a comparison is `sub` followed
+by `jzero`. Complement is `2 ^ w - 1 - m[b]`. No instruction returns
+the word length. The following operations are derived at constant cost,
+with `t` and `u` distinct scratch cells disjoint from the operands:
 
 | operation | instructions | count |
 |---|---|---|
@@ -100,50 +86,36 @@ at constant cost; with `t` and `u` cells the program spares:
 | if `b < c` goto `l` | `sub t c b; jzero t l'; jump l; l':` | 3 |
 | if `b = c` goto `l` | `sub t b c; sub u c b; add t t u; jzero t l` | 4 |
 
-`read` reduces the number it takes off the input tape modulo `2 ^ w`,
-like every other value, so the machine is total in its input and
-honesty about inputs whose entries do not fit into a word lives on the
-statement side, in the set of admissible inputs a claim quantifies
-over.
+An explicit `halt`, an exhausted `read`, or an out-of-range program
+counter terminates execution. `step` returns `none` in all three cases.
+`run w p k` counts successful transitions only. `RunsTo` adds the cost
+of the fetched terminal instruction: one for `halt` or exhausted `read`,
+and zero for an out-of-range counter, where no instruction exists.
+Thus `RunsTo` counts every executed instruction exactly once, and an
+empty program costs zero. Termination constrains the entire output
+tape; memory is left unconstrained.
 
-Reading and writing are total: a `halt` instruction halts the machine,
-an out-of-range program counter halts it, a read from an exhausted
-input tape halts it, and every memory cell holds a number, so no error
-states are needed. `Instr.effect` is the whole of the instruction
-semantics and `step` adds only the fetch, returning `none` exactly when
-the machine has halted, so the semantics is deterministic and total by
-construction. `run w p t` is `t`-fold application of `step`, and it is
-`none` as soon as the machine halts, which is what makes "halts after
-exactly `t` steps" in `RunsTo` a statement about the *number of
-instructions executed*: the time measure is intrinsic to the machine
-and is not an annotation carried alongside the program. `RunsTo`
-constrains the output tape and nothing else: memory is scratch space
-and is left unconstrained on halting.
+The separate read-only input preserves a fixed working-memory layout.
+An input-in-memory convention could also reserve fixed low-address
+working cells and put input at a fixed base; no length-dependent input
+base is necessary. Copying this model's input into writable memory,
+when desired and when the chosen layout fits, takes constant overhead
+per word and linear total time: a uniform loader uses `read` into a
+temporary cell, an indirect `store`, and loop maintenance.
 
-The input and output tapes are what makes the machine's memory start
-out empty, and hence what lets a program address it by fixed cell
-numbers; an input laid out in memory instead would begin at a cell
-number depending on the input length. A program that wants random
-access to its input copies it into memory first, at a cost of one
-instruction per number.
-
-Time is the machine's own step count, one unit per instruction, and it
-is honest for multiplication precisely because the factors are words.
-There is no space measure: it would be a further definition over `run`,
-and space is in any case bounded by the `2 ^ w` cells the machine can
-address. Randomness is absent as well; a randomized program is a
-deterministic program that consumes a word list of random numbers,
-which is definable downstream over this same machine, with no change to
-the model.
+There is no separate space measure or randomness primitive. A space
+measure can be defined over executions; writable memory has `2 ^ w`
+cells. A deterministic program can consume additional input words to
+model supplied random choices.
 -/
 
 namespace Lax67.Ram
 
 /-- An instruction. Every number naming a cell is read, except that
-the first one names the cell written by `set`, `load`, `read` and the
-arithmetic instructions, and the cell holding the address written by
-`store`; `set` is the only instruction carrying a literal, and `jump`,
-`jzero` carry a program address. -/
+the first one names the destination for instructions that write a cell,
+and the cell holding the destination address for `store`. `set` carries
+a literal value; `jump`, `jzero`, and `jeof` carry program labels,
+which are not data-memory addresses. -/
 inductive Instr
   /-- Set cell `a` to the literal `n`. -/
   | set (a n : ℕ)
@@ -178,6 +150,15 @@ inductive Instr
   | jump (l : ℕ)
   /-- Continue at instruction `l` if cell `a` is zero. -/
   | jzero (a l : ℕ)
+  /-- Continue at instruction `l` exactly when the remaining input tape
+  is empty. This test does not consume input. -/
+  | jeof (l : ℕ)
+  /-- Write the original input length, reduced to a word, into cell `a`. -/
+  | inputLength (a : ℕ)
+  /-- Read original input at the word index in cell `b` into cell `a`,
+  returning zero outside the input. Read the index before writing `a`,
+  even when the two cell addresses coincide. Do not consume input. -/
+  | inputLoad (a b : ℕ)
   /-- Halt. -/
   | halt
   /-- Read the next number of the input tape into cell `a`, or halt if
@@ -190,14 +171,16 @@ inductive Instr
 abbrev Program : Type := List Instr
 
 /-- A machine state: the program counter, the contents of every memory
-cell, the part of the input tape not yet read, and the output tape
-written so far. Memory is the only storage there is. -/
+cell, the immutable original input array, the remaining sequential input
+tape, and the output tape written so far. -/
 structure State where
   /-- The number of the instruction to be executed next. -/
   pc : ℕ
   /-- The contents of the memory cells; only the cells with number below
   `2 ^ w` are ever addressed. -/
   mem : ℕ → ℕ
+  /-- The original read-only input, unchanged by every instruction. -/
+  input : List ℕ
   /-- The numbers still to be read from the input tape. -/
   inp : List ℕ
   /-- The numbers written to the output tape so far. -/
@@ -210,8 +193,9 @@ def setCell (w : ℕ) (m : ℕ → ℕ) (a v : ℕ) : ℕ → ℕ :=
 
 /-- The effect of one instruction on the state at word length `w`, or
 `none` if it halts the machine, which a `halt` instruction and a read
-from an exhausted input tape do. Every value produced is reduced modulo
-`2 ^ w` and every address used is reduced modulo `2 ^ w`. -/
+from an exhausted input tape do. Data values, input indices, and
+data-memory addresses are reduced modulo `2 ^ w`; program labels and
+the counter are not. -/
 def Instr.effect (w : ℕ) : Instr → State → Option State
   | set a n, s => some { s with pc := s.pc + 1, mem := setCell w s.mem a n }
   | load a b, s =>
@@ -261,6 +245,13 @@ def Instr.effect (w : ℕ) : Instr → State → Option State
           mem := setCell w s.mem a (2 ^ w - 1 - s.mem (b % 2 ^ w)) }
   | jump l, s => some { s with pc := l }
   | jzero a l, s => some { s with pc := if s.mem (a % 2 ^ w) = 0 then l else s.pc + 1 }
+  | jeof l, s => some { s with pc := if s.inp.isEmpty then l else s.pc + 1 }
+  | inputLength a, s =>
+      some { s with pc := s.pc + 1, mem := setCell w s.mem a s.input.length }
+  | inputLoad a b, s =>
+      some { s with
+        pc := s.pc + 1
+        mem := setCell w s.mem a (s.input[s.mem (b % 2 ^ w) % 2 ^ w]?.getD 0) }
   | halt, _ => none
   | read a, s =>
       s.inp.head?.map fun v =>
@@ -275,24 +266,34 @@ run past the program. -/
 def step (w : ℕ) (p : Program) (s : State) : Option State :=
   p[s.pc]?.bind fun i => i.effect w s
 
-/-- The state after `t` steps at word length `w`, or `none` if the
-machine halts before executing `t` instructions. -/
+/-- The state after `t` successful transitions at word length `w`, or
+`none` if one of those transitions terminates. This auxiliary count does
+not include a fetched terminal instruction; `RunsTo` charges that too. -/
 def run (w : ℕ) (p : Program) : ℕ → State → Option State
   | 0, s => some s
   | t + 1, s => (step w p s).bind (run w p t)
 
 /-- The initial state on input `x`: program counter zero, all memory
-cells zero, the input word on the input tape, the output tape empty. -/
+cells zero, the original input array and its sequential tape both `x`,
+and the output tape empty. -/
 def initState (x : List ℕ) : State where
   pc := 0
   mem := fun _ => 0
+  input := x
   inp := x
   out := []
+
+/-- Cost of termination at `s`, when `step w p s = none`: a fetched
+terminal instruction costs one, while an out-of-range program counter
+costs zero because there is no instruction to execute. -/
+def terminalCost (p : Program) (s : State) : ℕ :=
+  if s.pc < p.length then 1 else 0
 
 /-- Started on input `x` at word length `w`, the machine executes
 exactly `t` instructions and then halts, having written the word `y` to
 its output tape. -/
 def RunsTo (w : ℕ) (p : Program) (x y : List ℕ) (t : ℕ) : Prop :=
-  ∃ s : State, run w p t (initState x) = some s ∧ step w p s = none ∧ s.out = y
+  ∃ (k : ℕ) (s : State), run w p k (initState x) = some s ∧
+    step w p s = none ∧ s.out = y ∧ t = k + terminalCost p s
 
 end Lax67.Ram

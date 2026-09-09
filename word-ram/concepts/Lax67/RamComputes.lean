@@ -8,14 +8,21 @@ type: definition
 ---
 A word RAM program computes a function of words within a time bound *T*
 on a set *D* of admissible inputs if, started on any input *x* in *D* at
-word length *w*, it halts after at most *T(x)* steps having written the
+word length *w*, it halts after at most *T(x)* instructions having written the
 value of the function at *x* to its output tape. The bound is a function
 of the input, so that bounds like "linear in the length of the input"
 are stated by instantiating *T*.
 
 # Formalization notes
 
-The number of steps is the machine's own step count, so a time bound is
+The count includes explicit `halt` and exhausted `read`, but charges
+nothing for an out-of-range program counter. Input is the supplied raw
+list: there is no implicit header or marker. EOF testing and indexed
+read-only input access, with original length metadata, are available
+at unit cost, as specified in `Ram`. No initial input-loading scan is
+charged. The complete append-only output must equal the function value.
+
+The number of instructions comes from the machine semantics, so a time bound is
 a statement about the *program*: nothing is annotated onto the program
 and then trusted. Only inputs in `D` are constrained; a program is free
 to do anything at all on malformed input, which is what a statement
@@ -60,7 +67,7 @@ namespace Lax67.RamComputes
 open Lax67.Ram
 
 /-- At word length `w`, on every admissible input `x`, the program halts
-within `T x` steps with output `f x`. -/
+within `T x` executed instructions with output `f x`. -/
 def ComputesInTime (w : ℕ) (p : Program) (D : Set (List ℕ))
     (f : List ℕ → List ℕ) (T : List ℕ → ℕ) : Prop :=
   ∀ x ∈ D, ∃ t ≤ T x, RunsTo w p x (f x) t

@@ -301,11 +301,11 @@ theorem solves {b : ℕ} (hb : 1 < b) :
     simp [initEnv]
 
 /-- **Square, end to end.** The compiled machine program writes the
-square and the double of its input within 90 steps, at every word length
+square and the double of its input within 91 instructions, at every word length
 at which the bound fits. -/
 theorem prog_computesInTime {b w : ℕ} (hb : 1 < b) (hw : b + 5 ≤ 2 ^ w) :
     ComputesInTime w prog (dom b) (fun x => [x.headI * x.headI, x.headI * 2])
-      (fun _ => 90) := by
+      (fun _ => 91) := by
   refine computesInTime_of_solves (solves hb)
     (fun x _ => fitsWords_of_max_le hb (by simp [Layout.span, layout]; omega))
     (fun x _ => by rw [const_eq])
