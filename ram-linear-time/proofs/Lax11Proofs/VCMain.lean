@@ -13,15 +13,15 @@ search is the loop of `VCLoop`; what is left is the arithmetic. One
 index computation is four instructions whatever the number of arrays,
 so the machine pays ten steps per unit of IMP+ cost; the run itself
 costs at most nine hundred times `2 ^ k` per entry of the input
-word. The product is the constant of the statement, and no part of it
-was fought over.
+word. The product bounds the nonhalting cost; one final `halt` is
+absorbed by using `9001` as the statement's constant.
 
 The word length is dealt with in the same step and in the same place.
 The value bound the driver runs under is the length of the input word
 plus the parameter — the parameter is an entry of the word, so it has
 to be a word, and the stack indices and budgets are below it, while
 everything else is below the length. The statement's hypothesis, that
-`9000(|x| + k + 1)` is a word, gives that bound and the span of the
+`9001(|x| + k + 1)` is a word, gives that bound and the span of the
 layout at it, `24 + 6(|x| + k)`, with a margin nobody has to compute.
 It is deliberately not the hypothesis that the *running time* is a
 word: `2 ^ k` is a count of steps, not a number the machine ever holds.
@@ -233,7 +233,7 @@ word, with every value it produces below the length of that word plus
 the parameter. -/
 theorem vcCom_solves (n : ℕ) (G : SimpleGraph (Fin n)) (k w : ℕ) :
     Solves layout vcCom
-      {x | EncodesParamInstance x n G k ∧ 9000 * (x.length + k + 1) ≤ 2 ^ w}
+      {x | EncodesParamInstance x n G k ∧ 9001 * (x.length + k + 1) ≤ 2 ^ w}
       (fun _ => if G.vertexCoverNum ≤ (k : ℕ∞) then [1] else [0])
       (fun x => x.length + k) (fun x => 900 * 2 ^ k * (x.length + 1)) where
   ok := vcCom_ok
@@ -249,8 +249,8 @@ Vertex cover is fixed-parameter tractable with the parameter dependence
 written into the bound: `vcProgram` decides, on every graph in
 compressed sparse row form followed by the parameter `k`, whether the
 graph has a vertex cover of at most `k` vertices, within
-`9000 * 2 ^ k * (|x| + 1)` machine steps, at every word length at
-which `9000 * (|x| + k + 1)` fits into a word.
+`9001 * 2 ^ k * (|x| + 1)` machine steps, at every word length at
+which `9001 * (|x| + k + 1)` fits into a word.
 
 # Proof strategy
 
@@ -285,8 +285,9 @@ configuration: `pot ⟨[], 0, k, 0⟩ = 4·2 ^ k − 2`.
 
 `computesInTime_of_solves` discharges the compiler, the layout
 invariant and the machine in one step, charging `layout.const = 10`
-machine steps per unit of IMP+ cost — an index computation is four
-instructions, whatever the number of arrays. The array extents are chosen per
+machine steps per unit of IMP+ cost, plus one for the final `halt` — an
+index computation is four instructions, whatever the number of arrays.
+The array extents are chosen per
 input, as that lemma allows: `vcExt n m k` declares `off ↦ n+1`,
 `tgt ↦ 2m`, `mark ↦ n` and the three stack arrays `↦ k`, which is
 exactly the depth the budget permits.
@@ -304,7 +305,7 @@ parameter itself and the stack pointer and budget, which lie between
 `0` and `k`. So the whole run needs the single hypothesis
 `|x| + k ≤ B`, and the compiled program needs in addition that the
 cells the layout addresses are words, which is `24 + 6(|x| + k)`. The
-statement's hypothesis, that `9000(|x| + k + 1)` is a word, gives both
+statement's hypothesis, that `9001(|x| + k + 1)` is a word, gives both
 with room to spare.
 
 What the hypothesis deliberately does *not* say is that the running
@@ -344,7 +345,7 @@ theorem exists_fptTime_program_vertexCover :
         {x | EncodesParamInstance x n G k ∧ c * (x.length + k + 1) ≤ 2 ^ w}
         (fun _ => if G.vertexCoverNum ≤ (k : ℕ∞) then [1] else [0])
         (fun x => c * 2 ^ k * (x.length + 1)) := by
-  refine ⟨vcProgram, 9000, fun n G k w =>
+  refine ⟨vcProgram, 9001, fun n G k w =>
     computesInTime_of_solves (vcCom_solves n G k w) ?_ ?_⟩
   · rintro x ⟨⟨g, rfl, hg⟩, hw⟩
     have hglen := hg.length_eq
@@ -352,6 +353,12 @@ theorem exists_fptTime_program_vertexCover :
     exact fitsWords_of_max_le (by omega) (by simp [Layout.span, layout]; omega)
   · rintro x -
     rw [const_eq]
-    exact le_of_eq (by ring)
+    have hpos : 1 ≤ 2 ^ k * (x.length + 1) := by
+      have := Nat.mul_pos (Nat.two_pow_pos k) (show 0 < x.length + 1 by omega)
+      omega
+    calc 10 * (900 * 2 ^ k * (x.length + 1)) + 1
+        ≤ 9000 * (2 ^ k * (x.length + 1)) + (2 ^ k * (x.length + 1)) := by
+          nlinarith
+      _ = 9001 * 2 ^ k * (x.length + 1) := by ring
 
 end Lax11Proofs.VCMain

@@ -337,16 +337,24 @@ annotation. -/
 multiplications are the address strides of `Layout.idxCode`: a `mul`
 whose scratch operand was just `set` to `L.arrays.length`. A `mul` in
 any other position — in particular at the very start of the program,
-where nothing precedes it — is rejected. -/
+where nothing precedes it — is rejected. This check also excludes the
+extended input instructions: this compiler uses only the original
+instruction subset. -/
 def noDataDependentWide (L : Layout) : Program → Bool
   | [] => true
   | .div _ _ _ :: _ => false
   | .shiftl _ _ _ :: _ => false
+  | .jeof _ :: _ => false
+  | .inputLength _ :: _ => false
+  | .inputLoad _ _ :: _ => false
   | .mul _ _ _ :: _ => false
   | .set c q :: .mul _ _ c' :: rest =>
       (c' == c && q == L.arrays.length) && noDataDependentWide L rest
   | _ :: rest => noDataDependentWide L rest
 
 #guard noDataDependentWide layout (driverProgram edgeTable acpEdge)
+#guard !noDataDependentWide layout [.jeof 0]
+#guard !noDataDependentWide layout [.inputLength 0]
+#guard !noDataDependentWide layout [.inputLoad 0 1]
 
 end Lax11Proofs.Courcelle

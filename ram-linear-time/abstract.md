@@ -1,7 +1,9 @@
 This submission collects running-time theorems about concrete
 algorithms, stated on the word RAM of the archive's model submission
 *The Word RAM* — which it requires — and measured by the machine's own
-step count. Every statement has the same elementary shape: there are a
+instruction count, including a fetched final `halt`. The programs read
+their counted input blocks sequentially and pay for loading them into
+working memory. Every statement has the same elementary shape: there are a
 program and a constant such that, at every word length $w$, on every
 admissible input — admissibility including an explicit fitting
 inequality against $2^w$ — the machine halts within an explicit bound,

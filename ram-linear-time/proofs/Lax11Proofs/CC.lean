@@ -1,5 +1,6 @@
 import Lax11.ConnectedComponents
 import Lax67Proofs.Frame
+import Lax67Proofs.Lib.Basic
 
 /-!
 The driver: connected components, as an IMP+ program.
@@ -138,34 +139,30 @@ below are given in the concept's encoding, and the outputs are the
 least-vertex labels. The word length is fixed at sixteen, which is more
 than these graphs need; the step counts do not depend on it. -/
 
-/-- Run a machine program at word length `w` to a halt within `f`
-steps, reporting the output tape and the number of steps taken. -/
-def runOut (w : ℕ) : ℕ → Program → State → ℕ → Option (List ℕ × ℕ)
-  | 0, _, _, _ => none
-  | f + 1, p, s, k =>
-      match step w p s with
-      | none => some (s.out, k)
-      | some s' => runOut w f p s' (k + 1)
+/-- The shared evaluator, proved to agree with `RunsTo`: fetched
+terminal instructions cost one and falling outside the program costs
+zero, including at the exact fuel boundary. -/
+abbrev runOut := Lax67Proofs.Reasoning.Lib.runOut
 
 /-- Run `ccProgram` on an encoded graph, at a word length that holds
 every number these graphs produce. -/
 def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 100000 ccProgram (initState x) 0
 
 -- no vertices
-#guard test [0, 0, 0] = some ([], 109)
+#guard test [0, 0, 0] = some ([], 110)
 -- one vertex, no edges
-#guard test [1, 0, 0, 0] = some ([0], 304)
+#guard test [1, 0, 0, 0] = some ([0], 305)
 -- two vertices, the edge between them
-#guard test [2, 1, 0, 1, 2, 1, 0] = some ([0, 0], 646)
+#guard test [2, 1, 0, 1, 2, 1, 0] = some ([0, 0], 647)
 -- two vertices, no edge
-#guard test [2, 0, 0, 0, 0] = some ([0, 1], 499)
+#guard test [2, 0, 0, 0, 0] = some ([0, 1], 500)
 -- three vertices, the edge 1-2
-#guard test [3, 1, 0, 0, 1, 2, 2, 1] = some ([0, 1, 1], 841)
+#guard test [3, 1, 0, 0, 1, 2, 2, 1] = some ([0, 1, 1], 842)
 -- four vertices, the edges 0-2 and 1-3: two components, interleaved
-#guard test [4, 2, 0, 1, 2, 3, 4, 2, 3, 0, 1] = some ([0, 1, 0, 1], 1183)
+#guard test [4, 2, 0, 1, 2, 3, 4, 2, 3, 0, 1] = some ([0, 1, 0, 1], 1184)
 -- five vertices, the path 0-1-2-3 and an isolated vertex
-#guard test [5, 3, 0, 1, 3, 5, 6, 6, 1, 0, 2, 1, 3, 2] = some ([0, 0, 0, 0, 4], 1525)
+#guard test [5, 3, 0, 1, 3, 5, 6, 6, 1, 0, 2, 1, 3, 2] = some ([0, 0, 0, 0, 4], 1526)
 -- four vertices, a triangle and an isolated vertex
-#guard test [4, 3, 0, 2, 4, 6, 6, 1, 2, 0, 2, 0, 1] = some ([0, 0, 0, 3], 1339)
+#guard test [4, 3, 0, 2, 4, 6, 6, 1, 2, 0, 2, 0, 1] = some ([0, 0, 0, 3], 1340)
 
 end Lax11Proofs.CC

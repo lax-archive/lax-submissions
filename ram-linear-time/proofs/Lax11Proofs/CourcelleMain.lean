@@ -388,7 +388,8 @@ because the root's value is the number of a type.
 
 `computesInTime_of_solves` discharges the compiler, the layout invariant
 and the machine, charging `layout.const = 10` machine steps per unit of
-IMP+ cost. The array extents are chosen per input, as that lemma allows.
+IMP+ cost, plus one for the final `halt`. The array extents are chosen
+per input, as that lemma allows.
 
 # Where the constant comes from
 
@@ -403,6 +404,10 @@ grows faster than any tower of exponentials in `q`. It is paid once,
 before the input is read, which the order of the quantifiers permits —
 the sentence and the width bound come first, then the program and the
 constant, then the graph.
+
+The input is nonempty and the table setup cost is positive. Spreading
+that one-time cost over the whole input leaves enough slack in the same
+constant to pay the final `halt` instruction.
 
 What the theorem claims about that constant is that it depends on the
 sentence and the width bound *alone*: the tables are materialized before
@@ -614,16 +619,16 @@ theorem exists_linearTime_program_modelChecking :
     refine fitsWords_of_max_le (by simp only [driverBound]; omega) ?_
     simp only [Layout.span, layout, driverBound, List.length_cons, List.length_nil]
     omega
-  · rintro x -
+  · rintro x ⟨hx, -⟩
     rw [const_eq]
     set T := table (rank φ) k with hTdef
-    calc 10 * (100 * (x.length + 1) + driverCost T)
-        ≤ 10 * ((100 + driverCost T) * (x.length + 1)) := by
-          refine Nat.mul_le_mul_left _ ?_
-          have h₁ : driverCost T ≤ driverCost T * (x.length + 1) :=
-            Nat.le_mul_of_pos_right _ (by omega)
-          rw [Nat.add_mul]
-          omega
-      _ = 10 * (100 + driverCost T) * (x.length + 1) := by rw [Nat.mul_assoc]
+    have hne : x ≠ [] := by
+      obtain ⟨_, _, _, _, _, hxeq, _⟩ := instance_tape hx
+      rw [hxeq]; simp
+    have hlen : 1 ≤ x.length := List.length_pos_of_ne_nil hne
+    have hcost : 1 ≤ driverCost T := by simp [driverCost]
+    have hslack : 1 ≤ driverCost T * x.length := by
+      exact Nat.mul_le_mul hcost hlen
+    nlinarith
 
 end Lax11Proofs.Courcelle

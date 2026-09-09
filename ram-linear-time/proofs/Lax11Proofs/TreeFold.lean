@@ -363,18 +363,13 @@ def foldProgram (T : Table) : Program := compileProgram layout (foldCom T)
 
 The house discipline: the machine program is checked against the pure
 model by evaluation before anything is proved. `runOut` runs to a halt
-and reports the output tape and the number of steps; it is the same
-three lines as in `CC.lean`, kept here so that this file depends on
-nothing of the connected-components driver but its read loop. -/
+and reports the output tape and the number of executed instructions,
+using the shared evaluator whose count is proved to agree with
+`RunsTo`. -/
 
-/-- Run a machine program at word length `w` to a halt within `f` steps,
-reporting the output tape and the number of steps taken. -/
-def runOut (w : ℕ) : ℕ → Program → State → ℕ → Option (List ℕ × ℕ)
-  | 0, _, _, _ => none
-  | f + 1, p, s, k =>
-      match step w p s with
-      | none => some (s.out, k)
-      | some s' => runOut w f p s' (k + 1)
+/-- The shared evaluator, including the final instruction charge and
+zero-cost fallthrough at the exact fuel boundary. -/
+abbrev runOut := Lax67Proofs.Reasoning.Lib.runOut
 
 /-- The instance word of a tree given by two lists. -/
 def encTree (parL labL : List ℕ) : List ℕ := parL.length :: (parL ++ labL)

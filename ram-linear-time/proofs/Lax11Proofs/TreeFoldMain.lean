@@ -252,7 +252,9 @@ the reason the table may be as large — and as noncomputable — as the
 mathematics that produces it. The word length hypothesis quantifies over
 the entries of the word because the encoding does not bound them all:
 the root's own parent entry is never read and never constrained, and the
-machine still has to hold it. -/
+machine still has to hold it. The constant also pays for the final
+`halt`: spreading the positive table setup cost over a nonempty input
+leaves more than one instruction of slack. -/
 theorem exists_linearTime_program_treeFold {T : Table} (hT : T.Wf) :
     ∃ (p : Program) (c : ℕ), ∀ (N : ℕ) (par lab : ℕ → ℕ) (w : ℕ),
       ComputesInTime w p
@@ -275,16 +277,14 @@ theorem exists_linearTime_program_treeFold {T : Table} (hT : T.Wf) :
     refine fitsWords_of_max_le (by simp only [foldBound]; omega) ?_
     simp only [Layout.span, layout, foldBound, List.length_cons, List.length_nil]
     omega
-  · rintro x -
+  · rintro x ⟨hx, -⟩
     rw [const_eq]
-    calc 10 * (60 * (x.length + 1) + tableCost T)
-        ≤ 10 * ((60 + tableCost T) * (x.length + 1)) := by
-          refine Nat.mul_le_mul_left _ ?_
-          have h₁ : tableCost T ≤ tableCost T * (x.length + 1) :=
-            Nat.le_mul_of_pos_right _ (by omega)
-          rw [Nat.add_mul]
-          omega
-      _ = 10 * (60 + tableCost T) * (x.length + 1) := by rw [Nat.mul_assoc]
+    have hne : x ≠ [] := by rw [hx.2.1]; simp
+    have hlen : 1 ≤ x.length := List.length_pos_of_ne_nil hne
+    have hcost : 1 ≤ tableCost T := by simp [tableCost]
+    have hslack : 1 ≤ tableCost T * x.length := by
+      exact Nat.mul_le_mul hcost hlen
+    nlinarith
 
 /-! ### The encoding, checked
 
