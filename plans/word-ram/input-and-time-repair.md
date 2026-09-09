@@ -89,3 +89,14 @@ Downstream pin boundary `ac2a589` updates five requirements in ram-linear-time
 and refinement-tower to that accepted source. Both full `lax build` checks
 passed (2m30s and 3m01s); supervisor diff review and narrow CCMain/Cash replays
 passed. Only the existing proof-package and draft-dependency advisories remain.
+
+Lax-11 and lax-62 accepted `d82625d050fde928adbe5d23b024a940e6f7d8da` in runs
+`34368293295` and `34368295127`, respectively; independent rebuilds passed in
+4m12s and 11m04s. Both published source tuples were checked against the live
+archive before the final model-checking pin update.
+
+Final pin boundary `f86a1cf` updates exactly six requirements in the two
+model-checking lakefiles. Full `lax build` passed in 16m59s (12 concepts and
+6 proofs inspected), with only eight existing dependency advisories. The
+supervisor reviewed the two-file diff and replayed `Lax3Proofs.SolveMachine`;
+all 3567 jobs passed. Sibling overrides report no stale requirements.
