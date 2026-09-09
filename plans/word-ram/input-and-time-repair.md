@@ -37,3 +37,8 @@ become 841 and 9001. Tree-fold and Courcelle retain their constants using
 proved slack. Internal IMP costs, input domains, and outputs are preserved.
 The sequential-input guards reject the three new input operations. Concepts
 and full proofs passed, followed by the supervisor's four-module replay.
+
+Reviewed refinement-tower boundary: `d2d94e7`. The codegen transfer and its
+end-to-end examples include the final halt once; exact executable counts and
+fuel assertions agree. Internal IR/IMP budgets and specifications are
+unchanged. Concepts, full proofs, and the supervisor's narrow replay passed.
