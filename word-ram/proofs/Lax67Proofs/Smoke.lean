@@ -10,6 +10,11 @@ transfer theorem, so that the hypothesis bundle is known to be
 dischargeable and the conclusion is known to be a statement about the
 machine that was submitted.
 
+For `echo` and `sum`, the machine theorem restricts length-prefixed
+inputs to a word-dependent domain in which the value and layout bounds
+fit. Every length-prefixed input belongs to that domain at sufficiently
+large word lengths; no fixed word length must accommodate all inputs.
+
 The three are chosen to exercise the parts that could be wrong
 independently: `echo` writes inside a loop, so the output tape is part of
 the loop invariant; `sum` accumulates, so its value bound is a genuine
@@ -53,6 +58,16 @@ def prog : Program := compileProgram layout com
 
 /-- Length-prefixed inputs. -/
 def dom : Set (List ℕ) := {x : List ℕ | ∃ xs, x = xs.length :: xs}
+
+/-- Length-prefixed inputs whose value bound and layout fit in `w`-bit words. -/
+def admissibleDom (w : ℕ) : Set (List ℕ) := {x | x ∈ dom ∧ x.sum + 7 ≤ 2 ^ w}
+
+/-- Every length-prefixed input is admissible at all sufficiently large word lengths. -/
+theorem dom_eventually_admissible {x : List ℕ} (hx : x ∈ dom) :
+    ∃ w₀, ∀ w ≥ w₀, x ∈ admissibleDom w := by
+  refine ⟨x.sum + 7, fun w hw => ⟨hx, ?_⟩⟩
+  exact (Nat.lt_two_pow_self : x.sum + 7 < 2 ^ (x.sum + 7)).le.trans
+    (Nat.pow_le_pow_right (by decide) hw)
 
 theorem com_ok : Com.Ok layout com := by
   simp [com, body, cond, layout, Com.Ok, Cond.Ok, condExpr, Expr.Ok]
@@ -126,14 +141,28 @@ theorem solves : Solves layout com dom (fun x => x.tail)
     · rw [hout]; simp [hσ₀, initEnv]
 
 /-- **Echo, end to end.** The compiled machine program copies a
-length-prefixed input to the output within `110 * (|x| + 1)` steps, at
-every word length at which the total of the input fits. -/
-theorem prog_computesInTime {w : ℕ} (hw : ∀ x ∈ dom, x.sum + 7 ≤ 2 ^ w) :
-    ComputesInTime w prog dom (fun x => x.tail) (fun x => 110 * (x.length + 1)) := by
-  refine computesInTime_of_solves solves
+length-prefixed input to the output within `110 * (|x| + 1)` instructions,
+including the final `halt`. The admissible domain includes the per-input
+condition `x.sum + 7 ≤ 2 ^ w`; the program is independent of `w`. -/
+theorem prog_computesInTime (w : ℕ) :
+    ComputesInTime w prog (admissibleDom w) (fun x => x.tail)
+      (fun x => 110 * (x.length + 1)) := by
+  have hsolves : Solves layout com (admissibleDom w) (fun x => x.tail)
+      (fun x => x.sum + 2) (fun x => 11 * x.length + 7) :=
+    ⟨solves.ok, fun x hx => solves.inp x hx.1, fun x hx => solves.run x hx.1⟩
+  refine computesInTime_of_solves hsolves
     (fun x hx => fitsWords_of_max_le (by omega)
-      (by have := hw x hx; simp [Layout.span, layout]; omega))
+      (by have := hx.2; simp [Layout.span, layout]; omega))
     (fun x _ => by rw [const_eq]; omega)
+
+/-- A nonzero two-element payload lies in the four-bit machine domain. -/
+theorem sample_mem_admissibleDom : [2, 2, 3] ∈ admissibleDom 4 := by
+  refine ⟨⟨[2, 3], rfl⟩, ?_⟩
+  norm_num
+
+/-- The machine theorem gives an actual initialized Echo execution on that input. -/
+theorem sample_runsTo : ∃ t ≤ 440, RunsTo 4 prog [2, 2, 3] [2, 3] t := by
+  simpa using prog_computesInTime 4 [2, 2, 3] sample_mem_admissibleDom
 
 end Echo
 
@@ -164,6 +193,16 @@ def prog : Program := compileProgram layout com
 
 /-- Length-prefixed inputs. -/
 def dom : Set (List ℕ) := {x : List ℕ | ∃ xs, x = xs.length :: xs}
+
+/-- Length-prefixed inputs whose value bound and layout fit in `w`-bit words. -/
+def admissibleDom (w : ℕ) : Set (List ℕ) := {x | x ∈ dom ∧ x.sum + 8 ≤ 2 ^ w}
+
+/-- Every length-prefixed input is admissible at all sufficiently large word lengths. -/
+theorem dom_eventually_admissible {x : List ℕ} (hx : x ∈ dom) :
+    ∃ w₀, ∀ w ≥ w₀, x ∈ admissibleDom w := by
+  refine ⟨x.sum + 8, fun w hw => ⟨hx, ?_⟩⟩
+  exact (Nat.lt_two_pow_self : x.sum + 8 < 2 ^ (x.sum + 8)).le.trans
+    (Nat.pow_le_pow_right (by decide) hw)
 
 theorem com_ok : Com.Ok layout com := by
   simp [com, body, cond, layout, Com.Ok, Cond.Ok, condExpr, Expr.Ok]
@@ -244,14 +283,28 @@ theorem solves : Solves layout com dom (fun x => [x.tail.sum])
       rw [hout, hs]; simp [hσ₀, initEnv]
 
 /-- **Sum, end to end.** The compiled machine program writes the sum of a
-length-prefixed input within `130 * (|x| + 1)` steps, at every word
-length at which the total of the input fits. -/
-theorem prog_computesInTime {w : ℕ} (hw : ∀ x ∈ dom, x.sum + 8 ≤ 2 ^ w) :
-    ComputesInTime w prog dom (fun x => [x.tail.sum]) (fun x => 130 * (x.length + 1)) := by
-  refine computesInTime_of_solves solves
+length-prefixed input within `130 * (|x| + 1)` instructions, including
+the final `halt`. The admissible domain includes the per-input condition
+`x.sum + 8 ≤ 2 ^ w`; the program is independent of `w`. -/
+theorem prog_computesInTime (w : ℕ) :
+    ComputesInTime w prog (admissibleDom w) (fun x => [x.tail.sum])
+      (fun x => 130 * (x.length + 1)) := by
+  have hsolves : Solves layout com (admissibleDom w) (fun x => [x.tail.sum])
+      (fun x => x.sum + 2) (fun x => 13 * x.length + 11) :=
+    ⟨solves.ok, fun x hx => solves.inp x hx.1, fun x hx => solves.run x hx.1⟩
+  refine computesInTime_of_solves hsolves
     (fun x hx => fitsWords_of_max_le (by omega)
-      (by have := hw x hx; simp [Layout.span, layout]; omega))
+      (by have := hx.2; simp [Layout.span, layout]; omega))
     (fun x _ => by rw [const_eq]; omega)
+
+/-- A nonzero two-element payload lies in the four-bit machine domain. -/
+theorem sample_mem_admissibleDom : [2, 2, 3] ∈ admissibleDom 4 := by
+  refine ⟨⟨[2, 3], rfl⟩, ?_⟩
+  norm_num
+
+/-- The machine theorem gives an actual initialized Sum execution on that input. -/
+theorem sample_runsTo : ∃ t ≤ 520, RunsTo 4 prog [2, 2, 3] [5] t := by
+  simpa using prog_computesInTime 4 [2, 2, 3] sample_mem_admissibleDom
 
 end Sum
 
