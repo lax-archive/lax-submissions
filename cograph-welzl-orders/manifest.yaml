@@ -33,3 +33,6 @@ bibEntries:
       year      = {2013},
       doi       = {10.1007/978-3-642-36065-7_13}
     }
+issue:
+  repositoryId: 1320232165
+  number: 87
