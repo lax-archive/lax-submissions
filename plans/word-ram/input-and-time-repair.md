@@ -30,3 +30,10 @@ user's requested retraction/resubmission while retaining lax-67 and lax-11 and
 their namespaces. Reset only after reviewed code is ready. The ordinary delete
 command cannot retract a registered record and retires IDs, so it is not the
 resubmission mechanism. Verify the resulting archive state and published source.
+
+Reviewed ram-linear-time boundary: `874c8e7` and `fd3d0b3`. Closed-machine
+counts and executable fixtures charge the final halt; CC and VC witnesses
+become 841 and 9001. Tree-fold and Courcelle retain their constants using
+proved slack. Internal IMP costs, input domains, and outputs are preserved.
+The sequential-input guards reject the three new input operations. Concepts
+and full proofs passed, followed by the supervisor's four-module replay.
