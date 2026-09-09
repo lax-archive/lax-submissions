@@ -81,3 +81,11 @@ the nonzero payload `[2, 3]` at four bits. The original impossible universal
 hypotheses were independently refuted in Lean. Only `Smoke.lean` changed;
 concepts and full proofs built, and the supervisor reviewed the complete diff
 and replayed the Smoke target. No downstream caller uses either changed API.
+
+The corrected lax-67 draft accepted `512403f000f23689a1c40d8826062d20f1e28f03`
+in archive run `34363212494` (independent rebuild 3m32s). Verified the live
+record and exact restoration of the original lax-13/lax-67 owner lists.
+Downstream pin boundary `ac2a589` updates five requirements in ram-linear-time
+and refinement-tower to that accepted source. Both full `lax build` checks
+passed (2m30s and 3m01s); supervisor diff review and narrow CCMain/Cash replays
+passed. Only the existing proof-package and draft-dependency advisories remain.
