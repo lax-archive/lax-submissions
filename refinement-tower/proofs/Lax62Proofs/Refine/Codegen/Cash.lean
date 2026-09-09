@@ -405,7 +405,8 @@ theorem solves_of_spec {L : Compile.Layout} {c : Imp.Com} {D : Set (List ℕ)}
     exact ⟨ext, σ', hrun, hout⟩
 
 /-- …and the last step, spelled out: the compiled machine program
-computes `f` in `L.const` machine steps per unit of IMP+ cost. -/
+computes `f` in at most `L.const` machine instructions per unit of IMP+
+cost, plus one instruction for the final `halt`. -/
 theorem computesInTime_of_spec {L : Compile.Layout} {c : Imp.Com} {D : Set (List ℕ)}
     {f : List ℕ → List ℕ} {B K : List ℕ → ℕ} {w : ℕ}
     (hok : Compile.Com.Ok L c) (hinp : ∀ x ∈ D, ∀ v ∈ x, v < B x)
@@ -414,7 +415,7 @@ theorem computesInTime_of_spec {L : Compile.Layout} {c : Imp.Com} {D : Set (List
         (fun _ σ' => σ'.out = f x) (K x))
     (hfit : ∀ x ∈ D, L.FitsWords (B x) w) :
     Lax67.RamComputes.ComputesInTime w (Compile.compileProgram L c) D f
-      (fun x => L.const * K x) :=
+      (fun x => L.const * K x + 1) :=
   (solves_of_spec hok hinp hspec).computesInTime hfit
 
 /-! ## 5. Refute before prove
