@@ -42,3 +42,10 @@ Reviewed refinement-tower boundary: `d2d94e7`. The codegen transfer and its
 end-to-end examples include the final halt once; exact executable counts and
 fuel assertions agree. Internal IR/IMP budgets and specifications are
 unchanged. Concepts, full proofs, and the supervisor's narrow replay passed.
+
+Reviewed model-checking boundary: `6540c3d`. Four machine-boundary files add
+the terminal instruction exactly once. The headline uses `T + 1` and `cf + 1`,
+with the extra unit absorbed using the existing positive exponent hypothesis.
+Source programs, internal budgets, domains, outputs, and uniformity are
+unchanged. Concepts and all 3575 proof jobs passed; the supervisor reviewed
+the full diff and replayed the headline theorem.
