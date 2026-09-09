@@ -19,8 +19,8 @@ input immutability and old-subset compatibility; audit examples and overflow,
 aliasing, and EOF edges. Concepts and proofs build; key proofs use background
 axioms only. Supervisor reviewed source semantics, preconditions, and costs.
 
-All source migrations are reviewed and landed. Remaining: publish model
-checking, verify the resulting record, and restore its original owner list.
+All source migrations and dependency pins are reviewed, landed, and published.
+The four corrected entries are accepted drafts. Original ownership is restored.
 
 Release mechanism: current lax has a supported maintainer `reset-draft` action;
 the current GitHub account is an authorized maintainer. This implements the
@@ -61,3 +61,12 @@ Lax-11 and lax-62 accepted source `418d847`, in runs `34348739381` and
 lists are restored. Model checking now pins those actual records and `bc4c6e6`
 for RAM. Its complete `lax build` passed against the final archive dependencies:
 12 concepts and 6 proofs inspected, with only the expected dependency advisories.
+
+Final archive boundary: lax-3 accepted `dcdf38f72851790ebc9e37e6e7b7a8603029e5ab`
+in run `34350383245`, archive commit `c24a0c4703a0e1c954465a2d938666368d87aa9d`.
+All four independent archive builds passed. Verified all four published source
+tuples and draft states, all 11 changed dependency requirements on main, and
+exact restoration of the five original owner lists (including lax-13, whose
+ownership was temporarily needed for the existing supersedes claim).
+All code is landed on main and published on `ram-input-repair`; the pre-existing
+unpublished main history and unrelated worktrees were preserved.
