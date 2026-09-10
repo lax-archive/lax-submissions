@@ -72,7 +72,7 @@ whether it encodes the intended meaning. One thing stands out:
 Theorem~\ref{thm:euclid} is stated not as a \texttt{theorem} but as an
 \texttt{axiom}, without a proof. That is Lax's way of separating claims from
 proofs. The correctness of a formal proof is guaranteed by Lean, so with Lax,
-readers only review the one thing Lean can \emph{not} check: whether the Lean
+readers only review the one thing Lean \emph{cannot} check: whether the Lean
 code faithfully represents the intended mathematics. Concepts are therefore
 written in especially clean and simple Lean code that even non-experts can
 read. Still, mismatches can be subtle, so it is best to get many pairs of eyes
@@ -123,7 +123,7 @@ or even that the prose is correct. To gain more control over the argument,
 authors may introduce concepts for the important lemmas along the way, thereby
 certifying each step of the informal proof rather than only its conclusion.
 
-Lax thereby tracks which lemmas were used to prove which other lemmas.
+Lax tracks which lemmas were used to prove which other lemmas.
 Formally, each proof assumes a set of concepts and derives a target concept.
 This defines a \emph{proof network} whose nodes are concepts and whose
 hyperedges are proofs between them. For example, here
@@ -224,11 +224,12 @@ it with
 \begin{verbatim}
 npm install -g lax-archive && lax doctor
 \end{verbatim}
-and, inside an empty folder of a public git repository, run
-\texttt{lax init}. This creates the layout the archive expects:
+and, inside a public git repository, run \texttt{lax init}. This creates
+the layout the archive expects:
 \begin{verbatim}
 manifest.yaml     title, authors, environment, and what it builds on
 abstract.md       the summary shown on the submission's page
+main.tex          optional, the LaTeX document
 LICENSE           Apache 2.0, the license of Lean and mathlib
 concepts/         a Lean package holding the concepts, one module each
     lakefile.toml
