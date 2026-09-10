@@ -35,7 +35,7 @@ subDir = "sparsity-lectures/concepts"
 [[require]]
 name = "Lax67"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "9d9639601dea95e60803cfb7db1f6296478dcb42"
+rev = "512403f000f23689a1c40d8826062d20f1e28f03"
 subDir = "word-ram/concepts"
 
 [[lean_lib]]
