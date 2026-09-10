@@ -3,3 +3,11 @@ paper.pdf
 paper-web.tar
 lake-manifest.json
 .lake/
+# latexmk artifacts of a local paper build
+paper/main.aux
+paper/main.fdb_latexmk
+paper/main.fls
+paper/main.log
+paper/main.out
+paper/main.pdf
+paper/main.synctex.gz
