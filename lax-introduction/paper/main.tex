@@ -36,7 +36,7 @@
 \begin{document}
 \maketitle
 
-\begin{abstract}
+\noindent
 Lax is an archive that links natural-language mathematics with Lean
 formalizations: an ``arXiv for Lean'', where submissions build on each other
 towards a shared body of formalized mathematics.
@@ -46,7 +46,6 @@ This document is itself a Lax submission, made from the features it describes.
 A submission consists of \emph{concepts}, \emph{proofs}, and optionally a
 \emph{paper}, which we introduce in turn, using the prime numbers as a running
 example.
-\end{abstract}
 
 \section{Concepts}
 
@@ -180,7 +179,7 @@ this one. Comments of the form \texttt{\% lax begin <id>} and
 \texttt{\% lax end} annotate the text with Lax objects, where
 \texttt{<id>} names a concept, a
 proof, or a submission. A normal \LaTeX{} build ignores these comments, so
-you may upload the same document to arXiv and to Lax. Using Radek
+you may upload the same document to arXiv and to Lax. Using Rados\l{}aw
 Pi\'orkowski's ReflowTeX library~\cite{reflowtex}, the \TeX{} source is
 rendered for the web as well, reflowed to the reader's screen width beside
 the as-printed PDF.
@@ -239,8 +238,9 @@ proofs/           a second Lean package holding the proofs
     ...
 \end{verbatim}
 Next, a prompt like ``run \texttt{lax print instructions} and formalize the
-following result'' to your favorite coding agent is usually enough to fill
-these folders with concepts and proofs. This may take several sessions,
+following result'' to your favorite coding agent will populate these folders
+with concepts and proofs. Your agent will take over and guide you through
+the whole process of creating a submission. This may take several sessions,
 depending on the scope of the project. Your agent uses \texttt{lax build} to
 make sure the project is accepted by the archive, and you can run
 \texttt{lax serve} in the project folder to preview a rendering of the work
@@ -258,7 +258,7 @@ permanent and citable, so that others can build upon it.
   In \emph{Proceedings of the 9th ACM SIGPLAN International Conference on
   Certified Programs and Proofs (CPP 2020)}, pages 367--381, 2020.
 \bibitem{reflowtex}
-  Radek Pi\'orkowski.
+  Rados\l{}aw Pi\'orkowski.
   ReflowTeX: reflowable web rendering of \LaTeX{} sources.
   \url{https://github.com/radek-p/reflowtex}, 2026.
 \end{thebibliography}

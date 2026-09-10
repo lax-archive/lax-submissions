@@ -8,7 +8,7 @@ authors:
 bibEntries:
   - |
     @misc{reflowtex,
-      author       = {Pi{\'o}rkowski, Radek},
+      author       = {Pi{\'o}rkowski, Rados{\l}aw},
       title        = {ReflowTeX: reflowable web rendering of {\LaTeX} sources},
       howpublished = {\url{https://github.com/radek-p/reflowtex}},
       year         = {2026}
