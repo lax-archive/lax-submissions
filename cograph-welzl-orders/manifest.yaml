@@ -3,6 +3,7 @@ id: lax-214022
 leanVersion: "v4.30.0"
 mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
 title: "Welzl Orders of Cographs"
+anonymous: true
 authors:
   - name: Clemens Kuske
     github: clemenskuske
