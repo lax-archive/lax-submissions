@@ -924,7 +924,8 @@ theorem exists_localized_copy {n t : ℕ} (G : SimpleGraph (Fin n))
       have haX : a.val ∈ X := Finset.mem_union_left reps a.property
       let i : Fin X.card := e.symm ⟨a.val, haX⟩
       have hEi : E i = a.val := by
-        simp [E, i]
+        change (e i).val = a.val
+        exact congrArg Subtype.val (e.apply_symm_apply ⟨a.val, haX⟩)
       have hiA' : i ∈ A' := (hA'_iff i).2 (hEi ▸ a.property)
       refine ⟨⟨i, hiA'⟩, ?_⟩
       apply Subtype.ext
@@ -950,7 +951,9 @@ theorem exists_localized_copy {n t : ℕ} (G : SimpleGraph (Fin n))
     by_cases hxA : x ∈ A
     · have hxX : x ∈ X := Finset.mem_union_left reps hxA
       let i : Fin X.card := e.symm ⟨x, hxX⟩
-      have hEi : E i = x := by simp [E, i]
+      have hEi : E i = x := by
+        change (e i).val = x
+        exact congrArg Subtype.val (e.apply_symm_apply ⟨x, hxX⟩)
       have hiA' : i ∈ A' := (hA'_iff i).2 (hEi ▸ hxA)
       have hmem (r : ↑T) :
           i ∈ lift r ↔ x ∈ r.val := by
@@ -960,7 +963,12 @@ theorem exists_localized_copy {n t : ℕ} (G : SimpleGraph (Fin n))
         simp only [hiA', true_and]
         change G.Adj (E (e.symm ⟨rep r,
           Finset.mem_union_right A (hrep_mem r)⟩)) (E i) ↔ x ∈ r.val
-        simp only [E, hEi]
+        have hErep :
+            E (e.symm ⟨rep r, Finset.mem_union_right A (hrep_mem r)⟩) = rep r := by
+          change (e (e.symm ⟨rep r,
+            Finset.mem_union_right A (hrep_mem r)⟩)).val = rep r
+          exact congrArg Subtype.val (e.apply_symm_apply _)
+        rw [hErep, hEi]
         rw [← rep_key r, mem_neighborTrace_iff]
         simp [hxA, G.adj_comm]
       rw [← hmem q, hqq', hmem q']

@@ -58,7 +58,8 @@ private def comapIsoInduceRange {V W : Type} (G : SimpleGraph V) (f : W ↪ V) :
   { toEquiv := embeddingRangeEquiv f
     map_rel_iff' := by
       intro a b
-      constructor <;> intro hab <;> simpa using hab }
+      change G.Adj (f a) (f b) ↔ G.Adj (f a) (f b)
+      rfl }
 
 private def minimumDegreeWitnessAux (n : ℕ) :
     ∀ {V : Type} [DecidableEq V] [Fintype V] [Nonempty V],
@@ -112,7 +113,7 @@ private def minimumDegreeWitnessAux (n : ℕ) :
             have : d * 1 ≤ 0 := by simpa [hcard1] using le_trans hEdges hedgele
             omega
         | succ n' =>
-            let s0 : Set V := { y : V | y ≠ x }
+            let s0 : Set V := ({x}ᶜ : Set V)
             have hcard_s0_raw : Fintype.card s0 = Fintype.card V - 1 := by
               simpa [s0] using (Set.card_ne_eq x)
             have hcard_s0 : Fintype.card s0 = n' + 1 := by
@@ -122,12 +123,11 @@ private def minimumDegreeWitnessAux (n : ℕ) :
             have hEdges_s0 : d * Fintype.card s0 ≤ (G.induce s0).edgeFinset.card := by
               have hdeg_le : G.degree x ≤ d := Nat.le_of_lt hdeglt
               have hedge : (G.induce s0).edgeFinset.card = G.edgeFinset.card - G.degree x := by
-                have hs0 : s0 = ({x}ᶜ : Set V) := by
-                  ext y
-                  simp [s0]
-                simpa [hs0] using
-                  (show (G.induce ({x}ᶜ : Set V)).edgeFinset.card = G.edgeFinset.card - G.degree x by
-                    rw [G.card_edgeFinset_induce_compl_singleton x, G.card_edgeFinset_deleteIncidenceSet x])
+                change
+                  (G.induce ({x}ᶜ : Set V)).edgeFinset.card =
+                    G.edgeFinset.card - G.degree x
+                rw [G.card_edgeFinset_induce_compl_singleton x,
+                  G.card_edgeFinset_deleteIncidenceSet x]
               calc
                 d * Fintype.card s0 = d * (Fintype.card V - 1) := by rw [hcard_s0_raw]
                 _ = d * Fintype.card V - d := by rw [Nat.mul_sub, Nat.mul_one]
@@ -147,12 +147,11 @@ private def minimumDegreeWitnessAux (n : ℕ) :
               exact w.hsdeg
             have hdeg_loss : G.degree x ≤ d - 1 := by omega
             have hedge : (G.induce s0).edgeFinset.card = G.edgeFinset.card - G.degree x := by
-              have hs0 : s0 = ({x}ᶜ : Set V) := by
-                ext y
-                simp [s0]
-              simpa [hs0] using
-                (show (G.induce ({x}ᶜ : Set V)).edgeFinset.card = G.edgeFinset.card - G.degree x by
-                  rw [G.card_edgeFinset_induce_compl_singleton x, G.card_edgeFinset_deleteIncidenceSet x])
+              change
+                (G.induce ({x}ᶜ : Set V)).edgeFinset.card =
+                  G.edgeFinset.card - G.degree x
+              rw [G.card_edgeFinset_induce_compl_singleton x,
+                G.card_edgeFinset_deleteIncidenceSet x]
             have hcard_W_le_s0 : Fintype.card w.W ≤ Fintype.card s0 := by
               exact Fintype.card_le_of_embedding w.f
             have hcard_s0_succ : Fintype.card s0 + 1 = Fintype.card V := by
@@ -318,9 +317,9 @@ private theorem isShallowMinor_mono {V W : Type}
 private theorem induced_isShallowMinor_zero {V : Type} [DecidableEq V] [Fintype V]
     (G : SimpleGraph V) (s : Set V) :
     IsShallowMinor (G.induce s) G 0 := by
-  simpa using
-    (isShallowMinor_zero_of_embedding
-      (SimpleGraph.Embedding.comap (Function.Embedding.subtype s) G))
+  change IsShallowMinor (SimpleGraph.comap (Function.Embedding.subtype s) G) G 0
+  exact isShallowMinor_zero_of_embedding
+    (SimpleGraph.Embedding.comap (Function.Embedding.subtype s) G)
 
 private def completeGraphEmbeddingOfLE {m n : ℕ} (hmn : m ≤ n) :
     SimpleGraph.completeGraph (Fin m) ↪g SimpleGraph.completeGraph (Fin n) :=

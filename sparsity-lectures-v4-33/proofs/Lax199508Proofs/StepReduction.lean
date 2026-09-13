@@ -98,8 +98,8 @@ theorem oddStepReduction {V : Type} [DecidableEq V] [Fintype V]
   let H : SimpleGraph W :=
     { Adj := fun w₁ w₂ => w₁ ≠ w₂ ∧
         ∃ x ∈ jBall G j w₁.val, ∃ y ∈ jBall G j w₂.val, G.Adj x y
-      symm := fun _ _ ⟨hne, x, hx, y, hy, hadj⟩ =>
-        ⟨hne.symm, y, hy, x, hx, hadj.symm⟩
+      symm := ⟨fun _ _ ⟨hne, x, hx, y, hy, hadj⟩ =>
+        ⟨hne.symm, y, hy, x, hx, hadj.symm⟩⟩
       loopless := ⟨fun w h => h.1 rfl⟩ }
   refine ⟨W, inferInstance, inferInstance, H, ?_, ?_, ?_⟩
   -- (1) IsShallowMinor H G j
@@ -193,8 +193,8 @@ theorem evenStepReduction {V : Type} [DecidableEq V] [Fintype V]
   let H : SimpleGraph W :=
     { Adj := fun w₁ w₂ => w₁ ≠ w₂ ∧
         ∃ x ∈ branchOf w₁, ∃ y ∈ branchOf w₂, G.Adj x y
-      symm := fun _ _ ⟨hne, x, hx, y, hy, hadj⟩ =>
-        ⟨hne.symm, y, hy, x, hx, hadj.symm⟩
+      symm := ⟨fun _ _ ⟨hne, x, hx, y, hy, hadj⟩ =>
+        ⟨hne.symm, y, hy, x, hx, hadj.symm⟩⟩
       loopless := ⟨fun w h => h.1 rfl⟩ }
   let aEmb : {v // v ∈ A} ↪ W :=
     { toFun := fun ⟨v, hv⟩ => ⟨v, Or.inl hv⟩
@@ -348,6 +348,6 @@ theorem evenStepReduction {V : Type} [DecidableEq V] [Fintype V]
         -- length-2 walk wa → wd → wb in deleteVerts H ↑S → contradiction
         exact absurd (hBind (Finset.mem_coe.mpr hwa_mem) (Finset.mem_coe.mpr hwb_mem)
           hwne (.cons ⟨hH_wa_wd, hwa_nS, hwd_nS⟩ (.cons ⟨hH_wd_wb, hwd_nS, hwb_nS⟩ .nil)))
-          (by simp [SimpleGraph.Walk.length_cons])
+          (by norm_num [SimpleGraph.Walk.length])
 
 end Lax199508Proofs.StepReduction

@@ -904,7 +904,13 @@ private theorem exists_maximal_connector
             ∀ i : ℕ, 0 < i → i < p.length → p.getVert i ∉ (S ∪ (K : Set V))) := by
   let P : ℕ → Prop := fun n =>
     ∃ M : RawConnector G r S, M.H.edgeFinset.card = n
-  have hP0 : P 0 := ⟨emptyRawConnector G r S, by simp [emptyRawConnector]⟩
+  have hP0 : P 0 :=
+    ⟨emptyRawConnector G r S, by
+      have hH : (emptyRawConnector G r S).H = (⊥ : SimpleGraph S) := rfl
+      rw [hH]
+      apply Finset.card_eq_zero.mpr
+      ext e
+      simp⟩
   let bound := (Fintype.card S).choose 2
   have hPN : P (Nat.findGreatest P bound) := Nat.findGreatest_spec (Nat.zero_le _) hP0
   obtain ⟨M, hMcard⟩ := hPN
@@ -1334,7 +1340,7 @@ private theorem exists_dense_shallow_minor
         Fintype.card {x : V // x ∈ (K : Set V)} := by
       convert Fintype.card_subtype_or (fun x : V => x ∈ S) (fun x => x ∈ (K : Set V)) using 1
     have h2 : Fintype.card {x : V // x ∈ (K : Set V)} = K.card := by
-      convert Fintype.card_coe K
+      simpa only [Finset.mem_coe] using Fintype.card_coe K
     omega
   -- Edge bound: I.card * n ≤ |E(J)|
   -- Pin the Fintype instance for J.edgeSet to match the existential witness

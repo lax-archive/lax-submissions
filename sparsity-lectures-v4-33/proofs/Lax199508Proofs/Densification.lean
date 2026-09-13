@@ -126,7 +126,6 @@ private lemma exists_good_pair (ε : ℝ) (hε_pos : 0 < ε) (hε_le : ε ≤ 2 
     have h2 : Filter.Tendsto (fun n : ℕ => 2 * Real.log (n : ℝ) / (n : ℝ) ^ ε)
         Filter.atTop (nhds 0) := by
       have := h.comp (tendsto_natCast_atTop_atTop (R := ℝ))
-      simp only [] at this
       have hcov : Filter.Tendsto (fun n : ℕ => 2 * (Real.log (n : ℝ) / (n : ℝ) ^ ε))
           Filter.atTop (nhds 0) := by
         simpa [mul_comm] using this.const_mul 2

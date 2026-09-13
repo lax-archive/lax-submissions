@@ -84,7 +84,7 @@ lemma lower_log_inequality {δ : ℝ} (hδ : δ ∈ Set.Ioo 0 1) :
     intro x hx
     have h1mx_ne : (1 : ℝ) - x ≠ 0 := by linarith [hx.2]
     have hd_1mx : HasDerivAt (fun x => 1 - x) (-1) x := by
-      simpa using (hasDerivAt_const x (1:ℝ)).sub (hasDerivAt_id x)
+      simpa using (hasDerivAt_id x).const_sub (1 : ℝ)
     -- (1−x)·log(1−x) = −negMulLog(1−x), derivative = −log(1−x) − 1
     have hd_nml : HasDerivAt (fun x => (1 - x) * Real.log (1 - x))
         (-Real.log (1 - x) - 1) x := by
@@ -93,10 +93,9 @@ lemma lower_log_inequality {δ : ℝ} (hδ : δ ∈ Set.Ioo 0 1) :
         ext y; simp [Real.negMulLog_def]
       rw [key]
       have h := ((Real.hasDerivAt_negMulLog h1mx_ne).comp x hd_1mx).neg
-      convert h using 1; ring
+      exact h.congr_deriv (by ring)
     have hd_sq : HasDerivAt (fun x => x ^ 2 / 3) (2 * x / 3) x := by
-      convert (hasDerivAt_pow 2 x).div_const (3 : ℝ) using 1
-      push_cast; ring
+      exact ((hasDerivAt_pow 2 x).div_const (3 : ℝ)).congr_deriv (by norm_num)
     have hd_sum : HasDerivAt (fun x => x + (1 - x) * Real.log (1 - x))
         (1 + (-Real.log (1 - x) - 1)) x := (hasDerivAt_id x).add hd_nml
     have hd_f : HasDerivAt f (1 + (-Real.log (1 - x) - 1) - 2 * x / 3) x :=

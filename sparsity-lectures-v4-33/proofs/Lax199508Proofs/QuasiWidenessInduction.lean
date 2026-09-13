@@ -399,7 +399,8 @@ private lemma stepLemma (C : GraphClass)
         let B_side : Finset W := Finset.univ \ AW
         let H_bip : SimpleGraph W :=
           { Adj := fun u v => H.Adj u v ∧ (u ∈ AW ∨ v ∈ AW)
-            symm := fun u v ⟨h1, h2⟩ => ⟨H.symm h1, h2.symm⟩
+            symm := ⟨fun u v ⟨h1, h2⟩ =>
+              ⟨H.symm.symm u v h1, h2.symm⟩⟩
             loopless := ⟨fun u ⟨h, _⟩ => H.loopless.irrefl u h⟩ }
         haveI : DecidableRel H_bip.Adj := Classical.decRel _
         have hBip : ∀ u v, H_bip.Adj u v →

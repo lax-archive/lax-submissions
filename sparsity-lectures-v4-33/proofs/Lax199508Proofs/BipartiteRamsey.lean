@@ -305,11 +305,14 @@ theorem bipartite_ramsey (m t d : ℕ) :
         have hcodes_nonempty :
             (commonNeighborCodes G A B d hdeg u' v').Nonempty := by
           refine ⟨localPairCode G A d w u'.1 v'.1 u'.2 v'.2
-              (G.symm huw.1) (G.symm huw.2) (fun h => huv' (Subtype.ext h)) (hdeg ⟨w, hwB⟩), ?_⟩
+              (G.symm.symm _ _ huw.1) (G.symm.symm _ _ huw.2)
+              (fun h => huv' (Subtype.ext h)) (hdeg ⟨w, hwB⟩), ?_⟩
           exact (mem_commonNeighborCodes G A B d hdeg u' v'
             (localPairCode G A d w u'.1 v'.1 u'.2 v'.2
-              (G.symm huw.1) (G.symm huw.2) (fun h => huv' (Subtype.ext h)) (hdeg ⟨w, hwB⟩))).2
-            ⟨w, hwB, fun h => huv' (Subtype.ext h), G.symm huw.1, G.symm huw.2, rfl⟩
+              (G.symm.symm _ _ huw.1) (G.symm.symm _ _ huw.2)
+              (fun h => huv' (Subtype.ext h)) (hdeg ⟨w, hwB⟩))).2
+            ⟨w, hwB, fun h => huv' (Subtype.ext h),
+              G.symm.symm _ _ huw.1, G.symm.symm _ _ huw.2, rfl⟩
         have hcolor0 : edgeColor G A B d hdeg u' v' = Fin.last k := by
           have hcolor' : c0 s(u', v') = Fin.last k := by
             apply Fin.ext
@@ -373,10 +376,18 @@ theorem bipartite_ramsey (m t d : ℕ) :
                 hwa hwb
                 (fun h => hab (f.injective h)) (hdeg ⟨w, hwB⟩) = j := by
         intro a b hab
-        simpa [f] using
+        obtain ⟨w, hwB, hwa, hwb, hcode⟩ :=
           exists_commonNeighbor_of_edgeColor_eq G A B d hdeg
             (u := ((f0 a).1)) (v := ((f0 b).1))
             (fun h => hab (f0.inj' (Subtype.ext h))) (hcolor_edge a b hab)
+        refine ⟨w, hwB, ?_, ?_, ?_⟩
+        · change G.Adj w (f0 a).1.1
+          exact hwa
+        · change G.Adj w (f0 b).1.1
+          exact hwb
+        · change localPairCode G A d w (f0 a).1.1 (f0 b).1.1
+            ((f0 a).1).2 ((f0 b).1).2 _ _ _ _ = j
+          exact hcode
       let edgeTail : (SimpleGraph.completeGraph (Fin t)).edgeSet → Fin t := fun e => e.1.out.1
       have hedgeTail_mem : ∀ e : (SimpleGraph.completeGraph (Fin t)).edgeSet,
           edgeTail e ∈ (e : Sym2 (Fin t)) := by
@@ -419,7 +430,7 @@ theorem bipartite_ramsey (m t d : ℕ) :
         edgeTail := edgeTail
         edgeTail_mem := hedgeTail_mem
         edgePath := fun e =>
-          SimpleGraph.Walk.cons (G.symm (hedgeMid_adj_tail e))
+          SimpleGraph.Walk.cons (G.symm.symm _ _ (hedgeMid_adj_tail e))
             (SimpleGraph.Walk.cons (hedgeMid_adj_head e) SimpleGraph.Walk.nil)
         edgePath_isPath := by
           intro e
@@ -638,7 +649,7 @@ private theorem iterStep (m t : ℕ) :
     let Sbip : Finset V := A_cur ∪ B_cur
     let G' : SimpleGraph V :=
       { Adj := fun u v => G.Adj u v ∧ u ∈ Sbip ∧ v ∈ Sbip
-        symm := fun _ _ h => ⟨G.symm h.1, h.2.2, h.2.1⟩
+        symm := ⟨fun _ _ h => ⟨G.symm.symm _ _ h.1, h.2.2, h.2.1⟩⟩
         loopless := ⟨fun u h => G.loopless.irrefl u h.1⟩ }
     haveI : DecidableRel G'.Adj := fun u v => inferInstance
     have hDisj' : Disjoint A_cur B_cur := by
@@ -704,7 +715,7 @@ private theorem iterStep (m t : ℕ) :
         (by rw [Finset.card_insert_of_notMem hvNotColl]; omega)
         (fun w hw u hu => by
           rcases Finset.mem_insert.mp hw with rfl | hw'
-          · exact G.symm (Finset.mem_filter.mp hu).2
+          · exact G.symm.symm _ _ (Finset.mem_filter.mp hu).2
           · exact hAllAdj w hw' u (Finset.filter_subset _ _ hu))
 
 /-- Lemma 3.10: iterative version of bipartite Ramsey. In a bipartite graph with

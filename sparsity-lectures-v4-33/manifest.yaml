@@ -45,3 +45,6 @@ bibEntries:
       eprint        = {2607.10941},
       archivePrefix = {arXiv}
     }
+issue:
+  repositoryId: 1320232165
+  number: 108
