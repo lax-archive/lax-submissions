@@ -131,7 +131,6 @@ theorem arrOf_congr {n : ℕ} {f g : ℕ → ℕ} (h : ∀ i < n, f i = g i) :
 theorem set_arrOf {n i : ℕ} (f : ℕ → ℕ) (v : ℕ) :
     (arrOf n f).set i v = arrOf n (fun k => if k = i then v else f k) := by
   refine List.ext_getElem (by simp) fun k h₁ h₂ => ?_
-  simp only [arrOf, List.length_map, List.length_range] at h₁ h₂
   rw [List.getElem_set]
   by_cases hk : k = i
   · subst hk; simp [arrOf]
