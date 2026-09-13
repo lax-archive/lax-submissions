@@ -371,8 +371,16 @@ theorem threeConnected_topCoe [Finite V] [DecidableEq V] {G : SimpleGraph V}
       intro hreach
       have hreachTop :=
         SimpleGraph.Reachable.map (topDeleteHom G T) hreach
-      exact hxy (by
-        simpa [topDeleteHom, S] using hreachTop)
+      have hxmap : (topDeleteHom G T) ⟨x.1.1, hxS⟩ = x := by
+        apply Subtype.ext
+        apply Subtype.ext
+        rfl
+      have hymap : (topDeleteHom G T) ⟨y.1.1, hyS⟩ = y := by
+        apply Subtype.ext
+        apply Subtype.ext
+        rfl
+      rw [hxmap, hymap] at hreachTop
+      exact hxy hreachTop
     exact hG.2 S hSsmall hGsep
 
 end Lax10Proofs
