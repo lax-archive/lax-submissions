@@ -143,7 +143,7 @@ theorem width_copyResolved_le (S : MergeSeq G) (R' : ℕ → SimpleGraph V)
       rintro u ⟨w, hw⟩
       exact ⟨w.mapLe (hle i), by
         change (w.map (SimpleGraph.Hom.ofLE (hle i))).length ≤ r
-        simpa only [SimpleGraph.Walk.length_map] using hw⟩
+        exact (w.length_map (SimpleGraph.Hom.ofLE (hle i))).trans_le hw⟩
     · exact Set.toFinite _
   refine le_trans hnum ?_
   refine Finset.le_sup_of_le (b := i) ?_ (Finset.le_sup (Finset.mem_univ v))
