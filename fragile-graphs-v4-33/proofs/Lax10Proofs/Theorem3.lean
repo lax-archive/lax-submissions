@@ -377,7 +377,7 @@ private theorem no_clique4_of_mfragile_four [Fintype V]
     have hne : a.1 ≠ b.1 := by
       intro h
       exact hab (Subtype.ext h)
-    exact hclique ha hb hne
+    exact ⟨ha, hb, hclique ha hb hne⟩
   have hthree : ThreeConnected H.coe := by
     constructor
     · rw [Nat.card_eq_fintype_card]
