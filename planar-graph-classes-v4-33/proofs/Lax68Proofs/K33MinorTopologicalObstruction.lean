@@ -51,7 +51,9 @@ private lemma mem_support_of_mem_mapped_support
     {P : (G.induce S).Walk a b} {x : V}
     (hx : x ∈ (P.map (SimpleGraph.Embedding.induce S).toHom).support) :
     ∃ y ∈ P.support, (y : V) = x := by
-  simpa only [SimpleGraph.Walk.support_map, List.mem_map] using hx
+  rw [SimpleGraph.Walk.support_map, List.mem_map] at hx
+  rcases hx with ⟨y, hy, hxy⟩
+  exact ⟨y, hy, hxy⟩
 
 private noncomputable def branchFan
     (M : MinorModel K33 G) (w : W)
@@ -276,8 +278,8 @@ private lemma route_isPath
       cases b with
       | inl k => simp [K33] at h
       | inr j =>
-          simpa [route, canonicalRoute] using
-            SimpleGraph.Walk.bypass_isPath (rawRoute M i j)
+          change (canonicalRoute M i j).IsPath
+          exact SimpleGraph.Walk.bypass_isPath (rawRoute M i j)
   | inr j =>
       cases b with
       | inl i =>
@@ -294,7 +296,8 @@ private lemma route_branch_avoids
       cases b with
       | inl k => simp [K33] at h
       | inr j =>
-          simpa [route] using canonicalRoute_branch_avoids M i j w
+          change branchPoint M w ∉ walkInterior (canonicalRoute M i j)
+          exact canonicalRoute_branch_avoids M i j w
   | inr j =>
       cases b with
       | inl i =>
@@ -324,8 +327,10 @@ private lemma route_interiors_disjoint
             push Not at hp
             rcases hp with ⟨rfl, rfl⟩
             exact hne (Or.inl ⟨rfl, rfl⟩)
-          simpa only [route] using
-            canonicalRoute_interiors_disjoint M i j' k l' hp
+          change Disjoint
+            (walkInterior (canonicalRoute M i j'))
+            (walkInterior (canonicalRoute M k l'))
+          exact canonicalRoute_interiors_disjoint M i j' k l' hp
       · rcases d with k | l'
         · have hp : i ≠ k ∨ j' ≠ l := by
             by_contra hp

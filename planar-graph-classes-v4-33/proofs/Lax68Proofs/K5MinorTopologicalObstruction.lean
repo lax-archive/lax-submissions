@@ -77,7 +77,9 @@ private lemma mem_support_of_mem_mapped_support
     {P : (G.induce S).Walk a b} {x : V}
     (hx : x ∈ (P.map (SimpleGraph.Embedding.induce S).toHom).support) :
     ∃ y ∈ P.support, (y : V) = x := by
-  simpa only [SimpleGraph.Walk.support_map, List.mem_map] using hx
+  rw [SimpleGraph.Walk.support_map, List.mem_map] at hx
+  rcases hx with ⟨y, hy, hxy⟩
+  exact ⟨y, hy, hxy⟩
 
 private noncomputable def mapFour
     {S : Set V} {a b c d : S}
@@ -343,24 +345,33 @@ private lemma fanArm_isPath
     (M : MinorModel K5 G) (i : Fin 5)
     (F : BranchFour M i) (k : Fin 4) :
     (fanArm M i F k).IsPath := by
-  have hk : k = 0 ∨ k = 1 ∨ k = 2 ∨ k = 3 := by omega
-  rcases hk with rfl | rfl | rfl | rfl
-  · simpa [fanArm] using F.fan.toA_isPath
-  · simpa [fanArm] using F.fan.toB_isPath
-  · simpa [fanArm] using F.fan.toC_isPath
-  · simpa [fanArm] using F.fan.toD_isPath
+  refine Fin.cases ?_ (fun k => ?_) k
+  · exact F.fan.toA_isPath
+  · refine Fin.cases ?_ (fun k => ?_) k
+    · exact F.fan.toB_isPath
+    · refine Fin.cases ?_ (fun k => ?_) k
+      · exact F.fan.toC_isPath
+      · refine Fin.cases ?_ (fun k => Fin.elim0 k) k
+        exact F.fan.toD_isPath
 
 private lemma fanArm_support
     (M : MinorModel K5 G) (i : Fin 5)
     (F : BranchFour M i) (k : Fin 4) {x : V}
     (hx : x ∈ (fanArm M i F k).support) :
     x ∈ M.branchSet i := by
-  have hk : k = 0 ∨ k = 1 ∨ k = 2 ∨ k = 3 := by omega
-  rcases hk with rfl | rfl | rfl | rfl
-  · exact F.toA_support (by simpa [fanArm] using hx)
-  · exact F.toB_support (by simpa [fanArm] using hx)
-  · exact F.toC_support (by simpa [fanArm] using hx)
-  · exact F.toD_support (by simpa [fanArm] using hx)
+  revert hx
+  refine Fin.cases ?_ (fun k => ?_) k
+  · intro hx
+    exact F.toA_support hx
+  · refine Fin.cases ?_ (fun k => ?_) k
+    · intro hx
+      exact F.toB_support hx
+    · refine Fin.cases ?_ (fun k => ?_) k
+      · intro hx
+        exact F.toC_support hx
+      · refine Fin.cases ?_ (fun k => Fin.elim0 k) k
+        intro hx
+        exact F.toD_support hx
 
 private lemma fanArm_inter
     (M : MinorModel K5 G) (i : Fin 5)
@@ -369,35 +380,59 @@ private lemma fanArm_inter
     (hxk : x ∈ (fanArm M i F k).support)
     (hxl : x ∈ (fanArm M i F l).support) :
     x = F.fan.center := by
-  have hk : k = 0 ∨ k = 1 ∨ k = 2 ∨ k = 3 := by omega
-  have hl : l = 0 ∨ l = 1 ∨ l = 2 ∨ l = 3 := by omega
-  rcases hk with rfl | rfl | rfl | rfl <;>
-    rcases hl with rfl | rfl | rfl | rfl
-  all_goals try exact (hkl rfl).elim
-  · exact F.fan.toA_toB (by simpa [fanArm] using hxk)
-      (by simpa [fanArm] using hxl)
-  · exact F.fan.toA_toC (by simpa [fanArm] using hxk)
-      (by simpa [fanArm] using hxl)
-  · exact F.fan.toA_toD (by simpa [fanArm] using hxk)
-      (by simpa [fanArm] using hxl)
-  · exact F.fan.toA_toB (by simpa [fanArm] using hxl)
-      (by simpa [fanArm] using hxk)
-  · exact F.fan.toB_toC (by simpa [fanArm] using hxk)
-      (by simpa [fanArm] using hxl)
-  · exact F.fan.toB_toD (by simpa [fanArm] using hxk)
-      (by simpa [fanArm] using hxl)
-  · exact F.fan.toA_toC (by simpa [fanArm] using hxl)
-      (by simpa [fanArm] using hxk)
-  · exact F.fan.toB_toC (by simpa [fanArm] using hxl)
-      (by simpa [fanArm] using hxk)
-  · exact F.fan.toC_toD (by simpa [fanArm] using hxk)
-      (by simpa [fanArm] using hxl)
-  · exact F.fan.toA_toD (by simpa [fanArm] using hxl)
-      (by simpa [fanArm] using hxk)
-  · exact F.fan.toB_toD (by simpa [fanArm] using hxl)
-      (by simpa [fanArm] using hxk)
-  · exact F.fan.toC_toD (by simpa [fanArm] using hxl)
-      (by simpa [fanArm] using hxk)
+  revert hkl hxk hxl
+  refine Fin.cases ?_ (fun k => ?_) k
+  · refine Fin.cases ?_ (fun l => ?_) l
+    · intro hkl _ _
+      exact (hkl rfl).elim
+    · refine Fin.cases ?_ (fun l => ?_) l
+      · intro _ hxk hxl
+        exact F.fan.toA_toB hxk hxl
+      · refine Fin.cases ?_ (fun l => ?_) l
+        · intro _ hxk hxl
+          exact F.fan.toA_toC hxk hxl
+        · refine Fin.cases ?_ (fun l => Fin.elim0 l) l
+          intro _ hxk hxl
+          exact F.fan.toA_toD hxk hxl
+  · refine Fin.cases ?_ (fun k => ?_) k
+    · refine Fin.cases ?_ (fun l => ?_) l
+      · intro _ hxk hxl
+        exact F.fan.toA_toB hxl hxk
+      · refine Fin.cases ?_ (fun l => ?_) l
+        · intro hkl _ _
+          exact (hkl rfl).elim
+        · refine Fin.cases ?_ (fun l => ?_) l
+          · intro _ hxk hxl
+            exact F.fan.toB_toC hxk hxl
+          · refine Fin.cases ?_ (fun l => Fin.elim0 l) l
+            intro _ hxk hxl
+            exact F.fan.toB_toD hxk hxl
+    · refine Fin.cases ?_ (fun k => ?_) k
+      · refine Fin.cases ?_ (fun l => ?_) l
+        · intro _ hxk hxl
+          exact F.fan.toA_toC hxl hxk
+        · refine Fin.cases ?_ (fun l => ?_) l
+          · intro _ hxk hxl
+            exact F.fan.toB_toC hxl hxk
+          · refine Fin.cases ?_ (fun l => ?_) l
+            · intro hkl _ _
+              exact (hkl rfl).elim
+            · refine Fin.cases ?_ (fun l => Fin.elim0 l) l
+              intro _ hxk hxl
+              exact F.fan.toC_toD hxk hxl
+      · refine Fin.cases ?_ (fun k => Fin.elim0 k) k
+        refine Fin.cases ?_ (fun l => ?_) l
+        · intro _ hxk hxl
+          exact F.fan.toA_toD hxl hxk
+        · refine Fin.cases ?_ (fun l => ?_) l
+          · intro _ hxk hxl
+            exact F.fan.toB_toD hxl hxk
+          · refine Fin.cases ?_ (fun l => ?_) l
+            · intro _ hxk hxl
+              exact F.fan.toC_toD hxl hxk
+            · refine Fin.cases ?_ (fun l => Fin.elim0 l) l
+              intro hkl _ _
+              exact (hkl rfl).elim
 
 private noncomputable def branchArm
     (M : MinorModel K5 G) (i j : Fin 5)
@@ -788,13 +823,17 @@ private theorem split_yields_k33_minor
     · have hk : k = 0 ∨ k = 1 ∨ k = 2 := by omega
       rcases hk with rfl | rfl | rfl
       · simpa [branchSet, leftBranch] using splitLeft_connected S
-      · simpa [branchSet, leftBranch] using M.connected C
-      · simpa [branchSet, leftBranch] using M.connected D
+      · change (G.induce (M.branchSet C)).Connected
+        exact M.connected C
+      · change (G.induce (M.branchSet D)).Connected
+        exact M.connected D
     · have hk : k = 0 ∨ k = 1 ∨ k = 2 := by omega
       rcases hk with rfl | rfl | rfl
       · simpa [branchSet, rightBranch] using splitRight_connected S tail
-      · simpa [branchSet, rightBranch] using M.connected A
-      · simpa [branchSet, rightBranch] using M.connected B
+      · change (G.induce (M.branchSet A)).Connected
+        exact M.connected A
+      · change (G.induce (M.branchSet B)).Connected
+        exact M.connected B
   have disjoint_of_subsets
       {p q : Fin 5} (hpq : p ≠ q) {s t : Set V}
       (hs : s ⊆ M.branchSet p) (ht : t ⊆ M.branchSet q) :
@@ -993,9 +1032,9 @@ theorem k5Minor_topologicalObstruction
     }⟩
     · intro a b h
       let hab : a ≠ b := by simpa [K5] using h
-      simpa [canonicalHubRoute] using
-        SimpleGraph.Walk.bypass_isPath
-          (rawHubRoute M hAll a b hab)
+      change (canonicalHubRoute M hAll a b _).IsPath
+      exact SimpleGraph.Walk.bypass_isPath
+        (rawHubRoute M hAll a b hab)
     · intro a b h w
       let hab : a ≠ b := by simpa [K5] using h
       exact canonicalHubRoute_branch_avoids M hAll a b hab w
