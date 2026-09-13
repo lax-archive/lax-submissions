@@ -102,11 +102,8 @@ lemma exists_initial (α p : ℕ) (hviol : α * p < neighborhoodComplexity G p) 
     rw [show Y = Finset.univ.image (fun s : {s // s ∈ I} => g s.val s.prop) by rfl]
     rw [Finset.card_image_of_injective]
     · rw [Finset.card_univ, Fintype.card_subtype]
-      simp only [I]
-      convert hXgt using 1
-      congr 1
-      ext x
-      simp [Finset.mem_image, f]
+      change α * p < I.card at hXgt
+      simpa using hXgt
     · intro ⟨s, hs⟩ ⟨s', hs'⟩ heq
       -- If g s hs = g s' hs', then f (g s hs) = f (g s' hs'), so s = s'
       have hfs := hg s hs |>.2

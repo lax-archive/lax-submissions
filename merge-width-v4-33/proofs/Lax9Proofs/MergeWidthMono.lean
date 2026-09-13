@@ -187,6 +187,7 @@ theorem restrictSeq_width_le (S : MergeSeq G) (Q : Setoid V) (r : ℕ) :
         rw [if_pos (by omega : i - 1 ≤ S.length)]
       -- Define quotient map q : Quotient (S.part (i-1) ⊓ Q) → Quotient (S.part (i-1))
       set s := S.part (i - 1) with hs_def
+      rw [show (restrictSeq S Q).part (i - 1) = s ⊓ Q by exact hrpart]
       -- q is induced by id : V → V
       let q : Quotient (s ⊓ Q) → Quotient s := Quotient.lift (Quotient.mk s) (fun a b hab => Quotient.sound hab.1)
       -- q is well-defined and satisfies q(⟦a⟧) = ⟦a⟧

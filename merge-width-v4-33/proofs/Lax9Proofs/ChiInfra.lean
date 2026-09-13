@@ -97,7 +97,9 @@ adjacent iff some edge of $G$ joins them. -/
 noncomputable def quotientGraph (G : SimpleGraph V) (P : Setoid V) :
     SimpleGraph (Quotient P) where
   Adj q q' := q ≠ q' ∧ ∃ a b, Quotient.mk P a = q ∧ Quotient.mk P b = q' ∧ G.Adj a b
-  symm := by rintro q q' ⟨hne, a, b, ha, hb, hab⟩; exact ⟨hne.symm, b, a, hb, ha, hab.symm⟩
+  symm := ⟨by
+    rintro q q' ⟨hne, a, b, ha, hb, hab⟩
+    exact ⟨hne.symm, b, a, hb, ha, hab.symm⟩⟩
   loopless := ⟨fun _ h => h.1 rfl⟩
 
 omit [Fintype V] in
