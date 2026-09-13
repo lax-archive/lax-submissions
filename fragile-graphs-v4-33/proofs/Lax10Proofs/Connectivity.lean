@@ -334,7 +334,8 @@ noncomputable def topDeleteHom [DecidableEq V] (G : SimpleGraph V)
           exact b.2 (by
             refine Finset.mem_image.mpr
               ⟨⟨b.1, by simp [SimpleGraph.Subgraph.verts_top]⟩, ht, rfl⟩)⟩ from by
-      simpa [deleteVertices, SimpleGraph.Subgraph.coe_adj, SimpleGraph.Subgraph.top_adj] using hab)
+      have hab' : G.Adj a.1 b.1 := SimpleGraph.induce_adj.mp hab
+      simpa [deleteVertices, SimpleGraph.Subgraph.coe_adj, SimpleGraph.Subgraph.top_adj] using hab')
 
 private lemma not_mem_image_subtype_of_not_mem [DecidableEq V] {G : SimpleGraph V}
     {T : Finset (⊤ : G.Subgraph).verts} {x : (⊤ : G.Subgraph).verts}
