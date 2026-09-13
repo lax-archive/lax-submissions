@@ -28,3 +28,6 @@ bibEntries:
       primaryClass  = {math.CO},
       doi           = {10.48550/arXiv.2609.06867}
     }
+issue:
+  repositoryId: 1320232165
+  number: 100
