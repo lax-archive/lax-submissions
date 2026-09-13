@@ -1,0 +1,23 @@
+specVersion: "1"
+id: lax-18
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: Szemerédi's Regularity Lemma
+authors:
+  - name: Fatemeh Ghasemi
+issue:
+  repositoryId: 1320232165
+  number: 18
+bibEntries:
+  - |
+      @book{diestel2017graph,
+        author    = {Reinhard Diestel},
+        title     = {Graph Theory},
+        edition   = {5},
+        series    = {Graduate Texts in Mathematics},
+        volume    = {173},
+        publisher = {Springer},
+        year      = {2017},
+        doi       = {10.1007/978-3-662-53622-3},
+        isbn      = {978-3-662-53621-6}
+      }

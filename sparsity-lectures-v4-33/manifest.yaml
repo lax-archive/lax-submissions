@@ -1,0 +1,47 @@
+specVersion: "1"
+id: lax-199508
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+supersedes: lax-12
+title: "Sparsity Lectures: Nowhere Denseness, Quasi-Wideness, and Generalized
+  Coloring Numbers"
+authors:
+  - name: Jan Dreier
+  - name: Claude Fable 5 (Anthropic)
+bibEntries:
+  - |
+    @misc{pilipczuk-sparsity-notes,
+      author = {Micha{\l} Pilipczuk and Sebastian Siebertz},
+      title  = {Sparsity --- lecture notes for the course ``Sparsity''},
+      year   = {2020},
+      note   = {University of Warsaw, Faculty of Mathematics, Informatics and Mechanics.
+                Cited by the numbering of the winter term 2019/20 edition;
+                Chapter~1 compiled 2020-01-24; Chapter~2 compiled 2019-11-22;
+                Chapter~4 compiled 2019-12-12},
+      url    = {https://www.mimuw.edu.pl/~mp248287/sparsity2/}
+    }
+  - |
+    @inproceedings{EickmeyerGiannopoulouKreutzerKwonPilipczukRabinovichSiebertz2017,
+      author    = {Eickmeyer, Kord and Giannopoulou, Archontia C. and
+                   Kreutzer, Stephan and Kwon, O-joung and Pilipczuk,
+                   Micha{\l} and Rabinovich, Roman and Siebertz, Sebastian},
+      title     = {Neighborhood Complexity and Kernelization for Nowhere
+                   Dense Classes of Graphs},
+      booktitle = {Proceedings of the 44th International Colloquium on
+                   Automata, Languages, and Programming (ICALP 2017)},
+      series    = {LIPIcs},
+      volume    = {80},
+      pages     = {63:1--63:14},
+      year      = {2017},
+      doi       = {10.4230/LIPIcs.ICALP.2017.63}
+    }
+  - |
+    @misc{DreierMahlmannMcCartyPilipczukTorunczyk2026,
+      author        = {Dreier, Jan and M{\"a}hlmann, Nikolas and McCarty, Rose
+                       and Pilipczuk, Micha{\l} and Toru{\'n}czyk, Szymon},
+      title         = {Neighborhood Complexity and Radius-1 Merge-Width in
+                       Monadically Dependent Graph Classes},
+      year          = {2026},
+      eprint        = {2607.10941},
+      archivePrefix = {arXiv}
+    }

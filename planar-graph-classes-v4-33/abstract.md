@@ -1,0 +1,21 @@
+This submission collects clean Lean concepts for twelve familiar planar
+graph classes: planar, outerplanar, maximal outerplanar, grids and walls,
+triangles, stars, ladders, Halin graphs, wheels, series-parallel graphs, trees,
+and paths, together with a relational concept for triangulations of planar
+graphs.
+
+The definitions follow the standard descriptions in Reinhard Diestel's
+*Graph Theory* (6th edition). Straight-line graph drawings are presented as a
+separate geometric concept and used as compact certificates of planarity, in
+accordance with Fáry's theorem. Graph minors, represented by connected branch
+sets, are likewise isolated as a separate combinatorial concept. The planar
+concept uses that relation directly to exclude *K₅* and *K₃,₃*; Wagner's
+theorem records the equivalence for finite graphs.
+
+Topological minors are presented separately as internally disjoint path
+models. The proof of Wagner's equivalence factors through Kuratowski's
+subdivision characterization and the special fact that the *K₅* and *K₃,₃*
+minor obstructions agree with their topological-minor obstructions. Each
+graph-class predicate contains only its defining structure: planarity and
+superclass consequences are stated separately as theorem cards. Proofs are
+supplied where the result is an elementary projection or composition in the

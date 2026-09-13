@@ -1,0 +1,120 @@
+specVersion: "1"
+id: lax-17
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: 'Exponent 8 ($\times$ Polylogarithmic) Bound for the Grid-Minor Theorem'
+authors:
+  - name: Édouard Bonnet
+  - name: Codex 5.5
+  - name: Codex 5.6
+issue:
+  repositoryId: 1320232165
+  number: 17
+bibEntries:
+  - |-
+    @article{ChuzhoyTan2021,
+      author = {Julia Chuzhoy and Zihan Tan},
+      title = {Towards tight(er) bounds for the Excluded Grid Theorem},
+      journal = {Journal of Combinatorial Theory, Series B},
+      volume = {146},
+      pages = {219--265},
+      year = {2021},
+      doi = {10.1016/j.jctb.2020.09.010}
+    }
+  - |-
+    @article{ChekuriChuzhoy2016,
+      author = {Chandra Chekuri and Julia Chuzhoy},
+      title = {Polynomial Bounds for the Grid-Minor Theorem},
+      journal = {Journal of the ACM},
+      volume = {63},
+      number = {5},
+      pages = {40:1--40:65},
+      year = {2016},
+      doi = {10.1145/2820609}
+    }
+  - |-
+    @misc{Chuzhoy2016Improved,
+      author = {Julia Chuzhoy},
+      title = {Improved Bounds for the Excluded Grid Theorem},
+      year = {2016},
+      eprint = {1602.02629},
+      archivePrefix = {arXiv},
+      primaryClass = {cs.DM}
+    }
+  - |-
+    @inproceedings{ChekuriChuzhoy2015Sparsifiers,
+      author = {Chandra Chekuri and Julia Chuzhoy},
+      title = {Degree-3 Treewidth Sparsifiers},
+      editor = {Piotr Indyk},
+      booktitle = {Proceedings of the Twenty-Sixth Annual ACM-SIAM Symposium on Discrete Algorithms},
+      pages = {242--255},
+      publisher = {SIAM},
+      year = {2015}
+    }
+  - |-
+    @techreport{KhandekarKhotOrecchiaVishnoi2007,
+      author = {Rohit Khandekar and Subhash A. Khot and Lorenzo Orecchia and Nisheeth K. Vishnoi},
+      title = {On a Cut-Matching Game for the Sparsest Cut Problem},
+      institution = {University of California, Berkeley},
+      number = {UCB/EECS-2007-177},
+      year = {2007},
+      url = {http://www.eecs.berkeley.edu/Pubs/TechRpts/2007/EECS-2007-177.html}
+    }
+  - |-
+    @misc{Krivelevich2019Expanders,
+      author = {Michael Krivelevich},
+      title = {Expanders---How to Find Them, and What to Find in Them},
+      year = {2019},
+      eprint = {1812.11562},
+      archivePrefix = {arXiv},
+      primaryClass = {math.CO}
+    }
+  - |-
+    @book{Diestel2017GraphTheory,
+      author = {Reinhard Diestel},
+      title = {Graph Theory},
+      edition = {5},
+      series = {Graduate Texts in Mathematics},
+      volume = {173},
+      publisher = {Springer},
+      year = {2017},
+      doi = {10.1007/978-3-662-53622-3}
+    }
+  - |-
+    @article{Menger1927,
+      author = {Karl Menger},
+      title = {Zur allgemeinen Kurventheorie},
+      journal = {Fundamenta Mathematicae},
+      volume = {10},
+      pages = {96--115},
+      year = {1927}
+    }
+  - |-
+    @article{HindOellermann1996,
+      author = {H. R. Hind and O. Oellermann},
+      title = {Menger-Type Results for Three or More Vertices},
+      journal = {Congressus Numerantium},
+      volume = {113},
+      pages = {179--204},
+      year = {1996}
+    }
+  - |-
+    @article{Mader1978,
+      author = {W. Mader},
+      title = {A Reduction Method for Edge Connectivity in Graphs},
+      journal = {Annals of Discrete Mathematics},
+      volume = {3},
+      pages = {145--164},
+      year = {1978}
+    }
+  - |-
+    @article{SinghLau2015,
+      author = {Mohit Singh and Lap Chi Lau},
+      title = {Approximating Minimum Bounded Degree Spanning Trees to within One of Optimal},
+      journal = {Journal of the ACM},
+      volume = {62},
+      number = {1},
+      pages = {1:1--1:19},
+      year = {2015},
+      doi = {10.1145/2629366}
+    }
