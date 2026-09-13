@@ -88,12 +88,9 @@ theorem ramsey (a b : ℕ) : ∃ N : ℕ,
           obtain ⟨t, ht⟩ := Classical.not_forall.mp h2'
           have ht : (Gᶜ.induce (↑B : Set V)).IsNClique b' t := not_not.mp ht
           let t' : Finset V := t.map ⟨Subtype.val, Subtype.val_injective⟩
-          have ht_coe : (((⊤ : Subgraph Gᶜ).induce (↑B : Set V)).coe).IsNClique b' t := by
-            simpa [SimpleGraph.induce_eq_coe_induce_top] using ht
           have ht' : Gᶜ.IsNClique b' t' := by
-            simpa [t'] using
-              (SimpleGraph.IsNClique.of_induce
-                (G := Gᶜ) (S := (⊤ : Subgraph Gᶜ)) (F := (↑B : Set V)) ht_coe)
+            exact (ht.map (f := ⟨Subtype.val, Subtype.val_injective⟩)).mono
+              (SimpleGraph.spanningCoe_induce_le (G := Gᶜ) (↑B : Set V))
           have hv_adj : ∀ w ∈ t', Gᶜ.Adj v w := by
             intro w hw
             rcases Finset.mem_map.mp hw with ⟨x, hx, rfl⟩
@@ -118,12 +115,9 @@ theorem ramsey (a b : ℕ) : ∃ N : ℕ,
           obtain ⟨s, hs⟩ := Classical.not_forall.mp h1
           have hs : (G.induce (↑A : Set V)).IsNClique a' s := not_not.mp hs
           let s' : Finset V := s.map ⟨Subtype.val, Subtype.val_injective⟩
-          have hs_coe : (((⊤ : Subgraph G).induce (↑A : Set V)).coe).IsNClique a' s := by
-            simpa [SimpleGraph.induce_eq_coe_induce_top] using hs
           have hs' : G.IsNClique a' s' := by
-            simpa [s'] using
-              (SimpleGraph.IsNClique.of_induce
-                (G := G) (S := (⊤ : Subgraph G)) (F := (↑A : Set V)) hs_coe)
+            exact (hs.map (f := ⟨Subtype.val, Subtype.val_injective⟩)).mono
+              (SimpleGraph.spanningCoe_induce_le (G := G) (↑A : Set V))
           have hv_adj : ∀ w ∈ s', G.Adj v w := by
             intro w hw
             rcases Finset.mem_map.mp hw with ⟨x, hx, rfl⟩
@@ -172,9 +166,9 @@ theorem multicolor_ramsey (sizes : List ℕ) (hk : sizes ≠ []) :
           intro V _ _ hcard c
           let G : SimpleGraph V := {
             Adj := fun u v => u ≠ v ∧ c s(u, v) = 0
-            symm := by
+            symm := ⟨by
               intro u v huv
-              exact ⟨huv.1.symm, by simpa [Sym2.eq_swap] using huv.2⟩
+              exact ⟨huv.1.symm, by simpa [Sym2.eq_swap] using huv.2⟩⟩
             loopless := ⟨fun v hv => hv.1 rfl⟩
           }
           letI : DecidableRel G.Adj := fun u v => by
