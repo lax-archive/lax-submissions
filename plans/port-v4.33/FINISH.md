@@ -51,12 +51,15 @@ The branch carries, besides the four ported folders:
 
 Optional local proof that the tree builds before submitting anything
 (word-ram ~5 min, ram-linear-time ~10 min, refinement-tower and ND-MC
-much longer — one package at a time, concepts before proofs):
+much longer — one package at a time, concepts before proofs; the two
+`-v4-33` dependencies are registered, so `.claude/capture-seed.sh
+sparsity-lectures-v4-33 finite-ramsey-v4-33` installs their builds in
+seconds):
 
 ```sh
 python3 .claude/local-overrides.py
 export PATH=$HOME/.elan/bin:$PATH LAKE_ARTIFACT_CACHE=false
-for s in word-ram ram-linear-time refinement-tower nowhere-dense-model-checking; do
+for s in word-ram ram-linear-time refinement-tower nowhere-dense-model-checking monadic-dependence-neighborhood-complexity-v4-33 twin-width-treewidth-separation-v4-33 lax-introduction; do
   (cd $s/concepts && lake build) && (cd $s/proofs && lake build) || { echo "FAIL $s"; break; }
 done
 ```
