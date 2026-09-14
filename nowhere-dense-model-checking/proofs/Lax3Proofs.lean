@@ -179,10 +179,11 @@ import Lax3Proofs.SolveMachine
 -- constant and time function precede every graph and word length.
 --
 -- Discharged here: `Lax3.Locality.locality` and `Lax3.NormalForm.normalForm`
--- (in `Assembly`), and
+-- (in `Assembly`), `Lax3.OrderedNeighborhoodCover.isNeighborhoodCover_wreach`
+-- and `Lax3.NeighborhoodCoverBound.exists_neighborhoodCover_degree_wcol`
+-- (in `CoverConstruction`),
+-- `Lax3.NowhereDenseSplitter.splitterWins_of_nowhereDense` (in `SplitterWin`),
+-- and
 -- `Lax3.ModelChecking.exists_almostLinearTime_program_modelChecking`
--- (in `SolveMachine`). The latter uses the existing Lax12 uniformly-quasi-wide
+-- (in `SolveMachine`). The last uses the Lax12 uniformly-quasi-wide
 -- dependency and does not assume a cover, ordering, or machine implementation.
--- Remaining concept declarations without conclusion annotations here:
--- `Lax3.NowhereDenseSplitter.splitterWins_of_nowhereDense`, and
--- `Lax3.NeighborhoodCoverBound.exists_neighborhoodCover_degree_wcol`.

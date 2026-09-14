@@ -64,6 +64,22 @@ Status values: `ready` (dependencies met, may be dispatched) · `waiting`
 
 ## Campaign log
 
+### 2026-09-07 — landed on main, resubmitted
+
+Edouard's `proof/lax-3-complete` (79 commits on `e20e09a`, head `42c861d`)
+fast-forwarded onto `main`. Supervisor replay: `lake build` green in place,
+`lax build` passes (12 concepts, 6 proofs inspected, 22 s warm), and
+`#print axioms` on the headline gives the three logical axioms plus the
+three concept claims it consumes — Lax12 UQW, `Lax3.Locality.locality`,
+`Lax3.OrderedNeighborhoodCover.isNeighborhoodCover_wreach` — each
+discharged downstream. `bd9bba6` rewrites `abstract.md` for the completed
+theorem and lists all six discharges in the proof root's header. Resubmitted
+from `bd9bba6` (`lax submit --force`, local checks already replayed here):
+the archive rebuilt in 22 min and wrote the public record — lax-3 is a
+**draft** at <https://laxarchive.org/lax-3/> with the proved headline; the
+five warnings are the standing proof-package and draft-lax-62 dependency
+notes. Registration stays open pending Jan's consent.
+
 ### 2026-09-06 — connected proof network
 
 Reviewed and landed `06ab970` and `df7b55d`. The normal-form proof and
