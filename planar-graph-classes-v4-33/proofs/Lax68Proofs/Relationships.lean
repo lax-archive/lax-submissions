@@ -246,14 +246,17 @@ theorem path_outerplanar {V : Type*} {G : SimpleGraph V} :
 ---
 conclusion: Lax68.PathPlanar.path_planar
 ---
-Every path is planar.
+A path is a tree, and every finite tree is planar. Finiteness follows from
+the defining isomorphism to a standard finite path graph.
 -/
 theorem path_planar {V : Type*} {G : SimpleGraph V} :
     Lax68.Paths.IsPath G →
-    Lax68.Planar.IsPlanar G :=
-  fun h =>
-    Lax68.OuterplanarPlanar.outerplanar_planar
-      (path_outerplanar h)
+    Lax68.Planar.IsPlanar G := by
+  intro h
+  have ht := Lax68.PathTree.path_tree h
+  obtain ⟨n, _, ⟨e⟩⟩ := h
+  let : Finite V := Finite.of_injective e e.injective
+  exact Lax68.TreePlanar.tree_planar ht
 
 /--
 ---
