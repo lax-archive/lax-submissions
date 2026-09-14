@@ -34,7 +34,7 @@ harmless because the endpoint principals are distinct.
 
 namespace Lax264807Proofs.CrossingTransduction
 
-open FirstOrder Lax264807.Transductions Lax264807.GraphClasses Lax12.GraphClasses
+open FirstOrder Lax264807.Transductions Lax264807.GraphClasses Lax199508.GraphClasses
 open Lax264807Proofs.Subdivision
 
 /-! ## Blue walks -/

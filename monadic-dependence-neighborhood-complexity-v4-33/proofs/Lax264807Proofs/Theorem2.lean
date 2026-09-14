@@ -8,14 +8,14 @@ choosing one representative vertex per realized neighborhood trace.
 
 namespace Lax264807Proofs.Theorem2
 
-open Lax12.GraphClasses Lax12.NeighborhoodComplexity
+open Lax199508.GraphClasses Lax199508.NeighborhoodComplexity
 open Lax264807.MonadicDependence
 
 /--
 ---
 conclusion: Lax264807.AlmostLinearNC.hasAlmostLinearNC_of_monadicallyDependent
 assumptions:
-  - Lax12.NowhereDenseNC.hasAlmostLinearNC_of_nowhereDense
+  - Lax199508.NowhereDenseNC.hasAlmostLinearNC_of_nowhereDense
   - Lax264807.WeaklySparseDependent.nowhereDense_of_weaklySparse_of_monadicallyDependent
 ---
 Monadically dependent graph classes have almost linear neighborhood

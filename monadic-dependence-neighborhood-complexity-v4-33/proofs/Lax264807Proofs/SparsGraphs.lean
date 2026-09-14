@@ -23,7 +23,7 @@ tuples inside neighborhood traces.
 namespace Lax264807Proofs
 
 open FirstOrder Lax264807.Transductions Lax264807.GraphClasses
-open Lax12.GraphClasses Lax12.NeighborhoodComplexity
+open Lax199508.GraphClasses Lax199508.NeighborhoodComplexity
 open Lax264807.MonadicDependence
 open scoped SimpleGraph
 

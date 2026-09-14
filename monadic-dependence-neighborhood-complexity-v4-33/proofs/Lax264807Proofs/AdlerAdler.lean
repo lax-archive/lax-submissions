@@ -32,9 +32,9 @@ specialization of the flip-breakability argument):
 
 namespace Lax264807Proofs.AdlerAdler
 
-open FirstOrder Lax264807.Transductions Lax264807.GraphClasses Lax12.GraphClasses
+open FirstOrder Lax264807.Transductions Lax264807.GraphClasses Lax199508.GraphClasses
 open Lax264807Proofs.LocalTypes Lax264807Proofs.EFAgreement Lax264807Proofs.BallSwap
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 
 /-! ### Powerset graphs -/
 
@@ -45,7 +45,7 @@ def powGraph (d : ℕ) : SimpleGraph (Fin d ⊕ (Fin d → Bool)) where
     | .inl i, .inr s => s i = true
     | .inr s, .inl i => s i = true
     | _, _ => False
-  symm := by rintro (i | s) (i' | s') h <;> first | exact h | exact h.elim
+  symm := ⟨by rintro (i | s) (i' | s') h <;> first | exact h | exact h.elim⟩
   loopless := ⟨by rintro (i | s) h <;> exact h⟩
 
 /-- A bijection of the powerset graph's vertices with a canonical
@@ -73,7 +73,7 @@ lemma powFin_adj (d : ℕ) (sb : Fin d → Bool) (i : Fin d) :
 ---
 conclusion: Lax264807.AdlerAdler.monadicallyDependent_of_nowhereDense
 assumptions:
-  - Lax12.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense
+  - Lax199508.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense
 ---
 Nowhere dense graph classes are monadically dependent (Adler–Adler).
 
@@ -114,7 +114,7 @@ back-and-forth in place of Gaifman's theorem.
 -/
 theorem monadicallyDependent_of_nowhereDense
     (C : GraphClass)
-    (h : Lax12.NowhereDenseClasses.NowhereDense C) :
+    (h : Lax199508.NowhereDenseClasses.NowhereDense C) :
     Lax264807.MonadicDependence.MonadicallyDependent C := by
   classical
   intro hT

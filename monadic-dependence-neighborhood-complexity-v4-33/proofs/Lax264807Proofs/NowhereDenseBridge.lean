@@ -173,7 +173,9 @@ private lemma forwardSubdivisionWalk_length
   match r with
   | 0 => simp [forwardSubdivisionWalk]
   | r' + 1 =>
-    simp [forwardSubdivisionWalk, subdivisionTailWalk_length]
+    simp only [forwardSubdivisionWalk, SimpleGraph.Walk.length_cons,
+      subdivisionTailWalk_length]
+    omega
 
 private lemma forwardSubdivisionWalk_isPath
     {N r : ℕ} (e : {p : Fin N × Fin N // p.1 < p.2}) :
@@ -183,7 +185,7 @@ private lemma forwardSubdivisionWalk_isPath
     simp [forwardSubdivisionWalk]
     exact Fin.ne_of_lt e.2
   | r' + 1 =>
-    simp [forwardSubdivisionWalk]
+    simp only [forwardSubdivisionWalk, SimpleGraph.Walk.cons_isPath_iff]
     refine ⟨subdivisionTailWalk_isPath e _, ?_⟩
     intro hmem
     rcases mem_subdivisionTailWalk_support e _ hmem with h | ⟨j, _, hxj⟩
@@ -246,8 +248,12 @@ private noncomputable def completeEdgeWalk
     (subdividedClique N r).Walk
       (Sum.inl (completeEdgeTail e))
       (Sum.inl (Sym2.Mem.other (completeEdgeTail_mem e))) := by
-  exact (forwardSubdivisionWalk (completeEdgeOrient e)).copy rfl
-    (congrArg Sum.inl (completeEdgeHead_eq e).symm)
+  exact (forwardSubdivisionWalk (completeEdgeOrient e)).copy
+    (congrArg Sum.inl
+      (show (completeEdgeOrient e).1.1 = completeEdgeTail e from rfl))
+    (congrArg Sum.inl
+      (show (completeEdgeOrient e).1.2 = Sym2.Mem.other (completeEdgeTail_mem e)
+        from (completeEdgeHead_eq e).symm))
 
 /-- Every vertex on the canonical subdivided-edge walk lies either at one
 endpoint or on the subdivision chain of that same edge. -/
@@ -263,7 +269,8 @@ private lemma mem_forwardSubdivisionWalk_support
     · exact Or.inl rfl
     · exact Or.inr (Or.inl rfl)
   | r' + 1 =>
-    simp [forwardSubdivisionWalk] at hx
+    simp only [forwardSubdivisionWalk, SimpleGraph.Walk.support_cons,
+      List.mem_cons] at hx
     rcases hx with rfl | hx
     · exact Or.inl rfl
     · rcases mem_subdivisionTailWalk_support e _ hx with h | ⟨j, _, hj⟩
@@ -308,7 +315,7 @@ private theorem subdividedClique_isShallowTopologicalMinor
           simpa [completeEdgeWalk] using hy
         rcases mem_forwardSubdivisionWalk_support (e := completeEdgeOrient e) hy' with
           htail' | hhead' | ⟨k, hk⟩
-        · exact (htail (by simpa [completeEdgeWalk] using congrArg copy htail')).elim
+        · exact (htail (by exact congrArg copy htail')).elim
         · have hheadEq :
               copy (Sum.inl (completeEdgeOrient e).1.2) =
                 copy (Sum.inl (Sym2.Mem.other (completeEdgeTail_mem e))) := by
@@ -330,7 +337,7 @@ private theorem subdividedClique_isShallowTopologicalMinor
           simpa [completeEdgeWalk] using hy'
         rcases mem_forwardSubdivisionWalk_support (e := completeEdgeOrient e) hy0 with
           hxTail | hxHead | ⟨k, hk⟩
-        · exact (htail (by simpa [completeEdgeWalk] using congrArg copy hxTail)).elim
+        · exact (htail (by exact congrArg copy hxTail)).elim
         · have hheadEq :
               copy (Sum.inl (completeEdgeOrient e).1.2) =
                 copy (Sum.inl (Sym2.Mem.other (completeEdgeTail_mem e))) := by
@@ -339,7 +346,7 @@ private theorem subdividedClique_isShallowTopologicalMinor
           exact (hhead ((congrArg copy hxHead).trans hheadEq)).elim
         · rcases mem_forwardSubdivisionWalk_support (e := completeEdgeOrient e') hy0' with
             hxTail' | hxHead' | ⟨k', hk'⟩
-          · exact (htail' (hyy'.symm.trans (by simpa [completeEdgeWalk] using congrArg copy hxTail'))).elim
+          · exact (htail' (hyy'.symm.trans (by exact congrArg copy hxTail'))).elim
           · have hheadEq' :
                 copy (Sum.inl (completeEdgeOrient e').1.2) =
                   copy (Sum.inl (Sym2.Mem.other (completeEdgeTail_mem e'))) := by

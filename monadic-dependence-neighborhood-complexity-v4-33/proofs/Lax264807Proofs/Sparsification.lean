@@ -766,7 +766,7 @@ theorem Sparsification.step {G : SimpleGraph (Fin n)}
           have hi := hf (Fin.castSucc i)
           rw [← congrArg Prod.fst (rep_key q),
             ← congrArg Prod.fst (rep_key q')]
-          simpa [f'] using hi
+          simpa [f', tup] using hi
         · rw [← congrArg Prod.snd (rep_key q),
             ← congrArg Prod.snd (rep_key q')]
           exact htrace }

@@ -42,7 +42,7 @@ open Lax264807Proofs.Subdivision
 /-! ### Encoding bridges -/
 
 /-- The type-polymorphic closure of a submitted class under graph copies. -/
-private def copyClosure (C : Lax12.GraphClasses.GraphClass) :
+private def copyClosure (C : Lax199508.GraphClasses.GraphClass) :
     Lax264807Proofs.ShallowMinors.GraphClass :=
   fun {_} _ _ H =>
     ∃ (n : ℕ) (G : SimpleGraph (Fin n)), C n G ∧ H ⊑ G
@@ -51,7 +51,7 @@ private def copyClosure (C : Lax12.GraphClasses.GraphClass) :
 walks inside branch sets are replaced by their bypass paths. -/
 private theorem isShallowMinor_of_shallowMinorModel {n t r : ℕ}
     {G : SimpleGraph (Fin n)}
-    (M : Lax12.NowhereDenseClasses.ShallowMinorModel r
+    (M : Lax199508.NowhereDenseClasses.ShallowMinorModel r
       (⊤ : SimpleGraph (Fin t)) G) :
     IsShallowMinor (SimpleGraph.completeGraph (Fin t)) G r := by
   refine ⟨{
@@ -71,9 +71,9 @@ private theorem isShallowMinor_of_shallowMinorModel {n t r : ℕ}
 /-- Internal nowhere-denseness of the copy closure transfers back to the
 submitted shallow-minor formulation. -/
 private theorem nowhereDense_of_isNowhereDense_copyClosure
-    (C : Lax12.GraphClasses.GraphClass)
+    (C : Lax199508.GraphClasses.GraphClass)
     (h : IsNowhereDense (copyClosure C)) :
-    Lax12.NowhereDenseClasses.NowhereDense C := by
+    Lax199508.NowhereDenseClasses.NowhereDense C := by
   intro r
   obtain ⟨t, ht⟩ := h r
   refine ⟨t + 1, ?_⟩
@@ -293,8 +293,8 @@ private lemma subdividedBiclique_isIndContained_of_le {k m r : ℕ} (h : k ≤ m
 ---
 conclusion: Lax264807.WeaklySparseDependent.nowhereDense_of_weaklySparse_of_monadicallyDependent
 assumptions:
-  - Lax14.MulticolorRamsey.exists_monochromatic_set
-  - Lax14.TupleRamsey.exists_orderType_homogeneous
+  - Lax345067.MulticolorRamsey.exists_monochromatic_set
+  - Lax345067.TupleRamsey.exists_orderType_homogeneous
 ---
 Every weakly sparse monadically dependent graph class is nowhere dense:
 Corollary 6a of Dreier, Mählmann, McCarty, Pilipczuk and Toruńczyk, by way
@@ -328,9 +328,9 @@ Dependent Graph Classes* (2026). The argument is Lemma 13.7 of
 Mählmann's thesis, through its Lemma 13.8, with the forbidden-pattern
 endpoint replaced by a transduction of all graphs. -/
 theorem nowhereDense_of_weaklySparse_of_monadicallyDependent
-    (C : Lax12.GraphClasses.GraphClass) (hs : WeaklySparse C)
+    (C : Lax199508.GraphClasses.GraphClass) (hs : WeaklySparse C)
     (hd : MonadicallyDependent C) :
-    Lax12.NowhereDenseClasses.NowhereDense C := by
+    Lax199508.NowhereDenseClasses.NowhereDense C := by
   obtain ⟨kWS, hWS⟩ := hs
   by_contra hNotND
   -- Cross the encoding bridge: the copy closure is not locally nowhere

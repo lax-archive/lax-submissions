@@ -1,4 +1,4 @@
-import Lax14.MulticolorRamsey
+import Lax345067.MulticolorRamsey
 import Mathlib.Data.Sym.Sym2
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Fintype.EquivFin
@@ -8,7 +8,7 @@ import Mathlib.Data.Set.Card
 Ramsey's theorem for colourings of pairs, in the finite unordered form the
 nowhere-dense bridge consumes: an arbitrary finite list of colours over a
 varying finite vertex type.  Nothing is proved here — the lemma is a
-transport of `Lax14.MulticolorRamsey.exists_monochromatic_set`, the
+transport of `Lax345067.MulticolorRamsey.exists_monochromatic_set`, the
 statement of the `finite-ramsey` submission, from its canonical `Fin n`
 carriers along `Fintype.equivFin`.  The signature is unchanged from the
 version that carried the proof, so `Lax264807Proofs.NowhereDenseBridge` needs
@@ -33,7 +33,7 @@ theorem multicolor_ramsey (sizes : List ℕ) (_hk : sizes ≠ []) :
           sizes.get i ≤ S.card ∧
           (↑S : Set V).Pairwise (fun u v => c s(u, v) = i) := by
   classical
-  obtain ⟨N, hN⟩ := Lax14.MulticolorRamsey.exists_monochromatic_set sizes.length
+  obtain ⟨N, hN⟩ := Lax345067.MulticolorRamsey.exists_monochromatic_set sizes.length
     (Finset.univ.sup fun i : Fin sizes.length => sizes.get i)
   refine ⟨N, ?_⟩
   intro V _ _ hcard c

@@ -122,8 +122,9 @@ private theorem realize_liftFirstColors {c₁ c₂ n : ℕ}
     ⟨fun f => f.elim, fun R x => by
       cases R with
       | color i =>
-        simpa only [firstColorHom, colorStructure] using
-          congrFun (Fin.append_left colors₁ colors₂ i) (x 0)⟩
+        show (x 0 ∈ Fin.append colors₁ colors₂ (Fin.castAdd c₂ i)) =
+            (x 0 ∈ colors₁ i)
+        exact congrFun (Fin.append_left colors₁ colors₂ i) (x 0)⟩
   exact Language.LHom.realize_onFormula
     (Language.LHom.sumMap (Language.LHom.id L) (firstColorHom c₁ c₂)) φ
 

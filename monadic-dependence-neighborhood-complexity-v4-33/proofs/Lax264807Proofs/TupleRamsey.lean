@@ -1,4 +1,4 @@
-import Lax14.TupleRamsey
+import Lax345067.TupleRamsey
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Fin.Tuple.Basic
@@ -12,7 +12,7 @@ homogeneity up to the tuple's order type, and the two-sided version for
 pairs of tuples (Mählmann's thesis, Lemma 4.15).
 
 The Erdős–Rado core is no longer proved here: `tuple_ramsey` is a
-repackaging of `Lax14.TupleRamsey.exists_orderType_homogeneous`, the
+repackaging of `Lax345067.TupleRamsey.exists_orderType_homogeneous`, the
 statement of the `finite-ramsey` submission, into the monotone-unbounded
 `Finset` form the subdivided-biclique argument consumes.  Its signature
 and that of `orderType` are unchanged, so
@@ -94,7 +94,7 @@ the `Prop`-valued order type of the assumed statement: two tuples compared
 the same way are, in particular, ordered the same way. -/
 private lemma orderTypeProp_eq_of_orderType_eq {V : Type*} [LinearOrder V]
     {ℓ : ℕ} {a b : Fin ℓ → V} (h : orderType a = orderType b) :
-    Lax14.OrderTypes.orderType a = Lax14.OrderTypes.orderType b := by
+    Lax345067.OrderTypes.orderType a = Lax345067.OrderTypes.orderType b := by
   funext i j
   have hij : compare (a i) (a j) = compare (b i) (b j) :=
     congrArg (fun ot => ot (i, j)) h
@@ -113,7 +113,7 @@ private lemma orderTypeProp_eq_of_orderType_eq {V : Type*} [LinearOrder V]
 
 /-- Hypergraph Ramsey for arbitrary `ℓ`-tuples with order-type homogeneity,
 in the monotone-unbounded form used throughout this entry.  Repackaging of
-the assumed statement `Lax14.TupleRamsey.exists_orderType_homogeneous`: its
+the assumed statement `Lax345067.TupleRamsey.exists_orderType_homogeneous`: its
 per-size bound is fed to `existsMonotoneUnbounded`, its `Set` witness is
 converted to a `Finset`, and the factoring function `f` is rebuilt from
 homogeneity by picking, for each realized order type, a tuple realizing
@@ -144,11 +144,11 @@ theorem tuple_ramsey (k ℓ : ℕ) (hk : 0 < k) :
       intro a hmem
       exact absurd (hmem 0) (Finset.notMem_empty _)
   let Nfin : ℕ → ℕ := fun M =>
-    (Lax14.TupleRamsey.exists_orderType_homogeneous k ℓ M).choose
+    (Lax345067.TupleRamsey.exists_orderType_homogeneous k ℓ M).choose
   have hNfin : ∀ M n, Nfin M ≤ n → P n M := by
     intro M n hn c
     obtain ⟨I, hIcard, hIhom⟩ :=
-      (Lax14.TupleRamsey.exists_orderType_homogeneous k ℓ M).choose_spec n c hn
+      (Lax345067.TupleRamsey.exists_orderType_homogeneous k ℓ M).choose_spec n c hn
     refine ⟨I.toFinset, ?_, ?_⟩
     · rw [← Set.ncard_eq_toFinset_card']
       exact hIcard
