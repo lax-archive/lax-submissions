@@ -192,7 +192,7 @@ theorem typ_succ_congr :
   induction q with
   | zero =>
       intro r s n₁ n₂ G₁ G₂ X₁ X₂ m₁ m₂ A₁ A₂ h
-      simpa [typ_zero] using congrArg T.diagram h
+      exact congrArg T.diagram h
   | succ q ih =>
       intro r s n₁ n₂ G₁ G₂ X₁ X₂ m₁ m₂ A₁ A₂ h
       have vstep : ∀ {n₁ n₂ : ℕ} {G₁ : SimpleGraph (Fin n₁)} {G₂ : SimpleGraph (Fin n₂)}
