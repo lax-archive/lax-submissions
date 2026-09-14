@@ -18,8 +18,11 @@ Kuratowski’s subdivision characterization and Wagner’s excluded-minor
 characterization are stated for finite graphs. Both are open statements;
 this submission does not supply their proofs.
 
-The supplied proofs include that stars and paths are trees. The remaining
-open formalization problems are grid and wall planarity, ladder outerplanarity
+The supplied proofs include that stars and paths are trees, and that wall
+planarity follows from grid planarity by restricting a drawing. Ladder
+planarity has alternative proofs through grids, outerplanarity, and
+series-parallel graphs, each conditional on the corresponding open statements.
+The remaining open formalization problems are grid planarity, ladder outerplanarity
 and series-parallel construction, series-parallel planarity, finite-tree
 outerplanarity, triangle maximal outerplanarity, and the wheel-to-Halin
 construction, as well as Kuratowski’s and Wagner’s theorems. These are known

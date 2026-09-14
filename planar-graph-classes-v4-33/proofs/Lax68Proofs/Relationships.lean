@@ -189,6 +189,34 @@ theorem ladder_planar {V : Type*} {G : SimpleGraph V} :
 
 /--
 ---
+conclusion: Lax68.LadderPlanar.ladder_planar
+---
+Alternatively, ladders are outerplanar, and outerplanar graphs are planar.
+This proof assumes the still-open statement that ladders are outerplanar.
+-/
+theorem ladder_planar_of_outerplanar {V : Type*} {G : SimpleGraph V} :
+    Lax68.Ladders.IsLadder G →
+    Lax68.Planar.IsPlanar G :=
+  fun h =>
+    Lax68.OuterplanarPlanar.outerplanar_planar
+      (Lax68.LadderOuterplanar.ladder_outerplanar h)
+
+/--
+---
+conclusion: Lax68.LadderPlanar.ladder_planar
+---
+Alternatively, ladders are series-parallel, and series-parallel graphs are planar.
+Both intermediate statements remain open in this formalization.
+-/
+theorem ladder_planar_of_seriesParallel {V : Type*} {G : SimpleGraph V} :
+    Lax68.Ladders.IsLadder G →
+    Lax68.Planar.IsPlanar G :=
+  fun h =>
+    Lax68.SeriesParallelPlanar.seriesParallel_planar
+      (Lax68.LadderSeriesParallel.ladder_seriesParallel h)
+
+/--
+---
 conclusion: Lax68.HalinPlanar.halin_planar
 ---
 Every Halin graph is planar.
@@ -271,5 +299,49 @@ theorem triangulationOf_planar {V : Type*}
     Lax68.Triangulations.IsTriangulationOf G T →
     Lax68.Planar.IsPlanar T :=
   fun _ h => h.2.2.1
+
+/--
+---
+conclusion: Lax68.WallPlanar.wall_planar
+---
+A wall uses a subset of the edges of its rectangular grid. Restrict a planar
+grid drawing to those edges and relabel its vertices by the wall isomorphism.
+This proof assumes the still-open statement that grids are planar.
+-/
+theorem wall_planar {V : Type*} {G : SimpleGraph V} :
+    Lax68.GridsAndWalls.IsWall G → Lax68.Planar.IsPlanar G := by
+  rintro ⟨m, n, hm, hn, e, he⟩
+  let Q := SimpleGraph.pathGraph m □ SimpleGraph.pathGraph n
+  obtain ⟨D⟩ := Lax68.GridPlanar.grid_planar
+    (G := Q) ⟨m, n, hm, hn, ⟨SimpleGraph.Iso.refl⟩⟩
+  have edges : ∀ {a b : V}, G.Adj a b → Q.Adj (e.symm a) (e.symm b) := by
+    intro a b hab
+    have hw := (he (e.symm a) (e.symm b)).mp (by simpa using hab)
+    rcases hw with ⟨hr, hc⟩ | ⟨hc, hr, _⟩
+    · exact Or.inr ⟨SimpleGraph.pathGraph_adj.mpr hc, hr⟩
+    · exact Or.inl ⟨SimpleGraph.pathGraph_adj.mpr hr, hc⟩
+  refine ⟨{
+    point := fun v => D.point (e.symm v)
+    injective := D.injective.comp e.symm.injective
+    noVertexOnEdge := ?_
+    disjointEdges := ?_
+  }⟩
+  · intro a b c hab hca hcb
+    exact D.noVertexOnEdge (edges hab)
+      (fun h => hca (e.symm.injective h))
+      (fun h => hcb (e.symm.injective h))
+  · intro a b c d hab hcd hdis
+    apply D.disjointEdges (edges hab) (edges hcd)
+    rw [Set.disjoint_left] at hdis ⊢
+    intro x hx hy
+    apply hdis (a := e x)
+    · rcases hx with rfl | hx
+      · simp
+      · rw [Set.mem_singleton_iff] at hx
+        simp [hx]
+    · rcases hy with rfl | hy
+      · simp
+      · rw [Set.mem_singleton_iff] at hy
+        simp [hy]
 
 end Lax68Proofs
