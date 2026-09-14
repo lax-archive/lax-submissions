@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="300" viewBox="0 0 760 300" role="img" aria-labelledby="title desc">
+  <title id="title">A planar graph</title>
+  <desc id="desc">A crossing-free drawing of a graph with six vertices.</desc>
+  <rect width="760" height="300" fill="white"/>
+  <g fill="none" stroke="#334155" stroke-width="4" stroke-linecap="round">
+    <path d="M120 210 L250 80 L440 80 L600 210 L360 255 Z M250 80 L360 255 M440 80 L360 255 M120 210 L440 80 M250 80 L600 210"/>
+  </g>
+  <g fill="#2563eb" stroke="white" stroke-width="3">
+    <circle cx="120" cy="210" r="11"/><circle cx="250" cy="80" r="11"/><circle cx="440" cy="80" r="11"/>
+    <circle cx="600" cy="210" r="11"/><circle cx="360" cy="255" r="11"/>
+  </g>
+  <text x="360" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" fill="#334155">A crossing-free straight-line drawing</text>
+</svg>

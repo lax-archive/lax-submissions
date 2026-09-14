@@ -6,7 +6,7 @@ title: Paths
 type: definition
 ---
 
-![Path graph illustration](https://placehold.co/760x220?text=Path+Graph "Path graph illustration")
+![Path graph illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/path.svg "Path graph illustration")
 
 A finite path graph is a graph isomorphic to the standard path graph on a
 positive number of vertices.

@@ -8,7 +8,7 @@ title: Halin graphs
 type: definition
 ---
 
-![Halin graph illustration](https://placehold.co/760x220?text=Halin+Graph "Halin graph illustration")
+![Halin graph illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/halin.svg "Halin graph illustration")
 
 A Halin graph is obtained from a plane tree with no vertex of degree two by
 joining its leaves in their cyclic order. The construction

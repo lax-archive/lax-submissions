@@ -7,7 +7,7 @@ title: Topological graph minors
 type: definition
 ---
 
-![Topological minor illustration](https://placehold.co/760x220?text=Topological+Minor "Topological minor illustration")
+![Topological minor illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/topological-minor.svg "Topological minor illustration")
 
 A graph *H* is a topological minor of *G* when the vertices of *H* are
 represented by distinct branch vertices of *G* and its edges by paths whose

@@ -6,7 +6,7 @@ title: Graph minors
 type: definition
 ---
 
-![Graph minor illustration](https://placehold.co/760x220?text=Graph+Minor+Hierarchy "Graph minor illustration")
+![Graph minor illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/graph-minor.svg "Graph minor illustration")
 
 A graph *H* is a minor of a graph *G* when the vertices of *H* can be
 represented by pairwise disjoint connected branch sets in *G*, with an edge

@@ -6,7 +6,7 @@ title: Wheels
 type: definition
 ---
 
-![Wheel graph illustration](https://placehold.co/760x220?text=Wheel+Graph "Wheel graph illustration")
+![Wheel graph illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/wheel.svg "Wheel graph illustration")
 
 A finite wheel consists of a cycle of at least three rim vertices together
 with one hub adjacent to every rim vertex, and has no other edges.

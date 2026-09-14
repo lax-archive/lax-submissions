@@ -6,7 +6,7 @@ title: Ladders
 type: definition
 ---
 
-![Ladder graph illustration](https://placehold.co/760x220?text=Ladder+Graph "Ladder graph illustration")
+![Ladder graph illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/ladder.svg "Ladder graph illustration")
 
 A finite ladder is a nonempty two-row grid: two paths joined by corresponding
 rungs.

@@ -6,7 +6,7 @@ title: Grids and walls
 type: definition
 ---
 
-![Grid and wall illustration](https://placehold.co/760x220?text=Grid+and+Wall "Grid and wall illustration")
+![Grid and wall illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/grid-wall.svg "Grid and wall illustration")
 
 A nonempty rectangular grid has vertices in rows and columns, with edges
 between orthogonally consecutive positions. A wall is the brick-wall subgraph

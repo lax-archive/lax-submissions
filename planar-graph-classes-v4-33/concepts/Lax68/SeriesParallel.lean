@@ -6,7 +6,7 @@ title: Series-parallel graphs
 type: definition
 ---
 
-![Series-parallel graph illustration](https://placehold.co/760x220?text=Series-Parallel+Graph "Series-parallel graph illustration")
+![Series-parallel graph illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/series-parallel.svg "Series-parallel graph illustration")
 
 A finite two-terminal series-parallel graph is built from a single terminal
 edge by series and parallel composition. The side conditions say that the

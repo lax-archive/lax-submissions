@@ -6,7 +6,7 @@ title: Maximal outerplanar graphs
 type: definition
 ---
 
-![Maximal outerplanar illustration](https://placehold.co/760x220?text=Maximal+Outerplanar+Graph "Maximal outerplanar illustration")
+![Maximal outerplanar illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/maximal-outerplanar.svg "Maximal outerplanar illustration")
 
 An outerplanar graph is maximal outerplanar when no edge can be added between
 its existing vertices while preserving outerplanarity.
