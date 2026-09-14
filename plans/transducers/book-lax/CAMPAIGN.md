@@ -182,8 +182,15 @@ longer bridges `id` and `fun x => x` without `Function.id_def`.
   resubmitted.
 
 State after the port (2026-09-14): every package of the eight submissions
-builds at v4.33.0 through the local loop; replay was not run locally except
-where noted; nothing is submitted — the archive records are still the
+builds at v4.33.0 through the local loop. `lax build --replay` (the archive's
+own checks, kernel replay included) is green on `mealy-machines` (1m41s: 22
+concepts · 13 proofs, the pre-existing `unused-lemma` warnings only) and on
+`pcp-undecidability` (22m16s, of which the kernel replay 21m51s on a 4-CPU
+machine — the archive caps the replay at 20 minutes, so S0's first v4.33.0
+submission may need the identical `--force` retry Part D needed at v4.30;
+9 concepts · 6 proofs, 77 pre-existing warnings); the other six cannot pass
+resolution until their dependencies are resubmitted (their requires still
+name v4.30.0 records). Nothing is submitted — the archive records are still the
 v4.30.0 drafts of the table above until the bottom-up resubmission.
 
 ## Source edits (against the epoch mathlib)

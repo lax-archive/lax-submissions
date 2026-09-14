@@ -1,7 +1,7 @@
 From 73cc541ca802846e6c30c670f768165d2d57866c Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 07:47:28 +0000
-Subject: [PATCH 09/16] lax/CAMPAIGN: S4 port entry
+Subject: [PATCH 09/18] lax/CAMPAIGN: S4 port entry
 
 ---
  lax/CAMPAIGN.md | 20 ++++++++++++++++++++

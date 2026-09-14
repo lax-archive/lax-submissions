@@ -1,7 +1,7 @@
 From 4e0a9c2558d00e62be494f3631a4276baf2a33f6 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 08:10:39 +0000
-Subject: [PATCH 13/16] lax/CLAUDE.md: the local loop and repin tools, the
+Subject: [PATCH 13/18] lax/CLAUDE.md: the local loop and repin tools, the
  v4.33.0 drift pointer
 
 ---

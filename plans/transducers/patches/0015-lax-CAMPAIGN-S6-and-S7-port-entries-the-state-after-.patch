@@ -1,7 +1,7 @@
 From 1aca613c5da188bc983cd7e64e7def5863c2e167 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 08:24:56 +0000
-Subject: [PATCH 15/16] lax/CAMPAIGN: S6 and S7 port entries, the state after
+Subject: [PATCH 15/18] lax/CAMPAIGN: S6 and S7 port entries, the state after
  the port
 
 ---

@@ -1,7 +1,7 @@
 From 3ec378115d20b2907884bf7f1b2ca9b3c926c51a Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 08:24:22 +0000
-Subject: [PATCH 14/16] lax/polyregular-functions: proofs build at v4.33.0
+Subject: [PATCH 14/18] lax/polyregular-functions: proofs build at v4.33.0
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

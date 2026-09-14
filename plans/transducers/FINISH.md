@@ -38,7 +38,8 @@ git log --oneline main..port-v4.33      # expect the series: pins, tools, S0+S1,
 
 If `git am` stops on a conflict, the only plausible cause is a `lax/`
 change on `main` after 4ec9235; resolve it keeping both, `git am --continue`.
-Never edit a `concepts/` file beyond what patch 12 (`CONCEPT CHANGE`) does.
+Never edit a `concepts/` file beyond what the one patch whose subject says
+`CONCEPT CHANGE` does.
 
 Optional local proof that the tree builds before submitting anything
 (30–60 min in total, one package at a time):
@@ -91,9 +92,11 @@ show `v4.33.0` in `lax sync`.
 
 Known outcomes to expect, and what to do:
 
-- **"proofs kernel replay exceeded its time limit"** on step 4 or 7 (the
-  large packages; Part D hit the 20-minute cap once at v4.30 and the
-  identical retry passed): resubmit the same commit once with `--force`. If
+- **"proofs kernel replay exceeded its time limit"** on step 1, 4 or 7
+  (Part D hit the 20-minute cap once at v4.30 and the identical retry
+  passed; `pcp-undecidability`'s replay took 21m51s on a 4-CPU machine
+  during the port, right at the cap): resubmit the same commit once with
+  `--force`. If
   it fails identically twice, stop and report — that is a limits question
   for the archive, not a port defect.
 - **A validation error in a Lean file**: the port was built and, for S0

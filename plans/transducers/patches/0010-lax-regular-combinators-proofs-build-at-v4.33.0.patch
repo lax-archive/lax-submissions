@@ -1,7 +1,7 @@
 From e7d5928d8a19704d2531a05f00a5f69a2b1c0c3d Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 08:01:54 +0000
-Subject: [PATCH 10/16] lax/regular-combinators: proofs build at v4.33.0
+Subject: [PATCH 10/18] lax/regular-combinators: proofs build at v4.33.0
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

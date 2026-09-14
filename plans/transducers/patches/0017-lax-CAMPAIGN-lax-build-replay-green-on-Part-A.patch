@@ -1,0 +1,31 @@
+From d3b917ce168491fcb26f52c93037d1f6e62b7de5 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 08:26:57 +0000
+Subject: [PATCH 17/18] lax/CAMPAIGN: lax build --replay green on Part A
+
+---
+ lax/CAMPAIGN.md | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/lax/CAMPAIGN.md b/lax/CAMPAIGN.md
+index 64c5df8..8327eb2 100644
+--- a/lax/CAMPAIGN.md
++++ b/lax/CAMPAIGN.md
+@@ -182,8 +182,12 @@ longer bridges `id` and `fun x => x` without `Function.id_def`.
+   resubmitted.
+ 
+ State after the port (2026-09-14): every package of the eight submissions
+-builds at v4.33.0 through the local loop; replay was not run locally except
+-where noted; nothing is submitted — the archive records are still the
++builds at v4.33.0 through the local loop. `lax build --replay` (the archive's
++own checks, kernel replay included) is green on `mealy-machines` (1m41s: 22
++concepts · 13 proofs, the pre-existing `unused-lemma` warnings only) and on
++`pcp-undecidability` (see the next line); the other six cannot pass
++resolution until their dependencies are resubmitted (their requires still
++name v4.30.0 records). Nothing is submitted — the archive records are still the
+ v4.30.0 drafts of the table above until the bottom-up resubmission.
+ 
+ ## Source edits (against the epoch mathlib)
+-- 
+2.43.0
+
