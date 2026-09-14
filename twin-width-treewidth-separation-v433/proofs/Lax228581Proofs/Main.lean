@@ -717,9 +717,13 @@ def mapIsoPartitionSequence {V V' : Type}
 ---
 conclusion: Lax228581.ExponentialSeparation.exists_treewidth_le_and_two_pow_lt_twinWidth
 ---
-Self-contained proof of the Bonnet–Déprés exponential gap: for every `k`, the
-Bonnet–Déprés graph `BD_k` has treewidth at most `2*k + 4` while its
-twin-width exceeds `2^k`.
+For every natural number $k$, there is a finite simple graph $G$ whose
+treewidth $\mathrm{tw}(G)$ and twin-width $\mathrm{tww}(G)$ satisfy
+$$
+\mathrm{tw}(G) \le 2k + 4
+\qquad\text{and}\qquad
+2^k < \mathrm{tww}(G).
+$$
 
 # Proof strategy
 
@@ -731,7 +735,7 @@ vertex type `Fin n`.
 
 # Attribution
 
-Ported from Édouard Bonnet's formalization of Bonnet–Déprés,
+Ported from Édouard Bonnet's formalization of
 *Twin-width can be exponential in treewidth* (JCTB 2023).
 -/
 theorem exists_treewidth_le_and_two_pow_lt_twinWidth (k : ℕ) :

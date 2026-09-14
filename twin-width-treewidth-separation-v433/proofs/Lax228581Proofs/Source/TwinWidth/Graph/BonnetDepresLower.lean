@@ -3491,7 +3491,7 @@ theorem not_hasTwinWidthAtMost_of_many_internalNonSingletonTreeBags
     ContractionSequence.false_of_many_internalNonSingletonTreeBags_firstRootChildQIndex
       S hd (hClaim19 S)
 
-/-- The Bonnet--Déprés graph has no contraction sequence of red degree at most
+/-- The constructed graph has no contraction sequence of red degree at most
 `2^k`. -/
 theorem bonnetDepres_not_hasTwinWidthAtMost_two_pow (k : ℕ) :
     ¬ HasTwinWidthAtMost (bonnetDepresGraph k) (2 ^ k) := by
@@ -3500,7 +3500,7 @@ theorem bonnetDepres_not_hasTwinWidthAtMost_two_pow (k : ℕ) :
     (fun S => ContractionSequence.many_internalNonSingletonTreeBags_firstRootChildQIndex
       S le_rfl)
 
-/-- The concrete Bonnet--Déprés lower bound on twin-width. -/
+/-- The concrete lower bound on twin-width. -/
 theorem bonnetDepres_two_pow_lt_twinWidth (k : ℕ) :
     2 ^ k < twinWidth (bonnetDepresGraph k) :=
   Lax228581Proofs.TwinWidth.SimpleGraph.lt_twinWidth_of_not_hasTwinWidthAtMost
