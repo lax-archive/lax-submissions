@@ -29,9 +29,14 @@ lax-13 (the word RAM, from lax-13's registered source, *not* lax-67's) —
 so ND-MC now requires `Lax199508` where it required `Lax12` (renamed
 throughout the folder, prose included), and the two folders
 `sparsity-lectures-v4-33/`, `finite-ramsey-v4-33/` are copied here verbatim
-from `codex/archive-v4.33-migration` for the local loop. One successor was
+from `codex/archive-v4.33-migration` for the local loop. Two successors were
 scaffolded here: **monadic-dependence-neighborhood-complexity-v4-33** =
-**lax-264807**, superseding lax-5, requiring `Lax199508` and `Lax345067`.
+**lax-264807**, superseding lax-5, requiring `Lax199508` and `Lax345067`;
+and **twin-width-treewidth-separation-v4-33** = **lax-768004**, superseding
+lax-48 (co-owned with Édouard; the draft lax-65 that once superseded lax-48
+was deleted), mathlib only, paper carried unchanged — the dependency
+**lax-introduction** (lax-242665, draft, in place) needs, beside
+`Lax199508` and `Lax67`.
 `lax port` itself had to be fixed first: it refused every pre-six-digit id
 (`lax-5`, `lax-13`, …) — `lax-archive/lax` branch
 `claude/port-ndmc-latest-epoch-0slpbd`, commit `fb1da25`.
@@ -81,6 +86,10 @@ Pins everywhere: `manifest.yaml` (`leanVersion`, `mathlibVersion`), both
   exists_congr …`.
 - **refinement-tower** (lax-62): _pending the worker's report_.
 - **nowhere-dense-model-checking** (lax-3): _pending_.
+- **twin-width-treewidth-separation-v4-33** (lax-768004): _pending_.
+- **lax-introduction** (lax-242665; concepts 585 jobs green): pins, and
+  `Lax48` → `Lax768004`, `Lax12` → `Lax199508` in the lakefiles, the Lean
+  and the paper's markers; proofs build once lax-768004's concepts do.
 - **monadic-dependence-neighborhood-complexity-v4-33** (lax-264807;
   2080 + 2840 jobs green; concepts compile with every declared statement
   byte-identical). The scaffold had left `import Lax12.*`/`Lax14.*` in the
@@ -126,8 +135,5 @@ Pins everywhere: `manifest.yaml` (`leanVersion`, `mathlibVersion`), both
   identical to lax-12's record, and his port started from that record);
   a second successor of lax-12 would be a duplicate. The v4.30 folder stays
   as the record's source.
-- **lax-introduction** (lax-242665, draft): requires Lax48 (registered,
-  v4.30.0, no successor — the draft lax-65 that superseded it was
-  deleted). Needs `lax port lax-48` first.
-- **lax-48 / lax-49** (twin-width, registered, with Édouard): `lax port`
-  each, lax-49 after lax-48.
+- **lax-49** (twin-width mixed minor number, registered, with Édouard):
+  `lax port lax-49` once lax-768004 is registered (FINISH.md §4).

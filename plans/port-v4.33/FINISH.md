@@ -134,16 +134,35 @@ lax sync   # expect ~/.lax/lax-database/lax-264807 as a draft at v4.33.0
 It stays a draft; registering it (which also marks lax-5 superseded) is
 your call, as for the others.
 
+### 2c. The successor of lax-48, then lax-introduction
+
+`twin-width-treewidth-separation-v4-33` (lax-768004, `supersedes: lax-48`,
+mathlib only, paper untouched) is a first submit like 2b — two runs. Then
+`lax-introduction` (lax-242665, draft, in place) requires it: its lakefile
+already names `Lax768004` with a placeholder rev, so it is repinned after
+lax-768004 has a record, and after step 1 for `Lax67`:
+
+```sh
+lax submit --force twin-width-treewidth-separation-v4-33   # binds the issue, stops
+git add twin-width-treewidth-separation-v4-33/manifest.yaml && git commit -m "lax-768004: bind the archive issue" && git push
+lax submit --force twin-width-treewidth-separation-v4-33
+lax sync
+LAX_SUBMIT_FLAGS="--force" .claude/resubmit-cascade.sh lax-introduction   # repins Lax768004, Lax199508, Lax67; submits
+```
+
+lax-introduction carries a paper; the archive compiles it (the `paper ·
+web-oracle` warning class, if any, is pre-existing).
+
 ## 3. Close out
 
 ```sh
 lax sync
-for id in 67 11 62 3 264807; do
+for id in 67 11 62 3 264807 768004 242665; do
   python3 -c "import json;b=json.load(open('$HOME/.lax/lax-database/lax-$id/build-output.json'));print('lax-$id', b['inputs']['manifest']['leanVersion'], b['capture']['sourceCommit'][:8])"
 done
 ```
 
-All five must read `v4.33.0`. Then note it in `plans/README.md` (one line
+All seven must read `v4.33.0`. Then note it in `plans/README.md` (one line
 under the 2026-09 entries), commit, push. Registration stays your manual
 step, bottom-up, as before the port.
 
@@ -175,11 +194,11 @@ step, bottom-up, as before the port.
    port's concept surface is otherwise unchanged. Lax14 was not a direct
    require of ND-MC.
 3. **Not ported (yours, registered or blocked):**
-   - **lax-introduction** (lax-242665, draft) requires **Lax48**
-     (registered, v4.30.0, no v4.33.0 successor exists — the draft lax-65
-     that superseded it was deleted). It needs `lax port lax-48` (a fresh
-     id, co-owned with Édouard, 10.7k lines plus the paper) before it can
-     move; then `Lax12` → `Lax199508` and the repin as above.
+   - **lax-49** (twin-width mixed minor number, registered, with Édouard):
+     `lax port lax-49` after lax-768004 has a record (it requires Lax48,
+     which the port follows to lax-768004 once that is *registered*; while
+     lax-768004 is a draft the port leaves the Lax48 pin and says so —
+     repoint by hand as lax-introduction was).
    - **sparsity-lectures** (lax-12, registered): already has its
      registered v4.33.0 successor, Clemens's lax-199508, ported from
      lax-12's own record (`main`'s folder is identical to that record), so
