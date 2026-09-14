@@ -163,7 +163,7 @@ exactly this list). -/
 endpoints are alive. -/
 def masked (G : SimpleGraph (Fin n)) (M : Fin n → Bool) : SimpleGraph (Fin n) where
   Adj u v := G.Adj u v ∧ M u = true ∧ M v = true
-  symm := fun _ _ h => ⟨h.1.symm, h.2.2, h.2.1⟩
+  symm := ⟨fun _ _ h => ⟨h.1.symm, h.2.2, h.2.1⟩⟩
   loopless := ⟨fun _ h => G.irrefl h.1⟩
 
 @[simp] theorem masked_adj {u v : Fin n} :
