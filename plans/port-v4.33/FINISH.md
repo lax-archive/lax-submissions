@@ -10,7 +10,9 @@ to check.
 You are finishing the port of four draft submissions from the closed
 v4.30.0 archive environment to the v4.33.0 epoch: **word-ram** (lax-67),
 **ram-linear-time** (lax-11), **refinement-tower** (lax-62) and
-**nowhere-dense-model-checking** (lax-3). The port itself is done and
+**nowhere-dense-model-checking** (lax-3), plus one new successor of a
+registered record: **monadic-dependence-neighborhood-complexity-v4-33**
+(lax-264807, `supersedes: lax-5`). The port itself is done and
 reviewed on branch `claude/port-ndmc-latest-epoch-0slpbd`: every package
 builds at v4.33.0 through the local loop, no concept statement changed,
 and `README.md` in this folder records every Lean edit. What remains is
@@ -115,16 +117,33 @@ Known outcomes to expect, and what to do:
   packages), `dependencies · draft-dependency` and `statements ·
   unused-lemma` were there at v4.30 and are expected.
 
+### 2b. The successor of lax-5
+
+`monadic-dependence-neighborhood-complexity-v4-33` (lax-264807) pins only
+registered v4.33.0 records (Lax199508, Lax345067), so it needs no cascade
+step: it is a *first* submit of a new id, which takes two runs (the first
+binds the control issue into `manifest.yaml` and asks for a commit):
+
+```sh
+lax submit --force monadic-dependence-neighborhood-complexity-v4-33   # binds the issue, stops
+git add monadic-dependence-neighborhood-complexity-v4-33/manifest.yaml && git commit -m "lax-264807: bind the archive issue" && git push
+lax submit --force monadic-dependence-neighborhood-complexity-v4-33
+lax sync   # expect ~/.lax/lax-database/lax-264807 as a draft at v4.33.0
+```
+
+It stays a draft; registering it (which also marks lax-5 superseded) is
+your call, as for the others.
+
 ## 3. Close out
 
 ```sh
 lax sync
-for id in 67 11 62 3; do
+for id in 67 11 62 3 264807; do
   python3 -c "import json;b=json.load(open('$HOME/.lax/lax-database/lax-$id/build-output.json'));print('lax-$id', b['inputs']['manifest']['leanVersion'], b['capture']['sourceCommit'][:8])"
 done
 ```
 
-All four must read `v4.33.0`. Then note it in `plans/README.md` (one line
+All five must read `v4.33.0`. Then note it in `plans/README.md` (one line
 under the 2026-09 entries), commit, push. Registration stays your manual
 step, bottom-up, as before the port.
 
@@ -158,8 +177,12 @@ step, bottom-up, as before the port.
      that superseded it was deleted). It needs `lax port lax-48` (a fresh
      id, co-owned with Édouard, 10.7k lines plus the paper) before it can
      move; then `Lax12` → `Lax199508` and the repin as above.
-   - **lax-5** (monadic dependence, registered, with Clemens): `lax port
-     lax-5`, then `Lax12` → `Lax199508`, `Lax14` → `Lax345067`.
+   - **sparsity-lectures** (lax-12, registered): already has its
+     registered v4.33.0 successor, Clemens's lax-199508, ported from
+     lax-12's own record (`main`'s folder is identical to that record), so
+     nothing was ported here — a second successor would duplicate it. If
+     you want the successor under your ownership instead, that is an
+     owners question on lax-199508 (`/lax admin owners`), not a port.
    - **lax-48 / lax-49** (twin-width, registered, with Édouard): `lax port`
      each, lax-49 after lax-48.
    - The eight Transducers drafts are on branch
