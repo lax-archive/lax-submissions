@@ -250,7 +250,7 @@ at `k = N²` it is `H` itself. -/
 noncomputable def agPre {N : ℕ} (H : SimpleGraph (Fin N)) (k : ℕ) :
     SimpleGraph (Fin N) where
   Adj u v := H.Adj u v ∧ agKey u v < k
-  symm _ _ h := ⟨h.1.symm, by rw [agKey_symm]; exact h.2⟩
+  symm := ⟨fun _ _ h => ⟨h.1.symm, by rw [agKey_symm]; exact h.2⟩⟩
   loopless := ⟨fun _ h => H.irrefl h.1⟩
 
 theorem agPre_adj {N : ℕ} {H : SimpleGraph (Fin N)} {k : ℕ} {u v : Fin N} :

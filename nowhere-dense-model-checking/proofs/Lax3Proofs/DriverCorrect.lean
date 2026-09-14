@@ -432,15 +432,13 @@ theorem map_childArena_eq (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
           ((childEquiv S A π u) ((childEquiv S A π u).symm ⟨b', hy'⟩) : Fin A.N) = y
         rw [heb]
         exact hye
-    · rw [hcoe, hea]
-      exact hxe
-    · rw [hcoe, heb]
-      exact hye
+    · exact (hcoe _).trans (by rw [hea]; exact hxe)
+    · exact (hcoe _).trans (by rw [heb]; exact hye)
   · intro h
     obtain ⟨a, b, hab, hax, hby⟩ := (SimpleGraph.map_adj _ _ _ _).mp h
     rw [hcoe] at hax hby
-    rw [childArena_G, Lax3Proofs.SplitterBasics.deleteVerts_adj] at hab
-    obtain ⟨hab, haw, hbw⟩ := hab
+    rw [childArena_G] at hab
+    obtain ⟨hab, haw, hbw⟩ := Lax3Proofs.SplitterBasics.deleteVerts_adj.mp hab
     have hadj : A.G.Adj ((childEquiv S A π u) a : Fin A.N)
         ((childEquiv S A π u) b : Fin A.N) := hab
     refine ⟨⟨(SimpleGraph.map_adj _ _ _ _).mpr ⟨_, _, hadj, hax, hby⟩, ?_, ?_⟩, ?_, ?_⟩

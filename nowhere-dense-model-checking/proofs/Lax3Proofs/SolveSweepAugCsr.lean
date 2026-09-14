@@ -709,7 +709,7 @@ def agCsrKeyGraph {N : ℕ} (ks : List ℕ)
     (hsym : ∀ u v : Fin N, agArcKey (u, v) ∈ ks → agArcKey (v, u) ∈ ks)
     (hloop : ∀ v : Fin N, agArcKey (v, v) ∉ ks) : SimpleGraph (Fin N) where
   Adj v u := agArcKey (u, v) ∈ ks
-  symm v u h := hsym u v h
+  symm := ⟨fun v u h => hsym u v h⟩
   loopless := ⟨hloop⟩
 
 /-- The padded key rows feed the exact graph-CSR seam for any represented

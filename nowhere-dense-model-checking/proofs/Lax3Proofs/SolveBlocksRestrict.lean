@@ -2827,8 +2827,8 @@ private theorem histRoundStep_spec (hNB : n < B) (hHB : n * ℓp * (hb + 1) < B)
   -- assemble
   refine ⟨σ₇, ?_, ⟨⟨by rw [h7arrs _ (Ne.symm hhc)]; exact hh5.1,
       fun v p => by rw [h7arrs _ (Ne.symm hhc)]; exact hh5.2 v p⟩,
-    ⟨by rw [h7arrs _ (Ne.symm hhla), h5la]; simpa using hcl.1,
-      fun t' ht' => by rw [h7arrs _ (Ne.symm hhla), h5la]; simpa using hcl.2 t' ht'⟩,
+    ⟨by rw [h7arrs _ (Ne.symm hhla), h5la, h4arrs la]; exact hcl.1,
+      fun t' ht' => by rw [h7arrs _ (Ne.symm hhla), h5la, h4arrs la]; exact hcl.2 t' ht'⟩,
     by rw [h7vars "rs.k" (by simp)]; exact hk,
     by rw [h7vars "rs.p" (by simp)]; exact hp,
     by rw [h7vars "rs.h" (by simp)]; exact hhb,

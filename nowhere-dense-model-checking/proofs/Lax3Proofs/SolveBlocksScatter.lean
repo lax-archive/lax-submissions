@@ -1667,7 +1667,7 @@ theorem gsSweep_spec (ht1 : 1 ≤ t) :
       by rw [hσi, hσb]; simp,
       Or.inl ⟨[], by rw [hσi]; simp,
         by rw [hσi, hσb, hσa]; simp,
-        by simpa using ht1,
+        by simp only [List.length_nil]; omega,
         ?_,
         by rw [hσi, hσb]; simp⟩⟩
     rw [marks_nil]
