@@ -368,9 +368,9 @@ frozen live prefix. -/
 def delStar {N : ℕ} (H : SimpleGraph (Fin N)) (u : Fin N) (T : Set (Fin N)) :
     SimpleGraph (Fin N) where
   Adj v w := H.Adj v w ∧ ¬(v = u ∧ w ∈ T) ∧ ¬(w = u ∧ v ∈ T)
-  symm := by
+  symm := ⟨by
     intro v w h
-    exact ⟨h.1.symm, h.2.2, h.2.1⟩
+    exact ⟨h.1.symm, h.2.2, h.2.1⟩⟩
   loopless := by
     exact ⟨fun v h => H.irrefl h.1⟩
 

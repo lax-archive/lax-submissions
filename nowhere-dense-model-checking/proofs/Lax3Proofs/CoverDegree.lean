@@ -203,7 +203,7 @@ private theorem card_pairsIn_le_of_density {G : SimpleGraph (Fin n)} {D₁ : ℕ
     simp [hfdef, hgdef, hx]
   set J : SimpleGraph (Fin S.card) :=
     { Adj := fun i j => G.Adj (f i) (f j)
-      symm := fun _ _ h => h.symm
+      symm := ⟨fun _ _ h => h.symm⟩
       loopless := ⟨fun i h => G.irrefl h⟩ }
   have hJadj : ∀ i j, J.Adj i j ↔ G.Adj (f i) (f j) := fun _ _ => Iff.rfl
   have hminor : HasShallowMinor G 1 J :=

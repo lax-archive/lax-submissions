@@ -395,7 +395,8 @@ private theorem exists_demand_of_walks {m : ℕ} {B : Fin m → Set (Fin n)} {cx
       omega
     · intro z hz
       rcases Finset.mem_insert.1 hz with rfl | hz'
-      · simpa using (Or.inl hcx : Dem D B x z)
+      · have hdem : Dem D B x z := Or.inl hcx
+        simpa using hdem
       · have hzne : z ≠ cx := (hsub z (List.mem_toFinset.1 hz')).2
         simpa [hzne] using hQydem z (hRsupp z (hsub z (List.mem_toFinset.1 hz')).1)
     · exact Finset.mem_insert_self _ _
@@ -762,9 +763,9 @@ theorem roundTransfer : RoundTransfer := by
     fun i => ball H ω (stepDepth a) (M.center (f i)) (f i) with hbset
   set Mg : SimpleGraph (Fin X.card) :=
     { Adj := fun i j => i ≠ j ∧ ∃ u ∈ bset i, ∃ v ∈ bset j, H.Adj u v
-      symm := by
+      symm := ⟨by
         rintro i j ⟨hne, u, hu, v, hv, huv⟩
-        exact ⟨hne.symm, v, hv, u, hu, huv.symm⟩
+        exact ⟨hne.symm, v, hv, u, hu, huv.symm⟩⟩
       loopless := ⟨fun i h => h.1 rfl⟩ } with hMg
   have hMgadj : ∀ i j, Mg.Adj i j ↔ (i ≠ j ∧ ∃ u ∈ bset i, ∃ v ∈ bset j, H.Adj u v) :=
     fun _ _ => Iff.rfl
