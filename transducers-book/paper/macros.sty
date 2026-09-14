@@ -1,0 +1,570 @@
+% Mikolaj Bojanczyk 2025
+%  this is a set of common macros that I use for my projects
+
+% basic math symbols, like \subseteq
+\usepackage{amssymb}
+
+% basic environments like align*
+\usepackage{amsmath}
+\usepackage{mathtools} % an extension of amsmath needed for I don't know what 
+
+% for repeating theorems, using restatable
+\usepackage{thmtools}
+\usepackage{thm-restate}
+
+
+% the proof macro
+\usepackage{proof}
+
+% commuting diagrams
+\usepackage{tikz-cd}
+% Lax's web view is derived with lualatex and tikz externalization; a tikz-cd
+% diagram inside a macro argument (the exercise solutions) cannot be
+% externalized, so externalization is switched off around every tikzcd.
+% Under plain pdflatex the two commands are no-ops.
+\providecommand\tikzexternaldisable{}
+\providecommand\tikzexternalenable{}
+\let\lax@tikzcd\tikzcd
+\let\lax@endtikzcd\endtikzcd
+\def\tikzcd{\tikzexternaldisable\lax@tikzcd}
+\def\endtikzcd{\lax@endtikzcd\tikzexternalenable}
+% allows multline
+\newcommand{\txt}[1]{\begin{tabular}{c}#1\end{tabular}}
+
+% clickable references
+\usepackage[hypertexnames=false]{hyperref}
+
+% used for URLs in the bibliography
+\usepackage{url}
+
+% used for automatically naming environments, configuration below
+\usepackage[capitalise]{cleveref} 
+\usepackage{aliascnt} % Helps cleveref distinguish shared counters 
+
+% used for fancy script font mathscr
+\usepackage{mathrsfs}
+
+% allows \begin{enumerate}[(a)]
+\usepackage[shortlabels]{enumitem}
+
+% used for code listings, configuration below
+ \usepackage{listings}
+
+% font packages 
+\usepackage{libertine}
+\usepackage{inconsolata}
+
+% Cyrillic, for the one Russian citation in partCRegular/bib-notes.tex.
+% Under pdflatex T1 is listed *last* so that it stays the default encoding:
+% Libertine has no T2A small caps, so making T2A the default silently turns
+% every \textsc into upright roman -- \mso among them.  Note also that this
+% deliberately does not load babel: babel with russian as its only language
+% makes Russian the main language of the whole document, which is what turns
+% \proofname into a Cyrillic word.  Under lualatex (the web edition's engine)
+% libertine goes through fontspec and its OTF already covers Cyrillic, so
+% there is nothing to switch.
+\usepackage{iftex}
+\ifpdftex
+  \usepackage[T2A,T1]{fontenc}
+  \newcommand{\rus}[1]{{\fontencoding{T2A}\fontfamily{cmr}\selectfont #1}}
+\else
+  \newcommand{\rus}[1]{#1}
+\fi
+
+% infrastructure for theorem names, actual names configured below
+\usepackage{amsthm} 
+
+% todonotes
+\usepackage{todonotes}
+
+% Knowledge 
+
+\usepackage[composition,hyperref,xcolor]{knowledge}
+\knowledgeconfigure{notion,quotation}
+
+
+\knowledgestyle{intro notion}{emphasize}
+\definecolor{klblue}{rgb}{0.05, 0.1, 0.45}
+\knowledgestyle{notion}{color={klblue}}
+% Anchor point markers, i.e.~the marks that \AP puts in the left margin.
+% They are only drawn in `composition' mode. These values happen to be the
+% package defaults, but are set explicitly so that the choice lives here.
+\knowledgeconfigure{anchor point color = red, anchor point shape = small corner}
+\knowledgestyle{intro unknown}{color={red}, emphasize}
+\knowledgestyle{intro unknown cont}{color={red}, emphasize}
+\knowledgestyle{kl unknown}{color={red}}
+\knowledgestyle{kl unknown cont}{color={red}}
+
+
+
+
+% ********** configuration for various packages ************
+
+
+%  ******** configuration for amsthm **********
+% amsthm provides infrastructure for theorem-like environments, but it does not define the environments themselves. This is done below.
+\newcommand\@thmheadfont{\bfseries}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+
+% Use aliascnt to help cleveref distinguish shared counters
+\newaliascnt{lemma}{theorem}
+\newtheorem{lemma}[lemma]{Lemma}
+\aliascntresetthe{lemma}
+
+\newaliascnt{proposition}{theorem}
+\newtheorem{proposition}[proposition]{Proposition}
+\aliascntresetthe{proposition}
+
+\newaliascnt{corollary}{theorem}
+\newtheorem{corollary}[corollary]{Corollary}
+\aliascntresetthe{corollary}
+
+\newaliascnt{definition}{theorem}
+\newtheorem{definition}[definition]{Definition}
+\aliascntresetthe{definition}
+
+\newaliascnt{conjecture}{theorem}
+\newtheorem{conjecture}[conjecture]{Conjecture}
+\aliascntresetthe{conjecture}
+
+\newaliascnt{fact}{theorem}
+\newtheorem{fact}[fact]{Fact}
+\aliascntresetthe{fact}
+
+\newaliascnt{claim}{theorem}
+\newtheorem{claim}[claim]{Claim}
+\aliascntresetthe{claim}
+
+\newaliascnt{subclaim}{theorem}
+\newtheorem{subclaim}[subclaim]{Subclaim}
+\aliascntresetthe{subclaim}
+
+\newaliascnt{example}{theorem}
+\newtheorem{example}[example]{Example}
+\aliascntresetthe{example}
+
+
+% we want remarks to be non-italic
+\theoremstyle{definition}
+
+\newaliascnt{remark}{theorem}
+\newtheorem{remark}[remark]{Remark}
+\aliascntresetthe{remark}
+
+
+% macros for exercises
+\newtheorem{exercise}{Exercise}[section]
+\newcommand{\exer}[2]{
+\begin{exercise}
+#1
+\end{exercise}
+
+ \noindent \textbf{Solution.}
+ #2
+
+}
+
+\newcommand{\exerciseheader}{
+
+\vspace{1cm}
+\subsection*{Exercises}
+}
+
+\newcommand{\exercisesubheader}[2]{
+\begin{center}
+    \textbf{#1}
+\end{center}
+ #2. }
+
+
+
+\theoremstyle{plain}
+\newtheorem{sublemma}{Lemma}[theorem]
+
+% ********* configuration for cleveref (after theorem definitions) ***********
+% cleveref: a package that allows the cref command, which automatically writes Lemma or Theorem etc, depending on the referenced object
+% Configuration that allows cleveref to use capitalized names
+\crefname{theorem}{Theorem}{Theorems}
+\crefname{lemma}{Lemma}{Lemmas}
+\crefname{definition}{Definition}{Definitions}
+\crefname{proposition}{Proposition}{Propositions}
+\crefname{corollary}{Corollary}{Corollaries}
+\crefname{claim}{Claim}{Claims}
+\crefname{example}{Example}{Examples}
+\crefname{section}{Section}{Sections}
+\crefname{equation}{Equation}{Equations}
+\crefname{conjecture}{Conjecture}{Conjectures}
+\crefname{exercise}{Exercise}{Exercises}
+\crefname{remark}{Remark}{Remarks}
+
+
+%  *********** configurations for listings ***********
+%  default configuration for listings, which uses python style
+\lstset{
+    basicstyle=\ttfamily\footnotesize, % Code font and size
+    % keywordstyle=\color{blue}\bfseries, % Keywords in bold blue
+    commentstyle=\color{gray}, % Comments in gray
+    % stringstyle=\color{red}, % Strings in red
+    numbers=left, % Line numbers on the left
+    numberstyle=\tiny\color{gray}, % Line number style
+    stepnumber=1, % Line number step
+    numbersep=5pt, % Space between line numbers and code
+    backgroundcolor=\color{lightgray!20}, % Light gray background
+    % frame=single, % Frame around the code
+    tabsize=4, % Tab size
+    breaklines=true, % Line breaking
+    captionpos=b, % Caption position (bottom)
+    language=Python, % Default language
+    mathescape=true, % Allow math mode in code
+    escapechar=|,
+    aboveskip=10pt, % Space above the listing
+    belowskip=10pt,  % Space below the listing
+    xleftmargin=15pt, % Left margin inside the box
+    xrightmargin=15pt % Right margin inside the box
+}
+
+
+
+% ************** remaining macros ***************
+
+
+
+%  ******* pictures **********
+
+% picture macros. Here is the setup. I use figma to generate a pdf file, in the directory of main.tex, which typically has some name based on the project, e.g. definable-clique.pdf. (This is because figma automatically uses the name of the project inside figma as the name of the pdf export, and it would be a hassle to always rename it.) The pdf has one page per picture, and the mypic command inputs the page number and shows the picture. 
+\usepackage{graphicx}
+
+% the core command, which contains the name of the file and the desired scaling factor. These are subject to per-project customization
+\newcommand{\mypiccore}[1]{
+	\includegraphics[page=#1,scale=0.17]{transducer-book-pics}
+}
+
+% show the picture centered
+\newcommand{\mypic}[1]{
+	\begin{center}
+		\mypiccore{#1}
+	\end{center}
+}
+
+% show two pictures centered
+\newcommand{\mypicdouble}[2]{
+	\begin{center}
+		\mypiccore{#1} \quad \mypiccore{#2}
+	\end{center}
+}
+
+% an environment that makes numbered inline pictures, similar to numbered equations
+\newcounter{mypic}
+\newenvironment{numberedpic}[1][]{%
+    \refstepcounter{mypic}%
+     #1\par
+    \vspace{0.5em}
+}{%
+    \vspace{0.5em}
+}
+\newcommand{\numpic}[2]{
+	\begin{numberedpic}
+        \label{#2}
+        \begin{center}
+            \begin{tabular}{cr}
+                \begin{minipage}{0.85\columnwidth}
+					\begin{center}
+						\mypiccore{#1}
+					\end{center}
+                \end{minipage} & (\themypic)
+            \end{tabular}
+        \end{center}
+    \end{numberedpic}
+}
+
+
+
+
+%  *********** small caps ************
+%  I like to use small caps for abbreviations like mso, fo, etc. or complexity classes. For some reason, the trailing space is swalled in small caps, unless xspace from the following package is used
+\usepackage{xspace}
+
+% logics
+\newcommand{\mso}{{\textsc{mso}}\xspace}
+\newcommand{\sst}{{\textsc{sst}}\xspace}
+\newcommand{\cmso}{{\textsc{cmso}}\xspace}
+\newcommand{\msoone}{{\sc mso}$_1$\xspace}
+
+
+
+\newcommand{\msotwo}{{\sc mso}$_2$\xspace}
+\newcommand{\fo}{{\sc fo}\xspace}
+\newcommand{\ctlstar}{\textsc{ctl$^*$ }\xspace}
+\newcommand{\ctl}{{\sc ctl}\xspace}
+\newcommand{\ltl}{{\sc ltl}\xspace}
+
+% complexity classes 
+\newcommand{\pspace}{{\textsc{PSpace}}\xspace}
+\newcommand{\ptime}{{\textsc{PTime}}\xspace}
+\newcommand{\np}{{\textsc{NP}}\xspace}
+
+% transducer classes
+% for use in math display:
+\newcommand{\twodftmath}{\mathrm{2way}}
+\newcommand{\rational}{\mathrm{Rational}}
+\newcommand{\mealy}{\mathrm{Mealy}}
+% for use in text:
+\newcommand{\dfa}{\textsc{dfa}\xspace}
+\newcommand{\nfa}{{\textsc{nfa}}\xspace}
+\newcommand{\dft}{\textsc{dft}\xspace}
+\newcommand{\nft}{\textsc{nft}\xspace}
+
+
+% ********* myexample **********
+%  A custom example environment. I think that the main feature is that it finishes with a box, so that it is clear where the example ends.
+\newcounter{ourexamplecounter}
+\newenvironment{myexample}{
+\medskip
+\refstepcounter{ourexamplecounter}
+\smallskip\noindent{\textbf{{Example \arabic{ourexamplecounter}. }}}}{
+$\Box$ \smallskip 
+}
+
+
+
+% *********** colours ***********
+\usepackage{color} 
+
+% these are colors consistent with my styles in figma
+\definecolor{red}{RGB}{235,87,87}
+\definecolor{blue}{RGB}{86,204,242}
+\definecolor{orange}{RGB}{242,153,74}
+
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\blue}[1]{{\color{blue}#1}}
+\newcommand{\orange}[1]{{\color{orange}#1}}
+
+
+%  ********** miscellaneous *************
+% the rest of this style file is a list of miscellaneous macros. It should only contain macros that are expected to be used in many projects. Macros specific to a single project should not be added here, and should be in the preamble of the main.tex file.
+
+
+% Custom underbrace and overbrace commands. They allow for annotations below and above the braces, possibly multiline
+\newcommand{\myunderbrace}[2]{\underbrace{#1}_{\mathclap{\text{\scriptsize 
+\begin{tabular}{c}
+	#2
+\end{tabular} }}}}
+\newcommand{\myoverbrace}[2]{\overbrace{#1}^{\mathclap{\text{\scriptsize 
+\begin{tabular}{c}
+	#2
+\end{tabular} }}}}
+
+
+% TODOs 
+\newcommand\omc[1]{\todo[inline,size=\scriptsize,backgroundcolor=red]{#1 - \textbf{Omid}}}
+\newcommand\mb[1]{\todo[inline,size=\scriptsize,backgroundcolor=yellow]{#1 - \textbf{Mikolaj}}}
+\newcommand\alc[1]{\todo[inline,size=\scriptsize,backgroundcolor=green]{#1 - \textbf{Aliaume}}}
+\newcommand\rs[1]{\todo[inline,size=\scriptsize,backgroundcolor=blue]{#1 - \textbf{Rafal}}}
+
+
+% Divergences between this text and the Lean formalisation in transducer-lean/.
+% \flag{...} puts a margin comment; set \showflagsfalse to hide them all.
+% \lean{...} typesets a Lean identifier or file name in typewriter font,
+% allowing line breaks after the underscores (the margin is narrow).
+\let\leanorigus\_
+\newcommand{\lean}[1]{{\def\_{\leanorigus\allowbreak}\texttt{#1}}}
+
+\newif\ifshowflags
+\showflagstrue
+\newcommand{\flag}[1]{%
+  \ifshowflags
+    \todo[size=\tiny,color=orange!30,bordercolor=orange!80!black,linecolor=orange!80!black]%
+      {\normalfont\raggedright\textbf{Lean:} #1}%
+  \fi}
+
+% Issues in the text itself: typos, mistakes, gaps, inconsistencies.
+% \issue{...} puts a margin comment; set \showissuesfalse to hide them all.
+\newif\ifshowissues
+\showissuestrue
+\newcommand{\issue}[1]{%
+  \ifshowissues
+    \todo[size=\tiny,color=red!25,bordercolor=red!80!black,linecolor=red!80!black]%
+      {\normalfont\raggedright\textbf{Issue:} #1}%
+  \fi}
+
+
+% Solutions written or completed by Claude, awaiting the author's review.
+% \review{...} puts a margin comment; set \showreviewsfalse to hide them all.
+\newif\ifshowreviews
+\showreviewstrue
+\newcommand{\review}[1]{%
+  \ifshowreviews
+    \todo[size=\tiny,color=blue!15,bordercolor=blue!70!black,linecolor=blue!70!black]%
+      {\normalfont\raggedright\textbf{Review:} #1}%
+  \fi}
+
+
+% various kinds of numbers
+\newcommand{\Nat}{{\mathbb N}}
+\newcommand{\Rat}{{\mathbb Q}}
+\newcommand{\Int}{{\mathbb Z}}
+\newcommand{\field}{\mathbb F}
+\newcommand{\semiring}{\mathbb S}
+% not really numbers, but close
+\newcommand{\Bool}{\mathsf{Bool}} 
+% again, not really nunbers
+\newcommand{\atoms}{\mathbb A}
+
+% domain and range
+\newcommand{\dom}{\operatorname{\mathrm{dom}}}
+\newcommand{\ran}{\operatorname{\mathrm{ran}}}
+\newcommand{\im}{\operatorname{\mathrm{im}}}
+\newcommand{\arity}{\operatorname{\mathrm{ar}}}
+\newcommand{\powerset}{\mathsf{P}}
+
+
+% a set 
+\newcommand{\set}[1]{\{#1\}}
+
+% set builder expression, which can be multiline
+\newcommand{\setbuild}[2]{\set{\ #1 \ | 
+\begin{tabular}{l}
+	#2
+\end{tabular}\! \! } }
+
+% a tuple, and also a generated subset
+\newcommand{\tuple}[1]{\langle #1 \rangle}
+\newcommand{\gen}[1]{\langle #1 \rangle}
+
+% ignore, similar to commenting something out
+\newcommand{\ign}[1]{}
+
+% semantic brackets 
+\newcommand{\sem}[1]{[\![#1]\!]}
+
+%% Calligraphic
+\newcommand{\Aa}{{\mathcal A}}
+\newcommand{\Bb}{{\mathcal B}}
+\newcommand{\Cc}{{\mathcal C}}
+\newcommand{\Dd}{{\mathcal D}}
+\newcommand{\Ee}{{\mathcal E}}
+\newcommand{\Ff}{{\mathcal F}}
+\newcommand{\Gg}{{\mathcal G}}
+\newcommand{\Hh}{{\mathcal H}}
+\newcommand{\Ii}{{\mathcal I}}
+\newcommand{\Jj}{{\mathcal J}}
+\newcommand{\Kk}{{\mathcal K}}
+\newcommand{\Ll}{{\mathcal L}}
+\newcommand{\Mm}{{\mathcal M}}
+\newcommand{\Nn}{{\mathcal N}}
+\newcommand{\Oo}{{\mathcal O}}
+\newcommand{\Pp}{{\mathcal P}}
+\newcommand{\Qq}{{\mathcal Q}}
+\newcommand{\Rr}{{\mathcal R}}
+\newcommand{\Ss}{{\mathcal S}}
+\newcommand{\Tt}{{\mathcal T}}
+\newcommand{\Uu}{{\mathcal U}}
+\newcommand{\Vv}{{\mathcal V}}
+\newcommand{\Ww}{{\mathcal W}}
+\newcommand{\Xx}{\mathcal X}
+\newcommand{\Yy}{{\mathcal Y}}
+\newcommand{\Zz}{{\mathcal Z}}
+
+
+% fancy italics for varieties
+\newcommand{\algclass}{\mathscr A}
+\newcommand{\langclass}{\mathscr L}
+
+% algebras are in bold (not sure if this is the right choice)
+\newcommand{\alga}{\mathbf{A}}
+\newcommand{\algb}{\mathbf{B}}
+
+% some type constructors
+\newcommand{\pfin}{\mathsf{P}_{\mathrm{fin}}}
+\newcommand{\multiset}{\mathsf{M}}
+\newcommand{\trees}{\mathrm{trees}}
+
+
+% tough foreign names
+\newcommand{\schutz}{Sch\"utzenberger\xspace}
+\newcommand{\buchi}{B\"uchi\xspace}
+
+% miscellaneous
+\newcommand{\eqdef}{\stackrel{\text{def}}=}
+\newcommand{\downset}[1]{#1\!\downarrow}
+\newcommand{\xor}{\oplus}
+\newcommand{\distance}[2]{|\!| #1, #2 |\!|}
+\newcommand{\half}{\frac{1}{2}}
+% ********* document structure *********
+% macro for parts (larger than sections)
+\newcounter{mypart}
+\renewcommand{\themypart}{\Alph{mypart}}
+
+% redefine section numbering to include part letter
+\renewcommand{\thesection}{\themypart.\arabic{section}}
+
+% adjust TOC section number width to accommodate part letter
+\makeatletter
+\renewcommand*\l@section{\@dottedtocline{1}{1em}{2em}}
+\renewcommand*\l@subsection{\@dottedtocline{2}{3em}{4em}}
+\makeatother
+
+\newcommand{\mypart}[1]{
+\refstepcounter{mypart}
+\setcounter{section}{0}
+\newpage
+\addcontentsline{toc}{part}{Part \themypart: #1}
+\addtocontents{toc}{\vspace{0.5em}}
+\begin{center}
+    \vspace*{2cm}
+    {\Large\bfseries Part \themypart: #1}
+    \vspace{2cm}
+\end{center}
+}
+
+
+
+% I want sections to start on a new page 
+\let\oldsection\section
+\renewcommand{\section}{\clearpage\oldsection}
+
+
+
+% Citations
+% Bibliography is handled by biblatex/biber.  The in-text style is alphabetic,
+% so an ordinary \cite still comes out as [Ber79].  Inside a footnote, \cite
+% switches automatically to the long humanities-style form
+%     Jean Berstel, Transductions and Context-Free Languages, 1979
+% see \incite below.
+\usepackage{csquotes}
+\usepackage[backend=bibtex, style=alphabetic, maxnames=99]{biblatex}
+\addbibresource{bib.bib}
+
+% for the moment, I just use the standard cite command, but at some point I want to improve it so that it is inline
+\newcommand{\mycite}[2][]{\cite[#2]{#1}}
+
+% Inline citation: full author names, title, year.
+% The optional argument is a pinpoint, e.g. \incite[Lemma 3]{key}.
+% Several keys are allowed, e.g. \incite{key1,key2}.
+\DeclareCiteCommand{\incite}
+  {\usebibmacro{prenote}}
+  {\printnames[given-family]{labelname}%
+   \setunit{\addcomma\space}%
+   \printfield[citetitle]{title}%
+   \setunit{\addcomma\space}%
+   \printfield{year}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+% Inside a footnote, \cite means \incite.  \shortcite is the escape hatch that
+% always gives the short label, also in a footnote.
+\newif\ifinfootnote
+\makeatletter
+\let\incite@footnotetext\@footnotetext
+\long\def\@footnotetext#1{\incite@footnotetext{\infootnotetrue#1}}
+\makeatother
+\let\shortcite\cite
+\protected\def\cite{\ifinfootnote\expandafter\incite\else\expandafter\shortcite\fi}
+
+% Block-style inline citation: left-indented with vertical space above/below.
+\newcommand{\inciteblock}[2][]{%
+    \par\smallskip
+    \noindent\hspace*{3em}\parbox[t]{\dimexpr\linewidth-2em\relax}{\incite[#1]{#2}}%
+    \par\smallskip
+}

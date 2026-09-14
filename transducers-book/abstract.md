@@ -1,0 +1,1 @@
+The book *Transducers* by Mikołaj Bojańczyk, as the paper layer over its formalisation: this submission carries the full text of the book with cards for every definition and theorem formalised in the seven submissions it requires (the undecidability of the Post correspondence problem, and Parts A–D).

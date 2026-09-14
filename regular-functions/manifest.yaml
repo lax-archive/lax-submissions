@@ -1,0 +1,53 @@
+specVersion: "1"
+id: lax-916827
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Transducers, Part C: Regular Functions, Two-Way Transducers and
+  Streaming String Transducers"
+authors:
+  - name: Mikołaj Bojańczyk
+  - name: Aristotle (Harmonic)
+bibEntries:
+  - |
+    @article{Shepherdson1959,
+      author  = {Shepherdson, John C.},
+      title   = {The Reduction of Two-Way Automata to One-Way Automata},
+      journal = {IBM Journal of Research and Development},
+      volume  = {3},
+      number  = {2},
+      pages   = {198--200},
+      year    = {1959},
+      doi     = {10.1147/rd.32.0198}
+    }
+  - |
+    @inproceedings{ChytilJakl1977,
+      author    = {Chytil, Michal P. and J{\'a}kl, Vojt{\v e}ch},
+      title     = {Serial Composition of 2-Way Finite-State Transducers and Simple Programs on Strings},
+      booktitle = {Automata, Languages and Programming (ICALP 1977)},
+      series    = {Lecture Notes in Computer Science},
+      volume    = {52},
+      pages     = {135--147},
+      year      = {1977},
+      doi       = {10.1007/3-540-08342-1_11}
+    }
+  - |
+    @inproceedings{AlurCerny2010,
+      author    = {Alur, Rajeev and {\v C}ern{\'y}, Pavol},
+      title     = {Expressiveness of Streaming String Transducers},
+      booktitle = {IARCS Annual Conference on Foundations of Software Technology and Theoretical Computer Science (FSTTCS 2010)},
+      series    = {LIPIcs},
+      volume    = {8},
+      pages     = {1--12},
+      year      = {2010},
+      doi       = {10.4230/LIPIcs.FSTTCS.2010.1}
+    }
+  - |
+    @book{Bojanczyk-transducers,
+      author = {Boja{\'n}czyk, Miko{\l}aj},
+      title  = {Transducers},
+      note   = {Book in preparation; sources at \url{https://github.com/bojanczyk/transducer-book}},
+      year   = {2026}
+    }
+issue:
+  repositoryId: 1320232165
+  number: 76

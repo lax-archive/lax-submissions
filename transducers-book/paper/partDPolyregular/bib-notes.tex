@@ -1,0 +1,13 @@
+\section{References}
+\label{sec:polyregular-bib}
+
+
+Historically the first model for this class was the pebble transducers. 
+
+\paragraph*{Pebble transducers.}  Automata with pebbles first appeared as language acceptors in \cite[Definition 4.1]{lewenstein1996}, where it was shown that they accept exactly the regular languages\cite[Theorem 4.2]{lewenstein1996}. This corresponds to saying that pebble transducers are continuous, i.e.~\cref{thm:pebble-are-continuous}. The transducer variant was introduced in~\cite[Section 3.1]{milo2003}, where a  tree-to-tree variant was used because of \textsc{xml} applications. The string-to-string variant was explicitly identified by Engelfriet and Hoogeboom, who proved that the corresponding class of functions is closed under composition~\cite[Theorem 2]{engelfriet2002}. (The composition closure does not hold for the tree variant as defined in~\cite{milo2003}, because of exponential size outputs.)
+
+It is worth pointing out that there are two ways of counting pebbles.
+Like~\cite{milo2003} but unlike~\cite{lewenstein1996, engelfriet2002}, we count the head as just another pebble. Therefore, a transducer with $k$ pebbles in our notation becomes, in the notation  of~\cite{lewenstein1996, engelfriet2002}, a transducer with $k-1$ pebbles and a head. The motivation for our choice is that a transducer with $k$ pebbles in our notation will have output size $\Oo(n^k)$. This is not tight by a wide margin:  for every $k$ there is a polyregular function of quadratic growth that cannot be computed by a pebble transducer with $k$ pebbles\cite[Theorem 3.3]{bojanczyk2022}.
+
+\paragraph*{For-transducers and primes.}
+For-transducers and the prime polyregular functions were introduced in the unpublished manuscript~\cite[Sections 1 and 3]{bojanczykPolyregularFunctions2018}. The manuscript also contains other characterisations of the class, and introduces the name ``polyregular''. A published overview of that manuscript is~\cite{bojanczyk2022}. In a future version of this book, we will also include a characterisation of the polyregular functions in terms of the $\lambda$-calculus~\cite[Section 4]{bojanczykPolyregularFunctions2018}. Another planned addition is the  logical characterisation from~\cite[Theorem 7]{bojanczykKieferLhote2019}, which uses (not necessarily linear) \mso interpretations.

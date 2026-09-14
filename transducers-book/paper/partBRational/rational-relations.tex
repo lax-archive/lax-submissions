@@ -1,0 +1,289 @@
+\section{Rational relations}
+\label{sec:rational-relations}
+
+We  begin with the rational relations, which are a nondeterministic version of the rational functions, in which the underlying model is an \nfa equipped with an output mechanism. One of the advantages of this model is that it does not treat the input and output differently. 
+
+% lax begin Lax132576.RationalRelations
+% lax begin Lax132576.LabelledAutomata
+\begin{definition}[\nfa with output]\label{def:nfa-with-output}
+    A \emph{nondeterministic automaton with output} consists of the following ingredients:
+    \begin{itemize}
+        \item input and output alphabets $A$ and $B$;
+        \item a finite set of states $Q$;
+        \item distinguished initial and final subsets $I, F \subseteq Q$;
+        \item a transition relation, which is a finite set 
+        \begin{align*}
+        \delta \subseteq Q \times A^* \times B^* \times Q. 
+        \end{align*}
+    \end{itemize}
+\end{definition}
+% lax end
+% lax end
+
+In other words, such an automaton is a directed graph, where the vertices are states, and each edge is labelled by a pair of input/output words. A run of this automaton is a path that begins in an initial state and ends in a final state. The input string of the run is obtained by concatenating the input strings on the transitions, and likewise we define the output string. The semantics of the automaton is the relation 
+\begin{align*}
+R \subseteq A^* \times B^*,
+\end{align*}
+which consists of pairs of input/output strings, ranging over accepting runs of the automaton. The relations that arise this way are called rational, as stated in the following definition. 
+% lax begin Lax132576.RationalRelations
+\begin{definition}[Rational relation]
+    \label{def:rational-relation}
+    A \emph{rational relation} is any relation that can be defined by a nondeterministic automaton with output.
+\end{definition}
+% lax end
+
+Every Mealy machine is a special case of a rational relation, since it corresponds to a nondeterministic automaton with output in which: (a) every transition is labelled by a single input letter and a single output letter; (b) the automaton is deterministic; and (c) every state is accepting. Here are some other examples of rational relations, which are not Mealy machines.
+
+\begin{myexample}[Subword relation]
+    For every alphabet $A$, the subword relation 
+    \begin{align*}
+    \setbuild{ (w,v) \in A^* \times A^*}{$v$ can be obtained from $w$ by deleting some letters}
+    \end{align*}
+    is a rational relation. Here is a picture of the automaton when $A = \set{a,b}$: 
+    \mypic{17}
+    An important property of rational relations is that they are input/output symmetric. Therefore, the inverse of the subword relation, i.e.~when letters can be added, is also rational, with the corresponding automaton looking like this:
+    \mypic{18}
+    In particular, thanks to transitions that have $\varepsilon$ on the input part, a rational relation can have infinitely many outputs for a single input.
+\end{myexample}
+
+\begin{myexample}[Swap first and last]
+ Here is an example of a rational relation which is a function, i.e.~every input string has exactly one output string: the output string is obtained from the input string by swapping the first and last letters (if the input string has at most one letter, it is unchanged). To implement this function, we use a union of six nondeterministic automata. (In the pictures below, we use an alphabet with two letters.) The first two automata deal with inputs that have at most one letter:
+\mypic{20}
+The remaining four automata deal with the possible combinations of (first letter, last letter), with one of them being:
+\mypic{19}
+This function is not computed by a Mealy machine, even though it is letter-to-letter. The reason is that for a Mealy machine, the first output letter depends only on the first input letter.
+\end{myexample}
+
+
+\paragraph*{Why the name rational?} We finish this section by explaining the naming convention. The idea is that we can try to identify the ``regular'' languages in any monoid, and not just the free monoid $A^*$. To formalise regularity in an abstract monoid, two ideas come to mind, which are based on (two-sided) Myhill-Nerode equivalence and regular expressions, respectively, as explained in the following definition.
+\begin{definition}\label{def:rational-recognisable-subsets}
+    [Rational and recognisable subsets of a monoid] \ 
+    \begin{itemize}
+    \item \textbf{The recognisable subsets.} A subset $L$ of a monoid $M$  is called \emph{recognisable} if it is a union of finitely many equivalence classes for some equivalence relation $\sim$ on $M$ that has finite index and is a congruence, i.e.
+    \begin{align*}
+    m_1 \sim m'_1 \land m_2 \sim m'_2 \quad \Rightarrow \quad m_1 \cdot m_2 \sim m'_1 \cdot m'_2.
+    \end{align*}
+    \item \textbf{The rational subsets.} A subset $L$ of a monoid $M$ is called \emph{rational} if it can be obtained from finite subsets of $M$ by applying a finite number of times the following operations: union, product, and Kleene star
+    \begin{align*}
+    L^* \quad \eqdef \quad \bigcup_{n \in \set{0,1,\ldots}}L^n.
+    \end{align*}
+    \end{itemize}
+\end{definition}
+Often the second class is called the \emph{regular expressions}, but the French algebraic tradition uses the name rational, which is inspired by similar terminology for power series.
+In the free monoid $A^*$, the two notions coincide, are exactly the rational subsets from the above definition, which can be proved by converting an \nfa with output into a regular expression. The recognisable subsets of $A^* \times B^*$ are much weaker; these are relations that can be recognised by separately testing some regular properties of the input and output strings, as explained in Exercise~\ref{ex:recognisable-relations}.
+
+
+\subsection{Composition and continuity} We now show that rational relations enjoy some  of the important properties that we have identified in the introduction, namely closure under composition and continuity.
+
+
+
+% lax begin Lax132576.RationalComposition
+\begin{theorem}\label{thm:composition-rational-relations}
+    Rational relations are closed under relational composition, i.e.~if 
+    \begin{align*}
+    R \subseteq A^* \times B^* 
+    \qquad 
+    \text{and}
+    \qquad 
+    S \subseteq B^* \times C^*
+    \end{align*}
+    are rational relations, then the same is true for the composition
+    \begin{align*}
+    R \cdot S = \setbuild{ (u,v) \in A^* \times C^*}{ $u R w$ and $w S v$ for some  $w \in B^*$}
+    \end{align*}
+\end{theorem}
+% lax end
+
+% lax begin Lax132576Proofs.Results.isRationalRel_comp
+\begin{proof}
+    This is essentially the same product  construction that we used for Mealy machines in Theorem~\ref{thm:composition-mealy}. By possibly splitting transitions into sequences of transitions, we can assume that in the automata for $R$ and $S$, each transition produces at most one letter of input or output. Once this has been done, we synchronise the  two automata using  a product construction, in which two transitions
+    \begin{align*}
+q \xrightarrow{u,w} q' \qquad  \qquad 
+    p \xrightarrow{w,v} p'
+    \end{align*}
+    in the automata  for $R$ and $S$ respectively
+    are combined into a new transition 
+    \begin{align*}
+    (q,p) \xrightarrow{u,v} (q',p')\end{align*} in the automaton for the composition. (To properly synchronise the two automata, we also assume that each one has an transition with empty input and output around each state.)
+    The rest of the construction is as usual in a product construction, i.e.~initial states are pairs that are initial on both coordinates, and likewise for final states.
+\end{proof}
+% lax end
+
+We now show that rational relations are continuous. Since we are talking about relations and not functions, the notion of continuity from Definition~\ref{def:continuity} needs to be adapted, by taking inverse images under relations.
+
+% lax begin Lax132576.RationalContinuity
+\begin{theorem}\label{thm:continuity-rational-relations}
+    If $R \subseteq A^* \times B^*$ is a rational relation and $L \subseteq B^*$ is a regular language, then the inverse image 
+    \begin{align*}
+    \setbuild{ w \in A^*}{$w R v$ for some $v \in L$}
+    \end{align*}
+    is also a regular language. 
+\end{theorem}
+% lax end
+
+Observe that rational relations are symmetric with respect to input and output, and therefore the above theorem also shows that forward images of regular languages under rational relations are also regular.
+\begin{proof}
+    One proof is by repeating a product construction, similar to the one used for composition. However, we prefer to deduce continuity from composition directly, since this highlights how the two notions are related. Consider a rational relation
+    with an empty output alphabet. There is only one possible output string, namely the empty string, and hence the relation can be described by saying which input strings can produce the unique output. All regular languages over the input alphabet arise this way, i.e.~the map
+    \begin{align*}
+    R \quad \mapsto \quad \setbuild{ w \in A^*}{$w R \varepsilon$}
+    \end{align*}
+    is a bijective correspondence between rational relations with an empty output alphabet and regular languages over the input alphabet.
+
+    Using the above  bijective correspondence, we can prove the continuity property using closure under composition. Indeed, take some $R$ and $L$ as in the statement of the theorem. By Theorem~\ref{thm:composition-rational-relations}, the composition 
+    \begin{align*}
+    R \cdot \setbuild{(w,\varepsilon)}{$w \in L$}
+    \end{align*}
+    is a rational relation. The corresponding language is exactly the inverse image of $L$ under $R$, and hence it is regular.
+\end{proof}
+
+
+
+\subsection{Undecidable equivalence} The trouble with rational relations is that  nondeterminism makes the equivalence problem undecidable.
+
+
+% lax begin Lax132576.RationalEquivalenceUndecidable
+\begin{theorem}[Griffiths]\label{thm:undecidable-equivalence-rational-relations}
+    The equivalence problem $R=S$ is undecidable for rational relations.
+\end{theorem}
+% lax end
+
+% lax begin Lax132576Proofs.Results.not_computablePred_codeRel_eq
+\begin{proof}
+    We will show undecidability already for a special case of the equivalence problem, namely the universality problem: is a rational relation equal to the full relation $A^* \times B^*$?  We will do this via a reduction from the Post Correspondence Problem, which is known to be undecidable: given two string homomorphisms $g,h : A^* \to B^*$, decide if there is some nonempty input string where both homomorphisms produce the same output. (Recall that a string homomorphism is a function that applies some function of type $A \to B^*$ to each input letter. This is like the letter-to-letter homomorphisms, except that letters can also be erased, or replaced by longer strings.)    The main observation is that the complement of a homomorphism can be defined by a rational relation. 
+
+% lax begin Lax132576.HomomorphismComplement
+    \begin{claim}\label{claim:homomorphism-complement-rational}
+        If $h : A^* \to B^*$ is a homomorphism, then its complement defined by
+        \begin{align*}
+        R = \setbuild{ (w,v) \in A^* \times B^*}{$v \neq h(w)$}
+        \end{align*} 
+        is a rational relation.
+    \end{claim}
+% lax end
+
+% lax begin Lax132576Proofs.Results.isRationalRel_ne_homOf
+    \begin{proof}
+        The automaton guesses a prefix of the input word for which the homomorphism is correctly applied. After reading this prefix and producing the correct output, it insists on making an error. This means that for the next input letter $a$ after the correct input prefix, it does one of the following: (i) outputs a string that is a proper prefix of $h(a)$ and then produces no more output; or (ii) outputs a string that is  incomparable with $h(a)$ under the prefix relation and then produces any output.
+    \end{proof}
+% lax end
+
+% This issue was flagged, but is not an issue, it follows under (i)
+% \issue{The case analysis misses the possibility that $h(w)$ is a \emph{proper prefix} of $v$: then the correctly applied prefix is all of $w$ and there is no ``next letter $a$''. A third option is needed --- read the whole input correctly and then produce at least one extra output letter.}
+
+    Using the complements from the above claim, we will recast the  Post Correspondence Problem as an instance of universality for rational relations. Consider an instance of the Post Correspondence Problem\footnote{This problem was proved undecidable in 
+        \cite[p.264]{Post1946}, where it was  called the ``correspondence problem''. A more modern proof can be found in \cite[Theorem 5.15]{Sipser2012}.
+    }:
+    \begin{align*}
+    \exists w \in A^* \ h(w) = g(w).
+    \end{align*}
+    The negation of this problem is 
+    \begin{align*}
+    \forall w \in A^*\  \forall v \in B^*\ (w,v) \in \myunderbrace{\text{(complement of $g$)} \cup \text{(complement of $h$)}}{a union of two rational relations}.
+    \end{align*}
+    Since rational relations are closed under union,  we have shown that the complement of the Post Correspondence Problem is the same as an instance of the  universality problem for  rational relations, and hence the latter problem must be undecidable.
+\end{proof}
+% lax end
+
+The above problem is one of the reasons why we avoid relations in this book. The undecidability and related complications would get only worse for the more advanced models of transducers that we will be looking at later.
+
+
+
+
+
+\exerciseheader 
+
+\exer{\label{exer:regular-languages-for-rational-relations}
+Show that for every rational relation $R \subseteq A^* \times B^*$, the following languages are regular:
+\begin{enumerate}
+    \item its domain, i.e.~input strings that produce at least one output;
+    \item its range, i.e.~output strings that arise from at least one input;
+    \item input strings that produce infinitely many outputs.
+\end{enumerate}
+}
+{
+    For the domain, we use continuity from Theorem~\ref{thm:continuity-rational-relations}: the domain is the inverse image of the regular language $B^*$. A more direct argument is that an automaton for the domain is obtained from the automaton with output by erasing the output part of every transition. The range is handled in the same way, using the symmetry of rational relations with respect to input and output.
+
+    The third language requires an analysis of the runs. Call a state \emph{pumping} if it admits a cycle with empty input and nonempty output. We claim that an input string has infinitely many outputs if and only if it admits an accepting run which visits a pumping state. The right-to-left implication is clear, since the cycle in a pumping state can be repeated any number of times, each repetition making the output longer. For the left-to-right implication, consider an input string with infinitely many outputs, and for each of these outputs choose an accepting run which uses the least number of transitions. Since each transition produces a bounded amount of output, these runs use unboundedly many transitions, while the number of transitions that consume a nonempty input is at most the length of the input string. Therefore, some run uses more consecutive transitions with empty input than there are states, and hence it visits some state twice, with empty input in between. The cycle obtained this way must have nonempty output, since otherwise we could remove it, contradicting the minimal choice of the run.
+
+    Since the pumping states can be computed, the third language is recognised by the automaton which is obtained from the automaton with output by erasing the outputs, and adding to the state a bit which says if a pumping state has already been visited.
+}
+
+\exer{\label{exer:non-regular-languages-for-rational-relations}
+Show that for some rational relation $R \subseteq A^* \times B^*$, the set of inputs that produce at most one output is non-regular.  
+}
+{
+The crucial idea is to  find two rational functions for which the following language is non-regular:
+\begin{align*}
+\setbuild{ w \in A^*}{$f(w) = g(w)$}.
+\end{align*}
+Once we have found them, the relation is simply the union of the two functions, and the set of inputs that produce at most one output is exactly the above language, since an input produces two outputs exactly when the two functions disagree on it. A simple example of such functions is when $f$ keeps only the $a$'s, while $g$ keeps only the $b$'s and replaces them by $a$'s; the two functions agree exactly on the strings that have as many $a$'s as $b$'s. (The two functions must use the same output alphabet, since otherwise they could only agree on the empty string.)
+}
+
+\exer{\label{exer:rational-relations-not-closed-under-intersection} Show that rational relations are not closed under intersection.}{
+    Consider the two relations
+    \begin{align*}
+    R = \setbuild{(a^n, b^n c^m)}{$n,m \geq 0$}
+    \qquad \text{and} \qquad
+    S = \setbuild{(a^n, b^m c^n)}{$n,m \geq 0$}.
+    \end{align*}
+    Both are rational: the automaton for $R$ first outputs one letter $b$ for each input letter, and then, without consuming any input, outputs any number of letters $c$; the automaton for $S$ does the same with the two phases swapped. Their intersection is
+    \begin{align*}
+    \setbuild{(a^n,b^nc^n)}{$n \geq 0$},
+    \end{align*}
+    which is not rational. Indeed, the image of the regular language $a^*$ under this relation is $\setbuild{b^nc^n}{$n \geq 0$}$, which is not regular, while rational relations map regular languages to regular languages, as observed after Theorem~\ref{thm:continuity-rational-relations}.
+}
+
+\exer {\label{exer:rational-relations-intersection-undecidable} Show that it is undecidable if two rational relations have nonempty intersection.}{
+    We reduce from the Post Correspondence Problem, as in the proof of Theorem~\ref{thm:undecidable-equivalence-rational-relations}, except that this time we do not need to complement the homomorphisms. Consider two homomorphisms $g,h : A^* \to B^*$, and view each of them as a relation, e.g.
+    \begin{align*}
+    \setbuild{(w,g(w))}{$w \in A^*$ is nonempty}.
+    \end{align*}
+    This relation is rational: the automaton has an initial and a final state, and for each input letter $a$ it has a transition with input $a$ and output $g(a)$, which goes from the initial to the final state, and also from the final state to itself. (The two states are used only to rule out the empty input string.) The intersection of the two relations obtained this way is nonempty if and only if the two homomorphisms agree on some nonempty input string, which is exactly the Post Correspondence Problem. Since the two relations used in the reduction are functions, the problem remains undecidable for rational functions.
+}
+
+\exer{\label{exer:rational-output-size} Show that the following conditions are equivalent for a rational relation:
+\begin{itemize}
+    \item every input string produces at most finitely many outputs;
+    \item output lengths are bounded by an affine function of the input length.
+\end{itemize}
+}
+{
+    The implication from the second condition to the first one is immediate, since there are finitely many strings of bounded length.
+
+    For the converse implication, we use the analysis of runs from \cref{exer:regular-languages-for-rational-relations}. Assume that every input string has finitely many outputs. As we have seen in that exercise, this means that no accepting run visits a state which admits a cycle with empty input and nonempty output. Consider an accepting run, and shorten it as long as possible by removing cycles with empty input. By the previous sentence, the cycles that are removed this way have empty output, and therefore removing them changes neither the input string nor the output string. In the run that remains, every group of consecutive transitions with empty input is shorter than the number of states, since otherwise some state would repeat and we could shorten the run further. Since the transitions that consume a nonempty input are at most as many as the letters in the input string, it follows that the total number of transitions in the run is at most
+    \begin{align*}
+    (\text{number of states}) \cdot (\text{length of the input string} + 1).
+    \end{align*}
+    Each transition produces a bounded amount of output, and hence the length of the output is bounded by an affine function of the length of the input.
+}
+
+
+\exer{\label{ex:recognisable-relations}Show that the recognisable subsets of $A^* \times B^*$ are exactly the unions of finitely many products of regular languages, i.e.~unions of the form 
+\begin{align*}
+K_1 \times L_1 \cup \cdots \cup K_n \times L_n 
+\end{align*}
+where each $K_i$ is a regular language over the input alphabet and each $L_i$ is a regular language over the output alphabet.}
+{
+    We use the standard reformulation of recognisability: a subset of a monoid is recognisable if and only if it is the inverse image $h^{-1}(F)$ of some subset $F$, under some monoid homomorphism $h$ into a finite monoid. (Given a congruence of finite index, take the quotient monoid; conversely, the equivalence which identifies elements with the same image under $h$ is a congruence of finite index.)
+
+    Consider first a product $K \times L$ of regular languages, which are recognised by monoid homomorphisms
+    \begin{align*}
+    A^* \xrightarrow g M \qquad \text{and} \qquad B^* \xrightarrow k N.
+    \end{align*}
+    This product is recognised by the homomorphism into $M \times N$ which maps a pair $(w,v)$ to $(g(w),k(v))$. For a finite union of such products, we take the product of the corresponding monoids, thus obtaining a single homomorphism which recognises all of the products at the same time, and hence also their union, since the recognisable subsets for a fixed homomorphism are closed under Boolean operations.
+
+    For the converse implication, consider a recognisable relation $R = h^{-1}(F)$, for some homomorphism $h$ into a finite monoid $M$. The point is that the two coordinates are independent, because every pair factors as
+    \begin{align*}
+    (w,v) = (w,\varepsilon) \cdot (\varepsilon,v).
+    \end{align*}
+    Applying $h$ to this factorisation, we get $h(w,v) = g(w) \cdot k(v)$, where
+    \begin{align*}
+    g(w) \eqdef h(w,\varepsilon) \qquad \text{and} \qquad k(v) \eqdef h(\varepsilon,v)
+    \end{align*}
+    are monoid homomorphisms from $A^*$ and $B^*$ into $M$, and hence they recognise regular languages. It follows that
+    \begin{align*}
+    R = \bigcup g^{-1}(m) \times k^{-1}(n),
+    \end{align*}
+    where the union ranges over the finitely many pairs $(m,n) \in M \times M$ whose product $mn$ belongs to $F$. This is a finite union of products of regular languages, as required.
+}

@@ -1,0 +1,988 @@
+% Bibliography for the transducer book.
+%
+% This file is the single source of BibTeX entries; the folder literature/
+% documents the sources and stores the PDFs that are freely available.
+% Grouped by part, chronologically inside each group.
+
+
+% ---------------------------------------------------------------------------
+% General references
+% ---------------------------------------------------------------------------
+
+@article{Post1946,
+  author  = {Post, Emil L.},
+  title   = {A Variant of a Recursively Unsolvable Problem},
+  journal = {Bulletin of the American Mathematical Society},
+  volume  = {52},
+  number  = {4},
+  pages   = {264--268},
+  year    = {1946},
+  doi     = {10.1090/S0002-9904-1946-08555-9},
+  url     = {https://doi.org/10.1090/S0002-9904-1946-08555-9}
+}
+
+@techreport{kleene1951,
+  author      = {Kleene, S. C.},
+  title       = {Representation of Events in Nerve Nets and Finite Automata},
+  type        = {Research Memorandum},
+  number      = {RM-704},
+  institution = {The RAND Corporation},
+  address     = {Santa Monica, CA},
+  year        = {1951},
+  url         = {https://www.rand.org/pubs/research_memoranda/RM704.html},
+  note        = {Published in revised form in \emph{Automata Studies}, edited by
+                 C. E. Shannon and J. McCarthy, Annals of Mathematics Studies 34,
+                 Princeton University Press, 1956, pp. 3--41}
+}
+
+@article{scott1967,
+  author  = {Scott, Dana},
+  title   = {Some Definitional Suggestions for Automata Theory},
+  journal = {Journal of Computer and System Sciences},
+  volume  = {1},
+  number  = {2},
+  pages   = {187--212},
+  year    = {1967},
+  month   = aug,
+  note    = {A less polished version was presented at the Conference on the
+             Algebraic Theory of Machines, Languages and Semigroups on
+             5 September 1966, under the title \emph{A Modest Proposal
+             Concerning Nondeterministic Automata}},
+  doi     = {10.1016/S0022-0000(67)80014-X},
+  url     = {https://doi.org/10.1016/S0022-0000(67)80014-X}
+}
+
+@book{Sipser2012,
+  author    = {Sipser, Michael},
+  title     = {Introduction to the Theory of Computation},
+  edition   = {3},
+  publisher = {Cengage Learning},
+  address   = {Boston, MA},
+  year      = {2012},
+  isbn      = {978-1-133-18779-0}
+}
+
+@book{200problems,
+  title     = {200 problems on languages, automata, and computation},
+  author    = {Murlak, Filip and Niwi{\'n}ski, Damian and Rytter, Wojciech},
+  year      = {2023},
+  publisher = {Cambridge University Press},
+  doi       = {10.1017/9781009072632},
+  url       = {https://doi.org/10.1017/9781009072632}
+}
+
+@misc{pin2025,
+  author       = {Pin, Jean-{\'E}ric},
+  title        = {Mathematical Foundations of Automata Theory},
+  year         = {2025},
+  howpublished = {MPRI lecture notes},
+  note         = {Version of 24 March 2025; profinite methods are Chapter~X,
+                  \emph{Profinite words}, pp.~175--188. Living document, so the
+                  version date matters when citing},
+  url          = {https://www.irif.fr/~jep/PDF/MPRI/MPRI.pdf}
+}
+
+@misc{bojanczyk_automata_2025,
+  author       = {Boja{\'n}czyk, Miko{\l}aj},
+  title        = {An Automata Toolbox},
+  year         = {2025},
+  howpublished = {Lecture notes},
+  url          = {https://www.mimuw.edu.pl/~bojan/paper/automata-toolbox-book}
+}
+
+
+% ---------------------------------------------------------------------------
+% Part A -- Mealy machines
+% ---------------------------------------------------------------------------
+
+@article{mealy1955,
+  author  = {Mealy, George H.},
+  title   = {A method for synthesizing sequential circuits},
+  journal = {The Bell System Technical Journal},
+  volume  = {34},
+  number  = {5},
+  pages   = {1045--1079},
+  year    = {1955},
+  month   = sep,
+  doi     = {10.1002/j.1538-7305.1955.tb03788.x},
+  url     = {https://doi.org/10.1002/j.1538-7305.1955.tb03788.x}
+}
+
+@incollection{moore1956,
+  author    = {Moore, Edward F.},
+  title     = {Gedanken-Experiments on Sequential Machines},
+  booktitle = {Automata Studies},
+  editor    = {Shannon, C. E. and McCarthy, J.},
+  series    = {Annals of Mathematics Studies},
+  number    = {34},
+  pages     = {129--153},
+  publisher = {Princeton University Press},
+  address   = {Princeton, NJ},
+  year      = {1956},
+  doi       = {10.1515/9781400882618-006},
+  url       = {https://doi.org/10.1515/9781400882618-006}
+}
+
+@article{nerode1958,
+  author  = {Nerode, Anil},
+  title   = {Linear automaton transformations},
+  journal = {Proceedings of the American Mathematical Society},
+  volume  = {9},
+  number  = {4},
+  pages   = {541--544},
+  year    = {1958},
+  doi     = {10.1090/S0002-9939-1958-0135681-9},
+  url     = {https://doi.org/10.1090/S0002-9939-1958-0135681-9}
+}
+
+@article{krohnRhodes1965,
+  author  = {Krohn, Kenneth and Rhodes, John},
+  title   = {Algebraic theory of machines. I. Prime decomposition theorem for finite semigroups and machines},
+  journal = {Transactions of the American Mathematical Society},
+  volume  = {116},
+  pages   = {450--464},
+  year    = {1965},
+  doi     = {10.1090/S0002-9947-1965-0188316-1},
+  url     = {https://doi.org/10.1090/S0002-9947-1965-0188316-1}
+}
+
+@article{Schutzenberger1965,
+  author  = {Sch{\"u}tzenberger, M. P.},
+  title   = {On finite monoids having only trivial subgroups},
+  journal = {Information and Control},
+  volume  = {8},
+  number  = {2},
+  pages   = {190--194},
+  year    = {1965},
+  doi     = {10.1016/S0019-9958(65)90108-7},
+  url     = {https://doi.org/10.1016/S0019-9958(65)90108-7}
+}
+
+@book{McNaughtonPapert1971,
+  author    = {McNaughton, Robert and Papert, Seymour},
+  title     = {Counter-Free Automata},
+  series    = {M.I.T. Research Monograph},
+  number    = {65},
+  publisher = {MIT Press},
+  address   = {Cambridge, MA},
+  year      = {1971},
+  isbn      = {0-262-13076-9}
+}
+
+@article{meyer1969,
+  author  = {Meyer, Albert R.},
+  title   = {A Note on Star-Free Events},
+  journal = {Journal of the ACM},
+  volume  = {16},
+  number  = {2},
+  pages   = {220--225},
+  year    = {1969},
+  doi     = {10.1145/321510.321513},
+  url     = {https://doi.org/10.1145/321510.321513}
+}
+
+@inproceedings{wilke1999,
+  author    = {Wilke, Thomas},
+  title     = {Classifying Discrete Temporal Properties},
+  booktitle = {STACS 99},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {1563},
+  pages     = {32--46},
+  publisher = {Springer},
+  year      = {1999},
+  doi       = {10.1007/3-540-49116-3_3},
+  url       = {https://doi.org/10.1007/3-540-49116-3_3}
+}
+
+@book{eilenberg1976,
+  author    = {Eilenberg, Samuel},
+  title     = {Automata, Languages, and Machines. Volume B},
+  series    = {Pure and Applied Mathematics},
+  volume    = {59-B},
+  publisher = {Academic Press},
+  address   = {New York},
+  year      = {1976},
+  isbn      = {978-0-12-234002-4},
+  note      = {With two chapters by Bret Tilson}
+}
+
+
+% ---------------------------------------------------------------------------
+% Part B -- Rational relations and functions
+% ---------------------------------------------------------------------------
+
+@article{dubreil1941,
+  author  = {Dubreil, Paul},
+  title   = {Contribution {\`a} la th{\'e}orie des demi-groupes. I},
+  journal = {M{\'e}moires de l'Acad{\'e}mie des Sciences de l'Institut de France},
+  volume  = {63},
+  number  = {3},
+  pages   = {1--52},
+  year    = {1941},
+  note    = {Tome 63 covers 1936--39; the memoir is no.~3 of the volume, with its own pagination},
+  url     = {https://gallica.bnf.fr/ark:/12148/bpt6k3278g/f355}
+}
+
+@article{Malcev1953Nilpotent,
+  author  = {Mal'cev, A. I.},
+  title   = {Nilpotent semigroups},
+  journal = {Uchenye Zapiski Ivanovskogo Gosudarstvennogo Pedagogicheskogo Instituta.
+             Fiziko-Matematicheskie Nauki},
+  volume  = {4},
+  pages   = {107--111},
+  year    = {1953},
+  note    = {In Russian. The source of the embedding of free monoids into the
+             metabelian group that Albert and Lawrence use in their proof of
+             Ehrenfeucht's conjecture}
+}
+
+@article{schutzenberger1956,
+  author    = {Sch{\"u}tzenberger, M. P.},
+  title     = {Une th{\'e}orie alg{\'e}brique du codage},
+  journal   = {S{\'e}minaire Dubreil. Alg{\`e}bre et th{\'e}orie des nombres},
+  volume    = {9},
+  pages     = {1--24},
+  year      = {1956},
+  publisher = {Secr{\'e}tariat math{\'e}matique},
+  note      = {S{\'e}minaire 1955--1956, expos{\'e} no.~15},
+  url       = {https://www.numdam.org/item/SD_1955-1956__9__A10_0/}
+}
+
+@article{schutzenberger1961,
+  author  = {Sch{\"u}tzenberger, M. P.},
+  title   = {A remark on finite transducers},
+  journal = {Information and Control},
+  volume  = {4},
+  number  = {2-3},
+  pages   = {185--196},
+  year    = {1961},
+  doi     = {10.1016/S0019-9958(61)80006-5},
+  url     = {https://doi.org/10.1016/S0019-9958(61)80006-5}
+}
+
+@article{Schutzenberger1961OnTheDefinition,
+  author  = {Sch{\"u}tzenberger, M. P.},
+  title   = {On the definition of a family of automata},
+  journal = {Information and Control},
+  volume  = {4},
+  number  = {2-3},
+  pages   = {245--270},
+  year    = {1961},
+  month   = sep,
+  doi     = {10.1016/S0019-9958(61)80020-X},
+  url     = {https://doi.org/10.1016/S0019-9958(61)80020-X}
+}
+
+@article{elgotMezei1965,
+  author  = {Elgot, C. C. and Mezei, J. E.},
+  title   = {On relations defined by generalized finite automata},
+  journal = {IBM Journal of Research and Development},
+  volume  = {9},
+  number  = {1},
+  pages   = {47--68},
+  year    = {1965},
+  month   = jan,
+  doi     = {10.1147/rd.91.0047},
+  url     = {https://doi.org/10.1147/rd.91.0047}
+}
+
+@article{GinsburgRose1966,
+  author  = {Ginsburg, Seymour and Rose, Gene F.},
+  title   = {A Characterization of Machine Mappings},
+  journal = {Canadian Journal of Mathematics},
+  volume  = {18},
+  pages   = {381--388},
+  year    = {1966},
+  doi     = {10.4153/CJM-1966-040-3},
+  url     = {https://doi.org/10.4153/CJM-1966-040-3}
+}
+
+@article{nivat1968,
+  author  = {Nivat, Maurice},
+  title   = {Transductions des langages de Chomsky},
+  journal = {Annales de l'Institut Fourier},
+  volume  = {18},
+  number  = {1},
+  pages   = {339--455},
+  year    = {1968},
+  doi     = {10.5802/aif.287},
+  url     = {https://doi.org/10.5802/aif.287}
+}
+
+@article{Griffiths1968,
+  author  = {Griffiths, Timothy V.},
+  title   = {The Unsolvability of the Equivalence Problem for {$\Lambda$}-Free Nondeterministic Generalized Machines},
+  journal = {Journal of the ACM},
+  volume  = {15},
+  number  = {3},
+  pages   = {409--413},
+  year    = {1968},
+  month   = jul,
+  doi     = {10.1145/321466.321473},
+  url     = {https://doi.org/10.1145/321466.321473}
+}
+
+@article{eilenbergSchutzenberger1969,
+  author  = {Eilenberg, Samuel and Sch{\"u}tzenberger, M. P.},
+  title   = {Rational Sets in Commutative Monoids},
+  journal = {Journal of Algebra},
+  volume  = {13},
+  number  = {2},
+  pages   = {173--191},
+  year    = {1969},
+  month   = oct,
+  doi     = {10.1016/0021-8693(69)90070-2},
+  url     = {https://doi.org/10.1016/0021-8693(69)90070-2}
+}
+
+@book{eilenberg1974,
+  author    = {Eilenberg, Samuel},
+  title     = {Automata, Languages, and Machines. Volume A},
+  series    = {Pure and Applied Mathematics},
+  volume    = {59-A},
+  publisher = {Academic Press},
+  address   = {New York},
+  year      = {1974},
+  isbn      = {978-0-12-234001-7}
+}
+
+@article{schutzenberger1976,
+  author  = {Sch{\"u}tzenberger, M. P.},
+  title   = {Sur les relations rationnelles entre monoides libres},
+  journal = {Theoretical Computer Science},
+  volume  = {3},
+  number  = {2},
+  pages   = {243--259},
+  year    = {1976},
+  month   = nov,
+  doi     = {10.1016/0304-3975(76)90026-8},
+  url     = {https://doi.org/10.1016/0304-3975(76)90026-8}
+}
+
+@article{choffrut1977,
+  author  = {Choffrut, Christian},
+  title   = {Une caracterisation des fonctions sequentielles et des fonctions sous-sequentielles en tant que relations rationnelles},
+  journal = {Theoretical Computer Science},
+  volume  = {5},
+  number  = {3},
+  pages   = {325--337},
+  year    = {1977},
+  month   = dec,
+  doi     = {10.1016/0304-3975(77)90049-4},
+  url     = {https://doi.org/10.1016/0304-3975(77)90049-4}
+}
+
+@article{blattner1977single,
+  author  = {Blattner, Meera and Head, Tom},
+  title   = {Single-valued a-transducers},
+  journal = {Journal of Computer and System Sciences},
+  volume  = {15},
+  number  = {3},
+  pages   = {310--327},
+  year    = {1977},
+  month   = dec,
+  doi     = {10.1016/S0022-0000(77)80033-0},
+  url     = {https://doi.org/10.1016/S0022-0000(77)80033-0}
+}
+
+@article{culik1978decidability,
+  author  = {Culik, II, Karel and Salomaa, Arto},
+  title   = {On the decidability of homomorphism equivalence for languages},
+  journal = {Journal of Computer and System Sciences},
+  volume  = {17},
+  number  = {2},
+  pages   = {163--175},
+  year    = {1978},
+  month   = oct,
+  doi     = {10.1016/0022-0000(78)90002-8},
+  url     = {https://doi.org/10.1016/0022-0000(78)90002-8}
+}
+
+@book{berstel1979,
+  author    = {Berstel, Jean},
+  title     = {Transductions and Context-Free Languages},
+  publisher = {Teubner},
+  address   = {Stuttgart},
+  year      = {1979},
+  note      = {Cited according to the electronic edition of 14 December 2009, which
+               contains the first four chapters and is available at
+               \url{https://www-igm.univ-mlv.fr/~berstel/LivreTransductions/LivreTransductions14dec2009.pdf}}
+}
+
+@article{CulikKarhumaki1983,
+  author  = {Culik, II, Karel and Karhum{\"a}ki, Juhani},
+  title   = {Systems of equations over a free monoid and {E}hrenfeucht's conjecture},
+  journal = {Discrete Mathematics},
+  volume  = {43},
+  number  = {2-3},
+  pages   = {139--153},
+  year    = {1983},
+  doi     = {10.1016/0012-365X(83)90152-8},
+  url     = {https://doi.org/10.1016/0012-365X(83)90152-8}
+}
+
+@article{AlbertLawrence1985,
+  author  = {Albert, Michael H. and Lawrence, John},
+  title   = {A Proof of {E}hrenfeucht's Conjecture},
+  journal = {Theoretical Computer Science},
+  volume  = {41},
+  pages   = {121--123},
+  year    = {1985},
+  doi     = {10.1016/0304-3975(85)90066-0},
+  url     = {https://doi.org/10.1016/0304-3975(85)90066-0}
+}
+
+@book{BerstelReutenauer1988,
+  author    = {Berstel, Jean and Reutenauer, Christophe},
+  title     = {Rational Series and Their Languages},
+  series    = {EATCS Monographs on Theoretical Computer Science},
+  volume    = {12},
+  publisher = {Springer},
+  address   = {Berlin},
+  year      = {1988},
+  isbn      = {978-0-387-18626-9},
+  note      = {Cited according to the electronic edition of 6 November 2006; a
+               revised and extended version appeared as \emph{Noncommutative
+               Rational Series with Applications}, Cambridge University Press,
+               2010}
+}
+
+@article{HarjuKarhumaki1991,
+  author  = {Harju, Tero and Karhum{\"a}ki, Juhani},
+  title   = {The Equivalence Problem of Multitape Finite Automata},
+  journal = {Theoretical Computer Science},
+  volume  = {78},
+  number  = {2},
+  pages   = {347--355},
+  year    = {1991},
+  month   = jan,
+  doi     = {10.1016/0304-3975(91)90356-7},
+  url     = {https://doi.org/10.1016/0304-3975(91)90356-7}
+}
+
+@article{reutenauer1991minimization,
+  author  = {Reutenauer, Christophe and Sch{\"u}tzenberger, Marcel-Paul},
+  title   = {Minimization of Rational Word Functions},
+  journal = {SIAM Journal on Computing},
+  volume  = {20},
+  number  = {4},
+  pages   = {669--685},
+  year    = {1991},
+  month   = aug,
+  doi     = {10.1137/0220042},
+  url     = {https://doi.org/10.1137/0220042}
+}
+
+@inbook{bealLombardySakarovitch2006,
+  author    = {B{\'e}al, Marie-Pierre and Lombardy, Sylvain and Sakarovitch, Jacques},
+  title     = {Conjugacy and equivalence of weighted automata and functional transducers},
+  booktitle = {Computer Science -- Theory and Applications},
+  pages     = {58--69},
+  year      = {2006},
+  publisher = {Springer Berlin Heidelberg},
+  doi       = {10.1007/11753728_9},
+  url       = {https://doi.org/10.1007/11753728_9}
+}
+
+@book{Sakarovitch2009,
+  author    = {Sakarovitch, Jacques},
+  title     = {Elements of Automata Theory},
+  publisher = {Cambridge University Press},
+  address   = {Cambridge},
+  year      = {2009},
+  isbn      = {978-0-521-84425-3},
+  note      = {Translated from the French by Reuben Thomas},
+  doi       = {10.1017/CBO9781139195218},
+  url       = {https://doi.org/10.1017/CBO9781139195218}
+}
+
+@book{schutzenberger_oeuvres_tome08,
+  author    = {Sch{\"u}tzenberger, Marcel-Paul},
+  editor    = {Berstel, Jean and Lascoux, Alain and Perrin, Dominique},
+  title     = {{\OE}uvres compl{\`e}tes},
+  volume    = {8},
+  publisher = {Institut Gaspard-Monge, Universit{\'e} Paris-Est},
+  address   = {Marne-la-Vall{\'e}e},
+  year      = {2009},
+  language  = {french},
+  note      = {Tome 8 collects the papers of 1971--1975, with editors' comments},
+  url       = {https://www-igm.univ-mlv.fr/~berstel/Mps/Oeuvres-Completes/tome08.pdf}
+}
+
+@inproceedings{benedikt2017,
+  author    = {Benedikt, Michael and Duff, Timothy and Sharad, Aditya and Worrell, James},
+  title     = {Polynomial automata: Zeroness and applications},
+  booktitle = {LICS 2017},
+  pages     = {1--12},
+  publisher = {IEEE Computer Society},
+  year      = {2017},
+  doi       = {10.1109/LICS.2017.8005101},
+  url       = {https://doi.org/10.1109/LICS.2017.8005101}
+}
+
+@article{Seidl2018,
+  author  = {Seidl, Helmut and Maneth, Sebastian and Kemper, Gregor},
+  title   = {Equivalence of Deterministic Top-Down Tree-to-String Transducers Is Decidable},
+  journal = {Journal of the ACM},
+  volume  = {65},
+  number  = {4},
+  pages   = {21:1--21:30},
+  year    = {2018},
+  month   = apr,
+  doi     = {10.1145/3182653},
+  url     = {https://doi.org/10.1145/3182653}
+}
+
+@article{Bojanczyk2019Hilbert,
+  author  = {Boja{\'n}czyk, Miko{\l}aj},
+  title   = {The Hilbert Method for Transducer Equivalence},
+  journal = {ACM SIGLOG News},
+  volume  = {6},
+  number  = {1},
+  pages   = {5--17},
+  year    = {2019},
+  month   = feb,
+  doi     = {10.1145/3313909.3313911},
+  url     = {https://doi.org/10.1145/3313909.3313911}
+}
+
+@incollection{Sakarovitch2021Automata,
+  author    = {Sakarovitch, Jacques},
+  title     = {Automata and Rational Expressions},
+  booktitle = {Handbook of Automata Theory. Volume I: Theoretical Foundations},
+  editor    = {Pin, Jean-{\'E}ric},
+  pages     = {39--78},
+  publisher = {EMS Press},
+  address   = {Berlin},
+  year      = {2021},
+  note      = {An extended version, with the proofs and examples cut for space,
+               is available as arXiv:1502.03573; theorem numbering differs
+               between the two},
+  doi       = {10.4171/AUTOMATA-1/2},
+  url       = {https://doi.org/10.4171/AUTOMATA-1/2}
+}
+
+
+% ---------------------------------------------------------------------------
+% Part C -- Regular functions
+% ---------------------------------------------------------------------------
+
+@article{RabinScott59,
+  author  = {Rabin, Michael O. and Scott, Dana},
+  title   = {Finite automata and their decision problems},
+  journal = {IBM Journal of Research and Development},
+  volume  = {3},
+  number  = {2},
+  pages   = {114--125},
+  year    = {1959},
+  doi     = {10.1147/rd.32.0114},
+  url     = {https://doi.org/10.1147/rd.32.0114}
+}
+
+@article{shepherdson1959reduction,
+  author  = {Shepherdson, J. C.},
+  title   = {The Reduction of Two-Way Automata to One-Way Automata},
+  journal = {IBM Journal of Research and Development},
+  volume  = {3},
+  number  = {2},
+  pages   = {198--200},
+  year    = {1959},
+  month   = apr,
+  doi     = {10.1147/rd.32.0198},
+  url     = {https://doi.org/10.1147/rd.32.0198}
+}
+
+@article{buchi1960,
+  author  = {B{\"u}chi, J. Richard},
+  title   = {Weak Second-Order Arithmetic and Finite Automata},
+  journal = {Zeitschrift f{\"u}r mathematische Logik und Grundlagen der Mathematik},
+  volume  = {6},
+  number  = {1-6},
+  pages   = {66--92},
+  year    = {1960},
+  doi     = {10.1002/malq.19600060105},
+  url     = {https://doi.org/10.1002/malq.19600060105}
+}
+
+@article{elgot1961,
+  author  = {Elgot, Calvin C.},
+  title   = {Decision problems of finite automata design and related arithmetics},
+  journal = {Transactions of the American Mathematical Society},
+  volume  = {98},
+  number  = {1},
+  pages   = {21--51},
+  year    = {1961},
+  doi     = {10.1090/S0002-9947-1961-0139530-9},
+  url     = {https://doi.org/10.1090/S0002-9947-1961-0139530-9}
+}
+
+@article{trakhtenbrot1962,
+  author  = {Trakhtenbrot, B. A.},
+  title   = {Finite automata and the logic of one-place predicates},
+  journal = {Sibirskii Matematicheskii Zhurnal},
+  volume  = {3},
+  number  = {1},
+  pages   = {103--131},
+  year    = {1962},
+  url     = {https://www.mathnet.ru/eng/smj4799},
+  note    = {In Russian. English translation in \emph{American Mathematical Society
+             Translations, Series 2}, volume 59, \emph{Twelve Papers on Logic and
+             Algebra}, 1966, pp. 23--55, \url{https://doi.org/10.1090/trans2/059/02}}
+}
+
+@inproceedings{hopcroftUllman1967,
+  author    = {Hopcroft, J. E. and Ullman, J. D.},
+  title     = {An approach to a unified theory of automata},
+  booktitle = {8th Annual Symposium on Switching and Automata Theory (SWAT 1967)},
+  pages     = {140--147},
+  year      = {1967},
+  doi       = {10.1109/FOCS.1967.4},
+  url       = {https://doi.org/10.1109/FOCS.1967.4}
+}
+
+@article{AhoHopcroftUllman1969,
+  author  = {Aho, Alfred V. and Hopcroft, John E. and Ullman, Jeffrey D.},
+  title   = {A General Theory of Translation},
+  journal = {Mathematical Systems Theory},
+  volume  = {3},
+  number  = {3},
+  pages   = {193--221},
+  year    = {1969},
+  month   = sep,
+  doi     = {10.1007/BF01703920},
+  url     = {https://doi.org/10.1007/BF01703920}
+}
+
+@article{AhoUllman1970,
+  author  = {Aho, Alfred V. and Ullman, Jeffrey D.},
+  title   = {A Characterization of Two-Way Deterministic Classes of Languages},
+  journal = {Journal of Computer and System Sciences},
+  volume  = {4},
+  number  = {6},
+  pages   = {523--538},
+  year    = {1970},
+  month   = dec,
+  doi     = {10.1016/S0022-0000(70)80027-7},
+  url     = {https://doi.org/10.1016/S0022-0000(70)80027-7}
+}
+
+@inproceedings{ChytilJakl1977,
+  author    = {Chytil, Michal P. and J{\'a}kl, Vojt{\v{e}}ch},
+  title     = {Serial Composition of 2-Way Finite-State Transducers and Simple Programs on Strings},
+  booktitle = {ICALP 1977},
+  editor    = {Salomaa, Arto and Steinby, Magnus},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {52},
+  pages     = {135--147},
+  publisher = {Springer},
+  year      = {1977},
+  doi       = {10.1007/3-540-08342-1_11},
+  url       = {https://doi.org/10.1007/3-540-08342-1_11}
+}
+
+@article{gurari1982,
+  author  = {Gurari, Eitan M.},
+  title   = {The Equivalence Problem for Deterministic Two-Way Sequential Transducers is Decidable},
+  journal = {SIAM Journal on Computing},
+  volume  = {11},
+  number  = {3},
+  pages   = {448--452},
+  year    = {1982},
+  month   = aug,
+  note    = {A preliminary version appeared at FOCS 1980, pp.~83--85,
+             \url{https://doi.org/10.1109/SFCS.1980.46}},
+  doi     = {10.1137/0211035},
+  url     = {https://doi.org/10.1137/0211035}
+}
+
+@incollection{thomas1997,
+  author    = {Thomas, Wolfgang},
+  title     = {Languages, Automata, and Logic},
+  booktitle = {Handbook of Formal Languages. Volume 3: Beyond Words},
+  editor    = {Rozenberg, Grzegorz and Salomaa, Arto},
+  pages     = {389--455},
+  publisher = {Springer},
+  address   = {Berlin},
+  year      = {1997},
+  doi       = {10.1007/978-3-642-59126-6_7},
+  url       = {https://doi.org/10.1007/978-3-642-59126-6_7}
+}
+
+@article{engelfrietManeth1999,
+  author  = {Engelfriet, Joost and Maneth, Sebastian},
+  title   = {Macro Tree Transducers, Attribute Grammars, and MSO Definable Tree Translations},
+  journal = {Information and Computation},
+  volume  = {154},
+  number  = {1},
+  pages   = {34--91},
+  year    = {1999},
+  month   = oct,
+  doi     = {10.1006/inco.1999.2807},
+  url     = {https://doi.org/10.1006/inco.1999.2807}
+}
+
+@article{bloemEngelfriet2000,
+  author  = {Bloem, Roderick and Engelfriet, Joost},
+  title   = {A Comparison of Tree Transductions Defined by Monadic Second Order Logic and by Attribute Grammars},
+  journal = {Journal of Computer and System Sciences},
+  volume  = {61},
+  number  = {1},
+  pages   = {1--50},
+  year    = {2000},
+  month   = aug,
+  doi     = {10.1006/jcss.1999.1684},
+  url     = {https://doi.org/10.1006/jcss.1999.1684}
+}
+
+@article{engelfrietHoogeboom2001,
+  author  = {Engelfriet, Joost and Hoogeboom, Hendrik Jan},
+  title   = {MSO Definable String Transductions and Two-Way Finite-State Transducers},
+  journal = {ACM Transactions on Computational Logic},
+  year    = {2001},
+  doi     = {10.1145/371316.371512},
+  url     = {https://doi.org/10.1145/371316.371512}
+}
+
+@inproceedings{alurCerny2010,
+  author    = {Alur, Rajeev and {\v{C}}ern{\'y}, Pavol},
+  title     = {Expressiveness of Streaming String Transducers},
+  booktitle = {FSTTCS 2010},
+  series    = {Leibniz International Proceedings in Informatics (LIPIcs)},
+  volume    = {8},
+  pages     = {1--12},
+  publisher = {Schloss Dagstuhl -- Leibniz-Zentrum f{\"u}r Informatik},
+  year      = {2010},
+  doi       = {10.4230/LIPIcs.FSTTCS.2010.1},
+  url       = {https://doi.org/10.4230/LIPIcs.FSTTCS.2010.1}
+}
+
+@inproceedings{alurCerny2011,
+  author    = {Alur, Rajeev and {\v{C}}ern{\'y}, Pavol},
+  title     = {Streaming Transducers for Algorithmic Verification of Single-Pass List-Processing Programs},
+  booktitle = {POPL 2011},
+  year      = {2011},
+  doi       = {10.1145/1926385.1926454},
+  url       = {https://doi.org/10.1145/1926385.1926454}
+}
+
+@book{courcelleEngelfriet2012,
+  author    = {Courcelle, Bruno and Engelfriet, Joost},
+  title     = {Graph Structure and Monadic Second-Order Logic: A Language-Theoretic Approach},
+  publisher = {Cambridge University Press},
+  year      = {2012},
+  doi       = {10.1017/CBO9780511977619},
+  url       = {https://doi.org/10.1017/CBO9780511977619}
+}
+
+@inproceedings{filiotReynierServais2013,
+  author    = {Filiot, Emmanuel and Reynier, Pierre-Alain and Servais, Arnaud},
+  title     = {From Two-Way to One-Way Finite State Transducers},
+  booktitle = {LICS 2013},
+  year      = {2013},
+  doi       = {10.1109/LICS.2013.45},
+  url       = {https://doi.org/10.1109/LICS.2013.45}
+}
+
+@inproceedings{alurFreilichRaghothaman2014,
+  author    = {Alur, Rajeev and Freilich, Adam and Raghothaman, Mukund},
+  title     = {Regular Combinators for String Transformations},
+  booktitle = {CSL-LICS 2014},
+  pages     = {9:1--9:10},
+  publisher = {ACM},
+  year      = {2014},
+  note      = {A full version, with the proofs and constructions omitted for
+               space, is available as arXiv:1402.3021},
+  doi       = {10.1145/2603088.2603151},
+  url       = {https://doi.org/10.1145/2603088.2603151}
+}
+
+@inproceedings{bojanczyk2014origin,
+  author    = {Boja{\'n}czyk, Miko{\l}aj},
+  title     = {Transducers with Origin Information},
+  booktitle = {ICALP 2014},
+  year      = {2014},
+  doi       = {10.1007/978-3-662-43951-7_10},
+  url       = {https://doi.org/10.1007/978-3-662-43951-7_10}
+}
+
+@inproceedings{baschenis2017,
+  author    = {Baschenis, F{\'e}lix and Gauwin, Olivier and Muscholl, Anca and Puppis, Gabriele},
+  title     = {Untwisting two-way transducers in elementary time},
+  booktitle = {LICS 2017},
+  pages     = {1--12},
+  publisher = {IEEE Computer Society},
+  year      = {2017},
+  doi       = {10.1109/LICS.2017.8005138},
+  url       = {https://doi.org/10.1109/LICS.2017.8005138}
+}
+
+@inproceedings{bojanczykDaviaudKrishna2018,
+  author    = {Boja{\'n}czyk, Miko{\l}aj and Daviaud, Laure and Krishna, Shankara Narayanan},
+  title     = {Regular and First-Order List Functions},
+  booktitle = {LICS 2018},
+  pages     = {125--134},
+  publisher = {ACM},
+  year      = {2018},
+  note      = {An extended version, 32 pages against the 10 of the proceedings
+               version, is available as arXiv:1803.06168; numbering differs
+               between the two},
+  doi       = {10.1145/3209108.3209163},
+  url       = {https://doi.org/10.1145/3209108.3209163}
+}
+
+@inproceedings{muschollPuppis2019,
+  author    = {Muscholl, Anca and Puppis, Gabriele},
+  title     = {The Many Facets of String Transducers (Invited Talk)},
+  booktitle = {STACS 2019},
+  year      = {2019},
+  doi       = {10.4230/LIPIcs.STACS.2019.2},
+  url       = {https://doi.org/10.4230/LIPIcs.STACS.2019.2}
+}
+
+@inproceedings{bojanczykStefanski2020,
+  author    = {Boja{\'n}czyk, Miko{\l}aj and Stefa{\'n}ski, Rafa{\l}},
+  title     = {Single-Use Automata and Transducers for Infinite Alphabets},
+  booktitle = {ICALP 2020},
+  series    = {Leibniz International Proceedings in Informatics (LIPIcs)},
+  volume    = {168},
+  pages     = {113:1--113:14},
+  publisher = {Schloss Dagstuhl -- Leibniz-Zentrum f{\"u}r Informatik},
+  year      = {2020},
+  doi       = {10.4230/LIPIcs.ICALP.2020.113},
+  url       = {https://doi.org/10.4230/LIPIcs.ICALP.2020.113}
+}
+
+@article{nguyen2024,
+  author  = {Nguy{\^e}n, L{\^e} Th{\`a}nh D{\~u}ng},
+  title   = {Two or three things I know about tree transducers},
+  journal = {CoRR},
+  volume  = {abs/2409.03169},
+  year    = {2024},
+  note    = {Unpublished note collecting known results},
+  doi     = {10.48550/arXiv.2409.03169},
+  url     = {https://doi.org/10.48550/arXiv.2409.03169}
+}
+
+
+% ---------------------------------------------------------------------------
+% Part D -- Polyregular functions
+% ---------------------------------------------------------------------------
+
+@article{ibarra1971,
+  author  = {Ibarra, Oscar H.},
+  title   = {Characterizations of Some Tape and Time Complexity Classes of Turing Machines in Terms of Multihead and Auxiliary Stack Automata},
+  journal = {Journal of Computer and System Sciences},
+  volume  = {5},
+  number  = {2},
+  pages   = {88--117},
+  year    = {1971},
+  month   = apr,
+  doi     = {10.1016/S0022-0000(71)80029-6},
+  url     = {https://doi.org/10.1016/S0022-0000(71)80029-6}
+}
+
+@article{lewenstein1996,
+  author  = {Globerman, Noa and Harel, David},
+  title   = {Complexity Results for Two-Way and Multi-Pebble Automata and their Logics},
+  journal = {Theoretical Computer Science},
+  volume  = {169},
+  number  = {2},
+  pages   = {161--184},
+  year    = {1996},
+  month   = dec,
+  doi     = {10.1016/S0304-3975(96)00119-3},
+  url     = {https://doi.org/10.1016/S0304-3975(96)00119-3}
+}
+
+@inproceedings{engelfriet2002,
+  author    = {Engelfriet, Joost and Maneth, Sebastian},
+  title     = {Two-Way Finite State Transducers with Nested Pebbles},
+  booktitle = {Mathematical Foundations of Computer Science 2002},
+  year      = {2002},
+  doi       = {10.1007/3-540-45687-2_19},
+  url       = {https://doi.org/10.1007/3-540-45687-2_19}
+}
+
+@article{milo2003,
+  author  = {Milo, Tova and Suciu, Dan and Vianu, Victor},
+  title   = {Typechecking for XML transformers},
+  journal = {Journal of Computer and System Sciences},
+  volume  = {66},
+  number  = {1},
+  pages   = {66--97},
+  year    = {2003},
+  month   = feb,
+  doi     = {10.1016/S0022-0000(02)00030-2},
+  url     = {https://doi.org/10.1016/S0022-0000(02)00030-2}
+}
+
+@inproceedings{engelfriet2007,
+  author    = {Engelfriet, Joost and Hoogeboom, Hendrik Jan and Samwel, Bart},
+  title     = {XML transformation by tree-walking transducers with invisible pebbles},
+  booktitle = {PODS 2007},
+  year      = {2007},
+  doi       = {10.1145/1265530.1265540},
+  url       = {https://doi.org/10.1145/1265530.1265540}
+}
+
+@article{engelfriet2015,
+  author  = {Engelfriet, Joost},
+  title   = {Two-way pebble transducers for partial functions and their composition},
+  journal = {Acta Informatica},
+  year    = {2015},
+  doi     = {10.1007/s00236-015-0224-3},
+  url     = {https://doi.org/10.1007/s00236-015-0224-3}
+}
+
+@article{bojanczykPolyregularFunctions2018,
+  author  = {Boja{\'n}czyk, Miko{\l}aj},
+  title   = {Polyregular Functions},
+  journal = {CoRR},
+  volume  = {abs/1810.08760},
+  year    = {2018},
+  doi     = {10.48550/arXiv.1810.08760},
+  url     = {https://doi.org/10.48550/arXiv.1810.08760}
+}
+
+@inproceedings{bojanczykKieferLhote2019,
+  author    = {Boja{\'n}czyk, Miko{\l}aj and Kiefer, Sandra and Lhote, Nathan},
+  title     = {String-to-String Interpretations With Polynomial-Size Output},
+  booktitle = {ICALP 2019},
+  year      = {2019},
+  doi       = {10.4230/LIPIcs.ICALP.2019.106},
+  url       = {https://doi.org/10.4230/LIPIcs.ICALP.2019.106}
+}
+
+@inproceedings{lhote2020,
+  author    = {Lhote, Nathan},
+  title     = {Pebble Minimization of Polyregular Functions},
+  booktitle = {LICS 2020},
+  year      = {2020},
+  doi       = {10.1145/3373718.3394804},
+  url       = {https://doi.org/10.1145/3373718.3394804}
+}
+
+@inproceedings{bojanczyk2022,
+  author    = {Boja{\'n}czyk, Miko{\l}aj},
+  title     = {Transducers of polynomial growth},
+  booktitle = {LICS 2022},
+  pages     = {1:1--1:27},
+  publisher = {ACM},
+  year      = {2022},
+  doi       = {10.1145/3531130.3533326},
+  url       = {https://doi.org/10.1145/3531130.3533326}
+}
+
+@inproceedings{bojanczyk2023,
+  author    = {Boja{\'n}czyk, Miko{\l}aj},
+  title     = {On the Growth Rates of Polyregular Functions},
+  booktitle = {LICS 2023},
+  pages     = {1--13},
+  publisher = {IEEE},
+  year      = {2023},
+  note      = {The author version, 24 pages against the 13 of the proceedings
+               version, is available as arXiv:2212.11631 under the title
+               \emph{On the growth rate of polyregular functions}},
+  doi       = {10.1109/LICS56636.2023.10175808},
+  url       = {https://doi.org/10.1109/LICS56636.2023.10175808}
+}

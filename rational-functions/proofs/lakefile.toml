@@ -1,0 +1,37 @@
+name = "Lax132576Proofs"
+defaultTargets = ["Lax132576Proofs"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+
+[[require]]
+name = "Lax132576"
+path = "../concepts"
+
+# Part A (lax-765601): concepts and the ported source development
+[[require]]
+name = "Lax765601"
+git = "https://github.com/bojanczyk/transducer-book"
+rev = "cf8ade7b9a07bf575705db4ddc28bd90b2c6cb74"
+subDir = "lax/mealy-machines/concepts"
+
+[[require]]
+name = "Lax765601Proofs"
+git = "https://github.com/bojanczyk/transducer-book"
+rev = "cf8ade7b9a07bf575705db4ddc28bd90b2c6cb74"
+subDir = "lax/mealy-machines/proofs"
+
+# The Post correspondence problem (lax-251941): its undecidability is assumed
+[[require]]
+name = "Lax251941"
+git = "https://github.com/bojanczyk/transducer-book"
+rev = "9680c6e19881cd2003af818af67ed92d9597f52e"
+subDir = "lax/pcp-undecidability/concepts"
+
+[[lean_lib]]
+name = "Lax132576Proofs"

@@ -1,0 +1,16 @@
+specVersion: "1"
+id: lax-157538
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Transducers"
+authors:
+  - name: Mikołaj Bojańczyk
+  - name: Aristotle (Harmonic)
+bibEntries: []
+issue:
+  repositoryId: 1320232165
+  number: 80
+paper:
+  folder: paper
+  main: main.tex
+  engine: pdflatex

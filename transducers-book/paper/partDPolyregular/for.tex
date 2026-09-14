@@ -1,0 +1,323 @@
+\section{For-transducers}
+\label{sec:for-transducers}
+We begin our discussion of polyregular functions with  \emph{for-transducers}, a model that was introduced in~\cite[Section 3]{bojanczykPolyregularFunctions2018}. Roughly speaking, a for-transducer is an imperative program, which uses for loops to range over positions in the input string.  We will use Python syntax for the code examples.
+
+
+\begin{myexample}
+  [Marked squaring]
+  \label{ex:marked-squaring-for-transducer}
+  Here is the source code of a for-transducer that implements the marked squaring function from Example~\ref{ex:marked-squaring}. The program has two nested loops: the variable {\tt x} in the outer loop ranges over copies of the input string, and the variable {\tt y} in the inner loop ranges over positions inside a copy. 
+  \begin{lstlisting}
+def markedSquare(w):
+    for x in positions(w):
+        for y in positions(w):
+            if y>x and w[y] == 'a':
+                output('a')
+            if y<=x and w[y] == 'a':
+                output('$\underline {\mathtt a}$')
+            if y>x and w[y] == 'b':
+                output('b')
+            if y<=x and w[y] == 'b':
+                output('$\underline {\mathtt b}$')
+\end{lstlisting}
+This program contains the main capabilities of for-transducers: we can loop over input positions, we can test the labels and order on these positions, and we can output letters.
+\end{myexample}
+
+Apart from the features illustrated in the above example, the remaining features of for-transducers are loops that range over positions in the reverse order, and Boolean variables. We illustrate these features in the next two examples.
+
+\begin{myexample}[Reverse]\label{ex:reverse-for-transducer}
+  To implement the reverse function, we use a loop that ranges over positions in the reverse order, as in the following program:
+  \begin{lstlisting}
+def reverse(w):
+    for x in positions_reverse(w):  
+        if w[x] == 'a':
+            output('a')
+        if w[x] == 'b':
+            output('b')
+\end{lstlisting}
+\end{myexample}
+
+Finally, we can use Boolean variables, as illustrated in the following example. 
+
+\begin{myexample}[Parity]\label{ex:parity-for-transducer}
+    The following for-transducer outputs the parity of the length of the  input string:
+    \begin{lstlisting}
+  def parity(w):
+    q = True  # a Boolean variable
+    for x in positions(w):
+        q = not q
+    #at the end, we output the parity
+    if q:
+        output('even')
+    else:
+        output('odd')
+\end{lstlisting}
+Using $k$ Boolean variables, we could compute the length modulo any number $\le 2^k$.
+\end{myexample}
+
+
+The above examples illustrate all features of for-transducers. Nevertheless, we give below a more formal definition of the syntax of the programming language. In a for-transducer, there  are two kinds of variables: position variables that range over positions in the input string, and Boolean variables that range over $\set{\text{true, false}}$.   Apart from that, there is a special variable {\tt w} that represents the input string, which is an argument of the for-transducer.
+There are  two kinds of loops 
+\begin{eqnarray*}
+    {\tt for\ x\ in\  positions(w)} \qquad {\tt for\ x\ in\ positions\_reverse(w)}
+\end{eqnarray*}
+Such a loop creates a position variable {\tt x}, which ranges over positions of the input string {\tt w} in either forward or reverse order. The atomic statements are 
+\begin{eqnarray*}
+   \myunderbrace{{\tt output('a')}}{append letter $a$ \\ \scriptsize to the output string} \qquad 
+   \myunderbrace{{\tt X = true} \qquad {\tt X = false}}{assign a value to a Boolean variable}.
+\end{eqnarray*}
+It is important that there are no assignments to position variables, i.e.~the position variables are read-only.
+A sequential composition {\tt I;J} of two for-transducers is also a for-transducer, and there is a conditional {\tt if ... else}, where  the condition is a Boolean combination of tests of the following kinds:
+\begin{align*}
+\myunderbrace{{\tt X}}{value of a\\ \scriptsize
+ Boolean variable} \hspace{1.5cm} 
+ \myunderbrace{\tt x == \tt y \qquad \tt x <= \tt y }{equality and order  \\ \scriptsize  tests on positions}
+ \hspace{1.5cm} 
+ \myunderbrace{\mathtt{w[x] == 'a'}}{label of  \\  \scriptsize position}
+\end{align*}
+We will not write variable declarations in the programs, with the types being implicit: the variables bound by the for loops are  position variables, and the remaining ones are  Booleans. The Booleans are initialised to false.
+
+
+This completes the syntax of for-transducers\footnote{
+  In the examples, we use some syntactic sugar, such as \texttt{q = not q} for negation of a Boolean variable, and \texttt{output(w[y])} for outputting the label of a position variable. Both of these can be implemented using conditionals from the basic syntax.
+}.  The semantics of a for-transducer is a string-to-string function which is defined in the expected way (we have presented the model as a fragment of Python, and the semantics are consistent).
+The output size of a for-transducer is polynomial -- if it has at most $k$ nested loops, then the output size will be $\Oo(n^k)$. This bound is not tight: one can show that the map reverse function -- which has linear output size -- needs two nested loops in order to be implemented by a for-transducer. 
+
+\begin{myexample}
+  The order test  $x \le y$ is in fact redundant, and it  can be implemented using equality tests only: run  a for loop of first-to-last kind, and check which of the variables $x$ or $y$ is seen  first in the loop, with the result remembered  in a Boolean variable. Similarly, we can implement a successor test $x = y+1$. As we will see later, we can implement any test $\varphi(x_1,\ldots,x_n)$ that can be defined using a formula of monadic second-order logic.
+\end{myexample}
+
+\subsection{Equivalence with polyregular functions}
+\label{sec:for-transducers-equivalence}
+In this section, we show that for-transducers are equivalent to polyregular functions, as defined in Definition~\ref{def:polyregular-functions}. 
+
+% lax begin Lax194892.ForIffPolyregular
+% lax begin Lax194892.ForOfPolyregular
+% lax begin Lax194892.PolyregularOfFor
+% lax begin Lax194892.ForTransducers
+\begin{theorem}
+  \label{thm:for-transducers-are-polyregular}
+  A string-to-string function is  polyregular if and only if it is computed by a for-transducer. 
+\end{theorem}
+% lax end
+% lax end
+% lax end
+% lax end
+
+% lax begin Lax194892Proofs.Results.isPolyregular_iff_isForTransducer
+\begin{proof}
+We begin with the left-to-right inclusion
+\begin{align*}
+\text{polyregular} \subseteq \text{for-transducers}.
+\end{align*}
+Before proving this inclusion, we would like to remark that it is non-trivial. In fact, already the fact that for-transducers can compute all regular functions is not obvious, at least if we think of regular functions as being computed by two-way transducers. Indeed, it is not immediately clear how a for-transducer can simulate the movement of the head in a two-way transducer, since the loops in a for-transducer are required to move in  a single direction. As we will see, the problem can be solved by the decomposition theorems for regular and rational functions that we have proved in the previous parts of this book.
+
+ By the definition of the polyregular functions and the decomposition theorem for rational functions in Theorem~\ref{thm:rational-primes}, we know that each polyregular function can be obtained by composing: (1) marked squaring; (2) map reverse; (3) map duplicate; (4) Mealy machines in both directions; (5) homomorphisms; and (6) the end-of-input function $w \mapsto w\#$. We will show that each of these functions can be computed by a for-transducer, and that for-transducers are closed under composition. Marked squaring was treated in Example~\ref{ex:marked-squaring-for-transducer}. A for-transducer for map reverse is given in Figure~\ref{fig:map-reverse-for-transducer}, and a similar one can be written for map duplicate. Mealy machines -- in both directions -- can be implemented using the same construction as in Example~\ref{ex:parity-for-transducer}, with the Boolean variables used to hold a state. Homomorphisms and the end-of-input function are straightforward to implement. We are left with closure under composition.
+
+
+
+
+
+
+\begin{figure}
+\begin{lstlisting}
+  def mapReverse(w):
+    #in this loop, x ranges over separator symbols
+    for x in positions(w):
+        if w[x]=='#':
+            #output the block ended by x, in reverse
+            #this variable will have four possible values, 
+            #which are: 'before', 'separator', 'inside', and 'after'
+            q = 'before'
+            for y in positions_reverse(w):
+                if y == x:
+                    q = 'separator'
+                if y < x and q == 'separator':
+                    q = 'inside'
+                if q == 'inside' and w[y]=='#':
+                    q = 'after'
+                    output('#')
+                if q == 'inside':
+                    output(w[y])
+            #special code for dealing with leftmost block
+            if q == 'inside':
+                output('#')
+    #an extra loop to process the rightmost block
+    q = 'inside'
+    for y in positions_reverse(w):
+        if w[y]=='#':
+            q = 'after'
+        if q == 'inside':
+            output(w[y])       
+\end{lstlisting}
+\caption{\label{fig:map-reverse-for-transducer}
+  A for-transducer that implements the map reverse function. We use a variable {\tt q} that can have four possible values; such a variable can be implemented using two Boolean variables.}
+\end{figure}
+
+Before proving closure under composition, we begin by describing a normal form.
+
+% lax begin Lax194892.ForTransducers
+\begin{definition}
+[Prenex form]
+\label{def:prenex-normal-form-for-transducers}
+A for-transducer is in \emph{prenex form} if it can be written as
+\begin{lstlisting}
+for $x_1$ in  $\tau_1$:
+  for $x_2$ in $\tau_2$:
+    ...
+      for $x_k$ in $\tau_k$:
+        body($x_1,\ldots,x_k$)
+epilogue
+            \end{lstlisting}
+such that: 
+\begin{itemize}
+  \item each $\tau_i$ is either $\texttt{positions(w)}$ or $\texttt{positions\_reverse(w)}$;
+  \item the subprograms {\tt body} and {\tt epilogue} do not use any loops;
+  \item the subprogram {\tt body} produces at most one output letter in each loop iteration.
+\end{itemize}
+\end{definition}
+% lax end
+
+The subprogram {\tt body} is allowed to refer to the position variables $x_1,\ldots,x_k$, but the subprogram {\tt epilogue} is not. There is, however, some form of communication between the two programs, since both of these subprograms refer to the same Boolean variables, and the epilogue can be sensitive to the changes in the Boolean variables that were effected by the various iterations of the body. For example, the following program which checks for emptiness is in prenex  form: 
+\begin{lstlisting}
+def isEmpty(w):
+  for x in positions(w):
+    q = True
+  if q:
+    output('not empty')
+\end{lstlisting}
+
+% lax begin Lax194892.PrenexNormalForm
+        \begin{lemma}\label{lemma:prenex-normal-form}
+            Every for-transducer is equivalent to one in prenex  form.
+        \end{lemma}
+% lax end
+
+% lax begin Lax194892Proofs.Results.exists_prenexForm
+        \begin{proof}
+            The same kind of argument as when converting first-order formulas to prenex  form. The epilogue is only needed for inputs of length at most one. For inputs with at least two letters, we can simulate  sequential composition \texttt{I;J} using a for loop, with the first loop iteration running \texttt{I}, the second loop iteration running \texttt{J}, and the remaining iterations unused. To remember if we are in the first or second loop iteration, we use Boolean variables.
+        \end{proof}
+% lax end
+
+    Using the prenex  form, we can show that for-transducers are closed under composition.
+
+% lax begin Lax194892.ForComposition
+\begin{lemma}\label{lem:for-closed-under-composition}
+    String-to-string functions computed by for-transducers are closed under composition.
+\end{lemma}
+% lax end
+
+% lax begin Lax194892Proofs.Results.isForTransducer_comp
+\begin{proof}
+    The construction is easiest to see if we assume that both composed for-transducers are in the prenex  form of Lemma~\ref{lemma:prenex-normal-form}, as follows:
+\begin{description}
+  \item[First for-transducer] \ 
+    \begin{lstlisting}
+for $x_1$ in $\tau_1$:
+  for $x_2$ in $\tau_2$:
+    ...
+      for $x_k$ in $\tau_k$:
+        body1$(x_1,\ldots,x_k)$
+epilogue1
+            \end{lstlisting}
+            \item[Second for-transducer] \ 
+\begin{lstlisting}
+for $y_1$ in $\sigma_1$:
+  for $y_2$ in $\sigma_2$:
+    ...
+      for $y_{\ell}$ in $\sigma_{\ell}$:
+        body2$(y_1,\ldots,y_{\ell})$
+epilogue2
+            \end{lstlisting}
+            \end{description}    
+    
+    To simplify the notation, we assume below that there is no epilogue in the first for-transducer, i.e.~{\tt epilogue1} is empty; dealing with this epilogue is a simple exercise.   
+ 
+Our goal is to write a for-transducer for the composed function, in which the second for-transducer is executed on the output of the first for-transducer. In this composition, the variables $y_1,\ldots,y_\ell$ of the second for-transducer range  over outputs of the first one, which are in one-to-one correspondence with those tuples $(x_1,\ldots,x_k)$ where the body of the first transducer produces an output letter. Therefore, each loop in the second transducer can be replaced by $k$ loops, giving a for-transducer with $\ell \times k$ variables 
+which looks like this (when multiplying kinds of loops, we assume that forward loops are represented by the number $1$ and reverse loops are represented by the number $-1$):
+\begin{description}
+  \item[Composed for-transducer] \ 
+                \begin{lstlisting}
+for $z_{11}$ in $\sigma_1 \cdot \tau_1$
+  for $z_{12}$ in $\sigma_1 \cdot \tau_2$
+    ...
+      for $z_{1k}$ in $\sigma_1 \cdot \tau_k$
+        for $z_{21}$ in $\sigma_2 \cdot \tau_1$
+          for $z_{22}$ in $\sigma_2 \cdot \tau_2$
+            ...
+              for $z_{\ell k}$ in $\sigma_\ell \cdot \tau_k$
+                body$(z_{11},\ldots,z_{\ell k})$
+epilogue2
+            \end{lstlisting}
+          \end{description}
+  The idea is that the new body is obtained from the body of the second for-transducer, by viewing each position variable $y_i$ as a tuple $(z_{i1},\ldots,z_{ik})$. 
+  % Therefore, the kind of the loop that binds $z_{ij}$ is obtained by taking the kind of the loop which binds $y_i$, and then reversing it in case the loop for $x_j$ is last-to-first.
+   The details of the construction are left to the reader. One of these details is that we only care about iterations where all of the variables $y_1,\ldots,y_\ell$ are defined, which means that for every $i \in \set{1,\ldots,\ell}$, the body of the first for-transducer produces an output letter in the iteration corresponding to the valuation $(z_{i1},\ldots,z_{ik})$. 
+\end{proof}
+% lax end
+
+This completes the proof of the left-to-right inclusion in the theorem, since we have shown that for-transducers are closed under composition, and that they can compute all the prime polyregular functions.
+
+Let us now move to the other inclusion
+\begin{align*}
+\text{for-transducers} \subseteq \text{polyregular}.
+\end{align*}
+Thanks to Lemma~\ref{lemma:prenex-normal-form}, it suffices to show that for-transducers in prenex  form compute polyregular functions. Consider such a for-transducer, with its code being 
+\begin{lstlisting}
+for $x_1$ in  $\tau_1$:
+  for $x_2$ in $\tau_2$:
+    ...
+      for $x_k$ in $\tau_k$:
+        body($x_1,\ldots,x_k$)
+epilogue
+\end{lstlisting}
+Each iteration of the body is called for some valuation of the position variables. Using the representation described in Section~\ref{sec:logic}, an input string $w \in A^*$ together with a valuation of the variables $x_1,\ldots,x_k$ can be represented as a string over an extended alphabet:
+\begin{align*}
+w \otimes {x_1} \otimes \cdots \otimes {x_k} \in (A \times 2^k)^*.
+\end{align*}
+We will simulate the for-transducer by a composition of the following functions: 
+\begin{enumerate}
+  \item In the first phase, we loop through all  valuations of the  variables $x_1,\ldots,x_k$, in the order given by the nested for loops, and for each one we output the string representation of the valuation, as described above. The output of this phase is illustrated in the following picture, assuming that the input string is $abcd$ and there are two position variables $x_1$ and $x_2$, of types left-to-right and right-to-left respectively:
+  \mypic{47}
+  The construction producing this output is by induction on the number of variables. If we have computed the output for $i$ variables, corresponding to the outermost $i$ loops, then the output for $i+1$ variables is obtained as follows: apply marked squaring, and then use a rational function to filter out the ill-formatted blocks. The details are left to the reader. In particular, if the loop for the variable $x_{i+1}$ is of the reverse kind, then we need a reverse version of marked squaring
+  \begin{align*}
+  abcd \quad \mapsto \quad abc\underline{d}\   ab\underline{cd}\   a\underline{bcd} \  \underline{abcd},
+  \end{align*}
+  which can be implemented using marked squaring, two instances of reverse, and a rational function.
+  \item Once we have the output of the first phase, the output of the nested loops in the for-transducer can be computed by a rational function, which maintains the Boolean variables of the for-transducer in its state, scans each block (corresponding to one iteration of the body), and produces at most one output letter per block. The epilogue can then be implemented using one more pass, which only needs to scan one of the copies of the input string.
+\end{enumerate}
+This completes the translation from for-transducers to polyregular functions, and therefore also the proof of Theorem~\ref{thm:for-transducers-are-polyregular}.
+\end{proof}
+% lax end
+
+\exerciseheader
+
+\exer{\label{exer:for-transducers-simulate-fo}  Consider a first-order formula that defines a language. 
+Show that the same language, viewed as a string-to-string function with outputs ``yes'' and ``no'', can be computed by a for-transducer whose source code is polynomial in the size of the formula.
+}
+{The translation replaces quantifiers by for loops, and the truth values of subformulas by Boolean variables. For a subformula $\exists x\, \psi$, we use a Boolean variable which is set to false, and then a loop over all positions $x$, which sets the variable to true whenever the translation of $\psi$ evaluates to true; a universal quantifier is treated dually. The atomic formulas -- the order and equality tests on positions, and the tests on labels -- are available directly in the syntax of for-transducers, and the Boolean connectives are available in the conditions. Finally, after the outermost loop, the epilogue outputs ``yes'' or ``no'', depending on the Boolean variable for the whole formula.
+
+The size is polynomial, and in fact linear: each quantifier of the formula contributes one loop and one Boolean variable, and each atomic subformula contributes one test. Note that this uses the fact that the loops of a for-transducer can be nested arbitrarily, and that Boolean variables can be reset inside a loop, so that the inner quantifiers are re-evaluated for every valuation of the outer ones.
+}
+
+\exer{\label{exer:for-transducer-continuity-nonelementary} Show that there is no algorithm that runs in elementary time and solves the following computational version of  continuity of  for-transducers:
+\begin{itemize}
+  \item \textbf{Input.} Source code of a for-transducer $f$ and an \nfa over its output alphabet;
+  \item \textbf{Output.} \nfa for its preimage.
+\end{itemize}
+} {
+Already the size of the output \nfa can be non-elementary, and hence no algorithm can produce it in elementary time. Indeed, consider a first-order sentence $\varphi$ as in \cref{exer:fo-non-elementary}, of size polynomial in $n$, whose language contains exactly one string, of length at least $\exp(n)$. By \cref{exer:for-transducers-simulate-fo}, there is a for-transducer $f_\varphi$, of size polynomial in $\varphi$, which outputs ``yes'' or ``no'' according to $\varphi$. Apply the hypothetical algorithm to $f_\varphi$ and to the one-state \nfa which accepts the language $\set{\text{yes}}$. The answer is an \nfa for the language of $\varphi$. An \nfa whose language contains a string of length $\ell$ and no longer string must have more than $\ell$ states, since otherwise the accepting run would repeat a state and could be pumped. Therefore the answer has at least $\exp(n)$ states, which is not elementary in the size of the input.
+}
+
+\exer{\label{exer:forward-for-transducer} A \emph{forward for-transducer} is a for-transducer in which all loops are of the first-to-last kind. Show that the functions computed by forward for-transducers are exactly the composition closure of marked squaring and rational (not regular) functions.
+}{
+Both inclusions follow the proof of \cref{thm:for-transducers-are-polyregular}, with an eye on the direction of the loops.
+
+\paragraph*{From forward for-transducers to compositions.} Consider the proof of \cref{thm:for-transducers-are-polyregular}, which translates a for-transducer into a composition of marked squaring and rational functions. In the first phase, the valuations of the position variables are enumerated, using one application of marked squaring per variable, followed by a rational function which filters out the ill-formatted blocks. The only place where a function beyond the rational ones is used is the reverse variant of marked squaring, which is needed for a variable whose loop is of the last-to-first kind, and which is implemented using string reversal. If all loops are forward, this never happens, and the first phase is a composition of marked squarings and rational functions. The second phase is a rational function, as is the epilogue, and hence the whole for-transducer is a composition of marked squarings and rational functions.
+
+\paragraph*{From compositions to forward for-transducers.} For the converse inclusion, we need three things. First, marked squaring is computed by a forward for-transducer, as we have seen in Example~\ref{ex:marked-squaring-for-transducer}. 
+
+Second, every rational function is computed by a forward for-transducer. By \cref{thm:bimachines}, a rational function is computed by a bimachine, and, as observed after the definition of bimachines, we may assume that the suffix automaton is run on the suffix in the forward direction, since the only role of the suffix automaton is to split the suffixes into finitely many regular languages. The forward for-transducer then has an outer forward loop over the positions $x$, which maintains the state of the prefix automaton in Boolean variables. Inside this loop, and before producing any output, an inner forward loop over the positions $y$ computes the state of the suffix automaton on the suffix that starts after $x$: the Boolean variables for this state are reset at the beginning of the inner loop, and are updated only for those $y$ that satisfy $x < y$. Once both states are known, the body outputs the corresponding string. The gap after the last position is handled by the epilogue.
+
+Third, forward for-transducers are closed under composition. This is the construction of \cref{lem:for-closed-under-composition}: each loop of the second transducer is replaced by a group of loops, one for each loop of the first transducer, and the direction of a new loop is the product of the directions of the two loops that it comes from. If both transducers are forward, then all these products are forward.
+}

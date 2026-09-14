@@ -1,0 +1,425 @@
+\section{Combinators}
+\label{sec:regular-list-functions}
+
+The elegant syntax of regular expressions is one of the main attractions of regular languages. Regular expressions have no variables or states, and they are compositional -- bigger regular expressions are built from smaller ones using a few simple combinators, namely union, concatenation and Kleene star. In this section, we describe an attempt at a similar syntax for regular functions. One could argue that the prime decompositions earlier in this book are such a syntax, see \cref{def:regular-functions}, with only one combinator, namely composition. However, those decompositions are motivated mainly by a mathematical desire to find a  minimal core of a given transducer class. The beauty of regular expressions is that they are both a minimal core, and are also  usable in everyday programming practice. The formalism in this section is intended to go in that direction, and to be more grounded in programming practice, by using  functions like 
+\begin{align*}
+ \myunderbrace{A^{**} \xrightarrow {\concatterm} A^*}{flatten a list of lists \\ into a list} \qquad \myunderbrace{\onetype + A \times A^* \xrightarrow {\consterm} A^*}{a list is constructed from \\ either an empty list, or \\ a head and a tail},
+\end{align*}
+which are familiar to any user of a functional programming language, such as  Haskell.
+
+\paragraph*{Types.} The functions in the above examples are not based purely on strings, but have more structured types. For example, the domain of $\concatterm$ uses lists of lists, while the domain of $\consterm$ is constructed using products, co-products, lists and a unit type. Such types can be encoded into strings using separators, but we will prefer a more direct approach which does not use such representations. The types that we care about are defined in the following way. 
+% lax begin Lax709149.Types
+\begin{definition}
+    [Types]\label{def:types} Types are expressions built using the following constructors:
+\begin{align*}
+    \myunderbrace{\onetype}{unit  type \\ which contains \\ a unique element $1 \in \onetype$} 
+\qquad
+\myunderbrace{A \times B}{product \\ type}
+\qquad
+\myunderbrace{A + B}{co-product \\ type}
+\qquad
+\myunderbrace{A^*}{list \\ type}.
+\end{align*}
+\end{definition}
+% lax end
+
+Each type also represents a set in the natural way, and we will use the same notation for the type and the set that it represents. For example $\onetype^*$ represents list over the unit type; this set is in bijection with the natural numbers. Using multiple disjoint copies of the unit type we can represent finite sets, e.g.~$\onetype + \onetype$ represents a binary alphabet, and $\onetype + \onetype + \onetype$ represents a ternary alphabet. Formally speaking, for the ternary alphabet we should choose one of the two bracketings $\onetype + (\onetype + \onetype)$ or $(\onetype + \onetype) + \onetype$, but these two types are isomorphic and we will not  pay attention to the difference.
+
+\paragraph*{Type-to-type functions.}
+A type-to-type function is defined to be  any function 
+\begin{align*}
+A \xrightarrow f B
+\end{align*}
+where $A$ and $B$ are types. As we have explained above, types can be used to describe finite alphabets and lists over these alphabets, and hence string-to-string functions are a special case of type-to-type functions.  However, the opposite inclusion is also essentially true, since types can be represented using strings, and thus type-to-type functions can be represented as string-to-string functions.
+As the alphabet for the string representations,  we use  an eight-letter alphabet that we denote by $8$ because it has eight letters: 
+\begin{align*}
+( \quad ) \quad [ \quad ] \quad , \quad \onelement \quad \leftterm \quad \rightterm.
+\end{align*}
+ The string representation for elements of types is defined by induction:  the unique element of $\onetype$ is represented by  $\onelement$; elements of $A + B$ are represented by $\leftterm\  a$ or $\rightterm\  b$; pairs are represented by $(a,b)$, and lists are represented by $[a_1,\ldots,a_n]$. Using this representation, we can  lift transducer classes to describe type-to-type functions.
+
+
+
+
+
+
+
+% lax begin Lax709149.RegularUnderRepresentation
+\begin{definition}[Regular under string representation]\label{def:regular-functions-on-types-under-string-representation}
+    A type-to-type function
+    \begin{align*}
+    A \xrightarrow f  B
+    \end{align*}
+    is called \emph{regular under string representation} if there is some regular string-to-string function $f'$ such that the following diagram commutes:
+    \[
+    \begin{tikzcd}
+    A 
+    \ar[r,"f"]
+    \ar[d,"\text{string representation}"']
+    &
+    \ar[d,"\text{string representation}"]
+    B
+    \\
+    8^* 
+    \ar[r,"f'"']
+    &
+    8^*.
+    \end{tikzcd}
+    \]
+     Similarly we define rational functions between types.
+\end{definition}
+% lax end
+
+\begin{myexample}[Parity under string representation]
+    Consider the function 
+    \begin{align*}
+    \onetype^* \xrightarrow f \onetype + \onetype
+    \end{align*}
+    which returns the parity of the input list. We think of the codomain as representing the Booleans, with the first copy of $\onetype$ representing ``yes'' and the second copy representing ``no''. Here are two examples of input/output pairs for this function under string representation:
+    \begin{align*}
+    [\onelement,\onelement,\onelement] \mapsto \myunderbrace{\rightterm\onelement}{``no'' means odd} \qquad [\onelement,\onelement] \mapsto \myunderbrace{\leftterm\onelement}{``yes'' means even}.
+    \end{align*}
+    The function $f$ is regular under string representation. The transducer $f'$ counts the appearances of the letter $1$ modulo two, and outputs $\leftterm\onelement$ or $\rightterm\onelement$ accordingly. Note that not all input strings over the input alphabet $8$ are representations of the domain, but the transducer $f'$ will still produce some output  for such inputs. However, the input strings which are correctly formatted, i.e.~represent some element of the domain, form a regular language, as witnessed by the following automaton:
+    \mypic{54}
+Therefore, we could improve $f'$ so that it produces the empty string for inputs that are not correctly formatted.
+\end{myexample}
+
+
+\subsection{Regular terms}
+\label{sec:regular-terms}
+As we mentioned earlier in this section, when defining type-to-type functions, we would like to work directly on the types instead of using string representations as is done in \cref{def:regular-functions-on-types-under-string-representation}. This is the purpose of the following definition, in which type-to-type functions are built by applying four standard combinators to certain atomic functions. We begin by describing two atomic functions that are not completely standard. 
+
+\begin{myexample}[Split]\label{ex:split}
+    For types $A$ and $B$, the split function 
+    \begin{align*}
+    (A + B)^* \xrightarrow{\splitterm} A^* \times (B \times A^*)^*
+    \end{align*}
+    splits the input list according to appearances of elements from $B$, as illustrated in the following example where elements of $A$ are letters and elements of $B$ are red digits:
+    \begin{align*}
+    [a,b,c,\red 1,d,e,\red 2,\red 3,f,g,h] \mapsto ([a,b,c],[(\red 1,[d,e]),(\red 2,[]), (\red 3,[f,g,h])]).
+    \end{align*}
+    A defining property of the split function is that it is a bijection, and its inverse is the concatenation of all its entries in the left-to-right order. 
+\end{myexample}
+
+\begin{myexample}[Group prefix multiplication]
+    For a finite group $G$, the group prefix multiplication function 
+    \begin{align*}
+    G^* \xrightarrow{\prefterm} G^*
+    \end{align*}
+    takes a list of elements from $G$ and returns the list of all prefix products. This means that the output list has the same length as the input list, and the $i$-th element of the output list is the result of applying the group operation  to the first $i$ elements in the input list. For example, if $G$ is $\set{0,1,2}$ with addition modulo 3, then we have
+    \begin{align*}
+    [0,1,2] \mapsto [0,1,0].
+    \end{align*}
+    Note that this function is parameterised not just by the underlying set of the group, but also its group operation. 
+\end{myexample}
+
+Apart from the above two examples, all other atomic functions are standard built-in functions of Haskell, and we believe that the combinators are also self-explanatory. Here is the definition.
+
+% lax begin Lax709149.RegularTerms
+\begin{definition}[Regular term] \label{def:regular-terms} A \emph{regular term} is any expresion that is built by applying the combinators from \cref{item:regular-list-functions-combinators} to the atomic terms in~\cref{item:regular-list-functions-fo-atomic}. In the following $A,B,C$ range over types, and $G$ ranges over groups whose underlying set is a finite type. 
+    \begin{enumerate}
+        \item \label{item:regular-list-functions-fo-atomic}     The atomic functions are:
+    \begin{description}
+        \item[Identity]  $A \xrightarrow {\idterm} A$.
+        \item[Projections]  $A \times B \xrightarrow {\fstterm} A$ and $A \times B \xrightarrow {\sndterm} B$.
+        \item[Co-projections] $A \xrightarrow {\leftterm} A + B$ and $B \xrightarrow {\rightterm} A + B$.
+        \item[Distributivity]  $A \times (B + C) \xrightarrow {\distrterm} (A \times B) + (A \times C)$. 
+        \item[List constructor] $\onetype + A \times A^* \xrightarrow {\consterm} A^*$.
+        \item[List deconstructor]  $A^* \xrightarrow {\unconsterm} \onetype + A \times A^*$.
+        \item[Reverse]  $A^* \xrightarrow{\reverseterm} A^*$.
+        \item[Concatenation] $A^{**} \xrightarrow{\concatterm} A^*$.
+        \item[Split] $(A+B)^* \xrightarrow{\splitterm} A^* \times (B \times A^*)^*$.
+        \item[Group prefix multiplication] $G^* \xrightarrow{\prefterm} G^*$.
+    \end{description}
+    
+            \item \label{item:regular-list-functions-combinators} The combinators are:
+    \begin{description}
+        \item[Composition] composition of functions.
+        \item [Pairing]  $A \xrightarrow{(f,g)} B \times C$ for two functions   $A \xrightarrow f B$ and $A \xrightarrow g C$.
+        \item [Co-pairing] $A + B \xrightarrow{\either f g} C$ for two functions  $A \xrightarrow f C$ and $B \xrightarrow g C$.
+        \item [Map] $A^* \xrightarrow{f^*} B^*$ for a function $A \xrightarrow f B$.
+    \end{description}
+        
+    \end{enumerate}
+\end{definition}
+% lax end
+
+Each term has syntax (an expression built from the atomic functions and combinators) and semantics (a type-to-type function), but we will not distinguish between the two, and we will use the same notation for both. 
+
+% lax begin Lax709149.RegularOfTerm
+\begin{theorem}\label{thm:regular-terms} A type-to-type function is regular under string representation if and only if it is defined by some regular term.
+\end{theorem}
+% lax end
+
+The rest of \cref{sec:regular-terms} is devoted to the proof of \cref{thm:regular-terms}.  We begin with the easy direction, which is
+\begin{align*}
+\text{defined by a regular term} 
+\quad \Rightarrow \quad 
+\text{regular under string representation.}
+\end{align*}
+This is a straightforward induction on the structure of the term. The induction basis says that all atomic terms are regular under string representation, which is easy to check, with the only  non-trivial part being  parsing the string representation of the input. Let us illustrate this on one example, which is distributivity.
+
+\begin{lemma}
+    For every types $A,B,C$, the distributivity function
+    \begin{align*}
+    A \times (B + C) \xrightarrow {\distrterm} (A \times B) + (A \times C)
+    \end{align*}
+    is regular under string representation.
+\end{lemma}
+\begin{proof}
+    The input, if correctly formatted, has one of the forms $(a, \leftterm b)$ or $(a, \rightterm c)$, where $a$ is a string representation of some element in $A$, and similarly for $b$ and $c$.      The transducer that implements the distributivity function first checks if the input is correctly formatted, and then checks if it uses the left or right variant, and finally outputs the corresponding output. In all of these steps, we use the fact that parsing can be implemented by a finite automaton, as stated in the following claim, which is proved by a straightforward induction on the structure of the type. 
+        \begin{claim}
+        For every type $A$, the following is a regular language
+        \begin{align*}
+        \setbuild{ w \in 8^*}{$w$ represents an element of $A$}.
+        \end{align*}
+    \end{claim}
+    Using the above claim, an automaton can check if the input is correctly formatted, and if so, it can check if the input uses the left or right variant. Also, the output can be produced, by identifying the separation between the two components of the input. 
+\end{proof}
+
+The remaining atomic functions are handled in a similar way,  and the combinators are also easily seen to preserve regularity, thus proving the induction step.
+
+The rest of this proof is devoted to the more difficult implication 
+\begin{align*}
+\text{defined by a regular term} 
+\quad \Leftarrow \quad 
+\text{regular under string representation,}
+\end{align*}
+which says that the terms are expressively complete. Ultimately, we need to prove expressive completeness for all type-to-type functions, but we begin with the string-to-string case, which contains the essence of the proof. In the string-to-string case, we can profit from the prime decomposition theorems (which are, technically speaking, our formal definition of the transducer class). Since terms are syntactically closed under composition, it suffices to show that the following prime  string-to-string functions are definable by terms, which is done in Lemmas \ref{lem:terms-define-string-homomorphisms} - \ref{lem:terms-define-reversible} as described in the following table.
+\begin{center}
+    \begin{tabular}{ll}
+    \cref{lem:terms-define-string-homomorphisms} & string-to-string homomorphisms \\
+    \cref{lem:terms-define-append-hash} & appending an endmarker $w \mapsto w\#$ \\
+        \cref{lem:terms-define-map-reverse-duplicate} & map reverse and map duplicate \\
+    \cref{lem:terms-define-flip-flop} & flip-flop Mealy machines \\
+    \cref{lem:terms-define-reversible} & reversible Mealy machines \\
+    \text{symmetric} & right-to-left variants of prime Mealy machines
+\end{tabular}
+\end{center}
+In the last line of the above table, the symmetry is resolved by the string reversal function, since a right-to-left Mealy machine can be decomposed as: (1) reverse; (2) a left-to-right Mealy machine; (3) reverse again. 
+From the decomposition result on rational functions in \cref{thm:rational-primes} and the definition of regular functions, the above lemmas will imply that all regular string-to-string functions are definable by terms. We will then conclude the proof in \cref{lem:terms-define-string-representation} by extending the completeness from string-to-string functions to all type-to-type functions. 
+
+Let us begin with the case of string-to-string homomorphisms, which is easy and also establishes some infrastructure that will be used in the other cases.
+
+
+
+\begin{lemma}\label{lem:terms-define-string-homomorphisms}
+        Every string-to-string homomorphism is definable by a regular term.
+\end{lemma}
+\begin{proof}
+    We say that a type is of the form $\onetype + \ldots + \onetype$ if it is a co-product of finitely many copies of the unit type.  (As mentioned before, a formal description would need to specify the bracketing, but  all possible bracketings are isomorphic using regular terms.) The following claim shows that such types cover all finite types.
+    \begin{claim}\label{claim:finite-type-bijection-disjoint-units}
+        Every finite type admits a bijection, which is definable by a regular term, to a type of the form $\onetype + \ldots + \onetype$.
+    \end{claim}
+    \begin{proof}
+        Induction on the structure of the finite type, with distributivity used in the case of products. It is worth noting that the proof needs two  kinds of distributivity:
+\begin{align*}
+A \times (B + C) \xrightarrow {\distrterm} (A \times B) + (A \times C)\\
+(A + B) \times C \xrightarrow {\distlterm} (A \times C) + (B \times C).
+\end{align*}
+    Our atomic functions contain only the first kind, but the second kind can be derived from the first one, since we have a function for swapping coordinates:
+\begin{align*}
+A \times B \xrightarrow {\mathtt{swap}} B \times A,
+\end{align*}
+which can be derived using pairing and projections.
+    \end{proof}
+    \begin{claim}\label{claim:finite-domain-regular-list-function}
+        Every type-to-type function with a finite domain  is definable by a regular term.
+    \end{claim}
+    \begin{proof}
+        By \cref{claim:finite-type-bijection-disjoint-units}, we can assume that the domain is of the form $\onetype + \ldots + \onetype$. By using co-pairing, we can reduce to the case of a function with domain $\onetype$. We now use induction on the structure of the codomain. The interesting case is a function 
+\begin{align*}
+\onetype \xrightarrow f A^*
+\end{align*}
+with a list codomain. Suppose that the output is a list $[a_1,\ldots,a_n]$. A term defining the function is constructed as follows. If $n=0$, i.e.~the output is the empty list, then we can use the composition
+\begin{align*}
+\onetype \xrightarrow{\leftterm} \onetype + A \times A^* \xrightarrow {\consterm} A^*.
+\end{align*}
+If the output list is non-empty, then use pairing to construct the pair (head, tail) for the list, with both the head and tail constructed using the induction hypothesis. Finally, use the list constructor to construct the output list from the head and tail. (There is a nested induction here on the length of the output list.) 
+\end{proof}
+
+By combining the above two claims, we see that if $A$ and $B$ are finite types, then every function of type $A \to B^*$ is definable by a regular term. Every  string-to-string homomorphism  then arises by taking such a function $f$, and using the following composition
+\begin{align*}
+    A^* \xrightarrow{f^*} B^{**} \xrightarrow \concatterm B^*.
+\end{align*}
+\end{proof}
+
+\begin{lemma}\label{lem:terms-define-append-hash}
+    The function $w \mapsto w\#$ is definable by a term.
+\end{lemma}
+\begin{proof}
+    When formalising this function, we think of $\#$ as being a fresh symbol. Therefore, we can think of its type as being 
+    \begin{align*}
+    A^* \to (A + \onetype)^*.
+    \end{align*}
+    (This type of thinking is justified by \cref{claim:finite-domain-regular-list-function}, which says that any function with a finite domain is definable by a term, which covers bijections between finite types.) By the symmetry principle, it will be easier to define a prepending function $w \mapsto \#w$. We begin by defining functions into the unit type (which are unique).
+
+    \begin{claim}\label{claim:bang-definable}
+         For every type $A$, the function  $A \xrightarrow ! \onetype$ is definable by a term. 
+    \end{claim}
+    \begin{proof}
+        Induction on the structure of the type, with the identity used for the induction bases, projections used for products, co-pairing used for co-products, and the list deconstructor used for lists.
+    \end{proof}
+    Using the $!$ function from the above claim, we can define prepending as follows.
+    \begin{align*}
+    A^* \xrightarrow {((!;\rightterm),\leftterm^*)}   (A + \onetype) \times (A + \onetype)^* \xrightarrow {\rightterm;\consterm} (A + \onetype)^*.
+    \end{align*}
+\end{proof}
+
+\begin{lemma}\label{lem:terms-define-map-reverse-duplicate}
+   Map reverse and map duplicate are definable by terms.
+\end{lemma}
+\begin{proof}
+    We begin by defining some helper functions:
+            \begin{align*}
+        \onetype & \xrightarrow \emptyterm A^*  & \leftterm; \consterm \\ 
+        A & \xrightarrow \pureterm A^* & (\idterm, (!;\emptyterm));\rightterm;\consterm\\
+        A^* \times A^* & \xrightarrow \binconcterm A^* & (\idterm \times \pureterm); \rightterm; \consterm; \concatterm .
+        \end{align*}
+    In the last line above,  we  use a derived derived combinator for applying two functions in parallel to separate coordinates of a product, which is defined by
+    \begin{align*}
+    f \times g = ((\fstterm;f),(\sndterm;g)).
+    \end{align*}
+    Finally, we define the inverse of $\splitterm$, which is a form of concatenation that was discussed earlier in Example~\ref{ex:split}. This inverse is the composition of 
+    \begin{align*}
+    A^* \times (B \times A^*)^* \xrightarrow{\leftterm \times (\rightterm \times \leftterm^*)^*} (A+B)^* \times ((A+B)^* \times (A+B)^*)^*
+    \end{align*}
+    followed by the below form of concatenation where $C = A+B$:
+    \begin{align*}
+    C^* \times (C \times C^*)^* \xrightarrow{ \idterm \times (\rightterm; \consterm)^*} C^* \times C^{**} \xrightarrow{\rightterm;\consterm} C^{**} \xrightarrow \concatterm C^*
+    \end{align*}
+
+    Equipped with the above helper functions, we can define map reverse and map duplicate, as required by the lemma.
+    We assume that these functions are typed as 
+    \begin{align*}
+    (A + \onetype)^* \to (A + \onetype)^*.
+    \end{align*}
+    The term for map reverse is the following composition:
+    \begin{align*}
+    (A + \onetype)^* \xrightarrow{\splitterm} A^* \times (\onetype \times A^*)^* \xrightarrow{(\reverseterm \times (\idterm \times \reverseterm)^*)} A^* \times (\onetype \times A^*)^*,
+    \end{align*}
+    followed by the inverse of $\splitterm$. In the presence of these helper functions, map duplicate is defined in the same way as map reverse, except that we use $(\idterm,\idterm);\binconcterm$ instead of string reversal.
+\end{proof}
+
+\begin{lemma}\label{lem:terms-define-flip-flop}
+        Every flip-flop Mealy machine is definable by a term.
+\end{lemma}
+\begin{proof}    
+    Consider a flip-flop Mealy machine 
+    \begin{align*}
+    A^* \xrightarrow f B^*
+    \end{align*}
+    with states $Q$. We assume that the states are a finite type. 
+    The input alphabet partitions into two parts: the identity letters which leave the state unchanged, and the reset letters which reset the state to a fixed state. To define this function using a term, we will split the input string according to appearances of the reset letters. The exact construction has several steps, which are described below.
+
+    \begin{enumerate}
+        \item Before splitting along the reset letters, we will need to annotate them with the states that they produce. This is implemented by a string-to-string homomorphism  
+        \begin{align*}
+        A^* \xrightarrow h (A+Q)^*
+        \end{align*}
+        in which the identity letters are left unchanged, and each  reset letter $a$ is replaced by the two-letter string $aq$ where $q$  is the state  after reading $a$.  
+        \item In the second step, we apply $\splitterm$ to  the output of the first step in order to split along the states, thus yielding an element of
+        \begin{align*}
+         (w_0, [(q_1,w_1),\ldots,(q_n,w_n)]) \in  A^* \times (Q \times A^*)^*.
+        \end{align*}
+        Thanks to the way that the first step was defined, we know that: (1) each of the strings $w_0,\ldots,w_n$ contains at most one reset letter, and if it contains a reset letter then it is the last one; and  (2)  $q_i$ is the state of the Mealy machine after reading $w_0 \cdots w_{i-1}$. In particular, thanks to (1), we know that the state of the Mealy machine will not change while reading any of the strings $w_0,\ldots,w_n$ (except at the end, when the state no longer influences the output). We will leverage this in the following steps, by simulating the Mealy machine using a homomorphism. 
+        \item Thanks to the way that the previous step was defined, the output produced by the Mealy machine on each pair $(q_i,w_i)$ is obtained by applying the function 
+        \begin{align*}
+                Q \times A^* & \xrightarrow g B^*\\ 
+                (q,v) & \mapsto h_q(v)
+        \end{align*}
+        where $h_q$ is the string-to-string homomorphism that replaces each letter by the corresponding output of the Mealy machine assuming that the current state is $q$.  Using \cref{lem:terms-define-string-homomorphisms}, as well as distributivity and co-pairing, we can show that $g$ is definable by a term.. (The variant of distributivity is the left-hand one that was given in the proof of \cref{claim:finite-type-bijection-disjoint-units}.)  For the initial string $w_0$, we can simply apply the homomorphism $h_{q_0}$, where $q_0$ is the initial state of the Mealy machine.
+        \item As a result of the previous step, we get an element of 
+            \begin{align*}
+            B^* \times (B^*)^*
+            \end{align*}
+            which should be concatenated to get the output string. This concatenation can be done by a term. 
+    \end{enumerate}
+\end{proof}
+
+\begin{lemma}
+    \label{lem:terms-define-reversible}
+    Every reversible Mealy machine is definable by a term.
+\end{lemma}
+\begin{proof}
+        Consider a reversible  Mealy machine 
+    \begin{align*}
+    A^* \xrightarrow f B^*
+    \end{align*}
+    with states $Q$.  Let us also choose some arbitrary group structure on the input alphabet $A$, say a cyclic group. 
+
+    \begin{itemize}
+        \item  Let $G$ be the group of permutations of the finite set $Q$; this is a finite group and we can describe its underlying set using some type. In the first step we apply the letter-to-letter homomorphism
+        \begin{align*}
+        A^* \to (A \times G)^*
+        \end{align*}
+        where each letter is paired with its state transformation.
+        \item Let the output of the first step be
+        \begin{align*}
+        [(a_1,g_1), \ldots, (a_n,g_n)] \in (A \times G)^*. 
+        \end{align*}
+        Thanks to the group structure on $A$,  the alphabet $A \times G$ can be seen as a group. In the second step, we apply group prefix multiplication.
+        \item The result of the previous step is 
+        \begin{align*}
+        [(a'_1,g'_1),  \ldots, (a'_n, g'_n)] \in (A \times G)^*,
+        \end{align*}
+        where $a'_i$ is the product of the first  $i$  input letters (according to our arbitrary group structure) and $g'_i$ is the state transformation induced by the first $i$ input letters. Recall the  delay machine from Example \ref{ex:delay}, which is a flip-flop Mealy machine (and hence definable by a term thanks to \cref{lem:terms-define-flip-flop}). Using this machine, we can label each pair with the previous one, so that each pair in the list becomes a four-tuple $(a'_i,g'_i,a'_{i-1},g'_{i-1})$, with the edge cases of  $a'_0$ and $g'_0$ being defined to be  the identity elements of the respective groups. 
+        \item Using group inverses we can recover the original input letters, because 
+        \begin{align*}
+        a_i = (a'_{i-1})^{-1} \cdot a'_i.
+        \end{align*}
+        Therefore, for each item in the previous list, we can compute the pair $(a_i,g'_{i-1})$ which describes the original input letter, and the state transformation before reading it. This is all the information needed to get the corresponding output letter in the Mealy machine, and hence a string-to-string homomorphism can be used to get the output string.
+    \end{itemize}
+\end{proof}
+
+We have thus proved that all prime regular string-to-string functions are definable by terms, and hence all regular string-to-string functions are definable by terms. It remains to lift the result to type-to-type functions. Consider  a type-to-type function 
+\begin{align*}
+A \xrightarrow f B
+\end{align*}
+that is regular under string representation. To define this function by a regular term, we compose the terms for: (a) the string representation of $A$; (b) the regular string-to-string function that defines $f$ on string representations; and (c) the inverse of the string representation of $B$.  Step (b) is already done, and we now need to show that steps (a) and (c) can be defined by terms. This will be proved in the following lemma.  The inverses in the lemma are understood as one-sided inverses, i.e.~a function such that the composition 
+\begin{align*}
+A \xrightarrow{\text{string representation}}
+8^*
+\xrightarrow{\text{inverse of string representation}}
+A
+\end{align*}
+is the identity on $A$.
+
+
+\begin{lemma}\label{lem:terms-define-string-representation}
+    For every type, its string representation and a one-sided inverse  can be defined by terms.
+\end{lemma}
+\begin{proof}
+    Induction on the structure of the type. We only do the induction step for a product type $A \times B$, with the other cases being similar. The string representation is easy, and we focus on its inverse. If correctly formatted, the input string is of the form $(a,b)$, where $a$ and $b$ are string representations of elements of $A$ and $B$, respectively. Consider the rational function 
+    \begin{align*}
+    8^* \xrightarrow f (8 + \onetype)^*
+    \end{align*}
+    which identifies the separating comma between $a$ and $b$ (there might be other commas in the representations of $a$ and $b$), and writes it using a fresh symbol. This function is defined by a term, since we have already proved expressive completeness for terms in the case of string-to-string functions. Apply the function $f$, followed by split, leading to an element of the type
+\begin{align}\label{eq:split-product-unrepresentation}
+    8^* \times (\onetype \times 8^*)^*.
+\end{align}
+We know that if the original input was correctly formatted, then the list on the second coordinate will have exactly one element. We will now extract it using a version of the head operation.
+\begin{claim}
+    \label{claim:head}
+    For every type $A$ there is a term  $A^* \xrightarrow \headterm A$ which returns the first element when the input list is nonempty (and an arbitrary element when it is empty). 
+\end{claim}
+\begin{proof}
+    The difficulty is inventing a value when the input list is empty. By a simple induction on the structure of the type $A$, we show that there is a term
+    \begin{align*}
+    \onetype \xrightarrow{\inventterm} A.
+    \end{align*}
+    Using this term, the claim is proved as follows
+    \begin{align*}
+   \headterm =  \unconsterm; \either  \inventterm \fstterm
+    \end{align*}
+\end{proof}
+By applying $\headterm$  to the second coordinate in~\eqref{eq:split-product-unrepresentation}, we get an element of 
+\begin{align*}
+8^* \times (\onetype \times 8^*).
+\end{align*}
+By projecting away the $\onetype$, removing the outer brackets (which are the first letter of the first $8^*$ and the last letter of the second $8^*$), and applying the induction assumption to both coordinates, we get the desired element of $A \times B$. This completes the induction step for the product type, and the other cases are similar.
+\end{proof}
+
+
+\subsection{Rational terms}
+\label{sec:rational-terms}
+In \cref{sec:regular-terms}, we proved that the regular type-to-type functions are exactly those that can be defined by regular terms. In this section, we isolate a fragment which corresponds to the rational and not regular functions. 

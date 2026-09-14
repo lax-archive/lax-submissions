@@ -1,0 +1,397 @@
+
+\section{The Krohn-Rhodes Decomposition Theorem}
+\label{sec:krohn-rhodes}
+As we have shown in Theorem~\ref{thm:composition-mealy}, Mealy machines can be composed. This motivates the idea of \emph{decomposing} Mealy machines into simpler ones. For example, if we compose the delay function from Example~\ref{ex:delay} with itself, then we get the \emph{double delay} function, which shifts the input letters by two steps to the right, as in the following picture: 
+\mypic{15}
+Therefore, the double delay function can be decomposed into two copies of the delay function. The main result of this section is the Krohn-Rhodes Decomposition Theorem, which shows that every Mealy machine can be decomposed into a composition of certain special Mealy machines, which we call \emph{prime Mealy machines}. Later on in this book, we will prove similar decomposition theorems for more advanced transducer models. Interestingly enough, the decomposition theorem for Mealy machines is arguably the most difficult one to prove.
+
+\paragraph*{Primes.} We begin by defining the prime Mealy machines. These prime machines are defined in terms of the state transformations that they can perform. Here, the \emph{state transformation} of an input letter is the function $Q \to Q$ which shows how this letter updates the state (the output of the machine is not relevant for this definition).
+
+
+% lax begin Lax765601.PrimeMealyMachines
+\begin{definition}\label{def:prime-mealy-machines}
+    There are two kinds of  \emph{prime Mealy machines}:
+        \begin{itemize}
+        \item Reversible: all state transformations of all letters  are permutations.
+        \item Flip-flop: for each letter, its  state transformation is either: (a) the identity transformation; or (b) a constant (i.e.~all states are mapped to the same one). 
+    \end{itemize}
+\end{definition}
+% lax end
+
+The definition of state transformations can be extended from individual letters to  input strings, by  composing the state transformations of the individual letters. We could modify the above definition to talk about state transformations of input strings, instead of input letters, and the result would be the same. This is because  composing constants gives a constant, and composing permutations gives a permutation. 
+
+\begin{myexample}
+If a Mealy machine has only one state, then it is  both reversible and flip-flop, since all state transformations are the identity transformation. 
+    The machine with output $ababa\cdots$ from Example~\ref{ex:alternating-a-b} is a reversible machine, since the state transformation of each letter is a permutation. 
+    The delay machine from Example~\ref{ex:delay} is a flip-flop machine, since the state transformation of each letter is a constant. 
+\end{myexample}
+
+
+% lax begin Lax765601.KrohnRhodes
+\begin{theorem}[Krohn-Rhodes Theorem] 
+\label{thm:krohn-rhodes}
+    Every Mealy machine $f$ admits a  decomposition
+    \begin{align*}
+    f = f_1 \cdot f_2  \cdots f_n
+    \end{align*}
+    where each  Mealy machine $f_1,\ldots,f_n$ is either reversible or flip-flop.
+\end{theorem}
+% lax end
+
+In some decomposition results in mathematics, such as the decomposition of a number into its prime factors, the decomposition is unique. We make no such uniqueness claims in the above theorem. 
+Since Mealy machines are closed under composition, it follows from the above theorem that the class of functions computed by Mealy machines is the same as the class of compositions of  functions computed by prime Mealy machines. This can be written as: 
+\begin{align*}
+\text{Mealy} = (\text{Reversible} \cup \text{Flip-flop})^*,
+\end{align*}
+where the Kleene star on the right-hand side stands for closure under composition.
+The rest of Section~\ref{sec:krohn-rhodes} is devoted to the proof of this theorem. There are two steps in the proof. First, in Section~\ref{sec:map-lifting}, we show an auxiliary result about map lifting, which shows that a decomposition into primes can be applied in parallel to a list of input strings. Then, in Section~\ref{sec:state-transformations}, we finish the proof.
+
+
+\subsection{Map lifting}
+\label{sec:map-lifting} In the first step of the proof, we introduce a construction on transducers that we call the map lifting, and which will be used many times in this lecture. The idea is to apply a transducer to a list of input strings, which are separated using some separator.
+
+% lax begin Lax765601.MapLifting
+\begin{definition}[Map lifting]\label{def:map-lifting}
+    Let 
+    \begin{align*}
+    f : A^* \to B^*
+    \end{align*}
+    be a string-to-string function. The map lifting of $f$, denoted by 
+    \begin{align*}
+    \myunderbrace{(A+1)^*}{alphabet obtained from $A$ \\ by adjoining a fresh letter $\#$} \xrightarrow{\map f} (B+1)^*,
+\end{align*}
+     is the function defined by 
+         \begin{align*}
+    \myunderbrace{w_1 \# w_2 \# \cdots \# w_n}{the strings $w_1,\ldots,w_n$ \\ do not  use the separator $\#$} 
+    \quad \mapsto \quad 
+    f(w_1) \# f(w_2) \# \cdots \# f(w_n).
+    \end{align*}
+\end{definition}
+% lax end
+
+  The following lemma shows that map lifting is compatible with decompositions into primes. 
+
+% lax begin Lax765601.MapLiftingDecomposition
+\begin{lemma}\label{lem:map-lifting-decomposition-mealy}
+    If a Mealy machine decomposes into prime Mealy machines, then the same is true for its map lifting.
+\end{lemma}
+% lax end
+
+% lax begin Lax765601Proofs.Results.compClosure_mapLift
+\begin{proof}
+    Map lifting commutes with composition of functions, i.e.
+    \begin{align*}
+    \map(f \cdot g) = (\map f) \cdot (\map g).
+    \end{align*}
+    Therefore, it is enough to show the lemma in the case when $f$ is a prime Mealy machine. If $f$ is a flip-flop, there is nothing to do:  we reset its state to the initial state whenever the separator symbol is read. The interesting case is when $f$ is reversible. The difficulty is that resetting the state would break reversibility. 
+
+    Consider an input string $w \in (A+1)^*$ that may contain the separator symbol. We consider two state transformations:
+    \begin{itemize}
+        \item[$\delta_w$] this is the state transformation in the automaton which corresponds to the  map lifting, i.e.~the separator symbol resets the state to the initial one;
+        \item[$\gamma_w$] this is the state transformation in a variant of the above automaton, in which the separator symbol does nothing, i.e.~it does not change the state.
+    \end{itemize} 
+    The first state transformation is the one that we care about, but  the underlying automaton is not reversible, since it involves resetting the state. The second state transformation seems less useful, but it arises from a reversible automaton. The two state transformations coincide for strings that do not use the separator symbol, and hence we have the following cancellation law: 
+    \begin{align}\label{eq:cancellation}
+    \delta_{w} = (\myunderbrace{\gamma_{v}}{a permutation, and \\ hence can be inverted})^{-1}  \cdot \gamma_{vw}, 
+    \qquad \text{where $w$ does not contain the separator symbol.}
+    \end{align}
+    We will apply the cancellation law for strings of the form $vw$ where $v$ is the prefix of $vw$ that ends with the last occurrence of the separator symbol, and $w$ is the suffix that follows it. (In this case, we call $v$ the $\#$-prefix of $vw$.)
+    Using the  cancellation law, we will  decompose the map lifting of $f$ into prime Mealy machines. The idea is that for each prefix of the input string, we  will compute the two state transformations that appear on the right-hand side of the cancellation law.  This is done in two stages.
+    \begin{enumerate}
+        \item  In the first stage, we label each prefix $w$ of the input string with the state transformation $\gamma_w$, i.e.~the one in which the separator symbol is ignored. This is done using a Mealy machine of type 
+        \begin{align*}
+        (A+1)^* \to (\text{permutations of $Q$})^*,
+        \end{align*}
+        where $Q$ is the state space  of the original Mealy machine. After reading an input word $w$, this machine stores $\gamma_w$ in its state, and its last output letter is also $\gamma_w$. This machine is reversible,  since the original one was reversible and the only new state transformation is the identity transformation. 
+        
+        Here is  a picture of the first stage. In the picture, we use hexadecimal for indexing positions (so that we can have more  single digit indexes) and we write  $\delta_{ij}$ for the state transformation which corresponds to the infix of the input string that begins in the $i$-th position and ends in the $j$-th position, including both endpoints:
+\mypic{8}
+        \item We now proceed to the second stage of the construction, in which we compute the state transformation for the $\#$-prefixes of the input string, as in the following picture:
+\mypic{9}
+        This is done using a flip-flop machine which is a  variant of the delay machine from Example~\ref{ex:delay}. The states of this machine are permutations of $Q$, plus an extra initial state for an undefined value. When we read a position with a separator symbol, we store the output of the first stage in the state. For other input positions, the state is unchanged. The output is always the incoming state. 
+        \item By applying the cancellation law to the outputs of the first and second stages, we can get for each input position $i$ the state transformation $\delta_{1i}$. Using reversibility and the $i$-th input letter, we can also get the state transformation $\delta_{1(i-1)}$. (Unless the $i$-th letter is the separator, in which case we simply copy the separator to the output.) From this state transformation, we can get the state just before reading the $i$-th position for the map lifting, and from this we can get the output of the map lifting. All of these operations use only the current position and its labels (in the input string and the first two stages), and hence they can be implemented using a one-state Mealy machine.
+    \end{enumerate}
+    Since each of the three stages above is a prime Mealy machine, we get the conclusion of the lemma. Although this is not important for the statement of the lemma, we observe that the third stage can be merged with the second stage, since prime Mealy machines are closed under post-composition with letter-to-letter homomorphisms. Therefore, the map lifting of $f$ is a composition of two prime Mealy machines, a reversible one followed by a flip-flop.
+\end{proof}
+% lax end
+
+\subsection{State transformations}
+\label{sec:state-transformations}
+
+In the second step of the proof, we will use the map lifting from the previous section to conclude the proof of the Krohn-Rhodes Theorem. As was the case for the map lifting, we will be mainly interested in the state transformations of the Mealy machine. The relevant information will thus be: 
+\begin{align}\label{eq:pre-automaton}
+\myunderbrace{A}{input \\ alphabet} \qquad 
+\myunderbrace{Q}{state \\ space} \qquad 
+\myunderbrace{\set{\delta_a : Q \to Q}_{a \in A}}{state transformations}.
+\end{align}
+We use the name \emph{pre-automaton} for the above; it is the same as a \textsc{dfa} without designated initial and accepting states. For a pre-automaton, define its \emph{state transformation transducer} to be the Mealy machine of type  
+\begin{align*}
+A^* \to (Q \to Q)^*,
+\end{align*}
+in which the  $n$-th letter of the output string is the state transformation for the first $n$ input letters. The main lemma in the proof of the Krohn-Rhodes Theorem is the following. 
+
+% lax begin Lax765601.StateTransformationDecomposition
+\begin{lemma}\label{lem:Mealy-map-lifting}
+    For every pre-automaton, its state transformation transducer  is a composition of prime Mealy machines.
+\end{lemma}
+% lax end
+
+Before proving the lemma, we use it to conclude the proof of the Krohn-Rhodes Theorem. Take a Mealy machine, and consider its  underlying pre-automaton.  By applying the lemma, we get a composition of prime Mealy machines, which computes for each input position the state of the underlying pre-automaton after reading this position. To get the output of the Mealy machine, we can use a delay machine as in Example~\ref{ex:delay} to get the state from the previous position, and then we can get the output letter using a letter-to-letter homomorphism that is based on the transition function. It remains to prove the lemma.
+
+\begin{proof}[Proof of Lemma~\ref{lem:Mealy-map-lifting}]
+We prove the lemma by induction on two parameters of the pre-automaton $\Aa$: (a) the size of the state space $Q$; and (b) the size of the input alphabet $A$. These parameters are ordered lexicographically, so that we first compare the size of the state space, and if there is a tie, then we compare the size of the input alphabet. In particular, we can make progress in the induction by decreasing the number of states but increasing the size of the input alphabet. 
+
+\paragraph*{Induction basis.} The induction basis is when there is one state and one input letter. We can easily cover a generalisation of the induction basis, namely when the pre-automaton is reversible, i.e.~all  state transformations are permutations (which trivially holds when there is one state only). In this case, there is nothing to do, since the natural Mealy machine for state transformations is already reversible. 
+
+\paragraph*{Induction step.} We are left with the induction step, under the assumption that the pre-automaton is not reversible. This means that there is some input letter $a \in A$ with a state  transformation that is  not a permutation. This means that the image of this state transformation is some proper subset $P \subset Q$ of the state space.   Fix this letter $a$ for the rest of the proof. 
+
+In the proof, we will be interested in $a$-positions, i.e.~positions in the input string that are labelled with the letter $a$, and $a$-blocks, i.e.~pieces of the input string that go from one $a$-position to the next one, including the latter $a$-position but not the former one. Here is a picture:
+\mypic{1}
+The $a$-blocks are disjoint and partition the input string, except for some suffix which does not use the letter $a$. 
+The general idea in the induction step is  that an $a$-block is subject to the assumption on a smaller input alphabet, since $a$ appears only once, while the $a$-blocks can be seen as individual letters for a pre-automaton with a smaller set of states. This will be made precise below.
+
+
+
+To compute the state transformation, we will be interested in a decomposition of the input word into  three parts,  as depicted in the following picture:
+\mypic{2}
+We refer to this decomposition as the \emph{tripartite decomposition}. We now describe a sequential composition of prime Mealy machines, in which all state transformations in the tripartite decomposition are computed.  This decomposition proceeds in five stages. We assume that in each stage, we have access to the outputs of the previous stages, since a prime Mealy machine can always be adapted so that it includes a copy of the input string in its output. 
+\begin{enumerate}
+    \item In the first stage, we compute the state transformation for the $a$-free suffixes, i.e.~the last of the three parts in the tripartite decomposition. Here is a picture of this stage, using the same conventions as in the proof of Lemma~\ref{lem:map-lifting-decomposition-mealy}:
+    \mypic{3}
+    This stage is implemented by removing the letter $a$ from the input alphabet in the pre-automaton, applying the induction assumption for a smaller input alphabet, and then applying map lifting to the result by Lemma~\ref{lem:map-lifting-decomposition-mealy}.
+    
+    \item In the second stage, we compute the state transformations of the individual $a$-blocks, and we store them in the $a$-positions that end them, as in the following picture:
+    \mypic{4}
+    To implement this, we first use a delay machine as in Example~\ref{ex:delay}, which is a flip-flop machine, to shift the outputs of the first stage by one letter to the right. Next, for positions that are not $a$-positions, we use a blank letter as the output, and for $a$-positions we take the value from the preceding position and post-compose it with the state transformation of $a$. This stage is a flip-flop machine followed by a letter-to-letter homomorphism, and hence it is a flip-flop machine.
+
+    \item In the third stage, we  compute  the first part of its tripartite decomposition, i.e.~the first $a$-block. To do this,  we use a flip-flop machine to copy the state transformation in the first $a$-block to the positions that are not in the first $a$-block,  as in the following picture:
+    \mypic{5}
+    This way, each position outside the first $a$-block has access to the state transformation in the first $a$-block.
+
+    \item After the first three stages, we have access to the state transformations of the  first and last parts of the tripartite decomposition. We are left with the middle part, which is the union of all $a$-blocks except for the first one. To compute this, we will use the induction assumption on the smaller set of states $P \subset Q$ which is the image of the state transformation of $a$. Consider a pre-automaton with  states $P$ as follows. The  input alphabet is the alphabet used to store the original input word together with the results of the preceding stages, while the  transition function  is defined as follows:
+     \begin{itemize}
+        \item If the position is  an $a$-position that is not the first one (which can be detected by looking at the input letter and the third stage), then apply the state transformation stored in the second stage. 
+        \item Otherwise,  do not change the state.
+     \end{itemize} 
+     We can apply the induction assumption to this pre-automaton, since it has a smaller set of states. The  state transformation of this new automaton is the state transformation of the original automaton for the middle part of the tripartite decomposition. 
+     \item In the stages so far, we have computed the state transformations for all three parts in the tripartite decomposition. These can be combined, using a letter-to-letter homomorphism, to get the state transformation for the entire prefix, as desired in the lemma.
+\end{enumerate}
+    \end{proof}
+
+
+\subsection{Aperiodic Mealy machines}
+\label{sec:one-kind-primes}
+In the Krohn-Rhodes Theorem, we have two kinds of prime Mealy machines, reversible and flip-flop. What about functions that decompose into only one kind of primes? In other words, what are the classes
+\begin{align*}
+\text{(Reversible)}^* 
+\quad \text{and} \quad 
+\text{(Flip-flop)}^*?
+\end{align*}
+For the first class, there is not much to say, since reversible Mealy machines are closed under composition, and hence the first class is just the class of reversible Mealy machines.
+
+% lax begin Lax765601.ReversibleComposition
+\begin{lemma}\label{lem:reversible-composition}
+    Reversible Mealy machines are closed under composition.
+\end{lemma}
+% lax end
+
+A much more interesting class is the second one, namely compositions of flip-flop machines. To capture this class, we will use the following notion of aperiodicity, which says that the machine cannot have periodic behaviour. Aperiodic machines will be studied in more detail in Section~\ref{sec:logic-aperiodic}, in light of the connection between aperiodicity and logic.
+
+% lax begin Lax765601.Aperiodicity
+\begin{definition}[Aperiodic]\label{def:aperiodic-mealy}
+    A length preserving string-to-string function is called \emph{aperiodic} if for all input strings $u,v,w$, with $uvw$ nonempty, there is some output letter $b$ such that \begin{align*}
+    b = \text{last letter of $f(uv^nw)$}  \qquad \text{for all sufficiently large $n$}.
+    \end{align*}
+\end{definition}
+% lax end
+
+In the definition above, we only talk about the last letter, but aperiodicity also implies that the last $k$ letters of $f(uv^nw)$ are eventually fixed for every $k$, by the arbitrary choice of $w$.
+
+
+\begin{myexample}[Aperiodic and periodic functions]
+    \label{ex:size-threshold-3}
+Consider the function 
+\begin{align*}
+f : \set{a}^* \to \set{0,1}^*
+\end{align*}
+where the last letter says if the string strictly before it is nonempty:
+\begin{align*}
+    aaaaaaaaa \mapsto 011111111.
+\end{align*}
+This function is clearly aperiodic, since the last letter of any sufficiently long input string will always be 1. On the other hand, if we change the function so that it indicates the parity of the length, as in the following example: 
+\begin{align*}
+    aaaaaaaaa \mapsto 010101010, 
+\end{align*}
+then the  aperiodicity condition will be  violated by repeating the letter $a$. In this example, we did not need the words $u$ and $w$ in $uv^nw$. To see that they are necessary, one can consider the function defined by 
+\begin{align*}
+\text{last letter of }f(w) = 
+\begin{cases}
+     \text{parity of $n$} & \text{if $w = \#a^n\#$ for some $n$}\\
+     \bot & \text{otherwise.}
+\end{cases}
+\end{align*}
+\end{myexample}
+
+
+% lax begin Lax765601.AperiodicMealy
+% lax begin Lax765601.FlipFlopsOfAperiodic
+% lax begin Lax765601.AperiodicOfFlipFlops
+\begin{theorem}\label{thm:aperiodic-mealy}
+    Consider a string-to-string function $f$ that is computed by a Mealy machine. Then $f$ is aperiodic if and only if it is computed by a  composition of flip-flop Mealy machines. Moreover, this property can be decided, given a Mealy machine that computes $f$.
+\end{theorem}
+% lax end
+% lax end
+% lax end
+
+
+
+% lax begin Lax765601Proofs.Results.aperiodic_iff_compClosure_flipFlop
+\begin{proof}
+We will begin with the implication 
+\begin{align*}
+\text{composition of flip-flop} \implies \text{aperiodic}.
+\end{align*}
+Then, before proving the converse implication, we will prove the decidability part of the theorem, as it will introduce notions  that will be useful in the converse implication.
+
+\paragraph*{From composition of flip-flop to aperiodicity.} To see that a composition of flip-flops is aperiodic, we will show that flip-flops are aperiodic, and that aperiodicity is preserved under composition.  The first part is easy, since the last letter of $f(uv^nw)$ depends only on: (1) the last letter of $w$ (or $v$ if $w$ is empty); and (2) the last letter in $uvw$ that has a constant state transformation. Neither of these values depends on $n$. To see that aperiodicity is preserved under composition, it will be more convenient to use the following equivalent characterisation of aperiodicity.
+% lax begin Lax765601.AperiodicPumping
+\begin{claim}\label{claim:aperiodic-pumping}
+    A function  $f$ computed by a Mealy machine is aperiodic if and only if for all input strings $u,v,w$ there are output strings $x,y,z$ and a number $k$ such that
+    \begin{align*}
+    f(uv^{n+k}w) =  xy^n z \quad \text{for all $n > 0$}.
+    \end{align*}
+\end{claim}
+% lax end
+
+% lax begin Lax765601Proofs.Results.aperiodic_iff_pumping
+\begin{proof}
+    The right-to-left direction is easy, since the last letter of $xy^nz$ does not depend on $n$. For the left-to-right direction, we use the remark after the definition of aperiodicity, which says that the last $k$ letters of the output  are eventually fixed. If we apply this to outputs of the form $f(uv^n)$ and the last $|v|$ letters,  we see that  from some point on, the output ends with a repetition of some fixed string $y$ of length $|v|$. If we apply this to outputs of the form $f(uv^nw)$ and the last $|w|$ letters, we get the part $z$.
+\end{proof}
+% lax end
+
+The condition in the above claim is easily seen to be compatible with composition, since the number $k$ for the composition $f \cdot g$ can be taken to be the sum of the corresponding numbers for $f$ and $g$. This completes the proof of the implication from composition of flip-flop to aperiodicity.
+
+
+
+    \paragraph*{Decidability.} As announced at the beginning of the proof of the theorem, before proving the converse implication, we  prove the decidability part. To check if function $f$ is aperiodic, we will check if the corresponding Mealy machine satisfies a certain aperiodicity condition on the state transformations, which will be described in \cref{lem:aperiodicity-minimal-machine}.  However, in order for the latter check to be meaningful, we will need to use a machine that avoids unnecessary states.  
+    Since Mealy machines are very close to regular languages, we can use a minimisation procedure that is similar to the classical Myhill-Nerode minimisation theorem. 
+    Define a \emph{derivative} of  a length preserving string-to-string function $f$ to be  any function of the form 
+    \begin{align*}
+    f(w\_)  \quad \eqdef \quad  v \mapsto f(wv) \text{ with the first $|w|$ letters of the output removed.}
+    \end{align*}
+    where $w$ is some input string. 
+    
+% lax begin Lax765601.MealyDerivatives
+% lax begin Lax765601.Derivatives
+    \begin{lemma}[Myhill-Nerode for Mealy machines]\label{lemma:derivatives}
+        A string-to-string function is computed by a Mealy machine if and only if: (1) it has finitely many derivatives; (2)  it is letter-to-letter; (3) the $n$-th output letter depends only on the first $n$ input letters.
+    \end{lemma}
+% lax end
+% lax end
+
+% lax begin Lax765601Proofs.Results.isMealy_iff_derivatives
+    \begin{proof}
+        The left-to-right direction is easy: the derivative $f(w\_)$ is uniquely determined by the state of the Mealy machine after reading $w$, and hence can be chosen in only finitely many ways. Let us now prove the right-to-left direction. The corresponding Mealy machine has states for the derivatives, with the initial state being the derivative corresponding to the empty string. The transition relation is defined by
+        \begin{align*}
+        f(w\_) \xrightarrow {a / \text{last letter of $f(wa)$}} f(wa\_).
+        \end{align*}
+        This transition function is well-defined, since the output letter and target states depend only on the source state $f(w\_)$ and not the particular choice of $w$. Using a simple induction on the length of $w$, one can show that after reading an input string $w$, this machine is in state $f(w\_)$ and the output that it has produced so far is $f(w)$.
+    \end{proof}
+% lax end
+
+    The machine constructed in the above proof is called the \emph{minimal machine} for the function $f$. The minimal machine can be easily constructed from any other Mealy machine, by computing which states define the same derivative, and merging them. To complete the proof of the theorem, it remains to show that aperiodicity can be decided based on the minimal machine.
+
+% lax begin Lax765601.AperiodicityMinimalMachine
+    \begin{lemma}\label{lem:aperiodicity-minimal-machine}
+        A function computed by a  Mealy machine is aperiodic if and only if its minimal Mealy machine satisfies the following condition: (*) for every state transformation $\delta : Q \to Q$ that arises from some input string, the    sequence of state transformations $\delta^1, \delta^2,\ldots$  eventually stabilises on a single state transformation.
+    \end{lemma}
+% lax end
+
+% lax begin Lax765601Proofs.Results.aperiodic_iff_transAperiodic
+    \begin{proof} The right-to-left direction is straightforward: if a Mealy machine (minimal or not) satisfies (*), then the function that it computes is aperiodic. 
+        Let us now prove the left-to-right direction. By Lemma~\ref{lemma:derivatives}, we can assume that the Mealy machine is minimal, and toward a contradiction suppose that this minimal machine does not satisfy (*). Then the input string $v$  that gives rise to the state transformation $\delta$ can be used to produce a violation of aperiodicity. Indeed, suppose that the sequence $\delta^1, \delta^2,\ldots$ does not stabilise, and thus it sees two state transformations $\delta^i \neq  \delta^j$ infinitely often. By definition of minimiality, there must be some strings $u$ and $v$ such that the last letters of $f(uv^iw)$ and $f(uv^jw)$ are different, for some $w$. This contradicts aperiodicity.
+    \end{proof}
+% lax end
+
+    The above lemma gives a decision procedure for checking if a function computed by a Mealy machine is aperiodic. We first compute all state transformations that arise from input strings, and for each one we check if its powers induce a non-trivial cycle. To compute the set of all state transformations, we start with the state transformations of individual letters, and we keep on adding state transformations by composing them, until we can add no new state transformation. This procedure terminates, since there are only finitely many possible state transformations.   This completes the decidability part of the theorem.
+
+    \paragraph*{From aperiodicity to composition of flip-flops.} We are left with the implication
+\begin{align*}\text{aperiodic} \implies \text{composition of flip-flop}.
+\end{align*}
+Consider a function $f$ that is computed by a Mealy machine and is aperiodic. By Lemma~\ref{lem:aperiodicity-minimal-machine}, we can assume that the Mealy machine satisfies condition (*) from the lemma. We now go through the proof of the Krohn-Rhodes Theorem for this particular machine, and we observe that in the induction process, all machines will continue to satisfy condition (*). This is because in the induction step, every new machine will only use state transformations that arise from the original machine, and these state transformations satisfy condition (*).  In particular, a non-flip-flop Mealy machine with more than one state will never arise, since such a machine would violate condition (*). Therefore, all machines in the decomposition will be flip-flops, as desired.
+
+\end{proof}
+% lax end
+
+
+\exerciseheader
+
+    \exer{\label{exer:simple-decomposition-example}
+    Consider the function which replaces all letters in the input string by the first input letter, as in 
+    \begin{align*}
+    a_1 \cdots a_n \mapsto a_1^n.
+    \end{align*}
+    Decompose this function into flip-flops.
+    }
+    {
+    The natural machine for this function is not a flip-flop. Its states are $A+1$, and they store the first input letter, with the extra state used before the first letter has been read. The state transformation of a letter $a$ maps the extra state to $a$ and leaves all other states unchanged, which is neither the identity nor a constant. The remedy is to first find out which position is the first one, using a separate machine.
+
+    In the first machine, the states are $\set{0,1}$, the initial state is $0$, and every letter has the constant state transformation with value $1$. The output is the state before the transition, and therefore the first position is labelled with $0$, while all remaining positions are labelled with $1$. This machine is a flip-flop and, as usual, we assume that it also copies the input letter to its output.
+
+    In the second machine, the states are $A+1$ as in the natural machine described above, but this time the state transformation of a letter depends on the label that was added by the first machine: a letter labelled $0$, i.e.~a first letter $a$, has the constant state transformation with value $a$, while a letter labelled $1$ has the identity state transformation. This machine is a flip-flop as well, and if its output is the state after the transition, then this output is the first letter of the input string in every position, as required.
+}
+
+    \exer{\label{exer:simple-decomposition-example-2}
+    Show that the function from the previous example cannot be decomposed into reversible machines only.}{
+    We use the same argument as for the delay function. We assume that the input alphabet has at least two letters, since otherwise the function is the identity, which is reversible. By Lemma~\ref{lem:reversible-composition}, a composition of reversible machines is again a reversible machine, and therefore it is enough to rule out a single reversible machine. Suppose that some reversible machine computes the function, and let $a$ and $b$ be two different input letters. The state transformation of $a$ is a permutation of a finite set, and hence it has finite order, i.e.~there is some $k \geq 1$ such that reading $a^k$ leads from the initial state back to the initial state. Consequently, the machine is in the initial state just before reading the last letter of both input strings
+    \begin{align*}
+    b \qquad \text{and} \qquad a^k b,
+    \end{align*}
+    and therefore it produces the same last output letter for both of them. This is a contradiction, since the function outputs $b$ for the first input string and $a$ for the second one.
+}
+
+
+    \exer{\label{exer:flip-flop-from-sequential-composition} Show that every flip-flop machine can be obtained as a sequential composition of two-state flip-flop machines.}{
+    In a flip-flop machine, the state after reading an input string is determined by the last letter which has a constant state transformation: the state is the value of that constant, or the initial state if there is no such letter. In particular, the state can be tracked one bit at a time.
+
+    Fix an injective encoding of the states as bit vectors
+    \begin{align*}
+    \text{enc} : Q \to \set{0,1}^k \qquad \text{where $k$ is logarithmic in the number of states,}
+    \end{align*}
+    and consider a composition of $k$ machines, where the $j$-th machine copies its input to the output, extending each position with one extra bit, namely the $j$-th bit of the encoding of the state that the original machine had \emph{before} reading this position. The $j$-th machine stores this bit in its state, and hence it has two states. It is a flip-flop machine, since a letter whose state transformation is the identity leaves the bit unchanged, while a letter whose state transformation is a constant sets the bit to the corresponding bit of that constant.
+
+    After all $k$ machines have been applied, each position is labelled by its original letter together with the state of the original machine before this position. This pair determines the output letter of the original machine, and therefore the construction is finished by a letter-to-letter homomorphism, i.e.~a Mealy machine with one state. (Such a machine can also be seen as a two-state flip-flop machine in which every letter has the identity state transformation, so that the second state is never visited.)
+}
+
+    \exer{\label{exer:delay-not-flip-flop-composition} Show that the delay function from Example~\ref{ex:delay} is not  a composition of reversible Mealy machines. }{
+    By Lemma~\ref{lem:reversible-composition}, a composition of reversible Mealy machines is again a reversible Mealy machine, and therefore it is enough to show that the delay function is not computed by a single reversible machine. Suppose that it is, and let $a$ be some input letter. The state transformation of $a$ is a permutation of a finite set, and hence it has finite order, i.e.~there is some $k \geq 1$ such that reading $a^k$ leads from the initial state back to the initial state. Consequently, the machine is in the initial state just before reading the last letter of both input strings
+    \begin{align*}
+    a \qquad \text{and} \qquad a^k a,
+    \end{align*}
+    and therefore it produces the same last output letter for both of them. This is not what the delay function does: its last output letter is the undefined letter for the first input string, and the letter $a$ for the second one.
+}
+    \exer{\label{exer:alternating-not-flip-flop-composition} Show that the function from Example~\ref{ex:alternating-a-b} is not  a composition of flip-flop Mealy machines.}{
+    By Theorem~\ref{thm:aperiodic-mealy}, the compositions of flip-flop machines are exactly the aperiodic functions, and hence it is enough to observe that this function is not aperiodic. Take $u$ and $w$ to be empty and $v = a$ in Definition~\ref{def:aperiodic-mealy}. The last letter of the output for the input string $a^n$ is $a$ or $b$, depending on the parity of $n$, and hence it does not stabilise for large $n$. This is the same argument as the one for the parity function in Example~\ref{ex:size-threshold-3}.
+}
+
+        \exer{\label{exer:invertible-mealy-is-reversible} Is every invertible Mealy machine, as defined in Exercise~\ref{exer:invertible}, necessarily reversible? The other way round?}{
+    Neither implication holds. The reason is that the two notions constrain different parts of the transition function: invertibility is about the output letters, while reversibility is about the target states.
+
+    For a machine that is invertible but not reversible, consider the machine over the alphabet $\set{a,b}$ which stores the previous input letter in its state, and whose output is: the current input letter, if the previous letter was $a$ or there was no previous letter; and the current input letter with $a$ and $b$ swapped otherwise. Every state transformation is a constant, and hence this is a flip-flop machine, which is not reversible, since a constant transformation on a state space with more than one state is not a permutation. It is invertible, because in each state the two outgoing transitions have different output letters, which is the criterion from the solution to Exercise~\ref{exer:invertible}.
+
+    For a machine that is reversible but not invertible, consider the machine with one state which sends every input letter to the same output letter. Its only state transformation is the identity, and hence it is reversible, but the function that it computes is not injective, and therefore it has no inverse.
+}
+
+    \exer{\label{ex:map-lifting-continuous} Show that if $f : A^* \to B^*$ is continuous, then the same is true for its map lifting.}{
+    Let $\Bb$ be an automaton which recognises a regular language over the output alphabet of the map lifting; we want to show that the inverse image of this language is regular. Consider an input string
+    \begin{align*}
+    w_1 \# \cdots \# w_n.
+    \end{align*}
+    Its image under the map lifting is accepted by $\Bb$ if and only if there are states $p_1,q_1$, $\ldots$, $p_n,q_n$ of $\Bb$ such that:
+    \begin{enumerate}
+        \item $p_1$ is initial and $q_n$ is accepting;
+        \item for every $i$, the automaton can go from $p_i$ to $q_i$ while reading $f(w_i)$;
+        \item for every $i<n$, the automaton can go from $q_i$ to $p_{i+1}$ while reading the separator.
+    \end{enumerate}
+    An automaton over the input alphabet can guess these states and check the three conditions. The first and third conditions speak about individual positions, and hence they are easily checked. The second condition is an inverse image, under $f$, of the language recognised by $\Bb$ with initial state $p_i$ and accepting state $q_i$; this inverse image is regular thanks to the continuity assumption on $f$. The same argument is used later in the book, see Lemma~\ref{lem:map-lifting-continuous}.
+}

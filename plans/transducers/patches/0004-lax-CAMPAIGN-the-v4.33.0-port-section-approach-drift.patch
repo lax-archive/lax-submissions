@@ -1,0 +1,67 @@
+From 6418a3c184cd8cd2b07c5822ae8d13d22d794535 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 06:47:59 +0000
+Subject: [PATCH 4/4] lax/CAMPAIGN: the v4.33.0 port section (approach, drift
+ classes, S0 and S1 edits)
+
+---
+ lax/CAMPAIGN.md | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+
+diff --git a/lax/CAMPAIGN.md b/lax/CAMPAIGN.md
+index ba0349b..7f38894 100644
+--- a/lax/CAMPAIGN.md
++++ b/lax/CAMPAIGN.md
+@@ -14,6 +14,49 @@ next session or subagent picks up. Keep this file short and current.
+ | lax-194892 | `polyregular-functions` | 21 | 15, all discharged; Source = 72 modules | **draft on the archive with content** (4bdfaae; the first submission hit the replay time cap, the identical retry passed) | none (S7 pins it) |
+ | lax-157538 | `transducers-book` | none (umbrella) | none | **draft on the archive** (7a3dd76): paper 179 pages, 210 marks resolved, pins all seven records; `backend=bibtex` (the archive's sandboxed `biber` cannot exec) and tikz externalization off around `tikzcd` (made the reflow's lualatex pass succeed) in the umbrella's `macros.sty`. Remaining warning: `paper · web-oracle`, the reflow stream diverges from the PDF text at similarity 0.9800 (< 0.98), first at the preface's "This book" read as "is book" — not the Th ligature (disabling ligatures under lualatex changed nothing, reverted) | registration bottom-up (Jan); the web-oracle warning needs laxreflow's own transcript (archive maintainers) |
+ 
++## v4.33.0 port (2026-09-14)
++
++The epoch moved to v4.33.0 (mathlib `db584cd6`) on 2026-09-13 and v4.30.0
++closed. The eight submissions are drafts, so the port is in place: same ids,
++same issues, same package names; every pin moved (manifest `leanVersion`
++and `mathlibVersion`, both `lean-toolchain` files, both lakefiles' mathlib
++`rev`, `tools/umbrella-pins.py`), the Lean fixed in the proof packages only,
++no statement changed, no concept file touched. Prepared without submit
++rights: resubmission is bottom-up with a repin at every step
++(`tools/repin.py`, then `tools/umbrella-pins.py` for the umbrella), as in
++"Cross-submission requires" of CLAUDE.md. Local loop: `lax doctor --env
++v4.33.0` once, then `python3 tools/local-overrides.py` and a direct `lake
++build` per package (concepts, then proofs).
++
++Drift classes met (Lean 4.33 / mathlib db584cd6): (i) tactic targets are
++checked for type-correctness at `implicit` transparency, so `simp`/`rw` bail
++on a term applying a `→.` (PFun) or passing an anonymous constructor at a
++`def`-wrapped type — term-level `.mp`/`.mpr`, explicit lemma arguments, or an
++ascription; (ii) a module-name component in Windows' reserved set (`Aux`,
++`Con`, `Nul`, …) is a hard error, no option disables it; (iii) `simp` no
++longer bridges `id` and `fun x => x` without `Function.id_def`.
++
++- S0 (`pcp-undecidability`, replay not run locally): `Source/Sim/Compile.lean:303`
++  `simp only [Part.bind_eq_bind, Part.mem_bind_iff] at hz; obtain …` →
++  `obtain ⟨w, hw, hzf⟩ := Part.mem_bind_iff.mp hz`; `:387` the goal-side
++  twin → `refine Part.mem_bind_iff.mpr ⟨vargs k u3, ?_, hz⟩`;
++  `Source/Sim/Rfind.lean:354` `show …; rw [Nat.rfind_dom]; exact` → `exact
++  Nat.rfind_dom.mpr ⟨…⟩` (the `rw` pattern no longer matches the goal's
++  `ℕ → Part Bool` lambda against `ℕ →. Bool`); `:389` `exact Part.bind_some
++  _ _` after a `simp` that no longer closes `Part.some x >>= ↑f = Part.some
++  (f x)`. The `Sym` alias and the `PCPRed` stub compile as they are.
++- S1 (`mealy-machines`): `Source/Common/Aux.lean` renamed
++  `Source/Common/Auxiliary.lean` (drift ii; importers `Lax765601Proofs.lean:3`,
++  `Source/PartA/Statements.lean:14`; `ported.txt` still lists the source
++  module `Common/Aux`, and `port.py` derives the ported name from it, so a
++  future `--dep Lax765601Proofs` would emit the old import — a rename map
++  in `port.py` is owed if Part A is ever re-ported);
++  `Source/PartA/StateTrans.lean:584` `simpa [h, Function.id_def]`;
++  `Source/PartA/Statements.lean:406,416-417` `derivMealy_trans` /
++  `Function.iterate_succ_apply'` given their arguments with the
++  `(⟨deriv f u, u, rfl⟩ : Derivs f)` ascription (drift i: `Derivs f` is a
++  `def`), `:414` `show deriv f u = _` before the `simp`.
++
+ ## Source edits (against the epoch mathlib)
+ 
+ - S0: `Source/PCP/TuringMachine.lean` — `Sym` aliased to the concept's type
+-- 
+2.43.0
+

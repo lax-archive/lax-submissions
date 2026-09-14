@@ -1,0 +1,9 @@
+Common/Aux
+Common/Basic
+PartA/FlipFlopClosure
+PartA/MapLift
+PartA/MealyBasic
+PartA/PrimeClosure
+PartA/StateTrans
+PartA/StateTransAperiodic
+PartA/Statements

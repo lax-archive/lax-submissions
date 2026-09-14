@@ -1,0 +1,79 @@
+specVersion: "1"
+id: lax-132576
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Transducers, Part B: Rational Functions"
+authors:
+  - name: Mikołaj Bojańczyk
+  - name: Aristotle (Harmonic)
+bibEntries:
+  - |
+    @book{Eilenberg1974,
+      author    = {Eilenberg, Samuel},
+      title     = {Automata, Languages, and Machines. Volume {A}},
+      publisher = {Academic Press},
+      year      = {1974}
+    }
+  - |
+    @article{Schutzenberger1961,
+      author  = {Sch{\"u}tzenberger, Marcel-Paul},
+      title   = {On the Definition of a Family of Automata},
+      journal = {Information and Control},
+      volume  = {4},
+      pages   = {245--270},
+      year    = {1961},
+      doi     = {10.1016/S0019-9958(61)80020-X}
+    }
+  - |
+    @article{Griffiths1968,
+      author  = {Griffiths, Timothy V.},
+      title   = {The Unsolvability of the Equivalence Problem for {$\Lambda$}-Free Nondeterministic Generalized Machines},
+      journal = {Journal of the ACM},
+      volume  = {15},
+      number  = {3},
+      pages   = {409--413},
+      year    = {1968},
+      doi     = {10.1145/321466.321473}
+    }
+  - |
+    @article{GinsburgRose1966,
+      author  = {Ginsburg, Seymour and Rose, Gene F.},
+      title   = {A Characterization of Machine Mappings},
+      journal = {Canadian Journal of Mathematics},
+      volume  = {18},
+      pages   = {381--388},
+      year    = {1966},
+      doi     = {10.4153/CJM-1966-040-3}
+    }
+  - |
+    @article{Choffrut1977,
+      author  = {Choffrut, Christian},
+      title   = {Une caract{\'e}risation des fonctions s{\'e}quentielles et des fonctions sous-s{\'e}quentielles en tant que relations rationnelles},
+      journal = {Theoretical Computer Science},
+      volume  = {5},
+      number  = {3},
+      pages   = {325--337},
+      year    = {1977},
+      doi     = {10.1016/0304-3975(77)90049-4}
+    }
+  - |
+    @article{ReutenauerSchutzenberger1991,
+      author  = {Reutenauer, Christophe and Sch{\"u}tzenberger, Marcel-Paul},
+      title   = {Minimization of Rational Word Functions},
+      journal = {SIAM Journal on Computing},
+      volume  = {20},
+      number  = {4},
+      pages   = {669--685},
+      year    = {1991},
+      doi     = {10.1137/0220042}
+    }
+  - |
+    @book{Bojanczyk-transducers,
+      author = {Boja{\'n}czyk, Miko{\l}aj},
+      title  = {Transducers},
+      note   = {Book in preparation; sources at \url{https://github.com/bojanczyk/transducer-book}},
+      year   = {2026}
+    }
+issue:
+  repositoryId: 1320232165
+  number: 75

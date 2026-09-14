@@ -1,0 +1,52 @@
+% lax begin lax-916827
+In this part, we move to the third step in the transducer ladder, namely the  regular functions. Probably the quickest way to define the regular functions is in terms of prime functions, so we begin with that. 
+
+\begin{myexample}[Map reverse and map duplicate]\label{ex:map-reverse-and-map-duplicate}
+    The map reverse function is obtained by applying the map lifting operation from Definition~\ref{def:map-lifting} to string reversal. Here is an example of its application:
+    \begin{align*}
+    123 \# 45 \# 6789 \quad \mapsto 321 \# 54 \# 9876.
+    \end{align*}
+    Similarly, we define the map duplicate function, by lifting string duplication $w \mapsto ww$. Here is an example of its application:
+    \begin{align*}
+    123 \# 45 \# 6789 \quad \mapsto 123123 \# 4545 \# 67896789.
+    \end{align*}
+    Formally speaking these are not two functions, but a family of functions, one for each alphabet (the input and output alphabets are the same in this case). Using Theorem~\ref{thm:machine-independent-rational-functions}, one can show that none of these functions is rational. 
+\end{myexample}
+
+In Example~\ref{ex:string-reversal-not-rational} we have shown that string reversal is not rational. It follows that map reverse is not rational either, since it can be used to implement string reversal by choosing an input string without separators. A similar argument can be made to show that neither duplicate nor map duplicate are rational. Therefore, we get a new step in the transducer ladder by adding these two functions, as we do in the following definition.
+
+% lax begin Lax916827.RegularFunctions
+\begin{definition}[Regular functions]\label{def:regular-functions}
+    A string-to-string function is called \emph{regular} if it can be obtained as a finite composition of functions, each of which is either:
+    \begin{enumerate}
+        \item a rational function;
+        \item one of the map reverse or map duplicate functions from Example~\ref{ex:map-reverse-and-map-duplicate}.
+    \end{enumerate}
+\end{definition}
+% lax end
+
+One could, of course, add just one of the two functions, or maybe even just duplicate and reverse without map. As we will see in this part, there is a good reason to consider the extension from the above definition. This is because the resulting class has an  abundance of equivalent models, including two-way automata with output, streaming string transducers, a transducer variant of monadic second-order logic, and a functional programming language based on combinators. These models will be introduced in the next few chapters. 
+
+
+
+% exercises about rational functions
+\exerciseheader
+
+\exer{\label{exer:regular-compression} Show that regular functions are compatible with compression, as defined in~\cref{exer:rational-compression}.
+}  {
+Functions compatible with compression are clearly closed under composition, and contain all rational functions by \cref{exer:rational-compression}. It remains to show that both map reverse and map duplicate are compatible with compression.  It is easy to see that both reverse and duplicate (without map) are compatible with compression, and thus it remains to show the following claim. 
+\begin{claim}\label{claim:map-compression}
+   Functions compatible with compression are closed under map lifting.
+\end{claim}
+\begin{proof}
+    The idea is that we can always improve a compression in polynomial time so that it is consistent with the separators in the following sense. Apart from the starting nonterminal, there are two kinds of nonterminals, called external and internal. Internal nonterminals generate strings without separators. For an external nonterminal, the rules must be of the form 
+    \begin{align*}
+    X \to \myunderbrace{YZ}{both are external}\qquad \text{or} \qquad  X \to \#\myunderbrace{Y}{internal}
+    \end{align*}
+    The initial nonterminal has a rule of the form $S \to XY$ where $X$ is internal and $Y$ is external. The idea is that the internal nonterminals generate the blocks, and the external nonterminals generate sequences of blocks. 
+
+    One can show without much difficulty that any grammar compression can be transformed into this form in polynomial time. The transformation is done by splitting the rules of the grammar at the separators, and introducing new nonterminals for the parts that are split off. After transforming into the form, we can apply the assumption on the original function to the blocks, which are the nonterminals $Y$ in the rules $X \to \#Y$.
+\end{proof}
+}
+% lax end
+

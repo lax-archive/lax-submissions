@@ -1,0 +1,62 @@
+name = "Lax157538"
+defaultTargets = ["Lax157538"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+
+# Undecidability of the Post correspondence problem (lax-251941)
+[[require]]
+name = "Lax251941"
+git = "https://github.com/bojanczyk/transducer-book"
+rev = "9680c6e19881cd2003af818af67ed92d9597f52e"
+subDir = "lax/pcp-undecidability/concepts"
+
+# Part A: Mealy machines (lax-765601)
+[[require]]
+name = "Lax765601"
+git = "https://github.com/bojanczyk/transducer-book"
+rev = "cf8ade7b9a07bf575705db4ddc28bd90b2c6cb74"
+subDir = "lax/mealy-machines/concepts"
+
+# Part B: rational functions (lax-132576)
+[[require]]
+name = "Lax132576"
+git = "https://github.com/bojanczyk/transducer-book"
+rev = "972ebefba92c54889997d65db9028aee76522813"
+subDir = "lax/rational-functions/concepts"
+
+# Part C §1–3: regular functions (lax-916827)
+[[require]]
+name = "Lax916827"
+git = "https://github.com/bojanczyk/transducer-book"
+rev = "2fb96b21ff6f644e216d6c933869a6b19d87af3b"
+subDir = "lax/regular-functions/concepts"
+
+# Part C §4: MSO transductions (lax-314295)
+[[require]]
+name = "Lax314295"
+git = "https://github.com/bojanczyk/transducer-book"
+rev = "8b8f8c62ecc4868f7004615a209bae7d46d78d3d"
+subDir = "lax/mso-transductions/concepts"
+
+# Part C §5: regular combinators (lax-709149)
+[[require]]
+name = "Lax709149"
+git = "https://github.com/bojanczyk/transducer-book"
+rev = "86f2df5c5c7a60b2f19cd47442310ab27cd92811"
+subDir = "lax/regular-combinators/concepts"
+
+# Part D: polyregular functions (lax-194892)
+[[require]]
+name = "Lax194892"
+git = "https://github.com/bojanczyk/transducer-book"
+rev = "4bdfaae88ff9a670e7cc1319c283a4be3227aede"
+subDir = "lax/polyregular-functions/concepts"
+
+[[lean_lib]]
+name = "Lax157538"

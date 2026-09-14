@@ -1,0 +1,38 @@
+specVersion: "1"
+id: lax-251941
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Undecidability of the Post Correspondence Problem"
+authors:
+  - name: Mikołaj Bojańczyk
+  - name: Aristotle (Harmonic)
+bibEntries:
+  - |
+    @book{Sipser2013,
+      author    = {Sipser, Michael},
+      title     = {Introduction to the Theory of Computation},
+      edition   = {3rd},
+      publisher = {Cengage Learning},
+      year      = {2013}
+    }
+  - |
+    @article{Post1946,
+      author  = {Post, Emil L.},
+      title   = {A Variant of a Recursively Unsolvable Problem},
+      journal = {Bulletin of the American Mathematical Society},
+      volume  = {52},
+      number  = {4},
+      pages   = {264--268},
+      year    = {1946},
+      doi     = {10.1090/S0002-9904-1946-08555-9}
+    }
+  - |
+    @book{Bojanczyk-transducers,
+      author = {Boja{\'n}czyk, Miko{\l}aj},
+      title  = {Transducers},
+      note   = {Book in preparation; sources at \url{https://github.com/bojanczyk/transducer-book}},
+      year   = {2026}
+    }
+issue:
+  repositoryId: 1320232165
+  number: 73

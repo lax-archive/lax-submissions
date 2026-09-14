@@ -1,0 +1,98 @@
+% lax begin lax-194892
+In this part, we move to the fourth and final (for this book) step in the transducer ladder, namely the  polyregular functions. All transducer classes that we have seen before had linear output size, and the purpose of the polyregular functions is to achieve polynomial output size. 
+
+As was the case for the regular functions, probably the quickest way to define the polyregular functions is in terms of prime functions, so we begin with that. We will simply add one more prime function, which has quadratic output size. 
+
+% lax begin Lax194892.MarkedSquaring
+\begin{myexample}[Marked squaring]\label{ex:marked-squaring}
+    The marked squaring function is illustrated in the following example: 
+    \begin{align*}
+    1234 \quad \mapsto \quad \underline 1234 \ \underline{12} 34\  \underline{123} 4\  \underline{1234}.
+    \end{align*}
+    More formally, if the input  string has $n$ letters, then it is copied $n$ times, and in the $i$-th copy the  first $i$ letters are  underlined\footnote{The underlines might seem mysterious at first, but we will show in \cref{exer:polyregular-unmarked-squaring}  that they are needed.}. In our example, we have spaces in the output for readability, but the function does not produce them, i.e.~the output length is $n^2$. (Using a variant with spaces would not change the class of polyregular functions.) As was the case for map reverse and map duplicate, marked squaring is not one function, but a family of functions, with one function of type 
+    \begin{align*}
+    A^* \to (\myunderbrace{A+A}{two copies of the \\ input alphabet, one with \\ underlines and one without})^*
+    \end{align*}
+    for each input alphabet $A$.
+\end{myexample}
+% lax end
+
+
+% lax begin Lax194892.PolyregularFunctions
+\begin{definition}
+    [Polyregular functions]\label{def:polyregular-functions}
+    A string-to-string function is  \emph{polyregular} if it can be obtained as a finite composition of functions, each of which is either regular, or the marked squaring function from Example~\ref{ex:marked-squaring}. In other words: 
+    \begin{align*}
+    \text{polyregular} \quad \eqdef \quad \text{(regular $\cup$ marked squaring)}^*.
+    \end{align*}
+\end{definition}
+% lax end
+
+Of course, the regular functions can be further decomposed into primes, using prime decompositions of regular functions, rational functions, and Mealy machines. The above definition is pleasingly short, but it does not adequately convey the expressive power and algorithmic strength of polyregular functions. To do that, we will present several characterisations of the polyregular functions in this part, using models coming from different fields, such as automata or programming languages.
+
+Before we do that, let us discuss our favourite three properties of transducer classes: continuity, closure under composition, and decidable equivalence. For closure under composition, there is nothing to do, since the class is defined in terms of composition. Decidable equivalence, regrettably, is not known and is a major open problem in this field. We are left with continuity.
+
+% lax begin Lax194892.PolyregularContinuity
+\begin{theorem}\label{thm:polyregular-functions-are-continuous}
+    Polyregular functions are continuous.
+\end{theorem}
+% lax end
+
+% lax begin Lax194892Proofs.Results.continuous_of_isPolyregular
+\begin{proof}
+    Since continuous functions are closed under composition, and regular functions are continuous by Theorem~\ref{thm:regular-functions-are-continuous-and-closed-under-composition}, it remains to show that marked squaring is continuous. Consider then a composition 
+    \begin{align}\label{eq:marked-squaring-composition}
+    A^* \xrightarrow{\text{marked squaring}} (A+A)^* \xrightarrow L \Bool
+    \end{align}
+    of marked squaring with a regular language $L$. We want to show that this composition, which corresponds to the inverse image of $L$ under marked squaring, is a regular language. Suppose that the language $L$ is recognised by a \dfa  $\Aa$ with states $Q$.     For a string $w  \in A^*$ and a position $i$ in this string, let us write
+    \begin{align*}
+    \delta_w^i : Q \to Q
+    \end{align*}
+    for the state transformation of the automaton $\Aa$ when reading the string that is obtained from $w$ by underlining the first $i$  input positions.  We will decompose the language in~\eqref{eq:marked-squaring-composition} into two steps, such that the first step is a rational function, and the second step is a regular language. Composing these two steps will give a regular language, by continuity of rational functions, and will hence prove that the language in~\eqref{eq:marked-squaring-composition} is regular. 
+    \begin{enumerate}
+        \item Suppose that the input is a string $w \in A^*$.  In the first step, we replace each input position $i$ by the state transformation $\delta_w^i$. The result is a string which has the same length as $w$, but is over the alphabet of state transformations $Q \to Q$. We will argue below that this first step is a rational function.
+
+        \item If we compose the state transformations in the output of the first step, then we get the state transformation of the automaton $\Aa$ on the result of applying marked squaring to $w$. Therefore, in the second step, we: (a) compose all the state transformations in the output of the first step; and then  (b) check if the resulting state transformation takes the initial state of $\Aa$ to an accepting state. The second step can be implemented by a \dfa, whose states are state transformations, and is hence a regular language. 
+    \end{enumerate}
+
+As we have explained, the composition of the above two steps gives the same language as the composition in~\eqref{eq:marked-squaring-composition}, and hence proves regularity of the latter language. 
+
+To conclude the proof, we will explain why the first step is a rational function. We will compute it using an unambiguous one-way transducer with output, in which the states are pairs $(\delta,\gamma)$ of state transformations. The invariant is going to be  that: (*) $\delta$ represents the underlined state transformation of the past, and $\gamma$ represents the non-underlined state transformation of the future. The transitions are of the form 
+        \begin{align*}
+        (\delta_1,\gamma_1) \xrightarrow {a / \delta_2 \cdot \gamma_2} (\delta_2, \gamma_2)
+        \end{align*}
+        such that the following conditions are satisfied:
+        \begin{align*}
+        \delta_2 = \delta_1 \cdot \myunderbrace{\delta_{\underline a}}{underlined state \\ transformation of $a \in A$} \qquad \text{and} \qquad  \gamma_1 = \myunderbrace{\delta_{a}}{non-underlined state \\ transformation of $a \in A$} \cdot \gamma_2.
+        \end{align*}
+        The initial states are those where $\delta$ is the identity transformation, and the accepting states are those where $\gamma$ is the identity transformation. This automaton has a unique accepting run on every input string, which satisfies the invariant (*) described above.
+\end{proof}
+% lax end
+     
+
+% exercises about rational functions
+\exerciseheader
+
+\exer{\label{exer:polyregular-marked-squaring-compression} Show that marked squaring is not   compatible with compression, as defined in~\cref{exer:rational-compression}.
+}{
+Suppose that the input to marked squaring is the string $a^N$ with $N = 2^n$, which has a grammar compression of size linear in $n$, obtained by repeated doubling. We will show that the output of marked squaring has no grammar compression of size subexponential in $n$. The crucial observation is that the distances between consecutive underlined letters in the output take exponentially many values, while a grammar can only produce a linear number of such distances.
+
+Indeed, the output of marked squaring on $a^N$ is the concatenation of the strings $\underline a^i a^{N-i}$, with $i$ ranging from $1$ to $N$. Between the last underlined letter of the $i$-th block and the first underlined letter of the next block there are exactly $N-i$ letters that are not underlined, and hence the distances between consecutive underlined letters take all the values $1,\ldots,N-1$. It remains to prove the following claim, in which $b$ plays the role of the underlined letter.
+\begin{claim}
+    Consider a grammar compression of a string $w \in \set{a,b}^*$. Then 
+    \begin{align*}
+    \setbuild{ i \in \set{0,1,\ldots}}{$w$ contains an infix of the form $b a^i b$}
+    \end{align*}
+    has size at most linear in the size of the grammar compression of $w$.
+\end{claim}
+\begin{proof}
+    Each rule in the grammar can add at most one new value of $i$. Indeed, consider a rule $X \to YZ$. Every infix of the form $ba^ib$ in the string generated by $X$ is either an infix of the string generated by $Y$, or of the string generated by $Z$, or it crosses the boundary between them. In the last case, its first letter is the last $b$ of the string generated by $Y$, and its last letter is the first $b$ of the string generated by $Z$, and therefore there is at most one such infix.
+\end{proof}
+}
+
+\exer{\label{exer:polyregular-unmarked-squaring} Suppose that we replace marked squaring with the (unmarked) squaring operation from \cref{exer:squaring-continuous}. Show that the resulting class of functions  is a strict subset of the polyregular functions.}
+ {
+(Unmarked) squaring is compatible with compression. Indeed, given a grammar compression of $w$, the length $|w|$ is computed in polynomial time, as a number with polynomially many bits, and a grammar for $w^{|w|}$ is obtained by adding $\Oo(\log |w|)$ rules that double the string, together with a bounded number of extra rules for the remaining copies, according to the binary representation of $|w|$. Therefore the resulting class of functions would be compatible with compression, while polyregular functions are not, by \cref{exer:polyregular-marked-squaring-compression}. The result would continue to hold if we added map lifting to the closure properties, while still keeping the squaring operation unmarked. This is because map lifting preserves compatibility with compression, as we have shown in the solution to \cref{exer:regular-compression}.
+}
+% lax end
+

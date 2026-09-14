@@ -1,0 +1,167 @@
+\section{The prime regular functions}
+\label{sec:prime-regular-functions}
+
+So far, we have defined the regular functions in terms of compositions of certain prime functions, namely the rational functions, map reverse and map duplicate. Before introducing new models for this class, in this chapter we establish the basic properties of the regular functions as defined. 
+
+\paragraph*{Continuity and composition.} Almost immediately from the definition, we recover two of our favourite properties for transducer classes.
+
+% lax begin Lax916827.RegularContinuity
+% lax begin Lax916827.RegularComposition
+\begin{theorem}\label{thm:regular-functions-are-continuous-and-closed-under-composition}
+    Regular functions are continuous and closed under composition.
+\end{theorem}
+% lax end
+% lax end
+
+% lax begin Lax916827Proofs.Results.continuous_of_isRegularFun
+\begin{proof}
+    Composition is built into the definition, so we only argue about continuity. Since continuous functions are closed under composition, and rational functions are continuous by Theorem~\ref{thm:continuity-rational-relations}, it remains to show that map reverse and map duplicate are continuous. We first show that reverse and duplicate (without map) are continuous, and then we extend this with the map combinator. 
+% lax begin Lax916827.ReversalContinuous
+% lax begin Lax916827.DuplicationContinuous
+\begin{lemma}\label{lem:reversal-duplication-continuous}
+    String reversal and string duplication are continuous.
+\end{lemma}
+% lax end
+% lax end
+
+% lax begin Lax916827Proofs.Results.continuous_reverse
+\begin{proof} This lemma is a classical exercise in automata theory
+    \footnote{\cite[Problems 30 and 35]{200problems}}. 
+    We need to show that for every regular language $L$, the inverse images 
+    \begin{align*}
+    \setbuild{ w \in A^*}{reverse$(w) \in L$}
+    \qquad 
+    \setbuild{ w \in A^*}{$ww \in L$}
+    \end{align*}
+    are regular. We assume that $L$ is given by a nondeterministic automaton. For string reversal, we modify the original automaton  by reversing all transitions and swapping initial and accepting states. For string duplication, the inverse image is 
+    \begin{align*}
+    \bigcup_{q} \setbuild{ w \in A^*}{
+        there is a run over $w$ from an initial state to $q$ and \\
+        there is a run over $w$ from $q$ to an accepting state
+    },
+    \end{align*}
+    which is easily seen to be a regular language.
+\end{proof}
+% lax end
+
+
+It remains to lift the above lemma via map. We will show that the map lifting of every continuous function, not just reverse and duplicate, is continuous.
+% lax begin Lax916827.MapLiftingContinuity
+    \begin{lemma}
+    \label{lem:map-lifting-continuous}
+    If a string-to-string function is continuous, then the same is true for  its map lifting.
+    \end{lemma}
+% lax end
+
+% lax begin Lax916827Proofs.Results.continuous_mapLift
+    \begin{proof}
+Consider the map lifting of some continuous  function $f$. To prove the lemma, we need to show how an automaton $\Bb$ over the output alphabet of the map lifting  is pulled back to an automaton $\Aa$ over the input alphabet.    Given an input string, 
+\begin{align*}
+w_1 \# \cdots \# w_n
+\end{align*}
+the automaton $\Aa$ 
+nondeterministically guesses states $p_1,q_1,\ldots,p_n,q_n$ of  the automaton  $\Bb$ and checks that the following conditions are all satisfied:
+\begin{enumerate}
+    \item the state $p_1$ is initial and the state $q_n$ is accepting;
+    \item for every $i\leq n$, the automaton $\Bb$ can go from $p_i$ to $q_i$ when reading $f(w_i)$;
+    \item for every $i < n$, the automaton $\Bb$ can go from $q_i$ to $p_{i+1}$ when reading $\#$.
+\end{enumerate}
+The first and third conditions can easily be checked by an automaton. 
+The second condition can also  be checked by an automaton thanks to continuity of $f$, since it corresponds to an inverse image of a regular language. 
+    \end{proof}
+% lax end
+
+\end{proof}
+% lax end
+
+\paragraph*{Equivalence.} We can also show that equivalence is decidable for regular functions.
+% lax begin Lax916827.RegularEquivalenceDecidable
+% lax begin Lax916827.TwoWayCodes
+\begin{theorem}\label{thm:decidable-equivalence-regular}
+    Equivalence is decidable for regular functions.
+\end{theorem}
+% lax end
+% lax end
+
+% lax begin Lax916827Proofs.Results.decidable_twoWayCodeRel_eq
+\begin{proof}
+    We use the same approach as in the equivalence algorithm for rational functions in Theorem~\ref{thm:equivalence-rational-functions}, which is a reduction to equivalence for weighted automata. As in the case of rational functions, it is enough to show that if we post-compose a regular function $f$ with a weighted automaton $g$ over the field of rationals
+    \begin{align*}
+    A^* \xrightarrow f B^* \xrightarrow g \Rat,
+    \end{align*}
+    then the resulting function  is also a weighted automaton, and can be computed. By choosing the weighted automaton $g$ to be injective, we can faithfully represent the regular function $f$ as a weighted automaton, thus reducing the equivalence problem for regular functions to the equivalence problem for weighted automata over a field.
+
+    Consider the class of functions which can be post-composed with weighted automata over a field, i.e.~
+    \begin{align*}
+    \setbuild{ A^* \xrightarrow f B^*}{if $ B^* \xrightarrow g \Rat$ is a weighted automaton, then so is $f \cdot g$.}
+    \end{align*}
+    We need to show that this class contains all regular functions. Since this class is easily seen to be closed under composition, and it contains all rational functions by Theorem~\ref{thm:characterisation-rational-functions-weighted-automata}, it is enough to show that it contains map reverse and map duplicate.
+
+
+    \begin{itemize}
+        \item \textbf{Map reverse.}
+        On each block between two separator symbols, the automaton for the post-composition $f \cdot g$ runs in reverse, and remembers the states at the beginning and end of the block.  This is implemented using triples of states, as in the following picture: 
+        \mypic{36}
+        (As we will see in the next chapter, this construction corresponds to a two-way automaton that computes the map reverse function.)
+        Assuming that the original weighted automaton $g$ had states $Q$, the new weighted automaton (for the post-composition $f \cdot g$) has states $Q^3$. We assume that the original automaton consumes at most one input letter in each transition, but $\varepsilon$-transitions are still allowed.  The transitions are defined by   
+        \begin{align*}
+            \myunderbrace
+            {      (r,q,s) \xrightarrow{a / x } (r,p,s) }{in the new automaton}
+            \qquad \iff \qquad 
+            \myunderbrace
+            {      p \xrightarrow{a / x } q }{in the original automaton}.
+        \end{align*}
+        for $a$ which is not the separator symbol $\#$, and by
+               \begin{align*}
+            \myunderbrace
+            {      (r,q,q) \xrightarrow{\# / x } (p,p,s) }{in the new automaton}
+            \qquad \iff \qquad 
+            \myunderbrace
+            {      r \xrightarrow{\# / x } s }{in the original automaton}.
+        \end{align*}
+        The initial states are those which have an initial state on the first coordinate, and the accepting states are those which have an accepting state on the third coordinate. Note that this weighted automaton will multiply the weights of the original run in a different order, but this is not an issue since multiplication in a field is commutative. More generally, this construction would work for any commutative semiring. For non-commutative semirings, the construction cannot work, since we have established in Theorem~\ref{thm:characterisation-rational-functions-weighted-automata} that only rational functions can be closed under post-composition with  weighted automata over arbitrary semirings, and map reverse is not rational.
+
+        \item \textbf{Map duplicate.}
+        The construction is similar to the one for map reverse, and illustrated in the following picture:
+        \mypic{37}
+        The details of the construction are left to the reader. Note that for a transition in the new automaton, its weight will be obtained by multiplying the weights of two transitions in the original automaton. 
+    \end{itemize}
+\end{proof}
+% lax end
+
+In the above proof, we showed that regular functions can be post-composed with weighted automata over the field of rationals, and the proof also extends to any commutative semiring. We conjecture that the converse also holds, thus giving a characterisation in the same spirit as Theorem~\ref{thm:characterisation-rational-functions-weighted-automata}.
+\begin{conjecture}\label{conj:regular-via-weighted-automata}
+    A string-to-string function $f : A^* \to B^*$ is regular if and only if it is closed under post-composition with weighted automata over all commutative semirings $\semiring$, i.e.
+    \begin{align*}
+    B^* \xrightarrow g \semiring \text{ is a weighted automaton} \qquad \implies \qquad A^* \xrightarrow{f \cdot g} \semiring \text{ is a weighted automaton}.
+    \end{align*}
+\end{conjecture}
+Note that continuity, in the sense of Definition~\ref{def:continuity}, is a special case of the post-composition closure in the above conjecture, when one considers weighted automata over the Boolean semiring. It is also possible that the conjecture holds already for a fixed semiring, such as the field of rationals.
+\exerciseheader 
+
+\exer{\label{exer:two-letter-alphabet-suffices}In  Definition~\ref{def:regular-functions}, we use map reverse and map duplicate over arbitrary alphabets of the form $A + 1$. Show that the definition remains the same if we only consider $A$ with two letters.   }{
+    One inclusion is immediate, since a two-letter alphabet is a special case. For the converse inclusion, we show how map reverse and map duplicate for an arbitrary alphabet $A$ can be simulated using their two-letter counterparts, together with rational functions.
+
+    Fix an injective encoding of the letters of $A$ as bit strings of a common length
+    \begin{align*}
+    \text{code} : A \to \set{0,1}^k,
+    \end{align*}
+    and extend it to a homomorphism on $(A+1)^*$, by mapping the separator to itself. This homomorphism is rational. Decoding is rational as well: a transducer reads the input in blocks of $k$ letters, restarting at each separator, and outputs one letter of $A$ per complete block. (A rational function must be total, so we also need to say what the decoder does on badly formatted inputs; this is irrelevant, so we can say that an incomplete last block is ignored.)
+
+    For map duplicate, we have the decomposition
+    \begin{align*}
+    \text{map duplicate over $A$} \quad = \quad \text{code} \ \cdot \ \text{map duplicate over $\set{0,1}$} \ \cdot \ \text{decode},
+    \end{align*}
+    because duplicating the encoding of a string is the same as encoding its duplication.
+
+    For map reverse, the same decomposition almost works, the problem being that reversing an encoded string reverses not only the order of the blocks, but also the bits inside each block. The second effect is undone before it happens: instead of the homomorphism above, we use the homomorphism which maps each letter to the reverse of its code. With this modification, reversing the encoded string yields the encoding of the reversed string, and the decomposition works as for map duplicate.
+}
+
+
+
+
+\exer{\label{exer:not-semiring-continuous} Show that weighted automata over arbitrary semirings are not closed under pre-composition with regular functions.
+}
+{
+By \cref{thm:characterisation-rational-functions-weighted-automata}, a function is rational if and only if weighted automata are closed under pre-composition with it. Therefore, it is enough to show that there exists a regular function which is not rational. The string reverse function is regular, but not rational as we have shown in Example \ref{ex:string-reversal-not-rational}.
+}

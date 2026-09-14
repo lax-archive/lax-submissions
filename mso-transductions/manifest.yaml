@@ -1,0 +1,69 @@
+specVersion: "1"
+id: lax-314295
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Transducers, Part C: Regular Functions in Terms of Logic"
+authors:
+  - name: Mikołaj Bojańczyk
+  - name: Aristotle (Harmonic)
+bibEntries:
+  - |
+    @article{Buchi1960,
+      author  = {B{\"u}chi, J. Richard},
+      title   = {Weak Second-Order Arithmetic and Finite Automata},
+      journal = {Zeitschrift f{\"u}r mathematische Logik und Grundlagen der Mathematik},
+      volume  = {6},
+      pages   = {66--92},
+      year    = {1960},
+      doi     = {10.1002/malq.19600060105}
+    }
+  - |
+    @article{BloemEngelfriet2000,
+      author  = {Bloem, Roderick and Engelfriet, Joost},
+      title   = {A Comparison of Tree Transductions Defined by Monadic Second Order Logic and by Attribute Grammars},
+      journal = {Journal of Computer and System Sciences},
+      volume  = {61},
+      number  = {1},
+      pages   = {1--50},
+      year    = {2000},
+      doi     = {10.1006/jcss.1999.1684}
+    }
+  - |
+    @article{EngelfrietHoogeboom2001,
+      author  = {Engelfriet, Joost and Hoogeboom, Hendrik Jan},
+      title   = {{MSO} Definable String Transductions and Two-Way Finite-State Transducers},
+      journal = {ACM Transactions on Computational Logic},
+      volume  = {2},
+      number  = {2},
+      pages   = {216--254},
+      year    = {2001},
+      doi     = {10.1145/371316.371512}
+    }
+  - |
+    @article{Schutzenberger1965,
+      author  = {Sch{\"u}tzenberger, Marcel-Paul},
+      title   = {On Finite Monoids Having Only Trivial Subgroups},
+      journal = {Information and Control},
+      volume  = {8},
+      number  = {2},
+      pages   = {190--194},
+      year    = {1965},
+      doi     = {10.1016/S0019-9958(65)90108-7}
+    }
+  - |
+    @book{McNaughtonPapert1971,
+      author    = {McNaughton, Robert and Papert, Seymour},
+      title     = {Counter-Free Automata},
+      publisher = {MIT Press},
+      year      = {1971}
+    }
+  - |
+    @book{Bojanczyk-transducers,
+      author = {Boja{\'n}czyk, Miko{\l}aj},
+      title  = {Transducers},
+      note   = {Book in preparation; sources at \url{https://github.com/bojanczyk/transducer-book}},
+      year   = {2026}
+    }
+issue:
+  repositoryId: 1320232165
+  number: 77

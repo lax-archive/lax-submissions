@@ -1,0 +1,48 @@
+specVersion: "1"
+id: lax-194892
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Transducers, Part D: Polyregular Functions"
+authors:
+  - name: Mikołaj Bojańczyk
+  - name: Aristotle (Harmonic)
+bibEntries:
+  - |
+    @misc{Bojanczyk2018polyregular,
+      author        = {Boja{\'n}czyk, Miko{\l}aj},
+      title         = {Polyregular Functions},
+      year          = {2018},
+      eprint        = {1810.08760},
+      archivePrefix = {arXiv}
+    }
+  - |
+    @article{MiloSuciuVianu2003,
+      author  = {Milo, Tova and Suciu, Dan and Vianu, Victor},
+      title   = {Typechecking for {XML} Transformers},
+      journal = {Journal of Computer and System Sciences},
+      volume  = {66},
+      number  = {1},
+      pages   = {66--97},
+      year    = {2003},
+      doi     = {10.1016/S0022-0000(02)00030-2}
+    }
+  - |
+    @article{EngelfrietManeth2002,
+      author  = {Engelfriet, Joost and Maneth, Sebastian},
+      title   = {Two-Way Finite State Transducers with Nested Pebbles},
+      journal = {Mathematical Foundations of Computer Science (MFCS 2002), Lecture Notes in Computer Science},
+      volume  = {2420},
+      pages   = {234--244},
+      year    = {2002},
+      doi     = {10.1007/3-540-45687-2_19}
+    }
+  - |
+    @book{Bojanczyk-transducers,
+      author = {Boja{\'n}czyk, Miko{\l}aj},
+      title  = {Transducers},
+      note   = {Book in preparation; sources at \url{https://github.com/bojanczyk/transducer-book}},
+      year   = {2026}
+    }
+issue:
+  repositoryId: 1320232165
+  number: 79

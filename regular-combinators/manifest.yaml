@@ -1,0 +1,28 @@
+specVersion: "1"
+id: lax-709149
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Transducers, Part C: Regular Functions in Terms of Combinators"
+authors:
+  - name: Mikołaj Bojańczyk
+  - name: Aristotle (Harmonic)
+bibEntries:
+  - |
+    @inproceedings{BojanczykDaviaudKrishna2018,
+      author    = {Boja{\'n}czyk, Miko{\l}aj and Daviaud, Laure and Krishna, Shankara Narayanan},
+      title     = {Regular and First-Order List Functions},
+      booktitle = {Proceedings of the 33rd Annual ACM/IEEE Symposium on Logic in Computer Science (LICS 2018)},
+      pages     = {125--134},
+      year      = {2018},
+      doi       = {10.1145/3209108.3209163}
+    }
+  - |
+    @book{Bojanczyk-transducers,
+      author = {Boja{\'n}czyk, Miko{\l}aj},
+      title  = {Transducers},
+      note   = {Book in preparation; sources at \url{https://github.com/bojanczyk/transducer-book}},
+      year   = {2026}
+    }
+issue:
+  repositoryId: 1320232165
+  number: 78

@@ -1,0 +1,350 @@
+\section{Streaming string transducers}
+\label{sec:sst}
+So far we have proved that the regular functions are exactly those which can be computed by two-way transducers. In this section, we describe a one-way model for the regular functions, which is called \emph{streaming string transducers} (\sst's).  The general idea is that the transducer processes the input string in a single left-to-right pass, and uses registers to store intermediate results, which are strings over the output alphabet. Before giving a formal definition of the model, we give some examples to illustrate the main ideas behind it.
+
+\begin{myexample}[Reverse]
+    \label{example:reverse-function-sst}
+    Consider the reverse function 
+    \begin{align*}
+    \set{a,b}^* 
+    \xrightarrow {\text{reverse}}
+    \set{a,b}^*.
+    \end{align*}
+    To compute this function, we use a streaming string transducer that has one register $X$ and one state $q$. This register starts with the empty string, and input letters are prepended to its content, with transitions of the form
+    \begin{align*}
+      \myunderbrace{q
+        \xrightarrow {a \mid X \mapsto aX}
+        q}{when reading input $a$, the state $q$ is not changed \\ and the register $X$ is updated by prepending $a$} \qquad
+        q   
+        \xrightarrow {b \mid X \mapsto bX}
+        q.
+    \end{align*}
+    After reading the whole input, the content of the register $X$ is the reverse of the input, and this is also the output of the transducer.
+\end{myexample}
+
+\begin{myexample}
+    [Map reverse] 
+    \label{example:map-reverse-function-sst}
+    Consider the map reverse function
+    \begin{align*}
+    \set{a,b,\#}^* 
+    \xrightarrow {\text{map reverse}}
+    \set{a,b,\#}^*.
+    \end{align*}
+    For this function, we also use one state $q$, but this time we have two registers. One register $X$ stores the reverse of the current block, and the other register $Y$ stores the output produced for the previous blocks. The transitions are as follows:
+\begin{align*}
+     \myunderbrace{
+         q
+        \xrightarrow {a \mid 
+        \begin{smallmatrix}
+            X \\ 
+            Y
+        \end{smallmatrix}
+        \mapsto 
+        \begin{smallmatrix}
+            aX \\ 
+            Y
+        \end{smallmatrix}}
+        q 
+     }
+     {upon reading input $a$, \\ letter $a$ is prepended to $X$ \\ and $Y$ is left unchanged}\qquad \qquad 
+     \myunderbrace{
+         q
+        \xrightarrow {b \mid 
+        \begin{smallmatrix}
+            X \\ 
+            Y
+        \end{smallmatrix}
+        \mapsto 
+        \begin{smallmatrix}
+            bX \\ 
+            Y
+        \end{smallmatrix}}
+        q 
+     }
+     {upon reading input $b$, \\ letter $b$ is prepended to $X$ \\ and $Y$ is left unchanged}
+        \qquad \qquad
+        \myunderbrace{
+            q           \xrightarrow {\# \mid 
+        \begin{smallmatrix}            X \\ 
+            Y
+        \end{smallmatrix}        \mapsto 
+        \begin{smallmatrix}            \varepsilon \\ 
+            YX\#
+        \end{smallmatrix}}
+        q
+     }
+     {upon reading input $\#$, \\ register $X$ is cleared \\ and its content is appended to $Y$}.
+    \end{align*}
+    After reading the whole input, the output is obtained as the concatenation $YX$.  
+\end{myexample}
+
+\begin{myexample}[Iterated duplication]
+    Using a register update of the form $X \mapsto XX$, we could implement a function with exponential output size. This will be forbidden in our model, by requiring that the register updates are copyless, which means intuitively that each register from the old valuation can be used at most once in the new valuation. 
+\end{myexample}
+
+\begin{myexample}
+    [Map duplicate]
+    \label{example:map-duplicate-function-sst}
+    As we have explained in the previous example, we cannot copy registers. Nevertheless, there is some bounded duplication that is possible. For example, if we want to compute the map duplicate function, we can simply have two registers $X_1$ and $X_2$ for the current block, which are updated independently. Then, the two registers are appended onto $Y$ upon reading the update
+\begin{align*}
+    \begin{smallmatrix}        X_1 \\
+        X_2 \\ 
+        Y
+    \end{smallmatrix}        \mapsto 
+    \begin{smallmatrix}        \varepsilon \\ 
+        \varepsilon \\
+        {YX_1X_2\#}.
+    \end{smallmatrix}
+\end{align*}
+\end{myexample}
+
+We now give a formal definition of the model of streaming string transducers. As explained in the above examples, the transducer model is based on updating registers that store strings over the output alphabet. Therefore, we begin by explaining in more detail how such register updates are formalised.
+
+\paragraph*{Registers and register updates.}
+Suppose that we have a set $\Xx$ of register names and an output alphabet $B$.  During its computation, the transducer will maintain a register valuation of type $\Xx \to B^*$, i.e.~the registers will store strings over the output alphabet. To update the register valuation, we will use register updates of the form 
+\begin{align*}
+ u : \Xx \to (\Xx + B)^*,
+\end{align*}
+which are \emph{copyless} in the following sense: each register name from $\Xx$ can appear in at most one string of the form $u(X)$, and if it appears, then it appears exactly once in that string. In other words, if we concatenate all the strings $u(Y)$ ranging over $Y \in \Xx$, then each register name from $\Xx$ appears at most once in the resulting string. A copyless register update can be applied to a register valuation, yielding a new register valuation. The copyless restriction ensures that for each register update $u$ there is some $k \in \Nat$ such that if the old register valuation had combined length $n$, then the new one after applying $u$ has combined length at most $n+k$. 
+
+\paragraph*{Transducer definition.} Having defined register updates, we can now give a formal definition of streaming string transducers. The general idea is that this is a deterministic finite automaton, which processes the input string in a single left-to-right pass, and which uses register updates to compute the output string.
+% lax begin Lax916827.StreamingStringTransducers
+\begin{definition}
+    [\sst]
+    \label{def:sst}
+    A streaming string transducer (\sst) consists of: 
+    \begin{itemize}
+        \item a finite input alphabet $A$ and a finite output alphabet $B$;
+        \item a finite set $Q$ of states, with an initial state $q_0 \in Q$;
+        \item a finite set $\Xx$ of register names;
+        \item a transition function 
+        \begin{align*}
+        \delta : Q \times A \to Q \times \text{(copyless register updates)},
+        \end{align*}
+        \item a final output function
+        \begin{align*}
+        F : Q \to (B + \Xx)^*.
+        \end{align*}
+    \end{itemize}
+\end{definition}
+% lax end
+
+
+
+In the final function, there is no copyless restriction. Nevertheless, we could impose such a restriction without changing the expressive power of the model, since the final function is applied once, and therefore any duplication could be treated by computing the appropriate registers in several independent copies.
+An \sst as in the above definition computes a function of type $A^* \to B^*$ which is defined as follows. After reading an input string $w \in A^*$, the transducer is in a configuration, which consists of a state $q \in Q$ and a register valuation $\eta : \Xx \to B^*$. In the initial configuration, the initial state is used, and all registers are empty. Upon reading an input letter, the transition function is applied to determine a new state and a register update which is applied to the current register valuation. After reading the whole input string, the output is obtained by applying the final output function to the  state at the end of the computation, and then substituting each register name for its contents in the final configuration.
+
+
+
+\subsection{Equivalence with regular functions}
+\label{sec:sst-equivalence-two-way}
+In this section we show that  the \sst model is equivalent to the ones previously described in this part of the book.
+% lax begin Lax916827.SSTIffRegular
+% lax begin Lax916827.SSTOfRegular
+% lax begin Lax916827.RegularOfSST
+\begin{theorem}[Alur and {\v{C}}ern{\'y}]
+    \label{theorem:sst-two-way-equivalence}
+    Streaming string transducers compute exactly the regular functions.
+\end{theorem}
+% lax end
+% lax end
+% lax end
+
+% lax begin Lax916827Proofs.Results.isSST_iff_isRegularFun
+\begin{proof} We begin with the easier implication of the theorem, which is that functions computed by \sst's are regular. The converse implication, that regular functions are computed by \sst's, is more involved, and relies on the decomposition results for the various classes of transducers that we have proved before.
+\paragraph*{\sst to regular.} Let us first show that every \sst computes a regular function. Since the regular functions are the same as two-way transducers by Theorem~\ref{thm:2dfa-decomposition-into-primes}, we will prove this by converting an \sst into an equivalent two-way transducer. A single register update of the \sst can be visualised as a forest (of depth 1), as in the following picture:
+\mypic{45}
+The fact that the picture above is a forest, i.e.~that the registers in the left column of the above picture have outdegree at most one, is a consequence of the copyless restriction on the register updates.
+If we compose all the register updates that are applied when reading an input string of length $n$, and then we add the final output update, then we get a tree of depth $n+1$, as explained in the following picture (the unreachable parts are erased from the tree):
+\mypic{46}
+We use the name \emph{register flow tree} for this tree. This tree can be computed by a rational function, under a suitable string representation, similar to the one for the configuration graph in Section~\ref{sec:2dfa-continuity}. Since two-way transducers are closed under pre-composition with rational functions by Corollary~\ref{cor:2dfa-closure-under-composition}, it remains to show that there is a two-way transducer which inputs a (string representation of) a  register flow tree, and outputs the corresponding output string. This is easy to see, since the output string is produced by traversing the register flow tree in a depth-first search, which can easily be implemented by a two-way transducer. 
+
+\paragraph*{Regular to \sst.} In this part of the proof, we leverage the decomposition results on the various transducer classes that we have proved before. By definition,  a regular function is a composition of prime functions, namely rational functions, map reverse, and map duplicate. We will show  that \sst's are closed under post-composition with these prime functions, i.e.
+\begin{align*}
+\sst \cdot \text{primes} \subseteq \sst.
+\end{align*}
+This will imply that \sst's are closed under post-composition with all regular functions, and hence \sst's contain all regular functions.  Among the prime functions we find the rational functions, and we will further decompose them using Theorem~\ref{thm:rational-primes} into: Mealy machines, right-to-left Mealy machines, homomorphisms, and  the end-of-string function $w \mapsto w\#$. We now show how to post-compose \sst's with these prime functions.
+
+\begin{itemize}
+    \item \textbf{Homomorphisms and end-of-string.} Consider a composition 
+    \[
+    \begin{tikzcd}
+    A^* \ar[r,"f","\text{\sst}"'] & B^* \ar[r,"g"] & C^*, 
+    \end{tikzcd}
+    \]
+    where $g$ is either a homomorphism or the end-of-string function. We want to show that the composition $f \cdot g$ is computed by an \sst. This is proved by a straightforward modification of the \sst for $f$. In the case of a homomorphism, we  apply the homomorphism when adding the letters to the registers, while in the case of  the end-of-string function, we simply add the letter $\#$ to the output in the final output function. 
+    \item \textbf{Map reverse.}  Let us now give an \sst for  a composition 
+    \[
+    \begin{tikzcd}
+    A^* \ar[r,"f","\text{\sst}"'] & (B+1)^* \ar[r,"\text{map rev}"] & (B+1)^*.
+    \end{tikzcd}
+    \] 
+To do this, we modify the \sst $f$ as follows. For a string stored in a register $X$ of this \sst, we will be interested in three parts, as illustrated in the following example:
+\begin{align*}
+\myoverbrace{abcd 
+}{
+    before first \\ separator
+}
+\myoverbrace{\#abbc\#abcdd\#abbcd\#abcca\#
+}{
+    from first separator  to last separator
+}
+\myoverbrace{aaabbddd}{
+    after last\\ separator
+}.
+\end{align*}
+There is an edge case where the middle part is empty, i.e.~there is no separator; in this case we assume that the first part is the whole string. If there is one separator only, then the middle part is $\#$. 
+
+In the new \sst computing the composition of $f$ with map reverse, each register $X$ of $f$ is replaced by three registers $X_1,X_2,X_3$ that correspond to these three parts. The invariant, which compares the values of registers $X_1,X_2,X_3$ in the new \sst with the value of register $X$ in the original \sst, is the following:
+\begin{align*}
+\myoverbrace{dcba 
+}{
+    $X_1$ stores first\\ part reversed
+}
+\qquad
+\myoverbrace{\#cbba\#ddcba\#dcbba\#accba\#
+}{
+    $X_2$ stores middle part with map reverse applied
+}
+\qquad 
+\myoverbrace{dddbbaaa}{
+    $X_3$ stores third\\ part reversed
+}.
+\end{align*}
+  We now describe how the register updates are modified in the new \sst. We only show the construction for atomic updates, which are:
+ \begin{align*}
+ \myoverbrace{X\mapsto  aX}{prepend a letter}
+ \qquad 
+ \myoverbrace{X\mapsto Xa}{append a letter}
+ \qquad 
+ \myoverbrace{X\mapsto YZ}{concatenation}.
+ \end{align*}
+
+ \begin{itemize}
+    \item \textbf{Prepending a letter.} If the original \sst does a prepend operation $X \mapsto  aX$ for a letter $a$ that is not the separator symbol, then the new \sst simulates this by adding the same letter to the left part in the opposite order, i.e.~$X_1 \mapsto  X_1a$. If the prepended letter is the separator symbol $\#$, then we need to move the left part into the middle part, which is implemented by the following update (updates are, as usual, simultaneous): 
+    \begin{align*}
+    X_1 \mapsto &  \varepsilon \\ 
+    X_2 \mapsto  & \# X_1 X_2.
+    \end{align*}
+    \item \textbf{Appending a letter.} The construction for appending letters is symmetric to the one for prepending, except that the third part is used  instead of the first one.
+    \item \textbf{Concatenation.} Suppose now that the original \sst does a concatenation update $X \mapsto  YZ$. There are several cases to consider depending on whether the middle part of $Y$ and/or $Z$ is empty or not. To manage this case distinction, the new \sst keeps in its state the information about which middle parts are nonempty. When both middle parts are nonempty, then the new \sst does the following updates: 
+\begin{align*}
+X_1 \mapsto & Y_1  \\
+X_2 \mapsto & Y_2 Z_1 Y_3 Z_2 \\
+X_3 \mapsto & Z_3.
+\end{align*}
+The remaining cases, when some middle parts are empty, are handled by similar updates, which are left to the reader. 
+ \end{itemize}
+ 
+ \item \textbf{Map duplicate.} The construction for map duplicate is similar to the previous one. This time each register of the original \sst is split into five registers instead of three, since we need an extra copy for each of the first and last parts.
+ \item \textbf{Mealy machines.} We are left with Mealy machines, and right-to-left Mealy machines. Since the construction is symmetric, we only do it for the normal, left-to-right Mealy machines. Consider a composition 
+\[
+\begin{tikzcd}
+A^* 
+\ar[r,"f","\text{\sst}"']
+&
+B^*
+\ar[r,"g","\text{Mealy}"']
+&
+C^*
+\end{tikzcd}
+\]
+of an \sst followed by a Mealy machine. Similarly to the previous cases, we will modify the \sst by integrating the actions of the Mealy machine into its register updates. We begin with an erroneous construction, which will help explain the underlying issue. For each state $q$ in the state space $Q$ of the Mealy machine, let $g_q$ be the Mealy machine obtained from $g$ by making $q$ the initial state. A natural idea is to create a new \sst $f'$, in which every register $X$ of $f$ is replaced by a family of registers $\set{X_q}_{q \in Q}$, subject to the following invariant: register $X_q$ in the new \sst stores $g_q$ applied to the string stored in $X$ by the original \sst. However, this construction is not compatible with the copyless restriction. Indeed, if we want to simulate a concatenation update $X \mapsto  YZ$ of the original \sst, then the corresponding family of updates would be 
+\begin{align*}
+ X_q \mapsto  Y_q Z_{q'},
+\end{align*}
+where $q'$ denotes the state of the Mealy machine after starting in $q$ and reading the string in $Y$. However, it could be the case that the map $q \mapsto q'$ is not injective, and thus we would need to use several copies of a register $Z_{q'}$. To solve this issue, we will use the Krohn-Rhodes decomposition theorem, to decompose the Mealy machine into reversible machines and flip-flops, and do the construction for these simpler machines. 
+\begin{itemize}
+    \item \textbf{Reversible Mealy machines.} For reversible machines, the map $q \mapsto q'$ is injective, and thus the above construction works without any modification.
+    \item \textbf{Flip-flop Mealy machines.} Consider now a flip-flop machine. In this case, we use a similar construction as for map reverse. For each register $X$ of the original \sst, we will care about two parts, depending on where the reset letters (those with a constant state transformation) are located, as explained in the following picture:
+\begin{align*}
+\myoverbrace{abbbababaaa\red c}{up to first reset \\ letter (in red)}
+\myoverbrace{abababba\red d abababaaaab \red c bbaabaaa \red c babbb}{remaining part}.
+\end{align*}
+In the edge case, where there is no reset letter in $X$, the first part is the whole string. For each register $X$ in the original \sst, the  new \sst will   have $|Q|+1$ registers: one register $X_{\text{right}}$ for the right part, and for each state $q$ of the Mealy machine, one register $X_q$  which stores the left part of $X$ transformed along $g_q$. It will also remember in its state: (a) the first constant letter in $X$; and (b) the last constant letter in $X$. A concatenation operation $X\mapsto  YZ$ in the original \sst is simulated by the following updates (with $q$ ranging over states of the Mealy machine) in the new \sst:
+\begin{align*}
+X_q & \mapsto  Y_q  \\
+X_{\text{right}} & \mapsto  Y_{\text{right}} Z_p Z_{\text{right}},
+\end{align*}
+where $p$ is the state of the Mealy machine after reading $Y$; the relevant state $p$ can be inferred from the information stored in the state of the new \sst. This is a copyless update, as required. The updates for prepending/appending letters are similar, and are left to the reader.
+\end{itemize}
+This completes the proof that \sst's are closed under post-composition with the Mealy machines, and more generally, all prime functions used in the regular functions. 
+\end{itemize}
+Having proved that \sst's are closed under post-composition with all regular functions, we conclude that \sst's contain all regular functions, and this completes the proof of Theorem~\ref{theorem:sst-two-way-equivalence}.
+\end{proof}
+% lax end
+
+
+
+% exercises about rational functions
+\exerciseheader
+
+\exer{\label{exer:sst-sorting} Write an \sst over alphabet $\set{a,b}$ that sorts the input string, i.e.~it outputs all the $a$'s first, followed by all the $b$'s.
+}{
+We use one state and two registers $X$ and $Y$, which store the letters $a$ and the letters $b$ that have been seen so far. The transitions are
+\begin{align*}
+q \xrightarrow{a \mid
+\begin{smallmatrix} X \\ Y \end{smallmatrix} \mapsto
+\begin{smallmatrix} Xa \\ Y \end{smallmatrix}} q
+\qquad \qquad
+q \xrightarrow{b \mid
+\begin{smallmatrix} X \\ Y \end{smallmatrix} \mapsto
+\begin{smallmatrix} X \\ Yb \end{smallmatrix}} q,
+\end{align*}
+and the final output function is $XY$. Both updates are copyless, since each register name is used once. After reading an input string, the register $X$ stores as many letters $a$ as the input has, and likewise for $Y$ and $b$, and therefore the output is the sorted input string.
+}
+
+\exer{\label{exer:sst-copyful-sst} Consider copyful \sst's, i.e.~ones where the copyless restriction is lifted. Show that they are continuous.} { 
+Consider a composition 
+\[
+\begin{tikzcd}
+A^* \xrightarrow {\text{copyful \sst}} B^* \xrightarrow{\text{regular language}} \Bool
+\end{tikzcd}
+\]
+For the regular language, we use a monoid homomorphism. We can now simulate the composition by modifying the  copyful \sst so that instead of storing a string in a register, one stores only  the corresponding element in the monoid. After this simulation, we get a deterministic finite automaton, thus witnessing regularity of the composition.
+ }
+
+
+ \exer{\label{exer:sst-copyful-sst-output-size} Show that copyful \sst's can have exponential size outputs, but not doubly exponential.
+}  {
+For the upper bound, observe that for each input letter, the combined length of the strings in the registers can be at most multiplied by some fixed constant $c \in \set{1,2,\ldots}$, namely the maximal number of times that a register name is used in an update. Hence the output size is $\Oo(c^n)$, which is exponential and not doubly exponential.
+
+The upper bound is attained. Consider the copyful \sst with one register $X$, which starts empty, and the transitions
+\begin{align*}
+X \mapsto XXa,
+\end{align*}
+with the final output function $X$. After reading $n$ letters, the register stores a string of length $2^n - 1$, and hence the function $a^n \mapsto a^{2^n-1}$ is computed by a copyful \sst.
+}
+
+  \exer{\label{exer:sst-copyful-sst-no-composition} Show that copyful \sst's are not closed under composition.} {
+By the previous exercise, the function $a^n \mapsto a^{2^n-1}$ is computed by a copyful \sst. The composition of this function with itself is
+\begin{align*}
+a^n \mapsto a^{2^{2^n-1}-1},
+\end{align*}
+which has doubly exponential output size, and hence it is not computed by a copyful \sst, again by the previous exercise.
+}
+
+  \exer{\label{exer:sst-polynomial-automaton} A polynomial automaton is an automaton with registers, like an \sst, but the registers hold rational numbers instead of strings. The updates need not be copyless, and they can use both addition and multiplication. A polynomial function computes a string-to-rational-number function. Show that $a^n \mapsto 2^n$ can be computed by a polynomial automaton. } { There is one register, which starts with $1$ and is doubled in each step. }
+
+    \exer{\label{exer:sst-polynomial-automaton-doubly-exponential}  Show that $a^n \mapsto 2^{2^n}$ can be computed by a polynomial automaton. } { There is one register, which starts with $2$ and is squared in each step. }
+
+
+\exer{\label{exer:copyful-sst-decidable} Assume that equivalence is decidable for polynomial automata\footnote{This assumption is true by \cite[Corollary 1]{benedikt2017}. }. Show that equivalence is decidable for copyful \sst's.} 
+{
+
+Essentially speaking, a polynomial automaton can simulate a copyful \sst by replacing its output with a number that represents it injectively.  Here are the details.
+Assume without loss of generality that the output alphabet is $\set{0,1}$. For a string over the output alphabet, we will be interested in two numbers: 
+\begin{align*}
+\alpha(w) = \text{number represented by $w$ in binary} \qquad \beta(w) = 2^{|w|}.
+\end{align*}
+For a copyful \sst, we replace each string register with two number registers that store the above two numbers. We can simulate concatenation polynomially as follows: 
+\begin{align*}
+\alpha(w_1 \cdot w_2) = \alpha(w_1) \cdot \beta(w_2) + \alpha(w_2) \qquad \beta(w_1 \cdot w_2) = \beta(w_1) \cdot \beta(w_2).
+\end{align*}
+Hence, the values of $\alpha$ and $\beta$ on the output string can be computed by a polynomial automaton. Finally, the output string can be replaced by 
+\begin{align*}
+\alpha(w) + 2 \cdot \beta(w),
+\end{align*}
+which is an injective function. Thus the problem of equivalence of copyful \sst's is reduced to the problem of equivalence of polynomial automata.
+}

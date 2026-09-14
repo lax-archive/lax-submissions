@@ -1,0 +1,489 @@
+\section{Two-way  transducers}
+\label{sec:2dfa}
+
+In this chapter, we define a transducer model for the regular functions, which is based on two-way automata, in which the head of the automaton can move in both directions. A configuration of the transducer consists of an input string, a state, and a head position, as in the following picture:
+\mypic{29}
+Note that the head points to a gap between positions, instead of a position. Usually, one defines two-way transducers (or Turing machines, which are a more powerful cousin) so that the head points to a position instead of a gap, but we choose the gap view so that it is more consistent with one-way automata. A configuration can be formally seen as an element of 
+\begin{align*}
+\myunderbrace{A^*}{input \\ before \\ the head}
+\times 
+\myunderbrace{Q}{state}
+\times 
+\myunderbrace{A^*}{input \\ after \\ the head}.\end{align*}
+The transducer starts in an initial configuration, where the state is the chosen initial state, and the head is to the left of the entire input string. Next, in each step, the transducer looks at: (a) the letter to the left of the head, (b) the current state, and (c) the letter to the right of the head. Based on this information, it can either produce an output string and halt, or it can produce an output string, change its state, and move the head left or right. Note that the letters in (a) and (c) might be undefined, since the head can be at the leftmost or rightmost position, and hence they can be seen as elements of $A+1$, where $1$ is a special symbol that stands for the undefined letter. The formal definition is given below.
+% lax begin Lax916827.TwoWayTransducers
+\begin{definition}\label{def:two-way-transducer}
+    A two-way  transducer consists of 
+    the following data:
+    \begin{itemize}
+        \item a finite input alphabet $A$;
+        \item a finite output alphabet $B$;
+        \item a finite set of states $Q$, with an initial state $q_0 \in Q$;
+        \item a transition function
+        \begin{align*}
+        \myunderbrace{(A+1)}{letter \\ left of \\  head} \times 
+        \myunderbrace{Q}{state} \times 
+        \myunderbrace{(A+1)}{letter \\ right of \\  head} 
+       \quad  \xrightarrow \delta  \quad 
+         \myunderbrace{B^*}{produce an \\ output string \\ and halt} 
+         \ \myoverbrace{+}{or} \   
+            \myunderbrace{(Q \times 
+            B^* \times 
+            \set{-1,1}).}{if the transducer does not halt, \\  then it chooses a new state, \\  produces some output, and  \\  moves the head  left or right.}
+        \end{align*}
+    \end{itemize}
+\end{definition}
+% lax end
+
+We now define the semantics of the transducer in more detail. The \emph{configuration graph} is a directed edge labelled  graph where vertices are 
+\begin{align*}
+V = \myunderbrace{(A^* \times Q \times A^*)}{configurations} + 
+\myunderbrace 1 {halt}
+\end{align*} 
+and the edges represent one step of computation, with  
+\begin{align*}
+c \xrightarrow w d
+\end{align*} 
+saying that  the transition applied in configuration $c$ leads to $d$ (which is defined in the natural way) and produces output $w$. By determinism, every vertex has at most one outgoing edge. (There might be no outgoing edge in case the transducer chooses to fall off the input, by moving left in the leftmost position or right in the rightmost position.)  The output for an input string $w \in A^*$ is obtained by taking the corresponding initial configuration $(\varepsilon, q_0, w)$, and reading the labels on the path from this configuration to the halting vertex. In particular, we require that this path exists, i.e.~the transducer does not loop or fall off the tape.
+
+\begin{myexample}\label{ex:map-duplicate-reverse-two-way}
+    Consider the map duplicate function from Example~\ref{ex:map-reverse-and-map-duplicate}. This function is computed by a two-way transducer that  has three states, and whose configuration graph (restricted to the input string) is shown in the following picture:
+    \mypic{27}
+    (The reader might recognise this picture from the proof of Theorem~\ref{thm:decidable-equivalence-regular}.)
+    A very similar transducer works for the map reverse function, except that the output is produced during the movement in the left direction.
+\end{myexample}
+
+\subsection{Continuity} 
+\label{sec:2dfa-continuity}
+This section shows that two-way transducers are continuous, i.e.~inverse images of regular languages are regular. Ultimately, we will show that two-way transducers are the same as the regular functions, and hence they must be  continuous by Theorem~\ref{thm:regular-functions-are-continuous-and-closed-under-composition}. However, the direct proof  of continuity is worth the effort, since it will introduce some useful techniques.
+% lax begin Lax916827.TwoWayContinuity
+\begin{theorem}[Rabin-Scott, Shepherdson]\label{thm:continuity-2dfas}
+    Every function computed by a two-way transducer is continuous.
+\end{theorem}
+% lax end
+
+% lax begin Lax916827Proofs.Results.continuous_of_isTwoWay
+\begin{proof}
+    We want to show that if $f$ is a two-way transducer and $L$ is a regular language, then their composition (which corresponds to an inverse image)
+    \begin{align}
+        \label{eq:composition-of-two-way-with-regular}
+        A^* \xrightarrow f B^* \xrightarrow L \set{\text{yes, no}}
+    \end{align}
+    is a regular language. If we take a \dfa that recognises the language $L$, then we can apply a straightforward product construction, yielding a two-way automaton (not transducer) which recognises the inverse image. Therefore, this theorem boils down to showing that two-way automata can only recognise regular languages\footnote{Turning a two-way automaton into a one-way automaton was one of the original motivations for introducing nondeterministic automata in \cite{RabinScott59}. The same problem was solved independently in~\cite{shepherdson1959reduction}, which applied a direct construction without nondeterminism. In Note 4 of Shepherdson's paper one can also see a mention of the transducer variant, and thus this is probably the first appearance of two-way transducers in the literature. }.
+    
+    Later on in this section, we will want to prove that two-way transducers are closed under composition, which is the extension of~\eqref{eq:composition-of-two-way-with-regular} in which the language $L$ is replaced by another two-way transducer. We try to phrase the present proof in a way which is amenable to that extension. The proof has two steps: (a) we first use a rational function to compute the configuration graph of $f$ on the input string $w \in A^*$; and then (b) we use the configuration graph to check membership of $f(w) \in L$.
+
+    \paragraph*{Computing the configuration graph.} For an input string, we will be interested in its configuration graph, which is the configuration graph of the transducer restricted to configurations that come from the input string. We have seen a picture of such a configuration graph in Example~\ref{ex:map-duplicate-reverse-two-way}. However, that picture was a bit misleading, since it only contained reachable configurations (except for isolated vertices). 
+    Here is a more illuminating picture, which shows a transducer that reverses the input string if the last letter is $a$, and otherwise keeps it unchanged:
+    \mypic{28}
+    A local inspection of the above configuration graph will not tell us which configurations are reachable. For this reason, we will be interested in the reachable part of the configuration graph, as in the following picture:
+    \mypic{31}
+    The reachable part is a single path, which goes from the initial configuration to a halting configuration. 
+    
+    We will show that the reachable part of the configuration graph can be computed by a rational function. In order to do this, we need to represent it as a string over a finite alphabet. The idea is to slice the graph into smaller graphs, one for each input letter, as in the following picture:
+    \mypic{32}
+    Formally speaking, the alphabet for the string representation, call it $C$, consists of bipartite  graphs, where the vertices are two copies of $Q$, edges are directed and labelled with output strings, each vertex has at most one outgoing edge, and this edge must go to the other copy of $Q$. This alphabet is finite, since we use only labels of edges that arise from transitions of the transducer. There is an edge case for the empty input string, in which the configuration graph looks like this: 
+    \mypic{33}
+    Therefore, the alphabet $C$ contains a special letter for this configuration graph. 
+% lax begin Lax916827.ConfigurationGraphRational
+% lax begin Lax916827.ConfigurationGraphs
+    \begin{lemma}\label{lem:compute-configuration-graph}
+        The function which maps an input string to the string representation of its reachable configuration graph is rational.
+    \end{lemma}
+% lax end
+% lax end
+
+% lax begin Lax916827Proofs.Results.isRationalFun_enc
+    \begin{proof}
+        The main observation is that configuration graphs form a regular language, i.e.~
+        \begin{align}
+            \label{eq:configuration-graphs-form-a-regular-language}
+             \setbuild{w \in C^*}{$w$ is a string representation of a reachable configuration graph}
+        \end{align}
+        is a regular language. To see this, we need to check that the letters are consistent with the transition function of the two-way transducer (which is a simple local consistency check) and that all arrows are reachable. For the latter property, about reachability of arrows, it is easier to consider the complement (since regular languages are closed under complementation). The complement can be checked by guessing a subset of arrows that is disconnected from the others. 
+
+        Once we know that the language~\eqref{eq:configuration-graphs-form-a-regular-language} is regular, the lemma follows. The function in the lemma is computed by an \nfa with output, which nondeterministically guesses the output, and then checks if it is correct using the language~\eqref{eq:configuration-graphs-form-a-regular-language}. There is a unique correct guess, and hence the function is rational.
+    \end{proof}
+% lax end
+
+    The following lemma shows that once we have computed the reachable configuration graph, we can check if the output string in this graph belongs to $L$.
+
+% lax begin Lax916827.ConfigurationGraphOutput
+    \begin{lemma}\label{lem:check-if-output-string-of-configuration-graph-belongs-to-L}
+        The following language is regular:
+        \begin{align*}
+        \setbuild{ w \in C^*}{$w$ is a string representation of a reachable configuration graph \\ and the corresponding output string belongs to $L$}
+        \end{align*}
+    \end{lemma}
+% lax end
+
+% lax begin Lax916827Proofs.Results.isRegular_encOutputLang
+    \begin{proof}
+        The automaton checks that the input is indeed a reachable configuration graph (which can be done as shown in the previous lemma), and then it guesses a labelling of the edges in the graph by transitions of an automaton for $L$, as in the following picture (with transitions in red):
+        \mypic{34}
+        Once the transitions have been guessed, the automaton checks if they represent an accepting run, which is a purely local property.
+    \end{proof}
+% lax end
+
+    By putting the above two lemmas together, we complete the proof, as explained in the following diagram: 
+    \[
+    \begin{tikzcd}[column sep=2cm]
+    A^* \ar[r,"{\scriptsize\shortstack[c]{\text{compute configuration }\\[-2pt]\text{graph using Lemma~\ref{lem:compute-configuration-graph}}}}"]
+    \ar[d,"\text{two-way transducer $f$}"'] & C^*
+    \ar[d,"{\scriptsize\shortstack[c]{\text{check if output string belongs}\\[-2pt]\text{ to \emph{L} using Lemma~\ref{lem:check-if-output-string-of-configuration-graph-belongs-to-L}}}}"] \\
+    B^* \ar[r, "L"] & \set{\text{yes, no}}
+    \end{tikzcd}
+    \]
+    The right-down part describes a regular language by continuity of rational functions, and hence the down-right path also describes a regular language, thus proving continuity of the two-way transducer $f$.
+\end{proof}
+% lax end
+
+
+\subsection{Closure under composition}
+We now prove that two-way transducers are closed under composition. This is a non-trivial result, because we cannot simply use a product construction, since the heads of the two transducers that are composed can move in different directions. 
+
+% lax begin Lax916827.TwoWayComposition
+\begin{theorem}[Chytil and J{\'a}kl]\label{thm:composition-of-two-way-transducers}
+    Functions computed by two-way transducers are closed under composition, i.e.~
+\begin{align*}\twodftmath \cdot \twodftmath \subseteq \twodftmath.    
+\end{align*}
+\end{theorem}
+% lax end
+
+% lax begin Lax916827Proofs.Results.isTwoWay_comp
+\begin{proof}
+    We will prove the theorem by gradually advancing up the transducer ladder. We will first show that two-way transducers are closed under pre-composition with Mealy machines, then we will extend this to pre-composition with rational functions, and finally we will show pre-composition with two-way transducers, as required by the theorem.
+
+% lax begin Lax916827.TwoWayMealyPrecomposition
+    \begin{lemma}\label{lem:2dfa-precomposition-with-mealy}
+        Functions computed by two-way transducers are closed under precomposition with Mealy machines, i.e.
+        \begin{align*}
+        \mealy \cdot \twodftmath 
+        \subseteq \twodftmath.   
+        \end{align*}
+    \end{lemma}
+% lax end
+
+% lax begin Lax916827Proofs.Results.isTwoWay_comp_isMealy
+    \begin{proof} 
+        A natural idea would be to use a product construction, in which the two-way transducer for the composition $f \cdot g$ keeps a pair of states as in the following picture:
+        \mypic{30}
+        If the two-way transducer wants to move to the right, then we can easily update both states, by using the transition functions in the two automata. However, if the two-way transducer wants to move to the left, then we have a problem: we do not know how to update the state of the Mealy machine, since there might be several candidates which go to state $q$ by reading the letter $a$.  One way to solve this problem was proposed by  Hopcroft and Ullman\footnote{This construction was introduced in  
+        \cite[Lemma 3]{hopcroftUllman1967}.
+        A description of the same construction can also be found in the lecture notes
+        \cite[Lemma 17.4]{bojanczyk_automata_2025}.
+        }, using a clever construction in which a transducer retraces its steps.  However, we will not need this construction, since we can leverage the Krohn-Rhodes Theorem, which says that every Mealy machine can be decomposed into prime Mealy machines. In light of this theorem, it is enough to show pre-composition with primes, i.e.~
+\begin{align*}\text{(Reversible Mealy)} \cdot \twodftmath 
+& \subseteq \twodftmath \\
+\text{(Flip-flop Mealy)} \cdot \twodftmath 
+& \subseteq \twodftmath.
+\end{align*}
+For the reversible Mealy machines, we can simply use the product construction, since the Mealy machine is deterministic in both directions. It remains to deal with the case of flip-flops. For flip-flops, we adapt the product construction as follows. If the two-way transducer wants to move right, the pair of states can be easily updated. If it wants to move to the left, there are two cases: (i) the letter to the left of the head does not change the state of the Mealy machine; or (ii) the letter to the left of the head resets the state of the Mealy machine to some fixed state. In case (i), there is no problem. Finally, in case (ii), we can execute a subroutine which keeps on moving to the left until it reaches another resetting letter, stores the corresponding state, and then returns to the right to the original resetting letter.
+    \end{proof}
+% lax end
+
+% lax begin Lax916827.TwoWayRationalPrecomposition
+    \begin{corollary}\label{cor:2dfa-closure-under-composition}
+        Functions computed by two-way transducers are closed under pre-composition with rational functions, i.e.~
+        \begin{align*}        \rational \cdot \twodftmath 
+        \subseteq \twodftmath.   
+        \end{align*}
+    \end{corollary}
+% lax end
+
+% lax begin Lax916827Proofs.Results.isTwoWay_comp_isRationalFun
+    \begin{proof}
+        As explained in the proof of Theorem~\ref{thm:rational-primes}, every rational function is a composition of: (a) Mealy machines, (b) a right-to-left variant of Mealy machines, (c) string homomorphisms, and (d) appending a separator. Pre-composition under (a) was shown in the previous lemma, and pre-composition under (b) can be shown by a symmetric argument. Pre-composition under (c) and (d) are easy constructions that are left to the reader. 
+    \end{proof}
+% lax end
+
+    We are now ready to finish the proof of the theorem, by showing that the composition 
+    \begin{align*}
+     A^* \xrightarrow f B^* \xrightarrow g C^*
+    \end{align*}
+    can also be computed by a two-way transducer. By Lemma~\ref{lem:compute-configuration-graph}, we can compute the configuration graph of $f$ using a rational function. Since two-way transducers are closed under pre-composition with rational functions by Corollary~\ref{cor:2dfa-closure-under-composition}, we can compute the configuration graph of $f$ using a two-way transducer. Finally, by Lemma~\ref{lem:check-if-output-string-of-configuration-graph-belongs-to-L}, it is enough to show that the output $g(f(w))$ can be computed by a two-way transducer which looks at the configuration graph of $f$ on $w$. Once the configuration graph is present, we can do this easily using a product construction, which is explained in the following picture:
+    \mypic{35}
+\end{proof}
+% lax end
+ 
+ 
+
+% lax begin Lax916827.TwoWayOfRegular
+\begin{corollary}\label{cor:2dfa-computes-all-regular-functions}
+    Every regular function  is computed by a two-way transducer
+\end{corollary}
+% lax end
+
+% lax begin Lax916827Proofs.Results.isTwoWay_of_isRegularFun
+\begin{proof}
+    Two-way transducers can compute all rational functions by Corollary~\ref{cor:2dfa-closure-under-composition}, and they can compute  map reverse and map duplicate by Example~\ref{ex:map-duplicate-reverse-two-way}. Finally, they are closed under composition thanks to Theorem~\ref{thm:composition-of-two-way-transducers}.
+\end{proof}
+% lax end
+
+
+
+Later in this chapter we will show the converse inclusion, which is that two-way transducers can be decomposed into the prime rational functions (map reverse, map duplicate, and rational functions).
+
+\subsection{Decidability of equivalence}
+\label{sec:decidability-equivalence-2dfa}
+
+In the previous chapter, we have shown that equivalence is decidable for regular functions, as defined by compositions of certain prime functions. We will show that two-way transducers are the same as regular functions, and hence the equivalence algorithm from the previous chapter will apply. Nevertheless, it is worth pointing out that the proof from the previous chapter can be adapted to give an equivalence algorithm that works directly on two-way transducers, without going through the prime decomposition. To see this, consider a composition 
+\begin{align*}
+A^* \xrightarrow f B^* \xrightarrow g \Rat
+\end{align*}
+of a two-way transducer followed by a weighted automaton. The composed function can be computed directly by a weighted automaton, in which each run describes a labelling of the configuration graph of $f$ by transitions of $g$, as in the following picture, in which states of the weighted automaton are represented using colours:
+\mypic{38}
+The weight of a transition in the new automaton, which corresponds to a column in the above picture, is the product of transition weights of the original weighted automaton $g$ along the column. For example, the second column in the above picture has weight $14 = 1 \times 2 \times 7$. It is helpful in the construction to assume that the weighted automaton $g$ does not use $\varepsilon$-transitions. Such transitions can be eliminated using the same technique as in Lemma~\ref{lemma:eliminate-epsilon-transitions}. The details are left to the reader. 
+
+
+\subsection{Decomposition into prime functions}
+\label{sec:decomposition-2dfa-into-primes}
+
+A consequence of the closure under composition for two-way transducers was that all regular functions are computed by two-way transducers. In this section, we show the converse, thus establishing:
+% lax begin Lax916827.TwoWayIffRegular
+% lax begin Lax916827.RegularOfTwoWay
+\begin{theorem}
+    \label{thm:2dfa-decomposition-into-primes}
+    Two-way transducers compute exactly the regular functions. 
+\end{theorem}
+% lax end
+% lax end
+
+% lax begin Lax916827Proofs.Results.isTwoWay_iff_isRegularFun
+\begin{proof}
+    The only part that we need to show is the left-to-right inclusion, i.e.~that every two-way transducer is regular, i.e.~it can be decomposed into prime functions. We begin by collecting some closure properties of the regular functions.
+% lax begin Lax916827.RegularMapLifting
+% lax begin Lax916827.RegularConcatenation
+% lax begin Lax916827.RegularConditional
+    \begin{lemma}
+        \label{lem:regular-closure-properties}
+        If $f,g : A^* \to B^*$ are regular functions, then so are: 
+        \begin{itemize}
+            \item their map liftings; and
+            \item their concatenation $w \mapsto f(w)\cdot g(w)$; and
+            \item the following conditional function
+            \begin{align*}
+            w \in A^* \quad \mapsto \quad
+            \begin{cases}
+                f(w) & \text{if $w \in L$}\\
+                g(w) & \text{otherwise.}
+            \end{cases}
+            \qquad \text{where $L \subseteq A^*$ is regular.}
+            \end{align*}
+        \end{itemize}
+    \end{lemma}
+% lax end
+% lax end
+% lax end
+
+% lax begin Lax916827Proofs.Results.isRegularFun_mapLift
+    \begin{proof}
+        Since map commutes with composition, as we have remarked in the proof of Lemma~\ref{lem:map-lifting-decomposition-mealy}, it is enough to show that the map liftings of the prime functions are regular. Rational functions are closed under map lifting, so we only need to check the map lifting of map reverse and map duplicate, i.e.~we have a double map lifting. In the double map lifting, there are two kinds of separators, which -- up to a rational rewriting -- can be represented using nested brackets (with two levels of nesting): 
+        \begin{align*}
+        [[123,45,6],[78,9]] \quad \xrightarrow{\map\  \map\  \text{rev}} \quad [[321,54,6],[87,9]]
+        \end{align*}
+        Once we see the double map lifting this way, it is clear that it is a regular function, since it can be implemented using the usual map lifting and a rational rearrangement of brackets.
+
+        Before dealing with the remaining two items in the lemma, about concatenation and conditionals, we introduce an auxiliary construction.
+    
+% lax begin Lax916827.RegularSum
+        \begin{claim}\label{claim:conditional}
+            Consider two regular functions 
+            \begin{align*}
+            f_1 : A_1^* \to B_1^* \quad f_2 : A_2^* \to B_2^*
+            \end{align*}
+            with disjoint input and output alphabets. The following function $f_1 + f_2$ is also regular:
+                    \begin{align*}
+        w \in (A_1 + A_2)^* 
+        \  \mapsto \ 
+        \begin{cases}
+            f_1(w) & \text{if $w$ uses only letters from $A_1$}\\
+            f_2(w) & \text{if $w$ uses only letters from $A_2$}\\
+            \bot & \text{otherwise, where $\bot$ is a string using both $B_1$ and $B_2$.}
+        \end{cases}
+        \end{align*}
+        \end{claim}
+% lax end
+
+% lax begin Lax916827Proofs.Results.exists_isRegularFun_sum
+        \begin{proof}
+            The construction in the claim is easily seen to be compatible with composition of functions. Therefore, it is enough to show it in the special case in which one of the functions is the identity function, and the other one is a prime function. When the prime function is rational, this is easy to see. When the prime function is map reverse or map duplicate, the argument is also straightforward and left to the reader.  (If the input is in the part that should be unchanged, then we can insert a separator before every letter so that it can be recovered after map duplicate or map reverse.)
+        \end{proof}
+% lax end
+
+        Using the above claim, we  implement concatenation of regular functions as follows:
+        \begin{align*}
+        w \quad \myunderbrace{\mapsto}{append $\#$}\quad  
+        w\# \quad \myunderbrace{\mapsto}{map duplicate \\ with $\#$ not being \\ a separator}  \quad   w\#w\# \quad  \myunderbrace{\mapsto}{use disjoint alphabet\\ for second copy \\ and remove extra $\#$} \quad   w\#\red{w} \quad \myunderbrace{\mapsto}{$\map(f+g)$ \\ with $\#$ being \\ a separator}  \quad   f(w)\#\red{g(w)}.
+        \end{align*}
+        Finally, a rational function can erase the separator and remove the colour information. A similar idea applies to the conditionals: we can first use a rational function to use an appropriate copy of the input alphabet (depending on membership in the condition language $L$), and then we can apply the function $f+g$.
+    \end{proof}
+% lax end
+
+    In the proof, we will be using snake graphs, which are pictorial descriptions of a run of a two-way transducer. Here is a picture of a snake graph, in which the colours of the arrows represent output letters (black represents the empty output):
+    \mypic{39}
+    Formally speaking,  a \emph{snake graph} with states $Q$, length $n$ and alphabet $B$ is a directed graph with edges labelled by $B+1$  that satisfies the following properties:
+    \begin{itemize}
+        \item each vertex consists of a row $q \in Q$ and a column $i \in \set{0,1,\ldots,n}$;
+        \item all edges in the graph are on a single directed path;
+        \item edges can only go between adjacent columns.
+    \end{itemize}
+ Similarly to configuration graphs in the proof of Theorem~\ref{thm:continuity-2dfas}, snake graphs can be represented as strings over a finite alphabet $C$, once the set of states is fixed.     Define the \emph{output} of a snake graph to be the concatenation of the labels on the edges. Using the output of snake graphs, every two-way transducer $f$ can be decomposed into two stages, as in the following diagram:  \[
+    \begin{tikzcd}[column sep=3cm]
+    A^* \ar[r,"\text{compute snake graph}"] &
+    C^* \ar[r,"\text{output of snake graph}"] & 
+    B^*
+    \end{tikzcd}
+    \]
+Since the first function is rational (and therefore also regular) by the same argument as in Lemma~\ref{lem:compute-configuration-graph}, it remains to prove that the second function is regular. 
+    The second  function  is partial, since the input might not represent a snake graph. To make it total, we assume that if a string in $C^*$ does not represent a snake graph, then its output is empty. To prove that the output of snake graph can be computed by a regular function, we use induction on  a parameter of snake graphs that we call the width: this is the maximal number of times that the snake graph visits a single column. Here is a picture:
+    \mypic{40}
+
+The maximal width of a snake graph is $|Q|$, and hence the following lemma will be sufficient to prove the theorem. 
+% lax begin Lax916827.SnakeLemma
+% lax begin Lax916827.SnakeGraphs
+\begin{lemma}\label{lem:output-of-snake-graph-is-regular}
+    Let $C$ be the alphabet used to represent snakes with state $Q$ and output alphabet $B$. For every $k \in \set{1,\ldots,|Q|}$, the following function is regular:
+    \begin{align*}
+    w \in C^* \quad \mapsto \quad 
+    \begin{cases}
+        \text{$\varepsilon$ if $w$ does not represent a snake graph of width $\le k$}\\
+        \text{otherwise, the output of the snake graph.}
+    \end{cases}
+    \end{align*}
+\end{lemma}
+% lax end
+% lax end
+
+% lax begin Lax916827Proofs.Results.isRegularFun_snakeOut
+\begin{proof}
+We begin by proving the induction step for a special case of a snake, in which the source and target are in the same column, as in the following picture:
+    \mypic{42}
+    A snake with this property is called a \emph{looping snake}. 
+    If the column with the source and target is visited at least three times then we can decompose the snake into a concatenation of a constant number of snakes in which the source and target are the only vertices in their column. This is because, as we will see in a moment, each of the factors in this concatenation can be computed by a rational function, and the concatenation itself  can be implemented by a regular function thanks to Lemma~\ref{lem:regular-closure-properties}.
+    We are left with the case where the source and target vertices of the looping snake are the only vertices in their column. Among the columns visited by the snake, consider the one that is the furthest away from the source, as in this picture:
+    \mypic{43}
+    In order to reach this furthest column for the first time, the snake cannot use its full width, since it needs to return. Therefore, if we partition the snake into two parts: before and after the first visit to the furthest column, then both parts have smaller width than the original snake. This partition can be computed by a rational function, the outputs for the parts can be computed by induction assumption, and the results can be combined using the concatenation construction in Lemma~\ref{lem:regular-closure-properties}. This completes the proof of the induction step in the case of a looping snake. 
+    
+
+    \paragraph*{General case.} Having dealt with the special case of  looping snakes, we now deal with the general case.   We can assume without loss of generality that the source column is before the target column. Indeed, using a regular language we can check if the source column is after the target column, and if it is, then we can reverse the snake, which does not change the output. (Formally speaking, when reversing a snake, we need to change the direction of the arrows in the letters that represent the snake.) Also, we need to use here the cases construction from Lemma~\ref{lem:regular-closure-properties} to check if the snake needs to be reversed.
+    
+    From now on, we assume that the source column is before the target column. This means that the snake generally progresses in the left-to-right direction, but it might make loops along the way. 
+    In the rest of this proof, we will decompose a snake into parts which are looping and parts which are progressing. The looping parts are defined as follows: for  a column $x$ that is visited by the snake, define its \emph{loop part} to be the part of the snake that starts in the first visit to $x$ and ends in the last visit to $x$.  The output of the loop part can be computed by a regular function, as we have explained above. To discuss the progressing part, we will be interested in special columns,
+    \begin{align*}
+    x_1 < \cdots < x_n,
+    \end{align*}
+    which are called \emph{record-breakers}. The first record-breaker $x_1$ is the source column. Assuming that the record-breaker $x_i$ has been defined, we define a new record-breaker  $x_{i+1}$ as follows. Consider  the rightmost column visited by the loop part of $x_i$, and then take the next column. (If the loop part of $x_i$ is empty, then we simply take the next column after $x_i$.) If the next column is visited by the snake, then it becomes the new record-breaker $x_{i+1}$, otherwise the sequence of record-breakers ends at $x_i$.  Here is a picture: 
+        \mypic{41}
+    For each record-breaker $x_i$, define its \emph{progress part} to be the part of the snake that starts in the last visit to $x_i$ and ends in the first visit to the next record-breaker $x_{i+1}$ (or the end of the snake if $i = n$). To compute the output of the progress part, we can use the induction assumption on smaller width, since every column visited by the progress part is also visited by the loop part, except for the last column which is visited only once. We now complete the proof of the induction step, which is done in several stages that are regular functions:
+        \begin{enumerate}
+            \item In the first stage, we first  mark the record-breakers, i.e.~we compute the string
+        \begin{align*}
+        w_0 \# w_1 \# \cdots \# w_n,
+        \end{align*}
+        where $w_i$ is the part of the input string between the record-breakers $x_i$ and $x_{i+1}$. This stage can be implemented by a rational function, since a nondeterministic automaton with output can guess the record-breakers, and then check that they satisfy the conditions in the definition.
+        \item         In the output of the first stage, each separator $\#$ represents a record-breaker. In the second stage, we compute for each separator the part of the input string that is around it, up to the nearest separator. This is represented by  the following string
+        \begin{align*}
+        (w_0 \# w_1)  (w_1 \# w_2) \cdots (w_{n-1} \# w_n).
+        \end{align*}
+        In the above string, the parentheses are part of the output.  As we will see later in the proof, the part $w_{i-1}\# w_i$ will contain both the loop and progress parts of the $i$-th record-breaker. This stage can be implemented by a regular function, which uses map duplicate to procure the two copies of each $w_i$, and then uses rational functions to arrange parentheses and remove the extra copies of $w_0$ and $w_n$.  
+        \item 
+        For each block $(w_{i-1}\# w_i)$ from the previous stage, we will need two copies, one for the loop and one for the progress. For this reason, we duplicate each block from the previous stage, as represented by the string 
+             \begin{align*}
+        \big((w_0 \# w_1) (w_0 \# w_1)\big)  \big((w_1 \# w_2) (w_1 \# w_2)\big) \cdots \big((w_{n-1} \# w_n) (w_{n-1} \# w_n)\big).
+        \end{align*}
+        \item We now show that  the loop and progress parts of the $i$-th separator are contained in the block $w_{i-1}\# w_i$. This will finish the proof, since the outputs of these parts can be computed (by induction assumption for the progress part, and by the previous argument for the loop part), and regular functions are closed under applying the map combinator thanks to Lemma~\ref{lem:regular-closure-properties}.  The loop part of the $i$-th record-breaker is contained in $w_{i-1} \# w_i$ because after visiting this record-breaker, the previous one is never visited. For the progress part, the argument is similar: the progress part never returns to its source (since otherwise such a return would be part of the corresponding loop) and it stops immediately upon visiting its target, which is the next record-breaker.
+        \end{enumerate}
+        This completes the proof of the induction step in the general case, and hence the proof of the lemma.
+\end{proof}
+% lax end
+
+\end{proof}
+% lax end
+
+
+% exercises about rational functions
+\exerciseheader
+
+
+\exer{\label{exer:2dfa-unary-output} Show that if the output alphabet is unary (one letter), then regular functions are exactly the same as rational functions.
+}{
+One inclusion is immediate, since rational functions are regular. For the other one, consider a two-way transducer, and recall from \cref{lem:compute-configuration-graph} that the function which maps an input string to the string representation of its reachable configuration graph is rational. In that representation, each input position carries one slice of the graph, and the slice determines the output strings of the transitions that are performed while the head is in that position; there are boundedly many of them, since the reachable configuration graph is a path that crosses each position at most once per state.
+
+Therefore, we can post-compose the rational function above with the letter-to-letter homomorphism which maps a slice to the concatenation of the output strings of its edges. This is again a rational function, and it produces the same letters as the two-way transducer, but ordered by input position rather than by the order in which the transducer produces them. Since the output alphabet has one letter, the two orders give the same string.
+} 
+
+\exer{\label{exer:2dfa-boolean} Consider  languages (not functions) recognised by two-way deterministic automata. Show that this class is closed under Boolean combinations: union, intersection and complement. Furthermore, all constructions are polynomial in the automaton size.
+}{
+As discussed in this book, a two-way automaton must eventually output ``yes'' or ``no''. This makes complementation trivial: just swap the outputs, without changing the number of states. For intersection: first run the first automaton, and if it outputs ``yes'', then return the head to the beginning of the input and run the second automaton, returning its output; otherwise output ``no''. Returning to the beginning of the input costs one extra state, which walks left until it falls off the input, and hence the number of states is the sum of the two, plus a constant. For union, the construction is the same, except that the second automaton is run when the first one outputs ``no''. (Alternatively, union is obtained from intersection and complementation, again without leaving the polynomial regime.)
+}
+
+\exer{\label{exer:2dfa-complexity} Consider  languages (not functions) recognised by two-way deterministic automata. Show that the shortest accepted string might be exponential in the automaton size.
+}{
+In \cref{exer:2dfa-boolean}, we showed that intersection can be achieved with a number of states that is the sum of the two automata. Therefore, one can write a deterministic two-way automaton which checks if the input length is divisible by each of the prime numbers $p_1,\ldots,p_n$, so that the number of states is proportional to the sum of the prime numbers. Checking divisibility by $p_i$ needs $p_i$ states in a single left-to-right pass. The shortest accepted string has length
+\begin{align*}
+p_1 \cdots p_n,
+\end{align*}
+which is exponential in $p_1 + \cdots + p_n$, and hence exponential in the number of states.
+}
+
+\exer{\label{exer:2dfa-loop-elimination} Consider a deterministic two-way transducer which is not required to terminate, i.e.~on some inputs it can loop forever. Show that the set of input strings where it terminates is a regular language.
+}{
+We use the representation  of the configuration graph from the proof of \cref{thm:continuity-2dfas}: an input string is described by the string over the alphabet $C$ in which each position carries the corresponding column of the configuration graph. As observed in the proof of \cref{lem:compute-configuration-graph}, the strings over $C$ that arise this way form a regular language, and the function which maps an input string to the representation of its configuration graph is rational.
+
+The transducer terminates on an input string if and only if the graph of that string admits a path from the initial configuration to the halting vertex. This is a regular property of the (string representation of the) graph: a nondeterministic automaton reads the columns from left to right, and guesses the path through them, remembering only the states in which the path crosses the current position, and whether the halting vertex has already been reached. Since rational functions are continuous, the inverse image of this regular language is a regular language of input strings.
+}
+
+\exer{\label{exer:2dfa-loop-elimination-sipser} Improve the solution to the previous exercise, so that the regular language is polynomial, in terms of a deterministic two-way automaton that recognises it. (Hint: use a depth-first search on the run graph, but with a special trick.)
+}  {
+Without loss of generality we assume that the transducer halts in a fixed configuration, where the head is at the left end of the input string and the state is a fixed final state.
+    Consider the configuration graph of the two-way transducer on some input string. This is a directed graph, in which every vertex has out-degree one or zero by determinism. We want to check if the unique initial configuration can reach the unique final configuration. If we look at the configurations that can reach the unique final configuration, then the corresponding part of the graph is a tree, since it does not contain cycles. This part of the graph can be explored by depth-first search, starting in the unique final configuration. If the search finds the initial configuration, one should accept, otherwise one should reject.
+
+    The trick is that this depth-first search is performed by a two-way automaton whose number of states is polynomial. The current vertex of the search is a configuration, and hence it is stored for free: its position is the position of the head, and its state is remembered in the state of the searching automaton. To move down in the tree, the automaton needs to enumerate the children of the current vertex, i.e.~the configurations which lead to it in one step; these are determined by a state and a direction, and hence there are boundedly many of them, and each one is at distance one from the current position. To move up in the tree, the automaton applies the transition function of the transducer, which is deterministic, and therefore it does not need a stack: the parent is computed from the child. The only extra information that has to be remembered is which child of the current vertex has been explored last, which is again bounded. Summing up, the state space of the searching automaton is the state space of the transducer times a bounded amount of bookkeeping.
+}
+
+
+\exer{\label{exer:regular-outpus-of-exactly-linear-size} Show that if a regular function has unbounded output size, then it has exactly linear output size in the following sense: the limit 
+\begin{align*}
+\lim_{n \to \infty} \frac{\text{maximal output length on inputs of length at most $n$}}{n}
+\end{align*}
+is defined, nonzero, and a rational number.  
+}    {The size of the output and regularity are not affected  once all letters in the output are replaced by a single letter $a$. Thus, the problem reduces to the case of unary output, in which case regular functions coincide with rational functions by \cref{exer:2dfa-unary-output}, and the exercise was solved for rational functions in \cref{exer:rational-outpus-of-exactly-linear-size}.
+}
+
+\exer{\label{exer:2nft} One can imagine two nondeterministic variants of a two-way transducer, in which more than one output string can be generated: 
+\begin{enumerate}
+    \item for a given configuration, there are several possible transitions, and the transition is chosen nondeterministically; or
+    \item the input string from $A^*$ is nondeterministically labelled by some auxilliary alphabet $C$, giving a new input string in $(A \times C)^*$, and then a deterministic two-way transducer is applied to this new input string.
+\end{enumerate}
+Show that these models are incomparable in expressive power.
+}{
+The first model is not contained in the second one, since the first model can have infinitely many output strings for a given input string, while the second one cannot. There is another rather silly reason why the second model is weaker, which is that the second model has to produce at least one output. However, this can be seen as mistake in the formalisation of the second model, which is rectified as follows: once the new input string is guessed, there is a regular language that describes which guesses are valid, and the transducer is only applied to valid guesses. This way, the second model can produce no output for a given input string, if all guesses are invalid.
+
+
+Let us now show that the second model is not contained in the first one. The feature that is present in the second model but not in the first model is that the guess made for an input position persists after repeated visits. To see this consider the relation
+\begin{align*}
+\setbuild{(w, vv)}{$|v| = |w|$},
+\end{align*}
+where the input alphabet is $\set{a}$  and the output alphabet is $\set{a,b}$. In other words, given an input $a^n$, the transducer guesses some string in $v \in \set{a,b}^n$ and writes it twice. This can be easily achieved by the second model.
+
+To see why it cannot be computed by the first model, consider a transducer of the first kind, and an input string $a^n$ where $n$ is large enough that $2^n$ is bigger than the number of configurations, which is the number of states times $n+1$. For each $v \in \set{a,b}^n$ there is an accepting run which outputs $vv$; consider the configuration in which this run has produced exactly the first half of its output, i.e.~exactly $n$ output letters. There are $2^n$ strings $v$ and only linearly many configurations, and therefore two different strings $v_1 \neq v_2$ give the same configuration $c$. But then we can cut and paste: follow the run for $v_1$ up to $c$, and then continue with the second half of the run for $v_2$. This is again an accepting run, and its output is $v_1 v_2$, which does not belong to the relation.
+}
+
+
+
+\exer{\label{exer:2nft-uniformise} 
+Consider the two models from the previous exercise. Show that both can be uniformised by deterministic two-way transducers: i.e.~if a binary relations is recognised by one of the two nondeterministic models and it is total (each input has at least one output), then it contains a function recognised by a deterministic two-way transducer. In particular, if  a relation that is computed by one of the two models, and it is a function, then it is computed by a deterministic two-way transducer.
+}{
+We begin with the first model. As in the proof of \cref{thm:continuity-2dfas}, a run of the transducer on an input string is presented by slicing its configuration graph, i.e.~by a string over the alphabet $C$ in which each input position carries the part of the run that crosses it. The pairs
+\begin{align*}
+(\text{input string},\ \text{slicing of an accepting run on it})
+\end{align*}
+form a rational relation, since being a slicing of an accepting run is a regular property, checked slice by slice as in \cref{lem:compute-configuration-graph}. If the relation computed by the transducer is total, then this rational relation is total as well, and hence, by \cref{lem:uniformisation}, it contains a rational function, which chooses one accepting run for each input string. Once the run has been chosen, its output is produced by a letter-to-letter homomorphism, as in \cref{exer:2dfa-unary-output}, except that this time the letters have to be produced in the order of the run and not in the order of the input positions; this is done by a two-way transducer which follows the chosen run. Since regular functions are closed under composition, and a rational function followed by a two-way transducer is regular, we get a deterministic two-way transducer, as required.
+
+For the second model, the argument is similar, and simpler. The pairs
+\begin{align*}
+(\text{input string},\ \text{a valid labelling of it by the auxiliary alphabet})
+\end{align*}
+form a rational relation, indeed a letter-to-letter one, because the valid labellings form a regular language. If the relation is total, then \cref{lem:uniformisation} gives a rational function which chooses one valid labelling for each input string, and the deterministic two-way transducer of the model is then applied to the result.
+}

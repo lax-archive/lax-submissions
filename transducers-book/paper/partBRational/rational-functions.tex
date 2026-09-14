@@ -1,0 +1,516 @@
+\section{Rational functions}
+\label{sec:rational-functions}
+
+After the brief detour into relations and nondeterminism, we return to the main focus of this book, which is about  functions and deterministic models. As we will see, this will allow us to work around the undecidability result from Theorem~\ref{thm:undecidable-equivalence-rational-relations}. We define rational functions semantically, as the functional fragment of the rational relations. 
+
+% lax begin Lax132576.RationalFunctions
+\begin{definition}
+    [Rational function]\label{def:rational-function} A rational function is the special case of a rational relation, in which each input string is related to exactly one output string.
+\end{definition}
+% lax end
+
+An advantage of the above definition is its simplicity, but a disadvantage is that the underlying automaton model is nondeterministic, and only happens to have unique outputs (possibly arising from different runs with the same output). 
+The disadvantage will be overcome in Section~\ref{sec:bimachines} below, where we introduce a deterministic model, called bimachines, which defines exactly the same class of functions.
+
+Rational functions are closed under composition and are continuous, since these properties are inherited from rational relations. As we will see in the next chapter, on weighted automata, rational functions have decidable equivalence.
+
+\subsection{Bimachines}
+\label{sec:bimachines}
+
+ A bimachine is based on two automata (called the prefix and suffix automata), which are deterministic, but which will be used in opposite directions: the prefix automaton will be used in a left-to-right way, but the suffix automaton will be used in a right-to-left way. For  each gap between positions in the input string, it produces a piece of the  output according to the following picture:
+\mypic{16}
+Here is a more formal definition.
+
+
+% lax begin Lax132576.Bimachines
+\begin{definition}
+    [Bimachine]
+    \label{def:bimachine} A bimachine consists of the following ingredients:
+    \begin{itemize}
+        \item input and output alphabets $A$ and $B$;
+        \item two deterministic automata with input alphabet $A$, which are called the \emph{prefix} and \emph{suffix} automata (the accepting states in these automata will be irrelevant, so they can be omitted);
+        \item an output function of type 
+        \begin{align*}
+        \text{(states of prefix automaton)} 
+        \times
+        \text{(states of suffix automaton)}
+        \to B^*
+        \end{align*}
+    \end{itemize}
+\end{definition}
+% lax end
+
+A bimachine computes a function of type $A^* \to B^*$, which is defined as follows. Suppose that the input string is $a_1 \cdots a_n$. For each $i \in \set{0,1,\ldots,n}$, we consider the partition of the input word as
+\begin{align*}
+\myunderbrace{a_1 \cdots a_{i}}{prefix}
+\quad 
+\myunderbrace{a_{i+1} \cdots a_n}{suffix}.
+\end{align*}
+We run the prefix automaton on the prefix, and the suffix automaton on the reverse\footnote{
+    Using the reverse of the suffix yields a pleasing symmetry in the execution of the bimachine, since both automata run in the direction of the gap. It  will also  be useful in the proof of Theorem~\ref{thm:bimachines}. However, running the suffix automaton in the forward direction would give the same class of functions, since the only role of the suffix automaton is to partition the suffixes into finitely many regular languages, and the reverse of a regular language is regular.
+} of the  suffix, yielding a pair of states. To this pair of states, we apply the output function, yielding a piece of the output string. The $n+1$ pieces obtained this way are concatenated, in increasing order of $i$, thus  yielding  the output string.
+
+We now show that bimachines compute exactly the rational functions. Along the way, we give another characterisation of the rational functions, which uses unambiguous nondeterministic automata with output, i.e.~nondeterministic automata that have exactly one accepting run for each input string.
+
+
+% lax begin Lax132576.RationalUnambiguousBimachine
+% lax begin Lax132576.UnambiguousOfRational
+% lax begin Lax132576.BimachineOfRational
+% lax begin Lax132576.RationalOfBimachine
+\begin{theorem}[Eilenberg]\label{thm:bimachines}
+    The following are equivalent for a string-to-string function:
+    \begin{enumerate}
+        \item it is a rational relation which happens to be functional;
+        \item it is computed by an unambiguous nondeterministic automaton with output;
+        \item it is computed by a bimachine.
+    \end{enumerate}
+\end{theorem}
+% lax end
+% lax end
+% lax end
+% lax end
+
+% lax begin Lax132576Proofs.Results.tfae_rational_unambiguous_bimachine
+\begin{proof}
+    We prove the implications in the order 3 $\Rightarrow$ 1 $\Rightarrow$ 2 $\Rightarrow$ 3.
+
+    \paragraph*{From bimachines to functional.}
+    We begin with the  easiest inclusion 
+    \begin{align*}
+    \text{bimachines} \quad \subseteq \quad \text{functional rational relations.}
+    \end{align*}
+    Consider some bimachine. The states of the corresponding nondeterministic automaton are pairs (states of prefix automaton, state of suffix automaton), plus one extra state that we will denote by $\dashv$. The essential idea is that the nondeterministic automaton guesses the runs of both the prefix and suffix automaton. More formally, we have transitions of the form 
+    \begin{align*}
+    (p,q) \xrightarrow{ a / w} (p',q'),
+    \end{align*}
+    where $a$ is an input letter,  $w$ is the output string produced by the pair $(p,q)$ and the following are transitions of the prefix and suffix automata:
+    \begin{align*}
+      \myunderbrace{p \xrightarrow a p'}{in prefix automaton} \qquad \qquad
+      \myunderbrace{q' \xleftarrow a q}{in suffix automaton}.
+    \end{align*}
+    Since we have used the output string for $(p,q)$ and $(p',q')$, the resulting automaton outputs for each input  letter the output  of the bimachine that corresponds to the gap on the left of the letter. This accounts for all gaps except the last one, which is where we use the extra state $\dashv$, for which we have transitions 
+    \begin{align*}
+    (p,q) \xrightarrow {\varepsilon/ w} \dashv,
+    \end{align*}
+    such that $w$ is the output on $(p,q)$ and $q$ is the initial state of the suffix automaton. The initial states in the automaton are pairs $(p,q)$ where $p$ is an initial state of the prefix automaton and $q$ is any state of the suffix automaton. There is only one final state, namely $\dashv$. It is easy to see that the resulting automaton computes the same function as the bimachine.
+
+    \paragraph*{From functional to unambiguous.}
+    We now prove the  inclusion
+    \begin{align*}
+    \text{functional rational relations} \quad \subseteq \quad \text{unambiguous rational relations.}
+    \end{align*}
+    
+            In the construction, and also later in this book,  it will be convenient to eliminate $\varepsilon$-transitions, i.e.~transitions with empty input. There are two caveats to eliminating $\varepsilon$-transitions, which is that they are  essential for two roles: (a) producing an output for the empty input string; and (b) producing infinitely many outputs for one input string.  To deal with issue (a), we will discuss the empty input separately. To deal with issue (b), we allow \emph{extended transitions}, where instead of an output string, a transition is labelled by a regular language of output strings. Subject to these two caveats, we can eliminate $\varepsilon$-transitions, as the following lemma shows.
+        
+% lax begin Lax132576.EpsilonEliminationExtended
+% lax begin Lax132576.EpsilonEliminationFinite
+% lax begin Lax132576.EpsilonFreeAutomata
+        \begin{lemma}[Elimination of $\varepsilon$-transitions]\label{lemma:eliminate-epsilon-transitions}
+            Every rational relation can be computed by an \nfa with output and extended transitions, where each accepting run has the following properties:
+            \begin{enumerate}
+                \item if the input string is nonempty, then each transition inputs exactly one letter;
+                \item if the input string is empty, then the run has exactly one transition.
+            \end{enumerate}
+            Furthermore, if the rational relation is such that every input string has finitely many outputs, then extended transitions are not needed.
+        \end{lemma}
+% lax end
+% lax end
+% lax end
+
+% lax begin Lax132576Proofs.Results.exists_extended_epsilonFree
+        \begin{proof}
+        Without loss of generality, we can assume that: (a) there is no state that is both initial and final; and (b) every  transition in the automaton  consumes zero or one input letters. Both of these assumptions can be achieved by using $\varepsilon$-transitions. Furthermore, we assume that (c) every state appears in at least one accepting run. 
+            
+        Having made the above assumptions on the original automaton, we can apply the usual construction for eliminating $\varepsilon$-transitions. We remove all transitions from the automaton, and replace them as follows. For each input letter $a$ and states $p$ and $q$, we create a transition of the form   
+            \begin{align*}
+            q \xrightarrow {a / L} p,
+            \end{align*}
+            where   $L$ is the set of outputs that can be produced by a run in the original automaton which starts in $q$, consumes the letter $a$ and  uses any number of  $\varepsilon$-transitions, and ends in $p$. This set  is easily seen to be a regular language. As a result, the new automaton has the same outputs for all nonempty inputs strings. Finally, in order to take care of the empty input string, we add a fresh initial state $\vdash$ and fresh final state $\dashv$, together with a transition 
+            \begin{align*}
+            \vdash\  \xrightarrow {\varepsilon / L }\ \dashv,
+            \end{align*}
+            in which $L$ is the set of outputs that can be produced by the original automaton on an empty string. 
+
+            Finally, if the original automaton had the property that every input string has finitely many outputs, then the regular languages $L$ that label the transitions in the new automaton are finite, and therefore we can replace each transition by a finite number of transitions that produce exactly one output string. 
+        \end{proof}
+% lax end
+
+    Using the above lemma, we show that a functional rational relation can be computed by an unambiguous automaton with output. 
+    In fact, we will show a stronger result, which we call uniformisation: if a rational relation is total (i.e.~every input string produces at least one output string), then it contains an unambiguous rational relation. In the case of a functional rational relation, the totality assumption is satisfied, and the contained unambiguous rational relation must be the same function.
+
+% lax begin Lax132576.Uniformisation
+    \begin{lemma}\label{lem:uniformisation}
+        [Uniformisation] If a rational relation is total, then it contains an unambiguous rational relation.
+    \end{lemma}
+% lax end
+
+% lax begin Lax132576Proofs.Results.exists_isUnambiguousRel_le
+    \begin{proof}
+        We begin by eliminating $\varepsilon$-transitions, using the previous lemma. As a result, the automaton might use extended transitions, but this  will not be an issue. We call this the original automaton, and our goal is to define a new unambiguous automaton. 
+        
+        Choose some arbitrary linear order on the state space of the original automaton. The new unambiguous automaton will use the run of the original automaton, which is lexicographically minimal with respect to the chosen linear order on states. This new automaton is defined as follows.  
+        \begin{itemize}
+            \item \textbf{States.} We have the two special states $\vdash$ and $\dashv$, which will be used for the empty input, similarly to the construction in Lemma~\ref{lemma:eliminate-epsilon-transitions}. Apart from these two states, the new automaton has a state  of the form    $P \ni p$ for every subset  $P$ of states in the original automaton and every chosen element $p$ of this subset.  The  idea is that $P$ is the set of states that can reach acceptance in the future, and $p$ is the chosen state used in the run with lexicographically minimal profile.
+            \item \textbf{Initial states.} The special state $\vdash$ is initial.  A state  of the form  $P \ni p$ is initial  if and only if  $p$ is initial in the original automaton, and $P$ does not contain any initial state of the original automaton that is smaller than $p$.
+            \item \textbf{Final states.} The special state $\dashv$ is final.  A state of the form $P \ni p$ is final  if and only if  $P$ is equal to the set of accepting states of the original automaton.
+            \item \textbf{Transitions.} For the two special states $\vdash$ and $\dashv$, there is a unique transition 
+            \begin{align*}
+            \vdash \ \xrightarrow{ \varepsilon / w} \ \dashv
+            \end{align*}
+            where $w$ is some arbitrarily chosen output that can be produced by the original automaton on an empty input. Next, we create transitions of the form 
+        \begin{align*}
+        P \ni p
+        \xrightarrow {a,w}
+        P' \ni p'
+        \end{align*}
+        under the following conditions:
+        \begin{enumerate}
+            \item $P$ is the set of all states that can reach $P'$ by reading input $a$;
+            \item $p'$ is the minimal state in $P'$ that can be reached from $p$ by reading input $a$; and
+            \item $w$ is some chosen output on a transition from $p$ to $p'$ that inputs $a$.
+        \end{enumerate}
+        In the above, the chosen output in item 3 is unique for the automaton, which means that once the source and target states and the input letter have been fixed, it is impossible to have two different outputs.
+        \end{itemize}
+    Let us now argue that this new automaton is unambiguous. The first component of the state $P \ni p$, which is the subset $P$, is chosen deterministically from right-to-left. Therefore, all runs of the new automaton will agree on this component. Once the first component has been fixed, the second component is deterministic from left-to-right, and therefore all runs will also agree on this component. Finally, the output string is determined uniquely by the states and the input letter. It is also not hard to see that if the original automaton had an accepting run (which is guaranteed by the totality assumption), then the new automaton also has an accepting run, and that the output string is the same.
+\end{proof}
+% lax end
+
+\paragraph*{From unambiguous to bimachines.}
+The final step in the theorem is the inclusion
+\begin{align*}
+\text{unambiguous rational relations} \quad \subseteq \quad \text{bimachines.}
+\end{align*}
+Consider an unambiguous automaton with output $\Aa$ that computes some function. We can assume without loss of generality that this automaton has the following property: every accepting run uses exactly one $\varepsilon$-transition (i.e.~with empty input), and this is the last transition of the run. This property can be ensured by the construction in the previous step, using the proof of Lemma~\ref{lem:uniformisation}. (In that construction, the automaton uses no $\varepsilon$-transitions on nonempty inputs, but a last $\varepsilon$-transition can be added separately.)
+We now design a bimachine that computes the same output.
+
+The bimachine produces the output as follows. For each gap in the input string (i.e.~a factorisation into prefix and suffix), the following output is produced: (a) if the gap is not the last one, i.e.~the suffix begins with some input letter, then we produce the part of the output that corresponds to the transition of the original automaton which consumes this letter; and (b) if the gap is the last one, i.e.~the suffix is empty, then we produce the part of the output that corresponds to the $\varepsilon$-transition at the end of the run of the original automaton. It remains to define the prefix and suffix automata so that the above can be implemented.  The prefix automaton computes the states that can be reached from an initial state by reading the prefix. The suffix automaton computes a little more information, namely: is the suffix empty (i.e.~are we at the last gap), and if the suffix is nonempty, then: 
+    \begin{itemize}
+        \item what is the first  letter of the suffix; and
+        \item which states can reach an accepting state via the suffix minus its first letter.   
+    \end{itemize}
+Using this information we can determine the output that should be produced at the gap, as described above.
+\end{proof}
+% lax end
+
+
+\subsection{Decomposition into primes}
+\label{sec:rational-primes}
+ Using bimachines, we can prove a variant of the Krohn-Rhodes decomposition theorem for rational functions. In fact, most of the decomposition work was already done in the case of Mealy machines. In the theorem, we use right-to-left Mealy machines, which are defined the same way as Mealy machines, except that the input string is processed in a right-to-left manner, with the initial state being used after the rightmost position.
+% lax begin Lax132576.RationalPrimes
+% lax begin Lax132576.PrimesOfRational
+% lax begin Lax132576.RationalOfPrimes
+% lax begin Lax132576.PrimeRationalFunctions
+\begin{theorem}\label{thm:rational-primes}
+    A string-to-string function is rational if and only if it can be obtained by composing the following functions (which we call the \emph{prime rational functions}): 
+    \begin{enumerate}
+        \item the prime Mealy machines, i.e.~reversible and flip-flop Mealy machines;
+        \item the right-to-left variants of the prime Mealy machines;
+        \item string homomorphisms;
+        \item the function $w \mapsto w\#$ which appends a fresh separator symbol to the input string.
+    \end{enumerate}
+\end{theorem}
+% lax end
+% lax end
+% lax end
+% lax end
+
+% lax begin Lax132576Proofs.Results.isRationalFun_iff_compClosure_primeRational
+\begin{proof}
+    Clearly all prime functions are rational, and rational functions are closed under composition, which gives us the implication $\Leftarrow$. Let us now prove the implication $\Rightarrow$. 
+    
+    By Theorem~\ref{thm:bimachines}, we can assume that $f$ is computed by a bimachine.  We first apply the function $w \mapsto w\#$. Next, we run the prefix and suffix automata on the string, and label the input string with the states of these automata. The state is stored in the position to its right, which is why we use the separator symbol $\#$ to store the state at the end of the string. The prefix and suffix automata are Mealy machines, with the suffix one being a right-to-left Mealy machine. Finally, we apply a homomorphism, which produces the desired output string. 
+\end{proof}
+% lax end
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Mealy machines as a subset of the rational functions}
+\label{sec:mealy-machines-and-rational-functions}
+
+Mealy machines are a special case of rational functions. The following theorem explains exactly which special case they are. 
+% lax begin Lax132576.RationalMealyCharacterisation
+\begin{theorem}\label{thm:rational-is-mealy-characterisation}
+Consider a rational function $f : A^* \to B^*$. This function is computed by a Mealy machine if and only if it satisfies the following two properties:
+\begin{itemize}
+    \item \emph{Letter-to-letter.} For every input string, the output string has the same length;
+    \item \emph{Determinism.} If two input strings agree on the first $n$ input letters, then the corresponding output strings also agree on the first $n$ output letters.
+\end{itemize}
+\end{theorem}
+% lax end
+
+
+% exercises about rational functions
+\exerciseheader
+
+
+
+\exer{\label{exer:examples-of-rational-fun}
+Represent the following functions as rational functions, and as bimachines: (a) if the input length is even, output it, otherwise output the empty string; (b) swap the first and last letters; (c) identity before last $\#$, after that every letter replaced by $\#$.
+}
+{
+    (a) As a rational function, we use two copies of the automaton which tracks the parity of the number of input letters that have been read so far. In the first copy, every transition copies its input letter to the output, and the accepting states are those with even parity; in the second copy, every transition has empty output, and the accepting states are those with odd parity. Putting the two copies side by side gives an unambiguous automaton, since the parity of the input length decides which copy is used. As a bimachine, we use the parity automaton for both the prefix and the suffix automata, except that the suffix automaton also stores the first letter of the suffix. The parity of the input length is the sum of the two parities, and hence it is known in every gap. The output in a gap is the first letter of the suffix if the total parity is even, and the empty string otherwise.
+
+    (b) As a rational function, this was already done in \cref{sec:rational-relations}, using a union of six automata. That union is unambiguous, since the six cases are determined by the input string.  (That solution was for a binary alphabet, but a similar construction works in general.) As a bimachine, we use a prefix automaton which stores the first letter of the prefix, and a suffix automaton which stores the first and the last letter of the suffix, as well as the length of the suffix up to the threshold two. The output in a gap is defined by the following cases: the empty string, if the suffix is empty; the last letter of the suffix, if the prefix is empty; the first letter of the prefix, if the suffix has exactly one letter; and the first letter of the suffix in the remaining cases. The three letters that are used here are, respectively, the last letter of the input string, its first letter, and the letter in the position that follows the gap.
+
+    (c) We use the convention that if the input string has no $\#$, then all of its letters are replaced by $\#$; the other convention, in which the input string is returned unchanged, is handled in the same way. For an unambiguous automaton, the automaton guesses which $\#$ is the last one: up to and including this letter, the input is copied to the output; after it, the automaton outputs $\#$ for every input letter, and rejects if it sees another $\#$. This automaton is unambiguous, since the guess is verified. The bimachine is even simpler, and it does not need the prefix automaton at all. The observation is that a position is copied to the output if and only if the suffix which begins in this position contains a $\#$. Therefore, it is enough that the suffix automaton stores the first letter of the suffix, together with the information about whether the suffix contains $\#$. The output in a gap is: the empty string, if the suffix is empty; the first letter of the suffix, if the suffix contains $\#$; and $\#$ otherwise.
+}
+
+\exer{\label{exer:rational-outpus-of-exactly-linear-size} Show that if a rational function has unbounded output size, then it has exactly linear output size in the following sense: the limit 
+\begin{align*}
+\lim_{n \to \infty} \frac{\text{maximal output length on inputs of length at most $n$}}{n}
+\end{align*}
+is defined and nonzero.
+} {We use nondeterministic transducers, and we assume that every state is reachable from an initial state, and can reach an accepting state. Call the \emph{ratio} of a run the length of its output string divided by the length of its input string. We claim that the limit in the exercise is qual to 
+\begin{align*}
+    \sup_\rho \frac{\text{length of output of $\rho$}}{\text{length of input of $\rho$}},
+\end{align*}
+where $\rho$ ranges over runs that are cycles (same source and target state) with nonempty input. We first observe that the supremum is reached: indeed if we take any cycle which contains nested cycles, then removing the nested cycles can only improve the ratio, unless the nested cycles had better ration. Therefore, nested cycles cannot contribute to the supremum, and thus there are finitely many candidates for the cycle in the supremum, which means that the supremum is actually a maximum. Repeating for every a cycle achieves the maximum gives a lower bound on the limit in the statement of the exercise. This ratio is also an upper bound, since it can be approximated arbitrarily closely by cycles that appear in long runs. (A more formal analysis of the upper bound would look at strongly connected components of states in the automaton).
+}
+
+\exer{\label{exer:rational-outpus-of-exactly-linear-size-rational-number} Show that the limit in the previous exercise is a rational number.
+}{ As we have shown in the solution to the previous exercise, the supremal ratio is attained by a simple cycle.
+}
+
+
+\exer{\label{exer:non-rational}
+Prove that the following functions are not rational, over an alphabet with at least two letters: (a) first half of the input string, rounded up; and (b) the duplicate function $w \mapsto ww$.
+}{
+    (a) This function is not continuous, and hence it is not rational by Theorem~\ref{thm:continuity-rational-relations}. Consider the inverse image of the regular language $a^*$, i.e.~the set of input strings whose first half uses the letter $a$ only. If we intersect this inverse image with the regular language $a^*b^*$, then we get
+    \begin{align*}
+    \setbuild{a^ib^j}{$j \leq i$},
+    \end{align*}
+    which is not regular. Therefore the inverse image is not regular either.
+
+    (b) Here continuity is not violated, since duplication is continuous. Instead, we use the observation after Theorem~\ref{thm:continuity-rational-relations}, which says that rational relations map regular languages to regular languages. The image of the regular language $A^*$ under duplication is
+    \begin{align*}
+    \setbuild{ww}{$w \in A^*$},
+    \end{align*}
+    which is not regular, as long as the alphabet has at least two letters. (For a one-letter alphabet, duplication is the homomorphism which maps $a$ to $aa$, and hence it is rational.)
+}
+
+\exer{\label{exer:decide-unambiguous} Show that one can decide unambiguity for a given \nfa that recognises a language (not a function or relation).
+}
+{
+    We can assume that the automaton has no transitions with empty input, since these can be eliminated in the usual way. Under this assumption, the automaton is ambiguous if and only if some input string admits two accepting runs which use different transitions in some position. This is tested by a product construction. Consider the automaton whose states are triples
+    \begin{align*}
+    (\text{state}, \text{state}, \text{a bit}),
+    \end{align*}
+    which runs two copies of the original automaton on the same input string, and uses the bit to remember if the two copies have already used different transitions. The bit is $0$ in the initial states, it is set to $1$ as soon as the two copies use different transitions, and it is never reset. The initial states are the pairs of initial states with bit $0$, and the accepting states are the pairs of accepting states with bit $1$. The original automaton is ambiguous if and only if the new automaton accepts some string, which is decided by checking if an accepting state is reachable from an initial state. Since the new automaton is only quadratically bigger than the original one, this algorithm runs in polynomial time.
+}
+
+\exer{\label{exer:decide-rational-colision} Are the following problems about two rational functions decidable: (a) is there some input string where both outputs are equal? (b) is there some input string where both outputs have the same length?
+}
+{
+    The first problem generalises PCP and is hence undecidable. (Some care is needed with the empty input string, on which two homomorphisms always agree; this is repaired by modifying the two rational functions so that they disagree on the empty input, which is possible because a rational function treats the empty input separately.) The second problem is decidable, since it can be solved using Parikh images: the pairs
+    \begin{align*}
+    (|f(w)|, |g(w)|) \qquad \text{for $w \in A^*$}
+    \end{align*}
+    form the Parikh image of a regular language, namely the language of runs of the product of the two transducers, and hence they form a semilinear set which can be computed. It remains to check if this set contains a pair with two equal coordinates.
+}
+
+\exer{\label{exer:rational-one-letter-input} Consider a rational function where the input alphabet has only one letter $a$. Show that the graph of the function is a finite union \begin{align*}
+\bigcup_{i \in I}\setbuild{ a^{\alpha_i + \beta_i n} \mapsto x_i y_i^n z_i}{$n \in \Nat$} 
+\end{align*}
+where the coefficients  $\alpha_i,\beta_i$ are natural numbers and strings $x_i,y_i,z_i$ are strings over the output alphabet.
+}
+{
+    Consider a bimachine that computes the function, which exists by Theorem~\ref{thm:bimachines}. Over a one-letter input alphabet, the prefix and suffix automata are deterministic automata with a one-letter alphabet, and therefore their runs are eventually periodic: there is a threshold $\lambda$ and a period $\pi$, which we can choose to be the same for both automata, such that for every $i \geq \lambda$ and for both automata, the state after reading $a^i$ is the same as the state after reading $a^{i+\pi}$.
+
+    The input strings of length smaller than $2\lambda$ contribute finitely many pairs to the graph, and each such pair is of the required form, with the coefficient $\beta_i$ equal to zero. For the remaining input strings, we group them according to the residue of their length modulo $\pi$, i.e.~we consider the input strings
+    \begin{align*}
+    a^{\alpha + \pi m} \qquad \text{for a fixed $\alpha$ and $m \in \Nat$}.
+    \end{align*}
+    The output in a gap is determined by the states of the two automata, and these are determined by the number of letters on the left and on the right of the gap. For the first $\lambda$ gaps, this pair of states does not depend on $m$, and the same is true for the last $\lambda$ gaps. For every other gap, both sides have at least $\lambda$ letters, and hence the pair of states depends only on the number of letters on the left, modulo $\pi$. Therefore, increasing $m$ by one has the following effect on the output: one more group of $\pi$ consecutive gaps appears in the middle, and this group produces the same string as the other such groups. Summing up, the output for the input string $a^{\alpha+\pi m}$ is of the form $x y^m z$, where the strings $x,y,z$ depend only on the residue $\alpha$, which is the required form with $\beta_i = \pi$.
+}
+
+\exer{\label{exer:function-that-is-not-rational} Show that there is a function
+\begin{align*}
+f : A^* \to B^*
+\end{align*}
+which is not rational, but has the property that for every rational function
+\begin{align*}
+g : B^* \to \myunderbrace{1^*}{words over a one-letter alphabet},
+\end{align*}
+the composition $f \cdot g$ is rational.}{
+    Take $f$ to be the string reversal function, which is not rational by Example~\ref{ex:string-reversal-not-rational}. Let
+    \begin{align*}
+    g : B^* \to 1^*
+    \end{align*}
+    be a rational function, and consider a bimachine that computes it, which exists by Theorem~\ref{thm:bimachines}. The output of a bimachine is the concatenation, from left to right, of the pieces that are produced in the gaps of the input string. Over a one-letter alphabet, concatenation is commutative, and therefore the output depends only on which pieces are produced, and not on the order in which they are produced.
+
+    This is what makes reversal harmless. Reversing the input string is a bijection on gaps, which swaps the prefix with the suffix. Therefore, the composition of reversal with $g$ is computed by the bimachine that is obtained from the one for $g$ by swapping the prefix and suffix automata, and swapping the two arguments of the output function. This new bimachine produces the same pieces as the original one, but in the opposite order, which is invisible over a one-letter alphabet.
+}
+
+
+% \exer{\label{exer:factoring-through-a-rational-function} Consider two rational functions $f$ and $g$, possibly with different input and output alphabets. We say that $f$ factors through $g$ if one can decompose $f$ as 
+% \begin{align*}
+% f = g_1 \cdot g \cdot g_2
+% \end{align*}
+% for some rational functions $g_1$ and $g_2$. Show an algorithm that decides this property, given rational functions $f$ and $g$.}{}
+
+In the following series of exercises, we will be interested in ideals of rational functions. Such an ideal is defined to be a set $\Ii$ of rational functions such that 
+\begin{align*}
+\Ii  = \text{Rational} \cdot \Ii \cdot \text{Rational},
+\end{align*}
+i.e.~functions that factor through the ideal must stay in the ideal. 
+
+\exer{\label{exer:some-ideals} 
+Show that the following are ideals: 
+    \begin{itemize}
+        \item functions with range of size at most $k$ for $k \in \set{1,2,3,\ldots}$;
+        \item functions where the number of outputs is  $\Oo(n^k)$, where $n$ is the input length and $k \in \set{0,1,2,\ldots}$ is some fixed constant.
+    \end{itemize}
+}{  Observe that the ideal in the second item for $k=0$ describes the class of rational functions with finitely many outputs.
+
+Pre-composing or post-composing with rational functions (or any functions) cannot increase the size of the range, and therefore the first item describes an ideal.  For the second item, we use a similar argument, but for precomposition we observe that the output size of a rational function is at most linear in the input length, and therefore pre-composing with a rational function cannot increase the degree of the polynomial.}
+
+
+\exer{\label{exer:finite-range-ideals} Consider an ideal where all functions have finite range. Show that the ideal is equal to one of the ideals from the first item in \cref{exer:some-ideals}, or to the ideal $\Oo(n^0)$ from the second item. }{
+    Suppose that the ideal contains a rational function $f$ with distinct outputs
+    \begin{align*}
+    f(w_1), \ldots, f(w_k).
+    \end{align*}
+    Every  rational function  $g$ with at most $k$ possible outputs $v_1,\ldots,v_\ell$  can be obtained as follows: first apply $g$ with $v_i$ replaced by $w_i$, then apply $f$, and finally replace $f(w_i)$ with $v_i$.  The first and third steps are rational functions, and therefore $g$ factors through $f$, which means that it is in the ideal.
+
+    It follows that the ideal is determined by the sizes of the ranges that appear in it. If these sizes are bounded, then the ideal is ``range of size at most $k$'', where $k$ is the largest size that appears. Otherwise the ideal contains rational functions with arbitrarily large finite ranges, and hence, by the argument above, it contains every rational function with finite range, i.e.~it is the ideal $\Oo(n^0)$.
+}
+
+
+\exer{\label{exer:full-ideal} Show that an ideal contains all rational functions if and only if it contains some function whose range is a regular language with super-polynomial growth. (The growth rate of a language is a function that maps an input length $n$ to the number of strings in the language that have length at most $n$.) }{
+    By  the analysis from \cref{exer:polynomial-image-growth-decidable},  a regular language has super-polynomial growth if and only if an automaton recognising it contains a pattern of the form 
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+I \ni q_0
+\arrow[r]
+\& q_1
+\arrow[loop above]
+\arrow[loop below]
+\arrow[r]
+\& q_2 \in F
+\end{tikzcd}
+\]
+such that the two loops have different output strings of the same length.
+Write $x$ and $x'$ for the strings on the two horizontal arrows, and $y_a$ and $y_b$ for the strings on the two loops; recall that the latter two are different strings of the same length. For an input string $c_1 \cdots c_n$ over the alphabet $\set{a,b}$, the string
+\begin{align*}
+x \, y_{c_1} \cdots y_{c_n} \, x'
+\end{align*}
+belongs to the range of the function, and different input strings give different strings, since the two loops have the same length. Producing these strings is easy, since this is done by the homomorphism which maps $c$ to $y_c$, followed by adding $x$ in front and $x'$ at the end. What we need, however, is to produce them as \emph{inputs} of the function, and not as outputs. This is where we use the Uniformisation Lemma~\ref{lem:uniformisation}: the inverse relation of the function is rational, and it becomes total once we extend it with a default output for the strings outside the range, which is a regular language. This gives a rational function which chooses, for each string in the range, some input that produces it, and we pre-compose with it. Post-composing with the rational function which removes $x$ and $x'$, and replaces each block $y_a$ or $y_b$ by the corresponding letter, we recover the string $c_1 \cdots c_n$. In other words, the ideal contains the identity function on the two-letter alphabet $\set{a,b}$. From this we can get the identity function on any alphabet, and therefore all rational functions.
+}
+
+\knowledgeconfigure{quotation=false}% tikzcd "..." labels need catcode-12 quotes inside \exer
+\exer{\label{exer:polynomial-ideals} Show that if an ideal contains some function whose range has growth $\Omega(n^k)$ with $k \in \set{1,2,\ldots}$, then it contains all functions whose range has growth $\Oo(n^k)$. }{
+    Define a $k$-pattern in an automaton that recognises a language (not a function or relation) to be a sequence of states and runs as in the following diagram:
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+I \ni q_0
+\ar[r,"x_1"']
+\& q_1
+\ar[loop above,"y_1"]
+\ar[r,"x_2"']
+\& q_2
+\ar[loop above,"y_2"]
+\ar[r,"x_3"']
+\& 
+\cdots
+\ar[r,"x_k"']
+\& q_k
+\ar[loop above,"y_k"]
+\ar[r,"x_{k+1}"']
+\& q_{k+1} \in F
+\end{tikzcd}
+\]
+such that for every $i \in \set{2,\ldots,k}$, the language $y_{i-1}^* x_i y_i^*$ is not contained in the prefixes of $y_i^*$.  Using the analysis of loops in automata from \cref{exer:polynomial-image-growth-decidable}, we can show that the growth rate of a regular language is $\Omega(n^k)$ if and only if it contains a $k$-pattern. (In particular, containing a $k$-pattern does not depend on the choice of automaton that recognises the language.) Next, using a similar analysis as in the previous exercise, one can show that if the range of some rational function in the ideal contains a $k$-pattern, then the ideal contains the function 
+\begin{align*}
+\set{a_1,\ldots,a_k}^* \xrightarrow {f_k} \set{a_1,\ldots,a_k}^*
+\end{align*}
+which is the identity on sorted strings (i.e.~strings from $a_1^* a_2^* \cdots a_k^*$) and outputs the empty string otherwise. 
+
+Finally, it remains to show that  if an ideal contains the function $f_k$, then it contains all rational functions whose range has growth $\Oo(n^k)$. This can be proved by analysing the structure of strongly connected components in the automaton that computes a rational function whose range has growth $\Oo(n^k)$.
+}
+\knowledgeconfigure{quotation=true}
+
+\exer{\label{exer:all-ideals} Show that the ideals from the previous exercise are all the ideals, i.e.~all possible  ideals are: ``range of size at most $k$'', ``range has growth rate $\Oo(n^k)$'', ``range has polynomial growth'',  and ``all rational functions'', where $k \in \set{0,1,2,\ldots}$. }
+{Let us begin by clarifying an edge case in the statement. When $k=0$, then the ideal ``range has size at most $k$'' is the empty ideal (since functions have at least one output), and the ideal ``range has growth rate $\Oo(n^k)$'' is the ideal of functions with finitely many outputs.  Indeed, by \cref{exer:finite-range-ideals}, all ideals with functions of finite range are either of the form ``range of size at most $k$'' or ``range has growth rate $\Oo(n^0)$''. By \cref{exer:full-ideal}, all ideals that contain a function with super-polynomial growth are equal to the ideal of all rational functions. Finally, consider an ideal in which every function has a range of polynomial growth, and which contains at least one function with an infinite range. If there is a largest $k$ such that some function in the ideal has range of growth $\Omega(n^k)$, then by \cref{exer:polynomial-ideals} the ideal is exactly the ideal of functions with growth $\Oo(n^k)$. Otherwise the ideal contains, for every $k$, some function of growth $\Omega(n^k)$, and hence, again by \cref{exer:polynomial-ideals}, it is the union of the ideals $\Oo(n^k)$ over all $k$, i.e.~the ideal of functions whose range has polynomial growth. 
+}
+
+\exer{\label{exer:decide-same-ideal} Show that it is decidable if two rational functions generate the same ideal (the ideal generated by a function is the last ideal that contains it). }{
+    By \cref{exer:all-ideals}, the ideal generated by a function is determined by its range: if the range is finite, then the ideal is ``range of size at most $k$'' where $k$ is the size of the range; and otherwise the ideal is determined by the growth rate of the range. (The growth rate alone is not enough, since all functions with a finite range have the same growth rate.) The size of the range, and its growth rate, can both be computed by looking for the patterns from the previous exercises in the automaton for the range of the function.
+}
+
+\exer{\label{exer:surjective-rational-function}Show that if  a rational function $f : A^* \to B^*$ is surjective, then it has a one-sided inverse, i.e.~a rational function $g : B^* \to A^*$ such that $g \cdot f$ is the identity on $B^*$.
+}{
+    Rational relations are symmetric with respect to input and output: swapping the input and output labels on the transitions of a nondeterministic automaton with output gives an automaton for the inverse relation. Therefore, the inverse relation
+    \begin{align*}
+    \setbuild{(v,w) \in B^* \times A^*}{$f(w) = v$}
+    \end{align*}
+    is rational, and it is total, because $f$ is surjective. By the Uniformisation Lemma~\ref{lem:uniformisation}, this relation contains a rational function $g : B^* \to A^*$. By the definition of the inverse relation, we have $f(g(v)) = v$ for every $v \in B^*$, which is the same as saying that $g \cdot f$ is the identity on $B^*$.
+}
+
+\exer{\label{exer:rational-injectivity-decidable}Show that the following problem is decidable: given a rational function $f$, we want to know if it is injective, i.e.~different input strings are mapped to different output strings. }{ 
+    Consider the inverse relation of $f$, which is rational. It need not be total, since $f$ need not be surjective, but its domain is the range of $f$, which is a regular language, and hence we can make the relation total by adding a default output for the strings outside the range. By the Uniformisation Lemma~\ref{lem:uniformisation}, this relation contains a rational function $g$, which satisfies $f(g(v)) = v$ for every $v$ in the range of $f$. The function $f$ is injective if and only if $g$ inverts it on the other side as well, i.e.~if and only if the composition $f \cdot g$, which first applies $f$ and then $g$, is the identity on $A^*$. Indeed, if $f$ is injective, then $g(f(w))$ has the same image under $f$ as $w$, and hence it must be equal to $w$; conversely, a function which has a left inverse is injective. By Theorem~\ref{thm:equivalence-rational-functions}, it can be decided if $f \cdot g$ is the identity.
+}
+
+\exer{\label{exer:rational-composition-finiteness-undecidable}Show that the following problem is undecidable: given a rational function $f : A^* \to A^*$, we want to know if it generates finitely many functions under composition, i.e.~if the following set is finite:
+\begin{align*}
+\setbuild{f^n}{$n \in \set{0,1,2,\ldots}$}.
+\end{align*}
+}{
+Encode a configuration of a Turing machine as a string which contains the contents of the tape, with the current state inserted at the position of the head. For a fixed Turing machine, the function which maps a configuration to the next one is rational: a bimachine copies the input string, except in the two positions next to the state, which it rewrites according to the transition function. (On strings that do not encode a configuration, the function can do anything, say leave the string unchanged.) The $n$-th iterate of this function maps a configuration to the configuration after $n$ steps.
+
+The set in the exercise is finite if and only if $f^n = f^{n+k}$ for some $n$ and some $k \geq 1$, i.e.~if and only if there is a bound $n$ such that the behaviour of the machine on \emph{every} configuration becomes periodic after at most $n$ steps. For a machine which stays in its halting configuration once it has halted, and which never visits the same configuration twice before halting, this says that every configuration halts after at most $n$ steps.
+
+It remains to reduce the halting problem to this property. Given a machine $M$ and an input string $x$, consider the machine which, on a tape of length $m$, simulates $M$ on the input $x$, and which halts as soon as the simulation would need more than $m$ tape cells. We can assume that $M$ never repeats a configuration, by adding a step counter to the tape; in particular, if $M$ does not halt on $x$, then its space grows without bound. If $M$ halts on $x$, then every configuration halts within a number of steps that does not depend on $m$, and the set of iterates is finite. If $M$ does not halt on $x$, then the number of steps before the simulation runs out of space grows with $m$, and hence there is no such bound.
+}
+
+
+\exer{\label{exer:rational-compression} Define a \emph{grammar compression} for a string to be a context-free grammar that generates the string and nothing else. We say that a string-to-string function is \emph{compatible with compression} if for every input string with a grammar compression of size $n$, there is a compression of the output string that has size polynomial in $n$\footnote{One could consider a stronger version, where the compressed output can be computed in polynomial time. Our positive reults will ensure the stronger version, and our negative results will exclude the weaker version.} Show that rational functions are compatible with compression. }{ 
+This follows from a stronger result: for a context-free language $L \subseteq A^*$ and a rational relation $R \subseteq A^* \times B^*$, the image
+\begin{align*}
+\setbuild {v \in B^*}{$(w,v) \in R$ for some $w \in L$}
+\end{align*}
+is context-free and can be computed in polynomial time (using grammars as representation of languages and nondeterministic transducers as representation of  relations). The proof is a straightforward product construction. In the special case when the input language is a singleton and the relation is a function, the image is also a singleton. 
+} 
+
+% \exer{Show that the following two conditions are equivalent for a rational relation: 
+% \begin{enumerate}
+%     \item for every input string, all output strings have the same length as the input;
+%     \item it is computed by an \nfa with output, in which for every transition, the length of the input and output strings are the same.
+% \end{enumerate}
+% Hint: for two states $p$ and $q$ in an \nfa with output, consider the set 
+%    \begin{align*}
+%    \Delta_{pq} = \setbuild{ (|w|-|v|)}{there is a run  $p \xrightarrow{v / w}  q$ }.
+%    \end{align*}
+
+%  }{
+%      \issue{In the solution below (currently not printed): the new transition should be $(p,u) \xrightarrow{v/w} (q,u')$ whenever $p \xrightarrow{v/w'} q$ and $u w' = w u'$. The printed condition $uv = w'u'$ concatenates the input $v$ with output strings and never determines $w$. One must also normalise the $\delta_q$ so that they are non-negative, and the sign is wrong in ``the left-hand side is equal to $\delta_{pq}$'': $|u|-|u'| = \delta_p - \delta_q$.}
+%    We only prove the non-trivial implication from 1 to 2. Consider an \nfa with output that computes the relation. Consider the set $\Delta_{pq}$ from the hint. 
+%    This set cannot contain two different numbers, since otherwise we would get a violation of condition 1. Therefore, this set is just a single number (possibly undefined if there is no run from $p$ to $q$), which we denote by $\delta_{pq}$. We have the following transitivity law
+%    \begin{align*}
+%    \delta_{pq} = \delta_{pr} + \delta_{rq},
+%    \end{align*}
+%    which holds whenever the two numbers on the right-hand side are defined.  This implies that for every state $q$ we can assign a number $\delta_q$ such that 
+%    \begin{align*}
+%    \delta_{pq} = \delta_q - \delta_p.
+%    \end{align*}
+%    We would like to improve the \nfa with output so that the numbers $\delta_q$ are all zero. For this, we define a new automaton in which the states are pairs $(q, u)$, such that $q$ is a state of the original automaton and $u$ is a string of length $\delta_q$. The general idea is that $u$ is a piece of the output string that was produced before, awaiting some transition.  Transitions are defined by 
+%    \begin{align*}
+%     (p, u) \xrightarrow {v/w} (q, u')
+%    \end{align*}
+%    whenever the original automaton had a transition of the form 
+%     \begin{align*}
+%     p \xrightarrow {v/w'} q
+%    \end{align*}
+%    such that $u v = w' u'$. This implies that 
+%    \begin{align*}
+%    |u| - |u'| = |w'| - |v|.
+%    \end{align*}
+%    The left-hand side is equal to $\delta_{pq}$ because of the lengths of the strings $u$ and $u'$, and the right-hand side is equal to $|w|-|v|+ \delta_{pq}$, and thus $|w|=|v|$, as desired. Finally, one can check that the new automaton computes the same relation. 
+%  }

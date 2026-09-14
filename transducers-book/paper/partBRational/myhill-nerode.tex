@@ -1,0 +1,518 @@
+\section{Machine independent characterisations}
+\label{sec:rational-myhill-nerode}
+
+\newcommand{\dist}{\mathrm{d}}
+
+In this section, we present machine independent characterisations of transducers, such as Mealy machines and the rational functions. The idea is to describe a class of functions uniquely in terms of the semantic properties of the functions -- such as continuity -- and not in terms of some computational model. For Mealy machines, the machine independent characterisation will be straightforward, but it will be substantially harder for the rational functions. In fact, our characterisation for rational functions will require developing characterisations for other intermediate classes that lie between Mealy machines and rational functions.
+
+\subsection{Mealy machines}
+\label{sec:mealy-machines-independent}
+As a warmup, we give a machine independent characterisation of Mealy machines. We say that a function is prefix preserving if
+\begin{align*}
+\text{$w$ is a prefix of $v$} 
+\quad \implies \quad 
+\text{$f(w)$ is a prefix of $f(v)$}.
+\end{align*}
+Similarly, a length preserving function is one in which the length of the input string is the same as the length of the output string. Clearly Mealy machines have these two properties, and they are continuous. It turns out that these properties exactly characterise Mealy machines, as the following theorem shows.
+
+
+% lax begin Lax132576.MealyMachineIndependent
+% lax begin Lax765601.ElementaryProperties
+\begin{theorem}\label{thm:mealy-machine-independent}
+    A function $f : A^* \to B^*$ is computed by a Mealy machine if and only if it is: (a) continuous; (b) prefix preserving; and (c) length preserving.
+\end{theorem}
+% lax end
+% lax end
+
+% lax begin Lax132576Proofs.Results.isMealy_iff
+\begin{proof}
+    Clearly a Mealy machine satisfies all conditions in the theorem. Let us now look at the converse. For each output letter $b \in B$, consider the language 
+    \begin{align}\label{eq:ends-with-b}
+    \setbuild{ w \in A^*}{$f(w)$ ends with $b$},
+    \end{align}
+    which is regular by continuity.  Because the function preserves the length and prefixes, we know that each input position contributes exactly one output letter, and furthermore, we can determine which one using finite state control, thanks to the regularity of the languages~\eqref{eq:ends-with-b} defined above. Formally speaking, the state space of the Mealy machine is the product of the state spaces of all languages from~\eqref{eq:ends-with-b}.
+\end{proof}
+% lax end
+
+
+Using the above theorem, we show that the Mealy machines, seen as a subset of the rational functions, are decidable. 
+% lax begin Lax132576.MealyDecidable
+\begin{theorem}\label{thm:decide-if-mealy}
+    One can decide if a rational function is computed by a Mealy machine.
+\end{theorem}
+% lax end
+
+% lax begin Lax132576Proofs.Results.decidable_isMealy
+\begin{proof}
+    It is enough to show that we can check if a rational function satisfies the three conditions in Theorem~\ref{thm:mealy-machine-independent}. Continuity is for free, since rational functions are necessarily continuous. Let us discuss the other two conditions.
+
+% lax begin Lax132576.LengthPreservingDecidable
+    \begin{lemma}\label{lem:decide-if-length-preserving}
+        One can decide if a rational function is length-preserving.
+    \end{lemma}
+% lax end
+
+% lax begin Lax132576Proofs.Results.decidable_lengthPreserving
+    \begin{proof} We give two arguments. The first argument is based on semilinear sets. Since we only sketch this argument, we do not recall the definition of semilinear sets. Consider the set of input/output length pairs
+        \begin{align*}
+        \setbuild{ (|w|,|f(w)|)}{ $w \in A^*$} \subseteq \Nat \times \Nat.
+        \end{align*}
+        This set is semilinear and can be computed using the Parikh image. The function is length-preserving if and only if this set is contained in the diagonal $\setbuild{(n,n)}{$n \in \Nat$}$. Since the diagonal is semilinear and containment is decidable for semilinear sets, we get a proof of the lemma. This concludes the first argument. 
+
+        Let us now present in more detail a second argument, which is more direct and does not use semilinear sets.
+        Fix an \nfa with output that computes $f$, and which has states $Q$.  Define a \emph{typing} for this automaton to be a function 
+        \begin{align*}
+        \tau : Q \to \Int
+        \end{align*}
+        such that for every run $\rho$ of the automaton from an initial state to $q$, we have 
+        \begin{align*}
+        |\text{output string of $\rho$}| = |\text{input string of $\rho$}| + \tau(q).
+        \end{align*}
+        The typing, if it exists, is clearly unique.
+% lax begin Lax132576.LengthPreservingTyping
+        \begin{claim}\label{claim:typing-length-preserving}
+            The function $f$ is length-preserving if and only if the typing exists, and all accepting states are mapped to zero. 
+        \end{claim}
+% lax end
+
+% lax begin Lax132576Proofs.Results.lengthPreserving_iff_typing
+        \begin{proof}
+            The right-to-left direction is immediate. For the opposite direction, we assume implicitly that every state is productive, i.e.~used in some accepting run. To prove the opposite direction,  we observe that: (1) if the typing does not exist, then one can find two runs that reach the same state $q$ and have different differences between the output and input lengths, which means that the function cannot be length-preserving; and (2) if the typing exists, but some accepting state has nonzero type, then also the function cannot be length-preserving, since we can find a run that reaches this accepting state and has a difference between output and input lengths equal to this nonzero type.
+        \end{proof}
+% lax end
+
+         Therefore, it remains to check if the conditions from the above claim are satisfied. The unique candidate for the typing can easily be computed, by looking at runs that reach every state.  Once we have a candidate for the typing, we need to check if 
+        \begin{align*}
+         |w|  =  |v| + \tau(q) - \tau(p) \quad \text{ for every transition } p \xrightarrow{ v /w} q
+        \end{align*}
+ and all accepting states have type zero. This concludes the second argument for  proving the lemma.
+        \end{proof}
+% lax end
+
+
+
+    It remains to check the prefix-preserving property. Before doing this, we prove a characterisation of the length-preserving functions.
+% lax begin Lax132576.LengthPreservingNormalForm
+    \begin{lemma}\label{lem:characterisation-length-preserving}
+        If a rational function is length-preserving, then it is computed by an \nfa with output where for each transition, the input and output strings have the same length.
+% todo: maybe this is a good idea
+        % \flag{\lean{lengthPreserving\_rational\_normal\_form} is proved without the free group (\lean{PartB/\allowbreak LenNormalForm.lean}): the second component of a state $(q,x)$ is a plain string of length $|\tau(q)|$, read as output produced but not yet emitted when $\tau(q)\ge 0$, and as output emitted but not yet produced (a guess, verified later) when $\tau(q)\le 0$.}
+    \end{lemma}
+% lax end
+
+% lax begin Lax132576Proofs.Results.exists_nfao_length_eq
+    \begin{proof}
+        In this proof, it will be convenient to use possibly negative strings, which can be seen as living in the free group. Formally speaking, the free group over generators $B$, which is denoted by $B^{(*)}$, consists of strings over the alphabet \begin{align*}\setbuild{ b, b^{-1}}{$b \in B$}\end{align*} which are reduced, i.e.~they do not contain two consecutive letters that cancel each other out. The multiplication operation in the free group is defined by concatenation followed by reduction. The free group will also be used later in this chapter, in the proof of Theorem~\ref{thm:subsequential-functions}.
+
+        Consider a rational function $f$ that is length preserving and computed by some \nfa with output. By Claim~\ref{claim:typing-length-preserving}, there must be some typing $\tau : Q \to \Int$ which maps all accepting states to zero. Define a new \nfa with output as follows. The  states are pairs $(q, x)$ where $x$ belongs to the free group $B^{(*)}$ and has length $\tau(q)$. This allows for negative lengths, since we assume that the inverse letters have length -1.  The transitions of the automaton are defined by  
+        \begin{align}\label{eq:new-transitions-length-preserving}
+         \myunderbrace{(q,x) \xrightarrow { w / v} (p,y)}{is a transition in the \\ new automaton} \quad \text{if and only if} \quad         \myunderbrace{q \xrightarrow { w / x^{-1} v y} p}{is a transition in the \\ original automaton}.
+        \end{align}
+        In the above, $w$ and $v$ are required to be normal strings, without negative letters, and also $x^{-1} v y$ must be a normal string, since it appears in a transition of the original automaton. Furthermore, the string $x$ must be either purely positive, or purely negative. 
+        These transitions in the new automaton are length-preserving, as required by the conclusion of  the lemma, because 
+        \begin{align*}
+        |w| = |x^{-1} v y| + \tau(q) - \tau(p) = |v|.
+        \end{align*}
+        The initial states are those which use an initial state of the original automaton, and likewise for the accepting states. Observe that both initial and final states are annotated by empty strings, since these states have type zero: initial states have type zero by definition and final states have type zero by assumption that the automaton is length-preserving. The condition~\eqref{eq:new-transitions-length-preserving} that defines transitions in the automaton also extends to runs, and thus the new automaton computes the same function as the original automaton.
+    \end{proof}
+% lax end
+
+    We now complete the proof of the theorem. Consider some \nfa which computes a rational function. We first check if it is length-preserving, using Lemma~\ref{lem:decide-if-length-preserving}, and if it is, then we use Lemma~\ref{lem:characterisation-length-preserving} to compute a new \nfa in which all transitions are length-preserving. (This can be done because the proof of Lemma~\ref{lem:characterisation-length-preserving} is constructive.) By possibly splitting transitions, we can assume without loss of generality that every transition consumes zero or one letters (both on input and output). As usual, we also assume that all states are productive, i.e.~every state appears in some accepting run. The function computed by the automaton is \emph{not}  prefix-preserving if and only if one can find a pair of transitions 
+    \begin{align*}
+    p_1 \xrightarrow{v_1/w_1}  q_1  \qquad p_2 \xrightarrow{v_2/w_2}  q_2
+    \end{align*}
+    such that the following three conditions are satisfied:
+    \begin{enumerate}
+        \item the inputs $v_1$ and $v_2$ are the same; and 
+        \item the outputs $w_1$ and $w_2$ are different; and
+        \item $p_1$ and $p_2$ can be reached from initial states using a common input string.
+    \end{enumerate} 
+    Since each transition consumes at most one letter, it follows from conditions 1 and 2 that the inputs and outputs of the two transitions use exactly one letter. To check if a pair of transitions with the above conditions exists, one can enumerate all pairs of transitions, and use a product construction to check if the two states $p_1$ and $p_2$ can be reached from initial states using a common input string.
+\end{proof}
+% lax end
+
+\subsection{Sequential functions}
+\label{sec:sequential}
+Our ultimate goal in this chapter is to characterise the rational functions. Before we do that, however, we will characterise an intermediate model that lies between Mealy machines and rational functions, which is called the \emph{sequential functions}. These are defined  like Mealy machines, except that the transition function has type 
+\begin{align*}
+Q \times A \to Q \times B^*,
+\end{align*}
+which means that a transition can produce an output string of variable length, instead of exactly one letter. 
+
+% lax begin Lax132576.SequentialCharacterisation
+% lax begin Lax132576.SequentialTransducers
+\begin{theorem}[Ginsburg and Rose]\label{thm:sequential-function-independent}
+    A function $f : A^* \to B^*$ is  sequential if and only if it: (a) is continuous; (b) is prefix preserving; (c) outputs $\varepsilon$ when the input is $\varepsilon$; and (d) has the following bounded increase property:
+        \begin{align*}
+        \myoverbrace{\sup_{\substack{w \in A^* \\ a \in A}} |f(wa)| - |f(w)|}{maximal increase in output length due \\ to extending input with  one letter} \quad < \quad \infty.
+        \end{align*}
+\end{theorem}
+% lax end
+% lax end
+
+% lax begin Lax132576Proofs.Results.isSequential_iff
+\begin{proof}
+    Again, it is clear that sequential functions have the properties in the theorem. Let us prove the converse. Consider a function $f$ that satisfies the four properties in the theorem. Define the \emph{derivative} (this is not the same as in the proof of \cref{thm:aperiodic-mealy}) of this function to be 
+\begin{align*}
+     A^+ & \xrightarrow{f'} B^*  \\
+     wa & \mapsto (f(w))^{-1} \cdot f(wa).
+\end{align*}
+This function tells us what is the contribution of the last letter to the output. The derivative is well-defined thanks to the prefix-preserving property, and it has finite image thanks to the bounded increase property. The output string of $f$ can be computed by concatenating outputs of the derivatives
+\begin{align*}
+f(a_1 \cdots a_n) = f'(a_1) \cdot f'(a_1 a_2) \cdots f'(a_1 \cdots a_n).
+\end{align*}
+Therefore, in order to show that $f$ is a sequential function, it suffices to show that the derivative $f'$ is computed by a finite automaton, i.e.~for each of the  finitely many output values, the corresponding set of inputs is a regular language. We do this in two steps.
+\begin{itemize}
+    \item  We first show that a finite automaton can determine the length of $f'(w)$. To do this, use the continuity assumption to compute the length
+    \begin{align*}
+    |f(w)| \mod k,
+    \end{align*}
+    where $k$ is some number that is bigger than the maximal length of an output of a derivative. This gives the length of the derivative, since the length of $f'(wa)$ is the unique number $\ell < k$ such that
+\begin{align*}
+    |f(w)| + \ell \equiv |f(wa)| \mod k.
+\end{align*}
+\item Once we know the length  of the derivative $f'(wa)$, we determine its output in the same way as for Mealy machines, i.e.~we can use continuity to ask what are the last $|f'(wa)|$ letters of the output $f(wa)$. 
+
+\end{itemize}
+\end{proof}
+% lax end
+
+\subsection{Subsequential functions}
+\label{sec:subsequential}
+In this section, we extend the   characterisation of sequential functions by considering a model that adds two new features: (a) the function is partial, i.e.~it might have undefined outputs; and (b) the function knows when the input string ends. The model is called the \emph{subsequential functions}, and the corresponding transducer is defined like a sequential transducer, except that its syntax is extended with  an \emph{end-of-input function}, which is a partial function  of type $Q \to B^*$.
+The end-of-input function is applied to  the last state in the computation. If the result is undefined, then  the entire output string is undefined, and otherwise the result is appended to the previously produced output string.
+
+\begin{myexample}[Append $b$]\label{ex:end-of-input-function}
+    One of the advantages of the end-of-input function is that it allows producing nonempty output on an empty input. For example, the function $a^n \mapsto a^{n}b$ is subsequential. We use a single state, in which the input is copied, and then the end-of-input function adds one more letter $b$.
+\end{myexample}
+
+The subsequential functions seem to be a minor variation on the sequential ones, and yet their machine independent characterisation will be considerably harder than the one for sequential functions. Nevertheless, this effort will pay off in the next section, where subsequential functions will be used as a crucial ingredient in the characterisation of rational functions. 
+
+One of the difficulties in subsequential functions is that the condition on preserving prefixes is no longer relevant. This condition will no longer be necessary:  because of the end-of-input function, the functions will no longer be prefix-preserving, such as the function in Example \ref{ex:end-of-input-function}. It will also not be sufficient, since any function can be turned into a partial function that is prefix preserving. 
+
+\begin{myexample}[Endmarkers] \label{ex:endmarker} Take any string-to-string function $f$. We can  extend the input alphabet with a distinguished endmarker $\dashv$, and define a new function by 
+\begin{align*}
+f_\dashv(w) \quad \eqdef \quad
+\begin{cases}
+    f(v) & \text{if $w = v\dashv$ for some $v$ that does not use $\dashv$}\\
+    \text{undefined} & \text{otherwise}.
+\end{cases}
+\end{align*}
+In the new function, the domain contains only words that end with the endmarker $\dashv$ and do not use it anywhere else. Such words are incomparable with respect to the prefix relation, and therefore the new function is prefix-preserving. This way, we can turn any continuous function into one that is partial and prefix-preserving, and as we have seen in the introduction, there are plenty of ill-behaved continuous functions. Also, this example shows that the end-of-input function is somehow less important than the partiality feature, since $f$ is subsequential if and only if $f_\dashv$ is subsequential without using the end-of-input function. Nevertheless, the end-of-input function will make the characterisation of subsequential functions more elegant, and so we keep it in the definition.
+\end{myexample}
+
+Because of the difficulty highlighted in the above example, we need a variant of the condition on preserving prefixes. This variant will be based on modifying strings by minor variations on the suffix (such as removing an endmarker), and is formalised in the following definition.
+
+
+
+% lax begin Lax132576.LeftDistance
+\begin{definition}[Left distance]\label{def:left-distance}
+   For two strings $w_1$ and $w_2$, define their \emph{left distance} 
+    \begin{align*}
+    \distance{ w_1}{w_2}
+    \end{align*}
+    to be the smallest $k$ such that the strings can be decomposed as 
+    \begin{align*}
+    w_1 = v v_1 \quad w_2 = v v_2 \quad \text{with $|v_1|,|v_2| \leq k$}
+    \end{align*}
+\end{definition}
+% lax end
+
+In the decomposition from the above definition, the string $v$ will necessarily be the longest common prefix of $w_1$ and $w_2$, as explained in the following picture:
+\mypic{26}
+The characterisation of subsequential functions will say that they are exactly the functions which are: (a) continuous; and (b) have a property called bounded variation, which is defined in terms of the left distance. The continuity condition is the same as in Definition~\ref{def:continuity}, except that we use inverse images for partial functions in the natural way. The bounded variation property is actually the same as uniform continuity with respect to the left distance, but we prefer to avoid the word continuity to avoid a name clash with condition (a).
+
+
+% lax begin Lax132576.SubsequentialCharacterisation
+% lax begin Lax132576.SubsequentialTransducers
+\begin{theorem}[Choffrut]\label{thm:subsequential-functions}
+        A partial function $f : A^* \to B^*$ is subsequential if and only if it is continuous and has the following  property: 
+        \begin{itemize}
+            \item \textbf{Bounded variation:}  for every $w_1$ and $w_2$ in $A^*$, we have 
+            \begin{align*}
+            \sup_{w} \distance{ f(ww_1)}{f(ww_2)} < \infty,
+        \end{align*}
+        where  $w$ ranges over strings such that both $f(w w_1)$ and $f(ww_2)$ are defined.
+        \end{itemize}
+\end{theorem}
+% lax end
+% lax end
+
+% lax begin Lax132576Proofs.Results.isSubsequential_iff
+\begin{proof}
+    The left-to-right direction is easy to see, and we only explain the proof of the right-to-left direction. Assume that $f$ is a continuous function with bounded variation. We will show that it can be computed by a subsequential transducer. 
+ 
+    We begin with a simple pumping argument which shows that if a string can be extended to a string in the domain of $f$, then a short extension can be used.
+   \begin{claim}\label{claim:bounded-extensions}
+    There is some $k \in \Nat$ such that for every $w \in A^*$, if there is some $v \in A^*$ such that $wv$ is in the domain of $f$, then one can choose $v$ so that it has length at most $k$.
+% we will need to address this when connecting the Lean proof to the text
+    % \flag{Claims B.4.9--B.4.12 are not formalised as numbered results; the Lean proof of Theorem~\ref{thm:subsequential-functions} reorganises them into \lean{Subseq.exists\_short\_extension} (this claim), \lean{Subseq.key\_drop} and \lean{Subseq.incr\_congr} (Claims~\ref{claim:computing-branching-part} and~\ref{claim:offsets-are-regular}, phrased through Myhill--Nerode states rather than through regular languages) and \lean{Subseq.exists\_deletion\_bound} (Claim~\ref{claim:eliminating-negative-letters}). The free group is not used: the transducer emits $\alpha(w)$ with a delay of $M$ letters kept in a buffer, flushed when it exceeds $2M$.}
+   \end{claim}
+   \begin{proof}
+    The domain is a regular language by continuity, and hence a pumping argument can be applied to make $v$ short.
+   \end{proof}
+
+   Fix the constant $k$ from the above claim for the rest of this proof.
+   Consider a string $w \in A^*$. We will be interested in the outputs of $f$ on input strings that are obtained from $w$ by extending it with  at most $k$ letters. (By definition of $k$, such short extensions are enough to enter the domain of the function, if this is possible at all.) Since these extensions are at bounded left distance from each other, it follows from the bounded variation property that the outputs will also be at bounded left distance from each other. Summing up, there is some $K \in \Nat$ such that for every $w \in A^*$, all strings in the set  
+   \begin{align}
+    \label{eq:short-extensions}
+   \setbuild{ f(wv)}{$v \in A^*$ has length at most $k$}
+   \end{align}
+   are at left distance at most $K$ from each other. This means that the set of strings in~\eqref{eq:short-extensions} can be visualised as a tree (where ancestors are prefixes), in which there is an initial non-branching part  (of unbounded length), followed by some branching part of length at most $K$, as shown in the following picture:
+   \mypic{25} 
+   Define $\alpha(w)$ to be the non-branching part for the input string $w$, which is formally speaking the longest common prefix of all strings in the set~\eqref{eq:short-extensions}. The non-branching part might be undefined, but thanks to Claim~\ref{claim:bounded-extensions}, it is defined if and only if $w$ has some extension that is in the domain of $f$. In particular, if we think of the non-branching part as a string-to-string function
+   \begin{align*}
+   \alpha : A^* \to B^*,
+   \end{align*}
+   then it is a partial function with a prefix-closed domain. Ultimately, we will establish that this function is subsequential. 
+   
+   Let us now discuss the branching part, which we denote by  $\beta(w)$. Formally speaking, the branching part is the partial function 
+   \begin{align*}
+    A^{\le k} & \xrightarrow{\beta(w)} B^* \\
+    v & \mapsto f(wv) \text{ with the prefix $\alpha(w)$ removed.}
+   \end{align*}
+
+From the branching and non-branching parts, we can recover the output of $f$: 
+\begin{align}\label{eq:f-from-alpha-beta}
+f(w) = \alpha(w) \cdot \myunderbrace{\beta(w)(\varepsilon)}{branching part evaluated \\ at the empty string}
+\end{align}
+The above is undefined if either of the two concatenated strings on the right-hand side of the equality is undefined, and it is defined otherwise.
+ We will show that  the branching part $\beta(w)$ has finitely many possible values and the right value can be selected by a finite automaton. Therefore, the function $f$ will be subsequential, because the contribution of the non-branching part $\alpha(w)$ is subsequential, and the contribution of the branching part $\beta(w)$ can be computed by using the end-of-input feature.
+
+\paragraph*{Computing the branching part.} We begin by discussing the branching part, and only later we will discuss the non-branching part.   The following claim shows that the contribution of the branching part can be computed using the end-of-input feature in a subsequential transducer.
+
+
+\begin{claim}\label{claim:computing-branching-part} The set of possible values of the branching part 
+    \begin{align*}
+    \setbuild {\beta(w)}{$ w \in A^*$}
+    \end{align*}
+    is finite. Furthermore, for every $\beta$, the set of $w \in A^*$ such that $\beta(w) = \beta$ is regular.
+\end{claim}
+\begin{proof}
+    The first part of the claim, about finitely many possible values, is a direct consequence of the fact that the branching part has length at most $K$, and thus there are finitely many possibilities for the corresponding tree.  We now show the second part of the claim, about regularity.
+    For every $v \in A^*$ of length at most $k$ and every $u \in B^*$ of length at most $K$, the language 
+    \begin{align*}
+    \setbuild{ w \in A^*}{ $u$ is a suffix of $f(wv)$}
+    \end{align*}
+    is regular by continuity. Therefore, a finite automaton which reads $w$ can identify the last $K$ letters of $f(wv)$ for all $v$ of length at most $k$. This almost gives us the branching part $\beta(w)$, except that we do not know how the strings $f(wv)$ align with each other. To do this, we do a similar modulo-counting trick as in the proof of Theorem~\ref{thm:sequential-function-independent}: we determine the remainders
+    \begin{align*}
+    |f(wv)| \mod K+1
+    \end{align*}
+    for all $v$ of length at most $k$. This gives us the relative alignment
+    of the outputs. Indeed, if $v_1$ and $v_2$ have length at most $k$ then the difference 
+    \begin{align*}
+    |f(wv_1)| - |f(wv_2)| 
+    \end{align*}
+    lies between $-K$ and $K$, and therefore this difference is uniquely determined by its value modulo $2K+1$, which is known to the automaton.
+    With these differences, we know how the strings $f(wv)$ align with each other, and hence we can determine the branching part $\beta(w)$.
+\end{proof}
+
+
+\paragraph*{Computing the non-branching part.} We now show that the non-branching part $\alpha(w)$ can be computed by a subsequential transducer.  For a nonempty input string $wa \in A^*$, let us define the offset as the difference
+\begin{align*}
+\delta(wa) \quad \eqdef \quad     (\alpha(w))^{-1} \cdot \alpha(wa).
+\end{align*}
+There is an important caveat in the definition of the offset: we do not  necessarily know if $\alpha(w)$ is a prefix of $\alpha(wa)$. Therefore, the computation of the prefix might result in some negative letters, as in the following example:
+\begin{align*}
+ \underbrace{(aa)^{-1}}_{\delta(wa)}  = (\underbrace{abbaa}_{\alpha(w)})^{-1} \cdot \underbrace{abb}_{\alpha(wa)}.
+\end{align*}
+Formally speaking, the offset belongs to the {free group} that was defined in the proof of Lemma~\ref{lem:characterisation-length-preserving}. Using the offsets in the free group, we can compute the non-branching part as 
+\begin{align}\label{eq:non-branching-part-deltas}
+\alpha(a_1 \cdots a_n) = \alpha(\varepsilon) \cdot \delta(a_1) \cdot \delta(a_1 a_2) \cdots \delta(a_1 \cdots a_n).
+\end{align}
+Formally speaking, the above equality is in the free group, i.e.~we must first reduce the right-hand side before we can compare it to the left-hand side.
+We will worry about the reductions later, in Claim~\ref{claim:eliminating-negative-letters}. For now, let us show that the offsets can be computed by a finite automaton. 
+
+\begin{claim}\label{claim:offsets-are-regular}
+The set of possible values of the offset       \begin{align*}
+    \setbuild{ \delta(w)}{$ w \in A^+$}
+    \end{align*}
+    is finite. Furthermore, for every  $\delta$, the set of  $w \in A^+$ such that $\delta(w) = \delta$ is regular.
+\end{claim}
+\begin{proof}
+    Consider a nonempty string of the form $wa$. To get its offset, we need to compare the branching parts $\beta(w)$ and $\beta(wa)$, and how they are aligned. All this information can be computed by a finite automaton, using the same proof as in Claim~\ref{claim:computing-branching-part}.
+\end{proof}
+
+As explained in~\eqref{eq:non-branching-part-deltas},  the non-branching part $\alpha(w)$ is obtained by concatenating the offsets and then reducing them in the free group. We know that the ultimate result, after reduction, does not use any negative letters, since it is equal to the non-branching part $\alpha(w)$. The following claim shows that the negative letters can be eliminated from the transducer. 
+\begin{claim}\label{claim:eliminating-negative-letters}
+    Let $g$ be a partial sequential function whose output alphabet is 
+    \begin{align*}
+    \setbuild{ b, b^{-1}}{$b \in B$},
+    \end{align*}
+and whose domain is prefix closed. Consider the function 
+    \begin{align*}
+    g'(w)  = \text{reduced form of $g(w)$}.
+    \end{align*}
+    If all outputs of $g'$ are in  $B^*$, then it is a partial subsequential function.
+\end{claim}
+\begin{proof}
+    The assumption that the domain is prefix-closed  is true in our intended application, but it is not essential, since the argument can be easily adapted to work without this assumption.
+    Because of the negative letters, it might be the case that  extending the input results in a shorter output, i.e. 
+    \begin{align}
+        \label{eq:size-increase}
+      \setbuild{|g'(wv)| - |g'(w)|} {$w,v \in A^*$}
+    \end{align}
+    might contain negative numbers. The crucial observation is that the above set can only contain finitely many negative numbers. Indeed, otherwise  the sequential transducer would have a loop with output of negative length, and iterating this loop would violate the assumption of the claim that all reduced outputs are positive. Therefore, there is some constant $M$ such that for every input string $w$, only the last $M$ letters of $g'(w)$ can ever be affected by cancellations in extension of the input. This means that $g'$ can be computed by a subsequential transducer, which outputs $g'(w)$ without the last $M$ letters, and keeps the last $M$ letters in a buffer in the state. When the input ends, the end-of-input function flushes the buffer.
+\end{proof}
+
+
+
+\paragraph*{Putting everything together.} We now put the above ingredients together to obtain the desired conclusion that $f$ is subsequential. Thanks to Claim~\ref{claim:offsets-are-regular} and~\eqref{eq:non-branching-part-deltas}, we know that there is a subsequential function with outputs in the free group that computes the non-branching part $\alpha(w)$. Thanks to Claim~\ref{claim:eliminating-negative-letters}, we can improve this function so that it does not use negative letters at all, i.e.~the function $\alpha(w)$ itself is subsequential. Thanks to Claim~\ref{claim:computing-branching-part}, there is a finite automaton whose state can be used to indicate the value of the branching part. By taking the product of this automaton with the subsequential function for $\alpha(w)$, we can get a subsequential transducer for $f$, thanks to the equality~\eqref{eq:f-from-alpha-beta}.
+\end{proof}
+% lax end
+
+
+\subsection{Rational functions}
+\label{sec:machine-independent-rational}
+We finish this chapter with  a machine independent characterisation of the rational functions. This characterisation is also based on bounded differences in the left distance.
+
+
+
+
+% lax begin Lax132576.RationalMachineIndependent
+\begin{theorem}[Reutenauer and Sch\"utzenberger]\label{thm:machine-independent-rational-functions}
+    A function $f : A^* \to B^*$ is rational if and only if it is continuous, and the following equivalence relation on input strings has finite index:
+    \begin{align*}
+w_1 \sim w_2 \quad \eqdef \quad  \sup_{w \in A^*} \distance{f(w w_1)}{f(w w_2)} < \infty.
+\end{align*}
+\end{theorem}
+% lax end
+
+% lax begin Lax132576Proofs.Results.isRationalFun_iff
+\begin{proof}
+    Since we have chosen to define rational functions as total functions, we assume that the function $f$ is total. Nevertheless, the same proof would work for partial rational functions, since all  the work related to undefined outputs is already done in the characterisation of subsequential functions.
+
+
+    The easy implication is from left-to-right. We have already established continuity for rational functions in Theorem~\ref{thm:continuity-rational-relations}. To see that $\sim$ has finite index for a rational function, one can use bimachines: if $w_1$ and $w_2$ give the same state of the suffix automaton, then they will be equivalent. 
+    
+    The rest of the proof is devoted to the right-to-left direction. Assume then that $f$ is continuous and $\sim$ has finitely many equivalence classes. 
+    We first observe that the relation  $\sim$ in the statement of the theorem  is a \emph{left congruence}, which means that 
+\begin{align*}
+w \sim w' \quad \implies \quad aw \sim aw' \qquad \text{for every $w,w' \in A^*$ and $a \in A$}.
+\end{align*}
+This congruence property holds because when we prepend $a$, the range of the supremum in the definition of $\sim$ becomes smaller. 
+Let $Q$ be the finite set of equivalence classes of $\sim$.  Thanks to the congruence property, there is an automaton structure on equivalence classes, which goes from right-to-left: if $q \in Q$ is an equivalence class and $a$ is an input letter, then there is a well-defined equivalence class $aq \in Q$, which is obtained by taking any word in $q$, prepending $a$, and taking the equivalence class.
+
+To finish the proof, we will show that the function $f$ can be computed in two steps, both of which are rational functions, and is hence rational as a composition of rational functions. In principle, the second step is a partial function, but the outputs of the first step will always fall in the domain of the second step.
+
+\begin{enumerate}
+    \item In the first step, we annotate each input letter with the equivalence class under $\sim$ of the remaining suffix. If the input is $a_1 \cdots a_n$, then the output of the first step is the string
+\begin{align*}
+\xleftarrow{a_1} q_1 \xleftarrow{a_2} q_2 \cdots \xleftarrow{a_n} q_n \in (A \times Q)^*,
+\end{align*}
+where $q_i$ is the equivalence class of the suffix $a_{i+1} \cdots a_n$. This function is rational, since it can be computed by a finite automaton which runs on the input string from right to left, and outputs the annotation as it goes.
+    \item In the second step, we use the string from the first step to compute the output of the original function $f$. Formally speaking, the second step is a partial function 
+    \begin{align*}
+     g : (A \times Q)^* \to B^*,
+    \end{align*}
+    which is defined if and only if the input is consistent (i.e.~it is a possible output of the first step), and in this case it returns the output of $f$ on the original input string. We now use Theorem~\ref{thm:subsequential-functions} to show that $g$ is subsequential. Let us check that the conditions in the theorem are satisfied. Continuity of $g$ is an easy consequence of continuity of $f$. For the bounded variation property,  we need to show that  for all strings $w_1$ and $w_2$ over the input alphabet of $g$,
+    \begin{align*}
+    \sup_{w} \distance{g(ww_1)}{g(ww_2)} < \infty,
+    \end{align*}
+    where $w$ ranges over strings that make both outputs defined.
+    Let $v_1$ and $v_2$ be the strings obtained from $w_1$ and $w_2$ by erasing the annotation with states $Q$. If $w_1$ and $w_2$ are inconsistent, or if they are consistent but the strings $v_1$ and $v_2$ are not equivalent under $\sim$, then the inequality above holds vacuously, since no string $w$ can be found which makes both outputs defined. Otherwise, by definition of the function $g$, the supremum above is the same as 
+    \begin{align*}
+    \sup_{v \in A^*} \distance{f(vv_1)}{f(vv_2)},
+    \end{align*}
+    and is therefore bounded by the definition of $\sim$.
+\end{enumerate}
+
+\end{proof}
+% lax end
+
+\begin{myexample}
+   [String reversal]
+   \label{ex:string-reversal-not-rational} Using the characterisation from the above theorem, we can show that the string reversal function is not rational. (We assume that the alphabet has at least two letters, since otherwise string reversal is the identity, and hence rational.) For string reversal, not only does the relation $\sim$ from the theorem fail to have finite index, but in fact all strings are pairwise non-equivalent. Indeed, consider two different strings $w_1$ and $w_2$. We want to show that 
+\begin{align*}
+\sup_{w \in A^*} \distance{\text{reverse}(ww_1)}{\text{reverse}(ww_2)} = \infty.
+\end{align*}
+We can easily choose the string $w$ so that the reversals differ in one of the first $|w_1|+1$ letters, which is a constant when $w_1$ and $w_2$ are fixed. Since the string $w$ can be made arbitrarily long, this will give unbounded distance.
+\end{myexample}
+
+
+% exercises about rational functions
+\exerciseheader
+
+\exer{\label{exer:minimal-sequential} We order sequential transducers by the number of states. Show that minimal sequential transducers are unique up to isomorphism.
+} {
+    This is the Myhill-Nerode theorem for sequential transducers. The key point, which is also what distinguishes this exercise from the following one, is that the output of each transition is already determined by the function. Indeed, a sequential function is prefix preserving, and therefore the transition which reads the $i$-th letter must produce
+    \begin{align*}
+    f(a_1 \cdots a_{i-1})^{-1} \cdot f(a_1 \cdots a_i),
+    \end{align*}
+    i.e.~the contribution of the $i$-th letter, which is the derivative from the proof of \cref{thm:sequential-function-independent}.
+
+    For an input string $u$, define its \emph{residual} to be the function
+    \begin{align*}
+    f_u : A^* \to B^* \qquad f_u(v) \quad \eqdef \quad f(u)^{-1} f(uv),
+    \end{align*}
+    which is well defined thanks to the prefix preserving property. If a sequential transducer computes $f$ and it is in state $q$ after reading $u$, then the residual $f_u$ is determined by $q$, since the outputs produced after reading $u$ depend only on $q$ and on the letters that follow. In particular, the transducer has at least as many states as there are residuals. Also, in a minimal transducer all states are reachable, since otherwise we could remove the unreachable ones.
+
+    Consider now a minimal transducer. By the two observations above, the map which sends a state $q$ to the residual $f_u$, for some $u$ that reaches $q$, is well defined and surjective onto the residuals. It is also injective: if two states had the same residual, then we could merge them, since the outputs of the corresponding transitions would be equal, and the corresponding target states would again have equal residuals; this would give a transducer with fewer states. Therefore the map is a bijection, and by construction it preserves the initial state, the transitions and their outputs. In other words, every minimal transducer is isomorphic to the transducer whose states are the residuals, with the initial state $f_\varepsilon = f$ and transitions
+    \begin{align*}
+    f_u \xrightarrow{\quad a \ / \ f_u(a) \quad} f_{ua}.
+    \end{align*}
+    Since this transducer depends on the function alone, all minimal transducers are isomorphic.
+}
+
+\exer{\label{exer:minimal-subsequential} We order subsequential transducers by the number of states. Show that minimal subsequential transducers are not unique up to isomorphism.
+} {
+    The end-of-input function makes it possible to produce the same output either while reading the input, or at the very end, and the state structure does not resolve this ambiguity. Consider the function over a one-letter input alphabet defined by
+    \begin{align*}
+    \varepsilon \mapsto \varepsilon \qquad \text{and} \qquad a^n \mapsto c \quad \text{for $n \geq 1$}.
+    \end{align*}
+    One state is not enough. Indeed, if the unique state had a transition with output $x$ and end-of-input output $y$, then the output on the input string $a^n$ would be $x^n y$, and this cannot be empty for $n=0$ and equal to $c$ for all $n \geq 1$.
+
+    Two states are enough, and there are two ways of using them. In both transducers, the states are the initial state $q_0$ and a second state $q_1$, the transitions are $q_0 \to q_1$ and $q_1 \to q_1$, the transition $q_1 \to q_1$ has empty output, and the end-of-input function maps $q_0$ to the empty string. The difference is in the remaining two values: in the first transducer, the transition $q_0 \to q_1$ outputs $c$ and the end-of-input function maps $q_1$ to the empty string, while in the second transducer, this transition has empty output and the end-of-input function maps $q_1$ to $c$. Both transducers are minimal, and they are not isomorphic, since an isomorphism would have to match the initial states, and therefore also the two remaining states, but the outputs of the transitions $q_0 \to q_1$ are different.
+
+    As the example suggests, uniqueness is restored if one additionally requires the output to be produced as early as possible.
+}
+
+\exer{\label{exer:non-minimal-bimachine} Consider bimachines ordered by the number of states in the suffix automaton.  Show that  minimal bimachines are not unique up to isomorphism.
+} 
+{This is already true for languages, i.e.~for functions of type
+\begin{align*}
+A^* \to \set{0,1},
+\end{align*}
+which produce one output letter that says if the input string belongs to the language. Take the language of strings of even length, over a one-letter input alphabet.
+
+In the first bimachine, the prefix automaton computes the parity of the prefix, and the suffix automaton tests if the suffix is empty. The output is empty in every gap except the last one, which is the one recognised by the suffix automaton, and in the last gap the output is the letter given by the parity in the prefix automaton. This machine has four states in total, two in each automaton. The second bimachine is symmetric: the prefix automaton tests if the prefix is empty, the suffix automaton computes the parity of the suffix, and the output is produced in the first gap. The two machines are not isomorphic, since already their prefix automata are not: in one of them the initial state can be reached again after reading a nonempty string, and in the other one it cannot.
+
+It remains to explain why four states cannot be improved. Since the output is one letter for every input string, exactly one gap produces a nonempty output. Suppose that the suffix automaton has one state. Then the output in a gap depends only on the prefix, i.e.~on the number of letters to the left of the gap, and therefore the gaps that produce a nonempty output form a fixed set of numbers, which does not depend on the input string. If this set has at least two elements, then a sufficiently long input string produces at least two letters of output; and if it has at most one element, then all sufficiently long input strings produce the same output. Both cases are impossible, and hence the suffix automaton has at least two states. The same argument, this time counting the letters to the right of the gap, shows that the prefix automaton has at least two states.
+}
+
+% \exer{\label{exer:minimal-bimachine-lexicographic} Consider a different order on bimachines: we  minimise the number of states in the suffix automaton, and we do not care about the prefix automaton. Show that suffix automaton in a minimal machine is unique up to isomorphism.
+% }
+% {
+%     We follow the proof of \cref{thm:machine-independent-rational-functions}. Throughout, we assume that all states of both automata are reachable, since unreachable states can be removed without changing the function.
+
+%     \paragraph*{The suffix automaton.} Let $\sim$ be the equivalence relation from \cref{thm:machine-independent-rational-functions}, which identifies two suffixes $v_1$ and $v_2$ if the outputs $f(wv_1)$ and $f(wv_2)$ are at bounded left distance, for $w$ ranging over all input strings.
+
+%     We first observe that the suffix automaton of every bimachine refines $\sim$. Suppose that two suffixes $v_1$ and $v_2$ lead to the same state of the suffix automaton, and consider an input string $wv_i$. In the gaps that are inside $w$, the state of the prefix automaton does not depend on $i$, and neither does the state of the suffix automaton, since it is obtained from the state of $v_i$ by reading the remaining part of $w$ backwards. Therefore the outputs $f(wv_1)$ and $f(wv_2)$ share the pieces produced in these gaps, and they can only differ in the pieces produced in the remaining $|v_i|+1$ gaps. Since each piece has bounded length, this is a bound that does not depend on $w$, and hence $v_1 \sim v_2$. In particular, the suffix automaton has at least as many states as $\sim$ has equivalence classes.
+
+%     Conversely, there is a bimachine whose suffix automaton is the automaton of $\sim$-classes.  In the proof of \cref{thm:machine-independent-rational-functions}, the function is decomposed into two steps: a right-to-left automaton which annotates every position with the $\sim$-class of the suffix that follows it, and a subsequential function on the annotated strings. The first step is precisely the automaton of $\sim$-classes, read as a suffix automaton. For the second step, the only thing to check is that the state of the subsequential transducer, after reading an annotated prefix, depends only on the prefix and on the class of the suffix that remains. This is indeed the case, because the earlier annotations can be recovered from the class of the remaining suffix, by prepending the letters of the prefix one by one; recall that $\sim$ is a left congruence. Therefore we can use, as the state of the prefix automaton after reading $u$, the function which maps a class $q$ to the state of the subsequential transducer after reading $u$ annotated according to $q$. This function is updated deterministically from left to right, and together with the class of the suffix it determines the output in the gap.
+
+%     Summing up, a bimachine with a minimal suffix automaton has one state per $\sim$-class, and its suffix automaton is the automaton of $\sim$-classes, which is determined by the function alone, and is therefore unique up to isomorphism.
+
+%     \paragraph*{The prefix automaton.} In the above discussion we have solved the exercise. Let us now continue and discuss the prefix automaton. Suppose that we refine the order on bimachines: we first minimise the number of states in the suffix automaton, and then we minimise the number of states in the prefix automaton. We will show that a minimal bimachine is unique up to isomorphism, if we make a further assumption: the bimachine is \emph{earliest}, which means that it produces the output as early as possible from left-to-right. 
+
+%     From now on the suffix automaton is fixed to be the one above, and we write $[v]$ for the state that it assigns to a suffix $v$. For a prefix $u$ and a state $q$ of the suffix automaton, define
+%     \begin{align*}
+%     \text{Out}(u,q) \quad \eqdef \quad \text{the longest common prefix of } \setbuild{f(uv)}{$[v]=q$}.
+%     \end{align*}
+%     In every bimachine, the pieces produced in the gaps inside $u$ depend only on $u$ and $[v]$, and they form a prefix of the output; therefore they form a prefix of $\text{Out}(u,q)$. In other words, $\text{Out}(u,q)$ is the most that a bimachine can produce before it has seen the letters of the suffix, and we call a bimachine \emph{earliest} if it produces exactly this much in every gap. For an earliest bimachine, the output function is determined by the function $f$: the piece produced in the gap that follows a prefix $u = u'a$, when the suffix is in state $q$, must be
+%     \begin{align*}
+%     \text{Out}(u', a q)^{-1} \cdot \text{Out}(u,q),
+%     \end{align*}
+%     where $aq$ is the state for the suffixes $av$ with $[v]=q$, and the piece in the first gap must be $\text{Out}(\varepsilon,q)$.
+
+%     It remains to choose the states of the prefix automaton, and this is the same Myhill-Nerode construction as in \cref{exer:minimal-sequential}: we identify two prefixes if the pieces described above are the same for them, and for all of their extensions. This is a right congruence, and hence it defines a deterministic automaton, which is determined by $f$ alone; the argument from \cref{exer:minimal-sequential} shows that no earliest bimachine can have fewer states in its prefix automaton, and that one with this many states must be isomorphic to it. 
+% }
+
+\exer{\label{exer:non-minimal-automaton} Give an example of a rational function which has two non-isomorphic unambiguous transducers of minimal size (the size is the number of states).
+}
+{The parity function from \cref{exer:non-minimal-bimachine} can be used, i.e.~the function which maps $a^n$ to the one-letter string that says if $n$ is even. We first observe that in every transducer for this function, all cycles that appear in accepting runs have empty output: repeating such a cycle would give the unique accepting run of a longer input string, and its output would have more than one letter. Therefore the output letter is produced in a bounded part of the run, which can be at its beginning or at its end, and this is where the two transducers differ.
+
+    In the first transducer, the output is produced at the end. There are two states that track the parity of the number of letters read so far, plus a final state, which is entered by two transitions with empty input, one from each parity state, producing the corresponding output letter. In the second transducer, the output is produced at the beginning. From the initial state there are two transitions with empty input, which guess the parity of the input string and produce the corresponding output letter, and which lead to two states that check whether the guess was correct. Both transducers have three states, and both are unambiguous, since in both of them the accepting run is determined by the parity of the input string. They are not isomorphic, since in the first one the transitions with empty input enter the same state, and in the second one they leave the same state.
+
+    Three states are necessary. The input string $a^0$ needs an accepting run which uses transitions with empty input only, and which produces the letter for even parity; this run cannot use a cycle, since a cycle with empty input would give infinitely many accepting runs. On the other hand, the input string $a^1$ needs an accepting run which produces the letter for odd parity, and hence it cannot use any of the transitions in the run for $a^0$. A short case analysis on the two remaining states, which have to track the parity, shows that these two runs cannot be accommodated.
+}

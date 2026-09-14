@@ -1,0 +1,91 @@
+\documentclass{article}
+
+% macros applicable to any text
+\usepackage{macros}
+% macros specific to transducers
+\usepackage{transducer-macros}
+\showissuesfalse\showreviewsfalse
+\newcommand{\map}{\mathsf{map}}
+
+
+\begin{document}
+
+% The front matter — title, preface, contents — is numbered separately and
+% shown without numbers, so that page 1 of the book is the first page of the
+% introduction. Roman rather than simply unnumbered: \pagenumbering also resets
+% the counter, which keeps hyperref's anchors for these pages distinct from the
+% arabic ones that follow (page.i, not a second page.1).
+\pagenumbering{roman}
+\pagestyle{empty}
+
+\title{Transducers}
+\author{Miko{\l}aj Boja\'nczyk}
+
+\maketitle
+\thispagestyle{empty}     % \maketitle asks for `plain` on its own page
+% \begin{abstract}
+%     Lecture notes for a course on transducers
+% \end{abstract}
+
+\input{knowledges}
+
+\newpage
+\input{preface}
+
+
+\newpage
+\tableofcontents
+
+\newpage
+
+% Here the book proper starts, and with it page 1.
+\pagenumbering{arabic}
+\pagestyle{plain}
+
+\input{intro}
+
+
+% part A Mealy machines
+\mypart{ Mealy machines}
+\label{part:mealy}
+\input{partAMealy/intro}
+\input{partAMealy/mealy}
+\input{partAMealy/krohn-rhodes}
+\input{partAMealy/bib-notes}
+
+% part B Rational functions
+\mypart{Rational functions}
+\label{part:rational}
+\input{partBRational/intro}
+\input{partBRational/rational-relations}
+\input{partBRational/rational-functions}
+\input{partBRational/weighted}
+\input{partBRational/myhill-nerode}
+\input{partBRational/bib-notes}
+
+
+% part C Regular functions
+\mypart{Regular functions}
+\label{part:regular}
+\input{partCRegular/intro}
+\input{partCRegular/regular-primes}
+\input{partCRegular/2dfa}
+\input{partCRegular/sst}
+\input{partCRegular/logic}
+\input{partCRegular/combinators}
+\input{partCRegular/bib-notes}
+
+% part D Polyregular functions
+\mypart{Polyregular functions}
+\label{part:polyregular}
+\input{partDPolyregular/intro}
+\input{partDPolyregular/for}
+\input{partDPolyregular/pebble}
+\input{partDPolyregular/bib-notes}
+
+
+\printbibliography
+
+
+
+\end{document}

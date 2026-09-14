@@ -1,0 +1,21 @@
+
+
+\section*{Preface} 
+
+This book started out as a collection of lecture notes for a course on transducers, taught at the University of Warsaw in 2024 and 2026, but it is meant to evolve into a more comprehensive resource on transducers.  I would recommend visiting the online version of the book, which links to a Lean formalisation of the entire text.  I hope that the presence of such a formalisation will allow others to build on results presented here without fear of errors. Also, I hope that the Lean formalisation can free me to adopt a readable and informal writing style, with pictures and examples, since doubts can be resolved conclusively by reading the linked formalisation.
+
+\paragraph*{Acknowledgements.} I would like to thank the students of the course for their feedback, and Antek Puch for his support in selecting exercises. I would also like to thank Rafał Stefański and Anshul Goyal for helping start the Lean formalisation project. Ultimately, the formalisation was done using the AI assistant Aristotle. (I confess that I have done  little more than spot checks to see if the formalisation crresponds to the text, but I hope that convenient web interface with direct links to Lean will ensure that any confabulations are exposed.)  I have also used AI, mainly Claude, to: autocomplete when writing,  find errors, write draft solutions for the more routine exercises (roughly one in ten of the solutions had a first draft written by AI), and implement the design of the web version. The web version uses reflowtex by Radek Piórkowski, which allows displaying TeX on web pages.
+
+
+
+\paragraph*{Lean.} 
+All theorems are proved in Lean without any assumptions. The same is true for all exercise solutions, with two exceptions: two solutions rely on external assumptions (Ehrenfeucht-Fra\"isse games and the Parikh Theorem).  I will try to fix these issues over time. Hopefully some of them will be resolved by improvements in Mathlib that I expect to see soon.
+
+\paragraph*{Future work.}  This book is a work in progress. My plans for the immediate future include the following, mainly concerning the polyregular functions:
+\begin{itemize}
+    \item regular list functions and their polyregular extension;
+    \item \mso interpretations as the logical version of polyregular functions;
+    \item the $\lambda$-calculus version of polyregular functions;
+    \item growth rates of polyregular functions.
+\end{itemize}
+Further down the line, I would like to extend from strings to trees and graphs.

@@ -1,0 +1,9 @@
+% lax begin lax-132576
+In this part, we move one step up the transducer ladder, to the rational functions.
+A Mealy machine produces its output deterministically in a left-to-right manner, and each input letter generates exactly one output letter. The rational functions lift both of these restrictions. There are intermediate models, which lift one restriction but not the other; however, we do not discuss them here in detail, in the interest of not proliferating transducer models.
+
+Before defining the rational functions, in Section~\ref{sec:rational-relations} we take a detour, and   define a more general class, which is called the rational relations. These are binary relations and not functions, because the underlying model is non-deterministic, and the same input string might generate multiple outputs, even infinitely many. Many results about rational functions are easily proved in the more general setup of relations, and so it is instructive to begin with the relational case. Nevertheless, there is a price to pay: the equivalence problem for rational relations is undecidable.
+
+Next, in Section~\ref{sec:rational-functions}, we define the rational functions as those rational relations which are semantically functional, i.e.~each input produces exactly one output. Although the definition uses a nondeterministic model, we also identify an equivalent model that is deterministic, which is called bimachines, although the determinism is not of the left-to-right kind that we are used to from Mealy machines. Finally, we show how restricting to functions allows us to recover decidability of equivalence. 
+% lax end
+

@@ -1,0 +1,200 @@
+\section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
+Unlike the study of regular languages, which can be viewed as functions with Boolean outputs
+\begin{align*}
+L : A^* \to \Bool = \set{\text{yes, no}},
+\end{align*}
+this book is about string-to-string functions
+\begin{align*}
+f : A^* \to B^*,
+\end{align*}
+where $A$ and $B$ are some finite alphabets. The functions should  be computed by models that are finite-state in some way; such models will be called transducers. There will be four main transducer models treated in this book, which are ordered in a ``transducer ladder'' in  increasing order of expressive power as follows: 
+
+\begin{center}
+$\left.
+\begin{array}{c}
+    \text{Part~\ref{part:mealy}. Mealy machines} \\ 
+    \rotatebox{90}{$\supset$} \\
+    \text{Part~\ref{part:rational}. Rational functions} \\ 
+    \rotatebox{90}{$\supset$} \\
+    \text{Part~\ref{part:regular}. Regular functions} \\
+    \rotatebox{90}{$\supset$} \\
+    \text{Part~\ref{part:polyregular}. Polyregular functions}
+\end{array}
+\right\} \quad \text{the transducer ladder}$
+\end{center}
+
+Before delving into the details of these models, we begin by explaining some general properties that we would like our transducer models to have.  
+
+\paragraph*{Continuity.} The transducer  ladder does not include Turing machines, or pushdown automata, suitably generalised to compute string-to-string functions. Why? 
+
+The reason is that, in  our understanding of ``finite-state'', the  regular languages are finite-state, but pushdown automata and Turing machines are not.  This is because we want finite-state models to correspond to regular languages. While the distinction between regular languages and non-regular ones is well understood,  the same distinction for string-to-string functions is less clear.  Although one of the  transducer models in the transducer ladder is  called the ``regular'' functions, this might well be only  a historical artefact, and cogent arguments can be made to justify the name  ``regularity'' for any of  the other models in the transducer ladder, and also for other models that are not in the ladder. Summing up, we do not really know what is the right analogue for regular languages in the case of  string-to-string functions.
+
+Nevertheless, there are some models that we can reject out of hand, because they violate a criterion that we call \emph{continuity}. This criterion requires a function to be compatible with regularity in the string-to-Boolean case, as formalised in the following definition. 
+% lax begin Lax765601.Continuity
+\begin{definition}[Continuous string-to-string functions]
+    \label{def:continuity}
+    A  function 
+    \begin{align*}
+    f : A^* \to B^*
+    \end{align*}
+    is called \emph{continuous} if for every regular language $L \subseteq B^*$ over the output alphabet, the inverse image $f^{-1}(L)$ is also regular.
+\end{definition}
+% lax end
+
+For example, if we take a string-to-string  function that is  computed by a Turing machine, or by a pushdown automaton with some kind of output mechanism, then the function  will typically not be  continuous.  One of the salient properties of continuity is that for functions with two possible outputs ``yes'' and ``no'', continuity is the same as regularity in the usual string-to-Boolean sense (this observation is valid when we see the outputs as one-letter words, and also as multi-letter words).
+
+The name continuity is loosely inspired by the topological notion of continuity, in which the inverse image of an open set is open. This is not a perfect analogy, since open sets in topology should be closed under possibly infinite unions, while regular languages are only closed under finite unions. A more in-depth discussion of this analogy can be found in the exercises, where we show that Definition~\ref{def:continuity} is the same as uniform continuity with respect to a certain distance on strings.
+
+As we will see, all functions in the transducer ladder are  continuous. Unfortunately, continuity on its own is not enough to guarantee a reasonable transducer model, and it should be treated as a necessary but not sufficient condition for having a good transducer model. In fact, as the following example shows, there are uncountably many continuous functions.
+
+\begin{myexample}\label{ex:uncountably-many-continuous}
+    Consider an output alphabet $B$ and any sequence of words 
+    \begin{align*}
+    w_1, w_2, \ldots \in B^*
+    \end{align*}
+    which has the following \emph{Cauchy property}: every regular language $L \subseteq B^*$ gives the same answer on all but finitely many words in the sequence. By a simple extraction process, one can show that every infinite sequence contains a subsequence with the Cauchy property. A more explicit example of a Cauchy sequence is the sequence of words obtained by repeating an input letter a  factorial number of times
+    \begin{align*}
+    b^{1!}, b^{2!}, b^{3!},\ldots \qquad \text{where $b \in B$.}
+    \end{align*}
+    Let us prove that this sequence has the Cauchy property. Consider some regular language, and a corresponding  deterministic finite automaton (\dfa) that recognises this language. (We assume that the reader is familiar with \dfa.)  When reading a string that uses only letter $b$, the run of the automaton looks like a lasso, with some prefix of  length $k$ followed by  some loop of length $\ell$. Therefore, if  $n > k$, the acceptance of an input string $b^n$ depends only on  the remainder $n-k \mod \ell$. If $n$ is furthermore  a sufficiently large factorial -- and hence divisible by $\ell$ --  then this remainder is always the same, namely $\ell - k \mod \ell$. Hence, from some point on the automaton will give the same answer to all strings in the sequence, thus proving that the sequence is Cauchy. 
+
+Fix a sequence with the Cauchy property, and consider any function 
+    \begin{align*}
+    f : A^* \to B^*
+    \end{align*}
+    where all outputs are in the sequence, and furthermore each output is used for finitely many inputs. For every regular language $L \subseteq B^*$, the language will give the same result on all but finitely many words in the Cauchy sequence, and therefore the inverse image $f^{-1}(L)$ will be either finite or cofinite. Since languages that are finite or cofinite are regular, it follows that the inverse image will necessarily be regular, thus proving that the function is continuous. Since a Cauchy sequence can be constructed in uncountably many ways, and the function $f$ can also be constructed in uncountably many ways, there are uncountably many continuous functions of this form.
+\end{myexample}
+
+Despite the issues raised in the above example, continuity will be a good -- if not perfect -- criterion for checking if a transducer model is reasonable.  There are, however, other criteria.
+
+\paragraph*{Composition.} Another desirable property of transducer models is closure under composition, i.e.~if we have two functions 
+\begin{align*}
+A^* 
+\xrightarrow f 
+B^* 
+\xrightarrow g 
+C^*
+\end{align*}
+that can be defined in some transducer model, then the same should be true for their composition. All transducer models in this book will have this property.   Arguably, continuity itself can be seen as a special case of composition, since taking the inverse image is the same as composing with a string-to-Boolean function: \begin{align*}
+A^* 
+\xrightarrow f 
+B^* 
+\xrightarrow L
+\Bool.
+\end{align*} 
+One of the advantages of composition is that functions can also be decomposed, i.e.~presented as compositions of simpler functions. This will be a fundamental theme in this book, starting with the Krohn-Rhodes decomposition of Mealy machines, and continuing with similar  decomposition theorems for models that are  higher up in the transducer ladder. 
+
+\paragraph*{Decidable algorithmic problems.} The above conditions are necessary, but not sufficient, for a good transducer model. For example, we could take the class of all continuous functions: this class is easily seen to be closed under composition, but it contains many pathological examples, as we have seen in Example~\ref{ex:uncountably-many-continuous}. An important further condition is that the model should be thoroughly decidable, similarly to finite automata.  There are many algorithmic problems to consider, including:
+\begin{itemize}
+    \item \textbf{evaluation:} given a transducer and an input string, compute the output string;
+    \item \textbf{computing inverse images:} given a transducer and a  regular property of output strings, compute the inverse image;
+    \item \textbf{composition:} given two transducers, compute a transducer for their composition;
+    \item \textbf{equivalence:} given two transducers, decide if they compute the same function.
+\end{itemize}
+The second and third problems can be seen as effective versions of  continuity and closure under composition. For all transducer models in this book, all the above problems will be decidable, with one exception: we do not know if equivalence is decidable for polyregular functions.
+
+\paragraph*{Is this all?} The properties that we have discussed above are not exhaustive. For all we know, there could be infinitely many transducer models that satisfy all of these properties. In this book, we try to give complete characterisations of some of the models in the transducer ladder, in a way that is machine independent. However, as we will see, this gets harder and harder as the models become more expressive.  
+\exerciseheader
+
+
+
+    \exer{ \label{exer:reverse-continuous} Show continuity for the reversal function $a_1 \cdots a_n \mapsto a_n \cdots a_1$. }
+    { Given a deterministic automaton for the output language, we can construct a nondeterministic automaton for the inverse image, by reversing the arrows in the automaton, and swapping the initial and accepting states.
+    
+    Here is an alternative solution, which uses monoids instead of automata, and which will extend more easily to the subsequent exercises. It is well known that a language $L \subseteq A^*$ is regular if and only if there is some finite monoid $M$ and a monoid homomorphism 
+    \begin{align*}
+    A^* 
+    \xrightarrow h
+    M
+    \end{align*}
+    such that the language $L$ is an inverse image $h^{-1}(F)$ for some accepting set $F \subseteq M$. Under this characterisation, reversal is straightforward: we simply consider a monoid with the reverse operation, and the corresponding homomorphism, with the same accepting set.
+    }
+    \exer{\label{exer:duplication-continuous} Show continuity for  the duplication\footnote{We use the name duplication for the function because the output length is double the input length. This clashes with the notation $ww = w^2$ which seems to suggest squaring. The reason for the clash is that string concatenation is traditionally written in  multiplicative notation, while additive notation is used for string lengths. For us, the more important one will be string length. This notation clash would be resolved by additve notation for strings, which is done for example in Haskell, where the concatenation operator is called \texttt{++}.  Nevertheless, we stay with the standard multiplicative notation for string concatenation.
+} function $w \mapsto ww$.}{
+    We use the monoid approach that was discussed in the solution to Exercise~\ref{exer:reverse-continuous}. Consider a regular language $L \subseteq A^*$. To see that its inverse image, under duplication, is regular, we use the same monoid homomorphism as for $L$, but we change the accepting set to be the set of elements $m$ such that $mm \in F$. This way, the inverse image of the new accepting set is exactly the inverse image of $L$ under duplication. }
+    \exer{\label{exer:squaring-continuous} Show continuity for the squaring\footnote{Similarly to the duplication function, the notation $w^{|w|}$ suggest exponentiation, but we call it squaring because of the output length.} function $w \mapsto w^{|w|}$.}
+    {Suppose that the original language $L$ is recognised by a monoid homomorphism
+    \begin{align*}
+    A^*
+    \xrightarrow h
+    M.
+    \end{align*}
+    The inverse image in the statement of the exercise is the language 
+    \begin{align*}
+    \setbuild{ w \in A^*}{$(h(w))^{|w|}$ belongs to the accepting set of the original language}
+    \end{align*}
+    To recognise this inverse image, we use a deterministic finite automaton where the state space is 
+    \begin{align*}
+     M \times M^M,
+    \end{align*}
+    subject to the following invariant: after reading an input string $w$,  the first coordinate is  the image $h(w)$; and the second coordinate  the function $m \mapsto m^{|w|}$. To maintain the invariant, the  state is updated as follows: 
+    \begin{align*}
+    (m, \varphi) \xmapsto a (m \cdot h(a), \lambda n \mapsto \varphi(n) \cdot n).
+    \end{align*}
+    The accepting set is
+    \begin{align*}
+    \setbuild{ (m,\varphi)}{$\varphi(m)$ belongs to the original accepting set}.
+    \end{align*}
+    }
+       \exer{\label{exer:factorial-continuous} Show continuity for the factorial function $w \mapsto w^{|w|!}$.}{
+We use a similar construction as in the monoid solution to the previous exercise.  Let $h$ and $g$ be as in that solution. We define a deterministic finite automaton for the inverse image, where the  state space is 
+\begin{align*}
+M \times M^M \times M^M.
+\end{align*}
+The first two coordinates are updated as in the previous exercise, while the third coordinate is updated so that it stores the function $m \mapsto m^{|w|!}$. This is implemented by taking the previous value of the third component, and multiplying it coordinatewise with the new value of the second coordinate.  The accepting set is defined similarly to the previous exercise, using the third coordinate instead of the second one.
+       }
+
+\exer{\label{exer:factorial-power-continuous}Let $g : \Nat \to \Nat$ be any non-decreasing function, possiby non-computable.  Show that the function $
+w  \mapsto w^{g(|w|)!}
+$
+is continuous.}{
+    The main observation is the following claim, which says that factorial powers in a monoid must necessarily stabilise.  
+    \begin{claim}
+        For every finite monoid $M$  and every $m \in M$, the following sequence of monoid elements is eventually constant:
+        \begin{align*}
+        m^{1!}, m^{2!}, m^{3!}, \ldots
+        \end{align*}
+    \end{claim}
+    Let us write $m^{!} \in M$ for the stable value of the sequence in the above claim. By the above claim, if we take a monoid homomorphism $h$ into a monoid $M$ and we replace the accepting set $F$ by 
+    \begin{align*}
+    \setbuild{ m \in M}{$m^{!} \in F$},
+    \end{align*}
+    then the new regular language will agree with the inverse image of the original language up to a finite number of exceptions. Since regular languages are closed under finite differences, the inverse image will be regular, and the function is continuous.
+}
+
+
+\exer{\label{ex:continuity-for-finite-images}Consider a string-to-string function  with finitely many output values. Show that this function is continuous if and only if the inverse image of each output value is regular.}{
+    The ``only if'' direction is immediate from the definition of continuity, since the inverse image of a singleton set is the inverse image of a regular language. For the ``if'' direction, we use the fact that every regular language can be expressed as a finite union of singleton sets, and that regular languages are closed under finite unions. Therefore, if the inverse image of each output value is regular, then the inverse image of any regular language will also be regular.
+}
+
+\exer{\label{exer:finite-images-assumption-necessary}Show that the assumption on finitely many output values in \cref{ex:continuity-for-finite-images} is necessary.}{ Otherwise, every injective string-to-string function would be continuous, since images of singletons would also be singletons and hence regular. Clearly not all injective functions are continuous, since every function can be made injective by adding a copy of the input string to the output, after some  separator symbol.
+}
+\exer{\label{exer:middle-letter-not-continuous}Consider a function which has an empty output for inputs of even length, and otherwise outputs the (one-letter string consisting of) the letter in the middle of the input string. Show that this function is not continuous when the alphabet has at least two letters.}{For a letter $a$ in the alphabet, the inverse image of the regular language $\set{a}$ is the set of strings of odd length whose middle letter is $a$. This language is not regular, since it is not recognised by any finite automaton, which can be proved using the pumping lemma. }
+
+
+
+       \exer{ \label{ex:distance}For words over an alphabet $A$, define the distance  between two  strings $w,w'$ to be zero if they are equal, and otherwise to be
+       \begin{align*}
+         \frac{1}{\text{minimal number of states in a \textsc{dfa} that accepts $w$ but not $w'$}}.
+       \end{align*}
+       Show that this is indeed a distance. }{ The distance is symmetric and zero if and only if the two strings are equal. The only thing to check is the triangle inequality. We will show a stronger inequality, where $\max$ is used instead of $+$ (which is called an ultrametric):
+       \begin{align*}
+       d(w_1,w_3)  \leq \max (d(w_1,w_2), d(w_2,w_3)).
+       \end{align*}
+       By unfolding the reciprocals in the definition, this is the same as 
+       \begin{align*}
+       s(w_1,w_3) \geq \min (s(w_1,w_2), s(w_2,w_3)),
+       \end{align*}
+       where $s$ is the minimal number of states in a \dfa that distinguishes two words. To see why the inequality holds, we observe that if a \dfa  distinguishes $w_1$ from $w_3$, then the same \dfa must also distinguish $w_1$ from $w_2$ or $w_2$ from $w_3$. Observe that this proof does not use any properties of automata, and we would also get a metric if used any class of distinguishers, such as Turing machines or pushdown automata.
+       }
+       \exer{\label{exer:all-functions-continuous-for-metric} Show that all string-to-string functions are continuous with respect to the distance from \cref{ex:distance}.}{
+        Continuity means that for every input string $w \in A^*$ and every $\varepsilon > 0$, there is some $\delta > 0$ such that for all input strings at distance at most $\delta$ from $w$, the output is at distance at most $\epsilon$ from $w$. This is true, because there is a \dfa whose language is the singleton $\set{w}$, and the distance from $w$ to any other string is at least $\delta = 1/n$, where $n$ is the number of states in the \dfa. All input strings at distance $< \delta$ will be mapped to exactly $f(w)$, because $w$ is the only such string.  
+
+        Here is a topological description of the  same argument. As we explained above, for sufficiently small $\delta$, the $\delta$-neighbourhood of $w$ is just the singleton $\set{w}$. This means that all singletons are open sets, and therefore all sets are open. Hence the topology is discrete, and all functions are continuous
+        \footnote{It is worth pointing out that the issues go away if we consider a completion of the space, i.e.~we extend $A^*$ to include limits of Cauchy sequences. The resulting topological space is called the space of \emph{profinite strings}, and it is compact. For more information, see \cite[Chapter X]{pin2025}.}.
+       }
+       \exer{\label{exer:continuous-iff-uniformly-continuous} Show that the continuous functions, in the sense of Definition~\ref{def:continuity}, are exactly the uniformly continuous functions with respect to the above metric. }{
+        Uniform continuity means that for every $\varepsilon > 0$, there is some $\delta > 0$ such that for all input strings $w,w'$ at distance at most $\delta$, the outputs are at distance at most $\epsilon$. This means that for every $n \in \Nat$ (think of $1/\varepsilon$) there is some $m\in \Nat$  (think of $1/\delta$) such that if input strings cannot be distinguished by automata with at most $m$ states, then the corresponding output strings cannot be distinguished by automata with at most $n$ states.  This is the same as continuity in the sense of Definition~\ref{def:continuity}, because there are finitely many automata with a given number of states (and a given alphabet).
+       }
+

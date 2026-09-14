@@ -1,0 +1,250 @@
+\section{Pebble transducers}
+\label{sec:polyregular-pebble}
+We now describe a second model for polyregular functions, which is called \emph{pebble transducers}. 
+% Historically, this is the original model: pebble transducers were introduced by Milo et al.~in~\cite[Section 3.1]{DBLP:journals/jcss/MiloSV03}, as a transducer variant of pebble automata with ``yes'' and ``no'' outputs that were introduced by Globerman and Harel~\cite[Definition 4.1]{DBLP:journals/tcs/GlobermanH96}.  Milo et al.~also generalized from strings to trees, but from the point of view of this paper, the string case originally considered by Globerman and Harel is more important: Engelfriet and Maneth~\cite{engelfriet2002two,DBLP:journals/acta/Engelfriet15} observed that in the string-to-string case, pebble transducers have polynomial size outputs and  are closed under composition (neither of which is true in the tree-to-tree case). Therefore,  in this paper, we discuss only the string-to-string version of pebble transducers.
+A pebble transducer extends a two-way transducer by having not one head, but a stack of  \emph{pebbles} that point to the input string, as in the following picture:
+\mypic{48}
+Similarly to one-way and  two-way transducers (but unlike for-transducers), our pebbles point to gaps between positions, and not positions. 
+Importantly, the pebbles are organised in a stack, with pebble 1 at the bottom of the stack, and a  pebble can only be modified by the transducer if it is at the top of the stack\footnote{
+    \label{footnote:stack-discipline}
+    Without  stack discipline the model would be the same as multi-head automata, which correspond to logarithmic space~\cite[Corollary 3.5]{ibarra1971}.}.
+The stack can be potentially empty, and -- more importantly -- its height is bounded by a constant $k$ that is given in the pebble automaton. (There are models with unbounded numbers of pebbles~\cite{engelfriet2007}.)
+We use the name \emph{head} for the topmost pebble on the stack. Apart from the pebble stack, the automaton has a state from a finite set. To update its configuration, the pebble transducer looks at its state, and the answers to the  following \emph{questions}, where $i \in \set{1,\ldots,k}$ range over pebble numbers:
+\begin{enumerate}
+    \item \label{pebble-question:label} what are the two input letters adjacent to pebble $i$?
+    \item \label{pebble-question:left} which other pebbles are in the same place as pebble $i$?
+\end{enumerate}
+Formally speaking, if the input alphabet is $A$, then  the set of possible answers to the above questions is described by the set
+\begin{align*}
+\myoverbrace{\sum_{\ell \in \set{0,\ldots,k}}}{how many \\ pebbles are \\ in the stack} \quad 
+\myoverbrace{\prod_{i \in \set{1,\ldots,\ell}}}{for each pebble \\ on the stack \\ we answer the \\ questions} 
+\quad 
+\myoverbrace{(A+1) \times (A+1)}{the two letters \\ adjacent to the \\ pebble, with $1$ meaning \\ that there is no letter} \quad \times \quad 
+\myoverbrace{\powerset \set{1,\ldots,\ell}}{the set of pebbles \\ in the same  place \\  as  pebble $i$}.
+\end{align*}
+Based on the  current state and the answers to these questions, the pebble transducer deterministically chooses a new state and an \emph{action} from the following set:
+\begin{enumerate}
+    \item \label{pebble-action:output} output letter $a$; 
+    \item \label{pebble-action:move} move the head by one position to the left/right;
+    \item \label{pebble-action:push} push a new pebble, placed in the first gap, onto the pebble stack;
+    \item \label{pebble-action:pop} pop the topmost pebble from the pebble stack;
+    \item \label{pebble-action:terminate} terminate.
+\end{enumerate}
+Formally speaking,
+a \emph{configuration} of the pebble transducer is defined to be  an input string, together with a state and a stack $x_1,\ldots,x_\ell$ of  gaps in the input string whose height $\ell$ is in $\set{0,\ldots,k}$. 
+
+
+The transducer begins in the configuration where the stack is empty and  the state is a  designated initial state. Next, it keeps on updating its configuration according to the above transition rules. The resulting sequence of configurations is called the \emph{run} of the pebble transducer, and it stops when the ``terminate'' action is executed. The \emph{output string} is defined to be the sequence of output letters that are produced by output actions during the run,  in the order that they were executed.  The output string is undefined if one of the following errors occurs: (a) the run never terminates; or (b) the head moves out of the input string; or (c) the stack bound is exceeded, by either popping in an empty stack or pushing pebble $k+1$. We will only care about pebble transducers which define total functions, which means that for every input string none of the errors (a) -- (c)  occur. 
+We use the name $k$-pebble transducer for a pebble transducer where the bound on the stack height is $k$. In the case of $k=1$, 
+    we recover  two-way transducers.
+
+\subsection{Continuity}
+\label{sec:continuity-pebble}
+In Theorem~\ref{thm:pebble-are-for} later in this section, we will show that pebble transducers compute the same string-to-string functions as for-transducers, and therefore they are continuous and closed under composition. Nevertheless, it is instructive to give a direct proof of continuity, which does not rely on the equivalence with for-transducers, and which will also explain the relevance of the stack discipline. We begin by showing that without stack discipline, the model would not be continuous.
+
+\begin{myexample}[Importance of stack discipline]
+    \label{ex:importance-of-stack-discipline}
+    Consider the non-regular language $\setbuild{a^n b^n}{$n \in \Nat$}$. We will show that this language can be computed by an extension of pebble transducers that does not have stack discipline. (The transducer will output ``yes'' or ``no'' depending on whether the input string is in the language or not.) The transducer begins by placing the pebble one at the beginning of the input string, and pebble two at the end. Then, the transducer enters a loop, such that in each iteration pebble one is moved one step to the right, and pebble two is moved one step to the left, until both pebbles meet. We require that, before meeting, the labels traversed by pebble one have label $a$ and the labels traversed by pebble two have label $b$. Formally speaking, this transducer needs a third pebble, which shuttles between the first two pebbles to implement the loop. Stack discipline is violated by this transducer, since pebble one is moved without removing pebble two.  As we have remarked in the footnote on stack discipline, without stack discipline the model can compute the same functions as deterministic Turing machines with logarithmic space.
+\end{myexample}
+
+
+We now show that with stack discipline, the model becomes continuous.
+
+% lax begin Lax194892.PebbleContinuity
+% lax begin Lax194892.PebbleTransducers
+\begin{theorem}
+    \label{thm:pebble-are-continuous}
+    Pebble transducers compute continuous functions.
+\end{theorem}
+% lax end
+% lax end
+
+% lax begin Lax194892Proofs.Results.continuous_of_isPebbleTransducer
+\begin{proof}
+    In the proof, it will be simpler to deal with \emph{pebble automata}, which are the variant of pebble transducers that compute languages, i.e.~string-to-Boolean instead of string-to-string. A pebble automaton is defined like a pebble transducer, except that instead of outputting letters, at some point during its run it makes a decision which is either ``accept'' or ``reject''.
+    We first observe that the composition of  a pebble transducer with a regular language is a pebble automaton, as explained in the following diagram:
+    \[
+    \begin{tikzcd}[column sep=2cm]
+    A^*
+    \ar[r,"\text{pebble transducer}"]
+    \ar[rr,bend right, "\text{pebble automaton}"']
+    &
+    B^*
+    \ar[r,"\text{regular language}"]
+    &
+    \Bool
+    \end{tikzcd}
+    \]
+    This is easy to show, by using a product of the pebble transducer with a \dfa that recognises the regular language. Therefore, in order to prove the theorem, it is enough to show that pebble automata recognise only regular languages. (They also recognise all regular languages, since they generalise \dfa.) 
+ 
+    Consider a pebble automaton that has $k$ pebbles and states $Q$. If the input string has length $n$, then the set of configurations can be described by the polynomial
+    \begin{align}
+        \label{eq:type-of-configurations-for-pebble-automaton}
+    \tau(n) = \sum_{\ell \in \set{0,\ldots,k}} Q \times (1+n)^\ell.
+    \end{align}
+    The main observation in the proof is that reachability of configurations can be defined in \mso, as stated in the following lemma.
+% lax begin Lax194892.PebbleReachability
+% lax begin Lax194892.PebbleConfigurationEncoding
+    \begin{lemma}\label{lem:reachability-pebble-automaton}
+        Let $\tau$ be as in~\eqref{eq:type-of-configurations-for-pebble-automaton}. There is an \mso formula 
+    \begin{align*}
+    \varphi(s: \tau, t : \tau)
+    \end{align*}
+    which holds if there is a run that begins in configuration $s$ and ends in configuration $t$.
+    \end{lemma}
+% lax end
+% lax end
+    
+
+    Before proving the lemma, we use it to conclude the proof of the theorem. By the lemma, the language recognised by a pebble automaton  is defined by an \mso formula which  says that there is a run from the initial configuration to an accepting configuration. Since  \mso can only define regular languages thanks to Theorem~\ref{thm:mso-logic-languages}, it follows that the language recognised by the automaton is regular, as required in the theorem. It remains to prove the lemma.
+
+
+
+
+
+
+% lax begin Lax194892Proofs.Results.exists_regular_reachLang
+    \begin{proof}
+        The most natural idea would be to define one-step reachability using a formula $\psi$, and to then express  reachability as a fixpoint, as follows
+        \begin{align*}
+        \myunderbrace{\forall X : 2^\tau}{for every \\ set $X$ of \\ configurations} 
+        \quad 
+        \myunderbrace{(s \in X}{if $X$ \\ contains\\ the source} \land \myunderbrace{\forall c : \tau \ \forall d : \tau\  \psi(c,d) \land c \in X \Rightarrow d \in X)}{and is closed under  taking transitions} \quad \Rightarrow \quad \myunderbrace{t \in X}{then  $X$ \\ contains\\ the target}.
+        \end{align*}
+        Unfortunately, this approach does not work directly, since we cannot quantify over sets of type $2^\tau$. This is because $\tau$ contains tuples of positions (if the automaton has $k>1$ pebbles), and monadic second-order logic can only quantify over sets of individual positions. To work around this issue, we will have to appeal to the stack discipline. 
+        
+        The proof is based on the analysis of special runs, which we call \emph{balanced runs}: this is a run in which the source and target have the same height, and the top pebble is never popped (but it can be moved).  Every run of the pebble automaton can be decomposed into a sequence of at most $4k$ runs, each of which is either a single transition, or a balanced run, as explained in the following picture, which shows the evolution of the stack:
+\mypic{53}
+    Since the decomposition has constant length, it remains to show that we can define in \mso runs which are either a single transition, or a balanced run. For single transitions, this is achieved by simply formalising the semantics of a pebble automaton in the logic. The interesting case is that of balanced runs. 
+
+    When formalising balanced runs, we will think of a configuration with stack of  height $\ell > 0$ as being a pair of the form $(x,y)$ where
+        \begin{align*}
+        \myunderbrace{x: (1+n)^{\ell-1}}{prefix of the  stack \\  that  has height $\ell-1$} \quad  \quad \myunderbrace{y: \myoverbrace{Q \times (1+n)}{we write $\sigma$ \\ for this type}}{the head}.
+        \end{align*}
+    The point of this decomposition is that a balanced run modifies $y$ but not $x$.  The following claim shows that balanced runs can be defined in \mso, and thus concludes the proof of the lemma.
+% lax begin Lax194892.BalancedRunReachability
+        \begin{claim}\label{claim:reachability-basic-run}
+            For every $\ell \in \set{1,\ldots,k}$, there is an \mso formula
+                \begin{align*}
+    \varphi_\ell(x : (1+n)^{\ell-1}, y_1  : \sigma, y_2 : \sigma)
+    \end{align*}
+    which holds if and only if there is a balanced run from  $(x,y_1)$ to  $(x,y_2)$.
+        \end{claim}
+% lax end
+
+% lax begin Lax194892Proofs.Results.exists_regular_balancedLang
+\begin{proof}
+    The proof is by induction on $\ell$, but in the opposite order: the induction starts with $\ell=k$ and proceeds down until $\ell=1$. The base case is proved in the same way as the induction step, so we will only describe the induction step. Define a \emph{basic balanced run} to be a balanced run which is either: (a) a single transition that moves pebble $\ell$; or (b) a run that starts by pushing pebble $\ell+1$, then does a balanced run, and finishes with popping pebble $\ell+1$. A balanced run is a composition of basic balanced runs. Using the induction assumption (if $\ell < k$), we can write an \mso formula 
+    \begin{align*}
+    \psi(x : (1+n)^{\ell-1}, y_1  : \sigma, y_2 : \sigma)
+    \end{align*}
+    which says that there is a basic balanced run from  $(x,y_1)$ to  $(x,y_2)$.  To finish the proof of the claim, we will formalise in \mso the composition of basic balanced runs, using a fixpoint similar to the one at the beginning of the proof of the lemma.
+            \begin{align*}
+        \myunderbrace{\forall Y : 2^\sigma}{for every \\ set $Y$ of \\ head\\ positions} 
+        \quad 
+        \myunderbrace{(y_1 \in Y}{if $Y$ \\ contains\\ the source} \land \myunderbrace{\forall c : \sigma \ \forall d : \sigma\  \psi(x,c,d) \land c \in Y \Rightarrow d \in Y)}{and is closed under  taking basic balanced runs} \quad \Rightarrow \quad \myunderbrace{y_2 \in Y}{then  $Y$ \\ contains\\ the target}.
+        \end{align*}
+    The difference with respect to the erroneous fixpoint construction at the beginning of the lemma is that the type $\sigma$ is linear, and therefore quantification over sets of type $2^\sigma$ is allowed in \mso, as explained below:
+\begin{align*}
+2^\sigma = 2^{Q \times (1+n)} = \myoverbrace{(2^{1} \times 2^{n}) \times \cdots \times (2^{1} \times 2^{n})}{quantifying over a subset of $Q \times (1+n)$ is like \\ quantifying over $|Q|$ bits and $|Q|$ subsets of $n$}.
+\end{align*}
+This completes the proof that balanced runs can be defined in \mso.
+\end{proof}
+% lax end
+
+As we have remarked at the beginning of the proof of the lemma, every run can be decomposed into a constant number of runs, each of which is either a single transition or a balanced run. Since both of these can be defined in \mso, it follows that reachability can be defined in \mso, as required in the lemma. 
+    \end{proof}
+\end{proof}
+% lax end
+% lax end
+
+
+
+
+\subsection{Equivalence with for-transducers} 
+We now prove that pebble transducers compute the same string-to-string functions as for-transducers, and therefore they compute exactly the polyregular functions.
+
+
+% lax begin Lax194892.PebbleIffFor
+% lax begin Lax194892.ForOfPebble
+% lax begin Lax194892.PebbleOfFor
+\begin{theorem}\label{thm:pebble-are-for}
+   Pebble transducers and for-transducers compute the same string-to-string functions.
+\end{theorem}
+% lax end
+% lax end
+% lax end
+
+One direction is clear: a for-transducer can easily be simulated by a pebble transducer, with one pebble for each nested for loop, and with the state used to store the values of the Boolean variables and the currently executed instruction. 
+
+The interesting direction is simulating a pebble transducer with a for-transducer.
+The difficulty is that a pebble transducer can move its head both ways, while a loop in a for-transducer has a fixed direction, which is either first-to-last or last-to-first.  Therefore, converting a pebble transducer into a for-transducer can be seen as a sort of ``untwisting'', to use the terminology of~\cite{baschenis2017}. A variant of untwisting was already presented when decomposing two-way transducers into primes in Theorem~\ref{thm:2dfa-decomposition-into-primes}, and our proof will draw heavily on the ideas behind that decomposition. It is worth pointing out that this untwisting will increase the depth of recursion. For example, map reverse is a function with linear output, which can be implemented by a pebble transducer with one pebble, but the corresponding for-transducer in Figure~\ref{fig:map-reverse-for-transducer} has three loops, two of them nested.
+
+
+
+
+To transform a pebble transducer into a for-transducer, we will show that a for-transducer can be used to produce the entire computation of a pebble transducer, represented as a list of configurations.
+A configuration of a pebble transducer can be represented as a string over an extended alphabet, as explained in the following example:
+\begin{align*}
+\myunderbrace{\red q}{state}\ abaa \red{x_1 x_3} ababa \myunderbrace{\red{x_2}}{pebble $i$ \\ is letter $\red{x_i}$} ababaa \red{x_4} abababa.
+\end{align*}
+More formally, the \emph{string representation} of a configuration with $\ell$ pebbles is a string in 
+\begin{align*}
+Q \cdot (A \cup \set{x_1,\ldots,x_\ell})^*
+\end{align*}
+where each pebble name from $\set{x_1,\ldots,x_\ell}$ appears exactly once, and if there are consecutive letters that represent pebbles, then they are listed in increasing order. Define the \emph{string representation} of a run to be the concatenation of the string representations of the configurations used in the run. 
+
+To prove that the computation of a pebble transducer can be produced by a for-transducer,  we will appeal to the  tree structure in a run of a pebble transducer, which we now explain.
+     For a configuration with stack of height $\ell$ that appears in this run, its \emph{parent} is defined to be the most recent earlier configuration with stack of height $\ell-1$. If we assume that the initial configuration is the unique configuration of height $0$ in every run, then  this parent relation defines a tree structure on the configurations, with the initial configuration being the root. The assumption that the initial configuration is the unique configuration of height $0$ in every run can be made without loss of generality, since any pebble transducer can be easily transformed into one that satisfies this assumption. The main technical ingredient in the proof of Theorem~\ref{thm:pebble-are-for} is the following lemma, which says that the children of a configuration in this tree structure can be computed by a for-transducer.
+
+% lax begin Lax194892.ChildrenOfConfiguration
+% lax begin Lax194892.ChildConfigurationGraphs
+\begin{lemma}\label{lem:children-of-configuration-in-pebble-run}
+    For every $k$-pebble transducer there  is a for-transducer which inputs a string representation of a configuration, and outputs all children of this configuration, represented as the concatenation of their string representations in order of execution. 
+\end{lemma}
+% lax end
+% lax end
+
+Before proving the lemma, we show how to use it to conclude the proof of the theorem. Functions computed by for-transducers are closed under composition, which was shown in Lemma~\ref{lem:for-closed-under-composition}. They are also closed under the map combinator, which is left as an exercise for the reader. Thanks to these closure properties and the lemma, we can use a for-transducer to output all configurations used in a run: first we output the initial configuration, then we append to it the list of its children, then we append (using map) to each child a list of all of its children, and so on $k$ times, until we have output all configurations in the run. Once we have a list of all configurations, the output string can be produced using a rational function which scans each configuration and outputs the letter (if any) that is produced when its transition is executed. It remains to prove the lemma.
+
+
+% lax begin Lax194892Proofs.Results.exists_forTransducer_children
+\begin{proof}[Proof of Lemma~\ref{lem:children-of-configuration-in-pebble-run}] Fix some $k$-pebble transducer for the rest of the proof.   Suppose that the input is a configuration with stack of height $\ell$. If $\ell =k$, then there is nothing to do, since the stack is already at full height and there can be no children. Suppose now that $\ell < k$. The children of the input configuration can be  described as a directed graph, in which an edge represents a run between two configurations of height $\ell+1$ that are not separated by any configuration of height $\ell +1$. Here is a picture of this graph, in which $\ell=3$.
+\mypic{49}
+The picture also contains additional annotation (in red), which gives us the input string and the positions of pebbles $\set{1,\ldots,\ell}$ that stay fixed throughout the run. We use the name \emph{child configuration graph} for this graph. The child configuration graph can be represented as a string over a fixed finite alphabet, whose length is the same as the input string.  This string contains the red annotation of the input string together with the positions of pebble $\ell+1$ in each child. Using this string representation, it is meaningful to talk about a for-transducer which outputs the child configuration graph.
+
+% lax begin Lax194892.ChildGraphOfConfiguration
+\begin{claim}\label{claim:from-configuration-to-child-configuration-graph}
+    There is a for-transducer which inputs the string representation of a configuration, and outputs the  string representation of its child configuration graph. 
+\end{claim}
+% lax end
+
+% lax begin Lax194892Proofs.Results.exists_forTransducer_childGraph
+\begin{proof}  In fact, we will show that the function in the claim is already a rational function, and therefore a special case of a for-transducer. To prove this, as our model for rational functions we use unambiguous one-way transducers with output. The transducer will simply guess the output string, and then check if it is correct. To complete the proof, it remains to show that the set of string representations of child configuration graphs is a regular language.
+Since regular languages are exactly those that can be defined in \mso by Theorem~\ref{thm:mso-logic-languages}, it is enough to show that set of string representations of child configuration graphs is definable in \mso. This follows from  Lemma~\ref{lem:reachability-pebble-automaton}, in which we showed that  reachability of configurations can be defined in \mso. 
+\end{proof}
+% lax end
+
+Thanks to the above claim, in order to complete the proof of the lemma, it is enough to show that there is a for-transducer which inputs the string representation of the child configuration graph, and outputs the concatenation of the string representations of the configurations that are stored in this graph, as stated in the following claim. 
+
+% lax begin Lax194892.ChildrenOfChildGraph
+    \begin{claim}\label{claim:from-child-configuration-graph-to-children}
+            There is a for-transducer which inputs the string representation of a child configuration graph, and outputs the  concatenation of the string representations of the corresponding child configurations. 
+    \end{claim}
+% lax end
+
+% lax begin Lax194892Proofs.Results.exists_forTransducer_cgOut
+    \begin{proof} This is essentially the same proof as in Lemma~\ref{lem:output-of-snake-graph-is-regular}, in which we transformed a configuration graph into its output string. The difference is that in this claim, for each vertex in the child configuration graph we need to output the entire child configuration, which requires producing a copy of the input string. In particular, the transformation has quadratic output size.
+
+        As in Lemma~\ref{lem:output-of-snake-graph-is-regular}, the lemma is proved by induction on the width of the input graph, i.e.~the maximal number of times that a given input gap is visited. In particular, in the inductive argument we will use subgraphs of the child configuration graph, in which the input is restricted by removing  edges.  In the induction basis, when the width is 1, then the path in the child configuration graph goes in one direction only, and the output can be produced by  a for-transducer that has an outer loop which traverses the snake, and an inner loop which is used to copy the input string. (Depending on the direction of the path, the outer loop is either first-to-last or last-to-first.) In the induction step, we first deal with the case of looping snakes, and then we decompose a general snake into a sequence of loops, exactly as we did in the proof of Lemma~\ref{lem:output-of-snake-graph-is-regular}.
+    \end{proof}
+% lax end
+
+By composing the for-transducers in Claims~\ref{claim:from-configuration-to-child-configuration-graph} and~\ref{claim:from-child-configuration-graph-to-children}, we get a for-transducer which inputs the string representation of a configuration, and outputs the concatenation of the string representations of its children, as required in the lemma.
+\end{proof}
+% lax end
+
+
+
+
+

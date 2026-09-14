@@ -1,0 +1,29 @@
+specVersion: "1"
+id: lax-765601
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Transducers, Part A: Mealy Machines"
+authors:
+  - name: Mikołaj Bojańczyk
+  - name: Aristotle (Harmonic)
+bibEntries:
+  - |
+    @book{Bojanczyk-transducers,
+      author = {Boja{\'n}czyk, Miko{\l}aj},
+      title  = {Transducers},
+      note   = {Book in preparation; sources at \url{https://github.com/bojanczyk/transducer-book}},
+      year   = {2026}
+    }
+  - |
+    @article{KrohnRhodes1965,
+      author  = {Krohn, Kenneth and Rhodes, John},
+      title   = {Algebraic Theory of Machines. {I}. Prime Decomposition Theorem for Finite Semigroups and Machines},
+      journal = {Transactions of the American Mathematical Society},
+      volume  = {116},
+      pages   = {450--464},
+      year    = {1965},
+      doi     = {10.2307/1994127}
+    }
+issue:
+  repositoryId: 1320232165
+  number: 74
