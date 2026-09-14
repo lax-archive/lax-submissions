@@ -1,5 +1,5 @@
 import Lax11Proofs.CCSweep
-import Lax67Proofs.Transfer
+import Lax865980Proofs.Transfer
 
 /-!
 The theorem, cashed in at the concept surface.
@@ -22,8 +22,8 @@ nobody has to compute.
 
 namespace Lax11Proofs.CCMain
 
-open Lax67.Ram Lax67.RamComputes Lax11.GraphEncoding Lax11.ConnectedComponents
-open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning Lax67Proofs.Transfer
+open Lax865980.Ram Lax865980.RamComputes Lax11.GraphEncoding Lax11.ConnectedComponents
+open Lax865980Proofs.Imp Lax865980Proofs.Compile Lax865980Proofs.Reasoning Lax865980Proofs.Transfer
 open Lax11Proofs.CC
 
 /-- The machine pays ten steps per unit of IMP+ cost, whatever the

@@ -1,4 +1,4 @@
-import Lax67.RamComputes
+import Lax865980.RamComputes
 import Lax11.GraphEncoding
 import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 import Mathlib.Data.Nat.Lattice
@@ -73,7 +73,7 @@ word length.
 
 namespace Lax11.ConnectedComponents
 
-open Lax67.Ram Lax67.RamComputes Lax11.GraphEncoding
+open Lax865980.Ram Lax865980.RamComputes Lax11.GraphEncoding
 
 /-- The label of a vertex: the least vertex of its connected
 component. -/

@@ -1,6 +1,6 @@
 import Lax11.ConnectedComponents
-import Lax67Proofs.Frame
-import Lax67Proofs.Lib.Basic
+import Lax865980Proofs.Frame
+import Lax865980Proofs.Lib.Basic
 
 /-!
 The driver: connected components, as an IMP+ program.
@@ -32,8 +32,8 @@ express, and why the while rule takes a potential.
 
 namespace Lax11Proofs.CC
 
-open Lax67.Ram Lax67.RamComputes Lax11.GraphEncoding Lax11.ConnectedComponents
-open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning
+open Lax865980.Ram Lax865980.RamComputes Lax11.GraphEncoding Lax11.ConnectedComponents
+open Lax865980Proofs.Imp Lax865980Proofs.Compile Lax865980Proofs.Reasoning
 
 /-! ### The program -/
 
@@ -142,7 +142,7 @@ than these graphs need; the step counts do not depend on it. -/
 /-- The shared evaluator, proved to agree with `RunsTo`: fetched
 terminal instructions cost one and falling outside the program costs
 zero, including at the exact fuel boundary. -/
-abbrev runOut := Lax67Proofs.Reasoning.Lib.runOut
+abbrev runOut := Lax865980Proofs.Reasoning.Lib.runOut
 
 /-- Run `ccProgram` on an encoded graph, at a word length that holds
 every number these graphs produce. -/
