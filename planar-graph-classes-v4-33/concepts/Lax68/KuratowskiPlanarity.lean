@@ -9,6 +9,8 @@ type: theorem
 A finite simple graph admits a crossing-free straight-line drawing exactly
 when it contains no subdivision of *K₅* or *K₃,₃*. This is Kuratowski's
 theorem together with Fáry's straight-line drawing theorem.
+
+This statement is open in this submission.
 -/
 
 set_option autoImplicit false

@@ -1,4 +1,5 @@
 import Mathlib.Combinatorics.SimpleGraph.Basic
+import Lax68.Planar
 
 /-!
 ---
@@ -50,5 +51,10 @@ def IsSeriesParallel {V : Type*} (G : SimpleGraph V) : Prop :=
   ∃ s t,
     TwoTerminal G s t ∧
     G.support = Set.univ
+
+/-- Every series-parallel graph is planar. -/
+axiom seriesParallel_planar {V : Type*} {G : SimpleGraph V} :
+  Lax68.SeriesParallel.IsSeriesParallel G →
+  Lax68.Planar.IsPlanar G
 
 end Lax68.SeriesParallel

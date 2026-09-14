@@ -16,8 +16,6 @@ set_option autoImplicit false
 
 namespace Lax68.GraphTopologicalMinors
 
-open GraphMinors
-
 def walkInterior {V : Type*} {G : SimpleGraph V} {a b : V}
     (P : G.Walk a b) : Set V :=
   {x | x ∈ P.support ∧ x ≠ a ∧ x ≠ b}
@@ -47,7 +45,7 @@ def IsTopologicalMinor {W V : Type*}
   Nonempty (TopologicalMinorModel H G)
 
 def IsKuratowskiFree {V : Type*} (G : SimpleGraph V) : Prop :=
-  ¬IsTopologicalMinor K5 G ∧
-  ¬IsTopologicalMinor K33 G
+  ¬IsTopologicalMinor Lax68.GraphMinors.K5 G ∧
+  ¬IsTopologicalMinor Lax68.GraphMinors.K33 G
 
 end Lax68.GraphTopologicalMinors

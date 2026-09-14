@@ -1,3 +1,4 @@
+import Lax68.Planar
 import Lax68.StraightLineDrawings
 
 /-!
@@ -25,5 +26,10 @@ structure OuterplaneDrawing {V : Type*} (G : SimpleGraph V)
 
 def IsOuterplanar {V : Type*} (G : SimpleGraph V) : Prop :=
   Nonempty (OuterplaneDrawing G)
+
+/-- Every outerplanar graph is planar. -/
+axiom outerplanar_planar {V : Type*} {G : SimpleGraph V} :
+  Lax68.Outerplanar.IsOuterplanar G →
+  Lax68.Planar.IsPlanar G
 
 end Lax68.Outerplanar

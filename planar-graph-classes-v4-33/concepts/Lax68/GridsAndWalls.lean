@@ -1,4 +1,5 @@
 import Mathlib.Combinatorics.SimpleGraph.Hasse
+import Lax68.Planar
 
 /-!
 ---
@@ -43,5 +44,15 @@ def IsGrid {V : Type*} (G : SimpleGraph V) : Prop :=
 
 def IsWall {V : Type*} (G : SimpleGraph V) : Prop :=
   HasWallShape G
+
+/-- Every grid graph is planar. -/
+axiom grid_planar {V : Type*} {G : SimpleGraph V} :
+  Lax68.GridsAndWalls.IsGrid G →
+  Lax68.Planar.IsPlanar G
+
+/-- Every wall graph is planar. -/
+axiom wall_planar {V : Type*} {G : SimpleGraph V} :
+  Lax68.GridsAndWalls.IsWall G →
+  Lax68.Planar.IsPlanar G
 
 end Lax68.GridsAndWalls

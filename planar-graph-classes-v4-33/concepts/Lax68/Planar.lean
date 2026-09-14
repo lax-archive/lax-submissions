@@ -1,28 +1,26 @@
-import Lax68.StraightLineDrawings
 import Lax68.GraphMinors
+import Lax68.StraightLineDrawings
 
 /-!
 ---
 title: Planar graphs
 type: definition
 ---
-A graph is planar when it can be drawn in the plane without crossings.
-For finite graphs, this is equivalent to containing neither the complete graph
-*K₅* nor the complete bipartite graph *K₃,₃* as a minor. The drawing certificate
-and graph-minor relation are supplied by separate concepts.
+A graph is planar here when it has a crossing-free straight-line drawing in
+the real plane. For finite simple graphs, this agrees with the usual notion
+of planarity. The drawing certificate is supplied by a separate concept.
 -/
 
 set_option autoImplicit false
 
 namespace Lax68.Planar
 
-open GraphMinors
-
+/-- Existence of a crossing-free straight-line drawing in the real plane. -/
 def IsPlanar {V : Type*} (G : SimpleGraph V) : Prop :=
   StraightLineDrawings.HasStraightLineDrawing G
 
 def IsPlanarByExcludedMinors {V : Type*} (G : SimpleGraph V) : Prop :=
-  ¬IsMinor K5 G ∧
-  ¬IsMinor K33 G
+  ¬GraphMinors.IsMinor GraphMinors.K5 G ∧
+  ¬GraphMinors.IsMinor GraphMinors.K33 G
 
 end Lax68.Planar

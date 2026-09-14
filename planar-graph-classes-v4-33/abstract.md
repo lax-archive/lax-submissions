@@ -1,21 +1,19 @@
-This submission collects clean Lean concepts for twelve familiar planar
-graph classes: planar, outerplanar, maximal outerplanar, grids and walls,
-triangles, stars, ladders, Halin graphs, wheels, series-parallel graphs, trees,
-and paths, together with a relational concept for triangulations of planar
-graphs.
+This submission collects definitions of planar graph classes: planar,
+outerplanar, maximal outerplanar, grids and walls, triangles, stars, ladders,
+Halin graphs, wheels, series-parallel graphs, trees, and paths, together with
+triangulations of planar graphs.
 
-The definitions follow the standard descriptions in Reinhard Diestel's
-*Graph Theory* (6th edition). Straight-line graph drawings are presented as a
-separate geometric concept and used as compact certificates of planarity, in
-accordance with Fáry's theorem. Graph minors, represented by connected branch
-sets, are likewise isolated as a separate combinatorial concept. The planar
-concept uses that relation directly to exclude *K₅* and *K₃,₃*; Wagner's
-theorem records the equivalence for finite graphs.
+The supporting concepts are straight-line graph drawings, graph minors via
+connected branch sets, and topological minors via internally disjoint paths.
+Planarity is expressed by the existence of a crossing-free straight-line
+drawing in the real plane.
 
-Topological minors are presented separately as internally disjoint path
-models. The proof of Wagner's equivalence factors through Kuratowski's
-subdivision characterization and the special fact that the *K₅* and *K₃,₃*
-minor obstructions agree with their topological-minor obstructions. Each
-graph-class predicate contains only its defining structure: planarity and
-superclass consequences are stated separately as theorem cards. Proofs are
-supplied where the result is an elementary projection or composition in the
+Elementary relationships are stated alongside the relevant graph-class
+definitions. Proofs are supplied for direct projections and simple
+compositions; the remaining relationships are explicitly open statements.
+The geometric planarity claims for trees and stars are restricted to finite
+graphs. The accompanying visual guide illustrates the defining shapes.
+
+Kuratowski’s subdivision characterization and Wagner’s excluded-minor
+characterization are stated for finite graphs. Both are open statements;
+this submission does not supply their proofs.

@@ -7,6 +7,8 @@ type: theorem
 ---
 For every finite simple graph, admitting a crossing-free drawing is equivalent
 to containing neither *K₅* nor *K₃,₃* as a minor.
+
+This statement is open in this submission.
 -/
 
 set_option autoImplicit false

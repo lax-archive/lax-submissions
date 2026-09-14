@@ -1,4 +1,6 @@
 import Mathlib.Combinatorics.SimpleGraph.UniversalVerts
+import Lax68.HalinGraphs
+import Lax68.Planar
 
 /-!
 ---
@@ -40,5 +42,17 @@ def HasWheelShape {V : Type*} (G : SimpleGraph V) : Prop :=
 
 def IsWheel {V : Type*} (G : SimpleGraph V) : Prop :=
   HasWheelShape G
+
+/-- Every wheel graph is a Halin graph. -/
+axiom wheel_halin
+    {V : Type*} {G : SimpleGraph V} :
+  Lax68.Wheels.IsWheel G →
+  Lax68.HalinGraphs.IsHalin G
+
+/-- Every wheel graph is planar. -/
+axiom wheel_planar
+    {V : Type*} {G : SimpleGraph V} :
+  Lax68.Wheels.IsWheel G →
+  Lax68.Planar.IsPlanar G
 
 end Lax68.Wheels
