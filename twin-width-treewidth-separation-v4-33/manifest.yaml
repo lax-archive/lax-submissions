@@ -1,0 +1,27 @@
+specVersion: "1"
+id: lax-768004
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: Twin-Width Can Be Exponential in Treewidth
+authors:
+  - name: Édouard Bonnet
+    github: EdouardBonnet
+  - name: Jan Dreier
+  - name: Claude Fable 5 (Anthropic)
+  - name: Codex (OpenAI)
+bibEntries:
+  - |
+    @article{BonnetDepres2023,
+      author  = {Bonnet, {\'E}douard and D{\'e}pr{\'e}s, Hugues},
+      title   = {Twin-width can be exponential in treewidth},
+      journal = {Journal of Combinatorial Theory, Series B},
+      volume  = {161},
+      pages   = {1--14},
+      year    = {2023},
+      doi     = {10.1016/j.jctb.2023.01.003}
+    }
+paper:
+  folder: paper
+  main: arxiv.tex
+  engine: pdflatex
+supersedes: lax-48
