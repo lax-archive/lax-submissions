@@ -12,7 +12,7 @@ Its additive one also handles empty graphs and constant program work.
 namespace Lax3Proofs.Prog
 open scoped SimpleGraph
 open Lax62Proofs.Refine Lax3.ColoredGraphs Lax3Proofs.Driver
-open Lax12.GraphClasses Lax12.ColoringNumbers Lax3Proofs.CoverEdgeSum
+open Lax199508.GraphClasses Lax199508.ColoringNumbers Lax3Proofs.CoverEdgeSum
 variable {L n₀ : ℕ}
 
 /-- The concrete cover cost is charged on nonempty arenas. Empty arenas take

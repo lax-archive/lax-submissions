@@ -38,9 +38,9 @@ and the coloring does not (deleting the edges incident to a vertex set)
 or the coloring changes and the graph does not (recording distance
 profiles as new colors), and the concepts of the submissions this one
 builds on already pass their data unbundled — the set environments of
-Lax11's MSO satisfaction, the graph classes of Lax12. Colors are `Set`s
+Lax11's MSO satisfaction, the graph classes of Lax199508. Colors are `Set`s
 of vertices rather than a predicate `Fin L → Fin n → Prop` for the same
-reason Lax12 states its vertex sets as `Set`s: the two are definitionally
+reason Lax199508 states its vertex sets as `Set`s: the two are definitionally
 interchangeable and the `Set` form composes with the existing library of
 `Set.ncard` cardinality lemmas.
 
@@ -54,21 +54,21 @@ Distance is a predicate on walks, `WithinDist`, and not mathlib's
 distance `d` exactly when some walk between them has length at most `d`,
 which needs no connectivity hypothesis, no `ℕ∞` arithmetic and no
 decidability instance, and — the deciding reason — it is verbatim the
-vocabulary of the sparsity concepts this submission consumes: Lax12's
+vocabulary of the sparsity concepts this submission consumes: Lax199508's
 `DistIndependent` says that every walk between two distinct members of a
 set is longer than `r`, so its negation and `WithinDist` are the same
 statement. A translation layer between two notions of distance at that
 interface would be pure friction.
 
 For the same reason, neither `DistIndependent` nor `deleteVerts` is
-restated here. Both are Lax12 concepts, already endorsed, and this
+restated here. Both are Lax199508 concepts, already endorsed, and this
 submission uses them as they stand: `deleteVerts G S` — the graph with
 every edge incident to `S` removed and the vertex type unchanged — is
 exactly the isolation move this submission's splitter game and its
 rewriting step perform.
 
 `WithinDist` and `ball` are stated for an arbitrary vertex type, as
-Lax12 states `DistIndependent` and `deleteVerts`, since both are
+Lax199508 states `DistIndependent` and `deleteVerts`, since both are
 pointwise notions and the proofs consuming them pass through
 intermediate carriers. Only `Coloring`, which fixes the two index
 ranges, is tied to `Fin`.

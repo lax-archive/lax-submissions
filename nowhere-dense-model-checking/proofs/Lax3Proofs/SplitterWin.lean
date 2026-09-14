@@ -1,5 +1,5 @@
 import Lax3.NowhereDenseSplitter
-import Lax12.NowhereDenseUQW
+import Lax199508.NowhereDenseUQW
 import Lax3Proofs.SplitterBasics
 import Lax3Proofs.WalkDistance
 import Lax3Proofs.DriverBatchCanon
@@ -13,7 +13,7 @@ Chapter 4 of the source lecture notes (Theorem 4.2 of
 Grohe–Kreutzer–Siebertz) transposed to the isolation variant.
 
 Everything is driven by the quasi-wideness margins of the class at the
-game radius `r`, taken from Lax12's endorsed
+game radius `r`, taken from Lax199508's endorsed
 `uniformlyQuasiWide_of_nowhereDense`: a threshold function `N` and a
 separator bound `s`. The bounds are `ℓ = N (2·s + 2)` rounds and
 `m = ℓ · (r + 1)` vertices per batch.
@@ -86,7 +86,7 @@ section, `SplitterWins` and `deleteVerts` by the clause lemmas of
 namespace Lax3Proofs.SplitterWin
 
 open Lax3.ColoredGraphs Lax3.SplitterGame
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.UniformQuasiWideness
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.UniformQuasiWideness
 open Lax3Proofs.SplitterBasics Lax3Proofs.WalkDistance
 
 section Generic
@@ -650,7 +650,7 @@ and `r`, with which Splitter wins the `(ℓ, m, r)`-game on every member.
 # Proof strategy
 
 Take the quasi-wideness margins `N, s` of the class at radius `r` from
-the endorsed `Lax12.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense`
+the endorsed `Lax199508.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense`
 and put `ℓ := N (2·s + 2)` and `m := ℓ · (r + 1)`. Splitter's strategy
 isolates, in each round, Connector's new vertex `v` together with the
 still-active vertices of a chosen walk of length at most `r` from every
@@ -687,7 +687,7 @@ theorem splitterWins_of_nowhereDense (C : GraphClass) (h : NowhereDense C)
     ∃ ℓ m : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
       SplitterWins m r ℓ G := by
   obtain ⟨N, s, hUQW⟩ :=
-    Lax12.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense C h r
+    Lax199508.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense C h r
   exact ⟨N (2 * s + 2), N (2 * s + 2) * (r + 1), fun n G hG =>
     splitterWins_of_reached (hUQW (2 * s + 2) n G hG) (N (2 * s + 2)) [] G
       Reached.nil (by simp)⟩

@@ -84,7 +84,7 @@ namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
 open Lax3Proofs.WalkDistance
@@ -261,16 +261,16 @@ open Classical in
 /-- Isolation never adds edges: the degree sum only drops. -/
 private theorem degSum_deleteVerts_le {N : ℕ} (G : SimpleGraph (Fin N))
     (W : Set (Fin N)) :
-    (∑ v : Fin N, (Lax12.UniformQuasiWideness.deleteVerts G W).degree v)
+    (∑ v : Fin N, (Lax199508.UniformQuasiWideness.deleteVerts G W).degree v)
       ≤ ∑ v : Fin N, G.degree v := by
   refine Finset.sum_le_sum fun v _ => ?_
-  have hsub : (Lax12.UniformQuasiWideness.deleteVerts G W).neighborFinset v
+  have hsub : (Lax199508.UniformQuasiWideness.deleteVerts G W).neighborFinset v
       ⊆ G.neighborFinset v := by
     intro w hw
     rw [SimpleGraph.mem_neighborFinset] at hw ⊢
     exact hw.1
-  calc (Lax12.UniformQuasiWideness.deleteVerts G W).degree v
-      = ((Lax12.UniformQuasiWideness.deleteVerts G W).neighborFinset v).card :=
+  calc (Lax199508.UniformQuasiWideness.deleteVerts G W).degree v
+      = ((Lax199508.UniformQuasiWideness.deleteVerts G W).neighborFinset v).card :=
         (SimpleGraph.card_neighborFinset_eq_degree _ _).symm
     _ ≤ (G.neighborFinset v).card := Finset.card_le_card hsub
     _ = G.degree v := SimpleGraph.card_neighborFinset_eq_degree _ _

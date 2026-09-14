@@ -94,8 +94,8 @@ tower program is built this run.
 namespace Lax3Proofs.Impl
 
 open Lax3.ColoredGraphs (WithinDist ball)
-open Lax12.UniformQuasiWideness (deleteVerts)
-open Lax12.ColoringNumbers
+open Lax199508.UniformQuasiWideness (deleteVerts)
+open Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.CoverConstruction (mem_wreach_iff)
 open Lax3Proofs.SplitterBasics (deleteVerts_adj)

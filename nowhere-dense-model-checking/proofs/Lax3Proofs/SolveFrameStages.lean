@@ -568,7 +568,7 @@ theorem supportsCom_specW {B n₀ Λc ℓp hb d : ℕ} {A : Impl.MArena Λc n₀
 
 /-! ## §4 The batch isolation, lifted -/
 
-open Lax12.UniformQuasiWideness (deleteVerts)
+open Lax199508.UniformQuasiWideness (deleteVerts)
 
 open Classical in
 /-- **`isolate` at the windowed contract** (the two-family case,

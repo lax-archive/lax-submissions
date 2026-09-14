@@ -121,7 +121,7 @@ namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
 open Lax62Proofs.Codegen (arrOf_getD getD_eq_getElem)
 open Lax3.ColoredGraphs (Coloring)
-open Lax12.UniformQuasiWideness (deleteVerts)
+open Lax199508.UniformQuasiWideness (deleteVerts)
 
 /-! ## §1 The rank encoding
 

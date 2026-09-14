@@ -109,8 +109,8 @@ lemmas (`mkSetup_margin`, `mkSetup_depth`, `mkSetup_width_le`,
 namespace Lax3Proofs.Unroll
 
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.UniformQuasiWideness Lax12.ColoringNumbers
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.UniformQuasiWideness Lax199508.ColoringNumbers
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3Proofs.Driver
 
 variable {L n₀ : ℕ}

@@ -6,7 +6,7 @@ namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 open Lax3.ScatterSentences Lax3Proofs.LocalityFun
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax3.FirstOrder
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax3.FirstOrder
 variable {L n : ℕ}
 
 noncomputable def concreteSolve (S : Setup 0) (covC : ℕ → Com) : Com :=

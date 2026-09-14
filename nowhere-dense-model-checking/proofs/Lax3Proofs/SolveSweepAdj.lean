@@ -83,8 +83,8 @@ namespace Lax3Proofs.Prog
 
 open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax3.ColoredGraphs (ball)
-open Lax12.UniformQuasiWideness (deleteVerts)
-open Lax12.ColoringNumbers
+open Lax199508.UniformQuasiWideness (deleteVerts)
+open Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.SplitterBasics (deleteVerts_adj)
 open Lax3Proofs.Driver

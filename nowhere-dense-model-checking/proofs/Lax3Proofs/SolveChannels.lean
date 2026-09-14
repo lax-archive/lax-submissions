@@ -10,7 +10,7 @@ namespace Lax3Proofs.Prog
 open Classical
 open Lax3Proofs.Driver
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 
 /-- The unique local name of a root vertex, when it has one. -/
 noncomputable def channelLocal {α β : Type*} (f : α ↪ β) (z : β) : Option α :=

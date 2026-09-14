@@ -6,14 +6,14 @@ edgeless arena. The recursion of `SplitterWins` reduces definitionally
 on its budget constructors, so both clauses are `Iff.rfl`; they are
 stated here once so that no proof ever hands the concept-side
 definition name to a tactic. The same is done for the adjacency of
-Lax12's `deleteVerts`, the isolation move both clauses recurse
+Lax199508's `deleteVerts`, the isolation move both clauses recurse
 through.
 -/
 
 namespace Lax3Proofs.SplitterBasics
 
 open Lax3.ColoredGraphs Lax3.SplitterGame
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 
 variable {n : ℕ} {m r ℓ : ℕ} {G : SimpleGraph (Fin n)}
 

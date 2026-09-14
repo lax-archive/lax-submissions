@@ -1,5 +1,5 @@
 import Lax3.NeighborhoodCovers
-import Lax12.ColoringNumbers
+import Lax199508.ColoringNumbers
 
 /-!
 ---
@@ -22,7 +22,7 @@ itself as the degree bound.
 
 The statement is per-graph and class-free, with the ordering `π` and
 bound `k` supplied explicitly. The cluster of `u` is
-`{w | u ∈ wreach G π (2r) w}`, using Lax12's weak reachability sets.
+`{w | u ∈ wreach G π (2r) w}`, using Lax199508's weak reachability sets.
 The hypothesis directly bounds the number of clusters containing a
 given vertex. The radius condition follows from reversing a weak
 reachability walk. For covering, choose a `π`-minimal vertex of an
@@ -38,7 +38,7 @@ sharing the same proved construction.
 namespace Lax3.OrderedNeighborhoodCover
 
 open Lax3.NeighborhoodCovers
-open Lax12.ColoringNumbers
+open Lax199508.ColoringNumbers
 
 /-- The fibers of weak `2r`-reachability under any ordering `π` form
 an `r`-neighborhood cover of radius `2r` and degree at most `k`,

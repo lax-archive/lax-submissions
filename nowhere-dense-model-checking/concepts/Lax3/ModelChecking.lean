@@ -1,5 +1,5 @@
 import Lax3.FirstOrder
-import Lax12.NowhereDenseClasses
+import Lax199508.NowhereDenseClasses
 import Lax67.RamComputes
 import Lax11.GraphEncoding
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
@@ -37,14 +37,14 @@ entries fit the word length; output by a classical `if` on
 satisfaction. The differences are the ones the theorem is about — and
 one of them is that side condition, which is *squared* here; see the
 deviation recorded below. The hypothesis is
-`Lax12.NowhereDense` verbatim — the endorsed shallow-minor form, not a
+`Lax199508.NowhereDense` verbatim — the endorsed shallow-minor form, not a
 restatement. The input predicate is `Lax11.EncodesGraph` alone: no
 expression, no ordering, no promise beyond membership in the class.
 The time bound cannot be the Courcelle form `c * (x.length + 1)`,
 since `n^(1+ε)` has no elementary spelling over ℕ: the bound function
 `T : List ℕ → ℕ` is existentially quantified and pinned by the
 real-valued side condition `(T x : ℝ) ≤ c * ((x.length : ℝ) + 1) ^
-(1 + ε)` — the same real-exponent idiom as Lax12's subpolynomial
+(1 + ε)` — the same real-exponent idiom as Lax199508's subpolynomial
 bounds, whose `^` is `Real.rpow`.
 
 The sentence ranges over plain first-order logic on graphs, `FO 0` of
@@ -99,7 +99,7 @@ of the encoding alone.
 namespace Lax3.ModelChecking
 
 open Lax3.FirstOrder
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax67.Ram Lax67.RamComputes
 open Lax11.GraphEncoding
 

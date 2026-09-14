@@ -1,6 +1,6 @@
 import Lax3Proofs.CoverConstruction
-import Lax12.ShallowMinorDensity
-import Lax12Proofs.NowhereDenseWcol
+import Lax199508.ShallowMinorDensity
+import Lax199508Proofs.NowhereDenseWcol
 
 /-!
 Transitive–fraternal augmentations and their in-degree bound on nowhere
@@ -47,7 +47,7 @@ survives the concatenation because the meeting vertex `w` is
 `π`-above both ends of a fraternal link and `π`-between the ends of a
 transitive one.  In-degrees are then bounded by the size of a weak
 reachability set, i.e. by `wcol G (2 ^ r)`, which is subpolynomial on a
-nowhere dense class by Lax12.
+nowhere dense class by Lax199508.
 
 The same invariant bounds the back-degree of the *fraternity graph* of
 each round under `π`, which is the "moreover" the greedy algorithm needs:
@@ -97,7 +97,7 @@ record names as the target — does not need it at all.
 namespace Lax3Proofs.Augmentation
 
 open scoped SimpleGraph
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ColoringNumbers
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.ColoringNumbers
 open Lax3Proofs.CoverConstruction
 
 variable {n : ℕ}
@@ -714,7 +714,7 @@ were contracted, `a w` the vertex of `S` they were contracted into, and
 `R` the pairs realized this way, listed once each. -/
 private theorem card_le_of_realized {H : SimpleGraph (Fin n)} {D : Orientation n} {D₁ : ℕ}
     (harc : ∀ u v : Fin n, u ∈ D.inN v → H.Adj u v)
-    (hdens : Lax12.ShallowMinorDensity.HasDensityAtMost H 1 D₁)
+    (hdens : Lax199508.ShallowMinorDensity.HasDensityAtMost H 1 D₁)
     {S : Finset (Fin n)} (hS : S.Nonempty) (a : Fin n → Fin n) (Used : Fin n → Prop)
     (hUsed : ∀ w, Used w → w ∉ S ∧ a w ∈ D.inN w)
     (R : Finset (Fin n × Fin n))
@@ -741,7 +741,7 @@ private theorem card_le_of_realized {H : SimpleGraph (Fin n)} {D : Orientation n
     with hMdef
   have hMadj : ∀ i j, M.Adj i j ↔ ((f i, f j) ∈ R ∨ (f j, f i) ∈ R) := fun _ _ => Iff.rfl
   -- the depth-1 minor: contract every used witness into its target
-  have hminor : Lax12.NowhereDenseClasses.HasShallowMinor H 1 M := by
+  have hminor : Lax199508.NowhereDenseClasses.HasShallowMinor H 1 M := by
     refine ⟨{ branch := fun i => insert (f i) {w | Used w ∧ a w = f i}
               center := f
               center_mem := fun i => Set.mem_insert _ _
@@ -868,7 +868,7 @@ Adding the two counts contradicts the assumed lower bound.
 -/
 theorem fratGraph_lowDegreeVertex {H : SimpleGraph (Fin n)} {D : Orientation n} {d D₁ : ℕ}
     (harc : ∀ u v : Fin n, u ∈ D.inN v → H.Adj u v) (hd : D.InDegLE d)
-    (hdens : Lax12.ShallowMinorDensity.HasDensityAtMost H 1 D₁) :
+    (hdens : Lax199508.ShallowMinorDensity.HasDensityAtMost H 1 D₁) :
     LowDegreeVertices (fratGraph D) (d * d + d * D₁) := by
   classical
   intro S hS
@@ -1066,7 +1066,7 @@ theorem exists_augChain_subpolynomial (C : GraphClass) (hC : NowhereDense C)
           (∀ i ≤ r, (D i).InDegLE k) ∧
           (∀ i < r, BackDegLE (fratGraph (D i)) σ k) := by
   obtain ⟨c, hc⟩ :=
-    Lax12Proofs.NowhereDenseWcol.hasSubpolynomialWcol_of_nowhereDense C hC (2 ^ r) δ hδ
+    Lax199508Proofs.NowhereDenseWcol.hasSubpolynomialWcol_of_nowhereDense C hC (2 ^ r) δ hδ
   refine ⟨c, fun n Gn hGn m G hsub => ?_⟩
   obtain ⟨D, σ, hinj, hchain, hdeg, hback⟩ := exists_augChain_wcol G r
   exact ⟨D, σ, wcol G (2 ^ r), hinj, hchain, hc n Gn hGn m G hsub, hdeg, hback⟩
@@ -1119,7 +1119,7 @@ arcs are not disjoint. -/
 /-- Every round's augmented graph has depth-1 minor density at most `D₁`.
 This is the hypothesis the greedy chain bound is stated over. -/
 def AugmentedDepthOneDensity (D : ℕ → Orientation n) (r D₁ : ℕ) : Prop :=
-  ∀ i < r, Lax12.ShallowMinorDensity.HasDensityAtMost (D i).toGraph 1 D₁
+  ∀ i < r, Lax199508.ShallowMinorDensity.HasDensityAtMost (D i).toGraph 1 D₁
 
 /-- The round oriented its fraternal edges along a ranking that is as
 good as the degeneracy of the fraternity graph allows: the specification
@@ -1156,7 +1156,7 @@ and any augmentation step orienting its fraternal edges along a witnessing
 ranking has in-degree at most `d + d² + (d² + d · D₁)`. -/
 theorem exists_greedy_round {H : SimpleGraph (Fin n)} {D : Orientation n} {d D₁ : ℕ}
     (harc : ∀ u v : Fin n, u ∈ D.inN v → H.Adj u v) (hd : D.InDegLE d)
-    (hdens : Lax12.ShallowMinorDensity.HasDensityAtMost H 1 D₁) :
+    (hdens : Lax199508.ShallowMinorDensity.HasDensityAtMost H 1 D₁) :
     ∃ σ : Fin n → ℕ, Function.Injective σ ∧
       BackDegLE (fratGraph D) σ (d * d + d * D₁) ∧
       ∀ D' : Orientation n, AugStep D D' →

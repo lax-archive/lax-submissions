@@ -14,7 +14,7 @@ set_option autoImplicit false
 
 namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Compile
-open Lax11.GraphEncoding Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax11.GraphEncoding Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3.ScatterSentences
 

@@ -88,11 +88,11 @@ namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
-open Lax12.UniformQuasiWideness (deleteVerts)
-open Lax12.ColoringNumbers
+open Lax199508.UniformQuasiWideness (deleteVerts)
+open Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.SplitterBasics (deleteVerts_adj)
 
@@ -4827,11 +4827,11 @@ namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
-open Lax12.UniformQuasiWideness (deleteVerts)
-open Lax12.ColoringNumbers
+open Lax199508.UniformQuasiWideness (deleteVerts)
+open Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.SplitterBasics (deleteVerts_adj)
 
@@ -4951,8 +4951,8 @@ end Lax3Proofs.Prog
 namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax11.GraphEncoding
-open Lax12.ColoringNumbers
-open Lax12.UniformQuasiWideness (deleteVerts)
+open Lax199508.ColoringNumbers
+open Lax199508.UniformQuasiWideness (deleteVerts)
 
 private theorem peel_swInv_set_i {N : ℕ} {G : SimpleGraph (Fin N)}
     {π : Equiv.Perm (Fin N)} {R i v : ℕ} {ca ra ao aj dg mt od : String} {σ : Env}
@@ -5062,7 +5062,7 @@ end Lax3Proofs.Prog
 namespace Lax3Proofs.Prog
 set_option linter.unusedSimpArgs false
 open Lax67Proofs.Imp Lax67Proofs.Reasoning
-open Lax12.ColoringNumbers
+open Lax199508.ColoringNumbers
 
 /-- Occurrences of one member in a prefix of the emitted stream. -/
 def peelOcc (f : ℕ → ℕ) (z k : ℕ) : ℕ :=
@@ -6129,7 +6129,7 @@ theorem peelP7B_spec {B N M : ℕ} {X : Fin N → Set (Fin N)}
 end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
-open Lax3Proofs.Impl Lax12.ColoringNumbers
+open Lax3Proofs.Impl Lax199508.ColoringNumbers
 open Classical
 
 private theorem sum_internal_degree_le_twice_dlt {N : ℕ}
@@ -6199,9 +6199,9 @@ theorem sum_scanned_degree_le {N : ℕ} (G H : SimpleGraph (Fin N))
 end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
-open Classical Lax3Proofs.Impl Lax12.ColoringNumbers
+open Classical Lax3Proofs.Impl Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance Lax3.ColoredGraphs
-open Lax12.UniformQuasiWideness (deleteVerts)
+open Lax199508.UniformQuasiWideness (deleteVerts)
 
 theorem peelDeg_le_mass {N : ℕ} (G : SimpleGraph (Fin N))
     (π : Equiv.Perm (Fin N)) (R : ℕ) (hr : 1 ≤ R)
@@ -6558,7 +6558,7 @@ theorem peelScr_mono {n N j : ℕ} {cm : ℕ → String} {σ : Env}
 
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
 

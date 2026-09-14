@@ -122,7 +122,7 @@ lemmas of `Lax3Proofs.SplitterBasics`, and balls by
 namespace Lax3Proofs.SplitterWinRec
 
 open Lax3.ColoredGraphs Lax3.SplitterGame
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 open Lax3Proofs.SplitterBasics Lax3Proofs.WalkDistance Lax3Proofs.SplitterWin
 
 section Play

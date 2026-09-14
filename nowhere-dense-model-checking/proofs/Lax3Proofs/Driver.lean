@@ -44,7 +44,7 @@ algorithm's canonical instantiation is `choice := greedyChoice`.
 namespace Lax3Proofs.Driver
 
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3Proofs.UqwInstantiation
 
 variable {L : ℕ}

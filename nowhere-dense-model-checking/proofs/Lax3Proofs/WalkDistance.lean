@@ -1,11 +1,11 @@
 import Lax3.ColoredGraphs
-import Lax12.UniformQuasiWideness
+import Lax199508.UniformQuasiWideness
 import Mathlib.Combinatorics.SimpleGraph.Walk.Decomp
 
 /-!
 The first slice of the walk-distance API of `Lax3.ColoredGraphs`:
 `WithinDist` is reflexive, symmetric and additively transitive, it grows
-with the radius and with the graph, and it descends along Lax12's
+with the radius and with the graph, and it descends along Lax199508's
 `deleteVerts` — the isolation move that this submission's splitter game
 and its rewriting step both perform.
 
@@ -28,7 +28,7 @@ prefix and the walk itself.
 namespace Lax3Proofs.WalkDistance
 
 open Lax3.ColoredGraphs
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 
 variable {V : Type*} {G G' : SimpleGraph V} {S : Set V} {u v w : V} {d d' d₁ d₂ : ℕ}
 

@@ -154,7 +154,7 @@ namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax62Proofs.Codegen Lax67Proofs.Compile
 open Lax62Proofs.Refine.Codegen (computesInTime_of_spec)
 open Lax11.GraphEncoding
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 
 /-! ## §1 The pipeline -/

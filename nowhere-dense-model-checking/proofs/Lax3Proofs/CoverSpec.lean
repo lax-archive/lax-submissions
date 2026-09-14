@@ -122,8 +122,8 @@ namespace Lax3Proofs.CoverSpec
 
 open scoped SimpleGraph
 open Lax3.NeighborhoodCovers
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ShallowMinorDensity
-open Lax12.ColoringNumbers
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.ShallowMinorDensity
+open Lax199508.ColoringNumbers
 open Lax3Proofs.Augmentation
 open Lax3Proofs.OrderedCovers
 open Lax3Proofs.CoverDegree

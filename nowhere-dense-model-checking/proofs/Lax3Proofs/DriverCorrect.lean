@@ -84,7 +84,7 @@ exactly why the clause is guarded by `A.G ≠ ⊥`.
 namespace Lax3Proofs.Driver
 
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.UniformQuasiWideness Lax12.ColoringNumbers
+open Lax199508.UniformQuasiWideness Lax199508.ColoringNumbers
 open Lax3Proofs.LocalityFun Lax3Proofs.WalkDistance
 
 variable {L n₀ : ℕ}
