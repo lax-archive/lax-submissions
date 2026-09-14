@@ -101,7 +101,12 @@ lemma pfold : ∀ (w : List Sym8) (u : Pfx G), (∃ g : G.Elt, u.val ++ w <+: G.
 
 /-- The part of the input that the machine of group prefix multiplication is inside of. -/
 inductive PrefPhase | start | blk | done
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype PrefPhase := derive_fintype% _
 
 /-- The mode of the machine: the part of the input, the product of the entries that are already
 written, and the part of the current entry that has been read. -/
@@ -294,11 +299,16 @@ theorem isRegularUnderRepr_pref :
     ((prefMach G).isRegularFun_run _ _).comp' (dropFirstMach.isRegularFun_run _ _)
       (fun _ => rfl),
     fun l => ?_⟩
-  show dropFirstMach.run ((prefDom G).height) DropMode.first
-      ((prefMach G).run ((prefDom G).height) (PrefPhase.start, 1, some (pfxNil G))
-        ((prefDom G).repr l)) = (Ty.list G).repr (prefixProd l)
-  rw [prefMach_run, dropFirstMach_run, commaBlocks_tail, prefixProdFrom_one]
-  rfl
+  -- `l` sits at the `def`-wrapped `(Ty.list G).Elt`, where the rewrites below no longer match
+  -- their `List G.Elt` patterns; run them for a plain list and instantiate.
+  have key : ∀ m : List G.Elt,
+      dropFirstMach.run ((prefDom G).height) DropMode.first
+          ((prefMach G).run ((prefDom G).height) (PrefPhase.start, 1, some (pfxNil G))
+            ((prefDom G).repr m)) = (Ty.list G).repr (prefixProd m) := by
+    intro m
+    rw [prefMach_run, dropFirstMach_run, commaBlocks_tail, prefixProdFrom_one]
+    rfl
+  exact key l
 
 end Pref
 

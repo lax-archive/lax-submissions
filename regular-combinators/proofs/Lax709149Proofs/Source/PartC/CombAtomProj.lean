@@ -41,7 +41,12 @@ theorem isRegularUnderRepr_inr (A B : Ty) :
 /-- The modes of the machines that read a pair: before the opening bracket, inside the first
 component, inside the second one, and after the closing bracket. -/
 inductive PMode | start | inA | inB | stop
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype PMode := derive_fintype% _
 
 /-! ## The projections -/
 

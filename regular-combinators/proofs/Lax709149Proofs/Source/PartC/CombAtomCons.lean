@@ -26,11 +26,21 @@ namespace Comb
 
 /-- The modes of the first machine of the list constructor. -/
 inductive ConsMode | s0 | sOpen | sA | sBrack | sPend | dead
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype ConsMode := derive_fintype% _
 
 /-- The modes of the second machine of the list constructor. -/
 inductive Cons2Mode | t0 | tL | tOpen | tA | tBrack | tBody | dead
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype Cons2Mode := derive_fintype% _
 
 /-- The first machine of the list constructor: it writes the opening bracket, the head, and the
 comma that separates the head from the tail if the tail is not empty. -/
@@ -264,10 +274,11 @@ theorem isRegularUnderRepr_cons :
   · dsimp only
     rw [consMach1_run_left, consMach2_run_left]
     simp [Ty.repr]
+    rfl
   · dsimp only
-    rw [consMach1_run_right, consMach2_run_right]
+    rw [consMach1_run_right A a l, consMach2_run_right A a l]
     cases l with
-    | nil => simp [Ty.repr]
+    | nil => simp [Ty.repr]; rfl
     | cons a2 l2 =>
         show Sym8.lbrack :: (A.repr a ++ [Sym8.comma])
             ++ (joinSep ((a2 :: l2).map A.repr) ++ [Sym8.rbrack])
@@ -283,7 +294,12 @@ end Cons
 
 /-- The modes of the machine of the list deconstructor. -/
 inductive UnconsMode | start | pend | copy1 | rest | dead
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype UnconsMode := derive_fintype% _
 
 /-- The machine of the list deconstructor: it waits for the letter after the opening bracket to
 decide whether the list is empty, and then copies the head and the tail. -/
@@ -374,6 +390,7 @@ theorem unconsMach_run (l : List A.Elt) :
         show unconsMach.out .pend 1 Sym8.rbrack = [Sym8.left, Sym8.one] from rfl,
         Mach.runFrom_dead _ _ _ (fun _ _ => rfl) (fun _ _ => rfl) (fun _ => rfl)]
       simp [Ty.repr]
+      rfl
   | cons a l' =>
       obtain ⟨c, w, hcw, hc⟩ := repr_eq_cons A a
       have hcne : c ≠ Sym8.rbrack := by rintro rfl; simp [transparent] at hc
@@ -392,6 +409,8 @@ theorem unconsMach_run (l : List A.Elt) :
             show unconsMach.out .copy1 1 Sym8.rbrack
               = [Sym8.comma, Sym8.lbrack, Sym8.rbrack, Sym8.rpar] from rfl,
             Mach.runFrom_dead _ _ _ (fun _ _ => rfl) (fun _ _ => rfl) (fun _ => rfl)]
+          show _ = Sym8.right :: Sym8.lpar ::
+            (A.repr a ++ Sym8.comma :: ((Ty.list A).repr ([] : List A.Elt) ++ [Sym8.rpar]))
           simp [Ty.repr, hcw]
       | cons a2 l2 =>
           rw [joinSepTail_cons,
@@ -409,6 +428,8 @@ theorem unconsMach_run (l : List A.Elt) :
           rw [show unconsMach.step .rest 1 Sym8.rbrack = UnconsMode.dead from rfl,
             show unconsMach.out .rest 1 Sym8.rbrack = [Sym8.rbrack, Sym8.rpar] from rfl,
             Mach.runFrom_dead _ _ _ (fun _ _ => rfl) (fun _ _ => rfl) (fun _ => rfl)]
+          show _ = Sym8.right :: Sym8.lpar ::
+            (A.repr a ++ Sym8.comma :: ((Ty.list A).repr (a2 :: l2) ++ [Sym8.rpar]))
           simp [Ty.repr, hcw]
 
 theorem isRegularUnderRepr_uncons :

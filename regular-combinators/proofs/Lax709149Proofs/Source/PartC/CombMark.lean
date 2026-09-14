@@ -150,7 +150,12 @@ lemma isRegularFun_unmark : IsRegularFun unmark := by
 /-- The modes of the marking machine: before the opening bracket, inside the list, and after the
 closing bracket. -/
 inductive ListMarkMode | start | body | done
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype ListMarkMode := derive_fintype% _
 
 /-- The machine that marks a list representation: it deletes the outer brackets, replaces the
 top-level commas by the separator, and marks every other letter. -/

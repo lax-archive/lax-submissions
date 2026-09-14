@@ -159,8 +159,8 @@ lemma repr_toSrc : ∀ (A : Ty) (a : A.Elt),
   | .list A, l => by
       show (Sym8.lbrack :: (joinSep (l.map A.repr) ++ [Sym8.rbrack])).map toSrcSym
         = (Transducers.Ty.list (toSrcTy A)).repr (l.map (eltEquiv A))
-      rw [Transducers.Ty.repr_list, List.map_cons, List.map_append, joinSep_toSrc, List.map_map,
-        List.map_map]
+      rw [Transducers.Ty.repr_list, List.map_cons, List.map_append, joinSep_toSrc,
+        List.map_map (l := l), List.map_map (l := l)]
       have : (List.map toSrcSym ∘ A.repr) = ((toSrcTy A).repr ∘ eltEquiv A) :=
         funext fun a => repr_toSrc A a
       rw [this]
@@ -262,7 +262,7 @@ lemma eval_toSrcTerm : ∀ {A B : Ty} (t : RegTerm A B) (a : A.Elt),
   | _, _, .copair _ t, Sum.inr b => eval_toSrcTerm t b
   | _, _, .map t, l => by
       show (l.map (eltEquiv _)).map (toSrcTerm t).eval = (l.map t.eval).map (eltEquiv _)
-      rw [List.map_map, List.map_map]
+      rw [List.map_map (l := l), List.map_map (l := l)]
       exact List.map_congr_left fun a _ => eval_toSrcTerm t a
 
 /-- A function defined by a concept term is, transported along `eltEquiv`,

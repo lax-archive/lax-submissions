@@ -127,7 +127,7 @@ theorem repr_append_inj : ∀ (t : Ty) (x y : t.Elt) (u v : List Sym8),
                         obtain ⟨hl, huv⟩ := ih (b' :: l₂') u v (List.cons.inj h3).2
                         exact ⟨by rw [haa, hl], huv⟩
       intro l l' u v h
-      rw [Ty.repr_list, Ty.repr_list] at h
+      rw [Ty.repr_list A l, Ty.repr_list A l'] at h
       have h1 : joinSep (l.map A.repr) ++ Sym8.rbrack :: u
           = joinSep (l'.map A.repr) ++ Sym8.rbrack :: v := by
         simpa [List.append_assoc] using (List.cons.inj h).2

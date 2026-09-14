@@ -92,7 +92,12 @@ def Ty.height : Ty → ℕ
 /-- The book's alphabet with eight letters: `(`, `)`, `[`, `]`, `,`, `1`, `L`, `R`. -/
 inductive Sym8 : Type
   | lpar | rpar | lbrack | rbrack | comma | one | left | right
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype Sym8 := derive_fintype% _
 
 /-! ## The string representation -/
 

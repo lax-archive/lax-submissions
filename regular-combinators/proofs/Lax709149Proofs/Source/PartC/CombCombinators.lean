@@ -220,11 +220,17 @@ theorem IsRegularUnderRepr.mapList {A B : Ty} {f : A.Elt → B.Elt} (hf : IsRegu
   refine ⟨fun w => unmark (mapLift f'' (listMarkMach.run (listMarkN A) .start w)), ?_, fun l => ?_⟩
   · exact ((isRegularFun_listMarkRun A).comp' (isRegularFun_mapLift hf''reg)
       (fun _ => rfl)).comp' isRegularFun_unmark (fun _ => rfl)
-  · dsimp only
-    rw [listMarkMach_run, mapLift_optBlocks hf''nil, List.map_map]
-    rw [show ((f'' ∘ A.repr) : A.Elt → List Sym8) = (B.repr ∘ f) from funext hf''repr,
-      ← List.map_map]
-    exact unmark_optBlocks B (l.map f)
+  · -- `l` sits at the `def`-wrapped `(Ty.list A).Elt`, where the rewrites below no longer match
+    -- their `List A.Elt` patterns; run them for a plain list and instantiate.
+    have key : ∀ m : List A.Elt,
+        unmark (mapLift f'' (listMarkMach.run (listMarkN A) ListMarkMode.start
+            ((Ty.list A).repr m))) = (Ty.list B).repr (m.map f) := by
+      intro m
+      rw [listMarkMach_run, mapLift_optBlocks hf''nil, List.map_map]
+      rw [show ((f'' ∘ A.repr) : A.Elt → List Sym8) = (B.repr ∘ f) from funext hf''repr,
+        ← List.map_map]
+      exact unmark_optBlocks B (m.map f)
+    exact key l
 
 end Comb
 end Lax709149Proofs.Transducers

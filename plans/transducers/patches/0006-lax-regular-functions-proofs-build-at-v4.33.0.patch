@@ -1,7 +1,7 @@
 From 0b6e43942bb3cb78c63c3a6a0336f29da8820237 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 07:33:26 +0000
-Subject: [PATCH 6/9] lax/regular-functions: proofs build at v4.33.0
+Subject: [PATCH 06/11] lax/regular-functions: proofs build at v4.33.0
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

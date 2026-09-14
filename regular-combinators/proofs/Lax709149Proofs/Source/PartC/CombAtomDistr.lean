@@ -22,7 +22,12 @@ namespace Comb
 /-- The modes of the machine writing the marker: before the opening bracket, inside the first
 component, at the letter `L` or `R`, and after it. -/
 inductive MMode | start | inA | atMark | after
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype MMode := derive_fintype% _
 
 /-- The machine that writes the marker `L` or `R` of the output of `distr`. -/
 def markMach : Mach MMode Sym8 where
@@ -41,7 +46,12 @@ def markMach : Mach MMode Sym8 where
 /-- The modes of the machine writing the pair: before the opening bracket, inside the first
 component, at the marker letter, inside the second component, and after the closing bracket. -/
 inductive QMode | start | inA | skip | inB | stop
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype QMode := derive_fintype% _
 
 /-- The machine that writes the pair of the output of `distr`. -/
 def pairMach : Mach QMode Sym8 where

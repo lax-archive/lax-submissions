@@ -23,4 +23,14 @@ mkdir -p "$here/book-lax"
 mv "$tmp"/lax/* "$here/book-lax/"
 rm -rf "$tmp"
 git -C "$book" format-patch --quiet -o "$here/patches" "$base..$branch"
+# Concept-file edits are never committed without Jan's approval; an
+# uncommitted one is exported beside the patches, and applied to the
+# root-level copy so the folders build.
+diff=$here/concept-change-awaiting-approval.diff
+rm -f "$diff"
+if ! git -C "$book" diff --quiet -- 'lax/*/concepts'; then
+  git -C "$book" diff -- 'lax/*/concepts' > "$diff"
+  (cd "$top" && sed 's|^\(--- a/\|+++ b/\)lax/|\1|' "$diff" | git apply -p1)
+  echo "concept change awaiting approval: $(git -C "$book" diff --stat -- 'lax/*/concepts' | tail -1)"
+fi
 echo "exported $(git -C "$book" rev-parse --short "$branch") ($(ls "$here/patches" | wc -l) patches over $(git -C "$book" rev-parse --short "$base"))"

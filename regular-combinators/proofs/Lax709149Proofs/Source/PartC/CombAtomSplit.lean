@@ -29,7 +29,12 @@ namespace Comb
 between two entries, inside an entry from `A`, inside an entry from `B`, and after the closing
 bracket. -/
 inductive SplitPhase | start | wait | copyA | copyB | done
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype SplitPhase := derive_fintype% _
 
 /-- The mode of the machine of split: the part of the input, whether an entry from `B` has been
 seen, and whether the block being written already has an entry. -/
@@ -363,12 +368,20 @@ theorem isRegularUnderRepr_split :
       (B := Ty.prod (Ty.list A) (Ty.list (pairTy A B))) (fun l => splitList l) := by
   refine ⟨splitMach.run ((splitDom A B).height) (SplitPhase.start, false, false),
     splitMach.isRegularFun_run _ _, fun l => ?_⟩
-  rw [splitMach_run, splitOut_false]
-  simp only [aBody]
-  show _ = Sym8.lpar :: ((Ty.list A).repr (splitList l).1
-    ++ Sym8.comma :: ((Ty.list (pairTy A B)).repr (splitList l).2 ++ [Sym8.rpar]))
-  rw [Ty.repr_list, Ty.repr_list]
-  simp
+  -- `l` sits at the `def`-wrapped `(splitDom A B).Elt`, where the rewrites below no longer
+  -- match their `List ((Ty.sum A B).Elt)` patterns; run them for a plain list and instantiate.
+  have key : ∀ m : List ((Ty.sum A B).Elt),
+      splitMach.run ((splitDom A B).height) (SplitPhase.start, false, false)
+          ((splitDom A B).repr m)
+        = (Ty.prod (Ty.list A) (Ty.list (pairTy A B))).repr (splitList m) := by
+    intro m
+    rw [splitMach_run, splitOut_false]
+    simp only [aBody]
+    show _ = Sym8.lpar :: ((Ty.list A).repr (splitList m).1
+      ++ Sym8.comma :: ((Ty.list (pairTy A B)).repr (splitList m).2 ++ [Sym8.rpar]))
+    rw [Ty.repr_list, Ty.repr_list (pairTy A B) (splitList m).2]
+    simp
+  exact key l
 
 end Split
 

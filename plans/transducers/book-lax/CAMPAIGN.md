@@ -132,6 +132,31 @@ longer bridges `id` and `fun x => x` without `Function.id_def`.
   `def` for `Unit`/`Bool`; `simp [Prod.ext_iff]` inside a goal, the
   residue `() = PUnit.unit` closes by `exact fun _ => rfl`, not
   `Subsingleton.elim`), `ITransBuild.lean:187` `Function.id_def` (iii).
+- S5 (`regular-combinators`; every v4.30 workaround still needed). **The
+  one concept-file change of the port, awaiting Jan**:
+  `concepts/Lax709149/Types.lean:48` `Sym8` (eight nullary constructors)
+  `deriving DecidableEq, Fintype` fails (ix); proposed `deriving
+  DecidableEq` + `instance : Fintype Sym8 := derive_fintype% _` with
+  `import Mathlib.Data.Fintype.Sum` added (the proxy type is an eightfold
+  sum) — what is declared is unchanged. Proofs: (ix) twelve enums —
+  `Source/PartC/CombTypes.lean:95-100` (`Sym8`), `CombAtomCons.lean:29-43,
+  296-302` (`ConsMode`, `Cons2Mode`, `UnconsMode`), `CombAtomConcat.lean:
+  28-34,73-79` (`ConcatMode`, `DropMode`), `CombAtomProj.lean:43-49`
+  (`PMode`), `CombMark.lean:153-158` (`ListMarkMode`), `CombAtomSplit.lean:
+  31-37` (`SplitPhase`), `CombAtomPref.lean:103-109` (`PrefPhase`),
+  `CombAtomDistr.lean:24-30,48-54` (`MMode`, `QMode`); (i) `rw` refuses to
+  unify a pattern variable at `List X.Elt` with a local at `(Ty.list
+  X).Elt` — `CombInj.lean:130`, `CombAtomConcat.lean:253`,
+  `CombAtomCons.lean:279` lemmas given their arguments;
+  `CombAtomSplit.lean:373-384`, `CombAtomReverse.lean:92-102`,
+  `CombCombinators.lean:223-233`, `CombAtomPref.lean:302-311` the original
+  tactic block moved into `have key : ∀ m : List _.Elt, …` and `exact key
+  l` (one edit instead of one failing rewrite per build round);
+  `Bridge.lean:163,265` `List.map_map (l := l)`; (i) `Sum.elim` at a
+  `def`-wrapped scrutinee no longer iota-reduces under `simp` —
+  `CombAtomCons.lean:277,281,393` `rfl` appended, `:412-413,431-432` a
+  `show` exposing `A.repr a` so `hcw` fires (the "unused simp argument"
+  hint is the tell).
 
 ## Source edits (against the epoch mathlib)
 

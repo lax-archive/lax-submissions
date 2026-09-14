@@ -26,7 +26,12 @@ namespace Comb
 at the letter that opens an entry (or closes an empty inner list), inside an entry or between the
 entries of one inner list, and after the outer closing bracket. -/
 inductive ConcatMode | start | outer | pend | inner | dead
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype ConcatMode := derive_fintype% _
 
 /-- The machine that writes the entries of the flattened list, each preceded by a comma. -/
 def concatMach : Mach ConcatMode Sym8 where
@@ -66,7 +71,12 @@ def concatMach : Mach ConcatMode Sym8 where
 
 /-- The modes of the machine that removes the first letter of its input. -/
 inductive DropMode | first | later
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype DropMode := derive_fintype% _
 
 /-- The machine that removes the first letter of its input and wraps the rest in brackets.  The
 depth plays no role here. -/
@@ -240,7 +250,7 @@ theorem isRegularUnderRepr_concat :
     (concatMach.isRegularFun_run _ _).comp' (dropFirstMach.isRegularFun_run _ _) (fun _ => rfl),
     fun l => ?_⟩
   show dropFirstMach.run _ .first (concatMach.run _ ConcatMode.start ((catDom A).repr l)) = _
-  rw [concatMach_run, dropFirstMach_run, commaBlocks_tail]
+  rw [concatMach_run (A := A) l, dropFirstMach_run, commaBlocks_tail]
   rfl
 
 end Concat

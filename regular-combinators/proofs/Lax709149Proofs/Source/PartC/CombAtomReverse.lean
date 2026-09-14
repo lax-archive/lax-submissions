@@ -89,11 +89,17 @@ lemma isRegularFun_reverseFun : IsRegularFun (reverseFun A) := by
 theorem isRegularUnderRepr_reverse :
     IsRegularUnderRepr (A := Ty.list A) (B := Ty.list A) (fun l => l.reverse) := by
   refine ⟨reverseFun A, isRegularFun_reverseFun A, fun l => ?_⟩
-  rw [reverseFun, listMarkMach_run, optBlocks_reverse, mapReverse,
-    mapLift_optBlocks (by simp) _, List.map_map]
-  rw [show (List.reverse ∘ List.reverse : List Sym8 → List Sym8) = id from by
-    funext u; simp]
-  rw [List.map_id, ← List.map_reverse, unmark_optBlocks]
+  -- `l` sits at the `def`-wrapped `(Ty.list A).Elt`, where the rewrites below no longer match
+  -- their `List A.Elt` patterns; run them for a plain list and instantiate.
+  have key : ∀ m : List A.Elt,
+      reverseFun A ((Ty.list A).repr m) = (Ty.list A).repr m.reverse := by
+    intro m
+    rw [reverseFun, listMarkMach_run, optBlocks_reverse, mapReverse,
+      mapLift_optBlocks (by simp) _, List.map_map]
+    rw [show (List.reverse ∘ List.reverse : List Sym8 → List Sym8) = id from by
+      funext u; simp]
+    rw [List.map_id, ← List.map_reverse, unmark_optBlocks]
+  exact key l
 
 end Reverse
 
