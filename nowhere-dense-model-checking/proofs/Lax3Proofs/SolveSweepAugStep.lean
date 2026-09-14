@@ -105,7 +105,7 @@ theorem agsGreedyExpr_eval {B N : ℕ} (D : Orientation N) (rank : Fin N → ℕ
       u ∈ (greedyStep rank D).inN v := by
     rw [mem_greedyStep, agsFrat_swap D u v]
     simp only [Orientation.Adjacent, not_or, and_assoc]
-  simpa only [hp] using hform
+  simpa only [agsGreedyExpr, hp] using hform
 
 /-- A lookup request contains names only. Its tag is a static identifier used
 by proof-side metadata; it has no role in the executed command. -/

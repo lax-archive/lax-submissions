@@ -466,13 +466,13 @@ theorem agCsrCom_scatter_spec {B N M : ℕ} {nN sz ky o t ct cu : String} {key :
       (.seq (.assign "ac.n" (.var nN)) (.assign "ac.m" (.var sz))) σ
       ((σ.setVar "ac.n" N).setVar "ac.m" M) 4 := by
     have h1 : Run B (.assign "ac.n" (.var nN)) σ (σ.setVar "ac.n" N) 2 := by
-      simpa only [hn] using Run.assign (x := "ac.n") (evalB_var (B := B) (x := nN)
-        (σ := σ) (by omega))
+      simpa only [hn, Expr.size] using Run.assign (x := "ac.n")
+        (evalB_var (B := B) (x := nN) (σ := σ) (by omega))
     have h2 : Run B (.assign "ac.m" (.var sz)) (σ.setVar "ac.n" N)
         ((σ.setVar "ac.n" N).setVar "ac.m" M) 2 := by
       have hv : (σ.setVar "ac.n" N).vars sz = M := by simp [hszn, hm]
-      simpa only [hv] using Run.assign (x := "ac.m") (evalB_var (B := B) (x := sz)
-        (σ := σ.setVar "ac.n" N) (by rw [hv]; omega))
+      simpa only [hv, Expr.size] using Run.assign (x := "ac.m")
+        (evalB_var (B := B) (x := sz) (σ := σ.setVar "ac.n" N) (by rw [hv]; omega))
     exact h1.seq h2
   have hS0 : AgCsrSource ky N M key ((σ.setVar "ac.n" N).setVar "ac.m" M) := by
     constructor <;> simp_all
@@ -762,7 +762,8 @@ theorem graphCsr_agCsrRows {N M : ℕ} {o t : String} {G : SimpleGraph (Fin N)} 
     fun i hi => hc.getD_off hi, ?_⟩, ?_, ?_⟩
   · intro v
     have hm := hc.off_le_succ v.isLt
-    simp only [rows, List.length_ofFn, Csr.rowLen]
+    have hlen : (rows v).length = Csr.rowLen off (v : ℕ) := List.length_ofFn
+    simp only [rows, Csr.rowLen] at hlen ⊢
     omega
   · intro v i hi
     have hi' : i < Csr.rowLen off v := by simpa [rows] using hi

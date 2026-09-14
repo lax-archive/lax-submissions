@@ -177,8 +177,9 @@ theorem agFilterCom_run {B U K : ℕ} (ix ky sz kv tv hv iv lm ans : String)
     (fun ρ h => h.1) (fun ρ h => (h.2.2.1 lm hlW).trans hlm) hbody
   have hstart : I (σ.setVar iv 0) := by
     refine ⟨by simp, ?_, ?_, fun _ _ _ => rfl, fun _ => rfl⟩
-    · simpa only [vars_setVar, if_pos rfl, agFilterPart_zero] using
-        hD.of_eq (τ := σ.setVar iv 0) rfl rfl (by simp [hs_i])
+    · have hiv0 : (σ.setVar iv 0).vars iv = 0 := by simp [vars_setVar]
+      rw [hiv0, agFilterPart_zero]
+      exact hD.of_eq (τ := σ.setVar iv 0) rfl rfl (by simp [hs_i])
     · intro y hy
       simp [(hw y hy).2.2.2.2.1]
   obtain ⟨τ, hrun, hI, hiv⟩ := hloop.run hstart

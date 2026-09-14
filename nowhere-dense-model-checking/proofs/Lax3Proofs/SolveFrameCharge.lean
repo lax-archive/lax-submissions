@@ -216,9 +216,12 @@ theorem chargeFrameK_root_le (S : Setup L) (ord : CoverSpec.OrderingRoutine)
   have hdrv : (chargeTotal (driverChargeMS S ord ℓp htabF covC S.depth 0
       (rootArena G col)) : ℝ) ≤ K * W := by
     by_cases hW : 1 ≤ graphWeight G
-    · have hd := driverChargeMS_chargeTotal_le S ord ℓp htabF covC hc hf hδ hcov hdeg
-        S.depth 0 (by omega) (rootArena G col) ⟨SimpleGraph.Copy.id G⟩ hW
-      rw [Headline.weight_rootArena] at hd
+    · have hd : (chargeTotal (driverChargeMS S ord ℓp htabF covC S.depth 0
+            (rootArena G col)) : ℝ)
+          ≤ KP S ℓp c f ^ (S.depth + 1)
+            * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ)) :=
+        driverChargeMS_chargeTotal_le S ord ℓp htabF covC hc hf hδ hcov hdeg
+          S.depth 0 (by omega) (rootArena G col) ⟨SimpleGraph.Copy.id G⟩ hW
       refine hd.trans (mul_le_mul_of_nonneg_left ?_ hK0)
       exact Real.rpow_le_rpow (Nat.cast_nonneg _) (by linarith) hE
     · have hN : (rootArena G col).N = 0 := by
