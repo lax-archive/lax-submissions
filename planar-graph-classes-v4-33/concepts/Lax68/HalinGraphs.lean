@@ -1,6 +1,5 @@
 import Mathlib.Combinatorics.SimpleGraph.Acyclic
 import Mathlib.Combinatorics.SimpleGraph.Finite
-import Lax68.Planar
 import Lax68.StraightLineDrawings
 
 /-!
@@ -47,11 +46,5 @@ structure Construction {V : Type*} (G : SimpleGraph V) where
 
 def IsHalin {V : Type*} (G : SimpleGraph V) : Prop :=
   Nonempty (Construction G)
-
-/-- Every Halin graph is planar. -/
-axiom halin_planar
-    {V : Type*} {G : SimpleGraph V} :
-  Lax68.HalinGraphs.IsHalin G →
-  Lax68.Planar.IsPlanar G
 
 end Lax68.HalinGraphs

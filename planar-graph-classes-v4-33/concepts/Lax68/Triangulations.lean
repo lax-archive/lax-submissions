@@ -24,11 +24,4 @@ def IsTriangulationOf {V : Type*}
       T < H →
       ¬ Planar.IsPlanar H
 
-/-- If T is a triangulation of a planar graph G, then T is planar. -/
-axiom triangulationOf_planar {V : Type*}
-    {G T : SimpleGraph V} :
-  Lax68.Planar.IsPlanar G →
-  Lax68.Triangulations.IsTriangulationOf G T →
-  Lax68.Planar.IsPlanar T
-
 end Lax68.Triangulations

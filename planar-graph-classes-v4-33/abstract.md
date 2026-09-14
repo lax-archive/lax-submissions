@@ -8,8 +8,8 @@ connected branch sets, and topological minors via internally disjoint paths.
 Planarity is expressed by the existence of a crossing-free straight-line
 drawing in the real plane.
 
-Elementary relationships are stated alongside the relevant graph-class
-definitions. Proofs are supplied for direct projections and simple
+Graph-class definitions contain no theorem statements. Elementary
+relationships are stated in separate theorem concepts. Proofs are supplied for direct projections and simple
 compositions; the remaining relationships are explicitly open statements.
 The geometric planarity claims for trees and stars are restricted to finite
 graphs. The accompanying visual guide illustrates the defining shapes.

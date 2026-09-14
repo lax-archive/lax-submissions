@@ -1,5 +1,4 @@
 import Lax68.Outerplanar
-import Lax68.Planar
 
 /-!
 ---
@@ -20,15 +19,5 @@ def IsMaximalOuterplanar {V : Type*}
     ∀ H : SimpleGraph V,
       G < H →
       ¬ Outerplanar.IsOuterplanar H
-
-/-- Every maximal outerplanar graph is outerplanar. -/
-axiom maximalOuterplanar_outerplanar {V : Type*} {G : SimpleGraph V} :
-  Lax68.MaximalOuterplanar.IsMaximalOuterplanar G →
-  Lax68.Outerplanar.IsOuterplanar G
-
-/-- Every maximal outerplanar graph is planar. -/
-axiom maximalOuterplanar_planar {V : Type*} {G : SimpleGraph V} :
-  Lax68.MaximalOuterplanar.IsMaximalOuterplanar G →
-  Lax68.Planar.IsPlanar G
 
 end Lax68.MaximalOuterplanar
