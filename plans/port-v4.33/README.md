@@ -84,7 +84,40 @@ Pins everywhere: `manifest.yaml` (`leanVersion`, `mathlibVersion`), both
   only` (drift xiv): `simp only [Atomic.of, setRemap]; refine
   decide_eq_decide.mpr ?_; simp only [Set.mem_iUnion, exists_prop]; exact
   exists_congr …`.
-- **refinement-tower** (lax-62): _pending the worker's report_.
+- **refinement-tower** (lax-62; 3 + 3343 jobs green; the concept package
+  is one empty root module). Everything under `proofs/Lax62Proofs/Refine/`,
+  no statement changed, no `#guard_msgs` docstring edited. Two classes
+  the tower numbered, both `exact`-at-default-transparency cures for
+  tactic matching at `instances`/`implicit`: **(xv)** `simp only [<def>]`
+  desyncs an `ite`'s displayed condition from its `Decidable` instance
+  argument (the instance keeps the old term; `rw [if_pos h]` finds no
+  occurrence, `split` finds no `if`, `pp.explicit` shows `@ite _ C
+  (propDecidable C')`) — keep every def inside the condition out of the
+  simp set that unfolds the ite's owner and state the hypothesis in the
+  folded form: `Sepref/Amortization.lean:127-145` (`twoPotential`),
+  `Iicf/IicfDynamicArray.lean:210-275` (`SourceArray.capacity`, four
+  theorems), `Iicf/Impl/ArrayMapMap.lean:100-115` (`Finset.mem_filter`
+  *before* unfolding `mapUpdate`); **(xvi)** `simp` no longer unfolds a
+  partially applied (eta-short) `def` — `polylog2 a b c d`, `nfoldli c f
+  []`, `hmKeyPrio prio hm`, `compPRE R P Q S` — so `simpa [thedef] using
+  h` mismatches; `exact h`, or `simp only … at h; exact h`:
+  `Asymptotics/TwoDimensional.lean:141,161,257`,
+  `TwoDimensionalComposition.lean:226,237`, `Recurrences.lean:241`,
+  `Codegen/Examples/EndToEnd.lean:154`, `Iicf/Impl/AbsHeapmap.lean:
+  546-582,625,689-692`, `ArrayMapMap.lean:546-547`, `ImplHeap.lean:1926`,
+  `Iicf/Intf/Multiset.lean:401-402`, `Ir/Triples.lean:436-438`,
+  `NREST/Automation.lean:304`, `NREST/For.lean:51-53,141`,
+  `Sepref/Signature.lean:263-264,313`, `SignatureFlatten.lean:208`. Also
+  (iv) `Asymptotics/OneDimensionalOperations.lean:372,402,446-448`; (xi)
+  `Examples/Bfs.lean:166`; (i) `AbsHeapmap.lean:215-218,319-324`,
+  `Multiset.lean:364-366`, `Sepref/Amortization.lean:70-71` (`abbrev`
+  currencies named in the simp set), `ImplHeap.lean:1516-1518` (`rw` →
+  `simp only`, "motive is not type correct" on an ite's instance);
+  (xii/xiv) `AbsHeapmap.lean:1141-1154`, `ArrayMap.lean:202-203` (two
+  `Decidable` instances inside `decide`); and one **renamed lemma**:
+  `Finset.sum_eq_add_sum_diff_singleton` is gone at this pin →
+  `(Finset.add_sum_erase _ f hMem).symm` (`Iicf/UnionFindTime.lean:932-946`).
+  `AbsHeap.lean:936,942` still carry `simp only []` and still build.
 - **nowhere-dense-model-checking** (lax-3): _pending_.
 - **twin-width-treewidth-separation-v4-33** (lax-768004; 1195 + 1272 jobs
   green; concepts compile as scaffolded, paper untouched). All under
