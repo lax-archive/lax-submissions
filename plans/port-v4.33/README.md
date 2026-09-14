@@ -59,6 +59,17 @@ Pins everywhere: `manifest.yaml` (`leanVersion`, `mathlibVersion`), both
   at h₁ h₂` no longer makes progress (drift vii), dropped;
   `proofs/Lax67Proofs/Simulation.lean:618` `compile_correct` — `simpa using
   hfits` → `simpa [compile] using hfits` (drift iv). Concepts untouched.
+  `lax build --replay word-ram` (the archive's own checks) is green:
+  layout, dependencies, compile, kernel replay 49 s, inspect (2 concepts
+  · 0 proofs), 1 m 02 s in all; its 608 `statements · unused-lemma`
+  warnings are the pre-existing class (the proof package is a library
+  with no proof theorem, so every helper is "unused"). Two things that
+  gate found first: the manifest's pins had been reverted by a `git
+  checkout` during the merge (fixed, commit e937cf9), and
+  **`supersedes-taken`** — lax-865980 already supersedes lax-13 and the
+  archive allows one successor, so lax-67 could not be resubmitted with
+  its `supersedes: lax-13` line; the line is removed (commit 75dad69,
+  FINISH.md §4.1).
 - **ram-linear-time** (lax-11; 1007 + 3083 jobs green). Concepts compile
   unchanged. `proofs/Lax11Proofs/MsoComposition.lean:195` `typ_succ_congr`
   — `simpa [typ_zero] using congrArg T.diagram h` → `exact congrArg
