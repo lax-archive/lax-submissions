@@ -388,7 +388,7 @@ theorem root_adj_rootChildWithNeighborhood (k : ℕ)
       (Sum.inr (FullTreeNode.root (bonnetDepresBranch k) (bonnetDepresDepth k)) :
         BonnetDepresVertex k)
       (Sum.inr (rootChildWithNeighborhood k f)) := by
-  simpa [bonnetDepresGraph, rootChildWithNeighborhood] using
+  simpa [bonnetDepresGraph, rootChildWithNeighborhood, FullTreeNode.graph] using
     (Or.inl
       (FullTreeNode.isParent_child
         (FullTreeNode.root (bonnetDepresBranch k) (bonnetDepresDepth k))
@@ -2379,7 +2379,7 @@ theorem partitionRedAdj_of_antichain_descendant_parent_parts
   · intro hAdj
     exact not_tree_adj_parent_descendant_of_antichain
       hanti haza hbzb hpza ha_strict
-      ((FullTreeNode.graph (bonnetDepresBranch k) (bonnetDepresDepth k)).symm hAdj)
+      ((FullTreeNode.graph (bonnetDepresBranch k) (bonnetDepresDepth k)).symm.symm _ _ hAdj)
 
 /-- Family form of the previous red-adjacency lemma: when `B` contains selected
 descendants of more than one branch in an antichain, the part containing the
@@ -2465,7 +2465,7 @@ theorem partitionRedAdj_of_ranked_antichain_family_parent_part
       (hanti haR hbR (fun hab => hba hab.symm))
       (hlevel_ne haR hbR (fun hab => hba hab.symm))
       (hdesc a haR) (hdesc b hbR) hpza
-      ((FullTreeNode.graph (bonnetDepresBranch k) (bonnetDepresDepth k)).symm hAdj)
+      ((FullTreeNode.graph (bonnetDepresBranch k) (bonnetDepresDepth k)).symm.symm _ _ hAdj)
 
 /-- A child whose label separates two apex vertices is red-adjacent to any bag
 containing both apices. -/

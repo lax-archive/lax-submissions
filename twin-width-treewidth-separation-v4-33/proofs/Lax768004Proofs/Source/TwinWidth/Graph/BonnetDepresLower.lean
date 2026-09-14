@@ -1076,7 +1076,7 @@ theorem ContractionSequence.exists_rootChild_hasManyChildrenInPart_before_first
   · let u := rootChildWithNeighborhood k f₀
     have hsingleP :
         ({Sum.inr u} : Finset (BonnetDepresVertex k)) ∈ (S.state i).bags := by
-      simpa [i, u, rootChildBag] using (by simpa [hAroot] using hA)
+      simpa [i, u, rootChildBag] using (by simpa [hAroot, rootChildBag] using hA)
     have hBne : B ≠ ({Sum.inr u} : Finset (BonnetDepresVertex k)) := by
       intro hBroot'
       apply hAB
@@ -1112,7 +1112,7 @@ theorem ContractionSequence.exists_rootChild_hasManyChildrenInPart_before_first
   · let u := rootChildWithNeighborhood k f₀
     have hsingleP :
         ({Sum.inr u} : Finset (BonnetDepresVertex k)) ∈ (S.state i).bags := by
-      simpa [i, u, rootChildBag] using (by simpa [hBroot] using hB)
+      simpa [i, u, rootChildBag] using (by simpa [hBroot, rootChildBag] using hB)
     have hAne : A ≠ ({Sum.inr u} : Finset (BonnetDepresVertex k)) := by
       intro hAroot'
       apply hAB
