@@ -7,7 +7,7 @@ autoImplicit = false
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4"
-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
+rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 [[require]]
 name = "Lax242665"
@@ -17,26 +17,26 @@ path = "../concepts"
 # in mathlib. Required so that their concept cards can be marked in the paper;
 # no proof module imports them.
 
-# twin-width (Lax48)
+# twin-width (Lax228581)
 [[require]]
-name = "Lax48"
+name = "Lax228581"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "b999c28492338182ea9d8dfa16e850e011dd16da"
-subDir = "twin-width-treewidth-separation/concepts"
+rev = "ed3054bb821a309fd2c6e14c0e0751aeac06eafb"
+subDir = "twin-width-treewidth-separation-v433/concepts"
 
-# nowhere dense graph classes (Lax12)
+# nowhere dense graph classes (Lax199508)
 [[require]]
-name = "Lax12"
+name = "Lax199508"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "25a164f8439311426b1033ba7ea21947d829ff88"
-subDir = "sparsity-lectures/concepts"
+rev = "e9845c204d14a5678f9d64c0e6f4ca757d9dc9d0"
+subDir = "sparsity-lectures-v4-33/concepts"
 
-# the word RAM (Lax67)
+# the word RAM (Lax865980)
 [[require]]
-name = "Lax67"
+name = "Lax865980"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "512403f000f23689a1c40d8826062d20f1e28f03"
-subDir = "word-ram/concepts"
+rev = "0aa87e1f6e6add4abe4f4e0aff8fe4a28950b2ea"
+subDir = "word-ram-v4-33/concepts"
 
 [[lean_lib]]
 name = "Lax242665Proofs"
