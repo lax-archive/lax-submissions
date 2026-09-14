@@ -1,0 +1,44 @@
+specVersion: "1"
+id: lax-345067
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+supersedes: lax-14
+title: Finite Ramsey Theorems for Pairs and Tuples
+authors:
+  - name: Jan Dreier
+  - name: Claude Fable 5 (Anthropic)
+bibEntries:
+  - |
+    @article{Ramsey1930,
+      author  = {Ramsey, Frank P.},
+      title   = {On a Problem of Formal Logic},
+      journal = {Proceedings of the London Mathematical Society},
+      series  = {2},
+      volume  = {30},
+      pages   = {264--286},
+      year    = {1930},
+      doi     = {10.1112/plms/s2-30.1.264}
+    }
+  - |
+    @article{ErdosRado1952,
+      author  = {Erd{\H o}s, Paul and Rado, Richard},
+      title   = {Combinatorial Theorems on Classifications of Subsets of a
+                 Given Set},
+      journal = {Proceedings of the London Mathematical Society},
+      series  = {3},
+      volume  = {2},
+      pages   = {417--439},
+      year    = {1952},
+      doi     = {10.1112/plms/s3-2.1.417}
+    }
+  - |
+    @phdthesis{Mahlmann2024,
+      author = {M{\"a}hlmann, Nikolas},
+      title  = {Monadically Stable and Monadically Dependent Graph Classes:
+                Characterizations and Algorithmic Meta-Theorems},
+      school = {Universit{\"a}t Bremen},
+      year   = {2024}
+    }
+issue:
+  repositoryId: 1320232165
+  number: 105
