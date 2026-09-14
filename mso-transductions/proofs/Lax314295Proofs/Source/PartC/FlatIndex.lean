@@ -8,7 +8,7 @@ of its run, and the corresponding output positions of the mso transduction are i
 pairs and proves the four facts about it that are needed: it enumerates the pairs without
 repetitions, it is sorted lexicographically, and reading the letters at those pairs gives back the
 flattened list. -/
-import Lax765601Proofs.Source.Common.Aux
+import Lax765601Proofs.Source.Common.Auxiliary
 open Lax765601Proofs Lax765601Proofs.Transducers
 
 namespace Lax314295Proofs.Transducers

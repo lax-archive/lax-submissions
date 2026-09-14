@@ -153,10 +153,12 @@ lemma outputs (w : List A) : (mapEquivTrans e).Outputs w (w.map e) := by
     ((List.range w.length).map (fun p => Sum.inl ((), p))) ?_ ?_ ?_ ?_ ?_
   · refine List.Nodup.map ?_ (List.nodup_range)
     intro p q h
-    simpa using h
+    simp only [Sum.inl.injEq] at h
+    exact congrArg Prod.snd h
   · rintro (⟨⟨⟩, p⟩ | j)
     · rw [selected_iff]
-      simp
+      simp [Prod.ext_iff]
+      exact fun _ => rfl
     · exact j.elim
   · rw [List.pairwise_map]
     refine List.Pairwise.imp ?_ (List.pairwise_lt_range (n := w.length))
@@ -182,6 +184,6 @@ theorem isFOTransduction_map_equiv {A B : Type} (e : A ≃ B) :
 /-- The identity is a first-order transduction. -/
 theorem isFOTransduction_id (A : Type) : IsFOTransduction (id : List A → List A) := by
   have h := isFOTransduction_map_equiv (Equiv.refl A)
-  simpa using h
+  simpa [Function.id_def] using h
 
 end Lax314295Proofs.Transducers

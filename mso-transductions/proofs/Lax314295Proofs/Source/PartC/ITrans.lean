@@ -252,8 +252,8 @@ lemma outputs_toI {w : List A} {v : List B} (h : T.Outputs w v) : (MSOTransducti
   obtain ⟨es, hnd, hmem, hord, hlen, hlab⟩ := h
   refine ⟨es, hnd, fun x => ?_, fun i j hi hj hij => ?_, hlen, fun i hi hi' => ?_⟩
   · rw [MSOTransduction.selected_toI T w x]; exact hmem x
-  · rw [MSOTransduction.ordRel_toI T w _ _]; exact hord i j hi hj hij
-  · rw [MSOTransduction.labRel_toI T w _ _]; exact hlab i hi hi'
+  · exact (MSOTransduction.ordRel_toI T w _ _).2 (hord i j hi hj hij)
+  · exact (MSOTransduction.labRel_toI T w _ _).2 (hlab i hi hi')
 
 lemma proper_toI (h : T.Proper) : (MSOTransduction.toI T).Proper := by
   intro w

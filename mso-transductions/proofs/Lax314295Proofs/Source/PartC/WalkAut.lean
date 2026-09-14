@@ -624,7 +624,9 @@ end Spec
 /-- On the empty input the transducer produces `outNil`. -/
 lemma computes_nil : (aut D).Computes [] D.outNil := by
   have hstep : (aut D).stepCfg (Cfg.conf [] (aut D).init []) = some (D.outNil, Cfg.halt) := rfl
-  simpa using TwoWay.Reaches.step hstep (TwoWay.Reaches.refl _)
+  have h := TwoWay.Reaches.step hstep (TwoWay.Reaches.refl _)
+  rw [List.append_nil] at h
+  exact h
 
 end WalkAut
 

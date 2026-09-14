@@ -1,7 +1,7 @@
 From 79c8d26f5cf849c1cb62aab416fac0d9215b838f Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 06:47:05 +0000
-Subject: [PATCH 3/7] lax/pcp-undecidability, lax/mealy-machines: proofs build
+Subject: [PATCH 3/9] lax/pcp-undecidability, lax/mealy-machines: proofs build
  at v4.33.0
 
 S0: Part.mem_bind_iff and Nat.rfind_dom applied term-level (simp/rw now

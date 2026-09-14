@@ -166,10 +166,10 @@ lemma sat_norm_ord (T : MSOTransduction A B) {w : List A} (hw : 0 < w.length)
   rcases y with ⟨i, p⟩ | j <;> rcases y' with ⟨i', p'⟩ | j'
   · simp only [normElt, NormT.ord, norm, normOrd, ordRel]
   · simp only [normElt, NormT.ord, norm, normOrd, ordRel]
-    rw [MSO.sat_atv w 0 _ _ _ (by simpa using h1)]
+    rw [MSO.sat_atv w 0 _ _ _ h1]
     simp
   · simp only [normElt, NormT.ord, norm, normOrd, ordRel]
-    rw [MSO.sat_atv w 1 _ _ _ (by simpa using h2)]
+    rw [MSO.sat_atv w 1 _ _ _ h2]
     simp
   · simp only [normElt, NormT.ord, norm, normOrd, ordRel]
     rw [MSO.sat_atv w 0 _ _ _ (by simpa using hw)]
@@ -196,7 +196,8 @@ lemma exists_normElt (T : MSOTransduction A B) {w : List A} (hw : 0 < w.length)
     have : p = 0 := by
       have := (sat_isFirstF w (fun _ => p) (fun _ => ∅) hw).1 hsat.1
       simpa using this
-    simp [normElt, this]
+    subst this
+    rfl
 
 /-- **Lemma `lem:logic-reduction-to-type-n` (normalisation of `τ`).**  Every mso transduction
 agrees, on non-empty inputs, with a normalised transduction. -/

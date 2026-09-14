@@ -112,6 +112,26 @@ longer bridges `id` and `fun x => x` without `Function.id_def`.
   `RegPair.lean:406-408` (`simp only … at h; exact h`),
   `TwoWayCont.lean:227` (xii, `<;> rfl`); (x) `SnakeAlphCyc.lean:158,269,
   295`; (xi) `SSTBasic.lean:62-64`.
+- S4 (`mso-transductions`, 9 files; concepts untouched; the `export`
+  aliases, the ~110 explicit dot-notation sites and the v4.30 drift fixes
+  all still needed): `Source/PartC/FlatIndex.lean:11` `Common.Aux` →
+  `Common.Auxiliary` (ii); (i) at `def`-wrapped component types
+  (`(trans R).E`, `(trans A₀).P`, `(toI T).Elt`, `(toSrcRel R).Idx`) —
+  `ITrans.lean:255,256` `rw [ordRel_toI]; exact` → `exact (ordRel_toI …).2 …`,
+  `FORelabTrans.lean:142-144,154-155,166-168` `ordRel_inr_iff` applied
+  term-level (the fully-applied `rw [ordRel_inl_iff …]` twins still
+  rewrite: giving a lemma its arguments is the cheapest fix),
+  `FOTransDup.lean:475-511` `rw [selected_iff] at h` → `replace h :=
+  (selected_iff w c p).1 h`, `:535,544,548` `refine <lemma>.2 ?_`,
+  `MSONorm.lean:169,172` the `simpa` side goal passed as `h1`, `:199-200`
+  `subst this; rfl`, `Results.lean:227-228` `simp only [sat_toSrc]; exact h`;
+  (iv) `WalkAut.lean:627-629` `rw [List.append_nil] at h; exact h`,
+  `FOTransRev.lean:271,276` and `ITransBuild.lean:156-157` constructor
+  injectivity as `congrArg Prod.snd (Sum.inl.inj h)` (new sub-case of (i):
+  `Prod.mk.injEq`/`Sum.inl.injEq` do not fire when a component sits at a
+  `def` for `Unit`/`Bool`; `simp [Prod.ext_iff]` inside a goal, the
+  residue `() = PUnit.unit` closes by `exact fun _ => rfl`, not
+  `Subsingleton.elim`), `ITransBuild.lean:187` `Function.id_def` (iii).
 
 ## Source edits (against the epoch mathlib)
 

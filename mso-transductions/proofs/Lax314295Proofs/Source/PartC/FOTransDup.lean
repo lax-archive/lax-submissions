@@ -472,18 +472,19 @@ lemma proper : (trans A₀).Proper := by
   intro w
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · rintro (⟨c, p⟩ | j) hx
-    · rw [selected_iff] at hx
+    · replace hx := (selected_iff w c p).1 hx
       refine ⟨w[p]'hx.1, (labRel_iff w c p _).2 (List.getElem?_eq_getElem hx.1), fun b hb => ?_⟩
       have hb' : w[p]? = some b := (labRel_iff w c p b).1 hb
       rw [List.getElem?_eq_getElem hx.1] at hb'
       exact (Option.some_inj.1 hb').symm
     · exact j.elim
   · rintro (⟨c, p⟩ | j) hx
-    · rw [selected_iff] at hx
+    · replace hx := (selected_iff w c p).1 hx
       exact (ordRel_iff w c c hx.1 hx.1).2 (dupOrd_refl w (c, p))
     · exact j.elim
   · rintro (⟨c, p⟩ | j) (⟨c', q⟩ | j') hx hy h₁ h₂
-    · rw [selected_iff] at hx hy
+    · replace hx := (selected_iff w c p).1 hx
+      replace hy := (selected_iff w c' q).1 hy
       rw [ordRel_iff w c c' hx.1 hy.1] at h₁
       rw [ordRel_iff w c' c hy.1 hx.1] at h₂
       have := dupOrd_antisymm hx hy h₁ h₂
@@ -492,7 +493,9 @@ lemma proper : (trans A₀).Proper := by
     · exact j.elim
     · exact j.elim
   · rintro (⟨c, p⟩ | j) (⟨c', q⟩ | j') (⟨c'', r⟩ | j'') hx hy hz h₁ h₂
-    · rw [selected_iff] at hx hy hz
+    · replace hx := (selected_iff w c p).1 hx
+      replace hy := (selected_iff w c' q).1 hy
+      replace hz := (selected_iff w c'' r).1 hz
       rw [ordRel_iff w c c' hx.1 hy.1] at h₁
       rw [ordRel_iff w c' c'' hy.1 hz.1] at h₂
       exact (ordRel_iff w c c'' hx.1 hz.1).2 (dupOrd_trans hz.1 h₁ h₂)
@@ -504,7 +507,8 @@ lemma proper : (trans A₀).Proper := by
     · exact j.elim
     · exact j.elim
   · rintro (⟨c, p⟩ | j) (⟨c', q⟩ | j') hx hy
-    · rw [selected_iff] at hx hy
+    · replace hx := (selected_iff w c p).1 hx
+      replace hy := (selected_iff w c' q).1 hy
       rw [ordRel_iff w c c' hx.1 hy.1, ordRel_iff w c' c hy.1 hx.1]
       exact dupOrd_total w (c, p) (c', q)
     · exact j'.elim
@@ -528,20 +532,20 @@ lemma outputs (w : List (Option A₀)) : (trans A₀).Outputs w (mapDuplicate A�
   refine (trans A₀).outputs_of_forall₂ (es.map (fun x => Sum.inl x)) ?_ ?_ ?_ ?_
   · exact hnd.map (fun x y h => by simpa using h)
   · rintro (⟨c, p⟩ | j)
-    · rw [selected_iff, List.mem_map]
+    · refine Iff.trans List.mem_map (Iff.trans ?_ (selected_iff w c p).symm)
       constructor
       · rintro ⟨y, hy, hyp⟩
-        have : y = (c, p) := by simpa using hyp
+        have : y = (c, p) := Sum.inl.inj hyp
         subst this
         exact (hmem _).1 hy
       · intro hp
         exact ⟨(c, p), (hmem (c, p)).2 hp, rfl⟩
     · exact j.elim
-  · rw [List.pairwise_map]
+  · refine List.pairwise_map.2 ?_
     refine hord.imp_of_mem ?_
     rintro ⟨c, p⟩ ⟨c', q⟩ hp hq hpq
     exact (ordRel_iff w c c' ((hmem _).1 hp).1 ((hmem _).1 hq).1).2 hpq
-  · rw [List.forall₂_map_left_iff]
+  · refine List.forall₂_map_left_iff.2 ?_
     refine hlab.imp ?_
     rintro ⟨c, p⟩ x hx
     exact (labRel_iff w c p x).2 hx

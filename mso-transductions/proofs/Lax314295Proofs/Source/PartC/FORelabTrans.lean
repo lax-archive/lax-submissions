@@ -139,9 +139,9 @@ lemma proper : (trans R).Proper := by
       rfl
     · exact (not_selected_both R hx hy).elim
     · exact (not_selected_both R hy hx).elim
-    · rw [ordRel_inr_iff] at h₁ h₂
-      have : j = j' := Fin.ext (le_antisymm h₁ h₂)
-      rw [this]
+    · have h₁' := (ordRel_inr_iff R w j j').1 h₁
+      have h₂' := (ordRel_inr_iff R w j' j).1 h₂
+      exact congrArg Sum.inr (Fin.ext (le_antisymm h₁' h₂'))
   · rintro (⟨⟨i, m⟩, p⟩ | j) (⟨⟨i', m'⟩, p'⟩ | j') (⟨⟨i'', m''⟩, p''⟩ | j'') hx hy hz h₁ h₂
     · rw [ordRel_inl_iff] at h₁ h₂ ⊢
       omega
@@ -151,8 +151,8 @@ lemma proper : (trans R).Proper := by
     · exact (not_selected_both R hy hx).elim
     · exact (not_selected_both R hy hx).elim
     · exact (not_selected_both R hz hx).elim
-    · rw [ordRel_inr_iff] at h₁ h₂ ⊢
-      omega
+    · exact (ordRel_inr_iff R w j j'').2
+        (le_trans ((ordRel_inr_iff R w j j').1 h₁) ((ordRel_inr_iff R w j' j'').1 h₂))
   · rintro (⟨⟨i, m⟩, p⟩ | j) (⟨⟨i', m'⟩, p'⟩ | j') hx hy
     · rw [ordRel_inl_iff, ordRel_inl_iff]
       rcases lt_trichotomy p p' with h | h | h
@@ -163,8 +163,9 @@ lemma proper : (trans R).Proper := by
       · exact Or.inr (Or.inl h)
     · exact (not_selected_both R hx hy).elim
     · exact (not_selected_both R hy hx).elim
-    · rw [ordRel_inr_iff, ordRel_inr_iff]
-      exact le_total _ _
+    · have htot : ∀ a b : Fin R.emptyOut.length, (a : ℕ) ≤ (b : ℕ) ∨ (b : ℕ) ≤ (a : ℕ) :=
+        fun a b => le_total _ _
+      exact (htot j j').imp (ordRel_inr_iff R w j j').2 (ordRel_inr_iff R w j' j).2
 
 open scoped Classical in
 lemma allFO (hFO : R.AllFO) : (trans R).AllFO := by
@@ -178,7 +179,7 @@ lemma outputs_nil : (trans R).Outputs [] R.emptyOut := by
     (List.ofFn (fun j : Fin R.emptyOut.length => Sum.inr j)) ?_ ?_ ?_ ?_
   · rw [List.nodup_ofFn]
     intro j j' h
-    simpa using h
+    exact Sum.inr.inj h
   · rintro (⟨⟨i, m⟩, p⟩ | j)
     · constructor
       · intro hx

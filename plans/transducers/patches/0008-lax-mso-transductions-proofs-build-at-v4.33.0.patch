@@ -1,0 +1,277 @@
+From 286c95a1c805a875511d2662961985140337e8fa Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 07:46:26 +0000
+Subject: [PATCH 8/9] lax/mso-transductions: proofs build at v4.33.0
+
+Nine files: the Common.Aux import renamed, rw/simpa at def-wrapped
+component types ((trans R).E, (toI T).Elt, (toSrcRel R).Idx) replaced by
+the lemma applied term-level or given its arguments, constructor
+injectivity through congrArg Prod.snd (Sum.inl.inj h), Function.id_def in
+one simpa. No statement changed; concepts untouched.
+---
+ .../proofs/Lax314295Proofs/Results.lean       |  3 ++-
+ .../Source/PartC/FORelabTrans.lean            | 17 +++++++-------
+ .../Source/PartC/FOTransDup.lean              | 22 +++++++++++--------
+ .../Source/PartC/FOTransRev.lean              |  4 ++--
+ .../Source/PartC/FlatIndex.lean               |  2 +-
+ .../Lax314295Proofs/Source/PartC/ITrans.lean  |  4 ++--
+ .../Source/PartC/ITransBuild.lean             |  8 ++++---
+ .../Lax314295Proofs/Source/PartC/MSONorm.lean |  7 +++---
+ .../Lax314295Proofs/Source/PartC/WalkAut.lean |  4 +++-
+ 9 files changed, 41 insertions(+), 30 deletions(-)
+
+diff --git a/lax/mso-transductions/proofs/Lax314295Proofs/Results.lean b/lax/mso-transductions/proofs/Lax314295Proofs/Results.lean
+index feb5268..e1a588d 100644
+--- a/lax/mso-transductions/proofs/Lax314295Proofs/Results.lean
++++ b/lax/mso-transductions/proofs/Lax314295Proofs/Results.lean
+@@ -224,7 +224,8 @@ theorem isRegular_annotation {A B : Type} [Finite A] (R : MSORelabelling A B) :
+       {u : List (A × R.Idx) | ∀ (p : ℕ) (hp : p < u.length),
+         MSO.Sat (u.map Prod.fst) (fun _ => p) (fun _ => ∅) (R.form (u.get ⟨p, hp⟩).2)} := by
+   have h := Transducers.msoRelabelling_annotation_regular (toSrcRel R)
+-  simpa only [toSrcRel_form, sat_toSrc] using h
++  simp only [sat_toSrc]
++  exact h
+ 
+ /-! ## Regular functions in terms of logic -/
+ 
+diff --git a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FORelabTrans.lean b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FORelabTrans.lean
+index 5bf3ef5..84e6c32 100644
+--- a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FORelabTrans.lean
++++ b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FORelabTrans.lean
+@@ -139,9 +139,9 @@ lemma proper : (trans R).Proper := by
+       rfl
+     · exact (not_selected_both R hx hy).elim
+     · exact (not_selected_both R hy hx).elim
+-    · rw [ordRel_inr_iff] at h₁ h₂
+-      have : j = j' := Fin.ext (le_antisymm h₁ h₂)
+-      rw [this]
++    · have h₁' := (ordRel_inr_iff R w j j').1 h₁
++      have h₂' := (ordRel_inr_iff R w j' j).1 h₂
++      exact congrArg Sum.inr (Fin.ext (le_antisymm h₁' h₂'))
+   · rintro (⟨⟨i, m⟩, p⟩ | j) (⟨⟨i', m'⟩, p'⟩ | j') (⟨⟨i'', m''⟩, p''⟩ | j'') hx hy hz h₁ h₂
+     · rw [ordRel_inl_iff] at h₁ h₂ ⊢
+       omega
+@@ -151,8 +151,8 @@ lemma proper : (trans R).Proper := by
+     · exact (not_selected_both R hy hx).elim
+     · exact (not_selected_both R hy hx).elim
+     · exact (not_selected_both R hz hx).elim
+-    · rw [ordRel_inr_iff] at h₁ h₂ ⊢
+-      omega
++    · exact (ordRel_inr_iff R w j j'').2
++        (le_trans ((ordRel_inr_iff R w j j').1 h₁) ((ordRel_inr_iff R w j' j'').1 h₂))
+   · rintro (⟨⟨i, m⟩, p⟩ | j) (⟨⟨i', m'⟩, p'⟩ | j') hx hy
+     · rw [ordRel_inl_iff, ordRel_inl_iff]
+       rcases lt_trichotomy p p' with h | h | h
+@@ -163,8 +163,9 @@ lemma proper : (trans R).Proper := by
+       · exact Or.inr (Or.inl h)
+     · exact (not_selected_both R hx hy).elim
+     · exact (not_selected_both R hy hx).elim
+-    · rw [ordRel_inr_iff, ordRel_inr_iff]
+-      exact le_total _ _
++    · have htot : ∀ a b : Fin R.emptyOut.length, (a : ℕ) ≤ (b : ℕ) ∨ (b : ℕ) ≤ (a : ℕ) :=
++        fun a b => le_total _ _
++      exact (htot j j').imp (ordRel_inr_iff R w j j').2 (ordRel_inr_iff R w j' j).2
+ 
+ open scoped Classical in
+ lemma allFO (hFO : R.AllFO) : (trans R).AllFO := by
+@@ -178,7 +179,7 @@ lemma outputs_nil : (trans R).Outputs [] R.emptyOut := by
+     (List.ofFn (fun j : Fin R.emptyOut.length => Sum.inr j)) ?_ ?_ ?_ ?_
+   · rw [List.nodup_ofFn]
+     intro j j' h
+-    simpa using h
++    exact Sum.inr.inj h
+   · rintro (⟨⟨i, m⟩, p⟩ | j)
+     · constructor
+       · intro hx
+diff --git a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FOTransDup.lean b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FOTransDup.lean
+index 153b614..03b2aed 100644
+--- a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FOTransDup.lean
++++ b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FOTransDup.lean
+@@ -472,18 +472,19 @@ lemma proper : (trans A₀).Proper := by
+   intro w
+   refine ⟨?_, ?_, ?_, ?_, ?_⟩
+   · rintro (⟨c, p⟩ | j) hx
+-    · rw [selected_iff] at hx
++    · replace hx := (selected_iff w c p).1 hx
+       refine ⟨w[p]'hx.1, (labRel_iff w c p _).2 (List.getElem?_eq_getElem hx.1), fun b hb => ?_⟩
+       have hb' : w[p]? = some b := (labRel_iff w c p b).1 hb
+       rw [List.getElem?_eq_getElem hx.1] at hb'
+       exact (Option.some_inj.1 hb').symm
+     · exact j.elim
+   · rintro (⟨c, p⟩ | j) hx
+-    · rw [selected_iff] at hx
++    · replace hx := (selected_iff w c p).1 hx
+       exact (ordRel_iff w c c hx.1 hx.1).2 (dupOrd_refl w (c, p))
+     · exact j.elim
+   · rintro (⟨c, p⟩ | j) (⟨c', q⟩ | j') hx hy h₁ h₂
+-    · rw [selected_iff] at hx hy
++    · replace hx := (selected_iff w c p).1 hx
++      replace hy := (selected_iff w c' q).1 hy
+       rw [ordRel_iff w c c' hx.1 hy.1] at h₁
+       rw [ordRel_iff w c' c hy.1 hx.1] at h₂
+       have := dupOrd_antisymm hx hy h₁ h₂
+@@ -492,7 +493,9 @@ lemma proper : (trans A₀).Proper := by
+     · exact j.elim
+     · exact j.elim
+   · rintro (⟨c, p⟩ | j) (⟨c', q⟩ | j') (⟨c'', r⟩ | j'') hx hy hz h₁ h₂
+-    · rw [selected_iff] at hx hy hz
++    · replace hx := (selected_iff w c p).1 hx
++      replace hy := (selected_iff w c' q).1 hy
++      replace hz := (selected_iff w c'' r).1 hz
+       rw [ordRel_iff w c c' hx.1 hy.1] at h₁
+       rw [ordRel_iff w c' c'' hy.1 hz.1] at h₂
+       exact (ordRel_iff w c c'' hx.1 hz.1).2 (dupOrd_trans hz.1 h₁ h₂)
+@@ -504,7 +507,8 @@ lemma proper : (trans A₀).Proper := by
+     · exact j.elim
+     · exact j.elim
+   · rintro (⟨c, p⟩ | j) (⟨c', q⟩ | j') hx hy
+-    · rw [selected_iff] at hx hy
++    · replace hx := (selected_iff w c p).1 hx
++      replace hy := (selected_iff w c' q).1 hy
+       rw [ordRel_iff w c c' hx.1 hy.1, ordRel_iff w c' c hy.1 hx.1]
+       exact dupOrd_total w (c, p) (c', q)
+     · exact j'.elim
+@@ -528,20 +532,20 @@ lemma outputs (w : List (Option A₀)) : (trans A₀).Outputs w (mapDuplicate A
+   refine (trans A₀).outputs_of_forall₂ (es.map (fun x => Sum.inl x)) ?_ ?_ ?_ ?_
+   · exact hnd.map (fun x y h => by simpa using h)
+   · rintro (⟨c, p⟩ | j)
+-    · rw [selected_iff, List.mem_map]
++    · refine Iff.trans List.mem_map (Iff.trans ?_ (selected_iff w c p).symm)
+       constructor
+       · rintro ⟨y, hy, hyp⟩
+-        have : y = (c, p) := by simpa using hyp
++        have : y = (c, p) := Sum.inl.inj hyp
+         subst this
+         exact (hmem _).1 hy
+       · intro hp
+         exact ⟨(c, p), (hmem (c, p)).2 hp, rfl⟩
+     · exact j.elim
+-  · rw [List.pairwise_map]
++  · refine List.pairwise_map.2 ?_
+     refine hord.imp_of_mem ?_
+     rintro ⟨c, p⟩ ⟨c', q⟩ hp hq hpq
+     exact (ordRel_iff w c c' ((hmem _).1 hp).1 ((hmem _).1 hq).1).2 hpq
+-  · rw [List.forall₂_map_left_iff]
++  · refine List.forall₂_map_left_iff.2 ?_
+     refine hlab.imp ?_
+     rintro ⟨c, p⟩ x hx
+     exact (labRel_iff w c p x).2 hx
+diff --git a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FOTransRev.lean b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FOTransRev.lean
+index eaa8511..6891ac8 100644
+--- a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FOTransRev.lean
++++ b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FOTransRev.lean
+@@ -268,12 +268,12 @@ lemma allFO : (trans A₀).AllFO :=
+ lemma outputs (w : List (Option A₀)) : (trans A₀).Outputs w (mapReverse A₀ w) := by
+   obtain ⟨es, hnd, hmem, hord, hlab⟩ := revEnum_all w
+   refine (trans A₀).outputs_of_forall₂ (es.map (fun p => Sum.inl ((), p))) ?_ ?_ ?_ ?_
+-  · exact hnd.map (fun p q h => by simpa using h)
++  · exact hnd.map (fun p q h => congrArg Prod.snd (Sum.inl.inj h))
+   · rintro (⟨⟨⟩, p⟩ | j)
+     · rw [selected_iff, List.mem_map]
+       constructor
+       · rintro ⟨q, hq, hqp⟩
+-        have : q = p := by simpa using hqp
++        have : q = p := congrArg Prod.snd (Sum.inl.inj hqp)
+         rw [← this]
+         exact (hmem q).1 hq
+       · intro hp
+diff --git a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FlatIndex.lean b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FlatIndex.lean
+index 5b6c685..cc722b8 100644
+--- a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FlatIndex.lean
++++ b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/FlatIndex.lean
+@@ -8,7 +8,7 @@ of its run, and the corresponding output positions of the mso transduction are i
+ pairs and proves the four facts about it that are needed: it enumerates the pairs without
+ repetitions, it is sorted lexicographically, and reading the letters at those pairs gives back the
+ flattened list. -/
+-import Lax765601Proofs.Source.Common.Aux
++import Lax765601Proofs.Source.Common.Auxiliary
+ open Lax765601Proofs Lax765601Proofs.Transducers
+ 
+ namespace Lax314295Proofs.Transducers
+diff --git a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/ITrans.lean b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/ITrans.lean
+index 77c37f0..984a93e 100644
+--- a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/ITrans.lean
++++ b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/ITrans.lean
+@@ -252,8 +252,8 @@ lemma outputs_toI {w : List A} {v : List B} (h : T.Outputs w v) : (MSOTransducti
+   obtain ⟨es, hnd, hmem, hord, hlen, hlab⟩ := h
+   refine ⟨es, hnd, fun x => ?_, fun i j hi hj hij => ?_, hlen, fun i hi hi' => ?_⟩
+   · rw [MSOTransduction.selected_toI T w x]; exact hmem x
+-  · rw [MSOTransduction.ordRel_toI T w _ _]; exact hord i j hi hj hij
+-  · rw [MSOTransduction.labRel_toI T w _ _]; exact hlab i hi hi'
++  · exact (MSOTransduction.ordRel_toI T w _ _).2 (hord i j hi hj hij)
++  · exact (MSOTransduction.labRel_toI T w _ _).2 (hlab i hi hi')
+ 
+ lemma proper_toI (h : T.Proper) : (MSOTransduction.toI T).Proper := by
+   intro w
+diff --git a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/ITransBuild.lean b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/ITransBuild.lean
+index 2ee1582..dd53de2 100644
+--- a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/ITransBuild.lean
++++ b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/ITransBuild.lean
+@@ -153,10 +153,12 @@ lemma outputs (w : List A) : (mapEquivTrans e).Outputs w (w.map e) := by
+     ((List.range w.length).map (fun p => Sum.inl ((), p))) ?_ ?_ ?_ ?_ ?_
+   · refine List.Nodup.map ?_ (List.nodup_range)
+     intro p q h
+-    simpa using h
++    simp only [Sum.inl.injEq] at h
++    exact congrArg Prod.snd h
+   · rintro (⟨⟨⟩, p⟩ | j)
+     · rw [selected_iff]
+-      simp
++      simp [Prod.ext_iff]
++      exact fun _ => rfl
+     · exact j.elim
+   · rw [List.pairwise_map]
+     refine List.Pairwise.imp ?_ (List.pairwise_lt_range (n := w.length))
+@@ -182,6 +184,6 @@ theorem isFOTransduction_map_equiv {A B : Type} (e : A ≃ B) :
+ /-- The identity is a first-order transduction. -/
+ theorem isFOTransduction_id (A : Type) : IsFOTransduction (id : List A → List A) := by
+   have h := isFOTransduction_map_equiv (Equiv.refl A)
+-  simpa using h
++  simpa [Function.id_def] using h
+ 
+ end Lax314295Proofs.Transducers
+diff --git a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/MSONorm.lean b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/MSONorm.lean
+index a7d39f1..a2fee44 100644
+--- a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/MSONorm.lean
++++ b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/MSONorm.lean
+@@ -166,10 +166,10 @@ lemma sat_norm_ord (T : MSOTransduction A B) {w : List A} (hw : 0 < w.length)
+   rcases y with ⟨i, p⟩ | j <;> rcases y' with ⟨i', p'⟩ | j'
+   · simp only [normElt, NormT.ord, norm, normOrd, ordRel]
+   · simp only [normElt, NormT.ord, norm, normOrd, ordRel]
+-    rw [MSO.sat_atv w 0 _ _ _ (by simpa using h1)]
++    rw [MSO.sat_atv w 0 _ _ _ h1]
+     simp
+   · simp only [normElt, NormT.ord, norm, normOrd, ordRel]
+-    rw [MSO.sat_atv w 1 _ _ _ (by simpa using h2)]
++    rw [MSO.sat_atv w 1 _ _ _ h2]
+     simp
+   · simp only [normElt, NormT.ord, norm, normOrd, ordRel]
+     rw [MSO.sat_atv w 0 _ _ _ (by simpa using hw)]
+@@ -196,7 +196,8 @@ lemma exists_normElt (T : MSOTransduction A B) {w : List A} (hw : 0 < w.length)
+     have : p = 0 := by
+       have := (sat_isFirstF w (fun _ => p) (fun _ => ∅) hw).1 hsat.1
+       simpa using this
+-    simp [normElt, this]
++    subst this
++    rfl
+ 
+ /-- **Lemma `lem:logic-reduction-to-type-n` (normalisation of `τ`).**  Every mso transduction
+ agrees, on non-empty inputs, with a normalised transduction. -/
+diff --git a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/WalkAut.lean b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/WalkAut.lean
+index a5d1667..a375e06 100644
+--- a/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/WalkAut.lean
++++ b/lax/mso-transductions/proofs/Lax314295Proofs/Source/PartC/WalkAut.lean
+@@ -624,7 +624,9 @@ end Spec
+ /-- On the empty input the transducer produces `outNil`. -/
+ lemma computes_nil : (aut D).Computes [] D.outNil := by
+   have hstep : (aut D).stepCfg (Cfg.conf [] (aut D).init []) = some (D.outNil, Cfg.halt) := rfl
+-  simpa using TwoWay.Reaches.step hstep (TwoWay.Reaches.refl _)
++  have h := TwoWay.Reaches.step hstep (TwoWay.Reaches.refl _)
++  rw [List.append_nil] at h
++  exact h
+ 
+ end WalkAut
+ 
+-- 
+2.43.0
+

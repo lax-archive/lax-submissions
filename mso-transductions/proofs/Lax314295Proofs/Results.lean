@@ -224,7 +224,8 @@ theorem isRegular_annotation {A B : Type} [Finite A] (R : MSORelabelling A B) :
       {u : List (A × R.Idx) | ∀ (p : ℕ) (hp : p < u.length),
         MSO.Sat (u.map Prod.fst) (fun _ => p) (fun _ => ∅) (R.form (u.get ⟨p, hp⟩).2)} := by
   have h := Transducers.msoRelabelling_annotation_regular (toSrcRel R)
-  simpa only [toSrcRel_form, sat_toSrc] using h
+  simp only [sat_toSrc]
+  exact h
 
 /-! ## Regular functions in terms of logic -/
 

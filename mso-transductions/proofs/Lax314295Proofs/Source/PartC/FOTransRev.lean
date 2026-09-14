@@ -268,12 +268,12 @@ lemma allFO : (trans A₀).AllFO :=
 lemma outputs (w : List (Option A₀)) : (trans A₀).Outputs w (mapReverse A₀ w) := by
   obtain ⟨es, hnd, hmem, hord, hlab⟩ := revEnum_all w
   refine (trans A₀).outputs_of_forall₂ (es.map (fun p => Sum.inl ((), p))) ?_ ?_ ?_ ?_
-  · exact hnd.map (fun p q h => by simpa using h)
+  · exact hnd.map (fun p q h => congrArg Prod.snd (Sum.inl.inj h))
   · rintro (⟨⟨⟩, p⟩ | j)
     · rw [selected_iff, List.mem_map]
       constructor
       · rintro ⟨q, hq, hqp⟩
-        have : q = p := by simpa using hqp
+        have : q = p := congrArg Prod.snd (Sum.inl.inj hqp)
         rw [← this]
         exact (hmem q).1 hq
       · intro hp
