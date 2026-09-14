@@ -4,10 +4,10 @@ import Lax228581Proofs.Source.TwinWidth.Contraction.TwinWidth
 /-!
 # Treewidth contract
 
-This file gives the treewidth interface needed for the Bonnet--Déprés
-twin-width/treewidth separation.  It deliberately contains only definitions and
-axiom-free basic API; proof-heavy bounds such as the feedback-vertex-set bound
-belong in full proof modules.
+This file gives the treewidth interface needed for the exponential
+separation between twin-width and treewidth.  It deliberately contains only
+definitions and axiom-free basic API; proof-heavy bounds such as the
+feedback-vertex-set bound belong in full proof modules.
 -/
 
 namespace Lax228581Proofs.TwinWidth

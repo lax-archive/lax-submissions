@@ -2,7 +2,7 @@ import Lax228581Proofs.Source.TwinWidth.Graph.Treewidth
 import Mathlib.Data.Nat.Bitwise
 
 /-!
-# The Bonnet--Déprés graph family
+# The graph family with an exponential separation
 
 This file defines the finite graph family used in the proof that twin-width can
 be exponential in treewidth.  For the first formal pass we specialize the paper
@@ -253,7 +253,7 @@ theorem graph_isTree (branch depth : ℕ) :
 
 end FullTreeNode
 
-/-- The apex-set size in the integer-specialized Bonnet--Déprés construction. -/
+/-- The apex-set size in the integer-specialized construction. -/
 def bonnetDepresApexCount (k : ℕ) : ℕ :=
   2 * k + 3
 
@@ -271,7 +271,7 @@ def bonnetDepresDepth (k : ℕ) : ℕ :=
   2 + 2 ^ (k + 2) *
     2 ^ ((k + 1) * (2 + 2 ^ (k + 2) * (2 ^ (k + 1) + 1)))
 
-/-- Vertices of the Bonnet--Déprés graph: apex vertices plus the full tree. -/
+/-- Vertices of the constructed graph: apex vertices plus the full tree. -/
 abbrev BonnetDepresVertex (k : ℕ) : Type :=
   Fin (bonnetDepresApexCount k) ⊕
     FullTreeNode (bonnetDepresBranch k) (bonnetDepresDepth k)
@@ -299,7 +299,7 @@ theorem bonnetDepresApexAdj_child {k : ℕ}
     simpa [FullTreeNode.lastLabel_child parent hlevel label (by simp [FullTreeNode.child])]
       using hbit
 
-/-- The Bonnet--Déprés graph specialized to exponent parameter `k`.
+/-- The constructed graph specialized to exponent parameter `k`.
 
 The apex set is independent, the tree part is the full rooted tree, and every
 non-root tree node uses its incoming child label as the binary code of its
@@ -332,7 +332,7 @@ def bonnetDepresGraph (k : ℕ) : _root_.SimpleGraph (BonnetDepresVertex k) wher
     | inr u =>
         exact (FullTreeNode.graph (bonnetDepresBranch k) (bonnetDepresDepth k)).irrefl h
 
-/-- The apex set of the Bonnet--Déprés graph. -/
+/-- The apex set of the constructed graph. -/
 def bonnetDepresApexSet (k : ℕ) : Finset (BonnetDepresVertex k) :=
   Finset.univ.image Sum.inl
 
@@ -401,7 +401,7 @@ theorem bonnetDepresApexSet_isFeedbackVertexSet_of_fullTree_acyclic
     (bonnetDepresTreeComplementIso k).isAcyclic_iff.mp hTree
 
 /-- The bag at a tree node in the direct tree decomposition of the
-Bonnet--Déprés graph.
+constructed graph.
 
 Every bag contains the whole apex set, the current tree node, and, away from the
 root, the parent of the current tree node.  Thus tree edges are covered by the
@@ -513,7 +513,7 @@ theorem bonnetDepresTreeDecomposition_bag_indices_connected (k : ℕ)
           _root_.SimpleGraph.Walk.nil⟩
 
 /-- The direct width-`|apex| + 1` tree decomposition of the
-Bonnet--Déprés graph. -/
+constructed graph. -/
 noncomputable def bonnetDepresTreeDecomposition (k : ℕ) :
     TreeDecomposition (bonnetDepresGraph k) where
   Node := FullTreeNode (bonnetDepresBranch k) (bonnetDepresDepth k)

@@ -4,9 +4,9 @@ import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Combinatorics.Pigeonhole
 
 /-!
-# Lower-bound infrastructure for the Bonnet--Déprés graphs
+# Lower-bound infrastructure for the constructed graphs
 
-This file collects the concrete, reusable facts about the Bonnet--Déprés
+This file collects the concrete, reusable facts about the graph
 construction that are used in the twin-width lower-bound proof.  The statements
 are deliberately phrased in the semantic partition language from
 `TwinWidth.Graph.Partition`: red adjacency means non-homogeneity of two bags in
@@ -18,7 +18,7 @@ namespace SimpleGraph
 
 namespace BonnetDepres
 
-/-- The explicit Bonnet--Déprés tree depth is positive. -/
+/-- The explicit tree depth is positive. -/
 theorem depth_pos (k : ℕ) : 0 < bonnetDepresDepth k := by
   simp [bonnetDepresDepth]
 
@@ -26,13 +26,13 @@ theorem depth_pos (k : ℕ) : 0 < bonnetDepresDepth k := by
 theorem two_lt_depth (k : ℕ) : 2 < bonnetDepresDepth k := by
   simp [bonnetDepresDepth]
 
-/-- The root is an internal tree node in the Bonnet--Déprés construction. -/
+/-- The root is an internal node in the constructed tree. -/
 theorem root_level_lt_depth (k : ℕ) :
     (FullTreeNode.root (bonnetDepresBranch k) (bonnetDepresDepth k)).1.val <
       bonnetDepresDepth k := by
   simp [FullTreeNode.root, depth_pos k]
 
-/-- Internal nodes of the Bonnet--Déprés tree are precisely nodes with children. -/
+/-- Internal nodes of the constructed tree are precisely nodes with children. -/
 def IsInternal {k : ℕ}
     (u : FullTreeNode (bonnetDepresBranch k) (bonnetDepresDepth k)) : Prop :=
   u.1.val < bonnetDepresDepth k
@@ -399,7 +399,7 @@ theorem root_adj_rootChildWithNeighborhood (k : ℕ)
     (rootChildWithNeighborhood k f).1.val = 1 := by
   simp [rootChildWithNeighborhood, FullTreeNode.child, FullTreeNode.root]
 
-/-- Every root child is internal in the Bonnet--Déprés tree. -/
+/-- Every root child is internal in the constructed tree. -/
 theorem rootChildWithNeighborhood_isInternal (k : ℕ)
     (f : Fin (bonnetDepresApexCount k) → Bool) :
     IsInternal (rootChildWithNeighborhood k f) := by
@@ -640,7 +640,7 @@ def separatingRootChildBags {k : ℕ}
       Finset (BonnetDepresVertex k))
 
 /-- A partition has kept every child of the root as a singleton bag.  This is
-the condition used for the initial segment of the Bonnet--Déprés lower-bound
+the condition used for the initial segment of the lower-bound
 argument, before the first contraction involving a root child. -/
 def RootChildrenSingleton {k : ℕ}
     (P : Finset (Finset (BonnetDepresVertex k))) : Prop :=
@@ -1421,7 +1421,7 @@ theorem card_childAdjSet_le_one {k : ℕ}
   exact FullTreeNode.isParent_unique hpa hpb
 
 /-- Children of `u` that are not adjacent to `w`, viewed as vertices of the
-Bonnet--Déprés graph. -/
+constructed graph. -/
 noncomputable def childNonAdjVertexSet {k : ℕ}
     (u w : FullTreeNode (bonnetDepresBranch k) (bonnetDepresDepth k))
     (hlevel : u.1.val < bonnetDepresDepth k) :
@@ -1559,7 +1559,7 @@ large-bag red-degree upper bound. -/
 def manyInternalBagsThreshold (k : ℕ) : ℕ :=
   1 + 2 ^ (k + 2) * (manyChildrenThreshold k + 1)
 
-/-- The depth of the Bonnet--Déprés tree is tuned to pigeonhole the
+/-- The depth of the constructed tree is tuned to pigeonhole the
 Claim-18 side branches among at most `2^(k+2)` large bags. -/
 theorem depth_sub_two_eq_largeBagBound_mul_manySideBranchesThreshold (k : ℕ) :
     bonnetDepresDepth k - 2 =
