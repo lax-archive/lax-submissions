@@ -107,13 +107,13 @@ theorem completeBetween_symm {V : Type*} {G : _root_.SimpleGraph V}
     {A B : Finset V} (h : CompleteBetween G A B) :
     CompleteBetween G B A := by
   intro b a hb ha
-  exact G.symm (h ha hb)
+  exact G.symm.symm _ _ (h ha hb)
 
 theorem emptyBetween_symm {V : Type*} {G : _root_.SimpleGraph V}
     {A B : Finset V} (h : EmptyBetween G A B) :
     EmptyBetween G B A := by
   intro b a hb ha
-  exact fun hba => h ha hb (G.symm hba)
+  exact fun hba => h ha hb (G.symm.symm _ _ hba)
 
 theorem homogeneousBetween_symm {V : Type*} {G : _root_.SimpleGraph V}
     {A B : Finset V} (h : HomogeneousBetween G A B) :

@@ -41,9 +41,9 @@ theorem not_isParent_self {branch depth : ℕ}
 /-- The full rooted tree as a simple graph. -/
 def graph (branch depth : ℕ) : _root_.SimpleGraph (FullTreeNode branch depth) where
   Adj u v := IsParent u v ∨ IsParent v u
-  symm := by
+  symm := ⟨by
     intro u v h
-    exact h.symm
+    exact h.symm⟩
   loopless := by
     constructor
     intro u h
@@ -97,9 +97,9 @@ theorem eq_root_of_level_zero {branch depth : ℕ}
     | mk n hn =>
       simp only at h
       subst n
-      simp [root]
-      funext i
-      exact Fin.elim0 i
+      have hpath : path = fun i => Fin.elim0 i := funext fun i => Fin.elim0 i
+      subst hpath
+      rfl
 
 /-- The immediate parent of a non-root full-tree node. -/
 def parent {branch depth : ℕ}
@@ -306,13 +306,13 @@ def bonnetDepresGraph (k : ℕ) : _root_.SimpleGraph (BonnetDepresVertex k) wher
     | Sum.inr u, Sum.inl x => bonnetDepresApexAdj x u
     | Sum.inr u, Sum.inr v =>
         (FullTreeNode.graph (bonnetDepresBranch k) (bonnetDepresDepth k)).Adj u v
-  symm := by
+  symm := ⟨by
     intro a b h
     cases a <;> cases b
     · exact h
     · exact h
     · exact h
-    · exact (FullTreeNode.graph (bonnetDepresBranch k) (bonnetDepresDepth k)).symm h
+    · exact (FullTreeNode.graph (bonnetDepresBranch k) (bonnetDepresDepth k)).symm.symm _ _ h⟩
   loopless := by
     constructor
     intro a h

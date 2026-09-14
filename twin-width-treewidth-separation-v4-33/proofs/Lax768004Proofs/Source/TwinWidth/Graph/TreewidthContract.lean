@@ -88,7 +88,8 @@ noncomputable def oneBagTreeDecomposition
     (G : _root_.SimpleGraph V) :
     (oneBagTreeDecomposition G).width = Fintype.card V - 1 := by
   classical
-  simp [oneBagTreeDecomposition, TreeDecomposition.width]
+  simp only [oneBagTreeDecomposition, TreeDecomposition.width, Finset.card_univ]
+  exact congrArg (· - 1) (Finset.sup_const Finset.univ_nonempty _)
 
 /-- A graph has treewidth at most `k` when it has a tree decomposition of width
 at most `k`. -/
