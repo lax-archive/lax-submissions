@@ -1,3 +1,4 @@
+import Lax68.GraphMinors
 import Lax68.StraightLineDrawings
 
 /-!
@@ -28,5 +29,10 @@ structure OuterplaneDrawing {V : Type*} (G : SimpleGraph V)
 
 def IsOuterplanar {V : Type*} (G : SimpleGraph V) : Prop :=
   Nonempty (OuterplaneDrawing G)
+
+/-- The usual forbidden-minor characterization of outerplanarity. -/
+def IsOuterplanarByExcludedMinors {V : Type*} (G : SimpleGraph V) : Prop :=
+  ¬ GraphMinors.IsMinor GraphMinors.K4 G ∧
+  ¬ GraphMinors.IsMinor GraphMinors.K23 G
 
 end Lax68.Outerplanar

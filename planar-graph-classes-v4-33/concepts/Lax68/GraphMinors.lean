@@ -35,7 +35,13 @@ def IsMinor {W V : Type*}
 abbrev K5 : SimpleGraph (Fin 5) :=
   SimpleGraph.completeGraph (Fin 5)
 
+abbrev K4 : SimpleGraph (Fin 4) :=
+  SimpleGraph.completeGraph (Fin 4)
+
 abbrev K33 : SimpleGraph (Fin 3 ⊕ Fin 3) :=
   completeBipartiteGraph (Fin 3) (Fin 3)
+
+abbrev K23 : SimpleGraph (Fin 2 ⊕ Fin 3) :=
+  completeBipartiteGraph (Fin 2) (Fin 3)
 
 end Lax68.GraphMinors

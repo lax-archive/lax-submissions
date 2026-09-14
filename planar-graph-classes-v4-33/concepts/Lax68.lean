@@ -3,6 +3,7 @@ import Lax68.GraphMinors
 import Lax68.GraphTopologicalMinors
 import Lax68.Planar
 import Lax68.Outerplanar
+import Lax68.OuterplanarExcludedMinors
 import Lax68.MaximalOuterplanar
 import Lax68.GridsAndWalls
 import Lax68.Triangles
