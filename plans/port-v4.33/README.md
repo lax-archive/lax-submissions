@@ -86,10 +86,26 @@ Pins everywhere: `manifest.yaml` (`leanVersion`, `mathlibVersion`), both
   exists_congr …`.
 - **refinement-tower** (lax-62): _pending the worker's report_.
 - **nowhere-dense-model-checking** (lax-3): _pending_.
-- **twin-width-treewidth-separation-v4-33** (lax-768004): _pending_.
-- **lax-introduction** (lax-242665; concepts 585 jobs green): pins, and
-  `Lax48` → `Lax768004`, `Lax12` → `Lax199508` in the lakefiles, the Lean
-  and the paper's markers; proofs build once lax-768004's concepts do.
+- **twin-width-treewidth-separation-v4-33** (lax-768004; 1195 + 1272 jobs
+  green; concepts compile as scaffolded, paper untouched). All under
+  `proofs/Lax768004Proofs/Source/TwinWidth/Graph/`: (xi) `Std.Symm` —
+  `Partition.lean:110,116`, `BonnetDepres.lean:44-46,308-315` (`symm :=
+  ⟨by …⟩`, `.symm.symm _ _ h`), `BonnetDepresLowerBasic.lean:2382,2468`;
+  (iv) `simpa` given the `def` it used to unfold — `BonnetDepresLowerBasic.
+  lean:391` (`FullTreeNode.graph`), `BonnetDepresLower.lean:1079,1115`
+  (`rootChildBag`); (i) `TreewidthContract.lean:91` — a `Fintype` instance
+  taken from a structure field makes `Finset.univ` opaque to `simp`/`rw`
+  (`rw [Finset.sup_const]` reports a `Fintype (…).Node` vs `Fintype Unit`
+  mismatch); discharged as a term, `exact congrArg (· - 1) (Finset.sup_const
+  Finset.univ_nonempty _)`. New class **(xx)**: `simp` on a `Σ`-valued goal
+  no longer peels `Sigma.mk` to its dependent second component, so a
+  following `funext` fails — supply the component equality (`have hpath :=
+  funext …; subst hpath; rfl`), `BonnetDepres.lean:98-102`.
+- **lax-introduction** (lax-242665; 585 + 623 jobs green, no Lean change):
+  pins, and `Lax48` → `Lax768004`, `Lax12` → `Lax199508` in the lakefiles,
+  the Lean and the paper's markers (`Lax67` stays). `Lax768004`'s rev in
+  the lakefile is a placeholder until lax-768004 has a record (FINISH.md
+  §2c).
 - **monadic-dependence-neighborhood-complexity-v4-33** (lax-264807;
   2080 + 2840 jobs green; concepts compile with every declared statement
   byte-identical). The scaffold had left `import Lax12.*`/`Lax14.*` in the
