@@ -615,7 +615,7 @@ theorem compile_correct {L : Layout} {B w : ℕ} {p : Program} {c : Com} {σ σ'
       have hxw : L.varAddr x < 2 ^ w := L.varAddr_lt_two_pow hfit hok
       have hs : s.inp = v :: rest := by rw [hrep.inp]; exact hinp'
       have hf : p[s.pc]? = some (Instr.read (L.varAddr x)) :=
-        fits_singleton.mp (by rw [hpc]; simpa using hfits)
+        fits_singleton.mp (by rw [hpc]; simpa [compile] using hfits)
       refine ⟨1, _, ?_, by rw [run_one hf, effect_read _ hs], ?_, ?_⟩
       · simp only [Nat.mul_one]; exact one_le_const L
       · show s.pc + 1 = a + size L (.read x); rw [hpc]; simp [size]
