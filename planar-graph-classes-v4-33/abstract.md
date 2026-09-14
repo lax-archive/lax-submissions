@@ -1,7 +1,7 @@
 This submission collects definitions of planar graph classes: planar,
 outerplanar, maximal outerplanar, grids and walls, triangles, stars, ladders,
 Halin graphs, wheels, series-parallel graphs, trees, and paths, together with
-triangulations of planar graphs.
+planar triangulations.
 
 The supporting concepts are straight-line graph drawings, graph minors via
 connected branch sets, and topological minors via internally disjoint paths.
