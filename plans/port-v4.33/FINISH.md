@@ -149,22 +149,25 @@ step, bottom-up, as before the port.
 
 ## 4. Decisions the port could not make (yours)
 
-1. **Two v4.33.0 successors of lax-13 (The Word RAM).** Clemens registered
-   `word-ram-v4-33` as **lax-865980** (`supersedes: lax-13`, ported from
-   lax-13's *registered* source `92ae2d6`) on 2026-09-13. Your draft
-   **lax-67** also claims `supersedes: lax-13` and carries the newer
-   word-ram (main's folder is 16 files / 700 lines past even lax-67's own
-   record). This port keeps lax-67 in place as you asked, so ND-MC,
-   ram-linear-time and refinement-tower keep requiring `Lax67`. If you
-   would rather retire lax-67 and build on lax-865980, the switch is
-   mechanical: `Lax67` → `Lax865980` in the three dependents' lakefiles,
-   imports, namespaces and prose (the same rename this port did for
-   `Lax12` → `Lax199508` in ND-MC), then repin — but lax-865980 lacks the
-   700 lines of word-ram changes since lax-13, so check first that the
-   dependents do not use them (`git diff 92ae2d6:word-ram main:word-ram`).
-   Registering lax-67 while lax-865980 stands may be refused as a second
-   supersession of lax-13; a delete of one of the two is probably the end
-   state either way.
+1. **lax-67 no longer claims to supersede lax-13 — decided by the
+   archive, confirm or reverse.** Clemens registered `word-ram-v4-33` as
+   **lax-865980** (`supersedes: lax-13`, ported from lax-13's *registered*
+   source `92ae2d6`) on 2026-09-13, and the archive allows one successor:
+   `lax build word-ram` with the old manifest failed at the dependency
+   gate, `supersedes-taken: lax-865980 already supersedes lax-13`, so
+   lax-67 could not be resubmitted at all with that line. The port
+   therefore **removed `supersedes: lax-13` from `word-ram/manifest.yaml`**
+   (commit "word-ram: drop the supersedes claim"): lax-67 stays your
+   draft of the newer word RAM (main's folder is 16 files / 700 lines past
+   lax-13, and past lax-67's own record), now a stand-alone one, and
+   ND-MC, ram-linear-time and refinement-tower keep requiring `Lax67`.
+   The alternative is to retire lax-67 and build on lax-865980: `Lax67`
+   → `Lax865980` in the three dependents' lakefiles, imports, namespaces
+   and prose (the same rename this port did for `Lax12` → `Lax199508` in
+   ND-MC), then repin — but lax-865980 lacks the 700 lines of word-ram
+   changes since lax-13, so check first that the dependents do not use
+   them (`git diff 92ae2d6:word-ram main:word-ram`). The end state either
+   way is probably one v4.33.0 word RAM, with the other deleted.
 2. **The registered dependencies were replaced, not ported.** ND-MC now
    requires **Lax199508** (Clemens's registered v4.33.0 sparsity lectures,
    `supersedes: lax-12`) where it required Lax12; `Lax12` was renamed to
