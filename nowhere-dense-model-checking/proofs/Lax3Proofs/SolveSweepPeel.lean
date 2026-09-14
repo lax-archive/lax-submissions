@@ -4855,12 +4855,10 @@ theorem peel_forRangeSum {B N : ℕ} {c : Com} (x m : String)
       omega
     obtain ⟨σ', hrun, hI', hx'⟩ := (hstep _ hi).run ⟨hI, rfl⟩
     refine ⟨σ', k (σ.vars x), hrun, hI', ?_⟩
-    dsimp only
     rw [hx', Finset.sum_eq_sum_Ico_succ_bot hi]
     simp only [Cond.size, Expr.size]
     omega
   · rintro σ ⟨hI, hx⟩
-    dsimp only
     rw [hx, Finset.range_eq_Ico]
     simp only [Cond.size, Expr.size]
     omega
@@ -5004,7 +5002,11 @@ theorem peelSweepB_spec {B N R : ℕ} {G : SimpleGraph (Fin N)}
   have hinit : Run B (.assign "pl.i" (.lit 0)) σ (σ.setVar "pl.i" 0) 2 :=
     Run.assign (evalB_lit (by omega))
   obtain ⟨σ', hrun, hI', hN'⟩ := hloop.run
-    ⟨by dsimp [I]; simpa using (peel_swInv_set_i (v := 0) hσ), by simp⟩
+    ⟨by
+      dsimp [I]
+      have hv : (σ.setVar "pl.i" 0).vars "pl.i" = 0 := by simp [vars_setVar]
+      rw [hv]
+      exact peel_swInv_set_i (v := 0) hσ, by simp⟩
   refine ⟨σ', (hinit.seq hrun).mono ?_, ?_⟩
   · dsimp [K]
     norm_num only [Nat.add_assoc]

@@ -681,7 +681,6 @@ theorem rowStores_spec {B : ℕ} (S : Setup L)
           rw [Nat.add_zero, hk, arrs_setArr, if_pos rfl,
             getD_set_self hrange]
           simp only [List.getElem_cons_zero]
-          exact if_congr Iff.rfl rfl rfl
         | succ m =>
           have hm' : m < rest.length := by
             rw [List.length_cons] at hm

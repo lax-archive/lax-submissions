@@ -261,7 +261,8 @@ theorem mdRank_injective (F : SimpleGraph (Fin n)) :
 theorem mdRank_lt (F : SimpleGraph (Fin n)) (v : Fin n) : mdRank F v < n := by
   have h := (mdRankAux_props F (lowDegreeVertices_card F) n Finset.univ
     (by simp)).2.1
-  simpa using h v (Finset.mem_univ v)
+  have h2 := h v (Finset.mem_univ v)
+  rwa [Finset.card_univ, Fintype.card_fin] at h2
 
 /-- **The pinned peel attains every valid bound** — the sInf-minimality
 attainment: `BackDegLE F (mdRank F) k` for *every* `k` with
