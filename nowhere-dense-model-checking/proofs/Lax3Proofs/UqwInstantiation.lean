@@ -137,11 +137,11 @@ section Falsification
 /-- The three-vertex star with centre `1`. -/
 def star3 : SimpleGraph (Fin 3) where
   Adj u v := (u = 1 ∧ v ≠ 1) ∨ (v = 1 ∧ u ≠ 1)
-  symm := by
+  symm := ⟨by
     intro u v h
     rcases h with ⟨h1, h2⟩ | ⟨h1, h2⟩
     · exact Or.inr ⟨h1, h2⟩
-    · exact Or.inl ⟨h1, h2⟩
+    · exact Or.inl ⟨h1, h2⟩⟩
   loopless := ⟨by
     intro v h
     rcases h with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> exact h2 h1⟩
@@ -152,12 +152,15 @@ centre. -/
 theorem star3_walk (u v : Fin 3) (huv : u ≠ v) : ∃ p : star3.Walk u v, p.length ≤ 2 := by
   by_cases hu : u = 1
   · subst hu
-    exact ⟨(SimpleGraph.Adj.toWalk (Or.inl ⟨rfl, fun h => huv h.symm⟩)), by simp⟩
+    have hadj : star3.Adj 1 v := Or.inl ⟨rfl, fun h => huv h.symm⟩
+    exact ⟨SimpleGraph.Adj.toWalk hadj, by simp⟩
   · by_cases hv : v = 1
     · subst hv
-      exact ⟨(SimpleGraph.Adj.toWalk (Or.inr ⟨rfl, hu⟩)), by simp⟩
-    · refine ⟨SimpleGraph.Walk.cons (Or.inr ⟨rfl, hu⟩)
-        (SimpleGraph.Adj.toWalk (Or.inl ⟨rfl, hv⟩)), by simp⟩
+      have hadj : star3.Adj u 1 := Or.inr ⟨rfl, hu⟩
+      exact ⟨SimpleGraph.Adj.toWalk hadj, by simp⟩
+    · have hadj₁ : star3.Adj u 1 := Or.inr ⟨rfl, hu⟩
+      have hadj₂ : star3.Adj 1 v := Or.inl ⟨rfl, hv⟩
+      refine ⟨SimpleGraph.Walk.cons hadj₁ (SimpleGraph.Adj.toWalk hadj₂), by simp⟩
 
 /-- **Refuted**: without the separator there is no margin. No two-element
 subset of the star's vertex set is distance-`2` independent, so the

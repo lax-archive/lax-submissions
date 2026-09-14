@@ -101,7 +101,11 @@ theorem exists_walk_deleteVerts (p : G.Walk u v) (hp : ∀ x ∈ p.support, x �
   | nil => exact ⟨.nil, rfl⟩
   | @cons a b c hab p ih =>
     obtain ⟨q, hq⟩ := ih fun x hx => hp x (by simp [hx])
-    exact ⟨SimpleGraph.Walk.cons ⟨hab, hp a (by simp), hp b (by simp)⟩ q, by simp [hq]⟩
+    have ha : a ∉ S := hp a (by simp)
+    have hb : b ∉ S := hp b (by simp)
+    have hadj : (deleteVerts G S).Adj a b := ⟨hab, ha, hb⟩
+    exact ⟨SimpleGraph.Walk.cons hadj q, by
+      rw [SimpleGraph.Walk.length_cons, hq, SimpleGraph.Walk.length_cons]⟩
 
 /-- The decomposition the isolation rewrite runs on: a walk of length at
 most `d` either avoids the isolated set `S`, and then survives isolation
