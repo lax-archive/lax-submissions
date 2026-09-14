@@ -361,7 +361,9 @@ sepref_decl_op mset_pick (α : Type) :
     subst X
     rcases p with ⟨x, mr⟩
     have hsplit : m = ({x} : Multiset α) + mr := by
-      simpa using hp
+      by_cases hx : m = x ::ₘ mr
+      · simpa using hx
+      · simp [hx] at hp
     have hcons : Multiset.Rel (fun a b => (a, b) ∈ A) (x ::ₘ mr) n := by
       simpa [hsplit] using hmn
     obtain ⟨y, nr, hxy, hrest, hncons⟩ := Multiset.rel_cons_left.mp hcons
@@ -396,7 +398,8 @@ theorem fold_op_mset_minus (m n : Multiset α) :
 theorem mset_sub_single (m : Multiset α) (x : α) :
     msetSub m ({x} : Multiset α) = msetErase m x := by
   classical
-  simpa only [msetSub, msetErase] using (Multiset.sub_singleton x m)
+  simp only [msetSub, msetErase]
+  exact Multiset.sub_singleton x m
 
 theorem mset_contains_iff_count_pos (m : Multiset α) (x : α) :
     x ∈ m ↔ 0 < msetCount m x := by

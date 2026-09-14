@@ -199,6 +199,8 @@ theorem amContains_refines {N : ℕ} {s : ArrayMap} {m : ℕ → Option ℕ}
     amContains s k = propBool (k ∈ mapDom m) := by
   apply Bool.eq_iff_iff.mpr
   simp [amContains, propBool, mapDom, amLookup_refines h k]
+  exact ⟨fun hh => @decide_eq_true _ (Classical.propDecidable _) hh,
+    fun hh => @of_decide_eq_true _ (Classical.propDecidable _) hh⟩
 
 /-! ## Custom empty and generic map refinements -/
 
