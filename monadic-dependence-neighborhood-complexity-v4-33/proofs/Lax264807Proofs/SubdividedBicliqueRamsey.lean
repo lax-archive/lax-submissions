@@ -253,9 +253,9 @@ private def tuplePositionGraph {r : ℕ} {V : Type} [DecidableEq V] [Fintype V]
     (copy : SimpleGraph.Copy (subdividedBiclique n (r + 1)) G)
     (a b : Fin n) : SimpleGraph (Fin (r + 3)) where
   Adj s t := G.Adj (atomicTuple copy a b s) (atomicTuple copy a b t)
-  symm := by
+  symm := ⟨by
     intro s t h
-    exact G.symm h
+    exact h.symm⟩
   loopless := ⟨fun s => G.loopless.irrefl (atomicTuple copy a b s)⟩
 
 private noncomputable def atomicTypeOf {r : ℕ} {V : Type} [DecidableEq V] [Fintype V]
@@ -338,8 +338,10 @@ private theorem diagonal_left_right_adj_iff {r : ℕ} {V : Type}
       (atomicTypeOf G hpaths.copy (diagPair i) (diagPair j)).2 (z, l) =
         (atomicTypeOf G hpaths.copy (diagPair i') (diagPair j')).2 (z, l) := by
     exact congrArg (fun t => t.2 (z, l)) hEq
-  simp [atomicTypeOf, diagPair, z, l, atomicTuple_zero, atomicTuple_last] at hMask ⊢
-  exact hMask
+  simp only [atomicTypeOf, diagPair] at hMask
+  have hMask' := decide_eq_decide.mp hMask
+  simp [z, l, atomicTuple_zero, atomicTuple_last] at hMask' ⊢
+  exact hMask'
 
 private theorem atomicType_eq_iff_eq {r : ℕ} {V : Type}
     [DecidableEq V] [Fintype V] {G : SimpleGraph V} {n : ℕ}
@@ -674,7 +676,7 @@ private theorem firstHalfFinset_lt_lastHalfFinset {n : ℕ} (I : Finset (Fin n))
   obtain ⟨k', _, rfl⟩ := hi'
   apply (I.orderEmbOfFin rfl).strictMono
   rw [Fin.lt_def]
-  simp only [Fin.castLEEmb_apply, Function.Embedding.coeFn_mk, Fin.val_castLE]
+  show (k : ℕ) < I.card - m + (k' : ℕ)
   have hk : k.val < m := k.isLt
   have hk' : k'.val < m := k'.isLt
   omega
@@ -1082,9 +1084,10 @@ private theorem tuplePositionGraph_adj_zero_canonicalInternalIndex {r : ℕ}
   have hlt : 0 < (canonicalShortestWalk copy a b).length := by
     rw [hlen]; omega
   have hadj := (canonicalShortestWalk copy a b).adj_getVert_succ hlt
-  have h0 : (canonicalShortestWalk copy a b).getVert 0 = ⟨0, by omega⟩ := by
-    simp
-  simpa [canonicalInternalIndex, h0] using hadj
+  have h0 : (canonicalShortestWalk copy a b).getVert 0 = ⟨0, by omega⟩ :=
+    (canonicalShortestWalk copy a b).getVert_zero
+  rw [h0] at hadj
+  simpa [canonicalInternalIndex] using hadj
 
 /-- The last canonical internal index is adjacent to `positionLast r`. -/
 private theorem tuplePositionGraph_adj_canonicalInternalIndex_last {r : ℕ}
@@ -1327,7 +1330,7 @@ private theorem candidateInducedMap_injective
       simpa [pathVertex] using this
     rcases u with ((i | j) | ⟨⟨i, j⟩, k⟩) <;>
       rcases v with ((i' | j') | ⟨⟨i', j'⟩, k'⟩) <;>
-      simp only [candidateInducedMap_inl_inl, candidateInducedMap_inl_inr] at huv
+      try simp only [candidateInducedMap_inl_inl, candidateInducedMap_inl_inr] at huv
     · -- left root = left root
       have hv : (Sum.inl (Sum.inl (eI i)) : SubdividedBicliqueVert n (r + 1)) =
           Sum.inl (Sum.inl (eI i')) :=
@@ -1548,14 +1551,14 @@ private theorem buildCrossEdgeFreeData (r : ℕ) {V : Type}
         canonicalShortestWalk_length_eq_dist hpaths.copy i₀ j₀
       have hStart :
           (canonicalShortestWalk hpaths.copy i₀ j₀).getVert 0 =
-            (⟨0, by omega⟩ : Fin (r + 3)) := by
-        simp
+            (⟨0, by omega⟩ : Fin (r + 3)) :=
+        (canonicalShortestWalk hpaths.copy i₀ j₀).getVert_zero
       have hEnd :
           (canonicalShortestWalk hpaths.copy i₀ j₀).getVert (r' + 1) =
             positionLast r := by
         rw [show r' + 1 = (canonicalShortestWalk hpaths.copy i₀ j₀).length
               from hlenCanon.symm]
-        simp
+        exact (canonicalShortestWalk hpaths.copy i₀ j₀).getVert_length
       -- `noChord pos₁ pos₂`: if positions `pos₁ < pos₂` on the canonical walk
       -- are `tuplePositionGraph`-adjacent, then `pos₂ = pos₁ + 1`.
       have noChord :
