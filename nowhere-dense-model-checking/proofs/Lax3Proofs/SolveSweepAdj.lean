@@ -476,7 +476,8 @@ private theorem ctrl_delAdjSt :
   have harrs_mt : ctrlEnv.arrs "c.mt" = [1, 0] := rfl
   refine ⟨id, rfl, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro v
-    simp [ctrl_neighborSet_ncard v]
+    rw [ctrl_neighborSet_ncard v]
+    rfl
   · rw [harrs_ao]; simp
   · intro i hi
     rw [harrs_ao]
