@@ -99,20 +99,20 @@ theorem maximalOuterplanar_outerplanar {V : Type*} {G : SimpleGraph V} :
 ---
 conclusion: Lax68.MaximalOuterplanarPlanar.maximalOuterplanar_planar
 ---
-Every maximal outerplanar graph is planar.
+Maximal outerplanar graphs are outerplanar, and outerplanar graphs are planar.
 -/
 theorem maximalOuterplanar_planar {V : Type*} {G : SimpleGraph V} :
     Lax68.MaximalOuterplanar.IsMaximalOuterplanar G →
     Lax68.Planar.IsPlanar G :=
   fun h =>
     Lax68.OuterplanarPlanar.outerplanar_planar
-      (maximalOuterplanar_outerplanar h)
+      (Lax68.MaximalOuterplanarOuterplanar.maximalOuterplanar_outerplanar h)
 
 /--
 ---
 conclusion: Lax68.TriangleOuterplanar.triangle_outerplanar
 ---
-Every triangle is outerplanar.
+Triangles are maximal outerplanar, and maximal outerplanar graphs are outerplanar.
 -/
 theorem triangle_outerplanar
     {V : Type*} {G : SimpleGraph V} :
@@ -126,7 +126,7 @@ theorem triangle_outerplanar
 ---
 conclusion: Lax68.TrianglePlanar.triangle_planar
 ---
-Every triangle is planar.
+Triangles are outerplanar, and outerplanar graphs are planar.
 -/
 theorem triangle_planar
     {V : Type*} {G : SimpleGraph V} :
@@ -134,33 +134,33 @@ theorem triangle_planar
     Lax68.Planar.IsPlanar G :=
   fun h =>
     Lax68.OuterplanarPlanar.outerplanar_planar
-      (triangle_outerplanar h)
+      (Lax68.TriangleOuterplanar.triangle_outerplanar h)
 
 /--
 ---
 conclusion: Lax68.StarOuterplanar.star_outerplanar
 ---
-Every star is outerplanar.
+Stars are trees, and finite trees are outerplanar.
 -/
 theorem star_outerplanar {V : Type*} [Finite V] {G : SimpleGraph V} :
     Lax68.Stars.IsStar G →
     Lax68.Outerplanar.IsOuterplanar G :=
   fun h =>
     Lax68.TreeOuterplanar.tree_outerplanar
-      (star_tree h)
+      (Lax68.StarTree.star_tree h)
 
 /--
 ---
 conclusion: Lax68.StarPlanar.star_planar
 ---
-Every star is planar.
+Stars are trees, and finite trees are planar.
 -/
 theorem star_planar {V : Type*} [Finite V] {G : SimpleGraph V} :
     Lax68.Stars.IsStar G →
     Lax68.Planar.IsPlanar G :=
   fun h =>
-    Lax68.OuterplanarPlanar.outerplanar_planar
-      (star_outerplanar h)
+    Lax68.TreePlanar.tree_planar
+      (Lax68.StarTree.star_tree h)
 
 /--
 ---
@@ -178,14 +178,14 @@ theorem ladder_grid {V : Type*} {G : SimpleGraph V} :
 ---
 conclusion: Lax68.LadderPlanar.ladder_planar
 ---
-Every ladder is planar.
+Ladders are grids, and grids are planar.
 -/
 theorem ladder_planar {V : Type*} {G : SimpleGraph V} :
     Lax68.Ladders.IsLadder G →
     Lax68.Planar.IsPlanar G :=
   fun h =>
     Lax68.GridPlanar.grid_planar
-      (ladder_grid h)
+      (Lax68.LadderGrid.ladder_grid h)
 
 /--
 ---
@@ -204,7 +204,7 @@ theorem halin_planar
 ---
 conclusion: Lax68.WheelPlanar.wheel_planar
 ---
-Every wheel is planar.
+Wheels are Halin graphs, and Halin graphs are planar.
 -/
 theorem wheel_planar
     {V : Type*} {G : SimpleGraph V} :
@@ -218,7 +218,7 @@ theorem wheel_planar
 ---
 conclusion: Lax68.TreePlanar.tree_planar
 ---
-Every tree is planar.
+Finite trees are outerplanar, and outerplanar graphs are planar.
 -/
 theorem tree_planar {V : Type*} [Finite V] {G : SimpleGraph V} :
     Lax68.Trees.IsTree G →
@@ -231,13 +231,14 @@ theorem tree_planar {V : Type*} [Finite V] {G : SimpleGraph V} :
 ---
 conclusion: Lax68.PathOuterplanar.path_outerplanar
 ---
-Every path is outerplanar.
+Paths are trees, and finite trees are outerplanar. Finiteness follows from
+the defining isomorphism to a standard finite path graph.
 -/
 theorem path_outerplanar {V : Type*} {G : SimpleGraph V} :
     Lax68.Paths.IsPath G →
     Lax68.Outerplanar.IsOuterplanar G := by
   intro h
-  have ht := path_tree h
+  have ht := Lax68.PathTree.path_tree h
   obtain ⟨n, _, ⟨e⟩⟩ := h
   let : Finite V := Finite.of_injective e e.injective
   exact Lax68.TreeOuterplanar.tree_outerplanar ht
