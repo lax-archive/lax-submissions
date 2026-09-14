@@ -1,6 +1,6 @@
 import Lax264807.GraphClasses
 import Lax264807.MonadicDependence
-import Lax12.NowhereDenseClasses
+import Lax199508.NowhereDenseClasses
 
 /-!
 ---
@@ -25,7 +25,7 @@ sparsity theory built on it.
 
 namespace Lax264807.WeaklySparseDependent
 
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax264807.GraphClasses Lax264807.MonadicDependence
 
 /-- Every weakly sparse monadically dependent graph class is nowhere

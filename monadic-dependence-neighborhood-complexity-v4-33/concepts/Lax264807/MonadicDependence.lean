@@ -18,7 +18,7 @@ prerequisite concepts.
 
 namespace Lax264807.MonadicDependence
 
-open Lax12.GraphClasses Lax264807.GraphClasses
+open Lax199508.GraphClasses Lax264807.GraphClasses
 
 /-- A graph class is monadically dependent if it does not transduce the
 class of all finite simple graphs. -/

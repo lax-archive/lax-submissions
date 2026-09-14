@@ -1,5 +1,5 @@
 import Lax264807.MonadicDependence
-import Lax12.NowhereDenseClasses
+import Lax199508.NowhereDenseClasses
 
 /-!
 ---
@@ -22,7 +22,7 @@ submission (Lax12), where nowhere denseness is defined and endorsed.
 
 namespace Lax264807.AdlerAdler
 
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax264807.MonadicDependence
 
 /-- Nowhere dense graph classes are monadically dependent. -/

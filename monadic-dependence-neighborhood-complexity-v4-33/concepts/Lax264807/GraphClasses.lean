@@ -1,4 +1,4 @@
-import Lax12.GraphClasses
+import Lax199508.GraphClasses
 import Mathlib.Combinatorics.SimpleGraph.Copy
 
 /-!
@@ -31,7 +31,7 @@ condition on `t` is needed.
 namespace Lax264807.GraphClasses
 
 open scoped SimpleGraph
-open Lax12.GraphClasses
+open Lax199508.GraphClasses
 
 /-- The class of all finite simple graphs. -/
 def allGraphs : GraphClass := fun _ _ => True

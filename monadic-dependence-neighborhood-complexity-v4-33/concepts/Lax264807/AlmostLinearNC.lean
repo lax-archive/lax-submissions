@@ -1,5 +1,5 @@
 import Lax264807.MonadicDependence
-import Lax12.NeighborhoodComplexity
+import Lax199508.NeighborhoodComplexity
 
 /-!
 ---
@@ -28,7 +28,7 @@ strictly weaker hypothesis.
 
 namespace Lax264807.AlmostLinearNC
 
-open Lax12.GraphClasses Lax12.NeighborhoodComplexity Lax264807.MonadicDependence
+open Lax199508.GraphClasses Lax199508.NeighborhoodComplexity Lax264807.MonadicDependence
 
 /-- Monadically dependent graph classes have almost linear neighborhood
 complexity. -/
