@@ -1,5 +1,6 @@
 import Lax68.StraightLineDrawings
 import Lax68.GraphMinors
+import Lax68.AcyclicMinors
 import Lax68.GraphTopologicalMinors
 import Lax68.Planar
 import Lax68.Outerplanar
