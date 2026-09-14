@@ -110,7 +110,7 @@ theorem canonicalChannels_child (S : Setup L) (ord : CoverSpec.OrderingRoutine)
     canonicalChannels S ℓp (j + 1) (childArena S A (ord A.N A.G).order u) =
       prepChan S ord ℓp (canonicalChannels S ℓp) j A u := by
   let π := (ord A.N A.G).order
-  let child := childArena S A π u
+  let child : Arena (S.pal (j + 1)) n₀ := childArena S A π u
   have hhc : child.hist.length = j + 1 := by simp [child, hhist]
   have hloc : channelLocal child.up = fun z =>
       (channelLocal A.up z).bind (Impl.toLocal (cluster S A π u)) := by
@@ -134,15 +134,20 @@ theorem canonicalChannels_child (S : Setup L) (ord : CoverSpec.OrderingRoutine)
       histGraph_eq_map S A π u
     rw [canonicalChannels, dif_pos hec, hnew]
     simp only
-    rw [prepChan, if_pos he, prepDescendCol_eq_pathList]
+    unfold prepChan
+    rw [if_pos he]
+    refine Eq.trans ?_ (prepDescendCol_eq_pathList (preG S A π u)
+      (centreChild S A π u) (2 * S.R) v).symm
     change (Lax3Proofs.BatchCanon.pathList (histGraph S A π u) (2 * S.R)
       (A.up u) (child.up v)).filterMap (channelLocal child.up) = _
-    rw [hmap, ← hcentre,
-      Lax3Proofs.BatchCanon.pathList_map child.up
-        (childArena_up_strictMono S A π u hmono), channelLocal_map]
-    rfl
+    rw [hmap, ← hcentre]
+    exact (congrArg (List.filterMap (channelLocal child.up))
+      (Lax3Proofs.BatchCanon.pathList_map child.up
+        (childArena_up_strictMono S A π u hmono) (preG S A π u) (2 * S.R)
+        (centreChild S A π u) v)).trans (channelLocal_map child.up _)
   · have hep : (e : ℕ) < ℓp j := by rw [← hlp]; exact e.isLt
-    rw [prepChan, if_neg he, dif_pos hep]
+    unfold prepChan
+    rw [if_neg he, dif_pos hep]
     by_cases heold : (e : ℕ) < j
     · have hec : (e : ℕ) < child.hist.length := by omega
       have hea : (e : ℕ) < A.hist.length := by omega
@@ -150,9 +155,10 @@ theorem canonicalChannels_child (S : Setup L) (ord : CoverSpec.OrderingRoutine)
           A.hist.reverse[(e : ℕ)]'(by simpa using hea) := by
         simp only [child, childArena_hist, List.reverse_cons]
         exact List.getElem_append_left (by simpa using hea)
-      rw [canonicalChannels, dif_pos hec, hold,
-        canonicalChannels, dif_pos hea, List.filterMap_filterMap, hloc]
-      rfl
+      rw [canonicalChannels, dif_pos hec, hold, canonicalChannels, dif_pos hea]
+      dsimp only
+      rw [hloc]
+      exact (List.filterMap_filterMap ..).symm
     · have hec : child.hist.length ≤ (e : ℕ) := by omega
       rw [canonicalChannels_empty S ℓp (j + 1) child v e hec]
       rw [canonicalChannels_empty S ℓp j A _ _ (by change A.hist.length ≤ (e : ℕ); omega)]
