@@ -88,8 +88,8 @@ theorem machineBudgets (S : Setup L) :
   · intro j hj A
     exact chargeFrameK_zero S _ (concreteLp S) _ _ _ _ (concreteQdepth S) j A hj
   · intro k j hj A
-    simpa only [machineKB, machineStageCoeff, concreteHb, Nat.add_assoc] using
-      chargeFrameK_guard S (mdOrderingRoutine (3 * S.R)) (concreteLp S)
+    simp only [machineKB, machineStageCoeff, concreteHb, Nat.add_assoc]
+    exact chargeFrameK_guard S (mdOrderingRoutine (3 * S.R)) (concreteLp S)
         (canonicalChannels S (concreteLp S))
         (fun _ A => machineCoverCharge A.N (CoverClean.Kcov A.G S.R))
         (fun _ A => CoverClean.Kcov A.G S.R)
