@@ -269,23 +269,32 @@ private lemma biclique_isContained_biclique_of_le {k m : ℕ} (h : k ≤ m) :
 via `Fin.castLE` on each coordinate. -/
 private lemma subdividedBiclique_isIndContained_of_le {k m r : ℕ} (h : k ≤ m) :
     (subdividedBiclique k r).IsIndContained (subdividedBiclique m r) := by
-  refine ⟨{
-    toFun := fun v => match v with
+  let emb : SubdividedBicliqueVert k r ↪ SubdividedBicliqueVert m r :=
+    ⟨fun v => match v with
       | .inl (.inl i) => .inl (.inl (Fin.castLE h i))
       | .inl (.inr j) => .inl (.inr (Fin.castLE h j))
-      | .inr ⟨⟨i, j⟩, k'⟩ => .inr ⟨⟨Fin.castLE h i, Fin.castLE h j⟩, k'⟩
-    inj' := by
-      intro u v heq
-      rcases u with (iU | jU) | ⟨⟨iU, jU⟩, kU⟩ <;>
-        rcases v with (iV | jV) | ⟨⟨iV, jV⟩, kV⟩ <;>
-        simp_all [Fin.ext_iff]
-    map_rel_iff' := by
-      intro u v
-      simp only [subdividedBiclique, SimpleGraph.fromRel_adj]
-      rcases u with (iU | jU) | ⟨⟨iU, jU⟩, kU⟩ <;>
-        rcases v with (iV | jV) | ⟨⟨iV, jV⟩, kV⟩ <;>
-        simp_all [Fin.ext_iff, Prod.ext_iff]
+      | .inr ⟨⟨i, j⟩, k'⟩ => .inr ⟨⟨Fin.castLE h i, Fin.castLE h j⟩, k'⟩,
+      by
+        intro u v heq
+        rcases u with (iU | jU) | ⟨⟨iU, jU⟩, kU⟩ <;>
+          rcases v with (iV | jV) | ⟨⟨iV, jV⟩, kV⟩ <;>
+          simp_all [Fin.ext_iff]⟩
+  have hembL : ∀ i : Fin k,
+      emb (.inl (.inl i)) = .inl (.inl (Fin.castLE h i)) := fun _ => rfl
+  have hembR : ∀ j : Fin k,
+      emb (.inl (.inr j)) = .inl (.inr (Fin.castLE h j)) := fun _ => rfl
+  have hembP : ∀ (i j : Fin k) (k' : Fin r),
+      emb (.inr ⟨⟨i, j⟩, k'⟩) =
+        .inr ⟨⟨Fin.castLE h i, Fin.castLE h j⟩, k'⟩ := fun _ _ _ => rfl
+  refine ⟨{
+    toEmbedding := emb
+    map_rel_iff' := ?_
   }⟩
+  intro u v
+  rcases u with (iU | jU) | ⟨⟨iU, jU⟩, kU⟩ <;>
+    rcases v with (iV | jV) | ⟨⟨iV, jV⟩, kV⟩ <;>
+    simp_all [subdividedBiclique, SimpleGraph.fromRel_adj, hembL, hembR, hembP,
+      Fin.ext_iff, Prod.ext_iff]
 
 /-! ### Corollary 6a -/
 
