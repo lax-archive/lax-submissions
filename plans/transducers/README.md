@@ -9,6 +9,8 @@ needs is done except the submissions themselves.
 
 ## What is here
 
+- `FINISH.md` — the one-off prompt to run on a machine with push and
+  submit rights: lands the patches in the book and resubmits the chain.
 - `patches/` — the port as a `git format-patch` series against the book's
   `main` at `4ec9235`, one commit per boundary. This is the copy-back:
   `git am plans/transducers/patches/*.patch` in a checkout of the book.
