@@ -45,12 +45,16 @@ def IsGrid {V : Type*} (G : SimpleGraph V) : Prop :=
 def IsWall {V : Type*} (G : SimpleGraph V) : Prop :=
   HasWallShape G
 
-/-- Every grid graph is planar. -/
+/-- Every grid graph is planar.
+
+Open in this formalization: no proof is supplied yet. -/
 axiom grid_planar {V : Type*} {G : SimpleGraph V} :
   Lax68.GridsAndWalls.IsGrid G →
   Lax68.Planar.IsPlanar G
 
-/-- Every wall graph is planar. -/
+/-- Every wall graph is planar.
+
+Open in this formalization: no proof is supplied yet. -/
 axiom wall_planar {V : Type*} {G : SimpleGraph V} :
   Lax68.GridsAndWalls.IsWall G →
   Lax68.Planar.IsPlanar G

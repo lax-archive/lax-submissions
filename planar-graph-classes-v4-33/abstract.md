@@ -17,3 +17,10 @@ graphs. The accompanying visual guide illustrates the defining shapes.
 Kuratowski’s subdivision characterization and Wagner’s excluded-minor
 characterization are stated for finite graphs. Both are open statements;
 this submission does not supply their proofs.
+
+The supplied proofs include that stars and paths are trees. The remaining
+open formalization problems are grid and wall planarity, ladder outerplanarity
+and series-parallel construction, series-parallel planarity, finite-tree
+outerplanarity, triangle maximal outerplanarity, and the wheel-to-Halin
+construction, as well as Kuratowski’s and Wagner’s theorems. These are known
+mathematical results whose Lean proofs are not supplied here.

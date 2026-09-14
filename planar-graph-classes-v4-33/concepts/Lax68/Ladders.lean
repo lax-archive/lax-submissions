@@ -31,12 +31,16 @@ axiom ladder_grid {V : Type*} {G : SimpleGraph V} :
   Lax68.Ladders.IsLadder G →
   Lax68.GridsAndWalls.IsGrid G
 
-/-- Every ladder graph is outerplanar. -/
+/-- Every ladder graph is outerplanar.
+
+Open in this formalization: no proof is supplied yet. -/
 axiom ladder_outerplanar {V : Type*} {G : SimpleGraph V} :
   Lax68.Ladders.IsLadder G →
   Lax68.Outerplanar.IsOuterplanar G
 
-/-- Every ladder graph is series-parallel. -/
+/-- Every ladder graph is series-parallel.
+
+Open in this formalization: no proof is supplied yet. -/
 axiom ladder_seriesParallel {V : Type*} {G : SimpleGraph V} :
   Lax68.Ladders.IsLadder G →
   Lax68.SeriesParallel.IsSeriesParallel G

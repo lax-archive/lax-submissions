@@ -18,7 +18,9 @@ namespace Lax68.Triangles
 def IsTriangle {V : Type*} (G : SimpleGraph V) : Prop :=
   Nonempty (G ≃g SimpleGraph.completeGraph (Fin 3))
 
-/-- Every triangle is maximal outerplanar. -/
+/-- Every triangle is maximal outerplanar.
+
+Open in this formalization: no proof is supplied yet. -/
 axiom triangle_maximalOuterplanar
     {V : Type*} {G : SimpleGraph V} :
   Lax68.Triangles.IsTriangle G →

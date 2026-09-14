@@ -43,7 +43,9 @@ def HasWheelShape {V : Type*} (G : SimpleGraph V) : Prop :=
 def IsWheel {V : Type*} (G : SimpleGraph V) : Prop :=
   HasWheelShape G
 
-/-- Every wheel graph is a Halin graph. -/
+/-- Every wheel graph is a Halin graph.
+
+Open in this formalization: no proof is supplied yet. -/
 axiom wheel_halin
     {V : Type*} {G : SimpleGraph V} :
   Lax68.Wheels.IsWheel G →

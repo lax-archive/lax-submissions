@@ -6,6 +6,73 @@ namespace Lax68Proofs
 
 /--
 ---
+conclusion: Lax68.Paths.path_tree
+---
+The standard path is connected. In a cycle, its greatest vertex would have
+two distinct neighbours below it, but a path has only one such neighbour.
+-/
+theorem path_tree {V : Type*} {G : SimpleGraph V} :
+    Lax68.Paths.IsPath G → Lax68.Trees.IsTree G := by
+  classical
+  rintro ⟨n, hn, ⟨e⟩⟩
+  apply e.isTree_iff.mpr
+  let : NeZero n := ⟨Nat.ne_of_gt hn⟩
+  refine ⟨⟨SimpleGraph.pathGraph_preconnected n⟩, ?_⟩
+  intro v p hp
+  let S := p.support.toFinset
+  have hS : S.Nonempty := ⟨v, by simp [S]⟩
+  let m := S.max' hS
+  have hm : m ∈ p.support := by
+    simpa [S] using Finset.max'_mem S hS
+  let q := p.rotate m hm
+  have hq : q.IsCycle := hp.rotate hm
+  have bound : ∀ x ∈ q.support, x ≤ m := by
+    intro x hx
+    apply Finset.le_max'
+    simpa [S, q, SimpleGraph.Walk.mem_support_rotate_iff] using hx
+  have hs := bound q.snd (q.getVert_mem_support 1)
+  have ht := bound q.penultimate (q.getVert_mem_support (q.length - 1))
+  have hsadj := SimpleGraph.pathGraph_adj.mp (q.adj_snd hq.not_nil)
+  have htadj := SimpleGraph.pathGraph_adj.mp (q.adj_penultimate hq.not_nil)
+  apply hq.snd_ne_penultimate
+  apply Fin.ext
+  change q.snd.val ≤ m.val at hs
+  change q.penultimate.val ≤ m.val at ht
+  omega
+
+/--
+---
+conclusion: Lax68.Stars.star_tree
+---
+A star is connected through its centre. A cycle would give a noncentral
+vertex two distinct neighbours, although its only neighbour is the centre.
+-/
+theorem star_tree {V : Type*} {G : SimpleGraph V} :
+    Lax68.Stars.IsStar G → Lax68.Trees.IsTree G := by
+  classical
+  rintro ⟨centre, universal, edges⟩
+  have reach : ∀ v, G.Reachable centre v := by
+    intro v
+    by_cases h : centre = v
+    · subst v; exact .rfl
+    · exact (universal h).reachable
+  let : Nonempty V := ⟨centre⟩
+  refine ⟨⟨fun u v => (reach u).symm.trans (reach v)⟩, ?_⟩
+  have noCycle : ∀ v, v ≠ centre → ∀ p : G.Walk v v, ¬p.IsCycle := by
+    intro v hv p hp
+    have hs := (edges (p.adj_snd hp.not_nil)).resolve_left hv
+    have ht := (edges (p.adj_penultimate hp.not_nil)).resolve_right hv
+    exact hp.snd_ne_penultimate (hs.trans ht.symm)
+  intro v p hp
+  by_cases hv : v = centre
+  · subst v
+    have hs : p.snd ≠ centre := (p.adj_snd hp.not_nil).ne.symm
+    exact noCycle p.snd hs (p.rotate p.snd (p.getVert_mem_support 1))
+      (hp.rotate _)
+  · exact noCycle v hv p hp
+
+/--
+---
 conclusion: Lax68.Outerplanar.outerplanar_planar
 ---
 An outerplane drawing is, after forgetting its boundary condition, a planar
@@ -31,9 +98,6 @@ theorem maximalOuterplanar_outerplanar {V : Type*} {G : SimpleGraph V} :
 /--
 ---
 conclusion: Lax68.MaximalOuterplanar.maximalOuterplanar_planar
-assumptions:
-  - Lax68.MaximalOuterplanar.maximalOuterplanar_outerplanar
-  - Lax68.Outerplanar.outerplanar_planar
 ---
 Every maximal outerplanar graph is planar.
 -/
@@ -42,14 +106,11 @@ theorem maximalOuterplanar_planar {V : Type*} {G : SimpleGraph V} :
     Lax68.Planar.IsPlanar G :=
   fun h =>
     Lax68.Outerplanar.outerplanar_planar
-      (Lax68.MaximalOuterplanar.maximalOuterplanar_outerplanar h)
+      (maximalOuterplanar_outerplanar h)
 
 /--
 ---
 conclusion: Lax68.Triangles.triangle_outerplanar
-assumptions:
-  - Lax68.MaximalOuterplanar.maximalOuterplanar_outerplanar
-  - Lax68.Triangles.triangle_maximalOuterplanar
 ---
 Every triangle is outerplanar.
 -/
@@ -64,9 +125,6 @@ theorem triangle_outerplanar
 /--
 ---
 conclusion: Lax68.Triangles.triangle_planar
-assumptions:
-  - Lax68.Outerplanar.outerplanar_planar
-  - Lax68.Triangles.triangle_outerplanar
 ---
 Every triangle is planar.
 -/
@@ -76,14 +134,11 @@ theorem triangle_planar
     Lax68.Planar.IsPlanar G :=
   fun h =>
     Lax68.Outerplanar.outerplanar_planar
-      (Lax68.Triangles.triangle_outerplanar h)
+      (triangle_outerplanar h)
 
 /--
 ---
 conclusion: Lax68.Stars.star_outerplanar
-assumptions:
-  - Lax68.Stars.star_tree
-  - Lax68.Trees.tree_outerplanar
 ---
 Every star is outerplanar.
 -/
@@ -92,14 +147,11 @@ theorem star_outerplanar {V : Type*} [Finite V] {G : SimpleGraph V} :
     Lax68.Outerplanar.IsOuterplanar G :=
   fun h =>
     Lax68.Trees.tree_outerplanar
-      (Lax68.Stars.star_tree h)
+      (star_tree h)
 
 /--
 ---
 conclusion: Lax68.Stars.star_planar
-assumptions:
-  - Lax68.Outerplanar.outerplanar_planar
-  - Lax68.Stars.star_outerplanar
 ---
 Every star is planar.
 -/
@@ -108,7 +160,7 @@ theorem star_planar {V : Type*} [Finite V] {G : SimpleGraph V} :
     Lax68.Planar.IsPlanar G :=
   fun h =>
     Lax68.Outerplanar.outerplanar_planar
-      (Lax68.Stars.star_outerplanar h)
+      (star_outerplanar h)
 
 /--
 ---
@@ -125,9 +177,6 @@ theorem ladder_grid {V : Type*} {G : SimpleGraph V} :
 /--
 ---
 conclusion: Lax68.Ladders.ladder_planar
-assumptions:
-  - Lax68.GridsAndWalls.grid_planar
-  - Lax68.Ladders.ladder_grid
 ---
 Every ladder is planar.
 -/
@@ -136,7 +185,7 @@ theorem ladder_planar {V : Type*} {G : SimpleGraph V} :
     Lax68.Planar.IsPlanar G :=
   fun h =>
     Lax68.GridsAndWalls.grid_planar
-      (Lax68.Ladders.ladder_grid h)
+      (ladder_grid h)
 
 /--
 ---
@@ -154,9 +203,6 @@ theorem halin_planar
 /--
 ---
 conclusion: Lax68.Wheels.wheel_planar
-assumptions:
-  - Lax68.HalinGraphs.halin_planar
-  - Lax68.Wheels.wheel_halin
 ---
 Every wheel is planar.
 -/
@@ -171,9 +217,6 @@ theorem wheel_planar
 /--
 ---
 conclusion: Lax68.Trees.tree_planar
-assumptions:
-  - Lax68.Outerplanar.outerplanar_planar
-  - Lax68.Trees.tree_outerplanar
 ---
 Every tree is planar.
 -/
@@ -187,9 +230,6 @@ theorem tree_planar {V : Type*} [Finite V] {G : SimpleGraph V} :
 /--
 ---
 conclusion: Lax68.Paths.path_outerplanar
-assumptions:
-  - Lax68.Paths.path_tree
-  - Lax68.Trees.tree_outerplanar
 ---
 Every path is outerplanar.
 -/
@@ -197,7 +237,7 @@ theorem path_outerplanar {V : Type*} {G : SimpleGraph V} :
     Lax68.Paths.IsPath G →
     Lax68.Outerplanar.IsOuterplanar G := by
   intro h
-  have ht := Lax68.Paths.path_tree h
+  have ht := path_tree h
   obtain ⟨n, _, ⟨e⟩⟩ := h
   let : Finite V := Finite.of_injective e e.injective
   exact Lax68.Trees.tree_outerplanar ht
@@ -205,9 +245,6 @@ theorem path_outerplanar {V : Type*} {G : SimpleGraph V} :
 /--
 ---
 conclusion: Lax68.Paths.path_planar
-assumptions:
-  - Lax68.Outerplanar.outerplanar_planar
-  - Lax68.Paths.path_outerplanar
 ---
 Every path is planar.
 -/
@@ -216,7 +253,7 @@ theorem path_planar {V : Type*} {G : SimpleGraph V} :
     Lax68.Planar.IsPlanar G :=
   fun h =>
     Lax68.Outerplanar.outerplanar_planar
-      (Lax68.Paths.path_outerplanar h)
+      (path_outerplanar h)
 
 /--
 ---
