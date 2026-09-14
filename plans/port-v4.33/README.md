@@ -81,8 +81,43 @@ Pins everywhere: `manifest.yaml` (`leanVersion`, `mathlibVersion`), both
   exists_congr …`.
 - **refinement-tower** (lax-62): _pending the worker's report_.
 - **nowhere-dense-model-checking** (lax-3): _pending_.
-- **monadic-dependence-neighborhood-complexity-v4-33** (lax-264807):
-  _pending_.
+- **monadic-dependence-neighborhood-complexity-v4-33** (lax-264807;
+  2080 + 2840 jobs green; concepts compile with every declared statement
+  byte-identical). The scaffold had left `import Lax12.*`/`Lax14.*` in the
+  sources (fixed in `lax port` afterwards, lax commit 044cfa8): renamed to
+  `Lax199508`/`Lax345067` everywhere, prose included. Proof sites, by
+  drift class — (xi) `Std.Symm` bundling: `proofs/AdlerAdler.lean:48`,
+  `SubdividedBicliqueRamsey.lean:256-258`, `CrossingTransduction.lean:60`
+  (`G.symm h` → `G.adj_symm h`; `h.symm` there resolves to the recursive
+  `BlueWalk.symm` and fails termination); (iv) `simpa` stricter:
+  `Sparsification.lean:769` (`simpa [f', tup]`), `NowhereDenseBridge.lean:
+  318,340,349` (`exact congrArg copy h`); (i) `TransductionCalculus.lean:
+  125-127` (`show … + exact`); (xiv) `SubdividedBicliqueRamsey.lean:341-344`
+  (`decide_eq_decide.mp` by hand); (vii) `SubdividedBicliqueRamsey.lean:
+  1333` (`try simp only […]` — one `rcases` branch makes no progress).
+  New classes: **(xv)** a `Walk.copy` whose proof arguments came from `rfl`
+  carries the walk's own endpoints in its type, so `support_copy` /
+  `length_copy` / `isPath_copy` never fire ("Application type mismatch …
+  _proof_1") — give each proof its declared type with `show lhs = rhs from
+  …` (`NowhereDenseBridge.lean:251-256`, which cleared six downstream
+  errors); **(xvi)** plain `simp [f]` where `f` unfolds to a `Walk.cons` no
+  longer applies `length_cons`/`cons_isPath_iff`/`support_cons` — name them
+  under `simp only` (`NowhereDenseBridge.lean:176-178,188,272-273`);
+  **(xvii)** `Walk.getVert_zero`/`getVert_length` do not fire under `simp`
+  for a walk whose endpoints are `Fin.mk` literals with `by omega` proofs —
+  use the term and `rw` (`SubdividedBicliqueRamsey.lean:1087-1091,
+  1553-1561`); **(xviii)** an argument supplied at a type only δ-equal to
+  the expected one poisons every later `rw`/`simp` in that application
+  (`colors : Fin (5*k+2) → …` where `Fin (sparsTransduction k).colors → …`
+  is expected: `realize_sup`/`realize_inf` "did not find an occurrence" on
+  a pattern that prints identically) — `change` the goal to the fully
+  spelled-out formula first (`SparsGraphs.lean:142-147,247-263`;
+  `SubdividedBicliqueRamsey.lean:679` `show … before omega`); **(xix)**
+  `Function.Embedding.coeFn_mk` does not fire while the embedding
+  literal's `inj'` field is still a metavariable inside a `refine ⟨{ … }⟩`
+  — bind the embedding with `let`, prove its three `rfl` computation
+  lemmas, pass them to `simp_all` (`Corollary6a.lean:272-297`, the one
+  moderate restructure; the lemma statement is unchanged).
 
 ## Not ported, and why (see FINISH.md §4)
 
