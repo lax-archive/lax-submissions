@@ -7,6 +7,9 @@ import Lax68.StraightLineDrawings
 title: Halin graphs
 type: definition
 ---
+
+![Halin graph illustration](https://placehold.co/760x220?text=Halin+Graph "Halin graph illustration")
+
 A Halin graph is obtained from a plane tree with no vertex of degree two by
 joining its leaves in their cyclic order. The construction
 contains the chosen crossing-free embedding because the word "plane" is part

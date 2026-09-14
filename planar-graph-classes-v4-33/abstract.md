@@ -9,7 +9,9 @@ Planarity is expressed by the existence of a crossing-free straight-line
 drawing in the real plane.
 
 Graph-class definitions contain no theorem statements. Elementary
-relationships are stated in separate theorem concepts. Proofs are supplied for direct projections and simple
+relationships are stated in separate theorem concepts. Each definition concept now
+includes a short illustration image.
+Proofs are supplied for direct projections and simple
 compositions; the remaining relationships are explicitly open statements.
 The geometric planarity claims for trees and stars are restricted to finite
 graphs. The accompanying visual guide illustrates the defining shapes.

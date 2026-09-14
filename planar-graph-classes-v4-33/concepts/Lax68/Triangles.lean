@@ -5,6 +5,9 @@ import Mathlib.Combinatorics.SimpleGraph.Maps
 title: Triangles
 type: definition
 ---
+
+![Triangle graph illustration](https://placehold.co/760x220?text=Triangle+Graph "Triangle graph illustration")
+
 A triangle is a finite complete graph on exactly three vertices.
 -/
 

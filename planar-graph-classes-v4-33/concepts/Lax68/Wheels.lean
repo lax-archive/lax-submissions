@@ -5,6 +5,9 @@ import Mathlib.Combinatorics.SimpleGraph.UniversalVerts
 title: Wheels
 type: definition
 ---
+
+![Wheel graph illustration](https://placehold.co/760x220?text=Wheel+Graph "Wheel graph illustration")
+
 A finite wheel consists of a cycle of at least three rim vertices together
 with one hub adjacent to every rim vertex, and has no other edges.
 -/

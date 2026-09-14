@@ -5,6 +5,9 @@ import Mathlib.Combinatorics.SimpleGraph.Hasse
 title: Paths
 type: definition
 ---
+
+![Path graph illustration](https://placehold.co/760x220?text=Path+Graph "Path graph illustration")
+
 A finite path graph is a graph isomorphic to the standard path graph on a
 positive number of vertices.
 -/

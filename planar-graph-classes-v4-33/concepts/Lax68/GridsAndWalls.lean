@@ -5,6 +5,9 @@ import Mathlib.Combinatorics.SimpleGraph.Hasse
 title: Grids and walls
 type: definition
 ---
+
+![Grid and wall illustration](https://placehold.co/760x220?text=Grid+and+Wall "Grid and wall illustration")
+
 A nonempty rectangular grid has vertices in rows and columns, with edges
 between orthogonally consecutive positions. A wall is the brick-wall subgraph
 obtained by retaining alternating vertical grid edges.

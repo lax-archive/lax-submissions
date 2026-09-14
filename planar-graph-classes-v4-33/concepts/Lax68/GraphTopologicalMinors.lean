@@ -6,6 +6,9 @@ import Lax68.GraphMinors
 title: Topological graph minors
 type: definition
 ---
+
+![Topological minor illustration](https://placehold.co/760x220?text=Topological+Minor "Topological minor illustration")
+
 A graph *H* is a topological minor of *G* when the vertices of *H* are
 represented by distinct branch vertices of *G* and its edges by paths whose
 interiors contain no branch vertex and are pairwise disjoint. Equivalently,

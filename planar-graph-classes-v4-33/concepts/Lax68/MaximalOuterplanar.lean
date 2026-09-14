@@ -5,6 +5,9 @@ import Lax68.Outerplanar
 title: Maximal outerplanar graphs
 type: definition
 ---
+
+![Maximal outerplanar illustration](https://placehold.co/760x220?text=Maximal+Outerplanar+Graph "Maximal outerplanar illustration")
+
 An outerplanar graph is maximal outerplanar when no edge can be added between
 its existing vertices while preserving outerplanarity.
 -/

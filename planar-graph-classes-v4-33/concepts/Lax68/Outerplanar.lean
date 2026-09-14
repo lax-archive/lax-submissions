@@ -5,6 +5,9 @@ import Lax68.StraightLineDrawings
 title: Outerplanar graphs
 type: definition
 ---
+
+![Outerplanar graph illustration](https://placehold.co/760x220?text=Outerplanar+Graph "Outerplanar graph illustration")
+
 A graph is outerplanar here when it has a crossing-free straight-line drawing
 with every vertex on one circle, a compact certificate for having every
 vertex on the boundary of the outer face.

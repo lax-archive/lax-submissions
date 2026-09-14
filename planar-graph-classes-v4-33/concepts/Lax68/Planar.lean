@@ -6,6 +6,9 @@ import Lax68.StraightLineDrawings
 title: Planar graphs
 type: definition
 ---
+
+![Planar graph illustration](https://placehold.co/760x220?text=Planar+Graph+Drawing "Planar graph illustration")
+
 A graph is planar here when it has a crossing-free straight-line drawing in
 the real plane. For finite simple graphs, this agrees with the usual notion
 of planarity. The drawing certificate is supplied by a separate concept.

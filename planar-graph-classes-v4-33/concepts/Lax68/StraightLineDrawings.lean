@@ -7,6 +7,9 @@ import Mathlib.Data.Real.Basic
 title: Straight-line graph drawings
 type: definition
 ---
+
+![Straight-line drawing illustration](https://placehold.co/760x220?text=Straight-line+Drawing "Straight-line drawing illustration")
+
 A straight-line drawing assigns distinct points of the real plane to the
 vertices of a simple graph and draws every edge as the segment between its
 endpoints. No vertex lies inside an edge and disjoint edges do not meet.

@@ -5,6 +5,9 @@ import Mathlib.Combinatorics.SimpleGraph.Acyclic
 title: Trees
 type: definition
 ---
+
+![Tree illustration](https://placehold.co/760x220?text=Tree+Graph "Tree illustration")
+
 A tree is a connected acyclic simple graph, using mathlib's native
 `SimpleGraph.IsTree` predicate.
 -/

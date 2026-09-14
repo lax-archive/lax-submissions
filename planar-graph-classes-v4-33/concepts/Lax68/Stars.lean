@@ -5,6 +5,9 @@ import Mathlib.Combinatorics.SimpleGraph.UniversalVerts
 title: Stars
 type: definition
 ---
+
+![Star graph illustration](https://placehold.co/760x220?text=Star+Graph "Star graph illustration")
+
 A star has a centre adjacent to every other vertex and has no edges between
 two non-central vertices.
 -/

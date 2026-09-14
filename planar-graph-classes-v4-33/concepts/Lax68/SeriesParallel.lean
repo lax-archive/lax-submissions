@@ -5,6 +5,9 @@ import Mathlib.Combinatorics.SimpleGraph.Basic
 title: Series-parallel graphs
 type: definition
 ---
+
+![Series-parallel graph illustration](https://placehold.co/760x220?text=Series-Parallel+Graph "Series-parallel graph illustration")
+
 A finite two-terminal series-parallel graph is built from a single terminal
 edge by series and parallel composition. The side conditions say that the
 composed graphs meet only at the intended terminals, and the final support

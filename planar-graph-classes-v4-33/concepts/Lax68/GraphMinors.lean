@@ -5,6 +5,9 @@ import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 title: Graph minors
 type: definition
 ---
+
+![Graph minor illustration](https://placehold.co/760x220?text=Graph+Minor+Hierarchy "Graph minor illustration")
+
 A graph *H* is a minor of a graph *G* when the vertices of *H* can be
 represented by pairwise disjoint connected branch sets in *G*, with an edge
 joining the corresponding branch sets for every edge of *H*.
