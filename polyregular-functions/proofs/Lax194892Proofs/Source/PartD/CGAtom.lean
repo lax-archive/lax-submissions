@@ -290,10 +290,11 @@ lemma midL_isRegular (M : Pebble A B Q k) (nid : Fin k) (qa : Q) (da : CG.Dir) (
 
 lemma edgeL_isRegular (M : Pebble A B Q k) (nid : Fin k) (qa : Q) (da : CG.Dir) (qb : Q)
     (db : CG.Dir) : (edgeL M nid qa da qb db).IsRegular := by
-  rw [edgeL]
-  split
-  · exact emptyL_isRegular
-  · exact isRegular_and (okL_isRegular _)
+  by_cases h : qa = qb ∧ da = db
+  · rw [show edgeL M nid qa da qb db = _ from if_pos h]
+    exact emptyL_isRegular
+  · rw [show edgeL M nid qa da qb db = _ from if_neg h]
+    exact isRegular_and (okL_isRegular _)
       (isRegular_and (okL_isRegular _)
         (isRegular_and (childL_isRegular _ _ _ _)
           (isRegular_and (reachL_isRegular _ _ _ _ _ _ _)

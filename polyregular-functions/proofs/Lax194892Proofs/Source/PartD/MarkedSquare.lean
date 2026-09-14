@@ -126,8 +126,7 @@ theorem continuous_markedSquare (A : Type) : Continuous (markedSquare A) := by
   haveI : Finite σ := Finite.of_fintype σ
   haveI : Fintype (((σ → σ) → (σ → σ)) × (σ → σ)) := Fintype.ofFinite _
   have hreg : ((msDFA D).accepts).IsRegular := ⟨_, inferInstance, msDFA D, rfl⟩
-  convert hreg.reverse using 1
-  ext w
+  refine RegAut.isRegular_of_eq hreg.reverse (fun w => ?_)
   have h := msState_fst D w [] D.start
   simp only [msAlpha_nil] at h
   show markedSquare A w ∈ D.accepts ↔ _

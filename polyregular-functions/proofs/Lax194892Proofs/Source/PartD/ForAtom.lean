@@ -70,30 +70,48 @@ lemma exec_iteAtom (w : List A) : ∀ (t : ForTest A) (P R : ForProg A B) (pos :
   | not t ih =>
       intro P R pos bv
       rw [iteAtom, ih]
-      simp only [ForTest.Holds]
       by_cases h : ForTest.Holds w pos bv t
-      · rw [if_pos h, if_neg (not_not_intro h)]
-      · rw [if_neg h, if_pos h]
+      · have hc : ¬ ForTest.Holds w pos bv (ForTest.not t) := not_not_intro h
+        rw [if_pos h, if_neg hc]
+      · have hc : ForTest.Holds w pos bv (ForTest.not t) := h
+        rw [if_neg h, if_pos hc]
   | and t s iht ihs =>
       intro P R pos bv
       rw [iteAtom, iht, ihs]
-      simp only [ForTest.Holds]
       by_cases h : ForTest.Holds w pos bv t
       · rw [if_pos h]
         by_cases h' : ForTest.Holds w pos bv s
-        · rw [if_pos h', if_pos ⟨h, h'⟩]
-        · rw [if_neg h', if_neg (fun hc => h' hc.2)]
-      · rw [if_neg h, if_neg (fun hc => h hc.1)]
+        · have hc : ForTest.Holds w pos bv (ForTest.and t s) := by
+            simp only [ForTest.Holds]
+            exact ⟨h, h'⟩
+          rw [if_pos h', if_pos hc]
+        · have hc : ¬ ForTest.Holds w pos bv (ForTest.and t s) := by
+            rintro ⟨-, h2⟩
+            exact h' h2
+          rw [if_neg h', if_neg hc]
+      · have hc : ¬ ForTest.Holds w pos bv (ForTest.and t s) := by
+          rintro ⟨h1, -⟩
+          exact h h1
+        rw [if_neg h, if_neg hc]
   | or t s iht ihs =>
       intro P R pos bv
       rw [iteAtom, iht, ihs]
-      simp only [ForTest.Holds]
       by_cases h : ForTest.Holds w pos bv t
-      · rw [if_pos h, if_pos (Or.inl h)]
+      · have hc : ForTest.Holds w pos bv (ForTest.or t s) := by
+          simp only [ForTest.Holds]
+          exact Or.inl h
+        rw [if_pos h, if_pos hc]
       · rw [if_neg h]
         by_cases h' : ForTest.Holds w pos bv s
-        · rw [if_pos h', if_pos (Or.inr h')]
-        · rw [if_neg h', if_neg (fun hc => hc.elim h h')]
+        · have hc : ForTest.Holds w pos bv (ForTest.or t s) := by
+            simp only [ForTest.Holds]
+            exact Or.inr h'
+          rw [if_pos h', if_pos hc]
+        · have hc : ¬ ForTest.Holds w pos bv (ForTest.or t s) := by
+            rintro (h1 | h2)
+            · exact h h1
+            · exact h' h2
+          rw [if_neg h', if_neg hc]
 
 lemma allAtomic_iteAtom : ∀ (t : ForTest A) (P R : ForProg A B), P.AllAtomic → R.AllAtomic →
     (iteAtom t P R).AllAtomic := by

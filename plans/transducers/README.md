@@ -39,9 +39,13 @@ pins and the Lean moved.
 1. Pins: `manifest.yaml` (`leanVersion`, `mathlibVersion`), both
    `lean-toolchain` files and both lakefiles' mathlib `rev` in all eight
    submissions, plus the rev in `tools/umbrella-pins.py`.
-2. Lean: proof packages only (`proofs/**`), the smallest change that
-   compiles at the new mathlib; no statement changed, no concept file
-   touched. The per-file list is the "v4.33.0 port" section of
+2. Lean: proof packages (`proofs/**`), the smallest change that compiles at
+   the new mathlib; no statement changed. One concept file changed, as its
+   own patch (`CONCEPT CHANGE` in the subject): `Sym8`'s finiteness
+   instance in `regular-combinators/concepts/Lax709149/Types.lean`, because
+   `deriving Fintype` on an enum fails at this mathlib pin — discussed with
+   Jan 2026-09-14. The per-file list, with the fourteen drift classes and
+   their fix patterns, is the "v4.33.0 port" section of
    `book-lax/CAMPAIGN.md`.
 3. Tools: `tools/local-overrides.py` seeds `lake-manifest.json` and
    `.lake/package-overrides.json` for every package (warm store + sibling
@@ -50,11 +54,19 @@ pins and the Lean moved.
 
 ## Building here
 
-    lax doctor --env v4.33.0                 # once: toolchain + warm store
-    .claude/sibling-overrides.sh             # or: python3 plans/transducers/book-lax/tools/local-overrides.py
-                                             # (that one expects the book's lax/ layout; see its docstring)
+    lax doctor --env v4.33.0                 # once: toolchain + warm store (~7.5 GB)
+    python3 plans/transducers/book-lax/tools/local-overrides.py .   # seeds all 16 packages
     export PATH=$HOME/.elan/toolchains/leanprover--lean4---v4.33.0/bin:$PATH LAKE_ARTIFACT_CACHE=false
     (cd mealy-machines/concepts && lake build) && (cd mealy-machines/proofs && lake build)
+
+Bottom-up order: `pcp-undecidability`, `mealy-machines`, `rational-functions`,
+`regular-functions`, `mso-transductions`, `regular-combinators`,
+`polyregular-functions`, `transducers-book`. `.claude/sibling-overrides.sh`
+works too once each package has been seeded once. Only `pcp-undecidability`
+and `mealy-machines` can go through `lax build` before the chain is
+resubmitted: every other part's requires name v4.30.0 records, which the
+resolution phase refuses ("only submissions in v4.33.0 can cite one
+another").
 
 ## Submitting (Jan): bottom-up, repin at every step
 

@@ -129,14 +129,25 @@ lemma exec_merge (w : List A) (zv lv pi : ℕ) (L₁ L₂ : List (Bool × ℕ)) 
         rw [hset t (pos zv) zv hzL, hz]
       have hl' : setTuple M t (Function.update pos pi (pos zv)) lv = pos lv := by
         rw [hset t (pos zv) lv hlL, hl]
-      simp only [hbody, mergeBody, ForProg.exec, ForTest.Holds]
+      simp only [hbody, mergeBody, ForProg.exec]
       by_cases hpin : ForTest.Holds w (setTuple M t (Function.update pos pi (pos zv))) s'
           (pinTest zv L₂ : ForTest A)
-      · rw [if_pos ⟨by rw [hpi', hz'], hpin⟩, if_pos hpin]
-      · rw [if_neg (fun h => hpin h.2), if_neg hpin, if_neg]
-        rintro ⟨h1, -⟩
-        rw [hpi', hl'] at h1
-        omega
+      · have hc : ForTest.Holds w (setTuple M t (Function.update pos pi (pos zv))) s'
+            (ForTest.and (ForTest.eqPos pi zv) (pinTest zv L₂)) := by
+          simp only [ForTest.Holds]
+          exact ⟨by rw [hpi', hz'], hpin⟩
+        rw [if_pos hc, if_pos hpin]
+      · have hc : ¬ ForTest.Holds w (setTuple M t (Function.update pos pi (pos zv))) s'
+            (ForTest.and (ForTest.eqPos pi zv) (pinTest zv L₂)) := by
+          rintro ⟨-, h2⟩
+          exact hpin h2
+        have hc2 : ¬ ForTest.Holds w (setTuple M t (Function.update pos pi (pos zv))) s'
+            (ForTest.and (ForTest.eqPos pi lv) (pinTest zv L₁)) := by
+          rintro ⟨h1, -⟩
+          simp only [ForTest.Holds] at h1
+          rw [hpi', hl'] at h1
+          omega
+        rw [if_neg hc, if_neg hpin, if_neg hc2]
     rw [hcongr, hM, nest_pin_inner w zv L₁ L₂ b₁ _ s (by rw [hz]; omega) hzL₁ hzL₂ hnd₂ hb₁]
     refine ForProg.exec_congr_pos w _ _ _ _ (fun i hi => ?_)
     rw [posVars_nestLoops] at hi
@@ -166,15 +177,26 @@ lemma exec_merge (w : List A) (zv lv pi : ℕ) (L₁ L₂ : List (Bool × ℕ)) 
         rw [hset t (pos lv) zv hzL, hz]
       have hl' : setTuple M t (Function.update pos pi (pos lv)) lv = pos lv := by
         rw [hset t (pos lv) lv hlL, hl]
-      simp only [hbody, mergeBody, ForProg.exec, ForTest.Holds]
-      rw [if_neg]
-      · by_cases hpin : ForTest.Holds w (setTuple M t (Function.update pos pi (pos lv))) s'
-            (pinTest zv L₁ : ForTest A)
-        · rw [if_pos ⟨by rw [hpi', hl'], hpin⟩, if_pos hpin]
-        · rw [if_neg (fun h => hpin h.2), if_neg hpin]
-      · rintro ⟨h1, -⟩
+      simp only [hbody, mergeBody, ForProg.exec]
+      have hne : ¬ ForTest.Holds w (setTuple M t (Function.update pos pi (pos lv))) s'
+          (ForTest.and (ForTest.eqPos pi zv) (pinTest zv L₂)) := by
+        rintro ⟨h1, -⟩
+        simp only [ForTest.Holds] at h1
         rw [hpi', hz'] at h1
         omega
+      rw [if_neg hne]
+      by_cases hpin : ForTest.Holds w (setTuple M t (Function.update pos pi (pos lv))) s'
+          (pinTest zv L₁ : ForTest A)
+      · have hc : ForTest.Holds w (setTuple M t (Function.update pos pi (pos lv))) s'
+            (ForTest.and (ForTest.eqPos pi lv) (pinTest zv L₁)) := by
+          simp only [ForTest.Holds]
+          exact ⟨by rw [hpi', hl'], hpin⟩
+        rw [if_pos hc, if_pos hpin]
+      · have hc : ¬ ForTest.Holds w (setTuple M t (Function.update pos pi (pos lv))) s'
+            (ForTest.and (ForTest.eqPos pi lv) (pinTest zv L₁)) := by
+          rintro ⟨-, h2⟩
+          exact hpin h2
+        rw [if_neg hc, if_neg hpin]
     rw [hcongr, hM, nest_pin_outer w zv L₁ L₂ b₂ _ s (by rw [hz]; omega) hzL₁ hzL₂ hnd₁ hb₂]
     refine ForProg.exec_congr_pos w _ _ _ _ (fun i hi => ?_)
     rw [posVars_nestLoops] at hi

@@ -658,8 +658,12 @@ theorem trFor_spec (zv lv k₀ : ℕ) (hzv : zv < k₀) (hlv : lv < k₀) (w : L
             = ForProg.exec w (ForProg.nestLoops L₁ b₁) pos s₀ := by
           refine nest_congr w L₁ c₁ b₁ pos s₀ (fun s => s (k + 1) = true) hs₀true
             (fun tt s hs => ?_) (fun tt s hs => ?_)
-          · simp only [hc₁, ForProg.exec, ForTest.Holds, if_pos hs]
-          · simp only [hc₁, ForProg.exec, ForTest.Holds, if_pos hs]
+          · have hs' : ForTest.Holds w (setTuple L₁ tt pos) s (ForTest.boolVar (k + 1)) := hs
+            simp only [hc₁, ForProg.exec]
+            rw [if_pos hs']
+          · have hs' : ForTest.Holds w (setTuple L₁ tt pos) s (ForTest.boolVar (k + 1)) := hs
+            simp only [hc₁, ForProg.exec]
+            rw [if_pos hs']
             exact (ForProg.exec_bv_unchanged w b₁ _ s hb₁bool).trans hs
         obtain ⟨e₁, e₂⟩ := ihP hPpos hPbool hzvP' hlvP' (k + 3) L₁ b₁ k₁ hr₁ (by omega) pos hpz hpl
           s₀ bv₂ hs₀bv

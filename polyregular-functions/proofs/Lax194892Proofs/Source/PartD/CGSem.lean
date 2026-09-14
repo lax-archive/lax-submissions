@@ -511,10 +511,9 @@ theorem mem_edgeL_iff (M : Pebble A B Q k) {nid : Fin k} {qa qb : Q} {da db : CG
       SpotOk (spotOfDir da) x w.length ∧ SpotOk (spotOfDir db) x w.length ∧
         CG.ChildStar M w st (ch 0) (qa, colOf x da) ∧
         CG.NextChild M w st (qa, colOf x da) (qb, colOf x db) := by
-  rw [edgeL]
-  split
-  · rename_i heq
-    obtain ⟨rfl, rfl⟩ := heq
+  by_cases hne : qa = qb ∧ da = db
+  · rw [show edgeL M nid qa da qb db = _ from if_pos hne]
+    obtain ⟨rfl, rfl⟩ := hne
     rw [mem_emptyL]
     constructor
     · exact False.elim
@@ -529,7 +528,7 @@ theorem mem_edgeL_iff (M : Pebble A B Q k) {nid : Fin k} {qa qb : Q} {da db : CG
       have h1 := hnc.unique (hseq.next t htm)
       have h2 := hseq.distinct t (t + 1) (by omega) (by omega) h1
       omega
-  · rename_i hne
+  · rw [show edgeL M nid qa da qb db = _ from if_neg hne]
     erw [Set.mem_setOf_eq]
     constructor
     · rintro ⟨ho1, ho2, hch, hre, hnm⟩

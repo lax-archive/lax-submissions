@@ -17,6 +17,7 @@ second case is the last copy of the group of copies that belong to the same tupl
 where the group is flushed into the output.
 -/
 import Lax194892Proofs.Source.PartD.PolyEnum
+import Mathlib.Data.Fintype.Sum
 open Lax765601Proofs Lax765601Proofs.Transducers
 open Lax132576Proofs Lax132576Proofs.Transducers
 open Lax916827Proofs Lax916827Proofs.Transducers
@@ -57,7 +58,9 @@ inductive Reg : Type
   | grp : Reg
   /-- The block currently being read. -/
   | cur : Reg
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype Reg := derive_fintype% _
 
 variable {A : Type} {k : ℕ}
 

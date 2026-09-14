@@ -231,11 +231,11 @@ lemma pin_inner (w : List A) (z : ℕ) (L : List (Bool × ℕ)) (body : ForProg 
                 (setTuple L t (Function.update pos x (pos z))) bv' := by
           intro t bv'
           rw [pinTest_cons]
-          simp only [ForProg.exec, ForTest.Holds]
+          simp only [ForProg.exec]
           have : setTuple L t (Function.update pos x (pos z)) x
               = setTuple L t (Function.update pos x (pos z)) z := by
             rw [hval t (pos z), hvalz t (pos z)]
-          exact if_congr (by simp [this]) rfl rfl
+          exact if_congr (by simp [ForTest.Holds, this]) rfl rfl
         rw [nest_congr w L _ (ForProg.ite (pinTest z L) body ForProg.skip) _ bv (fun _ => True)
           trivial (fun t bv' _ => hpin t bv') (fun _ _ _ => trivial)]
         rw [ih (Function.update pos x (pos z)) (by rwa [Function.update_of_ne hzx]) hzL' hndL
@@ -302,11 +302,11 @@ lemma pin_outer (w : List A) (z : ℕ) (L₁ L₂ : List (Bool × ℕ)) (body : 
                 (setTuple (L ++ L₂) t (Function.update pos x (pos z))) bv' := by
           intro t bv'
           rw [pinTest_cons]
-          simp only [ForProg.exec, ForTest.Holds]
+          simp only [ForProg.exec]
           have : setTuple (L ++ L₂) t (Function.update pos x (pos z)) x
               = setTuple (L ++ L₂) t (Function.update pos x (pos z)) z := by
             rw [hval t (pos z), hvalz t (pos z)]
-          exact if_congr (by simp [this]) rfl rfl
+          exact if_congr (by simp [ForTest.Holds, this]) rfl rfl
         rw [← nestLoops_append]
         rw [nest_congr w (L ++ L₂) _ (ForProg.ite (pinTest z L) body ForProg.skip) _ bv
           (fun _ => True) trivial (fun t bv' _ => hpin t bv') (fun _ _ _ => trivial)]

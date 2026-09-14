@@ -25,19 +25,18 @@ theorem continuous_of_isPebbleTransducer {A B : Type} [Finite A] [Finite B]
   obtain ⟨σ, hσ, D, rfl⟩ := hL
   haveI : Finite (Q × σ) := inferInstance
   have hreg := pebbleAut_answers_isRegular k (prodAut M D) (M.init, D.start) true
-  convert hreg using 1
-  ext w
+  refine RegAut.isRegular_of_eq hreg (fun w => ?_)
   constructor
   · intro hw
     have hacc : dfaAcc D (D.evalFrom D.start (f w)) = true := by
       rw [dfaAcc_eq_true]
-      simpa [DFA.mem_accepts, DFA.eval] using hw
+      exact hw
     have h := prodAut_answers_of_reaches M D (hM w) rfl D.start
     rw [hacc] at h
     exact h
   · rintro ⟨n, hn⟩
     obtain ⟨v, hv, hb⟩ := prodAut_reaches_of_answers M D n M.init [] D.start true hn
     obtain rfl : v = f w := Pebble.computes_unique hv (hM w)
-    simpa [DFA.mem_accepts, DFA.eval] using dfaAcc_eq_true.1 hb.symm
+    exact dfaAcc_eq_true.1 hb.symm
 
 end Lax194892Proofs.Transducers

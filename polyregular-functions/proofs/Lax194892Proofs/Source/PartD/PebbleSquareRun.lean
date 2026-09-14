@@ -541,7 +541,7 @@ lemma sim_push_nil {q q' : Q} (hk : 1 ≤ k)
   have hstep : (sim M).stepCfg (sqOf w) (encCfg w (PebbleCfg.conf q ([] : List ℕ)))
       = some ([], PebbleCfg.conf (q', false, ((none : Option A), (none : Option A)), Ph.mR)
         (([] : List ℕ) ++ [0])) := by
-    refine stepCfg_push' ?_ (by simpa using hk)
+    refine stepCfg_push' ?_ (by simp only [encStack, List.length_nil]; omega)
     rw [sim_step_eq (by simp) hact]
     rfl
   have hmark : IsMark (w.length + 2) 1 := by

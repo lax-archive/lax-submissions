@@ -75,9 +75,15 @@ of Part B uses the Mealy API of Part A). A require pins `(git, rev, subDir)` of
 the dependency's **current archive record** (`lax sync`; `~/.lax/lax-database/lax-N/record.json`),
 so a dependency is submitted as a draft before a dependent pins it, and every
 re-submission of a dependency means repinning and resubmitting the dependents.
-For the local loop, `~/git/lax-submissions/.claude/sibling-overrides.sh` shows
-how to redirect pins to sibling folders with Lake package overrides; adapt it
-here when the chain is long enough to hurt.
+For the local loop, `python3 tools/local-overrides.py` (from `lax/`) seeds
+every package's `lake-manifest.json` and `.lake/package-overrides.json` so a
+direct `lake build` reads the sibling folders and the warm store, before the
+pins are on the archive (adapted from lax-submissions'
+`sibling-overrides.sh`; rerun after any `lax build`, which rewrites both
+files from the pins alone). After a dependency is resubmitted, `lax sync`
+then `python3 tools/repin.py <folder>...` repins the dependents' requires to
+the current records; the umbrella regenerates its lakefiles with
+`tools/umbrella-pins.py`.
 
 ## Gotchas met so far
 
@@ -112,6 +118,13 @@ here when the chain is long enough to hurt.
   them through the overrides.
 - Disk is tight on this machine (~10 GB). Build one submission at a time;
   `.lake/build` of a full part is 1–3 GB.
+- The v4.33.0 port (2026-09-14) met twelve further drift classes — tactic
+  targets checked at `implicit` transparency (`simp`/`rw` bail at
+  `def`-wrapped types; `simpa` stricter than `exact`), `Aux` a forbidden
+  module name, set-builders at a `Language` position refused by `rw`,
+  `deriving Fintype` on an enum broken at the pin (`derive_fintype% _`
+  instead), relation-valued `TransGen.mono`, `[Std.Symm R]` — each with its
+  fix pattern and example sites in CAMPAIGN.md, "v4.33.0 port".
 
 ## Working rhythm
 

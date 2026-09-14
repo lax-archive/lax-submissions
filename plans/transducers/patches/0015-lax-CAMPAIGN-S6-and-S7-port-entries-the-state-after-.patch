@@ -1,0 +1,60 @@
+From 1aca613c5da188bc983cd7e64e7def5863c2e167 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 08:24:56 +0000
+Subject: [PATCH 15/16] lax/CAMPAIGN: S6 and S7 port entries, the state after
+ the port
+
+---
+ lax/CAMPAIGN.md | 29 ++++++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
+
+diff --git a/lax/CAMPAIGN.md b/lax/CAMPAIGN.md
+index 20ce6f7..64c5df8 100644
+--- a/lax/CAMPAIGN.md
++++ b/lax/CAMPAIGN.md
+@@ -3,7 +3,7 @@
+ Opened 2026-09-07. One row per submission; the *next leaf* column is what the
+ next session or subagent picks up. Keep this file short and current.
+ 
+-| id | folder | concepts | proofs | state (2026-09-07, 23:00) | next leaf |
++| id | folder | concepts | proofs | state (2026-09-07, 23:00; v4.33.0 port green locally 2026-09-14, see below) | next leaf |
+ |---|---|---|---|---|---|
+ | lax-251941 | `pcp-undecidability` | 9 | 6, all discharged | **draft on the archive with content** (9680c6e), replay green | none |
+ | lax-765601 | `mealy-machines` | 22 | 13, all discharged | **draft on the archive with content** (cf8ade7), replay green | none |
+@@ -158,6 +158,33 @@ longer bridges `id` and `fun x => x` without `Function.id_def`.
+   `CombAtomCons.lean:277,281,393` `rfl` appended, `:412-413,431-432` a
+   `show` exposing `A.repr a` so `hcw` fires (the "unused simp argument"
+   hint is the tell).
++- S6 (`polyregular-functions`, 12 files, all `Source/PartD/`; concepts
++  untouched; every v4.30 workaround still needed): (ix) `PolyStep.lean:19,
++  60-63` (`Reg`); (v) `MarkedSquare.lean:129-130`, `PebbleReg.lean:28-29`
++  `isRegular_of_eq`; (viii) `CGAtom.lean:293-296`, `CGSem.lean:514-516,531`
++  `rw [edgeL]; split` → `by_cases` + `rw [show edgeL … = _ from if_pos h]`;
++  (iv) `PebbleReg.lean:33,40` `exact` (membership defeq through the
++  set-builder), `PebbleSquareRun.lean:544` `simp only [encStack,
++  List.length_nil]; omega`; new class (xiii): `simp only [ForTest.Holds]`
++  unfolds an `ite` condition but leaves its `Classical.propDecidable`
++  instance keyed to the folded `Holds`, so a later `if_pos`/`if_neg`/
++  `if_congr` synthesizes a different instance and fails — keep `Holds`
++  folded in the `simp only` and give the condition proof its folded type in
++  a `have` (`ForNest.lean:234,238,305,309`, `ForMerge.lean:132-139,169-177`,
++  `ForAtom.lean:70-96`, `ForPrenex.lean:661-663`, `ForPrenexTop.lean:153`);
++  (xiv) `decide_eq_decide` no longer fires as a `simp only` rewrite at one
++  site, `PebbleSquareDef.lean:285-286` `refine decide_eq_decide.mpr ?_`
++  (`:212` still works — position-dependent).
++- S7 (`transducers-book`): pins only; both root modules build (`3 jobs`);
++  the paper is untouched (no TeX on the porting machine, the archive
++  compiles it). `tools/umbrella-pins.py` carries the new mathlib rev and
++  regenerates the requires from the records once the seven parts are
++  resubmitted.
++
++State after the port (2026-09-14): every package of the eight submissions
++builds at v4.33.0 through the local loop; replay was not run locally except
++where noted; nothing is submitted — the archive records are still the
++v4.30.0 drafts of the table above until the bottom-up resubmission.
+ 
+ ## Source edits (against the epoch mathlib)
+ 
+-- 
+2.43.0
+

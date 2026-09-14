@@ -1,7 +1,7 @@
 From 8d93118716bcd095a45103680bab56a0ea37e83b Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 06:31:01 +0000
-Subject: [PATCH 01/12] lax: pin the eight submissions to the v4.33.0 epoch
+Subject: [PATCH 01/16] lax: pin the eight submissions to the v4.33.0 epoch
  (mathlib db584cd)
 
 ---

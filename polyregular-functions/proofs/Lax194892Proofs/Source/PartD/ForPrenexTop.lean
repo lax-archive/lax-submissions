@@ -150,7 +150,9 @@ lemma shortSim_spec (G : ℕ) (w : List A) (hn : w.length ≤ 1) (pos : ℕ → 
           intro h
           have := hs.mp h
           omega
-        simp only [shortSim, ForProg.exec, ForTest.Holds, if_neg hsG, hrange, forLoopRun]
+        have hsG' : ¬ ForTest.Holds w pos s (ForTest.boolVar G) := hsG
+        simp only [shortSim, ForProg.exec, hrange, forLoopRun]
+        rw [if_neg hsG']
 
 /-! ## Tuples of an input of length one -/
 

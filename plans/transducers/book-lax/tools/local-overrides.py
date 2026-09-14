@@ -3,7 +3,7 @@
 folders and the machine-wide warm mathlib store — the fast local loop while
 the cross-submission pins are not yet on the archive.
 
-    python3 tools/local-overrides.py            # from lax/
+    python3 tools/local-overrides.py [root]     # from lax/; root defaults to lax/
 
 For each `lax/<submission>/{concepts,proofs}` it writes the two gitignored
 files `lax build` would write, adapted to the working tree:
@@ -29,7 +29,8 @@ submission's manifest.yaml (leanVersion, mathlibVersion).
 """
 import json, os, re, sys
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # lax/
+ROOT = (os.path.abspath(sys.argv[1]) if len(sys.argv) > 1
+        else os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # lax/
 WARM_BASE = os.path.expanduser("~/.lax/warm")
 MANIFEST_VERSION = "1.2.0"
 PACKAGES_DIR = ".lake/packages"

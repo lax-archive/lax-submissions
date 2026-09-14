@@ -282,7 +282,8 @@ lemma decView_encStack {w : List A} {st : List ℕ}
           refine List.cons_eq_cons.mpr ⟨by simp [eq_comm], ?_⟩
           refine List.map_congr_left ?_
           intro q _
-          simp only [decide_eq_decide, gp]
+          refine decide_eq_decide.mpr ?_
+          simp only [gp]
           omega
 
 /-- The view of the encoded stack decodes to the view of the stack, in the form in which the

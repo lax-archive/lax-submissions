@@ -1,7 +1,7 @@
 From 3689bb3b2e0dcbea80896e4c7a35c70c17135fb0 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 08:10:12 +0000
-Subject: [PATCH 12/12] =?UTF-8?q?lax/regular-combinators:=20CONCEPT=20CHAN?=
+Subject: [PATCH 12/16] =?UTF-8?q?lax/regular-combinators:=20CONCEPT=20CHAN?=
  =?UTF-8?q?GE=20=E2=80=94=20Sym8's=20Fintype=20instance=20via=20derive=5Ff?=
  =?UTF-8?q?intype%?=
 MIME-Version: 1.0
