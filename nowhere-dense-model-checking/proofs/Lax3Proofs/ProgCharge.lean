@@ -1137,9 +1137,12 @@ theorem mcChargeMS_chargeTotal_le (S : Setup L)
         * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ)) := by
   have hcopy : (rootArena (L := L) G col).G ⊑ G := ⟨SimpleGraph.Copy.id G⟩
   have hWr : 1 ≤ weight (rootArena (L := L) G col) := hW
-  have hdrv := driverChargeMS_chargeTotal_le S ord ℓp htabF covC hc hf hδ
-    hcov hdeg S.depth 0 (by omega) (rootArena G col) hcopy hWr
-  rw [Headline.weight_rootArena] at hdrv
+  have hdrv : (chargeTotal (driverChargeMS S ord ℓp htabF covC S.depth 0
+        (rootArena G col)) : ℝ)
+      ≤ KP S ℓp c f ^ (S.depth + 1)
+        * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ)) :=
+    driverChargeMS_chargeTotal_le S ord ℓp htabF covC hc hf hδ
+      hcov hdeg S.depth 0 (by omega) (rootArena G col) hcopy hWr
   have htot : chargeTotal (mcChargeMS S ord ℓp htabF covC G col)
       = chargeTotal (driverChargeMS S ord ℓp htabF covC S.depth 0 (rootArena G col))
         + topScatterCost S G col (tables S ord 0 (rootArena G col)) := by
