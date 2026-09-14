@@ -403,7 +403,9 @@ lemma isRegular_hasSep : (hasSep A).IsRegular := by
         cases x <;> simp
   ext u
   simp only [DFA.mem_accepts, DFA.eval, DFA.evalFrom, Set.mem_singleton_iff, hasSep]
-  simpa using key false u
+  have h := key false u
+  simp only [Bool.false_eq_true, false_or] at h
+  exact h
 
 /-- The pipeline computing `pairMap f` on the inputs that use the separator. -/
 noncomputable def pipeline (f : List (Option A) → List B) (u : List (Option A)) : List B :=

@@ -97,7 +97,11 @@ lemma eq_nil_of_not_nonempty (hB : ¬ Nonempty B) (l : List B) : l = [] := by
 /-- The states of the automaton separating the two copies produced by map
 duplicate. -/
 inductive Cm | m0 | m1 | m2
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- `deriving Fintype` is broken for enum types at this mathlib pin; the
+-- `derive_fintype%` (proxy-type) path works.
+instance : Fintype Cm := derive_fintype% _
 
 /-- Its transition function. -/
 def cmStep : Cm → Option (Option A) → Cm

@@ -67,7 +67,12 @@ lemma botStr_ne_mkR (u : List B₂) : botStr B₁ B₂ ≠ mkR B₁ u := by
 
 /-- The states of the automaton recognising the marked strings. -/
 inductive Shp | start | inL | inR | bad
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
+-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
+-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
+instance : Fintype Shp := derive_fintype% _
 
 /-- The transition function of the automaton recognising the marked strings. -/
 def shpStep {A₁ A₂ : Type} : Shp → (Bool ⊕ A₁ ⊕ A₂) → Shp
@@ -398,12 +403,11 @@ def decL (A₂ : Type) {A₁ : Type} : List (Bool ⊕ A₁ ⊕ A₂) → List A�
 
 lemma decL_mkL (u : List A₁) : decL A₂ (mkL A₂ u) = u := by
   have key : ∀ u : List A₁,
-      homOf (fun x : Bool ⊕ A₁ ⊕ A₂ => match x with | Sum.inr (Sum.inl a) => [a] | _ => [])
-        (u.map (fun a => Sum.inr (Sum.inl a))) = u := by
+      decL A₂ (u.map (fun a => Sum.inr (Sum.inl a) : A₁ → Bool ⊕ A₁ ⊕ A₂)) = u := by
     intro u
     induction u with
     | nil => rfl
-    | cons a u ih => simpa [homOf] using ih
+    | cons a u ih => simpa [decL, homOf] using ih
   simpa [decL, mkL, homOf] using key u
 
 /-- The homomorphism that keeps the marker and the letters of the second

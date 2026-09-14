@@ -106,9 +106,7 @@ lemma isRegular_valid (A : Type) (k l : ℕ) :
   have h := isRegular_forall_list
     (fun i : Fin k => {u : List (Ann A k l) | MarksOnce (foBit (A := A) (l := l) i) u})
     (List.finRange k) (fun i _ => isRegular_marksOnce _)
-  convert h using 1
-  ext u
-  simp only [List.mem_finRange, Valid]
+  refine isRegular_of_eq h (fun u => ?_)
   constructor
   · intro hu i _; exact hu i
   · intro hu i; exact hu i (by simp)

@@ -73,7 +73,7 @@ lemma computes_of_sim' (R : Cfg A S → Cfg B P → Prop)
     (hN : N.Computes v out) : aut.Computes w out := by
   obtain ⟨Y, hY, hRY⟩ := sim_reaches R H hN _ hinit
   rw [hhalt Y hRY] at hY
-  simpa using hpre.trans hY
+  simpa [TwoWay.Computes] using hpre.trans hY
 
 end Sim
 
@@ -294,7 +294,7 @@ theorem appAut_computes {g : List B → List C} (hN : ∀ v, N.Computes v (g v))
   · have h1 : (appAut N c₀ out₀).stepCfg (Cfg.conf [] (appAut N c₀ out₀).init []) =
         some (out₀, Cfg.halt) := by
       refine TwoWay.stepCfg_halt_eq _ ?_
-      simpa using appAut_empty (out₀ := out₀) N.init false
+      simpa [appAut] using appAut_empty (out₀ := out₀) N.init false
     simpa [TwoWay.Computes, hout] using TwoWay.reaches_one h1
   · refine TwoWay.computes_of_sim (appRel c₀ (w'.concat a))
       (appAut_step (N := N) (out₀ := out₀) (by simp)) ?_ ?_ (hN _)

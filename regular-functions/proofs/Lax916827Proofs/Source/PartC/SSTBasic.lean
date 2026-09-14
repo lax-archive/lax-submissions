@@ -59,9 +59,9 @@ lemma copyless_iff {X B : Type} [Fintype X] (u : X → List (X ⊕ B)) :
     refine ⟨fun x => h1 _ (List.mem_map_of_mem (by simp)), ?_⟩
     intro x x' hxx' y hy hy'
     rw [List.pairwise_map] at h2
-    have hsymm : Symmetric (fun a b : X => List.Disjoint (regsOf (u a)) (regsOf (u b))) :=
-      fun a b hab => hab.symm
-    exact (h2.forall hsymm (by simp) (by simp) hxx') hy hy'
+    haveI hsymm : Std.Symm (fun a b : X => List.Disjoint (regsOf (u a)) (regsOf (u b))) :=
+      ⟨fun _ _ hab => hab.symm⟩
+    exact (h2.forall (by simp) (by simp) hxx') hy hy'
   · rintro ⟨h1, h2⟩
     refine ⟨?_, ?_⟩
     · intro l hl

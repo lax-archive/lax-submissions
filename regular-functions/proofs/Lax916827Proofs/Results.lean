@@ -238,8 +238,7 @@ theorem isRegular_encOutputLang {A B Q : Type} [Finite A] [Finite Q] (M : TwoWay
   have h := Transducers.twoWay_encOutputLang_isRegular (toSrcTW M)
     (fun w => (computes_toSrc M w _).1 (hM w)) hL
   have h2 := isRegular_map (cletToSrc M) h
-  convert h2 using 1
-  ext u
+  refine Transducers.RegAut.isRegular_of_eq h2 (fun u => ?_)
   change ((∃ w, u = TwoWay.enc M w) ∧ ∃ v, (TwoWay.pathTrans M).Computes u v ∧ v ∈ L) ↔
     ((∃ w, u.map (cletToSrc M) = Transducers.TwoWay.enc (toSrcTW M) w) ∧
       ∃ v, (Transducers.TwoWay.pathTrans (toSrcTW M)).Computes (u.map (cletToSrc M)) v ∧ v ∈ L)

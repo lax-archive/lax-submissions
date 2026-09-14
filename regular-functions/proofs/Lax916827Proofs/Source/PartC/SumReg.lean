@@ -71,7 +71,11 @@ variable {A₁ A₂ B₁ B₂ : Type}
 /-- The states of the automaton testing that a string is nonempty and uses only
 letters of the second alphabet. -/
 inductive PreSt | init | good | bad
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- `deriving Fintype` is broken for enum types at this mathlib pin; the
+-- `derive_fintype%` (proxy-type) path works.
+instance : Fintype PreSt := derive_fintype% _
 
 /-- The transition function of that automaton. -/
 def preStep : PreSt → (A₁ ⊕ A₂) → PreSt

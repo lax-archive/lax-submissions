@@ -274,7 +274,7 @@ theorem precomp_computes
       aut.Reaches (Cfg.conf u (pnd p (gapSt M u)) v) o c)
     {w : List A} {out : List C} (h : N.Computes (M.eval w) out) : aut.Computes w out := by
   have h' : N.Reaches (simCfg M [] w N.init) out Cfg.halt := by
-    simpa [simCfg, Mealy.eval] using h
+    simpa [simCfg, Mealy.eval, TwoWay.Computes] using h
   have := precomp_sim hnrm hpnd h' [] w N.init rfl rfl
   simpa [TwoWay.Computes, hinit] using this
 
@@ -494,7 +494,11 @@ inductive PMode : Type
   | scanL : PMode
   /-- Returning to the place where the scan started. -/
   | scanR : PMode
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- `deriving Fintype` is broken for enum types at this mathlib pin; the
+-- `derive_fintype%` (proxy-type) path works.
+instance : Fintype PMode := derive_fintype% _
 
 section FlipFlop
 

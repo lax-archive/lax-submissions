@@ -224,7 +224,7 @@ lemma reaches_outAut {w : List A} {c t : Cfg A Q} {out : List B} (hreach : M.Rea
   induction hreach with
   | refl c =>
       rintro rfl _ d
-      exact ⟨0, by simp [cfgPos]⟩
+      exact ⟨0, by simp [cfgPos] <;> rfl⟩
   | @step c c' c'' o o' hstep _ ih =>
       rintro rfl hw d
       obtain ⟨u, q, v, rfl⟩ := exists_conf_of_stepCfg M hstep

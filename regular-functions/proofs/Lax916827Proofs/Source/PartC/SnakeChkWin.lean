@@ -107,25 +107,24 @@ lemma isRegular_winCond (M : TwoWay A B Q) (k : ℕ) (p : PieceParam A Q) :
   obtain ⟨d1, d2, d3, d4⟩ := p
   rcases d4 with _ | ⟨q, f⟩
   · exact RegAut.isRegular_univ
-  · show Language.IsRegular (if d1 = 1 then _ else if d1 = 2 then _ else if d1 = 3 then _
-      else if d1 = 4 then _ else Set.univ)
-    by_cases h1 : d1 = 1
-    · rw [if_pos h1]
+  · by_cases h1 : d1 = 1
+    · rw [show WinCond M k (d1, d2, d3, some (q, f)) = _ from if_pos h1]
       exact RegAut.isRegular_and (isRegular_endLang _ _) (isRegular_haltWidthLang _ _)
-    · rw [if_neg h1]
-      by_cases h2 : d1 = 2
-      · rw [if_pos h2]
+    · by_cases h2 : d1 = 2
+      · rw [show WinCond M k (d1, d2, d3, some (q, f)) = _ from
+          (if_neg h1).trans (if_pos h2)]
         exact isRegular_reverseSet
           (RegAut.isRegular_and (isRegular_endLang _ _) (isRegular_haltWidthLang _ _))
-      · rw [if_neg h2]
-        by_cases h3 : d1 = 3
-        · rw [if_pos h3]
+      · by_cases h3 : d1 = 3
+        · rw [show WinCond M k (d1, d2, d3, some (q, f)) = _ from
+            ((if_neg h1).trans (if_neg h2)).trans (if_pos h3)]
           exact isRegular_haltWidthLang _ _
-        · rw [if_neg h3]
-          by_cases h4 : d1 = 4
-          · rw [if_pos h4]
+        · by_cases h4 : d1 = 4
+          · rw [show WinCond M k (d1, d2, d3, some (q, f)) = _ from
+              (((if_neg h1).trans (if_neg h2)).trans (if_neg h3)).trans (if_pos h4)]
             exact isRegular_reverseSet (isRegular_haltWidthLang _ _)
-          · rw [if_neg h4]
+          · rw [show WinCond M k (d1, d2, d3, some (q, f)) = (Set.univ : Language A) from
+              (((if_neg h1).trans (if_neg h2)).trans (if_neg h3)).trans (if_neg h4)]
             exact RegAut.isRegular_univ
 
 end Regular

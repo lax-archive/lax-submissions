@@ -1,0 +1,58 @@
+From f88845aed59b5b7418f9f59a692db6648006c8f9 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 07:34:26 +0000
+Subject: [PATCH 7/7] lax/CAMPAIGN: S2 and S3 port entries
+
+---
+ lax/CAMPAIGN.md | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/lax/CAMPAIGN.md b/lax/CAMPAIGN.md
+index 7da7d75..3cd6799 100644
+--- a/lax/CAMPAIGN.md
++++ b/lax/CAMPAIGN.md
+@@ -77,6 +77,41 @@ longer bridges `id` and `fun x => x` without `Function.id_def`.
+   `List.length_map` instantiated by hand as `have`s over the `def`-wrapped
+   `InA c`/`OutA c` (drift i), `:286` `(by simpa using h2)` → `h2`, `:340`
+   `simp only [Subtype.coe_eta]` → `rfl`.
++- S3 (`regular-functions`, 23 files; concepts untouched; every v4.30
++  workaround still needed): new drift classes (viii) `Set` is
++  `Set.ofPred`-based and `Language` a `def` over it, so a set-builder at a
++  `Language` position is type-incorrect at `implicit` transparency —
++  `rw`/`kabstract` refuse the target, `simp only [if_pos h]` does not fire,
++  `convert h using 1` on two `IsRegular`s leaves an `Iff` and the following
++  `ext` fails; fixes: the term itself / `.mpr`, `isRegular_of_eq h (fun u =>
++  ?_)` for `convert … using 1; ext u`, `set L : Language α := …` *before*
++  the `rw`, `rw [show <def application> = _ from if_pos h]` (chain
++  `if_neg`s with `.trans`) for an `ite` body at `Language`; (ix) `deriving
++  Fintype` on an enum (all constructors nullary) is a hard error at this
++  mathlib pin (its `mkFintypeEnum` emits a `rw` that is type-incorrect at
++  `implicit` transparency; reproduced against bare mathlib) — `deriving
++  DecidableEq` kept, `instance : Fintype T := derive_fintype% _` (the
++  proxy-type path) added; (x) `Relation.TransGen.mono` is relation-valued
++  (`TransGen.mono h _ _ hR`); (xi) `List.Pairwise.forall` takes
++  `[Std.Symm R]`, not `Symmetric R`; (xii) an `X = X` that `simp` leaves is
++  two `Classical.propDecidable` arguments inside `decide` (`<;> rfl`), and
++  "has type X but is expected X" with identical printing is two matcher
++  auxiliaries (restate the local `have` through the named `def`). Sites:
++  (viii) `Source/PartC/RegAut.lean:49-57,75-81`, `ContAux.lean:21,61,
++  133-138,247-249`, `TwoDFA.lean:557`, `MSOAnnot.lean:109`,
++  `SnakeChkWin.lean:110-127`, `Results.lean:241`; (ix) `SumShape.lean:70-75`
++  (`Shp`), `SumReg.lean:74-78` (`PreSt`), `RegClosure.lean:100-104` (`Cm`),
++  `TwoWayErase.lean:128-132` (`EMode`), `TwoWayPrecomp.lean:497-501`
++  (`PMode`); (iv) `simpa` given the `def`s it used to unfold —
++  `TwoWay.Computes` at `TwoWayHom.lean:76`, `TwoWayComp.lean:929`,
++  `TwoWayPrecomp.lean:277`, `RegCodeSan.lean:198,205`; `ValidFrom` at
++  `ConfGraphAnnot.lean:107,110`; `excC` at `SnakePieceIdent.lean:600,631`,
++  `SnakeChkSlot.lean:156,165`; `encR` at `SumPrime.lean:275`; `appAut` at
++  `TwoWayHom.lean:297`; `bstep` at `ContAux.lean:165`; `Nat.add_assoc` at
++  `SnakeWinRun.lean:510,539`; `SumShape.lean:406-410` (xii, `decL`),
++  `RegPair.lean:406-408` (`simp only … at h; exact h`),
++  `TwoWayCont.lean:227` (xii, `<;> rfl`); (x) `SnakeAlphCyc.lean:158,269,
++  295`; (xi) `SSTBasic.lean:62-64`.
+ 
+ ## Source edits (against the epoch mathlib)
+ 
+-- 
+2.43.0
+

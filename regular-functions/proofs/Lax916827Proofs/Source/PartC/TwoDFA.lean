@@ -554,7 +554,7 @@ regular language. -/
 theorem accepts_isRegular [Finite A] [Finite R] (N : TwoDFA A R) :
     Language.IsRegular {w : List A | N.Accepts w} := by
   classical
-  rw [Language.isRegular_iff_finite_range_leftQuotient]
+  refine Language.isRegular_iff_finite_range_leftQuotient.mpr ?_
   refine finite_range_of_factors _ N.prof (Set.toFinite _) ?_
   intro x x' hxx'
   ext y

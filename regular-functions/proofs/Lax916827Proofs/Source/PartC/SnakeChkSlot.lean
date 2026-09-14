@@ -153,7 +153,7 @@ theorem exists_crossOK_exc (hT : cfgAt M w T = some Cfg.halt) (hwidth : WidthLe 
     (fun t h1 h2 => ⟨traj M w t, posAt_traj hT (by omega), hrange t h1 (by omega)⟩)
     (fun t h1 h2 hcon => by
       rw [posAt_traj hT (by omega)] at hcon
-      exact Walk.excSplit_first hab h1 h2 (by simpa using hcon))
+      exact Walk.excSplit_first hab h1 h2 (by simpa [excC] using hcon))
     hhalves.1
   obtain ⟨p₂, hp₂⟩ := exists_crossOK M w hsb hposS hposB
     (fun t h1 h2 => ⟨traj M w t, posAt_traj hT (by omega), by
@@ -162,7 +162,7 @@ theorem exists_crossOK_exc (hT : cfgAt M w T = some Cfg.halt) (hwidth : WidthLe 
     (fun t h1 h2 hcon => by
       rw [posAt_traj hT (by omega)] at hcon
       have hne : excT M w i j < t := by omega
-      exact hmid t hne h2 (by simpa using hcon))
+      exact hmid t hne h2 (by simpa [excC] using hcon))
     hhalves.2
   rw [min_comm (excC M w i j), max_comm (excC M w i j)] at hp₂
   exact ⟨p₁, p₂, hp₁, hp₂⟩

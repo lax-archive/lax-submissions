@@ -507,7 +507,7 @@ theorem exists_outRange_kind_three {x y a k : ℕ} (hxy : x ≤ y) {q : Q}
     · have hr := runOut_lastPiece hp
       rw [hw] at hr
       rw [pieceOut_kind_three, widthOut, if_pos hwidth]
-      simpa using hr.symm
+      simpa [Nat.add_assoc] using hr.symm
 
 /-- **A piece of kind `4`**: the last piece of the run, entered at the right end
 of the window, out of which the run does not leave. -/
@@ -536,7 +536,7 @@ theorem exists_outRange_kind_four {x y a k : ℕ} (hxy : x ≤ y) {q : Q}
     · have hr := runOut_lastPieceRev hp
       rw [hw] at hr
       rw [pieceOut_kind_four, widthOut, if_pos hwidth]
-      simpa using hr.symm
+      simpa [Nat.add_assoc] using hr.symm
 
 end TwoWay
 

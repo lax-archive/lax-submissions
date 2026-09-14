@@ -195,14 +195,14 @@ theorem twoWayCodeRel_map {c : TwoWayCode} {σ : ℕ → ℕ} (hσ : Blind c σ)
   constructor
   · intro h
     have h' : (twoWayCodeAut c).Reaches (mapCfg σ (Cfg.conf [] (twoWayCodeAut c).init w)) v
-        Cfg.halt := by simpa [mapCfg] using h
+        Cfg.halt := by simpa [mapCfg, twoWayCodeRel, TwoWay.Computes] using h
     obtain ⟨y, hy, hreach⟩ := reaches_of_reaches_mapCfg hσ h'
     have hyh : y = Cfg.halt := eq_halt_of_mapCfg_eq_halt hy.symm
     subst hyh
     exact hreach
   · intro h
     have := reaches_mapCfg_of_reaches (σ := σ) hσ h
-    simpa [mapCfg] using this
+    simpa [mapCfg, twoWayCodeRel, TwoWay.Computes] using this
 
 /-! ## A letter outside a finite set -/
 

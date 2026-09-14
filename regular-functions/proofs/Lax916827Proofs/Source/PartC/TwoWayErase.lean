@@ -125,7 +125,11 @@ inductive EMode
   | scanL
   | phase1
   | phase2
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- `deriving Fintype` is broken for enum types at this mathlib pin; the
+-- `derive_fintype%` (proxy-type) path works.
+instance : Fintype EMode := derive_fintype% _
 
 variable (N : TwoWay B C P) (e : A → Option B)
 

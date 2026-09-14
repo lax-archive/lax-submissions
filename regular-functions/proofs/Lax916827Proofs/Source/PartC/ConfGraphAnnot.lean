@@ -104,10 +104,10 @@ lemma validFrom_iff (p : Option (AnnLet A S)) (z : List (AnnLet A S)) :
       · intro h i hi
         have : i = 0 := by simpa using hi
         subst this
-        simpa using h
+        simpa [ValidFrom] using h
       · intro h
         have := h 0 (by omega)
-        simpa using this
+        simpa [ValidFrom] using this
   | cons c rest ih =>
       have hidx : ∀ k : ℕ,
           ((c :: rest)[k]? : Option (AnnLet A S)) = if k = 0 then some c else rest[k - 1]? := by

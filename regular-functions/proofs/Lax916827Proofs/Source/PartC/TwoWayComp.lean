@@ -926,7 +926,7 @@ theorem compAut_computes (hD : D.accepts = {z | (visitAut M).Accepts z})
         · exact absurd hc (by simp)
       subst hYhalt
       have hpre := pre_reaches D M N b₀ (g (f [])) (m := m) hznil hv
-      simpa using hpre.trans hY
+      simpa [TwoWay.Computes] using hpre.trans hY
     · rw [compFun, if_neg hv]
       exact scanR_halts D M N b₀ (g (f [])) hznil hv
 

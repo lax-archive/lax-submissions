@@ -47,18 +47,15 @@ lemma isRegular_univ : Language.IsRegular (Set.univ : Language Γ) := by
   simpa using this
 
 lemma isRegular_and {L₁ L₂ : Language Γ} (h₁ : L₁.IsRegular) (h₂ : L₂.IsRegular) :
-    Language.IsRegular {u | u ∈ L₁ ∧ u ∈ L₂} := by
-  have := h₁.inf h₂
-  convert this using 1
+    Language.IsRegular {u | u ∈ L₁ ∧ u ∈ L₂} :=
+  h₁.inf h₂
 
 lemma isRegular_or {L₁ L₂ : Language Γ} (h₁ : L₁.IsRegular) (h₂ : L₂.IsRegular) :
-    Language.IsRegular {u | u ∈ L₁ ∨ u ∈ L₂} := by
-  have := h₁.add h₂
-  convert this using 1
+    Language.IsRegular {u | u ∈ L₁ ∨ u ∈ L₂} :=
+  h₁.add h₂
 
-lemma isRegular_not {L : Language Γ} (h : L.IsRegular) : Language.IsRegular {u | u ∉ L} := by
-  have := h.compl
-  convert this using 1
+lemma isRegular_not {L : Language Γ} (h : L.IsRegular) : Language.IsRegular {u | u ∉ L} :=
+  h.compl
 
 /-- Regularity is transported along an equality of languages. -/
 lemma isRegular_of_eq {L₁ L₂ : Language Γ} (h : L₁.IsRegular) (he : ∀ u, u ∈ L₂ ↔ u ∈ L₁) :
@@ -75,13 +72,11 @@ lemma isRegular_forall_list {ι : Type} (L : ι → Language Γ) :
   | x :: l, h => by
       have hx : (L x).IsRegular := h x (by simp)
       have hl := isRegular_forall_list L l (fun y hy => h y (by simp [hy]))
-      have := isRegular_and hx hl
-      convert this using 1
-      ext u
-      simp only [List.mem_cons]
+      refine isRegular_of_eq (isRegular_and hx hl) (fun u => ?_)
       constructor
-      · intro hu; exact ⟨hu x (Or.inl rfl), fun y hy => hu y (Or.inr hy)⟩
-      · rintro ⟨h1, h2⟩ y (rfl | hy)
+      · intro hu; exact ⟨hu x (by simp), fun y hy => hu y (by simp [hy])⟩
+      · rintro ⟨h1, h2⟩ y hy
+        rcases List.mem_cons.mp hy with rfl | hy
         · exact h1
         · exact h2 y hy
 

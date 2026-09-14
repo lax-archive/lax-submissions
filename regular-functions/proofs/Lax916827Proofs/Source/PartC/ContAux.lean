@@ -18,7 +18,7 @@ namespace Lax916827Proofs.Transducers
 
 /-! ## Elementary closure properties of continuity -/
 
-lemma continuous_id {A : Type} : Continuous (id : List A → List A) := fun _ hL => by simpa using hL
+lemma continuous_id {A : Type} : Continuous (id : List A → List A) := fun _ hL => hL
 
 lemma Continuous.comp {A B C : Type} {f : List A → List B} {g : List B → List C}
     (hg : Continuous g) (hf : Continuous f) : Continuous (g ∘ f) :=
@@ -58,7 +58,7 @@ lemma continuous_map {A B : Type} (h : A → B) : Continuous (fun w : List A => 
 /-- String reversal is continuous. -/
 lemma continuous_reverse {A : Type} : Continuous (List.reverse : List A → List A) := by
   intro L hL
-  convert hL.reverse using 1
+  exact hL.reverse
 
 /-- The dfa recognising `{w | w ++ w ∈ M.accepts}`: it remembers the state
 reached from the initial state, and the state transformation of the string read
@@ -130,10 +130,12 @@ lemma blockLang_isRegular [Fintype σ] (hf : Continuous f) (p q : σ) :
   have hreg : Language.IsRegular ((blockDFA D p q).accepts) :=
     ⟨σ, inferInstance, blockDFA D p q, rfl⟩
   have hpre := hf _ hreg
-  convert hpre using 1
-  ext u
-  simp only [DFA.mem_accepts, DFA.eval, blockDFA_evalFrom]
-  exact Iff.rfl
+  have heq : ({u : List A | f u ∈ (blockDFA D p q).accepts} : Language A) = blockLang f D p q := by
+    refine Set.ext fun u => ?_
+    simp only [DFA.mem_accepts, DFA.eval, blockDFA_evalFrom]
+    exact Iff.rfl
+  rw [← heq]
+  exact hpre
 
 /-- One step of the automaton that reads `mapLift f w`: the state consists of
 the state of `D` at the beginning of the current block together with the part of
@@ -160,7 +162,7 @@ lemma evalFrom_mapLift (v : List (Option A)) (u : List A) (p : σ) :
       | none =>
           rw [mapLift_map_some_cons_none, DFA.evalFrom_of_append, DFA.evalFrom_cons]
           have := ih [] (D.step (D.evalFrom p ((f u).map some)) none)
-          simpa using this
+          simpa [bstep] using this
 
 /-- The behaviour of the automaton does not change if the current block is
 replaced by a block with the same effect on all continuations. -/
@@ -243,8 +245,8 @@ theorem continuous_mapLift {f : List A → List B} (hf : Continuous f) :
     Continuous (mapLift f) := by
   classical
   rintro L ⟨σ, hσ, D, rfl⟩
-  rw [Language.isRegular_iff_finite_range_leftQuotient]
   set P : Language (Option A) := {w | mapLift f w ∈ D.accepts} with hP
+  rw [Language.isRegular_iff_finite_range_leftQuotient]
   have hquot : ∀ w : List (Option A), P.leftQuotient w =
       {v | bfinal f D (List.foldl (bstep f D)
         (List.foldl (bstep f D) (D.start, []) w) v) ∈ D.accept} := by

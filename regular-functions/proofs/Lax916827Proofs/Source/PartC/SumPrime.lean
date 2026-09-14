@@ -272,7 +272,7 @@ lemma dec_mark_mark_sep (b : Bool) (Y : List (Option (Alph A₀ A₂))) :
 lemma mapLift_rev_encR (v : List A₂) :
     mapLift List.reverse (encR A₀ v) = (encR A₀ v : List (Option (Alph A₀ A₂))) := by
   induction v with
-  | nil => simpa using mapLift_map_some (List.reverse) ([] : List (Alph A₀ A₂))
+  | nil => simpa [encR] using mapLift_map_some (List.reverse) ([] : List (Alph A₀ A₂))
   | cons c v ih =>
       have h : encR A₀ (c :: v)
           = [(Sum.inr (Sum.inr c) : Alph A₀ A₂)].map some ++ none :: encR A₀ v := rfl

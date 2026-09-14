@@ -597,7 +597,7 @@ theorem exists_widthOut_excHalves (hT : cfgAt M w T = some Cfg.halt)
         (fun t ht1 ht2 => ⟨traj M w t, posAt_traj hT (by omega), hrange t ht1 (by omega)⟩)
         (fun t ht1 ht2 hcon => by
           rw [posAt_traj hT (by omega)] at hcon
-          exact Walk.excSplit_first hab ht1 ht2 (by simpa using hcon))
+          exact Walk.excSplit_first hab ht1 ht2 (by simpa [excC] using hcon))
         hhalves.1
       obtain ⟨q₂, f₂, h2⟩ := exists_widthOut_pieceRev M w hsb (le_of_lt hltc) hyw hposS hposb
         (fun t ht1 ht2 => ⟨traj M w t, posAt_traj hT (by omega), hrange t (by omega) ht2⟩)
@@ -628,7 +628,7 @@ theorem exists_widthOut_excHalves (hT : cfgAt M w T = some Cfg.halt)
         (fun t ht1 ht2 => ⟨traj M w t, posAt_traj hT (by omega), hrange t ht1 (by omega)⟩)
         (fun t ht1 ht2 hcon => by
           rw [posAt_traj hT (by omega)] at hcon
-          exact Walk.excSplit_first hab ht1 ht2 (by simpa using hcon))
+          exact Walk.excSplit_first hab ht1 ht2 (by simpa [excC] using hcon))
         hhalves.1
       obtain ⟨q₂, f₂, h2⟩ := exists_widthOut_piece M w hsb (le_of_lt hltc) hyw hposS hposb
         (fun t ht1 ht2 => ⟨traj M w t, posAt_traj hT (by omega), hrange t (by omega) ht2⟩)

@@ -155,7 +155,7 @@ lemma transGen_of_cross {w : List (SnakeLetter Q B)} {c : SnakeLetter Q B} {p q 
   have mid : Relation.ReflTransGen (EdgeRel (w ++ [c])) (p', w.length) (q', w.length) := by
     rcases h2 with rfl | hR
     · exact Relation.ReflTransGen.refl
-    · exact (Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab) hR).to_reflTransGen
+    · exact (Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab) _ _ hR).to_reflTransGen
   exact Relation.TransGen.head e1 (Relation.TransGen.trans_right mid (Relation.TransGen.single e2))
 
 /-! ## The two update lemmas -/
@@ -266,7 +266,7 @@ lemma path_split (w : List (SnakeLetter Q B)) (c : SnakeLetter Q B) {v v' : Vtx 
           simpa using h0
         rcases Nat.lt_or_ge w.length x2.2 with hx2 | hx2
         · refine Or.inl ⟨x2, by omega, ?_, Relation.ReflTransGen.refl⟩
-          exact ((Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab)
+          exact ((Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab) _ _
             hw).to_reflTransGen).tail ⟨o, ho⟩
         · exact Or.inr (hw.tail ⟨o, edge_of_append_le ho hx1 hx2⟩)
 
@@ -292,7 +292,7 @@ theorem hasCycle_concat (w : List (SnakeLetter Q B)) (c : SnakeLetter Q B) :
       exact hcyc
     · exact Or.inl ⟨v, hw⟩
   · rintro (⟨v, hv⟩ | ⟨q, hq⟩)
-    · exact ⟨v, Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab) hv⟩
+    · exact ⟨v, Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab) _ _ hv⟩
     · exact ⟨(q, (w ++ [c]).length), hq⟩
 
 /-! ## The automaton -/
