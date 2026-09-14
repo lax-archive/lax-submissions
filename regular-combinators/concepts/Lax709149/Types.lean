@@ -1,4 +1,5 @@
 import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Fintype.Sum
 import Mathlib.Tactic.DeriveFintype
 
 /-!
@@ -45,7 +46,9 @@ def Ty.Elt : Ty → Type
 /-- The alphabet with eight letters `(`, `)`, `[`, `]`, `,`, `1`, `L`, `R`. -/
 inductive Sym8 : Type
   | lpar | rpar | lbrack | rbrack | comma | one | left | right
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype Sym8 := derive_fintype% _
 
 /-- The entries of a list representation, separated by commas. -/
 def joinSep : List (List Sym8) → List Sym8
