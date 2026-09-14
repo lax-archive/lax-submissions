@@ -134,7 +134,7 @@ theorem ne_of_mem_inN {D : Orientation n} {u v : Fin n} (h : u ∈ D.inN v) : u 
 /-- The underlying undirected graph of an orientation. -/
 def toGraph (D : Orientation n) : SimpleGraph (Fin n) where
   Adj := D.Adjacent
-  symm _ _ h := Or.symm h
+  symm := ⟨fun _ _ h => Or.symm h⟩
   loopless := ⟨fun v h => by rcases h with h | h <;> exact D.not_mem_self v h⟩
 
 theorem toGraph_adj {D : Orientation n} {u v : Fin n} :
@@ -177,7 +177,7 @@ theorem FratLink.symm {D : Orientation n} {u v : Fin n} (h : FratLink D u v) :
 common out-neighbour. -/
 def fratGraph (D : Orientation n) : SimpleGraph (Fin n) where
   Adj u v := u ≠ v ∧ FratLink D u v
-  symm _ _ h := ⟨h.1.symm, h.2.symm⟩
+  symm := ⟨fun _ _ h => ⟨h.1.symm, h.2.symm⟩⟩
   loopless := ⟨fun _ h => h.1 rfl⟩
 
 theorem fratGraph_adj {D : Orientation n} {u v : Fin n} :
@@ -665,7 +665,7 @@ theorem piIncreasing_canonChain (G : SimpleGraph (Fin n)) (π : Equiv.Perm (Fin 
 
 theorem wreachBound_canonChain (G : SimpleGraph (Fin n)) (π : Equiv.Perm (Fin n)) :
     ∀ i, WreachBound G π (2 ^ i) (canonChain G π i)
-  | 0 => by simpa using baseOr_wreach G π
+  | 0 => baseOr_wreach G π
   | i + 1 => by
       have := wreachBound_tightStep (wreachBound_canonChain G π i) (Nat.one_le_two_pow)
       intro u v hu
@@ -736,7 +736,7 @@ private theorem card_le_of_realized {H : SimpleGraph (Fin n)} {D : Orientation n
     simp [hfdef, hgdef, hx]
   set M : SimpleGraph (Fin S.card) :=
     { Adj := fun i j => (f i, f j) ∈ R ∨ (f j, f i) ∈ R
-      symm := fun _ _ h => Or.symm h
+      symm := ⟨fun _ _ h => Or.symm h⟩
       loopless := ⟨fun i h => by rcases h with h | h <;> exact (hR _ h).2.2.1 rfl⟩ }
     with hMdef
   have hMadj : ∀ i j, M.Adj i j ↔ ((f i, f j) ∈ R ∨ (f j, f i) ∈ R) := fun _ _ => Iff.rfl

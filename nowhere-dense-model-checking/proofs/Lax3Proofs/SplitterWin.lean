@@ -135,7 +135,11 @@ theorem exists_walk_deleteVerts_of_le (hG : G ≤ G') (p : G.Walk u v)
   | nil => exact ⟨.nil, rfl⟩
   | @cons a b c hab p ih =>
     obtain ⟨q, hq⟩ := ih fun z hz => hp z (by simp [hz])
-    exact ⟨SimpleGraph.Walk.cons ⟨hG hab, hp a (by simp), hp b (by simp)⟩ q, by simp [hq]⟩
+    have ha : a ∉ S := hp a (by simp)
+    have hb : b ∉ S := hp b (by simp)
+    have hadj : (deleteVerts G' S).Adj a b := ⟨hG hab, ha, hb⟩
+    exact ⟨SimpleGraph.Walk.cons hadj q, by
+      rw [SimpleGraph.Walk.length_cons, hq, SimpleGraph.Walk.length_cons]⟩
 
 /-- The ball around an isolated vertex is that vertex alone. -/
 theorem eq_of_mem_ball_of_isolated (hv : ∀ z, ¬ G.Adj v z) (hx : x ∈ ball G r v) :
