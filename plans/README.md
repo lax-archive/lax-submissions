@@ -22,6 +22,14 @@ and brief files here, not at the root.
 | `../twin-width-exponential-in-treewidth/PLAN.md` | the Bonnet–Déprés paper with its own constants (real ε, t > 1/ε, f(t), C_t): lax-65 supersedes the registered lax-48 (ε = 1/2, t = 2k+3, bound 2^k). Fourteen concepts — one per definition, lemma, theorem, corollary — build and are submitted as a draft; all eight statements open. The plan lives in the submission root on Jan's instruction (2026-09-02): ten leaves, critical path L0 → graph structure → lower-bound port → Theorem 1. |
 | `pcp-theorem/pcp-plan.md` | the PCP theorem by Dinur gap amplification — the first formal hardness artifact in any assistant. Machine-free Amplification Theorem as the P7 flagship (explicit size-linear gap-doubling transformation on constraint graphs, no machine model anywhere); PCP proper at P8 over the word RAM with tower-verified reduction cost. Five-submission ladder: `constraint-graphs/`, `spectral-expanders/`, `linearity-testing/`, `gap-amplification/`, `pcp-theorem/`. Rev 1 PROPOSAL 2026-07-29, queued behind the RAM campaigns (flag 2 resolved by Jan same day: waits until the dust settles on tower + ND-MC RAM) — flags 1, 3, 4 (charter scope, NP-over-RAM surface, split) open. |
 
+**2026-09-14 — the Transducers port lives in the book.** The eight
+*Transducers* submissions (Bojańczyk, `bojanczyk/transducer-book`, folder
+`lax/`) are not in this tree; `plans/transducers/` holds only the record of
+their v4.30.0 → v4.33.0 epoch port — the one-off `FINISH.md`, the 18-patch
+series landed in the book at 4ec9235..ce87f39, the book's `lax/` bookkeeping
+as patched, and the outcome (all eight drafts at v4.33.0, no retry, no
+concept change beyond the agreed `Sym8` instance).
+
 **2026-09-03 — the vertex cover ladder is gone.** lax-15 was deleted from
 the archive (id retired) and `vertex-cover-ladder/` removed from the tree,
 last present at `b80cc51`; `plans/vertex-cover-ladder/` is closed history.

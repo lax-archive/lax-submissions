@@ -1,0 +1,418 @@
+From e7d5928d8a19704d2531a05f00a5f69a2b1c0c3d Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 08:01:54 +0000
+Subject: [PATCH 10/18] lax/regular-combinators: proofs build at v4.33.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Twelve enum Fintype instances via derive_fintype% (deriving Fintype on a
+nullary-constructor inductive fails at this pin), rewrites over
+(Ty.list A).Elt given their arguments or run through a plain-list
+'have key : ∀ m : List _.Elt' and instantiated, rfl after simp where
+Sum.elim no longer iota-reduces at a def-wrapped type, List.map_map with
+its list pinned in the bridge. No statement changed. The concepts fix
+(Sym8) is held uncommitted, awaiting Jan.
+---
+ .../proofs/Lax709149Proofs/Bridge.lean        |  6 ++--
+ .../Source/PartC/CombAtomConcat.lean          | 16 ++++++++--
+ .../Source/PartC/CombAtomCons.lean            | 31 ++++++++++++++++---
+ .../Source/PartC/CombAtomDistr.lean           | 14 +++++++--
+ .../Source/PartC/CombAtomPref.lean            | 22 +++++++++----
+ .../Source/PartC/CombAtomProj.lean            |  7 ++++-
+ .../Source/PartC/CombAtomReverse.lean         | 16 +++++++---
+ .../Source/PartC/CombAtomSplit.lean           | 27 +++++++++++-----
+ .../Source/PartC/CombCombinators.lean         | 16 +++++++---
+ .../Lax709149Proofs/Source/PartC/CombInj.lean |  2 +-
+ .../Source/PartC/CombMark.lean                |  7 ++++-
+ .../Source/PartC/CombTypes.lean               |  7 ++++-
+ 12 files changed, 131 insertions(+), 40 deletions(-)
+
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Bridge.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Bridge.lean
+index 28048e7..46f88ac 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Bridge.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Bridge.lean
+@@ -159,8 +159,8 @@ lemma repr_toSrc : ∀ (A : Ty) (a : A.Elt),
+   | .list A, l => by
+       show (Sym8.lbrack :: (joinSep (l.map A.repr) ++ [Sym8.rbrack])).map toSrcSym
+         = (Transducers.Ty.list (toSrcTy A)).repr (l.map (eltEquiv A))
+-      rw [Transducers.Ty.repr_list, List.map_cons, List.map_append, joinSep_toSrc, List.map_map,
+-        List.map_map]
++      rw [Transducers.Ty.repr_list, List.map_cons, List.map_append, joinSep_toSrc,
++        List.map_map (l := l), List.map_map (l := l)]
+       have : (List.map toSrcSym ∘ A.repr) = ((toSrcTy A).repr ∘ eltEquiv A) :=
+         funext fun a => repr_toSrc A a
+       rw [this]
+@@ -262,7 +262,7 @@ lemma eval_toSrcTerm : ∀ {A B : Ty} (t : RegTerm A B) (a : A.Elt),
+   | _, _, .copair _ t, Sum.inr b => eval_toSrcTerm t b
+   | _, _, .map t, l => by
+       show (l.map (eltEquiv _)).map (toSrcTerm t).eval = (l.map t.eval).map (eltEquiv _)
+-      rw [List.map_map, List.map_map]
++      rw [List.map_map (l := l), List.map_map (l := l)]
+       exact List.map_congr_left fun a _ => eval_toSrcTerm t a
+ 
+ /-- A function defined by a concept term is, transported along `eltEquiv`,
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomConcat.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomConcat.lean
+index 5180953..2400ac6 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomConcat.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomConcat.lean
+@@ -26,7 +26,12 @@ namespace Comb
+ at the letter that opens an entry (or closes an empty inner list), inside an entry or between the
+ entries of one inner list, and after the outer closing bracket. -/
+ inductive ConcatMode | start | outer | pend | inner | dead
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype ConcatMode := derive_fintype% _
+ 
+ /-- The machine that writes the entries of the flattened list, each preceded by a comma. -/
+ def concatMach : Mach ConcatMode Sym8 where
+@@ -66,7 +71,12 @@ def concatMach : Mach ConcatMode Sym8 where
+ 
+ /-- The modes of the machine that removes the first letter of its input. -/
+ inductive DropMode | first | later
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype DropMode := derive_fintype% _
+ 
+ /-- The machine that removes the first letter of its input and wraps the rest in brackets.  The
+ depth plays no role here. -/
+@@ -240,7 +250,7 @@ theorem isRegularUnderRepr_concat :
+     (concatMach.isRegularFun_run _ _).comp' (dropFirstMach.isRegularFun_run _ _) (fun _ => rfl),
+     fun l => ?_⟩
+   show dropFirstMach.run _ .first (concatMach.run _ ConcatMode.start ((catDom A).repr l)) = _
+-  rw [concatMach_run, dropFirstMach_run, commaBlocks_tail]
++  rw [concatMach_run (A := A) l, dropFirstMach_run, commaBlocks_tail]
+   rfl
+ 
+ end Concat
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomCons.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomCons.lean
+index 7284278..fcf781f 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomCons.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomCons.lean
+@@ -26,11 +26,21 @@ namespace Comb
+ 
+ /-- The modes of the first machine of the list constructor. -/
+ inductive ConsMode | s0 | sOpen | sA | sBrack | sPend | dead
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype ConsMode := derive_fintype% _
+ 
+ /-- The modes of the second machine of the list constructor. -/
+ inductive Cons2Mode | t0 | tL | tOpen | tA | tBrack | tBody | dead
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype Cons2Mode := derive_fintype% _
+ 
+ /-- The first machine of the list constructor: it writes the opening bracket, the head, and the
+ comma that separates the head from the tail if the tail is not empty. -/
+@@ -264,10 +274,11 @@ theorem isRegularUnderRepr_cons :
+   · dsimp only
+     rw [consMach1_run_left, consMach2_run_left]
+     simp [Ty.repr]
++    rfl
+   · dsimp only
+-    rw [consMach1_run_right, consMach2_run_right]
++    rw [consMach1_run_right A a l, consMach2_run_right A a l]
+     cases l with
+-    | nil => simp [Ty.repr]
++    | nil => simp [Ty.repr]; rfl
+     | cons a2 l2 =>
+         show Sym8.lbrack :: (A.repr a ++ [Sym8.comma])
+             ++ (joinSep ((a2 :: l2).map A.repr) ++ [Sym8.rbrack])
+@@ -283,7 +294,12 @@ end Cons
+ 
+ /-- The modes of the machine of the list deconstructor. -/
+ inductive UnconsMode | start | pend | copy1 | rest | dead
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype UnconsMode := derive_fintype% _
+ 
+ /-- The machine of the list deconstructor: it waits for the letter after the opening bracket to
+ decide whether the list is empty, and then copies the head and the tail. -/
+@@ -374,6 +390,7 @@ theorem unconsMach_run (l : List A.Elt) :
+         show unconsMach.out .pend 1 Sym8.rbrack = [Sym8.left, Sym8.one] from rfl,
+         Mach.runFrom_dead _ _ _ (fun _ _ => rfl) (fun _ _ => rfl) (fun _ => rfl)]
+       simp [Ty.repr]
++      rfl
+   | cons a l' =>
+       obtain ⟨c, w, hcw, hc⟩ := repr_eq_cons A a
+       have hcne : c ≠ Sym8.rbrack := by rintro rfl; simp [transparent] at hc
+@@ -392,6 +409,8 @@ theorem unconsMach_run (l : List A.Elt) :
+             show unconsMach.out .copy1 1 Sym8.rbrack
+               = [Sym8.comma, Sym8.lbrack, Sym8.rbrack, Sym8.rpar] from rfl,
+             Mach.runFrom_dead _ _ _ (fun _ _ => rfl) (fun _ _ => rfl) (fun _ => rfl)]
++          show _ = Sym8.right :: Sym8.lpar ::
++            (A.repr a ++ Sym8.comma :: ((Ty.list A).repr ([] : List A.Elt) ++ [Sym8.rpar]))
+           simp [Ty.repr, hcw]
+       | cons a2 l2 =>
+           rw [joinSepTail_cons,
+@@ -409,6 +428,8 @@ theorem unconsMach_run (l : List A.Elt) :
+           rw [show unconsMach.step .rest 1 Sym8.rbrack = UnconsMode.dead from rfl,
+             show unconsMach.out .rest 1 Sym8.rbrack = [Sym8.rbrack, Sym8.rpar] from rfl,
+             Mach.runFrom_dead _ _ _ (fun _ _ => rfl) (fun _ _ => rfl) (fun _ => rfl)]
++          show _ = Sym8.right :: Sym8.lpar ::
++            (A.repr a ++ Sym8.comma :: ((Ty.list A).repr (a2 :: l2) ++ [Sym8.rpar]))
+           simp [Ty.repr, hcw]
+ 
+ theorem isRegularUnderRepr_uncons :
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomDistr.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomDistr.lean
+index 262b412..53f655e 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomDistr.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomDistr.lean
+@@ -22,7 +22,12 @@ namespace Comb
+ /-- The modes of the machine writing the marker: before the opening bracket, inside the first
+ component, at the letter `L` or `R`, and after it. -/
+ inductive MMode | start | inA | atMark | after
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype MMode := derive_fintype% _
+ 
+ /-- The machine that writes the marker `L` or `R` of the output of `distr`. -/
+ def markMach : Mach MMode Sym8 where
+@@ -41,7 +46,12 @@ def markMach : Mach MMode Sym8 where
+ /-- The modes of the machine writing the pair: before the opening bracket, inside the first
+ component, at the marker letter, inside the second component, and after the closing bracket. -/
+ inductive QMode | start | inA | skip | inB | stop
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype QMode := derive_fintype% _
+ 
+ /-- The machine that writes the pair of the output of `distr`. -/
+ def pairMach : Mach QMode Sym8 where
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomPref.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomPref.lean
+index bc7dd37..355086c 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomPref.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomPref.lean
+@@ -101,7 +101,12 @@ lemma pfold : ∀ (w : List Sym8) (u : Pfx G), (∃ g : G.Elt, u.val ++ w <+: G.
+ 
+ /-- The part of the input that the machine of group prefix multiplication is inside of. -/
+ inductive PrefPhase | start | blk | done
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype PrefPhase := derive_fintype% _
+ 
+ /-- The mode of the machine: the part of the input, the product of the entries that are already
+ written, and the part of the current entry that has been read. -/
+@@ -294,11 +299,16 @@ theorem isRegularUnderRepr_pref :
+     ((prefMach G).isRegularFun_run _ _).comp' (dropFirstMach.isRegularFun_run _ _)
+       (fun _ => rfl),
+     fun l => ?_⟩
+-  show dropFirstMach.run ((prefDom G).height) DropMode.first
+-      ((prefMach G).run ((prefDom G).height) (PrefPhase.start, 1, some (pfxNil G))
+-        ((prefDom G).repr l)) = (Ty.list G).repr (prefixProd l)
+-  rw [prefMach_run, dropFirstMach_run, commaBlocks_tail, prefixProdFrom_one]
+-  rfl
++  -- `l` sits at the `def`-wrapped `(Ty.list G).Elt`, where the rewrites below no longer match
++  -- their `List G.Elt` patterns; run them for a plain list and instantiate.
++  have key : ∀ m : List G.Elt,
++      dropFirstMach.run ((prefDom G).height) DropMode.first
++          ((prefMach G).run ((prefDom G).height) (PrefPhase.start, 1, some (pfxNil G))
++            ((prefDom G).repr m)) = (Ty.list G).repr (prefixProd m) := by
++    intro m
++    rw [prefMach_run, dropFirstMach_run, commaBlocks_tail, prefixProdFrom_one]
++    rfl
++  exact key l
+ 
+ end Pref
+ 
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomProj.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomProj.lean
+index 6bb1db3..b6f7c3d 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomProj.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomProj.lean
+@@ -41,7 +41,12 @@ theorem isRegularUnderRepr_inr (A B : Ty) :
+ /-- The modes of the machines that read a pair: before the opening bracket, inside the first
+ component, inside the second one, and after the closing bracket. -/
+ inductive PMode | start | inA | inB | stop
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype PMode := derive_fintype% _
+ 
+ /-! ## The projections -/
+ 
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomReverse.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomReverse.lean
+index b6d1bd3..3441d52 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomReverse.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomReverse.lean
+@@ -89,11 +89,17 @@ lemma isRegularFun_reverseFun : IsRegularFun (reverseFun A) := by
+ theorem isRegularUnderRepr_reverse :
+     IsRegularUnderRepr (A := Ty.list A) (B := Ty.list A) (fun l => l.reverse) := by
+   refine ⟨reverseFun A, isRegularFun_reverseFun A, fun l => ?_⟩
+-  rw [reverseFun, listMarkMach_run, optBlocks_reverse, mapReverse,
+-    mapLift_optBlocks (by simp) _, List.map_map]
+-  rw [show (List.reverse ∘ List.reverse : List Sym8 → List Sym8) = id from by
+-    funext u; simp]
+-  rw [List.map_id, ← List.map_reverse, unmark_optBlocks]
++  -- `l` sits at the `def`-wrapped `(Ty.list A).Elt`, where the rewrites below no longer match
++  -- their `List A.Elt` patterns; run them for a plain list and instantiate.
++  have key : ∀ m : List A.Elt,
++      reverseFun A ((Ty.list A).repr m) = (Ty.list A).repr m.reverse := by
++    intro m
++    rw [reverseFun, listMarkMach_run, optBlocks_reverse, mapReverse,
++      mapLift_optBlocks (by simp) _, List.map_map]
++    rw [show (List.reverse ∘ List.reverse : List Sym8 → List Sym8) = id from by
++      funext u; simp]
++    rw [List.map_id, ← List.map_reverse, unmark_optBlocks]
++  exact key l
+ 
+ end Reverse
+ 
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomSplit.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomSplit.lean
+index cbc60c6..7711eeb 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomSplit.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombAtomSplit.lean
+@@ -29,7 +29,12 @@ namespace Comb
+ between two entries, inside an entry from `A`, inside an entry from `B`, and after the closing
+ bracket. -/
+ inductive SplitPhase | start | wait | copyA | copyB | done
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype SplitPhase := derive_fintype% _
+ 
+ /-- The mode of the machine of split: the part of the input, whether an entry from `B` has been
+ seen, and whether the block being written already has an entry. -/
+@@ -363,12 +368,20 @@ theorem isRegularUnderRepr_split :
+       (B := Ty.prod (Ty.list A) (Ty.list (pairTy A B))) (fun l => splitList l) := by
+   refine ⟨splitMach.run ((splitDom A B).height) (SplitPhase.start, false, false),
+     splitMach.isRegularFun_run _ _, fun l => ?_⟩
+-  rw [splitMach_run, splitOut_false]
+-  simp only [aBody]
+-  show _ = Sym8.lpar :: ((Ty.list A).repr (splitList l).1
+-    ++ Sym8.comma :: ((Ty.list (pairTy A B)).repr (splitList l).2 ++ [Sym8.rpar]))
+-  rw [Ty.repr_list, Ty.repr_list]
+-  simp
++  -- `l` sits at the `def`-wrapped `(splitDom A B).Elt`, where the rewrites below no longer
++  -- match their `List ((Ty.sum A B).Elt)` patterns; run them for a plain list and instantiate.
++  have key : ∀ m : List ((Ty.sum A B).Elt),
++      splitMach.run ((splitDom A B).height) (SplitPhase.start, false, false)
++          ((splitDom A B).repr m)
++        = (Ty.prod (Ty.list A) (Ty.list (pairTy A B))).repr (splitList m) := by
++    intro m
++    rw [splitMach_run, splitOut_false]
++    simp only [aBody]
++    show _ = Sym8.lpar :: ((Ty.list A).repr (splitList m).1
++      ++ Sym8.comma :: ((Ty.list (pairTy A B)).repr (splitList m).2 ++ [Sym8.rpar]))
++    rw [Ty.repr_list, Ty.repr_list (pairTy A B) (splitList m).2]
++    simp
++  exact key l
+ 
+ end Split
+ 
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombCombinators.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombCombinators.lean
+index a662ca6..bcebebb 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombCombinators.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombCombinators.lean
+@@ -220,11 +220,17 @@ theorem IsRegularUnderRepr.mapList {A B : Ty} {f : A.Elt → B.Elt} (hf : IsRegu
+   refine ⟨fun w => unmark (mapLift f'' (listMarkMach.run (listMarkN A) .start w)), ?_, fun l => ?_⟩
+   · exact ((isRegularFun_listMarkRun A).comp' (isRegularFun_mapLift hf''reg)
+       (fun _ => rfl)).comp' isRegularFun_unmark (fun _ => rfl)
+-  · dsimp only
+-    rw [listMarkMach_run, mapLift_optBlocks hf''nil, List.map_map]
+-    rw [show ((f'' ∘ A.repr) : A.Elt → List Sym8) = (B.repr ∘ f) from funext hf''repr,
+-      ← List.map_map]
+-    exact unmark_optBlocks B (l.map f)
++  · -- `l` sits at the `def`-wrapped `(Ty.list A).Elt`, where the rewrites below no longer match
++    -- their `List A.Elt` patterns; run them for a plain list and instantiate.
++    have key : ∀ m : List A.Elt,
++        unmark (mapLift f'' (listMarkMach.run (listMarkN A) ListMarkMode.start
++            ((Ty.list A).repr m))) = (Ty.list B).repr (m.map f) := by
++      intro m
++      rw [listMarkMach_run, mapLift_optBlocks hf''nil, List.map_map]
++      rw [show ((f'' ∘ A.repr) : A.Elt → List Sym8) = (B.repr ∘ f) from funext hf''repr,
++        ← List.map_map]
++      exact unmark_optBlocks B (m.map f)
++    exact key l
+ 
+ end Comb
+ end Lax709149Proofs.Transducers
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombInj.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombInj.lean
+index 1ee9419..4af3d56 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombInj.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombInj.lean
+@@ -127,7 +127,7 @@ theorem repr_append_inj : ∀ (t : Ty) (x y : t.Elt) (u v : List Sym8),
+                         obtain ⟨hl, huv⟩ := ih (b' :: l₂') u v (List.cons.inj h3).2
+                         exact ⟨by rw [haa, hl], huv⟩
+       intro l l' u v h
+-      rw [Ty.repr_list, Ty.repr_list] at h
++      rw [Ty.repr_list A l, Ty.repr_list A l'] at h
+       have h1 : joinSep (l.map A.repr) ++ Sym8.rbrack :: u
+           = joinSep (l'.map A.repr) ++ Sym8.rbrack :: v := by
+         simpa [List.append_assoc] using (List.cons.inj h).2
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombMark.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombMark.lean
+index 6d5da5e..06b4793 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombMark.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombMark.lean
+@@ -150,7 +150,12 @@ lemma isRegularFun_unmark : IsRegularFun unmark := by
+ /-- The modes of the marking machine: before the opening bracket, inside the list, and after the
+ closing bracket. -/
+ inductive ListMarkMode | start | body | done
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype ListMarkMode := derive_fintype% _
+ 
+ /-- The machine that marks a list representation: it deletes the outer brackets, replaces the
+ top-level commas by the separator, and marks every other letter. -/
+diff --git a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombTypes.lean b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombTypes.lean
+index 4df8be3..50a7b5d 100644
+--- a/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombTypes.lean
++++ b/lax/regular-combinators/proofs/Lax709149Proofs/Source/PartC/CombTypes.lean
+@@ -92,7 +92,12 @@ def Ty.height : Ty → ℕ
+ /-- The book's alphabet with eight letters: `(`, `)`, `[`, `]`, `,`, `1`, `L`, `R`. -/
+ inductive Sym8 : Type
+   | lpar | rpar | lbrack | rbrack | comma | one | left | right
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype Sym8 := derive_fintype% _
+ 
+ /-! ## The string representation -/
+ 
+-- 
+2.43.0
+

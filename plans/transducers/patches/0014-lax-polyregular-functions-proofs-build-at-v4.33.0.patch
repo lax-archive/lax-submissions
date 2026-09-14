@@ -1,0 +1,371 @@
+From 3ec378115d20b2907884bf7f1b2ca9b3c926c51a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 08:24:22 +0000
+Subject: [PATCH 14/18] lax/polyregular-functions: proofs build at v4.33.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+One enum Fintype via derive_fintype%, convert-using-1 on IsRegular via
+isRegular_of_eq, an ite at a Language position rewritten through
+'show … from if_pos h' instead of split, simpa replaced by exact where
+Language membership is defeq, and the ForTest.Holds sites: keeping Holds
+folded in simp only so if_pos/if_neg synthesize the same Decidable
+instance (the condition proofs given their folded type in a have). No
+statement changed; concepts untouched.
+---
+ .../Lax194892Proofs/Source/PartD/CGAtom.lean  |  9 ++--
+ .../Lax194892Proofs/Source/PartD/CGSem.lean   |  9 ++--
+ .../Lax194892Proofs/Source/PartD/ForAtom.lean | 40 +++++++++++-----
+ .../Source/PartD/ForMerge.lean                | 48 ++++++++++++++-----
+ .../Lax194892Proofs/Source/PartD/ForNest.lean |  8 ++--
+ .../Source/PartD/ForPrenex.lean               |  8 +++-
+ .../Source/PartD/ForPrenexTop.lean            |  4 +-
+ .../Source/PartD/MarkedSquare.lean            |  3 +-
+ .../Source/PartD/PebbleReg.lean               |  7 ++-
+ .../Source/PartD/PebbleSquareDef.lean         |  3 +-
+ .../Source/PartD/PebbleSquareRun.lean         |  2 +-
+ .../Source/PartD/PolyStep.lean                |  5 +-
+ 12 files changed, 97 insertions(+), 49 deletions(-)
+
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/CGAtom.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/CGAtom.lean
+index 6b8328c..97ce7e3 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/CGAtom.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/CGAtom.lean
+@@ -290,10 +290,11 @@ lemma midL_isRegular (M : Pebble A B Q k) (nid : Fin k) (qa : Q) (da : CG.Dir) (
+ 
+ lemma edgeL_isRegular (M : Pebble A B Q k) (nid : Fin k) (qa : Q) (da : CG.Dir) (qb : Q)
+     (db : CG.Dir) : (edgeL M nid qa da qb db).IsRegular := by
+-  rw [edgeL]
+-  split
+-  · exact emptyL_isRegular
+-  · exact isRegular_and (okL_isRegular _)
++  by_cases h : qa = qb ∧ da = db
++  · rw [show edgeL M nid qa da qb db = _ from if_pos h]
++    exact emptyL_isRegular
++  · rw [show edgeL M nid qa da qb db = _ from if_neg h]
++    exact isRegular_and (okL_isRegular _)
+       (isRegular_and (okL_isRegular _)
+         (isRegular_and (childL_isRegular _ _ _ _)
+           (isRegular_and (reachL_isRegular _ _ _ _ _ _ _)
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/CGSem.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/CGSem.lean
+index dc5ca31..5b5961d 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/CGSem.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/CGSem.lean
+@@ -511,10 +511,9 @@ theorem mem_edgeL_iff (M : Pebble A B Q k) {nid : Fin k} {qa qb : Q} {da db : CG
+       SpotOk (spotOfDir da) x w.length ∧ SpotOk (spotOfDir db) x w.length ∧
+         CG.ChildStar M w st (ch 0) (qa, colOf x da) ∧
+         CG.NextChild M w st (qa, colOf x da) (qb, colOf x db) := by
+-  rw [edgeL]
+-  split
+-  · rename_i heq
+-    obtain ⟨rfl, rfl⟩ := heq
++  by_cases hne : qa = qb ∧ da = db
++  · rw [show edgeL M nid qa da qb db = _ from if_pos hne]
++    obtain ⟨rfl, rfl⟩ := hne
+     rw [mem_emptyL]
+     constructor
+     · exact False.elim
+@@ -529,7 +528,7 @@ theorem mem_edgeL_iff (M : Pebble A B Q k) {nid : Fin k} {qa qb : Q} {da db : CG
+       have h1 := hnc.unique (hseq.next t htm)
+       have h2 := hseq.distinct t (t + 1) (by omega) (by omega) h1
+       omega
+-  · rename_i hne
++  · rw [show edgeL M nid qa da qb db = _ from if_neg hne]
+     erw [Set.mem_setOf_eq]
+     constructor
+     · rintro ⟨ho1, ho2, hch, hre, hnm⟩
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForAtom.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForAtom.lean
+index 01c02a9..210db47 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForAtom.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForAtom.lean
+@@ -70,30 +70,48 @@ lemma exec_iteAtom (w : List A) : ∀ (t : ForTest A) (P R : ForProg A B) (pos :
+   | not t ih =>
+       intro P R pos bv
+       rw [iteAtom, ih]
+-      simp only [ForTest.Holds]
+       by_cases h : ForTest.Holds w pos bv t
+-      · rw [if_pos h, if_neg (not_not_intro h)]
+-      · rw [if_neg h, if_pos h]
++      · have hc : ¬ ForTest.Holds w pos bv (ForTest.not t) := not_not_intro h
++        rw [if_pos h, if_neg hc]
++      · have hc : ForTest.Holds w pos bv (ForTest.not t) := h
++        rw [if_neg h, if_pos hc]
+   | and t s iht ihs =>
+       intro P R pos bv
+       rw [iteAtom, iht, ihs]
+-      simp only [ForTest.Holds]
+       by_cases h : ForTest.Holds w pos bv t
+       · rw [if_pos h]
+         by_cases h' : ForTest.Holds w pos bv s
+-        · rw [if_pos h', if_pos ⟨h, h'⟩]
+-        · rw [if_neg h', if_neg (fun hc => h' hc.2)]
+-      · rw [if_neg h, if_neg (fun hc => h hc.1)]
++        · have hc : ForTest.Holds w pos bv (ForTest.and t s) := by
++            simp only [ForTest.Holds]
++            exact ⟨h, h'⟩
++          rw [if_pos h', if_pos hc]
++        · have hc : ¬ ForTest.Holds w pos bv (ForTest.and t s) := by
++            rintro ⟨-, h2⟩
++            exact h' h2
++          rw [if_neg h', if_neg hc]
++      · have hc : ¬ ForTest.Holds w pos bv (ForTest.and t s) := by
++          rintro ⟨h1, -⟩
++          exact h h1
++        rw [if_neg h, if_neg hc]
+   | or t s iht ihs =>
+       intro P R pos bv
+       rw [iteAtom, iht, ihs]
+-      simp only [ForTest.Holds]
+       by_cases h : ForTest.Holds w pos bv t
+-      · rw [if_pos h, if_pos (Or.inl h)]
++      · have hc : ForTest.Holds w pos bv (ForTest.or t s) := by
++          simp only [ForTest.Holds]
++          exact Or.inl h
++        rw [if_pos h, if_pos hc]
+       · rw [if_neg h]
+         by_cases h' : ForTest.Holds w pos bv s
+-        · rw [if_pos h', if_pos (Or.inr h')]
+-        · rw [if_neg h', if_neg (fun hc => hc.elim h h')]
++        · have hc : ForTest.Holds w pos bv (ForTest.or t s) := by
++            simp only [ForTest.Holds]
++            exact Or.inr h'
++          rw [if_pos h', if_pos hc]
++        · have hc : ¬ ForTest.Holds w pos bv (ForTest.or t s) := by
++            rintro (h1 | h2)
++            · exact h h1
++            · exact h' h2
++          rw [if_neg h', if_neg hc]
+ 
+ lemma allAtomic_iteAtom : ∀ (t : ForTest A) (P R : ForProg A B), P.AllAtomic → R.AllAtomic →
+     (iteAtom t P R).AllAtomic := by
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForMerge.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForMerge.lean
+index 9be9537..04cf4b9 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForMerge.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForMerge.lean
+@@ -129,14 +129,25 @@ lemma exec_merge (w : List A) (zv lv pi : ℕ) (L₁ L₂ : List (Bool × ℕ))
+         rw [hset t (pos zv) zv hzL, hz]
+       have hl' : setTuple M t (Function.update pos pi (pos zv)) lv = pos lv := by
+         rw [hset t (pos zv) lv hlL, hl]
+-      simp only [hbody, mergeBody, ForProg.exec, ForTest.Holds]
++      simp only [hbody, mergeBody, ForProg.exec]
+       by_cases hpin : ForTest.Holds w (setTuple M t (Function.update pos pi (pos zv))) s'
+           (pinTest zv L₂ : ForTest A)
+-      · rw [if_pos ⟨by rw [hpi', hz'], hpin⟩, if_pos hpin]
+-      · rw [if_neg (fun h => hpin h.2), if_neg hpin, if_neg]
+-        rintro ⟨h1, -⟩
+-        rw [hpi', hl'] at h1
+-        omega
++      · have hc : ForTest.Holds w (setTuple M t (Function.update pos pi (pos zv))) s'
++            (ForTest.and (ForTest.eqPos pi zv) (pinTest zv L₂)) := by
++          simp only [ForTest.Holds]
++          exact ⟨by rw [hpi', hz'], hpin⟩
++        rw [if_pos hc, if_pos hpin]
++      · have hc : ¬ ForTest.Holds w (setTuple M t (Function.update pos pi (pos zv))) s'
++            (ForTest.and (ForTest.eqPos pi zv) (pinTest zv L₂)) := by
++          rintro ⟨-, h2⟩
++          exact hpin h2
++        have hc2 : ¬ ForTest.Holds w (setTuple M t (Function.update pos pi (pos zv))) s'
++            (ForTest.and (ForTest.eqPos pi lv) (pinTest zv L₁)) := by
++          rintro ⟨h1, -⟩
++          simp only [ForTest.Holds] at h1
++          rw [hpi', hl'] at h1
++          omega
++        rw [if_neg hc, if_neg hpin, if_neg hc2]
+     rw [hcongr, hM, nest_pin_inner w zv L₁ L₂ b₁ _ s (by rw [hz]; omega) hzL₁ hzL₂ hnd₂ hb₁]
+     refine ForProg.exec_congr_pos w _ _ _ _ (fun i hi => ?_)
+     rw [posVars_nestLoops] at hi
+@@ -166,15 +177,26 @@ lemma exec_merge (w : List A) (zv lv pi : ℕ) (L₁ L₂ : List (Bool × ℕ))
+         rw [hset t (pos lv) zv hzL, hz]
+       have hl' : setTuple M t (Function.update pos pi (pos lv)) lv = pos lv := by
+         rw [hset t (pos lv) lv hlL, hl]
+-      simp only [hbody, mergeBody, ForProg.exec, ForTest.Holds]
+-      rw [if_neg]
+-      · by_cases hpin : ForTest.Holds w (setTuple M t (Function.update pos pi (pos lv))) s'
+-            (pinTest zv L₁ : ForTest A)
+-        · rw [if_pos ⟨by rw [hpi', hl'], hpin⟩, if_pos hpin]
+-        · rw [if_neg (fun h => hpin h.2), if_neg hpin]
+-      · rintro ⟨h1, -⟩
++      simp only [hbody, mergeBody, ForProg.exec]
++      have hne : ¬ ForTest.Holds w (setTuple M t (Function.update pos pi (pos lv))) s'
++          (ForTest.and (ForTest.eqPos pi zv) (pinTest zv L₂)) := by
++        rintro ⟨h1, -⟩
++        simp only [ForTest.Holds] at h1
+         rw [hpi', hz'] at h1
+         omega
++      rw [if_neg hne]
++      by_cases hpin : ForTest.Holds w (setTuple M t (Function.update pos pi (pos lv))) s'
++          (pinTest zv L₁ : ForTest A)
++      · have hc : ForTest.Holds w (setTuple M t (Function.update pos pi (pos lv))) s'
++            (ForTest.and (ForTest.eqPos pi lv) (pinTest zv L₁)) := by
++          simp only [ForTest.Holds]
++          exact ⟨by rw [hpi', hl'], hpin⟩
++        rw [if_pos hc, if_pos hpin]
++      · have hc : ¬ ForTest.Holds w (setTuple M t (Function.update pos pi (pos lv))) s'
++            (ForTest.and (ForTest.eqPos pi lv) (pinTest zv L₁)) := by
++          rintro ⟨-, h2⟩
++          exact hpin h2
++        rw [if_neg hc, if_neg hpin]
+     rw [hcongr, hM, nest_pin_outer w zv L₁ L₂ b₂ _ s (by rw [hz]; omega) hzL₁ hzL₂ hnd₁ hb₂]
+     refine ForProg.exec_congr_pos w _ _ _ _ (fun i hi => ?_)
+     rw [posVars_nestLoops] at hi
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForNest.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForNest.lean
+index 1a72e1f..b355eb5 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForNest.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForNest.lean
+@@ -231,11 +231,11 @@ lemma pin_inner (w : List A) (z : ℕ) (L : List (Bool × ℕ)) (body : ForProg
+                 (setTuple L t (Function.update pos x (pos z))) bv' := by
+           intro t bv'
+           rw [pinTest_cons]
+-          simp only [ForProg.exec, ForTest.Holds]
++          simp only [ForProg.exec]
+           have : setTuple L t (Function.update pos x (pos z)) x
+               = setTuple L t (Function.update pos x (pos z)) z := by
+             rw [hval t (pos z), hvalz t (pos z)]
+-          exact if_congr (by simp [this]) rfl rfl
++          exact if_congr (by simp [ForTest.Holds, this]) rfl rfl
+         rw [nest_congr w L _ (ForProg.ite (pinTest z L) body ForProg.skip) _ bv (fun _ => True)
+           trivial (fun t bv' _ => hpin t bv') (fun _ _ _ => trivial)]
+         rw [ih (Function.update pos x (pos z)) (by rwa [Function.update_of_ne hzx]) hzL' hndL
+@@ -302,11 +302,11 @@ lemma pin_outer (w : List A) (z : ℕ) (L₁ L₂ : List (Bool × ℕ)) (body :
+                 (setTuple (L ++ L₂) t (Function.update pos x (pos z))) bv' := by
+           intro t bv'
+           rw [pinTest_cons]
+-          simp only [ForProg.exec, ForTest.Holds]
++          simp only [ForProg.exec]
+           have : setTuple (L ++ L₂) t (Function.update pos x (pos z)) x
+               = setTuple (L ++ L₂) t (Function.update pos x (pos z)) z := by
+             rw [hval t (pos z), hvalz t (pos z)]
+-          exact if_congr (by simp [this]) rfl rfl
++          exact if_congr (by simp [ForTest.Holds, this]) rfl rfl
+         rw [← nestLoops_append]
+         rw [nest_congr w (L ++ L₂) _ (ForProg.ite (pinTest z L) body ForProg.skip) _ bv
+           (fun _ => True) trivial (fun t bv' _ => hpin t bv') (fun _ _ _ => trivial)]
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForPrenex.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForPrenex.lean
+index 3ea2822..003e74f 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForPrenex.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForPrenex.lean
+@@ -658,8 +658,12 @@ theorem trFor_spec (zv lv k₀ : ℕ) (hzv : zv < k₀) (hlv : lv < k₀) (w : L
+             = ForProg.exec w (ForProg.nestLoops L₁ b₁) pos s₀ := by
+           refine nest_congr w L₁ c₁ b₁ pos s₀ (fun s => s (k + 1) = true) hs₀true
+             (fun tt s hs => ?_) (fun tt s hs => ?_)
+-          · simp only [hc₁, ForProg.exec, ForTest.Holds, if_pos hs]
+-          · simp only [hc₁, ForProg.exec, ForTest.Holds, if_pos hs]
++          · have hs' : ForTest.Holds w (setTuple L₁ tt pos) s (ForTest.boolVar (k + 1)) := hs
++            simp only [hc₁, ForProg.exec]
++            rw [if_pos hs']
++          · have hs' : ForTest.Holds w (setTuple L₁ tt pos) s (ForTest.boolVar (k + 1)) := hs
++            simp only [hc₁, ForProg.exec]
++            rw [if_pos hs']
+             exact (ForProg.exec_bv_unchanged w b₁ _ s hb₁bool).trans hs
+         obtain ⟨e₁, e₂⟩ := ihP hPpos hPbool hzvP' hlvP' (k + 3) L₁ b₁ k₁ hr₁ (by omega) pos hpz hpl
+           s₀ bv₂ hs₀bv
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForPrenexTop.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForPrenexTop.lean
+index ad454d6..f14784c 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForPrenexTop.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/ForPrenexTop.lean
+@@ -150,7 +150,9 @@ lemma shortSim_spec (G : ℕ) (w : List A) (hn : w.length ≤ 1) (pos : ℕ →
+           intro h
+           have := hs.mp h
+           omega
+-        simp only [shortSim, ForProg.exec, ForTest.Holds, if_neg hsG, hrange, forLoopRun]
++        have hsG' : ¬ ForTest.Holds w pos s (ForTest.boolVar G) := hsG
++        simp only [shortSim, ForProg.exec, hrange, forLoopRun]
++        rw [if_neg hsG']
+ 
+ /-! ## Tuples of an input of length one -/
+ 
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/MarkedSquare.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/MarkedSquare.lean
+index 60a87b7..c48f418 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/MarkedSquare.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/MarkedSquare.lean
+@@ -126,8 +126,7 @@ theorem continuous_markedSquare (A : Type) : Continuous (markedSquare A) := by
+   haveI : Finite σ := Finite.of_fintype σ
+   haveI : Fintype (((σ → σ) → (σ → σ)) × (σ → σ)) := Fintype.ofFinite _
+   have hreg : ((msDFA D).accepts).IsRegular := ⟨_, inferInstance, msDFA D, rfl⟩
+-  convert hreg.reverse using 1
+-  ext w
++  refine RegAut.isRegular_of_eq hreg.reverse (fun w => ?_)
+   have h := msState_fst D w [] D.start
+   simp only [msAlpha_nil] at h
+   show markedSquare A w ∈ D.accepts ↔ _
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleReg.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleReg.lean
+index 229abb4..ead7388 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleReg.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleReg.lean
+@@ -25,19 +25,18 @@ theorem continuous_of_isPebbleTransducer {A B : Type} [Finite A] [Finite B]
+   obtain ⟨σ, hσ, D, rfl⟩ := hL
+   haveI : Finite (Q × σ) := inferInstance
+   have hreg := pebbleAut_answers_isRegular k (prodAut M D) (M.init, D.start) true
+-  convert hreg using 1
+-  ext w
++  refine RegAut.isRegular_of_eq hreg (fun w => ?_)
+   constructor
+   · intro hw
+     have hacc : dfaAcc D (D.evalFrom D.start (f w)) = true := by
+       rw [dfaAcc_eq_true]
+-      simpa [DFA.mem_accepts, DFA.eval] using hw
++      exact hw
+     have h := prodAut_answers_of_reaches M D (hM w) rfl D.start
+     rw [hacc] at h
+     exact h
+   · rintro ⟨n, hn⟩
+     obtain ⟨v, hv, hb⟩ := prodAut_reaches_of_answers M D n M.init [] D.start true hn
+     obtain rfl : v = f w := Pebble.computes_unique hv (hM w)
+-    simpa [DFA.mem_accepts, DFA.eval] using dfaAcc_eq_true.1 hb.symm
++    exact dfaAcc_eq_true.1 hb.symm
+ 
+ end Lax194892Proofs.Transducers
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleSquareDef.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleSquareDef.lean
+index ac94f0c..a2f9b2c 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleSquareDef.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleSquareDef.lean
+@@ -282,7 +282,8 @@ lemma decView_encStack {w : List A} {st : List ℕ}
+           refine List.cons_eq_cons.mpr ⟨by simp [eq_comm], ?_⟩
+           refine List.map_congr_left ?_
+           intro q _
+-          simp only [decide_eq_decide, gp]
++          refine decide_eq_decide.mpr ?_
++          simp only [gp]
+           omega
+ 
+ /-- The view of the encoded stack decodes to the view of the stack, in the form in which the
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleSquareRun.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleSquareRun.lean
+index 05e6abd..f809400 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleSquareRun.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PebbleSquareRun.lean
+@@ -541,7 +541,7 @@ lemma sim_push_nil {q q' : Q} (hk : 1 ≤ k)
+   have hstep : (sim M).stepCfg (sqOf w) (encCfg w (PebbleCfg.conf q ([] : List ℕ)))
+       = some ([], PebbleCfg.conf (q', false, ((none : Option A), (none : Option A)), Ph.mR)
+         (([] : List ℕ) ++ [0])) := by
+-    refine stepCfg_push' ?_ (by simpa using hk)
++    refine stepCfg_push' ?_ (by simp only [encStack, List.length_nil]; omega)
+     rw [sim_step_eq (by simp) hact]
+     rfl
+   have hmark : IsMark (w.length + 2) 1 := by
+diff --git a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PolyStep.lean b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PolyStep.lean
+index fa8d02d..f2abec9 100644
+--- a/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PolyStep.lean
++++ b/lax/polyregular-functions/proofs/Lax194892Proofs/Source/PartD/PolyStep.lean
+@@ -17,6 +17,7 @@ second case is the last copy of the group of copies that belong to the same tupl
+ where the group is flushed into the output.
+ -/
+ import Lax194892Proofs.Source.PartD.PolyEnum
++import Mathlib.Data.Fintype.Sum
+ open Lax765601Proofs Lax765601Proofs.Transducers
+ open Lax132576Proofs Lax132576Proofs.Transducers
+ open Lax916827Proofs Lax916827Proofs.Transducers
+@@ -57,7 +58,9 @@ inductive Reg : Type
+   | grp : Reg
+   /-- The block currently being read. -/
+   | cur : Reg
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++instance : Fintype Reg := derive_fintype% _
+ 
+ variable {A : Type} {k : ℕ}
+ 
+-- 
+2.43.0
+

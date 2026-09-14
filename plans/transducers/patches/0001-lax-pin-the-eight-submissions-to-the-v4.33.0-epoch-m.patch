@@ -1,0 +1,498 @@
+From 8d93118716bcd095a45103680bab56a0ea37e83b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 06:31:01 +0000
+Subject: [PATCH 01/18] lax: pin the eight submissions to the v4.33.0 epoch
+ (mathlib db584cd)
+
+---
+ lax/mealy-machines/concepts/lakefile.toml         | 2 +-
+ lax/mealy-machines/concepts/lean-toolchain        | 2 +-
+ lax/mealy-machines/manifest.yaml                  | 4 ++--
+ lax/mealy-machines/proofs/lakefile.toml           | 2 +-
+ lax/mealy-machines/proofs/lean-toolchain          | 2 +-
+ lax/mso-transductions/concepts/lakefile.toml      | 2 +-
+ lax/mso-transductions/concepts/lean-toolchain     | 2 +-
+ lax/mso-transductions/manifest.yaml               | 4 ++--
+ lax/mso-transductions/proofs/lakefile.toml        | 2 +-
+ lax/mso-transductions/proofs/lean-toolchain       | 2 +-
+ lax/pcp-undecidability/concepts/lakefile.toml     | 2 +-
+ lax/pcp-undecidability/concepts/lean-toolchain    | 2 +-
+ lax/pcp-undecidability/manifest.yaml              | 4 ++--
+ lax/pcp-undecidability/proofs/lakefile.toml       | 2 +-
+ lax/pcp-undecidability/proofs/lean-toolchain      | 2 +-
+ lax/polyregular-functions/concepts/lakefile.toml  | 2 +-
+ lax/polyregular-functions/concepts/lean-toolchain | 2 +-
+ lax/polyregular-functions/manifest.yaml           | 4 ++--
+ lax/polyregular-functions/proofs/lakefile.toml    | 2 +-
+ lax/polyregular-functions/proofs/lean-toolchain   | 2 +-
+ lax/rational-functions/concepts/lakefile.toml     | 2 +-
+ lax/rational-functions/concepts/lean-toolchain    | 2 +-
+ lax/rational-functions/manifest.yaml              | 4 ++--
+ lax/rational-functions/proofs/lakefile.toml       | 2 +-
+ lax/rational-functions/proofs/lean-toolchain      | 2 +-
+ lax/regular-combinators/concepts/lakefile.toml    | 2 +-
+ lax/regular-combinators/concepts/lean-toolchain   | 2 +-
+ lax/regular-combinators/manifest.yaml             | 4 ++--
+ lax/regular-combinators/proofs/lakefile.toml      | 2 +-
+ lax/regular-combinators/proofs/lean-toolchain     | 2 +-
+ lax/regular-functions/concepts/lakefile.toml      | 2 +-
+ lax/regular-functions/concepts/lean-toolchain     | 2 +-
+ lax/regular-functions/manifest.yaml               | 4 ++--
+ lax/regular-functions/proofs/lakefile.toml        | 2 +-
+ lax/regular-functions/proofs/lean-toolchain       | 2 +-
+ lax/tools/umbrella-pins.py                        | 2 +-
+ lax/transducers-book/concepts/lakefile.toml       | 2 +-
+ lax/transducers-book/concepts/lean-toolchain      | 2 +-
+ lax/transducers-book/manifest.yaml                | 4 ++--
+ lax/transducers-book/proofs/lakefile.toml         | 2 +-
+ lax/transducers-book/proofs/lean-toolchain        | 2 +-
+ 41 files changed, 49 insertions(+), 49 deletions(-)
+
+diff --git a/lax/mealy-machines/concepts/lakefile.toml b/lax/mealy-machines/concepts/lakefile.toml
+index d5a52b9..198b26a 100644
+--- a/lax/mealy-machines/concepts/lakefile.toml
++++ b/lax/mealy-machines/concepts/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ [[lean_lib]]
+ name = "Lax765601"
+diff --git a/lax/mealy-machines/concepts/lean-toolchain b/lax/mealy-machines/concepts/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/mealy-machines/concepts/lean-toolchain
++++ b/lax/mealy-machines/concepts/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/mealy-machines/manifest.yaml b/lax/mealy-machines/manifest.yaml
+index b7030b7..302c219 100644
+--- a/lax/mealy-machines/manifest.yaml
++++ b/lax/mealy-machines/manifest.yaml
+@@ -1,7 +1,7 @@
+ specVersion: "1"
+ id: lax-765601
+-leanVersion: "v4.30.0"
+-mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++leanVersion: "v4.33.0"
++mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+ title: "Transducers, Part A: Mealy Machines"
+ authors:
+   - name: Mikołaj Bojańczyk
+diff --git a/lax/mealy-machines/proofs/lakefile.toml b/lax/mealy-machines/proofs/lakefile.toml
+index 19e7dae..bf0ead5 100644
+--- a/lax/mealy-machines/proofs/lakefile.toml
++++ b/lax/mealy-machines/proofs/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ [[require]]
+ name = "Lax765601"
+diff --git a/lax/mealy-machines/proofs/lean-toolchain b/lax/mealy-machines/proofs/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/mealy-machines/proofs/lean-toolchain
++++ b/lax/mealy-machines/proofs/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/mso-transductions/concepts/lakefile.toml b/lax/mso-transductions/concepts/lakefile.toml
+index 1e2c4e1..1415c44 100644
+--- a/lax/mso-transductions/concepts/lakefile.toml
++++ b/lax/mso-transductions/concepts/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ # Part A (lax-765601)
+ [[require]]
+ name = "Lax765601"
+diff --git a/lax/mso-transductions/concepts/lean-toolchain b/lax/mso-transductions/concepts/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/mso-transductions/concepts/lean-toolchain
++++ b/lax/mso-transductions/concepts/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/mso-transductions/manifest.yaml b/lax/mso-transductions/manifest.yaml
+index eb4996e..7c6c455 100644
+--- a/lax/mso-transductions/manifest.yaml
++++ b/lax/mso-transductions/manifest.yaml
+@@ -1,7 +1,7 @@
+ specVersion: "1"
+ id: lax-314295
+-leanVersion: "v4.30.0"
+-mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++leanVersion: "v4.33.0"
++mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+ title: "Transducers, Part C: Regular Functions in Terms of Logic"
+ authors:
+   - name: Mikołaj Bojańczyk
+diff --git a/lax/mso-transductions/proofs/lakefile.toml b/lax/mso-transductions/proofs/lakefile.toml
+index 74b1adc..19de030 100644
+--- a/lax/mso-transductions/proofs/lakefile.toml
++++ b/lax/mso-transductions/proofs/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ [[require]]
+ name = "Lax314295"
+diff --git a/lax/mso-transductions/proofs/lean-toolchain b/lax/mso-transductions/proofs/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/mso-transductions/proofs/lean-toolchain
++++ b/lax/mso-transductions/proofs/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/pcp-undecidability/concepts/lakefile.toml b/lax/pcp-undecidability/concepts/lakefile.toml
+index a2f5a5d..98e6e73 100644
+--- a/lax/pcp-undecidability/concepts/lakefile.toml
++++ b/lax/pcp-undecidability/concepts/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ [[lean_lib]]
+ name = "Lax251941"
+diff --git a/lax/pcp-undecidability/concepts/lean-toolchain b/lax/pcp-undecidability/concepts/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/pcp-undecidability/concepts/lean-toolchain
++++ b/lax/pcp-undecidability/concepts/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/pcp-undecidability/manifest.yaml b/lax/pcp-undecidability/manifest.yaml
+index 0004aaa..2ad9406 100644
+--- a/lax/pcp-undecidability/manifest.yaml
++++ b/lax/pcp-undecidability/manifest.yaml
+@@ -1,7 +1,7 @@
+ specVersion: "1"
+ id: lax-251941
+-leanVersion: "v4.30.0"
+-mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++leanVersion: "v4.33.0"
++mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+ title: "Undecidability of the Post Correspondence Problem"
+ authors:
+   - name: Mikołaj Bojańczyk
+diff --git a/lax/pcp-undecidability/proofs/lakefile.toml b/lax/pcp-undecidability/proofs/lakefile.toml
+index 76180e7..5c587e4 100644
+--- a/lax/pcp-undecidability/proofs/lakefile.toml
++++ b/lax/pcp-undecidability/proofs/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ [[require]]
+ name = "Lax251941"
+diff --git a/lax/pcp-undecidability/proofs/lean-toolchain b/lax/pcp-undecidability/proofs/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/pcp-undecidability/proofs/lean-toolchain
++++ b/lax/pcp-undecidability/proofs/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/polyregular-functions/concepts/lakefile.toml b/lax/polyregular-functions/concepts/lakefile.toml
+index 1785ffc..868842e 100644
+--- a/lax/polyregular-functions/concepts/lakefile.toml
++++ b/lax/polyregular-functions/concepts/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ # Part A (lax-765601)
+ [[require]]
+diff --git a/lax/polyregular-functions/concepts/lean-toolchain b/lax/polyregular-functions/concepts/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/polyregular-functions/concepts/lean-toolchain
++++ b/lax/polyregular-functions/concepts/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/polyregular-functions/manifest.yaml b/lax/polyregular-functions/manifest.yaml
+index 48ad0cf..34e538d 100644
+--- a/lax/polyregular-functions/manifest.yaml
++++ b/lax/polyregular-functions/manifest.yaml
+@@ -1,7 +1,7 @@
+ specVersion: "1"
+ id: lax-194892
+-leanVersion: "v4.30.0"
+-mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++leanVersion: "v4.33.0"
++mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+ title: "Transducers, Part D: Polyregular Functions"
+ authors:
+   - name: Mikołaj Bojańczyk
+diff --git a/lax/polyregular-functions/proofs/lakefile.toml b/lax/polyregular-functions/proofs/lakefile.toml
+index b49e67f..fed7c63 100644
+--- a/lax/polyregular-functions/proofs/lakefile.toml
++++ b/lax/polyregular-functions/proofs/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ [[require]]
+ name = "Lax194892"
+diff --git a/lax/polyregular-functions/proofs/lean-toolchain b/lax/polyregular-functions/proofs/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/polyregular-functions/proofs/lean-toolchain
++++ b/lax/polyregular-functions/proofs/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/rational-functions/concepts/lakefile.toml b/lax/rational-functions/concepts/lakefile.toml
+index 126de7e..9cd08ed 100644
+--- a/lax/rational-functions/concepts/lakefile.toml
++++ b/lax/rational-functions/concepts/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ # Part A of the book: continuity, Mealy machines, primes, aperiodicity (lax-765601)
+ [[require]]
+diff --git a/lax/rational-functions/concepts/lean-toolchain b/lax/rational-functions/concepts/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/rational-functions/concepts/lean-toolchain
++++ b/lax/rational-functions/concepts/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/rational-functions/manifest.yaml b/lax/rational-functions/manifest.yaml
+index 1326942..374eda4 100644
+--- a/lax/rational-functions/manifest.yaml
++++ b/lax/rational-functions/manifest.yaml
+@@ -1,7 +1,7 @@
+ specVersion: "1"
+ id: lax-132576
+-leanVersion: "v4.30.0"
+-mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++leanVersion: "v4.33.0"
++mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+ title: "Transducers, Part B: Rational Functions"
+ authors:
+   - name: Mikołaj Bojańczyk
+diff --git a/lax/rational-functions/proofs/lakefile.toml b/lax/rational-functions/proofs/lakefile.toml
+index ea9a776..6334ce8 100644
+--- a/lax/rational-functions/proofs/lakefile.toml
++++ b/lax/rational-functions/proofs/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ [[require]]
+ name = "Lax132576"
+diff --git a/lax/rational-functions/proofs/lean-toolchain b/lax/rational-functions/proofs/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/rational-functions/proofs/lean-toolchain
++++ b/lax/rational-functions/proofs/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/regular-combinators/concepts/lakefile.toml b/lax/regular-combinators/concepts/lakefile.toml
+index 87e293d..c6d5d8a 100644
+--- a/lax/regular-combinators/concepts/lakefile.toml
++++ b/lax/regular-combinators/concepts/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ # Part B (lax-132576)
+ [[require]]
+ name = "Lax132576"
+diff --git a/lax/regular-combinators/concepts/lean-toolchain b/lax/regular-combinators/concepts/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/regular-combinators/concepts/lean-toolchain
++++ b/lax/regular-combinators/concepts/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/regular-combinators/manifest.yaml b/lax/regular-combinators/manifest.yaml
+index e36bd6d..15ebc39 100644
+--- a/lax/regular-combinators/manifest.yaml
++++ b/lax/regular-combinators/manifest.yaml
+@@ -1,7 +1,7 @@
+ specVersion: "1"
+ id: lax-709149
+-leanVersion: "v4.30.0"
+-mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++leanVersion: "v4.33.0"
++mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+ title: "Transducers, Part C: Regular Functions in Terms of Combinators"
+ authors:
+   - name: Mikołaj Bojańczyk
+diff --git a/lax/regular-combinators/proofs/lakefile.toml b/lax/regular-combinators/proofs/lakefile.toml
+index 33eb062..4fd39c7 100644
+--- a/lax/regular-combinators/proofs/lakefile.toml
++++ b/lax/regular-combinators/proofs/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ [[require]]
+ name = "Lax709149"
+diff --git a/lax/regular-combinators/proofs/lean-toolchain b/lax/regular-combinators/proofs/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/regular-combinators/proofs/lean-toolchain
++++ b/lax/regular-combinators/proofs/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/regular-functions/concepts/lakefile.toml b/lax/regular-functions/concepts/lakefile.toml
+index a53d680..e73ade7 100644
+--- a/lax/regular-functions/concepts/lakefile.toml
++++ b/lax/regular-functions/concepts/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ # Part A (lax-765601) and Part B (lax-132576) of the book
+ [[require]]
+diff --git a/lax/regular-functions/concepts/lean-toolchain b/lax/regular-functions/concepts/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/regular-functions/concepts/lean-toolchain
++++ b/lax/regular-functions/concepts/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/regular-functions/manifest.yaml b/lax/regular-functions/manifest.yaml
+index abb1412..5d77ccc 100644
+--- a/lax/regular-functions/manifest.yaml
++++ b/lax/regular-functions/manifest.yaml
+@@ -1,7 +1,7 @@
+ specVersion: "1"
+ id: lax-916827
+-leanVersion: "v4.30.0"
+-mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++leanVersion: "v4.33.0"
++mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+ title: "Transducers, Part C: Regular Functions, Two-Way Transducers and
+   Streaming String Transducers"
+ authors:
+diff --git a/lax/regular-functions/proofs/lakefile.toml b/lax/regular-functions/proofs/lakefile.toml
+index 8b18713..1f60089 100644
+--- a/lax/regular-functions/proofs/lakefile.toml
++++ b/lax/regular-functions/proofs/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ [[require]]
+ name = "Lax916827"
+diff --git a/lax/regular-functions/proofs/lean-toolchain b/lax/regular-functions/proofs/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/regular-functions/proofs/lean-toolchain
++++ b/lax/regular-functions/proofs/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/tools/umbrella-pins.py b/lax/tools/umbrella-pins.py
+index 400fdea..fc2294a 100644
+--- a/lax/tools/umbrella-pins.py
++++ b/lax/tools/umbrella-pins.py
+@@ -23,7 +23,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ """
+ def req(name, rev, sub):
+     return f'\n[[require]]\nname = "{name}"\ngit = "https://github.com/bojanczyk/transducer-book"\nrev = "{rev}"\nsubDir = "lax/{sub}"\n'
+diff --git a/lax/transducers-book/concepts/lakefile.toml b/lax/transducers-book/concepts/lakefile.toml
+index 7bec941..d346277 100644
+--- a/lax/transducers-book/concepts/lakefile.toml
++++ b/lax/transducers-book/concepts/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ # Undecidability of the Post correspondence problem (lax-251941)
+ [[require]]
+diff --git a/lax/transducers-book/concepts/lean-toolchain b/lax/transducers-book/concepts/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/transducers-book/concepts/lean-toolchain
++++ b/lax/transducers-book/concepts/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+diff --git a/lax/transducers-book/manifest.yaml b/lax/transducers-book/manifest.yaml
+index c882371..221cf18 100644
+--- a/lax/transducers-book/manifest.yaml
++++ b/lax/transducers-book/manifest.yaml
+@@ -1,7 +1,7 @@
+ specVersion: "1"
+ id: lax-157538
+-leanVersion: "v4.30.0"
+-mathlibVersion: "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++leanVersion: "v4.33.0"
++mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+ title: "Transducers"
+ authors:
+   - name: Mikołaj Bojańczyk
+diff --git a/lax/transducers-book/proofs/lakefile.toml b/lax/transducers-book/proofs/lakefile.toml
+index 430b015..fbf0563 100644
+--- a/lax/transducers-book/proofs/lakefile.toml
++++ b/lax/transducers-book/proofs/lakefile.toml
+@@ -7,7 +7,7 @@ autoImplicit = false
+ [[require]]
+ name = "mathlib"
+ git = "https://github.com/leanprover-community/mathlib4"
+-rev = "c5ea00351c28e24afc9f0f84379aa41082b1188f"
++rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+ 
+ [[require]]
+ name = "Lax157538"
+diff --git a/lax/transducers-book/proofs/lean-toolchain b/lax/transducers-book/proofs/lean-toolchain
+index af9e5d3..025e595 100644
+--- a/lax/transducers-book/proofs/lean-toolchain
++++ b/lax/transducers-book/proofs/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.30.0
++leanprover/lean4:v4.33.0
+-- 
+2.43.0
+
