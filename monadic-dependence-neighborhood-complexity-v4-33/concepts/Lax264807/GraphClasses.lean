@@ -14,7 +14,7 @@ graph $K_{t,t}$ occurs in no member as a subgraph.
 # Formalization notes
 
 The notion of a graph class is not restated here. `GraphClass` is the
-abbreviation of the *Sparsity Lectures* submission (Lax12), imported and
+abbreviation of the *Sparsity Lectures* submission (Lax199508), imported and
 used as is, so that the statements of this submission and the statements
 assumed from that one speak about literally the same objects. This
 concept adds the two class-level notions this submission needs on top of

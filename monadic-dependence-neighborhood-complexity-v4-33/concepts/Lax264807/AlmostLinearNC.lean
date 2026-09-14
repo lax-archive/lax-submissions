@@ -20,7 +20,7 @@ Dependent Graph Classes* (2026).
 The hypothesis is the transduction-based definition of monadic
 dependence, the subject of this submission; the conclusion is the
 predicate `HasAlmostLinearNC` of the *Sparsity Lectures* submission
-(Lax12), where neighborhood complexity is defined and endorsed. Stating
+(Lax199508), where neighborhood complexity is defined and endorsed. Stating
 the theorem over that predicate is what makes it directly comparable to
 the nowhere dense counting statement there: the same bound, under a
 strictly weaker hypothesis.

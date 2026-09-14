@@ -17,7 +17,7 @@ Adler and Adler proved that nowhere dense classes are monadically
 *stable*; monadic dependence is the weakening stated here, which is how
 the equivalence is used in the literature. The hypothesis is
 `NowhereDense`, the shallow-minor definition of the *Sparsity Lectures*
-submission (Lax12), where nowhere denseness is defined and endorsed.
+submission (Lax199508), where nowhere denseness is defined and endorsed.
 -/
 
 namespace Lax264807.AdlerAdler

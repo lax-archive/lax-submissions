@@ -17,7 +17,7 @@ classes, monadic dependence and nowhere denseness coincide.
 The hypotheses are the weak sparseness predicate of the graph classes
 concept of this submission and the transduction-based definition of
 monadic dependence; the conclusion is `NowhereDense`, the shallow-minor
-definition of the *Sparsity Lectures* submission (Lax12), where nowhere
+definition of the *Sparsity Lectures* submission (Lax199508), where nowhere
 denseness is defined and endorsed. Stating the conclusion over that
 definition is what lets this statement compose directly with the
 sparsity theory built on it.

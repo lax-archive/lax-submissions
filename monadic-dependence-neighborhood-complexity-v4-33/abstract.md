@@ -8,7 +8,7 @@ $|\{N(v) \cap A : v \in V(G)\}| \le c\,|A|^{1+\varepsilon}$. Neighborhood
 complexity is a notion of sparsity theory, and the theorem extends a
 classical bound for nowhere dense classes to a much larger,
 model-theoretically defined family. The submission builds on the
-*Sparsity Lectures* submission (Lax12), whose graph classes, nowhere
+*Sparsity Lectures* submission (Lax199508), whose graph classes, nowhere
 denseness and neighborhood complexity it imports and states its theorems
 over, and contributes the model-theoretic side — non-copying first-order
 transductions of relational structures, graph transductions, monadic
@@ -17,7 +17,7 @@ two: weakly sparse monadically dependent classes are nowhere dense; the
 headline theorem; and nowhere dense classes are monadically dependent
 (Adler–Adler). Because the nowhere-denseness hypotheses and the
 almost-linear bound predicate are the separately endorsed definitions of
-Lax12, these statements compose directly with the sparsity theory stated
+Lax199508, these statements compose directly with the sparsity theory stated
 there, and the surface carries the full classical equivalence that on
 weakly sparse classes, monadic dependence and nowhere denseness coincide.
 
@@ -36,12 +36,12 @@ lemma refute this.
 The classical sparsity and Ramsey material the proofs rest on is assumed
 from upstream submissions, so the dependency is visible in the archive's
 proof network: uniform quasi-wideness and almost linear neighborhood
-complexity of nowhere dense classes from *Sparsity Lectures* (Lax12),
+complexity of nowhere dense classes from *Sparsity Lectures* (Lax199508),
 which formalizes the lecture notes of Pilipczuk and Siebertz, and
 Ramsey's theorem for colourings of pairs with its order-type form for
-tuples from *Finite Ramsey* (Lax14). The terminal step of the headline
+tuples from *Finite Ramsey* (Lax345067). The terminal step of the headline
 proof composes the statements of the two halves of the paper's
 Corollary 6 — the weakly sparse theorem stated here and the nowhere
-dense counting theorem stated in Lax12. What each proof reports beyond
+dense counting theorem stated in Lax199508. What each proof reports beyond
 Lean's standard logical axioms is exactly the list in its `assumptions`
 block.
