@@ -151,7 +151,7 @@ theorem fcRun_snd_le (ys : List ℕ) (t : ℕ) : ∀ (m : ℕ) (s : ℕ × ℕ),
 def fcCountOf (ys : List ℕ) (t : ℕ) : ℕ := (fcRun ys t ys.length (0, 0)).2
 
 theorem fcCountOf_le (ys : List ℕ) (t : ℕ) : fcCountOf ys t ≤ ys.length := by
-  simpa using fcRun_snd_le ys t ys.length (0, 0)
+  simpa [fcCountOf] using fcRun_snd_le ys t ys.length (0, 0)
 
 /-! ## 2. Filter-count: the initial IR state
 
