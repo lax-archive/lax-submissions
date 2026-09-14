@@ -1,7 +1,7 @@
 From f88845aed59b5b7418f9f59a692db6648006c8f9 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 07:34:26 +0000
-Subject: [PATCH 07/11] lax/CAMPAIGN: S2 and S3 port entries
+Subject: [PATCH 07/12] lax/CAMPAIGN: S2 and S3 port entries
 
 ---
  lax/CAMPAIGN.md | 35 +++++++++++++++++++++++++++++++++++

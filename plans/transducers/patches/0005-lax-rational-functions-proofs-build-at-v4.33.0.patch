@@ -1,7 +1,7 @@
 From d639d5cd36e2591a7182ea912036d7c9db2abcf8 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 07:02:16 +0000
-Subject: [PATCH 05/11] lax/rational-functions: proofs build at v4.33.0
+Subject: [PATCH 05/12] lax/rational-functions: proofs build at v4.33.0
 
 Nine files, thirteen sites: simpa split into simp only + exact where the
 bridge term is defeq but not syntactic, convert-using-1 on IsRegular

@@ -1,7 +1,7 @@
 From 286c95a1c805a875511d2662961985140337e8fa Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 14 Sep 2026 07:46:26 +0000
-Subject: [PATCH 08/11] lax/mso-transductions: proofs build at v4.33.0
+Subject: [PATCH 08/12] lax/mso-transductions: proofs build at v4.33.0
 
 Nine files: the Common.Aux import renamed, rw/simpa at def-wrapped
 component types ((trans R).E, (toI T).Elt, (toSrcRel R).Idx) replaced by

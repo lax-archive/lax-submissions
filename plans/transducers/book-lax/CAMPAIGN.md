@@ -133,7 +133,8 @@ longer bridges `id` and `fun x => x` without `Function.id_def`.
   residue `() = PUnit.unit` closes by `exact fun _ => rfl`, not
   `Subsingleton.elim`), `ITransBuild.lean:187` `Function.id_def` (iii).
 - S5 (`regular-combinators`; every v4.30 workaround still needed). **The
-  one concept-file change of the port, awaiting Jan**:
+  one concept-file change of the port** (discussed with Jan 2026-09-14: no
+  concept dialect is enforced yet, and the declared content is unchanged):
   `concepts/Lax709149/Types.lean:48` `Sym8` (eight nullary constructors)
   `deriving DecidableEq, Fintype` fails (ix); proposed `deriving
   DecidableEq` + `instance : Fintype Sym8 := derive_fintype% _` with
