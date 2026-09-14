@@ -139,8 +139,12 @@ theorem sparsGraphOn_mem_sparsGraphs {C : GraphClass} (hG : C n G)
           exact congrArg Subtype.val (e.apply_symm_apply ⟨x, hx'⟩)
       refine hrange.trans ?_
       symm
-      simp only [sparsTransduction, RealizeIn,
-        Language.Formula.realize_sup]
+      change RealizeIn G.structure colors
+          (colorAtom (⟨5 * k, by omega⟩ : Fin (5 * k + 2))
+              (Language.Term.var (Sum.inl 0)) ⊔
+            colorAtom (⟨5 * k + 1, by omega⟩ : Fin (5 * k + 2))
+              (Language.Term.var (Sum.inl 0))) ![x] ↔ _
+      simp only [RealizeIn, Language.Formula.realize_sup]
       constructor
       · intro h
         rcases h with h | h
@@ -240,8 +244,23 @@ theorem sparsGraphOn_mem_sparsGraphs {C : GraphClass} (hG : C n G)
                 fin_cases i <;> rfl
               rw [hw]
               exact hformula j x y hx
-        change (sparsGraphOn S reps).Adj (v 0) (v 1) ↔ _
-        simp only [sparsTransduction, RealizeIn,
+        change (sparsGraphOn S reps).Adj (v 0) (v 1) ↔
+          RealizeIn G.structure colors
+            ((colorAtom (⟨5 * k, by omega⟩ : Fin (5 * k + 2))
+                    (Language.Term.var (Sum.inl 0)) ⊓
+                  colorAtom (⟨5 * k + 1, by omega⟩ : Fin (5 * k + 2))
+                    (Language.Term.var (Sum.inl 1)) ⊓
+                Language.BoundedFormula.iSup fun j : Fin k =>
+                  Language.Formula.relabel ![1, 0]
+                    (liftFormula (by omega) (sparsFormulas k j))) ⊔
+              (colorAtom (⟨5 * k, by omega⟩ : Fin (5 * k + 2))
+                    (Language.Term.var (Sum.inl 1)) ⊓
+                  colorAtom (⟨5 * k + 1, by omega⟩ : Fin (5 * k + 2))
+                    (Language.Term.var (Sum.inl 0)) ⊓
+                Language.BoundedFormula.iSup fun j : Fin k =>
+                  liftFormula (by omega) (sparsFormulas k j)))
+            (⇑g ∘ v)
+        simp only [RealizeIn,
           Language.Formula.realize_sup, Language.Formula.realize_inf]
         constructor
         · intro hadj

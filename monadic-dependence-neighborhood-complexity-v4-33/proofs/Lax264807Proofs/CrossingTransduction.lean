@@ -57,7 +57,7 @@ theorem BlueWalk.symm {V : Type*} {G : SimpleGraph V} {blue : Set V}
     {ℓ : ℕ} : ∀ {x y : V}, BlueWalk G blue ℓ x y →
       BlueWalk G blue ℓ y x := by
   induction ℓ with
-  | zero => exact fun h => G.symm h
+  | zero => exact fun h => G.adj_symm h
   | succ ℓ ih =>
     rintro x y ⟨z, hz, hxz, hzy⟩
     exact (ih hzy).snoc hz hxz.symm
