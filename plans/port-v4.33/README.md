@@ -51,6 +51,12 @@ compile), then a direct `lake build` per package, concepts before proofs.
 `lax build --replay word-ram` (the archive's own checks, kernel replay
 included) runs on the one folder with no cross-submission require.
 
+**Outcome.** All seven folders build green at v4.33.0 through the local
+loop — word-ram, ram-linear-time, refinement-tower,
+nowhere-dense-model-checking, lax-introduction in place, and the two
+successors lax-264807 and lax-768004 — with no declared statement changed
+anywhere. What the port cannot do without submit rights is in FINISH.md.
+
 ## What changed, per folder
 
 Pins everywhere: `manifest.yaml` (`leanVersion`, `mathlibVersion`), both
@@ -118,7 +124,48 @@ Pins everywhere: `manifest.yaml` (`leanVersion`, `mathlibVersion`), both
   `Finset.sum_eq_add_sum_diff_singleton` is gone at this pin →
   `(Finset.add_sum_erase _ f hMem).symm` (`Iicf/UnionFindTime.lean:932-946`).
   `AbsHeap.lean:936,942` still carry `simp only []` and still build.
-- **nowhere-dense-model-checking** (lax-3): _pending_.
+- **nowhere-dense-model-checking** (lax-3; 2048 + 3754 jobs green;
+  concepts compile with zero Lean changes, every declared statement
+  byte-identical). 37 proof files, +152/−100, all under
+  `proofs/Lax3Proofs/`. (xi) `Std.Symm`: `Augmentation.lean:137,180,739`,
+  `AugmentedDensity.lean:766`, `CoverDegree.lean:206`, `ImplFrontEnd.lean:
+  119`, `ImplMultiSource.lean:106`, `SolveSweepAug.lean:253`,
+  `SolveSweepAugCsr.lean:712`, `SolveSweepPeel.lean:371`,
+  `UqwInstantiation.lean:140`. (i) typed `have`s / explicit arguments /
+  terms at δ-equal carriers (`(childArena …).N` vs `childN …`, `Tabs`,
+  `Coloring`, `OrderingRoutine`): `WalkDistance.lean:104-108`,
+  `SplitterWin.lean:137-141`, `UqwInstantiation.lean:155-165`,
+  `DriverCorrect.lean:435-441`, `AugmentedDensity.lean:398`,
+  `ProgFrame.lean:542-548`, `SolveMatFrame.lean:199-205`,
+  `SolveMachPrep.lean:211-219`, `SolveMachPrepRun.lean:521,3229-3232,
+  3288-3295`, and `Unroll.lean:173-176,463-466` — the one restructured
+  proof (a `funext`-derived `have` fed to `rw` before unfolding the frame;
+  both statements unchanged). (iv)/(vii): `Augmentation.lean:668`,
+  `SolveBlocksScatter.lean:1670`, `SolveCovLoad.lean:1066-1067`,
+  `SolveSeamTop.lean:578,741`, `SolveSegReadRun.lean:683`,
+  `SolveStageCharge.lean:210`, `SolveConcreteBounds.lean:77`,
+  `SolveSweepPeel.lean:4857,4862`, `SolveSweepAugStep.lean:108`,
+  `SolveSweepAugCsr.lean:469-475`, `SolveMachine.lean:91-92`,
+  `SolveConcreteStages.lean:54-55`; `if false = true` no longer reduced by
+  `simp only` (`SolveSweepAug.lean:1862`, `SolveSweepAugPairFilter.lean:
+  43-45`, `SolveSweepAugRound.lean:360`). New classes: **(xxi)** `simp`
+  no longer zeta-unfolds a tactic-local `set`/`let` — rewrite with the
+  binding equation explicitly (`SolveBlocksRestrict.lean:2830-2831`,
+  `SolveBlocksProfiles.lean:821,1705`, `SolveSweepAug.lean:1161-1163`,
+  `SolveSweepAugFilter.lean:179-181`, `SolveSweepPeel.lean:5007-5009`,
+  `SolveMachPrepRun.lean:4048-4050`, `SolveSweepAugCsr.lean:764-766`);
+  **(xxii)** `List`'s `⊆` lost dot-notation `.trans` (`HasSubset.Subset.
+  trans` deprecated to the `Preorder` lemma) — `List.Subset.trans h₁ h₂`
+  (`SolveBlocksBotCom.lean:2143-2187`); **(xxiii)** `SimpleGraph.map` is
+  now `Ne ⊓ Relation.Map`, so a `show` against the old body no longer
+  matches — go through `SimpleGraph.map_adj` (`SolveMachPrep.lean:212-215`);
+  **(xxiv)** a `let`'s inferred type is now the δ-expanded one, which made
+  every `rw [canonicalChannels]` in `SolveChannels.lean` miss — ascribe the
+  `let` (`:112`), then `unfold` for `rw` (`:137,146`) and term finishes
+  (`:141-145,157-160`); **(xxv)** a `rfl` `@[simp]` projection lemma is no
+  longer `rw`-able at a `def`-wrapped arena — state the bound at
+  `graphWeight G` when the hypothesis is built (`ProgCharge.lean:1141-1146`,
+  `SolveFrameCharge.lean:219-224`).
 - **twin-width-treewidth-separation-v4-33** (lax-768004; 1195 + 1272 jobs
   green; concepts compile as scaffolded, paper untouched). All under
   `proofs/Lax768004Proofs/Source/TwinWidth/Graph/`: (xi) `Std.Symm` —
