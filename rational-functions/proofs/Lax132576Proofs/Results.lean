@@ -349,7 +349,8 @@ theorem decidable_wcodeEval_eq :
     DecidableUnderPromise (fun p : WCode × WCode => WCodeValid p.1 ∧ WCodeValid p.2)
       (fun p => wcodeEval p.1 = wcodeEval p.2) := by
   have h := (wcode_pair_transport _ _).2 Transducers.weighted_equivalence_decidable
-  simpa only [wcodeValid_iff, wcodeEval_eq] using h
+  simp only [wcodeValid_iff, wcodeEval_eq]
+  exact h
 
 /--
 ---
@@ -367,7 +368,8 @@ theorem decidable_codeRel_eq :
     DecidableUnderPromise (fun p : RelCode × RelCode => CodeFunctional p.1 ∧ CodeFunctional p.2)
       (fun p => codeRel p.1 = codeRel p.2) := by
   have h := (relcode_pair_transport _ _).2 Transducers.rationalFun_equivalence_decidable
-  simpa only [codeFunctional_iff, codeRel_eq] using h
+  simp only [codeFunctional_iff, codeRel_eq]
+  exact h
 
 /--
 ---
@@ -538,7 +540,8 @@ theorem lengthPreserving_iff_typing {A B Q : Type} (M : NFAO A B Q)
         ∀ p ∈ M.final, τ p = 0 := by
   have h := Transducers.lengthPreserving_iff_typing (toSrc M)
     (fun q => (productive_iff M q).1 (hprod q)) (fun w v => ((rel_iff M w v).symm.trans (hM w v)))
-  simpa only [path_iff, inputOf_eq, outputOf_eq] using h
+  simp only [path_iff, inputOf_eq, outputOf_eq]
+  exact h
 
 /--
 ---

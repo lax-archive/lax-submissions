@@ -302,12 +302,12 @@ def sufPre (u : List B) : Language A := {w | u <:+ f w}
 lemma modPre_isRegular (hcont : Continuous f) (r : ℕ) :
     (modPre f K r).IsRegular := by
   have h := hcont (lengthModLang (K + 1) r) (lengthModLang_isRegular (K + 1) r (by omega))
-  convert h using 1
+  exact h
 
 lemma sufPre_isRegular [Finite B] (hcont : Continuous f) (u : List B) :
     (sufPre f u).IsRegular := by
   have h := hcont (suffixLang u) (suffixLang_isRegular u)
-  convert h using 1
+  exact h
 
 /-- The state of the canonical transducer after reading `w`. -/
 def state (w : List A) : (Fin (K + 1) → Language A) × (Short B K → Language A) :=

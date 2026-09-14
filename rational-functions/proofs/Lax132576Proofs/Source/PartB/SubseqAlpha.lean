@@ -32,7 +32,7 @@ def Dom (f : List A → Option (List B)) : Language A := {w | (f w).isSome}
 def Pre (f : List A → Option (List B)) : Language A := {w | ∃ v, (f (w ++ v)).isSome}
 
 lemma mem_pre_of_mem_dom {f : List A → Option (List B)} {w : List A} (h : w ∈ Dom f) :
-    w ∈ Pre f := ⟨[], by simpa using h⟩
+    w ∈ Pre f := ⟨[], by simp only [List.append_nil]; exact h⟩
 
 lemma mem_pre_of_append {f : List A → Option (List B)} {w v : List A} (h : w ++ v ∈ Pre f) :
     w ∈ Pre f := by

@@ -248,10 +248,16 @@ lemma lengthPreserving_codeFun_iff {c : RelCode} (hc : CodeFunctional c) :
     obtain ⟨w', rfl⟩ : ∃ w' : List (InA c), w = w'.map Subtype.val :=
       exists_lift (fun y hy => codeRel_codeWord hrel y hy)
     rw [codeFun_eq hc hrel]
-    simpa using hlen w'
+    have hO : ((codeFun c w').map Subtype.val).length = (codeFun c w').length :=
+      List.length_map _
+    have hI : (w'.map Subtype.val).length = w'.length := List.length_map _
+    exact hO.trans ((hlen w').trans hI.symm)
   · intro hlen w
-    have := hlen _ _ (codeFun_spec hc w)
-    simpa using this
+    have h := hlen _ _ (codeFun_spec hc w)
+    have hO : ((codeFun c w).map Subtype.val).length = (codeFun c w).length :=
+      List.length_map _
+    have hI : (w.map Subtype.val).length = w.length := List.length_map _
+    exact hO.symm.trans (h.trans hI)
 
 /-- Under the promise, the function described by the code is prefix preserving
 exactly when the coded relation is. -/
@@ -277,7 +283,7 @@ lemma prefixPreserving_codeFun_iff {c : RelCode} (hc : CodeFunctional c) :
       have h2 := codeFun_spec hc (w ++ [a])
       erw [List.map_append] at h2
       have := hpc (w.map Subtype.val) ((codeFun c w).map Subtype.val) a.val
-        ((codeFun c (w ++ [a])).map Subtype.val) h1 (by simpa using h2)
+        ((codeFun c (w ++ [a])).map Subtype.val) h1 h2
       exact prefix_of_map_prefix Subtype.val_injective this
     have main : ∀ (t w : List (InA c)), codeFun c w <+: codeFun c (w ++ t) := by
       intro t
@@ -331,7 +337,7 @@ lemma widen_run {c : RelCode} {Q : Type} (M : Mealy (InA c) (OutA c) Q) (q : Q)
             ((M.step q ⟨a.val, h⟩).1, (M.step q ⟨a.val, h⟩).2.val)
           else (q, 0)) = _
         rw [dif_pos ha]
-        simp only [Subtype.coe_eta]
+        rfl
       erw [List.map_cons, Mealy.run_cons, Mealy.run_cons, hstep, List.map_cons, ih]
 
 lemma widen_eval {c : RelCode} {Q : Type} (M : Mealy (InA c) (OutA c) Q) (w : List (InA c)) :
@@ -365,7 +371,10 @@ theorem mealyProperty_iff {c : RelCode} (hc : CodeFunctional c) :
     · intro w
       have h1 : ((codeFun c w).map Subtype.val).length = (M.eval (w.map Subtype.val)).length := by
         rw [hval]
-      simpa using h1
+      have hO : ((codeFun c w).map Subtype.val).length = (codeFun c w).length :=
+        List.length_map _
+      have hI : (w.map Subtype.val).length = w.length := List.length_map _
+      simpa [hO, hI] using h1
   · rintro ⟨Q, hQ, M, hM⟩
     refine ⟨(widen M).eval, ?_, ⟨Q, hQ, widen M, rfl⟩⟩
     intro w hw v

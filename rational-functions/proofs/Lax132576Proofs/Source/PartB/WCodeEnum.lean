@@ -133,12 +133,12 @@ lemma mem_upto {c : WCode} : ∀ (K : ℕ) (P : List PRun) (y : PRun),
             obtain ⟨hsrc, htδ, hrest⟩ := Path.cons_inv h2
             obtain ⟨s, hs, rfl⟩ := htδ
             refine ⟨(wtr s :: x.1, (wtr s).2.2.2, x.2.2.drop (wtr s).2.1.length), ?_, ts',
-              by simpa using Nat.le_of_succ_le_succ hlen, by simpa using h1, hrest, ?_⟩
+              by simpa using Nat.le_of_succ_le_succ hlen, by simpa [wtr] using h1, hrest, ?_⟩
             · refine List.mem_flatMap.2 ⟨x, hx, mem_extend.2 ⟨s, hs, hsrc, ?_, ?_⟩⟩
               · refine ⟨inputOf ts' ++ y.2.2, ?_⟩
                 simpa using h3
               · rfl
-            · have : (wtr s).2.1 ++ (inputOf ts' ++ y.2.2) = x.2.2 := by simpa using h3
+            · have : (wtr s).2.1 ++ (inputOf ts' ++ y.2.2) = x.2.2 := by simpa [wtr] using h3
               rw [← this]
               simp
 

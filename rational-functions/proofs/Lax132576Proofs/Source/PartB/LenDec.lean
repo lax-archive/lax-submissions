@@ -254,7 +254,7 @@ lemma acceptB_iff (c : RelCode) (ts : List Tr) :
   · rintro ⟨q, hq, p, hp, hpath⟩
     refine (anyB_iff _ _).2 ⟨q, hq, ?_⟩
     rw [(runO_iff c.1 (codeAut c) hM ts q p).2 hpath]
-    simpa [memB_iff] using hp
+    simpa [memB_iff, codeAut] using hp
 
 /-- The boolean test for a transition sequence being balanced. -/
 def balB (ts : List Tr) : Bool := decide (dOut ts = dIn ts)

@@ -39,13 +39,13 @@ def ModL (r : ℕ) : Language A := {w | ∃ x, D.f w = some x ∧ x.length % Mod
 
 lemma sufL_isRegular [Finite A] [Finite B] (u : List B) : Language.IsRegular (SufL D u) := by
   have h := D.cont (suffixLang u) (suffixLang_isRegular u)
-  convert h using 1
+  exact h
 
 lemma modL_isRegular [Finite A] [Finite B] (r : ℕ) :
     Language.IsRegular (ModL D r) := by
   have h := D.cont (lengthModLang (Mod D) r)
     (lengthModLang_isRegular (Mod D) r (Mod_pos D))
-  convert h using 1
+  exact h
 
 /-! ## The state -/
 

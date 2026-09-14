@@ -56,6 +56,27 @@ longer bridges `id` and `fun x => x` without `Function.id_def`.
   `Function.iterate_succ_apply'` given their arguments with the
   `(⟨deriv f u, u, rfl⟩ : Derivs f)` ascription (drift i: `Derivs f` is a
   `def`), `:414` `show deriv f u = _` before the `simp`.
+- S2 (`rational-functions`, 9 files, 13 sites; concepts untouched; none of
+  the v4.30 workarounds became unnecessary — the `list_take'`/`list_drop'`
+  renames, `decode_rat`, the `PairWeighted` binders and the six `CodeRat`
+  `erw` sites all still needed): new drift classes (iv) `simpa … using h`
+  is stricter than `exact` — a bridge term that is defeq but not
+  syntactically equal (`(toSrc M).init` vs `M.init`) now fails "after
+  simplification", split into `simp only […]` + `exact h`; (v) `convert h
+  using 1` on `Language.IsRegular` leaves an unsolved `Iff`, `exact h`
+  works; (vi) an `instance` with an explicit argument instance synthesis can
+  never supply is a hard error; (vii) `simp only []` no longer makes
+  progress. Sites: `Results.lean:352,371,543` (iv);
+  `Source/PartB/SeqChar.lean:305,310`, `SubseqState.lean:42,48` (v);
+  `SubseqAlpha.lean:35` `simpa using h` → `simp only [List.append_nil];
+  exact h`; `WeightedNF.lean:862` `instance instFiniteUseful (h :
+  M.init.Finite)` → `lemma` (vi; both call sites already pass `h`);
+  `HomComplement.lean:272` `simp only [] at ht` → `simp only [aut, delta,
+  Set.mem_union] at ht` (vii); `LenDec.lean:257` `simpa [memB_iff, codeAut]`;
+  `WCodeEnum.lean:136,141` `simpa [wtr]`; `CodeRat.lean:251-260,374-377`
+  `List.length_map` instantiated by hand as `have`s over the `def`-wrapped
+  `InA c`/`OutA c` (drift i), `:286` `(by simpa using h2)` → `h2`, `:340`
+  `simp only [Subtype.coe_eta]` → `rfl`.
 
 ## Source edits (against the epoch mathlib)
 

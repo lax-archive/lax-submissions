@@ -859,7 +859,7 @@ lemma useful_finite (h : M.init.Finite) : {q : Q | Useful M q}.Finite := by
   · exact Or.inl hq₀
   · exact Or.inr ⟨t, htm, htp⟩
 
-instance instFiniteUseful (h : M.init.Finite) : Finite {q : Q // Useful M q} :=
+lemma instFiniteUseful (h : M.init.Finite) : Finite {q : Q // Useful M q} :=
   (useful_finite M h).to_subtype
 
 end Restrict

@@ -269,7 +269,7 @@ lemma aut_sound_aux {p : Fin 4} (hp : p ≠ 0) {s : Fin 4} {w : List A} {v : Lis
   have hstep : ∀ (q q' : Fin 4) (u : List A) (x : List B) (w : List A) (v : List B),
       (q, u, x, q') ∈ (aut φ).δ → (aut φ).relFrom q' w v p → inv φ q' w v → inv φ q (u ++ w) (x ++ v) := by
     intro q q' u x w v ht _ hi
-    simp only [] at ht
+    simp only [aut, delta, Set.mem_union] at ht
     induction ht with
     | inl h => induction h with
       | inl h => induction h with
