@@ -7,7 +7,7 @@ title: Planar graphs
 type: definition
 ---
 
-![Planar graph illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/planar.svg "Planar graph illustration")
+![Planar graph illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/1d7f2bc99763b554a5d59824c6c0d682f8241254/planar-graph-classes-v4-33/assets/planar.svg "Planar graph illustration")
 
 A graph is planar here when it has a crossing-free straight-line drawing in
 the real plane. For finite simple graphs, this agrees with the usual notion
