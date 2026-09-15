@@ -118,6 +118,6 @@ Others (owners in brackets):
 |---|---|---|---|---|
 | 1a | merge ram-input-repair + cloud port into main; re-port the four RAM folders on the repaired content; local builds green | opus | `.claude/worktrees/port-land` | dispatched 2026-09-15 |
 | 1b | lax-5 successor: real id, rename, build, submit as draft | opus | `.claude/worktrees/ndmc-succ` | dispatched 2026-09-15 |
-| 1c | lax-introduction resubmit from main (v4.33, registered deps) | supervisor | main | started 2026-09-15 |
+| 1c | lax-introduction resubmit from main (v4.33, registered deps) | supervisor | main | DONE 2026-09-15: lax-242665 draft @ 2be112c, v4.33.0, requires Lax228581/Lax199508/Lax865980 (all registered); draft-dependency violation cleared |
 | 2 | cascade resubmit word-ram → ram-linear-time, refinement-tower → nowhere-dense-model-checking (`.claude/resubmit-cascade.sh`), supersedes claim per D1 | after 1a | main | pending |
 | 3 | registration per D4 | after 2 | main | pending |
