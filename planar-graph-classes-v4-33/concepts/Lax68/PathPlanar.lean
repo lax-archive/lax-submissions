@@ -4,7 +4,7 @@ import Lax68.Planar
 /-!
 ---
 title: Paths are planar
-type: theorem
+type: opn
 ---
 Every path graph is planar.
 -/

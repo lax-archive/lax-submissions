@@ -30,8 +30,6 @@ import Lax68.StarTree
 import Lax68.StarOuterplanar
 import Lax68.StarPlanar
 import Lax68.LadderGrid
-import Lax68.LadderOuterplanar
-import Lax68.LadderSeriesParallel
 import Lax68.LadderPlanar
 import Lax68.HalinPlanar
 import Lax68.WheelHalin

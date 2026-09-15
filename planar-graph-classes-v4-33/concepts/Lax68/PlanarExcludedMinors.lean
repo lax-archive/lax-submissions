@@ -3,7 +3,7 @@ import Lax68.Planar
 /-!
 ---
 title: Wagner's theorem
-type: theorem
+type: opn
 ---
 For every finite simple graph, admitting a crossing-free drawing is equivalent
 to containing neither *K₅* nor *K₃,₃* as a minor.

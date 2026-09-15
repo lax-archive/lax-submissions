@@ -4,7 +4,7 @@ import Lax68.Outerplanar
 /-!
 ---
 title: Triangles are outerplanar
-type: theorem
+type: opn
 ---
 Every triangle is outerplanar.
 -/

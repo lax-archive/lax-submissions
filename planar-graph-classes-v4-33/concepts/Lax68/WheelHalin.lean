@@ -4,7 +4,7 @@ import Lax68.HalinGraphs
 /-!
 ---
 title: Wheels are Halin graphs
-type: theorem
+type: opn
 ---
 Every wheel graph is a Halin graph.
 

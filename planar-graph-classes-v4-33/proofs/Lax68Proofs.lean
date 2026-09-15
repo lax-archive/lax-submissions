@@ -1,3 +1,4 @@
 import Lax68Proofs.Relationships
 import Lax68Proofs.ForestMinors
 import Lax68Proofs.Triangles
+import Lax68Proofs.Grids

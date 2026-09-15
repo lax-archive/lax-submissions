@@ -4,7 +4,7 @@ import Lax68.Planar
 /-!
 ---
 title: Kuratowski's theorem in straight-line form
-type: theorem
+type: opn
 ---
 A finite simple graph admits a crossing-free straight-line drawing exactly
 when it contains no subdivision of *K₅* or *K₃,₃*. This is Kuratowski's

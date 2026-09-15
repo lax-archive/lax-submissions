@@ -4,7 +4,7 @@ import Lax68.MaximalOuterplanar
 /-!
 ---
 title: Triangles are maximal outerplanar
-type: theorem
+type: opn
 ---
 Every triangle is maximal outerplanar.
 

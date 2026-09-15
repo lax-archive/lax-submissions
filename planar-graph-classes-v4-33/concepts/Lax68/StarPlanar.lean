@@ -4,7 +4,7 @@ import Lax68.Planar
 /-!
 ---
 title: Stars are planar
-type: theorem
+type: opn
 ---
 Every star graph is planar.
 -/

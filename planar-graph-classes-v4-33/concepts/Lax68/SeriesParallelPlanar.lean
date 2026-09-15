@@ -4,7 +4,7 @@ import Lax68.Planar
 /-!
 ---
 title: Series-parallel graphs are planar
-type: theorem
+type: opn
 ---
 Every series-parallel graph is planar.
 

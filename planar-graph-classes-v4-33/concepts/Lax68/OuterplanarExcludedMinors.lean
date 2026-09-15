@@ -3,7 +3,7 @@ import Lax68.Outerplanar
 /-!
 ---
 title: The excluded-minor characterization of outerplanarity
-type: theorem
+type: opn
 ---
 For every finite simple graph, having an outerplane drawing is equivalent to
 containing neither *K₄* nor *K₂,₃* as a minor.

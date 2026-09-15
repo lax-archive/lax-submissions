@@ -4,7 +4,7 @@ import Lax68.Planar
 /-!
 ---
 title: Triangles are planar
-type: theorem
+type: opn
 ---
 Every triangle is planar.
 -/

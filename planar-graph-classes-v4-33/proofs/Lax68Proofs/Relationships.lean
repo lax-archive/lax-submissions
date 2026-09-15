@@ -189,34 +189,6 @@ theorem ladder_planar {V : Type*} {G : SimpleGraph V} :
 
 /--
 ---
-conclusion: Lax68.LadderPlanar.ladder_planar
----
-Alternatively, ladders are outerplanar, and outerplanar graphs are planar.
-This proof assumes the still-open statement that ladders are outerplanar.
--/
-theorem ladder_planar_of_outerplanar {V : Type*} {G : SimpleGraph V} :
-    Lax68.Ladders.IsLadder G →
-    Lax68.Planar.IsPlanar G :=
-  fun h =>
-    Lax68.OuterplanarPlanar.outerplanar_planar
-      (Lax68.LadderOuterplanar.ladder_outerplanar h)
-
-/--
----
-conclusion: Lax68.LadderPlanar.ladder_planar
----
-Alternatively, ladders are series-parallel, and series-parallel graphs are planar.
-Both intermediate statements remain open in this formalization.
--/
-theorem ladder_planar_of_seriesParallel {V : Type*} {G : SimpleGraph V} :
-    Lax68.Ladders.IsLadder G →
-    Lax68.Planar.IsPlanar G :=
-  fun h =>
-    Lax68.SeriesParallelPlanar.seriesParallel_planar
-      (Lax68.LadderSeriesParallel.ladder_seriesParallel h)
-
-/--
----
 conclusion: Lax68.HalinPlanar.halin_planar
 ---
 Every Halin graph is planar.
@@ -306,7 +278,6 @@ conclusion: Lax68.WallPlanar.wall_planar
 ---
 A wall uses a subset of the edges of its rectangular grid. Restrict a planar
 grid drawing to those edges and relabel its vertices by the wall isomorphism.
-This proof assumes the still-open statement that grids are planar.
 -/
 theorem wall_planar {V : Type*} {G : SimpleGraph V} :
     Lax68.GridsAndWalls.IsWall G → Lax68.Planar.IsPlanar G := by

@@ -4,7 +4,7 @@ import Lax68.Outerplanar
 /-!
 ---
 title: Paths are outerplanar
-type: theorem
+type: opn
 ---
 Every path graph is outerplanar.
 -/
