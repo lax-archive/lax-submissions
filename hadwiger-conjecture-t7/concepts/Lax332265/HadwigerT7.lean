@@ -4,7 +4,7 @@ import Lax332265.SixColorable
 /-!
 ---
 title: Hadwiger's conjecture for t = 7
-type: theorem
+type: opn
 ---
 Every finite graph with no *K*₇ minor is 6-colourable. This is the first open
 case of Hadwiger's conjecture.
