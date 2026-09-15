@@ -74,7 +74,6 @@ theorem concreteScale_level (S : Setup L) {j : ℕ} (hj : j ≤ S.depth) :
   have h2 := concreteLevelMax_le S (fun j => (levelFml S j).length) hj
   have h3 := concreteLevelMax_le S (fun j => concreteAtomBound (levelAtoms S j)) hj
   have h4 := concreteLevelMax_le S (fun j => 2 ^ S.pal j * (concreteQdepth S + 1)) hj
-  dsimp only at h2 h3 h4
   unfold concreteScale
   omega
 

@@ -11,7 +11,7 @@ namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Compile
 open Lax67Proofs.Reasoning Lax62Proofs.Codegen
 open Lax62Proofs.Refine.Codegen (computesInTime_of_spec)
-open Lax11.GraphEncoding Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax11.GraphEncoding Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 
 def codeExprScalars : Expr → List String

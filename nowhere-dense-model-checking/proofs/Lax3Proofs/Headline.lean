@@ -58,7 +58,7 @@ bound, in every statement below; they depend only on `(C, hC, hT, φ,
 namespace Lax3Proofs.Headline
 
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO rank)
 open Lax3Proofs.Driver Lax3Proofs.Reduction Lax3Proofs.CoverEdgeSum
 open Lax11.GraphEncoding

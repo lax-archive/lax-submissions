@@ -109,8 +109,8 @@ lemmas (`mkSetup_margin`, `mkSetup_depth`, `mkSetup_width_le`,
 namespace Lax3Proofs.Unroll
 
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.UniformQuasiWideness Lax12.ColoringNumbers
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.UniformQuasiWideness Lax199508.ColoringNumbers
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3Proofs.Driver
 
 variable {L n₀ : ℕ}
@@ -172,8 +172,9 @@ theorem unrollAux_eq_tablesAux (S : Setup L) (ord : CoverSpec.OrderingRoutine) :
   | zero => intro j A; rfl
   | succ k ih =>
     intro j A
-    rw [unrollAux, tablesAux, frameEval]
-    simp only [ih]
+    have hnext : (fun B => unrollAux (n₀ := n₀) S ord k (j + 1) B)
+        = fun B => tablesAux S ord k (j + 1) B := funext (ih (j + 1))
+    rw [unrollAux, hnext, tablesAux, frameEval]
 
 /-- **The iterative form computes exactly `Driver.tables`** — §8 step
 4b's owed theorem. -/
@@ -459,8 +460,9 @@ theorem unrollCostAux_eq_dcostAux (S : Setup L) (ord : CoverSpec.OrderingRoutine
   | zero => intro j A; rfl
   | succ k ih =>
     intro j A
-    rw [unrollCostAux, dcostAux, frameCost]
-    simp only [ih]
+    have hnext : unrollCostAux (n₀ := n₀) S ord c k (j + 1)
+        = dcostAux S ord c k (j + 1) := funext (ih (j + 1))
+    rw [unrollCostAux, hnext, dcostAux, frameCost]
 
 /-- **The charge of the iterative form equals `Driver.dcost`** — so
 every cost theorem of `DriverCost` (`dcost_node_le`, `dcostAux_le`,

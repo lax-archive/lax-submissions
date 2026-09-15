@@ -51,7 +51,8 @@ theorem ConcreteScr.child (S : Setup L) (n j : ℕ) (hj : j + 1 ≤ S.depth) {σ
     (show n * n ≤ concreteCapacity S n by omega).trans (hc "sa.t" (by decide)),
     hp.trans (hc "sa.c" (by decide)), hn.trans (h.childUp S n j j), ?_⟩
   have := hc "sa.h" (by decide)
-  simpa only [concreteLp, concreteHb, Nat.add_assoc, Nat.mul_assoc] using hh.trans this
+  simp only [concreteLp, concreteHb, Nat.add_assoc, Nat.mul_assoc, Nat.reduceAdd]
+  exact Nat.le_trans hh this
 
 theorem ConcreteScr.table (S : Setup L) (n j i : ℕ) (hi : i ≤ S.depth) {σ : Env}
     (h : ConcreteScr S n j σ) :

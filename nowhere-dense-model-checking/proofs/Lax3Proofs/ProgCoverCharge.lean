@@ -108,7 +108,7 @@ order throughout: the constant *before* `n`, `Gn`, `m`, `G`.
 namespace Lax3Proofs.Prog
 
 open scoped SimpleGraph
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ShallowMinorDensity
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.ShallowMinorDensity
 open Lax3Proofs.Augmentation
 open Lax3Proofs.Augmentation.Orientation
 open Lax3Proofs.AugmentedDensity

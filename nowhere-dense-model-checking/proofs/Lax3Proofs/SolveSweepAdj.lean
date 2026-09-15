@@ -83,8 +83,8 @@ namespace Lax3Proofs.Prog
 
 open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax3.ColoredGraphs (ball)
-open Lax12.UniformQuasiWideness (deleteVerts)
-open Lax12.ColoringNumbers
+open Lax199508.UniformQuasiWideness (deleteVerts)
+open Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.SplitterBasics (deleteVerts_adj)
 open Lax3Proofs.Driver
@@ -476,7 +476,8 @@ private theorem ctrl_delAdjSt :
   have harrs_mt : ctrlEnv.arrs "c.mt" = [1, 0] := rfl
   refine ⟨id, rfl, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro v
-    simp [ctrl_neighborSet_ncard v]
+    rw [ctrl_neighborSet_ncard v]
+    rfl
   · rw [harrs_ao]; simp
   · intro i hi
     rw [harrs_ao]

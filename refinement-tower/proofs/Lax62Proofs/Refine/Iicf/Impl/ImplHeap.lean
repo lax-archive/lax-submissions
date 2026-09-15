@@ -1513,8 +1513,9 @@ theorem heapSinkChild?_eq_implSinkChild {buf : List ℕ} {n idx : ℕ}
       rw [implHeapValue_take hn (by omega) (by omega)]
       congr 1
       omega
-    rw [if_pos (show 0 < 2 * idx + 1 ∧ 2 * idx + 1 ≤ n from ⟨by omega, hr⟩),
-      hvR, hvL, if_pos hr']
+    rw [if_pos (show 0 < 2 * idx + 1 ∧ 2 * idx + 1 ≤ n from ⟨by omega, hr⟩)]
+    simp only [hvR, hvL]
+    rw [if_pos hr']
     by_cases hc : buf[idx * 2]! < buf[idx * 2 - 1]! <;>
       simp only [hc, if_true, if_false] <;> congr 1 <;> omega
   · have hr' : ¬ idx * 2 + 1 < n + 1 := by omega
@@ -1922,8 +1923,7 @@ theorem implHeapPopMinExecSpec_run {s : ArrayList} (hwf : s.Wf)
     (ok, (A, (outLen, (outCap, phys))))
       (natAssn ×ₐ (arrayAssn ×ₐ (natAssn ×ₐ (natAssn ×ₐ natAssn))))
     (boundedExecSpec s x) := by
-  simpa only [boundedExecPre, boundedExecPost] using
-    arlAppend_exec_hnr s x hwf A len cap phys value one two outLen outCap ok doubled
+  exact arlAppend_exec_hnr s x hwf A len cap phys value one two outLen outCap ok doubled
 
 set_option maxHeartbeats 3000000 in
 set_option linter.unusedVariables false in

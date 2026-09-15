@@ -40,6 +40,8 @@ theorem agpPairExpr_eval {B N : ℕ} (up : Bool) (ra uv vv : String)
       (lt_trans u.isLt (by omega)) (lt_trans v.isLt (by omega)) (by omega)
     have hs := agEvalSub (evalB_lit (show 1 < B by omega)) he (by have := agBit_le_one (u.val = v.val); omega)
     rw [agNum_not rfl] at hs
+    show ((Expr.lit 1).sub (agEqE (Expr.var uv) (Expr.var vv))).evalB B σ
+      = some (agBit (u ≠ v))
     simpa only [Fin.val_inj] using hs
   · obtain ⟨hl, hr⟩ := hra rfl
     have hget (x : String) (w : Fin N) (hx : σ.vars x = w) :

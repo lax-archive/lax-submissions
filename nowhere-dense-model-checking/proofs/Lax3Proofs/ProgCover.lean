@@ -64,7 +64,7 @@ namespace Lax3Proofs.Prog
 
 open scoped SimpleGraph
 open Lax62Proofs.Refine
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ColoringNumbers
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.ColoringNumbers
 open Lax3Proofs.CoverDegree
 open Lax3Proofs.CoverRoutine
 

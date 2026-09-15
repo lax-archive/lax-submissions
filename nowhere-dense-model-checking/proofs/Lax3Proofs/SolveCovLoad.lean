@@ -1063,7 +1063,8 @@ private theorem clInit_spec :
       ((σ.setVar "cl.u" 0).setVar "cl.p" 0)
       (((σ.setVar "cl.u" 0).setVar "cl.p" 0).setArr "sa.o" 0 0) 3 := by
     refine (Run.store (evalB_lit h0B) (evalB_lit h0B) ?_).mono (by simp)
-    simpa using hσ
+    have hpos : 0 < (σ.arrs "sa.o").length := hσ
+    simpa using hpos
   have ha4 : Run B (.assign "cl.j" (.lit 0))
       (((σ.setVar "cl.u" 0).setVar "cl.p" 0).setArr "sa.o" 0 0)
       ((((σ.setVar "cl.u" 0).setVar "cl.p" 0).setArr "sa.o" 0 0).setVar

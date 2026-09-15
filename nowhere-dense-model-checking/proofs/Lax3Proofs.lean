@@ -185,5 +185,5 @@ import Lax3Proofs.SolveMachine
 -- `Lax3.NowhereDenseSplitter.splitterWins_of_nowhereDense` (in `SplitterWin`),
 -- and
 -- `Lax3.ModelChecking.exists_almostLinearTime_program_modelChecking`
--- (in `SolveMachine`). The last uses the Lax12 uniformly-quasi-wide
+-- (in `SolveMachine`). The last uses the Lax199508 uniformly-quasi-wide
 -- dependency and does not assume a cover, ordering, or machine implementation.

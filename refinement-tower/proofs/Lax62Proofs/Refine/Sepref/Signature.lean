@@ -260,7 +260,8 @@ theorem hfref_compI_PRE {α α' β β' κa κb : Type}
       (compPRE T Q (fun _ y => P y) (fun x => (h x).nofailT))
       (hrpComp RR' T) (hrrCompND A U) := by
   have hc := hfref_weaken_pre_nofail (hfref_compI_PRE_aux hA hB SC)
-  simpa only [compPRE_apply, true_implies] using hc
+  simp only [compPRE_apply, true_implies] at hc
+  exact hc
 
 /-- Typed Lean entry point corresponding to the source's `FCOMP` attribute.
 No caller needs to apply `hfcomp` manually. -/
@@ -309,7 +310,7 @@ theorem hfref_compI_PRE_dep {α α' β β' κa κb : Type}
       (compPRE T Q (fun _ y => P y) (fun x => (h x).nofailT))
       (hrpComp RR' T) (hrrCompDep T S U) := by
   have hc := hfref_weaken_pre_nofail (hfcomp_dep hA hB SC)
-  simpa only [compPRE_apply, true_implies] using hc
+  exact hc
 
 /-- Typed dependent-result composition entry point. -/
 theorem FCOMP_dep {α α' β β' κa κb : Type}

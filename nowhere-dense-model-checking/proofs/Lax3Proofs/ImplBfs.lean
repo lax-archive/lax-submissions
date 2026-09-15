@@ -80,7 +80,7 @@ namespace Lax3Proofs.Impl
 
 open Lax62Proofs.Refine
 open Lax3.ColoredGraphs (WithinDist ball)
-open Lax12.UniformQuasiWideness (deleteVerts)
+open Lax199508.UniformQuasiWideness (deleteVerts)
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.RefineBfsProbe (charge bfsAlg_computes_ball)
 

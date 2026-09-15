@@ -67,7 +67,8 @@ private theorem twoCost_le_iff {a b : TwoCurrency → ℕ∞} :
   · intro h i
     fin_cases i
     · simpa [twoCost] using ACost.le_def.mp h firstCurrency
-    · simpa [twoCost] using ACost.le_def.mp h secondCurrency
+    · simpa [twoCost, firstCurrency, secondCurrency] using
+        ACost.le_def.mp h secondCurrency
   · intro h
     apply ACost.le_def.mpr
     intro k
@@ -123,11 +124,11 @@ private theorem reclaim_twoCurrency_eq (available required : TwoCurrency → ℕ
       | none => .fail
       | some residual =>
           .rest fun _ => ((twoCost residual : ECost) : WithBot ECost) := by
-  simp only [reclaim, twoResult, twoPotential, reclaimMirror]
+  simp only [reclaim, twoResult, reclaimMirror]
   by_cases hpay : ∀ i, required i ≤ available i
-  · have hglobal : ∀ (_ : Unit) (c : ECost),
+  · have hglobal : ∀ (x : Unit) (c : ECost),
         (twoCost available : WithBot ECost) = (c : WithBot ECost) →
-          twoCost required ≤ c := by
+          twoPotential required x ≤ c := by
       intro _ c hc
       have hc' : c = twoCost available := by
         exact WithBot.coe_injective hc.symm
@@ -137,11 +138,11 @@ private theorem reclaim_twoCurrency_eq (available required : TwoCurrency → ℕ
     congr 1
     funext x
     cases x
-    simp only [WithBot.recBotCoe_coe]
+    simp only [WithBot.recBotCoe_coe, twoPotential]
     rw [twoCost_resSub]
-  · have hglobal : ¬ ∀ (_ : Unit) (c : ECost),
+  · have hglobal : ¬ ∀ (x : Unit) (c : ECost),
         (twoCost available : WithBot ECost) = (c : WithBot ECost) →
-          twoCost required ≤ c := by
+          twoPotential required x ≤ c := by
       intro h
       apply hpay
       exact twoCost_le_iff.mp (h () (twoCost available) rfl)

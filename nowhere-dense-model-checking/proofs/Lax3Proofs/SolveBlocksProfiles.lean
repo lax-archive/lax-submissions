@@ -818,7 +818,7 @@ theorem vsOffCom_spec
   set σ₀ := σ.setVar "pw.k" 0 with hσ₀
   have hpre : I (σ₀.setVar "pw.i" 0) := by
     refine ⟨(hc.setVar _ _).setVar _ _,
-      ⟨by simpa using hxb.1, fun v => by simpa using hxb.2 v⟩,
+      ⟨by rw [hσ₀]; simpa using hxb.1, fun v => by rw [hσ₀]; simpa using hxb.2 v⟩,
       ?_, ?_, by rw [vars_setVar_self]; omega, ?_, ?_⟩
     · rw [vars_setVar_ne hnN_i, hσ₀, vars_setVar_ne hnN_k]
       exact hn
@@ -1702,7 +1702,7 @@ theorem vsSrcCom_spec :
   have hloop := Spec.forRangeZero (B := B) "pw.i" nN I N 20 (by omega)
     (fun σ hσ => hσ.2.2.2.2.1) (fun σ hσ => hσ.2.1) hbody
   have hpre : I (σa.setVar "pw.i" 0) := by
-    refine ⟨⟨by simpa using hxb0.1, fun v => by simpa using hxb0.2 v⟩,
+    refine ⟨⟨by rw [hσa]; simpa using hxb0.1, fun v => by rw [hσa]; simpa using hxb0.2 v⟩,
       ?_, ?_, ?_, by rw [vars_setVar_self]; omega, ?_, ?_⟩
     · rw [vars_setVar_ne hnN_i, hσa, vars_setVar_ne hnN_k]
       exact hn0

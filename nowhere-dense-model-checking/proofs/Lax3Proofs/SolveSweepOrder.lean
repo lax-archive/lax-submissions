@@ -83,7 +83,7 @@ concrete machine routine.
 namespace Lax3Proofs.CoverRoutine
 
 open scoped SimpleGraph
-open Lax12.GraphClasses
+open Lax199508.GraphClasses
 open Lax3Proofs.Augmentation
 open Lax3Proofs.Augmentation.Orientation
 open Lax3Proofs.CoverDegree
@@ -261,7 +261,8 @@ theorem mdRank_injective (F : SimpleGraph (Fin n)) :
 theorem mdRank_lt (F : SimpleGraph (Fin n)) (v : Fin n) : mdRank F v < n := by
   have h := (mdRankAux_props F (lowDegreeVertices_card F) n Finset.univ
     (by simp)).2.1
-  simpa using h v (Finset.mem_univ v)
+  have h2 := h v (Finset.mem_univ v)
+  rwa [Finset.card_univ, Fintype.card_fin] at h2
 
 /-- **The pinned peel attains every valid bound** — the sInf-minimality
 attainment: `BackDegLE F (mdRank F) k` for *every* `k` with
@@ -394,7 +395,7 @@ namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
 open Lax3Proofs.CoverRoutine (mdChain mdPerm mdOrderingRoutine)

@@ -91,7 +91,7 @@ namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
 open Lax3Proofs.WalkDistance
@@ -210,12 +210,17 @@ theorem preG_eq_comap_childUp (S : Setup L) {Λ : ℕ} (A : Arena Λ n₀)
   ext a b
   show A.G.Adj ((childEquiv S A π u) a : Fin A.N)
       ((childEquiv S A π u) b : Fin A.N) ↔ _
-  simp only [SimpleGraph.comap_adj, SimpleGraph.map_adj, hup]
+  refine Iff.trans ?_ (SimpleGraph.map_adj A.up A.G
+    ((childArena S A π u).up a) ((childArena S A π u).up b)).symm
   constructor
   · intro h
     exact ⟨_, _, h, rfl, rfl⟩
   · rintro ⟨x, y, hxy, hx, hy⟩
-    rw [← A.up.injective hx, ← A.up.injective hy]
+    have hxa : x = ((childEquiv S A π u) a : Fin A.N) :=
+      A.up.injective (hx.trans (hup a))
+    have hyb : y = ((childEquiv S A π u) b : Fin A.N) :=
+      A.up.injective (hy.trans (hup b))
+    rw [← hxa, ← hyb]
     exact hxy
 
 /-! ## §3 The assembled machine arena, and the assembly identity -/

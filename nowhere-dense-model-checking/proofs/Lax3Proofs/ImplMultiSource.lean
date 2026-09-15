@@ -103,11 +103,11 @@ def vsrc (H : SimpleGraph (Fin n)) (X : Set (Fin n)) : SimpleGraph (Fin (n + 1))
     (∃ u v : Fin n, H.Adj u v ∧ a = u.castSucc ∧ b = v.castSucc)
     ∨ (∃ y ∈ X, a = Fin.last n ∧ b = y.castSucc)
     ∨ (∃ y ∈ X, a = y.castSucc ∧ b = Fin.last n)
-  symm := by
+  symm := ⟨by
     rintro a b (⟨u, v, huv, rfl, rfl⟩ | ⟨y, hy, rfl, rfl⟩ | ⟨y, hy, rfl, rfl⟩)
     · exact Or.inl ⟨v, u, huv.symm, rfl, rfl⟩
     · exact Or.inr (Or.inr ⟨y, hy, rfl, rfl⟩)
-    · exact Or.inr (Or.inl ⟨y, hy, rfl, rfl⟩)
+    · exact Or.inr (Or.inl ⟨y, hy, rfl, rfl⟩)⟩
   loopless := by
     constructor
     rintro a (⟨u, v, huv, rfl, h⟩ | ⟨y, hy, rfl, h⟩ | ⟨y, hy, rfl, h⟩)

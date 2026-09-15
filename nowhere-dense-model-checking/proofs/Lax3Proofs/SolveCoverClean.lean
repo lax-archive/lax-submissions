@@ -495,7 +495,7 @@ open Classical in
 /-- The heap is charged at its real degree sum and logarithm; the sweep is
 charged at its actual weak-reach fibres, with every linear/constant term kept. -/
 theorem tailK_le_sparse {N R r D : ℕ} (G : SimpleGraph (Fin N)) (hr : 1 ≤ r)
-    (hD : ∀ v, (Lax12.ColoringNumbers.wreach G (mdPerm (mdChain G R).toGraph) (2 * r) v).ncard ≤ D) :
+    (hD : ∀ v, (Lax199508.ColoringNumbers.wreach G (mdPerm (mdChain G R).toGraph) (2 * r) v).ncard ≤ D) :
     tailK G R r ≤ 200 * (N + nsOf (mdChain G R).toGraph + 1) * mdLogFactor N +
       70 * nsOf G + 306 * N + 286 +
       640 * Impl.sweepCharge G (mdPerm (mdChain G R).toGraph) r D := by

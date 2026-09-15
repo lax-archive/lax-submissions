@@ -11,7 +11,7 @@ the gap of `algorithm-v2.md` §9 (third bullet) and D1 (`:125-141`).
 D1 materializes each child arena as a fresh compact structure on `Fin N`
 with its own numbering, while every lemma of the correctness chain keeps
 the carrier — `deleteVerts` isolates, it does not remove
-(`Lax12/UniformQuasiWideness.lean:54-57`). The recorded game types its
+(`Lax199508/UniformQuasiWideness.lean:54-57`). The recorded game types its
 arenas on one fixed carrier: `RoundS n` fixes `arena : SimpleGraph (Fin n)`
 and `ReachedS r G rounds A` types `G`, every recorded arena, and `A` on
 that same `Fin n`. §5 line 8's `# pre:` therefore does not typecheck
@@ -78,7 +78,7 @@ compact child by `nextArenaS_mapRound` — see the final section.
 namespace Lax3Proofs.ArenaTransport
 
 open Lax3.ColoredGraphs
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 open Lax3Proofs.SplitterBasics Lax3Proofs.WalkDistance Lax3Proofs.ReachedS
 
 variable {n m r : ℕ}

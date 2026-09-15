@@ -1,5 +1,5 @@
 import Lax3.DistFO
-import Lax12.UniformQuasiWideness
+import Lax199508.UniformQuasiWideness
 import Mathlib.Data.Set.Card
 import Mathlib.Order.Minimal
 
@@ -44,7 +44,7 @@ are added that β does not mention. Both are properties the algorithm
 needs and neither is available from the source's form. The dependence
 on the graph is genuine and stays.
 
-"*r*-scattered" is Lax12's `DistIndependent`: a set is distance-*r*
+"*r*-scattered" is Lax199508's `DistIndependent`: a set is distance-*r*
 independent in `G` when every walk between two distinct members is
 longer than *r*, which is the source's "pairwise distance larger than
 *r*" in the Gaifman graph, since the Gaifman graph of a colored graph
@@ -66,7 +66,7 @@ which is the source's convention made into a fact.
 
 namespace Lax3.ScatterSentences
 
-open Lax3.ColoredGraphs Lax3.DistFO Lax12.UniformQuasiWideness
+open Lax3.ColoredGraphs Lax3.DistFO Lax199508.UniformQuasiWideness
 
 /-- A choice of scatter values: for every graph `G`, radius `r` and
 vertex set `X`, a number `size G r X` which is the cardinality of some

@@ -67,7 +67,7 @@ and is again local, so semantic locality applies to it in turn.
 namespace Lax3Proofs.Relativize
 
 open Lax3.ColoredGraphs Lax3.DistFO
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 open Lax3Proofs.SyntaxLemmas Lax3Proofs.WalkDistance
 
 /-! ### Walks in the isolated arena

@@ -34,7 +34,7 @@ covers it.
 
 "Internal edge" is `internalEdgeSet G S = {e ∈ G.edgeSet | ∀ x ∈ e, x ∈ S}`,
 a `Set (Sym2 (Fin N))` counted with `Set.ncard` — the cardinality idiom
-of `CoverDegree` and of the `Lax12` concepts, and the spelling that needs
+of `CoverDegree` and of the `Lax199508` concepts, and the spelling that needs
 no `DecidableRel G.Adj` in any statement.  `internalEdgeSet_univ` pins it
 against `G.edgeSet` at `S = Set.univ`, so `clusterWeight G Set.univ` is
 literally `graphWeight G`.

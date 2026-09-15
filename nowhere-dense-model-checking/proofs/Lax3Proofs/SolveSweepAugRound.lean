@@ -357,7 +357,7 @@ theorem agsGreedyRound_run {B N : ℕ} (a : AgsRoundNames) (hnames : a.WellNamed
   · simp only [agsSourceKeys, show (1 : Fin 3) ≠ 0 by decide,
       show (2 : Fin 3) ≠ 0 by decide, show (2 : Fin 3) ≠ 1 by decide, ↓reduceIte]
     omega
-  · simpa only [agsSourceKeys, Fin.isValue, ↓reduceIte, Fin.zero_eta] using hD3
+  · exact hD3
   · intro y hy
     exact (hf3 y hy).trans ((hf2 y hy).trans ((hf1 y hy).trans (hf0 y hy)))
   · intro s hsi hsk

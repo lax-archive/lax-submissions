@@ -1,11 +1,11 @@
 import Lax3.ColoredGraphs
-import Lax12.UniformQuasiWideness
+import Lax199508.UniformQuasiWideness
 import Mathlib.Combinatorics.SimpleGraph.Walk.Decomp
 
 /-!
 The first slice of the walk-distance API of `Lax3.ColoredGraphs`:
 `WithinDist` is reflexive, symmetric and additively transitive, it grows
-with the radius and with the graph, and it descends along Lax12's
+with the radius and with the graph, and it descends along Lax199508's
 `deleteVerts` — the isolation move that this submission's splitter game
 and its rewriting step both perform.
 
@@ -28,7 +28,7 @@ prefix and the walk itself.
 namespace Lax3Proofs.WalkDistance
 
 open Lax3.ColoredGraphs
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 
 variable {V : Type*} {G G' : SimpleGraph V} {S : Set V} {u v w : V} {d d' d₁ d₂ : ℕ}
 
@@ -101,7 +101,11 @@ theorem exists_walk_deleteVerts (p : G.Walk u v) (hp : ∀ x ∈ p.support, x �
   | nil => exact ⟨.nil, rfl⟩
   | @cons a b c hab p ih =>
     obtain ⟨q, hq⟩ := ih fun x hx => hp x (by simp [hx])
-    exact ⟨SimpleGraph.Walk.cons ⟨hab, hp a (by simp), hp b (by simp)⟩ q, by simp [hq]⟩
+    have ha : a ∉ S := hp a (by simp)
+    have hb : b ∉ S := hp b (by simp)
+    have hadj : (deleteVerts G S).Adj a b := ⟨hab, ha, hb⟩
+    exact ⟨SimpleGraph.Walk.cons hadj q, by
+      rw [SimpleGraph.Walk.length_cons, hq, SimpleGraph.Walk.length_cons]⟩
 
 /-- The decomposition the isolation rewrite runs on: a walk of length at
 most `d` either avoids the isolated set `S`, and then survives isolation

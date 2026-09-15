@@ -58,7 +58,7 @@ below takes it as a hypothesis so that `F5` only ever owes `time`.
 namespace Lax3Proofs.CoverRoutine
 
 open scoped SimpleGraph
-open Lax12.GraphClasses
+open Lax199508.GraphClasses
 open Lax3Proofs.Augmentation
 open Lax3Proofs.Augmentation.Orientation
 open Lax3Proofs.CoverDegree

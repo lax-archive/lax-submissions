@@ -20,7 +20,7 @@ set_option autoImplicit false
 namespace Lax3Proofs.Prog
 open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax62Proofs.Refine
 open Lax3Proofs.Driver Lax3Proofs.CoverRoutine Lax3.ColoredGraphs
-open Lax11.GraphEncoding Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax11.GraphEncoding Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder
 variable {L n : ℕ}
 
@@ -90,8 +90,8 @@ theorem machineBudgets (S : Setup L) :
   · intro j hj A
     exact chargeFrameK_zero S _ (concreteLp S) _ _ _ _ (concreteQdepth S) j A hj
   · intro k j hj A
-    simpa only [machineKB, machineStageCoeff, concreteHb, Nat.add_assoc] using
-      chargeFrameK_guard S (mdOrderingRoutine (3 * S.R)) (concreteLp S)
+    simp only [machineKB, machineStageCoeff, concreteHb, Nat.add_assoc]
+    exact chargeFrameK_guard S (mdOrderingRoutine (3 * S.R)) (concreteLp S)
         (canonicalChannels S (concreteLp S))
         (fun _ A => machineCoverCharge A.N (CoverClean.Kcov A.G S.R))
         (fun _ A => CoverClean.Kcov A.G S.R)
@@ -126,7 +126,7 @@ end Lax3Proofs.Prog
 namespace Lax3Proofs.ModelChecking
 open Lax3Proofs.Prog Lax3Proofs.Driver Lax3Proofs.CoverRoutine
 open Lax3.FirstOrder Lax11.GraphEncoding
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax67.Ram Lax67.RamComputes
 
 open Classical in

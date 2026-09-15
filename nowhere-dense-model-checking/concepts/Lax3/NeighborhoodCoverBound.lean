@@ -1,5 +1,5 @@
 import Lax3.OrderedNeighborhoodCover
-import Lax12.ColoringNumbers
+import Lax199508.ColoringNumbers
 
 /-!
 ---
@@ -13,16 +13,16 @@ the graph.
 This is Theorem 6.2 of Grohe–Kreutzer–Siebertz (via their Lemma 6.9):
 from a vertex ordering witnessing the weak coloring number, take as
 the cluster of *v* the set of vertices from which *v* is weakly
-2*r*-reachable. On a nowhere dense class this composes with Lax12's
+2*r*-reachable. On a nowhere dense class this composes with Lax199508's
 subpolynomial weak coloring numbers to covers of degree *c* · *n*^ε
 for every ε > 0 — the form the model-checking recursion consumes, on
-every arena, since the weak coloring bound of Lax12 is uniform over
+every arena, since the weak coloring bound of Lax199508 is uniform over
 subgraphs of members.
 
 # Formalization notes
 
 The statement is per-graph and class-free, with the degree bound
-`wcol G (2r)` — Lax12's `wcol`, not restated. It chooses an optimal
+`wcol G (2r)` — Lax199508's `wcol`, not restated. It chooses an optimal
 ordering and applies the arbitrary-order construction
 `Lax3.OrderedNeighborhoodCover.isNeighborhoodCover_wreach` to it.
 That core names the clusters explicitly and accepts the supplied
@@ -43,7 +43,7 @@ part of this claim.
 namespace Lax3.NeighborhoodCoverBound
 
 open Lax3.NeighborhoodCovers
-open Lax12.ColoringNumbers
+open Lax199508.ColoringNumbers
 
 /-- Every graph has an `r`-neighborhood cover of radius `2r` and
 degree at most its weak `2r`-coloring number. -/
