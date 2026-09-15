@@ -1,23 +1,20 @@
-The word RAM is the machine the modern analysis of algorithms is
-stated on. It is a random access machine in the register-transfer
-format of Cook and Reckhow — a memory of cells addressed by number and
-no other storage, an instruction that sets one cell from one or two
-others, indirect addressing through a cell holding an address, an input
-and an output tape, jumps against zero — with its numbers bounded
-rather than its instruction set: cells hold `w`-bit words, and
-multiplication, division, shifts and the bitwise operations each cost
-one time unit because on words each of them is one instruction of a
-real machine. This submission fixes the archive's canonical encoding of
-that model. It carries two definitions and no proof obligations: the
-machine, whose semantics is parameterized by the word length and obeys
-one uniform truncation rule — every value the machine produces and
-every address it uses is taken modulo `2 ^ w` — and the predicate
-saying that a program computes a function of words within a time bound
-on a set of admissible inputs, the running time being the machine's own
-step count rather than an annotation carried alongside the program.
-Neither is a claim, so neither is stated as one; the review question is
-faithfulness of the model, and the formalization notes give the word
-model and its sources, the truncation rule and what follows from it,
-the constant-cost derivations of the remaining standard operations —
-disjunction, exclusive or, the right shift, the remainder and the
-comparisons — and the machine's halting behaviour and time measure.
+This submission defines a word RAM and computation within an explicit
+instruction bound on a stated domain of inputs. Writable memory has
+`2 ^ w` cells holding `w`-bit words and starts at zero. The read-only
+input is a finite array supplied at initialization, with constant-time
+indexed access and length metadata, a sequential read operation, and
+an explicit end-of-input test. Zero remains ordinary input data. Output
+is append-only, and correctness constrains the complete output list.
+
+Arithmetic values, input values and lengths, input indices, and
+data-memory addresses are reduced modulo `2 ^ w`. Program labels and
+the program counter are unrestricted natural numbers. Time charges one
+unit per executed instruction, including explicit `halt` and exhausted
+`read`; falling outside the program costs no nonexistent instruction.
+The formalization notes state fitting conditions, the input-access
+convention, the additive linear cost of loading sequential input when
+comparing models, and the distinction from Cook and Reckhow's terminated
+input encoding. The proof package provides compiler transfer theorems,
+a verified execution driver, and semantic regression proofs for raw-list
+length parity, constant-time indexed input access, and exact termination
+costs.

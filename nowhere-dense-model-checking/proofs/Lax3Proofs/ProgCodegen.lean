@@ -39,7 +39,8 @@ translation.
 
 `mc_computesInTime_of_solveSpec` then lands the axiom's exact
 `ComputesInTime` shape on the axiom's exact admissible set `mcD`
-(verbatim), at time `mcLayout.const · (12·|x| + Ks x + 2)`. The `Sat`
+(verbatim), at time `mcLayout.const · (12·|x| + Ks x + 2) + 1`,
+including the compiled program's final `halt`. The `Sat`
 form of the value function is produced here from the obligation's
 `unrolledMC` form through the landed semantic chain
 (`Unroll.unrolledMC_eq_MC` + `Headline.headlineSetup_mc_correct`) —
@@ -145,7 +146,7 @@ one `Spec`. In dependency order:
 
 What F7 then does with this file's headline: instantiate, choose
 `c ≥` the `hspan` sum, wrap `T x := mcLayout.const · (12·|x| + Ks x
-+ 2)`, prove `(T x : ℝ) ≤ c'·(|x|+1)^(1+ε)` from (4), and `∃`-close
++ 2) + 1`, prove `(T x : ℝ) ≤ c'·(|x|+1)^(1+ε)` from (4), and `∃`-close
 the axiom's statement.
 -/
 
@@ -200,7 +201,8 @@ def SolveSpec (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
 
 /-- The pipeline's IMP+ budget: the front end's `12·|x|`, the solve
 stages' `Ks x`, the epilogue's `2`. `computesInTime_of_spec`
-multiplies exactly `mcLayout.const` on top — nothing else. -/
+multiplies by `mcLayout.const` and adds one machine instruction for
+the final `halt`. That terminal charge is outside this IMP+ budget. -/
 def mcK (Ks : List ℕ → ℕ) (x : List ℕ) : ℕ := 12 * x.length + Ks x + 2
 
 /-! ## §3 The skeleton's headline -/
@@ -233,7 +235,7 @@ theorem mc_computesInTime_of_solveSpec
       (compileProgram (mcLayout eS eA) (mcCom solveCom))
       (mcD n G c w)
       (fun _ => if Lax3.FirstOrder.Sat G Fin.elim0 φ then [1] else [0])
-      (fun x => (mcLayout eS eA).const * mcK Ks x) := by
+      (fun x => (mcLayout eS eA).const * mcK Ks x + 1) := by
   refine computesInTime_of_spec (mcCom_ok hokS) (mcD_entry_lt_mcB hq) ?_
     (mcLayout_fitsWords eS eA hq hqc hspan)
   intro x hx

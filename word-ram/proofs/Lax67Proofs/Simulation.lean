@@ -886,24 +886,25 @@ theorem represents_initState (L : Layout) (ext : String → ℕ) (x : List ℕ) 
 below `B`, and let `w` be a word length at which the layout and the
 bound fit — `B ≤ 2 ^ w` and `L.span B ≤ 2 ^ w`. Then the compiled
 machine program, at word length `w`, runs on the same input, halts with
-the same output, and executes at most `L.const * k` instructions. The
+the same output, and executes at most `L.const * k + 1` instructions (including the final `halt`). The
 constant depends on the layout alone: not on the program, not on the
 input, and not on the word length. The array lengths `ext` are the
 user's free choice and cost nothing. -/
 theorem compileProgram_runsTo {L : Layout} {B w : ℕ} {c : Com} {ext : String → ℕ}
     {x : List ℕ} {σ' : Env} {k : ℕ} (hfit : L.FitsWords B w) (hok : Com.Ok L c)
     (hx : ∀ v ∈ x, v < B) (hbs : BigStepB B c (initEnv ext x) σ' k) :
-    ∃ t ≤ L.const * k, RunsTo w (compileProgram L c) x σ'.out t := by
+    ∃ t ≤ L.const * k + 1, RunsTo w (compileProgram L c) x σ'.out t := by
   obtain ⟨t, s', ht, hr, hpc, hrep⟩ :=
     compile_correct hfit hbs hok (initEnv_inpBounded ext hx) 0 (initState x) rfl
       (represents_initState L ext x) (fits_self _ _)
-  refine ⟨t, ht, s', hr, ?_, by rw [← hrep.out]⟩
   have hhalt : (compileProgram L c)[s'.pc]? = some Instr.halt := by
     rw [hpc, compileProgram]
     rw [List.getElem?_append_right (by simp)]
     simp
-  rw [step_eq, hhalt]
-  rfl
+  refine ⟨t + 1, Nat.add_le_add_right ht 1, t, s', hr, ?_, ?_, ?_⟩
+  · rw [step_eq, hhalt]; rfl
+  · rw [← hrep.out]
+  · rw [terminalCost_of_getElem? hhalt]
 
 /-! ### A sanity check
 
@@ -914,7 +915,7 @@ the machine of the concept. Programs are the business of the layers
 above this one. -/
 
 example :
-    ∃ t ≤ 20, RunsTo 3 (compileProgram ⟨[], [], 1⟩ (.write (.lit 5))) [] [5] t := by
+    ∃ t ≤ 21, RunsTo 3 (compileProgram ⟨[], [], 1⟩ (.write (.lit 5))) [] [5] t := by
   have hfit : (⟨[], [], 1⟩ : Layout).FitsWords 8 3 :=
     ⟨by norm_num, by norm_num, by simp [Layout.span]⟩
   have hbs : BigStepB 8 (.write (.lit 5)) (initEnv (fun _ => 0) [])

@@ -55,31 +55,122 @@ theorem upd_le {f : ℕ → ℕ} {k v c i : ℕ} (hv : v ≤ c) (hf : f i ≤ c)
 
 /-! ### The worked-example driver -/
 
-open Lax67.Ram in
-/-- Run `p` at word length `w` from `s` until it halts, taking at most
-`fuel` steps, and report the output tape together with the number of
-steps taken. `none` means the fuel ran out. -/
+open Lax67.Ram Lax67Proofs.Machine
+
+/-- Run `p` at word length `w` from `s` using at most `fuel` executed
+instructions, and return its complete output and the accumulated count.
+Fetched terminal instructions cost one. Falling outside the program
+costs zero and is detected even when the available fuel is zero.
+`none` means that no terminating execution fits the available fuel. -/
 def runOut (w : ℕ) : ℕ → Program → State → ℕ → Option (List ℕ × ℕ)
-  | 0, _, _, _ => none
+  | 0, p, s, k => if s.pc < p.length then none else some (s.out, k)
   | fuel + 1, p, s, k =>
-      match step w p s with
-      | none => some (s.out, k)
-      | some s' => runOut w fuel p s' (k + 1)
+      if s.pc < p.length then
+        match step w p s with
+        | none => some (s.out, k + 1)
+        | some s' => runOut w fuel p s' (k + 1)
+      else some (s.out, k)
 
-/-! `runOut` is defined by `match`, so its equation lemmas and match
-splitters are created on first use. These two statements ask for them
-here, per the standing kit rule of `Frame.lean`: a downstream
-`simp [runOut]` then finds them among its imports and creates nothing
-named under `Lax67Proofs` in a consumer package. -/
+/-! Materialize defining equations here so downstream simplification
+introduces no declarations in the proof package's namespace. -/
 
-@[simp] theorem runOut_zero (w : ℕ) (p : Lax67.Ram.Program) (s : Lax67.Ram.State) (k : ℕ) :
-    runOut w 0 p s k = none := by simp [runOut]
-
-theorem runOut_succ (w fuel : ℕ) (p : Lax67.Ram.Program) (s : Lax67.Ram.State) (k : ℕ) :
-    runOut w (fuel + 1) p s k =
-      match Lax67.Ram.step w p s with
-      | none => some (s.out, k)
-      | some s' => runOut w fuel p s' (k + 1) := by
+@[simp] theorem runOut_zero (w : ℕ) (p : Program) (s : State) (k : ℕ) :
+    runOut w 0 p s k = if s.pc < p.length then none else some (s.out, k) := by
   simp [runOut]
+
+theorem runOut_succ (w fuel : ℕ) (p : Program) (s : State) (k : ℕ) :
+    runOut w (fuel + 1) p s k =
+      if s.pc < p.length then
+        match step w p s with
+        | none => some (s.out, k + 1)
+        | some s' => runOut w fuel p s' (k + 1)
+      else some (s.out, k) := by
+  simp [runOut]
+
+/-- The execution driver returns only terminal states, with the exact
+instruction charge bounded by its fuel. The initial count is an offset. -/
+theorem runOut_sound {w fuel k t : ℕ} {p : Program} {s : State} {y : List ℕ}
+    (h : runOut w fuel p s k = some (y, t)) :
+    ∃ j u, run w p j s = some u ∧ step w p u = none ∧ u.out = y ∧
+      t = k + (j + terminalCost p u) ∧ j + terminalCost p u ≤ fuel := by
+  induction fuel generalizing s k with
+  | zero =>
+      rw [runOut_zero] at h
+      split at h
+      · contradiction
+      · rename_i hpc
+        have heq := Prod.mk.inj (Option.some.inj h)
+        refine ⟨0, s, rfl, step_none_of_length_le (by omega), heq.1, ?_, ?_⟩
+        · simpa [terminalCost_eq, hpc] using heq.2.symm
+        · simp [terminalCost_eq, hpc]
+  | succ fuel ih =>
+      rw [runOut_succ] at h
+      split at h
+      · rename_i hpc
+        cases hs : step w p s with
+        | none =>
+            simp only [hs] at h
+            have heq := Prod.mk.inj (Option.some.inj h)
+            refine ⟨0, s, rfl, hs, heq.1, ?_, ?_⟩
+            · simpa [terminalCost_eq, hpc] using heq.2.symm
+            · simp [terminalCost_eq, hpc]
+        | some s' =>
+            simp only [hs] at h
+            obtain ⟨j, u, hr, hu, hy, ht, hf⟩ := ih h
+            refine ⟨j + 1, u, ?_, hu, hy, ?_, ?_⟩
+            · rw [run_succ, hs]; exact hr
+            · omega
+            · omega
+      · rename_i hpc
+        have heq := Prod.mk.inj (Option.some.inj h)
+        refine ⟨0, s, rfl, step_none_of_length_le (by omega), heq.1, ?_, ?_⟩
+        · simpa [terminalCost_eq, hpc] using heq.2.symm
+        · simp [terminalCost_eq, hpc]
+
+/-- Every charged terminating execution is found with sufficient fuel. -/
+theorem runOut_complete {w j fuel : ℕ} {p : Program} {s u : State}
+    (hr : run w p j s = some u) (hu : step w p u = none)
+    (hf : j + terminalCost p u ≤ fuel) (k : ℕ) :
+    runOut w fuel p s k = some (u.out, k + (j + terminalCost p u)) := by
+  induction j generalizing s fuel k with
+  | zero =>
+      have heq : s = u := Option.some.inj hr
+      subst u
+      cases fuel with
+      | zero =>
+          have hpc : ¬ s.pc < p.length := by
+            simpa [terminalCost_eq] using hf
+          simp [runOut_zero, terminalCost_eq, hpc]
+      | succ fuel =>
+          by_cases hpc : s.pc < p.length <;>
+            simp [runOut_succ, terminalCost_eq, hpc, hu]
+  | succ j ih =>
+      rw [run_succ] at hr
+      cases hs : step w p s with
+      | none => simp [hs] at hr
+      | some s' =>
+          have hpc : s.pc < p.length := by
+            by_contra hn
+            have := step_none_of_length_le (w := w) (p := p) (s := s) (by omega)
+            rw [hs] at this
+            contradiction
+          obtain ⟨fuel, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : fuel ≠ 0)
+          rw [runOut_succ, if_pos hpc, hs]
+          have hrec := ih (fuel := fuel) (by simpa [hs] using hr) (by omega) (k + 1)
+          simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hrec
+
+/-- The driver's reported count agrees with the public timed relation,
+including its exact fuel boundary. -/
+theorem runOut_init_iff {w fuel t : ℕ} {p : Program} {x y : List ℕ} :
+    runOut w fuel p (initState x) 0 = some (y, t) ↔
+      RunsTo w p x y t ∧ t ≤ fuel := by
+  constructor
+  · intro h
+    obtain ⟨j, u, hr, hu, hy, ht, hf⟩ := runOut_sound h
+    simp only [Nat.zero_add] at ht
+    exact ⟨⟨j, u, hr, hu, hy, ht⟩, ht ▸ hf⟩
+  · rintro ⟨⟨j, u, hr, hu, hy, ht⟩, hf⟩
+    have := runOut_complete hr hu (ht ▸ hf) 0
+    simpa only [Nat.zero_add, hy, ← ht] using this
 
 end Lax67Proofs.Reasoning.Lib
