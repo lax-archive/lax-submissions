@@ -1,0 +1,10 @@
+specVersion: "1"
+id: lax-683916
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Graph Representations"
+authors:
+  - name: Clemens Kuske
+    github: clemenskuske
+  - name: Codex (OpenAI)
+bibEntries: []
