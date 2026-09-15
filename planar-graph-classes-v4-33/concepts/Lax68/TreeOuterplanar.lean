@@ -4,7 +4,7 @@ import Lax68.Outerplanar
 /-!
 ---
 title: Trees are outerplanar
-type: opn
+type: theorem
 ---
 Every finite tree is outerplanar.
 

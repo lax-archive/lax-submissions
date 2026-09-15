@@ -4,14 +4,12 @@ import Lax68.MaximalOuterplanar
 /-!
 ---
 title: Triangles are maximal outerplanar
-type: opn
+type: theorem
 ---
 Every triangle is maximal outerplanar.
 
-A triangle is isomorphic to `K₃`, so it has too few vertices to contain
-`K₄` or `K₂,₃` as a minor. The proof uses the open excluded-minor
-characterization for outerplanarity. Since the triangle is complete,
-no further edge can be added on its existing vertices.
+A triangle is drawn using three explicit points on a circle. Since the
+triangle is complete, no further edge can be added on its existing vertices.
 -/
 
 set_option autoImplicit false

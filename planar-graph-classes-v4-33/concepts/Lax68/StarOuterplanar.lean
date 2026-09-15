@@ -4,7 +4,7 @@ import Lax68.Outerplanar
 /-!
 ---
 title: Stars are outerplanar
-type: opn
+type: theorem
 ---
 Every star graph is outerplanar.
 -/

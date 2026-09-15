@@ -4,7 +4,7 @@ import Lax68.Planar
 /-!
 ---
 title: Wheels are planar
-type: opn
+type: theorem
 ---
 Every wheel graph is planar.
 -/

@@ -4,7 +4,7 @@ import Lax68.Planar
 /-!
 ---
 title: Trees are planar
-type: opn
+type: theorem
 ---
 Every finite tree is planar.
 -/
