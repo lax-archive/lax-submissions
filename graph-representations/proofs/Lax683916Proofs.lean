@@ -2,6 +2,5 @@ import Lax683916Proofs.DigraphRepresentation
 import Lax683916Proofs.HypergraphRepresentation
 import Lax683916Proofs.MultigraphRepresentation
 import Lax683916Proofs.NeighborhoodSetSystemRepresentation
-import Lax683916Proofs.QuiverRepresentation
 import Lax683916Proofs.SetSystemRepresentation
 import Lax683916Proofs.SimpleGraphMultigraphRepresentation

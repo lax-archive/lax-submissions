@@ -4,10 +4,8 @@ import Lax683916.MultigraphIsomorphism
 import Lax683916.MultigraphRepresentation
 import Lax683916.NeighborhoodSetSystemRepresentation
 import Lax683916.NeighborhoodSetSystems
-import Lax683916.QuiverRepresentation
 import Lax683916.SetSystemRepresentation
 import Lax683916.SimpleGraphMultigraphRepresentation
 import Lax683916.SpanningTwoUniformHypergraphs
 import Lax683916.SymmetricLooplessDigraphs
-import Lax683916.ThinSymmetricLooplessQuivers
 import Lax683916.TwoUniformSetSystems
