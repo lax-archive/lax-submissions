@@ -139,9 +139,8 @@ below are given in the concept's encoding, and the outputs are the
 least-vertex labels. The word length is fixed at sixteen, which is more
 than these graphs need; the step counts do not depend on it. -/
 
-/-- The shared evaluator, proved to agree with `RunsTo`: fetched
-terminal instructions cost one and falling outside the program costs
-zero, including at the exact fuel boundary. -/
+/-- The shared evaluator from the registered word-RAM proof package,
+proved to agree with `RunsTo`. -/
 abbrev runOut := Lax865980Proofs.Reasoning.Lib.runOut
 
 /-- Run `ccProgram` on an encoded graph, at a word length that holds
@@ -149,20 +148,20 @@ every number these graphs produce. -/
 def test (x : List ℕ) : Option (List ℕ × ℕ) := runOut 16 100000 ccProgram (initState x) 0
 
 -- no vertices
-#guard test [0, 0, 0] = some ([], 110)
+#guard test [0, 0, 0] = some ([], 109)
 -- one vertex, no edges
-#guard test [1, 0, 0, 0] = some ([0], 305)
+#guard test [1, 0, 0, 0] = some ([0], 304)
 -- two vertices, the edge between them
-#guard test [2, 1, 0, 1, 2, 1, 0] = some ([0, 0], 647)
+#guard test [2, 1, 0, 1, 2, 1, 0] = some ([0, 0], 646)
 -- two vertices, no edge
-#guard test [2, 0, 0, 0, 0] = some ([0, 1], 500)
+#guard test [2, 0, 0, 0, 0] = some ([0, 1], 499)
 -- three vertices, the edge 1-2
-#guard test [3, 1, 0, 0, 1, 2, 2, 1] = some ([0, 1, 1], 842)
+#guard test [3, 1, 0, 0, 1, 2, 2, 1] = some ([0, 1, 1], 841)
 -- four vertices, the edges 0-2 and 1-3: two components, interleaved
-#guard test [4, 2, 0, 1, 2, 3, 4, 2, 3, 0, 1] = some ([0, 1, 0, 1], 1184)
+#guard test [4, 2, 0, 1, 2, 3, 4, 2, 3, 0, 1] = some ([0, 1, 0, 1], 1183)
 -- five vertices, the path 0-1-2-3 and an isolated vertex
-#guard test [5, 3, 0, 1, 3, 5, 6, 6, 1, 0, 2, 1, 3, 2] = some ([0, 0, 0, 0, 4], 1526)
+#guard test [5, 3, 0, 1, 3, 5, 6, 6, 1, 0, 2, 1, 3, 2] = some ([0, 0, 0, 0, 4], 1525)
 -- four vertices, a triangle and an isolated vertex
-#guard test [4, 3, 0, 2, 4, 6, 6, 1, 2, 0, 2, 0, 1] = some ([0, 0, 0, 3], 1340)
+#guard test [4, 3, 0, 2, 4, 6, 6, 1, 2, 0, 2, 0, 1] = some ([0, 0, 0, 3], 1339)
 
 end Lax11Proofs.CC

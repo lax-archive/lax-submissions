@@ -356,7 +356,7 @@ theorem exists_fptTime_program_vertexCover :
     have hpos : 1 ≤ 2 ^ k * (x.length + 1) := by
       have := Nat.mul_pos (Nat.two_pow_pos k) (show 0 < x.length + 1 by omega)
       omega
-    calc 10 * (900 * 2 ^ k * (x.length + 1)) + 1
+    calc 10 * (900 * 2 ^ k * (x.length + 1))
         ≤ 9000 * (2 ^ k * (x.length + 1)) + (2 ^ k * (x.length + 1)) := by
           nlinarith
       _ = 9001 * 2 ^ k * (x.length + 1) := by ring
