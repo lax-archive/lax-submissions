@@ -25,14 +25,14 @@ subDir = "sparsity-lectures-v4-33/concepts"
 [[require]]
 name = "Lax808846"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "512403f000f23689a1c40d8826062d20f1e28f03"
+rev = "5a2645e5b68a2d1539610196a09883da16433a94"
 subDir = "word-ram/concepts"
 
 # graph encodings (CSR) of submission Lax271696
 [[require]]
 name = "Lax271696"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "d82625d050fde928adbe5d23b024a940e6f7d8da"
+rev = "956e1cfb10dbdfea05f3eff4eb73735cba610b76"
 subDir = "ram-linear-time/concepts"
 
 # the IMP+ toolkit (Spec, run_vcg, Lib) of submission Lax808846's proofs,
@@ -40,7 +40,7 @@ subDir = "ram-linear-time/concepts"
 [[require]]
 name = "Lax808846Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "512403f000f23689a1c40d8826062d20f1e28f03"
+rev = "5a2645e5b68a2d1539610196a09883da16433a94"
 subDir = "word-ram/proofs"
 
 # the sparsity proof modules (Densification pattern and friends)
@@ -56,7 +56,7 @@ subDir = "sparsity-lectures-v4-33/proofs"
 [[require]]
 name = "Lax62Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "d82625d050fde928adbe5d23b024a940e6f7d8da"
+rev = "9d06d27717ad676bc4c1c240c6c08a2783fcf073"
 subDir = "refinement-tower/proofs"
 
 [[lean_lib]]
