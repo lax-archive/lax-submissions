@@ -7,7 +7,7 @@ title: Outerplanar graphs
 type: definition
 ---
 
-![Outerplanar graph illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/outerplanar.svg "Outerplanar graph illustration")
+![Outerplanar graph illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/d475531e6ec14f564ed7488033e83d43ae8bd5e6/planar-graph-classes-v4-33/assets/outerplanar.svg "Outerplanar graph illustration")
 
 A graph is outerplanar here when it has a crossing-free straight-line drawing
 with every vertex on one circle, a compact certificate for having every
