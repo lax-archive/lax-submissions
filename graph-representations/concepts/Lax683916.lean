@@ -2,6 +2,8 @@ import Lax683916.DigraphRepresentation
 import Lax683916.HypergraphRepresentation
 import Lax683916.MultigraphIsomorphism
 import Lax683916.MultigraphRepresentation
+import Lax683916.NeighborhoodSetSystemRepresentation
+import Lax683916.NeighborhoodSetSystems
 import Lax683916.QuiverRepresentation
 import Lax683916.SetSystemRepresentation
 import Lax683916.SimpleGraphMultigraphRepresentation
