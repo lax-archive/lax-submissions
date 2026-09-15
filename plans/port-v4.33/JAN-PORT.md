@@ -54,21 +54,20 @@ port's ledger (2026-09-14) and `FINISH.md` its hand-back runbook.
 
 ## Decisions
 
-**D1 — the word-RAM line is DEFERRED (Jan, 2026-09-15 after lunch).**
-Édouard's lax-489179 (ETH/SETH) and Clemens's lax-195003 (Welzl orders)
-— the two external dependents of lax-67 — are being ported right now;
-where they land (lax-865980 or lax-67) decides the RAM base, so nothing
-RAM-related is submitted, repinned, or landed on main until that is
-known. Facts on file for the decision: (a) lax-865980 (registered,
-Clemens) is lax-13's content at v4.33 — without the reviewed repair Jan
-approved on 2026-09-09 and without ~700 proof-package lines the
-dependents use (`Com.NoWrite` alone in 19 dependent files); (b) deleting
-lax-67 retires the id and breaks any draft still requiring it; (c) if
-lax-67 is kept, the clean archive shape is `supersedes: lax-865980`
-(one line lax-13 → lax-865980 → lax-67), which needs ownership of
-lax-865980 (Clemens). Wave 1a continues only as a local build on its
-branch (does the repaired content port cleanly at v4.33?) — its result
-is information, not a landing.
+**D1 — lax-67 DELETED (Jan, 2026-09-15, 13:05): "we delete the .30 ram
+draft even if clemens and edouard still depend on it. that is okay."**
+`lax delete --yes lax-67` retired the id; the archive listed lax-3,
+lax-11, lax-62, lax-195003 (Welzl orders, Clemens) and lax-489179
+(ETH/SETH, Édouard) as left broken — the last two are their owners' to
+repin. The repaired word RAM gets the fresh id **lax-808846** (`lax init
+--env v4.33.0`), the surface renames Lax67 → Lax808846 in word-ram and
+its three dependents (219 files, mechanical), and the manifest claims
+`supersedes: lax-865980` for the archive gate to accept or refuse (the
+owner rule refused it for lax-67; if refused again the record stands
+alone and the line is dropped). Facts that led here: lax-865980
+(registered, Clemens) is lax-13's content at v4.33 without the reviewed
+repair and without ~700 proof-package lines the dependents use;
+`supersedes: lax-13` is taken by it for good.
 
 **D2 — lax-768004 dropped.** lax-228581 (registered from main) already
 supersedes lax-48; the cloud port's folder is deleted at landing.
@@ -128,6 +127,6 @@ Others (owners in brackets):
 | 1a | merge ram-input-repair + cloud port; re-port the four RAM folders on the repaired content; local builds green | opus | `.claude/worktrees/port-land` | BUILT 2026-09-15, branch `worktree-port-land` @ 611f0d9, reviewed by the supervisor, HELD (not landed) until D1 is decided. Result: ram-input-repair merges clean; 8e048cf reverted; cloud port merges with conflicts only in lax-introduction (main kept); **zero Lean edits needed** — repair and drift fixes are disjoint; word-ram 526+3030, ram-linear-time 1007+3083, refinement-tower 3+3343, ndmc 2048+3754 jobs green; `lax build --replay word-ram` green (51 s). Archive gate refuses BOTH supersedes claims for lax-67: `supersedes: lax-13` → supersedes-taken (lax-865980 holds it), `supersedes: lax-865980` → supersedes-owners (no owner of lax-865980 owns lax-67). Branch carries word-ram with no supersedes line. Worktree kept: it holds the v4.33 builds wave 2 needs. |
 | 1b | lax-5 successor: real id, rename, build, submit as draft | opus | `.claude/worktrees/ndmc-succ` | DONE 2026-09-15: lax-710763 draft, 2080+2840 jobs green, archive accepted, concepts identical to lax-5 (archive extraction diffed field by field); landed on main, worktree removed, remote branch kept (the record points at it) |
 | 1c | lax-introduction resubmit from main (v4.33, registered deps) | supervisor | main | DONE 2026-09-15: lax-242665 draft @ 2be112c, v4.33.0, requires Lax228581/Lax199508/Lax865980 (all registered); draft-dependency violation cleared |
-| 1d | lax-introduction: drop the Bertrand network for the front page's (PrimeDivisor → Euclid) plus the twin prime conjecture as the open concept; front page carousel draws lax-242665's own cards | supervisor | main | BUILT 2026-09-15 @ 3a10fb3 (4 concepts, 2 proofs), previewed via `lax serve` against a local `~/git/lax-website` build (index.ts + test uncommitted there); NOT resubmitted — Jan inspects first. Order afterwards: `lax submit` the intro, then deploy the website (its primes slide is gated on `Lax242665.PrimeDivisor` existing on the archive) |
+| 1d | lax-introduction: drop the Bertrand network for the front page's (PrimeDivisor → Euclid) plus the twin prime conjecture as the open concept; front page carousel draws lax-242665's own cards | supervisor | main | DONE 2026-09-15: statements numbered from one counter (Def 1, Thm 2, Lem 3, Conj 4), boundary cases of all four concepts checked in Lean (no off-by-one), submitted @ f7c9272 and **REGISTERED** (Jan's go). Website `index.ts` + test still uncommitted in `~/git/lax-website`; deploy any time now that the archive holds `Lax242665.PrimeDivisor` |
 | 2 | cascade resubmit word-ram → ram-linear-time, refinement-tower → nowhere-dense-model-checking (`.claude/resubmit-cascade.sh`), supersedes claim per D1 | after 1a | main | ON HOLD — waits for the SETH and Welzl ports (D1) |
-| 3 | registration per D4 | after 2 | main | lax-710763 REGISTERED 2026-09-15 (lax-5 now shows as superseded); RAM chain waits on D1; lax-introduction waits on Jan's paper edit |
+| 3 | registration per D4 | after 2 | main | lax-710763 REGISTERED 2026-09-15 (lax-5 now shows as superseded); RAM chain waits on D1; lax-242665 REGISTERED 2026-09-15 @ f7c9272 |
