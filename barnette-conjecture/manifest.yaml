@@ -16,3 +16,6 @@ bibEntries:
       primaryClass = {math.CO},
       doi = {10.48550/arXiv.2508.03531}
     }
+issue:
+  repositoryId: 1320232165
+  number: 121
