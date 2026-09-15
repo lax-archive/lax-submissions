@@ -1,0 +1,18 @@
+specVersion: "1"
+id: lax-881656
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Barnette's Conjecture"
+authors:
+  - name: Clemens Kuske
+bibEntries:
+  - |
+    @misc{Schnieders2025,
+      author = {Tobias Schnieders},
+      title = {Barnette Graphs with Faces up to Size 8 are Hamiltonian},
+      year = {2025},
+      eprint = {2508.03531},
+      archivePrefix = {arXiv},
+      primaryClass = {math.CO},
+      doi = {10.48550/arXiv.2508.03531}
+    }

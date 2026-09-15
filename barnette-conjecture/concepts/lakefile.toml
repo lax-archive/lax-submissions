@@ -1,0 +1,19 @@
+name = "Lax881656"
+defaultTargets = ["Lax881656"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+
+[[require]]
+name = "Lax68"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "c81b1a4741268738e4f00fb7895514d3087d75ac"
+subDir = "planar-graph-classes-v4-33/concepts"
+
+[[lean_lib]]
+name = "Lax881656"
