@@ -30,10 +30,10 @@ namespace Lax881656.BarnetteConjecture
 /-- Barnette's conjecture: every 3-connected cubic bipartite planar graph has
 a Hamiltonian cycle. -/
 axiom barnette_conjecture {n : ℕ} (G : SimpleGraph (Fin n)) :
-  Lax881656.ThreeConnected.IsThreeConnected G →
-  Lax881656.Cubic.IsCubic G →
-  Lax881656.Bipartite.IsBipartite G →
-  Lax68.Planar.IsPlanar G →
+  (Lax881656.ThreeConnected.IsThreeConnected G ∧
+    Lax881656.Cubic.IsCubic G ∧
+    Lax881656.Bipartite.IsBipartite G ∧
+    Lax68.Planar.IsPlanar G) →
   Lax881656.HamiltonianCycle.HasHamiltonianCycle G
 
 end Lax881656.BarnetteConjecture
