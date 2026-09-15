@@ -6,7 +6,7 @@ title: Triangulations
 type: definition
 ---
 
-![Triangulation illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/triangulation.svg "Triangulation illustration")
+![Triangulation illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/6a23e9f09597af8e83514df2442e5a47ed6ab095/planar-graph-classes-v4-33/assets/triangulation.svg "Triangulation illustration")
 
 A triangulation of a graph G is a planar supergraph T on the same vertex set,
 with at least three vertices, to which no edge can be added while preserving
