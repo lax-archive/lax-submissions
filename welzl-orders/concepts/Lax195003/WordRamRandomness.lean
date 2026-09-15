@@ -1,4 +1,4 @@
-import Lax865980.Ram
+import Lax808846.Ram
 import Mathlib.Data.Rat.Cast.Order
 import Mathlib.Data.Set.Card
 
@@ -35,7 +35,7 @@ length without exposing an implementation-specific random-bit count.
 
 namespace Lax195003.WordRamRandomness
 
-open Lax865980.Ram
+open Lax808846.Ram
 
 /-- A bit tape as a word list, in index order, with `false` encoded by zero
 and `true` by one. -/
