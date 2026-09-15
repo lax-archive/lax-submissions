@@ -1,0 +1,65 @@
+specVersion: "1"
+id: lax-710763
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: Almost Linear Neighborhood Complexity of Monadically Dependent Graph Classes
+authors:
+  - name: Jan Dreier
+  - name: Claude Fable 5 (Anthropic)
+bibEntries:
+  - |
+    @misc{DreierMahlmannMcCartyPilipczukTorunczyk2026,
+      author        = {Dreier, Jan and M{\"a}hlmann, Nikolas and McCarty, Rose
+                       and Pilipczuk, Micha{\l} and Toru{\'n}czyk, Szymon},
+      title         = {Neighborhood Complexity and Radius-1 Merge-Width in
+                       Monadically Dependent Graph Classes},
+      year          = {2026},
+      eprint        = {2607.10941},
+      archivePrefix = {arXiv}
+    }
+  - |
+    @phdthesis{Mahlmann2024,
+      author = {M{\"a}hlmann, Nikolas},
+      title  = {Monadically Stable and Monadically Dependent Graph Classes:
+                Characterizations and Algorithmic Meta-Theorems},
+      school = {Universit{\"a}t Bremen},
+      year   = {2024}
+    }
+  - |
+    @inproceedings{DreierMahlmannTorunczyk2024,
+      author    = {Dreier, Jan and M{\"a}hlmann, Nikolas and Toru{\'n}czyk,
+                   Szymon},
+      title     = {Flip-Breakability: A Combinatorial Dichotomy for
+                   Monadically Dependent Graph Classes},
+      booktitle = {Proceedings of the 56th Annual ACM Symposium on Theory
+                   of Computing (STOC 2024)},
+      year      = {2024},
+      eprint    = {2403.15201},
+      archivePrefix = {arXiv}
+    }
+  - |
+    @misc{pilipczuk-sparsity-notes,
+      author = {Micha{\l} Pilipczuk and Sebastian Siebertz},
+      title  = {Sparsity --- lecture notes for the course ``Sparsity''},
+      year   = {2020},
+      note   = {University of Warsaw, Faculty of Mathematics, Informatics and Mechanics.
+                Cited by the numbering of the winter term 2019/20 edition;
+                Chapter~1 compiled 2020-01-24; Chapter~2 compiled 2019-11-22;
+                Chapter~4 compiled 2019-12-12},
+      url    = {https://www.mimuw.edu.pl/~mp248287/sparsity2/}
+    }
+  - |
+    @article{AdlerAdler2014,
+      author  = {Adler, Hans and Adler, Isolde},
+      title   = {Interpreting nowhere dense graph classes as a classical
+                 notion of model theory},
+      journal = {European Journal of Combinatorics},
+      volume  = {36},
+      pages   = {322--330},
+      year    = {2014},
+      doi     = {10.1016/j.ejc.2013.06.048}
+    }
+supersedes: lax-5
+issue:
+  repositoryId: 1320232165
+  number: 117

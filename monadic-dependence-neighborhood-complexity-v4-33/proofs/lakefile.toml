@@ -1,0 +1,33 @@
+name = "Lax710763Proofs"
+defaultTargets = ["Lax710763Proofs"]
+
+[leanOptions]
+autoImplicit = false
+
+# mathlib is part of the archive environment (the pin is archive-wide)
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+
+[[require]]
+name = "Lax710763"
+path = "../concepts"
+
+# sparsity lectures: the quasi-wideness and neighborhood-complexity
+# statements of submission Lax12
+[[require]]
+name = "Lax199508"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "e9845c204d14a5678f9d64c0e6f4ca757d9dc9d0"
+subDir = "sparsity-lectures-v4-33/concepts"
+
+# finite Ramsey theorems: the Ramsey statements of submission Lax14
+[[require]]
+name = "Lax345067"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "feabf43dcd6967ac912b2064003ea715e06e58f9"
+subDir = "finite-ramsey-v4-33/concepts"
+
+[[lean_lib]]
+name = "Lax710763Proofs"
