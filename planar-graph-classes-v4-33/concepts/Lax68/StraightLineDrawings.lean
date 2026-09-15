@@ -8,7 +8,7 @@ title: Straight-line graph drawings
 type: definition
 ---
 
-![Straight-line drawing illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/4dd917c8b9a1e181ec951b7f6fa384262af31fa9/planar-graph-classes-v4-33/assets/straight-line-drawing.svg "Straight-line drawing illustration")
+![Straight-line drawing illustration](https://raw.githubusercontent.com/lax-archive/lax-submissions/56a5a1328deb64eaacc857b9cb6f53fc0b0b3461/planar-graph-classes-v4-33/assets/straight-line-drawing.svg "Straight-line drawing illustration")
 
 A straight-line drawing assigns distinct points of the real plane to the
 vertices of a simple graph and draws every edge as the segment between its
