@@ -1,0 +1,52 @@
+import Lax153141Proofs.Bridge
+import Lax153141Proofs.Source.TwinWidth.Equivalence.MixedToTwinWidth
+import Lax153141.TwinWidthFromMixedMinorNumber
+
+/-!
+# The mixed-minor-to-twin-width direction
+
+The source development bounds source twin-width by a function of the source
+mixed minor number; `Lax153141Proofs.Bridge` proves both submitted parameters
+pointwise equal to their source counterparts, so the bound transports
+verbatim.
+-/
+
+namespace Lax153141Proofs.TwinWidthFromMixedMinorNumber
+
+noncomputable section
+
+/--
+---
+conclusion: Lax153141.TwinWidthFromMixedMinorNumber.exists_twinWidth_bound_of_mixedMinorNumber
+---
+Twin-width (the parameter of submission Lax228581) is bounded by a numerical
+function of the submitted mixed minor number.
+
+# Proof strategy
+
+The source direction `twinWidthBoundedByMixedMinorNumber` is the mirrored
+Boolean Theorem 14 construction: an ordered adjacency matrix of mixed number
+`k` is `(k+1)`-mixed-free, and the Marcus–Tardos-based Theorem 10 machinery
+turns a mixed-free matrix into a contraction sequence of bounded red degree.
+Rewriting with the two parameter equalities of `Lax153141Proofs.Bridge` moves the
+bound onto the submitted parameters, with the same witness function.
+
+# Attribution
+
+Bonnet, Kim, Thomassé and Watrigant, *Twin-width I: Tractable FO Model
+Checking* (J. ACM 2022).
+-/
+theorem exists_twinWidth_bound_of_mixedMinorNumber :
+    ∃ f : ℕ → ℕ, ∀ {V : Type} [Fintype V] [DecidableEq V]
+      (G : SimpleGraph V),
+      Lax228581.TwinWidth.twinWidth G ≤
+        f (Lax153141.MixedMinorNumber.mixedMinorNumber G) := by
+  obtain ⟨f, hf⟩ := TwinWidth.SimpleGraph.twinWidthBoundedByMixedMinorNumber
+  refine ⟨f, ?_⟩
+  intro V _ _ G
+  rw [Bridge.submitted_twinWidth_eq_source, Bridge.submitted_mixedMinorNumber_eq]
+  exact hf G
+
+end
+
+end Lax153141Proofs.TwinWidthFromMixedMinorNumber
