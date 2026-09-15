@@ -32,8 +32,8 @@ below `k`, and the marks and modes, which are `0`, `1` or `2`; so `2`,
 
 namespace Lax11Proofs.VC
 
-open Lax67.Ram Lax11.GraphEncoding
-open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning Lax11Proofs.CC
+open Lax865980.Ram Lax11.GraphEncoding
+open Lax865980Proofs.Imp Lax865980Proofs.Compile Lax865980Proofs.Reasoning Lax11Proofs.CC
 
 variable {g : List ℕ} {n m k B : ℕ} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
 
