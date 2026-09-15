@@ -189,33 +189,6 @@ theorem ladder_planar {V : Type*} {G : SimpleGraph V} :
 
 /--
 ---
-conclusion: Lax68.HalinPlanar.halin_planar
----
-Every Halin graph is planar.
--/
-theorem halin_planar
-    {V : Type*} {G : SimpleGraph V} :
-    Lax68.HalinGraphs.IsHalin G →
-    Lax68.Planar.IsPlanar G := by
-  rintro ⟨construction⟩
-  exact ⟨construction.drawing⟩
-
-/--
----
-conclusion: Lax68.WheelPlanar.wheel_planar
----
-Wheels are Halin graphs, and Halin graphs are planar.
--/
-theorem wheel_planar
-    {V : Type*} {G : SimpleGraph V} :
-    Lax68.Wheels.IsWheel G →
-    Lax68.Planar.IsPlanar G :=
-  fun h =>
-    Lax68.HalinPlanar.halin_planar
-      (Lax68.WheelHalin.wheel_halin h)
-
-/--
----
 conclusion: Lax68.TreePlanar.tree_planar
 ---
 Finite trees are outerplanar, and outerplanar graphs are planar.

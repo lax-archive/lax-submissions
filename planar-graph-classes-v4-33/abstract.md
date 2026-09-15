@@ -1,6 +1,6 @@
 This submission collects definitions of planar graph classes: planar,
 outerplanar, maximal outerplanar, grids and walls, triangles, stars, ladders,
-Halin graphs, wheels, series-parallel graphs, trees, and paths, together with
+series-parallel graphs, trees, and paths, together with
 triangulations of planar graphs.
 
 The supporting concepts are straight-line graph drawings, graph minors via
@@ -25,16 +25,13 @@ The supplied proofs include that stars and paths are trees and that minors
 of acyclic graphs are acyclic. The latter excludes `K₄` and `K₂,₃` from
 trees, proving tree outerplanarity conditional on the open excluded-minor
 characterization. The existing tree, star, and path consequences use this
-same chain. Triangles are maximal outerplanar: their three vertices exclude
-both forbidden minors, and completeness gives maximality. This also uses
-the open outerplanar characterization and supplies the existing triangle
-outerplanarity and planarity chain.
+same chain. Triangles are maximal outerplanar via an explicit drawing of
+three points on a circle; completeness gives maximality. The triangle
+outerplanarity and planarity consequences follow.
 
-Wall planarity follows from grid planarity by restricting a drawing. Ladder
-planarity has alternative proofs through grids, outerplanarity, and
-series-parallel graphs, each conditional on the corresponding open statements.
-The remaining open formalization problems are grid planarity, ladder outerplanarity
-and series-parallel construction, series-parallel planarity,
-and the wheel-to-Halin construction,
-as well as Kuratowski's, Wagner's, and the outerplanar characterization theorems. These
-are known mathematical results whose Lean proofs are not supplied here.
+Grid planarity is proved by placing vertices at integer row-column coordinates.
+Wall planarity follows by restricting this drawing, and ladder planarity follows
+because every ladder is a two-row grid. The remaining open formalization problems
+are series-parallel planarity, Kuratowski's theorem, Wagner's theorem, and the
+excluded-minor characterization of outerplanarity. These are known mathematical
+results whose Lean proofs are not supplied here.

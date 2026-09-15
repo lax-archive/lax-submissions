@@ -10,8 +10,6 @@ import Lax68.GridsAndWalls
 import Lax68.Triangles
 import Lax68.Stars
 import Lax68.Ladders
-import Lax68.HalinGraphs
-import Lax68.Wheels
 import Lax68.SeriesParallel
 import Lax68.Trees
 import Lax68.Paths
@@ -31,9 +29,6 @@ import Lax68.StarOuterplanar
 import Lax68.StarPlanar
 import Lax68.LadderGrid
 import Lax68.LadderPlanar
-import Lax68.HalinPlanar
-import Lax68.WheelHalin
-import Lax68.WheelPlanar
 import Lax68.SeriesParallelPlanar
 import Lax68.TreeOuterplanar
 import Lax68.TreePlanar
