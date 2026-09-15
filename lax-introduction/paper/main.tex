@@ -9,13 +9,12 @@
 
 \hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black}
 
-\theoremstyle{definition}
-\newtheorem{definition}{Definition}
 \theoremstyle{plain}
 \newtheorem{theorem}{Theorem}
-\newtheorem{lemma}{Lemma}
-\newtheorem{conjecture}{Conjecture}
-\renewcommand{\thelemma}{\Alph{lemma}}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
 
 % The status badges of the website, as they appear next to a concept:
 % a green "proven" chip and a yellow "open" chip.
