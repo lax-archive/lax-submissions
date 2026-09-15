@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Ir.Semantics
-import Lax67Proofs.Reasoning
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+import Lax808846Proofs.Reasoning
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The embedding of the IR into IMP+, and the state agreement it preserves.

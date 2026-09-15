@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Ir.Assn
 import Lax62Proofs.Refine.NREST.BackwardsReasoning
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The generic weakest-precondition layer, the cost framework, and the IR's

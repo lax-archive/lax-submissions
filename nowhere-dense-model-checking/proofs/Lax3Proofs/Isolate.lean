@@ -12,7 +12,7 @@ no side condition on where the tuple sits.
 
 The arena is a colored graph `(A, col)` on `Fin n`. The batch is an
 enumeration `w : Fin m' → Fin n`; the batch *set* is `Set.range w`, and
-the isolated arena is `deleteVerts A (Set.range w)` — Lax12's isolation
+the isolated arena is `deleteVerts A (Set.range w)` — Lax199508's isolation
 move, which drops every edge incident to the batch and keeps the
 carrier, so vertices persist and equality needs no readout at all.
 
@@ -132,7 +132,7 @@ namespace Lax3Proofs.Isolate
 
 open Lax3.ColoredGraphs Lax3.DistFO
 open Lax3Proofs.Horizon Lax3Proofs.SyntaxLemmas Lax3Proofs.WalkDistance
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 
 /-! ### Derived connectives
 

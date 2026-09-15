@@ -116,9 +116,9 @@ satisfying `EncodesGraph x n G` the cleaning is the identity
 and irreflexive because `G.Adj` is. -/
 def parseGraphAt (x : List ℕ) (n : ℕ) : SimpleGraph (Fin n) where
   Adj u v := u ≠ v ∧ (blockMem x u v ∨ blockMem x v u)
-  symm := by
+  symm := ⟨by
     rintro u v ⟨hne, h⟩
-    exact ⟨hne.symm, h.symm⟩
+    exact ⟨hne.symm, h.symm⟩⟩
   loopless := ⟨fun u h => h.1 rfl⟩
 
 instance instDecidableRelParseAdj (x : List ℕ) (n : ℕ) :

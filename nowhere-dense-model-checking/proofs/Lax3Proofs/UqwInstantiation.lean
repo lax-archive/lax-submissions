@@ -1,4 +1,4 @@
-import Lax12.NowhereDenseUQW
+import Lax199508.NowhereDenseUQW
 import Mathlib.Combinatorics.SimpleGraph.Walk.Basic
 
 /-!
@@ -6,7 +6,7 @@ import Mathlib.Combinatorics.SimpleGraph.Walk.Basic
 
 The descent through the game tree needs exactly one hypothesis that is
 not about the machine: uniform quasi-wideness of the arena at radius
-`2 · cap`, together with `hℓ : ℓ = N (2 s + 2)` fixing the round budget. This file produces both from Lax12's endorsed theorem
+`2 · cap`, together with `hℓ : ℓ = N (2 s + 2)` fixing the round budget. This file produces both from Lax199508's endorsed theorem
 that nowhere dense classes are uniformly quasi-wide.
 
 # The statement
@@ -17,7 +17,7 @@ of at least `N (2 s + 2)` vertices there is a separator `S` of at most
 is distance-`2 · cap` independent in `G − S`.
 
 Two things about its shape are load-bearing, and both are inherited from
-`Lax12.UniformQuasiWideness.UniformlyQuasiWide` rather than chosen here.
+`Lax199508.UniformQuasiWideness.UniformlyQuasiWide` rather than chosen here.
 
 * **The quantifier order.** `N` and `s` are produced *before* the member
   `G` — they depend on the class and the radius alone. They have to be:
@@ -36,16 +36,16 @@ Two things about its shape are load-bearing, and both are inherited from
 
 # The vocabulary is shared
 
-`DistIndependent` and `deleteVerts` in the driver's `hQ` are Lax12's own:
+`DistIndependent` and `deleteVerts` in the driver's `hQ` are Lax199508's own:
 `Lax3.SplitterGame` and `Lax3.ScatterSentences` import
-`Lax12.UniformQuasiWideness` and use its definitions unchanged, so no
+`Lax199508.UniformQuasiWideness` and use its definitions unchanged, so no
 bridging lemma is needed and none is proved here. Both live at
-`Type*`-generality in Lax12 and are used at `Fin n` on both sides.
+`Type*`-generality in Lax199508 and are used at `Fin n` on both sides.
 
 # What enters the dependency cone
 
-One endorsed Lax12 axiom, by design:
-`Lax12.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense`. It is the
+One endorsed Lax199508 axiom, by design:
+`Lax199508.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense`. It is the
 hard direction of the source's Theorem 3.2 and is exactly the interface
 this campaign was built to consume.
 
@@ -62,7 +62,7 @@ deletion in `deleteVerts G S` is therefore not decoration.
 
 namespace Lax3Proofs.UqwInstantiation
 
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.UniformQuasiWideness
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.UniformQuasiWideness
 
 /-! ### The driver's hypothesis, named -/
 
@@ -77,17 +77,17 @@ def SplitterMargin {n : ℕ} (G : SimpleGraph (Fin n)) (N : ℕ → ℕ) (s cap 
 
 /-! ### The derivation -/
 
-/-- **The campaign's mathematics, from Lax12.** On a nowhere dense class
+/-- **The campaign's mathematics, from Lax199508.** On a nowhere dense class
 and at every locality radius `cap` there are a threshold function `N` and
 a separator bound `s`, depending on the class and the radius alone, such
 that every member satisfies the driver's `hQ`.
 
-This is `Lax12.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense` at the
+This is `Lax199508.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense` at the
 radius `2 · cap` and the requested size `2 s + 2`. -/
 theorem hQ_of_nowhereDense (C : GraphClass) (hC : NowhereDense C) (cap : ℕ) :
     ∃ (N : ℕ → ℕ) (s : ℕ),
       ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G → SplitterMargin G N s cap := by
-  obtain ⟨N, s, h⟩ := Lax12.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense C hC (2 * cap)
+  obtain ⟨N, s, h⟩ := Lax199508.NowhereDenseUQW.uniformlyQuasiWide_of_nowhereDense C hC (2 * cap)
   exact ⟨N, s, fun n G hG Pt hPt => h (2 * s + 2) n G hG Pt hPt⟩
 
 /-- **The same, with the round budget named.** The driver takes `hℓ : ℓ =
@@ -137,11 +137,11 @@ section Falsification
 /-- The three-vertex star with centre `1`. -/
 def star3 : SimpleGraph (Fin 3) where
   Adj u v := (u = 1 ∧ v ≠ 1) ∨ (v = 1 ∧ u ≠ 1)
-  symm := by
+  symm := ⟨by
     intro u v h
     rcases h with ⟨h1, h2⟩ | ⟨h1, h2⟩
     · exact Or.inr ⟨h1, h2⟩
-    · exact Or.inl ⟨h1, h2⟩
+    · exact Or.inl ⟨h1, h2⟩⟩
   loopless := ⟨by
     intro v h
     rcases h with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> exact h2 h1⟩
@@ -152,12 +152,15 @@ centre. -/
 theorem star3_walk (u v : Fin 3) (huv : u ≠ v) : ∃ p : star3.Walk u v, p.length ≤ 2 := by
   by_cases hu : u = 1
   · subst hu
-    exact ⟨(SimpleGraph.Adj.toWalk (Or.inl ⟨rfl, fun h => huv h.symm⟩)), by simp⟩
+    have hadj : star3.Adj 1 v := Or.inl ⟨rfl, fun h => huv h.symm⟩
+    exact ⟨SimpleGraph.Adj.toWalk hadj, by simp⟩
   · by_cases hv : v = 1
     · subst hv
-      exact ⟨(SimpleGraph.Adj.toWalk (Or.inr ⟨rfl, hu⟩)), by simp⟩
-    · refine ⟨SimpleGraph.Walk.cons (Or.inr ⟨rfl, hu⟩)
-        (SimpleGraph.Adj.toWalk (Or.inl ⟨rfl, hv⟩)), by simp⟩
+      have hadj : star3.Adj u 1 := Or.inr ⟨rfl, hu⟩
+      exact ⟨SimpleGraph.Adj.toWalk hadj, by simp⟩
+    · have hadj₁ : star3.Adj u 1 := Or.inr ⟨rfl, hu⟩
+      have hadj₂ : star3.Adj 1 v := Or.inl ⟨rfl, hv⟩
+      refine ⟨SimpleGraph.Walk.cons hadj₁ (SimpleGraph.Adj.toWalk hadj₂), by simp⟩
 
 /-- **Refuted**: without the separator there is no margin. No two-element
 subset of the star's vertex set is distance-`2` independent, so the

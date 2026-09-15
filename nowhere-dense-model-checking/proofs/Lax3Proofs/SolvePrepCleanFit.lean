@@ -3,7 +3,7 @@ import Lax3Proofs.SolvePrepCleanRoot
 /-! Concrete consumer fit: PREP's proved machine pass supplies the exact
 child precondition consumed by the clean recursive step. -/
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 variable {L n₀ : ℕ}
 

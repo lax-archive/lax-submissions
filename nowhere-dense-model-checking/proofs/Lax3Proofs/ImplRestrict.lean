@@ -48,7 +48,7 @@ holds its child):
 ## §2 `isolate`
 
 `isolate B W` drops the edges incident to `W`: it IS `deleteVerts B.G W`
-(`isolate_G`, definitional) — Lax12's isolation, which keeps the carrier
+(`isolate_G`, definitional) — Lax199508's isolation, which keeps the carrier
 (`isolate_N`): isolates, never removes. `childArena_G_eq_isolate_restrict`
 is §5 line 21 as a program identity:
 `(childArena …).G = (isolate (restrict A (cluster …)) (range batchFn)).G`.
@@ -113,7 +113,7 @@ predicate through its `degree_le` field.
 namespace Lax3Proofs.Impl
 
 open Lax3.ColoredGraphs (Coloring)
-open Lax12.UniformQuasiWideness (deleteVerts)
+open Lax199508.UniformQuasiWideness (deleteVerts)
 open Lax3Proofs.CoverEdgeSum (graphWeight)
 
 variable {n : ℕ}
@@ -267,7 +267,7 @@ end DriverIdentity
 /-! ### §2 `isolate` -/
 
 /-- **§4 row 2, `isolate B W`** — drop the edges incident to `W`. It is
-Lax12's `deleteVerts`: the carrier is kept, only edges go. -/
+Lax199508's `deleteVerts`: the carrier is kept, only edges go. -/
 noncomputable def MArena.isolate (B : MArena Λ n₀ ℓp) (W : Set (Fin B.N)) :
     MArena Λ n₀ ℓp :=
   { B with G := deleteVerts B.G W }

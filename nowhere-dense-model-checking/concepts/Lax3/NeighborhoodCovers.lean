@@ -36,7 +36,7 @@ in the ball *of its own index*, no existential center.
 The three fields quantify over all of `Fin n`, including vertices
 outside every cluster of interest; an empty cluster satisfies both the
 radius and the degree conditions vacuously, so this costs nothing.
-Degree is stated with `Set.ncard`, the cardinality idiom of the Lax12
+Degree is stated with `Set.ncard`, the cardinality idiom of the Lax199508
 concepts this submission composes with.
 -/
 

@@ -128,7 +128,7 @@ Per descent at centre `u`, at level names:
 namespace Lax3Proofs.BatchCanon
 
 open Lax3.ColoredGraphs
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 open Lax3Proofs.WalkDistance
 
 variable {V : Type*}

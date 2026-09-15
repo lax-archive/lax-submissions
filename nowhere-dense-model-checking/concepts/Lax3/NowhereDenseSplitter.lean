@@ -1,5 +1,5 @@
 import Lax3.SplitterGame
-import Lax12.NowhereDenseClasses
+import Lax199508.NowhereDenseClasses
 
 /-!
 ---
@@ -20,8 +20,8 @@ vertex.
 
 # Formalization notes
 
-The hypothesis is `Lax12.NowhereDense` verbatim, and the proof to come
-derives the strategy from Lax12's `uniformlyQuasiWide_of_nowhereDense`,
+The hypothesis is `Lax199508.NowhereDense` verbatim, and the proof to come
+derives the strategy from Lax199508's `uniformlyQuasiWide_of_nowhereDense`,
 following the notes' path-maintenance strategy: Splitter maintains
 BFS paths to the connector vertices of earlier rounds and isolates the
 still-active vertices of those paths, with `ℓ = N_r(2·s_r + 2)` and
@@ -34,7 +34,7 @@ slip silently. Second, the isolation variant needs no new argument
 over the notes' deletion variant: arenas only lose edges, so a vertex
 isolated in some round has no incident edge in any later arena — the
 paths the strategy cuts stay cut, and the distance-independent set the
-contradiction extracts is independent in exactly Lax12's
+contradiction extracts is independent in exactly Lax199508's
 `deleteVerts` sense, which is the conclusion shape of the endorsed
 quasi-wideness theorem.
 
@@ -49,7 +49,7 @@ concept.
 namespace Lax3.NowhereDenseSplitter
 
 open Lax3.SplitterGame
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 
 /-- On a nowhere dense class, for every radius there are round and
 batch bounds with which Splitter wins the isolation splitter game on

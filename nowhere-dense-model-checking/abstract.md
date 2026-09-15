@@ -1,7 +1,7 @@
 First-order model checking is fixed-parameter tractable on nowhere
 dense graph classes (Grohe–Kreutzer–Siebertz, JACM 2017). This
 submission proves that theorem as a running-time claim on the word RAM
-of *The Word RAM* (Lax67): for every nowhere dense class *C*, every
+of *The Word RAM* (Lax808846): for every nowhere dense class *C*, every
 first-order sentence φ and every ε > 0 there is one program that
 decides φ on every member of *C*, given in compressed sparse row form
 as a word *x*, within *c* · (|x| + 1)^(1+ε) steps. Program, constant
@@ -34,8 +34,8 @@ with their step counts; the time bound is the machine's own count.
 
 The combinatorial hypotheses — nowhere denseness, uniform
 quasi-wideness, subpolynomial weak coloring numbers — are consumed from
-*Sparsity Lectures* (Lax12); the machine model and timed computation
-from *The Word RAM* (Lax67) and its refinement framework (Lax62); graph
+*Sparsity Lectures* (Lax199508); the machine model and timed computation
+from *The Word RAM* (Lax808846) and its refinement framework (Lax62); graph
 encodings from *Algorithmic Experiments on a Random Access Machine*
 (Lax11).
 
@@ -44,4 +44,4 @@ Section 6 are those of Grohe, Kreutzer and Siebertz (JACM 2017, cited
 by the numbering of arXiv:1311.3899); the locality theorem is
 Dreier–Toruńczyk (arXiv 2606.23180); the sparsity theory behind the
 hypotheses follows the Pilipczuk–Siebertz lecture notes as formalized
-in Lax12.
+in Lax199508.

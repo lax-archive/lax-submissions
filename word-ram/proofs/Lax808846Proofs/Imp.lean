@@ -61,7 +61,7 @@ The nine familiar names are available as abbreviations, so `.add e f`
 still writes a sum.
 -/
 
-namespace Lax67Proofs.Imp
+namespace Lax808846Proofs.Imp
 
 /-- The binary operators of IMP+, one for each of the machine's
 arithmetic and bitwise instructions. -/
@@ -319,4 +319,4 @@ def initEnv (ext : String → ℕ) (x : List ℕ) : Env where
   inp := x
   out := []
 
-end Lax67Proofs.Imp
+end Lax808846Proofs.Imp

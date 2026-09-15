@@ -1,4 +1,4 @@
-import Lax67Proofs.Lib.Basic
+import Lax808846Proofs.Lib.Basic
 
 /-!
 An array filled cell by cell by a counter: the array, a scalar counting
@@ -35,9 +35,9 @@ the counter: a fill says nothing about where it has not been yet, so the
 caller's precondition is only that the array has the right length.
 -/
 
-namespace Lax67Proofs.Reasoning.Lib
+namespace Lax808846Proofs.Reasoning.Lib
 
-open Lax67Proofs.Imp
+open Lax808846Proofs.Imp
 
 variable {B n i j k v : ℕ} {a b x y m : String} {g F : ℕ → ℕ} {σ : Env}
 
@@ -305,23 +305,23 @@ def demoWatched (a x m : String) : Com :=
         (.seq (.write (.get a (.lit 1))) (.write (.get a (.lit 2))))))
 
 /-- Two scalars, one array, two temporaries. -/
-def layout : Lax67Proofs.Compile.Layout := ⟨["i", "m"], ["ar"], 2⟩
+def layout : Lax808846Proofs.Compile.Layout := ⟨["i", "m"], ["ar"], 2⟩
 
 /-- The machine program. -/
-def prog : Lax67.Ram.Program :=
-  Lax67Proofs.Compile.compileProgram layout (demoWatched "ar" "i" "m")
+def prog : Lax808846.Ram.Program :=
+  Lax808846Proofs.Compile.compileProgram layout (demoWatched "ar" "i" "m")
 
 /-- The layout covers the block, so the compilation is the one the
 simulation theorem is about and not an accident. -/
-theorem demoWatched_ok : Lax67Proofs.Compile.Com.Ok layout (demoWatched "ar" "i" "m") := by
-  simp [demoWatched, demo, put, layout, Lax67Proofs.Compile.Com.Ok,
-    Lax67Proofs.Compile.Cond.Ok, Lax67Proofs.Compile.condExpr, Lax67Proofs.Compile.Expr.Ok]
+theorem demoWatched_ok : Lax808846Proofs.Compile.Com.Ok layout (demoWatched "ar" "i" "m") := by
+  simp [demoWatched, demo, put, layout, Lax808846Proofs.Compile.Com.Ok,
+    Lax808846Proofs.Compile.Cond.Ok, Lax808846Proofs.Compile.condExpr, Lax808846Proofs.Compile.Expr.Ok]
 
 /-- Run it: the machine's memory starts zeroed, and the pass writes the
 counter into each cell, so the three readings must be `0`, `1`, `2`. -/
-def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax67.Ram.initState []) 0
+def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax808846.Ram.initState []) 0
 
-#guard demoRun = some ([0, 1, 2], 108)
+#guard demoRun = some ([0, 1, 2], 109)
 
 /-! And the arithmetic on the other side of the abstraction: three turns
 of a fill with the identity. -/
@@ -332,4 +332,4 @@ end Demo
 
 end Fill
 
-end Lax67Proofs.Reasoning.Lib
+end Lax808846Proofs.Reasoning.Lib

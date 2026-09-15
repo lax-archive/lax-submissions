@@ -1,7 +1,7 @@
 import Lax62Proofs.Refine.Iicf.IicfArray
 import Lax62Proofs.Refine.Iicf.UnionFindAbstract
 import Mathlib.Data.Nat.Bitwise
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Timed loop-form union-find
@@ -929,29 +929,21 @@ theorem rankInvar_union_roots (hU : ufaInvar parents)
     have hsplitNewRx :
         (∑ k ∈ Finset.range parents.length, newWeight k) =
           newWeight rx + ∑ k ∈ (Finset.range parents.length).erase rx, newWeight k := by
-      simpa only [Finset.sdiff_singleton_eq_erase] using
-        (Finset.sum_eq_add_sum_diff_singleton rx newWeight
-          (fun hnot => (hnot hrxMem).elim))
+      exact (Finset.add_sum_erase _ newWeight hrxMem).symm
     have hsplitNewRy :
         (∑ k ∈ (Finset.range parents.length).erase rx, newWeight k) =
           newWeight ry +
             ∑ k ∈ ((Finset.range parents.length).erase rx).erase ry, newWeight k := by
-      simpa only [Finset.sdiff_singleton_eq_erase] using
-        (Finset.sum_eq_add_sum_diff_singleton ry newWeight
-          (fun hnot => (hnot hryMem).elim))
+      exact (Finset.add_sum_erase _ newWeight hryMem).symm
     have hsplitOldRx :
         (∑ k ∈ Finset.range parents.length, oldWeight k) =
           oldWeight rx + ∑ k ∈ (Finset.range parents.length).erase rx, oldWeight k := by
-      simpa only [Finset.sdiff_singleton_eq_erase] using
-        (Finset.sum_eq_add_sum_diff_singleton rx oldWeight
-          (fun hnot => (hnot hrxMem).elim))
+      exact (Finset.add_sum_erase _ oldWeight hrxMem).symm
     have hsplitOldRy :
         (∑ k ∈ (Finset.range parents.length).erase rx, oldWeight k) =
           oldWeight ry +
             ∑ k ∈ ((Finset.range parents.length).erase rx).erase ry, oldWeight k := by
-      simpa only [Finset.sdiff_singleton_eq_erase] using
-        (Finset.sum_eq_add_sum_diff_singleton ry oldWeight
-          (fun hnot => (hnot hryMem).elim))
+      exact (Finset.add_sum_erase _ oldWeight hryMem).symm
     calc
       (∑ k ∈ Finset.range parents.length, newWeight k) =
           newWeight rx + ∑ k ∈ (Finset.range parents.length).erase rx, newWeight k := by

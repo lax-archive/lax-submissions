@@ -14,7 +14,7 @@ namespace Lax3Proofs.Prog
 
 set_option linter.unusedSimpArgs false
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax3Proofs.Augmentation Lax3Proofs.Augmentation.Orientation
 
 /-- The scalar scratch cells, reusable between augmentation stages. -/
@@ -466,13 +466,13 @@ theorem agCsrCom_scatter_spec {B N M : ℕ} {nN sz ky o t ct cu : String} {key :
       (.seq (.assign "ac.n" (.var nN)) (.assign "ac.m" (.var sz))) σ
       ((σ.setVar "ac.n" N).setVar "ac.m" M) 4 := by
     have h1 : Run B (.assign "ac.n" (.var nN)) σ (σ.setVar "ac.n" N) 2 := by
-      simpa only [hn] using Run.assign (x := "ac.n") (evalB_var (B := B) (x := nN)
-        (σ := σ) (by omega))
+      simpa only [hn, Expr.size] using Run.assign (x := "ac.n")
+        (evalB_var (B := B) (x := nN) (σ := σ) (by omega))
     have h2 : Run B (.assign "ac.m" (.var sz)) (σ.setVar "ac.n" N)
         ((σ.setVar "ac.n" N).setVar "ac.m" M) 2 := by
       have hv : (σ.setVar "ac.n" N).vars sz = M := by simp [hszn, hm]
-      simpa only [hv] using Run.assign (x := "ac.m") (evalB_var (B := B) (x := sz)
-        (σ := σ.setVar "ac.n" N) (by rw [hv]; omega))
+      simpa only [hv, Expr.size] using Run.assign (x := "ac.m")
+        (evalB_var (B := B) (x := sz) (σ := σ.setVar "ac.n" N) (by rw [hv]; omega))
     exact h1.seq h2
   have hS0 : AgCsrSource ky N M key ((σ.setVar "ac.n" N).setVar "ac.m" M) := by
     constructor <;> simp_all
@@ -709,7 +709,7 @@ def agCsrKeyGraph {N : ℕ} (ks : List ℕ)
     (hsym : ∀ u v : Fin N, agArcKey (u, v) ∈ ks → agArcKey (v, u) ∈ ks)
     (hloop : ∀ v : Fin N, agArcKey (v, v) ∉ ks) : SimpleGraph (Fin N) where
   Adj v u := agArcKey (u, v) ∈ ks
-  symm v u h := hsym u v h
+  symm := ⟨fun v u h => hsym u v h⟩
   loopless := ⟨hloop⟩
 
 /-- The padded key rows feed the exact graph-CSR seam for any represented
@@ -762,7 +762,8 @@ theorem graphCsr_agCsrRows {N M : ℕ} {o t : String} {G : SimpleGraph (Fin N)} 
     fun i hi => hc.getD_off hi, ?_⟩, ?_, ?_⟩
   · intro v
     have hm := hc.off_le_succ v.isLt
-    simp only [rows, List.length_ofFn, Csr.rowLen]
+    have hlen : (rows v).length = Csr.rowLen off (v : ℕ) := List.length_ofFn
+    simp only [rows, Csr.rowLen] at hlen ⊢
     omega
   · intro v i hi
     have hi' : i < Csr.rowLen off v := by simpa [rows] using hi

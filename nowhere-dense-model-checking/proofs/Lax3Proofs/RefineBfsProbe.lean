@@ -106,14 +106,14 @@ namespace Lax3Proofs.RefineBfsProbe
 
 open Lax62Proofs.Refine
 open Lax3.ColoredGraphs (WithinDist ball)
-open Lax12.UniformQuasiWideness (deleteVerts)
+open Lax199508.UniformQuasiWideness (deleteVerts)
 open Lax3Proofs.WalkDistance (mem_ball)
 
 variable {n : ℕ}
 
 /-! ## The vocabulary bridge (§1) -/
 
-/-- **The bridge, graph half.** The tower's masked graph *is* Lax12's
+/-- **The bridge, graph half.** The tower's masked graph *is* Lax199508's
 vertex deletion at the dead set of the mask. `ext` plus one `simp`
 (`Bool.not_eq_false` is the entire gap — `masked` stores `M u = true`,
 `deleteVerts` stores `¬ (M u = false)`). -/

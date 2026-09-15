@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Sepref.Rules
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 Flattening laws for iterated dependent signature composition.
@@ -205,7 +205,7 @@ theorem naive_independent_flattening_is_false :
     subst b₀
     cases b₁ with
     | false => simp [U₁] at hU₁
-    | true => simpa [S] using hS
+    | true => simp [S, sepFalse] at hS
   have hnaive : hrrCompDep naiveT S naiveU () () 0 () (0 : AState) := by
     apply hrrCompDep_I (b := false) (rb := 0)
       (show (false, ()) ∈ naiveT from ⟨false, rfl, trivial⟩)

@@ -30,7 +30,7 @@ from this definition.
 namespace Lax3Proofs.ScatterChoices
 
 open Lax3.ColoredGraphs Lax3.ScatterSentences
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 
 /-- The greedy process of the source, in the canonical order on
 `Fin n`: the vertex `v` is selected exactly when it lies in `X` and no

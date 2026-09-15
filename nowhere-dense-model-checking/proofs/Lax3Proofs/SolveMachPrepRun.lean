@@ -81,10 +81,10 @@ reset is replaced by a one-step skip). No carrier-sized clear occurs in
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
 open Lax3Proofs.WalkDistance
@@ -261,16 +261,16 @@ open Classical in
 /-- Isolation never adds edges: the degree sum only drops. -/
 private theorem degSum_deleteVerts_le {N : ℕ} (G : SimpleGraph (Fin N))
     (W : Set (Fin N)) :
-    (∑ v : Fin N, (Lax12.UniformQuasiWideness.deleteVerts G W).degree v)
+    (∑ v : Fin N, (Lax199508.UniformQuasiWideness.deleteVerts G W).degree v)
       ≤ ∑ v : Fin N, G.degree v := by
   refine Finset.sum_le_sum fun v _ => ?_
-  have hsub : (Lax12.UniformQuasiWideness.deleteVerts G W).neighborFinset v
+  have hsub : (Lax199508.UniformQuasiWideness.deleteVerts G W).neighborFinset v
       ⊆ G.neighborFinset v := by
     intro w hw
     rw [SimpleGraph.mem_neighborFinset] at hw ⊢
     exact hw.1
-  calc (Lax12.UniformQuasiWideness.deleteVerts G W).degree v
-      = ((Lax12.UniformQuasiWideness.deleteVerts G W).neighborFinset v).card :=
+  calc (Lax199508.UniformQuasiWideness.deleteVerts G W).degree v
+      = ((Lax199508.UniformQuasiWideness.deleteVerts G W).neighborFinset v).card :=
         (SimpleGraph.card_neighborFinset_eq_degree _ _).symm
     _ ≤ (G.neighborFinset v).card := Finset.card_le_card hsub
     _ = G.degree v := SimpleGraph.card_neighborFinset_eq_degree _ _
@@ -519,7 +519,7 @@ theorem prepChan_new_pin (S : Setup L) (ord : CoverSpec.OrderingRoutine)
           (histGraph S A ((ord A.N A.G).order) u) (2 * S.R) (A.up u)
           ((childArena S A ((ord A.N A.G).order) u).up v) := by
   let π := (ord A.N A.G).order
-  let f := (childArena S A π u).up
+  let f : Fin (childN S A π u) ↪ Fin n₀ := (childArena S A π u).up
   have hcentre : f (centreChild S A π u) = A.up u := by
     change A.up ((childEquiv S A π u) ((childEquiv S A π u).symm
       ⟨u, self_mem_cluster S A π u⟩) : Fin A.N) = A.up u
@@ -3225,11 +3225,15 @@ private theorem colWriters_forall₂ {B : ℕ} :
           (lt_trans hdlt (lt_of_le_of_lt (Nat.le_add_left _ _) h9)))
         (by rw [Bop.apply_add]; exact hsumB)
       rwa [Bop.apply_add] at hadd
+    have hset : Impl.recordProfilesMS S.R (relColoring f0 Set.univ) Dp Dc d
+        = f0 c := by
+      rw [hd_def]
+      exact (Impl.recordProfilesMS_old ..).trans (relColoring_castSucc ..)
     have hbit : colBit S j f0 Dp Dc a ha d
         = if (⟨a, ha⟩ : Fin kk) ∈ f0 c then 1 else 0 := by
       rw [colBit]
-      refine if_congr ?_ rfl rfl
-      rw [hd_def, Impl.recordProfilesMS_old, relColoring_castSucc]
+      exact if_congr (iff_of_eq (congrArg
+        (fun t : Set (Fin kk) => (⟨a, ha⟩ : Fin kk) ∈ t) hset)) rfl rfl
     have hclt : (c : ℕ) < S.pal j := c.2
     have hval : (Expr.get "cp.c"
         (.add (.mul (.var "cp.i") (.lit (S.pal j))) (.lit (c : ℕ)))).evalB
@@ -3284,10 +3288,14 @@ private theorem colWriters_forall₂ {B : ℕ} :
           (lt_trans hdlt (lt_of_le_of_lt (Nat.le_add_left _ _) h9)))
         (by rw [Bop.apply_add]; exact hsumB)
       rwa [Bop.apply_add] at hadd
+    have hset : Impl.recordProfilesMS S.R (relColoring f0 Set.univ) Dp Dc d
+        = (Set.univ : Set (Fin kk)) := by
+      rw [hd_def]
+      exact (Impl.recordProfilesMS_old ..).trans (relColoring_last ..)
     have hmem : (⟨a, ha⟩ : Fin kk) ∈
-        Impl.recordProfilesMS S.R (relColoring f0 Set.univ) Dp Dc d := by
-      rw [hd_def, Impl.recordProfilesMS_old, relColoring_last]
-      exact Set.mem_univ _
+        Impl.recordProfilesMS S.R (relColoring f0 Set.univ) Dp Dc d :=
+      (iff_of_eq (congrArg (fun t : Set (Fin kk) => (⟨a, ha⟩ : Fin kk) ∈ t)
+        hset)).mpr (Set.mem_univ _)
     have hbit : colBit S j f0 Dp Dc a ha d = 1 := by
       rw [colBit, if_pos hmem]
     have hval : (Expr.lit 1).evalB B σ
@@ -4046,8 +4054,8 @@ private theorem prepTail_spec (B : ℕ) (S : Setup L)
       (σ0.setVar "sp.n" kk) ((σ0.setVar "sp.n" kk).setVar "sp.m" ns) 2 := by
     apply Run.assign
     have hv : (σ0.setVar "sp.n" kk).vars "cp.m" = ns := by
-      simpa only [vars_setVar, if_neg (by decide : ("cp.m" : String) ≠ "sp.n")]
-        using hcpm0
+      rw [vars_setVar, if_neg (by decide : ("cp.m" : String) ≠ "sp.n")]
+      exact hcpm0
     rw [← hv]
     exact evalB_var (by rw [hv]; exact hnsB)
   have hr3 : Run B (.assign "sp.r" (.lit (2 * S.R)))
@@ -4215,7 +4223,8 @@ private theorem prepTail_spec (B : ℕ) (S : Setup L)
             (le_trans hnsn htL0)⟩
   have hrC' : Run B (prepColCom S j) σ3 σ4
       ((30 * isoPal (relPal (S.pal j)) S.width S.R + 9) * kk + 6) := by
-    simpa only [length_colWriters] using hrC
+    rw [length_colWriters] at hrC
+    exact hrC
   have hr := (hr1.seq (hr2.seq (hr3.seq (hr4.seq (hr5.seq (hr6.seq hrS)))))).seq
     (hrP.seq (hrC'.seq hrI))
   refine ⟨σ5, hr.mono ?_, Dp, Dc, hPT, ?_⟩

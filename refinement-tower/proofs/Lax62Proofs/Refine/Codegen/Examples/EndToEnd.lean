@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Codegen.Cash
 import Lax62Proofs.Refine.Sepref.Examples.Acceptance
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 P5's acceptance: P4's two toy programs, landed at `ComputesInTime`.
@@ -65,8 +65,8 @@ sharper `B` and re-runs §3 with the same invariants.
 namespace Lax62Proofs.Refine.Codegen
 
 open Lax62Proofs.Refine.Ir Lax62Proofs.Refine.Sepref Lax62Proofs.Refine.Sepref.Acceptance
-open Lax62Proofs.Codegen Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
-open Lax67Proofs.Imp Lax67Proofs.Compile
+open Lax62Proofs.Codegen Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Compile
 
 namespace EndToEnd
 
@@ -151,7 +151,7 @@ theorem fcRun_snd_le (ys : List ℕ) (t : ℕ) : ∀ (m : ℕ) (s : ℕ × ℕ),
 def fcCountOf (ys : List ℕ) (t : ℕ) : ℕ := (fcRun ys t ys.length (0, 0)).2
 
 theorem fcCountOf_le (ys : List ℕ) (t : ℕ) : fcCountOf ys t ≤ ys.length := by
-  simpa using fcRun_snd_le ys t ys.length (0, 0)
+  simpa [fcCountOf] using fcRun_snd_le ys t ys.length (0, 0)
 
 /-! ## 2. Filter-count: the initial IR state
 
@@ -401,7 +401,7 @@ theorem fc_program_spec (ys : List ℕ) (t : ℕ) :
 
 theorem fcProgram_ok : Compile.Com.Ok fcLayout fcProgram := by
   simp [fcProgram, fcBody, readScalarsThenArr, readArr, writeScalar,
-    Lax67Proofs.Reasoning.Lib.Fill.put, fcLayout, Compile.Com.Ok, Compile.Cond.Ok,
+    Lax808846Proofs.Reasoning.Lib.Fill.put, fcLayout, Compile.Com.Ok, Compile.Cond.Ok,
     Compile.condExpr, Compile.Expr.Ok, fcLoop_impl, embed, embedCond, embedOperand]
 
 /-- **The boundary.** -/
@@ -426,10 +426,11 @@ theorem fc_solves : Transfer.Solves fcLayout fcProgram fcD fcOut fcB fcK := by
     exact h
 
 /-- **The P5 gate for filter-count**: the compiled machine program
-computes the count in `L.const · (32·n + 17)` steps. -/
+computes the count in at most `L.const · (32·n + 17) + 1` instructions,
+including the final `halt`. -/
 theorem fc_computesInTime (w : ℕ) (hfit : ∀ x ∈ fcD, fcLayout.FitsWords (fcB x) w) :
-    Lax67.RamComputes.ComputesInTime w (compileProgram fcLayout fcProgram) fcD fcOut
-      (fun x => fcLayout.const * fcK x) :=
+    Lax808846.RamComputes.ComputesInTime w (compileProgram fcLayout fcProgram) fcD fcOut
+      (fun x => fcLayout.const * fcK x + 1) :=
   fc_solves.computesInTime hfit
 
 /-! ## 5. In-place reverse: the abstract loop -/
@@ -825,7 +826,7 @@ theorem rv_program_spec (ys : List ℕ) :
 
 theorem rvProgram_ok : Compile.Com.Ok rvLayout rvProgram := by
   simp [rvProgram, rvBody, readScalarsThenArr, readArr, writeArr,
-    Lax67Proofs.Reasoning.Lib.Fill.put, rvLayout, Compile.Com.Ok, Compile.Cond.Ok,
+    Lax808846Proofs.Reasoning.Lib.Fill.put, rvLayout, Compile.Com.Ok, Compile.Cond.Ok,
     Compile.condExpr, Compile.Expr.Ok, rvLoop_impl, embed, embedCond, embedOperand]
 
 /-- **The boundary.** -/
@@ -847,10 +848,10 @@ theorem rv_solves : Transfer.Solves rvLayout rvProgram rvD rvOut' fcB rvK := by
     rw [hout, hK]
     exact rv_program_spec ys
 
-/-- **The P5 gate for reverse.** -/
+/-- **The P5 gate for reverse.** The machine bound includes the final `halt`. -/
 theorem rv_computesInTime (w : ℕ) (hfit : ∀ x ∈ rvD, rvLayout.FitsWords (fcB x) w) :
-    Lax67.RamComputes.ComputesInTime w (compileProgram rvLayout rvProgram) rvD rvOut'
-      (fun x => rvLayout.const * rvK x) :=
+    Lax808846.RamComputes.ComputesInTime w (compileProgram rvLayout rvProgram) rvD rvOut'
+      (fun x => rvLayout.const * rvK x + 1) :=
   rv_solves.computesInTime hfit
 
 /-! ## 9. The gates (ledger D4)
@@ -866,7 +867,7 @@ call P5/D-ai. -/
 
 namespace Gate
 
-open Lax67.Ram
+open Lax808846.Ram
 
 /-! ### Filter-count: `[3, 1, 4, 1, 5]` under `t = 4` -/
 
@@ -889,13 +890,15 @@ def fcProg : Program := compileProgram fcLayout fcProgram
 def fcRunGate : Option (List ℕ × ℕ) := runOut 16 400000 fcProg (initState fcInput) 0
 
 #guard fcRunGate.map Prod.fst = some [3]
+-- The exact instruction count includes the final `halt`.
+#guard fcRunGate.map Prod.snd = some 357
 
 -- **The negative control**: not the number of entries *above* the
 -- threshold, which on this input is `2`.
 #guard fcRunGate.map Prod.fst ≠ some [2]
 
--- The cost cross-check: the machine run stays inside `L.const · K`.
-#guard (fcRunGate.map Prod.snd).getD 0 ≤ fcLayout.const * fcK fcInput
+-- The cost cross-check includes the final `halt`: `L.const · K + 1`.
+#guard (fcRunGate.map Prod.snd).getD 0 ≤ fcLayout.const * fcK fcInput + 1
 
 /-! ### Reverse: `[1, 2, 3, 4]` -/
 
@@ -916,11 +919,13 @@ def rvProg : Program := compileProgram rvLayout rvProgram
 def rvRunGate : Option (List ℕ × ℕ) := runOut 16 400000 rvProg (initState rvInput) 0
 
 #guard rvRunGate.map Prod.fst = some [4, 3, 2, 1]
+-- The exact instruction count includes the final `halt`.
+#guard rvRunGate.map Prod.snd = some 354
 
 -- **The negative control**: the identity is not the reverse.
 #guard rvRunGate.map Prod.fst ≠ some [1, 2, 3, 4]
 
-#guard (rvRunGate.map Prod.snd).getD 0 ≤ rvLayout.const * rvK rvInput
+#guard (rvRunGate.map Prod.snd).getD 0 ≤ rvLayout.const * rvK rvInput + 1
 
 end Gate
 
@@ -937,9 +942,9 @@ end Gate
   `ComputesInTime` on the endorsed boundary, with no `sorry` and no
   axiom beyond `propext`, `Classical.choice`, `Quot.sound`:
   - `fc_computesInTime : ComputesInTime w (compileProgram fcLayout fcProgram) fcD fcOut
-    (fun x => fcLayout.const * fcK x)`, `fcK x = 32·n + 17`;
+    (fun x => fcLayout.const * fcK x + 1)`, `fcK x = 32·n + 17`;
   - `rv_computesInTime : ComputesInTime w (compileProgram rvLayout rvProgram) rvD rvOut'
-    (fun x => rvLayout.const * rvK x)`, `rvK x = 12·n + 26·(n−1) + 11·n + 24`
+    (fun x => rvLayout.const * rvK x + 1)`, `rvK x = 12·n + 26·(n−1) + 11·n + 24`
     — that is `49·n − 2` for `n ≥ 1`, and `24` at `n = 0`, where the
     truncated subtraction of the loop's iteration budget bites. The four
     summands are left unsummed because each is one phase's lemma.
@@ -988,8 +993,9 @@ end Gate
   agree on a lifted account (so `cash κ ≤ ecash T` is tight, not slack
   the wrong way) at `Ir/Semantics.lean`'s own countdown, and the two
   `#guard`s of §9 above check the *machine* step count against
-  `L.const · K` on real runs of both compiled programs. No inequality
-  came out backwards. Negative controls: one per program in §9, plus
+  `L.const · K + 1` on real runs of both compiled programs, including
+  their final `halt`. The exact instruction counts are pinned there too.
+  No inequality came out backwards. Negative controls: one per program in §9, plus
   `BoundVcg.lean`'s `no_runs_bigConst` and `Sim.lean`'s two.
 
 * **Backlog.**

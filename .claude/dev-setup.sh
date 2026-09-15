@@ -61,10 +61,6 @@ note() { printf '    %s\n' "$1" >&2; }
 
 "$root/.claude/cloud-setup.sh"
 
-npm_root=$(npm root -g)
-export LAX_DIST="$npm_root/lax-archive/dist"
-export REPO_ROOT="$root"
-
 # --- 2. the archive database clone -----------------------------------------
 # Cross-submission requires are pinned to these records, and re-submitting a
 # dependency moves its record — so this is refreshed per session, not cached
@@ -80,63 +76,22 @@ else
 fi
 
 # --- 3. the per-package generated files ------------------------------------
-# seedManifest writes the complete manifest (path requires first, then the warm
-# workspace's locked mathlib closure verbatim) and seedOverrides the redirects
-# to the store, exactly as `lax build` would — so lake resolves nothing,
-# clones nothing, and runs no post_update hook. Only packages missing a file
-# are touched; an existing pair may already carry sibling entries, and
-# rewriting it from the pins alone would drop them.
+# `.claude/local-overrides.py` writes, for every package of the checkout, the
+# complete manifest (the proof package's own concept package, every
+# cross-submission require of the closure as the git entry its lakefile
+# declares, then the warm workspace's locked mathlib closure verbatim) and the
+# overrides redirecting each of those names — mathlib and friends to the
+# store of the environment the submission's manifest.yaml names, each
+# LaxN/LaxNProofs to the sibling folder — exactly as `lax build` would, so
+# lake resolves nothing, clones nothing, and runs no post_update hook. Both
+# files are rewritten from the pins alone on every run; the sibling entries
+# come from the same pins, so nothing is lost by rewriting. A submission whose
+# environment has no store on this machine is reported and skipped (`lax
+# doctor --env <id>` provisions it).
 
 step "package manifests and overrides"
-node --input-type=module <<'JS'
-import fs from "node:fs";
-import path from "node:path";
-const warm = await import(`file://${process.env.LAX_DIST}/submission-validation/host/warmstore.js`);
-const ws = warm.warmDir();
-const root = process.env.REPO_ROOT;
-
-if (!warm.warmReady(ws)) {
-  console.error(`    skipped: no warm store at ${ws}; nothing to point the overrides at`);
-  process.exit(0);
-}
-
-/** Every [[require]] of a lakefile. They are the whitelisted TOML the spec
- * allows, so the same line scanner sibling-overrides.sh uses is enough. */
-function requires(file) {
-  const found = [];
-  let cur = null;
-  for (const raw of fs.readFileSync(file, "utf8").split("\n")) {
-    const line = raw.trim();
-    if (line === "[[require]]") { cur = {}; found.push(cur); continue; }
-    if (line.startsWith("[")) { cur = null; continue; }
-    const m = /^(\w+)\s*=\s*"([^"]*)"$/u.exec(line);
-    if (m && cur !== null) cur[m[1]] = m[2];
-  }
-  return found;
-}
-
-let seeded = 0, kept = 0;
-for (const submission of fs.readdirSync(root).sort()) {
-  for (const kind of ["concepts", "proofs"]) {
-    const dir = path.join(root, submission, kind);
-    const file = path.join(dir, "lakefile.toml");
-    if (!fs.existsSync(file)) continue;
-    if (fs.existsSync(path.join(dir, "lake-manifest.json")) &&
-        fs.existsSync(path.join(dir, ".lake", "package-overrides.json"))) { kept++; continue; }
-    // Path requires are the ones lake resolves in-tree: a proof package's own
-    // '../concepts', plus the sibling requires the one unpinnable pair still
-    // carries. Rev-pinned cross-submission requires are sibling-overrides.sh's
-    // job — it reads the archive records this script cannot invent.
-    const deps = requires(file)
-      .filter((r) => r.path !== undefined)
-      .map((r) => ({ name: r.name, dir: r.path }));
-    warm.seedManifest(ws, dir, deps);
-    warm.seedOverrides(ws, dir);
-    seeded++;
-  }
-}
-console.error(`    seeded ${seeded} package(s), left ${kept} existing pair(s) alone`);
-JS
+python3 "$root/.claude/local-overrides.py" "$root" >&2 || \
+  note "WARNING: some packages were not seeded (see above)"
 
 # The cross-submission half: rev-pinned requires redirected to this checkout's
 # sibling folders. Reports every pin that no longer matches its archive record.

@@ -8,17 +8,18 @@
 #   .claude/resubmit-cascade.sh monadic-dependence-neighborhood-complexity nowhere-dense-model-checking
 #                                            # resume from a later step
 #
-# Order (each folder depends only on those before it):
-#   word-ram (Lax67)                                     — the superseding revision of the
-#                                                          registered lax-13; lax-13 itself can
-#                                                          never be resubmitted
-#   sparsity-lectures (Lax12)                            — pin-only refresh: requires Lax14,
-#                                                          whose record moved under it
-#   ram-linear-time (Lax11), refinement-tower (Lax62)   — both require Lax67
-#   monadic-dependence-neighborhood-complexity (Lax5)    — pin-only refresh: requires Lax12, Lax14
-#   nowhere-dense-model-checking (Lax3)                  — requires Lax11, Lax12, Lax14, Lax62, Lax67
-# finite-ramsey and the two twin-width submissions match their records and
-# depend on nothing that moves; they are not in the list.
+# Order (each folder depends only on those before it), as of the v4.33.0
+# port (plans/port-v4.33/FINISH.md):
+#   word-ram (lax-808846)                                    — no cross-submission require
+#   ram-linear-time (lax-11), refinement-tower (lax-62)  — both require Lax808846
+#   nowhere-dense-model-checking (lax-3)                 — requires Lax11, Lax62, Lax808846 and the
+#                                                          registered Lax199508
+#   lax-introduction (lax-242665)                        — requires Lax808846, the registered Lax199508,
+#                                                          and Lax768004 (submit
+#                                                          twin-width-treewidth-separation-v4-33 first)
+# sparsity-lectures and monadic-dependence are registered v4.30 records with
+# registered / drafted v4.33.0 successors (lax-199508, lax-264807) and are
+# not resubmitted; finite-ramsey and the two twin-width folders likewise.
 #
 # Extra flags for `lax submit` (e.g. --allow-dirty) go in LAX_SUBMIT_FLAGS.
 # Requires a clean, committed, pushed tree at the start except for what the
@@ -38,7 +39,7 @@ source = json.load(open(path)).get("source") if os.path.isfile(path) else None
 print(source["commit"] if source and source.get("folder") == folder else "")
 PY2
 }
-default=(word-ram sparsity-lectures ram-linear-time refinement-tower monadic-dependence-neighborhood-complexity nowhere-dense-model-checking)
+default=(word-ram ram-linear-time refinement-tower nowhere-dense-model-checking lax-introduction)
 order=("${@:-${default[@]}}")
 [ $# -eq 0 ] && order=("${default[@]}")
 for sub in "${order[@]}"; do

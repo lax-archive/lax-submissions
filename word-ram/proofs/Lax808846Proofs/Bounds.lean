@@ -1,4 +1,4 @@
-import Lax67Proofs.Imp
+import Lax808846Proofs.Imp
 
 /-!
 The no-overflow side of the pipeline.
@@ -33,7 +33,7 @@ word" at the boundary, where the concept's admissible sets already
 carry conditions of that shape.
 -/
 
-namespace Lax67Proofs.Imp
+namespace Lax808846Proofs.Imp
 
 /-- The value `v`, or `none` when `v` does not fit below `B`. -/
 def fit (B v : ℕ) : Option ℕ := if v < B then some v else none
@@ -215,4 +215,4 @@ theorem BigStepB.inpBounded {B : ℕ} {c : Com} {σ σ' : Env} {k : ℕ}
 theorem initEnv_inpBounded {B : ℕ} (ext : String → ℕ) {x : List ℕ}
     (hx : ∀ v ∈ x, v < B) : (initEnv ext x).InpBounded B := hx
 
-end Lax67Proofs.Imp
+end Lax808846Proofs.Imp

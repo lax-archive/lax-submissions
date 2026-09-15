@@ -138,7 +138,7 @@ theorem stableBigO2Add {f g : ℕ × ℕ → ℝ}
 
 /-- Source `stable_polylog2` (line 133). -/
 theorem stablePolylog2 (a b c d : ℕ) : StableBigO2 (polylog2 a b c d) := by
-  simpa [polylog2] using stableBigO2Mul (stablePolylog a b) (stablePolylog c d)
+  exact stableBigO2Mul (stablePolylog a b) (stablePolylog c d)
 
 /-! ## Eventual norm-monotonicity in the product order -/
 
@@ -158,7 +158,7 @@ theorem eventMono2Mul {f g : ℕ → ℝ}
 /-- Source `event_mono2_polylog2` (line 173). -/
 theorem eventMono2Polylog2 (a b c d : ℕ) :
     EventuallyMonoNorm2 (polylog2 a b c d) := by
-  simpa [polylog2] using eventMono2Mul (eventMonoPolylog a b) (eventMonoPolylog c d)
+  exact eventMono2Mul (eventMonoPolylog a b) (eventMonoPolylog c d)
 
 private theorem eventuallyFutureNonnegative2 {f : ℕ × ℕ → ℝ}
     (hf : EventuallyNonnegative productAtTop f) :
@@ -254,7 +254,7 @@ theorem multThetaBivariatePolylog {f₁ f₂ : ℕ → ℕ} {a b c d : ℕ}
     (h₂ : (fun n => (f₂ n : ℝ)) =Θ[atTop] fun n => polylog c d n) :
     (fun p : ℕ × ℕ => ((f₁ p.1 * f₂ p.2 : ℕ) : ℝ)) =Θ[productAtTop]
       polylog2 a b c d := by
-  simpa [polylog2] using multThetaBivariate h₁ h₂
+  exact multThetaBivariate h₁ h₂
 
 /-- Source `mult_Theta_bivariate1` (line 649). -/
 theorem multThetaBivariateFst {f : ℕ → ℕ} {a b : ℕ}

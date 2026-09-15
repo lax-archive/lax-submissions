@@ -48,8 +48,9 @@ theorem forRec_eq (f : σ → ℕ → NRest σ ECost) (a : σ) (n : ℕ) :
       nfoldli (fun _ => true) (fun k a => f a k) (List.range (n + 1)) a := by
   induction n with
   | zero =>
-      simpa only [forRec_zero, Nat.zero_add, List.range_one, nfoldli_cons,
-        if_pos, nfoldli_nil] using (bindT_returnT_ecost (f a 0)).symm
+      simp only [forRec_zero, Nat.zero_add, List.range_one, nfoldli_cons,
+        if_pos]
+      exact (bindT_returnT_ecost (f a 0)).symm
   | succ n ih =>
       rw [forRec_succ, ih]
       calc
@@ -137,7 +138,7 @@ theorem cube_shape :
                 (List.range 2))
             (List.range 2))
         (List.range 2) 0 := by
-  simpa using forRec3_eq (fun a i j k => returnT (step a i j k)) 0 1
+  simpa [step] using forRec3_eq (fun a i j k => returnT (step a i j k)) 0 1
 
 /-- info: 'Lax62Proofs.Refine.NRest.ForGate.cube_shape' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

@@ -8,7 +8,7 @@ compiled whole, conditional on one named `Spec` obligation
 
 The endorsed axiom
 (`Lax3.ModelChecking.exists_almostLinearTime_program_modelChecking`)
-needs a compiled `Lax67.Ram.Program` with
+needs a compiled `Lax808846.Ram.Program` with
 
     ComputesInTime w p {x | EncodesGraph x n G ∧ side condition}
       (fun _ => if Sat G Fin.elim0 φ then [1] else [0]) T.
@@ -39,7 +39,8 @@ translation.
 
 `mc_computesInTime_of_solveSpec` then lands the axiom's exact
 `ComputesInTime` shape on the axiom's exact admissible set `mcD`
-(verbatim), at time `mcLayout.const · (12·|x| + Ks x + 2)`. The `Sat`
+(verbatim), at time `mcLayout.const · (12·|x| + Ks x + 2) + 1`,
+including the compiled program's final `halt`. The `Sat`
 form of the value function is produced here from the obligation's
 `unrolledMC` form through the landed semantic chain
 (`Unroll.unrolledMC_eq_MC` + `Headline.headlineSetup_mc_correct`) —
@@ -145,16 +146,16 @@ one `Spec`. In dependency order:
 
 What F7 then does with this file's headline: instantiate, choose
 `c ≥` the `hspan` sum, wrap `T x := mcLayout.const · (12·|x| + Ks x
-+ 2)`, prove `(T x : ℝ) ≤ c'·(|x|+1)^(1+ε)` from (4), and `∃`-close
++ 2) + 1`, prove `(T x : ℝ) ≤ c'·(|x|+1)^(1+ε)` from (4), and `∃`-close
 the axiom's statement.
 -/
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax62Proofs.Codegen Lax67Proofs.Compile
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax62Proofs.Codegen Lax808846Proofs.Compile
 open Lax62Proofs.Refine.Codegen (computesInTime_of_spec)
 open Lax11.GraphEncoding
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 
 /-! ## §1 The pipeline -/
@@ -167,7 +168,7 @@ def mcCom (solveCom : Com) : Com :=
 /-- The front end compiles under the skeleton layout, whatever the
 extension. -/
 theorem parseCom_ok (eS eA : List String) : Com.Ok (mcLayout eS eA) parseCom := by
-  simp [parseCom, readScalars, readArr, Lax67Proofs.Reasoning.Lib.Fill.put,
+  simp [parseCom, readScalars, readArr, Lax808846Proofs.Reasoning.Lib.Fill.put,
     mcLayout, Com.Ok, Cond.Ok, condExpr, Expr.Ok]
 
 /-- The pipeline compiles as soon as the solve stages do. -/
@@ -200,7 +201,8 @@ def SolveSpec (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
 
 /-- The pipeline's IMP+ budget: the front end's `12·|x|`, the solve
 stages' `Ks x`, the epilogue's `2`. `computesInTime_of_spec`
-multiplies exactly `mcLayout.const` on top — nothing else. -/
+multiplies by `mcLayout.const` and adds one machine instruction for
+the final `halt`. That terminal charge is outside this IMP+ budget. -/
 def mcK (Ks : List ℕ → ℕ) (x : List ℕ) : ℕ := 12 * x.length + Ks x + 2
 
 /-! ## §3 The skeleton's headline -/
@@ -229,11 +231,11 @@ theorem mc_computesInTime_of_solveSpec
     (hextTgt : ∀ x ∈ mcD n G c w, ext x "tgt" = 2 * edgeCount x)
     (hokS : Com.Ok (mcLayout eS eA) solveCom) (hnw : solveCom.NoWrite)
     (hsolve : SolveSpec C hC φ ord G c w q ext solveCom Ks) :
-    Lax67.RamComputes.ComputesInTime w
+    Lax808846.RamComputes.ComputesInTime w
       (compileProgram (mcLayout eS eA) (mcCom solveCom))
       (mcD n G c w)
       (fun _ => if Lax3.FirstOrder.Sat G Fin.elim0 φ then [1] else [0])
-      (fun x => (mcLayout eS eA).const * mcK Ks x) := by
+      (fun x => (mcLayout eS eA).const * mcK Ks x + 1) := by
   refine computesInTime_of_spec (mcCom_ok hokS) (mcD_entry_lt_mcB hq) ?_
     (mcLayout_fitsWords eS eA hq hqc hspan)
   intro x hx

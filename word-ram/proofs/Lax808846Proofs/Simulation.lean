@@ -1,5 +1,5 @@
-import Lax67Proofs.Compile
-import Lax67Proofs.Machine
+import Lax808846Proofs.Compile
+import Lax808846Proofs.Machine
 
 /-!
 The simulation theorem: a terminating IMP+ run whose values all stay
@@ -45,9 +45,9 @@ leaves is stated separately, as `s'.mem d = v`, and the frame condition
 is what carries it forward.
 -/
 
-namespace Lax67Proofs.Simulation
+namespace Lax808846Proofs.Simulation
 
-open Lax67.Ram Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Machine
+open Lax808846.Ram Lax808846Proofs.Imp Lax808846Proofs.Compile Lax808846Proofs.Machine
 
 /-- The machine state `s` represents the environment `σ`. -/
 structure Represents (L : Layout) (σ : Env) (s : State) : Prop where
@@ -615,7 +615,7 @@ theorem compile_correct {L : Layout} {B w : ℕ} {p : Program} {c : Com} {σ σ'
       have hxw : L.varAddr x < 2 ^ w := L.varAddr_lt_two_pow hfit hok
       have hs : s.inp = v :: rest := by rw [hrep.inp]; exact hinp'
       have hf : p[s.pc]? = some (Instr.read (L.varAddr x)) :=
-        fits_singleton.mp (by rw [hpc]; simpa using hfits)
+        fits_singleton.mp (by rw [hpc]; simpa [compile] using hfits)
       refine ⟨1, _, ?_, by rw [run_one hf, effect_read _ hs], ?_, ?_⟩
       · simp only [Nat.mul_one]; exact one_le_const L
       · show s.pc + 1 = a + size L (.read x); rw [hpc]; simp [size]
@@ -886,24 +886,25 @@ theorem represents_initState (L : Layout) (ext : String → ℕ) (x : List ℕ) 
 below `B`, and let `w` be a word length at which the layout and the
 bound fit — `B ≤ 2 ^ w` and `L.span B ≤ 2 ^ w`. Then the compiled
 machine program, at word length `w`, runs on the same input, halts with
-the same output, and executes at most `L.const * k` instructions. The
+the same output, and executes at most `L.const * k + 1` instructions (including the final `halt`). The
 constant depends on the layout alone: not on the program, not on the
 input, and not on the word length. The array lengths `ext` are the
 user's free choice and cost nothing. -/
 theorem compileProgram_runsTo {L : Layout} {B w : ℕ} {c : Com} {ext : String → ℕ}
     {x : List ℕ} {σ' : Env} {k : ℕ} (hfit : L.FitsWords B w) (hok : Com.Ok L c)
     (hx : ∀ v ∈ x, v < B) (hbs : BigStepB B c (initEnv ext x) σ' k) :
-    ∃ t ≤ L.const * k, RunsTo w (compileProgram L c) x σ'.out t := by
+    ∃ t ≤ L.const * k + 1, RunsTo w (compileProgram L c) x σ'.out t := by
   obtain ⟨t, s', ht, hr, hpc, hrep⟩ :=
     compile_correct hfit hbs hok (initEnv_inpBounded ext hx) 0 (initState x) rfl
       (represents_initState L ext x) (fits_self _ _)
-  refine ⟨t, ht, s', hr, ?_, by rw [← hrep.out]⟩
   have hhalt : (compileProgram L c)[s'.pc]? = some Instr.halt := by
     rw [hpc, compileProgram]
     rw [List.getElem?_append_right (by simp)]
     simp
-  rw [step_eq, hhalt]
-  rfl
+  refine ⟨t + 1, Nat.add_le_add_right ht 1, t, s', hr, ?_, ?_, ?_⟩
+  · rw [step_eq, hhalt]; rfl
+  · rw [← hrep.out]
+  · rw [terminalCost_of_getElem? hhalt]
 
 /-! ### A sanity check
 
@@ -914,7 +915,7 @@ the machine of the concept. Programs are the business of the layers
 above this one. -/
 
 example :
-    ∃ t ≤ 20, RunsTo 3 (compileProgram ⟨[], [], 1⟩ (.write (.lit 5))) [] [5] t := by
+    ∃ t ≤ 21, RunsTo 3 (compileProgram ⟨[], [], 1⟩ (.write (.lit 5))) [] [5] t := by
   have hfit : (⟨[], [], 1⟩ : Layout).FitsWords 8 3 :=
     ⟨by norm_num, by norm_num, by simp [Layout.span]⟩
   have hbs : BigStepB 8 (.write (.lit 5)) (initEnv (fun _ => 0) [])
@@ -925,4 +926,4 @@ example :
   exact ⟨t, le_trans ht (by norm_num [Layout.const, Expr.size]),
     by simpa [initEnv] using hrun⟩
 
-end Lax67Proofs.Simulation
+end Lax808846Proofs.Simulation

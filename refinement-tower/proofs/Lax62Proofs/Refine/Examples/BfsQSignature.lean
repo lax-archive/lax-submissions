@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Examples.BfsQSynth
 import Lax62Proofs.Refine.Sepref.Register
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # P1.B acceptance: queue BFS from an `hfref` signature

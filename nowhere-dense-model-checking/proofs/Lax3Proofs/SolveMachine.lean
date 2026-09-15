@@ -11,14 +11,16 @@ import Lax3Proofs.SolveUniformMachine
 The concrete cover, recursion, memory reservations and actual scalar costs
 are assembled into the endorsed almost-linear-time theorem. Program, common
 word-room constant and time function are fixed before graphs and word lengths.
+The final `halt` adds one to the machine time function; the positive exponent
+allows the same addition to its coefficient without changing the exponent.
 -/
 
 set_option autoImplicit false
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax62Proofs.Refine
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax62Proofs.Refine
 open Lax3Proofs.Driver Lax3Proofs.CoverRoutine Lax3.ColoredGraphs
-open Lax11.GraphEncoding Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax11.GraphEncoding Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder
 variable {L n : ℕ}
 
@@ -88,8 +90,8 @@ theorem machineBudgets (S : Setup L) :
   · intro j hj A
     exact chargeFrameK_zero S _ (concreteLp S) _ _ _ _ (concreteQdepth S) j A hj
   · intro k j hj A
-    simpa only [machineKB, machineStageCoeff, concreteHb, Nat.add_assoc] using
-      chargeFrameK_guard S (mdOrderingRoutine (3 * S.R)) (concreteLp S)
+    simp only [machineKB, machineStageCoeff, concreteHb, Nat.add_assoc]
+    exact chargeFrameK_guard S (mdOrderingRoutine (3 * S.R)) (concreteLp S)
         (canonicalChannels S (concreteLp S))
         (fun _ A => machineCoverCharge A.N (CoverClean.Kcov A.G S.R))
         (fun _ A => CoverClean.Kcov A.G S.R)
@@ -124,8 +126,8 @@ end Lax3Proofs.Prog
 namespace Lax3Proofs.ModelChecking
 open Lax3Proofs.Prog Lax3Proofs.Driver Lax3Proofs.CoverRoutine
 open Lax3.FirstOrder Lax11.GraphEncoding
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
-open Lax67.Ram Lax67.RamComputes
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
+open Lax808846.Ram Lax808846.RamComputes
 
 open Classical in
 /--
@@ -154,13 +156,22 @@ theorem exists_almostLinearTime_program_modelChecking :
   let a := 104 + 2 * topStageCoeff (concreteTopAtoms S) + topEvalCost S (concreteAV S)
   obtain ⟨cf, T, _, hT, htime⟩ :=
     exists_chargeFrameK_inputTime S ord (concreteLp S) hcdeg hf hε (machineStageCoeff S) 10 a
+  have hTplus : ∀ x, ((T x + 1 : ℕ) : ℝ) ≤
+      (cf + 1) * ((x.length : ℝ) + 1) ^ (1 + ε) := by
+    intro x
+    have hpow : (1 : ℝ) ≤ ((x.length : ℝ) + 1) ^ (1 + ε) :=
+      Real.one_le_rpow (by have := Nat.cast_nonneg (α := ℝ) x.length; linarith)
+        (by linarith)
+    simpa only [Nat.cast_add, Nat.cast_one, add_mul, one_mul] using
+      add_le_add (hT x) hpow
   apply exists_machine_of_uniformSolve C hC φ ε ord (concreteWordQ S) (concreteExt S)
     (concreteSolve S (CoverClean.coverCom S.R))
     (fun _ G => concreteSolveK S G (machineKB S))
     (by unfold concreteWordQ; omega)
     (concreteSolve_noWrite S _ (fun j => (CoverClean.cover_tapes S.R j).2))
     (fun _ _ x _ => concreteExt_off S x) (fun _ _ x _ => concreteExt_tgt S x)
-    (fun _ G hG c w => machineSolveSpec C hC φ G hG c w) cf T hT
+    (fun _ G hG c w => machineSolveSpec C hC φ G hG c w) (cf + 1)
+      (fun x => T x + 1) hTplus
   intro n G hG x hx
   have ht := htime n G (Impl.trivialColoring n)
     (canonicalChannels S (concreteLp S))
@@ -172,6 +183,6 @@ theorem exists_almostLinearTime_program_modelChecking :
   have hb := mcK_rootStages_le G (concreteTopAtoms S) (topEvalCost S (concreteAV S))
     (machineKB S S.depth 0 (rootArena G (Impl.trivialColoring n))) hx
   rw [codeLayout_const]
-  exact (Nat.mul_le_mul_left 10 hb).trans ht
+  exact Nat.add_le_add_right ((Nat.mul_le_mul_left 10 hb).trans ht) 1
 
 end Lax3Proofs.ModelChecking

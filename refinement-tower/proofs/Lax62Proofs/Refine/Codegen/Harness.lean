@@ -1,5 +1,5 @@
-import Lax67Proofs.Lib.Fill
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+import Lax808846Proofs.Lib.Fill
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The I/O harness: the prelude and the epilogue an IR program is wrapped
@@ -89,7 +89,7 @@ and the harness owes the output tape to nobody else.
 
 namespace Lax62Proofs.Codegen
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 
 /-! ### A list as a cell function
 
@@ -591,14 +591,15 @@ control — the array epilogue writes the entries in index order, and the
 reversal is pinned as *not* what comes out.
 
 The step counts are also checked against the cost this file claims:
-`compileProgram` costs at most `L.const` machine steps per unit of IMP+
-cost, so `steps ≤ L.const * K` is a genuine cross-check of the constants
+`compileProgram` costs at most `L.const` machine instructions per unit of
+IMP+ cost, plus one instruction for the final `halt`, so
+`steps ≤ L.const * K + 1` is a cross-check of the constants
 in the specifications above, and the one thing a `#guard` on the output
 alone would not catch. -/
 
 namespace Gate
 
-open Lax67Proofs.Compile
+open Lax808846Proofs.Compile
 
 /-! #### Shape 1: two scalars in, one scalar out
 
@@ -646,16 +647,18 @@ theorem scalarsCom_ok : Com.Ok scalarsLayout scalarsCom := by
   simp [scalarsCom, scalarsBody, writeScalar, scalarsLayout, Com.Ok, Expr.Ok]
 
 /-- The machine program. -/
-def scalarsProg : Lax67.Ram.Program := compileProgram scalarsLayout scalarsCom
+def scalarsProg : Lax808846.Ram.Program := compileProgram scalarsLayout scalarsCom
 
 /-- Run it on `[7, 9]`. -/
 def scalarsRun : Option (List ℕ × ℕ) :=
-  runOut 16 1000 scalarsProg (Lax67.Ram.initState [7, 9]) 0
+  runOut 16 1000 scalarsProg (Lax808846.Ram.initState [7, 9]) 0
 
 /-! The two cells hold what the two `read`s put in them, in that order:
 `7 + 10·9`, and no other pair of the two entries gives `97`. -/
 
 #guard scalarsRun.map Prod.fst = some [97]
+-- Fourteen continuing instructions, then the charged `halt`.
+#guard scalarsRun.map Prod.snd = some 15
 
 /-! **The negative control**: the cells are not read the other way
 round, which would give `9 + 10·7 = 79`. -/
@@ -663,9 +666,10 @@ round, which would give `9 + 10·7 = 79`. -/
 #guard scalarsRun.map Prod.fst ≠ some [79]
 
 /-! And the run stays inside the cost `scalarsCom_spec` claims: the
-compiler costs at most `L.const` machine steps per unit of IMP+ cost. -/
+compiler costs at most `L.const` machine instructions per unit of IMP+
+cost, plus one for the final `halt`. -/
 
-#guard (scalarsRun.map Prod.snd).getD 0 ≤ scalarsLayout.const * 11
+#guard (scalarsRun.map Prod.snd).getD 0 ≤ scalarsLayout.const * 11 + 1
 
 /-! #### Shape 3: a length-prefixed array in, an array out
 
@@ -707,15 +711,17 @@ theorem arrCom_ok : Com.Ok arrLayout arrCom := by
     condExpr, Expr.Ok]
 
 /-- The machine program. -/
-def arrProg : Lax67.Ram.Program := compileProgram arrLayout arrCom
+def arrProg : Lax808846.Ram.Program := compileProgram arrLayout arrCom
 
 /-- Run it on `[3, 5, 6, 7]`. -/
 def arrRun : Option (List ℕ × ℕ) :=
-  runOut 16 5000 arrProg (Lax67.Ram.initState [3, 5, 6, 7]) 0
+  runOut 16 5000 arrProg (Lax808846.Ram.initState [3, 5, 6, 7]) 0
 
 /-! The array comes back in index order. -/
 
 #guard arrRun.map Prod.fst = some [5, 6, 7]
+-- The exact instruction count includes the final `halt`.
+#guard arrRun.map Prod.snd = some 170
 
 /-! **The negative control.** Index order is not reverse index order,
 and a `writeArr` that counted down would still write three entries and
@@ -723,9 +729,10 @@ fail only here. -/
 
 #guard arrRun.map Prod.fst ≠ some [7, 6, 5]
 
-/-! And the run stays inside the cost `arrCom_spec` claims. -/
+/-! And the run stays inside the compiled bound from `arrCom_spec`,
+including the final `halt`. -/
 
-#guard (arrRun.map Prod.snd).getD 0 ≤ arrLayout.const * 84
+#guard (arrRun.map Prod.snd).getD 0 ≤ arrLayout.const * 84 + 1
 
 end Gate
 

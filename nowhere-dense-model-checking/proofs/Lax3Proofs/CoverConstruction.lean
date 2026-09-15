@@ -29,7 +29,7 @@ namespace Lax3Proofs.CoverConstruction
 
 open Lax3.ColoredGraphs
 open Lax3.NeighborhoodCovers
-open Lax12.ColoringNumbers
+open Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance
 
 /-! ### Reading the definitions -/

@@ -369,7 +369,7 @@ theorem abcdLog {a b c : ℝ} {d : ℕ}
       (fun n => Real.log (n : ℝ)) := hceil.const_mul_left (by linarith)
   have hconst : (fun _ : ℕ => a) =o[atTop] fun n => Real.log (n : ℝ) := by
     simpa using (Real.isLittleO_const_log_atTop (c := a)).natCast_atTop
-  simpa only [Pi.add_apply] using hconst.add_isTheta hmain
+  exact hconst.add_isTheta hmain
 
 /-- Source `log2_gt_zero` (line 725). -/
 theorem log2Nonnegative {x : ℝ} (hx : 1 ≤ x) : 0 ≤ Real.logb 2 x :=
@@ -399,7 +399,7 @@ theorem thetaAddFn {α : Type*} {l : Filter α} {f₁ f₂ g₁ g₂ : α → �
     (hg₁ : EventuallyNonnegative l g₁) (hg₂ : EventuallyNonnegative l g₂)
     (hf : f₁ =Θ[l] f₂) (hg : g₁ =Θ[l] g₂) :
     (f₁ + g₁) =Θ[l] (f₂ + g₂) := by
-  simpa only [Pi.add_apply] using thetaAdd hf₁ hf₂ hg₁ hg₂ hf hg
+  exact thetaAdd hf₁ hf₂ hg₁ hg₂ hf hg
 
 /-! ## Named normalization rules -/
 
@@ -443,8 +443,9 @@ theorem plusAbsorbRight {α : Type*} {l : Filter α} {f g : α → ℝ}
 /-- Source `plus_absorb_same'` (line 811). -/
 theorem plusAbsorbSame {α : Type*} {l : Filter α} {f : α → ℝ} :
     (f + f) =Θ[l] f := by
-  simpa [two_mul] using
-    (isTheta_refl f l).const_mul_left (show (2 : ℝ) ≠ 0 by norm_num)
+  have h := (isTheta_refl f l).const_mul_left (show (2 : ℝ) ≠ 0 by norm_num)
+  simp only [two_mul] at h
+  exact h
 
 /-- Source `bigtheta_add` (line 814), with casts after natural addition. -/
 theorem bigThetaAdd {α : Type*} {l : Filter α} {f₁ f₂ : α → ℕ} {g₁ g₂ : α → ℝ}

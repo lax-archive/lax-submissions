@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Iicf.Impl.ArrayListGrowSynth
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # The array list, re-seated on the heap

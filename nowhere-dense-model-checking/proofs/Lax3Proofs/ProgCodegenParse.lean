@@ -63,7 +63,7 @@ the `hinp`/`FitsWords` pair.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax62Proofs.Codegen
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax62Proofs.Codegen
 open Lax11.GraphEncoding
 
 /-! ## §1 The word, split into its three zones -/

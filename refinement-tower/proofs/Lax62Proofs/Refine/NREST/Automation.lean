@@ -301,7 +301,7 @@ theorem upperBoundSynthesisGate : ∃ ub : ECost,
 theorem debugCurrencyGate {x y : ℕ∞} (h : x ≤ y) :
     ACost.cost "debug-currency" x ≤ ACost.cost "debug-currency" y := by
   sc_solve'_debug
-  exact ⟨trivial, by simpa using h⟩
+  exact ⟨trivial, by simpa [scSolveDebug] using h⟩
 
 theorem suppliedBoundGate :
     ACost.cost "a" 1 + ACost.cost "b" (2 : ℕ∞) + ACost.cost "b" 2 + ACost.cost "b" 5 ≤

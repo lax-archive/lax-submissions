@@ -1,5 +1,5 @@
-import Lax67.RamComputes
-import Lax67Proofs.Reasoning
+import Lax808846.RamComputes
+import Lax808846Proofs.Reasoning
 
 /-!
 The boundary: from an IMP+ run to a statement about the machine.
@@ -26,16 +26,15 @@ inequality against `2 ^ w` with the constant written in. A program whose
 values are bounded outright uses a constant function and loses nothing.
 
 The cost is separated from the conclusion's time bound by one
-inequality, `L.const * K x ≤ T x`, so that a statement may be made at a
+inequality, `L.const * K x + 1 ≤ T x`, so that a statement may be made at a
 round constant instead of at whatever the cost model happens to add up
-to; `Solves.computesInTime` is the version that takes the product as it
-comes.
+to; `Solves.computesInTime` is the version that takes the product plus the final `halt` as it comes.
 -/
 
-namespace Lax67Proofs.Transfer
+namespace Lax808846Proofs.Transfer
 
-open Lax67.Ram Lax67.RamComputes Lax67Proofs.Imp Lax67Proofs.Compile
-open Lax67Proofs.Simulation Lax67Proofs.Reasoning
+open Lax808846.Ram Lax808846.RamComputes Lax808846Proofs.Imp Lax808846Proofs.Compile
+open Lax808846Proofs.Simulation Lax808846Proofs.Reasoning
 
 /-- The obligation the pipeline asks of one program: `c` compiles under
 `L`, admissible inputs have entries below `B`, and on an admissible
@@ -59,23 +58,23 @@ structure Solves (L : Layout) (c : Com) (D : Set (List ℕ)) (f : List ℕ → L
 within cost `K` and values below `B` compiles to a machine program that
 computes the same function within `T`, at every word length at which the
 layout and the bound fit — provided `L.const` machine steps per unit of
-IMP+ cost stay within `T`. -/
+IMP+ cost, plus the final `halt`, stay within `T`. -/
 theorem computesInTime_of_solves {L : Layout} {c : Com} {D : Set (List ℕ)}
     {f : List ℕ → List ℕ} {B K T : List ℕ → ℕ} {w : ℕ}
     (h : Solves L c D f B K) (hfit : ∀ x ∈ D, L.FitsWords (B x) w)
-    (hT : ∀ x ∈ D, L.const * K x ≤ T x) :
+    (hT : ∀ x ∈ D, L.const * K x + 1 ≤ T x) :
     ComputesInTime w (compileProgram L c) D f T := by
   intro x hx
   obtain ⟨ext, σ', ⟨k, hk, hbs⟩, hout⟩ := h.run x hx
   obtain ⟨t, ht, hrun⟩ := compileProgram_runsTo (hfit x hx) h.ok (h.inp x hx) hbs
-  exact ⟨t, ht.trans ((Nat.mul_le_mul_left _ hk).trans (hT x hx)), hout ▸ hrun⟩
+  exact ⟨t, ht.trans ((Nat.add_le_add_right (Nat.mul_le_mul_left _ hk) 1).trans (hT x hx)), hout ▸ hrun⟩
 
 /-- The transfer theorem with the time bound taken as it comes: the
-IMP+ cost times the constant of the layout. -/
+IMP+ cost times the constant of the layout, plus the final `halt`. -/
 theorem Solves.computesInTime {L : Layout} {c : Com} {D : Set (List ℕ)}
     {f : List ℕ → List ℕ} {B K : List ℕ → ℕ} {w : ℕ}
     (h : Solves L c D f B K) (hfit : ∀ x ∈ D, L.FitsWords (B x) w) :
-    ComputesInTime w (compileProgram L c) D f (fun x => L.const * K x) :=
+    ComputesInTime w (compileProgram L c) D f (fun x => L.const * K x + 1) :=
   computesInTime_of_solves h hfit fun _ _ => le_rfl
 
 /-- The word-length hypothesis as one inequality against `2 ^ w`. The
@@ -87,4 +86,4 @@ theorem fitsWords_of_max_le {L : Layout} {B w : ℕ} (h1 : 1 < B)
     (h : max B (L.span B) ≤ 2 ^ w) : L.FitsWords B w :=
   ⟨h1, le_trans (le_max_left _ _) h, le_trans (le_max_right _ _) h⟩
 
-end Lax67Proofs.Transfer
+end Lax808846Proofs.Transfer

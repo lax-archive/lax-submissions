@@ -7,14 +7,15 @@ import Lax3Proofs.SolveCovLoad
 
 The actual linear front/back ends surround the recursive budget. One natural
 constant then pays the inferred memory layout and the uniform time envelope,
-with exactly the endorsed theorem's program/constant/time quantifier order.
+including the compiled program's final `halt`, with exactly the endorsed
+theorem's program/constant/time quantifier order.
 -/
 
 set_option autoImplicit false
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Compile
-open Lax11.GraphEncoding Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax808846Proofs.Imp Lax808846Proofs.Compile
+open Lax11.GraphEncoding Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3.ScatterSentences
 
@@ -60,11 +61,11 @@ theorem exists_machine_of_uniformSolve (C : GraphClass) (hC : NowhereDense C)
     (cf : ℝ) (T : List ℕ → ℕ)
     (hT : ∀ x, (T x : ℝ) ≤ cf * ((x.length : ℝ) + 1) ^ (1 + ε))
     (hK : ∀ n (G : SimpleGraph (Fin n)), C n G → ∀ x, EncodesGraph x n G →
-      (codeLayout (mcCom solveCom)).const * mcK (Ks n G) x ≤ T x) :
-    ∃ (p : Lax67.Ram.Program) (c : ℕ) (T : List ℕ → ℕ),
+      (codeLayout (mcCom solveCom)).const * mcK (Ks n G) x + 1 ≤ T x) :
+    ∃ (p : Lax808846.Ram.Program) (c : ℕ) (T : List ℕ → ℕ),
       (∀ x : List ℕ, (T x : ℝ) ≤ c * ((x.length : ℝ) + 1) ^ (1 + ε)) ∧
       ∀ (n : ℕ) (G : SimpleGraph (Fin n)) (w : ℕ), C n G →
-        Lax67.RamComputes.ComputesInTime w p
+        Lax808846.RamComputes.ComputesInTime w p
           {x | EncodesGraph x n G ∧ ∀ v ∈ x, c * (x.length + v + 1) ^ 2 ≤ 2 ^ w}
           (fun _ => if Lax3.FirstOrder.Sat G Fin.elim0 φ then [1] else [0]) T := by
   let lay := codeLayout (mcCom solveCom)

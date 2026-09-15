@@ -1,4 +1,4 @@
-import Lax67Proofs.Lib.Basic
+import Lax808846Proofs.Lib.Basic
 
 /-!
 A block structure in compressed-row form: an array of offsets and an
@@ -118,9 +118,9 @@ same — export the pair as one `Spec`.
 graph taken out.
 -/
 
-namespace Lax67Proofs.Reasoning.Lib
+namespace Lax808846Proofs.Reasoning.Lib
 
-open Lax67Proofs.Imp
+open Lax808846Proofs.Imp
 
 variable {B nv ns V i k p u : ℕ} {o t v j b : String} {off tgt : ℕ → ℕ} {σ : Env}
 
@@ -862,30 +862,30 @@ def demoWatched (o t j m w u : String) : Com :=
       (scan j m (ownerStepWatched o t j w u)))
 
 /-- Four scalars, two arrays, four temporaries. -/
-def layout : Lax67Proofs.Compile.Layout := ⟨["j", "m", "w", "u"], ["off", "tgt"], 4⟩
+def layout : Lax808846Proofs.Compile.Layout := ⟨["j", "m", "w", "u"], ["off", "tgt"], 4⟩
 
 /-- The machine program. -/
-def prog : Lax67.Ram.Program :=
-  Lax67Proofs.Compile.compileProgram layout (demoWatched "off" "tgt" "j" "m" "w" "u")
+def prog : Lax808846.Ram.Program :=
+  Lax808846Proofs.Compile.compileProgram layout (demoWatched "off" "tgt" "j" "m" "w" "u")
 
 /-- The layout covers the block, so the compilation is the one the
 simulation theorem is about and not an accident. -/
 theorem demoWatched_ok :
-    Lax67Proofs.Compile.Com.Ok layout (demoWatched "off" "tgt" "j" "m" "w" "u") := by
+    Lax808846Proofs.Compile.Com.Ok layout (demoWatched "off" "tgt" "j" "m" "w" "u") := by
   simp [demoWatched, setup, ownerStepWatched, slot, scan, layout,
-    Lax67Proofs.Compile.Com.Ok, Lax67Proofs.Compile.Cond.Ok, Lax67Proofs.Compile.condExpr,
-    Lax67Proofs.Compile.Expr.Ok]
+    Lax808846Proofs.Compile.Com.Ok, Lax808846Proofs.Compile.Cond.Ok, Lax808846Proofs.Compile.condExpr,
+    Lax808846Proofs.Compile.Expr.Ok]
 
 /-- Run it. The four slots come out paired with their owners: the first
 two slots belong to row `0`, the third to row `1`, the fourth to row
 `2`, and the owner pointer advances between them without any slot being
 read twice. -/
-def demoRun : Option (List ℕ × ℕ) := runOut 16 4000 prog (Lax67.Ram.initState []) 0
+def demoRun : Option (List ℕ × ℕ) := runOut 16 4000 prog (Lax808846.Ram.initState []) 0
 
-#guard demoRun = some ([0, 1, 0, 2, 1, 0, 2, 1], 310)
+#guard demoRun = some ([0, 1, 0, 2, 1, 0, 2, 1], 311)
 
 end Demo
 
 end Csr
 
-end Lax67Proofs.Reasoning.Lib
+end Lax808846Proofs.Reasoning.Lib

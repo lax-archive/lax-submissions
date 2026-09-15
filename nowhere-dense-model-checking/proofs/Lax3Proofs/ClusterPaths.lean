@@ -32,7 +32,7 @@ algorithm instantiates `r := 2 * R`.
 namespace Lax3Proofs.ClusterPaths
 
 open Lax3.ColoredGraphs
-open Lax12.ColoringNumbers
+open Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.CoverConstruction
 

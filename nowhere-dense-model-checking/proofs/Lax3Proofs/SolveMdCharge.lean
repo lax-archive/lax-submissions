@@ -11,8 +11,8 @@ lazy heap's logarithm are retained in the machine charge.
 namespace Lax3Proofs.Prog
 
 open scoped SimpleGraph
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ShallowMinorDensity
-open Lax12.ColoringNumbers
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.ShallowMinorDensity
+open Lax199508.ColoringNumbers
 open Lax3Proofs.Augmentation Lax3Proofs.Augmentation.Orientation
 open Lax3Proofs.AugmentedDensity Lax3Proofs.CoverDegree Lax3Proofs.CoverRoutine
 

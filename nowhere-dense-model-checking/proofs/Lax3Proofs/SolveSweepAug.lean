@@ -13,13 +13,13 @@ indices before reading payloads, and requires no scan of its reserved capacity.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
-open Lax12.UniformQuasiWideness (deleteVerts)
+open Lax199508.UniformQuasiWideness (deleteVerts)
 open Lax3Proofs.Augmentation
 open Lax3Proofs.Augmentation.Orientation
 open Lax3Proofs.CoverRoutine
@@ -250,7 +250,7 @@ at `k = N²` it is `H` itself. -/
 noncomputable def agPre {N : ℕ} (H : SimpleGraph (Fin N)) (k : ℕ) :
     SimpleGraph (Fin N) where
   Adj u v := H.Adj u v ∧ agKey u v < k
-  symm _ _ h := ⟨h.1.symm, by rw [agKey_symm]; exact h.2⟩
+  symm := ⟨fun _ _ h => ⟨h.1.symm, by rw [agKey_symm]; exact h.2⟩⟩
   loopless := ⟨fun _ h => H.irrefl h.1⟩
 
 theorem agPre_adj {N : ℕ} {H : SimpleGraph (Fin N)} {k : ℕ} {u v : Fin N} :
@@ -1159,8 +1159,9 @@ theorem agDictEnumerate_run {B U : ℕ} (ix ky sz kv tv hv iv lm : String)
       (Ne.symm ht_l) (Ne.symm hh_l) (Ne.symm hi_l)).trans hlm) hbody
   have hstart : I (σ.setVar iv 0) := by
     refine ⟨by simp, ?_, ?_, fun _ _ _ => rfl, fun _ => rfl⟩
-    · simpa only [vars_setVar, if_pos rfl, List.take_zero, agDictUnion_nil] using
-        hD.of_eq (τ := σ.setVar iv 0) rfl rfl (by simp [hs_i])
+    · have hiv0 : (σ.setVar iv 0).vars iv = 0 := by simp [vars_setVar]
+      rw [hiv0, List.take_zero, agDictUnion_nil]
+      exact hD.of_eq (τ := σ.setVar iv 0) rfl rfl (by simp [hs_i])
     · intro y _ _ _ _ hy; simp [Env.setVar, hy]
   obtain ⟨τ, hrun, hI, hiv⟩ := hloop.run hstart
   refine ⟨τ, hrun, ?_, hI.2.2.1, hI.2.2.2.1, hI.2.2.2.2⟩
@@ -1860,6 +1861,7 @@ private theorem agWitness_sums {N : ℕ} {D : Orientation N}
       if b then fratPairCount D else transPairCount D := by
   cases b
   · have hh := agTransCandidates_length h
+    show (∑ v, ((rows v).map fun w => (rows w).length).sum) = transPairCount D
     simpa only [agTransCandidates, List.length_flatMap, List.length_map, agSum_finRange] using hh
   · simp only [↓reduceIte, List.map_const', List.sum_replicate, smul_eq_mul]
     exact Finset.sum_congr rfl fun v _ => by rw [h.length v]

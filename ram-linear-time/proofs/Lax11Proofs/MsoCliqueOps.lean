@@ -207,7 +207,9 @@ theorem Atomic.of_setRemap {s' : ℕ} (f : Fin s' → Finset (Fin s))
     (funext fun a => funext fun j => ?_)
   · simpa [Atomic.of] using adj_iff_of_diagram_eq h a b
   · simpa [Atomic.of] using eq_iff_of_diagram_eq h a b
-  · simp only [Atomic.of, setRemap, decide_eq_decide, Set.mem_iUnion, exists_prop]
+  · simp only [Atomic.of, setRemap]
+    refine decide_eq_decide.mpr ?_
+    simp only [Set.mem_iUnion, exists_prop]
     exact exists_congr fun i => and_congr_right fun _ => mem_iff_of_diagram_eq h a i
 
 /-- **Remapping the set parameters.** Replacing the assignment by one in

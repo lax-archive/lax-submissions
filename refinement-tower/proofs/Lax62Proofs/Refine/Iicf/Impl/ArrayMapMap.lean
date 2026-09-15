@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Iicf.Impl.ArrayMap
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Cardinality-carrying array map
@@ -97,19 +97,21 @@ theorem ammDomain_update {N k v : ℕ} {m : ℕ → Option ℕ} (hk : k < N) :
   · have hnot : k ∉ ammDomain N m := by simp [ammDomain, hm]
     have heq : ammDomain N (mapUpdate m k v) = insert k (ammDomain N m) := by
       ext i
+      simp only [ammDomain, Finset.mem_filter, Finset.mem_range, Finset.mem_insert]
       by_cases hik : i = k
       · subst i
-        simp [ammDomain, mapUpdate, hk]
-      · simp [ammDomain, mapUpdate, hik]
+        simp [mapUpdate, hk]
+      · simp [mapUpdate, hik]
     rw [heq, Finset.card_insert_of_notMem hnot]
     simp [hm]
   · have heq : ammDomain N (mapUpdate m k v) = ammDomain N m := by
       ext i
+      simp only [ammDomain, Finset.mem_filter, Finset.mem_range]
       by_cases hik : i = k
       · subst i
         obtain ⟨w, hw⟩ := Option.ne_none_iff_exists'.mp hm
-        simp [ammDomain, mapUpdate, hk, hw]
-      · simp [ammDomain, mapUpdate, hik]
+        simp [mapUpdate, hk, hw]
+      · simp [mapUpdate, hik]
     rw [heq]
     simp [hm]
 
@@ -541,7 +543,8 @@ theorem ammContainsExecSpec_refines {N : ℕ} {s : ArrayMapMap}
     {m : ℕ → Option ℕ} (h : (s, m) ∈ amm1Rel N) {k : ℕ} (hk : k < N) :
     ammContainsExecSpec s.present k = NRest.consume
       (NRest.returnT (if decide (m k ≠ none) then 1 else 0)) ammContainsCost := by
-  simpa [ArrayMapMap.base] using amContainsExecSpec_refines h.1 hk
+  simpa [ArrayMapMap.base, ammContainsExecSpec, ammContainsCost,
+    amContainsExecSpec, amContainsCost] using amContainsExecSpec_refines h.1 hk
 
 theorem ammLookupExecSpec_refines {N : ℕ} {s : ArrayMapMap}
     {m : ℕ → Option ℕ} (h : (s, m) ∈ amm1Rel N)

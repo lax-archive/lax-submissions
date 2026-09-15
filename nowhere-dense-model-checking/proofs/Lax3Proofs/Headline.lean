@@ -58,7 +58,7 @@ bound, in every statement below; they depend only on `(C, hC, hT, φ,
 namespace Lax3Proofs.Headline
 
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO rank)
 open Lax3Proofs.Driver Lax3Proofs.Reduction Lax3Proofs.CoverEdgeSum
 open Lax11.GraphEncoding
@@ -353,7 +353,7 @@ alignment `dcost` was designed for). This is the largest remaining
 block: comparable in size to the whole `Impl*` family it composes
 (estimate: several worker-days, thousands of lines).
 
-**(b) Codegen to a `Lax67.Ram.Program`.** The landed exit is
+**(b) Codegen to a `Lax808846.Ram.Program`.** The landed exit is
 `computesInTime_of_spec`
 (`word-ram/proofs/Lax62Proofs/Refine/Codegen/Cash.lean:408-419`): from
 `Com.Ok`, an input bound `∀ x ∈ D, ∀ v ∈ x, v < B x`, a

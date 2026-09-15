@@ -49,10 +49,10 @@ and `av` reads the first occurrence's slot.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
 open Lax3Proofs.LocalityFun
@@ -576,7 +576,6 @@ theorem topAtomsCom_spec {Fl : List (DistFO Λc 1)}
           hlow'' i (by omega)
         simp only [Nat.add_zero, List.getElem_cons_zero]
         rw [h1, hbit']
-        rfl
       | succ k =>
         have hk' : k < rest.length := by
           simp only [List.length_cons] at hk
@@ -739,5 +738,5 @@ theorem topScatterAll_of (C : GraphClass) (hC : NowhereDense C) (φ : FO 0)
     refine evalB_get (evalB_lit (by omega)) ?_ ?_
     · rw [List.getElem?_eq_getElem hlt', hval]
       simp only [getElem_memIdx hmem]
-    · rw [scatterBit]
+    · unfold scatterBit
       split <;> omega

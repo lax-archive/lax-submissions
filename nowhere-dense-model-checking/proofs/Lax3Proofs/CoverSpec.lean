@@ -113,7 +113,7 @@ O(1)`. It does not need a paper this repository lacks.
 program: this leaf is a statement leaf and does not build one. `E12`, the
 `Arena` implementation (`execution-plan.md:306-315`), is expected to instantiate
 `OrderingRoutine` with the actual `cover` implementation and read `steps` off
-`Lax67`'s timed computation — at which point `IsCoverOrdering.data` becomes a
+`Lax808846`'s timed computation — at which point `IsCoverOrdering.data` becomes a
 correctness proof about the program and `IsCoverOrdering.time` becomes the one
 surviving hypothesis, in the same shape, about its running time.
 -/
@@ -122,8 +122,8 @@ namespace Lax3Proofs.CoverSpec
 
 open scoped SimpleGraph
 open Lax3.NeighborhoodCovers
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ShallowMinorDensity
-open Lax12.ColoringNumbers
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.ShallowMinorDensity
+open Lax199508.ColoringNumbers
 open Lax3Proofs.Augmentation
 open Lax3Proofs.OrderedCovers
 open Lax3Proofs.CoverDegree

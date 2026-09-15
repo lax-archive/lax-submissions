@@ -4,7 +4,7 @@ import Lax3Proofs.SolveGlueLoad
 /-! Realizable lengths. The total `ext` map follows `initEnv`; `codeLayout`
 allocates only the finite list of regions used by the program. -/
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 variable {L : ℕ}
 

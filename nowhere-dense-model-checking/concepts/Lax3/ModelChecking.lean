@@ -1,6 +1,6 @@
 import Lax3.FirstOrder
-import Lax12.NowhereDenseClasses
-import Lax67.RamComputes
+import Lax199508.NowhereDenseClasses
+import Lax808846.RamComputes
 import Lax11.GraphEncoding
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
@@ -20,7 +20,7 @@ row form as a word *x* each of whose entries *v* satisfies
 writes `1` if φ holds in the graph and `0` if it does not.
 
 This is the theorem of Grohe, Kreutzer and Siebertz (JACM 2017), with
-the algorithm realized on the word RAM of Lax67. Nowhere denseness is
+the algorithm realized on the word RAM of Lax808846. Nowhere denseness is
 the exact limit of this kind of tractability on monotone classes, and
 the input is the graph *alone*: unlike the Courcelle theorem of Lax11,
 which is handed a k-expression alongside the graph, every auxiliary
@@ -37,14 +37,14 @@ entries fit the word length; output by a classical `if` on
 satisfaction. The differences are the ones the theorem is about — and
 one of them is that side condition, which is *squared* here; see the
 deviation recorded below. The hypothesis is
-`Lax12.NowhereDense` verbatim — the endorsed shallow-minor form, not a
+`Lax199508.NowhereDense` verbatim — the endorsed shallow-minor form, not a
 restatement. The input predicate is `Lax11.EncodesGraph` alone: no
 expression, no ordering, no promise beyond membership in the class.
 The time bound cannot be the Courcelle form `c * (x.length + 1)`,
 since `n^(1+ε)` has no elementary spelling over ℕ: the bound function
 `T : List ℕ → ℕ` is existentially quantified and pinned by the
 real-valued side condition `(T x : ℝ) ≤ c * ((x.length : ℝ) + 1) ^
-(1 + ε)` — the same real-exponent idiom as Lax12's subpolynomial
+(1 + ε)` — the same real-exponent idiom as Lax199508's subpolynomial
 bounds, whose `^` is `Real.rpow`.
 
 The sentence ranges over plain first-order logic on graphs, `FO 0` of
@@ -65,7 +65,7 @@ Lax11's Courcelle axiom admits an encoding `x` at word length `w` when
 over *every* `w`, the smallest admissible one is in scope, and under
 the Courcelle form that is `2 ^ w < 2 * c * (|x| + max x + 1)` — a
 machine that can address only linearly many of its own cells, because
-Lax67's RAM has `2 ^ w` cells and reduces every address modulo `2 ^ w`.
+Lax808846's RAM has `2 ^ w` cells and reduces every address modulo `2 ^ w`.
 Squaring moves the smallest admissible word length from
 `log |x| + O(1)` to `2 * log |x| + O(1)`: a constant factor in `w`, and
 a quadratic factor in addressable memory.
@@ -99,8 +99,8 @@ of the encoding alone.
 namespace Lax3.ModelChecking
 
 open Lax3.FirstOrder
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
-open Lax67.Ram Lax67.RamComputes
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
+open Lax808846.Ram Lax808846.RamComputes
 open Lax11.GraphEncoding
 
 open Classical in

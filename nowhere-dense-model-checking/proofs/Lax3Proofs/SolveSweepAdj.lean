@@ -75,16 +75,16 @@ in its *current* degree) are the insert/delete Specs of the structure;
 iteration needs no command of its own — it is the invariant's
 completeness clause read over the live prefix, priced by the degree
 clause. Both are contracts for the machine wave; nothing here proves a
-program. `Lib.Queue` (Lax67) supplies the BFS frontier the peel pass
+program. `Lib.Queue` (Lax808846) supplies the BFS frontier the peel pass
 composes next to these.
 -/
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax3.ColoredGraphs (ball)
-open Lax12.UniformQuasiWideness (deleteVerts)
-open Lax12.ColoringNumbers
+open Lax199508.UniformQuasiWideness (deleteVerts)
+open Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.SplitterBasics (deleteVerts_adj)
 open Lax3Proofs.Driver
@@ -476,7 +476,8 @@ private theorem ctrl_delAdjSt :
   have harrs_mt : ctrlEnv.arrs "c.mt" = [1, 0] := rfl
   refine ⟨id, rfl, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro v
-    simp [ctrl_neighborSet_ncard v]
+    rw [ctrl_neighborSet_ncard v]
+    rfl
   · rw [harrs_ao]; simp
   · intro i hi
     rw [harrs_ao]

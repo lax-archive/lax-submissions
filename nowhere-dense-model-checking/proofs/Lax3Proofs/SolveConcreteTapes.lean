@@ -1,7 +1,7 @@
 import Lax3Proofs.SolveConcreteBoundary
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 open Lax3.ScatterSentences
 variable {L : ℕ}
@@ -45,7 +45,7 @@ private theorem concrete_noWrite_topAtoms (nm : ArenaNames) (pa ma da tsb : Stri
   induction l generalizing i with
   | nil => trivial
   | cons a l ih =>
-    simp [topAtomsCom, topAtomCom, topGlueCom, topColCom, Lax67Proofs.Reasoning.Lib.Fill.put, topBitCom,
+    simp [topAtomsCom, topAtomCom, topGlueCom, topColCom, Lax808846Proofs.Reasoning.Lib.Fill.put, topBitCom,
       Com.NoWrite, noWrite_scatterCom, ih]
 
 private theorem concrete_noWrite_rows (tb ct tsb : String) (S : Setup L) (j : ℕ)
