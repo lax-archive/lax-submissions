@@ -73,8 +73,16 @@ is information, not a landing.
 **D2 — lax-768004 dropped.** lax-228581 (registered from main) already
 supersedes lax-48; the cloud port's folder is deleted at landing.
 
-**D3 — lax-5 successor gets a real id** via `lax port lax-5` on this
-machine; the folder from the cloud port is renamed to it.
+**D3 — lax-5 successor = lax-710763** (draft, v4.33.0, `supersedes: lax-5`,
+issue #117, source 5e97e29 on branch `worktree-ndmc-succ`; the folder is on
+main since c874dee+1). `lax port lax-5` fails in lax 0.1.43 (refuses a
+pre-six-digit source id; fixed upstream in an unreleased lax commit), so the
+id came from `lax init --env v4.33.0` with `supersedes: lax-5` added by
+hand. Same failure will hit `lax port lax-49` until lax is updated.
+Cosmetic leftover: both lakefile comments in the folder still say
+`Lax12`/`Lax14` (fixing them changes the content vs the record; do it at
+the next resubmit). Stale `264807` mentions remain in the cloud port's
+README/FINISH.md and `.claude/resubmit-cascade.sh:21` (comment).
 
 **D4 — registration.** Bottom-up once each record is at v4.33 and its
 dependencies are registered: lax-5 successor; then lax-67 (if D1's
@@ -118,7 +126,7 @@ Others (owners in brackets):
 | wave | leaf | worker | worktree | state |
 |---|---|---|---|---|
 | 1a | merge ram-input-repair + cloud port; re-port the four RAM folders on the repaired content; local builds green | opus | `.claude/worktrees/port-land` | BUILT 2026-09-15, branch `worktree-port-land` @ 611f0d9, reviewed by the supervisor, HELD (not landed) until D1 is decided. Result: ram-input-repair merges clean; 8e048cf reverted; cloud port merges with conflicts only in lax-introduction (main kept); **zero Lean edits needed** — repair and drift fixes are disjoint; word-ram 526+3030, ram-linear-time 1007+3083, refinement-tower 3+3343, ndmc 2048+3754 jobs green; `lax build --replay word-ram` green (51 s). Archive gate refuses BOTH supersedes claims for lax-67: `supersedes: lax-13` → supersedes-taken (lax-865980 holds it), `supersedes: lax-865980` → supersedes-owners (no owner of lax-865980 owns lax-67). Branch carries word-ram with no supersedes line. Worktree kept: it holds the v4.33 builds wave 2 needs. |
-| 1b | lax-5 successor: real id, rename, build, submit as draft | opus | `.claude/worktrees/ndmc-succ` | dispatched 2026-09-15 |
+| 1b | lax-5 successor: real id, rename, build, submit as draft | opus | `.claude/worktrees/ndmc-succ` | DONE 2026-09-15: lax-710763 draft, 2080+2840 jobs green, archive accepted, concepts identical to lax-5 (archive extraction diffed field by field); landed on main, worktree removed, remote branch kept (the record points at it) |
 | 1c | lax-introduction resubmit from main (v4.33, registered deps) | supervisor | main | DONE 2026-09-15: lax-242665 draft @ 2be112c, v4.33.0, requires Lax228581/Lax199508/Lax865980 (all registered); draft-dependency violation cleared |
 | 2 | cascade resubmit word-ram → ram-linear-time, refinement-tower → nowhere-dense-model-checking (`.claude/resubmit-cascade.sh`), supersedes claim per D1 | after 1a | main | ON HOLD — waits for the SETH and Welzl ports (D1) |
-| 3 | registration per D4 | after 2 | main | pending |
+| 3 | registration per D4 | after 2 | main | lax-710763 is registrable now (deps registered); RAM chain waits on D1; lax-introduction waits on Jan's paper edit |
