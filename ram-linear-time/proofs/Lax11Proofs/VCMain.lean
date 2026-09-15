@@ -1,6 +1,6 @@
 import Lax11Proofs.VCLoop
 import Lax11Proofs.CCSweep
-import Lax67Proofs.Transfer
+import Lax808846Proofs.Transfer
 
 /-!
 The bounded search tree, run whole. The statement this file proves is
@@ -29,8 +29,8 @@ word: `2 ^ k` is a count of steps, not a number the machine ever holds.
 
 namespace Lax11Proofs.VCMain
 
-open Lax67.Ram Lax67.RamComputes Lax11.GraphEncoding Lax11.VertexCover
-open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning Lax67Proofs.Transfer
+open Lax808846.Ram Lax808846.RamComputes Lax11.GraphEncoding Lax11.VertexCover
+open Lax808846Proofs.Imp Lax808846Proofs.Compile Lax808846Proofs.Reasoning Lax808846Proofs.Transfer
 open Lax11Proofs.VC
 
 /-- The array extents the driver runs with. -/

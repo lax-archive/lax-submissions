@@ -1,4 +1,4 @@
-import Lax67Proofs.Lib.Basic
+import Lax808846Proofs.Lib.Basic
 
 /-!
 A stack of numbers: a backing array holding the entries bottom-first,
@@ -76,9 +76,9 @@ tuple-shaped module is built on top of them; the two lemmas are what a
 parallel push needs.
 -/
 
-namespace Lax67Proofs.Reasoning.Lib
+namespace Lax808846Proofs.Reasoning.Lib
 
-open Lax67Proofs.Imp
+open Lax808846Proofs.Imp
 
 variable {B cap V h h' i v : ℕ} {a t x r y b : String} {f : ℕ → ℕ} {σ : Env}
 
@@ -417,23 +417,23 @@ def demoWatched (a t x y r : String) : Com :=
                   (.seq (peek a t r) (.write (.var r))))))))))
 
 /-- Four scalars, one stack array, two temporaries. -/
-def layout : Lax67Proofs.Compile.Layout := ⟨["t", "x", "y", "r"], ["st"], 2⟩
+def layout : Lax808846Proofs.Compile.Layout := ⟨["t", "x", "y", "r"], ["st"], 2⟩
 
 /-- The machine program. -/
-def prog : Lax67.Ram.Program :=
-  Lax67Proofs.Compile.compileProgram layout (demoWatched "st" "t" "x" "y" "r")
+def prog : Lax808846.Ram.Program :=
+  Lax808846Proofs.Compile.compileProgram layout (demoWatched "st" "t" "x" "y" "r")
 
 /-- The layout covers the block, so the compilation is the one the
 simulation theorem is about and not an accident. -/
 theorem demoWatched_ok :
-    Lax67Proofs.Compile.Com.Ok layout (demoWatched "st" "t" "x" "y" "r") := by
-  simp [demoWatched, push, pop, peek, layout, Lax67Proofs.Compile.Com.Ok,
-    Lax67Proofs.Compile.Expr.Ok]
+    Lax808846Proofs.Compile.Com.Ok layout (demoWatched "st" "t" "x" "y" "r") := by
+  simp [demoWatched, push, pop, peek, layout, Lax808846Proofs.Compile.Com.Ok,
+    Lax808846Proofs.Compile.Expr.Ok]
 
 /-- Run it: the machine's memory starts zeroed, so the count starts at
 `0` and the stack starts empty. The peek must see `7`, the pop must take
 `7` off, and the second peek must see `5`. -/
-def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax67.Ram.initState []) 0
+def demoRun : Option (List ℕ × ℕ) := runOut 16 1000 prog (Lax808846.Ram.initState []) 0
 
 #guard demoRun = some ([7, 7, 5], 83)
 
@@ -447,4 +447,4 @@ end Demo
 
 end Stack
 
-end Lax67Proofs.Reasoning.Lib
+end Lax808846Proofs.Reasoning.Lib

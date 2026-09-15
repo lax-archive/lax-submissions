@@ -16,7 +16,7 @@ the actual bounded execution; reservations are expressed only as lengths.
 
 namespace Lax3Proofs.Prog.AugMachine
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax62Proofs.Codegen (getD_eq_getElem)
 open Lax3Proofs.Augmentation Lax3Proofs.Augmentation.Orientation
 open Lax3Proofs.CoverRoutine

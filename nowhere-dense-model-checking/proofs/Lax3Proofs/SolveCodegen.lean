@@ -8,8 +8,8 @@ set_option autoImplicit false
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Compile
-open Lax67Proofs.Reasoning Lax62Proofs.Codegen
+open Lax808846Proofs.Imp Lax808846Proofs.Compile
+open Lax808846Proofs.Reasoning Lax62Proofs.Codegen
 open Lax62Proofs.Refine.Codegen (computesInTime_of_spec)
 open Lax11.GraphEncoding Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
@@ -167,7 +167,7 @@ theorem mc_auto_computesInTime_of_solveSpec
     (hextTgt : ∀ x ∈ mcD n G c w, ext x "tgt" = 2 * edgeCount x)
     (hnw : solveCom.NoWrite)
     (hsolve : SolveSpec C hC φ ord G c w q ext solveCom Ks) :
-    Lax67.RamComputes.ComputesInTime w
+    Lax808846.RamComputes.ComputesInTime w
       (compileProgram (codeLayout (mcCom solveCom)) (mcCom solveCom))
       (mcD n G c w)
       (fun _ => if Lax3.FirstOrder.Sat G Fin.elim0 φ then [1] else [0])

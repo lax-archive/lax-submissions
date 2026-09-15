@@ -1,5 +1,5 @@
-import Lax67Proofs.Tactic
-import Lax67Proofs.Compile
+import Lax808846Proofs.Tactic
+import Lax808846Proofs.Compile
 
 /-!
 The two pieces every module of the data-structure library needs, and
@@ -18,9 +18,9 @@ specifications say is also *seen*; that is house discipline everywhere
 else in this repo and there is no reason for the kit to be exempt.
 -/
 
-namespace Lax67Proofs.Reasoning.Lib
+namespace Lax808846Proofs.Reasoning.Lib
 
-open Lax67Proofs.Imp
+open Lax808846Proofs.Imp
 
 /-! ### Updating a cell function -/
 
@@ -55,7 +55,7 @@ theorem upd_le {f : ℕ → ℕ} {k v c i : ℕ} (hv : v ≤ c) (hf : f i ≤ c)
 
 /-! ### The worked-example driver -/
 
-open Lax67.Ram Lax67Proofs.Machine
+open Lax808846.Ram Lax808846Proofs.Machine
 
 /-- Run `p` at word length `w` from `s` using at most `fuel` executed
 instructions, and return its complete output and the accumulated count.
@@ -173,4 +173,4 @@ theorem runOut_init_iff {w fuel t : ℕ} {p : Program} {x y : List ℕ} :
     have := runOut_complete hr hu (ht ▸ hf) 0
     simpa only [Nat.zero_add, hy, ← ht] using this
 
-end Lax67Proofs.Reasoning.Lib
+end Lax808846Proofs.Reasoning.Lib

@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Iicf.Basic
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Set interface

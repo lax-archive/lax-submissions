@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Codegen.BigStepB
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The bounds pass: a verification-condition generator for

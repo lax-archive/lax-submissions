@@ -1,5 +1,5 @@
-import Lax67.RamComputes
-import Lax67Proofs.Lib.Basic
+import Lax808846.RamComputes
+import Lax808846Proofs.Lib.Basic
 
 /-!
 Semantic acceptance proofs for the input and time contract. The parity
@@ -8,10 +8,10 @@ without any bound on the list length or entries. The last-entry program
 has a constant instruction count, independent of the input length.
 -/
 
-namespace Lax67Proofs.InputSemantics
+namespace Lax808846Proofs.InputSemantics
 
-open Lax67.Ram Lax67.RamComputes Lax67Proofs.Machine
-open Lax67Proofs.Reasoning.Lib
+open Lax808846.Ram Lax808846.RamComputes Lax808846Proofs.Machine
+open Lax808846Proofs.Reasoning.Lib
 
 /-- The empty program executes no instruction. -/
 theorem empty_runsTo (w : ℕ) (x : List ℕ) : RunsTo w [] x [] 0 := by
@@ -191,4 +191,4 @@ example : RunsTo 1 [.inputLength 0, .write 0, .halt] [0, 0] [0] 3 :=
 example : RunsTo 1 parityProgram [0] [1] 7 := parity_runsTo (by norm_num) [0]
 example : RunsTo 1 parityProgram [0, 0] [0] 10 := parity_runsTo (by norm_num) [0, 0]
 
-end Lax67Proofs.InputSemantics
+end Lax808846Proofs.InputSemantics

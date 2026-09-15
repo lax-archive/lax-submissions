@@ -1,4 +1,4 @@
-import Lax67Proofs.Lib.Ind
+import Lax808846Proofs.Lib.Ind
 
 /-!
 An undo trail: a log of the cells of a companion array that were set,
@@ -60,9 +60,9 @@ same eight. The potential form is for `Csr`'s owner-advancing scan,
 where a turn's cost varies.
 -/
 
-namespace Lax67Proofs.Reasoning.Lib
+namespace Lax808846Proofs.Reasoning.Lib
 
-open Lax67Proofs.Imp
+open Lax808846Proofs.Imp
 
 variable {B cap n h h' i v : ℕ} {a t tb b x y : String} {g : ℕ → ℕ} {σ : Env}
 
@@ -178,7 +178,7 @@ def undoRange (g f : ℕ → ℕ) : ℕ → ℕ → (ℕ → ℕ)
 
 /-! The equation lemmas, materialized here per the standing kit rule of
 `Frame.lean`: a downstream `simp [undoRange]` then finds them among its
-imports and creates nothing named under `Lax67Proofs` in a consumer
+imports and creates nothing named under `Lax808846Proofs` in a consumer
 package. -/
 
 @[simp] theorem undoRange_zero (g f : ℕ → ℕ) (t : ℕ) : undoRange g f t 0 = f := by
@@ -477,24 +477,24 @@ def demoWatched (a t tb b x y r : String) : Com :=
 
 /-- Five scalars, the trail and the mark array, four temporaries (the
 deepest expression is the unwind's `mark[trail[tt]] := 0`). -/
-def layout : Lax67Proofs.Compile.Layout := ⟨["t", "tb", "x", "y", "r"], ["tr", "mk"], 4⟩
+def layout : Lax808846Proofs.Compile.Layout := ⟨["t", "tb", "x", "y", "r"], ["tr", "mk"], 4⟩
 
 /-- The machine program. -/
-def prog : Lax67.Ram.Program :=
-  Lax67Proofs.Compile.compileProgram layout (demoWatched "tr" "t" "tb" "mk" "x" "y" "r")
+def prog : Lax808846.Ram.Program :=
+  Lax808846Proofs.Compile.compileProgram layout (demoWatched "tr" "t" "tb" "mk" "x" "y" "r")
 
 /-- The layout covers the block, so the compilation is the one the
 simulation theorem is about and not an accident. -/
 theorem demoWatched_ok :
-    Lax67Proofs.Compile.Com.Ok layout (demoWatched "tr" "t" "tb" "mk" "x" "y" "r") := by
+    Lax808846Proofs.Compile.Com.Ok layout (demoWatched "tr" "t" "tb" "mk" "x" "y" "r") := by
   simp [demoWatched, record, unwind, unwindBody, Ind.mark, Ind.test, layout,
-    Lax67Proofs.Compile.Com.Ok, Lax67Proofs.Compile.Cond.Ok, Lax67Proofs.Compile.condExpr,
-    Lax67Proofs.Compile.Expr.Ok]
+    Lax808846Proofs.Compile.Com.Ok, Lax808846Proofs.Compile.Cond.Ok, Lax808846Proofs.Compile.condExpr,
+    Lax808846Proofs.Compile.Expr.Ok]
 
 /-- Run it: the machine's memory starts zeroed, so the trail starts
 empty and the saved height is `0`. Both cells must read `1` before the
 unwind and `0` after it. -/
-def demoRun : Option (List ℕ × ℕ) := runOut 16 4000 prog (Lax67.Ram.initState []) 0
+def demoRun : Option (List ℕ × ℕ) := runOut 16 4000 prog (Lax808846.Ram.initState []) 0
 
 #guard demoRun = some ([1, 1, 0, 0], 166)
 
@@ -511,4 +511,4 @@ end Demo
 
 end Trail
 
-end Lax67Proofs.Reasoning.Lib
+end Lax808846Proofs.Reasoning.Lib

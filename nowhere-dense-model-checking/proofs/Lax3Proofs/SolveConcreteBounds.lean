@@ -4,7 +4,7 @@ import Lax3Proofs.SolveChannels
 
 /-! Finite, schedule-only constants for the concrete machine. -/
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 open Lax3.DistFO Lax3.ScatterSentences Lax3.Locality Lax3Proofs.LocalityFun
 variable {L : ℕ}

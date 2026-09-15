@@ -75,13 +75,13 @@ in its *current* degree) are the insert/delete Specs of the structure;
 iteration needs no command of its own — it is the invariant's
 completeness clause read over the live prefix, priced by the degree
 clause. Both are contracts for the machine wave; nothing here proves a
-program. `Lib.Queue` (Lax67) supplies the BFS frontier the peel pass
+program. `Lib.Queue` (Lax808846) supplies the BFS frontier the peel pass
 composes next to these.
 -/
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax3.ColoredGraphs (ball)
 open Lax199508.UniformQuasiWideness (deleteVerts)
 open Lax199508.ColoringNumbers

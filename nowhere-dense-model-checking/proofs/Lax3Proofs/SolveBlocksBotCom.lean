@@ -94,7 +94,7 @@ scatter routine, or `proofs/Lax3Proofs.lean`.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax62Proofs.Codegen (arrOf_getD getD_eq_getElem)
 open Lax3.DistFO
 

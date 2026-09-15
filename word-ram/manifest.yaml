@@ -1,5 +1,6 @@
 specVersion: "1"
-id: lax-67
+id: lax-808846
+supersedes: lax-865980
 leanVersion: "v4.33.0"
 mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
 title: The Word RAM
@@ -62,6 +63,3 @@ bibEntries:
       publisher = {Elsevier and MIT Press},
       year      = {1990}
     }
-issue:
-  repositoryId: 1320232165
-  number: 67

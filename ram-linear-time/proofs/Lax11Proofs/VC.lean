@@ -30,8 +30,8 @@ is `0`.
 
 namespace Lax11Proofs.VC
 
-open Lax67.Ram Lax67.RamComputes Lax11.GraphEncoding
-open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning Lax11Proofs.CC
+open Lax808846.Ram Lax808846.RamComputes Lax11.GraphEncoding
+open Lax808846Proofs.Imp Lax808846Proofs.Compile Lax808846Proofs.Reasoning Lax11Proofs.CC
 
 /-! ### The program -/
 

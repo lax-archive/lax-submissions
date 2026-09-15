@@ -111,7 +111,7 @@ cells. A deterministic program can consume additional input words to
 model supplied random choices.
 -/
 
-namespace Lax67.Ram
+namespace Lax808846.Ram
 
 /-- An instruction. Every number naming a cell is read, except that
 the first one names the destination for instructions that write a cell,
@@ -298,4 +298,4 @@ def RunsTo (w : ℕ) (p : Program) (x y : List ℕ) (t : ℕ) : Prop :=
   ∃ (k : ℕ) (s : State), run w p k (initState x) = some s ∧
     step w p s = none ∧ s.out = y ∧ t = k + terminalCost p s
 
-end Lax67.Ram
+end Lax808846.Ram

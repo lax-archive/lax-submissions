@@ -10,7 +10,7 @@ The key-space capacity appears only in the word and allocation bounds.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning List
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning List
 open Lax62Proofs.Codegen (getD_eq_getElem)
 
 /-- Scalar frame used by the sparse stream combinators. -/

@@ -1,6 +1,6 @@
 import Lax3Proofs.SolveSweepStep
 import Lax3Proofs.SolveBfs
-import Lax67Proofs.Tactic
+import Lax808846Proofs.Tactic
 
 /-!
 # F6c12 — `CovPeelIn`: the GKS peeling sweep, discharged
@@ -85,7 +85,7 @@ row being dismantled (`delStar H u T` is `H` minus the `u`–`T` star).
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
@@ -4824,7 +4824,7 @@ end SweepMachine
 end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
@@ -4947,7 +4947,7 @@ theorem peelInitB_arrays_spec {B N R : ℕ} {nNs ca : String}
 end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax11.GraphEncoding
 open Lax199508.ColoringNumbers
 open Lax199508.UniformQuasiWideness (deleteVerts)
@@ -5063,7 +5063,7 @@ end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
 set_option linter.unusedSimpArgs false
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax199508.ColoringNumbers
 
 /-- Occurrences of one member in a prefix of the emitted stream. -/
@@ -5800,7 +5800,7 @@ theorem peelCOff_eq_mass {N : ℕ} {ρ : Equiv.Perm (Fin N)} {X : Fin N → Set 
 end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 set_option linter.unusedSimpArgs false
 
 /-- Rows already encountered while scanning one inverse bucket. -/
@@ -6311,7 +6311,7 @@ end Lax3Proofs.Prog
 
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 set_option linter.unusedSimpArgs false
 
 /-- The global counting regroup, separated from the peeling sweep. -/

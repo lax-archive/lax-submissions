@@ -10,7 +10,7 @@ reserved pair-key universe.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 
 private theorem agxName_ne {xs : List String} (h : xs.Nodup) (i j : ℕ)
     (hi : i < xs.length) (hj : j < xs.length) (hne : i ≠ j) :

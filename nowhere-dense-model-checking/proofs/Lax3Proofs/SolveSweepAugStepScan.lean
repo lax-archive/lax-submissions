@@ -5,7 +5,7 @@ import Lax3Proofs.SolveSweepAugFilter
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax3Proofs.Augmentation Lax3Proofs.Augmentation.Orientation
 open Lax3Proofs.CoverRoutine
 

@@ -1,7 +1,7 @@
 import Lax3Proofs.SolveConcreteTapes
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 open Lax3.ScatterSentences Lax3Proofs.LocalityFun
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax3.FirstOrder

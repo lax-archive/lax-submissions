@@ -14,9 +14,9 @@ rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
 name = "Lax11"
 path = "../concepts"
 
-# the word RAM: the machine and timed computation of submission Lax67
+# the word RAM: the machine and timed computation of submission Lax808846
 [[require]]
-name = "Lax67"
+name = "Lax808846"
 git = "https://github.com/lax-archive/lax-submissions"
 rev = "512403f000f23689a1c40d8826062d20f1e28f03"
 subDir = "word-ram/concepts"
@@ -24,7 +24,7 @@ subDir = "word-ram/concepts"
 # the word RAM's verified compilation pipeline, reused as proved
 # theorems (deliberate proofs-package dependency)
 [[require]]
-name = "Lax67Proofs"
+name = "Lax808846Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
 rev = "512403f000f23689a1c40d8826062d20f1e28f03"
 subDir = "word-ram/proofs"

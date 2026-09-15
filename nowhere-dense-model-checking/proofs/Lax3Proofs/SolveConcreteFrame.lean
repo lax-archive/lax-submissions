@@ -2,7 +2,7 @@ import Lax3Proofs.SolvePrepCleanFit
 
 /-! The graph guard is charged only for the branch that actually runs. -/
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 variable {L n₀ : ℕ}
 

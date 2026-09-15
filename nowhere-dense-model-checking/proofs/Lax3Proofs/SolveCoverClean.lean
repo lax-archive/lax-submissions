@@ -16,7 +16,7 @@ radius are distinct parameters; the headline uses `3*S.R` and `S.R`.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax3Proofs.Driver Lax3Proofs.CoverRoutine
 
 /-- Read explicit rows from the meaningful prefix of an arena's padded CSR. -/

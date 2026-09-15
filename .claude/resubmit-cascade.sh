@@ -10,11 +10,11 @@
 #
 # Order (each folder depends only on those before it), as of the v4.33.0
 # port (plans/port-v4.33/FINISH.md):
-#   word-ram (lax-67)                                    — no cross-submission require
-#   ram-linear-time (lax-11), refinement-tower (lax-62)  — both require Lax67
-#   nowhere-dense-model-checking (lax-3)                 — requires Lax11, Lax62, Lax67 and the
+#   word-ram (lax-808846)                                    — no cross-submission require
+#   ram-linear-time (lax-11), refinement-tower (lax-62)  — both require Lax808846
+#   nowhere-dense-model-checking (lax-3)                 — requires Lax11, Lax62, Lax808846 and the
 #                                                          registered Lax199508
-#   lax-introduction (lax-242665)                        — requires Lax67, the registered Lax199508,
+#   lax-introduction (lax-242665)                        — requires Lax808846, the registered Lax199508,
 #                                                          and Lax768004 (submit
 #                                                          twin-width-treewidth-separation-v4-33 first)
 # sparsity-lectures and monadic-dependence are registered v4.30 records with

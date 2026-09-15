@@ -25,8 +25,8 @@ semantics asks for.
 
 namespace Lax11Proofs.VC
 
-open Lax67.Ram Lax11.GraphEncoding
-open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning Lax11Proofs.CC
+open Lax808846.Ram Lax11.GraphEncoding
+open Lax808846Proofs.Imp Lax808846Proofs.Compile Lax808846Proofs.Reasoning Lax11Proofs.CC
 
 variable {g : List ℕ} {n m B : ℕ} {G : SimpleGraph (Fin n)} {O T MK : ℕ → ℕ}
 

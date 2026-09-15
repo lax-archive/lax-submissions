@@ -1,6 +1,6 @@
 import Lax11.Courcelle
 import Lax11Proofs.CourcelleDriver
-import Lax67Proofs.Transfer
+import Lax808846Proofs.Transfer
 
 /-!
 Courcelle's theorem, cashed in at the concept surface.
@@ -34,8 +34,8 @@ constant and not two.
 
 namespace Lax11Proofs.Courcelle
 
-open Lax67.Ram Lax67.RamComputes Lax11.GraphEncoding Lax11.Mso Lax11.CliqueExpr
-open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning Lax67Proofs.Transfer
+open Lax808846.Ram Lax808846.RamComputes Lax11.GraphEncoding Lax11.Mso Lax11.CliqueExpr
+open Lax808846Proofs.Imp Lax808846Proofs.Compile Lax808846Proofs.Reasoning Lax808846Proofs.Transfer
 open Lax11Proofs.TreeFold Lax11Proofs.MsoTypes Lax11Proofs.MsoTable
 open Lax11Proofs.CC (readLoop readLoop_run)
 open Lax11.InstanceEncoding (EncodesModelCheckingInstance)
@@ -522,7 +522,7 @@ The table's content is carried by proof; the program text around it is
 carried by evaluation.
 
 *The multiplication instruction is never used.* The machine of
-`Lax67.Ram` has one, and under a unit-cost measure a linear-time claim
+`Lax808846.Ram` has one, and under a unit-cost measure a linear-time claim
 that leans on it is at risk of being an artifact of the model. The fold
 indexes a two-dimensional table, which is where a multiplication would
 naturally appear — the entry for `a` and `b` sits at `a·V + b`. Instead

@@ -1,4 +1,4 @@
-import Lax67Proofs.Lib.Csr
+import Lax808846Proofs.Lib.Csr
 import Lax3Proofs.ImplRestrict
 import Lax3Proofs.ProgCodegenLayout
 
@@ -160,7 +160,7 @@ Status of the per-routine discharges:
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax3.ColoredGraphs (Coloring)
 open Lax3.DistFO
 

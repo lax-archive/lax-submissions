@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Iicf.IicfStack
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # IICF: CSR graphs over two fixed arrays — the thin instance

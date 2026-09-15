@@ -1,4 +1,4 @@
-import Lax67.Ram
+import Lax808846.Ram
 import Mathlib.Data.Set.Basic
 
 /-!
@@ -62,9 +62,9 @@ carries a bound, and plain computability is the special case in which
 `T` is unconstrained.
 -/
 
-namespace Lax67.RamComputes
+namespace Lax808846.RamComputes
 
-open Lax67.Ram
+open Lax808846.Ram
 
 /-- At word length `w`, on every admissible input `x`, the program halts
 within `T x` executed instructions with output `f x`. -/
@@ -72,4 +72,4 @@ def ComputesInTime (w : ℕ) (p : Program) (D : Set (List ℕ))
     (f : List ℕ → List ℕ) (T : List ℕ → ℕ) : Prop :=
   ∀ x ∈ D, ∃ t ≤ T x, RunsTo w p x (f x) t
 
-end Lax67.RamComputes
+end Lax808846.RamComputes

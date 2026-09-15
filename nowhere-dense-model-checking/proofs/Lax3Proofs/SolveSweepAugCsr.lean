@@ -14,7 +14,7 @@ namespace Lax3Proofs.Prog
 
 set_option linter.unusedSimpArgs false
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax3Proofs.Augmentation Lax3Proofs.Augmentation.Orientation
 
 /-- The scalar scratch cells, reusable between augmentation stages. -/

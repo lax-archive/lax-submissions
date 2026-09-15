@@ -47,8 +47,8 @@ the plumbing has to be tested against one that can.
 
 namespace Lax11Proofs.Courcelle
 
-open Lax67.Ram Lax67.RamComputes Lax11.GraphEncoding Lax11.Mso Lax11.CliqueExpr
-open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning
+open Lax808846.Ram Lax808846.RamComputes Lax11.GraphEncoding Lax11.Mso Lax11.CliqueExpr
+open Lax808846Proofs.Imp Lax808846Proofs.Compile Lax808846Proofs.Reasoning
 open Lax11Proofs.CliqueExpr Lax11Proofs.TreeFold Lax11Proofs.MsoTable
 open Lax11Proofs.CC (readLoop)
 open Lax11.InstanceEncoding (nodeCount parent opCode vertexName EncodesExprTree EncodesExpr

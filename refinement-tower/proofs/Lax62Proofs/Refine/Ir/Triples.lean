@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Ir.Wp
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The IR's credit-carrying Hoare triples, one per operation.

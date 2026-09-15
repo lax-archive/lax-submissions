@@ -12,7 +12,7 @@ keeps the actual build and heap budgets, including the heap logarithm.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax3Proofs.CoverRoutine (mdRank mdPerm mdPerm_val)
 
 /-- The CSR extent is exactly the graph's degree sum. -/
