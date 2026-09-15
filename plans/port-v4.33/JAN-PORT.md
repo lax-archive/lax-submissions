@@ -54,20 +54,21 @@ port's ledger (2026-09-14) and `FINISH.md` its hand-back runbook.
 
 ## Decisions
 
-**D1 — lax-67 stays; it is not the stray draft to delete.** Facts: (a)
-lax-865980 (registered, Clemens) is lax-13's content at v4.33 — it lacks
-the reviewed repair Jan approved on 2026-09-09 and ~700 proof-package
-lines the dependents use (`Com.NoWrite` alone in 19 dependent files);
-(b) lax-67 has external dependents: Édouard's lax-489179 (ETH/SETH) and
-Clemens's lax-195003 (Welzl orders) — deleting retires the id and breaks
-both; (c) deletion is irreversible, keeping is not. Resolution: port
-lax-67 in place at v4.33 on the repaired content (ram-input-repair merged
-into main), and claim `supersedes: lax-865980` so the archive shows one
-line lax-13 → lax-865980 → lax-67 instead of two v4.33 "The Word RAM"
-records. If the archive refuses the claim (lax-865980 is owned by
-Clemens alone; a supersedes claim needs ownership of the superseded
-record), lax-67 is submitted without a supersedes line and this item
-goes back to Jan/Clemens. Registering lax-67 waits on that outcome.
+**D1 — the word-RAM line is DEFERRED (Jan, 2026-09-15 after lunch).**
+Édouard's lax-489179 (ETH/SETH) and Clemens's lax-195003 (Welzl orders)
+— the two external dependents of lax-67 — are being ported right now;
+where they land (lax-865980 or lax-67) decides the RAM base, so nothing
+RAM-related is submitted, repinned, or landed on main until that is
+known. Facts on file for the decision: (a) lax-865980 (registered,
+Clemens) is lax-13's content at v4.33 — without the reviewed repair Jan
+approved on 2026-09-09 and without ~700 proof-package lines the
+dependents use (`Com.NoWrite` alone in 19 dependent files); (b) deleting
+lax-67 retires the id and breaks any draft still requiring it; (c) if
+lax-67 is kept, the clean archive shape is `supersedes: lax-865980`
+(one line lax-13 → lax-865980 → lax-67), which needs ownership of
+lax-865980 (Clemens). Wave 1a continues only as a local build on its
+branch (does the repaired content port cleanly at v4.33?) — its result
+is information, not a landing.
 
 **D2 — lax-768004 dropped.** lax-228581 (registered from main) already
 supersedes lax-48; the cloud port's folder is deleted at landing.
@@ -116,8 +117,8 @@ Others (owners in brackets):
 
 | wave | leaf | worker | worktree | state |
 |---|---|---|---|---|
-| 1a | merge ram-input-repair + cloud port into main; re-port the four RAM folders on the repaired content; local builds green | opus | `.claude/worktrees/port-land` | dispatched 2026-09-15 |
+| 1a | merge ram-input-repair + cloud port; re-port the four RAM folders on the repaired content; local builds green | opus | `.claude/worktrees/port-land` | building 2026-09-15 — NOT to be landed until D1 is decided |
 | 1b | lax-5 successor: real id, rename, build, submit as draft | opus | `.claude/worktrees/ndmc-succ` | dispatched 2026-09-15 |
 | 1c | lax-introduction resubmit from main (v4.33, registered deps) | supervisor | main | DONE 2026-09-15: lax-242665 draft @ 2be112c, v4.33.0, requires Lax228581/Lax199508/Lax865980 (all registered); draft-dependency violation cleared |
-| 2 | cascade resubmit word-ram → ram-linear-time, refinement-tower → nowhere-dense-model-checking (`.claude/resubmit-cascade.sh`), supersedes claim per D1 | after 1a | main | pending |
+| 2 | cascade resubmit word-ram → ram-linear-time, refinement-tower → nowhere-dense-model-checking (`.claude/resubmit-cascade.sh`), supersedes claim per D1 | after 1a | main | ON HOLD — waits for the SETH and Welzl ports (D1) |
 | 3 | registration per D4 | after 2 | main | pending |
