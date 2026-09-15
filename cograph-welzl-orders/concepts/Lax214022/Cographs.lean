@@ -1,4 +1,4 @@
-import Lax48.TwinWidth
+import Lax228581.TwinWidth
 
 /-!
 ---
@@ -20,7 +20,7 @@ the maximum red degree and a cograph contraction creates no red adjacency.
 
 namespace Lax214022.Cographs
 
-open Lax48.TwinWidth
+open Lax228581.TwinWidth
 
 /-- A finite graph is a cograph when it admits a contraction sequence of red
 degree zero. -/

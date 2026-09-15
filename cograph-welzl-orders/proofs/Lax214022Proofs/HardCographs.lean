@@ -15,18 +15,19 @@ and four.
 
 namespace Lax214022Proofs.HardCographs
 
-open Lax48Proofs.Main
+open Lax228581Proofs.Main
 open Lax214022Proofs.Cotree
 open Lax214022Proofs.CotreeSequence
 
 noncomputable section
 
 /-- Vertices of the height-k hard cograph. -/
+@[reducible]
 def Vertex : ℕ → Type
   | 0 => Fin 1
   | k + 1 => Option (Fin 3 × Vertex k)
 
-instance vertexDecidableEq (k : ℕ) : DecidableEq (Vertex k) := by
+@[reducible] instance vertexDecidableEq (k : ℕ) : DecidableEq (Vertex k) := by
   induction k with
   | zero => simp only [Vertex]; infer_instance
   | succ k ih =>
@@ -53,6 +54,7 @@ def graph : (k : ℕ) → SimpleGraph (Vertex k)
           | some _, none => True
           | some (i, u), some (j, v) => i = j ∧ (graph k).Adj u v
         symm := by
+          constructor
           intro x y
           cases x with
           | none => cases y <;> simp

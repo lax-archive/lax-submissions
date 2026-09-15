@@ -12,8 +12,8 @@ frontier blocks can be merged.
 
 namespace Lax214022Proofs.CotreeSequence
 
-open Lax48.TwinWidth
-open Lax48Proofs.Main
+open Lax228581.TwinWidth
+open Lax228581Proofs.Main
 open Lax214022Proofs.Cotree
 
 noncomputable section

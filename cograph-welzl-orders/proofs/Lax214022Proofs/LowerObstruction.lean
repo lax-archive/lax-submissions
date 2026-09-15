@@ -18,7 +18,7 @@ open Lax214022Proofs.ListCrossings
 
 noncomputable section
 
-local instance graphAdjDecidable (k : ℕ) : DecidableRel (graph k).Adj :=
+@[reducible] local instance graphAdjDecidable (k : ℕ) : DecidableRel (graph k).Adj :=
   Classical.decRel _
 
 def defaultVertex : (k : ℕ) → Vertex k

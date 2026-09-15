@@ -1,5 +1,5 @@
 import Lax214022.Cographs
-import Lax48Proofs.Main
+import Lax228581Proofs.Main
 import Mathlib.Data.List.NodupEquivFin
 import Mathlib.Data.Nat.Log
 
@@ -14,8 +14,8 @@ the concept defines cographs by the already endorsed twin-width notion.
 
 namespace Lax214022Proofs.Cotree
 
-open Lax48.TwinWidth
-open Lax48Proofs.Main
+open Lax228581.TwinWidth
+open Lax228581Proofs.Main
 
 noncomputable section
 
@@ -132,7 +132,7 @@ def PartsRepresented (G : SimpleGraph V) (P : Finset (Finset V)) : Prop :=
 theorem partsRepresented_singletons :
     PartsRepresented G (singletonPartition V) := by
   intro A hA
-  rcases Lax48Proofs.TwinWidth.TrigraphState.mem_singletonBags.mp hA with ⟨v, rfl⟩
+  rcases Lax228581Proofs.TwinWidth.TrigraphState.mem_singletonBags.mp hA with ⟨v, rfl⟩
   exact ⟨Tree.leaf v, by simp, by simp [Tree.Represents]⟩
 
 /-- At width zero, every pair of distinct current parts is homogeneous. -/
@@ -174,11 +174,11 @@ theorem partsRepresented_merge
     rcases hhom with hcomplete | hempty
     · refine ⟨Tree.node true l r, ?_, ?_⟩
       · simp [hlset, hrset]
-      · simpa [Tree.Represents, hlset, hrset] using
+      · simpa [Tree.Represents, CompleteBetween, hlset, hrset] using
           And.intro hlrep (And.intro hrrep (And.intro hdisj hcomplete))
     · refine ⟨Tree.node false l r, ?_, ?_⟩
       · simp [hlset, hrset]
-      · simpa [Tree.Represents, hlset, hrset] using
+      · simpa [Tree.Represents, EmptyBetween, hlset, hrset] using
           And.intro hlrep (And.intro hrrep (And.intro hdisj hempty))
   · have h1 := Finset.mem_erase.mp hCrest
     have h2 := Finset.mem_erase.mp h1.2

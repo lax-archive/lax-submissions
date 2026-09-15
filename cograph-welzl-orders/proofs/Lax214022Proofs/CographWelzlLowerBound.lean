@@ -15,7 +15,7 @@ at the root in the selected neighborhood row.
 
 namespace Lax214022Proofs.CographWelzlLowerBound
 
-open Lax48Proofs.Main
+open Lax228581Proofs.Main
 open Lax214022.Cographs
 open Lax214022Proofs.HardCographs
 open Lax214022Proofs.LowerObstruction
