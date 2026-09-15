@@ -1,5 +1,5 @@
-name = "Lax264807"
-defaultTargets = ["Lax264807"]
+name = "Lax710763"
+defaultTargets = ["Lax710763"]
 
 [leanOptions]
 autoImplicit = false
@@ -11,7 +11,7 @@ git = "https://github.com/leanprover-community/mathlib4"
 rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 [[lean_lib]]
-name = "Lax264807"
+name = "Lax710763"
 
 # sparsity lectures: the graph-class, nowhere-denseness and
 # neighborhood-complexity definitions of submission Lax12

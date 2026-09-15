@@ -1,5 +1,5 @@
-name = "Lax264807Proofs"
-defaultTargets = ["Lax264807Proofs"]
+name = "Lax710763Proofs"
+defaultTargets = ["Lax710763Proofs"]
 
 [leanOptions]
 autoImplicit = false
@@ -11,7 +11,7 @@ git = "https://github.com/leanprover-community/mathlib4"
 rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 [[require]]
-name = "Lax264807"
+name = "Lax710763"
 path = "../concepts"
 
 # sparsity lectures: the quasi-wideness and neighborhood-complexity
@@ -30,4 +30,4 @@ rev = "feabf43dcd6967ac912b2064003ea715e06e58f9"
 subDir = "finite-ramsey-v4-33/concepts"
 
 [[lean_lib]]
-name = "Lax264807Proofs"
+name = "Lax710763Proofs"
