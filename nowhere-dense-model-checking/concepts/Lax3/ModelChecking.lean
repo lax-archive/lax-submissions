@@ -1,7 +1,7 @@
 import Lax3.FirstOrder
 import Lax199508.NowhereDenseClasses
 import Lax808846.RamComputes
-import Lax11.GraphEncoding
+import Lax271696.GraphEncoding
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
@@ -22,7 +22,7 @@ writes `1` if φ holds in the graph and `0` if it does not.
 This is the theorem of Grohe, Kreutzer and Siebertz (JACM 2017), with
 the algorithm realized on the word RAM of Lax808846. Nowhere denseness is
 the exact limit of this kind of tractability on monotone classes, and
-the input is the graph *alone*: unlike the Courcelle theorem of Lax11,
+the input is the graph *alone*: unlike the Courcelle theorem of Lax271696,
 which is handed a k-expression alongside the graph, every auxiliary
 object the algorithm consumes — orderings, neighborhood covers,
 splitter moves, distance profiles — is computed from the input. That
@@ -30,7 +30,7 @@ computation is the main algorithmic weight of the theorem.
 
 # Formalization notes
 
-The statement follows the house pattern of Lax11's Courcelle axiom:
+The statement follows the house pattern of Lax271696's Courcelle axiom:
 program and constant after the class data, the sentence and ε; before
 the graph and the word length; inputs restricted to encodings whose
 entries fit the word length; output by a classical `if` on
@@ -38,7 +38,7 @@ satisfaction. The differences are the ones the theorem is about — and
 one of them is that side condition, which is *squared* here; see the
 deviation recorded below. The hypothesis is
 `Lax199508.NowhereDense` verbatim — the endorsed shallow-minor form, not a
-restatement. The input predicate is `Lax11.EncodesGraph` alone: no
+restatement. The input predicate is `Lax271696.EncodesGraph` alone: no
 expression, no ordering, no promise beyond membership in the class.
 The time bound cannot be the Courcelle form `c * (x.length + 1)`,
 since `n^(1+ε)` has no elementary spelling over ℕ: the bound function
@@ -59,7 +59,7 @@ through the choice of `c` and `T` only, the program depending on
 finitely many of its excluded-minor thresholds.
 
 **Deviation, deliberate: the word-length side condition is squared.**
-Lax11's Courcelle axiom admits an encoding `x` at word length `w` when
+Lax271696's Courcelle axiom admits an encoding `x` at word length `w` when
 `c * (x.length + v + 1) ≤ 2 ^ w`; here the requirement is
 `c * (x.length + v + 1) ^ 2 ≤ 2 ^ w`. Since the statement quantifies
 over *every* `w`, the smallest admissible one is in scope, and under
@@ -82,7 +82,7 @@ about machines that the theorem is not about.
 
 Two things the deviation does *not* do. It does not change the time
 bound, which is still `n^(1+ε)` for every ε > 0; and it does not touch
-Lax11, whose axiom keeps the linear form — the Courcelle algorithm runs
+Lax271696, whose axiom keeps the linear form — the Courcelle algorithm runs
 in linear space and has no need of this. If a later revision makes the
 cover streaming rather than materialized, so that the whole algorithm
 runs in linear space, the linear side condition can be restored and the
@@ -101,7 +101,7 @@ namespace Lax3.ModelChecking
 open Lax3.FirstOrder
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax808846.Ram Lax808846.RamComputes
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 
 open Classical in
 /-- **First-order model checking on nowhere dense classes** (Grohe–

@@ -1298,7 +1298,7 @@ theorem exists_mcChargeMS_chargeTotal_le (C : GraphClass) (hC : NowhereDense C)
 
 /-! ## The `T`-arithmetic close (deliverable 3, E13's item (e)) -/
 
-open Lax11.GraphEncoding in
+open Lax271696.GraphEncoding in
 /-- **The endorsed axiom's `T` clause, at the charge level** — E13's
 item (e), stated so F7 need only multiply by the machine's `L.const`:
 for every nowhere dense `C`, plain sentence `φ : FO 0`, `ε > 0` and

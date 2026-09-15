@@ -5,7 +5,7 @@ import Lax3Proofs.ImplFrontEnd
 # F6a — the CSR front end as an IMP+ program
 
 The endorsed axiom hands the machine one word
-`x = [n, m] ++ offsets ++ targets` (`Lax11.GraphEncoding.EncodesGraph`);
+`x = [n, m] ++ offsets ++ targets` (`Lax271696.GraphEncoding.EncodesGraph`);
 F2 (`ImplFrontEnd`) defined what parsing it *means* (`parseGraphAt`,
 `parse_encodesGraph`) and what it may *cost* (`chargeParse`, exactly
 `x.length` on an encoding). This file is the machine's side of that
@@ -64,7 +64,7 @@ the `hinp`/`FitsWords` pair.
 namespace Lax3Proofs.Prog
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax62Proofs.Codegen
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 
 /-! ## §1 The word, split into its three zones -/
 

@@ -56,7 +56,7 @@ has entries — `x.length ≥ 3`), and every entry is `≤ x.length`
 
 namespace Lax3Proofs.Prog
 
-open Lax808846Proofs.Compile Lax11.GraphEncoding
+open Lax808846Proofs.Compile Lax271696.GraphEncoding
 
 /-! ## §1 The three numbers -/
 

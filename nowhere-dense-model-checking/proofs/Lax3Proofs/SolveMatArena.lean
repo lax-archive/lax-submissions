@@ -68,7 +68,7 @@ namespace Lax3Proofs.Prog
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax62Proofs.Codegen
 open Lax808846Proofs.Compile
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 
 variable {x : List ℕ} {n : ℕ} {G : SimpleGraph (Fin n)}
 

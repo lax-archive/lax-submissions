@@ -1,5 +1,5 @@
-name = "Lax11Proofs"
-defaultTargets = ["Lax11Proofs"]
+name = "Lax271696Proofs"
+defaultTargets = ["Lax271696Proofs"]
 
 [leanOptions]
 autoImplicit = false
@@ -11,7 +11,7 @@ git = "https://github.com/leanprover-community/mathlib4"
 rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 [[require]]
-name = "Lax11"
+name = "Lax271696"
 path = "../concepts"
 
 # the word RAM: the machine and timed computation of submission Lax808846
@@ -30,4 +30,4 @@ rev = "5a2645e5b68a2d1539610196a09883da16433a94"
 subDir = "word-ram/proofs"
 
 [[lean_lib]]
-name = "Lax11Proofs"
+name = "Lax271696Proofs"

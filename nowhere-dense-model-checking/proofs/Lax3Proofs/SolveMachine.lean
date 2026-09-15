@@ -20,7 +20,7 @@ set_option autoImplicit false
 namespace Lax3Proofs.Prog
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax62Proofs.Refine
 open Lax3Proofs.Driver Lax3Proofs.CoverRoutine Lax3.ColoredGraphs
-open Lax11.GraphEncoding Lax199508.GraphClasses Lax199508.NowhereDenseClasses
+open Lax271696.GraphEncoding Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder
 variable {L n : ℕ}
 
@@ -125,7 +125,7 @@ end Lax3Proofs.Prog
 
 namespace Lax3Proofs.ModelChecking
 open Lax3Proofs.Prog Lax3Proofs.Driver Lax3Proofs.CoverRoutine
-open Lax3.FirstOrder Lax11.GraphEncoding
+open Lax3.FirstOrder Lax271696.GraphEncoding
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax808846.Ram Lax808846.RamComputes
 

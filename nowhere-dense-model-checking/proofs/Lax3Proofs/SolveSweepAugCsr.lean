@@ -724,7 +724,7 @@ theorem AgCsrKeyRows.graphCsr_window {N M : ℕ} {o t : String} {ks : List ℕ}
 /-- The three word-room conditions are supplied by the fixed quadratic bound
 for every encoded input; the schedule's constant needs only `1 ≤ q`. -/
 theorem agCsr_word_room {N n M q : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
-    (henc : Lax11.GraphEncoding.EncodesGraph x n G) (hN : N ≤ n) (hM : M ≤ N * N)
+    (henc : Lax271696.GraphEncoding.EncodesGraph x n G) (hN : N ≤ n) (hM : M ≤ N * N)
     (hq : 1 ≤ q) : N + 1 < mcB q x ∧ M + 1 < mcB q x ∧ N * N < mcB q x := by
   have hnx : n + 3 ≤ x.length := by
     have := henc.length_eq

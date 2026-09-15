@@ -154,7 +154,7 @@ namespace Lax3Proofs.Prog
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax62Proofs.Codegen Lax808846Proofs.Compile
 open Lax62Proofs.Refine.Codegen (computesInTime_of_spec)
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 

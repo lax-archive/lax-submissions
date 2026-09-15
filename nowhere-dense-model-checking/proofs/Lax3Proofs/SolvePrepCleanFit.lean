@@ -4,7 +4,7 @@ import Lax3Proofs.SolvePrepCleanRoot
 child precondition consumed by the clean recursive step. -/
 namespace Lax3Proofs.Prog
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
-open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
+open Lax271696.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 variable {L n₀ : ℕ}
 
 theorem centrePrepClean_of_prep (B : ℕ) (S : Setup L)

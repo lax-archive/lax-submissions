@@ -26,7 +26,7 @@ one. It is also the full strength that model checking on a class of
 *graphs* consumes: the Gaifman graph of a colored graph is the graph
 itself, every structure the algorithm builds along the way is the input
 graph with edges deleted and colors added, and no step ever leaves this
-signature. The same move is made by the MSO concept of submission Lax11,
+signature. The same move is made by the MSO concept of submission Lax271696,
 which pins its logic to MSO₁ rather than claiming a version of
 second-order quantification it does not formalize.
 
@@ -38,7 +38,7 @@ and the coloring does not (deleting the edges incident to a vertex set)
 or the coloring changes and the graph does not (recording distance
 profiles as new colors), and the concepts of the submissions this one
 builds on already pass their data unbundled — the set environments of
-Lax11's MSO satisfaction, the graph classes of Lax199508. Colors are `Set`s
+Lax271696's MSO satisfaction, the graph classes of Lax199508. Colors are `Set`s
 of vertices rather than a predicate `Fin L → Fin n → Prop` for the same
 reason Lax199508 states its vertex sets as `Set`s: the two are definitionally
 interchangeable and the `Set` form composes with the existing library of

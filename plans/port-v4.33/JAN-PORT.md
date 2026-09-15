@@ -11,8 +11,8 @@ port's ledger (2026-09-14) and `FINISH.md` its hand-back runbook.
 
 | folder / record | id | state | env | authors | what has to happen |
 |---|---|---|---|---|---|
-| word-ram | lax-67 | draft | v4.30 | Jan | port in place; see decision D1 |
-| ram-linear-time | lax-11 | draft | v4.30 | Jan | port in place, repin Lax67 |
+| word-ram | lax-67 → **lax-808846** | lax-67 deleted 09-15; lax-808846 draft | v4.33 | Jan | done: stand-alone draft @ 5a2645e (D1) |
+| ram-linear-time | lax-11 → **lax-271696** | lax-11 REGISTERED by Clemens 09-15 11:24 UTC (his port on Lax865980, @ f867352); lax-271696 = successor draft on Lax808846 | v4.33 | Jan | see D5 |
 | refinement-tower | lax-62 | draft | v4.30 | Jan | port in place, repin Lax67 |
 | nowhere-dense-model-checking | lax-3 | draft | v4.30 | Jan | port in place, repin Lax67/11/62, Lax12→Lax199508 |
 | lax-introduction | lax-242665 | draft | record v4.30, tree v4.33 | Édouard, Jan, Clemens | resubmit from main (already pinned to lax-228581/199508/865980) |
@@ -68,6 +68,18 @@ alone and the line is dropped). Facts that led here: lax-865980
 (registered, Clemens) is lax-13's content at v4.33 without the reviewed
 repair and without ~700 proof-package lines the dependents use;
 `supersedes: lax-13` is taken by it for good.
+
+**D5 — ram-linear-time gets the successor lax-271696 (supervisor, 2026-09-15
+14:20).** While wave 2 was building, Clemens registered lax-11 (11:24 UTC,
+source f867352: his own v4.33 port of ram-linear-time onto the registered
+Lax865980, a 20-file/89-line delta from ours — the rename plus nothing
+the repair needs). Registered is immutable, so the cascade's in-place
+resubmit of lax-11 was refused. The chain on the repaired RAM therefore
+continues as `lax-271696` (`lax init --env v4.33.0`, `supersedes: lax-11`
+— Jan co-owns lax-11, so the owner rule should pass), surface renamed
+Lax11 → Lax271696 in ram-linear-time and nowhere-dense-model-checking
+(102 files). lax-11 stays as Clemens's Welzl-orders base. word-ram's
+prose mentions of "Lax11" and welzl-orders are untouched.
 
 **D2 — lax-768004 dropped.** lax-228581 (registered from main) already
 supersedes lax-48; the cloud port's folder is deleted at landing.
@@ -128,5 +140,6 @@ Others (owners in brackets):
 | 1b | lax-5 successor: real id, rename, build, submit as draft | opus | `.claude/worktrees/ndmc-succ` | DONE 2026-09-15: lax-710763 draft, 2080+2840 jobs green, archive accepted, concepts identical to lax-5 (archive extraction diffed field by field); landed on main, worktree removed, remote branch kept (the record points at it) |
 | 1c | lax-introduction resubmit from main (v4.33, registered deps) | supervisor | main | DONE 2026-09-15: lax-242665 draft @ 2be112c, v4.33.0, requires Lax228581/Lax199508/Lax865980 (all registered); draft-dependency violation cleared |
 | 1d | lax-introduction: drop the Bertrand network for the front page's (PrimeDivisor → Euclid) plus the twin prime conjecture as the open concept; front page carousel draws lax-242665's own cards | supervisor | main | DONE 2026-09-15: statements numbered from one counter (Def 1, Thm 2, Lem 3, Conj 4), boundary cases of all four concepts checked in Lean (no off-by-one), submitted @ f7c9272 and **REGISTERED** (Jan's go). Website `index.ts` + test still uncommitted in `~/git/lax-website`; deploy any time now that the archive holds `Lax242665.PrimeDivisor` |
-| 2 | cascade resubmit word-ram → ram-linear-time, refinement-tower → nowhere-dense-model-checking (`.claude/resubmit-cascade.sh`), supersedes claim per D1 | after 1a | main | ON HOLD — waits for the SETH and Welzl ports (D1) |
+| 1a′ | Lax67 → Lax808846 rename on the held branch, rebuild, land | supervisor | `port-land` | DONE 2026-09-15: four packages green (word-ram 70 s, rlt 3 min, tower 10 min, ndmc 20 min), landed on main @ 0bbb796 (phantom lax-264807 files dropped), worktree removed, builds moved into main |
+| 2 | cascade resubmit word-ram → ram-linear-time, refinement-tower → nowhere-dense-model-checking (`.claude/resubmit-cascade.sh`, `LAX_SUBMIT_FLAGS=--force`) | supervisor | main | IN PROGRESS 2026-09-15: lax-808846 draft @ 5a2645e (gate refused `supersedes: lax-865980` again → stand-alone); lax-11 refused (registered, D5) → Lax11 → Lax271696 rename + rebuild, then cascade `ram-linear-time refinement-tower nowhere-dense-model-checking` |
 | 3 | registration per D4 | after 2 | main | lax-710763 REGISTERED 2026-09-15 (lax-5 now shows as superseded); RAM chain waits on D1; lax-242665 REGISTERED 2026-09-15 @ f7c9272 |

@@ -64,7 +64,7 @@ The word-room story: every stored value is `≤ ns` or `< N`, and
 namespace Lax3Proofs.Prog
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)

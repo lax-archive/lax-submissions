@@ -1,6 +1,6 @@
 import Lax3Proofs.Unroll
 import Lax3Proofs.Reduction
-import Lax11.GraphEncoding
+import Lax271696.GraphEncoding
 import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import Mathlib.Order.Interval.Set.Nat
 
@@ -61,7 +61,7 @@ open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO rank)
 open Lax3Proofs.Driver Lax3Proofs.Reduction Lax3Proofs.CoverEdgeSum
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 
 /-! ## Part 1 — the abstract headline -/
 
@@ -198,7 +198,7 @@ theorem headline_abstract_unrolled (C : GraphClass) (hC : NowhereDense C)
 
 /-! ## Part 2 — the encoding seam
 
-`Lax11.GraphEncoding.EncodesGraph x n G` pins `x.length = 3 + n + 2m`
+`Lax271696.GraphEncoding.EncodesGraph x n G` pins `x.length = 3 + n + 2m`
 where `m = edgeCount x` is the *declared* edge count — at least
 `|E(G)|`, with equality exactly when no block repeats a neighbor
 (repetitions are deliberately permitted; `GraphEncoding.lean`'s notes).

@@ -296,7 +296,7 @@ theorem agBuildPeel_spec {B N M : ℕ}
 /-- The combined adapter's sole word-room premise follows from the fixed
 quadratic word bound for every encoded input, with `1 ≤ q`. -/
 theorem agBuildPeel_word_room {N n q : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
-    (henc : Lax11.GraphEncoding.EncodesGraph x n G) (hN : N ≤ n) (hq : 1 ≤ q) :
+    (henc : Lax271696.GraphEncoding.EncodesGraph x n G) (hN : N ≤ n) (hq : 1 ≤ q) :
     N * N + 4 * N + 4 ≤ mcB q x := by
   have hnx : n + 3 ≤ x.length := by
     have := henc.length_eq

@@ -12,7 +12,7 @@ child-call boundary, including the return from the recursive block.
 namespace Lax3Proofs.Prog
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
-open Lax11.GraphEncoding Lax3.ColoredGraphs
+open Lax271696.GraphEncoding Lax3.ColoredGraphs
 open Lax3Proofs.Driver
 
 /-- The shared parent-name rank array is clean on the root carrier. -/

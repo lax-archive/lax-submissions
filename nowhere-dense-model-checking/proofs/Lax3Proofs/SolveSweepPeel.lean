@@ -86,7 +86,7 @@ row being dismantled (`delStar H u T` is `H` minus the `u`–`T` star).
 namespace Lax3Proofs.Prog
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
@@ -4825,7 +4825,7 @@ end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
@@ -4948,7 +4948,7 @@ end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 open Lax199508.ColoringNumbers
 open Lax199508.UniformQuasiWideness (deleteVerts)
 
@@ -6558,7 +6558,7 @@ theorem peelScr_mono {n N j : ℕ} {cm : ℕ → String} {σ : Env}
   obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hs
   exact ⟨by omega, by omega, by omega, by omega, by omega, by omega, by omega, by omega, by omega⟩
 
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)

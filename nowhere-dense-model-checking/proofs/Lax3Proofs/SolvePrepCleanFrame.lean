@@ -5,7 +5,7 @@ guard, and every recursive block. -/
 
 namespace Lax3Proofs.Prog
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
-open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
+open Lax271696.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 variable {L n₀ : ℕ}
 
 open Classical in

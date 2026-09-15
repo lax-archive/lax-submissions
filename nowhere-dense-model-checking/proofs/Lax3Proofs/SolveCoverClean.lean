@@ -433,7 +433,7 @@ theorem word_room {B n₀ N R : ℕ} (hN : N ≤ n₀)
 
 /-- Encoded inputs supply the same schedule-only word coefficient uniformly. -/
 theorem word_room_mcB {n₀ R q : ℕ} {G : SimpleGraph (Fin n₀)} {x : List ℕ}
-    (henc : Lax11.GraphEncoding.EncodesGraph x n₀ G) (hq : 2 * R + 6 ≤ q) :
+    (henc : Lax271696.GraphEncoding.EncodesGraph x n₀ G) (hq : 2 * R + 6 ≤ q) :
     (2 * R + 6) * (n₀ + 2) ^ 2 < mcB q x := by
   have hnx : n₀ + 3 ≤ x.length := by
     have := henc.length_eq

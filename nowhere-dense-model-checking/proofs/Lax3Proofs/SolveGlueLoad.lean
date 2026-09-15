@@ -10,7 +10,7 @@ that step except one named pass, and records a **scope finding**:
 
 **The finding.** The chain's `GraphCsr` demands duplicate-free rows at
 slot count `Σ_v deg v` (`GraphCsr.ns_eq_sum_degree` is what every
-budget statement rides). But `Lax11.GraphEncoding.EncodesGraph` — the
+budget statement rides). But `Lax271696.GraphEncoding.EncodesGraph` — the
 endorsed axiom's input format, verbatim — *does not forbid repeated
 neighbours within a block*, and `mcD` adds only the word-size side
 condition. So the root load is **not** a plain CSR copy (the
@@ -48,7 +48,7 @@ Everything else of `RootLoadSpec` is proved here, unconditionally:
 namespace Lax3Proofs.Prog
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)

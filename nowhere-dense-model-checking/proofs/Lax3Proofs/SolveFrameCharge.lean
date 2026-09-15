@@ -251,7 +251,7 @@ theorem exists_chargeFrameK_inputTime (S : Setup L) (ord : CoverSpec.OrderingRou
       ∀ (n : ℕ) (G : SimpleGraph (Fin n)) (col : Coloring n L)
         (htabF : (j : ℕ) → (A : Arena (S.pal j) n) → Fin A.N → Fin (ℓp j) → List (Fin A.N))
         (covC : (j : ℕ) → Arena (S.pal j) n → ACost String ℕ)
-        (x : List ℕ), Lax11.GraphEncoding.EncodesGraph x n G →
+        (x : List ℕ), Lax271696.GraphEncoding.EncodesGraph x n G →
         (∀ j (A : Arena (S.pal j) n), A.G ⊑ G →
           (chargeTotal (covC j A) : ℝ) ≤ f * (A.N : ℝ) ^ (1 + 2 * headlineδ S ε)) →
         (∀ (m : ℕ) (H : SimpleGraph (Fin m)), H ⊑ G → ∀ v : Fin m,

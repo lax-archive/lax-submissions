@@ -5,7 +5,7 @@ allocation lengths. The return path uses the child's returned cleanliness. -/
 
 namespace Lax3Proofs.Prog
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
-open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
+open Lax271696.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 variable {L n₀ : ℕ}
 
 theorem centrePrepClean_of_parts (B : ℕ) (S : Setup L)

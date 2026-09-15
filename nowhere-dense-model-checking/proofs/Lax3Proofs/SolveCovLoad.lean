@@ -56,7 +56,7 @@ namespace Lax3Proofs.Prog
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax62Proofs.Codegen (arrOf_getD getD_eq_getElem)
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 
 /-! ## §1 First-occurrence deduplication -/
 

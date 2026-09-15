@@ -11,8 +11,8 @@
 # Order (each folder depends only on those before it), as of the v4.33.0
 # port (plans/port-v4.33/FINISH.md):
 #   word-ram (lax-808846)                                    — no cross-submission require
-#   ram-linear-time (lax-11), refinement-tower (lax-62)  — both require Lax808846
-#   nowhere-dense-model-checking (lax-3)                 — requires Lax11, Lax62, Lax808846 and the
+#   ram-linear-time (lax-271696), refinement-tower (lax-62)  — both require Lax808846
+#   nowhere-dense-model-checking (lax-3)                 — requires Lax271696, Lax62, Lax808846 and the
 #                                                          registered Lax199508
 #   lax-introduction (lax-242665)                        — requires Lax808846, the registered Lax199508,
 #                                                          and Lax768004 (submit

@@ -37,7 +37,7 @@ quasi-wideness, subpolynomial weak coloring numbers — are consumed from
 *Sparsity Lectures* (Lax199508); the machine model and timed computation
 from *The Word RAM* (Lax808846) and its refinement framework (Lax62); graph
 encodings from *Algorithmic Experiments on a Random Access Machine*
-(Lax11).
+(Lax271696).
 
 The model-checking theorem and the neighborhood-cover construction of
 Section 6 are those of Grohe, Kreutzer and Siebertz (JACM 2017, cited

@@ -1,5 +1,6 @@
 specVersion: "1"
-id: Lax11
+id: lax-271696
+supersedes: lax-11
 leanVersion: "v4.33.0"
 mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
 title: Algorithmic Experiments on a Random Access Machine
@@ -82,6 +83,3 @@ bibEntries:
       year    = {2006},
       doi     = {10.1016/j.jctb.2005.10.006}
     }
-issue:
-  repositoryId: 1320232165
-  number: 11

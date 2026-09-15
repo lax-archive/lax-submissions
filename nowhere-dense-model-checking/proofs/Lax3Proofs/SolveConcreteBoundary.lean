@@ -3,7 +3,7 @@ import Lax3Proofs.SolveCovLoad
 
 namespace Lax3Proofs.Prog
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
-open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
+open Lax271696.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 open Lax3.ScatterSentences Lax3Proofs.LocalityFun
 open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax3.FirstOrder
 
