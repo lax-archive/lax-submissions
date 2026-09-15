@@ -32,3 +32,6 @@ bibEntries:
       doi     = {10.1016/j.jcta.2004.04.002}
     }
 supersedes: lax-49
+issue:
+  repositoryId: 1320232165
+  number: 125
