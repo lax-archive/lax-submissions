@@ -7,7 +7,7 @@ import Lax881656.HamiltonianCycle
 /-!
 ---
 title: Barnette's conjecture
-type: theorem
+type: opn
 ---
 Every finite, simple, 3-connected, cubic, bipartite planar graph has a
 Hamiltonian cycle.
