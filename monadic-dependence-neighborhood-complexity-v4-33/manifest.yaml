@@ -60,3 +60,6 @@ bibEntries:
       doi     = {10.1016/j.ejc.2013.06.048}
     }
 supersedes: lax-5
+issue:
+  repositoryId: 1320232165
+  number: 117
