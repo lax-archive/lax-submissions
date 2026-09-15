@@ -1,5 +1,5 @@
 import Lax68.GraphMinors
-import Lax994427.SixColorable
+import Lax332265.SixColorable
 
 /-!
 ---
@@ -30,7 +30,7 @@ subgraphs, or requiring a special graph decomposition. These strengthen the
 hypotheses but leave the conclusion unchanged.
 -/
 
-namespace Lax994427.HadwigerT7
+namespace Lax332265.HadwigerT7
 
 /-- Hadwiger's conjecture at `t = 7`: excluding a `K₇` minor guarantees a
 proper colouring with six colours. -/
@@ -38,6 +38,6 @@ axiom sixColorable_of_no_K7_minor :
   ∀ (n : ℕ) (G : SimpleGraph (Fin n)),
     ¬ Lax68.GraphMinors.IsMinor
         (SimpleGraph.completeGraph (Fin 7)) G →
-      Lax994427.SixColorable.IsSixColorable G
+      Lax332265.SixColorable.IsSixColorable G
 
-end Lax994427.HadwigerT7
+end Lax332265.HadwigerT7

@@ -23,11 +23,11 @@ pointwise graph property. The conjecture itself is stated on the canonical
 finite carriers `Fin n`.
 -/
 
-namespace Lax994427.SixColorable
+namespace Lax332265.SixColorable
 
 /-- A graph admits a proper vertex colouring with the six colours in `Fin 6`. -/
 def IsSixColorable {V : Type*} (G : SimpleGraph V) : Prop :=
   ∃ colour : V → Fin 6,
     ∀ ⦃u v : V⦄, G.Adj u v → colour u ≠ colour v
 
-end Lax994427.SixColorable
+end Lax332265.SixColorable

@@ -1,5 +1,5 @@
-name = "Lax994427"
-defaultTargets = ["Lax994427"]
+name = "Lax332265"
+defaultTargets = ["Lax332265"]
 
 [leanOptions]
 autoImplicit = false
@@ -17,4 +17,4 @@ rev = "c81b1a4741268738e4f00fb7895514d3087d75ac"
 subDir = "planar-graph-classes-v4-33/concepts"
 
 [[lean_lib]]
-name = "Lax994427"
+name = "Lax332265"
