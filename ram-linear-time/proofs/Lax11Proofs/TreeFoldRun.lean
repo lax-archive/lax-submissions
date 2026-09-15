@@ -33,7 +33,7 @@ than with an anonymous function.
 
 namespace Lax11Proofs.TreeFold
 
-open Lax865980.Ram Lax865980Proofs.Imp Lax865980Proofs.Compile Lax865980Proofs.Reasoning
+open Lax67.Ram Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning
 open Lax11Proofs.CC (readLoop)
 
 /-! ### The largest entry of a word

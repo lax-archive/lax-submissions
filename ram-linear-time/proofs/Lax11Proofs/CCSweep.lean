@@ -42,9 +42,9 @@ cost nor the walk's `K ≤` shape can state.
 
 namespace Lax11Proofs.CC
 
-open Lax865980.Ram Lax865980.RamComputes Lax11.GraphEncoding Lax11.ConnectedComponents
-open Lax865980Proofs.Imp Lax865980Proofs.Compile Lax865980Proofs.Reasoning Lax11Proofs.Labels
-open Lax865980Proofs.Reasoning.Lib
+open Lax67.Ram Lax67.RamComputes Lax11.GraphEncoding Lax11.ConnectedComponents
+open Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning Lax11Proofs.Labels
+open Lax67Proofs.Reasoning.Lib
 
 variable {x : List ℕ} {B n m : ℕ} {G : SimpleGraph (Fin n)} {O T : ℕ → ℕ}
 

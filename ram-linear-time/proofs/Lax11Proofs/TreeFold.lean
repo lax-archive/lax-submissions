@@ -39,7 +39,7 @@ per-node work is two array reads.
 
 namespace Lax11Proofs.TreeFold
 
-open Lax865980.Ram Lax865980Proofs.Imp Lax865980Proofs.Compile Lax865980Proofs.Reasoning
+open Lax67.Ram Lax67Proofs.Imp Lax67Proofs.Compile Lax67Proofs.Reasoning
 open Lax11Proofs.CC (readLoop)
 
 /-! ### The table
@@ -369,7 +369,7 @@ using the shared evaluator whose count is proved to agree with
 
 /-- The shared evaluator, including the final instruction charge and
 zero-cost fallthrough at the exact fuel boundary. -/
-abbrev runOut := Lax865980Proofs.Reasoning.Lib.runOut
+abbrev runOut := Lax67Proofs.Reasoning.Lib.runOut
 
 /-- The instance word of a tree given by two lists. -/
 def encTree (parL labL : List ℕ) : List ℕ := parL.length :: (parL ++ labL)

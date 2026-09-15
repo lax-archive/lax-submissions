@@ -1,5 +1,5 @@
 import Lax11Proofs.TreeFoldRun
-import Lax865980Proofs.Transfer
+import Lax67Proofs.Transfer
 
 /-!
 The tree fold, end to end.
@@ -42,8 +42,8 @@ constant and not two.
 
 namespace Lax11Proofs.TreeFold
 
-open Lax865980.Ram Lax865980.RamComputes Lax865980Proofs.Imp Lax865980Proofs.Compile
-open Lax865980Proofs.Reasoning Lax865980Proofs.Transfer
+open Lax67.Ram Lax67.RamComputes Lax67Proofs.Imp Lax67Proofs.Compile
+open Lax67Proofs.Reasoning Lax67Proofs.Transfer
 open Lax11Proofs.CC (readLoop readLoop_run)
 
 /-! ### The extents
