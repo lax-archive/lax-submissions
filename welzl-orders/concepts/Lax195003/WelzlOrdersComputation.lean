@@ -63,8 +63,8 @@ imposing an arbitrary tie-breaking rule absent from the paper.
 namespace Lax195003.WelzlOrdersComputation
 
 open Lax11.GraphEncoding
-open Lax12.GraphClasses
-open Lax67.Ram
+open Lax199508.GraphClasses
+open Lax865980.Ram
 open Lax195003.WelzlOrdersNeighborhoodComplexity
 open Lax195003.WordRamRandomness Lax195003.WelzlOrdersInGraphs
 

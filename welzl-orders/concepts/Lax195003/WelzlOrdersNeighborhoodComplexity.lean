@@ -1,7 +1,7 @@
 import Mathlib.Combinatorics.SimpleGraph.Basic
 import Mathlib.Data.Nat.Lattice
 import Mathlib.Data.Set.Card
-import Lax12.GraphClasses
+import Lax199508.GraphClasses
 
 /-!
 ---
@@ -34,7 +34,7 @@ trace `∅`, so the literal inequality `π_G(0) ≤ c · 0` would be false.
 
 namespace Lax195003.WelzlOrdersNeighborhoodComplexity
 
-open Lax12.GraphClasses
+open Lax199508.GraphClasses
 
 /-- The number of distinct traces `N(v) ∩ A` that vertex neighborhoods leave
 on the vertex set `A`. -/
