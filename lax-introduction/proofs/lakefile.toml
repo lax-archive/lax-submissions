@@ -31,12 +31,12 @@ git = "https://github.com/lax-archive/lax-submissions"
 rev = "e9845c204d14a5678f9d64c0e6f4ca757d9dc9d0"
 subDir = "sparsity-lectures-v4-33/concepts"
 
-# the word RAM (Lax865980)
+# the word RAM (Lax808846)
 [[require]]
-name = "Lax865980"
+name = "Lax808846"
 git = "https://github.com/lax-archive/lax-submissions"
-rev = "0aa87e1f6e6add4abe4f4e0aff8fe4a28950b2ea"
-subDir = "word-ram-v4-33/concepts"
+rev = "9394e531cc51cb67a0214bca3f9264dfe97ba5c7"
+subDir = "word-ram/concepts"
 
 [[lean_lib]]
 name = "Lax242665Proofs"
