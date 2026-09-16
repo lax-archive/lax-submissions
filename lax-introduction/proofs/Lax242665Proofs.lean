@@ -1,3 +1,2 @@
+import Lax242665Proofs.PrimeDivisor
 import Lax242665Proofs.InfinitelyManyPrimes
-import Lax242665Proofs.OddPrimes
-import Lax242665Proofs.OddPrimeBetween

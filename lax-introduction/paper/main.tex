@@ -9,12 +9,12 @@
 
 \hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black}
 
-\theoremstyle{definition}
-\newtheorem{definition}{Definition}
 \theoremstyle{plain}
 \newtheorem{theorem}{Theorem}
-\newtheorem{lemma}{Lemma}
-\renewcommand{\thelemma}{\Alph{lemma}}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
 
 % The status badges of the website, as they appear next to a concept:
 % a green "proven" chip and a yellow "open" chip.
@@ -80,12 +80,8 @@ involved. You can click on each concept to see its full context, including a
 discussion thread where the faithfulness of the encoding can be debated.
 
 Concepts can be reused across submissions, which lets established academic
-practices transfer to Lax: submissions build upon each other, and common
-standards and definitions emerge by an organic selection process. For example,
-this submission introduces prime numbers as a concept and deliberately leaves
-one claim about them open (Lemma~\ref{lem:bertrand} below); a follow-up
-submission can build on it, reuse Definition~\ref{def:prime} unchanged, and
-supply the missing proof. The definition of a prime number is of course
+practices transfer to Lax: submissions may build upon each other, allowing common
+standards and definitions to emerge by an organic selection process. The definition of a prime number is of course
 already in mathlib~\cite{mathlib2020}. For notions that are not, such as
 % lax begin Lax228581.TwinWidth
 twin-width% lax end
@@ -103,9 +99,9 @@ Let us now turn towards proofs, such as this one.
 
 % lax begin Lax242665Proofs.InfinitelyManyPrimes.exists_prime_gt
 \begin{proof}[Proof of Theorem~\ref{thm:euclid}]
-  Let $p$ be the smallest prime factor of $n! + 1$. If we had $p \leq n$,
-  then $p$ would divide $n!$, and hence also $(n! + 1) - n! = 1$, which is
-  impossible. So $p > n$.
+  By Lemma~\ref{lem:primediv}, $n! + 1$ has a prime divisor $p$. If we had
+  $p \leq n$, then $p$ would divide $n!$, and hence also $(n! + 1) - n! = 1$,
+  which is impossible. So $p > n$.
 \end{proof}
 % lax end
 
@@ -116,61 +112,48 @@ are not particularly suited for the latter. They can run to enormous length
 and are rarely enlightening even when short. Lax therefore treats formal proofs
 as opaque blobs.
 
-A green badge \laxproven{} next to a concept indicates that it has a complete
-formal proof; a yellow one \laxopen{} indicates that it does not. However, Lax
+A badge \laxproven{} next to a concept indicates that it has a complete
+formal proof, while a badge \laxopen{} indicates that it does not. However, Lax
 does not ensure that the formal proof follows the same argument as the prose,
 or even that the prose is correct. To gain more control over the argument,
 authors may introduce concepts for the important lemmas along the way, thereby
 certifying each step of the informal proof rather than only its conclusion.
+The proof above does this for its key step.
+
+% lax begin Lax242665.PrimeDivisor
+\begin{lemma}\label{lem:primediv}
+  Every natural number greater than $1$ has a prime divisor.
+\end{lemma}
+% lax end
+
+% lax begin Lax242665Proofs.PrimeDivisor.exists_prime_dvd
+\begin{proof}
+  Let $d$ be the least divisor of $n$ with $d > 1$. Every divisor of $d$
+  divides $n$, so $d$ has no divisor strictly between $1$ and $d$; hence $d$
+  is prime.
+\end{proof}
+% lax end
 
 Lax tracks which lemmas were used to prove which other lemmas.
 Formally, each proof assumes a set of concepts and derives a target concept.
 This defines a \emph{proof network} whose nodes are concepts and whose
-hyperedges are proofs between them. For example, here
-Lemmas~\ref{lem:odd}~and~\ref{lem:bertrand} are used to derive
-Theorem~\ref{thm:oddprime}.
+hyperedges are proofs between them. Here, Lemma~\ref{lem:primediv} is used to
+derive Theorem~\ref{thm:euclid}. Clicking on a concept shows its proof network
+and its open proof obligations.
 
-% lax begin Lax242665.OddPrimes
-\begin{lemma}\label{lem:odd}
-  Every prime other than $2$ is odd.
-\end{lemma}
+A concept need not come with a proof at all.
+
+% lax begin Lax242665.TwinPrimes
+\begin{conjecture}\label{con:twin}
+  For every natural number $n$ there is a prime $p > n$ such that $p + 2$ is
+  prime as well.
+\end{conjecture}
 % lax end
 
-% lax begin Lax242665Proofs.OddPrimes.odd_of_prime
-\begin{proof}
-  Let $p \neq 2$ be prime. If $p$ were even, then $2$ would divide $p$, so by
-  Definition~\ref{def:prime} we would have $2 = 1$ or $2 = p$; both are
-  impossible.
-\end{proof}
-% lax end
-
-% lax begin Lax242665.BertrandPostulate
-\begin{lemma}[Bertrand's postulate]\label{lem:bertrand}
-  For every natural number $n \geq 1$ there is a prime $p$ with
-  $n < p \leq 2n$.
-\end{lemma}
-% lax end
-
-% lax begin Lax242665.OddPrimeBetween
-\begin{theorem}\label{thm:oddprime}
-  For every natural number $n \geq 2$ there is an odd prime $p$ with
-  $n < p \leq 2n$.
-\end{theorem}
-% lax end
-
-% lax begin Lax242665Proofs.OddPrimeBetween.exists_odd_prime_between
-\begin{proof}
-  By Lemma~\ref{lem:bertrand} there is a prime $p$ with $n < p \leq 2n$.
-  Since $n \geq 2$, we have $p > 2$, so $p$ is odd by Lemma~\ref{lem:odd}.
-\end{proof}
-% lax end
-
-Note that Lemma~\ref{lem:bertrand} is not proven in this submission. A
-follow-up submission may provide a proof, thereby completing the proof of
-Theorem~\ref{thm:oddprime}, after which both are marked as proven
-\laxproven{} on the website. Clicking on a concept shows its proof network
-and its open proof obligations. Providing a concept and proving it can thus be
-separate contributions by separate people.
+Should a later submission prove Conjecture~\ref{con:twin}, it is marked as
+proven \laxproven{} on the website, and so is every concept whose proof
+depends on it. Providing a concept and proving it can thus be separate
+contributions by separate people.
 
 \section{Papers}
 
@@ -205,7 +188,7 @@ registered submission is immutable. This submission, with id
 This also makes it easy to attach a Lax submission to a conference or journal
 paper under review; the author list may be left empty if the review process
 requires anonymity. If changes are needed, you upload a revision under a new
-id that \emph{supersedes} the old one, and the website points readers from the
+id, and the website points readers from the
 old version to the new one.
 
 Immutability has a cost on Lax that it does not have on arXiv. A Lean
@@ -225,7 +208,7 @@ it with
 npm install -g lax-archive && lax doctor
 \end{verbatim}
 and, inside a public git repository, run \texttt{lax init}. This creates
-the layout the archive expects:
+a layout like this one:
 \begin{verbatim}
 manifest.yaml     title, authors, environment, and what it builds on
 abstract.md       the summary shown on the submission's page

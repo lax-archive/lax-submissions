@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Iicf.Impl.AbsHeap
 import Lax62Proofs.Refine.Iicf.Intf.PrioMap
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Abstract heap maps
@@ -212,7 +212,10 @@ theorem heapSwimFuel_map [Inhabited K] [Inhabited V] [LinearOrder P]
           rw [heapExchange_map]
           simp only [Function.comp_apply, if_neg hle]
           apply ih
-          simpa using hp
+          have hlen : heapParent i ≤ (heapExchange xs i (heapParent i)).length := by
+            rw [heapExchange_length]
+            exact hp.2
+          exact And.intro hp.1 hlen
       · have hpmap : ¬ (0 < heapParent i ∧
             heapParent i ≤ (xs.map f).length) := by simpa using hp
         simp [hp]
@@ -313,7 +316,12 @@ theorem heapSwimFuel_bag [Inhabited K] [LinearOrder P]
         by_cases hle : q (heapValue xs (heapParent i)) ≤ q (heapValue xs i)
         · simp [hle]
         · simp only [if_neg hle]
-          exact (ih (by simpa using hp)).trans
+          have hlen : heapParent i ≤ (heapExchange xs i (heapParent i)).length := by
+            rw [heapExchange_length]
+            exact hp.2
+          have hpx : heapValid (heapExchange xs i (heapParent i)) (heapParent i) :=
+            And.intro hp.1 hlen
+          exact (ih hpx).trans
             (heapExchange_bag xs i (heapParent i) hi hp)
       · simp [hp]
 
@@ -535,27 +543,30 @@ theorem heapmapPriorityView_swim [Inhabited K] [Inhabited V] [Inhabited P]
     (hi : hmValid hm i) :
     heapmapPriorityView prio (hmSwim prio hm i) =
       heapSwim id (heapmapPriorityView prio hm) i := by
-  simpa [heapmapPriorityView, hmSwim, heapmapKeys, hmKeyPrio,
-    heapmapLookupD, heapmapMap, Function.comp_def] using
-    (heapSwim_map (hmKeyPrio prio hm) id hi).symm
+  have h := (heapSwim_map (hmKeyPrio prio hm) id hi).symm
+  simp [heapmapPriorityView, hmSwim, heapmapKeys, hmKeyPrio,
+    heapmapLookupD, heapmapMap, Function.comp_def] at h ⊢
+  exact h
 
 theorem heapmapPriorityView_sink [Inhabited K] [Inhabited V] [Inhabited P]
     [LinearOrder P] (prio : V → P) {hm : AbsHeapmap K V} {i : ℕ}
     (hi : hmValid hm i) :
     heapmapPriorityView prio (hmSink prio hm i) =
       heapSink id (heapmapPriorityView prio hm) i := by
-  simpa [heapmapPriorityView, hmSink, heapmapKeys, hmKeyPrio,
-    heapmapLookupD, heapmapMap, Function.comp_def] using
-    (heapSink_map (hmKeyPrio prio hm) id hi).symm
+  have h := (heapSink_map (hmKeyPrio prio hm) id hi).symm
+  simp [heapmapPriorityView, hmSink, heapmapKeys, hmKeyPrio,
+    heapmapLookupD, heapmapMap, Function.comp_def] at h ⊢
+  exact h
 
 theorem heapmapPriorityView_repair [Inhabited K] [Inhabited V] [Inhabited P]
     [LinearOrder P] (prio : V → P) {hm : AbsHeapmap K V} {i : ℕ}
     (hi : hmValid hm i) :
     heapmapPriorityView prio (hmRepair prio hm i) =
       heapRepair id (heapmapPriorityView prio hm) i := by
-  simpa [heapmapPriorityView, hmRepair, heapmapKeys, hmKeyPrio,
-    heapmapLookupD, heapmapMap, Function.comp_def] using
-    (heapRepair_map (hmKeyPrio prio hm) id hi).symm
+  have h := (heapRepair_map (hmKeyPrio prio hm) id hi).symm
+  simp [heapmapPriorityView, hmRepair, heapmapKeys, hmKeyPrio,
+    heapmapLookupD, heapmapMap, Function.comp_def] at h ⊢
+  exact h
 
 theorem heapmapPriorityView_updateAt [Inhabited K] [Inhabited V]
     (prio : V → P) {hm : AbsHeapmap K V} {i : ℕ}
@@ -565,9 +576,10 @@ theorem heapmapPriorityView_updateAt [Inhabited K] [Inhabited V]
   rcases hi with ⟨hi0, hile⟩
   have hlt : i - 1 < (heapmapKeys hm).length := by
     simpa [hmLength] using (show i - 1 < hmLength hm by omega)
-  simpa [heapmapPriorityView, hmUpdateAt, heapmapKeys, hmKeyPrio,
-    heapmapLookupD, heapmapMap, hmKeyOf, heapUpdate] using
-    mapPriority_updateAt prio (heapmapMap hm) hstruct.1 hlt v
+  have h := mapPriority_updateAt prio (heapmapMap hm) hstruct.1 hlt v
+  simp [heapmapPriorityView, hmUpdateAt, heapmapKeys, hmKeyPrio,
+    heapmapLookupD, heapmapMap, hmKeyOf, heapUpdate] at h ⊢
+  exact h
 
 theorem hmKeyOf_mem [Inhabited K] {hm : AbsHeapmap K V} {i : ℕ}
     (hi : hmValid hm i) : hmKeyOf hm i ∈ heapmapKeys hm := by
@@ -610,7 +622,7 @@ theorem heapmapStructInv_append [Inhabited K]
       exact hmem
     exact hkdom hk
   constructor
-  · simpa [hmAppend, heapmapKeys] using hstruct.1.append
+  · simpa [hmAppend, heapmapKeys, heapAppend] using hstruct.1.append
       (List.nodup_singleton k) (by simp [hnotmem])
   · apply Set.ext
     intro x
@@ -674,9 +686,10 @@ theorem heapmapPriorityView_exchange [Inhabited V]
     (prio : V → P) (hm : AbsHeapmap K V) (i j : ℕ) :
     heapmapPriorityView prio (hmExchange hm i j) =
       heapExchange (heapmapPriorityView prio hm) i j := by
-  simpa [heapmapPriorityView, hmExchange, heapmapKeys, hmKeyPrio,
-    heapmapLookupD, heapmapMap] using
-    (heapExchange_map (hmKeyPrio prio hm) (heapmapKeys hm) i j).symm
+  have h := (heapExchange_map (hmKeyPrio prio hm) (heapmapKeys hm) i j).symm
+  simp [heapmapPriorityView, hmExchange, heapmapKeys, hmKeyPrio,
+    heapmapLookupD, heapmapMap] at h ⊢
+  exact h
 
 theorem heapmapPriorityView_butlast [Inhabited K] [Inhabited V]
     (prio : V → P) {hm : AbsHeapmap K V} (hstruct : heapmapStructInv hm)
@@ -1125,7 +1138,20 @@ theorem hmIsEmpty_eq (hm : AbsHeapmap K V) (hstruct : heapmapStructInv hm) :
 
 theorem hmContains_eq (hm : AbsHeapmap K V) (k : K) :
     hmContains hm k = propBool (k ∈ mapDom (heapmapMap hm)) := by
+  have key : ∀ (Q : Prop) (i₁ : Decidable Q) (i₂ : Decidable ¬Q),
+      @decide Q i₁ = !(@decide (¬Q) i₂) := by
+    intro Q i₁ i₂
+    cases i₁ with
+    | isTrue h =>
+        cases i₂ with
+        | isTrue h' => exact absurd h h'
+        | isFalse _ => rfl
+    | isFalse h =>
+        cases i₂ with
+        | isTrue _ => rfl
+        | isFalse h' => exact absurd h h'
   simp [hmContains, propBool, mapDom]
+  exact key _ _ _
 
 theorem hmPeekMin?_correct [DecidableEq K] [Inhabited K]
     [Inhabited V] [Inhabited P] [LinearOrder P] (prio : V → P)

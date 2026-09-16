@@ -37,7 +37,7 @@ check. The price is that variables are de Bruijn positions rather than
 names; the alternative, named variables, needs capture-avoiding
 substitution *inside the trusted definition*, which is a considerably
 worse object to audit than an index. This is the pattern of submission
-Lax11's MSO concept, minus the set variables.
+Lax271696's MSO concept, minus the set variables.
 
 Variables are levels, not indices: the quantifier extends the
 environment at its *last* position (`Fin.snoc`), so the outermost bound

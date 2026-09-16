@@ -1,0 +1,136 @@
+From 79c8d26f5cf849c1cb62aab416fac0d9215b838f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 06:47:05 +0000
+Subject: [PATCH 03/18] lax/pcp-undecidability, lax/mealy-machines: proofs
+ build at v4.33.0
+
+S0: Part.mem_bind_iff and Nat.rfind_dom applied term-level (simp/rw now
+refuse PFun applications at implicit transparency), one Part.bind_some.
+S1: Common/Aux renamed Common/Auxiliary (AUX is a forbidden module-name
+component since Lean 4.33), Function.id_def in one simpa, explicit
+arguments where Derivs f (a def-wrapped subtype) blocks keyed matching.
+No statement changed; concepts untouched.
+---
+ lax/mealy-machines/proofs/Lax765601Proofs.lean           | 2 +-
+ .../Source/Common/{Aux.lean => Auxiliary.lean}           | 0
+ .../proofs/Lax765601Proofs/Source/PartA/StateTrans.lean  | 2 +-
+ .../proofs/Lax765601Proofs/Source/PartA/Statements.lean  | 9 +++++----
+ .../proofs/Lax251941Proofs/Source/Sim/Compile.lean       | 6 ++----
+ .../proofs/Lax251941Proofs/Source/Sim/Rfind.lean         | 5 ++---
+ 6 files changed, 11 insertions(+), 13 deletions(-)
+ rename lax/mealy-machines/proofs/Lax765601Proofs/Source/Common/{Aux.lean => Auxiliary.lean} (100%)
+
+diff --git a/lax/mealy-machines/proofs/Lax765601Proofs.lean b/lax/mealy-machines/proofs/Lax765601Proofs.lean
+index 595513a..3db60ba 100644
+--- a/lax/mealy-machines/proofs/Lax765601Proofs.lean
++++ b/lax/mealy-machines/proofs/Lax765601Proofs.lean
+@@ -1,6 +1,6 @@
+ import Lax765601Proofs.Bridge
+ import Lax765601Proofs.Results
+-import Lax765601Proofs.Source.Common.Aux
++import Lax765601Proofs.Source.Common.Auxiliary
+ import Lax765601Proofs.Source.Common.Basic
+ import Lax765601Proofs.Source.PartA.FlipFlopClosure
+ import Lax765601Proofs.Source.PartA.MapLift
+diff --git a/lax/mealy-machines/proofs/Lax765601Proofs/Source/Common/Aux.lean b/lax/mealy-machines/proofs/Lax765601Proofs/Source/Common/Auxiliary.lean
+similarity index 100%
+rename from lax/mealy-machines/proofs/Lax765601Proofs/Source/Common/Aux.lean
+rename to lax/mealy-machines/proofs/Lax765601Proofs/Source/Common/Auxiliary.lean
+diff --git a/lax/mealy-machines/proofs/Lax765601Proofs/Source/PartA/StateTrans.lean b/lax/mealy-machines/proofs/Lax765601Proofs/Source/PartA/StateTrans.lean
+index 5176392..c7f8831 100644
+--- a/lax/mealy-machines/proofs/Lax765601Proofs/Source/PartA/StateTrans.lean
++++ b/lax/mealy-machines/proofs/Lax765601Proofs/Source/PartA/StateTrans.lean
+@@ -581,7 +581,7 @@ lemma nonBijSet_deltaFree_ssubset {A Q : Type} [DecidableEq A] (δ : Q → A →
+   · intro y hy
+     simp only [nonBijSet, Set.mem_setOf_eq, deltaFree] at hy ⊢
+     by_cases h : y = a
+-    · exact absurd (by simpa [h] using Function.bijective_id) hy
++    · exact absurd (by simpa [h, Function.id_def] using Function.bijective_id) hy
+     · simpa [h] using hy
+   · intro hsub
+     have h1 : a ∈ nonBijSet (deltaFree δ a) := hsub ha
+diff --git a/lax/mealy-machines/proofs/Lax765601Proofs/Source/PartA/Statements.lean b/lax/mealy-machines/proofs/Lax765601Proofs/Source/PartA/Statements.lean
+index 93456b7..68d3ca5 100644
+--- a/lax/mealy-machines/proofs/Lax765601Proofs/Source/PartA/Statements.lean
++++ b/lax/mealy-machines/proofs/Lax765601Proofs/Source/PartA/Statements.lean
+@@ -11,7 +11,7 @@ Krohn-Rhodes Theorem `thm:krohn-rhodes`, is proved in
+ "aperiodic ⇒ composition of flip-flops" of Theorem `thm:aperiodic-mealy`, is proved in
+ `RequestProject/PartA/StateTransAperiodic.lean`. -/
+ import Lax765601Proofs.Source.PartA.MealyBasic
+-import Lax765601Proofs.Source.Common.Aux
++import Lax765601Proofs.Source.Common.Auxiliary
+ import Lax765601Proofs.Source.PartA.PrimeClosure
+ import Lax765601Proofs.Source.PartA.MapLift
+ import Lax765601Proofs.Source.PartA.StateTrans
+@@ -403,7 +403,7 @@ derivative. -/
+ lemma derivMealy_trans_deriv {A B : Type} [Inhabited B] (f : List A → List B) (u z : List A) :
+     (derivMealy f).trans z ⟨deriv f u, u, rfl⟩ = ⟨deriv f (u ++ z), u ++ z, rfl⟩ := by
+   apply Subtype.ext
+-  rw [derivMealy_trans]
++  rw [derivMealy_trans f z (⟨deriv f u, u, rfl⟩ : Derivs f)]
+   exact (deriv_append f u z).symm
+ 
+ /-- Iterating the state transformation of the minimal machine. -/
+@@ -411,9 +411,10 @@ lemma derivMealy_trans_iterate {A B : Type} [Inhabited B] (f : List A → List B
+     (n : ℕ) :
+     ((derivMealy f).trans z)^[n] ⟨deriv f u, u, rfl⟩ = ⟨deriv f (u ++ npow z n), _, rfl⟩ := by
+   induction n with
+-  | zero => apply Subtype.ext; simp
++  | zero => apply Subtype.ext; show deriv f u = _; simp
+   | succ n ih =>
+-      rw [Function.iterate_succ_apply', ih, derivMealy_trans_deriv]
++      rw [Function.iterate_succ_apply' ((derivMealy f).trans z) n
++        (⟨deriv f u, u, rfl⟩ : Derivs f), ih, derivMealy_trans_deriv]
+       apply Subtype.ext
+       rw [npow_succ', ← List.append_assoc]
+ 
+diff --git a/lax/pcp-undecidability/proofs/Lax251941Proofs/Source/Sim/Compile.lean b/lax/pcp-undecidability/proofs/Lax251941Proofs/Source/Sim/Compile.lean
+index 1393cad..6e6fe8f 100644
+--- a/lax/pcp-undecidability/proofs/Lax251941Proofs/Source/Sim/Compile.lean
++++ b/lax/pcp-undecidability/proofs/Lax251941Proofs/Source/Sim/Compile.lean
+@@ -300,8 +300,7 @@ lemma computes_comp {m k : ℕ} {f : List.Vector ℕ k →. ℕ} {g : Fin k →
+   refine ⟨?_, ?_⟩
+   · -- the convergent case
+     intro z hz
+-    simp only [Part.bind_eq_bind, Part.mem_bind_iff] at hz
+-    obtain ⟨w, hw, hzf⟩ := hz
++    obtain ⟨w, hw, hzf⟩ := Part.mem_bind_iff.mp hz
+     have hdom : ∀ (t : ℕ) (ht : t < k), (g ⟨t, ht⟩ (vargs m s)).Dom :=
+       fun t ht => Part.dom_iff_mem.mpr ⟨_, mem_mOfFn hw ⟨t, ht⟩⟩
+     obtain ⟨u1, u2, u3, hr1, hr2, hr3, ha, hb, hc, hd⟩ := prefix_run hdom
+@@ -385,8 +384,7 @@ lemma computes_comp {m k : ℕ} {f : List.Vector ℕ k →. ℕ} {g : Fin k →
+         obtain ⟨z, hz⟩ := Part.dom_iff_mem.mp hdf
+         refine ⟨z, ?_⟩
+         show z ∈ (List.Vector.mOfFn fun i => g i (vargs m s)) >>= f
+-        simp only [Part.bind_eq_bind, Part.mem_bind_iff]
+-        refine ⟨vargs k u3, ?_, hz⟩
++        refine Part.mem_bind_iff.mpr ⟨vargs k u3, ?_, hz⟩
+         rw [hvk]
+         exact mOfFn_mem (fun i => by
+           have h1 := hYc_mem (i : ℕ) i.isLt (hdom (i : ℕ) i.isLt)
+diff --git a/lax/pcp-undecidability/proofs/Lax251941Proofs/Source/Sim/Rfind.lean b/lax/pcp-undecidability/proofs/Lax251941Proofs/Source/Sim/Rfind.lean
+index 06aab88..f4c07db 100644
+--- a/lax/pcp-undecidability/proofs/Lax251941Proofs/Source/Sim/Rfind.lean
++++ b/lax/pcp-undecidability/proofs/Lax251941Proofs/Source/Sim/Rfind.lean
+@@ -351,9 +351,7 @@ lemma computes_rfind {n : ℕ} {f : List.Vector ℕ (n + 1) → ℕ} {bF : ℕ}
+     have hall : ∀ k, f (k ::ᵥ vargs n s) ≠ 0 := by
+       intro k hk0
+       refine hnd ?_
+-      show (Nat.rfind fun k => Part.some (decide (f (k ::ᵥ vargs n s) = 0))).Dom
+-      rw [Nat.rfind_dom]
+-      exact ⟨k, by simp [hk0], fun {_} _ => trivial⟩
++      exact Nat.rfind_dom.mpr ⟨k, by simp [hk0], fun {_} _ => trivial⟩
+     refine not_halts_pseq_right hrPre (not_halts_pseq_left ?_)
+     refine not_halts_loopDec
+       (I := fun t => t (W + n + 1) = 1 ∧ (∀ i, i < W → t i = 0) ∧
+@@ -388,6 +386,7 @@ theorem exists_prog_primrec {n : ℕ} {f : List.Vector ℕ n → ℕ} (hf : Nat.
+     obtain ⟨b, P, hP⟩ := computes_comp hF hG
+     refine ⟨b, P, hP.congr fun v => ?_⟩
+     simp
++    exact Part.bind_some _ _
+   | @prec n f g hf hg ihf ihg =>
+     obtain ⟨bF, F, hF⟩ := ihf
+     obtain ⟨bG, G, hG⟩ := ihg
+-- 
+2.43.0
+

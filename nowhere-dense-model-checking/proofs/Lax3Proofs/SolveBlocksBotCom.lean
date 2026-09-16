@@ -94,7 +94,7 @@ scatter routine, or `proofs/Lax3Proofs.lean`.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax62Proofs.Codegen (arrOf_getD getD_eq_getElem)
 open Lax3.DistFO
 
@@ -2140,7 +2140,8 @@ theorem wvars_fillCom (Fl : List (DistFO Lc 1)) :
   rw [entryGen]
   show ((evalCom ca na fa ea xa Lc K β).wvars ++ []) ⊆ _
   rw [List.append_nil]
-  exact (wvars_evalCom ca na fa ea xa Lc K β).trans evalWScalars_subset_btScalars
+  exact List.Subset.trans (wvars_evalCom ca na fa ea xa Lc K β)
+    evalWScalars_subset_btScalars
 
 theorem warrs_fillCom (Fl : List (DistFO Lc 1)) :
     (fillCom ca na fa ea xa ta Lc K Fl).warrs ⊆ [ea, xa, ta] := by
@@ -2153,7 +2154,7 @@ theorem warrs_fillCom (Fl : List (DistFO Lc 1)) :
   rw [entryGen]
   show ((evalCom ca na fa ea xa Lc K β).warrs ++ [ta]) ⊆ _
   refine List.append_subset.mpr ⟨?_, by simp⟩
-  refine (warrs_evalCom ca na fa ea xa Lc K β).trans ?_
+  refine List.Subset.trans (warrs_evalCom ca na fa ea xa Lc K β) ?_
   intro x hx
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
   rcases hx with rfl | rfl <;> simp
@@ -2180,11 +2181,11 @@ theorem warrs_botCom (Fl : List (DistFO Lc 1)) :
   refine List.append_subset.mpr ⟨warrs_zeroCom ea _ (by simp), ?_⟩
   refine List.append_subset.mpr ⟨warrs_zeroCom xa _ (by simp), ?_⟩
   refine List.append_subset.mpr ⟨?_, ?_⟩
-  · refine (warrs_buildCom ca na fa Lc K).trans ?_
+  · refine List.Subset.trans (warrs_buildCom ca na fa Lc K) ?_
     intro x hx
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
     rcases hx with rfl | rfl <;> simp
-  · refine (warrs_fillCom ca na fa ea xa ta Lc K Fl).trans ?_
+  · refine List.Subset.trans (warrs_fillCom ca na fa ea xa ta Lc K Fl) ?_
     intro x hx
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
     rcases hx with rfl | rfl | rfl <;> simp

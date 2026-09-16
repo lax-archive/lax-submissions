@@ -121,7 +121,7 @@ written with the carrier kept: the induced substructure lives on the
 same vertex type `Fin n`, and the restriction to `D` is imposed by the
 definition instead of by a subtype. That matches the uniform vertex
 numbering every structure of this submission carries, and matches
-Lax12's `deleteVerts`, which also isolates rather than removes. Inside
+Lax199508's `deleteVerts`, which also isolates rather than removes. Inside
 `D` the atoms are the induced ones: an edge survives only if both its
 endpoints do, a color class is intersected with `D`, and a distance
 atom measures along walks that stay in `D`. Satisfaction and

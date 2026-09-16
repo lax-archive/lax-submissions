@@ -102,7 +102,7 @@ namespace Lax3Proofs.Prog
 open scoped SimpleGraph
 open Lax62Proofs.Refine
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ColoringNumbers
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.ColoringNumbers
 open Lax3Proofs.Driver
 open Lax3Proofs.LocalityFun
 open Lax3Proofs.CoverEdgeSum
@@ -1137,9 +1137,12 @@ theorem mcChargeMS_chargeTotal_le (S : Setup L)
         * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ)) := by
   have hcopy : (rootArena (L := L) G col).G ⊑ G := ⟨SimpleGraph.Copy.id G⟩
   have hWr : 1 ≤ weight (rootArena (L := L) G col) := hW
-  have hdrv := driverChargeMS_chargeTotal_le S ord ℓp htabF covC hc hf hδ
-    hcov hdeg S.depth 0 (by omega) (rootArena G col) hcopy hWr
-  rw [Headline.weight_rootArena] at hdrv
+  have hdrv : (chargeTotal (driverChargeMS S ord ℓp htabF covC S.depth 0
+        (rootArena G col)) : ℝ)
+      ≤ KP S ℓp c f ^ (S.depth + 1)
+        * (graphWeight G : ℝ) ^ (1 + ((S.depth : ℝ) + 2) * (2 * δ)) :=
+    driverChargeMS_chargeTotal_le S ord ℓp htabF covC hc hf hδ
+      hcov hdeg S.depth 0 (by omega) (rootArena G col) hcopy hWr
   have htot : chargeTotal (mcChargeMS S ord ℓp htabF covC G col)
       = chargeTotal (driverChargeMS S ord ℓp htabF covC S.depth 0 (rootArena G col))
         + topScatterCost S G col (tables S ord 0 (rootArena G col)) := by
@@ -1295,7 +1298,7 @@ theorem exists_mcChargeMS_chargeTotal_le (C : GraphClass) (hC : NowhereDense C)
 
 /-! ## The `T`-arithmetic close (deliverable 3, E13's item (e)) -/
 
-open Lax11.GraphEncoding in
+open Lax271696.GraphEncoding in
 /-- **The endorsed axiom's `T` clause, at the charge level** — E13's
 item (e), stated so F7 need only multiply by the machine's `L.const`:
 for every nowhere dense `C`, plain sentence `φ : FO 0`, `ε > 0` and

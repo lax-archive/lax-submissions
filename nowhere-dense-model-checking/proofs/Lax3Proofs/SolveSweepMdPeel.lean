@@ -77,10 +77,10 @@ rank array, as the residual demands.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
-open Lax11.GraphEncoding
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
+open Lax271696.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
 open Lax3Proofs.CoverRoutine (mdChain mdPerm mdOrderingRoutine mdRank mdRankAux
@@ -179,7 +179,7 @@ theorem hMul_congr {n : ℕ} {f g : ℕ → ℕ} (h : ∀ t < n, f t = g t) :
 theorem hMul_succ (n : ℕ) (f : ℕ → ℕ) : hMul (n + 1) f = f n ::ₘ hMul n f := by
   rw [hMul, hMul, Multiset.range_succ, Multiset.map_cons]
 
-open Lax67Proofs.Reasoning.Lib in
+open Lax808846Proofs.Reasoning.Lib in
 /-- Swapping two prefix cells leaves the content multiset alone. -/
 theorem hMul_swap {n ti xi : ℕ} (hti : ti < n) (hxi : xi < n) (hne : ti ≠ xi)
     (f : ℕ → ℕ) : hMul n (upd (upd f ti (f xi)) xi (f ti)) = hMul n f := by
@@ -209,7 +209,7 @@ theorem hMul_swap {n ti xi : ℕ} (hti : ti < n) (hxi : xi < n) (hne : ti ≠ xi
   rw [Multiset.map_cons, Multiset.map_cons, Multiset.map_cons, Multiset.map_cons,
     hgt, hgx, Multiset.map_congr rfl hgR, Multiset.cons_swap]
 
-open Lax67Proofs.Reasoning.Lib in
+open Lax808846Proofs.Reasoning.Lib in
 /-- Overwriting the root with the last cell and shrinking removes one
 copy of the root's key from the content. -/
 theorem hMul_pop {n : ℕ} (hn : 0 < n) (f : ℕ → ℕ) :
@@ -282,7 +282,7 @@ theorem HeapSt.of_eq {hp hs : String} {n : ℕ} {f : ℕ → ℕ} {σ σ' : Env}
 
 section HeapOps
 
-open Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Reasoning.Lib
 
 variable {B : ℕ} (hp hs tv xv yv : String)
 
@@ -3562,7 +3562,7 @@ theorem mdPeelCore_spec (mt : String)
         ∃ t, t < baseDeg F (u : ℕ) ∧
           ajL.getD (offF (u : ℕ) + t) 0 = (w : ℕ) := by
       intro u w hadj
-      have hadj' : (Lax12.UniformQuasiWideness.deleteVerts F ∅).Adj u w := by
+      have hadj' : (Lax199508.UniformQuasiWideness.deleteVerts F ∅).Adj u w := by
         rw [Impl.deleteVerts_empty]
         exact hadj
       obtain ⟨t, ht, hval⟩ := hcomp u (Set.notMem_empty u) w hadj'

@@ -1,4 +1,4 @@
-import Lax11.GraphEncoding
+import Lax271696.GraphEncoding
 import Lax3Proofs.DriverArena
 import Lax62Proofs.Refine.Cost.ACost
 
@@ -8,7 +8,7 @@ import Lax62Proofs.Refine.Cost.ACost
 The endorsed axiom (`Lax3.ModelChecking.
 exists_almostLinearTime_program_modelChecking`) hands the machine its
 input as a CSR word `x : List ℕ` satisfying
-`Lax11.GraphEncoding.EncodesGraph x n G`: two header entries `n, m`,
+`Lax271696.GraphEncoding.EncodesGraph x n G`: two header entries `n, m`,
 then `n + 1` offsets, then a target array of length `2m` listing each
 vertex's block of neighbors. No module of `Lax3Proofs` before this one
 turns such a word back into the driver's structures (`Headline.lean`
@@ -86,7 +86,7 @@ likewise not consumed here — F6 spends it at codegen time.
 
 namespace Lax3Proofs.Impl
 
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 open Lax3.ColoredGraphs (Coloring)
 open Lax62Proofs.Refine (ACost)
 
@@ -116,9 +116,9 @@ satisfying `EncodesGraph x n G` the cleaning is the identity
 and irreflexive because `G.Adj` is. -/
 def parseGraphAt (x : List ℕ) (n : ℕ) : SimpleGraph (Fin n) where
   Adj u v := u ≠ v ∧ (blockMem x u v ∨ blockMem x v u)
-  symm := by
+  symm := ⟨by
     rintro u v ⟨hne, h⟩
-    exact ⟨hne.symm, h.symm⟩
+    exact ⟨hne.symm, h.symm⟩⟩
   loopless := ⟨fun u h => h.1 rfl⟩
 
 instance instDecidableRelParseAdj (x : List ℕ) (n : ℕ) :

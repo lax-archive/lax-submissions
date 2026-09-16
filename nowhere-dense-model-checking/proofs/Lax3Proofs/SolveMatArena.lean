@@ -66,9 +66,9 @@ whenever the extension lists carry `"k"` and `"up"`.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax62Proofs.Codegen
-open Lax67Proofs.Compile
-open Lax11.GraphEncoding
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax62Proofs.Codegen
+open Lax808846Proofs.Compile
+open Lax271696.GraphEncoding
 
 variable {x : List ℕ} {n : ℕ} {G : SimpleGraph (Fin n)}
 

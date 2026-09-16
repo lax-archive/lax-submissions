@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Codegen.Cash
 import Lax62Proofs.Refine.Sepref.Examples.Acceptance
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 P5's acceptance: P4's two toy programs, landed at `ComputesInTime`.
@@ -65,8 +65,8 @@ sharper `B` and re-runs §3 with the same invariants.
 namespace Lax62Proofs.Refine.Codegen
 
 open Lax62Proofs.Refine.Ir Lax62Proofs.Refine.Sepref Lax62Proofs.Refine.Sepref.Acceptance
-open Lax62Proofs.Codegen Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
-open Lax67Proofs.Imp Lax67Proofs.Compile
+open Lax62Proofs.Codegen Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Compile
 
 namespace EndToEnd
 
@@ -151,7 +151,7 @@ theorem fcRun_snd_le (ys : List ℕ) (t : ℕ) : ∀ (m : ℕ) (s : ℕ × ℕ),
 def fcCountOf (ys : List ℕ) (t : ℕ) : ℕ := (fcRun ys t ys.length (0, 0)).2
 
 theorem fcCountOf_le (ys : List ℕ) (t : ℕ) : fcCountOf ys t ≤ ys.length := by
-  simpa using fcRun_snd_le ys t ys.length (0, 0)
+  simpa [fcCountOf] using fcRun_snd_le ys t ys.length (0, 0)
 
 /-! ## 2. Filter-count: the initial IR state
 
@@ -401,7 +401,7 @@ theorem fc_program_spec (ys : List ℕ) (t : ℕ) :
 
 theorem fcProgram_ok : Compile.Com.Ok fcLayout fcProgram := by
   simp [fcProgram, fcBody, readScalarsThenArr, readArr, writeScalar,
-    Lax67Proofs.Reasoning.Lib.Fill.put, fcLayout, Compile.Com.Ok, Compile.Cond.Ok,
+    Lax808846Proofs.Reasoning.Lib.Fill.put, fcLayout, Compile.Com.Ok, Compile.Cond.Ok,
     Compile.condExpr, Compile.Expr.Ok, fcLoop_impl, embed, embedCond, embedOperand]
 
 /-- **The boundary.** -/
@@ -429,7 +429,7 @@ theorem fc_solves : Transfer.Solves fcLayout fcProgram fcD fcOut fcB fcK := by
 computes the count in at most `L.const · (32·n + 17) + 1` instructions,
 including the final `halt`. -/
 theorem fc_computesInTime (w : ℕ) (hfit : ∀ x ∈ fcD, fcLayout.FitsWords (fcB x) w) :
-    Lax67.RamComputes.ComputesInTime w (compileProgram fcLayout fcProgram) fcD fcOut
+    Lax808846.RamComputes.ComputesInTime w (compileProgram fcLayout fcProgram) fcD fcOut
       (fun x => fcLayout.const * fcK x + 1) :=
   fc_solves.computesInTime hfit
 
@@ -826,7 +826,7 @@ theorem rv_program_spec (ys : List ℕ) :
 
 theorem rvProgram_ok : Compile.Com.Ok rvLayout rvProgram := by
   simp [rvProgram, rvBody, readScalarsThenArr, readArr, writeArr,
-    Lax67Proofs.Reasoning.Lib.Fill.put, rvLayout, Compile.Com.Ok, Compile.Cond.Ok,
+    Lax808846Proofs.Reasoning.Lib.Fill.put, rvLayout, Compile.Com.Ok, Compile.Cond.Ok,
     Compile.condExpr, Compile.Expr.Ok, rvLoop_impl, embed, embedCond, embedOperand]
 
 /-- **The boundary.** -/
@@ -850,7 +850,7 @@ theorem rv_solves : Transfer.Solves rvLayout rvProgram rvD rvOut' fcB rvK := by
 
 /-- **The P5 gate for reverse.** The machine bound includes the final `halt`. -/
 theorem rv_computesInTime (w : ℕ) (hfit : ∀ x ∈ rvD, rvLayout.FitsWords (fcB x) w) :
-    Lax67.RamComputes.ComputesInTime w (compileProgram rvLayout rvProgram) rvD rvOut'
+    Lax808846.RamComputes.ComputesInTime w (compileProgram rvLayout rvProgram) rvD rvOut'
       (fun x => rvLayout.const * rvK x + 1) :=
   rv_solves.computesInTime hfit
 
@@ -867,7 +867,7 @@ call P5/D-ai. -/
 
 namespace Gate
 
-open Lax67.Ram
+open Lax808846.Ram
 
 /-! ### Filter-count: `[3, 1, 4, 1, 5]` under `t = 4` -/
 

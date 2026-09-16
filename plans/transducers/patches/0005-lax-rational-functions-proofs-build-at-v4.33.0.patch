@@ -1,0 +1,257 @@
+From d639d5cd36e2591a7182ea912036d7c9db2abcf8 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 07:02:16 +0000
+Subject: [PATCH 05/18] lax/rational-functions: proofs build at v4.33.0
+
+Nine files, thirteen sites: simpa split into simp only + exact where the
+bridge term is defeq but not syntactic, convert-using-1 on IsRegular
+replaced by exact, List.length_map instantiated by hand over the
+def-wrapped InA/OutA, an instance with an explicit hypothesis demoted to a
+lemma, simp only [] given its unfolding lemmas. No statement changed;
+concepts untouched. Ledger entry in CAMPAIGN.md.
+---
+ lax/CAMPAIGN.md                               | 21 +++++++++++++++++++
+ .../proofs/Lax132576Proofs/Results.lean       |  9 +++++---
+ .../Lax132576Proofs/Source/PartB/CodeRat.lean | 21 +++++++++++++------
+ .../Source/PartB/HomComplement.lean           |  2 +-
+ .../Lax132576Proofs/Source/PartB/LenDec.lean  |  2 +-
+ .../Lax132576Proofs/Source/PartB/SeqChar.lean |  4 ++--
+ .../Source/PartB/SubseqAlpha.lean             |  2 +-
+ .../Source/PartB/SubseqState.lean             |  4 ++--
+ .../Source/PartB/WCodeEnum.lean               |  4 ++--
+ .../Source/PartB/WeightedNF.lean              |  2 +-
+ 10 files changed, 52 insertions(+), 19 deletions(-)
+
+diff --git a/lax/CAMPAIGN.md b/lax/CAMPAIGN.md
+index 7f38894..7da7d75 100644
+--- a/lax/CAMPAIGN.md
++++ b/lax/CAMPAIGN.md
+@@ -56,6 +56,27 @@ longer bridges `id` and `fun x => x` without `Function.id_def`.
+   `Function.iterate_succ_apply'` given their arguments with the
+   `(⟨deriv f u, u, rfl⟩ : Derivs f)` ascription (drift i: `Derivs f` is a
+   `def`), `:414` `show deriv f u = _` before the `simp`.
++- S2 (`rational-functions`, 9 files, 13 sites; concepts untouched; none of
++  the v4.30 workarounds became unnecessary — the `list_take'`/`list_drop'`
++  renames, `decode_rat`, the `PairWeighted` binders and the six `CodeRat`
++  `erw` sites all still needed): new drift classes (iv) `simpa … using h`
++  is stricter than `exact` — a bridge term that is defeq but not
++  syntactically equal (`(toSrc M).init` vs `M.init`) now fails "after
++  simplification", split into `simp only […]` + `exact h`; (v) `convert h
++  using 1` on `Language.IsRegular` leaves an unsolved `Iff`, `exact h`
++  works; (vi) an `instance` with an explicit argument instance synthesis can
++  never supply is a hard error; (vii) `simp only []` no longer makes
++  progress. Sites: `Results.lean:352,371,543` (iv);
++  `Source/PartB/SeqChar.lean:305,310`, `SubseqState.lean:42,48` (v);
++  `SubseqAlpha.lean:35` `simpa using h` → `simp only [List.append_nil];
++  exact h`; `WeightedNF.lean:862` `instance instFiniteUseful (h :
++  M.init.Finite)` → `lemma` (vi; both call sites already pass `h`);
++  `HomComplement.lean:272` `simp only [] at ht` → `simp only [aut, delta,
++  Set.mem_union] at ht` (vii); `LenDec.lean:257` `simpa [memB_iff, codeAut]`;
++  `WCodeEnum.lean:136,141` `simpa [wtr]`; `CodeRat.lean:251-260,374-377`
++  `List.length_map` instantiated by hand as `have`s over the `def`-wrapped
++  `InA c`/`OutA c` (drift i), `:286` `(by simpa using h2)` → `h2`, `:340`
++  `simp only [Subtype.coe_eta]` → `rfl`.
+ 
+ ## Source edits (against the epoch mathlib)
+ 
+diff --git a/lax/rational-functions/proofs/Lax132576Proofs/Results.lean b/lax/rational-functions/proofs/Lax132576Proofs/Results.lean
+index 465ca69..202bd36 100644
+--- a/lax/rational-functions/proofs/Lax132576Proofs/Results.lean
++++ b/lax/rational-functions/proofs/Lax132576Proofs/Results.lean
+@@ -349,7 +349,8 @@ theorem decidable_wcodeEval_eq :
+     DecidableUnderPromise (fun p : WCode × WCode => WCodeValid p.1 ∧ WCodeValid p.2)
+       (fun p => wcodeEval p.1 = wcodeEval p.2) := by
+   have h := (wcode_pair_transport _ _).2 Transducers.weighted_equivalence_decidable
+-  simpa only [wcodeValid_iff, wcodeEval_eq] using h
++  simp only [wcodeValid_iff, wcodeEval_eq]
++  exact h
+ 
+ /--
+ ---
+@@ -367,7 +368,8 @@ theorem decidable_codeRel_eq :
+     DecidableUnderPromise (fun p : RelCode × RelCode => CodeFunctional p.1 ∧ CodeFunctional p.2)
+       (fun p => codeRel p.1 = codeRel p.2) := by
+   have h := (relcode_pair_transport _ _).2 Transducers.rationalFun_equivalence_decidable
+-  simpa only [codeFunctional_iff, codeRel_eq] using h
++  simp only [codeFunctional_iff, codeRel_eq]
++  exact h
+ 
+ /--
+ ---
+@@ -538,7 +540,8 @@ theorem lengthPreserving_iff_typing {A B Q : Type} (M : NFAO A B Q)
+         ∀ p ∈ M.final, τ p = 0 := by
+   have h := Transducers.lengthPreserving_iff_typing (toSrc M)
+     (fun q => (productive_iff M q).1 (hprod q)) (fun w v => ((rel_iff M w v).symm.trans (hM w v)))
+-  simpa only [path_iff, inputOf_eq, outputOf_eq] using h
++  simp only [path_iff, inputOf_eq, outputOf_eq]
++  exact h
+ 
+ /--
+ ---
+diff --git a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/CodeRat.lean b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/CodeRat.lean
+index 967e043..4c763ed 100644
+--- a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/CodeRat.lean
++++ b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/CodeRat.lean
+@@ -248,10 +248,16 @@ lemma lengthPreserving_codeFun_iff {c : RelCode} (hc : CodeFunctional c) :
+     obtain ⟨w', rfl⟩ : ∃ w' : List (InA c), w = w'.map Subtype.val :=
+       exists_lift (fun y hy => codeRel_codeWord hrel y hy)
+     rw [codeFun_eq hc hrel]
+-    simpa using hlen w'
++    have hO : ((codeFun c w').map Subtype.val).length = (codeFun c w').length :=
++      List.length_map _
++    have hI : (w'.map Subtype.val).length = w'.length := List.length_map _
++    exact hO.trans ((hlen w').trans hI.symm)
+   · intro hlen w
+-    have := hlen _ _ (codeFun_spec hc w)
+-    simpa using this
++    have h := hlen _ _ (codeFun_spec hc w)
++    have hO : ((codeFun c w).map Subtype.val).length = (codeFun c w).length :=
++      List.length_map _
++    have hI : (w.map Subtype.val).length = w.length := List.length_map _
++    exact hO.symm.trans (h.trans hI)
+ 
+ /-- Under the promise, the function described by the code is prefix preserving
+ exactly when the coded relation is. -/
+@@ -277,7 +283,7 @@ lemma prefixPreserving_codeFun_iff {c : RelCode} (hc : CodeFunctional c) :
+       have h2 := codeFun_spec hc (w ++ [a])
+       erw [List.map_append] at h2
+       have := hpc (w.map Subtype.val) ((codeFun c w).map Subtype.val) a.val
+-        ((codeFun c (w ++ [a])).map Subtype.val) h1 (by simpa using h2)
++        ((codeFun c (w ++ [a])).map Subtype.val) h1 h2
+       exact prefix_of_map_prefix Subtype.val_injective this
+     have main : ∀ (t w : List (InA c)), codeFun c w <+: codeFun c (w ++ t) := by
+       intro t
+@@ -331,7 +337,7 @@ lemma widen_run {c : RelCode} {Q : Type} (M : Mealy (InA c) (OutA c) Q) (q : Q)
+             ((M.step q ⟨a.val, h⟩).1, (M.step q ⟨a.val, h⟩).2.val)
+           else (q, 0)) = _
+         rw [dif_pos ha]
+-        simp only [Subtype.coe_eta]
++        rfl
+       erw [List.map_cons, Mealy.run_cons, Mealy.run_cons, hstep, List.map_cons, ih]
+ 
+ lemma widen_eval {c : RelCode} {Q : Type} (M : Mealy (InA c) (OutA c) Q) (w : List (InA c)) :
+@@ -365,7 +371,10 @@ theorem mealyProperty_iff {c : RelCode} (hc : CodeFunctional c) :
+     · intro w
+       have h1 : ((codeFun c w).map Subtype.val).length = (M.eval (w.map Subtype.val)).length := by
+         rw [hval]
+-      simpa using h1
++      have hO : ((codeFun c w).map Subtype.val).length = (codeFun c w).length :=
++        List.length_map _
++      have hI : (w.map Subtype.val).length = w.length := List.length_map _
++      simpa [hO, hI] using h1
+   · rintro ⟨Q, hQ, M, hM⟩
+     refine ⟨(widen M).eval, ?_, ⟨Q, hQ, widen M, rfl⟩⟩
+     intro w hw v
+diff --git a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/HomComplement.lean b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/HomComplement.lean
+index 4f13878..e1e66cf 100644
+--- a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/HomComplement.lean
++++ b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/HomComplement.lean
+@@ -269,7 +269,7 @@ lemma aut_sound_aux {p : Fin 4} (hp : p ≠ 0) {s : Fin 4} {w : List A} {v : Lis
+   have hstep : ∀ (q q' : Fin 4) (u : List A) (x : List B) (w : List A) (v : List B),
+       (q, u, x, q') ∈ (aut φ).δ → (aut φ).relFrom q' w v p → inv φ q' w v → inv φ q (u ++ w) (x ++ v) := by
+     intro q q' u x w v ht _ hi
+-    simp only [] at ht
++    simp only [aut, delta, Set.mem_union] at ht
+     induction ht with
+     | inl h => induction h with
+       | inl h => induction h with
+diff --git a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/LenDec.lean b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/LenDec.lean
+index 841a6d1..e06f351 100644
+--- a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/LenDec.lean
++++ b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/LenDec.lean
+@@ -254,7 +254,7 @@ lemma acceptB_iff (c : RelCode) (ts : List Tr) :
+   · rintro ⟨q, hq, p, hp, hpath⟩
+     refine (anyB_iff _ _).2 ⟨q, hq, ?_⟩
+     rw [(runO_iff c.1 (codeAut c) hM ts q p).2 hpath]
+-    simpa [memB_iff] using hp
++    simpa [memB_iff, codeAut] using hp
+ 
+ /-- The boolean test for a transition sequence being balanced. -/
+ def balB (ts : List Tr) : Bool := decide (dOut ts = dIn ts)
+diff --git a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SeqChar.lean b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SeqChar.lean
+index 2c2c312..049f08f 100644
+--- a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SeqChar.lean
++++ b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SeqChar.lean
+@@ -302,12 +302,12 @@ def sufPre (u : List B) : Language A := {w | u <:+ f w}
+ lemma modPre_isRegular (hcont : Continuous f) (r : ℕ) :
+     (modPre f K r).IsRegular := by
+   have h := hcont (lengthModLang (K + 1) r) (lengthModLang_isRegular (K + 1) r (by omega))
+-  convert h using 1
++  exact h
+ 
+ lemma sufPre_isRegular [Finite B] (hcont : Continuous f) (u : List B) :
+     (sufPre f u).IsRegular := by
+   have h := hcont (suffixLang u) (suffixLang_isRegular u)
+-  convert h using 1
++  exact h
+ 
+ /-- The state of the canonical transducer after reading `w`. -/
+ def state (w : List A) : (Fin (K + 1) → Language A) × (Short B K → Language A) :=
+diff --git a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SubseqAlpha.lean b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SubseqAlpha.lean
+index 5623e5d..21d3af4 100644
+--- a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SubseqAlpha.lean
++++ b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SubseqAlpha.lean
+@@ -32,7 +32,7 @@ def Dom (f : List A → Option (List B)) : Language A := {w | (f w).isSome}
+ def Pre (f : List A → Option (List B)) : Language A := {w | ∃ v, (f (w ++ v)).isSome}
+ 
+ lemma mem_pre_of_mem_dom {f : List A → Option (List B)} {w : List A} (h : w ∈ Dom f) :
+-    w ∈ Pre f := ⟨[], by simpa using h⟩
++    w ∈ Pre f := ⟨[], by simp only [List.append_nil]; exact h⟩
+ 
+ lemma mem_pre_of_append {f : List A → Option (List B)} {w v : List A} (h : w ++ v ∈ Pre f) :
+     w ∈ Pre f := by
+diff --git a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SubseqState.lean b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SubseqState.lean
+index 3c35b91..390a971 100644
+--- a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SubseqState.lean
++++ b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/SubseqState.lean
+@@ -39,13 +39,13 @@ def ModL (r : ℕ) : Language A := {w | ∃ x, D.f w = some x ∧ x.length % Mod
+ 
+ lemma sufL_isRegular [Finite A] [Finite B] (u : List B) : Language.IsRegular (SufL D u) := by
+   have h := D.cont (suffixLang u) (suffixLang_isRegular u)
+-  convert h using 1
++  exact h
+ 
+ lemma modL_isRegular [Finite A] [Finite B] (r : ℕ) :
+     Language.IsRegular (ModL D r) := by
+   have h := D.cont (lengthModLang (Mod D) r)
+     (lengthModLang_isRegular (Mod D) r (Mod_pos D))
+-  convert h using 1
++  exact h
+ 
+ /-! ## The state -/
+ 
+diff --git a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/WCodeEnum.lean b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/WCodeEnum.lean
+index 1498a74..8864453 100644
+--- a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/WCodeEnum.lean
++++ b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/WCodeEnum.lean
+@@ -133,12 +133,12 @@ lemma mem_upto {c : WCode} : ∀ (K : ℕ) (P : List PRun) (y : PRun),
+             obtain ⟨hsrc, htδ, hrest⟩ := Path.cons_inv h2
+             obtain ⟨s, hs, rfl⟩ := htδ
+             refine ⟨(wtr s :: x.1, (wtr s).2.2.2, x.2.2.drop (wtr s).2.1.length), ?_, ts',
+-              by simpa using Nat.le_of_succ_le_succ hlen, by simpa using h1, hrest, ?_⟩
++              by simpa using Nat.le_of_succ_le_succ hlen, by simpa [wtr] using h1, hrest, ?_⟩
+             · refine List.mem_flatMap.2 ⟨x, hx, mem_extend.2 ⟨s, hs, hsrc, ?_, ?_⟩⟩
+               · refine ⟨inputOf ts' ++ y.2.2, ?_⟩
+                 simpa using h3
+               · rfl
+-            · have : (wtr s).2.1 ++ (inputOf ts' ++ y.2.2) = x.2.2 := by simpa using h3
++            · have : (wtr s).2.1 ++ (inputOf ts' ++ y.2.2) = x.2.2 := by simpa [wtr] using h3
+               rw [← this]
+               simp
+ 
+diff --git a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/WeightedNF.lean b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/WeightedNF.lean
+index f3b8e15..943961a 100644
+--- a/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/WeightedNF.lean
++++ b/lax/rational-functions/proofs/Lax132576Proofs/Source/PartB/WeightedNF.lean
+@@ -859,7 +859,7 @@ lemma useful_finite (h : M.init.Finite) : {q : Q | Useful M q}.Finite := by
+   · exact Or.inl hq₀
+   · exact Or.inr ⟨t, htm, htp⟩
+ 
+-instance instFiniteUseful (h : M.init.Finite) : Finite {q : Q // Useful M q} :=
++lemma instFiniteUseful (h : M.init.Finite) : Finite {q : Q // Useful M q} :=
+   (useful_finite M h).to_subtype
+ 
+ end Restrict
+-- 
+2.43.0
+

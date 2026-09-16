@@ -1,0 +1,60 @@
+From 3689bb3b2e0dcbea80896e4c7a35c70c17135fb0 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 08:10:12 +0000
+Subject: [PATCH 12/18] =?UTF-8?q?lax/regular-combinators:=20CONCEPT=20CHAN?=
+ =?UTF-8?q?GE=20=E2=80=94=20Sym8's=20Fintype=20instance=20via=20derive=5Ff?=
+ =?UTF-8?q?intype%?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The only concept-file edit of the v4.33.0 port. deriving Fintype on an
+enum (all constructors nullary) fails at mathlib db584cd6 with Lean
+4.33.0 (the handler's enum shortcut emits a rewrite the stricter tactic
+check rejects; reproduced against bare mathlib). The general route,
+instance : Fintype Sym8 := derive_fintype% _, generates the same instance;
+it needs Mathlib.Data.Fintype.Sum imported. What is declared is unchanged.
+Discussed with Jan 2026-09-14.
+---
+ lax/CAMPAIGN.md                                       | 3 ++-
+ lax/regular-combinators/concepts/Lax709149/Types.lean | 5 ++++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/lax/CAMPAIGN.md b/lax/CAMPAIGN.md
+index 9021aec..dec0ccf 100644
+--- a/lax/CAMPAIGN.md
++++ b/lax/CAMPAIGN.md
+@@ -133,7 +133,8 @@ longer bridges `id` and `fun x => x` without `Function.id_def`.
+   residue `() = PUnit.unit` closes by `exact fun _ => rfl`, not
+   `Subsingleton.elim`), `ITransBuild.lean:187` `Function.id_def` (iii).
+ - S5 (`regular-combinators`; every v4.30 workaround still needed). **The
+-  one concept-file change of the port, awaiting Jan**:
++  one concept-file change of the port** (discussed with Jan 2026-09-14: no
++  concept dialect is enforced yet, and the declared content is unchanged):
+   `concepts/Lax709149/Types.lean:48` `Sym8` (eight nullary constructors)
+   `deriving DecidableEq, Fintype` fails (ix); proposed `deriving
+   DecidableEq` + `instance : Fintype Sym8 := derive_fintype% _` with
+diff --git a/lax/regular-combinators/concepts/Lax709149/Types.lean b/lax/regular-combinators/concepts/Lax709149/Types.lean
+index ecb43cf..8608f09 100644
+--- a/lax/regular-combinators/concepts/Lax709149/Types.lean
++++ b/lax/regular-combinators/concepts/Lax709149/Types.lean
+@@ -1,4 +1,5 @@
+ import Mathlib.Data.Fintype.Basic
++import Mathlib.Data.Fintype.Sum
+ import Mathlib.Tactic.DeriveFintype
+ 
+ /-!
+@@ -45,7 +46,9 @@ def Ty.Elt : Ty → Type
+ /-- The alphabet with eight letters `(`, `)`, `[`, `]`, `,`, `1`, `L`, `R`. -/
+ inductive Sym8 : Type
+   | lpar | rpar | lbrack | rbrack | comma | one | left | right
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++instance : Fintype Sym8 := derive_fintype% _
+ 
+ /-- The entries of a list representation, separated by commas. -/
+ def joinSep : List (List Sym8) → List Sym8
+-- 
+2.43.0
+

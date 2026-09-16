@@ -207,7 +207,6 @@ theorem solveStageCoeff_level (S : Setup L) (ℓp : ℕ → ℕ)
   have h := Finset.single_le_sum (f := fun i => prepStageCoeff S (ℓp i) i +
     readStageCoeff S (ct i) (tsb i) i + botStageCoeff S Kq i)
     (fun i _ => Nat.zero_le _) (Finset.mem_range.mpr (by omega : j < S.depth + 1))
-  dsimp only at h
   unfold solveStageCoeff
   omega
 

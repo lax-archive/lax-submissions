@@ -238,7 +238,7 @@ theorem bigThetaLinearRecurrenceConst {f g : ℕ → ℝ} {N : ℕ}
   constructor
   · simpa using (bigOLinearRecurrenceGeneral (N := max N 1) hrec' hg.1
       (fun _ _ _ _ => le_rfl) (fun _ _ => zero_lt_one))
-  · simpa using (bigOmegaLinearRecurrenceGeneral (N := max N 1) (C := 1)
+  · simpa [IsBigOmega] using (bigOmegaLinearRecurrenceGeneral (N := max N 1) (C := 1)
       hrec' hg.2 hf_nonneg hg_nonneg (fun _ _ => zero_lt_one)
       (fun n _ => by push_cast; ring_nf; norm_num) (by norm_num))
 

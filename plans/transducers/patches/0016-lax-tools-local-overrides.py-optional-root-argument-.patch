@@ -1,0 +1,36 @@
+From 1026bf4f83b0a198a736f278487d409ba13baf89 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 08:25:26 +0000
+Subject: [PATCH 16/18] lax/tools/local-overrides.py: optional root argument (a
+ checkout with the submissions at its root)
+
+---
+ lax/tools/local-overrides.py | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/lax/tools/local-overrides.py b/lax/tools/local-overrides.py
+index f1cf68c..3f9f6dc 100644
+--- a/lax/tools/local-overrides.py
++++ b/lax/tools/local-overrides.py
+@@ -3,7 +3,7 @@
+ folders and the machine-wide warm mathlib store — the fast local loop while
+ the cross-submission pins are not yet on the archive.
+ 
+-    python3 tools/local-overrides.py            # from lax/
++    python3 tools/local-overrides.py [root]     # from lax/; root defaults to lax/
+ 
+ For each `lax/<submission>/{concepts,proofs}` it writes the two gitignored
+ files `lax build` would write, adapted to the working tree:
+@@ -29,7 +29,8 @@ submission's manifest.yaml (leanVersion, mathlibVersion).
+ """
+ import json, os, re, sys
+ 
+-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # lax/
++ROOT = (os.path.abspath(sys.argv[1]) if len(sys.argv) > 1
++        else os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # lax/
+ WARM_BASE = os.path.expanduser("~/.lax/warm")
+ MANIFEST_VERSION = "1.2.0"
+ PACKAGES_DIR = ".lake/packages"
+-- 
+2.43.0
+

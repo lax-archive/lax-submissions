@@ -1,0 +1,571 @@
+From 0b6e43942bb3cb78c63c3a6a0336f29da8820237 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 07:33:26 +0000
+Subject: [PATCH 06/18] lax/regular-functions: proofs build at v4.33.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+23 files: Language-typed set-builder targets (isRegular_of_eq / term-level
+.mpr / rw [show … from if_pos]) where convert-using-1 and rw now refuse
+them, deriving Fintype on five enums replaced by derive_fintype% (broken
+for nullary-constructor inductives at this mathlib pin), simpa given the
+defs it used to see through, TransGen.mono and Pairwise.forall at their
+new signatures. No statement changed; concepts untouched.
+---
+ .../proofs/Lax916827Proofs/Results.lean       |  3 +--
+ .../Source/PartC/ConfGraphAnnot.lean          |  4 +--
+ .../Lax916827Proofs/Source/PartC/ContAux.lean | 18 +++++++------
+ .../Source/PartC/MSOAnnot.lean                |  4 +--
+ .../Lax916827Proofs/Source/PartC/RegAut.lean  | 25 +++++++----------
+ .../Source/PartC/RegClosure.lean              |  6 ++++-
+ .../Source/PartC/RegCodeSan.lean              |  4 +--
+ .../Lax916827Proofs/Source/PartC/RegPair.lean |  4 ++-
+ .../Source/PartC/SSTBasic.lean                |  6 ++---
+ .../Source/PartC/SnakeAlphCyc.lean            |  6 ++---
+ .../Source/PartC/SnakeChkSlot.lean            |  4 +--
+ .../Source/PartC/SnakeChkWin.lean             | 27 +++++++++----------
+ .../Source/PartC/SnakePieceIdent.lean         |  4 +--
+ .../Source/PartC/SnakeWinRun.lean             |  4 +--
+ .../Source/PartC/SumPrime.lean                |  2 +-
+ .../Lax916827Proofs/Source/PartC/SumReg.lean  |  6 ++++-
+ .../Source/PartC/SumShape.lean                | 12 ++++++---
+ .../Lax916827Proofs/Source/PartC/TwoDFA.lean  |  2 +-
+ .../Source/PartC/TwoWayComp.lean              |  2 +-
+ .../Source/PartC/TwoWayCont.lean              |  2 +-
+ .../Source/PartC/TwoWayErase.lean             |  6 ++++-
+ .../Source/PartC/TwoWayHom.lean               |  4 +--
+ .../Source/PartC/TwoWayPrecomp.lean           |  8 ++++--
+ 23 files changed, 89 insertions(+), 74 deletions(-)
+
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Results.lean b/lax/regular-functions/proofs/Lax916827Proofs/Results.lean
+index ff6b4e0..b2c5c9e 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Results.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Results.lean
+@@ -238,8 +238,7 @@ theorem isRegular_encOutputLang {A B Q : Type} [Finite A] [Finite Q] (M : TwoWay
+   have h := Transducers.twoWay_encOutputLang_isRegular (toSrcTW M)
+     (fun w => (computes_toSrc M w _).1 (hM w)) hL
+   have h2 := isRegular_map (cletToSrc M) h
+-  convert h2 using 1
+-  ext u
++  refine Transducers.RegAut.isRegular_of_eq h2 (fun u => ?_)
+   change ((∃ w, u = TwoWay.enc M w) ∧ ∃ v, (TwoWay.pathTrans M).Computes u v ∧ v ∈ L) ↔
+     ((∃ w, u.map (cletToSrc M) = Transducers.TwoWay.enc (toSrcTW M) w) ∧
+       ∃ v, (Transducers.TwoWay.pathTrans (toSrcTW M)).Computes (u.map (cletToSrc M)) v ∧ v ∈ L)
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/ConfGraphAnnot.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/ConfGraphAnnot.lean
+index 83fbd39..c270ec4 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/ConfGraphAnnot.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/ConfGraphAnnot.lean
+@@ -104,10 +104,10 @@ lemma validFrom_iff (p : Option (AnnLet A S)) (z : List (AnnLet A S)) :
+       · intro h i hi
+         have : i = 0 := by simpa using hi
+         subst this
+-        simpa using h
++        simpa [ValidFrom] using h
+       · intro h
+         have := h 0 (by omega)
+-        simpa using this
++        simpa [ValidFrom] using this
+   | cons c rest ih =>
+       have hidx : ∀ k : ℕ,
+           ((c :: rest)[k]? : Option (AnnLet A S)) = if k = 0 then some c else rest[k - 1]? := by
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/ContAux.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/ContAux.lean
+index 6704e95..d8b0149 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/ContAux.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/ContAux.lean
+@@ -18,7 +18,7 @@ namespace Lax916827Proofs.Transducers
+ 
+ /-! ## Elementary closure properties of continuity -/
+ 
+-lemma continuous_id {A : Type} : Continuous (id : List A → List A) := fun _ hL => by simpa using hL
++lemma continuous_id {A : Type} : Continuous (id : List A → List A) := fun _ hL => hL
+ 
+ lemma Continuous.comp {A B C : Type} {f : List A → List B} {g : List B → List C}
+     (hg : Continuous g) (hf : Continuous f) : Continuous (g ∘ f) :=
+@@ -58,7 +58,7 @@ lemma continuous_map {A B : Type} (h : A → B) : Continuous (fun w : List A =>
+ /-- String reversal is continuous. -/
+ lemma continuous_reverse {A : Type} : Continuous (List.reverse : List A → List A) := by
+   intro L hL
+-  convert hL.reverse using 1
++  exact hL.reverse
+ 
+ /-- The dfa recognising `{w | w ++ w ∈ M.accepts}`: it remembers the state
+ reached from the initial state, and the state transformation of the string read
+@@ -130,10 +130,12 @@ lemma blockLang_isRegular [Fintype σ] (hf : Continuous f) (p q : σ) :
+   have hreg : Language.IsRegular ((blockDFA D p q).accepts) :=
+     ⟨σ, inferInstance, blockDFA D p q, rfl⟩
+   have hpre := hf _ hreg
+-  convert hpre using 1
+-  ext u
+-  simp only [DFA.mem_accepts, DFA.eval, blockDFA_evalFrom]
+-  exact Iff.rfl
++  have heq : ({u : List A | f u ∈ (blockDFA D p q).accepts} : Language A) = blockLang f D p q := by
++    refine Set.ext fun u => ?_
++    simp only [DFA.mem_accepts, DFA.eval, blockDFA_evalFrom]
++    exact Iff.rfl
++  rw [← heq]
++  exact hpre
+ 
+ /-- One step of the automaton that reads `mapLift f w`: the state consists of
+ the state of `D` at the beginning of the current block together with the part of
+@@ -160,7 +162,7 @@ lemma evalFrom_mapLift (v : List (Option A)) (u : List A) (p : σ) :
+       | none =>
+           rw [mapLift_map_some_cons_none, DFA.evalFrom_of_append, DFA.evalFrom_cons]
+           have := ih [] (D.step (D.evalFrom p ((f u).map some)) none)
+-          simpa using this
++          simpa [bstep] using this
+ 
+ /-- The behaviour of the automaton does not change if the current block is
+ replaced by a block with the same effect on all continuations. -/
+@@ -243,8 +245,8 @@ theorem continuous_mapLift {f : List A → List B} (hf : Continuous f) :
+     Continuous (mapLift f) := by
+   classical
+   rintro L ⟨σ, hσ, D, rfl⟩
+-  rw [Language.isRegular_iff_finite_range_leftQuotient]
+   set P : Language (Option A) := {w | mapLift f w ∈ D.accepts} with hP
++  rw [Language.isRegular_iff_finite_range_leftQuotient]
+   have hquot : ∀ w : List (Option A), P.leftQuotient w =
+       {v | bfinal f D (List.foldl (bstep f D)
+         (List.foldl (bstep f D) (D.start, []) w) v) ∈ D.accept} := by
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/MSOAnnot.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/MSOAnnot.lean
+index 6dd9757..00608b7 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/MSOAnnot.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/MSOAnnot.lean
+@@ -106,9 +106,7 @@ lemma isRegular_valid (A : Type) (k l : ℕ) :
+   have h := isRegular_forall_list
+     (fun i : Fin k => {u : List (Ann A k l) | MarksOnce (foBit (A := A) (l := l) i) u})
+     (List.finRange k) (fun i _ => isRegular_marksOnce _)
+-  convert h using 1
+-  ext u
+-  simp only [List.mem_finRange, Valid]
++  refine isRegular_of_eq h (fun u => ?_)
+   constructor
+   · intro hu i _; exact hu i
+   · intro hu i; exact hu i (by simp)
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegAut.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegAut.lean
+index 32ad4af..fcfef84 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegAut.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegAut.lean
+@@ -47,18 +47,15 @@ lemma isRegular_univ : Language.IsRegular (Set.univ : Language Γ) := by
+   simpa using this
+ 
+ lemma isRegular_and {L₁ L₂ : Language Γ} (h₁ : L₁.IsRegular) (h₂ : L₂.IsRegular) :
+-    Language.IsRegular {u | u ∈ L₁ ∧ u ∈ L₂} := by
+-  have := h₁.inf h₂
+-  convert this using 1
++    Language.IsRegular {u | u ∈ L₁ ∧ u ∈ L₂} :=
++  h₁.inf h₂
+ 
+ lemma isRegular_or {L₁ L₂ : Language Γ} (h₁ : L₁.IsRegular) (h₂ : L₂.IsRegular) :
+-    Language.IsRegular {u | u ∈ L₁ ∨ u ∈ L₂} := by
+-  have := h₁.add h₂
+-  convert this using 1
++    Language.IsRegular {u | u ∈ L₁ ∨ u ∈ L₂} :=
++  h₁.add h₂
+ 
+-lemma isRegular_not {L : Language Γ} (h : L.IsRegular) : Language.IsRegular {u | u ∉ L} := by
+-  have := h.compl
+-  convert this using 1
++lemma isRegular_not {L : Language Γ} (h : L.IsRegular) : Language.IsRegular {u | u ∉ L} :=
++  h.compl
+ 
+ /-- Regularity is transported along an equality of languages. -/
+ lemma isRegular_of_eq {L₁ L₂ : Language Γ} (h : L₁.IsRegular) (he : ∀ u, u ∈ L₂ ↔ u ∈ L₁) :
+@@ -75,13 +72,11 @@ lemma isRegular_forall_list {ι : Type} (L : ι → Language Γ) :
+   | x :: l, h => by
+       have hx : (L x).IsRegular := h x (by simp)
+       have hl := isRegular_forall_list L l (fun y hy => h y (by simp [hy]))
+-      have := isRegular_and hx hl
+-      convert this using 1
+-      ext u
+-      simp only [List.mem_cons]
++      refine isRegular_of_eq (isRegular_and hx hl) (fun u => ?_)
+       constructor
+-      · intro hu; exact ⟨hu x (Or.inl rfl), fun y hy => hu y (Or.inr hy)⟩
+-      · rintro ⟨h1, h2⟩ y (rfl | hy)
++      · intro hu; exact ⟨hu x (by simp), fun y hy => hu y (by simp [hy])⟩
++      · rintro ⟨h1, h2⟩ y hy
++        rcases List.mem_cons.mp hy with rfl | hy
+         · exact h1
+         · exact h2 y hy
+ 
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegClosure.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegClosure.lean
+index 93e14a1..de2f4b2 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegClosure.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegClosure.lean
+@@ -97,7 +97,11 @@ lemma eq_nil_of_not_nonempty (hB : ¬ Nonempty B) (l : List B) : l = [] := by
+ /-- The states of the automaton separating the two copies produced by map
+ duplicate. -/
+ inductive Cm | m0 | m1 | m2
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- `deriving Fintype` is broken for enum types at this mathlib pin; the
++-- `derive_fintype%` (proxy-type) path works.
++instance : Fintype Cm := derive_fintype% _
+ 
+ /-- Its transition function. -/
+ def cmStep : Cm → Option (Option A) → Cm
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegCodeSan.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegCodeSan.lean
+index 5fa5ee3..1550ac2 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegCodeSan.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegCodeSan.lean
+@@ -195,14 +195,14 @@ theorem twoWayCodeRel_map {c : TwoWayCode} {σ : ℕ → ℕ} (hσ : Blind c σ)
+   constructor
+   · intro h
+     have h' : (twoWayCodeAut c).Reaches (mapCfg σ (Cfg.conf [] (twoWayCodeAut c).init w)) v
+-        Cfg.halt := by simpa [mapCfg] using h
++        Cfg.halt := by simpa [mapCfg, twoWayCodeRel, TwoWay.Computes] using h
+     obtain ⟨y, hy, hreach⟩ := reaches_of_reaches_mapCfg hσ h'
+     have hyh : y = Cfg.halt := eq_halt_of_mapCfg_eq_halt hy.symm
+     subst hyh
+     exact hreach
+   · intro h
+     have := reaches_mapCfg_of_reaches (σ := σ) hσ h
+-    simpa [mapCfg] using this
++    simpa [mapCfg, twoWayCodeRel, TwoWay.Computes] using this
+ 
+ /-! ## A letter outside a finite set -/
+ 
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegPair.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegPair.lean
+index dea20a9..86cc73c 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegPair.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/RegPair.lean
+@@ -403,7 +403,9 @@ lemma isRegular_hasSep : (hasSep A).IsRegular := by
+         cases x <;> simp
+   ext u
+   simp only [DFA.mem_accepts, DFA.eval, DFA.evalFrom, Set.mem_singleton_iff, hasSep]
+-  simpa using key false u
++  have h := key false u
++  simp only [Bool.false_eq_true, false_or] at h
++  exact h
+ 
+ /-- The pipeline computing `pairMap f` on the inputs that use the separator. -/
+ noncomputable def pipeline (f : List (Option A) → List B) (u : List (Option A)) : List B :=
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SSTBasic.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SSTBasic.lean
+index 4e372f7..95c42b5 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SSTBasic.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SSTBasic.lean
+@@ -59,9 +59,9 @@ lemma copyless_iff {X B : Type} [Fintype X] (u : X → List (X ⊕ B)) :
+     refine ⟨fun x => h1 _ (List.mem_map_of_mem (by simp)), ?_⟩
+     intro x x' hxx' y hy hy'
+     rw [List.pairwise_map] at h2
+-    have hsymm : Symmetric (fun a b : X => List.Disjoint (regsOf (u a)) (regsOf (u b))) :=
+-      fun a b hab => hab.symm
+-    exact (h2.forall hsymm (by simp) (by simp) hxx') hy hy'
++    haveI hsymm : Std.Symm (fun a b : X => List.Disjoint (regsOf (u a)) (regsOf (u b))) :=
++      ⟨fun _ _ hab => hab.symm⟩
++    exact (h2.forall (by simp) (by simp) hxx') hy hy'
+   · rintro ⟨h1, h2⟩
+     refine ⟨?_, ?_⟩
+     · intro l hl
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeAlphCyc.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeAlphCyc.lean
+index f403c6e..b2a7f1c 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeAlphCyc.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeAlphCyc.lean
+@@ -155,7 +155,7 @@ lemma transGen_of_cross {w : List (SnakeLetter Q B)} {c : SnakeLetter Q B} {p q
+   have mid : Relation.ReflTransGen (EdgeRel (w ++ [c])) (p', w.length) (q', w.length) := by
+     rcases h2 with rfl | hR
+     · exact Relation.ReflTransGen.refl
+-    · exact (Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab) hR).to_reflTransGen
++    · exact (Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab) _ _ hR).to_reflTransGen
+   exact Relation.TransGen.head e1 (Relation.TransGen.trans_right mid (Relation.TransGen.single e2))
+ 
+ /-! ## The two update lemmas -/
+@@ -266,7 +266,7 @@ lemma path_split (w : List (SnakeLetter Q B)) (c : SnakeLetter Q B) {v v' : Vtx
+           simpa using h0
+         rcases Nat.lt_or_ge w.length x2.2 with hx2 | hx2
+         · refine Or.inl ⟨x2, by omega, ?_, Relation.ReflTransGen.refl⟩
+-          exact ((Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab)
++          exact ((Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab) _ _
+             hw).to_reflTransGen).tail ⟨o, ho⟩
+         · exact Or.inr (hw.tail ⟨o, edge_of_append_le ho hx1 hx2⟩)
+ 
+@@ -292,7 +292,7 @@ theorem hasCycle_concat (w : List (SnakeLetter Q B)) (c : SnakeLetter Q B) :
+       exact hcyc
+     · exact Or.inl ⟨v, hw⟩
+   · rintro (⟨v, hv⟩ | ⟨q, hq⟩)
+-    · exact ⟨v, Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab) hv⟩
++    · exact ⟨v, Relation.TransGen.mono (fun _ _ hab => edgeRel_append hab) _ _ hv⟩
+     · exact ⟨(q, (w ++ [c]).length), hq⟩
+ 
+ /-! ## The automaton -/
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeChkSlot.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeChkSlot.lean
+index 5b04605..3c17612 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeChkSlot.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeChkSlot.lean
+@@ -153,7 +153,7 @@ theorem exists_crossOK_exc (hT : cfgAt M w T = some Cfg.halt) (hwidth : WidthLe
+     (fun t h1 h2 => ⟨traj M w t, posAt_traj hT (by omega), hrange t h1 (by omega)⟩)
+     (fun t h1 h2 hcon => by
+       rw [posAt_traj hT (by omega)] at hcon
+-      exact Walk.excSplit_first hab h1 h2 (by simpa using hcon))
++      exact Walk.excSplit_first hab h1 h2 (by simpa [excC] using hcon))
+     hhalves.1
+   obtain ⟨p₂, hp₂⟩ := exists_crossOK M w hsb hposS hposB
+     (fun t h1 h2 => ⟨traj M w t, posAt_traj hT (by omega), by
+@@ -162,7 +162,7 @@ theorem exists_crossOK_exc (hT : cfgAt M w T = some Cfg.halt) (hwidth : WidthLe
+     (fun t h1 h2 hcon => by
+       rw [posAt_traj hT (by omega)] at hcon
+       have hne : excT M w i j < t := by omega
+-      exact hmid t hne h2 (by simpa using hcon))
++      exact hmid t hne h2 (by simpa [excC] using hcon))
+     hhalves.2
+   rw [min_comm (excC M w i j), max_comm (excC M w i j)] at hp₂
+   exact ⟨p₁, p₂, hp₁, hp₂⟩
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeChkWin.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeChkWin.lean
+index e3b4c22..356cda3 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeChkWin.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeChkWin.lean
+@@ -107,25 +107,24 @@ lemma isRegular_winCond (M : TwoWay A B Q) (k : ℕ) (p : PieceParam A Q) :
+   obtain ⟨d1, d2, d3, d4⟩ := p
+   rcases d4 with _ | ⟨q, f⟩
+   · exact RegAut.isRegular_univ
+-  · show Language.IsRegular (if d1 = 1 then _ else if d1 = 2 then _ else if d1 = 3 then _
+-      else if d1 = 4 then _ else Set.univ)
+-    by_cases h1 : d1 = 1
+-    · rw [if_pos h1]
++  · by_cases h1 : d1 = 1
++    · rw [show WinCond M k (d1, d2, d3, some (q, f)) = _ from if_pos h1]
+       exact RegAut.isRegular_and (isRegular_endLang _ _) (isRegular_haltWidthLang _ _)
+-    · rw [if_neg h1]
+-      by_cases h2 : d1 = 2
+-      · rw [if_pos h2]
++    · by_cases h2 : d1 = 2
++      · rw [show WinCond M k (d1, d2, d3, some (q, f)) = _ from
++          (if_neg h1).trans (if_pos h2)]
+         exact isRegular_reverseSet
+           (RegAut.isRegular_and (isRegular_endLang _ _) (isRegular_haltWidthLang _ _))
+-      · rw [if_neg h2]
+-        by_cases h3 : d1 = 3
+-        · rw [if_pos h3]
++      · by_cases h3 : d1 = 3
++        · rw [show WinCond M k (d1, d2, d3, some (q, f)) = _ from
++            ((if_neg h1).trans (if_neg h2)).trans (if_pos h3)]
+           exact isRegular_haltWidthLang _ _
+-        · rw [if_neg h3]
+-          by_cases h4 : d1 = 4
+-          · rw [if_pos h4]
++        · by_cases h4 : d1 = 4
++          · rw [show WinCond M k (d1, d2, d3, some (q, f)) = _ from
++              (((if_neg h1).trans (if_neg h2)).trans (if_neg h3)).trans (if_pos h4)]
+             exact isRegular_reverseSet (isRegular_haltWidthLang _ _)
+-          · rw [if_neg h4]
++          · rw [show WinCond M k (d1, d2, d3, some (q, f)) = (Set.univ : Language A) from
++              (((if_neg h1).trans (if_neg h2)).trans (if_neg h3)).trans (if_neg h4)]
+             exact RegAut.isRegular_univ
+ 
+ end Regular
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakePieceIdent.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakePieceIdent.lean
+index 046f346..3bf1e4b 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakePieceIdent.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakePieceIdent.lean
+@@ -597,7 +597,7 @@ theorem exists_widthOut_excHalves (hT : cfgAt M w T = some Cfg.halt)
+         (fun t ht1 ht2 => ⟨traj M w t, posAt_traj hT (by omega), hrange t ht1 (by omega)⟩)
+         (fun t ht1 ht2 hcon => by
+           rw [posAt_traj hT (by omega)] at hcon
+-          exact Walk.excSplit_first hab ht1 ht2 (by simpa using hcon))
++          exact Walk.excSplit_first hab ht1 ht2 (by simpa [excC] using hcon))
+         hhalves.1
+       obtain ⟨q₂, f₂, h2⟩ := exists_widthOut_pieceRev M w hsb (le_of_lt hltc) hyw hposS hposb
+         (fun t ht1 ht2 => ⟨traj M w t, posAt_traj hT (by omega), hrange t (by omega) ht2⟩)
+@@ -628,7 +628,7 @@ theorem exists_widthOut_excHalves (hT : cfgAt M w T = some Cfg.halt)
+         (fun t ht1 ht2 => ⟨traj M w t, posAt_traj hT (by omega), hrange t ht1 (by omega)⟩)
+         (fun t ht1 ht2 hcon => by
+           rw [posAt_traj hT (by omega)] at hcon
+-          exact Walk.excSplit_first hab ht1 ht2 (by simpa using hcon))
++          exact Walk.excSplit_first hab ht1 ht2 (by simpa [excC] using hcon))
+         hhalves.1
+       obtain ⟨q₂, f₂, h2⟩ := exists_widthOut_piece M w hsb (le_of_lt hltc) hyw hposS hposb
+         (fun t ht1 ht2 => ⟨traj M w t, posAt_traj hT (by omega), hrange t (by omega) ht2⟩)
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeWinRun.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeWinRun.lean
+index 32abc6a..e991288 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeWinRun.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SnakeWinRun.lean
+@@ -507,7 +507,7 @@ theorem exists_outRange_kind_three {x y a k : ℕ} (hxy : x ≤ y) {q : Q}
+     · have hr := runOut_lastPiece hp
+       rw [hw] at hr
+       rw [pieceOut_kind_three, widthOut, if_pos hwidth]
+-      simpa using hr.symm
++      simpa [Nat.add_assoc] using hr.symm
+ 
+ /-- **A piece of kind `4`**: the last piece of the run, entered at the right end
+ of the window, out of which the run does not leave. -/
+@@ -536,7 +536,7 @@ theorem exists_outRange_kind_four {x y a k : ℕ} (hxy : x ≤ y) {q : Q}
+     · have hr := runOut_lastPieceRev hp
+       rw [hw] at hr
+       rw [pieceOut_kind_four, widthOut, if_pos hwidth]
+-      simpa using hr.symm
++      simpa [Nat.add_assoc] using hr.symm
+ 
+ end TwoWay
+ 
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumPrime.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumPrime.lean
+index 431e9dd..5409c42 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumPrime.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumPrime.lean
+@@ -272,7 +272,7 @@ lemma dec_mark_mark_sep (b : Bool) (Y : List (Option (Alph A₀ A₂))) :
+ lemma mapLift_rev_encR (v : List A₂) :
+     mapLift List.reverse (encR A₀ v) = (encR A₀ v : List (Option (Alph A₀ A₂))) := by
+   induction v with
+-  | nil => simpa using mapLift_map_some (List.reverse) ([] : List (Alph A₀ A₂))
++  | nil => simpa [encR] using mapLift_map_some (List.reverse) ([] : List (Alph A₀ A₂))
+   | cons c v ih =>
+       have h : encR A₀ (c :: v)
+           = [(Sum.inr (Sum.inr c) : Alph A₀ A₂)].map some ++ none :: encR A₀ v := rfl
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumReg.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumReg.lean
+index bb0878e..6717485 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumReg.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumReg.lean
+@@ -71,7 +71,11 @@ variable {A₁ A₂ B₁ B₂ : Type}
+ /-- The states of the automaton testing that a string is nonempty and uses only
+ letters of the second alphabet. -/
+ inductive PreSt | init | good | bad
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- `deriving Fintype` is broken for enum types at this mathlib pin; the
++-- `derive_fintype%` (proxy-type) path works.
++instance : Fintype PreSt := derive_fintype% _
+ 
+ /-- The transition function of that automaton. -/
+ def preStep : PreSt → (A₁ ⊕ A₂) → PreSt
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumShape.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumShape.lean
+index 70e8b1c..090f351 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumShape.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/SumShape.lean
+@@ -67,7 +67,12 @@ lemma botStr_ne_mkR (u : List B₂) : botStr B₁ B₂ ≠ mkR B₁ u := by
+ 
+ /-- The states of the automaton recognising the marked strings. -/
+ inductive Shp | start | inL | inR | bad
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- The `Fintype` deriving handler's enum path is broken at this mathlib pin
++-- (`Finset.mk` is not type-correct at `implicit` transparency, so its internal
++-- `rw [Finset.mem_mk, …]` fails); `derive_fintype%` takes the proxy-type path.
++instance : Fintype Shp := derive_fintype% _
+ 
+ /-- The transition function of the automaton recognising the marked strings. -/
+ def shpStep {A₁ A₂ : Type} : Shp → (Bool ⊕ A₁ ⊕ A₂) → Shp
+@@ -398,12 +403,11 @@ def decL (A₂ : Type) {A₁ : Type} : List (Bool ⊕ A₁ ⊕ A₂) → List A
+ 
+ lemma decL_mkL (u : List A₁) : decL A₂ (mkL A₂ u) = u := by
+   have key : ∀ u : List A₁,
+-      homOf (fun x : Bool ⊕ A₁ ⊕ A₂ => match x with | Sum.inr (Sum.inl a) => [a] | _ => [])
+-        (u.map (fun a => Sum.inr (Sum.inl a))) = u := by
++      decL A₂ (u.map (fun a => Sum.inr (Sum.inl a) : A₁ → Bool ⊕ A₁ ⊕ A₂)) = u := by
+     intro u
+     induction u with
+     | nil => rfl
+-    | cons a u ih => simpa [homOf] using ih
++    | cons a u ih => simpa [decL, homOf] using ih
+   simpa [decL, mkL, homOf] using key u
+ 
+ /-- The homomorphism that keeps the marker and the letters of the second
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoDFA.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoDFA.lean
+index d66a243..e4b4fab 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoDFA.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoDFA.lean
+@@ -554,7 +554,7 @@ regular language. -/
+ theorem accepts_isRegular [Finite A] [Finite R] (N : TwoDFA A R) :
+     Language.IsRegular {w : List A | N.Accepts w} := by
+   classical
+-  rw [Language.isRegular_iff_finite_range_leftQuotient]
++  refine Language.isRegular_iff_finite_range_leftQuotient.mpr ?_
+   refine finite_range_of_factors _ N.prof (Set.toFinite _) ?_
+   intro x x' hxx'
+   ext y
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayComp.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayComp.lean
+index 7c23bee..8d54346 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayComp.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayComp.lean
+@@ -926,7 +926,7 @@ theorem compAut_computes (hD : D.accepts = {z | (visitAut M).Accepts z})
+         · exact absurd hc (by simp)
+       subst hYhalt
+       have hpre := pre_reaches D M N b₀ (g (f [])) (m := m) hznil hv
+-      simpa using hpre.trans hY
++      simpa [TwoWay.Computes] using hpre.trans hY
+     · rw [compFun, if_neg hv]
+       exact scanR_halts D M N b₀ (g (f [])) hznil hv
+ 
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayCont.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayCont.lean
+index cbd9696..c955fd5 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayCont.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayCont.lean
+@@ -224,7 +224,7 @@ lemma reaches_outAut {w : List A} {c t : Cfg A Q} {out : List B} (hreach : M.Rea
+   induction hreach with
+   | refl c =>
+       rintro rfl _ d
+-      exact ⟨0, by simp [cfgPos]⟩
++      exact ⟨0, by simp [cfgPos] <;> rfl⟩
+   | @step c c' c'' o o' hstep _ ih =>
+       rintro rfl hw d
+       obtain ⟨u, q, v, rfl⟩ := exists_conf_of_stepCfg M hstep
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayErase.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayErase.lean
+index 550c5cd..1cf34e6 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayErase.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayErase.lean
+@@ -125,7 +125,11 @@ inductive EMode
+   | scanL
+   | phase1
+   | phase2
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- `deriving Fintype` is broken for enum types at this mathlib pin; the
++-- `derive_fintype%` (proxy-type) path works.
++instance : Fintype EMode := derive_fintype% _
+ 
+ variable (N : TwoWay B C P) (e : A → Option B)
+ 
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayHom.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayHom.lean
+index 242f282..8a77730 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayHom.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayHom.lean
+@@ -73,7 +73,7 @@ lemma computes_of_sim' (R : Cfg A S → Cfg B P → Prop)
+     (hN : N.Computes v out) : aut.Computes w out := by
+   obtain ⟨Y, hY, hRY⟩ := sim_reaches R H hN _ hinit
+   rw [hhalt Y hRY] at hY
+-  simpa using hpre.trans hY
++  simpa [TwoWay.Computes] using hpre.trans hY
+ 
+ end Sim
+ 
+@@ -294,7 +294,7 @@ theorem appAut_computes {g : List B → List C} (hN : ∀ v, N.Computes v (g v))
+   · have h1 : (appAut N c₀ out₀).stepCfg (Cfg.conf [] (appAut N c₀ out₀).init []) =
+         some (out₀, Cfg.halt) := by
+       refine TwoWay.stepCfg_halt_eq _ ?_
+-      simpa using appAut_empty (out₀ := out₀) N.init false
++      simpa [appAut] using appAut_empty (out₀ := out₀) N.init false
+     simpa [TwoWay.Computes, hout] using TwoWay.reaches_one h1
+   · refine TwoWay.computes_of_sim (appRel c₀ (w'.concat a))
+       (appAut_step (N := N) (out₀ := out₀) (by simp)) ?_ ?_ (hN _)
+diff --git a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayPrecomp.lean b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayPrecomp.lean
+index d769970..26b9ce0 100644
+--- a/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayPrecomp.lean
++++ b/lax/regular-functions/proofs/Lax916827Proofs/Source/PartC/TwoWayPrecomp.lean
+@@ -274,7 +274,7 @@ theorem precomp_computes
+       aut.Reaches (Cfg.conf u (pnd p (gapSt M u)) v) o c)
+     {w : List A} {out : List C} (h : N.Computes (M.eval w) out) : aut.Computes w out := by
+   have h' : N.Reaches (simCfg M [] w N.init) out Cfg.halt := by
+-    simpa [simCfg, Mealy.eval] using h
++    simpa [simCfg, Mealy.eval, TwoWay.Computes] using h
+   have := precomp_sim hnrm hpnd h' [] w N.init rfl rfl
+   simpa [TwoWay.Computes, hinit] using this
+ 
+@@ -494,7 +494,11 @@ inductive PMode : Type
+   | scanL : PMode
+   /-- Returning to the place where the scan started. -/
+   | scanR : PMode
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++-- `deriving Fintype` is broken for enum types at this mathlib pin; the
++-- `derive_fintype%` (proxy-type) path works.
++instance : Fintype PMode := derive_fintype% _
+ 
+ section FlipFlop
+ 
+-- 
+2.43.0
+

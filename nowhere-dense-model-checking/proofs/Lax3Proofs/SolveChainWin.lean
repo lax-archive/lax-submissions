@@ -59,7 +59,7 @@ Everything here is proved; no obligation is introduced.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 
 /-! ## §1 Environment extensionality and the padding -/
 

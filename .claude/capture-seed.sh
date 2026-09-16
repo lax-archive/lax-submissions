@@ -4,7 +4,7 @@
 # On demand, never automatic:
 #
 #   .claude/capture-seed.sh                     every submission with a capture
-#   .claude/capture-seed.sh word-ram lax-11     only these (folder or id)
+#   .claude/capture-seed.sh word-ram lax-271696     only these (folder or id)
 #
 # What a capture is. Every `lax submit` that builds leaves a sealed tar of the
 # submission's compiled output — per package, the `.olean`/`.ilean`/`.trace`

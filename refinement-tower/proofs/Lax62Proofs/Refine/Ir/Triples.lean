@@ -1,5 +1,5 @@
 import Lax62Proofs.Refine.Ir.Wp
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The IR's credit-carrying Hoare triples, one per operation.
@@ -433,7 +433,9 @@ theorem rt_runs :
       κ.toFun Currency.aget = 1 ∧ κ.toFun Currency.aset = 1 ∧ κ.toFun Currency.«while» = 0 := by
   obtain ⟨s', κ, hrun, hpost, -⟩ := rt_triple rtFrame (roundtripState, rtBalance) rtPre_holds
   refine ⟨s', κ, hrun, ?_, ?_, ?_, ?_⟩
-  · exact ptoArr_arrs (by simpa only [rtPost, sepConj_assoc] using hpost)
+  · have hpost' := hpost
+    simp only [rtPost, sepConj_assoc] at hpost'
+    exact ptoArr_arrs hpost'
   all_goals
     obtain ⟨-, rfl⟩ := hrun.unique roundtrip_bigStep
     rfl

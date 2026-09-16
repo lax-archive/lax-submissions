@@ -1,5 +1,5 @@
-import Lax67Proofs.Lib.Fill
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+import Lax808846Proofs.Lib.Fill
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 The I/O harness: the prelude and the epilogue an IR program is wrapped
@@ -89,7 +89,7 @@ and the harness owes the output tape to nobody else.
 
 namespace Lax62Proofs.Codegen
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 
 /-! ### A list as a cell function
 
@@ -599,7 +599,7 @@ alone would not catch. -/
 
 namespace Gate
 
-open Lax67Proofs.Compile
+open Lax808846Proofs.Compile
 
 /-! #### Shape 1: two scalars in, one scalar out
 
@@ -647,11 +647,11 @@ theorem scalarsCom_ok : Com.Ok scalarsLayout scalarsCom := by
   simp [scalarsCom, scalarsBody, writeScalar, scalarsLayout, Com.Ok, Expr.Ok]
 
 /-- The machine program. -/
-def scalarsProg : Lax67.Ram.Program := compileProgram scalarsLayout scalarsCom
+def scalarsProg : Lax808846.Ram.Program := compileProgram scalarsLayout scalarsCom
 
 /-- Run it on `[7, 9]`. -/
 def scalarsRun : Option (List ℕ × ℕ) :=
-  runOut 16 1000 scalarsProg (Lax67.Ram.initState [7, 9]) 0
+  runOut 16 1000 scalarsProg (Lax808846.Ram.initState [7, 9]) 0
 
 /-! The two cells hold what the two `read`s put in them, in that order:
 `7 + 10·9`, and no other pair of the two entries gives `97`. -/
@@ -711,11 +711,11 @@ theorem arrCom_ok : Com.Ok arrLayout arrCom := by
     condExpr, Expr.Ok]
 
 /-- The machine program. -/
-def arrProg : Lax67.Ram.Program := compileProgram arrLayout arrCom
+def arrProg : Lax808846.Ram.Program := compileProgram arrLayout arrCom
 
 /-- Run it on `[3, 5, 6, 7]`. -/
 def arrRun : Option (List ℕ × ℕ) :=
-  runOut 16 5000 arrProg (Lax67.Ram.initState [3, 5, 6, 7]) 0
+  runOut 16 5000 arrProg (Lax808846.Ram.initState [3, 5, 6, 7]) 0
 
 /-! The array comes back in index order. -/
 

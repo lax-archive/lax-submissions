@@ -1,6 +1,6 @@
 import Lax3Proofs.SolveSweepStep
 import Lax3Proofs.SolveBfs
-import Lax67Proofs.Tactic
+import Lax808846Proofs.Tactic
 
 /-!
 # F6c12 — `CovPeelIn`: the GKS peeling sweep, discharged
@@ -85,14 +85,14 @@ row being dismantled (`delStar H u T` is `H` minus the `u`–`T` star).
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
-open Lax11.GraphEncoding
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
+open Lax271696.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
-open Lax12.UniformQuasiWideness (deleteVerts)
-open Lax12.ColoringNumbers
+open Lax199508.UniformQuasiWideness (deleteVerts)
+open Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.SplitterBasics (deleteVerts_adj)
 
@@ -368,9 +368,9 @@ frozen live prefix. -/
 def delStar {N : ℕ} (H : SimpleGraph (Fin N)) (u : Fin N) (T : Set (Fin N)) :
     SimpleGraph (Fin N) where
   Adj v w := H.Adj v w ∧ ¬(v = u ∧ w ∈ T) ∧ ¬(w = u ∧ v ∈ T)
-  symm := by
+  symm := ⟨by
     intro v w h
-    exact ⟨h.1.symm, h.2.2, h.2.1⟩
+    exact ⟨h.1.symm, h.2.2, h.2.1⟩⟩
   loopless := by
     exact ⟨fun v h => H.irrefl h.1⟩
 
@@ -4824,14 +4824,14 @@ end SweepMachine
 end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
-open Lax11.GraphEncoding
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
+open Lax271696.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
-open Lax12.UniformQuasiWideness (deleteVerts)
-open Lax12.ColoringNumbers
+open Lax199508.UniformQuasiWideness (deleteVerts)
+open Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance
 open Lax3Proofs.SplitterBasics (deleteVerts_adj)
 
@@ -4855,12 +4855,10 @@ theorem peel_forRangeSum {B N : ℕ} {c : Com} (x m : String)
       omega
     obtain ⟨σ', hrun, hI', hx'⟩ := (hstep _ hi).run ⟨hI, rfl⟩
     refine ⟨σ', k (σ.vars x), hrun, hI', ?_⟩
-    dsimp only
     rw [hx', Finset.sum_eq_sum_Ico_succ_bot hi]
     simp only [Cond.size, Expr.size]
     omega
   · rintro σ ⟨hI, hx⟩
-    dsimp only
     rw [hx, Finset.range_eq_Ico]
     simp only [Cond.size, Expr.size]
     omega
@@ -4949,10 +4947,10 @@ theorem peelInitB_arrays_spec {B N R : ℕ} {nNs ca : String}
 end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
-open Lax11.GraphEncoding
-open Lax12.ColoringNumbers
-open Lax12.UniformQuasiWideness (deleteVerts)
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
+open Lax271696.GraphEncoding
+open Lax199508.ColoringNumbers
+open Lax199508.UniformQuasiWideness (deleteVerts)
 
 private theorem peel_swInv_set_i {N : ℕ} {G : SimpleGraph (Fin N)}
     {π : Equiv.Perm (Fin N)} {R i v : ℕ} {ca ra ao aj dg mt od : String} {σ : Env}
@@ -5004,7 +5002,11 @@ theorem peelSweepB_spec {B N R : ℕ} {G : SimpleGraph (Fin N)}
   have hinit : Run B (.assign "pl.i" (.lit 0)) σ (σ.setVar "pl.i" 0) 2 :=
     Run.assign (evalB_lit (by omega))
   obtain ⟨σ', hrun, hI', hN'⟩ := hloop.run
-    ⟨by dsimp [I]; simpa using (peel_swInv_set_i (v := 0) hσ), by simp⟩
+    ⟨by
+      dsimp [I]
+      have hv : (σ.setVar "pl.i" 0).vars "pl.i" = 0 := by simp [vars_setVar]
+      rw [hv]
+      exact peel_swInv_set_i (v := 0) hσ, by simp⟩
   refine ⟨σ', (hinit.seq hrun).mono ?_, ?_⟩
   · dsimp [K]
     norm_num only [Nat.add_assoc]
@@ -5061,8 +5063,8 @@ end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
 set_option linter.unusedSimpArgs false
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
-open Lax12.ColoringNumbers
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
+open Lax199508.ColoringNumbers
 
 /-- Occurrences of one member in a prefix of the emitted stream. -/
 def peelOcc (f : ℕ → ℕ) (z k : ℕ) : ℕ :=
@@ -5798,7 +5800,7 @@ theorem peelCOff_eq_mass {N : ℕ} {ρ : Equiv.Perm (Fin N)} {X : Fin N → Set 
 end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 set_option linter.unusedSimpArgs false
 
 /-- Rows already encountered while scanning one inverse bucket. -/
@@ -6129,7 +6131,7 @@ theorem peelP7B_spec {B N M : ℕ} {X : Fin N → Set (Fin N)}
 end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
-open Lax3Proofs.Impl Lax12.ColoringNumbers
+open Lax3Proofs.Impl Lax199508.ColoringNumbers
 open Classical
 
 private theorem sum_internal_degree_le_twice_dlt {N : ℕ}
@@ -6199,9 +6201,9 @@ theorem sum_scanned_degree_le {N : ℕ} (G H : SimpleGraph (Fin N))
 end Lax3Proofs.Prog
 
 namespace Lax3Proofs.Prog
-open Classical Lax3Proofs.Impl Lax12.ColoringNumbers
+open Classical Lax3Proofs.Impl Lax199508.ColoringNumbers
 open Lax3Proofs.WalkDistance Lax3.ColoredGraphs
-open Lax12.UniformQuasiWideness (deleteVerts)
+open Lax199508.UniformQuasiWideness (deleteVerts)
 
 theorem peelDeg_le_mass {N : ℕ} (G : SimpleGraph (Fin N))
     (π : Equiv.Perm (Fin N)) (R : ℕ) (hr : 1 ≤ R)
@@ -6309,7 +6311,7 @@ end Lax3Proofs.Prog
 
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 set_option linter.unusedSimpArgs false
 
 /-- The global counting regroup, separated from the peeling sweep. -/
@@ -6556,9 +6558,9 @@ theorem peelScr_mono {n N j : ℕ} {cm : ℕ → String} {σ : Env}
   obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hs
   exact ⟨by omega, by omega, by omega, by omega, by omega, by omega, by omega, by omega, by omega⟩
 
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 open Lax3Proofs.Driver
 

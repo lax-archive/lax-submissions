@@ -1,38 +1,34 @@
-import Mathlib.Data.Nat.Prime.Factorial
+import Mathlib.Data.Nat.Factorial.Basic
 import Lax242665.InfinitelyManyPrimes
+import Lax242665.PrimeDivisor
 
 /-!
-Euclid's proof that there are infinitely many primes, for the submission's
-own notion of primality.
+Euclid's proof that there are infinitely many primes.
 -/
 
 namespace Lax242665Proofs.InfinitelyManyPrimes
 
-/-- A prime in mathlib's sense is a prime in the sense of `Lax242665.Primes`. -/
-theorem prime_of_natPrime {p : ℕ} (hp : Nat.Prime p) : Lax242665.Primes.Prime p :=
-  ⟨hp.one_lt, fun d hd => hp.eq_one_or_self_of_dvd d hd⟩
-
 /--
 ---
 conclusion: Lax242665.InfinitelyManyPrimes.exists_prime_gt
+assumptions:
+  - Lax242665.PrimeDivisor.exists_prime_dvd
 ---
-Euclid's argument: the smallest prime factor `p` of `n! + 1` cannot be at
-most `n`, because then `p` would divide `n!` and hence divide `1`.
+Euclid's argument: a prime divisor `p` of `n! + 1` cannot be at most `n`,
+because then `p` would divide `n!` and hence divide `1`.
 -/
 theorem exists_prime_gt : ∀ n : ℕ, ∃ p : ℕ, Lax242665.Primes.Prime p ∧ n < p := by
   intro n
-  have hne : n.factorial + 1 ≠ 1 := by
-    have := Nat.factorial_pos n
-    omega
-  have hprime : Nat.Prime (Nat.minFac (n.factorial + 1)) := Nat.minFac_prime hne
-  refine ⟨Nat.minFac (n.factorial + 1), prime_of_natPrime hprime, ?_⟩
+  have hpos := Nat.factorial_pos n
+  obtain ⟨p, hp, hdvd⟩ :=
+    Lax242665.PrimeDivisor.exists_prime_dvd (n.factorial + 1) (by omega)
+  refine ⟨p, hp, ?_⟩
+  have h1 : 1 < p := hp.1
   by_contra hle
   rw [Nat.not_lt] at hle
-  have hdvd_fact : Nat.minFac (n.factorial + 1) ∣ n.factorial :=
-    hprime.dvd_factorial.mpr hle
-  have hdvd_succ : Nat.minFac (n.factorial + 1) ∣ n.factorial + 1 := Nat.minFac_dvd _
-  have hdvd_one : Nat.minFac (n.factorial + 1) ∣ 1 :=
-    (Nat.dvd_add_right hdvd_fact).mp hdvd_succ
-  exact hprime.one_lt.ne' (Nat.dvd_one.mp hdvd_one)
+  have hdvd_fact : p ∣ n.factorial := Nat.dvd_factorial (by omega) hle
+  have hdvd_one : p ∣ 1 := (Nat.dvd_add_right hdvd_fact).mp hdvd
+  have := Nat.le_of_dvd Nat.one_pos hdvd_one
+  omega
 
 end Lax242665Proofs.InfinitelyManyPrimes

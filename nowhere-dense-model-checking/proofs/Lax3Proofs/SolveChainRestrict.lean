@@ -33,7 +33,7 @@ level's own dimensions, scratch windows at exact lengths or none).
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 
 /-- `ClusterList` reads one array; it transports along agreement. -/
 theorem clusterList_of_eq {la : String} {n : ℕ} {S : Set (Fin n)}

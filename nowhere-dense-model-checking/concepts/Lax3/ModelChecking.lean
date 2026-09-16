@@ -1,7 +1,7 @@
 import Lax3.FirstOrder
-import Lax12.NowhereDenseClasses
-import Lax67.RamComputes
-import Lax11.GraphEncoding
+import Lax199508.NowhereDenseClasses
+import Lax808846.RamComputes
+import Lax271696.GraphEncoding
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
@@ -20,9 +20,9 @@ row form as a word *x* each of whose entries *v* satisfies
 writes `1` if φ holds in the graph and `0` if it does not.
 
 This is the theorem of Grohe, Kreutzer and Siebertz (JACM 2017), with
-the algorithm realized on the word RAM of Lax67. Nowhere denseness is
+the algorithm realized on the word RAM of Lax808846. Nowhere denseness is
 the exact limit of this kind of tractability on monotone classes, and
-the input is the graph *alone*: unlike the Courcelle theorem of Lax11,
+the input is the graph *alone*: unlike the Courcelle theorem of Lax271696,
 which is handed a k-expression alongside the graph, every auxiliary
 object the algorithm consumes — orderings, neighborhood covers,
 splitter moves, distance profiles — is computed from the input. That
@@ -30,21 +30,21 @@ computation is the main algorithmic weight of the theorem.
 
 # Formalization notes
 
-The statement follows the house pattern of Lax11's Courcelle axiom:
+The statement follows the house pattern of Lax271696's Courcelle axiom:
 program and constant after the class data, the sentence and ε; before
 the graph and the word length; inputs restricted to encodings whose
 entries fit the word length; output by a classical `if` on
 satisfaction. The differences are the ones the theorem is about — and
 one of them is that side condition, which is *squared* here; see the
 deviation recorded below. The hypothesis is
-`Lax12.NowhereDense` verbatim — the endorsed shallow-minor form, not a
-restatement. The input predicate is `Lax11.EncodesGraph` alone: no
+`Lax199508.NowhereDense` verbatim — the endorsed shallow-minor form, not a
+restatement. The input predicate is `Lax271696.EncodesGraph` alone: no
 expression, no ordering, no promise beyond membership in the class.
 The time bound cannot be the Courcelle form `c * (x.length + 1)`,
 since `n^(1+ε)` has no elementary spelling over ℕ: the bound function
 `T : List ℕ → ℕ` is existentially quantified and pinned by the
 real-valued side condition `(T x : ℝ) ≤ c * ((x.length : ℝ) + 1) ^
-(1 + ε)` — the same real-exponent idiom as Lax12's subpolynomial
+(1 + ε)` — the same real-exponent idiom as Lax199508's subpolynomial
 bounds, whose `^` is `Real.rpow`.
 
 The sentence ranges over plain first-order logic on graphs, `FO 0` of
@@ -59,13 +59,13 @@ through the choice of `c` and `T` only, the program depending on
 finitely many of its excluded-minor thresholds.
 
 **Deviation, deliberate: the word-length side condition is squared.**
-Lax11's Courcelle axiom admits an encoding `x` at word length `w` when
+Lax271696's Courcelle axiom admits an encoding `x` at word length `w` when
 `c * (x.length + v + 1) ≤ 2 ^ w`; here the requirement is
 `c * (x.length + v + 1) ^ 2 ≤ 2 ^ w`. Since the statement quantifies
 over *every* `w`, the smallest admissible one is in scope, and under
 the Courcelle form that is `2 ^ w < 2 * c * (|x| + max x + 1)` — a
 machine that can address only linearly many of its own cells, because
-Lax67's RAM has `2 ^ w` cells and reduces every address modulo `2 ^ w`.
+Lax808846's RAM has `2 ^ w` cells and reduces every address modulo `2 ^ w`.
 Squaring moves the smallest admissible word length from
 `log |x| + O(1)` to `2 * log |x| + O(1)`: a constant factor in `w`, and
 a quadratic factor in addressable memory.
@@ -82,7 +82,7 @@ about machines that the theorem is not about.
 
 Two things the deviation does *not* do. It does not change the time
 bound, which is still `n^(1+ε)` for every ε > 0; and it does not touch
-Lax11, whose axiom keeps the linear form — the Courcelle algorithm runs
+Lax271696, whose axiom keeps the linear form — the Courcelle algorithm runs
 in linear space and has no need of this. If a later revision makes the
 cover streaming rather than materialized, so that the whole algorithm
 runs in linear space, the linear side condition can be restored and the
@@ -99,9 +99,9 @@ of the encoding alone.
 namespace Lax3.ModelChecking
 
 open Lax3.FirstOrder
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
-open Lax67.Ram Lax67.RamComputes
-open Lax11.GraphEncoding
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
+open Lax808846.Ram Lax808846.RamComputes
+open Lax271696.GraphEncoding
 
 open Classical in
 /-- **First-order model checking on nowhere dense classes** (Grohe–

@@ -42,10 +42,10 @@ Submission directories currently in this repository:
   tuples — multicolor Ramsey, the two-color clique-or-independent-set
   form (assuming the multicolor statement), and Erdős–Rado tuple Ramsey
   in order-type form.
-- `ram-linear-time/` — **Lax11**: algorithmic experiments on a RAM —
+- `ram-linear-time/` — **Lax271696**: algorithmic experiments on a RAM —
   linear-time claims for connected components and
   Courcelle–Makowsky–Rotics model checking on bounded cliquewidth,
-  discharged via a verified IMP+ compiler on Lax67's word RAM. Also
+  discharged via a verified IMP+ compiler on Lax808846's word RAM. Also
   home of the graph encoding, of the parameterized instance format, and
   of a proof of the textbook 2^k bounded search tree for vertex cover.
 
@@ -261,7 +261,7 @@ implementation.
 permanent dependency targets and definitional identity is nominal — a
 later, textually identical copy elsewhere is a *different term*. A def
 may stay inside a theorem-concept only when it is the claim-local object
-the statement is about (`ccLabels` in Lax11's `ConnectedComponents`
+the statement is about (`ccLabels` in Lax271696's `ConnectedComponents`
 defines the labeling the claim computes). Any notion that could plausibly
 appear in a second statement goes in a definition-concept *now*, or every
 future statement about it must import a theorem it does not use. When in

@@ -1,5 +1,5 @@
 import Lax3.ColoredGraphs
-import Lax12.UniformQuasiWideness
+import Lax199508.UniformQuasiWideness
 
 /-!
 ---
@@ -30,7 +30,7 @@ on whether a variable lands on the batch.
 Both moves of a round are the same operation: restricting to the ball
 around Connector's vertex is `deleteVerts` of the ball's complement,
 and isolating Splitter's batch is `deleteVerts` of the batch —
-Lax12's `deleteVerts`, which removes the edges incident to a set and
+Lax199508's `deleteVerts`, which removes the edges incident to a set and
 keeps the vertex type, is used for both, and is not restated here.
 Arenas therefore only ever lose edges, which is the invariant the win
 proof and the evaluator downstream both ride on (a vertex isolated
@@ -53,7 +53,7 @@ move, only enlarges Splitter's winning positions by games he has
 already won and matches the algorithm's base case, which stops at an
 edgeless arena before playing a round.
 
-The batch is a `Set` with an `ncard` bound, the idiom of Lax12's
+The batch is a `Set` with an `ncard` bound, the idiom of Lax199508's
 quasi-wideness statements. The edgeless condition is `G = ⊥`,
 mathlib's empty graph.
 -/
@@ -61,7 +61,7 @@ mathlib's empty graph.
 namespace Lax3.SplitterGame
 
 open Lax3.ColoredGraphs
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 
 /-- Winning positions of Splitter in the (`ℓ`, `m`, `r`)-isolation
 splitter game, by recursion on the remaining budget `ℓ`: the arena `G`

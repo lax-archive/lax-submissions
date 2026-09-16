@@ -196,12 +196,14 @@ theorem foldMS_le_spec (S : Setup L) (j : ℕ) (A : Arena (S.pal j) n₀)
         rcases List.mem_cons.mp hw with rfl | hw'
         · by_cases hwus : w ∈ us
           · exact h₁ hwus
-          · rw [h₂ hwus, Function.update_self]
+          · rw [h₂ hwus]
+            exact Function.update_self ..
         · exact h₁ hw'
       · intro hw
         have hwu : w ≠ u := fun h => hw (h ▸ List.mem_cons_self ..)
         have hwus : w ∉ us := fun h => hw (List.mem_cons_of_mem _ h)
-        rw [h₂ hwus, Function.update_of_ne hwu]
+        rw [h₂ hwus]
+        exact Function.update_of_ne hwu ..
 
 /-! ## The frame at the MS budget -/
 

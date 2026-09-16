@@ -4,8 +4,8 @@ import Lax3Proofs.SolveChannels
 
 /-! Finite, schedule-only constants for the concrete machine. -/
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
-open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
+open Lax271696.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 open Lax3.DistFO Lax3.ScatterSentences Lax3.Locality Lax3Proofs.LocalityFun
 variable {L : ℕ}
 
@@ -74,7 +74,6 @@ theorem concreteScale_level (S : Setup L) {j : ℕ} (hj : j ≤ S.depth) :
   have h2 := concreteLevelMax_le S (fun j => (levelFml S j).length) hj
   have h3 := concreteLevelMax_le S (fun j => concreteAtomBound (levelAtoms S j)) hj
   have h4 := concreteLevelMax_le S (fun j => 2 ^ S.pal j * (concreteQdepth S + 1)) hj
-  dsimp only at h2 h3 h4
   unfold concreteScale
   omega
 

@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Sepref.Definition
 import Lax62Proofs.Refine.Sepref.Signature
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Signature-driven Sepref synthesis

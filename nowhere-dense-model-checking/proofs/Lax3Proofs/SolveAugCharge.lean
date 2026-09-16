@@ -10,7 +10,7 @@ Uniform constants are chosen before the graph and before its subgraph copy.
 namespace Lax3Proofs.Prog
 
 open scoped SimpleGraph
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ColoringNumbers
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.ColoringNumbers
 open Lax3Proofs.Augmentation Lax3Proofs.Augmentation.Orientation
 open Lax3Proofs.CoverRoutine Lax3Proofs.CoverDegree
 

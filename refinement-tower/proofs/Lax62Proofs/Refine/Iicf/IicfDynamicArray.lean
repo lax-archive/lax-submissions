@@ -1,6 +1,6 @@
 import Lax62Proofs.Refine.Iicf.Basic
 import Lax62Proofs.Refine.Sepref.Amortization
-open Lax67Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
+open Lax808846Proofs  -- the base pipeline this tower is built on (`Imp`, `Compile`, `Reasoning`, ...)
 
 /-!
 # Dynamic arrays: abstract amortization and a bounded no-allocation adapter
@@ -207,10 +207,11 @@ theorem sourcePushBasic_active (s : SourceArray) (x : ℕ)
 
 theorem sourcePush_wf (s : SourceArray) (x : ℕ) (h : s.Wf) : (sourcePush s x).Wf := by
   have hwf : 0 < s.buffer.length ∧ s.length ≤ s.buffer.length := h
-  by_cases hspace : s.length < s.buffer.length
-  · simp only [sourcePush, SourceArray.capacity, if_pos hspace]
+  by_cases hspace : s.length < s.capacity
+  · simp only [sourcePush, if_pos hspace]
     exact sourcePushBasic_wf s x h hspace
-  · simp only [sourcePush, SourceArray.capacity, if_neg hspace]
+  · simp only [sourcePush, if_neg hspace]
+    have hspace' : ¬ s.length < s.buffer.length := hspace
     have heq : s.length = s.buffer.length := by omega
     apply sourcePushBasic_wf (sourceDouble s) x (sourceDouble_wf s h)
     simp [sourceDouble, SourceArray.capacity, heq, hwf.1]
@@ -219,10 +220,11 @@ theorem sourcePush_wf (s : SourceArray) (x : ℕ) (h : s.Wf) : (sourcePush s x).
 theorem sourcePush_active (s : SourceArray) (x : ℕ) (h : s.Wf) :
     (sourcePush s x).active = s.active ++ [x] := by
   have hwf : 0 < s.buffer.length ∧ s.length ≤ s.buffer.length := h
-  by_cases hspace : s.length < s.buffer.length
-  · simp only [sourcePush, SourceArray.capacity, if_pos hspace]
+  by_cases hspace : s.length < s.capacity
+  · simp only [sourcePush, if_pos hspace]
     exact sourcePushBasic_active s x hspace
-  · simp only [sourcePush, SourceArray.capacity, if_neg hspace]
+  · simp only [sourcePush, if_neg hspace]
+    have hspace' : ¬ s.length < s.buffer.length := hspace
     have heq : s.length = s.buffer.length := by omega
     rw [sourcePushBasic_active (sourceDouble s) x]
     · exact congrArg (· ++ [x]) (sourceDouble_active s h)
@@ -234,14 +236,18 @@ theorem sourcePush_amortized_costN (s : SourceArray) (x : ℕ) (h : s.Wf) :
       PushCost.plus sourceAdvertisedCostN (sourcePotentialN s) := by
   change 0 < s.buffer.length ∧ s.length ≤ s.buffer.length at h
   rcases h with ⟨hpos, hlen⟩
-  by_cases hspace : s.length < s.buffer.length
-  · simp only [PushCost.le_def, PushCost.plus, sourceRawCostN, sourcePotentialN,
-      sourceAdvertisedCostN, sourcePush, SourceArray.capacity, if_pos hspace]
+  by_cases hspace : s.length < s.capacity
+  · have hspace' : s.length < s.buffer.length := hspace
+    simp only [sourcePush, sourceRawCostN, if_pos hspace]
+    simp only [PushCost.le_def, PushCost.plus, sourcePotentialN,
+      sourceAdvertisedCostN, SourceArray.capacity]
     simp only [sourcePushBasic, List.length_set]
     omega
-  · have heq : s.length = s.buffer.length := by omega
-    simp only [PushCost.le_def, PushCost.plus, sourceRawCostN, sourcePotentialN,
-      sourceAdvertisedCostN, SourceArray.capacity, sourcePush, if_neg hspace,
+  · have hspace' : ¬ s.length < s.buffer.length := hspace
+    have heq : s.length = s.buffer.length := by omega
+    simp only [sourcePush, sourceRawCostN, if_neg hspace]
+    simp only [PushCost.le_def, PushCost.plus, sourcePotentialN,
+      sourceAdvertisedCostN, SourceArray.capacity,
       sourcePushBasic, sourceDouble, List.length_set, List.length_append,
       List.length_replicate]
     omega
@@ -252,15 +258,19 @@ theorem sourcePush_public_amortized_costN (s : SourceArray) (x : ℕ) (h : s.Wf)
       PushCost.plus sourcePublicAdvertisedCostN (sourcePublicPotentialN s) := by
   change 0 < s.buffer.length ∧ s.length ≤ s.buffer.length at h
   rcases h with ⟨hpos, hlen⟩
-  by_cases hspace : s.length < s.buffer.length
-  · simp only [PushCost.le_def, PushCost.plus, sourceRawCostN, sourcePotentialN,
+  by_cases hspace : s.length < s.capacity
+  · have hspace' : s.length < s.buffer.length := hspace
+    simp only [sourcePush, sourceRawCostN, if_pos hspace]
+    simp only [PushCost.le_def, PushCost.plus, sourcePotentialN,
       sourceOuterPotentialN, sourcePublicPotentialN, sourcePublicAdvertisedCostN,
-      sourcePush, SourceArray.capacity, if_pos hspace, sourcePushBasic, List.length_set]
+      SourceArray.capacity, sourcePushBasic, List.length_set]
     omega
-  · have heq : s.length = s.buffer.length := by omega
-    simp only [PushCost.le_def, PushCost.plus, sourceRawCostN, sourcePotentialN,
+  · have hspace' : ¬ s.length < s.buffer.length := hspace
+    have heq : s.length = s.buffer.length := by omega
+    simp only [sourcePush, sourceRawCostN, if_neg hspace]
+    simp only [PushCost.le_def, PushCost.plus, sourcePotentialN,
       sourceOuterPotentialN, sourcePublicPotentialN, sourcePublicAdvertisedCostN,
-      SourceArray.capacity, sourcePush, if_neg hspace, sourcePushBasic, sourceDouble,
+      SourceArray.capacity, sourcePushBasic, sourceDouble,
       List.length_set, List.length_append, List.length_replicate]
     omega
 

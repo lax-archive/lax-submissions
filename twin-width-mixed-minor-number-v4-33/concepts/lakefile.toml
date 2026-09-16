@@ -1,0 +1,21 @@
+name = "Lax153141"
+defaultTargets = ["Lax153141"]
+
+[leanOptions]
+autoImplicit = false
+
+# mathlib is part of the archive environment (the pin is archive-wide)
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+
+[[lean_lib]]
+name = "Lax153141"
+
+# twin-width tower: the twin-width parameter of submission Lax228581
+[[require]]
+name = "Lax228581"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "1e200ffac8b69e63b802f0aaf1dfee79561ca39a"
+subDir = "twin-width-treewidth-separation-v433/concepts"

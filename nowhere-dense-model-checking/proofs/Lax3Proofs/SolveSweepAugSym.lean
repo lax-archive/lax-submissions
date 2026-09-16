@@ -9,7 +9,7 @@ underlying graph required by the final adjacency build.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax62Proofs.Codegen (getD_eq_getElem)
 open Lax3Proofs.Augmentation Lax3Proofs.Augmentation.Orientation
 

@@ -54,9 +54,9 @@ and the three `ext` length conventions at the pass's regions
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax62Proofs.Codegen (arrOf_getD getD_eq_getElem)
-open Lax11.GraphEncoding
+open Lax271696.GraphEncoding
 
 /-! ## §1 First-occurrence deduplication -/
 
@@ -1063,7 +1063,8 @@ private theorem clInit_spec :
       ((σ.setVar "cl.u" 0).setVar "cl.p" 0)
       (((σ.setVar "cl.u" 0).setVar "cl.p" 0).setArr "sa.o" 0 0) 3 := by
     refine (Run.store (evalB_lit h0B) (evalB_lit h0B) ?_).mono (by simp)
-    simpa using hσ
+    have hpos : 0 < (σ.arrs "sa.o").length := hσ
+    simpa using hpos
   have ha4 : Run B (.assign "cl.j" (.lit 0))
       (((σ.setVar "cl.u" 0).setVar "cl.p" 0).setArr "sa.o" 0 0)
       ((((σ.setVar "cl.u" 0).setVar "cl.p" 0).setArr "sa.o" 0 0).setVar

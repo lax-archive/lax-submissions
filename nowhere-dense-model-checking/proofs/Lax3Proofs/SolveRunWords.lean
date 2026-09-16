@@ -1,4 +1,4 @@
-import Lax67Proofs.Spec
+import Lax808846Proofs.Spec
 
 /-!
 Array contents remain words throughout any bounded run. This invariant
@@ -8,7 +8,7 @@ must be readable before the table validates them against occupied keys.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 
 /-- Every allocated array cell is a word below the run's bound. -/
 def ArrWords (B : ℕ) (σ : Env) : Prop :=

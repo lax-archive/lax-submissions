@@ -223,7 +223,7 @@ theorem polylog2Compare {f₁ f₂ : ℕ × ℕ → ℝ} {a₁ b₁ c₁ d₁ a�
         · exact (polylogCompare (Or.inr ⟨rfl, hd⟩)).isBigO
     have hpoly : polylog2 a₁ b₁ c₁ d₁ =o[productAtTop]
         polylog2 a₂ b₂ c₂ d₂ := by
-      simpa [polylog2] using oO_o hoa hOc
+      exact oO_o hoa hOc
     exact hf₁.trans_isLittleO (hpoly.trans_isTheta hf₂.symm)
   · have hOa : (fun n => polylog a₁ b₁ n) =O[atTop] fun n => polylog a₂ b₂ n := by
       rcases ha with ha | ⟨rfl, hb⟩
@@ -234,7 +234,7 @@ theorem polylog2Compare {f₁ f₂ : ℕ × ℕ → ℝ} {a₁ b₁ c₁ d₁ a�
     have hoc := polylogCompare hc
     have hpoly : polylog2 a₁ b₁ c₁ d₁ =o[productAtTop]
         polylog2 a₂ b₂ c₂ d₂ := by
-      simpa [polylog2] using Oo_o hOa hoc
+      exact Oo_o hOa hoc
     exact hf₁.trans_isLittleO (hpoly.trans_isTheta hf₂.symm)
 
 /-- Source first-coordinate-strict wrapper `polylog2_compare'` (line 602). -/

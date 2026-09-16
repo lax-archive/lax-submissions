@@ -58,7 +58,7 @@ No tactic in this file is handed a concept-side definition, exactly as in
 namespace Lax3Proofs.ReachedS
 
 open Lax3.ColoredGraphs Lax3.SplitterGame
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 open Lax3Proofs.SplitterBasics Lax3Proofs.WalkDistance Lax3Proofs.SplitterWin
 open Lax3Proofs.SplitterWinRec
 

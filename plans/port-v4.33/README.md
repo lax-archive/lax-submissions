@@ -1,0 +1,235 @@
+# The v4.33.0 port of Jan's submissions (2026-09-14)
+
+The epoch moved to v4.33.0 (mathlib `db584cd6d46c92f209a44c0f1c829460d327499d`)
+on 2026-09-13 and v4.30.0 closed to new records. This folder is the record
+of porting Jan's submissions in this repository, prepared in a session
+without submit rights; `FINISH.md` is the one-off prompt that lands and
+resubmits it, `WORKER-BRIEF.md` the packet each porting worker received.
+
+## Approach
+
+**Drafts move in place.** A draft is updated by resubmitting, and the
+publisher's only environment gate on a resubmission is closure
+(`environmentAcceptsRecord`): v4.33.0 is open, so a draft keeps its id,
+issue and package names and only its pins and Lean move. That is what
+Jan asked for, and what the Transducers port (`plans/transducers/`) did
+the same day. Four drafts: **word-ram** (lax-67), **ram-linear-time**
+(lax-11), **refinement-tower** (lax-62), **nowhere-dense-model-checking**
+(lax-3). Every one of the four folders on `main` was already past its
+archive record (word-ram by 16 files, ram-linear-time 11, refinement-tower
+4, ND-MC 8), so the port is on top of that unsubmitted work.
+
+**Registered records get successors.** A registered record is immutable;
+`lax port lax-N` scaffolds a successor (fresh id, `supersedes: lax-N`, the
+target pins, every cross-submission require followed to the dependency's
+own v4.33.0 successor). Clemens had already done this for the three
+registered dependencies on 2026-09-13 — **lax-199508** supersedes lax-12
+(sparsity lectures), **lax-345067** lax-14 (finite Ramsey), **lax-865980**
+lax-13 (the word RAM, from lax-13's registered source, *not* lax-67's) —
+so ND-MC now requires `Lax199508` where it required `Lax12` (renamed
+throughout the folder, prose included), and the two folders
+`sparsity-lectures-v4-33/`, `finite-ramsey-v4-33/` are copied here verbatim
+from `codex/archive-v4.33-migration` for the local loop. Two successors were
+scaffolded here: **monadic-dependence-neighborhood-complexity-v4-33** =
+**lax-264807**, superseding lax-5, requiring `Lax199508` and `Lax345067`;
+and **twin-width-treewidth-separation-v4-33** = **lax-768004**, superseding
+lax-48 (co-owned with Édouard; the draft lax-65 that once superseded lax-48
+was deleted), mathlib only, paper carried unchanged — the dependency
+**lax-introduction** (lax-242665, draft, in place) needs, beside
+`Lax199508` and `Lax67`.
+`lax port` itself had to be fixed first: it refused every pre-six-digit id
+(`lax-5`, `lax-13`, …) — `lax-archive/lax` branch
+`claude/port-ndmc-latest-epoch-0slpbd`, commit `fb1da25`.
+
+**Local loop.** `lax doctor --env v4.33.0` once (toolchain 34 s, warm store
+2 m 27 s, 7.5 GB), `python3 .claude/local-overrides.py` (every package's
+`lake-manifest.json` + `.lake/package-overrides.json` from the pins: the
+warm store of the environment its `manifest.yaml` names, plus the sibling
+folders), `.claude/capture-seed.sh sparsity-lectures-v4-33
+finite-ramsey-v4-33` (the registered captures, so those two never
+compile), then a direct `lake build` per package, concepts before proofs.
+`lax build --replay word-ram` (the archive's own checks, kernel replay
+included) runs on the one folder with no cross-submission require.
+
+**Outcome.** All seven folders build green at v4.33.0 through the local
+loop — word-ram, ram-linear-time, refinement-tower,
+nowhere-dense-model-checking, lax-introduction in place, and the two
+successors lax-264807 and lax-768004 — with no declared statement changed
+anywhere. What the port cannot do without submit rights is in FINISH.md.
+
+## What changed, per folder
+
+Pins everywhere: `manifest.yaml` (`leanVersion`, `mathlibVersion`), both
+`lean-toolchain` files, both lakefiles' mathlib `rev`. Then:
+
+- **word-ram** (lax-67; 526 + 3029 jobs green). Two proof sites, taken
+  from Clemens's lax-865980 port by a per-file three-way merge of
+  (lax-13 source → his port) onto main's newer folder, package names
+  mapped back to `Lax67`: `proofs/Lax67Proofs/Reasoning.lean:134`
+  `set_arrOf` — the `simp only [arrOf, List.length_map, List.length_range]
+  at h₁ h₂` no longer makes progress (drift vii), dropped;
+  `proofs/Lax67Proofs/Simulation.lean:618` `compile_correct` — `simpa using
+  hfits` → `simpa [compile] using hfits` (drift iv). Concepts untouched.
+  `lax build --replay word-ram` (the archive's own checks) is green:
+  layout, dependencies, compile, kernel replay 49 s, inspect (2 concepts
+  · 0 proofs), 1 m 02 s in all; its 608 `statements · unused-lemma`
+  warnings are the pre-existing class (the proof package is a library
+  with no proof theorem, so every helper is "unused"). Two things that
+  gate found first: the manifest's pins had been reverted by a `git
+  checkout` during the merge (fixed, commit e937cf9), and
+  **`supersedes-taken`** — lax-865980 already supersedes lax-13 and the
+  archive allows one successor, so lax-67 could not be resubmitted with
+  its `supersedes: lax-13` line; the line is removed (commit 75dad69,
+  FINISH.md §4.1).
+- **ram-linear-time** (lax-11; 1007 + 3083 jobs green). Concepts compile
+  unchanged. `proofs/Lax11Proofs/MsoComposition.lean:195` `typ_succ_congr`
+  — `simpa [typ_zero] using congrArg T.diagram h` → `exact congrArg
+  T.diagram h` (drift iv: `T 0 r s` and `Atomic r s` are defeq, not
+  syntactically equal after simp); `proofs/Lax11Proofs/MsoCliqueOps.lean:210`
+  `Atomic.of_setRemap` — `decide_eq_decide` no longer fires inside `simp
+  only` (drift xiv): `simp only [Atomic.of, setRemap]; refine
+  decide_eq_decide.mpr ?_; simp only [Set.mem_iUnion, exists_prop]; exact
+  exists_congr …`.
+- **refinement-tower** (lax-62; 3 + 3343 jobs green; the concept package
+  is one empty root module). Everything under `proofs/Lax62Proofs/Refine/`,
+  no statement changed, no `#guard_msgs` docstring edited. Two classes
+  the tower numbered, both `exact`-at-default-transparency cures for
+  tactic matching at `instances`/`implicit`: **(xv)** `simp only [<def>]`
+  desyncs an `ite`'s displayed condition from its `Decidable` instance
+  argument (the instance keeps the old term; `rw [if_pos h]` finds no
+  occurrence, `split` finds no `if`, `pp.explicit` shows `@ite _ C
+  (propDecidable C')`) — keep every def inside the condition out of the
+  simp set that unfolds the ite's owner and state the hypothesis in the
+  folded form: `Sepref/Amortization.lean:127-145` (`twoPotential`),
+  `Iicf/IicfDynamicArray.lean:210-275` (`SourceArray.capacity`, four
+  theorems), `Iicf/Impl/ArrayMapMap.lean:100-115` (`Finset.mem_filter`
+  *before* unfolding `mapUpdate`); **(xvi)** `simp` no longer unfolds a
+  partially applied (eta-short) `def` — `polylog2 a b c d`, `nfoldli c f
+  []`, `hmKeyPrio prio hm`, `compPRE R P Q S` — so `simpa [thedef] using
+  h` mismatches; `exact h`, or `simp only … at h; exact h`:
+  `Asymptotics/TwoDimensional.lean:141,161,257`,
+  `TwoDimensionalComposition.lean:226,237`, `Recurrences.lean:241`,
+  `Codegen/Examples/EndToEnd.lean:154`, `Iicf/Impl/AbsHeapmap.lean:
+  546-582,625,689-692`, `ArrayMapMap.lean:546-547`, `ImplHeap.lean:1926`,
+  `Iicf/Intf/Multiset.lean:401-402`, `Ir/Triples.lean:436-438`,
+  `NREST/Automation.lean:304`, `NREST/For.lean:51-53,141`,
+  `Sepref/Signature.lean:263-264,313`, `SignatureFlatten.lean:208`. Also
+  (iv) `Asymptotics/OneDimensionalOperations.lean:372,402,446-448`; (xi)
+  `Examples/Bfs.lean:166`; (i) `AbsHeapmap.lean:215-218,319-324`,
+  `Multiset.lean:364-366`, `Sepref/Amortization.lean:70-71` (`abbrev`
+  currencies named in the simp set), `ImplHeap.lean:1516-1518` (`rw` →
+  `simp only`, "motive is not type correct" on an ite's instance);
+  (xii/xiv) `AbsHeapmap.lean:1141-1154`, `ArrayMap.lean:202-203` (two
+  `Decidable` instances inside `decide`); and one **renamed lemma**:
+  `Finset.sum_eq_add_sum_diff_singleton` is gone at this pin →
+  `(Finset.add_sum_erase _ f hMem).symm` (`Iicf/UnionFindTime.lean:932-946`).
+  `AbsHeap.lean:936,942` still carry `simp only []` and still build.
+- **nowhere-dense-model-checking** (lax-3; 2048 + 3754 jobs green;
+  concepts compile with zero Lean changes, every declared statement
+  byte-identical). 37 proof files, +152/−100, all under
+  `proofs/Lax3Proofs/`. (xi) `Std.Symm`: `Augmentation.lean:137,180,739`,
+  `AugmentedDensity.lean:766`, `CoverDegree.lean:206`, `ImplFrontEnd.lean:
+  119`, `ImplMultiSource.lean:106`, `SolveSweepAug.lean:253`,
+  `SolveSweepAugCsr.lean:712`, `SolveSweepPeel.lean:371`,
+  `UqwInstantiation.lean:140`. (i) typed `have`s / explicit arguments /
+  terms at δ-equal carriers (`(childArena …).N` vs `childN …`, `Tabs`,
+  `Coloring`, `OrderingRoutine`): `WalkDistance.lean:104-108`,
+  `SplitterWin.lean:137-141`, `UqwInstantiation.lean:155-165`,
+  `DriverCorrect.lean:435-441`, `AugmentedDensity.lean:398`,
+  `ProgFrame.lean:542-548`, `SolveMatFrame.lean:199-205`,
+  `SolveMachPrep.lean:211-219`, `SolveMachPrepRun.lean:521,3229-3232,
+  3288-3295`, and `Unroll.lean:173-176,463-466` — the one restructured
+  proof (a `funext`-derived `have` fed to `rw` before unfolding the frame;
+  both statements unchanged). (iv)/(vii): `Augmentation.lean:668`,
+  `SolveBlocksScatter.lean:1670`, `SolveCovLoad.lean:1066-1067`,
+  `SolveSeamTop.lean:578,741`, `SolveSegReadRun.lean:683`,
+  `SolveStageCharge.lean:210`, `SolveConcreteBounds.lean:77`,
+  `SolveSweepPeel.lean:4857,4862`, `SolveSweepAugStep.lean:108`,
+  `SolveSweepAugCsr.lean:469-475`, `SolveMachine.lean:91-92`,
+  `SolveConcreteStages.lean:54-55`; `if false = true` no longer reduced by
+  `simp only` (`SolveSweepAug.lean:1862`, `SolveSweepAugPairFilter.lean:
+  43-45`, `SolveSweepAugRound.lean:360`). New classes: **(xxi)** `simp`
+  no longer zeta-unfolds a tactic-local `set`/`let` — rewrite with the
+  binding equation explicitly (`SolveBlocksRestrict.lean:2830-2831`,
+  `SolveBlocksProfiles.lean:821,1705`, `SolveSweepAug.lean:1161-1163`,
+  `SolveSweepAugFilter.lean:179-181`, `SolveSweepPeel.lean:5007-5009`,
+  `SolveMachPrepRun.lean:4048-4050`, `SolveSweepAugCsr.lean:764-766`);
+  **(xxii)** `List`'s `⊆` lost dot-notation `.trans` (`HasSubset.Subset.
+  trans` deprecated to the `Preorder` lemma) — `List.Subset.trans h₁ h₂`
+  (`SolveBlocksBotCom.lean:2143-2187`); **(xxiii)** `SimpleGraph.map` is
+  now `Ne ⊓ Relation.Map`, so a `show` against the old body no longer
+  matches — go through `SimpleGraph.map_adj` (`SolveMachPrep.lean:212-215`);
+  **(xxiv)** a `let`'s inferred type is now the δ-expanded one, which made
+  every `rw [canonicalChannels]` in `SolveChannels.lean` miss — ascribe the
+  `let` (`:112`), then `unfold` for `rw` (`:137,146`) and term finishes
+  (`:141-145,157-160`); **(xxv)** a `rfl` `@[simp]` projection lemma is no
+  longer `rw`-able at a `def`-wrapped arena — state the bound at
+  `graphWeight G` when the hypothesis is built (`ProgCharge.lean:1141-1146`,
+  `SolveFrameCharge.lean:219-224`).
+- **twin-width-treewidth-separation-v4-33** (lax-768004; 1195 + 1272 jobs
+  green; concepts compile as scaffolded, paper untouched). All under
+  `proofs/Lax768004Proofs/Source/TwinWidth/Graph/`: (xi) `Std.Symm` —
+  `Partition.lean:110,116`, `BonnetDepres.lean:44-46,308-315` (`symm :=
+  ⟨by …⟩`, `.symm.symm _ _ h`), `BonnetDepresLowerBasic.lean:2382,2468`;
+  (iv) `simpa` given the `def` it used to unfold — `BonnetDepresLowerBasic.
+  lean:391` (`FullTreeNode.graph`), `BonnetDepresLower.lean:1079,1115`
+  (`rootChildBag`); (i) `TreewidthContract.lean:91` — a `Fintype` instance
+  taken from a structure field makes `Finset.univ` opaque to `simp`/`rw`
+  (`rw [Finset.sup_const]` reports a `Fintype (…).Node` vs `Fintype Unit`
+  mismatch); discharged as a term, `exact congrArg (· - 1) (Finset.sup_const
+  Finset.univ_nonempty _)`. New class **(xx)**: `simp` on a `Σ`-valued goal
+  no longer peels `Sigma.mk` to its dependent second component, so a
+  following `funext` fails — supply the component equality (`have hpath :=
+  funext …; subst hpath; rfl`), `BonnetDepres.lean:98-102`.
+- **lax-introduction** (lax-242665; 585 + 623 jobs green, no Lean change):
+  pins, and `Lax48` → `Lax768004`, `Lax12` → `Lax199508` in the lakefiles,
+  the Lean and the paper's markers (`Lax67` stays). `Lax768004`'s rev in
+  the lakefile is a placeholder until lax-768004 has a record (FINISH.md
+  §2c).
+- **monadic-dependence-neighborhood-complexity-v4-33** (lax-264807;
+  2080 + 2840 jobs green; concepts compile with every declared statement
+  byte-identical). The scaffold had left `import Lax12.*`/`Lax14.*` in the
+  sources (fixed in `lax port` afterwards, lax commit 044cfa8): renamed to
+  `Lax199508`/`Lax345067` everywhere, prose included. Proof sites, by
+  drift class — (xi) `Std.Symm` bundling: `proofs/AdlerAdler.lean:48`,
+  `SubdividedBicliqueRamsey.lean:256-258`, `CrossingTransduction.lean:60`
+  (`G.symm h` → `G.adj_symm h`; `h.symm` there resolves to the recursive
+  `BlueWalk.symm` and fails termination); (iv) `simpa` stricter:
+  `Sparsification.lean:769` (`simpa [f', tup]`), `NowhereDenseBridge.lean:
+  318,340,349` (`exact congrArg copy h`); (i) `TransductionCalculus.lean:
+  125-127` (`show … + exact`); (xiv) `SubdividedBicliqueRamsey.lean:341-344`
+  (`decide_eq_decide.mp` by hand); (vii) `SubdividedBicliqueRamsey.lean:
+  1333` (`try simp only […]` — one `rcases` branch makes no progress).
+  New classes: **(xv)** a `Walk.copy` whose proof arguments came from `rfl`
+  carries the walk's own endpoints in its type, so `support_copy` /
+  `length_copy` / `isPath_copy` never fire ("Application type mismatch …
+  _proof_1") — give each proof its declared type with `show lhs = rhs from
+  …` (`NowhereDenseBridge.lean:251-256`, which cleared six downstream
+  errors); **(xvi)** plain `simp [f]` where `f` unfolds to a `Walk.cons` no
+  longer applies `length_cons`/`cons_isPath_iff`/`support_cons` — name them
+  under `simp only` (`NowhereDenseBridge.lean:176-178,188,272-273`);
+  **(xvii)** `Walk.getVert_zero`/`getVert_length` do not fire under `simp`
+  for a walk whose endpoints are `Fin.mk` literals with `by omega` proofs —
+  use the term and `rw` (`SubdividedBicliqueRamsey.lean:1087-1091,
+  1553-1561`); **(xviii)** an argument supplied at a type only δ-equal to
+  the expected one poisons every later `rw`/`simp` in that application
+  (`colors : Fin (5*k+2) → …` where `Fin (sparsTransduction k).colors → …`
+  is expected: `realize_sup`/`realize_inf` "did not find an occurrence" on
+  a pattern that prints identically) — `change` the goal to the fully
+  spelled-out formula first (`SparsGraphs.lean:142-147,247-263`;
+  `SubdividedBicliqueRamsey.lean:679` `show … before omega`); **(xix)**
+  `Function.Embedding.coeFn_mk` does not fire while the embedding
+  literal's `inj'` field is still a metavariable inside a `refine ⟨{ … }⟩`
+  — bind the embedding with `let`, prove its three `rfl` computation
+  lemmas, pass them to `simp_all` (`Corollary6a.lean:272-297`, the one
+  moderate restructure; the lemma statement is unchanged).
+
+## Not ported, and why (see FINISH.md §4)
+
+- **sparsity-lectures** (lax-12, registered): Clemens's lax-199508 is its
+  registered v4.33.0 successor already (same content — `main`'s folder is
+  identical to lax-12's record, and his port started from that record);
+  a second successor of lax-12 would be a duplicate. The v4.30 folder stays
+  as the record's source.
+- **lax-49** (twin-width mixed minor number, registered, with Édouard):
+  `lax port lax-49` once lax-768004 is registered (FINISH.md §4).

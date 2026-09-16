@@ -49,7 +49,7 @@ namespace Lax3Proofs.ScatterFml
 open Lax3.ColoredGraphs Lax3.DistFO Lax3.ScatterSentences Lax3.Locality Lax3.NormalForm
 open Lax3Proofs.Horizon Lax3Proofs.WalkDistance
 open Lax3Proofs.SyntaxLemmas Lax3Proofs.SemLocal Lax3Proofs.ScatterCore
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 
 variable {L n : ℕ}
 

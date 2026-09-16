@@ -8,7 +8,7 @@ compiled whole, conditional on one named `Spec` obligation
 
 The endorsed axiom
 (`Lax3.ModelChecking.exists_almostLinearTime_program_modelChecking`)
-needs a compiled `Lax67.Ram.Program` with
+needs a compiled `Lax808846.Ram.Program` with
 
     ComputesInTime w p {x | EncodesGraph x n G ∧ side condition}
       (fun _ => if Sat G Fin.elim0 φ then [1] else [0]) T.
@@ -152,10 +152,10 @@ the axiom's statement.
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax62Proofs.Codegen Lax67Proofs.Compile
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax62Proofs.Codegen Lax808846Proofs.Compile
 open Lax62Proofs.Refine.Codegen (computesInTime_of_spec)
-open Lax11.GraphEncoding
-open Lax12.GraphClasses Lax12.NowhereDenseClasses
+open Lax271696.GraphEncoding
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses
 open Lax3.FirstOrder (FO)
 
 /-! ## §1 The pipeline -/
@@ -168,7 +168,7 @@ def mcCom (solveCom : Com) : Com :=
 /-- The front end compiles under the skeleton layout, whatever the
 extension. -/
 theorem parseCom_ok (eS eA : List String) : Com.Ok (mcLayout eS eA) parseCom := by
-  simp [parseCom, readScalars, readArr, Lax67Proofs.Reasoning.Lib.Fill.put,
+  simp [parseCom, readScalars, readArr, Lax808846Proofs.Reasoning.Lib.Fill.put,
     mcLayout, Com.Ok, Cond.Ok, condExpr, Expr.Ok]
 
 /-- The pipeline compiles as soon as the solve stages do. -/
@@ -231,7 +231,7 @@ theorem mc_computesInTime_of_solveSpec
     (hextTgt : ∀ x ∈ mcD n G c w, ext x "tgt" = 2 * edgeCount x)
     (hokS : Com.Ok (mcLayout eS eA) solveCom) (hnw : solveCom.NoWrite)
     (hsolve : SolveSpec C hC φ ord G c w q ext solveCom Ks) :
-    Lax67.RamComputes.ComputesInTime w
+    Lax808846.RamComputes.ComputesInTime w
       (compileProgram (mcLayout eS eA) (mcCom solveCom))
       (mcD n G c w)
       (fun _ => if Lax3.FirstOrder.Sat G Fin.elim0 φ then [1] else [0])

@@ -1,8 +1,8 @@
 import Lax3Proofs.SolveConcreteAlloc
 
 namespace Lax3Proofs.Prog
-open Lax67Proofs.Imp Lax67Proofs.Reasoning
-open Lax11.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
+open Lax271696.GraphEncoding Lax3.ColoredGraphs Lax3Proofs.Driver
 variable {L : ℕ}
 
 def concreteLp (S : Setup L) (_ : ℕ) := S.depth

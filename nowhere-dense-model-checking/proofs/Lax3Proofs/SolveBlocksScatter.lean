@@ -66,7 +66,7 @@ concrete names).
 
 namespace Lax3Proofs.Prog
 
-open Lax67Proofs.Imp Lax67Proofs.Reasoning Lax67Proofs.Reasoning.Lib
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Reasoning.Lib
 open Lax62Proofs.Codegen (arrOf_getD getD_eq_getElem)
 open Lax3.ColoredGraphs (WithinDist)
 open Lax3Proofs.WalkDistance
@@ -1667,7 +1667,7 @@ theorem gsSweep_spec (ht1 : 1 ≤ t) :
       by rw [hσi, hσb]; simp,
       Or.inl ⟨[], by rw [hσi]; simp,
         by rw [hσi, hσb, hσa]; simp,
-        by simpa using ht1,
+        by simp only [List.length_nil]; omega,
         ?_,
         by rw [hσi, hσb]; simp⟩⟩
     rw [marks_nil]

@@ -57,7 +57,7 @@ hypothesis applied to the two endpoints of each edge.
 namespace Lax3Proofs.Compaction
 
 open Lax3.ColoredGraphs Lax3.DistFO
-open Lax12.UniformQuasiWideness
+open Lax199508.UniformQuasiWideness
 open Lax3Proofs.SyntaxLemmas Lax3Proofs.WalkDistance
 
 variable {L n N : ℕ} {X : Set (Fin n)} {A : SimpleGraph (Fin n)} {B : SimpleGraph (Fin N)}

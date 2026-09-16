@@ -1,6 +1,6 @@
 import Lax3Proofs.Augmentation
-import Lax12Proofs.MinorBridge
-import Lax12Proofs.NowhereDenseDensity
+import Lax199508Proofs.MinorBridge
+import Lax199508Proofs.NowhereDenseDensity
 
 /-!
 Depth-one density of the augmented graphs of a transitive–fraternal
@@ -69,7 +69,7 @@ depth-`a` minor of the augmented graph becomes a depth-`(4a+4)` minor of
 
 Iterating `r` times (`chain_density`) bounds the depth-1 density of round
 `i` by the depth-`chainDepth i 1` density of `G`, which on a nowhere dense
-class is subpolynomial by `Lax12`'s density theorem
+class is subpolynomial by `Lax199508`'s density theorem
 (`exists_densityAtMost_of_nowhereDense`).  No walk in `G` is ever
 expanded, and no shallow-minor composition is needed: the induction stays
 inside one round at a time.
@@ -99,7 +99,7 @@ subpolynomial density of `G`.
 namespace Lax3Proofs.AugmentedDensity
 
 open scoped SimpleGraph
-open Lax12.GraphClasses Lax12.NowhereDenseClasses Lax12.ShallowMinorDensity
+open Lax199508.GraphClasses Lax199508.NowhereDenseClasses Lax199508.ShallowMinorDensity
 open Lax3Proofs.Augmentation
 
 variable {n : ℕ}
@@ -151,15 +151,15 @@ theorem hasDensityAtMost_mono {G : SimpleGraph (Fin n)} {r D₁ D₂ : ℕ} (h12
 
 /-- Composition of shallow minors, in the concept's idiom: a depth-`b`
 minor of a depth-`a` minor of `G` is a depth-`(2ab+a+b)` minor of `G`.
-This is `Lax12Proofs.ShallowMinors.shallowMinor_trans` read through the
+This is `Lax199508Proofs.ShallowMinors.shallowMinor_trans` read through the
 bridge. -/
 theorem hasShallowMinor_trans {n m k : ℕ} {G : SimpleGraph (Fin n)} {X : SimpleGraph (Fin m)}
     {J : SimpleGraph (Fin k)} {a b : ℕ} (hX : HasShallowMinor G a X)
     (hJ : HasShallowMinor X b J) : HasShallowMinor G (2 * a * b + a + b) J :=
-  Lax12Proofs.MinorBridge.hasShallowMinor_of_isShallowMinor
-    (Lax12Proofs.ShallowMinors.shallowMinor_trans
-      (Lax12Proofs.MinorBridge.isShallowMinor_of_hasShallowMinor hJ)
-      (Lax12Proofs.MinorBridge.isShallowMinor_of_hasShallowMinor hX))
+  Lax199508Proofs.MinorBridge.hasShallowMinor_of_isShallowMinor
+    (Lax199508Proofs.ShallowMinors.shallowMinor_trans
+      (Lax199508Proofs.MinorBridge.isShallowMinor_of_hasShallowMinor hJ)
+      (Lax199508Proofs.MinorBridge.isShallowMinor_of_hasShallowMinor hX))
 
 /-- Density passes to shallow minors: if `X` is a depth-`a` minor of `G`
 and `G` has depth-`(2ab+a+b)` density at most `D₁`, then `X` has depth-`b`
@@ -174,7 +174,7 @@ theorem hasDensityAtMost_of_isContained {m : ℕ} {G : SimpleGraph (Fin m)}
     {Gn : SimpleGraph (Fin n)} {r D₁ : ℕ} (hsub : G ⊑ Gn) (h : HasDensityAtMost Gn r D₁) :
     HasDensityAtMost G r D₁ :=
   fun k J hJ =>
-    hasDensityAtMost_iff.1 h k J (Lax12Proofs.MinorBridge.hasShallowMinor_of_copy hsub hJ)
+    hasDensityAtMost_iff.1 h k J (Lax199508Proofs.MinorBridge.hasShallowMinor_of_copy hsub hJ)
 
 /-! ### The single-round transfer, as a named property
 
@@ -395,7 +395,8 @@ private theorem exists_demand_of_walks {m : ℕ} {B : Fin m → Set (Fin n)} {cx
       omega
     · intro z hz
       rcases Finset.mem_insert.1 hz with rfl | hz'
-      · simpa using (Or.inl hcx : Dem D B x z)
+      · have hdem : Dem D B x z := Or.inl hcx
+        simpa using hdem
       · have hzne : z ≠ cx := (hsub z (List.mem_toFinset.1 hz')).2
         simpa [hzne] using hQydem z (hRsupp z (hsub z (List.mem_toFinset.1 hz')).1)
     · exact Finset.mem_insert_self _ _
@@ -732,7 +733,7 @@ theorem roundTransfer : RoundTransfer := by
     obtain ⟨heE, hagree⟩ := mem_survivors.1 he
     obtain ⟨hc1, hg1, hc2, hg2, -⟩ := hTreal e (hadj_of_mem e heE)
     exact ⟨(hmemX _).2 (by rw [hagree _ hc1, hg1]), (hmemX _).2 (by rw [hagree _ hc2, hg2])⟩
-  have hEcard : J.edgeSet.ncard = J.edgeFinset.card := Lax12Proofs.MinorBridge.ncard_edgeSet J
+  have hEcard : J.edgeSet.ncard = J.edgeFinset.card := Lax199508Proofs.MinorBridge.ncard_edgeSet J
   rcases X.eq_empty_or_nonempty with hXe | hXne
   · -- nothing survives, so there was nothing to count
     have hzero : (survivors J.edgeFinset T g ω).card = 0 := by
@@ -762,9 +763,9 @@ theorem roundTransfer : RoundTransfer := by
     fun i => ball H ω (stepDepth a) (M.center (f i)) (f i) with hbset
   set Mg : SimpleGraph (Fin X.card) :=
     { Adj := fun i j => i ≠ j ∧ ∃ u ∈ bset i, ∃ v ∈ bset j, H.Adj u v
-      symm := by
+      symm := ⟨by
         rintro i j ⟨hne, u, hu, v, hv, huv⟩
-        exact ⟨hne.symm, v, hv, u, hu, huv.symm⟩
+        exact ⟨hne.symm, v, hv, u, hu, huv.symm⟩⟩
       loopless := ⟨fun i h => h.1 rfl⟩ } with hMg
   have hMgadj : ∀ i j, Mg.Adj i j ↔ (i ≠ j ∧ ∃ u ∈ bset i, ∃ v ∈ bset j, H.Adj u v) :=
     fun _ _ => Iff.rfl
@@ -972,7 +973,7 @@ theorem greedy_chain_joint_inDegLE {G : SimpleGraph (Fin n)}
 
 /-! ### Nowhere dense hosts
 
-`Lax12`'s density theorem gives `c · m ^ (1 + δ)` edges for the depth-`b`
+`Lax199508`'s density theorem gives `c · m ^ (1 + δ)` edges for the depth-`b`
 minors of a member; on a subgraph of a member with `m` vertices that is
 `⌈c · m ^ δ⌉ · k` edges on `k` vertices, since a minor has no more
 vertices than its host.  That is the numeric shape `HasDensityAtMost`
@@ -988,11 +989,11 @@ theorem exists_densityAtMost_of_nowhereDense (C : GraphClass) (hC : NowhereDense
         HasDensityAtMost G b ⌈c * (m : ℝ) ^ δ⌉₊ := by
   obtain ⟨c, hc⟩ :=
     hasSubpolynomialDensity_iff.1
-      (Lax12Proofs.NowhereDenseDensity.hasSubpolynomialDensity_of_nowhereDense C hC) b δ hδ
+      (Lax199508Proofs.NowhereDenseDensity.hasSubpolynomialDensity_of_nowhereDense C hC) b δ hδ
   refine ⟨max c 0, fun n Gn hGn m G hsub => hasDensityAtMost_iff.2 (fun k J hJ => ?_)⟩
   have hkm : k ≤ m := by
-    simpa using Lax12Proofs.MinorBridge.card_le_of_hasShallowMinor hJ
-  have hbound := hc n Gn hGn k J (Lax12Proofs.MinorBridge.hasShallowMinor_of_copy hsub hJ)
+    simpa using Lax199508Proofs.MinorBridge.card_le_of_hasShallowMinor hJ
+  have hbound := hc n Gn hGn k J (Lax199508Proofs.MinorBridge.hasShallowMinor_of_copy hsub hJ)
   have hc0 : (0 : ℝ) ≤ max c 0 := le_max_right _ _
   rcases Nat.eq_zero_or_pos k with rfl | hk
   · have hle : ((J.edgeSet.ncard : ℕ) : ℝ) ≤ 0 := by

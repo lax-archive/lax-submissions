@@ -59,13 +59,13 @@ where the model checking theorem lives, it is automatic.
 
 namespace Lax3Proofs.ScatterCore
 
-open Lax3.ColoredGraphs Lax3Proofs.WalkDistance Lax3Proofs.Clusters Lax12.UniformQuasiWideness
+open Lax3.ColoredGraphs Lax3Proofs.WalkDistance Lax3Proofs.Clusters Lax199508.UniformQuasiWideness
 
 section Scattered
 
 variable {V : Type*} {G : SimpleGraph V} {d : ℕ} {X S : Set V} {x : V}
 
-/-- Lax12's `DistIndependent` in the walk-distance vocabulary: a set is
+/-- Lax199508's `DistIndependent` in the walk-distance vocabulary: a set is
 distance-`d` independent exactly when no two distinct members are within
 distance `d`. -/
 theorem distIndependent_iff_not_withinDist {A : Set V} :
