@@ -503,7 +503,8 @@ theorem refineOne_run
     hcurrentLe, hactive₅, ?_, hwork₅, hcleared₅, hstamp₅, hstampLe₅, hclearedZero,
     ?_, ?_, ?_⟩
   · have rr := r₀.seq (r₁.seq (r₂.seq (r₃.seq (rmark.seq rfinish))))
-    simpa [refineOne, finishRefinement, seqs, lo, hi] using
+    simpa [refineOne, finishRefinement, refineSplitBody, refineRelabelBody,
+      refineResetBody, seqs, lo, hi] using
       rr.mono (by omega)
   · simpa [lo, hi] using hlabel₅
   · simpa [lo, hi] using hnewSizes

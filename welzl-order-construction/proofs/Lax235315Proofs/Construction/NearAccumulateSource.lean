@@ -22,6 +22,15 @@ also in the current neighborhood. -/
 def addCommon (P M : Finset ℕ) (rep base : ℕ → ℕ) (v : ℕ) : ℕ :=
   if v ∈ P ∧ rep v ∈ M then base v + 1 else base v
 
+@[simp] theorem addOn_empty (base : ℕ → ℕ) : addOn ∅ base = base := by
+  funext v
+  simp [addOn]
+
+@[simp] theorem addCommon_empty (M : Finset ℕ) (rep base : ℕ → ℕ) :
+    addCommon ∅ M rep base = base := by
+  funext v
+  simp [addCommon]
+
 theorem upd_addOn {P : Finset ℕ} {base : ℕ → ℕ} {q : ℕ}
     (hq : q ∉ P) :
     upd (addOn P base) q (addOn P base q + 1) =

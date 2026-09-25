@@ -114,26 +114,26 @@ theorem secondPartitionAndVerify_run
       htouched hsplit hrepClass hrepsA hnextA hrepA hBdata hactiveANonempty
       (by omega) htargetCapB (by omega) hactiveAB
   have hn₁ : σ₁.vars "n" = n := by
-    rw [rpartition.frame_var "n" (by native_decide), hn]
+    rw [rpartition.frame_var "n" (by decide), hn]
   have hbound₁ : σ₁.vars "nearBound" = bound := by
-    rw [rpartition.frame_var "nearBound" (by native_decide), hbound]
+    rw [rpartition.frame_var "nearBound" (by decide), hbound]
   have hgoodB₁ : σ₁.vars "good" < B := by
-    rw [rpartition.frame_var "good" (by native_decide)]
+    rw [rpartition.frame_var "good" (by decide)]
     exact hgoodB
   have hoff₁ : σ₁.arrs "off" = arrOf (n + 1) (offset x) := by
-    rw [rpartition.frame_arr "off" (by native_decide), hoff]
+    rw [rpartition.frame_arr "off" (by decide), hoff]
   have htarget₁ : σ₁.arrs "tgt" = arrOf targetCap (target x) := by
-    rw [rpartition.frame_arr "tgt" (by native_decide), htarget]
+    rw [rpartition.frame_arr "tgt" (by decide), htarget]
   have hactiveB₁ : σ₁.arrs "activeB" = arrOf n activeB := by
-    rw [rpartition.frame_arr "activeB" (by native_decide), hactiveBArray]
+    rw [rpartition.frame_arr "activeB" (by decide), hactiveBArray]
   have hrepB₁ : σ₁.arrs "repB" = arrOf n repB := by
-    rw [rpartition.frame_arr "repB" (by native_decide), hrepB]
+    rw [rpartition.frame_arr "repB" (by decide), hrepB]
   have hdegree₁ : σ₁.arrs "degree" = arrOf n degree := by
-    rw [rpartition.frame_arr "degree" (by native_decide), hdegree]
+    rw [rpartition.frame_arr "degree" (by decide), hdegree]
   have hinter₁ : σ₁.arrs "inter" = arrOf n inter := by
-    rw [rpartition.frame_arr "inter" (by native_decide), hinter]
+    rw [rpartition.frame_arr "inter" (by decide), hinter]
   have hneighbors₁ : σ₁.arrs "neighbors" = arrOf n neighbors := by
-    rw [rpartition.frame_arr "neighbors" (by native_decide), hneighbors]
+    rw [rpartition.frame_arr "neighbors" (by decide), hneighbors]
   have hstampLen : (σ₁.arrs "stamp").length = n := by
     rw [run_array_length_eq rpartition "stamp", hstamp, length_arrOf]
   obtain ⟨stamp₁, hstamp₁⟩ := exists_arrOf_of_length hstampLen

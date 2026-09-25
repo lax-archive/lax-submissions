@@ -98,37 +98,37 @@ theorem prepareAndFirstPartition_run
   obtain ⟨σ₁, rprepare, hdenom₁, hsample₁⟩ :=
     prepareSampleCount_run hacount hcsq hc ha haB hdenomB
   have hn₁ : σ₁.vars "n" = n := by
-    rw [rprepare.frame_var "n" (by native_decide), hn]
+    rw [rprepare.frame_var "n" (by decide), hn]
   have hoff₁ : σ₁.arrs "off" = arrOf (n + 1) (offset x) := by
-    rw [rprepare.frame_arr "off" (by native_decide), hoff]
+    rw [rprepare.frame_arr "off" (by decide), hoff]
   have htarget₁ : σ₁.arrs "tgt" = arrOf targetCap (target x) := by
-    rw [rprepare.frame_arr "tgt" (by native_decide), htarget]
+    rw [rprepare.frame_arr "tgt" (by decide), htarget]
   have hactiveB₁ : σ₁.arrs "activeB" = arrOf n activeB := by
-    rw [rprepare.frame_arr "activeB" (by native_decide), hactiveBArray]
+    rw [rprepare.frame_arr "activeB" (by decide), hactiveBArray]
   have hord₁ : σ₁.arrs "ord" = arrOf n ord := by
-    rw [rprepare.frame_arr "ord" (by native_decide), hord]
+    rw [rprepare.frame_arr "ord" (by decide), hord]
   have hclassB₁ : σ₁.arrs "classB" = arrOf n classB := by
-    rw [rprepare.frame_arr "classB" (by native_decide), hclassB]
+    rw [rprepare.frame_arr "classB" (by decide), hclassB]
   have hclassSize₁ : σ₁.arrs "classSize" = arrOf n classSize := by
-    rw [rprepare.frame_arr "classSize" (by native_decide), hclassSize]
+    rw [rprepare.frame_arr "classSize" (by decide), hclassSize]
   have hmarkedCount₁ : σ₁.arrs "markedCount" = arrOf n markedCount := by
-    rw [rprepare.frame_arr "markedCount" (by native_decide), hmarkedCount]
+    rw [rprepare.frame_arr "markedCount" (by decide), hmarkedCount]
   have hstamp₁ : σ₁.arrs "stamp" = arrOf n stamp := by
-    rw [rprepare.frame_arr "stamp" (by native_decide), hstamp]
+    rw [rprepare.frame_arr "stamp" (by decide), hstamp]
   have hmarked₁ : σ₁.arrs "marked" = arrOf n marked := by
-    rw [rprepare.frame_arr "marked" (by native_decide), hmarked]
+    rw [rprepare.frame_arr "marked" (by decide), hmarked]
   have htouched₁ : σ₁.arrs "touched" = arrOf n touched := by
-    rw [rprepare.frame_arr "touched" (by native_decide), htouched]
+    rw [rprepare.frame_arr "touched" (by decide), htouched]
   have hsplit₁ : σ₁.arrs "split" = arrOf n split := by
-    rw [rprepare.frame_arr "split" (by native_decide), hsplit]
+    rw [rprepare.frame_arr "split" (by decide), hsplit]
   have hrepClass₁ : σ₁.arrs "repClass" = arrOf n repClass := by
-    rw [rprepare.frame_arr "repClass" (by native_decide), hrepClass]
+    rw [rprepare.frame_arr "repClass" (by decide), hrepClass]
   have hrepsB₁ : σ₁.arrs "repsB" = arrOf n repsB := by
-    rw [rprepare.frame_arr "repsB" (by native_decide), hrepsB]
+    rw [rprepare.frame_arr "repsB" (by decide), hrepsB]
   have hnextB₁ : σ₁.arrs "nextB" = arrOf n nextB := by
-    rw [rprepare.frame_arr "nextB" (by native_decide), hnextB]
+    rw [rprepare.frame_arr "nextB" (by decide), hnextB]
   have hrepB₁ : σ₁.arrs "repB" = arrOf n repB := by
-    rw [rprepare.frame_arr "repB" (by native_decide), hrepB]
+    rw [rprepare.frame_arr "repB" (by decide), hrepB]
   obtain ⟨σ₂, current, label, repClass', repsB', nextB', repB', R,
       rpartition, hnextBCount, hactiveB₂, hclassB₂, hrepClass₂,
       hrepsB₂, hnextB₂, hrepB₂, hdata, -, hpartition⟩ :=
@@ -220,32 +220,32 @@ theorem preparePartitionsAndVerify_run
       hactiveBB
   obtain ⟨hBpartition⟩ := hBnonempty
   have hn₁ : σ₁.vars "n" = n := by
-    rw [rfirst.frame_var "n" (by native_decide), hn]
+    rw [rfirst.frame_var "n" (by decide), hn]
   have hbound₁ : σ₁.vars "nearBound" = bound := by
-    rw [rfirst.frame_var "nearBound" (by native_decide), hbound]
+    rw [rfirst.frame_var "nearBound" (by decide), hbound]
   have hgoodB₁ : σ₁.vars "good" < B := by
-    rw [rfirst.frame_var "good" (by native_decide)]
+    rw [rfirst.frame_var "good" (by decide)]
     exact hgoodB
   have hoff₁ : σ₁.arrs "off" = arrOf (n + 1) (offset x) := by
-    rw [rfirst.frame_arr "off" (by native_decide), hoff]
+    rw [rfirst.frame_arr "off" (by decide), hoff]
   have htarget₁ : σ₁.arrs "tgt" = arrOf targetCap (target x) := by
-    rw [rfirst.frame_arr "tgt" (by native_decide), htarget]
+    rw [rfirst.frame_arr "tgt" (by decide), htarget]
   have hactiveA₁ : σ₁.arrs "activeA" = arrOf n activeA := by
-    rw [rfirst.frame_arr "activeA" (by native_decide), hactiveAArray]
+    rw [rfirst.frame_arr "activeA" (by decide), hactiveAArray]
   have hclassA₁ : σ₁.arrs "classA" = arrOf n classA := by
-    rw [rfirst.frame_arr "classA" (by native_decide), hclassA]
+    rw [rfirst.frame_arr "classA" (by decide), hclassA]
   have hrepsA₁ : σ₁.arrs "repsA" = arrOf n repsA := by
-    rw [rfirst.frame_arr "repsA" (by native_decide), hrepsA]
+    rw [rfirst.frame_arr "repsA" (by decide), hrepsA]
   have hnextA₁ : σ₁.arrs "nextA" = arrOf n nextA := by
-    rw [rfirst.frame_arr "nextA" (by native_decide), hnextA]
+    rw [rfirst.frame_arr "nextA" (by decide), hnextA]
   have hrepA₁ : σ₁.arrs "repA" = arrOf n repA := by
-    rw [rfirst.frame_arr "repA" (by native_decide), hrepA]
+    rw [rfirst.frame_arr "repA" (by decide), hrepA]
   have hdegree₁ : σ₁.arrs "degree" = arrOf n degree := by
-    rw [rfirst.frame_arr "degree" (by native_decide), hdegree]
+    rw [rfirst.frame_arr "degree" (by decide), hdegree]
   have hinter₁ : σ₁.arrs "inter" = arrOf n inter := by
-    rw [rfirst.frame_arr "inter" (by native_decide), hinter]
+    rw [rfirst.frame_arr "inter" (by decide), hinter]
   have hneighbors₁ : σ₁.arrs "neighbors" = arrOf n neighbors := by
-    rw [rfirst.frame_arr "neighbors" (by native_decide), hneighbors]
+    rw [rfirst.frame_arr "neighbors" (by decide), hneighbors]
   have hclassSizeLen : (σ₁.arrs "classSize").length = n := by
     rw [run_array_length_eq rfirst "classSize", hclassSize, length_arrOf]
   have hmarkedCountLen : (σ₁.arrs "markedCount").length = n := by

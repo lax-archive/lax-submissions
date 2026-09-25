@@ -151,11 +151,9 @@ theorem processActiveNearBody_run
     · simp [σ₄, σ₃, σ₂, σ₁]
     · intro v hv heq
       have := hstampLe v hv
-      simp at this
       omega
     · intro v hv
       have := hstampLe v hv
-      simp at this
       omega
     · exact hstampB
   have htargetRange : ∀ j, lo ≤ j → j < hi → target j < n := by

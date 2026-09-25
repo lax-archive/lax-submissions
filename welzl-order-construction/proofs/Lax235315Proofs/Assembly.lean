@@ -31,7 +31,7 @@ successful-output contract holds. -/
 theorem goodTapes_subset_accepted
     {K c n w : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     (hvalid : ValidInput K c n w G x)
-    (hruntime : HasRunningTimeBound K) (hcorrect : HasCorrectOutput K) :
+    (hcorrect : HasCorrectOutput K) :
     goodTapes w c x (timeBudget K n x) ⊆
       {ρ | ∃ y : List ℕ, ∃ t ≤ timeBudget K n x,
         RunsTo w program ((c :: x) ++ bitTape ρ) y t ∧
@@ -40,15 +40,11 @@ theorem goodTapes_subset_accepted
   intro ρ hρ
   rcases hρ with ⟨s, t, hterm⟩
   rcases hterm with ⟨ht, hrun, hhalt, hpc, hflag⟩
-  obtain ⟨y, t', ht', hruntimeRun⟩ := hruntime c n w G x hvalid ρ
   have hgoodRun : RunsTo w program ((c :: x) ++ bitTape ρ) s.out (t + 1) := by
     refine ⟨t, s, hrun, hhalt, rfl, ?_⟩
     have hpc' : s.pc < program.length := by omega
     rw [Lax808846Proofs.Machine.terminalCost_eq, if_pos hpc']
-  have ⟨hout, htime⟩ :=
-    Lax808846Proofs.Machine.runsTo_unique hgoodRun hruntimeRun
-  have hgoodTime : t + 1 ≤ timeBudget K n x := by omega
-  refine ⟨s.out, t + 1, hgoodTime, hgoodRun, ?_⟩
+  refine ⟨s.out, t + 1, ht, hgoodRun, ?_⟩
   exact hcorrect c n w G x hvalid ρ s t
     ⟨ht, hrun, hhalt, hpc, hflag⟩
 
@@ -84,7 +80,7 @@ theorem exists_program_of_contracts
   · intro ρ
     exact hruntime c n w G x hvalid ρ
   · have hgood := hprobability c n w G x hvalid
-    have hsubset := goodTapes_subset_accepted hvalid hruntime hcorrect
+    have hsubset := goodTapes_subset_accepted hvalid hcorrect
     have hcard :
         (goodTapes w c x T).ncard ≤
           ({ρ | ∃ y : List ℕ, ∃ t ≤ T,
@@ -100,6 +96,10 @@ theorem exists_program_of_contracts
 /--
 ---
 conclusion: Lax195003.WelzlOrdersComputation.exists_nearLinearTime_randomized_welzlOrder_program
+assumptions:
+  - Lax235315.ConstructionRuntime.eventually_hasRunningTimeBound
+  - Lax235315.ConstructionCorrectness.eventually_hasCorrectOutput
+  - Lax235315.ConstructionProbability.eventually_hasSuccessProbability
 ---
 **Conditional assembly for the near-linear Welzl-order algorithm.** This proof
 assembles the construction's three independent contracts. It is
@@ -117,8 +117,8 @@ lower bound from successful tapes to accepted tapes.
 # Attribution
 
 The conditional contracts are the three separate theorem concepts in this
-submission. The assembled target statement is Lax195003's Theorem 1.3
-formalization.
+submission. The assembled target is the registered claim of Lax195003;
+the graph result is Theorem 1.4 in the supplied arXiv v1 PDF.
 -/
 theorem exists_nearLinearTime_randomized_welzlOrder_program :
     ∃ (p : Program) (K : ℕ), 1 ≤ K ∧
@@ -148,5 +148,3 @@ theorem exists_nearLinearTime_randomized_welzlOrder_program :
     (hRuntime K hKrK) (hCorrect K hKcK) (hProbability K hKpK)
 
 end Lax235315Proofs.Assembly
-
-#print axioms Lax235315Proofs.Assembly.exists_nearLinearTime_randomized_welzlOrder_program

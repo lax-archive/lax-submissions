@@ -46,7 +46,7 @@ def ValidInput (K c n w : ℕ) (G : SimpleGraph (Fin n)) (x : List ℕ) : Prop :
 /-- Termination at the final instruction with the success flag set, within T steps. -/
 def SuccessfulTermination (w : ℕ) (input : List ℕ) (T : ℕ)
     (s : State) (t : ℕ) : Prop :=
-  t ≤ T ∧ run w program t (initState input) = some s ∧
+  t + 1 ≤ T ∧ run w program t (initState input) = some s ∧
     step w program s = none ∧ s.pc + 1 = program.length ∧
       s.mem successFlagCell = 1
 

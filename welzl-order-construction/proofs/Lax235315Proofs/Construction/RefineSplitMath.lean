@@ -39,6 +39,16 @@ theorem partiallyRefinedLabel_eq_refinedLabel
 def partiallyCleared (processed : Finset ℕ) (counts : ℕ → ℕ) (q : ℕ) : ℕ :=
   if q ∈ processed then 0 else counts q
 
+@[simp] theorem partiallyRefinedLabel_empty (label split : ℕ → ℕ) :
+    partiallyRefinedLabel ∅ label split = label := by
+  funext v
+  simp [partiallyRefinedLabel]
+
+@[simp] theorem partiallyCleared_empty (counts : ℕ → ℕ) :
+    partiallyCleared ∅ counts = counts := by
+  funext v
+  simp [partiallyCleared]
+
 theorem update_partiallyCleared
     {processed : Finset ℕ} {counts : ℕ → ℕ} {q : ℕ}
     (hq : q ∉ processed) :
