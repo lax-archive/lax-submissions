@@ -58,7 +58,7 @@ original bit.
 
 # Attribution
 The statement is the adjacent-twin crossing observation used in Lemma 2.1 of
-Dreier and Kuske, *Fast exact algorithms via modular decomposition*.
+Dreier and Kuske, *Near-Linear Time Computation of Welzl Orders on Graphs with Linear Neighborhood Complexity*.
 -/
 theorem crossings_duplicate (pre post : List Bool) (b : Bool) :
     crossings (pre ++ b :: b :: post) =
@@ -89,7 +89,7 @@ changes, so every changed position is charged at most twice overall.
 
 # Attribution
 This is the elementary membership-sequence estimate in Lemma 2.2 of Dreier
-and Kuske, *Fast exact algorithms via modular decomposition*.
+and Kuske, *Near-Linear Time Computation of Welzl Orders on Graphs with Linear Neighborhood Complexity*.
 -/
 theorem crossings_le_add_twice_hamming (xs ys : List Bool)
     (h : xs.length = ys.length) :
@@ -108,9 +108,6 @@ theorem crossings_le_add_twice_hamming (xs ys : List Bool)
               crossings (b :: tailY) + bitChange a b +
                 2 * hamming tail tailY := by
             simpa [hamming, bitChange] using h'
-          have hgoal : crossings (a :: tail) ≤
-              crossings (b :: tailY) + 2 * bitChange a b +
-                2 * hamming tail tailY := by omega
           change crossings (a :: tail) ≤ crossings (b :: tailY) +
             2 * (bitChange a b + hamming tail tailY)
           calc
