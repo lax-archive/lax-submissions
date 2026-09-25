@@ -17,13 +17,13 @@ def badInjections {α : Type*} [Fintype α] [DecidableEq α]
     (M s : ℕ) (bad : Finset (Finset α)) : Finset (KeyInjection α M) :=
   Finset.univ.filter fun f => keySample f s ∈ bad
 
-theorem keySample_mem_samples {α : Type*} [Fintype α] [DecidableEq α]
+lemma keySample_mem_samples {α : Type*} [Fintype α] [DecidableEq α]
     {M s : ℕ} (f : KeyInjection α M) (hs : s ≤ Fintype.card α) :
     keySample f s ∈ samples (Finset.univ : Finset α) s := by
   simp only [samples, Finset.mem_powersetCard]
   exact ⟨keySample_subset_univ f, card_keySample f hs⟩
 
-theorem card_badInjections_eq_sum {α : Type*} [Fintype α] [DecidableEq α]
+lemma card_badInjections_eq_sum {α : Type*} [Fintype α] [DecidableEq α]
     {M s : ℕ} (bad : Finset (Finset α)) :
     (badInjections M s bad).card =
       ∑ W ∈ bad, (sampleFiber M s W).card := by
@@ -33,7 +33,7 @@ theorem card_badInjections_eq_sum {α : Type*} [Fintype α] [DecidableEq α]
       (s := (Finset.univ : Finset (KeyInjection α M)))
       (t := bad) (g := fun f => keySample f s)).symm
 
-theorem card_injections_eq_sum_samples {α : Type*} [Fintype α]
+lemma card_injections_eq_sum_samples {α : Type*} [Fintype α]
     [DecidableEq α] {M s : ℕ} (hs : s ≤ Fintype.card α) :
     Fintype.card (KeyInjection α M) =
       ∑ W ∈ samples (Finset.univ : Finset α) s,
@@ -51,7 +51,7 @@ theorem card_injections_eq_sum_samples {α : Type*} [Fintype α]
 
 /-- After conditioning on no key collision, membership in any family of
 fixed-size samples has exactly the uniform-subset frequency. -/
-theorem card_badInjections_mul_samples {α : Type*} [Fintype α]
+lemma card_badInjections_mul_samples {α : Type*} [Fintype α]
     [DecidableEq α] {M s : ℕ} (hs : s ≤ Fintype.card α)
     {bad : Finset (Finset α)}
     (hbad : bad ⊆ samples (Finset.univ : Finset α) s) :

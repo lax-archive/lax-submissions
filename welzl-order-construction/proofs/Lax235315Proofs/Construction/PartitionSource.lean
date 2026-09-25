@@ -14,7 +14,7 @@ open Lax235315Proofs.Construction.MarkingMath
 open Lax235315Proofs.Construction.WelzlProgram
 open Lax235315Proofs.Construction.WelzlStraight
 
-theorem scanList_length_eq_activeVertices_card (active : ℕ → ℕ) (n : ℕ) :
+lemma scanList_length_eq_activeVertices_card (active : ℕ → ℕ) (n : ℕ) :
     (scanList active 0 n).length = (activeVertices n active).card := by
   induction n with
   | zero => simp [scanList, activeVertices]
@@ -30,7 +30,7 @@ theorem scanList_length_eq_activeVertices_card (active : ℕ → ℕ) (n : ℕ) 
 
 /-- The concrete one-class initialization has the exact compact size table
 needed by every subsequent refinement. -/
-theorem initPartition_classSizes_and_occupancy
+lemma initPartition_classSizes_and_occupancy
     {n : ℕ} {active cls size : ℕ → ℕ}
     (hfill : ∀ v < n, active v = 1 → cls v = 0)
     (hsize : size 0 = (scanList active 0 n).length)
@@ -69,7 +69,7 @@ def InitPartitionInv (n : ℕ) (active : ℕ → ℕ)
     τ.arrs clsName = arrOf n cls ∧
     ∀ i < τ.vars "v", active i = 1 → cls i = 0
 
-private theorem initPartition_body_spec {B n : ℕ} {active : ℕ → ℕ}
+private lemma initPartition_body_spec {B n : ℕ} {active : ℕ → ℕ}
     {activeName clsName : String}
     (hactiveCls : activeName ≠ clsName)
     (hactiveB : ∀ i < n, active i < B)
@@ -164,7 +164,7 @@ private theorem initPartition_body_spec {B n : ℕ} {active : ℕ → ℕ}
 
 /-- `initPartition` creates the one-class partition of the active side and
 zeros the scratch arrays used by refinement. -/
-theorem initPartition_run {B n : ℕ} {active cls : ℕ → ℕ}
+lemma initPartition_run {B n : ℕ} {active cls : ℕ → ℕ}
     {activeName clsName : String} {σ : Env}
     (hactive : σ.arrs activeName = arrOf n active)
     (hcls : σ.arrs clsName = arrOf n cls)

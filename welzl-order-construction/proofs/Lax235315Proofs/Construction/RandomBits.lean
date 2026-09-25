@@ -13,13 +13,13 @@ open Lax235315Proofs.Construction.WelzlProgram
 def bitsValue (xs : List ℕ) : ℕ :=
   xs.foldl (fun a b => 2 * a + b) 0
 
-@[simp] theorem bitsValue_nil : bitsValue [] = 0 := rfl
+@[simp] lemma bitsValue_nil : bitsValue [] = 0 := rfl
 
-theorem bitsValue_append (xs : List ℕ) (b : ℕ) :
+lemma bitsValue_append (xs : List ℕ) (b : ℕ) :
     bitsValue (xs ++ [b]) = 2 * bitsValue xs + b := by
   simp [bitsValue, List.foldl_append]
 
-theorem bitsValue_lt_pow (xs : List ℕ)
+lemma bitsValue_lt_pow (xs : List ℕ)
     (hbits : ∀ b ∈ xs, b ≤ 1) : bitsValue xs < 2 ^ xs.length := by
   induction xs using List.reverseRecOn with
   | nil => simp
@@ -33,7 +33,7 @@ theorem bitsValue_lt_pow (xs : List ℕ)
       have := ih hxs
       omega
 
-theorem bitsValue_take_succ {xs : List ℕ} {i : ℕ} (hi : i < xs.length) :
+lemma bitsValue_take_succ {xs : List ℕ} {i : ℕ} (hi : i < xs.length) :
     bitsValue (xs.take (i + 1)) =
       2 * bitsValue (xs.take i) + xs.getD i 0 := by
   rw [List.take_succ_eq_append_getElem hi, bitsValue_append]
@@ -47,7 +47,7 @@ def ReadDigitInv (key : String) (v L : ℕ) (bs rest : List ℕ)
 
 /-- One key digit is read exactly, as a binary number, into the selected
 vertex cell. -/
-theorem readKeyDigit_run {B n v L : ℕ} {key : String}
+lemma readKeyDigit_run {B n v L : ℕ} {key : String}
     {σ : Env} {g : ℕ → ℕ} {bs rest : List ℕ}
     (hkey : σ.arrs key = arrOf n g)
     (hv : σ.vars "v" = v) (hvn : v < n)

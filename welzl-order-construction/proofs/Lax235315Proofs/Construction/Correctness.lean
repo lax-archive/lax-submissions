@@ -22,14 +22,14 @@ noncomputable section
 def naturalVertexOrder (n : ℕ) : List (Fin n) :=
   List.ofFn id
 
-theorem naturalVertexOrder_enumerates (n : ℕ) :
+lemma naturalVertexOrder_enumerates (n : ℕ) :
     Enumerates (Set.univ : Set (Fin n)) (naturalVertexOrder n) := by
   constructor
   · exact List.nodup_ofFn.mpr Function.injective_id
   · intro v
     simp [naturalVertexOrder]
 
-theorem naturalVertexOrder_map_val (n : ℕ) :
+lemma naturalVertexOrder_map_val (n : ℕ) :
     (naturalVertexOrder n).map Fin.val = List.range n := by
   apply List.ext_getElem
   · simp [naturalVertexOrder]
@@ -38,7 +38,7 @@ theorem naturalVertexOrder_map_val (n : ℕ) :
 
 /-- A certified run on both full vertex sides yields exactly the graph Welzl
 order encoding used by the submission. -/
-theorem certifiedRun_encodesGraphWelzlOrder {n k q rounds bound : ℕ}
+lemma certifiedRun_encodesGraphWelzlOrder {n k q rounds bound : ℕ}
     (G : SimpleGraph (Fin n)) (l : List (Fin n))
     (h : CertifiedRun G k q rounds Set.univ Set.univ l)
     (hkq : 2 * k ≤ q) (hbound : (rounds + 1) * q ≤ bound) :
@@ -63,7 +63,7 @@ theorem certifiedRun_encodesGraphWelzlOrder {n k q rounds bound : ℕ}
 
 /-- The paper's choice `q = 12 c² log n`, together with at most `log n - 1`
 reduction rounds, gives the advertised `12 c² log² n` crossing bound. -/
-theorem certifiedRun_encodesGraphWelzlOrder_paperBound {n c rounds : ℕ}
+lemma certifiedRun_encodesGraphWelzlOrder_paperBound {n c rounds : ℕ}
     (G : SimpleGraph (Fin n)) (l : List (Fin n))
     (h : CertifiedRun G
       (6 * c ^ 2 * Nat.clog 2 n)
@@ -83,7 +83,7 @@ theorem certifiedRun_encodesGraphWelzlOrder_paperBound {n c rounds : ℕ}
 
 /-- On a small instance the native order is already within any bound at
 least `n`; this is the deterministic base branch of the implementation. -/
-theorem naturalOrder_encodesGraphWelzlOrder {n bound : ℕ}
+lemma naturalOrder_encodesGraphWelzlOrder {n bound : ℕ}
     (G : SimpleGraph (Fin n)) (hbound : n ≤ bound) :
     EncodesGraphWelzlOrder G 1 bound (List.range n) := by
   have hrun : CertifiedRun G 0 n 0 Set.univ Set.univ

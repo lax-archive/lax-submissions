@@ -12,13 +12,13 @@ open Lax235315Proofs.Construction.RadixMath
 open Lax235315Proofs.Construction.WelzlProgram
 open Lax235315Proofs.Construction.WelzlStraight
 
-private theorem getD_eq_of_cells {n : ℕ} {f : ℕ → ℕ} {xs : List ℕ}
+private lemma getD_eq_of_cells {n : ℕ} {f : ℕ → ℕ} {xs : List ℕ}
     {i : ℕ} (harr : i < n) (hixs : i < xs.length)
     (hf : ∀ j < xs.length, f j = xs.getD j 0) :
     (arrOf n f).getD i 0 = xs.getD i 0 := by
   rw [getD_arrOf f harr, hf i hixs]
 
-private theorem count_update (key : ℕ → ℕ) (xs : List ℕ)
+private lemma count_update (key : ℕ → ℕ) (xs : List ℕ)
     {i : ℕ} (hi : i < xs.length) :
     upd (fun d => countDigit key (xs.take i) d) (key xs[i])
         (countDigit key (xs.take i) (key xs[i]) + 1) =
@@ -43,7 +43,7 @@ def CountInv (n q : ℕ) (xs : List ℕ) (keyName : String)
     τ.arrs "count" = arrOf q
       (fun d => countDigit key (xs.take (τ.vars "i")) d)
 
-private theorem count_body_spec {B n q : ℕ} {xs : List ℕ}
+private lemma count_body_spec {B n q : ℕ} {xs : List ℕ}
     {keyName : String} {key ord : ℕ → ℕ}
     (hkeyCount : keyName ≠ "count")
     (hxn : xs.length ≤ n) (hnB : n < B) (hqB : q < B)
@@ -124,7 +124,7 @@ private theorem count_body_spec {B n q : ℕ} {xs : List ℕ}
 
 /-- The first loop of a radix pass replaces the zeroed counter array by the
 exact multiplicity of every digit. -/
-theorem countPhase_run {B n q : ℕ} {xs : List ℕ} {keyName : String}
+lemma countPhase_run {B n q : ℕ} {xs : List ℕ} {keyName : String}
     {key ord count : ℕ → ℕ}
     {σ : Env}
     (halen : σ.vars "alen" = xs.length) (hqpow : σ.vars "qpow" = q)
@@ -172,11 +172,11 @@ theorem countPhase_run {B n q : ℕ} {xs : List ℕ} {keyName : String}
 def prefixCount (key : ℕ → ℕ) (xs : List ℕ) (processed d : ℕ) : ℕ :=
   if d < processed then startDigit key xs d else countDigit key xs d
 
-@[simp] theorem prefixCount_zero (key : ℕ → ℕ) (xs : List ℕ) (d : ℕ) :
+@[simp] lemma prefixCount_zero (key : ℕ → ℕ) (xs : List ℕ) (d : ℕ) :
     prefixCount key xs 0 d = countDigit key xs d := by
   simp [prefixCount]
 
-private theorem prefixCount_update (key : ℕ → ℕ) (xs : List ℕ)
+private lemma prefixCount_update (key : ℕ → ℕ) (xs : List ℕ)
     (i : ℕ) :
     upd (prefixCount key xs i) i (startDigit key xs i) =
       prefixCount key xs (i + 1) := by
@@ -195,7 +195,7 @@ def PrefixInv (q : ℕ) (xs : List ℕ) (key : ℕ → ℕ) (τ : Env) : Prop :=
     τ.vars "sum" = startDigit key xs (τ.vars "digit") ∧
     τ.arrs "count" = arrOf q (prefixCount key xs (τ.vars "digit"))
 
-private theorem prefix_body_spec {B q : ℕ} {xs : List ℕ} {key : ℕ → ℕ}
+private lemma prefix_body_spec {B q : ℕ} {xs : List ℕ} {key : ℕ → ℕ}
     (hqB : q < B) (hlenB : xs.length < B)
     (hstart : startDigit key xs q = xs.length) :
     Spec B
@@ -238,7 +238,7 @@ private theorem prefix_body_spec {B q : ℕ} {xs : List ℕ} {key : ℕ → ℕ}
   · simp [hcell, hsum, hcount, set_arrOf_eq_upd, prefixCount_update]
   all_goals simp [hcell, hcountLen] <;> omega
 
-theorem prefixPhase_run {B q : ℕ} {xs : List ℕ} {key count : ℕ → ℕ}
+lemma prefixPhase_run {B q : ℕ} {xs : List ℕ} {key count : ℕ → ℕ}
     {σ : Env}
     (hqpow : σ.vars "qpow" = q)
     (hcount : σ.arrs "count" = arrOf q count)
@@ -287,7 +287,7 @@ theorem prefixPhase_run {B q : ℕ} {xs : List ℕ} {key count : ℕ → ℕ}
 def scatterCount (key : ℕ → ℕ) (xs : List ℕ) (processed d : ℕ) : ℕ :=
   startDigit key xs d + countDigit key (xs.take processed) d
 
-private theorem scatterCount_update (key : ℕ → ℕ) (xs : List ℕ)
+private lemma scatterCount_update (key : ℕ → ℕ) (xs : List ℕ)
     {i : ℕ} (hi : i < xs.length) :
     upd (scatterCount key xs i) (key xs[i])
         (scatterCount key xs i (key xs[i]) + 1) =
@@ -302,7 +302,7 @@ private theorem scatterCount_update (key : ℕ → ℕ) (xs : List ℕ)
     simp [upd, hd, hne]
     rfl
 
-private theorem scatterPrefix_update (key : ℕ → ℕ) (xs : List ℕ)
+private lemma scatterPrefix_update (key : ℕ → ℕ) (xs : List ℕ)
     (initial : ℕ → ℕ) {i : ℕ} (hi : i < xs.length) :
     upd (scatterPrefix key xs initial i)
         (scatterCount key xs i (key xs[i])) xs[i] =
@@ -321,7 +321,7 @@ def ScatterInv (n q : ℕ) (xs : List ℕ) (keyName : String)
     τ.arrs "scratchOrder" =
       arrOf n (scatterPrefix key xs initial (τ.vars "i"))
 
-private theorem scatter_body_spec {B n q : ℕ} {xs : List ℕ}
+private lemma scatter_body_spec {B n q : ℕ} {xs : List ℕ}
     {keyName : String} {key ord initial : ℕ → ℕ}
     (hkeyCount : keyName ≠ "count")
     (hkeyScratch : keyName ≠ "scratchOrder")
@@ -400,7 +400,7 @@ private theorem scatter_body_spec {B n q : ℕ} {xs : List ℕ}
     simp [hordVal, hkeyVal, hcountVal, hordLen, hkeyLen, hcountLen,
       hscratchLen] <;> omega
 
-theorem scatterPhase_run {B n q : ℕ} {xs : List ℕ} {keyName : String}
+lemma scatterPhase_run {B n q : ℕ} {xs : List ℕ} {keyName : String}
     {key ord count scratch : ℕ → ℕ} {σ : Env}
     (halen : σ.vars "alen" = xs.length)
     (hord : σ.arrs "ord" = arrOf n ord)
@@ -460,7 +460,7 @@ def CopyInv (n : ℕ) (ys : List ℕ) (scratch : ℕ → ℕ) (τ : Env) : Prop 
     (∀ j < ys.length, scratch j = ys.getD j 0) ∧
     Fill.Below "ord" "i" n (fun j => ys.getD j 0) τ
 
-private theorem copy_body_spec {B n : ℕ} {ys : List ℕ} {scratch : ℕ → ℕ}
+private lemma copy_body_spec {B n : ℕ} {ys : List ℕ} {scratch : ℕ → ℕ}
     (hylen : ys.length ≤ n) (hnB : n < B)
     (hyB : ∀ y ∈ ys, y < B) :
     Spec B
@@ -491,7 +491,7 @@ private theorem copy_body_spec {B n : ℕ} {ys : List ℕ} {scratch : ℕ → �
   · exact hfill.step hin (by simpa [hcell])
   all_goals simp [hcell, hscratchLen, hordLen] <;> omega
 
-theorem copyPhase_run {B n : ℕ} {ys : List ℕ} {scratch ord : ℕ → ℕ}
+lemma copyPhase_run {B n : ℕ} {ys : List ℕ} {scratch ord : ℕ → ℕ}
     {σ : Env}
     (halen : σ.vars "alen" = ys.length)
     (hscratch : σ.arrs "scratchOrder" = arrOf n scratch)
@@ -527,7 +527,7 @@ theorem copyPhase_run {B n : ℕ} {ys : List ℕ} {scratch ord : ℕ → ℕ}
 
 /-- One concrete counting-sort pass realizes the mathematical stable bucket
 sort, with a linear source cost. -/
-theorem radixPass_run {B n q : ℕ} {xs : List ℕ} {keyName : String}
+lemma radixPass_run {B n q : ℕ} {xs : List ℕ} {keyName : String}
     {key ord count scratch : ℕ → ℕ} {σ : Env}
     (halen : σ.vars "alen" = xs.length) (hqpow : σ.vars "qpow" = q)
     (hord : σ.arrs "ord" = arrOf n ord)

@@ -54,7 +54,7 @@ def MarkInv (B n targetCap lo hi classCount token : ℕ)
 
 /-- Zero scratch heights and a stamp unequal to the current token establish
 the scan invariant at the left endpoint of a block. -/
-theorem markInv_initial {B n targetCap lo hi classCount token : ℕ}
+lemma markInv_initial {B n targetCap lo hi classCount token : ℕ}
     {activeName clsName : String} {active label size target : ℕ → ℕ}
     {σ : Env} {stamp marked touched counts : ℕ → ℕ}
     (hj : σ.vars "j" = lo) (hjend : σ.vars "jend" = hi)
@@ -97,7 +97,7 @@ theorem markInv_initial {B n targetCap lo hi classCount token : ℕ}
 
 /-- If the next CSR slot contributes no new active vertex, only the scan
 counter changes. -/
-private theorem MarkInv.advanceSame
+private lemma MarkInv.advanceSame
     {B n targetCap lo hi classCount token : ℕ}
     {activeName clsName : String} {active label size target : ℕ → ℕ}
     {σ : Env} (h : MarkInv B n targetCap lo hi classCount token
@@ -132,7 +132,7 @@ private theorem MarkInv.advanceSame
 /-- Mathematical state update performed on the first occurrence of an active
 target.  The hypotheses are only the scalar and array equations supplied by
 the source execution. -/
-private theorem MarkInv.advanceFresh
+private lemma MarkInv.advanceFresh
     {B n targetCap lo hi classCount token : ℕ}
     {activeName clsName : String} {active label size target : ℕ → ℕ}
     {σ σ' : Env} (h : MarkInv B n targetCap lo hi classCount token
@@ -295,7 +295,7 @@ private theorem MarkInv.advanceFresh
       simp [counts', hlabelq, hqlabel, hc]
 
 /-- One inactive CSR entry changes no marking data. -/
-private theorem refineMarkBody_run_inactive
+private lemma refineMarkBody_run_inactive
     {B n targetCap lo hi classCount token : ℕ}
     {activeName clsName : String} {active label size target : ℕ → ℕ}
     {σ : Env}
@@ -362,7 +362,7 @@ private theorem refineMarkBody_run_inactive
 
 /-- A repeated active target is recognized by its stamp and is not recorded
 twice. -/
-private theorem refineMarkBody_run_duplicate
+private lemma refineMarkBody_run_duplicate
     {B n targetCap lo hi classCount token : ℕ}
     {activeName clsName : String} {active label size target : ℕ → ℕ}
     {σ : Env}
@@ -453,7 +453,7 @@ private theorem refineMarkBody_run_duplicate
 /-- A first active occurrence executes both marking stores, records its class
 on the touched stack exactly when that class was previously absent, and
 increments the exact class multiplicity. -/
-private theorem refineMarkBody_run_fresh
+private lemma refineMarkBody_run_fresh
     {B n targetCap lo hi classCount token : ℕ}
     {activeName clsName : String} {active label size target : ℕ → ℕ}
     {σ : Env}
@@ -838,7 +838,7 @@ private theorem refineMarkBody_run_fresh
     exact ⟨σ₇, hrun, hpost, by simp [σ₇, σ₆]⟩
 
 /-- Uniform specification of one duplicate-tolerant CSR marking step. -/
-theorem refineMarkBody_spec
+lemma refineMarkBody_spec
     {B n targetCap lo hi classCount token : ℕ}
     {activeName clsName : String} {active label size target : ℕ → ℕ}
     (htargetRange : ∀ j, lo ≤ j → j < hi → target j < n)
@@ -874,7 +874,7 @@ theorem refineMarkBody_spec
 
 /-- The whole CSR interval scan terminates at `hi` and represents exactly
 the distinct active targets and their touched classes. -/
-theorem refineMarkLoop_run
+lemma refineMarkLoop_run
     {B n targetCap lo hi classCount token : ℕ}
     {activeName clsName : String} {active label size target : ℕ → ℕ}
     {σ : Env}

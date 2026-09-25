@@ -22,7 +22,7 @@ The induction and quotient calculation adapt the arithmetic argument in
 `Lax195003Proofs.Iterations.ShrinkingRun.value_le`, specialized to the
 single-sequence statement here.
 -/
-theorem size_after_rounds (a : ℕ → ℕ) (q : ℕ)
+lemma size_after_rounds (a : ℕ → ℕ) (q : ℕ)
     (step : ∀ i, a (i + 1) ≤ a i / 2 + q) (i : ℕ) :
     a i ≤ a 0 / 2 ^ i + 2 * q := by
   induction i with

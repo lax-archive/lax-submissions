@@ -26,7 +26,7 @@ result to a representative of each set and take the finite supremum.
 Lemma 2.2 of Dreier--Kuske, arXiv:2602.14625v1. The component proof is ported
 from the existing local Welzl development at commit 44a44623.
 -/
-theorem nearTwinReplacement {n k m : ℕ}
+lemma nearTwinReplacement {n k m : ℕ}
     {F R : SetSystem (Fin n)} {π : Equiv.Perm (Fin n)}
     (hrep : ∀ X ∈ F, ∃ Y ∈ R, (X ∆ Y).ncard ≤ k)
     (hπ : crossingNumber R π ≤ m) :
@@ -49,7 +49,7 @@ samples by an exponential, and use the ceiling sampling rate and N≤2^L.
 Lemma 3.7 of Dreier--Kuske, arXiv:2602.14625v1, through the component proof
 ported from the existing local development at commit 44a44623.
 -/
-theorem uniformSampleAvoidance {n : ℕ} {A X : Finset (Fin n)} {c N L : ℕ}
+lemma uniformSampleAvoidance {n : ℕ} {A X : Finset (Fin n)} {c N L : ℕ}
     (hc : 1 ≤ c) (hA : A.Nonempty) (hX : X ⊆ A)
     (hXcard : 6 * c ^ 2 * L ≤ X.card)
     (hAN : A.card ≤ N) (hNpow : N ≤ 2 ^ L) :
@@ -78,7 +78,7 @@ The elementary collision estimate is used to implement the paper's ideal
 sampler with finite random keys. The component proof is ported from the local
 Welzl development at commit 44a44623.
 -/
-theorem randomKeyCollisions (a M : ℕ) :
+lemma randomKeyCollisions (a M : ℕ) :
     {f : Fin a → Fin M | ¬ Function.Injective f}.ncard ≤
       a ^ 2 * M ^ (a - 1) := by
   classical

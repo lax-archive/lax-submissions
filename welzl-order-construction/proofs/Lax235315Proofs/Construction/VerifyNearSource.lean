@@ -19,7 +19,7 @@ open Lax235315Proofs.Construction.WelzlStraight
 
 /-- The three clears and the outer-counter reset establish the exact empty
 prefix invariant of the batched sweep. -/
-theorem prepareNearSweep_run
+lemma prepareNearSweep_run
     {B n targetCap : ℕ} {target off activeA activeB rep : ℕ → ℕ}
     {degree inter stamp neighbors : ℕ → ℕ} {σ : Env}
     (hn : σ.vars "n" = n)
@@ -106,7 +106,7 @@ theorem prepareNearSweep_run
 
 /-- A successful `verifyNear` run certifies every active set-side vertex as
 near its representative on the current active ground set. -/
-theorem verifyNear_run
+lemma verifyNear_run
     {B n targetCap bound : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {target off activeA activeB rep : ℕ → ℕ}
     {degree inter stamp neighbors : ℕ → ℕ} {σ : Env}

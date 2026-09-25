@@ -30,7 +30,7 @@ set_option maxRecDepth 10000
 /-- Concrete representative arrays, their two trace partitions, and a
 successful near check already constitute the abstract reduction certificate
 used in the crossing-number proof. -/
-theorem exists_reduction_of_concrete_partitions
+lemma exists_reduction_of_concrete_partitions
     {n k : ℕ} {G : SimpleGraph (Fin n)}
     {activeA activeB repA repB : ℕ → ℕ} {W R S : Finset ℕ}
     (hB : ConcreteTracePartition G activeB (finSetAsSet W) R repB)
@@ -57,7 +57,7 @@ def secondPartitionAndVerify : Com :=
 /-- The second trace partition and the subsequent source-level checker use
 the same concrete `repB` map as the first trace-partition certificate. Thus a
 successful checker result is already the near condition needed by the paper. -/
-theorem secondPartitionAndVerify_run
+lemma secondPartitionAndVerify_run
     {B n targetCap current bound : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ}
     {activeA activeB labelB repClassB repsB nextB repB

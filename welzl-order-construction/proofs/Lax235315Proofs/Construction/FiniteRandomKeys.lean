@@ -25,14 +25,14 @@ def collisions (α : Type*) [Fintype α] [DecidableEq α] (M : ℕ) :
   ((Finset.univ ×ˢ Finset.univ).filter fun p : α × α => p.1 ≠ p.2).biUnion
     fun p => pairCollisions α M p.1 p.2
 
-theorem card_allAssignments (α : Type*) [Fintype α] [DecidableEq α]
+lemma card_allAssignments (α : Type*) [Fintype α] [DecidableEq α]
     (M : ℕ) :
     (allAssignments α M).card = M ^ Fintype.card α := by
   simp [allAssignments]
 
 /-- Fixing equality of two distinct coordinates removes one independent key
 choice. -/
-theorem card_pairCollisions_le (α : Type*) [Fintype α] [DecidableEq α]
+lemma card_pairCollisions_le (α : Type*) [Fintype α] [DecidableEq α]
     (M : ℕ) {x y : α} (hxy : x ≠ y) :
     (pairCollisions α M x y).card ≤ M ^ (Fintype.card α - 1) := by
   classical
@@ -63,7 +63,7 @@ theorem card_pairCollisions_le (α : Type*) [Fintype α] [DecidableEq α]
       simp [rest, Fintype.card_subtype_compl (fun z : α => z = y)]
 
 /-- Union bound for key collisions. -/
-theorem card_collisions_le (α : Type*) [Fintype α] [DecidableEq α]
+lemma card_collisions_le (α : Type*) [Fintype α] [DecidableEq α]
     (M : ℕ) :
     (collisions α M).card ≤
       Fintype.card α ^ 2 *
@@ -88,7 +88,7 @@ theorem card_collisions_le (α : Type*) [Fintype α] [DecidableEq α]
         _ = Fintype.card α ^ 2 := by simp [pow_two]
 
 /-- In probability form, the collision fraction is at most `a²/M`. -/
-theorem collision_fraction_le (α : Type*) [Fintype α] [DecidableEq α]
+lemma collision_fraction_le (α : Type*) [Fintype α] [DecidableEq α]
     {M : ℕ} (hM : 0 < M) :
     ((collisions α M).card : ℝ) / (allAssignments α M).card ≤
       (Fintype.card α : ℝ) ^ 2 / M := by

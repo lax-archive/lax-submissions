@@ -4,7 +4,7 @@ import Mathlib.Data.Set.SymmDiff
 /-!
 ---
 title: Replacing near twins in a set system
-type: theorem
+type: lemma
 ---
 Suppose every set in a finite set system differs from some representative
 set on at most k vertices. Every order with crossing number at most m for

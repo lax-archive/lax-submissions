@@ -23,7 +23,7 @@ def keyRank {α : Type*} [Fintype α] [DecidableEq α]
     {M : ℕ} (f : α → Fin M) (x : α) : ℕ :=
   (Finset.univ.filter fun y => f y < f x).card
 
-theorem keyRank_lt {α : Type*} [Fintype α] [DecidableEq α]
+lemma keyRank_lt {α : Type*} [Fintype α] [DecidableEq α]
     {M : ℕ} (f : α → Fin M) (x : α) :
     keyRank f x < Fintype.card α := by
   unfold keyRank
@@ -37,7 +37,7 @@ def keyRankFin {α : Type*} [Fintype α] [DecidableEq α]
     {M : ℕ} (f : α → Fin M) (x : α) : Fin (Fintype.card α) :=
   ⟨keyRank f x, keyRank_lt f x⟩
 
-theorem keyRank_strictMono {α : Type*} [Fintype α] [DecidableEq α]
+lemma keyRank_strictMono {α : Type*} [Fintype α] [DecidableEq α]
     {M : ℕ} {f : α → Fin M} {x y : α} (hxy : f x < f y) :
     keyRank f x < keyRank f y := by
   unfold keyRank
@@ -52,7 +52,7 @@ theorem keyRank_strictMono {α : Type*} [Fintype α] [DecidableEq α]
     have := hsub hxmem
     simp at this
 
-theorem keyRankFin_injective {α : Type*} [Fintype α] [DecidableEq α]
+lemma keyRankFin_injective {α : Type*} [Fintype α] [DecidableEq α]
     {M : ℕ} (f : KeyInjection α M) :
     Function.Injective (keyRankFin f.1) := by
   intro x y hrank
@@ -67,7 +67,7 @@ theorem keyRankFin_injective {α : Type*} [Fintype α] [DecidableEq α]
     have := keyRank_strictMono hxy
     exact (Fin.ne_of_lt this) hrank
 
-theorem keyRankFin_surjective {α : Type*} [Fintype α] [DecidableEq α]
+lemma keyRankFin_surjective {α : Type*} [Fintype α] [DecidableEq α]
     {M : ℕ} (f : KeyInjection α M) :
     Function.Surjective (keyRankFin f.1) := by
   exact ((Fintype.bijective_iff_injective_and_card (keyRankFin f.1)).mpr
@@ -78,7 +78,7 @@ def keySample {α : Type*} [Fintype α] [DecidableEq α]
     {M : ℕ} (f : KeyInjection α M) (s : ℕ) : Finset α :=
   Finset.univ.filter fun x => keyRank f.1 x < s
 
-theorem card_keySample {α : Type*} [Fintype α] [DecidableEq α]
+lemma card_keySample {α : Type*} [Fintype α] [DecidableEq α]
     {M s : ℕ} (f : KeyInjection α M) (hs : s ≤ Fintype.card α) :
     (keySample f s).card = s := by
   classical
@@ -106,7 +106,7 @@ theorem card_keySample {α : Type*} [Fintype α] [DecidableEq α]
       rw [← Fintype.card_coe]
       simpa [target] using Fintype.card_fin_lt_of_le hs
 
-theorem keySample_subset_univ {α : Type*} [Fintype α] [DecidableEq α]
+lemma keySample_subset_univ {α : Type*} [Fintype α] [DecidableEq α]
     {M s : ℕ} (f : KeyInjection α M) :
     keySample f s ⊆ Finset.univ := fun _ _ => Finset.mem_univ _
 
@@ -130,7 +130,7 @@ def relabelEquiv {α : Type*} [Fintype α] {M : ℕ}
     funext x
     simp [relabel]
 
-theorem keyRank_relabel {α : Type*} [Fintype α] [DecidableEq α]
+lemma keyRank_relabel {α : Type*} [Fintype α] [DecidableEq α]
     {M : ℕ} (σ : Equiv.Perm α) (f : KeyInjection α M) (x : α) :
     keyRank (relabel σ f).1 (σ x) = keyRank f.1 x := by
   classical
@@ -142,7 +142,7 @@ theorem keyRank_relabel {α : Type*} [Fintype α] [DecidableEq α]
     simp [low, relabel]
   rw [heq, Finset.card_map]
 
-theorem keySample_relabel {α : Type*} [Fintype α] [DecidableEq α]
+lemma keySample_relabel {α : Type*} [Fintype α] [DecidableEq α]
     {M s : ℕ} (σ : Equiv.Perm α) (f : KeyInjection α M) :
     keySample (relabel σ f) s = (keySample f s).map σ.toEmbedding := by
   classical
@@ -167,7 +167,7 @@ def sampleFiber {α : Type*} [Fintype α] [DecidableEq α]
     (M s : ℕ) (W : Finset α) : Finset (KeyInjection α M) :=
   Finset.univ.filter fun f => keySample f s = W
 
-theorem card_sampleFiber_eq_of_map {α : Type*} [Fintype α] [DecidableEq α]
+lemma card_sampleFiber_eq_of_map {α : Type*} [Fintype α] [DecidableEq α]
     {M s : ℕ} {W W' : Finset α} (σ : Equiv.Perm α)
     (hσ : W.map σ.toEmbedding = W') :
     (sampleFiber M s W).card = (sampleFiber M s W').card := by
@@ -186,7 +186,7 @@ theorem card_sampleFiber_eq_of_map {α : Type*} [Fintype α] [DecidableEq α]
 
 /-- All samples of the same size have equally many collision-free key
 assignments. -/
-theorem card_sampleFiber_eq_of_card {α : Type*} [Fintype α] [DecidableEq α]
+lemma card_sampleFiber_eq_of_card {α : Type*} [Fintype α] [DecidableEq α]
     {M s : ℕ} {W W' : Finset α} (hcard : W.card = W'.card) :
     (sampleFiber M s W).card = (sampleFiber M s W').card := by
   classical
@@ -195,7 +195,7 @@ theorem card_sampleFiber_eq_of_card {α : Type*} [Fintype α] [DecidableEq α]
 
 /-- The fibers of the collision-free key sampler are uniform on the
 prescribed-size subsets. -/
-theorem card_sampleFiber_eq {α : Type*} [Fintype α] [DecidableEq α]
+lemma card_sampleFiber_eq {α : Type*} [Fintype α] [DecidableEq α]
     {M s : ℕ} {W W' : Finset α}
     (hW : W ∈ samples (Finset.univ : Finset α) s)
     (hW' : W' ∈ samples (Finset.univ : Finset α) s) :

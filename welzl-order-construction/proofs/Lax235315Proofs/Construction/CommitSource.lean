@@ -24,7 +24,7 @@ def AdoptInv (n : ℕ) (nextA nextB : ℕ → ℕ) (τ : Env) : Prop :=
 
 /-- The literal `adoptNext` pass replaces both active indicator arrays by
 the outputs of the two verified trace partitions. -/
-theorem adoptNext_run {B n : ℕ} {σ : Env}
+lemma adoptNext_run {B n : ℕ} {σ : Env}
     {activeA activeB nextA nextB : ℕ → ℕ}
     (hn : σ.vars "n" = n)
     (hactiveA : σ.arrs "activeA" = arrOf n activeA)

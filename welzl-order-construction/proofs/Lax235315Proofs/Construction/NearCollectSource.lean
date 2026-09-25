@@ -33,7 +33,7 @@ def NeighborInv (B n targetCap lo hi token : ℕ)
     (∀ v < n, stamp v ≤ token) ∧
     ∀ v < n, stamp v < B
 
-theorem neighborInv_initial
+lemma neighborInv_initial
     {B n targetCap lo hi token : ℕ} {active target : ℕ → ℕ}
     {σ : Env} {stamp neighbors : ℕ → ℕ}
     (hj : σ.vars "j" = lo) (hjend : σ.vars "jend" = hi)
@@ -57,7 +57,7 @@ theorem neighborInv_initial
   · intro v hv
     simp [hj, hstampNe v hv]
 
-private theorem NeighborInv.advanceSame
+private lemma NeighborInv.advanceSame
     {B n targetCap lo hi token : ℕ} {active target : ℕ → ℕ}
     {σ : Env}
     (hI : NeighborInv B n targetCap lo hi token active target σ)
@@ -78,7 +78,7 @@ private theorem NeighborInv.advanceSame
   · intro v hv
     simpa [σ', hsame] using hstampMem v hv
 
-private theorem NeighborInv.advanceFresh
+private lemma NeighborInv.advanceFresh
     {B n targetCap lo hi token : ℕ} {active target : ℕ → ℕ}
     {σ σ' : Env}
     (hI : NeighborInv B n targetCap lo hi token active target σ)
@@ -170,7 +170,7 @@ private theorem NeighborInv.advanceFresh
     · exact hstampB u hu
 
 /-- One collection step preserves `NeighborInv` and advances the CSR index. -/
-theorem collectNeighborBody_spec
+lemma collectNeighborBody_spec
     {B n targetCap lo hi token : ℕ} {active target : ℕ → ℕ}
     (htargetRange : ∀ j, lo ≤ j → j < hi → target j < n)
     (hactiveB : ∀ v < n, active v < B)
@@ -350,7 +350,7 @@ theorem collectNeighborBody_spec
 
 /-- The complete interval scan produces a duplicate-free enumeration of its
 active targets. -/
-theorem collectNeighborLoop_run
+lemma collectNeighborLoop_run
     {B n targetCap lo hi token : ℕ} {active target : ℕ → ℕ} {σ : Env}
     (hI : NeighborInv B n targetCap lo hi token active target σ)
     (htargetRange : ∀ j, lo ≤ j → j < hi → target j < n)

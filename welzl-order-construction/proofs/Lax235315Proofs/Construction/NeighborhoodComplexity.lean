@@ -20,13 +20,13 @@ def neighborhoodTrace {V : Type*} (G : SimpleGraph V) (A : Set V)
     (v : V) : Set V :=
   G.neighborSet v ∩ A
 
-theorem range_neighborhoodTrace {V : Type*} (G : SimpleGraph V) (A : Set V) :
+lemma range_neighborhoodTrace {V : Type*} (G : SimpleGraph V) (A : Set V) :
     Set.range (neighborhoodTrace G A) =
       {S : Set V | ∃ v : V, S = G.neighborSet v ∩ A} := by
   ext S
   simp [neighborhoodTrace, eq_comm]
 
-theorem ncard_image_neighborhoodTrace_le_traceCount {n : ℕ}
+lemma ncard_image_neighborhoodTrace_le_traceCount {n : ℕ}
     (G : SimpleGraph (Fin n)) (A R : Set (Fin n)) :
     (neighborhoodTrace G A '' R).ncard ≤ traceCount G A := by
   unfold traceCount
@@ -41,7 +41,7 @@ theorem ncard_image_neighborhoodTrace_le_traceCount {n : ℕ}
 
 /-- Any set of vertices having pairwise distinct traces on `A` has at most
 `traceCount G A` members. -/
-theorem ncard_le_traceCount_of_injOn {n : ℕ} (G : SimpleGraph (Fin n))
+lemma ncard_le_traceCount_of_injOn {n : ℕ} (G : SimpleGraph (Fin n))
     (A R : Set (Fin n))
     (hR : Set.InjOn (neighborhoodTrace G A) R) :
     R.ncard ≤ traceCount G A := by
@@ -50,7 +50,7 @@ theorem ncard_le_traceCount_of_injOn {n : ℕ} (G : SimpleGraph (Fin n))
 
 /-- Every particular trace count is bounded by the graph's neighborhood
 complexity at the cardinality of the test set. -/
-theorem traceCount_le_neighborhoodComplexity {n : ℕ}
+lemma traceCount_le_neighborhoodComplexity {n : ℕ}
     (G : SimpleGraph (Fin n)) (A : Set (Fin n)) :
     traceCount G A ≤ neighborhoodComplexity G A.ncard := by
   unfold neighborhoodComplexity
@@ -64,7 +64,7 @@ theorem traceCount_le_neighborhoodComplexity {n : ℕ}
 
 /-- On every nonempty test set, a linear-neighborhood-complexity constant
 bounds the number of induced twin classes by `c * |A|`. -/
-theorem traceCount_le_mul_ncard {n c : ℕ} {G : SimpleGraph (Fin n)}
+lemma traceCount_le_mul_ncard {n c : ℕ} {G : SimpleGraph (Fin n)}
     (hG : HasLinearNeighborhoodComplexityWithConstant G c)
     {A : Set (Fin n)} (hA : A.Nonempty) :
     traceCount G A ≤ c * A.ncard := by
@@ -73,7 +73,7 @@ theorem traceCount_le_mul_ncard {n c : ℕ} {G : SimpleGraph (Fin n)}
 
 /-- The representative-count estimate used twice in each iteration of the
 paper's algorithm. -/
-theorem ncard_le_mul_of_injOn {n c : ℕ} {G : SimpleGraph (Fin n)}
+lemma ncard_le_mul_of_injOn {n c : ℕ} {G : SimpleGraph (Fin n)}
     (hG : HasLinearNeighborhoodComplexityWithConstant G c)
     {A R : Set (Fin n)} (hA : A.Nonempty)
     (hR : Set.InjOn (neighborhoodTrace G A) R) :

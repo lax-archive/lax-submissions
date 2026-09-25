@@ -9,7 +9,7 @@ namespace Lax235315Proofs.Construction.GraphNeighborhood
 open Lax195003.WelzlOrdersNeighborhoodSetSystem
 
 /-- The submitted open `1`-neighborhood is the ordinary neighbor set. -/
-theorem openNeighborhood_one_eq {n : ℕ} (G : SimpleGraph (Fin n))
+lemma openNeighborhood_one_eq {n : ℕ} (G : SimpleGraph (Fin n))
     (v : Fin n) :
     {u : Fin n | u ≠ v ∧ ∃ w : G.Walk v u, w.length ≤ 1} =
       G.neighborSet v := by
@@ -27,7 +27,7 @@ theorem openNeighborhood_one_eq {n : ℕ} (G : SimpleGraph (Fin n))
 
 /-- The radius-one neighborhood set system is exactly the family of open
 vertex neighborhoods. -/
-theorem neighborhoodSetSystem_one {n : ℕ} (G : SimpleGraph (Fin n)) :
+lemma neighborhoodSetSystem_one {n : ℕ} (G : SimpleGraph (Fin n)) :
     neighborhoodSetSystem G 1 =
       {X : Set (Fin n) | ∃ v : Fin n, X = G.neighborSet v} := by
   ext X

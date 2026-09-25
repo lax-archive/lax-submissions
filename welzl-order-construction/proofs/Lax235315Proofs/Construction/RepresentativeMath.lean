@@ -8,7 +8,7 @@ namespace Lax235315Proofs.Construction.RepresentativeMath
 open Lax808846Proofs.Reasoning.Lib
 open Lax235315Proofs.Construction.MarkingMath
 
-theorem activeVertices_succ {active : ℕ → ℕ} {i : ℕ} :
+lemma activeVertices_succ {active : ℕ → ℕ} {i : ℕ} :
     activeVertices (i + 1) active =
       if active i = 1 then insert i (activeVertices i active)
       else activeVertices i active := by
@@ -34,7 +34,7 @@ structure RepData (n current processed : ℕ) (active label : ℕ → ℕ)
     repClass q ∈ R ∧ label (repClass q) = q
   out_mem : ∀ v < n, outActive v = 1 ↔ v ∈ R
 
-theorem RepData.initial {n current : ℕ} {active label reps : ℕ → ℕ} :
+lemma RepData.initial {n current : ℕ} {active label reps : ℕ → ℕ} :
     RepData n current 0 active label (fun _ => n) reps (fun _ => 0) ∅ := by
   constructor
   · exact prefixEnumerates_zero reps
@@ -46,7 +46,7 @@ theorem RepData.initial {n current : ℕ} {active label reps : ℕ → ℕ} :
   · simp
   · simp
 
-theorem RepData.inactive {n current i : ℕ}
+lemma RepData.inactive {n current i : ℕ}
     {active label repClass reps outActive : ℕ → ℕ} {R : Finset ℕ}
     (h : RepData n current i active label repClass reps outActive R)
     (hi : active i ≠ 1) :
@@ -57,7 +57,7 @@ theorem RepData.inactive {n current i : ℕ}
   · simpa [hprocessed] using h.reps_processed
   · simpa [hprocessed] using h.covers
 
-theorem RepData.existing {n current i q : ℕ}
+lemma RepData.existing {n current i q : ℕ}
     {active label repClass reps outActive : ℕ → ℕ} {R : Finset ℕ}
     (h : RepData n current i active label repClass reps outActive R)
     (hi : i < n) (hai : active i = 1) (hlabel : label i = q)
@@ -82,7 +82,7 @@ theorem RepData.existing {n current i q : ℕ}
     · exact ⟨repClass q, hrep.1, by simpa [hlabel] using hrep.2⟩
     · exact h.covers v hv
 
-theorem RepData.fresh {n current i q : ℕ}
+lemma RepData.fresh {n current i q : ℕ}
     {active label repClass reps outActive : ℕ → ℕ} {R : Finset ℕ}
     (h : RepData n current i active label repClass reps outActive R)
     (hi : i < n) (hai : active i = 1) (hlabel : label i = q)

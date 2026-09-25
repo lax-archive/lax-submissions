@@ -13,15 +13,15 @@ open Lax235315Proofs.Construction.WelzlProgram
 open Lax235315Proofs.Construction.WelzlStraight
 open Lax235315Proofs.Construction.WelzlLog
 
-private theorem getD_take {l : List ℕ} {k i : ℕ} (h : i < k) :
+private lemma getD_take {l : List ℕ} {k i : ℕ} (h : i < k) :
     (l.take k).getD i 0 = l.getD i 0 := by
   simp [List.getD_eq_getElem?_getD, h]
 
-private theorem getD_drop {l : List ℕ} {k i : ℕ} :
+private lemma getD_drop {l : List ℕ} {k i : ℕ} :
     (l.drop k).getD i 0 = l.getD (k + i) 0 := by
   simp [List.getD_eq_getElem?_getD]
 
-private theorem getD_cons_cons (a b : ℕ) (l : List ℕ) (i : ℕ) :
+private lemma getD_cons_cons (a b : ℕ) (l : List ℕ) (i : ℕ) :
     (a :: b :: l).getD (2 + i) 0 = l.getD i 0 := by
   have h : 2 + i = i + 1 + 1 := by omega
   rw [h]
@@ -32,22 +32,22 @@ def welzlExt (n m qpow : ℕ) (a : String) : ℕ :=
   if a = "off" then n + 1 else if a = "tgt" then 2 * m else
     if a = "count" then qpow else n
 
-@[simp] theorem welzlExt_off (n m q : ℕ) : welzlExt n m q "off" = n + 1 := by
+@[simp] lemma welzlExt_off (n m q : ℕ) : welzlExt n m q "off" = n + 1 := by
   simp [welzlExt]
 
-@[simp] theorem welzlExt_tgt (n m q : ℕ) : welzlExt n m q "tgt" = 2 * m := by
+@[simp] lemma welzlExt_tgt (n m q : ℕ) : welzlExt n m q "tgt" = 2 * m := by
   simp [welzlExt]
 
-@[simp] theorem welzlExt_count (n m q : ℕ) : welzlExt n m q "count" = q := by
+@[simp] lemma welzlExt_count (n m q : ℕ) : welzlExt n m q "count" = q := by
   simp [welzlExt]
 
-@[simp] theorem welzlExt_other (n m q : ℕ) {a : String}
+@[simp] lemma welzlExt_other (n m q : ℕ) {a : String}
     (hoff : a ≠ "off") (htgt : a ≠ "tgt") (hcount : a ≠ "count") :
     welzlExt n m q a = n := by
   simp [welzlExt, hoff, htgt, hcount]
 
 /-- Split an encoded word into its header, offset block, and target block. -/
-theorem encodesGraph_split {x : List ℕ} {n : ℕ} {G : SimpleGraph (Fin n)}
+lemma encodesGraph_split {x : List ℕ} {n : ℕ} {G : SimpleGraph (Fin n)}
     (hx : EncodesGraph x n G) :
     ∃ (m : ℕ) (ys zs : List ℕ),
       edgeCount x = m ∧ x = n :: m :: (ys ++ zs) ∧
@@ -89,7 +89,7 @@ theorem encodesGraph_split {x : List ℕ} {n : ℕ} {G : SimpleGraph (Fin n)}
 
 /-- The graph-reading phase copies the CSR blocks literally and leaves the
 random suffix untouched. -/
-theorem readGraph_run {B c n m qpow : ℕ} {x bits : List ℕ}
+lemma readGraph_run {B c n m qpow : ℕ} {x bits : List ℕ}
     {G : SimpleGraph (Fin n)} (hx : EncodesGraph x n G)
     (hm : edgeCount x = m)
     {ys zs : List ℕ}
@@ -198,7 +198,7 @@ theorem readGraph_run {B c n m qpow : ℕ} {x bits : List ℕ}
 
 /-- The deterministic initialization phase computes the exact logarithm,
 fills both active sides, and zeros the reconstruction counters. -/
-theorem initializeWelzl_run {B n : ℕ} {σ : Env} {fA fB : ℕ → ℕ}
+lemma initializeWelzl_run {B n : ℕ} {σ : Env} {fA fB : ℕ → ℕ}
     (hn : σ.vars "n" = n)
     (hA : σ.arrs "activeA" = arrOf n fA)
     (hBside : σ.arrs "activeB" = arrOf n fB)

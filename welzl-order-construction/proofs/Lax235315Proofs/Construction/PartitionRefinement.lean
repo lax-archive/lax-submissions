@@ -20,7 +20,7 @@ def Classifies (V S : Set (Fin n)) (label : Fin n → ℕ) : Prop :=
   ∀ ⦃u⦄, u ∈ V → ∀ ⦃v⦄, v ∈ V →
     (label u = label v ↔ neighborhoodTrace G S u = neighborhoodTrace G S v)
 
-theorem classifies_empty (V : Set (Fin n)) :
+lemma classifies_empty (V : Set (Fin n)) :
     Classifies G V ∅ (fun _ => 0) := by
   intro u hu v hv
   simp [neighborhoodTrace]
@@ -31,7 +31,7 @@ def refineLabel (label : Fin n → ℕ) (t : Fin n) (v : Fin n) : ℕ := by
   classical
   exact if G.Adj t v then 2 * label v + 1 else 2 * label v
 
-theorem refineLabel_eq_iff {label : Fin n → ℕ} {t u v : Fin n} :
+lemma refineLabel_eq_iff {label : Fin n → ℕ} {t u v : Fin n} :
     refineLabel G label t u = refineLabel G label t v ↔
       label u = label v ∧ (G.Adj t u ↔ G.Adj t v) := by
   classical
@@ -39,7 +39,7 @@ theorem refineLabel_eq_iff {label : Fin n → ℕ} {t u v : Fin n} :
   by_cases hu : G.Adj t u <;> by_cases hv : G.Adj t v <;>
     simp [hu, hv] <;> omega
 
-theorem neighborhoodTrace_insert_eq_iff {S : Set (Fin n)} {t u v : Fin n} :
+lemma neighborhoodTrace_insert_eq_iff {S : Set (Fin n)} {t u v : Fin n} :
     neighborhoodTrace G (insert t S) u = neighborhoodTrace G (insert t S) v ↔
       neighborhoodTrace G S u = neighborhoodTrace G S v ∧
         (G.Adj t u ↔ G.Adj t v) := by
@@ -65,7 +65,7 @@ theorem neighborhoodTrace_insert_eq_iff {S : Set (Fin n)} {t u v : Fin n} :
       simp [neighborhoodTrace, G.adj_comm, ht]
     · simpa [neighborhoodTrace, hxt] using hx
 
-theorem Classifies.refine {V S : Set (Fin n)} {label : Fin n → ℕ}
+lemma Classifies.refine {V S : Set (Fin n)} {label : Fin n → ℕ}
     (h : Classifies G V S label) (t : Fin n) :
     Classifies G V (insert t S) (refineLabel G label t) := by
   intro u hu v hv
@@ -83,7 +83,7 @@ def RefinesBy (V : Set (Fin n)) (label label' : Fin n → ℕ)
       label u = label v ∧ (G.Adj t u ↔ G.Adj t v))
 
 /-- Compact numeric refinement preserves the semantic trace invariant. -/
-theorem Classifies.of_refinesBy {V S : Set (Fin n)}
+lemma Classifies.of_refinesBy {V S : Set (Fin n)}
     {label label' : Fin n → ℕ} {t : Fin n}
     (h : Classifies G V S label)
     (hrefine : RefinesBy G V label label' t) :

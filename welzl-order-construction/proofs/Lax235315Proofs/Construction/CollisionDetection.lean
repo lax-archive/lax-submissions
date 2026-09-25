@@ -20,13 +20,13 @@ instance equalOnDecidable (value : String → ℕ → ℕ) (keys : List String)
   unfold EqualOn
   infer_instance
 
-@[simp] theorem checkAllDigitsEqual_warrs (keys : List String) :
+@[simp] lemma checkAllDigitsEqual_warrs (keys : List String) :
     (checkAllDigitsEqual keys).warrs = [] := by
   induction keys with
   | nil => rfl
   | cons key keys ih => simp [checkAllDigitsEqual, Com.warrs, ih]
 
-@[simp] theorem checkAllDigitsEqual_wvars (keys : List String) :
+@[simp] lemma checkAllDigitsEqual_wvars (keys : List String) :
     (checkAllDigitsEqual keys).wvars = ["collision"] := by
   induction keys with
   | nil => rfl
@@ -34,7 +34,7 @@ instance equalOnDecidable (value : String → ℕ → ℕ) (keys : List String)
 
 /-- The short-circuit comparison sets `collision` precisely when every
 listed array agrees at `left` and `right`. -/
-theorem checkAllDigitsEqual_run {B n left right : ℕ}
+lemma checkAllDigitsEqual_run {B n left right : ℕ}
     {value : String → ℕ → ℕ} {keys : List String} {σ : Env}
     (hleft : σ.vars "left" = left) (hright : σ.vars "right" = right)
     (hleftn : left < n) (hrightn : right < n)
@@ -99,7 +99,7 @@ noncomputable instance adjacentBeforeDecidable (value : String → ℕ → ℕ)
     (keys : List String) (xs : List ℕ) (i : ℕ) :
     Decidable (AdjacentBefore value keys xs i) := Classical.propDecidable _
 
-theorem adjacentBefore_succ {value : String → ℕ → ℕ} {keys : List String}
+lemma adjacentBefore_succ {value : String → ℕ → ℕ} {keys : List String}
     {xs : List ℕ} {i : ℕ} (hi : 1 ≤ i) :
     AdjacentBefore value keys xs (i + 1) ↔
       AdjacentBefore value keys xs i ∨
@@ -126,7 +126,7 @@ def DetectInv (n : ℕ) (value : String → ℕ → ℕ) (xs : List ℕ)
       if AdjacentBefore value keyNames xs (τ.vars "i") then 1 else 0
 
 /-- `detectCollision` checks exactly all adjacent pairs in `ord`. -/
-theorem detectCollision_run {B n : ℕ} {value : String → ℕ → ℕ}
+lemma detectCollision_run {B n : ℕ} {value : String → ℕ → ℕ}
     {xs : List ℕ} {ord : ℕ → ℕ} {σ : Env}
     (halen : σ.vars "alen" = xs.length)
     (hord : σ.arrs "ord" = arrOf n ord)
@@ -336,11 +336,11 @@ def keyIndex (key : String) : Fin 8 :=
 def digitValue (digits : Fin 8 → ℕ → ℕ) (key : String) (v : ℕ) : ℕ :=
   digits (keyIndex key) v
 
-@[simp] theorem digitValue_keyName (digits : Fin 8 → ℕ → ℕ) (d : Fin 8) :
+@[simp] lemma digitValue_keyName (digits : Fin 8 → ℕ → ℕ) (d : Fin 8) :
     digitValue digits (keyName d) = digits d := by
   fin_cases d <;> funext v <;> simp [digitValue, keyIndex, keyName]
 
-theorem mem_keyNames_iff {key : String} :
+lemma mem_keyNames_iff {key : String} :
     key ∈ keyNames ↔ ∃ d : Fin 8, key = keyName d := by
   constructor
   · intro h
@@ -365,7 +365,7 @@ instance allDigitsEqualDecidable (digits : Fin 8 → ℕ → ℕ) (x y : ℕ) :
   unfold AllDigitsEqual
   infer_instance
 
-theorem equalOn_digitValue_iff (digits : Fin 8 → ℕ → ℕ) (x y : ℕ) :
+lemma equalOn_digitValue_iff (digits : Fin 8 → ℕ → ℕ) (x y : ℕ) :
     EqualOn (digitValue digits) keyNames x y ↔ AllDigitsEqual digits x y := by
   constructor
   · intro h d
@@ -383,7 +383,7 @@ noncomputable instance hasAdjacentEqualDigitsDecidable (digits : Fin 8 → ℕ �
     (xs : List ℕ) : Decidable (HasAdjacentEqualDigits digits xs) :=
   Classical.propDecidable _
 
-theorem adjacentBefore_digitValue_iff (digits : Fin 8 → ℕ → ℕ)
+lemma adjacentBefore_digitValue_iff (digits : Fin 8 → ℕ → ℕ)
     (xs : List ℕ) :
     AdjacentBefore (digitValue digits) keyNames xs xs.length ↔
       HasAdjacentEqualDigits digits xs := by
@@ -397,7 +397,7 @@ theorem adjacentBefore_digitValue_iff (digits : Fin 8 → ℕ → ℕ)
   exact equalOn_digitValue_iff digits _ _
 
 /-- The concrete detector, specialized to the program's eight arrays. -/
-theorem detectCollision_digits_run {B n : ℕ}
+lemma detectCollision_digits_run {B n : ℕ}
     {digits : Fin 8 → ℕ → ℕ} {xs : List ℕ} {ord : ℕ → ℕ} {σ : Env}
     (halen : σ.vars "alen" = xs.length)
     (hord : σ.arrs "ord" = arrOf n ord)

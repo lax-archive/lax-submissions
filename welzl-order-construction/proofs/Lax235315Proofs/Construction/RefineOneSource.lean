@@ -21,7 +21,7 @@ open Lax11Proofs.CC
 
 /-- A numeric binary-refinement certificate for one encoded CSR block is the
 graph-theoretic refinement relation on the corresponding active vertex set. -/
-theorem refinesBy_of_numeric_block
+lemma refinesBy_of_numeric_block
     {n : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     (hx : EncodesGraph x n G) {active label label' : ℕ → ℕ}
     (t : Fin n)
@@ -65,7 +65,7 @@ def finishRefinement (clsName : String) : Com :=
 /-- Once the adjacency scan has collected its distinct active targets, the
 remaining loops allocate compact classes, relabel exactly those targets, and
 restore the marked counters to zero. -/
-theorem finishRefinement_run
+lemma finishRefinement_run
     {B n targetCap lo hi base token : ℕ}
     {activeName clsName : String}
     {active label size target initialSplit : ℕ → ℕ}
@@ -336,7 +336,7 @@ theorem finishRefinement_run
 
 /-- One complete `refineOne` call realizes binary refinement by the distinct
 active targets in the selected CSR block. -/
-theorem refineOne_run
+lemma refineOne_run
     {B n targetCap base token t : ℕ}
     {activeName clsName : String}
     {active label size offset target stamp counts marked touched split₀ : ℕ → ℕ}

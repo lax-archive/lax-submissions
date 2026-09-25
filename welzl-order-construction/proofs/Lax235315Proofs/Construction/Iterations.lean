@@ -18,7 +18,7 @@ inductive ShrinkingRun (d threshold initial : ℕ) : ℕ → ℕ → Prop
 
 /-- Unfolding `a' ≤ a/2+d` gives the geometric estimate from the paper,
 with the geometric tail bounded by `2d`. -/
-theorem ShrinkingRun.value_le {d threshold initial rounds a : ℕ}
+lemma ShrinkingRun.value_le {d threshold initial rounds a : ℕ}
     (h : ShrinkingRun d threshold initial rounds a) :
     a ≤ initial / 2 ^ rounds + 2 * d := by
   induction h with
@@ -36,7 +36,7 @@ theorem ShrinkingRun.value_le {d threshold initial rounds a : ℕ}
 /-- If `initial ≤ 2^L`, `d,L ≥ 1`, and the loop threshold is `12dL`,
 there can be at most `L` reduction rounds. This is the natural-number
 counterpart of Theorem 3.1. -/
-theorem ShrinkingRun.rounds_le {d initial rounds a L : ℕ}
+lemma ShrinkingRun.rounds_le {d initial rounds a L : ℕ}
     (hd : 1 ≤ d) (hL : 1 ≤ L) (hinitial : initial ≤ 2 ^ L)
     (h : ShrinkingRun d (12 * d * L) initial rounds a) :
     rounds ≤ L := by
@@ -63,7 +63,7 @@ theorem ShrinkingRun.rounds_le {d initial rounds a L : ℕ}
 
 /-- The sharper form used by the crossing induction: the number of rounds
 plus the base layer is at most `L`. -/
-theorem ShrinkingRun.rounds_succ_le {d initial rounds a L : ℕ}
+lemma ShrinkingRun.rounds_succ_le {d initial rounds a L : ℕ}
     (hd : 1 ≤ d) (hL : 1 ≤ L) (hinitial : initial ≤ 2 ^ L)
     (h : ShrinkingRun d (12 * d * L) initial rounds a) :
     rounds + 1 ≤ L := by
@@ -92,7 +92,7 @@ theorem ShrinkingRun.rounds_succ_le {d initial rounds a L : ℕ}
       omega
 
 /-- Specialization to the paper's `d=c²` and the ceiling binary logarithm. -/
-theorem ShrinkingRun.rounds_le_clog {n c rounds a : ℕ}
+lemma ShrinkingRun.rounds_le_clog {n c rounds a : ℕ}
     (hc : 1 ≤ c) (hn : 1 < n)
     (h : ShrinkingRun (c ^ 2)
       (12 * c ^ 2 * Nat.clog 2 n) n rounds a) :
@@ -102,7 +102,7 @@ theorem ShrinkingRun.rounds_le_clog {n c rounds a : ℕ}
   · exact Nat.clog_pos (by omega) hn
   · exact Nat.le_pow_clog (by omega) n
 
-theorem ShrinkingRun.rounds_succ_le_clog {n c rounds a : ℕ}
+lemma ShrinkingRun.rounds_succ_le_clog {n c rounds a : ℕ}
     (hc : 1 ≤ c) (hn : 1 < n)
     (h : ShrinkingRun (c ^ 2)
       (12 * c ^ 2 * Nat.clog 2 n) n rounds a) :

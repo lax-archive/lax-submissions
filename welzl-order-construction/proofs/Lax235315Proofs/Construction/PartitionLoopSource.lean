@@ -24,12 +24,12 @@ noncomputable section
 def testPrefix {n : ℕ} (tests : ℕ → ℕ) (i : ℕ) : Set (Fin n) :=
   {v | ∃ j < i, tests j = v.val}
 
-@[simp] theorem testPrefix_zero {n : ℕ} (tests : ℕ → ℕ) :
+@[simp] lemma testPrefix_zero {n : ℕ} (tests : ℕ → ℕ) :
     testPrefix (n := n) tests 0 = ∅ := by
   ext v
   simp [testPrefix]
 
-theorem testPrefix_succ {n i : ℕ} {tests : ℕ → ℕ}
+lemma testPrefix_succ {n i : ℕ} {tests : ℕ → ℕ}
     (hi : tests i < n) :
     testPrefix (n := n) tests (i + 1) =
       insert (⟨tests i, hi⟩ : Fin n) (testPrefix tests i) := by
@@ -85,7 +85,7 @@ def RefineTestsInv {n : ℕ} (G : SimpleGraph (Fin n))
     Classifies G {v : Fin n | active v.val = 1}
       (testPrefix tests (τ.vars "ti")) (fun v => label v.val)
 
-private theorem partitionRefineBody_run
+private lemma partitionRefineBody_run
     {B n targetCap testCount : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {active tests : ℕ → ℕ}
     {activeName testsName testCountName clsName : String}
@@ -277,7 +277,7 @@ def refinementWork (x : List ℕ) (tests : ℕ → ℕ) : ℕ → ℕ → ℕ
       (offset x (tests i + 1) - offset x (tests i) + 1) +
         refinementWork x tests (i + 1) k
 
-theorem refinementWork_eq_sum_range (x : List ℕ) (tests : ℕ → ℕ)
+lemma refinementWork_eq_sum_range (x : List ℕ) (tests : ℕ → ℕ)
     (i k : ℕ) :
     refinementWork x tests i k =
       ∑ j ∈ Finset.range k,
@@ -289,7 +289,7 @@ theorem refinementWork_eq_sum_range (x : List ℕ) (tests : ℕ → ℕ)
       rw [ih (i + 1)]
       simp [deg, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
 
-theorem refinementWork_le_edgeCount_add
+lemma refinementWork_le_edgeCount_add
     {n k : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ} {tests : ℕ → ℕ}
     (hx : EncodesGraph x n G)
     (hrange : ∀ i < k, tests i < n)
@@ -304,7 +304,7 @@ theorem refinementWork_le_edgeCount_add
 
 /-- All refinement passes terminate with the exact graph-trace equivalence
 relation induced by the supplied test prefix. -/
-theorem partitionRefineLoop_run
+lemma partitionRefineLoop_run
     {B n targetCap testCount : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {active tests : ℕ → ℕ}
     {activeName testsName testCountName clsName : String} {σ : Env}

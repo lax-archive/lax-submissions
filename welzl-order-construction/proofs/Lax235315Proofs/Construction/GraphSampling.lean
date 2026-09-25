@@ -22,12 +22,12 @@ def traceFinset {n : ℕ} (G : SimpleGraph (Fin n))
     (A : Finset (Fin n)) (v : Fin n) : Finset (Fin n) :=
   (Set.toFinite (neighborhoodTrace G (A : Set (Fin n)) v)).toFinset
 
-@[simp] theorem coe_traceFinset (A : Finset (Fin n)) (v : Fin n) :
+@[simp] lemma coe_traceFinset (A : Finset (Fin n)) (v : Fin n) :
     (traceFinset G A v : Set (Fin n)) =
       neighborhoodTrace G (A : Set (Fin n)) v := by
   simp [traceFinset]
 
-theorem traceFinset_subset (A : Finset (Fin n)) (v : Fin n) :
+lemma traceFinset_subset (A : Finset (Fin n)) (v : Fin n) :
     traceFinset G A v ⊆ A := by
   intro u hu
   have hu' : u ∈ neighborhoodTrace G (A : Set (Fin n)) v := by
@@ -39,7 +39,7 @@ def traceFamily {n : ℕ} (G : SimpleGraph (Fin n))
     (A B : Finset (Fin n)) : Finset (Finset (Fin n)) :=
   B.image (traceFinset G A)
 
-theorem coe_traceFamily (A B : Finset (Fin n)) :
+lemma coe_traceFamily (A B : Finset (Fin n)) :
     (traceFamily G A B : Set (Finset (Fin n))) =
       traceFinset G A '' (B : Set (Fin n)) := by
   ext X
@@ -47,7 +47,7 @@ theorem coe_traceFamily (A B : Finset (Fin n)) :
 
 /-- Linear neighborhood complexity bounds the number of distinct finite
 traces made by any selected family of vertices. -/
-theorem traceFamily_card_le_mul {c : ℕ} {A B : Finset (Fin n)}
+lemma traceFamily_card_le_mul {c : ℕ} {A B : Finset (Fin n)}
     (hG : HasLinearNeighborhoodComplexityWithConstant G c)
     (hA : A.Nonempty) :
     (traceFamily G A B).card ≤ c * A.card := by
@@ -83,7 +83,7 @@ theorem traceFamily_card_le_mul {c : ℕ} {A B : Finset (Fin n)}
 
 /-- The set symmetric difference used by the paper agrees with the explicit
 finite symmetric difference used in the counting proof. -/
-theorem card_finSymmDiff_trace (A : Finset (Fin n)) (u v : Fin n) :
+lemma card_finSymmDiff_trace (A : Finset (Fin n)) (u v : Fin n) :
     (finSymmDiff (traceFinset G A u) (traceFinset G A v)).card =
       ((G.neighborSet u ∩ (A : Set (Fin n))) ∆
         (G.neighborSet v ∩ (A : Set (Fin n)))).ncard := by
@@ -95,7 +95,7 @@ theorem card_finSymmDiff_trace (A : Finset (Fin n)) (u v : Fin n) :
 /-- A trace partition on `W` cannot distinguish its vertex from its
 representative on `W`; hence the sample misses their full traces' symmetric
 difference on `A`. -/
-theorem sample_disjoint_trace_symmDiff {A B W B' : Finset (Fin n)}
+lemma sample_disjoint_trace_symmDiff {A B W B' : Finset (Fin n)}
     (hWsub : W ⊆ A)
     (hB : TracePartition G (B : Set (Fin n)) (W : Set (Fin n))
       (B' : Set (Fin n)))
@@ -122,7 +122,7 @@ theorem sample_disjoint_trace_symmDiff {A B W B' : Finset (Fin n)}
 
 /-- If the near-partition verification in Figure 1 fails, its sample lies in
 the finite bad-sample family from Lemma 3.8. -/
-theorem failed_near_check_mem_familyBadSamples
+lemma failed_near_check_mem_familyBadSamples
     {A B W B' : Finset (Fin n)} {c L : ℕ}
     (hWsub : W ⊆ A)
     (hWcard : W.card = sampleSize A.card c)
@@ -162,7 +162,7 @@ theorem failed_near_check_mem_familyBadSamples
 /-- **Lemma 3.8 (graph form).** Under linear neighborhood complexity, the
 fraction of samples which can make the near-partition check fail is at most
 `c²/N`. -/
-theorem graph_bad_fraction_le {c N L : ℕ} {A B : Finset (Fin n)}
+lemma graph_bad_fraction_le {c N L : ℕ} {A B : Finset (Fin n)}
     (hc : 1 ≤ c) (hA : A.Nonempty)
     (hG : HasLinearNeighborhoodComplexityWithConstant G c)
     (hAN : A.card ≤ N) (hNpow : N ≤ 2 ^ L) :

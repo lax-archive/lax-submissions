@@ -25,7 +25,7 @@ variable {n : ℕ} (G : SimpleGraph (Fin n))
 def Enumerates (A : Set (Fin n)) (l : List (Fin n)) : Prop :=
   l.Nodup ∧ ∀ v : Fin n, v ∈ l ↔ v ∈ A
 
-theorem Enumerates.length_eq_ncard {A : Set (Fin n)} {l : List (Fin n)}
+lemma Enumerates.length_eq_ncard {A : Set (Fin n)} {l : List (Fin n)}
     (h : Enumerates A l) :
     l.length = A.ncard := by
   classical
@@ -46,7 +46,7 @@ inductive TwinExpansion (B : Set (Fin n)) :
       (htwin : ∀ b ∈ B, (G.Adj b a ↔ G.Adj b x)) :
       TwinExpansion B small (insertAfter a x current)
 
-theorem TwinExpansion.nodup {B : Set (Fin n)} {small big : List (Fin n)}
+lemma TwinExpansion.nodup {B : Set (Fin n)} {small big : List (Fin n)}
     (h : TwinExpansion G B small big) (hsmall : small.Nodup) :
     big.Nodup := by
   induction h with
@@ -55,7 +55,7 @@ theorem TwinExpansion.nodup {B : Set (Fin n)} {small big : List (Fin n)}
 
 /-- Inserting ground-side twins preserves every crossing count represented
 by `B`. -/
-theorem TwinExpansion.crossingCount_eq {B : Set (Fin n)}
+lemma TwinExpansion.crossingCount_eq {B : Set (Fin n)}
     {small big : List (Fin n)} (h : TwinExpansion G B small big)
     {b : Fin n} (hb : b ∈ B) :
     crossingCount (G.neighborSet b) big =
@@ -86,7 +86,7 @@ structure Reduction (k : ℕ) (A B A' B' : Set (Fin n))
     ((G.neighborSet b ∩ A) ∆
       (G.neighborSet (representative b) ∩ A)).ncard ≤ k
 
-theorem Reduction.crossingCount_le {k m : ℕ}
+lemma Reduction.crossingCount_le {k m : ℕ}
     {A B A' B' : Set (Fin n)} {small big : List (Fin n)}
     (h : Reduction G k A B A' B' small big)
     (hsmall : ∀ b ∈ B', crossingCount (G.neighborSet b) small ≤ m) :
@@ -117,7 +117,7 @@ theorem Reduction.crossingCount_le {k m : ℕ}
       rw [h.expands.crossingCount_eq G hr]
     _ ≤ m + 2 * k := Nat.add_le_add_right (hsmall r hr) _
 
-theorem add_round_bound (rounds k q : ℕ) (hkq : 2 * k ≤ q) :
+lemma add_round_bound (rounds k q : ℕ) (hkq : 2 * k ≤ q) :
     (rounds + 1) * q + 2 * k ≤ (rounds + 1 + 1) * q := by
   calc
     (rounds + 1) * q + 2 * k ≤ (rounds + 1) * q + q :=
@@ -139,7 +139,7 @@ inductive CertifiedRun (k q : ℕ) :
       (htail : CertifiedRun k q rounds A' B' small) :
       CertifiedRun k q (rounds + 1) A B big
 
-theorem CertifiedRun.enumerates {k q rounds : ℕ}
+lemma CertifiedRun.enumerates {k q rounds : ℕ}
     {A B : Set (Fin n)} {l : List (Fin n)}
     (h : CertifiedRun G k q rounds A B l) : Enumerates A l := by
   cases h with
@@ -147,7 +147,7 @@ theorem CertifiedRun.enumerates {k q rounds : ℕ}
   | step hreduction _ => exact hreduction.big_enumerates
 
 /-- The crossing-number induction of Theorem 3.2 in the paper. -/
-theorem CertifiedRun.crossingCount_le {k q rounds : ℕ}
+lemma CertifiedRun.crossingCount_le {k q rounds : ℕ}
     {A B : Set (Fin n)} {l : List (Fin n)}
     (h : CertifiedRun G k q rounds A B l) (hkq : 2 * k ≤ q) :
     ∀ b ∈ B, crossingCount (G.neighborSet b) l ≤ (rounds + 1) * q := by

@@ -12,7 +12,7 @@ open Lax235315Proofs.Construction.RandomBits
 open Lax235315Proofs.Construction.RandomKeysRead
 open Lax235315Proofs.Construction.WelzlProgram
 
-private theorem keyName_ne_ord (d : Fin 8) : keyName d ≠ "ord" := by
+private lemma keyName_ne_ord (d : Fin 8) : keyName d ≠ "ord" := by
   fin_cases d <;> decide
 
 /-- Increasing active vertices in the half-open integer interval
@@ -24,7 +24,7 @@ def scanList (active : ℕ → ℕ) (start : ℕ) : ℕ → List ℕ
         start :: scanList active (start + 1) count
       else scanList active (start + 1) count
 
-theorem scanList_add (active : ℕ → ℕ) (start first second : ℕ) :
+lemma scanList_add (active : ℕ → ℕ) (start first second : ℕ) :
     scanList active start (first + second) =
       scanList active start first ++ scanList active (start + first) second := by
   induction first generalizing start with
@@ -36,14 +36,14 @@ theorem scanList_add (active : ℕ → ℕ) (start first second : ℕ) :
       rw [hstart]
       split <;> rfl
 
-theorem scanList_zero_add (active : ℕ → ℕ) (v : ℕ) :
+lemma scanList_zero_add (active : ℕ → ℕ) (v : ℕ) :
     scanList active 0 (v + 1) =
       scanList active 0 v ++
         if active v = 1 then [v] else [] := by
   rw [show v + 1 = v + 1 by rfl, scanList_add]
   simp [scanList]
 
-theorem scanList_remaining {active : ℕ → ℕ} {v n : ℕ} (hv : v < n) :
+lemma scanList_remaining {active : ℕ → ℕ} {v n : ℕ} (hv : v < n) :
     scanList active v (n - v) =
       if active v = 1 then
         v :: scanList active (v + 1) (n - (v + 1))
@@ -51,7 +51,7 @@ theorem scanList_remaining {active : ℕ → ℕ} {v n : ℕ} (hv : v < n) :
   conv_lhs => rw [show n - v = (n - (v + 1)) + 1 by omega]
   simp [scanList]
 
-theorem scanList_length_le (active : ℕ → ℕ) (start count : ℕ) :
+lemma scanList_length_le (active : ℕ → ℕ) (start count : ℕ) :
     (scanList active start count).length ≤ count := by
   induction count generalizing start with
   | zero => simp [scanList]
@@ -62,7 +62,7 @@ theorem scanList_length_le (active : ℕ → ℕ) (start count : ℕ) :
         exact Nat.succ_le_succ (ih (start + 1))
       · exact (ih (start + 1)).trans (Nat.le_succ count)
 
-theorem mem_scanList {active : ℕ → ℕ} {start count v : ℕ} :
+lemma mem_scanList {active : ℕ → ℕ} {start count v : ℕ} :
     v ∈ scanList active start count ↔
       start ≤ v ∧ v < start + count ∧ active v = 1 := by
   induction count generalizing start with
@@ -94,7 +94,7 @@ theorem mem_scanList {active : ℕ → ℕ} {start count v : ℕ} :
             exact hs ha
           exact ⟨by omega, by omega, ha⟩
 
-theorem scanList_nodup (active : ℕ → ℕ) (start count : ℕ) :
+lemma scanList_nodup (active : ℕ → ℕ) (start count : ℕ) :
     (scanList active start count).Nodup := by
   induction count generalizing start with
   | zero => simp [scanList]
@@ -106,11 +106,11 @@ theorem scanList_nodup (active : ℕ → ℕ) (start count : ℕ) :
         omega
       · simpa [scanList, hs] using ih (start + 1)
 
-theorem scanList_mem_range {active : ℕ → ℕ} {start count v : ℕ}
+lemma scanList_mem_range {active : ℕ → ℕ} {start count v : ℕ}
     (hv : v ∈ scanList active start count) : v < start + count :=
   (mem_scanList.mp hv).2.1
 
-theorem scanList_active_getD {active : ℕ → ℕ} {v n : ℕ}
+lemma scanList_active_getD {active : ℕ → ℕ} {v n : ℕ}
     (hv : v < n) (hav : active v = 1) :
     (scanList active 0 n).getD (scanList active 0 v).length 0 = v := by
   have hn : n = v + (n - v) := by omega
@@ -123,14 +123,14 @@ theorem scanList_active_getD {active : ℕ → ℕ} {v n : ℕ}
 def keyTape (bits : ℕ → Fin 8 → List ℕ) (vertices : List ℕ) : List ℕ :=
   vertices.flatMap fun v => joined8 (bits v)
 
-@[simp] theorem keyTape_nil (bits : ℕ → Fin 8 → List ℕ) :
+@[simp] lemma keyTape_nil (bits : ℕ → Fin 8 → List ℕ) :
     keyTape bits [] = [] := rfl
 
-@[simp] theorem keyTape_cons (bits : ℕ → Fin 8 → List ℕ) (v : ℕ)
+@[simp] lemma keyTape_cons (bits : ℕ → Fin 8 → List ℕ) (v : ℕ)
     (vertices : List ℕ) :
     keyTape bits (v :: vertices) = joined8 (bits v) ++ keyTape bits vertices := rfl
 
-theorem keyTape_append (bits : ℕ → Fin 8 → List ℕ) (xs ys : List ℕ) :
+lemma keyTape_append (bits : ℕ → Fin 8 → List ℕ) (xs ys : List ℕ) :
     keyTape bits (xs ++ ys) = keyTape bits xs ++ keyTape bits ys := by
   simp [keyTape]
 
@@ -140,12 +140,12 @@ def filledKey (original : Fin 8 → ℕ → ℕ) (active : ℕ → ℕ)
     (bits : ℕ → Fin 8 → List ℕ) (processed : ℕ) (d : Fin 8) (i : ℕ) : ℕ :=
   if i < processed ∧ active i = 1 then bitsValue (bits i d) else original d i
 
-@[simp] theorem filledKey_zero (original : Fin 8 → ℕ → ℕ) (active : ℕ → ℕ)
+@[simp] lemma filledKey_zero (original : Fin 8 → ℕ → ℕ) (active : ℕ → ℕ)
     (bits : ℕ → Fin 8 → List ℕ) (d : Fin 8) (i : ℕ) :
     filledKey original active bits 0 d i = original d i := by
   simp [filledKey]
 
-theorem updateKeys_filledKey_succ {original : Fin 8 → ℕ → ℕ}
+lemma updateKeys_filledKey_succ {original : Fin 8 → ℕ → ℕ}
     {active : ℕ → ℕ} {bits : ℕ → Fin 8 → List ℕ} {v : ℕ}
     (hav : active v = 1) (d : Fin 8) :
     updateKeys (fun e => filledKey original active bits v e) (bits v) v d =
@@ -158,7 +158,7 @@ theorem updateKeys_filledKey_succ {original : Fin 8 → ℕ → ℕ}
   · have hiff : i < v + 1 ↔ i < v := by omega
     simp [hiv, hiff]
 
-theorem filledKey_succ_of_inactive {original : Fin 8 → ℕ → ℕ}
+lemma filledKey_succ_of_inactive {original : Fin 8 → ℕ → ℕ}
     {active : ℕ → ℕ} {bits : ℕ → Fin 8 → List ℕ} {v : ℕ}
     (hav : active v ≠ 1) (d : Fin 8) :
     filledKey original active bits (v + 1) d =
@@ -185,12 +185,12 @@ def ReadKeysInv (n L : ℕ) (active : ℕ → ℕ)
     τ.inp = keyTape bits (scanList active (τ.vars "v")
       (n - τ.vars "v")) ++ rest
 
-private theorem joined8_lengths {L : ℕ} {b : Fin 8 → List ℕ}
+private lemma joined8_lengths {L : ℕ} {b : Fin 8 → List ℕ}
     (hlen : ∀ d, (b d).length = L) : (joined8 b).length = 8 * L := by
   simp [joined8, hlen]
   omega
 
-private theorem readKeys_body_spec {B n L : ℕ} {active : ℕ → ℕ}
+private lemma readKeys_body_spec {B n L : ℕ} {active : ℕ → ℕ}
     {original : Fin 8 → ℕ → ℕ} {bits : ℕ → Fin 8 → List ℕ}
     {rest : List ℕ}
     (hlen : ∀ v < n, ∀ d, (bits v d).length = L)
@@ -348,7 +348,7 @@ private theorem readKeys_body_spec {B n L : ℕ} {active : ℕ → ℕ}
 
 /-- `readKeys` consumes exactly the active vertices' key blocks, writes
 their increasing enumeration to `ord`, and records every decoded digit. -/
-theorem readKeys_run {B n L : ℕ} {σ : Env} {active ord : ℕ → ℕ}
+lemma readKeys_run {B n L : ℕ} {σ : Env} {active ord : ℕ → ℕ}
     {original : Fin 8 → ℕ → ℕ} {bits : ℕ → Fin 8 → List ℕ}
     {rest : List ℕ}
     (hn : σ.vars "n" = n) (hL : σ.vars "L" = L)

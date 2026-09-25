@@ -29,7 +29,7 @@ def NearCheckInv (B n bound : ℕ)
 
 /-- One final-check iteration preserves all previously checked vertices and
 checks the current active vertex. -/
-theorem checkNearBody_spec
+lemma checkNearBody_spec
     {B n bound : ℕ} {activeB rep degree inter : ℕ → ℕ}
     (hnB : 2 * n + 1 < B) (hboundB : bound < B)
     (hactiveB : ∀ v < n, activeB v < B)
@@ -224,7 +224,7 @@ theorem checkNearBody_spec
 
 /-- Starting at zero and scanning every vertex proves the advertised
 threshold property whenever `good` remains one. -/
-theorem checkNearLoop_run
+lemma checkNearLoop_run
     {B n bound : ℕ} {activeB rep degree inter : ℕ → ℕ} {σ : Env}
     (hn : σ.vars "n" = n) (hbound : σ.vars "nearBound" = bound)
     (hgoodB : σ.vars "good" < B)

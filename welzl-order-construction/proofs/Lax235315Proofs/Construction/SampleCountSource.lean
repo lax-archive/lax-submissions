@@ -13,7 +13,7 @@ open Lax235315Proofs.Construction.WelzlProgram
 
 /-- Division followed by a remainder test is the ceiling division used in
 the paper's definition of `sampleSize`. -/
-theorem div_add_remainder_indicator_eq_sampleSize
+lemma div_add_remainder_indicator_eq_sampleSize
     {a c : ℕ} (hc : 1 ≤ c) :
     let d := 2 * c ^ 2
     a / d + (if a - (a / d) * d = 0 then 0 else 1) = sampleSize a c := by
@@ -38,7 +38,7 @@ theorem div_add_remainder_indicator_eq_sampleSize
 
 /-- The literal IMP+ prefix in `reductionRound` computes exactly
 `sampleSize acount c`, with a constant source-level cost. -/
-theorem prepareSampleCount_run
+lemma prepareSampleCount_run
     {B a c : ℕ} {σ : Env}
     (hacount : σ.vars "acount" = a) (hcsq : σ.vars "csq" = c ^ 2)
     (hc : 1 ≤ c) (ha : 0 < a) (haB : a < B)

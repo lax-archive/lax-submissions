@@ -4,7 +4,7 @@ import Mathlib.Data.Set.Card
 /-!
 ---
 title: Collision bound for finite random keys
-type: theorem
+type: lemma
 ---
 Give each of a vertices an independent uniform key from M possibilities.
 The number of assignments with any repeated key is at most a² M^(a-1).

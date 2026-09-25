@@ -20,7 +20,7 @@ def partiallyRefinedLabel (processed : Finset ℕ)
     (label split : ℕ → ℕ) (v : ℕ) : ℕ :=
   if v ∈ processed then split (label v) else label v
 
-theorem update_partiallyRefinedLabel
+lemma update_partiallyRefinedLabel
     {processed : Finset ℕ} {label split : ℕ → ℕ} {v : ℕ}
     (hv : v ∉ processed) :
     upd (partiallyRefinedLabel processed label split) v (split (label v)) =
@@ -31,7 +31,7 @@ theorem update_partiallyRefinedLabel
     simp [upd, partiallyRefinedLabel]
   · simp [upd, partiallyRefinedLabel, huv]
 
-theorem partiallyRefinedLabel_eq_refinedLabel
+lemma partiallyRefinedLabel_eq_refinedLabel
     (M : Finset ℕ) (label split : ℕ → ℕ) :
     partiallyRefinedLabel M label split = refinedLabel M label split := rfl
 
@@ -39,17 +39,17 @@ theorem partiallyRefinedLabel_eq_refinedLabel
 def partiallyCleared (processed : Finset ℕ) (counts : ℕ → ℕ) (q : ℕ) : ℕ :=
   if q ∈ processed then 0 else counts q
 
-@[simp] theorem partiallyRefinedLabel_empty (label split : ℕ → ℕ) :
+@[simp] lemma partiallyRefinedLabel_empty (label split : ℕ → ℕ) :
     partiallyRefinedLabel ∅ label split = label := by
   funext v
   simp [partiallyRefinedLabel]
 
-@[simp] theorem partiallyCleared_empty (counts : ℕ → ℕ) :
+@[simp] lemma partiallyCleared_empty (counts : ℕ → ℕ) :
     partiallyCleared ∅ counts = counts := by
   funext v
   simp [partiallyCleared]
 
-theorem update_partiallyCleared
+lemma update_partiallyCleared
     {processed : Finset ℕ} {counts : ℕ → ℕ} {q : ℕ}
     (hq : q ∉ processed) :
     upd (partiallyCleared processed counts) q 0 =
@@ -75,18 +75,18 @@ def ValidSplits (classCount : ℕ) (touched : Finset ℕ)
 def processedClasses (i : ℕ) (entry : ℕ → ℕ) : Finset ℕ :=
   (Stack.toList i entry).toFinset
 
-@[simp] theorem processedClasses_succ (i : ℕ) (entry : ℕ → ℕ) :
+@[simp] lemma processedClasses_succ (i : ℕ) (entry : ℕ → ℕ) :
     processedClasses (i + 1) entry = insert (entry i) (processedClasses i entry) := by
   simp [processedClasses, Stack.toList_succ]
 
-theorem toList_prefix {i height : ℕ} (entry : ℕ → ℕ) (hi : i ≤ height) :
+lemma toList_prefix {i height : ℕ} (entry : ℕ → ℕ) (hi : i ≤ height) :
     Stack.toList i entry = (Stack.toList height entry).take i := by
   simp only [Stack.toList, arrOf, ← List.map_take, List.take_range,
     Nat.min_eq_left hi]
 
 /-- In a duplicate-free touched stack, the next entry belongs to the
 represented set and has not occurred in the processed prefix. -/
-theorem PrefixEnumerates.next_mem_not_processed
+lemma PrefixEnumerates.next_mem_not_processed
     {height i : ℕ} {entry : ℕ → ℕ} {S : Finset ℕ}
     (h : PrefixEnumerates height entry S) (hi : i < height) :
     entry i ∈ S ∧ entry i ∉ processedClasses i entry := by
@@ -107,7 +107,7 @@ theorem PrefixEnumerates.next_mem_not_processed
     exact List.mem_map.mpr ⟨i, by simp [hi], rfl⟩
   · simpa [processedClasses] using hnot
 
-theorem PrefixEnumerates.processedClasses_subset
+lemma PrefixEnumerates.processedClasses_subset
     {height i : ℕ} {entry : ℕ → ℕ} {S : Finset ℕ}
     (h : PrefixEnumerates height entry S) (hi : i ≤ height) :
     processedClasses i entry ⊆ S := by
@@ -119,7 +119,7 @@ theorem PrefixEnumerates.processedClasses_subset
   rw [hprefix] at hqList
   exact List.mem_of_mem_take hqList
 
-theorem PrefixEnumerates.processedClasses_eq
+lemma PrefixEnumerates.processedClasses_eq
     {height : ℕ} {entry : ℕ → ℕ} {S : Finset ℕ}
     (h : PrefixEnumerates height entry S) :
     processedClasses height entry = S := by
@@ -147,11 +147,11 @@ def SplitSizes (processed : Finset ℕ) (counts oldSize split workSize : ℕ →
     workSize q = oldSize q - counts q ∧ workSize (split q) = counts q) ∧
   ∀ q ∈ processed, oldSize q ≤ counts q → workSize q = oldSize q
 
-theorem splitSizes_empty (counts oldSize split workSize : ℕ → ℕ) :
+lemma splitSizes_empty (counts oldSize split workSize : ℕ → ℕ) :
     SplitSizes ∅ counts oldSize split workSize := by
   simp [SplitSizes]
 
-theorem SplitSizes.insert_partial
+lemma SplitSizes.insert_partial
     {base current q : ℕ} {processed : Finset ℕ}
     {counts oldSize split workSize : ℕ → ℕ}
     (hp : SplitPrefix base current processed counts oldSize split)
@@ -194,7 +194,7 @@ theorem SplitSizes.insert_partial
       omega
     simp [upd, hrq, hrCurrent, hfullOld r hrP hrfull]
 
-theorem SplitSizes.insert_full
+lemma SplitSizes.insert_full
     {q : ℕ} {processed : Finset ℕ}
     {counts oldSize split workSize : ℕ → ℕ}
     (hs : SplitSizes processed counts oldSize split workSize)
@@ -216,13 +216,13 @@ theorem SplitSizes.insert_full
       exact hqSize
     · exact hfullOld r (by simpa [hrq] using hr) hrfull
 
-theorem splitPrefix_empty (base : ℕ) (counts size split : ℕ → ℕ) :
+lemma splitPrefix_empty (base : ℕ) (counts size split : ℕ → ℕ) :
     SplitPrefix base base ∅ counts size split := by
   simp [SplitPrefix]
 
 /-- Allocating the current counter to one previously unprocessed partial
 class extends the compact-label certificate. -/
-theorem SplitPrefix.insert_partial
+lemma SplitPrefix.insert_partial
     {base current q : ℕ} {processed : Finset ℕ}
     {counts size split : ℕ → ℕ}
     (h : SplitPrefix base current processed counts size split)
@@ -281,7 +281,7 @@ theorem SplitPrefix.insert_partial
 
 /-- A fully marked class retains its old label and does not consume a new
 class number. -/
-theorem SplitPrefix.insert_full
+lemma SplitPrefix.insert_full
     {base current q : ℕ} {processed : Finset ℕ}
     {counts size split : ℕ → ℕ}
     (h : SplitPrefix base current processed counts size split)
@@ -326,7 +326,7 @@ theorem SplitPrefix.insert_full
     have hsP : s ∈ processed := by simpa [hsq] using hs
     simpa [upd, hrq, hsq] using hinj r hrP hpart s hsP hspart
 
-theorem SplitPrefix.validSplits
+lemma SplitPrefix.validSplits
     {base current : ℕ} {touched : Finset ℕ}
     {counts size split : ℕ → ℕ}
     (h : SplitPrefix base current touched counts size split) :
@@ -334,7 +334,7 @@ theorem SplitPrefix.validSplits
   rcases h with ⟨-, hrange, hfull, hinj⟩
   exact ⟨fun q hq hp => (hrange q hq hp).1, hfull, hinj⟩
 
-theorem SplitPrefix.current_le
+lemma SplitPrefix.current_le
     {base current : ℕ} {processed total : Finset ℕ}
     {counts size split : ℕ → ℕ}
     (h : SplitPrefix base current processed counts size split)
@@ -347,7 +347,7 @@ theorem SplitPrefix.current_le
   simp only [Finset.mem_filter] at hq ⊢
   exact ⟨hsub hq.1, hq.2⟩
 
-theorem SplitPrefix.current_lt_of_unprocessed_partial
+lemma SplitPrefix.current_lt_of_unprocessed_partial
     {base current q : ℕ} {processed total : Finset ℕ}
     {counts size split : ℕ → ℕ}
     (h : SplitPrefix base current processed counts size split)
@@ -371,7 +371,7 @@ theorem SplitPrefix.current_lt_of_unprocessed_partial
 
 /-- At the end of allocation, the images of the partial old classes are
 exactly the consecutive fresh labels. -/
-theorem SplitPrefix.image_partial_eq_Ico
+lemma SplitPrefix.image_partial_eq_Ico
     {base current : ℕ} {touched : Finset ℕ}
     {counts size split : ℕ → ℕ}
     (h : SplitPrefix base current touched counts size split) :
@@ -394,11 +394,11 @@ theorem SplitPrefix.image_partial_eq_Ico
   rw [Nat.card_Ico, Finset.card_image_iff.mpr hinj, hcurrent]
   omega
 
-theorem touched_of_mem {label : ℕ → ℕ} {M : Finset ℕ} {v : ℕ}
+lemma touched_of_mem {label : ℕ → ℕ} {M : Finset ℕ} {v : ℕ}
     (hv : v ∈ M) : label v ∈ touchedClasses label M := by
   exact mem_touchedClasses.mpr ⟨v, hv, rfl⟩
 
-theorem multiplicity_le_of_subset {label : ℕ → ℕ} {M A : Finset ℕ}
+lemma multiplicity_le_of_subset {label : ℕ → ℕ} {M A : Finset ℕ}
     (hMA : M ⊆ A) (q : ℕ) :
     classMultiplicity label M q ≤ classMultiplicity label A q :=
   classMultiplicity_mono hMA q
@@ -406,7 +406,7 @@ theorem multiplicity_le_of_subset {label : ℕ → ℕ} {M A : Finset ℕ}
 /-- The abstract split certificate realizes exactly the binary refinement by
 membership in `M`.  This is the core semantic fact consumed by the graph
 partition proof. -/
-theorem refinedLabel_eq_iff
+lemma refinedLabel_eq_iff
     {n classCount : ℕ} {active label size counts split : ℕ → ℕ}
     {M : Finset ℕ}
     (hM : M ⊆ activeVertices n active)
@@ -523,7 +523,7 @@ theorem refinedLabel_eq_iff
 
 /-- The refined fiber through an active vertex is its marked part when the
 vertex is marked, and its unmarked part otherwise. -/
-theorem classMultiplicity_refinedLabel_at
+lemma classMultiplicity_refinedLabel_at
     {n classCount : ℕ} {active label size counts split : ℕ → ℕ}
     {M : Finset ℕ}
     (hM : M ⊆ activeVertices n active)
@@ -600,7 +600,7 @@ theorem classMultiplicity_refinedLabel_at
 
 /-- A completed compact split preserves the exact size table and occupancy
 of the class-label prefix. -/
-theorem refinedLabel_classSizes_and_occupancy
+lemma refinedLabel_classSizes_and_occupancy
     {n base current : ℕ} {active label size counts split workSize : ℕ → ℕ}
     {M : Finset ℕ}
     (hM : M ⊆ activeVertices n active)

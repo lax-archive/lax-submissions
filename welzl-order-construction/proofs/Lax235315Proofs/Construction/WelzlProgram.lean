@@ -526,7 +526,7 @@ def welzlProgram : Program := compileProgram layout welzlCom
 
 /-- Every variable and array used by the generated source is present in its
 layout, and four temporary cells cover its deepest expression. -/
-theorem welzlCom_ok : Com.Ok layout welzlCom := by
+lemma welzlCom_ok : Com.Ok layout welzlCom := by
   simp [welzlCom, finish, reduceAll, setup, initializeWelzl, readGraph, computeLog,
     reductionRound, buildReductionCertificate, prepareSampleCount,
     reconstructAndWrite, writeNaturalOrder,

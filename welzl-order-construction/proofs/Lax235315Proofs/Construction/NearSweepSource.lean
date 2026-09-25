@@ -58,7 +58,7 @@ def ProcessActivePost (B n targetCap a : ℕ)
     ∀ v < n, stamp v < B
 
 /-- The active branch of one outer sweep iteration. -/
-theorem processActiveNearBody_run
+lemma processActiveNearBody_run
     {B n targetCap : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {target off activeA activeB rep : ℕ → ℕ} {σ : Env}
     (hx : EncodesGraph x n G) (htargetCap : targetCap = 2 * edgeCount x)
@@ -307,7 +307,7 @@ theorem processActiveNearBody_run
 /-- One outer sweep iteration advances the exact prefix semantics by one
 vertex.  Its charge is proportional to the size of that vertex's CSR block,
 including one unit for an empty block. -/
-theorem sweepNearBody_run
+lemma sweepNearBody_run
     {B n targetCap : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {target off activeA activeB rep : ℕ → ℕ} {σ : Env}
     (hx : EncodesGraph x n G) (htargetCap : targetCap = 2 * edgeCount x)
@@ -423,7 +423,7 @@ def nearSweepPotential (n targetCap : ℕ) (off : ℕ → ℕ)
 
 /-- The complete outer sweep computes all degree and common-neighborhood
 counters in time linear in the CSR input size. -/
-theorem nearSweepLoop_run
+lemma nearSweepLoop_run
     {B n targetCap : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {target off activeA activeB rep : ℕ → ℕ} {σ : Env}
     (hx : EncodesGraph x n G) (htargetCap : targetCap = 2 * edgeCount x)

@@ -22,7 +22,7 @@ def badInjectionAssignments {α : Type*} [Fintype α] [DecidableEq α]
     (M s : ℕ) (bad : Finset (Finset α)) : Finset (α → Fin M) :=
   (badInjections M s bad).map (injectionEmbedding α M)
 
-@[simp] theorem card_badInjectionAssignments {α : Type*} [Fintype α]
+@[simp] lemma card_badInjectionAssignments {α : Type*} [Fintype α]
     [DecidableEq α] (M s : ℕ) (bad : Finset (Finset α)) :
     (badInjectionAssignments M s bad).card =
       (badInjections M s bad).card := by
@@ -34,7 +34,7 @@ def failingAssignments {α : Type*} [Fintype α] [DecidableEq α]
     (M s : ℕ) (bad : Finset (Finset α)) : Finset (α → Fin M) :=
   collisions α M ∪ badInjectionAssignments M s bad
 
-theorem card_keyInjections_le_assignments (α : Type*) [Fintype α]
+lemma card_keyInjections_le_assignments (α : Type*) [Fintype α]
     [DecidableEq α] (M : ℕ) :
     Fintype.card (KeyInjection α M) ≤ M ^ Fintype.card α := by
   calc
@@ -44,7 +44,7 @@ theorem card_keyInjections_le_assignments (α : Type*) [Fintype α]
 
 /-- Conditioning on collision-free keys cannot make the absolute frequency
 of a bad fixed-size sample exceed its uniform-subset frequency. -/
-theorem badInjectionAssignments_fraction_le {α : Type*} [Fintype α]
+lemma badInjectionAssignments_fraction_le {α : Type*} [Fintype α]
     [DecidableEq α] {M s : ℕ} (hM : 0 < M)
     (hs : s ≤ Fintype.card α) {bad : Finset (Finset α)}
     (hbad : bad ⊆ samples (Finset.univ : Finset α) s) :
@@ -78,7 +78,7 @@ theorem badInjectionAssignments_fraction_le {α : Type*} [Fintype α]
 
 /-- The unconditioned failure probability is at most the collision union
 bound plus the uniform bad-sample probability. -/
-theorem failingAssignments_fraction_le {α : Type*} [Fintype α]
+lemma failingAssignments_fraction_le {α : Type*} [Fintype α]
     [DecidableEq α] {M s : ℕ} (hM : 0 < M)
     (hs : s ≤ Fintype.card α) {bad : Finset (Finset α)}
     (hbad : bad ⊆ samples (Finset.univ : Finset α) s) :
@@ -104,7 +104,7 @@ theorem failingAssignments_fraction_le {α : Type*} [Fintype α]
       add_le_add (collision_fraction_le α hM)
         (badInjectionAssignments_fraction_le hM hs hbad)
 
-theorem collision_term_le_one_div_pow_six {a N q : ℕ}
+lemma collision_term_le_one_div_pow_six {a N q : ℕ}
     (hN : 0 < N) (haN : a ≤ N) (hNq : N ≤ q) :
     (a : ℝ) ^ 2 / (q : ℝ) ^ 8 ≤ 1 / (N : ℝ) ^ 6 := by
   have hNr : (0 : ℝ) < N := by exact_mod_cast hN
@@ -123,7 +123,7 @@ theorem collision_term_le_one_div_pow_six {a N q : ℕ}
 
 /-- With eight `L`-bit digits and `N ≤ 2^L`, a round's collision term is
 at most `N⁻⁶`; the other term is exactly the paper's bad-sample bound. -/
-theorem failingAssignments_fraction_le_paper {α : Type*} [Fintype α]
+lemma failingAssignments_fraction_le_paper {α : Type*} [Fintype α]
     [DecidableEq α] {N q c s : ℕ}
     (hN : 0 < N) (haN : Fintype.card α ≤ N) (hNq : N ≤ q)
     (hs : s ≤ Fintype.card α) {bad : Finset (Finset α)}
@@ -150,7 +150,7 @@ theorem failingAssignments_fraction_le_paper {α : Type*} [Fintype α]
 
 /-- The guarded regime of the program leaves less than one sixth total
 failure budget over at most `L` rounds. -/
-theorem paper_total_failure_le_one_six {n c L rounds : ℕ}
+lemma paper_total_failure_le_one_six {n c L rounds : ℕ}
     (hn : 12 ≤ n) (hL : L ≤ n) (hrounds : rounds ≤ L)
     (hguard : 12 * c ^ 2 * L ≤ n) :
     (rounds : ℝ) * (1 / (n : ℝ) ^ 6 + (c : ℝ) ^ 2 / n) ≤ 1 / 6 := by

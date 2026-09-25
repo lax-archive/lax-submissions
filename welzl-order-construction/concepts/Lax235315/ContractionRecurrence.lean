@@ -3,7 +3,7 @@ import Mathlib.Data.Nat.Log
 /-!
 ---
 title: Geometric contraction with an additive rounding error
-type: theorem
+type: lemma
 ---
 If the size after a round is at most half the preceding size plus q, then
 after i rounds it is at most the initial size divided by 2^i, plus 2q.

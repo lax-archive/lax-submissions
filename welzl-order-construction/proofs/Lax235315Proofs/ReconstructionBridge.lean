@@ -8,7 +8,7 @@ namespace Lax235315Proofs.ReconstructionBridge
 open Lax235315.TwinReconstruction
 open Lax235315Proofs.Construction.Reconstruction
 
-private theorem insertAfter_eq {n : ℕ} (a x : Fin n) (l : List (Fin n)) :
+private lemma insertAfter_eq {n : ℕ} (a x : Fin n) (l : List (Fin n)) :
     Lax235315.TwinReconstruction.insertAfter a x l =
       Lax235315Proofs.Construction.ListCrossing.insertAfter a x l := by
   induction l with
@@ -17,7 +17,7 @@ private theorem insertAfter_eq {n : ℕ} (a x : Fin n) (l : List (Fin n)) :
       simp [Lax235315.TwinReconstruction.insertAfter,
         Lax235315Proofs.Construction.ListCrossing.insertAfter, ih]
 
-private theorem twinExpansion_toConstruction {n : ℕ} {G : SimpleGraph (Fin n)}
+private lemma twinExpansion_toConstruction {n : ℕ} {G : SimpleGraph (Fin n)}
     {B : Set (Fin n)} {small big : List (Fin n)}
     (h : Lax235315.TwinReconstruction.TwinExpansion G B small big) :
     Lax235315Proofs.Construction.Reconstruction.TwinExpansion G B small big := by
@@ -38,7 +38,7 @@ private def reduction_toConstruction {n k : ℕ} {G : SimpleGraph (Fin n)}
     representative_mem := h.representative_mem
     near := h.near }
 
-private theorem run_toCertifiedRun {n k q rounds : ℕ} {G : SimpleGraph (Fin n)}
+private lemma run_toCertifiedRun {n k q rounds : ℕ} {G : SimpleGraph (Fin n)}
     {A B : Set (Fin n)} {l : List (Fin n)}
     (h : Lax235315.TwinReconstruction.Run G k q rounds A B l) :
     Lax235315Proofs.Construction.Reconstruction.CertifiedRun G k q rounds A B l := by
@@ -66,7 +66,7 @@ This bridge carries the reconstruction correctness proof of Theorem 3.2 in
 Dreier and Kuske, *Near-Linear Time Computation of Welzl Orders on Graphs with
 Linear Neighborhood Complexity*, into the submitted certificate types.
 -/
-theorem encodesGraphWelzlOrder {n k q rounds bound : ℕ}
+lemma encodesGraphWelzlOrder {n k q rounds bound : ℕ}
     (G : SimpleGraph (Fin n)) (l : List (Fin n))
     (h : Lax235315.TwinReconstruction.Run G k q rounds Set.univ Set.univ l)
     (hkq : 2 * k ≤ q) (hbound : (rounds + 1) * q ≤ bound) :

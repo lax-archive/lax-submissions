@@ -3,7 +3,7 @@ import Lax235315.SequenceCrossings
 /-!
 ---
 title: Crossing counts are stable under membership changes
-type: theorem
+type: lemma
 ---
 If two membership sequences of equal length differ at k positions, the first
 crossing count is at most the second plus 2k. Interchanging the sequences

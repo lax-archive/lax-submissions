@@ -45,7 +45,7 @@ inductive SuccessfulRun (c L : ℕ) :
       (tail : SuccessfulRun c L rounds A' B' small) :
       SuccessfulRun c L (rounds + 1) A B big
 
-theorem SuccessfulRun.toCertifiedRun {c L rounds : ℕ}
+lemma SuccessfulRun.toCertifiedRun {c L rounds : ℕ}
     {A B : Set (Fin n)} {l : List (Fin n)}
     (h : SuccessfulRun G c L rounds A B l) :
     CertifiedRun G (6 * c ^ 2 * L) (12 * c ^ 2 * L)
@@ -55,7 +55,7 @@ theorem SuccessfulRun.toCertifiedRun {c L rounds : ℕ}
   | step _ _ _ _ _ _ _ _ reduction _ ih =>
       exact CertifiedRun.step reduction ih
 
-theorem ShrinkingRun.prepend {d threshold first second rounds last : ℕ}
+lemma ShrinkingRun.prepend {d threshold first second rounds last : ℕ}
     (hone : threshold < first) (hshrink : second ≤ first / 2 + d)
     (h : ShrinkingRun d threshold second rounds last) :
     ShrinkingRun d threshold first (rounds + 1) last := by
@@ -66,7 +66,7 @@ theorem ShrinkingRun.prepend {d threshold first second rounds last : ℕ}
 
 /-- The active-side cardinalities of a successful run obey the recurrence
 from Theorem 3.1. -/
-theorem SuccessfulRun.toShrinkingRun {c L rounds : ℕ}
+lemma SuccessfulRun.toShrinkingRun {c L rounds : ℕ}
     {A B : Set (Fin n)} {l : List (Fin n)}
     (hc : 1 ≤ c)
     (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant
@@ -86,7 +86,7 @@ theorem SuccessfulRun.toShrinkingRun {c L rounds : ℕ}
 
 /-- For `n>1`, a successful full graph run already satisfies the exact
 output relation and crossing bound of the submitted theorem. -/
-theorem SuccessfulRun.encodesGraphWelzlOrder {c rounds : ℕ}
+lemma SuccessfulRun.encodesGraphWelzlOrder {c rounds : ℕ}
     (hc : 1 ≤ c) (hn : 1 < n)
     (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant
       G c)

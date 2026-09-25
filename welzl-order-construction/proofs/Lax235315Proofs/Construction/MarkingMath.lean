@@ -22,24 +22,24 @@ def touchedClasses (label : ℕ → ℕ) (M : Finset ℕ) : Finset ℕ :=
 def classMultiplicity (label : ℕ → ℕ) (M : Finset ℕ) (q : ℕ) : ℕ :=
   (M.filter fun v => label v = q).card
 
-theorem mem_activeVertices {n : ℕ} {active : ℕ → ℕ} {v : ℕ} :
+lemma mem_activeVertices {n : ℕ} {active : ℕ → ℕ} {v : ℕ} :
     v ∈ activeVertices n active ↔ v < n ∧ active v = 1 := by
   simp [activeVertices]
 
-theorem mem_touchedClasses {label : ℕ → ℕ} {M : Finset ℕ} {q : ℕ} :
+lemma mem_touchedClasses {label : ℕ → ℕ} {M : Finset ℕ} {q : ℕ} :
     q ∈ touchedClasses label M ↔ ∃ v ∈ M, label v = q := by
   simp [touchedClasses]
 
-theorem classMultiplicity_le_card (label : ℕ → ℕ) (M : Finset ℕ) (q : ℕ) :
+lemma classMultiplicity_le_card (label : ℕ → ℕ) (M : Finset ℕ) (q : ℕ) :
     classMultiplicity label M q ≤ M.card := by
   exact Finset.card_filter_le _ _
 
-@[simp] theorem classMultiplicity_empty (label : ℕ → ℕ) (q : ℕ) :
+@[simp] lemma classMultiplicity_empty (label : ℕ → ℕ) (q : ℕ) :
     classMultiplicity label ∅ q = 0 := by
   simp [classMultiplicity]
 
 /-- Adding a fresh vertex increments exactly its class multiplicity. -/
-theorem classMultiplicity_insert {label : ℕ → ℕ} {M : Finset ℕ} {v q : ℕ}
+lemma classMultiplicity_insert {label : ℕ → ℕ} {M : Finset ℕ} {v q : ℕ}
     (hv : v ∉ M) :
     classMultiplicity label (insert v M) q =
       if label v = q then classMultiplicity label M q + 1
@@ -52,11 +52,11 @@ theorem classMultiplicity_insert {label : ℕ → ℕ} {M : Finset ℕ} {v q : �
     simp [hq]
     rfl
 
-@[simp] theorem touchedClasses_empty (label : ℕ → ℕ) :
+@[simp] lemma touchedClasses_empty (label : ℕ → ℕ) :
     touchedClasses label ∅ = ∅ := by
   simp [touchedClasses]
 
-theorem touchedClasses_insert (label : ℕ → ℕ) (M : Finset ℕ) (v : ℕ) :
+lemma touchedClasses_insert (label : ℕ → ℕ) (M : Finset ℕ) (v : ℕ) :
     touchedClasses label (insert v M) =
       insert (label v) (touchedClasses label M) := by
   simp [touchedClasses, Finset.image_insert]
@@ -67,7 +67,7 @@ def PrefixEnumerates (height : ℕ) (entry : ℕ → ℕ) (S : Finset ℕ) : Pro
   (Stack.toList height entry).Nodup ∧
     ∀ v, v ∈ Stack.toList height entry ↔ v ∈ S
 
-theorem PrefixEnumerates.of_list_prefix
+lemma PrefixEnumerates.of_list_prefix
     {height : ℕ} {entry : ℕ → ℕ} {xs : List ℕ}
     (hheight : height ≤ xs.length)
     (hentry : ∀ i < height, entry i = xs.getD i 0)
@@ -85,7 +85,7 @@ theorem PrefixEnumerates.of_list_prefix
   rw [PrefixEnumerates, hlist]
   exact ⟨hxs.take, by simp⟩
 
-theorem PrefixEnumerates.injective_on_prefix
+lemma PrefixEnumerates.injective_on_prefix
     {height : ℕ} {entry : ℕ → ℕ} {S : Finset ℕ}
     (h : PrefixEnumerates height entry S) :
     ∀ i < height, ∀ j < height, entry i = entry j → i = j := by
@@ -95,12 +95,12 @@ theorem PrefixEnumerates.injective_on_prefix
   apply (h.1.getElem_inj_iff (hi := hi') (hj := hj')).mp
   simpa [Stack.toList, hi, hj] using hij
 
-@[simp] theorem prefixEnumerates_zero (entry : ℕ → ℕ) :
+@[simp] lemma prefixEnumerates_zero (entry : ℕ → ℕ) :
     PrefixEnumerates 0 entry ∅ := by
   simp [PrefixEnumerates]
 
 /-- Recording a fresh entry extends the represented finite set by insertion. -/
-theorem PrefixEnumerates.push {height : ℕ} {entry : ℕ → ℕ}
+lemma PrefixEnumerates.push {height : ℕ} {entry : ℕ → ℕ}
     {S : Finset ℕ} (h : PrefixEnumerates height entry S)
     {v : ℕ} (hv : v ∉ S) :
     PrefixEnumerates (height + 1) (upd entry height v) (insert v S) := by
@@ -123,7 +123,7 @@ def updateTouched (label : ℕ → ℕ) (M : Finset ℕ)
   if label v ∈ touchedClasses label M then touched
   else upd touched (touchedClasses label M).card (label v)
 
-theorem prefixEnumerates_updateTouched {label touched : ℕ → ℕ}
+lemma prefixEnumerates_updateTouched {label touched : ℕ → ℕ}
     {M : Finset ℕ} {v : ℕ}
     (h : PrefixEnumerates (touchedClasses label M).card touched
       (touchedClasses label M)) :
@@ -140,7 +140,7 @@ theorem prefixEnumerates_updateTouched {label touched : ℕ → ℕ}
     rw [hcard]
     simpa [updateTouched, hv] using h.push hv
 
-theorem upd_eq_token_iff_insert {stamp : ℕ → ℕ} {M : Finset ℕ}
+lemma upd_eq_token_iff_insert {stamp : ℕ → ℕ} {M : Finset ℕ}
     {v token u : ℕ} (hold : stamp u = token ↔ u ∈ M) :
     upd stamp v token u = token ↔ u ∈ insert v M := by
   by_cases huv : u = v
@@ -149,7 +149,7 @@ theorem upd_eq_token_iff_insert {stamp : ℕ → ℕ} {M : Finset ℕ}
 
 /-- Updating the numeric counter at the inserted vertex's class realizes
 all new class multiplicities. -/
-theorem updateMultiplicity {label counts : ℕ → ℕ} {M : Finset ℕ}
+lemma updateMultiplicity {label counts : ℕ → ℕ} {M : Finset ℕ}
     {v : ℕ} (hv : v ∉ M)
     (hcounts : ∀ q, counts q = classMultiplicity label M q) (q : ℕ) :
     upd counts (label v) (counts (label v) + 1) q =
@@ -161,7 +161,7 @@ theorem updateMultiplicity {label counts : ℕ → ℕ} {M : Finset ℕ}
   · have hq' : q ≠ label v := Ne.symm hq
     simp [upd, hq, hq', hcounts]
 
-theorem classMultiplicity_pos_iff {label : ℕ → ℕ} {M : Finset ℕ} {q : ℕ} :
+lemma classMultiplicity_pos_iff {label : ℕ → ℕ} {M : Finset ℕ} {q : ℕ} :
     0 < classMultiplicity label M q ↔ q ∈ touchedClasses label M := by
   constructor
   · intro h
@@ -189,7 +189,7 @@ def LabelsOccupyPrefix (classCount : ℕ) (label : ℕ → ℕ)
 
 /-- The class multiplicities over a prefix containing every label partition
 the underlying finite set. -/
-theorem sum_classMultiplicity_of_bounded
+lemma sum_classMultiplicity_of_bounded
     {classCount : ℕ} {label : ℕ → ℕ} {A : Finset ℕ}
     (hlabel : ∀ v ∈ A, label v < classCount) :
     ∑ q ∈ Finset.range classCount, classMultiplicity label A q = A.card := by
@@ -205,7 +205,7 @@ theorem sum_classMultiplicity_of_bounded
 /-- At most one new label is allocated for each old class that has both a
 marked and an unmarked vertex.  Compactness therefore leaves enough cells in
 the length-`n` class arrays for all allocations. -/
-theorem compact_split_capacity
+lemma compact_split_capacity
     {classCount : ℕ} {label size counts : ℕ → ℕ}
     {A M : Finset ℕ}
     (hlabel : ∀ v ∈ A, label v < classCount)
@@ -246,7 +246,7 @@ theorem compact_split_capacity
       exact Finset.sum_le_sum hterm
     _ = A.card := sum_classMultiplicity_of_bounded hlabel
 
-theorem activeVertices_card_le (n : ℕ) (active : ℕ → ℕ) :
+lemma activeVertices_card_le (n : ℕ) (active : ℕ → ℕ) :
     (activeVertices n active).card ≤ n := by
   calc
     (activeVertices n active).card ≤ (Finset.range n).card := by
@@ -255,7 +255,7 @@ theorem activeVertices_card_le (n : ℕ) (active : ℕ → ℕ) :
       exact (Finset.mem_filter.mp hv).1
     _ = n := Finset.card_range n
 
-theorem ClassSizes.split_capacity
+lemma ClassSizes.split_capacity
     {n classCount : ℕ} {active label size counts : ℕ → ℕ}
     (hsizes : ClassSizes n classCount active label size)
     (hoccupied : LabelsOccupyPrefix classCount label (activeVertices n active))
@@ -268,7 +268,7 @@ theorem ClassSizes.split_capacity
       (mem_activeVertices.mp hv).2) hoccupied hsizes.2 hM hcounts).trans
   exact activeVertices_card_le n active
 
-theorem classMultiplicity_mono {label : ℕ → ℕ} {M A : Finset ℕ}
+lemma classMultiplicity_mono {label : ℕ → ℕ} {M A : Finset ℕ}
     (hMA : M ⊆ A) (q : ℕ) :
     classMultiplicity label M q ≤ classMultiplicity label A q := by
   apply Finset.card_le_card
@@ -278,7 +278,7 @@ theorem classMultiplicity_mono {label : ℕ → ℕ} {M A : Finset ℕ}
 
 /-- Before a fresh vertex of a class is inserted into the marked set, that
 class's marked count is strictly below its full active size. -/
-theorem classMultiplicity_lt_size_of_fresh
+lemma classMultiplicity_lt_size_of_fresh
     {n classCount : ℕ} {active label size : ℕ → ℕ}
     (hsizes : ClassSizes n classCount active label size)
     {M : Finset ℕ} (hM : M ⊆ activeVertices n active)

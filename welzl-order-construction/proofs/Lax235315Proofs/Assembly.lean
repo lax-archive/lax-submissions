@@ -28,7 +28,7 @@ open Lax235315.ConstructionProgram
 /-- A tape counted as successful by the finite-tape contract is accepted by
 the registered randomized-computation predicate whenever the program's
 successful-output contract holds. -/
-theorem goodTapes_subset_accepted
+lemma goodTapes_subset_accepted
     {K c n w : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     (hvalid : ValidInput K c n w G x)
     (hcorrect : HasCorrectOutput K) :
@@ -50,7 +50,7 @@ theorem goodTapes_subset_accepted
 
 /-- For any common resource constant, the three contracts assemble into the
 exact statement made by Lax195003. -/
-theorem exists_program_of_contracts
+lemma exists_program_of_contracts
     {K : ℕ} (hK : 1 ≤ K)
     (hruntime : HasRunningTimeBound K)
     (hcorrect : HasCorrectOutput K)
@@ -120,7 +120,7 @@ The conditional contracts are the three separate theorem concepts in this
 submission. The assembled target is the registered claim of Lax195003;
 the graph result is Theorem 1.4 in the supplied arXiv v1 PDF.
 -/
-theorem exists_nearLinearTime_randomized_welzlOrder_program :
+lemma exists_nearLinearTime_randomized_welzlOrder_program :
     ∃ (p : Program) (K : ℕ), 1 ≤ K ∧
       ∀ (C : GraphClass) (c : ℕ), 1 ≤ c →
         (∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →

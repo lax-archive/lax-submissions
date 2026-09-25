@@ -27,7 +27,7 @@ def updateKeys (g : Fin 8 → ℕ → ℕ) (b : Fin 8 → List ℕ)
     (v : ℕ) (d : Fin 8) (i : ℕ) : ℕ :=
   if i = v then bitsValue (b d) else g d i
 
-private theorem array_eq_update {n v value : ℕ} {g g' : ℕ → ℕ}
+private lemma array_eq_update {n v value : ℕ} {g g' : ℕ → ℕ}
     (hat : g' v = value)
     (hother : ∀ i < n, i ≠ v → g' i = g i) :
     arrOf n g' = arrOf n (fun i => if i = v then value else g i) := by
@@ -39,7 +39,7 @@ private theorem array_eq_update {n v value : ℕ} {g g' : ℕ → ℕ}
   · simp [hiv, hother i hi hiv]
 
 /-- The fixed eight-digit block updates exactly the eight key arrays at `v`. -/
-theorem readAllKeyDigits_run {B n v L : ℕ} {σ : Env}
+lemma readAllKeyDigits_run {B n v L : ℕ} {σ : Env}
     {g : Fin 8 → ℕ → ℕ} {b : Fin 8 → List ℕ} {rest : List ℕ}
     (hkeys : ∀ d, σ.arrs (keyName d) = arrOf n (g d))
     (hv : σ.vars "v" = v) (hvn : v < n)

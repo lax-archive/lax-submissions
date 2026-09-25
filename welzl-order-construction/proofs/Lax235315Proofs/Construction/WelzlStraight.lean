@@ -12,7 +12,7 @@ open Lax808846Proofs.Reasoning.Lib
 open Lax235315Proofs.Construction.WelzlProgram
 
 /-- Clearing an array is the standard verified fill pass. -/
-theorem clearArray_run {B n : ℕ} {a lim : String} {σ : Env} {g : ℕ → ℕ}
+lemma clearArray_run {B n : ℕ} {a lim : String} {σ : Env} {g : ℕ → ℕ}
     (harr : σ.arrs a = arrOf n g) (hlim : σ.vars lim = n)
     (hilim : "i" ≠ lim) (hnB : n < B) :
     ∃ σ' g', Run B (clearArray a lim) σ σ' (11 * n + 6) ∧
@@ -35,7 +35,7 @@ def ReadInv (a lim : String) (k : ℕ) (ys rest : List ℕ) (τ : Env) : Prop :=
 
 /-- Reading one CSR block copies it literally and consumes exactly that input
 prefix. -/
-theorem readArray_run {B : ℕ} {a lim : String}
+lemma readArray_run {B : ℕ} {a lim : String}
     (hi : lim ≠ "i") (htmp : lim ≠ "tmp")
     {σ : Env} {g : ℕ → ℕ} {k : ℕ} {ys rest : List ℕ}
     (harr : σ.arrs a = arrOf k g) (hlim : σ.vars lim = k)
@@ -91,7 +91,7 @@ def NaturalOutInv (n : ℕ) (o : List ℕ) (τ : Env) : Prop :=
   τ.vars "v" ≤ n ∧ τ.vars "n" = n ∧
     τ.out = o ++ List.range (τ.vars "v")
 
-theorem writeNaturalOrder_run {B n : ℕ} {σ : Env}
+lemma writeNaturalOrder_run {B n : ℕ} {σ : Env}
     (hn : σ.vars "n" = n) (hnB : n < B) :
     ∃ σ', Run B writeNaturalOrder σ σ' (10 * n + 6) ∧
       σ'.out = σ.out ++ List.range n := by
@@ -127,7 +127,7 @@ def InitActiveInv (n : ℕ) (τ : Env) : Prop :=
     (∀ i < τ.vars "v", fB i = 1)
 
 /-- Both graph sides start as the full vertex set. -/
-theorem initActive_run {B n : ℕ} {σ : Env} {fA fB : ℕ → ℕ}
+lemma initActive_run {B n : ℕ} {σ : Env} {fA fB : ℕ → ℕ}
     (hA : σ.arrs "activeA" = arrOf n fA)
     (hB : σ.arrs "activeB" = arrOf n fB)
     (hn : σ.vars "n" = n) (hnB : n < B) (honeB : 1 < B) :

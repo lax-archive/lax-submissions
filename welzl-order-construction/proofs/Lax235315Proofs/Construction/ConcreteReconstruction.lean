@@ -20,18 +20,18 @@ def restoreAfter {α : Type*} [DecidableEq α] (representative : α → α) :
   | current, x :: xs =>
       restoreAfter representative (insertAfter (representative x) x current) xs
 
-@[simp] theorem restoreAfter_nil {α : Type*} [DecidableEq α]
+@[simp] lemma restoreAfter_nil {α : Type*} [DecidableEq α]
     (representative : α → α)
     (current : List α) : restoreAfter representative current [] = current := rfl
 
-@[simp] theorem restoreAfter_cons {α : Type*} [DecidableEq α]
+@[simp] lemma restoreAfter_cons {α : Type*} [DecidableEq α]
     (representative : α → α)
     (current : List α) (x : α) (xs : List α) :
     restoreAfter representative current (x :: xs) =
       restoreAfter representative
         (insertAfter (representative x) x current) xs := rfl
 
-theorem restoreAfter_append {α : Type*} [DecidableEq α]
+lemma restoreAfter_append {α : Type*} [DecidableEq α]
     (representative : α → α) (current xs ys : List α) :
     restoreAfter representative current (xs ++ ys) =
       restoreAfter representative (restoreAfter representative current xs) ys := by
@@ -41,7 +41,7 @@ theorem restoreAfter_append {α : Type*} [DecidableEq α]
 
 /-- Replaying any duplicate-free enumeration of all nonrepresentatives gives
 an enumeration of the old active set and a genuine twin expansion. -/
-theorem TracePartition.restoreAfter_nonrepresentatives
+lemma TracePartition.restoreAfter_nonrepresentatives
     {n : ℕ} {G : SimpleGraph (Fin n)} {V S R : Set (Fin n)}
     (h : TracePartition G V S R) {small removed : List (Fin n)}
     (hsmall : Enumerates R small)
@@ -136,12 +136,12 @@ theorem TracePartition.restoreAfter_nonrepresentatives
 def removedVertices {n : ℕ} (V R : Set (Fin n)) : List (Fin n) :=
   (Set.toFinite (V \ R)).toFinset.toList
 
-theorem removedVertices_enumerates {n : ℕ} (V R : Set (Fin n)) :
+lemma removedVertices_enumerates {n : ℕ} (V R : Set (Fin n)) :
     Enumerates (V \ R) (removedVertices V R) := by
   classical
   exact ⟨Finset.nodup_toList _, by simp [removedVertices]⟩
 
-theorem TracePartition.canonical_restore
+lemma TracePartition.canonical_restore
     {n : ℕ} {G : SimpleGraph (Fin n)} {V S R : Set (Fin n)}
     (h : TracePartition G V S R) {small : List (Fin n)}
     (hsmall : Enumerates R small) :

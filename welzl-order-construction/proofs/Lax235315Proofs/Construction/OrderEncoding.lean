@@ -17,7 +17,7 @@ def vertexAt {n : ℕ} (l : List (Fin n)) (hlen : l.length = n)
     (i : Fin n) : Fin n :=
   l.get ⟨i.val, by omega⟩
 
-theorem vertexAt_bijective {n : ℕ} (l : List (Fin n))
+lemma vertexAt_bijective {n : ℕ} (l : List (Fin n))
     (hl : l.Nodup) (hall : ∀ v : Fin n, v ∈ l) (hlen : l.length = n) :
     Function.Bijective (vertexAt l hlen) := by
   constructor
@@ -40,7 +40,7 @@ def permutationOfList {n : ℕ} (l : List (Fin n)) (hl : l.Nodup)
 
 /-- Reading the inverse permutation in position order returns the original
 enumeration. -/
-theorem ofFn_permutationOfList_symm {n : ℕ} (l : List (Fin n))
+lemma ofFn_permutationOfList_symm {n : ℕ} (l : List (Fin n))
     (hl : l.Nodup) (hall : ∀ v : Fin n, v ∈ l) (hlen : l.length = n) :
     List.ofFn (permutationOfList l hl hall hlen).symm = l := by
   apply List.ext_get
@@ -51,7 +51,7 @@ theorem ofFn_permutationOfList_symm {n : ℕ} (l : List (Fin n))
 
 /-- The natural-number word obtained from a complete duplicate-free vertex
 list has exactly the encoding shape used in the theorem statement. -/
-theorem map_val_eq_ofFn {n : ℕ} (l : List (Fin n))
+lemma map_val_eq_ofFn {n : ℕ} (l : List (Fin n))
     (hl : l.Nodup) (hall : ∀ v : Fin n, v ∈ l) (hlen : l.length = n) :
     l.map Fin.val = List.ofFn
       (fun i : Fin n => ((permutationOfList l hl hall hlen).symm i).val) := by
@@ -65,7 +65,7 @@ theorem map_val_eq_ofFn {n : ℕ} (l : List (Fin n))
           rfl
 
 /-- The position assigned by `permutationOfList` is the list index. -/
-theorem permutationOfList_val_eq_idxOf {n : ℕ} (l : List (Fin n))
+lemma permutationOfList_val_eq_idxOf {n : ℕ} (l : List (Fin n))
     (hl : l.Nodup) (hall : ∀ v : Fin n, v ∈ l) (hlen : l.length = n)
     (v : Fin n) :
     ((permutationOfList l hl hall hlen) v).val = l.idxOf v := by
@@ -82,7 +82,7 @@ theorem permutationOfList_val_eq_idxOf {n : ℕ} (l : List (Fin n))
 
 /-- The submitted permutation crossing count agrees exactly with the
 consecutive-pair count of the list from which the permutation was built. -/
-theorem crossingCount_permutationOfList {n : ℕ} (l : List (Fin n))
+lemma crossingCount_permutationOfList {n : ℕ} (l : List (Fin n))
     (hl : l.Nodup) (hall : ∀ v : Fin n, v ∈ l) (hlen : l.length = n)
     (X : Set (Fin n)) :
     Lax195003.WelzlOrders.crossingCount

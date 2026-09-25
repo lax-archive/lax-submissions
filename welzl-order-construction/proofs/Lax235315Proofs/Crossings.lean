@@ -15,7 +15,7 @@ private lemma edge_change_bound (a b c d : Bool) :
 
 private def bitChange (a b : Bool) : ℕ := if a = b then 0 else 1
 
-private theorem crossings_le_add_head_change (xs ys : List Bool)
+private lemma crossings_le_add_head_change (xs ys : List Bool)
     (h : xs.length = ys.length) :
     crossings xs ≤ crossings ys +
       (match xs, ys with
@@ -60,7 +60,7 @@ original bit.
 The statement is the adjacent-twin crossing observation used in Lemma 2.1 of
 Dreier and Kuske, *Near-Linear Time Computation of Welzl Orders on Graphs with Linear Neighborhood Complexity*.
 -/
-theorem crossings_duplicate (pre post : List Bool) (b : Bool) :
+lemma crossings_duplicate (pre post : List Bool) (b : Bool) :
     crossings (pre ++ b :: b :: post) =
       crossings (pre ++ b :: post) := by
   induction pre with
@@ -91,7 +91,7 @@ changes, so every changed position is charged at most twice overall.
 This is the elementary membership-sequence estimate in Lemma 2.2 of Dreier
 and Kuske, *Near-Linear Time Computation of Welzl Orders on Graphs with Linear Neighborhood Complexity*.
 -/
-theorem crossings_le_add_twice_hamming (xs ys : List Bool)
+lemma crossings_le_add_twice_hamming (xs ys : List Bool)
     (h : xs.length = ys.length) :
     crossings xs ≤ crossings ys + 2 * hamming xs ys := by
   have h' := crossings_le_add_head_change xs ys h

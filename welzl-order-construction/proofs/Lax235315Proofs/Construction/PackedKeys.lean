@@ -24,7 +24,7 @@ def LexNatLe : List ℕ → List ℕ → Prop
   | x :: xs, y :: ys => x < y ∨ x = y ∧ LexNatLe xs ys
   | _, _ => False
 
-theorem lexNatLe_and_ne_iff_lexNat : ∀ {xs ys : List ℕ},
+lemma lexNatLe_and_ne_iff_lexNat : ∀ {xs ys : List ℕ},
     xs.length = ys.length →
       (LexNatLe xs ys ∧ xs ≠ ys ↔ LexNat xs ys) := by
   intro xs
@@ -58,7 +58,7 @@ theorem lexNatLe_and_ne_iff_lexNat : ∀ {xs ys : List ℕ},
 
 /-- Reading a list backwards as little-endian digits is strictly increasing
 for the corresponding most-significant-first lexicographic order. -/
-theorem ofDigits_reverse_lt_of_lex {q : ℕ} (hq : 1 < q) :
+lemma ofDigits_reverse_lt_of_lex {q : ℕ} (hq : 1 < q) :
     ∀ {xs ys : List ℕ}, xs.length = ys.length →
       (∀ d ∈ xs, d < q) → (∀ d ∈ ys, d < q) → LexNat xs ys →
       Nat.ofDigits q xs.reverse < Nat.ofDigits q ys.reverse := by
@@ -95,7 +95,7 @@ theorem ofDigits_reverse_lt_of_lex {q : ℕ} (hq : 1 < q) :
 
 /-- Conversely, strict order of two bounded equal-length base expansions
 comes from lexicographic order of their most-significant-first digits. -/
-theorem lex_of_ofDigits_reverse_lt {q : ℕ} (hq : 1 < q) :
+lemma lex_of_ofDigits_reverse_lt {q : ℕ} (hq : 1 < q) :
     ∀ {xs ys : List ℕ}, xs.length = ys.length →
       (∀ d ∈ xs, d < q) → (∀ d ∈ ys, d < q) →
       Nat.ofDigits q xs.reverse < Nat.ofDigits q ys.reverse → LexNat xs ys := by
@@ -125,7 +125,7 @@ theorem lex_of_ofDigits_reverse_lt {q : ℕ} (hq : 1 < q) :
         have hrev := ofDigits_reverse_lt_of_lex hq hlen.symm hys hxs hrevLex
         exact (Nat.not_lt_of_ge hrev.le) hlt
 
-theorem ofDigits_reverse_lt_iff_lex {q : ℕ} (hq : 1 < q)
+lemma ofDigits_reverse_lt_iff_lex {q : ℕ} (hq : 1 < q)
     {xs ys : List ℕ} (hlen : xs.length = ys.length)
     (hxs : ∀ d ∈ xs, d < q) (hys : ∀ d ∈ ys, d < q) :
     Nat.ofDigits q xs.reverse < Nat.ofDigits q ys.reverse ↔ LexNat xs ys :=
@@ -141,28 +141,28 @@ def digitList (digits : Fin 8 → ℕ → ℕ) (v : ℕ) : List ℕ :=
 def packedKey (q : ℕ) (digits : Fin 8 → ℕ → ℕ) (v : ℕ) : ℕ :=
   Nat.ofDigits q (digitList digits v).reverse
 
-@[simp] theorem digitList_length (digits : Fin 8 → ℕ → ℕ) (v : ℕ) :
+@[simp] lemma digitList_length (digits : Fin 8 → ℕ → ℕ) (v : ℕ) :
     (digitList digits v).length = 8 := rfl
 
-theorem digitList_bounded {q : ℕ} {digits : Fin 8 → ℕ → ℕ} {v : ℕ}
+lemma digitList_bounded {q : ℕ} {digits : Fin 8 → ℕ → ℕ} {v : ℕ}
     (h : ∀ d, digits d v < q) : ∀ a ∈ digitList digits v, a < q := by
   intro a ha
   simp only [digitList, List.mem_cons, List.mem_nil_iff, or_false] at ha
   rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> apply h
 
-theorem packedKey_lt_pow {q : ℕ} (hq : 1 < q)
+lemma packedKey_lt_pow {q : ℕ} (hq : 1 < q)
     {digits : Fin 8 → ℕ → ℕ} {v : ℕ} (h : ∀ d, digits d v < q) :
     packedKey q digits v < q ^ 8 := by
   apply Nat.ofDigits_lt_base_pow_length hq
   intro a ha
   exact digitList_bounded h a (by simpa [packedKey] using ha)
 
-theorem lexNatLe_digitList_iff {digits : Fin 8 → ℕ → ℕ} {u v : ℕ} :
+lemma lexNatLe_digitList_iff {digits : Fin 8 → ℕ → ℕ} {u v : ℕ} :
     LexNatLe (digitList digits u) (digitList digits v) ↔
       LexOn digits digitOrder u v := by
   simp [digitList, digitOrder, LexNatLe, LexOn]
 
-theorem digitList_eq_iff {digits : Fin 8 → ℕ → ℕ} {u v : ℕ} :
+lemma digitList_eq_iff {digits : Fin 8 → ℕ → ℕ} {u v : ℕ} :
     digitList digits u = digitList digits v ↔ AllDigitsEqual digits u v := by
   constructor
   · intro h d
@@ -171,7 +171,7 @@ theorem digitList_eq_iff {digits : Fin 8 → ℕ → ℕ} {u v : ℕ} :
     simp only [digitList]
     rw [h 0, h 1, h 2, h 3, h 4, h 5, h 6, h 7]
 
-theorem packedKey_lt_iff_lexOn_and_not_equal {q : ℕ} (hq : 1 < q)
+lemma packedKey_lt_iff_lexOn_and_not_equal {q : ℕ} (hq : 1 < q)
     {digits : Fin 8 → ℕ → ℕ} {u v : ℕ}
     (hu : ∀ d, digits d u < q) (hv : ∀ d, digits d v < q) :
     packedKey q digits u < packedKey q digits v ↔
@@ -187,7 +187,7 @@ theorem packedKey_lt_iff_lexOn_and_not_equal {q : ℕ} (hq : 1 < q)
   · rintro ⟨hlex, hne⟩
     exact ⟨hlex, fun heq => hne (digitList_eq_iff.mp heq)⟩
 
-theorem packedKey_eq_iff {q : ℕ} (hq : 1 < q)
+lemma packedKey_eq_iff {q : ℕ} (hq : 1 < q)
     {digits : Fin 8 → ℕ → ℕ} {u v : ℕ}
     (hu : ∀ d, digits d u < q) (hv : ∀ d, digits d v < q) :
     packedKey q digits u = packedKey q digits v ↔ AllDigitsEqual digits u v := by
@@ -202,12 +202,12 @@ theorem packedKey_eq_iff {q : ℕ} (hq : 1 < q)
   · intro h
     rw [digitList_eq_iff.mpr h]
 
-theorem mem_digitOrder (d : Fin 8) : d ∈ digitOrder := by
+lemma mem_digitOrder (d : Fin 8) : d ∈ digitOrder := by
   fin_cases d <;> simp [digitOrder]
 
 /-- On the radix-sorted vertex list, absence of an adjacent collision means
 the packed keys are injective on every listed vertex. -/
-theorem packedKey_injective_on_of_noAdjacent {q : ℕ} (hq : 1 < q)
+lemma packedKey_injective_on_of_noAdjacent {q : ℕ} (hq : 1 < q)
     {digits : Fin 8 → ℕ → ℕ} {xs : List ℕ}
     (hbound : ∀ v ∈ xs, ∀ d, digits d v < q)
     (hnodup : xs.Nodup)
@@ -261,7 +261,7 @@ theorem packedKey_injective_on_of_noAdjacent {q : ℕ} (hq : 1 < q)
       exact hk d (mem_digitOrder d)
 
 /-- Collision-free radix output is strictly increasing in the packed key. -/
-theorem pairwise_packedKey_lt_of_noAdjacent {q : ℕ} (hq : 1 < q)
+lemma pairwise_packedKey_lt_of_noAdjacent {q : ℕ} (hq : 1 < q)
     {digits : Fin 8 → ℕ → ℕ} {xs : List ℕ}
     (hbound : ∀ v ∈ xs, ∀ d, digits d v < q)
     (hnodup : xs.Nodup)
@@ -290,7 +290,7 @@ theorem pairwise_packedKey_lt_of_noAdjacent {q : ℕ} (hq : 1 < q)
 
 /-- In a duplicate-free complete list sorted by an injective finite key,
 the number of smaller keys at position `i` is exactly `i`. -/
-theorem keyRank_eq_index_of_pairwise
+lemma keyRank_eq_index_of_pairwise
     {α : Type*} [Fintype α] [DecidableEq α] {M : ℕ}
     (f : KeyInjection α M) {xs : List α}
     (hcomplete : ∀ x : α, x ∈ xs) (hnodup : xs.Nodup)
@@ -328,7 +328,7 @@ theorem keyRank_eq_index_of_pairwise
 
 /-- Therefore the mathematical bottom-`s` key sample is precisely the first
 `s` entries of any complete strictly key-sorted list. -/
-theorem keySample_eq_take_of_pairwise
+lemma keySample_eq_take_of_pairwise
     {α : Type*} [Fintype α] [DecidableEq α] {M s : ℕ}
     (f : KeyInjection α M) {xs : List α}
     (hcomplete : ∀ x : α, x ∈ xs) (hnodup : xs.Nodup)
@@ -374,7 +374,7 @@ def indexKeyInjection {q : ℕ} (hq : 1 < q)
   · exact List.getElem_mem j.isLt
   · exact Fin.mk.inj hij
 
-theorem indexKeyRank_eq {q : ℕ} (hq : 1 < q)
+lemma indexKeyRank_eq {q : ℕ} (hq : 1 < q)
     {digits : Fin 8 → ℕ → ℕ} {xs : List ℕ}
     (hbound : ∀ v ∈ xs, ∀ d, digits d v < q)
     (hnodup : xs.Nodup)
@@ -409,7 +409,7 @@ theorem indexKeyRank_eq {q : ℕ} (hq : 1 < q)
   rw [← Fintype.card_coe]
   simpa using Fintype.card_fin_lt_of_le i.isLt.le
 
-theorem indexKeySample_eq_range {q s : ℕ} (hq : 1 < q)
+lemma indexKeySample_eq_range {q s : ℕ} (hq : 1 < q)
     {digits : Fin 8 → ℕ → ℕ} {xs : List ℕ}
     (hbound : ∀ v ∈ xs, ∀ d, digits d v < q)
     (hnodup : xs.Nodup)
@@ -430,7 +430,7 @@ def indexVertexEmbedding {xs : List ℕ} (hnodup : xs.Nodup) :
 
 /-- Mapping sampled indices back through the radix output recovers exactly
 its first `s` vertices. -/
-theorem image_indexKeySample_eq_take {q s : ℕ} (hq : 1 < q)
+lemma image_indexKeySample_eq_take {q s : ℕ} (hq : 1 < q)
     {digits : Fin 8 → ℕ → ℕ} {xs : List ℕ}
     (hbound : ∀ v ∈ xs, ∀ d, digits d v < q)
     (hnodup : xs.Nodup)

@@ -13,7 +13,7 @@ namespace Lax235315Proofs.Construction.Sampling
 open Finset
 open Lax235315Proofs.Construction.TracePartitions
 
-private theorem factor_le {a x i : ℕ} (ha : 0 < a) (hx : x ≤ a)
+private lemma factor_le {a x i : ℕ} (ha : 0 < a) (hx : x ≤ a)
     (hi : i < a - x) :
     ((↑(a - x - i) : ℝ) / (↑(a - i) : ℝ)) ≤
       (↑(a - x) : ℝ) / (a : ℝ) := by
@@ -27,7 +27,7 @@ private theorem factor_le {a x i : ℕ} (ha : 0 < a) (hx : x ≤ a)
   rw [div_le_div_iff₀ haipos hapos]
   nlinarith [show (0 : ℝ) ≤ (x : ℝ) * i by positivity]
 
-private theorem descFactorial_ratio_le_pow {a x s : ℕ} (ha : 0 < a)
+private lemma descFactorial_ratio_le_pow {a x s : ℕ} (ha : 0 < a)
     (hx : x ≤ a) (hs : s ≤ a - x) :
     (↑((a - x).descFactorial s) : ℝ) /
         (↑(a.descFactorial s) : ℝ) ≤
@@ -50,7 +50,7 @@ private theorem descFactorial_ratio_le_pow {a x s : ℕ} (ha : 0 < a)
     _ = ((↑(a - x) : ℝ) / (a : ℝ)) ^ s := by
       rw [Finset.prod_const, Finset.card_range]
 
-private theorem choose_ratio_eq_descFactorial_ratio {a x s : ℕ}
+private lemma choose_ratio_eq_descFactorial_ratio {a x s : ℕ}
     (hs : s ≤ a) :
     (↑((a - x).choose s) : ℝ) / (↑(a.choose s) : ℝ) =
       (↑((a - x).descFactorial s) : ℝ) /
@@ -65,7 +65,7 @@ private theorem choose_ratio_eq_descFactorial_ratio {a x s : ℕ}
 
 /-- Hypergeometric avoidance is bounded by the corresponding exponential
 estimate. This is the analytic inequality used in Lemma 3.7. -/
-theorem choose_ratio_le_exp {a x s : ℕ} (ha : 0 < a) (hx : x ≤ a)
+lemma choose_ratio_le_exp {a x s : ℕ} (ha : 0 < a) (hx : x ≤ a)
     (hs : s ≤ a) :
     (↑((a - x).choose s) : ℝ) / (↑(a.choose s) : ℝ) ≤
       Real.exp (-((s : ℝ) / a * x)) := by
@@ -101,7 +101,7 @@ theorem choose_ratio_le_exp {a x s : ℕ} (ha : 0 < a) (hx : x ≤ a)
     exact (Real.exp_pos _).le
 
 /-- Ceiling division supplies at least the requested sampling rate. -/
-theorem le_mul_sampleSize {a c : ℕ} (hc : 1 ≤ c) :
+lemma le_mul_sampleSize {a c : ℕ} (hc : 1 ≤ c) :
     a ≤ 2 * c ^ 2 * sampleSize a c := by
   unfold sampleSize
   have hd : 0 < 2 * c ^ 2 :=
@@ -110,7 +110,7 @@ theorem le_mul_sampleSize {a c : ℕ} (hc : 1 ≤ c) :
   rw [Nat.mul_add] at h
   omega
 
-theorem sampleSize_le_self {a c : ℕ} (hc : 1 ≤ c) (ha : 0 < a) :
+lemma sampleSize_le_self {a c : ℕ} (hc : 1 ≤ c) (ha : 0 < a) :
     sampleSize a c ≤ a := by
   have hd : 1 < 2 * c ^ 2 := by
     have hc2 : 1 ≤ c ^ 2 := Nat.one_le_pow 2 c (by omega)
@@ -120,7 +120,7 @@ theorem sampleSize_le_self {a c : ℕ} (hc : 1 ≤ c) (ha : 0 < a) :
 
 /-- The ceiling sample size and the large symmetric-difference hypothesis
 give the exponent `3L` in Lemma 3.7. -/
-theorem three_mul_le_sample_rate {a c x L : ℕ}
+lemma three_mul_le_sample_rate {a c x L : ℕ}
     (ha : 0 < a) (hc : 1 ≤ c) (hx : 6 * c ^ 2 * L ≤ x) :
     (3 * L : ℝ) ≤ (sampleSize a c : ℝ) / a * x := by
   let d := 2 * c ^ 2
@@ -150,7 +150,7 @@ theorem three_mul_le_sample_rate {a c x L : ℕ}
     _ = (sampleSize a c : ℝ) / a * x := by rfl
 
 /-- `e^{-3L}` is at most `2^{-3L}`. -/
-theorem exp_neg_three_mul_le_half_pow (L : ℕ) :
+lemma exp_neg_three_mul_le_half_pow (L : ℕ) :
     Real.exp (-(3 * L : ℝ)) ≤ (1 / 2 : ℝ) ^ (3 * L) := by
   calc
     Real.exp (-(3 * L : ℝ)) = Real.exp (-1) ^ (3 * L) := by
@@ -171,11 +171,11 @@ def misses {α : Type*} [DecidableEq α] (A X : Finset α) (s : ℕ) :
     Finset (Finset α) :=
   (samples A s).filter fun W => Disjoint W X
 
-theorem card_samples {α : Type*} [DecidableEq α] (A : Finset α) (s : ℕ) :
+lemma card_samples {α : Type*} [DecidableEq α] (A : Finset α) (s : ℕ) :
     (samples A s).card = A.card.choose s := by
   simp [samples, Finset.card_powersetCard]
 
-theorem card_misses {α : Type*} [DecidableEq α]
+lemma card_misses {α : Type*} [DecidableEq α]
     (A X : Finset α) (s : ℕ) (hX : X ⊆ A) :
     (misses A X s).card = (A.card - X.card).choose s := by
   have heq : misses A X s = (A \ X).powersetCard s := by
@@ -199,7 +199,7 @@ theorem card_misses {α : Type*} [DecidableEq α]
 /-- **Lemma 3.7 (finite counting form).** A uniform sample of the paper's
 size misses a set of at least `6c²L` elements on at most a `N⁻³` fraction
 of the sample space, whenever `|A| ≤ N ≤ 2^L`. -/
-theorem uniform_sample_miss_fraction_le {α : Type*} [DecidableEq α]
+lemma uniform_sample_miss_fraction_le {α : Type*} [DecidableEq α]
     {A X : Finset α} {c N L : ℕ}
     (hc : 1 ≤ c) (hA : A.Nonempty) (hX : X ⊆ A)
     (hXcard : 6 * c ^ 2 * L ≤ X.card)
@@ -238,7 +238,7 @@ def finSymmDiff {α : Type*} [DecidableEq α]
     (X Y : Finset α) : Finset α :=
   (X \ Y) ∪ (Y \ X)
 
-theorem finSymmDiff_subset {α : Type*} [DecidableEq α]
+lemma finSymmDiff_subset {α : Type*} [DecidableEq α]
     {A X Y : Finset α} (hX : X ⊆ A) (hY : Y ⊆ A) :
     finSymmDiff X Y ⊆ A := by
   intro a ha
@@ -264,7 +264,7 @@ def familyBadSamples {α ι : Type*} [DecidableEq α] [DecidableEq ι]
 /-- **Lemma 3.8 (union-bound core).** If `R` indexes traces contained in
 `A`, the fraction of samples failing to distinguish a far pair is at most
 `|R|²/N³`. -/
-theorem family_bad_fraction_le {α ι : Type*}
+lemma family_bad_fraction_le {α ι : Type*}
     [DecidableEq α] [DecidableEq ι]
     {A : Finset α} {R : Finset ι} {F : ι → Finset α}
     {c N L : ℕ}
@@ -315,7 +315,7 @@ theorem family_bad_fraction_le {α ι : Type*}
 
 /-- The numerical last step of Lemma 3.8: at most `c|A|` traces and
 `|A|≤N` turn `|R|²/N³` into `c²/N`. -/
-theorem family_bad_fraction_le_csq_div {α ι : Type*}
+lemma family_bad_fraction_le_csq_div {α ι : Type*}
     [DecidableEq α] [DecidableEq ι]
     {A : Finset α} {R : Finset ι} {F : ι → Finset α}
     {c N L : ℕ}

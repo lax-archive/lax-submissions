@@ -4,7 +4,7 @@ import Lax195003.WelzlOrdersInGraphs
 /-!
 ---
 title: Reconstruction yields a graph Welzl order
-type: theorem
+type: lemma
 ---
 A checked reconstruction with r rounds, near-twin distance at most k,
 and a base ground set of size at most q returns a graph Welzl order with

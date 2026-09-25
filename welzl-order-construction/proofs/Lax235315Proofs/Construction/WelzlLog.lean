@@ -14,7 +14,7 @@ def LogInv (n : ℕ) (τ : Env) : Prop :=
   τ.vars "n" = n ∧ τ.vars "qpow" = 2 ^ τ.vars "L" ∧
     τ.vars "L" ≤ Nat.clog 2 n
 
-theorem computeLog_run {B n : ℕ} {σ : Env}
+lemma computeLog_run {B n : ℕ} {σ : Env}
     (hn : σ.vars "n" = n)
     (hpowB : 2 ^ Nat.clog 2 n < B)
     (hlogB : Nat.clog 2 n + 1 < B) :

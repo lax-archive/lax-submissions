@@ -26,17 +26,17 @@ def commonPrefix (target off activeA activeB rep : ℕ → ℕ)
     activeA u = 1 ∧ b ∈ neighborBlock target off activeB u ∧
       rep b ∈ neighborBlock target off activeB u).card
 
-@[simp] theorem degreePrefix_zero
+@[simp] lemma degreePrefix_zero
     (target off activeA activeB : ℕ → ℕ) (b : ℕ) :
     degreePrefix target off activeA activeB 0 b = 0 := by
   simp [degreePrefix]
 
-@[simp] theorem commonPrefix_zero
+@[simp] lemma commonPrefix_zero
     (target off activeA activeB rep : ℕ → ℕ) (b : ℕ) :
     commonPrefix target off activeA activeB rep 0 b = 0 := by
   simp [commonPrefix]
 
-theorem degreePrefix_succ_of_active
+lemma degreePrefix_succ_of_active
     {target off activeA activeB : ℕ → ℕ} {a : ℕ}
     (ha : activeA a = 1) :
     degreePrefix target off activeA activeB (a + 1) =
@@ -49,7 +49,7 @@ theorem degreePrefix_succ_of_active
   · simp [degreePrefix, addOn, ha, hb, Finset.card_insert_of_notMem]
   · simp [degreePrefix, addOn, ha, hb]
 
-theorem commonPrefix_succ_of_active
+lemma commonPrefix_succ_of_active
     {target off activeA activeB rep : ℕ → ℕ} {a : ℕ}
     (ha : activeA a = 1) :
     commonPrefix target off activeA activeB rep (a + 1) =
@@ -64,7 +64,7 @@ theorem commonPrefix_succ_of_active
   · simp [commonPrefix, addCommon, ha, hb, Finset.card_insert_of_notMem]
   · simp [commonPrefix, addCommon, ha, hb]
 
-theorem degreePrefix_succ_of_inactive
+lemma degreePrefix_succ_of_inactive
     {target off activeA activeB : ℕ → ℕ} {a : ℕ}
     (ha : activeA a ≠ 1) :
     degreePrefix target off activeA activeB (a + 1) =
@@ -74,7 +74,7 @@ theorem degreePrefix_succ_of_inactive
     Finset.filter_insert]
   simp [degreePrefix, ha]
 
-theorem commonPrefix_succ_of_inactive
+lemma commonPrefix_succ_of_inactive
     {target off activeA activeB rep : ℕ → ℕ} {a : ℕ}
     (ha : activeA a ≠ 1) :
     commonPrefix target off activeA activeB rep (a + 1) =
@@ -84,11 +84,11 @@ theorem commonPrefix_succ_of_inactive
     Finset.filter_insert]
   simp [commonPrefix, ha]
 
-theorem degreePrefix_le (target off activeA activeB : ℕ → ℕ)
+lemma degreePrefix_le (target off activeA activeB : ℕ → ℕ)
     (a b : ℕ) : degreePrefix target off activeA activeB a b ≤ a := by
   exact (Finset.card_filter_le _ _).trans_eq (Finset.card_range a)
 
-theorem commonPrefix_le (target off activeA activeB rep : ℕ → ℕ)
+lemma commonPrefix_le (target off activeA activeB rep : ℕ → ℕ)
     (a b : ℕ) : commonPrefix target off activeA activeB rep a b ≤ a := by
   exact (Finset.card_filter_le _ _).trans_eq (Finset.card_range a)
 

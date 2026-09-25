@@ -16,7 +16,7 @@ open Lax235315Proofs.Construction.RandomBits
 
 noncomputable section
 
-theorem bitsValue_eq_ofDigits_reverse (xs : List ℕ) :
+lemma bitsValue_eq_ofDigits_reverse (xs : List ℕ) :
     bitsValue xs = Nat.ofDigits 2 xs.reverse := by
   induction xs using List.reverseRecOn with
   | nil => rfl
@@ -25,10 +25,10 @@ theorem bitsValue_eq_ofDigits_reverse (xs : List ℕ) :
       simp [Nat.ofDigits, ih]
       omega
 
-theorem bitTape_length {r : ℕ} (ρ : Fin r → Bool) :
+lemma bitTape_length {r : ℕ} (ρ : Fin r → Bool) :
     (bitTape ρ).length = r := by simp [bitTape]
 
-theorem bitTape_bounded {r : ℕ} (ρ : Fin r → Bool) :
+lemma bitTape_bounded {r : ℕ} (ρ : Fin r → Bool) :
     ∀ b ∈ bitTape ρ, b < 2 := by
   intro b hb
   obtain ⟨i, hi, hib⟩ := List.mem_iff_getElem.mp hb
@@ -41,7 +41,7 @@ theorem bitTape_bounded {r : ℕ} (ρ : Fin r → Bool) :
 def boolWordValue {L : ℕ} (ρ : Fin L → Bool) : ℕ :=
   bitsValue (bitTape ρ)
 
-theorem boolWordValue_lt {L : ℕ} (ρ : Fin L → Bool) :
+lemma boolWordValue_lt {L : ℕ} (ρ : Fin L → Bool) :
     boolWordValue ρ < 2 ^ L := by
   unfold boolWordValue
   rw [bitsValue_eq_ofDigits_reverse]
@@ -49,7 +49,7 @@ theorem boolWordValue_lt {L : ℕ} (ρ : Fin L → Bool) :
     (b := 2) (l := (bitTape ρ).reverse) (by omega)
       (fun b hb => bitTape_bounded ρ b (by simpa using hb))
 
-theorem bitTape_injective {L : ℕ} :
+lemma bitTape_injective {L : ℕ} :
     Function.Injective (bitTape : (Fin L → Bool) → List ℕ) := by
   intro ρ τ h
   unfold bitTape at h
@@ -58,7 +58,7 @@ theorem bitTape_injective {L : ℕ} :
   have hi := congrFun hfn i
   cases hρi : ρ i <;> cases hτi : τ i <;> simp_all
 
-theorem boolWordValue_injective {L : ℕ} :
+lemma boolWordValue_injective {L : ℕ} :
     Function.Injective (boolWordValue : (Fin L → Bool) → ℕ) := by
   intro ρ τ h
   apply bitTape_injective

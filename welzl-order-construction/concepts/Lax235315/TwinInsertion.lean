@@ -3,7 +3,7 @@ import Lax235315.SequenceCrossings
 /-!
 ---
 title: Inserting a twin preserves crossings
-type: theorem
+type: lemma
 ---
 Duplicating a membership entry immediately next to itself leaves the crossing
 count unchanged. Applying this to every set proves Lemma 2.1 of

@@ -41,7 +41,7 @@ def fillRepClass : Com :=
         .store "repClass" (.var "i") (.var "n"),
         inc "i"])]
 
-theorem fillRepClass_run {B n : ℕ} {σ : Env} {old : ℕ → ℕ}
+lemma fillRepClass_run {B n : ℕ} {σ : Env} {old : ℕ → ℕ}
     (harr : σ.arrs "repClass" = arrOf n old) (hn : σ.vars "n" = n)
     (hnB : n < B) :
     ∃ σ' repClass,
@@ -90,7 +90,7 @@ def partitionCost (x : List ℕ) (tests : ℕ → ℕ)
 
 /-- On a duplicate-free test prefix, one complete partition call is linear
 in the encoded CSR word. -/
-theorem partitionCost_le_input
+lemma partitionCost_le_input
     {n testCount : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {tests : ℕ → ℕ}
     (hx : EncodesGraph x n G) (htestCountN : testCount ≤ n)
@@ -103,7 +103,7 @@ theorem partitionCost_le_input
   unfold partitionCost
   omega
 
-private theorem Run.append_right2 {B K K' : ℕ} {a b c : Com}
+private lemma Run.append_right2 {B K K' : ℕ} {a b c : Com}
     {σ σ' σ'' : Env}
     (h : Run B (.seq a b) σ σ' K)
     (h' : Run B c σ' σ'' K') :
@@ -114,7 +114,7 @@ private theorem Run.append_right2 {B K K' : ℕ} {a b c : Com}
   | seq ha hb =>
     refine ⟨_, by omega, .seq ha (.seq hb hrun')⟩
 
-private theorem Run.append_right3 {B K K' : ℕ} {a b c d : Com}
+private lemma Run.append_right3 {B K K' : ℕ} {a b c d : Com}
     {σ σ' σ'' : Env}
     (h : Run B (.seq a (.seq b c)) σ σ' K)
     (h' : Run B d σ' σ'' K') :
@@ -127,7 +127,7 @@ private theorem Run.append_right3 {B K K' : ℕ} {a b c d : Com}
     | seq hb hc =>
       refine ⟨_, by omega, .seq ha (.seq hb (.seq hc hrun'))⟩
 
-theorem partitionRefinePrefix_run
+lemma partitionRefinePrefix_run
     {B n targetCap testCount : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {active tests cls size counts stamp marked touched split : ℕ → ℕ}
     {activeName testsName testCountName clsName : String} {σ : Env}
@@ -238,7 +238,7 @@ theorem partitionRefinePrefix_run
   simpa [partitionRefinePrefix, seqs, Nat.add_assoc] using
     rinit.seq (rti.seq rloop)
 
-theorem partitionRepresentativeSuffix_run
+lemma partitionRepresentativeSuffix_run
     {B n current : ℕ} {active label oldRepClass oldReps oldOut oldRepOf : ℕ → ℕ}
     {activeName clsName repsName activeOutName repOfName outCountName : String}
     {σ : Env}
@@ -441,7 +441,7 @@ theorem partitionRepresentativeSuffix_run
 /-- Once the verified refinement prefix has finished, the literal remainder
 of `partition` produces the concrete representative arrays and an abstract
 trace partition for exactly the supplied tests. -/
-theorem partition_run_of_refinePrefix
+lemma partition_run_of_refinePrefix
     {B n targetCap testCount : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {active tests : ℕ → ℕ}
     {activeName testsName testCountName clsName repsName activeOutName
@@ -532,7 +532,7 @@ theorem partition_run_of_refinePrefix
 
 /-- The complete literal `partition` command, from its initial arrays through
 the final representative map and abstract trace-partition certificate. -/
-theorem partition_run
+lemma partition_run
     {B n targetCap testCount : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {active tests cls size counts stamp marked touched split
       oldRepClass oldReps oldOut oldRepOf : ℕ → ℕ}

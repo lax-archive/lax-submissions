@@ -132,3 +132,10 @@ passed for the entire submitted concept and proof inventory.
 The remaining warnings concern intentionally retained implementation helpers,
 dependencies on verified proof packages, and the deliberate use of the exact
 Lax11 type occurring in the original claim. There are no validation errors.
+
+## Presentation convention
+
+Only ConstructionRuntime, ConstructionCorrectness, and ConstructionProbability
+are theorem concepts. The seven proved component claims are lemma concepts;
+supporting proof declarations, including conditional assembly, use `lemma`.
+This classification does not alter their propositions or dependency status.

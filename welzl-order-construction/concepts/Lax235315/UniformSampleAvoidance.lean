@@ -4,7 +4,7 @@ import Mathlib.Data.Real.Basic
 /-!
 ---
 title: A uniform sample is unlikely to miss a large set
-type: theorem
+type: lemma
 ---
 Let A be nonempty, let X be a subset of A of size at least 6c²L, and suppose
 c≥1 and |A|≤N≤2^L. A uniformly chosen subset of A of size ceil(|A|/(2c²))

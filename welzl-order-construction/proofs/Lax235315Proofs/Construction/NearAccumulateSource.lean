@@ -22,16 +22,16 @@ also in the current neighborhood. -/
 def addCommon (P M : Finset ℕ) (rep base : ℕ → ℕ) (v : ℕ) : ℕ :=
   if v ∈ P ∧ rep v ∈ M then base v + 1 else base v
 
-@[simp] theorem addOn_empty (base : ℕ → ℕ) : addOn ∅ base = base := by
+@[simp] lemma addOn_empty (base : ℕ → ℕ) : addOn ∅ base = base := by
   funext v
   simp [addOn]
 
-@[simp] theorem addCommon_empty (M : Finset ℕ) (rep base : ℕ → ℕ) :
+@[simp] lemma addCommon_empty (M : Finset ℕ) (rep base : ℕ → ℕ) :
     addCommon ∅ M rep base = base := by
   funext v
   simp [addCommon]
 
-theorem upd_addOn {P : Finset ℕ} {base : ℕ → ℕ} {q : ℕ}
+lemma upd_addOn {P : Finset ℕ} {base : ℕ → ℕ} {q : ℕ}
     (hq : q ∉ P) :
     upd (addOn P base) q (addOn P base q + 1) =
       addOn (insert q P) base := by
@@ -41,7 +41,7 @@ theorem upd_addOn {P : Finset ℕ} {base : ℕ → ℕ} {q : ℕ}
     simp [upd, addOn, hq]
   · simp [upd, addOn, hvq]
 
-theorem upd_addCommon {P M : Finset ℕ} {rep base : ℕ → ℕ} {q : ℕ}
+lemma upd_addCommon {P M : Finset ℕ} {rep base : ℕ → ℕ} {q : ℕ}
     (hq : q ∉ P) (hr : rep q ∈ M) :
     upd (addCommon P M rep base) q (addCommon P M rep base q + 1) =
       addCommon (insert q P) M rep base := by
@@ -51,7 +51,7 @@ theorem upd_addCommon {P M : Finset ℕ} {rep base : ℕ → ℕ} {q : ℕ}
     simp [upd, addCommon, hq, hr]
   · simp [upd, addCommon, hvq]
 
-theorem addCommon_insert_of_rep_notMem
+lemma addCommon_insert_of_rep_notMem
     {P M : Finset ℕ} {rep base : ℕ → ℕ} {q : ℕ}
     (hr : rep q ∉ M) :
     addCommon (insert q P) M rep base = addCommon P M rep base := by
@@ -78,7 +78,7 @@ def AccumulateInv (n height token : ℕ) (entry rep baseDegree baseInter : ℕ �
     (addCommon (processedClasses (τ.vars "i") entry) M rep baseInter) ∧
   PrefixEnumerates height entry M
 
-theorem accumulateInv_initial
+lemma accumulateInv_initial
     {n height token : ℕ} {entry rep baseDegree baseInter stamp : ℕ → ℕ}
     {M : Finset ℕ} {σ : Env}
     (hi : σ.vars "i" = 0) (hheight : height ≤ n)
@@ -99,7 +99,7 @@ theorem accumulateInv_initial
   · simpa [hi, processedClasses, addCommon] using hinter
 
 /-- One neighbor-prefix step performs the two advertised increments. -/
-theorem accumulateNearBody_spec
+lemma accumulateNearBody_spec
     {B n height token : ℕ} {entry rep baseDegree baseInter : ℕ → ℕ}
     {M : Finset ℕ}
     (hnB : n + 1 < B)
@@ -286,7 +286,7 @@ theorem accumulateNearBody_spec
         processedClasses_succ, addCommon_insert_of_rep_notMem hrM]
 
 /-- Replaying the complete neighbor stack updates exactly its members. -/
-theorem accumulateNearLoop_run
+lemma accumulateNearLoop_run
     {B n height token : ℕ} {entry rep baseDegree baseInter : ℕ → ℕ}
     {M : Finset ℕ} {σ : Env}
     (hI : AccumulateInv n height token entry rep baseDegree baseInter M σ)

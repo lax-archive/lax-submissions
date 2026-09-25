@@ -44,18 +44,18 @@ def contains (D : Set α) (a : α) : Bool := by
 def memberCount (D : Set α) (l : List α) : ℕ :=
   l.countP (contains D)
 
-@[simp] theorem crossingCount_nil (X : Set α) : crossingCount X [] = 0 := rfl
+@[simp] lemma crossingCount_nil (X : Set α) : crossingCount X [] = 0 := rfl
 
-@[simp] theorem crossingCount_singleton (X : Set α) (a : α) :
+@[simp] lemma crossingCount_singleton (X : Set α) (a : α) :
     crossingCount X [a] = 0 := rfl
 
-theorem crossingCount_cons_cons (X : Set α) (a b : α) (l : List α) :
+lemma crossingCount_cons_cons (X : Set α) (a b : α) (l : List α) :
     crossingCount X (a :: b :: l) =
       crossingCount X (b :: l) + if crosses X a b = true then 1 else 0 := by
   simp [crossingCount, List.countP_cons]
 
 /-- A crossing count is at most the length of its list. -/
-theorem crossingCount_le_length (X : Set α) (l : List α) :
+lemma crossingCount_le_length (X : Set α) (l : List α) :
     crossingCount X l ≤ l.length := by
   unfold crossingCount
   exact List.countP_le_length.trans <| by
@@ -63,7 +63,7 @@ theorem crossingCount_le_length (X : Set α) (l : List α) :
 
 /-- Sets agreeing on every listed element have the same list crossing
 count. -/
-theorem crossingCount_congr_on {X Y : Set α} {l : List α}
+lemma crossingCount_congr_on {X Y : Set α} {l : List α}
     (h : ∀ a ∈ l, (a ∈ X) ↔ (a ∈ Y)) :
     crossingCount X l = crossingCount Y l := by
   induction l with
@@ -85,7 +85,7 @@ theorem crossingCount_congr_on {X Y : Set α} {l : List α}
             ih (fun z hz => h z (by simp [hz]))
           rw [htail]
 
-theorem crossingCount_cons_of_head {X : Set α} {a b : α} {l : List α}
+lemma crossingCount_cons_of_head {X : Set α} {a b : α} {l : List α}
     (h : l.head? = some b) :
     crossingCount X (a :: l) =
       crossingCount X l + if crosses X a b = true then 1 else 0 := by
@@ -96,20 +96,20 @@ theorem crossingCount_cons_of_head {X : Set α} {a b : α} {l : List α}
       subst d
       exact crossingCount_cons_cons X a b l
 
-theorem crosses_eq_false_of_iff {X : Set α} {a b : α}
+lemma crosses_eq_false_of_iff {X : Set α} {a b : α}
     (h : (a ∈ X) ↔ (b ∈ X)) :
     crosses X a b = false := by
   classical
   by_cases ha : a ∈ X <;> by_cases hb : b ∈ X <;> simp_all [crosses]
 
-theorem crosses_congr_left {X : Set α} {a a' b : α}
+lemma crosses_congr_left {X : Set α} {a a' b : α}
     (h : (a ∈ X) ↔ (a' ∈ X)) :
     crosses X a b = crosses X a' b := by
   classical
   by_cases ha : a ∈ X <;> by_cases ha' : a' ∈ X <;>
     by_cases hb : b ∈ X <;> simp_all [crosses]
 
-theorem edge_crossing_le (X Y : Set α) (a b : α) :
+lemma edge_crossing_le (X Y : Set α) (a b : α) :
     (if crosses X a b = true then 1 else 0) ≤
       (if crosses Y a b = true then 1 else 0) +
         (if contains (X ∆ Y) a = true then 1 else 0) +
@@ -119,7 +119,7 @@ theorem edge_crossing_le (X Y : Set α) (a b : α) :
     by_cases hYa : a ∈ Y <;> by_cases hYb : b ∈ Y <;>
       simp_all [crosses, contains, Set.mem_symmDiff]
 
-theorem countPairCrossings_le (X Y : Set α) (ps : List (α × α)) :
+lemma countPairCrossings_le (X Y : Set α) (ps : List (α × α)) :
     ps.countP (fun p => crosses X p.1 p.2) ≤
       ps.countP (fun p => crosses Y p.1 p.2) +
         (ps.map Prod.fst).countP (contains (X ∆ Y)) +
@@ -131,7 +131,7 @@ theorem countPairCrossings_le (X Y : Set α) (ps : List (α × α)) :
       have hp := edge_crossing_le X Y p.1 p.2
       omega
 
-theorem map_fst_zip_tail_sublist (l : List α) :
+lemma map_fst_zip_tail_sublist (l : List α) :
     List.Sublist ((l.zip l.tail).map Prod.fst) l := by
   cases l with
   | nil => simp
@@ -144,14 +144,14 @@ theorem map_fst_zip_tail_sublist (l : List α) :
 termination_by l.length
 decreasing_by simp_wf
 
-theorem map_snd_zip_tail (l : List α) :
+lemma map_snd_zip_tail (l : List α) :
     (l.zip l.tail).map Prod.snd = l.tail := by
   apply List.map_snd_zip
   simp
 
 /-- Consecutive pairs in a duplicate-free list are exactly the pairs whose
 second entry has index one greater than the first entry. -/
-theorem mem_zip_tail_iff_idxOf_succ [DecidableEq α] {l : List α}
+lemma mem_zip_tail_iff_idxOf_succ [DecidableEq α] {l : List α}
     (hl : l.Nodup) (u v : α) :
     (u, v) ∈ l.zip l.tail ↔
       u ∈ l ∧ v ∈ l ∧ l.idxOf v = l.idxOf u + 1 := by
@@ -203,7 +203,7 @@ theorem mem_zip_tail_iff_idxOf_succ [DecidableEq α] {l : List α}
 
 /-- For a duplicate-free list, counting crossing pairs is the same as
 counting their first endpoints. -/
-theorem ncard_crossingEndpoints [DecidableEq α] [Finite α]
+lemma ncard_crossingEndpoints [DecidableEq α] [Finite α]
     (X : Set α) {l : List α} (hl : l.Nodup) :
     (crossingEndpoints X l).ncard = crossingCount X l := by
   classical
@@ -224,7 +224,7 @@ theorem ncard_crossingEndpoints [DecidableEq α] [Finite α]
     _ = (ps.map Prod.fst).length := List.toFinset_card_of_nodup hnodup
     _ = ps.length := by simp
 
-theorem mem_crossingEndpoints_iff [DecidableEq α] (X : Set α)
+lemma mem_crossingEndpoints_iff [DecidableEq α] (X : Set α)
     (l : List α) (u : α) :
     u ∈ crossingEndpoints X l ↔
       ∃ v, (u, v) ∈ l.zip l.tail ∧ (u ∈ X ↔ v ∉ X) := by
@@ -232,7 +232,7 @@ theorem mem_crossingEndpoints_iff [DecidableEq α] (X : Set α)
 
 /-- Changing membership on `D` changes at most two incident list edges per
 occurrence of a member of `D`. -/
-theorem crossingCount_le_add_two_mul_memberCount (X Y : Set α) (l : List α) :
+lemma crossingCount_le_add_two_mul_memberCount (X Y : Set α) (l : List α) :
     crossingCount X l ≤
       crossingCount Y l + 2 * memberCount (X ∆ Y) l := by
   unfold crossingCount memberCount
@@ -252,7 +252,7 @@ theorem crossingCount_le_add_two_mul_memberCount (X Y : Set α) (l : List α) :
 
 /-- On a duplicate-free list, the number of entries in a set is bounded by
 the cardinality of that set. -/
-theorem memberCount_le_ncard [DecidableEq α] [Finite α]
+lemma memberCount_le_ncard [DecidableEq α] [Finite α]
     (D : Set α) {l : List α} (hl : l.Nodup) :
     memberCount D l ≤ D.ncard := by
   classical
@@ -268,7 +268,7 @@ theorem memberCount_le_ncard [DecidableEq α] [Finite α]
   exact Set.ncard_le_ncard hsub
 
 /-- List form of the paper's `2k` near-twin estimate. -/
-theorem crossingCount_le_add_two_mul_symmDiff [DecidableEq α] [Finite α]
+lemma crossingCount_le_add_two_mul_symmDiff [DecidableEq α] [Finite α]
     (X Y : Set α) {l : List α} (hl : l.Nodup) :
     crossingCount X l ≤ crossingCount Y l + 2 * (X ∆ Y).ncard := by
   exact (crossingCount_le_add_two_mul_memberCount X Y l).trans <| by
@@ -281,21 +281,21 @@ def insertAfter [DecidableEq α] (a x : α) : List α → List α
   | [] => []
   | b :: l => if b = a then b :: x :: l else b :: insertAfter a x l
 
-@[simp] theorem insertAfter_nil [DecidableEq α] (a x : α) :
+@[simp] lemma insertAfter_nil [DecidableEq α] (a x : α) :
     insertAfter a x [] = [] := rfl
 
-theorem insertAfter_cons [DecidableEq α] (a x b : α) (l : List α) :
+lemma insertAfter_cons [DecidableEq α] (a x b : α) (l : List α) :
     insertAfter a x (b :: l) =
       if b = a then b :: x :: l else b :: insertAfter a x l := rfl
 
-theorem insertAfter_head [DecidableEq α] {a x b : α} {l : List α} :
+lemma insertAfter_head [DecidableEq α] {a x b : α} {l : List α} :
     (insertAfter a x (b :: l)).head? = some b := by
   rw [insertAfter_cons]
   split <;> simp
 
 /-- Inserting after a present representative adds exactly the new element,
 up to permutation. -/
-theorem insertAfter_perm [DecidableEq α] {a x : α} {l : List α}
+lemma insertAfter_perm [DecidableEq α] {a x : α} {l : List α}
     (ha : a ∈ l) :
     (insertAfter a x l).Perm (x :: l) := by
   induction l with
@@ -311,7 +311,7 @@ theorem insertAfter_perm [DecidableEq α] {a x : α} {l : List α}
         exact (ih hal).cons b |>.trans (List.Perm.swap _ _ _)
 
 /-- A twin insertion does not change the list crossing count. -/
-theorem crossingCount_insertAfter [DecidableEq α] {X : Set α} {a x : α}
+lemma crossingCount_insertAfter [DecidableEq α] {X : Set α} {a x : α}
     {l : List α} (ha : a ∈ l) (hax : (a ∈ X) ↔ (x ∈ X)) :
     crossingCount X (insertAfter a x l) = crossingCount X l := by
   induction l with
@@ -342,14 +342,14 @@ theorem crossingCount_insertAfter [DecidableEq α] {X : Set α} {a x : α}
 
 /-- Twin insertion preserves duplicate-freeness when the inserted vertex is
 new. -/
-theorem nodup_insertAfter [DecidableEq α] {a x : α} {l : List α}
+lemma nodup_insertAfter [DecidableEq α] {a x : α} {l : List α}
     (hl : l.Nodup) (ha : a ∈ l) (hx : x ∉ l) :
     (insertAfter a x l).Nodup := by
   rw [(insertAfter_perm ha).nodup_iff]
   simpa using List.nodup_cons.mpr ⟨hx, hl⟩
 
 /-- Twin insertion preserves all old members and adds the inserted vertex. -/
-theorem mem_insertAfter_iff [DecidableEq α] {a x y : α} {l : List α}
+lemma mem_insertAfter_iff [DecidableEq α] {a x y : α} {l : List α}
     (ha : a ∈ l) :
     y ∈ insertAfter a x l ↔ y = x ∨ y ∈ l := by
   rw [(insertAfter_perm ha).mem_iff]

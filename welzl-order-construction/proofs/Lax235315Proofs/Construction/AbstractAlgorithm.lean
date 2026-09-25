@@ -28,7 +28,7 @@ def quotient (G : SimpleGraph (Fin n)) (V S : Finset (Fin n)) :
   (Set.toFinite
     (canonicalRepresentatives G (V : Set (Fin n)) (S : Set (Fin n)))).toFinset
 
-@[simp] theorem coe_quotient (V S : Finset (Fin n)) :
+@[simp] lemma coe_quotient (V S : Finset (Fin n)) :
     (quotient G V S : Set (Fin n)) =
       canonicalRepresentatives G (V : Set (Fin n)) (S : Set (Fin n)) := by
   simp [quotient]
@@ -38,13 +38,13 @@ def quotientPartition (V S : Finset (Fin n)) :
       (quotient G V S : Set (Fin n)) := by
   simpa using canonicalTracePartition G (V : Set (Fin n)) (S : Set (Fin n))
 
-theorem quotient_nonempty {V S : Finset (Fin n)} (hV : V.Nonempty) :
+lemma quotient_nonempty {V S : Finset (Fin n)} (hV : V.Nonempty) :
     (quotient G V S).Nonempty := by
   have h := (quotientPartition G V S).reps_nonempty G (by simpa using hV)
   obtain ⟨v, hv⟩ := h
   exact ⟨v, by simpa [quotient] using hv⟩
 
-theorem sampleSize_pos {a c : ℕ} (hc : 1 ≤ c) (ha : 0 < a) :
+lemma sampleSize_pos {a c : ℕ} (hc : 1 ≤ c) (ha : 0 < a) :
     0 < sampleSize a c := by
   have h := le_mul_sampleSize (a := a) hc
   by_contra hs
@@ -72,7 +72,7 @@ inductive GoodSampleRun (c L : ℕ) :
 
 /-- Outside the bad-sample event, every class representative passes the
 paper's near-twin verification. -/
-theorem near_of_good_sample {c L : ℕ} {A B W : Finset (Fin n)}
+lemma near_of_good_sample {c L : ℕ} {A B W : Finset (Fin n)}
     (hWsub : W ⊆ A)
     (hWcard : W.card = sampleSize A.card c)
     (hgood : W ∉ familyBadSamples (traceFamily G A B) id A c L) :
@@ -91,7 +91,7 @@ theorem near_of_good_sample {c L : ℕ} {A B W : Finset (Fin n)}
 
 /-- Every good ideal-sample run produces a successful paper run and its
 concrete vertex list. -/
-theorem GoodSampleRun.exists_successfulRun {c L rounds : ℕ}
+lemma GoodSampleRun.exists_successfulRun {c L rounds : ℕ}
     (hc : 1 ≤ c) {A B : Finset (Fin n)}
     (h : GoodSampleRun G c L rounds A B) :
     ∃ l : List (Fin n),

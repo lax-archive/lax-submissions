@@ -20,7 +20,7 @@ open Lax235315Proofs.Construction.WelzlStraight
 
 noncomputable section
 
-theorem testPrefix_eq_finSetAsSet_of_prefixEnumerates
+lemma testPrefix_eq_finSetAsSet_of_prefixEnumerates
     {n count : ℕ} {tests : ℕ → ℕ} {W : Finset ℕ}
     (henum : PrefixEnumerates count tests W) :
     testPrefix (n := n) tests count = finSetAsSet W := by
@@ -29,7 +29,7 @@ theorem testPrefix_eq_finSetAsSet_of_prefixEnumerates
   rw [← henum.2]
   simp [Stack.toList, arrOf]
 
-theorem PrefixEnumerates.entry_lt
+lemma PrefixEnumerates.entry_lt
     {n count : ℕ} {tests : ℕ → ℕ} {W : Finset ℕ}
     (henum : PrefixEnumerates count tests W)
     (hWrange : ∀ v ∈ W, v < n) :
@@ -42,7 +42,7 @@ theorem PrefixEnumerates.entry_lt
 
 /-- The first concrete partition call of a reduction round partitions the
 active `B` side by the sampled prefix of the random order. -/
-theorem firstPartition_run
+lemma firstPartition_run
     {B n targetCap sampleCount : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {activeB ord classB classSize markedCount stamp marked
       touched split repClass repsB nextB repB : ℕ → ℕ}
@@ -116,7 +116,7 @@ theorem firstPartition_run
 /-- The second concrete partition call uses the representatives selected by
 the first call as its duplicate-free test prefix, and partitions the active
 `A` side by their neighborhood traces. -/
-theorem secondPartition_run
+lemma secondPartition_run
     {B n targetCap current : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {activeA activeB labelB repClassB repsB nextB
       classA classSize markedCount stamp marked touched split

@@ -12,7 +12,7 @@ open Finset
 open Lax235315Proofs.Construction.GraphSampling
 open Lax235315Proofs.Construction.Sampling
 
-theorem card_finSymmDiff_eq {α : Type*} [DecidableEq α]
+lemma card_finSymmDiff_eq {α : Type*} [DecidableEq α]
     (X Y : Finset α) :
     (finSymmDiff X Y).card = X.card + Y.card - 2 * (X ∩ Y).card := by
   have hIX : (X ∩ Y).card ≤ X.card :=
@@ -29,7 +29,7 @@ theorem card_finSymmDiff_eq {α : Type*} [DecidableEq α]
 
 /-- The value accumulated by `verifyNear` is precisely the cardinality of
 the symmetric difference checked in Figure 1. -/
-theorem neighborhood_symmDiff_ncard_eq {n : ℕ}
+lemma neighborhood_symmDiff_ncard_eq {n : ℕ}
     (G : SimpleGraph (Fin n)) (A : Finset (Fin n)) (b r : Fin n) :
     ((G.neighborSet b ∩ (A : Set (Fin n))) ∆
       (G.neighborSet r ∩ (A : Set (Fin n)))).ncard =

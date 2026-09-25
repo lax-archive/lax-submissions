@@ -13,18 +13,18 @@ open Lax235315Proofs.Construction.RadixPass
 open Lax235315Proofs.Construction.RandomKeysRead
 open Lax235315Proofs.Construction.WelzlProgram
 
-theorem bigStep_array_length_eq {c : Com} {σ σ' : Env} {k : ℕ}
+lemma bigStep_array_length_eq {c : Com} {σ σ' : Env} {k : ℕ}
     (h : BigStep c σ σ' k) (a : String) :
     (σ'.arrs a).length = (σ.arrs a).length := by
   induction h <;> simp_all [Env.setArr] <;> split_ifs <;> simp_all
 
-theorem run_array_length_eq {B : ℕ} {c : Com} {σ σ' : Env} {K : ℕ}
+lemma run_array_length_eq {B : ℕ} {c : Com} {σ σ' : Env} {K : ℕ}
     (h : Run B c σ σ' K) (a : String) :
     (σ'.arrs a).length = (σ.arrs a).length := by
   obtain ⟨_, _, hb⟩ := h.bigStep
   exact bigStep_array_length_eq hb a
 
-theorem exists_arrOf_of_length {l : List ℕ} {n : ℕ} (h : l.length = n) :
+lemma exists_arrOf_of_length {l : List ℕ} {n : ℕ} (h : l.length = n) :
     ∃ f : ℕ → ℕ, l = arrOf n f := by
   let f := fun i => l.getD i 0
   refine ⟨f, ?_⟩
@@ -44,23 +44,23 @@ def SortState (n q : ℕ) (digits : Fin 8 → ℕ → ℕ)
     (∃ count, τ.arrs "count" = arrOf q count) ∧
     ∃ scratch, τ.arrs "scratchOrder" = arrOf n scratch
 
-private theorem keyName_ne_ord (d : Fin 8) : keyName d ≠ "ord" := by
+private lemma keyName_ne_ord (d : Fin 8) : keyName d ≠ "ord" := by
   fin_cases d <;> decide
 
-private theorem keyName_ne_count (d : Fin 8) : keyName d ≠ "count" := by
+private lemma keyName_ne_count (d : Fin 8) : keyName d ≠ "count" := by
   fin_cases d <;> decide
 
-private theorem keyName_ne_scratch (d : Fin 8) : keyName d ≠ "scratchOrder" := by
+private lemma keyName_ne_scratch (d : Fin 8) : keyName d ≠ "scratchOrder" := by
   fin_cases d <;> decide
 
-private theorem radixPass_preserves_keys {B : ℕ} {d : Fin 8} {σ σ' : Env}
+private lemma radixPass_preserves_keys {B : ℕ} {d : Fin 8} {σ σ' : Env}
     {K : ℕ} (r : Run B (radixPass (keyName d)) σ σ' K)
     (e : Fin 8) : σ'.arrs (keyName e) = σ.arrs (keyName e) := by
   apply r.frame_arr
   fin_cases d <;> fin_cases e <;>
     decide
 
-theorem onePass_run {B n q : ℕ} {digits : Fin 8 → ℕ → ℕ}
+lemma onePass_run {B n q : ℕ} {digits : Fin 8 → ℕ → ℕ}
     {xs : List ℕ} {d : Fin 8} {σ : Env}
     (hstate : SortState n q digits xs σ)
     (hxn : xs.length ≤ n) (hnB : n < B) (hqB : q < B)
@@ -94,12 +94,12 @@ theorem onePass_run {B n q : ℕ} {digits : Fin 8 → ℕ → ℕ}
   intro e
   rw [radixPass_preserves_keys r e, hkeys e]
 
-private theorem pass_mem {q : ℕ} {digits : Fin 8 → ℕ → ℕ}
+private lemma pass_mem {q : ℕ} {digits : Fin 8 → ℕ → ℕ}
     {xs : List ℕ} (hkey : ∀ e x, x ∈ xs → digits e x < q)
     (d : Fin 8) {x : ℕ} (hx : x ∈ bucketSort q (digits d) xs) : x ∈ xs :=
   (mem_bucketSort.mp hx).1
 
-private theorem pass_properties {n q : ℕ}
+private lemma pass_properties {n q : ℕ}
     {digits : Fin 8 → ℕ → ℕ} {xs : List ℕ}
     (hxs : xs.Nodup) (hvert : ∀ x ∈ xs, x < n)
     (hkey : ∀ e x, x ∈ xs → digits e x < q) (d : Fin 8) :
@@ -114,7 +114,7 @@ private theorem pass_properties {n q : ℕ}
 
 /-- The fixed sequence in `reductionRound` implements all eight stable
 least-significant-first passes. -/
-theorem radixEight_run {B n q : ℕ} {digits : Fin 8 → ℕ → ℕ}
+lemma radixEight_run {B n q : ℕ} {digits : Fin 8 → ℕ → ℕ}
     {xs : List ℕ} {σ : Env}
     (hstate : SortState n q digits xs σ)
     (hxn : xs.length ≤ n) (hnB : n < B) (hqB : q < B)

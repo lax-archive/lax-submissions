@@ -26,7 +26,7 @@ structure ConcreteTracePartition {n : ℕ} (G : SimpleGraph (Fin n))
   representative_val : ∀ (v : Fin n), active v.val = 1 →
     (partition.representative v).val = repOf v.val
 
-theorem ConcreteTracePartition.rep_lt
+lemma ConcreteTracePartition.rep_lt
     {n : ℕ} {G : SimpleGraph (Fin n)} {active repOf : ℕ → ℕ}
     {S : Set (Fin n)} {R : Finset ℕ}
     (h : ConcreteTracePartition G active S R repOf)
@@ -35,7 +35,7 @@ theorem ConcreteTracePartition.rep_lt
   rw [← h.representative_val vf hv]
   exact (h.partition.representative vf).isLt
 
-theorem ConcreteTracePartition.rep_active
+lemma ConcreteTracePartition.rep_active
     {n : ℕ} {G : SimpleGraph (Fin n)} {active repOf : ℕ → ℕ}
     {S : Set (Fin n)} {R : Finset ℕ}
     (h : ConcreteTracePartition G active S R repOf)
@@ -46,7 +46,7 @@ theorem ConcreteTracePartition.rep_active
   change active (h.partition.representative vf).val = 1 at hr
   rwa [h.representative_val vf hv] at hr
 
-theorem repClass_lt_of_active
+lemma repClass_lt_of_active
     {n current : ℕ} {active label repClass reps outActive : ℕ → ℕ}
     {R : Finset ℕ}
     (h : RepData n current n active label repClass reps outActive R)
@@ -76,7 +76,7 @@ def representativeFin {n current : ℕ}
       exact repClass_lt_of_active hdata v.isLt hav (hlabels _ v.isLt hav)⟩
   · exact v
 
-@[simp] theorem representativeFin_val_of_active
+@[simp] lemma representativeFin_val_of_active
     {n current : ℕ}
     {active label repClass repOf reps outActive : ℕ → ℕ}
     {R : Finset ℕ}

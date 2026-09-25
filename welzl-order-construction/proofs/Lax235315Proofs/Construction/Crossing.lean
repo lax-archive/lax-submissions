@@ -27,7 +27,7 @@ noncomputable def successor {n : ℕ} (π : Equiv.Perm (Fin n)) (u : Fin n) : Fi
     classical
     exact if h : HasSuccessor π u then Classical.choose h else u
 
-theorem successor_spec {n : ℕ} {π : Equiv.Perm (Fin n)} {u : Fin n}
+lemma successor_spec {n : ℕ} {π : Equiv.Perm (Fin n)} {u : Fin n}
     (h : HasSuccessor π u) :
     (π (successor π u)).val = (π u).val + 1 := by
   rw [successor, dif_pos h]
@@ -39,7 +39,7 @@ def predecessorsOf {n : ℕ} (π : Equiv.Perm (Fin n)) (D : Set (Fin n)) :
   {u | HasSuccessor π u ∧ successor π u ∈ D}
 
 /-- Taking the successor injects `predecessorsOf π D` into `D`. -/
-theorem predecessorsOf_ncard_le {n : ℕ} (π : Equiv.Perm (Fin n))
+lemma predecessorsOf_ncard_le {n : ℕ} (π : Equiv.Perm (Fin n))
     (D : Set (Fin n)) :
     (predecessorsOf π D).ncard ≤ D.ncard := by
   apply Set.ncard_le_ncard_of_injOn (successor π)
@@ -54,7 +54,7 @@ theorem predecessorsOf_ncard_le {n : ℕ} (π : Equiv.Perm (Fin n))
     omega
 
 /-- Every crossing count is at most the number of vertices. -/
-theorem crossingCount_le_card {n : ℕ} (π : Equiv.Perm (Fin n))
+lemma crossingCount_le_card {n : ℕ} (π : Equiv.Perm (Fin n))
     (X : Set (Fin n)) :
     crossingCount π X ≤ n := by
   unfold crossingCount
@@ -64,7 +64,7 @@ theorem crossingCount_le_card {n : ℕ} (π : Equiv.Perm (Fin n))
 
 /-- A member's crossing count is bounded by the crossing number of the
 set system containing it. -/
-theorem crossingCount_le_crossingNumber {n : ℕ}
+lemma crossingCount_le_crossingNumber {n : ℕ}
     {ℱ : SetSystem (Fin n)} {π : Equiv.Perm (Fin n)}
     {X : Set (Fin n)} (hX : X ∈ ℱ) :
     crossingCount π X ≤ crossingNumber ℱ π := by
@@ -76,7 +76,7 @@ theorem crossingCount_le_crossingNumber {n : ℕ}
   · exact ⟨X, hX, rfl⟩
 
 /-- A pointwise bound on all members bounds the crossing number. -/
-theorem crossingNumber_le_of_forall {n : ℕ}
+lemma crossingNumber_le_of_forall {n : ℕ}
     {ℱ : SetSystem (Fin n)} {π : Equiv.Perm (Fin n)} {k : ℕ}
     (h : ∀ X ∈ ℱ, crossingCount π X ≤ k) :
     crossingNumber ℱ π ≤ k := by
@@ -92,7 +92,7 @@ theorem crossingNumber_le_of_forall {n : ℕ}
 
 /-- Changing membership on `D` can create at most two new crossings for
 each vertex of `D`. -/
-theorem crossingCount_le_add_two_mul_symmDiff {n : ℕ}
+lemma crossingCount_le_add_two_mul_symmDiff {n : ℕ}
     (π : Equiv.Perm (Fin n)) (X Y : Set (Fin n)) :
     crossingCount π X ≤ crossingCount π Y + 2 * (X ∆ Y).ncard := by
   let CX : Set (Fin n) :=
@@ -144,7 +144,7 @@ theorem crossingCount_le_add_two_mul_symmDiff {n : ℕ}
 `ℱ` is within symmetric-difference distance `k` of a representative in
 `ℱ'`, an order of crossing number `m` for `ℱ'` has crossing number at
 most `m + 2k` for `ℱ`. -/
-theorem crossingNumber_le_add_two_mul {n k m : ℕ}
+lemma crossingNumber_le_add_two_mul {n k m : ℕ}
     {ℱ ℱ' : SetSystem (Fin n)} {π : Equiv.Perm (Fin n)}
     (hrep : ∀ X ∈ ℱ, ∃ Y ∈ ℱ', (X ∆ Y).ncard ≤ k)
     (hπ : crossingNumber ℱ' π ≤ m) :

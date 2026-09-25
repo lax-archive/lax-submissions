@@ -23,7 +23,7 @@ def traceClass (V S : Set (Fin n)) (v : Fin n) : Finset (Fin n) := by
   exact Finset.univ.filter fun u =>
     u ∈ V ∧ neighborhoodTrace G S u = neighborhoodTrace G S v
 
-theorem traceClass_nonempty {V S : Set (Fin n)} {v : Fin n} (hv : v ∈ V) :
+lemma traceClass_nonempty {V S : Set (Fin n)} {v : Fin n} (hv : v ∈ V) :
     (traceClass G V S v).Nonempty := by
   exact ⟨v, by simp [traceClass, hv]⟩
 
@@ -35,14 +35,14 @@ def canonicalRepresentative (V S : Set (Fin n)) (v : Fin n) : Fin n := by
       (traceClass G V S v).min' (traceClass_nonempty G h)
     else v
 
-theorem canonicalRepresentative_mem {V S : Set (Fin n)} {v : Fin n}
+lemma canonicalRepresentative_mem {V S : Set (Fin n)} {v : Fin n}
     (hv : v ∈ V) : canonicalRepresentative G V S v ∈ V := by
   classical
   rw [canonicalRepresentative, dif_pos hv]
   have := Finset.min'_mem (traceClass G V S v) (traceClass_nonempty G hv)
   exact (Finset.mem_filter.mp this).2.1
 
-theorem canonicalRepresentative_same_trace {V S : Set (Fin n)} {v : Fin n}
+lemma canonicalRepresentative_same_trace {V S : Set (Fin n)} {v : Fin n}
     (hv : v ∈ V) :
     neighborhoodTrace G S (canonicalRepresentative G V S v) =
       neighborhoodTrace G S v := by
@@ -106,21 +106,21 @@ def canonicalTracePartition (V S : Set (Fin n)) :
 
 /-- A representative set has at most as many elements as there are
 neighborhood traces on its test set. -/
-theorem TracePartition.ncard_le_traceCount {V S R : Set (Fin n)}
+lemma TracePartition.ncard_le_traceCount {V S R : Set (Fin n)}
     (h : TracePartition G V S R) :
     R.ncard ≤ Lax195003.WelzlOrdersNeighborhoodComplexity.traceCount G S :=
   ncard_le_traceCount_of_injOn G S R h.reps_separated
 
 /-- Under linear neighborhood complexity, a trace partition on a nonempty
 test set has at most `c |S|` representatives. -/
-theorem TracePartition.ncard_le_mul {c : ℕ} {V S R : Set (Fin n)}
+lemma TracePartition.ncard_le_mul {c : ℕ} {V S R : Set (Fin n)}
     (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant
       G c)
     (h : TracePartition G V S R) (hS : S.Nonempty) :
     R.ncard ≤ c * S.ncard :=
   ncard_le_mul_of_injOn hG hS h.reps_separated
 
-theorem TracePartition.reps_nonempty {V S R : Set (Fin n)}
+lemma TracePartition.reps_nonempty {V S R : Set (Fin n)}
     (h : TracePartition G V S R) (hV : V.Nonempty) : R.Nonempty := by
   obtain ⟨v, hv⟩ := hV
   exact ⟨h.representative v, h.representative_mem v hv⟩
@@ -130,7 +130,7 @@ division. -/
 def sampleSize (a c : ℕ) : ℕ :=
   (a + 2 * c ^ 2 - 1) / (2 * c ^ 2)
 
-theorem sampleSize_le_div_add_one {a c : ℕ} (hc : 1 ≤ c) :
+lemma sampleSize_le_div_add_one {a c : ℕ} (hc : 1 ≤ c) :
     sampleSize a c ≤ a / (2 * c ^ 2) + 1 := by
   unfold sampleSize
   have hd : 0 < 2 * c ^ 2 :=
@@ -141,7 +141,7 @@ theorem sampleSize_le_div_add_one {a c : ℕ} (hc : 1 ≤ c) :
       Nat.div_le_div_right (Nat.sub_le _ _)
     _ = a / (2 * c ^ 2) + 1 := Nat.add_div_right a hd
 
-theorem sq_mul_sampleSize_le {a c : ℕ} (hc : 1 ≤ c) :
+lemma sq_mul_sampleSize_le {a c : ℕ} (hc : 1 ≤ c) :
     c ^ 2 * sampleSize a c ≤ a / 2 + c ^ 2 := by
   have hd : 0 < 2 * c ^ 2 :=
     Nat.mul_pos (by omega) (pow_pos (by omega) _)
@@ -160,7 +160,7 @@ theorem sq_mul_sampleSize_le {a c : ℕ} (hc : 1 ≤ c) :
 
 /-- The two quotient steps shrink the active ground side to at most
 `c² |W|`. -/
-theorem partitions_ground_ncard_le {c : ℕ} {A B W A' B' : Set (Fin n)}
+lemma partitions_ground_ncard_le {c : ℕ} {A B W A' B' : Set (Fin n)}
     (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant
       G c)
     (hB : TracePartition G B W B')
@@ -177,7 +177,7 @@ theorem partitions_ground_ncard_le {c : ℕ} {A B W A' B' : Set (Fin n)}
 
 /-- With the prescribed sample cardinality, the paper's one-step recurrence
 is `|A'| ≤ |A|/2 + c²`. -/
-theorem partitions_ground_ncard_le_half_add {c : ℕ}
+lemma partitions_ground_ncard_le_half_add {c : ℕ}
     {A B W A' B' : Set (Fin n)}
     (hc : 1 ≤ c)
     (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant
@@ -193,7 +193,7 @@ theorem partitions_ground_ncard_le_half_add {c : ℕ}
     _ = c ^ 2 * sampleSize A.ncard c := by rw [hWcard]
     _ ≤ A.ncard / 2 + c ^ 2 := sq_mul_sampleSize_le hc
 
-private theorem same_trace_adj {V S R : Set (Fin n)}
+private lemma same_trace_adj {V S R : Set (Fin n)}
     (h : TracePartition G V S R) {v : Fin n} (hv : v ∈ V)
     {s : Fin n} (hs : s ∈ S) :
     G.Adj s (h.representative v) ↔ G.Adj s v := by
@@ -202,7 +202,7 @@ private theorem same_trace_adj {V S R : Set (Fin n)}
 
 /-- Restoring every nonrepresentative immediately after its representative
 produces an enumeration of `V` by genuine twin insertions over `S`. -/
-theorem TracePartition.exists_twinExpansion {V S R : Set (Fin n)}
+lemma TracePartition.exists_twinExpansion {V S R : Set (Fin n)}
     (h : TracePartition G V S R) {small : List (Fin n)}
     (hsmall : Enumerates R small) :
     ∃ big, Enumerates V big ∧ TwinExpansion G S small big := by
@@ -263,7 +263,7 @@ theorem TracePartition.exists_twinExpansion {V S R : Set (Fin n)}
 
 /-- The two trace partitions and the checked near-twin condition constitute
 one reconstruction reduction. -/
-theorem exists_reduction_of_partitions {k : ℕ}
+lemma exists_reduction_of_partitions {k : ℕ}
     {A B W A' B' : Set (Fin n)} {small : List (Fin n)}
     (hB : TracePartition G B W B')
     (hA : TracePartition G A B' A')

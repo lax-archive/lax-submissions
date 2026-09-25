@@ -17,14 +17,14 @@ def countDigit {α : Type*} (key : α → ℕ) (xs : List α) (d : ℕ) : ℕ :=
 def startDigit {α : Type*} (key : α → ℕ) (xs : List α) (d : ℕ) : ℕ :=
   ((List.range d).map fun e => countDigit key xs e).sum
 
-@[simp] theorem startDigit_zero {α : Type*} (key : α → ℕ) (xs : List α) :
+@[simp] lemma startDigit_zero {α : Type*} (key : α → ℕ) (xs : List α) :
     startDigit key xs 0 = 0 := rfl
 
-theorem startDigit_succ {α : Type*} (key : α → ℕ) (xs : List α) (d : ℕ) :
+lemma startDigit_succ {α : Type*} (key : α → ℕ) (xs : List α) (d : ℕ) :
     startDigit key xs (d + 1) = startDigit key xs d + countDigit key xs d := by
   simp [startDigit, List.range_succ, List.map_append]
 
-theorem startDigit_mono {α : Type*} (key : α → ℕ) (xs : List α)
+lemma startDigit_mono {α : Type*} (key : α → ℕ) (xs : List α)
     {d e : ℕ} (hde : d ≤ e) : startDigit key xs d ≤ startDigit key xs e := by
   induction e with
   | zero => simp_all
@@ -34,7 +34,7 @@ theorem startDigit_mono {α : Type*} (key : α → ℕ) (xs : List α)
       · have : d = e + 1 := by omega
         simp [this]
 
-theorem countDigit_take_succ {α : Type*} (key : α → ℕ) (xs : List α)
+lemma countDigit_take_succ {α : Type*} (key : α → ℕ) (xs : List α)
     {i : ℕ} (hi : i < xs.length) (d : ℕ) :
     countDigit key (xs.take (i + 1)) d =
       countDigit key (xs.take i) d + if key xs[i] = d then 1 else 0 := by
@@ -43,24 +43,24 @@ theorem countDigit_take_succ {α : Type*} (key : α → ℕ) (xs : List α)
   rw [List.filter_append, List.length_append]
   by_cases h : key xs[i] = d <;> simp [h]
 
-theorem countDigit_take_le {α : Type*} (key : α → ℕ) (xs : List α)
+lemma countDigit_take_le {α : Type*} (key : α → ℕ) (xs : List α)
     (i d : ℕ) : countDigit key (xs.take i) d ≤ countDigit key xs d := by
   unfold countDigit
   apply List.Sublist.length_le
   exact (List.take_sublist _ _).filter _
 
-theorem digit_intervals_separated {α : Type*} (key : α → ℕ)
+lemma digit_intervals_separated {α : Type*} (key : α → ℕ)
     (xs : List α) {d e : ℕ} (hde : d < e) :
     startDigit key xs d + countDigit key xs d ≤ startDigit key xs e := by
   rw [← startDigit_succ]
   exact startDigit_mono key xs (by omega)
 
-theorem length_bucketSort_eq_startDigit {α : Type*} (key : α → ℕ)
+lemma length_bucketSort_eq_startDigit {α : Type*} (key : α → ℕ)
     (xs : List α) (d : ℕ) :
     (bucketSort d key xs).length = startDigit key xs d := by
   simp [bucketSort, startDigit, countDigit]
 
-private theorem range_split_at {d q : ℕ} (hdq : d < q) :
+private lemma range_split_at {d q : ℕ} (hdq : d < q) :
     List.range q = List.range d ++ d :: List.range' (d + 1) (q - (d + 1)) := by
   simp only [List.range_eq_range']
   rw [show q = d + (q - d) by omega, ← List.range'_append_1]
@@ -69,7 +69,7 @@ private theorem range_split_at {d q : ℕ} (hdq : d < q) :
   simp only [Nat.zero_add]
   congr 2 <;> omega
 
-theorem bucketSort_split_at {α : Type*} (key : α → ℕ) (xs : List α)
+lemma bucketSort_split_at {α : Type*} (key : α → ℕ) (xs : List α)
     {d q : ℕ} (hdq : d < q) :
     bucketSort q key xs = bucketSort d key xs ++
       (xs.filter fun x => key x = d) ++
@@ -78,7 +78,7 @@ theorem bucketSort_split_at {α : Type*} (key : α → ℕ) (xs : List α)
   simp only [bucketSort, range_split_at hdq, List.flatMap_append,
     List.flatMap_cons, List.flatMap_nil, List.append_nil, List.append_assoc]
 
-theorem getD_bucketSort {α : Type*} [Inhabited α]
+lemma getD_bucketSort {α : Type*} [Inhabited α]
     (key : α → ℕ) (xs : List α) {d q j : ℕ}
     (hdq : d < q) (hj : j < countDigit key xs d) :
     (bucketSort q key xs).getD (startDigit key xs d + j) default =
@@ -93,10 +93,10 @@ theorem getD_bucketSort {α : Type*} [Inhabited α]
 def natUpdate (f : ℕ → ℕ) (k v : ℕ) : ℕ → ℕ :=
   fun i => if i = k then v else f i
 
-@[simp] theorem natUpdate_self (f : ℕ → ℕ) (k v : ℕ) :
+@[simp] lemma natUpdate_self (f : ℕ → ℕ) (k v : ℕ) :
     natUpdate f k v k = v := by simp [natUpdate]
 
-theorem natUpdate_of_ne (f : ℕ → ℕ) {i k v : ℕ} (h : i ≠ k) :
+lemma natUpdate_of_ne (f : ℕ → ℕ) {i k v : ℕ} (h : i ≠ k) :
     natUpdate f k v i = f i := by simp [natUpdate, h]
 
 /-- Array contents after scattering the first `i` entries to their stable
@@ -109,7 +109,7 @@ def scatterPrefix (key : ℕ → ℕ) (xs : List ℕ) (initial : ℕ → ℕ) :
       natUpdate (scatterPrefix key xs initial i)
         (startDigit key xs (key x) + countDigit key (xs.take i) (key x)) x
 
-private theorem getD_filter_at_count_take (key : ℕ → ℕ) (xs : List ℕ)
+private lemma getD_filter_at_count_take (key : ℕ → ℕ) (xs : List ℕ)
     {i : ℕ} (hi : i < xs.length) :
     (xs.filter fun x => key x = key xs[i]).getD
         (countDigit key (xs.take i) (key xs[i])) 0 = xs[i] := by
@@ -132,7 +132,7 @@ private theorem getD_filter_at_count_take (key : ℕ → ℕ) (xs : List ℕ)
     simp [countDigit])]
   simp [countDigit]
 
-private theorem scatter_position_ne (key : ℕ → ℕ) (xs : List ℕ)
+private lemma scatter_position_ne (key : ℕ → ℕ) (xs : List ℕ)
     {i d e j : ℕ} (hi : i < xs.length) (he : key xs[i] = e)
     (hj : j < countDigit key (xs.take i) d) :
     startDigit key xs d + j ≠
@@ -155,7 +155,7 @@ private theorem scatter_position_ne (key : ℕ → ℕ) (xs : List ℕ)
 
 /-- Every cell already scattered into a bucket has the corresponding
 stable-filter value. -/
-theorem scatterPrefix_correct (key : ℕ → ℕ) (xs : List ℕ)
+lemma scatterPrefix_correct (key : ℕ → ℕ) (xs : List ℕ)
     (initial : ℕ → ℕ) {i : ℕ} (hi : i ≤ xs.length) :
     ∀ d j, j < countDigit key (xs.take i) d →
       scatterPrefix key xs initial i (startDigit key xs d + j) =
@@ -185,7 +185,7 @@ theorem scatterPrefix_correct (key : ℕ → ℕ) (xs : List ℕ)
         rw [natUpdate_of_ne _ (scatter_position_ne key xs hilength rfl hj)]
         exact ih (by omega) d j hj
 
-theorem exists_digit_position {α : Type*} (key : α → ℕ) (xs : List α)
+lemma exists_digit_position {α : Type*} (key : α → ℕ) (xs : List α)
     {q k : ℕ} (hk : k < startDigit key xs q) :
     ∃ d < q, ∃ j < countDigit key xs d, k = startDigit key xs d + j := by
   induction q with
@@ -198,7 +198,7 @@ theorem exists_digit_position {α : Type*} (key : α → ℕ) (xs : List α)
       · refine ⟨q, by omega, k - startDigit key xs q, by omega, ?_⟩
         omega
 
-@[simp] theorem mem_bucketSort {α : Type*} {q : ℕ} {key : α → ℕ}
+@[simp] lemma mem_bucketSort {α : Type*} {q : ℕ} {key : α → ℕ}
     {xs : List α} {x : α} :
     x ∈ bucketSort q key xs ↔ x ∈ xs ∧ key x < q := by
   simp only [bucketSort, List.mem_flatMap, List.mem_range, List.mem_filter,
@@ -209,7 +209,7 @@ theorem exists_digit_position {α : Type*} (key : α → ℕ) (xs : List α)
   · rintro ⟨hx, hkey⟩
     exact ⟨key x, hkey, hx, rfl⟩
 
-theorem nodup_bucketSort {α : Type*} [DecidableEq α] {q : ℕ}
+lemma nodup_bucketSort {α : Type*} [DecidableEq α] {q : ℕ}
     {key : α → ℕ} {xs : List α} (hxs : xs.Nodup) :
     (bucketSort q key xs).Nodup := by
   rw [bucketSort, List.nodup_flatMap]
@@ -233,7 +233,7 @@ theorem nodup_bucketSort {α : Type*} [DecidableEq α] {q : ℕ}
     have hjKey := of_decide_eq_true (List.mem_filter.mp hxj).2
     exact hdij (hiKey.symm.trans hjKey)
 
-theorem bucketSort_perm {α : Type*} [DecidableEq α] {q : ℕ}
+lemma bucketSort_perm {α : Type*} [DecidableEq α] {q : ℕ}
     {key : α → ℕ} {xs : List α} (hxs : xs.Nodup)
     (hkey : ∀ x ∈ xs, key x < q) :
     List.Perm (bucketSort q key xs) xs := by
@@ -247,7 +247,7 @@ theorem bucketSort_perm {α : Type*} [DecidableEq α] {q : ℕ}
 
 /-- At the end of scattering, the first `|xs|` cells are exactly the stable
 bucket-sort output. -/
-theorem scatterPrefix_eq_bucketSort (key : ℕ → ℕ) (xs : List ℕ)
+lemma scatterPrefix_eq_bucketSort (key : ℕ → ℕ) (xs : List ℕ)
     (initial : ℕ → ℕ) {q k : ℕ} (hxs : xs.Nodup)
     (hkey : ∀ x ∈ xs, key x < q) (hk : k < xs.length) :
     scatterPrefix key xs initial xs.length k =
@@ -262,7 +262,7 @@ theorem scatterPrefix_eq_bucketSort (key : ℕ → ℕ) (xs : List ℕ)
       simpa using hj)]
   exact (getD_bucketSort key xs hdq hj).symm
 
-@[simp] theorem length_bucketSort {α : Type*} [DecidableEq α] {q : ℕ}
+@[simp] lemma length_bucketSort {α : Type*} [DecidableEq α] {q : ℕ}
     {key : α → ℕ} {xs : List α} (hxs : xs.Nodup)
     (hkey : ∀ x ∈ xs, key x < q) :
     (bucketSort q key xs).length = xs.length :=
@@ -270,7 +270,7 @@ theorem scatterPrefix_eq_bucketSort (key : ℕ → ℕ) (xs : List ℕ)
 
 /-- One stable pass promotes an ordering relation `R` to lexicographic
 ordering by the new, more significant digit. -/
-theorem pairwise_bucketSort_lex {α : Type*} {q : ℕ} {key : α → ℕ}
+lemma pairwise_bucketSort_lex {α : Type*} {q : ℕ} {key : α → ℕ}
     {xs : List α} {R : α → α → Prop}
     (hpair : xs.Pairwise R) :
     (bucketSort q key xs).Pairwise
@@ -319,7 +319,7 @@ def radixSort8 {α : Type*} (q : ℕ) (digits : Fin 8 → α → ℕ)
   bucketSort q (digits 6) <|
   bucketSort q (digits 7) xs
 
-theorem radixSort8_perm {α : Type*} [DecidableEq α]
+lemma radixSort8_perm {α : Type*} [DecidableEq α]
     {q : ℕ} {digits : Fin 8 → α → ℕ} {xs : List α}
     (hxs : xs.Nodup) (hkey : ∀ d x, x ∈ xs → digits d x < q) :
     List.Perm (radixSort8 q digits xs) xs := by
@@ -363,7 +363,7 @@ theorem radixSort8_perm {α : Type*} [DecidableEq α]
   exact p₀.trans (p₁.trans (p₂.trans (p₃.trans (p₄.trans
     (p₅.trans (p₆.trans p₇))))))
 
-theorem radixSort8_pairwise {α : Type*}
+lemma radixSort8_pairwise {α : Type*}
     {q : ℕ} {digits : Fin 8 → α → ℕ} {xs : List α} :
     (radixSort8 q digits xs).Pairwise (LexOn digits digitOrder) := by
   let x₇ := bucketSort q (digits 7) xs
@@ -407,7 +407,7 @@ theorem radixSort8_pairwise {α : Type*}
 
 /-- An element lexicographically between two equal digit vectors has the
 same digits as both endpoints. -/
-theorem lexOn_between_eq {α : Type*} {digits : Fin 8 → α → ℕ}
+lemma lexOn_between_eq {α : Type*} {digits : Fin 8 → α → ℕ}
     {ds : List (Fin 8)} {x y z : α}
     (hxy : ∀ d ∈ ds, digits d x = digits d y)
     (hxz : LexOn digits ds x z) (hzy : LexOn digits ds z y) :
@@ -438,7 +438,7 @@ theorem lexOn_between_eq {α : Type*} {digits : Fin 8 → α → ℕ}
 
 /-- In a lexicographically sorted list, any repeated digit vector already
 appears on an adjacent pair, exactly what `detectCollision` checks. -/
-theorem exists_adjacent_equal_of_equal_indices {α : Type*}
+lemma exists_adjacent_equal_of_equal_indices {α : Type*}
     {digits : Fin 8 → α → ℕ} {xs : List α}
     (hpair : xs.Pairwise (LexOn digits digitOrder))
     {i j : ℕ} (hi : i < xs.length) (hj : j < xs.length) (hij : i < j)

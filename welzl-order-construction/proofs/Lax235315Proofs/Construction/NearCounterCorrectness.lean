@@ -21,7 +21,7 @@ noncomputable section
 
 /-- A generic array view of one completed CSR block has exactly the active
 graph neighbors of its source. -/
-theorem mem_neighborBlock_iff
+lemma mem_neighborBlock_iff
     {n targetCap : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {target off active : ℕ → ℕ}
     (hx : EncodesGraph x n G) (htargetCap : targetCap = 2 * edgeCount x)
@@ -70,7 +70,7 @@ def activeCommonNeighborNumbers {n : ℕ} (G : SimpleGraph (Fin n))
   exact (Finset.range n).filter fun a =>
     active a = 1 ∧ Adjn G a b ∧ Adjn G a r
 
-theorem degreePrefix_full_eq_card
+lemma degreePrefix_full_eq_card
     {n targetCap : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {target off activeA activeB : ℕ → ℕ}
     (hx : EncodesGraph x n G) (htargetCap : targetCap = 2 * edgeCount x)
@@ -90,7 +90,7 @@ theorem degreePrefix_full_eq_card
     exact ⟨haN, haa, (mem_neighborBlock_iff hx htargetCap hoffEq htargetEq haN).mpr
       ⟨hb, hab⟩⟩
 
-theorem commonPrefix_full_eq_card
+lemma commonPrefix_full_eq_card
     {n targetCap : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {target off activeA activeB rep : ℕ → ℕ}
     (hx : EncodesGraph x n G) (htargetCap : targetCap = 2 * edgeCount x)
@@ -117,11 +117,11 @@ theorem commonPrefix_full_eq_card
 def activeFinset {n : ℕ} (active : ℕ → ℕ) : Finset (Fin n) :=
   Finset.univ.filter fun v => active v.val = 1
 
-@[simp] theorem mem_activeFinset {n : ℕ} {active : ℕ → ℕ}
+@[simp] lemma mem_activeFinset {n : ℕ} {active : ℕ → ℕ}
     {v : Fin n} : v ∈ activeFinset active ↔ active v.val = 1 := by
   simp [activeFinset]
 
-theorem activeNeighborNumbers_card_eq_traceFinset
+lemma activeNeighborNumbers_card_eq_traceFinset
     {n : ℕ} (G : SimpleGraph (Fin n)) (active : ℕ → ℕ)
     (b : Fin n) :
     (activeNeighborNumbers G active b.val).card =
@@ -148,7 +148,7 @@ theorem activeNeighborNumbers_card_eq_traceFinset
     · exact ⟨v.isLt, b.isLt, by simpa using hv.1.symm⟩
     · exact Fin.ext rfl
 
-theorem activeCommonNeighborNumbers_card_eq_inter
+lemma activeCommonNeighborNumbers_card_eq_inter
     {n : ℕ} (G : SimpleGraph (Fin n)) (active : ℕ → ℕ)
     (b r : Fin n) :
     (activeCommonNeighborNumbers G active b.val r.val).card =
@@ -180,7 +180,7 @@ theorem activeCommonNeighborNumbers_card_eq_inter
 
 /-- The verifier's final arithmetic distance is exactly the restricted
 open-neighborhood symmetric difference used in the paper. -/
-theorem nearDistance_eq_neighborhood_symmDiff
+lemma nearDistance_eq_neighborhood_symmDiff
     {n targetCap : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {target off activeA activeB rep : ℕ → ℕ}
     (hx : EncodesGraph x n G) (htargetCap : targetCap = 2 * edgeCount x)

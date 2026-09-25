@@ -16,11 +16,11 @@ open Lax11Proofs.CC
 def activeTargets (target active : ℕ → ℕ) (lo hi : ℕ) : Finset ℕ :=
   ((Finset.Ico lo hi).image target).filter fun v => active v = 1
 
-@[simp] theorem activeTargets_same (target active : ℕ → ℕ) (lo : ℕ) :
+@[simp] lemma activeTargets_same (target active : ℕ → ℕ) (lo : ℕ) :
     activeTargets target active lo lo = ∅ := by
   simp [activeTargets]
 
-theorem mem_activeTargets {target active : ℕ → ℕ} {lo hi v : ℕ} :
+lemma mem_activeTargets {target active : ℕ → ℕ} {lo hi v : ℕ} :
     v ∈ activeTargets target active lo hi ↔
       active v = 1 ∧ ∃ j, lo ≤ j ∧ j < hi ∧ target j = v := by
   simp only [activeTargets, Finset.mem_filter, Finset.mem_image,
@@ -28,7 +28,7 @@ theorem mem_activeTargets {target active : ℕ → ℕ} {lo hi v : ℕ} :
   aesop
 
 /-- Extending a scan by one slot inserts precisely its active target. -/
-theorem activeTargets_succ {target active : ℕ → ℕ} {lo j : ℕ}
+lemma activeTargets_succ {target active : ℕ → ℕ} {lo j : ℕ}
     (hlo : lo ≤ j) :
     activeTargets target active lo (j + 1) =
       if active (target j) = 1 then
@@ -71,7 +71,7 @@ theorem activeTargets_succ {target active : ℕ → ℕ} {lo j : ℕ}
       obtain ⟨hav, k, hlk, hkj, hkv⟩ := hv
       exact ⟨hav, k, hlk, by omega, hkv⟩
 
-theorem activeTargets_mono {target active : ℕ → ℕ} {lo i j : ℕ}
+lemma activeTargets_mono {target active : ℕ → ℕ} {lo i j : ℕ}
     (hij : i ≤ j) :
     activeTargets target active lo i ⊆ activeTargets target active lo j := by
   intro v hv
@@ -79,7 +79,7 @@ theorem activeTargets_mono {target active : ℕ → ℕ} {lo i j : ℕ}
   obtain ⟨ha, k, hlk, hki, hkv⟩ := hv
   exact ⟨ha, k, hlk, hki.trans_le hij, hkv⟩
 
-theorem activeTargets_subset_range {target active : ℕ → ℕ} {lo hi n : ℕ}
+lemma activeTargets_subset_range {target active : ℕ → ℕ} {lo hi n : ℕ}
     (htarget : ∀ j, lo ≤ j → j < hi → target j < n) :
     activeTargets target active lo hi ⊆ Finset.range n := by
   intro v hv
@@ -87,7 +87,7 @@ theorem activeTargets_subset_range {target active : ℕ → ℕ} {lo hi n : ℕ}
   obtain ⟨-, j, hlj, hjh, rfl⟩ := hv
   exact Finset.mem_range.mpr (htarget j hlj hjh)
 
-theorem card_activeTargets_le {target active : ℕ → ℕ} {lo hi n : ℕ}
+lemma card_activeTargets_le {target active : ℕ → ℕ} {lo hi n : ℕ}
     (htarget : ∀ j, lo ≤ j → j < hi → target j < n) :
     (activeTargets target active lo hi).card ≤ n := by
   exact (Finset.card_le_card (activeTargets_subset_range htarget)).trans_eq
@@ -95,7 +95,7 @@ theorem card_activeTargets_le {target active : ℕ → ℕ} {lo hi n : ℕ}
 
 /-- A duplicate-free set extracted from a half-open array interval has at
 most as many elements as the interval has slots. -/
-theorem card_activeTargets_le_interval {target active : ℕ → ℕ}
+lemma card_activeTargets_le_interval {target active : ℕ → ℕ}
     {lo hi : ℕ} :
     (activeTargets target active lo hi).card ≤ hi - lo := by
   calc
@@ -107,7 +107,7 @@ theorem card_activeTargets_le_interval {target active : ℕ → ℕ}
 
 /-- A completed encoded block contains exactly the active graph neighbors of
 its source vertex. -/
-theorem mem_activeTargets_block {x : List ℕ} {n : ℕ}
+lemma mem_activeTargets_block {x : List ℕ} {n : ℕ}
     {G : SimpleGraph (Fin n)} (hx : EncodesGraph x n G)
     {active : ℕ → ℕ} {t v : ℕ} (ht : t < n) :
     v ∈ activeTargets (target x) active (offset x t) (offset x (t + 1)) ↔

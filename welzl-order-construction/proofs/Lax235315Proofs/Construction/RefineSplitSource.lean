@@ -53,7 +53,7 @@ def SplitInv (n base height : ℕ) (entry : ℕ → ℕ) (touched : Finset ℕ)
     ∀ q < base, q ∉ processedClasses (τ.vars "i") entry →
       workSize q = oldSize q
 
-theorem splitInv_initial
+lemma splitInv_initial
     {n base height : ℕ} {entry counts oldSize split : ℕ → ℕ}
     {touched : Finset ℕ} {σ : Env}
     (hi : σ.vars "i" = 0) (hheight : height ≤ n)
@@ -74,7 +74,7 @@ theorem splitInv_initial
   · intro q hq hnot
     rfl
 
-private theorem splitBody_spec
+private lemma splitBody_spec
     {B n base height : ℕ} {entry counts oldSize : ℕ → ℕ}
     {touched : Finset ℕ}
     (hnB : n < B) (honeB : 1 < B)
@@ -310,7 +310,7 @@ private theorem splitBody_spec
 
 /-- The allocation loop terminates after the touched prefix and produces a
 `ValidSplits` certificate for every touched class. -/
-theorem refineSplitLoop_run
+lemma refineSplitLoop_run
     {B n base height : ℕ} {entry counts oldSize : ℕ → ℕ}
     {touched : Finset ℕ} {σ : Env}
     (hI : SplitInv n base height entry touched counts oldSize σ)
@@ -391,7 +391,7 @@ def RelabelInv (n height : ℕ) (entry : ℕ → ℕ) (marked : Finset ℕ)
     (partiallyRefinedLabel (processedClasses (τ.vars "i") entry) label split) ∧
   PrefixEnumerates height entry marked
 
-theorem relabelInv_initial
+lemma relabelInv_initial
     {n height : ℕ} {entry label split : ℕ → ℕ} {marked : Finset ℕ}
     {clsName : String} {σ : Env}
     (hi : σ.vars "i" = 0) (hheight : height ≤ n) (hn : σ.vars "n" = n)
@@ -404,7 +404,7 @@ theorem relabelInv_initial
   refine ⟨by omega, hheight, hn, hmarkedLen, hmarked, hsplit, ?_, henum⟩
   simpa [hi, processedClasses, partiallyRefinedLabel] using hcls
 
-private theorem relabelBody_spec
+private lemma relabelBody_spec
     {B n height : ℕ} {entry label split : ℕ → ℕ}
     {marked : Finset ℕ} {clsName : String}
     (hnB : n < B) (honeB : 1 < B)
@@ -491,7 +491,7 @@ private theorem relabelBody_spec
 
 /-- Replaying the whole marked stack updates exactly the vertices in the
 marked set. -/
-theorem refineRelabelLoop_run
+lemma refineRelabelLoop_run
     {B n height : ℕ} {entry label split : ℕ → ℕ}
     {marked : Finset ℕ} {clsName : String} {σ : Env}
     (hI : RelabelInv n height entry marked clsName label split σ)
@@ -551,7 +551,7 @@ def ResetInv (n height : ℕ) (entry : ℕ → ℕ) (touched : Finset ℕ)
     (partiallyCleared (processedClasses (τ.vars "i") entry) counts) ∧
   PrefixEnumerates height entry touched
 
-theorem resetInv_initial
+lemma resetInv_initial
     {n height : ℕ} {entry counts : ℕ → ℕ} {touched : Finset ℕ}
     {σ : Env}
     (hi : σ.vars "i" = 0) (hheight : height ≤ n) (hn : σ.vars "n" = n)
@@ -563,7 +563,7 @@ theorem resetInv_initial
   refine ⟨by omega, hheight, hn, htouchedLen, htouched, ?_, henum⟩
   simpa [hi, processedClasses, partiallyCleared] using hcounts
 
-private theorem resetBody_spec
+private lemma resetBody_spec
     {B n height : ℕ} {entry counts : ℕ → ℕ} {touched : Finset ℕ}
     (hnB : n < B) (hclassN : ∀ q ∈ touched, q < n) :
     Spec B
@@ -617,7 +617,7 @@ private theorem resetBody_spec
   rw [hcounts, set_arrOf_eq_upd, processedClasses_succ]
   exact congrArg (arrOf n) hupdate
 
-theorem refineResetLoop_run
+lemma refineResetLoop_run
     {B n height : ℕ} {entry counts : ℕ → ℕ} {touched : Finset ℕ}
     {σ : Env}
     (hI : ResetInv n height entry touched counts σ)

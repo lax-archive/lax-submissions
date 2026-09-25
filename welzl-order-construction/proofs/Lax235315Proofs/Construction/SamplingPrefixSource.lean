@@ -24,7 +24,7 @@ open Lax235315Proofs.Construction.WelzlProgram
 def samplingPrefix : Com :=
   seqs [readKeys, seqs ((keyNames.reverse).map radixPass), detectCollision]
 
-theorem SortState.prefixEnumerates
+lemma SortState.prefixEnumerates
     {n q sampleCount : ℕ} {digits : Fin 8 → ℕ → ℕ}
     {xs : List ℕ} {σ : Env}
     (hstate : SortState n q digits xs σ)
@@ -40,7 +40,7 @@ theorem SortState.prefixEnumerates
 /-- Reading and sorting the active vertices leaves every sampled prefix as an
 exact duplicate-free enumeration and reports whether two adjacent sorted keys
 collide. -/
-theorem samplingPrefix_run
+lemma samplingPrefix_run
     {B n L q sampleCount : ℕ} {σ : Env}
     {active ord count scratch : ℕ → ℕ}
     {original : Fin 8 → ℕ → ℕ} {bits : ℕ → Fin 8 → List ℕ}

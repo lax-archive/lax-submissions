@@ -44,7 +44,7 @@ def RepSelectInv (n current : ℕ)
     RepData n current (τ.vars "v") active label
       repClass reps outActive R
 
-private theorem representativeSelectBody_spec
+private lemma representativeSelectBody_spec
     {B n current : ℕ} {active label : ℕ → ℕ}
     {activeName clsName repsName activeOutName outCountName : String}
     (hnB : n < B) (honeB : 1 < B)
@@ -247,7 +247,7 @@ private theorem representativeSelectBody_spec
 
 /-- The complete increasing scan selects exactly one active representative of
 each occupied class. -/
-theorem representativeSelectLoop_run
+lemma representativeSelectLoop_run
     {B n current : ℕ} {active label : ℕ → ℕ}
     {activeName clsName repsName activeOutName outCountName : String}
     {σ : Env}
@@ -332,7 +332,7 @@ def RepMapInv (n current : ℕ)
     ∀ v < τ.vars "v", active v = 1 →
       repOf v = repClass (label v)
 
-private theorem representativeMapBody_spec
+private lemma representativeMapBody_spec
     {B n current : ℕ} {active label repClass : ℕ → ℕ}
     {activeName clsName repOfName : String}
     (hnB : n < B) (honeB : 1 < B)
@@ -436,7 +436,7 @@ private theorem representativeMapBody_spec
       exact (hav hua).elim
     · exact hfilled u (by simp [τ₁] at hu; omega) hua
 
-theorem representativeMapLoop_run
+lemma representativeMapLoop_run
     {B n current : ℕ} {active label repClass : ℕ → ℕ}
     {activeName clsName repOfName : String} {σ : Env}
     (hI : RepMapInv n current activeName clsName repOfName

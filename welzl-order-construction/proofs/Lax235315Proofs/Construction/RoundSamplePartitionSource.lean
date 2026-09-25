@@ -29,7 +29,7 @@ open Lax235315Proofs.Construction.WelzlProgram
 noncomputable section
 
 /-- Every finite numeric vertex set has a duplicate-free `Fin n` listing. -/
-theorem exists_enumerates_finSetAsSet {n : ℕ} (S : Finset ℕ) :
+lemma exists_enumerates_finSetAsSet {n : ℕ} (S : Finset ℕ) :
     ∃ small : List (Fin n), Enumerates (finSetAsSet S) small := by
   classical
   let T : Finset (Fin n) := Finset.univ.filter fun v => v.val ∈ S
@@ -52,7 +52,7 @@ def preparePartitionsAndVerify : Com :=
 
 /-- Computing the prescribed sample size and then executing the first
 partition produces a concrete partition by exactly that sampled prefix. -/
-theorem prepareAndFirstPartition_run
+lemma prepareAndFirstPartition_run
     {B n targetCap a c : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {activeB ord classB classSize markedCount stamp marked
       touched split repClass repsB nextB repB : ℕ → ℕ}
@@ -145,7 +145,7 @@ theorem prepareAndFirstPartition_run
 /-- From a sampled prefix, the literal collision-free round suffix builds
 both concrete trace partitions and checks the near-twin condition required
 for an abstract reduction. -/
-theorem preparePartitionsAndVerify_run
+lemma preparePartitionsAndVerify_run
     {B n targetCap a c bound : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ}
     {activeA activeB ord classB classA classSize markedCount stamp marked
