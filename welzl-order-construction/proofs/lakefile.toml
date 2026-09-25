@@ -13,5 +13,41 @@ rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
 name = "Lax235315"
 path = "../concepts"
 
+[[require]]
+name = "Lax195003"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "63ac657db4dd622a1a74f5adfb0f56b2193b3007"
+subDir = "welzl-orders/concepts"
+
+[[require]]
+name = "Lax808846"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "9394e531cc51cb67a0214bca3f9264dfe97ba5c7"
+subDir = "word-ram/concepts"
+
+[[require]]
+name = "Lax11"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "1ec4e4ddb612005237178975bbee285dfb403bb3"
+subDir = "ram-linear-time/concepts"
+
+[[require]]
+name = "Lax199508"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "e9845c204d14a5678f9d64c0e6f4ca757d9dc9d0"
+subDir = "sparsity-lectures-v4-33/concepts"
+
+[[require]]
+name = "Lax808846Proofs"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "9394e531cc51cb67a0214bca3f9264dfe97ba5c7"
+subDir = "word-ram/proofs"
+
+[[require]]
+name = "Lax11Proofs"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "1ec4e4ddb612005237178975bbee285dfb403bb3"
+subDir = "ram-linear-time/proofs"
+
 [[lean_lib]]
 name = "Lax235315Proofs"
