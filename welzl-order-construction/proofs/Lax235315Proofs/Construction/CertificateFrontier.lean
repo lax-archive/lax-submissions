@@ -24,7 +24,6 @@ open Lax235315Proofs.Construction.RoundSamplePartitionSource
 open Lax235315Proofs.Construction.Sampling
 open Lax235315Proofs.Construction.TracePartitions
 open Lax235315Proofs.Construction.NearCounterCorrectness
-open Lax235315Proofs.Construction.Reconstruction
 open scoped symmDiff
 
 lemma prefix_card {k : ℕ} {f : ℕ → ℕ} {S : Finset ℕ}
@@ -60,17 +59,16 @@ structure CertificateSnapshot {B c n : ℕ} {x : List ℕ} {σ : Env}
     (bound : ℕ) (G : SimpleGraph (Fin n)) (W : Finset ℕ) (σ' : Env)
     (h : Frontier B c n x σ) : Prop where
   candidate : Candidate B c n x σ'
-  arrays : ∃ nextA nextB repA repB : ℕ → ℕ,
-    σ'.arrs "activeA" = arrOf n (view σ "activeA") ∧
-    σ'.arrs "activeB" = arrOf n (view σ "activeB") ∧
-    σ'.arrs "nextA" = arrOf n nextA ∧
-    σ'.arrs "nextB" = arrOf n nextB ∧
-    σ'.arrs "repA" = arrOf n repA ∧
-    σ'.arrs "repB" = arrOf n repB
   certificate : ∃ (currentB : ℕ) (labelB tableB repsB nextB repB : ℕ → ℕ)
       (R : Finset ℕ) (currentA : ℕ)
       (labelA tableA repsA nextA repA : ℕ → ℕ) (S : Finset ℕ),
     ∃ hB : ConcreteTracePartition G (view σ "activeB") (finSetAsSet W) R repB,
+      σ'.arrs "activeA" = arrOf n (view σ "activeA") ∧
+      σ'.arrs "activeB" = arrOf n (view σ "activeB") ∧
+      σ'.arrs "nextA" = arrOf n nextA ∧
+      σ'.arrs "nextB" = arrOf n nextB ∧
+      σ'.arrs "repA" = arrOf n repA ∧
+      σ'.arrs "repB" = arrOf n repB ∧
       RepData n currentB n (view σ "activeB") labelB tableB repsB nextB R ∧
       Nonempty (ConcreteTracePartition G (view σ "activeA") (finSetAsSet R) S repA) ∧
       RepData n currentA n (view σ "activeA") labelA tableA repsA nextA S ∧
@@ -78,13 +76,7 @@ structure CertificateSnapshot {B c n : ℕ} {x : List ℕ} {σ : Env}
       ((G.neighborSet v ∩
           (activeFinset (n := n) (view σ "activeA") : Set (Fin n))) ∆
         (G.neighborSet (hB.partition.representative v) ∩
-          (activeFinset (n := n) (view σ "activeA") : Set (Fin n)))).ncard ≤ bound) ∧
-      (∃ small big : List (Fin n),
-        Enumerates (finSetAsSet S) small ∧
-        Nonempty (Reduction G bound
-          {v : Fin n | view σ "activeA" v.val = 1}
-          {v : Fin n | view σ "activeB" v.val = 1}
-          (finSetAsSet S) (finSetAsSet R) small big))
+          (activeFinset (n := n) (view σ "activeA") : Set (Fin n)))).ncard ≤ bound)
 
 lemma workspace_certificate {B C c n : ℕ} {x : List ℕ} {σ σ' : Env}
     (h : Workspace B c n x σ) (hr : Run B buildReductionCertificate σ σ' C) :
@@ -220,15 +212,14 @@ lemma certificate_candidate_run_full {B c n bound : ℕ} {x : List ℕ}
     · rw [hnextASet, hcost.frame_var "acount" (by decide), h.activeCount]
       exact concrete_partitions_shrink hc hG partB partA hWr hSr hW
         (h.nonemptyB hn) hWcard
-  refine ⟨hcand, ?_, ?_⟩
-  · exact ⟨nextA, nextB, repA, repB,
-      hactiveA, hactiveB, hnextA, hnextB, hrepA, hrepB⟩
-  · refine ⟨curB, labelB, tableB, repsB, nextB, repB, R,
+  refine ⟨hcand, ?_⟩
+  refine ⟨curB, labelB, tableB, repsB, nextB, repB, R,
       curA, labelA, tableA, repsA, nextA, repA, S, ?_⟩
-    refine ⟨partB, dataB, ⟨partA⟩, dataA, ?_, ?_⟩
-    · intro v hv
-      exact hnear hgood v hv
-    · simpa only [activeFinset] using hred hgood
+  refine ⟨partB, ?_⟩
+  refine ⟨hactiveA, hactiveB, hnextA, hnextB, hrepA, hrepB,
+    dataB, ⟨partA⟩, dataA, ?_⟩
+  · intro v hv
+    exact hnear hgood v hv
 
 /-- Backwards-compatible projection retaining the original candidate API. -/
 lemma certificate_candidate_run {B c n bound : ℕ} {x : List ℕ}
