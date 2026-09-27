@@ -209,9 +209,19 @@ lemma preparePartitionsAndVerify_run
           Nonempty (Reduction G bound
             {v : Fin n | activeA v.val = 1}
             {v : Fin n | activeB v.val = 1}
-            (finSetAsSet S) (finSetAsSet R) small big)) := by
+            (finSetAsSet S) (finSetAsSet R) small big)) ∧
+      σ'.vars "nextBCount" = R.card ∧
+      σ'.vars "nextACount" = S.card ∧
+      σ'.arrs "activeA" = arrOf n activeA ∧
+      σ'.arrs "activeB" = arrOf n activeB ∧
+      σ'.arrs "repsA" = arrOf n repsA' ∧
+      σ'.arrs "repsB" = arrOf n repsB' ∧
+      σ'.arrs "nextA" = arrOf n nextA' ∧
+      σ'.arrs "nextB" = arrOf n nextB' ∧
+      σ'.arrs "repA" = arrOf n repA' ∧
+      σ'.arrs "repB" = arrOf n repB' := by
   obtain ⟨σ₁, currentB, labelB', repClassB', repsB', nextB', repB', R,
-      rfirst, hnextBCount, hactiveB₁, -, hrepClass₁, hrepsB₁, -, hrepB₁,
+      rfirst, hnextBCount, hactiveB₁, -, hrepClass₁, hrepsB₁, hnextB₁, hrepB₁,
       hBdata, hBnonempty⟩ :=
     prepareAndFirstPartition_run hx htargetCap hn hacount hcsq hoff htarget
       hactiveBArray hord hclassB hclassSize hmarkedCount hstamp hmarked
@@ -265,9 +275,11 @@ lemma preparePartitionsAndVerify_run
   obtain ⟨touched₁, htouched₁⟩ := exists_arrOf_of_length htouchedLen
   obtain ⟨split₁, hsplit₁⟩ := exists_arrOf_of_length hsplitLen
   obtain ⟨σ₂, current', labelA', repClassA', repsA', nextA', repA', S,
-      rsecond, hAdata, hApartition, hnear⟩ :=
+      rsecond, hAdata, hApartition, hnear, hnextBCount₂, hnextACount₂,
+      hactiveA₂, hactiveB₂, hrepsA₂, hrepsB₂, hnextA₂, hnextB₂,
+      hrepA₂, hrepB₂⟩ :=
     secondPartitionAndVerify_run hx htargetCap hn₁ hnextBCount hbound₁ hgoodB₁
-      hoff₁ htarget₁ hactiveA₁ hactiveB₁ hrepsB₁ hrepB₁ hclassA₁
+      hoff₁ htarget₁ hactiveA₁ hactiveB₁ hrepsB₁ hnextB₁ hrepB₁ hclassA₁
       hclassSize₁ hmarkedCount₁ hstamp₁ hmarked₁ htouched₁ hsplit₁
       hrepClass₁ hrepsA₁ hnextA₁ hrepA₁ hdegree₁ hinter₁ hneighbors₁
       hBdata hBpartition hactiveANonempty hactiveAB hactiveBB hnB
@@ -275,7 +287,9 @@ lemma preparePartitionsAndVerify_run
   refine ⟨σ₂, currentB, labelB', repClassB', repsB', nextB', repB', R,
     hBpartition,
     current', labelA', repClassA', repsA', nextA', repA', S, ?_, hBdata,
-    hAdata, hApartition, ?_, ?_⟩
+    hAdata, hApartition, ?_, ?_, hnextBCount₂, hnextACount₂,
+    hactiveA₂, hactiveB₂, hrepsA₂, hrepsB₂, hnextA₂, hnextB₂,
+    hrepA₂, hrepB₂⟩
   · simpa [preparePartitionsAndVerify, buildReductionCertificate,
       prepareAndFirstPartition, secondPartitionAndVerify, seqs, Nat.add_assoc] using
       rfirst.seq rsecond

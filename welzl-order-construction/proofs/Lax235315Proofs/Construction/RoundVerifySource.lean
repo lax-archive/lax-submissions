@@ -73,6 +73,7 @@ lemma secondPartitionAndVerify_run
     (hactiveAArray : σ.arrs "activeA" = arrOf n activeA)
     (hactiveBArray : σ.arrs "activeB" = arrOf n activeB)
     (hrepsB : σ.arrs "repsB" = arrOf n repsB)
+    (hnextBArray : σ.arrs "nextB" = arrOf n nextB)
     (hrepB : σ.arrs "repB" = arrOf n repB)
     (hclassA : σ.arrs "classA" = arrOf n classA)
     (hclassSize : σ.arrs "classSize" = arrOf n classSize)
@@ -105,7 +106,17 @@ lemma secondPartitionAndVerify_run
           ((G.neighborSet v ∩
               (activeFinset (n := n) activeA : Set (Fin n))) ∆
             (G.neighborSet (hBpartition.partition.representative v) ∩
-              (activeFinset (n := n) activeA : Set (Fin n)))).ncard ≤ bound) := by
+              (activeFinset (n := n) activeA : Set (Fin n)))).ncard ≤ bound) ∧
+      σ'.vars "nextBCount" = R.card ∧
+      σ'.vars "nextACount" = S.card ∧
+      σ'.arrs "activeA" = arrOf n activeA ∧
+      σ'.arrs "activeB" = arrOf n activeB ∧
+      σ'.arrs "repsA" = arrOf n repsA' ∧
+      σ'.arrs "repsB" = arrOf n repsB ∧
+      σ'.arrs "nextA" = arrOf n nextA' ∧
+      σ'.arrs "nextB" = arrOf n nextB ∧
+      σ'.arrs "repA" = arrOf n repA' ∧
+      σ'.arrs "repB" = arrOf n repB := by
   obtain ⟨σ₁, current', labelA, repClass', repsA', nextA', repA', S,
       rpartition, hnextACount, hactiveA₁, hclassA₁, hrepClass₁, hrepsA₁,
       hnextA₁, hrepA₁, hAdata, hAmap, hApartition⟩ :=
@@ -128,6 +139,12 @@ lemma secondPartitionAndVerify_run
     rw [rpartition.frame_arr "activeB" (by decide), hactiveBArray]
   have hrepB₁ : σ₁.arrs "repB" = arrOf n repB := by
     rw [rpartition.frame_arr "repB" (by decide), hrepB]
+  have hnextB₁ : σ₁.arrs "nextB" = arrOf n nextB := by
+    rw [rpartition.frame_arr "nextB" (by decide), hnextBArray]
+  have hrepsB₁ : σ₁.arrs "repsB" = arrOf n repsB := by
+    rw [rpartition.frame_arr "repsB" (by decide), hrepsB]
+  have hnextBCount₁ : σ₁.vars "nextBCount" = R.card := by
+    rw [rpartition.frame_var "nextBCount" (by decide), hnextBCount]
   have hdegree₁ : σ₁.arrs "degree" = arrOf n degree := by
     rw [rpartition.frame_arr "degree" (by decide), hdegree]
   have hinter₁ : σ₁.arrs "inter" = arrOf n inter := by
@@ -143,8 +160,29 @@ lemma secondPartitionAndVerify_run
     (fun v hvn hv => hBpartition.rep_lt hvn hv)
     (fun v hvn hv => hBpartition.rep_active hvn hv)
     hnB htargetCapB hboundB
+  have hnextB₂ : σ₂.arrs "nextB" = arrOf n nextB := by
+    rw [rverify.frame_arr "nextB" (by decide), hnextB₁]
+  have hrepsB₂ : σ₂.arrs "repsB" = arrOf n repsB := by
+    rw [rverify.frame_arr "repsB" (by decide), hrepsB₁]
+  have hnextBCount₂ : σ₂.vars "nextBCount" = R.card := by
+    rw [rverify.frame_var "nextBCount" (by decide), hnextBCount₁]
+  have hcount₂ : σ₂.vars "nextACount" = S.card := by
+    rw [rverify.frame_var "nextACount" (by decide), hnextACount]
+  have hactiveA₂ : σ₂.arrs "activeA" = arrOf n activeA := by
+    rw [rverify.frame_arr "activeA" (by decide), hactiveA₁]
+  have hactiveB₂ : σ₂.arrs "activeB" = arrOf n activeB := by
+    rw [rverify.frame_arr "activeB" (by decide), hactiveB₁]
+  have hrepsA₂ : σ₂.arrs "repsA" = arrOf n repsA' := by
+    rw [rverify.frame_arr "repsA" (by decide), hrepsA₁]
+  have hnextA₂ : σ₂.arrs "nextA" = arrOf n nextA' := by
+    rw [rverify.frame_arr "nextA" (by decide), hnextA₁]
+  have hrepA₂ : σ₂.arrs "repA" = arrOf n repA' := by
+    rw [rverify.frame_arr "repA" (by decide), hrepA₁]
+  have hrepB₂ : σ₂.arrs "repB" = arrOf n repB := by
+    rw [rverify.frame_arr "repB" (by decide), hrepB₁]
   refine ⟨σ₂, current', labelA, repClass', repsA', nextA', repA', S,
-    ?_, hAdata, hApartition, ?_⟩
+    ?_, hAdata, hApartition, ?_, hnextBCount₂, hcount₂, hactiveA₂, hactiveB₂,
+    hrepsA₂, hrepsB₂, hnextA₂, hnextB₂, hrepA₂, hrepB₂⟩
   · simpa [secondPartitionAndVerify, seqs] using rpartition.seq rverify
   · intro hgood v hv
     have h := hnear hgood v hv
