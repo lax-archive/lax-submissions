@@ -31,7 +31,7 @@ noncomputable def failingTapes {α β : Type} [Fintype β] [DecidableEq β]
 
 /-- The first-failure decomposition counts disjoint branches by their first
 choice. -/
-theorem card_failingTapes_succ {α β : Type} [Fintype β] [DecidableEq β]
+lemma card_failingTapes_succ {α β : Type} [Fintype β] [DecidableEq β]
     (advance : α → β → α) (bad : α → β → Prop)
     (r : ℕ) (state : α) :
     (failingTapes advance bad (r + 1) state).card =
@@ -61,7 +61,7 @@ theorem card_failingTapes_succ {α β : Type} [Fintype β] [DecidableEq β]
     exact hne hfirst
 
 /-- The total number of tapes is the expected alphabet-size power. -/
-theorem card_tape (β : Type) [Fintype β] (r : ℕ) :
+lemma card_tape (β : Type) [Fintype β] (r : ℕ) :
     Fintype.card (Tape β r) = Fintype.card β ^ r := by
   simp [Tape]
 
@@ -69,7 +69,7 @@ theorem card_tape (β : Type) [Fintype β] (r : ℕ) :
 among all length-r tapes at most an r ε fraction encounter a bad choice.
 The state after each choice is unrestricted, so the estimate applies to
 adaptive histories and does not assume independent bad events. -/
-theorem failingTapes_fraction_le {α β : Type} [Fintype β] [DecidableEq β]
+lemma failingTapes_fraction_le {α β : Type} [Fintype β] [DecidableEq β]
     (advance : α → β → α) (bad : α → β → Prop)
     (ε : ℚ) (hε : 0 ≤ ε)
     (hlocal : ∀ state,
