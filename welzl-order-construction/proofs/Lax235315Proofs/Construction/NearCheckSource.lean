@@ -16,7 +16,7 @@ def nearDistance (degree inter rep : ℕ → ℕ) (b : ℕ) : ℕ :=
 /-- Invariant of the final scan.  If `good` is still set, every processed
 active vertex has passed the distance threshold. -/
 def NearCheckInv (B n bound : ℕ)
-    (activeB rep degree inter : ℕ → ℕ) (τ : Env) : Prop :=
+    (activeB rep degree inter : ℕ → ℕ) (initialGood : ℕ) (τ : Env) : Prop :=
   τ.vars "b" ≤ n ∧ τ.vars "n" = n ∧
     τ.vars "nearBound" = bound ∧ τ.vars "good" < B ∧
     τ.arrs "activeB" = arrOf n activeB ∧
@@ -25,27 +25,32 @@ def NearCheckInv (B n bound : ℕ)
     τ.arrs "inter" = arrOf n inter ∧
     (τ.vars "good" = 1 →
       ∀ v < τ.vars "b", activeB v = 1 →
+        nearDistance degree inter rep v ≤ bound) ∧
+    (τ.vars "good" = 1 ↔ initialGood = 1 ∧
+      ∀ v < τ.vars "b", activeB v = 1 →
         nearDistance degree inter rep v ≤ bound)
 
 /-- One final-check iteration preserves all previously checked vertices and
 checks the current active vertex. -/
 lemma checkNearBody_spec
-    {B n bound : ℕ} {activeB rep degree inter : ℕ → ℕ}
+    {B n bound initialGood : ℕ} {activeB rep degree inter : ℕ → ℕ}
     (hnB : 2 * n + 1 < B) (hboundB : bound < B)
     (hactiveB : ∀ v < n, activeB v < B)
     (hrepN : ∀ v < n, activeB v = 1 → rep v < n)
     (hdegreeN : ∀ v < n, degree v ≤ n)
     (hinterN : ∀ v < n, inter v ≤ n) :
     Spec B
-      (fun τ => NearCheckInv B n bound activeB rep degree inter τ ∧
+    (fun τ => NearCheckInv B n bound activeB rep degree inter
+        initialGood τ ∧
         τ.vars "b" < n)
       checkNearBody
-      (fun τ τ' => NearCheckInv B n bound activeB rep degree inter τ' ∧
+      (fun τ τ' => NearCheckInv B n bound activeB rep degree inter
+          initialGood τ' ∧
         τ'.vars "b" = τ.vars "b" + 1)
       60 := by
   intro σ hσ
   rcases hσ with ⟨⟨hbLe, hn, hbound, hgoodB, hactive, hrep, hdegree,
-    hinter, hchecked⟩, hbN⟩
+    hinter, hchecked, hgoodExact⟩, hbN⟩
   let b := σ.vars "b"
   have hbB : b < B := by omega
   have hb1B : b + 1 < B := by omega
@@ -164,7 +169,12 @@ lemma checkNearBody_spec
         by simp [σ₄, σ₃, σ₂, σ₁, hactive],
         by simp [σ₄, σ₃, σ₂, σ₁, hrep],
         by simp [σ₄, σ₃, σ₂, σ₁, hdegree],
-        by simp [σ₄, σ₃, σ₂, σ₁, hinter], by simp [σ₄, σ₃]⟩
+        by simp [σ₄, σ₃, σ₂, σ₁, hinter], by simp [σ₄, σ₃], ?_⟩
+      constructor
+      · simp [σ₄, σ₃]
+      · rintro ⟨_, hall⟩
+        have hb := hall b (by simp [σ₄, b]) hba
+        exact (Nat.not_le_of_gt hfar hb).elim
     · have hfarTest : farTest.evalB B σ₂ = some false := by
         simpa [farTest, hfar] using evalB_condLt hboundEval hdiffVarEval
       let σ₃ := σ₂.setVar "b" (b + 1)
@@ -193,13 +203,32 @@ lemma checkNearBody_spec
         by simp [σ₃, σ₂, σ₁, hactive],
         by simp [σ₃, σ₂, σ₁, hrep],
         by simp [σ₃, σ₂, σ₁, hdegree],
-        by simp [σ₃, σ₂, σ₁, hinter], ?_⟩
-      intro hgood v hv hvan
-      by_cases hvb : v = b
-      · subst v
-        simpa [d] using Nat.le_of_not_gt hfar
-      · apply hchecked (by simpa [σ₃, σ₂, σ₁] using hgood) v
-          (by simp [σ₃, b] at hv; omega) hvan
+        by simp [σ₃, σ₂, σ₁, hinter], ?_, ?_⟩
+      · intro hgood v hv hvan
+        by_cases hvb : v = b
+        · subst v
+          simpa [d] using Nat.le_of_not_gt hfar
+        · apply hchecked (by simpa [σ₃, σ₂, σ₁] using hgood) v
+            (by simp [σ₃, b] at hv; omega) hvan
+      · constructor
+        · intro hout
+          have ⟨hinit, hprev⟩ := hgoodExact.mp
+            (by simpa [σ₃, σ₂, σ₁] using hout)
+          refine ⟨hinit, ?_⟩
+          intro v hv hva
+          by_cases hvb : v = b
+          · subst v
+            simpa [d] using Nat.le_of_not_gt hfar
+          · have hvle : v ≤ σ.vars "b" := by simpa [σ₃, b] using hv
+            have hv' : v < σ.vars "b" := by omega
+            exact hprev v hv' hva
+        · rintro ⟨hinit, hall⟩
+          have hprev : ∀ v < σ.vars "b", activeB v = 1 →
+              nearDistance degree inter rep v ≤ bound := by
+            intro v hv hva
+            exact hall v (by dsimp [σ₃, b]; omega) hva
+          have hin := hgoodExact.mpr ⟨hinit, hprev⟩
+          simpa [σ₃, σ₂, σ₁] using hin
   · have hactiveTest : activeTest.evalB B σ = some false := by
       simpa [activeTest, hba] using evalB_condEq hactiveEval
         (evalB_lit (by omega : 1 < B))
@@ -208,22 +237,89 @@ lemma checkNearBody_spec
       apply Run.assign
       exact evalB_bin (by simpa [b] using evalB_var hbB)
         (evalB_lit (by omega)) (by simp; exact hb1B)
+    have hchecked' : σ₁.vars "good" = 1 →
+        ∀ v < σ₁.vars "b", activeB v = 1 →
+          nearDistance degree inter rep v ≤ bound := by
+      intro hgood v hv hvan
+      by_cases hvb : v = b
+      · subst v
+        exact (hba hvan).elim
+      · apply hchecked (by simpa [σ₁] using hgood) v
+          (by simp [σ₁, b] at hv; omega) hvan
     refine ⟨σ₁, (Run.seq (Run.ite_false hactiveTest Run.skip) rb).mono
       (by norm_num [checkNearBody, seqs, activeTest, Cond.size, Expr.size]),
       ?_, by simp [σ₁, b]⟩
     refine ⟨by simp [σ₁, b]; omega, by simp [σ₁, hn],
       by simp [σ₁, hbound], by simp [σ₁, hgoodB],
       by simp [σ₁, hactive], by simp [σ₁, hrep],
-      by simp [σ₁, hdegree], by simp [σ₁, hinter], ?_⟩
-    intro hgood v hv hvan
-    by_cases hvb : v = b
-    · subst v
-      exact (hba hvan).elim
-    · apply hchecked (by simpa [σ₁] using hgood) v
-        (by simp [σ₁, b] at hv; omega) hvan
+      by simp [σ₁, hdegree], by simp [σ₁, hinter], hchecked', ?_⟩
+    · constructor
+      · intro hout
+        have houtσ : σ.vars "good" = 1 := by simpa [σ₁] using hout
+        have ⟨hinit, hprev⟩ := hgoodExact.mp houtσ
+        refine ⟨hinit, ?_⟩
+        intro v hv hva
+        have hvb : v ≠ b := by
+          intro heq
+          subst v
+          exact (hba hva).elim
+        have hvle : v ≤ σ.vars "b" := by simpa [σ₁, b] using hv
+        have hv' : v < σ.vars "b" := by omega
+        exact hprev v hv' hva
+      · rintro ⟨hinit, hall⟩
+        have hprev : ∀ v < σ.vars "b", activeB v = 1 →
+            nearDistance degree inter rep v ≤ bound := by
+          intro v hv hva
+          have hv' : v < σ₁.vars "b" := by dsimp [σ₁]; omega
+          exact hall v hv' hva
+        have hin := hgoodExact.mpr ⟨hinit, hprev⟩
+        simpa [σ₁] using hin
 
 /-- Starting at zero and scanning every vertex proves the advertised
 threshold property whenever `good` remains one. -/
+lemma checkNearLoop_run_full
+    {B n bound : ℕ} {activeB rep degree inter : ℕ → ℕ} {σ : Env}
+    (hn : σ.vars "n" = n) (hbound : σ.vars "nearBound" = bound)
+    (hgoodB : σ.vars "good" < B)
+    (hactive : σ.arrs "activeB" = arrOf n activeB)
+    (hrep : σ.arrs "repB" = arrOf n rep)
+    (hdegree : σ.arrs "degree" = arrOf n degree)
+    (hinter : σ.arrs "inter" = arrOf n inter)
+    (hnB : 2 * n + 1 < B) (hboundB : bound < B)
+    (hactiveB : ∀ v < n, activeB v < B)
+    (hrepN : ∀ v < n, activeB v = 1 → rep v < n)
+    (hdegreeN : ∀ v < n, degree v ≤ n)
+    (hinterN : ∀ v < n, inter v ≤ n) :
+    ∃ σ', Run B finishNearCheck σ σ' (64 * n + 6) ∧
+      (σ'.vars "good" = 1 →
+        ∀ v < n, activeB v = 1 →
+          nearDistance degree inter rep v ≤ bound) ∧
+      (σ'.vars "good" = 1 ↔ σ.vars "good" = 1 ∧
+        ∀ v < n, activeB v = 1 →
+          nearDistance degree inter rep v ≤ bound) := by
+  let I := NearCheckInv B n bound activeB rep degree inter (σ.vars "good")
+  have hspec := checkNearBody_spec (initialGood := σ.vars "good")
+    hnB hboundB hactiveB hrepN hdegreeN hinterN
+  obtain ⟨σ', hrun, hI', hbFinal⟩ :=
+    (Spec.forRangeZero "b" "n" I n 60 (by omega)
+      (fun _ h => h.1)
+      (fun _ h => h.2.1)
+      hspec).run (σ := σ) (by
+        refine ⟨by simp, by simp [hn], by simp [hbound], by simp [hgoodB],
+          by simp [hactive], by simp [hrep], by simp [hdegree],
+          by simp [hinter], ?_, ?_⟩
+        · intro _ v hv
+          simp at hv
+        · simp [I, NearCheckInv])
+  rcases hI' with ⟨hbLe, hn', hbound', hgoodB', hactive', hrep',
+    hdegree', hinter', hchecked', hgoodExact'⟩
+  refine ⟨σ', ?_, ?_, ?_⟩
+  · simpa [finishNearCheck, seqs] using hrun
+  · intro hgood v hv hactivev
+    exact hchecked' hgood v (by simpa [hbFinal] using hv) hactivev
+  · simpa [I, hbFinal] using hgoodExact'
+
+/-- Backwards-compatible projection of the successful-check direction. -/
 lemma checkNearLoop_run
     {B n bound : ℕ} {activeB rep degree inter : ℕ → ℕ} {σ : Env}
     (hn : σ.vars "n" = n) (hbound : σ.vars "nearBound" = bound)
@@ -241,21 +337,8 @@ lemma checkNearLoop_run
       (σ'.vars "good" = 1 →
         ∀ v < n, activeB v = 1 →
           nearDistance degree inter rep v ≤ bound) := by
-  let I := NearCheckInv B n bound activeB rep degree inter
-  have hspec := checkNearBody_spec hnB hboundB hactiveB hrepN hdegreeN hinterN
-  obtain ⟨σ', hrun, hI', hbFinal⟩ :=
-    (Spec.forRangeZero "b" "n" I n 60 (by omega)
-      (fun _ h => h.1)
-      (fun _ h => h.2.1)
-      hspec).run (σ := σ) (by
-        refine ⟨by simp, by simp [hn], by simp [hbound], by simp [hgoodB],
-          by simp [hactive], by simp [hrep], by simp [hdegree],
-          by simp [hinter], ?_⟩
-        intro _ v hv
-        simp at hv)
-  refine ⟨σ', ?_, ?_⟩
-  · simpa [finishNearCheck, seqs] using hrun
-  · intro hgood v hv hactivev
-    exact hI'.2.2.2.2.2.2.2.2 hgood v (by simpa [hbFinal] using hv) hactivev
+  obtain ⟨σ', hrun, hnear, _⟩ := checkNearLoop_run_full hn hbound hgoodB
+    hactive hrep hdegree hinter hnB hboundB hactiveB hrepN hdegreeN hinterN
+  exact ⟨σ', hrun, hnear⟩
 
 end Lax235315Proofs.Construction.NearCheckSource

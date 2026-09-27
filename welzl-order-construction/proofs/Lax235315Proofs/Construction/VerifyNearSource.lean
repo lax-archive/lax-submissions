@@ -106,6 +106,110 @@ lemma prepareNearSweep_run
 
 /-- A successful `verifyNear` run certifies every active set-side vertex as
 near its representative on the current active ground set. -/
+lemma verifyNear_run_full
+    {B n targetCap bound : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {target off activeA activeB rep : ℕ → ℕ}
+    {degree inter stamp neighbors : ℕ → ℕ} {σ : Env}
+    (hx : EncodesGraph x n G) (htargetCap : targetCap = 2 * edgeCount x)
+    (hoffEq : ∀ i ≤ n, off i = offset x i)
+    (htargetEq : ∀ j < targetCap, target j = Lax11.GraphEncoding.target x j)
+    (hn : σ.vars "n" = n) (hbound : σ.vars "nearBound" = bound)
+    (hgoodB : σ.vars "good" < B)
+    (hoff : σ.arrs "off" = arrOf (n + 1) off)
+    (htarget : σ.arrs "tgt" = arrOf targetCap target)
+    (hactiveA : σ.arrs "activeA" = arrOf n activeA)
+    (hactiveB : σ.arrs "activeB" = arrOf n activeB)
+    (hrep : σ.arrs "repB" = arrOf n rep)
+    (hdegree : σ.arrs "degree" = arrOf n degree)
+    (hinter : σ.arrs "inter" = arrOf n inter)
+    (hstamp : σ.arrs "stamp" = arrOf n stamp)
+    (hneighbors : σ.arrs "neighbors" = arrOf n neighbors)
+    (hactiveAB : ∀ v < n, activeA v < B)
+    (hactiveBB : ∀ v < n, activeB v < B)
+    (hrepN : ∀ v < n, activeB v = 1 → rep v < n)
+    (hrepActive : ∀ v < n, activeB v = 1 → activeB (rep v) = 1)
+    (hnB : 2 * n + 1 < B) (htargetCapB : targetCap < B)
+    (hboundB : bound < B) :
+    ∃ σ', Run B verifyNear σ σ' (400 * (n + targetCap + 1)) ∧
+      (σ'.vars "good" = 1 →
+        ∀ (v : Fin n) (hv : activeB v.val = 1),
+          ((G.neighborSet v ∩
+              (activeFinset (n := n) activeA : Set (Fin n))) ∆
+            (G.neighborSet ⟨rep v.val, hrepN v.val v.isLt hv⟩ ∩
+              (activeFinset (n := n) activeA : Set (Fin n)))).ncard ≤ bound) ∧
+      (σ'.vars "good" = 1 ↔ σ.vars "good" = 1 ∧
+        ∀ (v : Fin n) (hv : activeB v.val = 1),
+          ((G.neighborSet v ∩
+              (activeFinset (n := n) activeA : Set (Fin n))) ∆
+            (G.neighborSet ⟨rep v.val, hrepN v.val v.isLt hv⟩ ∩
+              (activeFinset (n := n) activeA : Set (Fin n)))).ncard ≤ bound) := by
+  obtain ⟨σ₁, rprepare, hI₁, haZero⟩ := prepareNearSweep_run (B := B) hn hoff htarget
+    hactiveA hactiveB hrep hdegree hinter hstamp hneighbors (by omega)
+  obtain ⟨σ₂, rsweep, hI₂, haDone⟩ := nearSweepLoop_run hx htargetCap
+    hoffEq htargetEq hactiveAB hactiveBB hrepN (by omega) htargetCapB hI₁
+  rcases hI₂ with ⟨stamp₂, neighbors₂, haLe₂, hn₂, hoff₂, htarget₂,
+    hactiveA₂, hactiveB₂, hrep₂, hstamp₂, hneighbors₂, hdegree₂,
+    hinter₂, hstampLe₂, hstampB₂⟩
+  have hprefix := rprepare.seq rsweep
+  have hbound₂ : σ₂.vars "nearBound" = bound := by
+    rw [rsweep.frame_var "nearBound" (by
+        simp [sweepNearBody, processActiveNearBody, collectNeighborBody,
+          accumulateNearBody, seqs, inc, Com.wvars]),
+      rprepare.frame_var "nearBound" (by
+        simp [prepareNearSweep, clearArray, seqs, inc, Com.wvars]), hbound]
+  have hgoodB₂ : σ₂.vars "good" < B := by
+    rw [rsweep.frame_var "good" (by
+        simp [sweepNearBody, processActiveNearBody, collectNeighborBody,
+          accumulateNearBody, seqs, inc, Com.wvars]),
+      rprepare.frame_var "good" (by
+        simp [prepareNearSweep, clearArray, seqs, inc, Com.wvars])]
+    exact hgoodB
+  obtain ⟨σ₃, rcheck, hchecked, hgoodExact⟩ := checkNearLoop_run_full hn₂ hbound₂
+    hgoodB₂ hactiveB₂ hrep₂ (by simpa [haDone] using hdegree₂)
+    (by simpa [haDone] using hinter₂) hnB hboundB hactiveBB hrepN
+    (fun v hv => degreePrefix_le target off activeA activeB n v)
+    (fun v hv => commonPrefix_le target off activeA activeB rep n v)
+  have hgoodPreserved : σ₂.vars "good" = σ.vars "good" := by
+    rw [rsweep.frame_var "good" (by
+        simp [sweepNearBody, processActiveNearBody, collectNeighborBody,
+          accumulateNearBody, seqs, inc, Com.wvars]),
+      rprepare.frame_var "good" (by
+        simp [prepareNearSweep, clearArray, seqs, inc, Com.wvars])]
+  refine ⟨σ₃, ?_, ?_, ?_⟩
+  · have r := rprepare.seq (rsweep.seq rcheck)
+    have hoffZero : off 0 = 0 := by
+      rw [hoffEq 0 (by omega), hx.offset_zero]
+    have hpot : nearSweepPotential n targetCap off σ₁ =
+        220 * (targetCap + n) := by
+      simp [nearSweepPotential, haZero, hoffZero]
+    simpa [verifyNear, seqs, hpot] using r.mono (by omega)
+  · intro hgood v hactivev
+    have hnum := hchecked hgood v.val v.isLt hactivev
+    have hrActive := hrepActive v.val v.isLt hactivev
+    rw [nearDistance_eq_neighborhood_symmDiff hx htargetCap hoffEq htargetEq
+      v.isLt (hrepN v.val v.isLt hactivev) hactivev hrActive] at hnum
+    exact hnum
+  · constructor
+    · intro hgoodOut
+      have ⟨hgoodIn, hnum⟩ := hgoodExact.mp hgoodOut
+      refine ⟨by rw [← hgoodPreserved]; exact hgoodIn, ?_⟩
+      intro v hv
+      have hnumv := hnum v.val v.isLt hv
+      have hrActive := hrepActive v.val v.isLt hv
+      rw [nearDistance_eq_neighborhood_symmDiff hx htargetCap hoffEq htargetEq
+        v.isLt (hrepN v.val v.isLt hv) hv hrActive] at hnumv
+      exact hnumv
+    · rintro ⟨hgoodIn, hnearAll⟩
+      apply hgoodExact.mpr
+      refine ⟨by rw [hgoodPreserved]; exact hgoodIn, ?_⟩
+      intro v hv hactivev
+      have hnear := hnearAll ⟨v, hv⟩ hactivev
+      have hrActive := hrepActive v hv hactivev
+      rw [nearDistance_eq_neighborhood_symmDiff hx htargetCap hoffEq
+        htargetEq hv (hrepN v hv hactivev) hactivev hrActive]
+      exact hnear
+
+/-- Backwards-compatible projection of the successful-check direction. -/
 lemma verifyNear_run
     {B n targetCap bound : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {target off activeA activeB rep : ℕ → ℕ}
@@ -137,45 +241,10 @@ lemma verifyNear_run
               (activeFinset (n := n) activeA : Set (Fin n))) ∆
             (G.neighborSet ⟨rep v.val, hrepN v.val v.isLt hv⟩ ∩
               (activeFinset (n := n) activeA : Set (Fin n)))).ncard ≤ bound) := by
-  obtain ⟨σ₁, rprepare, hI₁, haZero⟩ := prepareNearSweep_run (B := B) hn hoff htarget
-    hactiveA hactiveB hrep hdegree hinter hstamp hneighbors (by omega)
-  obtain ⟨σ₂, rsweep, hI₂, haDone⟩ := nearSweepLoop_run hx htargetCap
-    hoffEq htargetEq hactiveAB hactiveBB hrepN (by omega) htargetCapB hI₁
-  rcases hI₂ with ⟨stamp₂, neighbors₂, haLe₂, hn₂, hoff₂, htarget₂,
-    hactiveA₂, hactiveB₂, hrep₂, hstamp₂, hneighbors₂, hdegree₂,
-    hinter₂, hstampLe₂, hstampB₂⟩
-  have hprefix := rprepare.seq rsweep
-  have hbound₂ : σ₂.vars "nearBound" = bound := by
-    rw [rsweep.frame_var "nearBound" (by
-        simp [sweepNearBody, processActiveNearBody, collectNeighborBody,
-          accumulateNearBody, seqs, inc, Com.wvars]),
-      rprepare.frame_var "nearBound" (by
-        simp [prepareNearSweep, clearArray, seqs, inc, Com.wvars]), hbound]
-  have hgoodB₂ : σ₂.vars "good" < B := by
-    rw [rsweep.frame_var "good" (by
-        simp [sweepNearBody, processActiveNearBody, collectNeighborBody,
-          accumulateNearBody, seqs, inc, Com.wvars]),
-      rprepare.frame_var "good" (by
-        simp [prepareNearSweep, clearArray, seqs, inc, Com.wvars])]
-    exact hgoodB
-  obtain ⟨σ₃, rcheck, hchecked⟩ := checkNearLoop_run hn₂ hbound₂
-    hgoodB₂ hactiveB₂ hrep₂ (by simpa [haDone] using hdegree₂)
-    (by simpa [haDone] using hinter₂) hnB hboundB hactiveBB hrepN
-    (fun v hv => degreePrefix_le target off activeA activeB n v)
-    (fun v hv => commonPrefix_le target off activeA activeB rep n v)
-  refine ⟨σ₃, ?_, ?_⟩
-  · have r := rprepare.seq (rsweep.seq rcheck)
-    have hoffZero : off 0 = 0 := by
-      rw [hoffEq 0 (by omega), hx.offset_zero]
-    have hpot : nearSweepPotential n targetCap off σ₁ =
-        220 * (targetCap + n) := by
-      simp [nearSweepPotential, haZero, hoffZero]
-    simpa [verifyNear, seqs, hpot] using r.mono (by omega)
-  · intro hgood v hactivev
-    have hnum := hchecked hgood v.val v.isLt hactivev
-    have hrActive := hrepActive v.val v.isLt hactivev
-    rw [nearDistance_eq_neighborhood_symmDiff hx htargetCap hoffEq htargetEq
-      v.isLt (hrepN v.val v.isLt hactivev) hactivev hrActive] at hnum
-    exact hnum
+  obtain ⟨σ', hrun, hnear, _⟩ := verifyNear_run_full hx htargetCap hoffEq
+    htargetEq hn hbound hgoodB hoff htarget hactiveA hactiveB hrep hdegree
+    hinter hstamp hneighbors hactiveAB hactiveBB hrepN hrepActive hnB
+    htargetCapB hboundB
+  exact ⟨σ', hrun, hnear⟩
 
 end Lax235315Proofs.Construction.VerifyNearSource
