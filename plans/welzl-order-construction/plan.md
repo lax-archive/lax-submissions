@@ -126,10 +126,16 @@ claims. The paper's graph theorem is 1.4 in this supplied version.
   active sets and the round-end update at cost at most 80(n+1).
 - `LinkedReconstruction` proves that pointer insertion implements mathematical
   list insertion. `LinkedSource` verifies the literal inner reconstruction
-  loop at cost 21 times its log interval length plus 4.
+  loop at cost 21 times its log interval length plus 4. `LinkedOutputSource`
+  proves the literal final traversal emits the represented list at cost
+  13n+9, including the empty-list case.
 - `AdaptiveFailure` proves a finite counting union bound for adaptive states.
   `AdaptiveBitBlocks` proves the corresponding rational failure-mass bound
   with history-dependent block widths, so there is no fixed per-round padding.
+  `AdaptiveTapeCounting` identifies this mass exactly with the fraction of
+  failing fixed-length tapes, counting every unused suffix.
+  `AdaptiveMachineBridge` transfers its complement count to the actual machine
+  event, conditional on successful source execution outside that failure set.
 
 All these are supporting lemmas. The only theorem concepts remain the same
 three main statements, and all three are still open.
@@ -143,25 +149,26 @@ three main statements, and all three are still open.
    paths under that invariant. Include collisions and failed near checks.
 3. Prove the entire reduction loop and outer linked-list reconstruction match
    the public reconstruction relation. Connect base-list initialization,
-   recorded round slices, and final traversal, including n=0 and n=1.
+   recorded round slices, and the now-verified final traversal, including n=0
+   and n=1.
 4. Sum all source costs using the checked shrinking and key-reading bounds;
    instantiate `MachineBridge.SourceTotal` and `SourceCorrect` and apply the
    already proved machine-transfer lemmas.
 5. Identify the concrete program's adaptive bit blocks and bad events with
-   the sampling/key estimates. Prove the induced finite-tape count, including
-   unused suffixes, and instantiate `MachineBridge.SourceProbability`.
+   the sampling/key estimates. Apply the now-checked fixed-tape counting bridge
+   and instantiate `MachineBridge.SourceProbability`.
 6. Discharge the three contracts, then rerun the dependency audit. Only then is
    the original archive claim solved.
 
 ## Validated checkpoint
 
-`lax build --replay welzl-order-construction` passed on 2026-09-25:
-14 concepts, 10 local statements, and 8 annotated proofs. Seven proofs have
+`lax build --replay welzl-order-construction` passed on 2026-09-27:
+14 concepts, 10 local statements, 77 imported proof modules, and 8 annotated proofs. Seven proofs have
 empty claim-assumption lists. The eighth concludes the original Lax195003
 claim relative to exactly the three open program contracts. Kernel replay
 passed for the entire submitted concept and proof inventory.
 
-The remaining warnings concern intentionally retained implementation helpers,
+The 508 warnings concern intentionally retained implementation helpers,
 dependencies on verified proof packages, and the deliberate use of the exact
 Lax11 type occurring in the original claim. There are no validation errors.
 

@@ -19,10 +19,12 @@ registered statement of Lax195003. It does not discharge those assumptions.
 
 Checked implementation lemmas now cover canonical setup and persistent
 memory bounds, sharper random-key costs summed over shrinking active sets,
-the complete accepted-round log update, and linked reconstruction insertions.
+the complete accepted-round log update, linked reconstruction insertions,
+and exact output traversal (including the empty list).
 A compiler bridge transfers complete source-level guarantees to each of the
 three exact machine contracts. Adaptive failure bounds allow later random
-block lengths to depend on earlier choices. The whole-loop invariant and
+block lengths to depend on earlier choices, and are proved equal to actual
+finite-tape failure fractions with unused suffixes counted. The whole-loop invariant and
 its connection to these bounds remain unfinished.
 
 The submission imports the registered graph encoding, machine, graph-class,

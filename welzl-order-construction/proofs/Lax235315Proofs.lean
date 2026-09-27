@@ -3,6 +3,8 @@ import Lax235315Proofs.ComponentProofs
 import Lax235315Proofs.Construction.AbstractAlgorithm
 import Lax235315Proofs.Construction.AdaptiveBitBlocks
 import Lax235315Proofs.Construction.AdaptiveFailure
+import Lax235315Proofs.Construction.AdaptiveMachineBridge
+import Lax235315Proofs.Construction.AdaptiveTapeCounting
 import Lax235315Proofs.Construction.CollisionDetection
 import Lax235315Proofs.Construction.CommitSource
 import Lax235315Proofs.Construction.ConcreteReconstruction
@@ -17,6 +19,7 @@ import Lax235315Proofs.Construction.Iterations
 import Lax235315Proofs.Construction.KeyFailureBounds
 import Lax235315Proofs.Construction.KeySampling
 import Lax235315Proofs.Construction.KeySamplingBounds
+import Lax235315Proofs.Construction.LinkedOutputSource
 import Lax235315Proofs.Construction.LinkedReconstruction
 import Lax235315Proofs.Construction.LinkedSource
 import Lax235315Proofs.Construction.ListCrossing
