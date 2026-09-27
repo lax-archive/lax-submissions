@@ -19,17 +19,25 @@ registered statement of Lax195003. It does not discharge those assumptions.
 
 Checked implementation lemmas cover canonical setup, persistent memory bounds,
 exact finite-tape sampling, both accepted and rejected round paths, and the
-entire guarded reduction loop with a near-linear source cost. The shrinking
-frontier preserves nonempty active sets, zero-one indicators, counter identities,
-and log capacity. The near verifier accepts exactly when its concrete
-representatives satisfy the required distance bounds. Linked-list initialization,
-individual logged insertions, and final output traversal are also verified.
+complete guarded reduction phase. Setup and reduction take at most
+5,600(|x|+1)(L+1) source steps, where L is the ceiling binary logarithm of n;
+the public budget supplies the entire adaptive bit reserve. Quotient guards
+justify the products evaluated by the program. The shrinking frontier preserves
+nonempty active sets, zero-one indicators, counter identities, and log capacity.
+The near verifier accepts exactly when its concrete representatives satisfy
+the required distance bounds.
 
-The remaining work is to connect the guarded loop to the complete driver and
-its reconstruction history, and identify the concrete adaptive random process
-with the proved finite-tape failure count. The compiler and counting bridges
-are checked, but these remaining connections are necessary to discharge the
-three main theorems.
+The whole reconstruction routine is verified at a cost of at most 100(n+1)
+source steps, conditional on a certificate for its recorded log. Its pointer
+writes restore precisely the vertices in each stored interval, in source order,
+and its final traversal emits the certified list. A separate checked bridge
+builds a graph reduction using that same concrete deletion order.
+
+The remaining work is to carry these exact log certificates through every
+accepted round of the driver, and to identify the concrete adaptive random
+process with the proved finite-tape failure count. The compiler and counting
+bridges are checked, but these remaining connections are necessary to discharge
+the three main theorems.
 
 The submission imports the registered graph encoding, machine, graph-class,
 and Welzl-order definitions. All seven component proofs have only the

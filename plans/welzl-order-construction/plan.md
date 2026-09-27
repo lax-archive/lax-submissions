@@ -171,36 +171,76 @@ three main statements, and all three are still open.
   active-vertex scan at cost 40(n+1), including empty and nonempty lists,
   arbitrary bounded initial pointer values, and preserved arrays/tape/output.
 
+## Guarded driver and ordered reconstruction (2026-09-27)
+
+- `GuardedArithmetic` derives square and threshold bounds from the literal
+  quotient guards; `FrontierFrames` preserves the numeric invariants across
+  scratch assignments. `GuardedDriverSource.reduceAll_run` executes every
+  guarded branch, including small n, and returns the final frontier or explicit
+  rejection together with the base-size bound for n>1.
+- `initial_tape_reserve` derives 24Ln unread bits from `sourceCost A n x ≤ T`
+  for A≥24. `setup_reduceAll_run` composes the actual setup and guarded phase
+  with cost at most 5600(|x|+1)(L+1). `setup_frontier_ready` supplies its initial
+  counters while retaining the previous setup API as a projection.
+- `LinkedRoundsSource` verifies every reverse log interval with cost at most
+  24R + 21 boundary(R) + 4. Only the written prefixes of roundStart/roundEnd
+  are constrained; unused array cells do not need artificial values.
+- `IndexedRestoreBridge` equates log-indexed writes with vertex-indexed list
+  restoration, and turns `recordRemoved_run`'s getD postconditions into exact
+  ordered slices and parallel representative values. It also preserves old
+  slices across a later append.
+- `RemovedRestoreBridge` lifts the actual numeric deletion order to Fin n,
+  proves exact enumeration, transports restoration through Fin.val, and builds
+  the mathematical `Reduction` using that actual order instead of an unrelated
+  enumeration of the deleted set.
+- `ReconstructionSource.reconstructAndWrite_run` composes the complete literal
+  initialization, reverse replay, and output at cost at most 100(n+1). Its
+  `LoggedRestorations` certificate contains only list and log facts, not an
+  execution hypothesis. The output equals the certified order; input is
+  preserved. This certificate still must be derived from the whole driver.
+
+- `ScanIndexEquiv` identifies positions in the actual increasing active scan
+  with the active-vertex subtype. Its forward values equal the source scan's
+  getD entries, preparing transport of finite key assignments and samples.
+- `RationalFailureBounds` transports the existing one-round finite failure
+  fraction and the total 1/6 estimate from real to rational arithmetic, matching
+  the adaptive protocol's exact counting field without new combinatorics.
+
 ## Next concrete leaves
 
-1. Compose setup, the overflow-avoiding `reduceAll` guards, the checked literal
-   while loop, and finish. Derive the loop's word-fit conditions and initial
-   24Ln tape reserve from the public source budget, including n=0 and n=1.
-2. Strengthen the loop invariant with exact reconstruction history: connect
-   the recorded vertex/representative slices to accepted concrete `Reduction`
-   certificates. The current frontier accounts for log capacity and counters,
-   not the semantic contents of the entire history.
-3. Compose linked initialization, all reverse round slices, and final traversal;
-   identify the output with the checked reconstruction relation. Then sum the
-   remaining driver/reconstruction costs and prove `SourceTotal`/`SourceCorrect`.
-4. Identify concrete adaptive key blocks and rejected samples with the finite
-   counting model. Use exact verifier acceptance, initial tape sufficiency,
-   and unused-suffix counting to prove `SourceProbability`.
-5. Discharge the three contracts and rerun the dependency audit. Only then is
+1. Strengthen accepted-round postconditions and the loop invariant with exact
+   reconstruction history. The completed certificate currently exposes only
+   `Candidate` to the driver; preserve its concrete partitions, verified near
+   bounds, and deletion-order `Reduction` instead of discarding them. Append
+   each exact stored slice and retain earlier intervals. Include valid indices
+   in all log cells and the zero-initialized unused tails.
+2. Derive `LoggedRestorations`, full enumeration, and the graph crossing bound
+   at loop exit. Compose finish with `setup_reduceAll_run`, including the
+   rejected natural-order path, to prove `SourceTotal` and `SourceCorrect`.
+3. Identify concrete adaptive key blocks and rejected samples with the finite
+   counting model. Join row-major tape digits to `roundAssignmentEquiv`, and
+   transport the actual sorted prefix through the active scan enumeration to
+   graph bad-sample families. Prove a one-round event inclusion: collision-free
+   keys outside that bad family make the exact verifier accept. Then use
+   history-dependent block widths, the now-proved initial tape sufficiency,
+   and unused-suffix counting to prove `SourceProbability`. The numeric
+   real-to-rational seam is closed by `RationalFailureBounds`.
+4. Discharge the three contracts and rerun the dependency audit. Only then is
    the original archive claim solved.
 
 ## Validated checkpoint
 
 `lax build --replay welzl-order-construction` passed on 2026-09-27:
-14 concepts, 10 local statements, 89 imported proof modules, and 8 annotated proofs. Seven proofs have
+14 concepts, 10 local statements, 98 imported proof modules, and 8 annotated proofs. Seven proofs have
 empty claim-assumption lists. The eighth concludes the original Lax195003
 claim relative to exactly the three open program contracts. Kernel replay
 passed for the entire submitted concept and proof inventory.
 
-The 614 archive warnings concern intentionally retained implementation helpers,
+The 667 archive warnings concern intentionally retained implementation helpers,
 dependencies on verified proof packages, and the deliberate use of the exact
 Lax11 type occurring in the original claim. There are no validation errors. The newly integrated loop, round, setup,
-linked initialization, exact verifier, and tape-decomposition lemmas were also
+linked initialization, exact verifier, tape-decomposition, guarded-driver,
+ordered reconstruction, scan-index, and rational failure-bound lemmas were also
 audited with `#print axioms`: each uses only `propext`, `Classical.choice`, and
 `Quot.sound`, with none of the three open construction contracts.
 
