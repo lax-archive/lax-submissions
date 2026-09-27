@@ -330,7 +330,11 @@ lemma commitReduction_run_logValues_lt {B n base round : ℕ} {σ : Env}
     (hnewRep : ∀ i < n, activeA i = 1 → nextA i = 0 → rep i < n) :
     ∃ (σ' : Env) (rem : ℕ → ℕ) (remRep : ℕ → ℕ),
       Run B commitReduction σ σ' (80 * (n + 1)) ∧
-      (∀ i < n, rem i < n ∧ remRep i < n) := by
+      σ'.arrs "removed" = arrOf n rem ∧
+      σ'.arrs "removedRep" = arrOf n remRep ∧
+      (∀ i < n,
+        (σ'.arrs "removed").getD i 0 < n ∧
+        (σ'.arrs "removedRep").getD i 0 < n) := by
   obtain ⟨σ', rem, remRep, hrun, hactiveA', hactiveB', hround', hacount',
       hremovedCount', hroundStart', hroundEnd', harrRemoved', harrRemovedRep',
       hprefix, hsuffix, hprefixRep, hsuffixRep, htail, htailRep⟩ :=
@@ -345,30 +349,37 @@ lemma commitReduction_run_logValues_lt {B n base round : ℕ} {σ : Env}
     obtain ⟨v, hv, rfl⟩ := hx
     exact hnewRep v (removedList_mem_lt (start := 0) (by omega) hv)
       (removedList_mem_selected hv).1 (removedList_mem_selected hv).2
-  refine ⟨σ', rem, remRep, hrun, ?_⟩
+  have hlogValues : ∀ i < n, rem i < n ∧ remRep i < n := by
+    intro i hi
+    constructor
+    · by_cases hprefixI : i < base
+      · rw [hprefix i hprefixI]
+        exact holdRemoved i hi
+      · by_cases hsuffixI : i < base + (removedList activeA nextA 0 n).length
+        · have hj : i - base < (removedList activeA nextA 0 n).length := by omega
+          have hval := hsuffix (i - base) hj
+          have hindex : base + (i - base) = i := by omega
+          rw [← hindex, hval]
+          exact getD_lt_of_mem_lt hj hremovedValues
+        · exact (htail i (by omega) hi).symm ▸ holdRemoved i hi
+    · by_cases hprefixI : i < base
+      · rw [hprefixRep i hprefixI]
+        exact holdRep i hi
+      · by_cases hsuffixI : i < base + (removedList activeA nextA 0 n).length
+        · have hj : i - base < (removedList activeA nextA 0 n).length := by omega
+          have hjRep : i - base < (removedRepList activeA nextA rep 0 n).length := by
+            simpa [removedRepList] using hj
+          have hval := hsuffixRep (i - base) hj
+          have hindex : base + (i - base) = i := by omega
+          rw [← hindex, hval]
+          exact getD_lt_of_mem_lt hjRep hrepValues
+        · exact (htailRep i (by omega) hi).symm ▸ holdRep i hi
+  refine ⟨σ', rem, remRep, hrun, harrRemoved', harrRemovedRep', ?_⟩
   intro i hi
   constructor
-  · by_cases hprefixI : i < base
-    · rw [hprefix i hprefixI]
-      exact holdRemoved i hi
-    · by_cases hsuffixI : i < base + (removedList activeA nextA 0 n).length
-      · have hj : i - base < (removedList activeA nextA 0 n).length := by omega
-        have hval := hsuffix (i - base) hj
-        have hindex : base + (i - base) = i := by omega
-        rw [← hindex, hval]
-        exact getD_lt_of_mem_lt hj hremovedValues
-      · exact (htail i (by omega) hi).symm ▸ holdRemoved i hi
-  · by_cases hprefixI : i < base
-    · rw [hprefixRep i hprefixI]
-      exact holdRep i hi
-    · by_cases hsuffixI : i < base + (removedList activeA nextA 0 n).length
-      · have hj : i - base < (removedList activeA nextA 0 n).length := by omega
-        have hjRep : i - base < (removedRepList activeA nextA rep 0 n).length := by
-          simpa [removedRepList] using hj
-        have hval := hsuffixRep (i - base) hj
-        have hindex : base + (i - base) = i := by omega
-        rw [← hindex, hval]
-        exact getD_lt_of_mem_lt hjRep hrepValues
-      · exact (htailRep i (by omega) hi).symm ▸ holdRep i hi
+  · simpa [harrRemoved', List.getD_eq_getElem?_getD, getElem?_arrOf rem hi]
+      using (hlogValues i hi).1
+  · simpa [harrRemovedRep', List.getD_eq_getElem?_getD,
+      getElem?_arrOf remRep hi] using (hlogValues i hi).2
 
 end Lax235315Proofs.Construction.CommitSource
