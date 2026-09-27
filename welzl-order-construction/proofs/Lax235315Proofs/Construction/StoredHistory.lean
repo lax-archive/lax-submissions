@@ -166,5 +166,62 @@ lemma Stored.reconstructAndWrite_correct {B c n : ℕ} {G : SimpleGraph (Fin n)}
     rw [he] at hs
     exact List.not_mem_nil hs
 
-end Lax235315Proofs.Construction.StoredHistory
+/-- Append an accepted step to the concrete history. The premises are the
+actual commit's counter, boundary-array, prefix and value postconditions. -/
+def Stored.append {n k : ℕ} {G : SimpleGraph (Fin n)} {σ τ : Env}
+    (h : Stored G k σ) {boundary' : ℕ → ℕ}
+    (hround : τ.vars "round" = σ.vars "round" + 1)
+    (hboundary : ∀ r ≤ σ.vars "round", boundary' r = h.boundary r)
+    (hnew : boundary' (σ.vars "round" + 1) = τ.vars "removedCount")
+    (hinc : σ.vars "removedCount" ≤ τ.vars "removedCount")
+    (hcap : τ.vars "removedCount" ≤ n)
+    (hstarts : ∀ r < τ.vars "round", view τ "roundStart" r = boundary' r)
+    (hends : ∀ r < τ.vars "round", view τ "roundEnd" r = boundary' (r + 1))
+    (hremoved : ∀ i < σ.vars "removedCount", view τ "removed" i = view σ "removed" i)
+    (hreps : ∀ i < σ.vars "removedCount", view τ "removedRep" i = view σ "removedRep" i)
+    (hremBound : ∀ i < n, view τ "removed" i < n)
+    (hrepBound : ∀ i < n, view τ "removedRep" i < n)
+    (s : RecordedStep G k (σ.vars "round") (h.A (σ.vars "round"))
+      (h.C (σ.vars "round")) {v : Fin n | view τ "activeA" v.val = 1}
+      {v : Fin n | view τ "activeB" v.val = 1} boundary'
+      (view τ "removed") (view τ "removedRep")) : Stored G k τ where
+  A := Function.update h.A (σ.vars "round" + 1) {v : Fin n | view τ "activeA" v.val = 1}
+  C := Function.update h.C (σ.vars "round" + 1) {v : Fin n | view τ "activeB" v.val = 1}
+  boundary := boundary'
+  history := by
+    rw [hround]
+    exact h.history.append hboundary
+      (fun r hr => h.monotone r (r + 1) (by omega) (by omega))
+      (fun r hr => h.monotone (r + 1) (σ.vars "round") (by omega) le_rfl)
+      (by simpa only [h.used] using hremoved)
+      (by simpa only [h.used] using hreps) s
+  initialA := by simpa using h.initialA
+  initialC := by simpa using h.initialC
+  currentA := by simp [hround]
+  currentC := by simp [hround]
+  starts := hstarts
+  ends := hends
+  monotone := by
+    intro r t hrt ht
+    by_cases he : t = σ.vars "round" + 1
+    · subst t
+      rw [hnew]
+      by_cases hr : r = σ.vars "round" + 1
+      · rw [hr, hnew]
+      · have hrle : r ≤ σ.vars "round" := by omega
+        rw [hboundary r hrle]
+        exact (h.monotone r (σ.vars "round") hrle le_rfl).trans (h.used.symm ▸ hinc)
+    · have htle : t ≤ σ.vars "round" := by omega
+      rw [hboundary t htle, hboundary r (by omega)]
+      exact h.monotone r t hrt htle
+  capacity := by
+    intro r hr
+    by_cases he : r = σ.vars "round" + 1
+    · rw [he, hnew]; exact hcap
+    · have hrle : r ≤ σ.vars "round" := by omega
+      rw [hboundary r hrle]; exact h.capacity r hrle
+  used := by simpa only [hround] using hnew
+  removedBound := hremBound
+  representativeBound := hrepBound
 
+end Lax235315Proofs.Construction.StoredHistory
