@@ -57,7 +57,7 @@ Concept axioms are open proof obligations, never evidence of proof. A compiled
 glue theorem with open assumptions does not solve the original claim. Record
 which claims have closed Lean proofs and which remain open in every milestone.
 
-## Current proof map (2026-09-25)
+## Current proof map (2026-09-27)
 
 | Claim | Status | Proof module |
 | --- | --- | --- |
@@ -104,22 +104,54 @@ The source PDF SHA-256 is
 The seven mathematical claims are checked independently of the open program
 claims. The paper's graph theorem is 1.4 in this supplied version.
 
+## Checked integration progress (2026-09-27)
+
+- `DriverSetup` executes the literal setup from every valid CSR input and
+  finite tape, yielding canonical active arrays, logarithm, counters, and CSR
+  arrays. `SourceBounds` proves global memory bounds persist through every
+  bounded source execution, including reads from the random tape.
+- `MachineBridge` lifts complete source executions to the exact registered
+  machine, including its final halt. Its three integration lemmas derive the
+  public runtime, output correctness, and probability properties from explicit
+  source-level obligations. Those obligations remain to be discharged; they
+  are definitions, not new axioms or claimed proofs.
+- `ReadKeys.readKeys_run_sharp` charges 120n + 120L|A| + 8 for a round.
+  `CostAccounting` bounds the sum over shrinking active sets, including a
+  final unsuccessful round, by 736(n+1)(L+1), with at most 32nL random bits.
+  The earlier per-round O(nL) bound would have yielded O(nL²) if summed
+  directly; the sharper bound removes that obstacle for key reading.
+- `RecordRemovedSource` verifies the entire deletion scan, its capacity,
+  preserved prefixes, appended vertices and representatives, and round start.
+  `CommitSource.commitReduction_run` composes this with adoption of both
+  active sets and the round-end update at cost at most 80(n+1).
+- `LinkedReconstruction` proves that pointer insertion implements mathematical
+  list insertion. `LinkedSource` verifies the literal inner reconstruction
+  loop at cost 21 times its log interval length plus 4.
+- `AdaptiveFailure` proves a finite counting union bound for adaptive states.
+  `AdaptiveBitBlocks` proves the corresponding rational failure-mass bound
+  with history-dependent block widths, so there is no fixed per-round padding.
+
+All these are supporting lemmas. The only theorem concepts remain the same
+three main statements, and all three are still open.
+
 ## Next concrete leaves
 
 1. Package the active-round invariant, unchanged CSR arrays, workspace sizes,
-   deletion log, and remaining tape. Connect `setup` to its initial state.
-2. Compose the verified accepted and rejected round paths, preserving the
-   invariant and obtaining the checked reconstruction data. Include collisions
-   and failed near checks in the rejected paths.
-3. Prove the entire reduction loop and linked-list reconstruction match the
-   public reconstruction relation, including n=0 and n=1.
-4. Sum charged source costs over the shrinking rounds; bound all memory indices
-   and values, then apply the verified compiler with the final-halt charge.
-5. Partition tapes by execution history and unused suffix. Transfer the existing
-   finite key, uniform sample, and collision estimates to each conditional
-   round; sum failures and prove sufficient tape length for all runs.
+   exact deletion log, and remaining tape. The canonical initial state and
+   persistent value bounds are now checked.
+2. Compose the verified sampling, partitioning, and accepted/rejected round
+   paths under that invariant. Include collisions and failed near checks.
+3. Prove the entire reduction loop and outer linked-list reconstruction match
+   the public reconstruction relation. Connect base-list initialization,
+   recorded round slices, and final traversal, including n=0 and n=1.
+4. Sum all source costs using the checked shrinking and key-reading bounds;
+   instantiate `MachineBridge.SourceTotal` and `SourceCorrect` and apply the
+   already proved machine-transfer lemmas.
+5. Identify the concrete program's adaptive bit blocks and bad events with
+   the sampling/key estimates. Prove the induced finite-tape count, including
+   unused suffixes, and instantiate `MachineBridge.SourceProbability`.
 6. Discharge the three contracts, then rerun the dependency audit. Only then is
-the original archive claim solved.
+   the original archive claim solved.
 
 ## Validated checkpoint
 

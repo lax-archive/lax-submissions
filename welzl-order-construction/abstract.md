@@ -17,6 +17,14 @@ successful outputs, and its finite-tape success probability. A checked
 conditional assembly lemma shows that these three claims imply the exact
 registered statement of Lax195003. It does not discharge those assumptions.
 
+Checked implementation lemmas now cover canonical setup and persistent
+memory bounds, sharper random-key costs summed over shrinking active sets,
+the complete accepted-round log update, and linked reconstruction insertions.
+A compiler bridge transfers complete source-level guarantees to each of the
+three exact machine contracts. Adaptive failure bounds allow later random
+block lengths to depend on earlier choices. The whole-loop invariant and
+its connection to these bounds remain unfinished.
+
 The submission imports the registered graph encoding, machine, graph-class,
 and Welzl-order definitions. All seven component proofs have only the
 archive's background axioms; the assembly proof additionally depends on
