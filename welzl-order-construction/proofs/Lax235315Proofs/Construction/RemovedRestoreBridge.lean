@@ -6,6 +6,8 @@ import Mathlib.Tactic
 
 namespace Lax235315Proofs.Construction.RemovedRestoreBridge
 
+open scoped symmDiff
+
 open Lax235315Proofs.Construction.ActiveBookkeeping
 open Lax235315Proofs.Construction.MarkingMath
 open Lax235315Proofs.Construction.ListCrossing
@@ -48,9 +50,10 @@ lemma removedFinList_nodup {n : ℕ} (active next : ℕ → ℕ) :
 
 /-- The numeric deletion log, lifted to `Fin n`, enumerates exactly the old
 active vertices outside the representatives selected by the completed pass. -/
-lemma removedFinList_enumerates {n : ℕ} {active next label table reps : ℕ → ℕ}
+lemma removedFinList_enumerates {n current : ℕ}
+    {active next label table reps : ℕ → ℕ}
     {R : Finset ℕ} (hbits : ∀ i < n, next i ≤ 1)
-    (hdata : RepData n n n active label table reps next R) :
+    (hdata : RepData n current n active label table reps next R) :
     Enumerates (({v : Fin n | active v.val = 1} : Set (Fin n)) \ finSetAsSet R)
       (removedFinList (n := n) active next) := by
   constructor
@@ -167,10 +170,11 @@ lemma ConcreteTracePartition.restore_removed_log_map_val {n : ℕ}
 /-- Replaying the actual deletion-log order gives the order-sensitive
 restoration theorem for the concrete partition produced by the arrays. -/
 lemma ConcreteTracePartition.restore_removed_log
-    {n : ℕ} {G : SimpleGraph (Fin n)} {active next label table reps repOf : ℕ → ℕ}
+    {n current : ℕ} {G : SimpleGraph (Fin n)}
+    {active next label table reps repOf : ℕ → ℕ}
     {S : Set (Fin n)} {R : Finset ℕ}
     (hpart : ConcreteTracePartition G active S R repOf)
-    (hdata : RepData n n n active label table reps next R)
+    (hdata : RepData n current n active label table reps next R)
     (hbits : ∀ i < n, next i ≤ 1)
     {small : List (Fin n)} (hsmall : Enumerates (finSetAsSet R) small) :
     Enumerates ({v : Fin n | active v.val = 1} : Set (Fin n))
@@ -179,5 +183,38 @@ lemma ConcreteTracePartition.restore_removed_log
         (restoreAfter hpart.partition.representative small (removedFinList (n := n) active next)) := by
   exact TracePartition.restoreAfter_nonrepresentatives hpart.partition hsmall
     (removedFinList_enumerates hbits hdata)
+
+/-- The two concrete partitions, completed representative data, and near
+certificate form a `Reduction` whose larger order restores the actual
+scan-order deletion log. -/
+lemma ConcreteTracePartition.reduction_of_removed_log
+    {n k currentA : ℕ} {G : SimpleGraph (Fin n)}
+    {activeA activeB nextA labelA tableA repsA repA repB : ℕ → ℕ}
+    {W : Set (Fin n)} {R S : Finset ℕ}
+    (hB : ConcreteTracePartition G activeB W R repB)
+    (hA : ConcreteTracePartition G activeA (finSetAsSet R) S repA)
+    (hdataA : RepData n currentA n activeA labelA tableA repsA nextA S)
+    (hbitsA : ∀ i < n, nextA i ≤ 1)
+    (hnear : ∀ b ∈ ({v : Fin n | activeB v.val = 1} : Set (Fin n)),
+      ((G.neighborSet b ∩ {v : Fin n | activeA v.val = 1}) ∆
+        (G.neighborSet (hB.partition.representative b) ∩
+          {v : Fin n | activeA v.val = 1})).ncard ≤ k)
+    {small : List (Fin n)} (hsmall : Enumerates (finSetAsSet S) small) :
+    Nonempty (Reduction G k
+      {v : Fin n | activeA v.val = 1}
+      {v : Fin n | activeB v.val = 1}
+      (finSetAsSet S) (finSetAsSet R) small
+      (restoreAfter hA.partition.representative small
+        (removedFinList (n := n) activeA nextA))) := by
+  obtain ⟨hbig, hexpands⟩ :=
+    ConcreteTracePartition.restore_removed_log hA hdataA hbitsA hsmall
+  exact ⟨{
+    small_enumerates := hsmall
+    big_enumerates := hbig
+    expands := hexpands
+    representative := hB.partition.representative
+    representative_mem := hB.partition.representative_mem
+    near := hnear
+  }⟩
 
 end Lax235315Proofs.Construction.RemovedRestoreBridge
