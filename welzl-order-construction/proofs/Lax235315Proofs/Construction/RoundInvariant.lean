@@ -109,13 +109,15 @@ lemma activeVertices_of_ones {n : ℕ} {σ : Env} {a : String}
   rw [mem_activeVertices, Finset.mem_range]
   exact ⟨And.left, fun hi => ⟨hi, view_of_array ha hi⟩⟩
 
-/-- Deterministic setup establishes the frontier for every finite tape. -/
-lemma setup_frontier {c n T : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+/-- Deterministic setup establishes the frontier and its initial counters for
+every finite tape. -/
+lemma setup_frontier_ready {c n T : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     (hx : EncodesGraph x n G) (ρ : Fin T → Bool) :
     ∃ σ, Run (sourceBound c x) setup
       (initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n))
         ((c :: x) ++ bitTape ρ)) σ (40 * (x.length + Nat.clog 2 n + 1)) ∧
-      Frontier (sourceBound c x) c n x σ ∧ σ.inp = bitTape ρ := by
+      Frontier (sourceBound c x) c n x σ ∧ σ.inp = bitTape ρ ∧
+      σ.vars "round" = 0 ∧ σ.vars "acount" = n := by
   obtain ⟨σ, hr, hready, hb⟩ := setup_ready_bounded (c := c) hx ρ
   have hbits : InputBits σ := by
     intro v hv
@@ -125,7 +127,7 @@ lemma setup_frontier {c n T : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     split <;> omega
   have hA := activeVertices_of_ones hready.activeA
   have hB := activeVertices_of_ones hready.activeB
-  refine ⟨σ, hr, ?_, hready.input⟩
+  refine ⟨σ, hr, ?_, hready.input, hready.round, hready.activeCount⟩
   refine ⟨⟨hb, hready.parameter, hready.vertices, hready.edges,
     hready.logarithm, hready.radixSize, hready.offsets, hready.targets,
     hready.lengths, hbits, hready.output⟩, hready.success, ?_, ?_, ?_, ?_, ?_,
@@ -144,6 +146,16 @@ lemma setup_frontier {c n T : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     omega
   · simp [hready.removedCount, hready.activeCount]
   · rw [hready.round, hready.activeCount]; exact ShrinkingRun.base
+
+/-- Compatibility projection retaining the original setup-frontier API. -/
+lemma setup_frontier {c n T : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    (hx : EncodesGraph x n G) (ρ : Fin T → Bool) :
+    ∃ σ, Run (sourceBound c x) setup
+      (initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n))
+        ((c :: x) ++ bitTape ρ)) σ (40 * (x.length + Nat.clog 2 n + 1)) ∧
+      Frontier (sourceBound c x) c n x σ ∧ σ.inp = bitTape ρ := by
+  obtain ⟨σ, hr, hfront, hin, _, _⟩ := setup_frontier_ready hx ρ
+  exact ⟨σ, hr, hfront, hin⟩
 
 /-- A reduction round cannot corrupt the input graph or workspace. -/
 lemma Workspace.reductionRound {B C c n : ℕ} {x : List ℕ} {σ σ' : Env}
