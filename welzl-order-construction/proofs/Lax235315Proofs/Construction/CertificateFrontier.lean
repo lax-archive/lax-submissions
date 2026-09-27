@@ -23,6 +23,9 @@ open Lax235315Proofs.Construction.RoundPartitionSource
 open Lax235315Proofs.Construction.RoundSamplePartitionSource
 open Lax235315Proofs.Construction.Sampling
 open Lax235315Proofs.Construction.TracePartitions
+open Lax235315Proofs.Construction.NearCounterCorrectness
+open Lax235315Proofs.Construction.Reconstruction
+open scoped symmDiff
 
 lemma prefix_card {k : ℕ} {f : ℕ → ℕ} {S : Finset ℕ}
     (h : PrefixEnumerates k f S) : S.card = k := by
@@ -48,6 +51,40 @@ lemma Candidate.commit {B c n : ℕ} {x : List ℕ} {σ : Env}
       σ'.vars "acount" = σ.vars "nextACount" :=
   frontier_commit_run h.frontier hc hn hnB hlarge h.nextCount h.subset
     h.nonemptyA h.nonemptyB h.shrinks
+
+/-- The accepted certificate data produced by the literal builder, alongside
+the shrinking frontier used by the commit.  The arrays are exposed as exact
+`arrOf` equalities so a later loop invariant can append the same stored order
+and representatives that the source program computed. -/
+structure CertificateSnapshot {B c n : ℕ} {x : List ℕ} {σ : Env}
+    (bound : ℕ) (G : SimpleGraph (Fin n)) (W : Finset ℕ) (σ' : Env)
+    (h : Frontier B c n x σ) : Prop where
+  candidate : Candidate B c n x σ'
+  arrays : ∃ nextA nextB repA repB : ℕ → ℕ,
+    σ'.arrs "activeA" = arrOf n (view σ "activeA") ∧
+    σ'.arrs "activeB" = arrOf n (view σ "activeB") ∧
+    σ'.arrs "nextA" = arrOf n nextA ∧
+    σ'.arrs "nextB" = arrOf n nextB ∧
+    σ'.arrs "repA" = arrOf n repA ∧
+    σ'.arrs "repB" = arrOf n repB
+  certificate : ∃ (currentB : ℕ) (labelB tableB repsB nextB repB : ℕ → ℕ)
+      (R : Finset ℕ) (currentA : ℕ)
+      (labelA tableA repsA nextA repA : ℕ → ℕ) (S : Finset ℕ),
+    ∃ hB : ConcreteTracePartition G (view σ "activeB") (finSetAsSet W) R repB,
+      RepData n currentB n (view σ "activeB") labelB tableB repsB nextB R ∧
+      Nonempty (ConcreteTracePartition G (view σ "activeA") (finSetAsSet R) S repA) ∧
+      RepData n currentA n (view σ "activeA") labelA tableA repsA nextA S ∧
+      (∀ (v : Fin n), view σ "activeB" v.val = 1 →
+      ((G.neighborSet v ∩
+          (activeFinset (n := n) (view σ "activeA") : Set (Fin n))) ∆
+        (G.neighborSet (hB.partition.representative v) ∩
+          (activeFinset (n := n) (view σ "activeA") : Set (Fin n)))).ncard ≤ bound) ∧
+      (∃ small big : List (Fin n),
+        Enumerates (finSetAsSet S) small ∧
+        Nonempty (Reduction G bound
+          {v : Fin n | view σ "activeA" v.val = 1}
+          {v : Fin n | view σ "activeB" v.val = 1}
+          (finSetAsSet S) (finSetAsSet R) small big))
 
 lemma workspace_certificate {B C c n : ℕ} {x : List ℕ} {σ σ' : Env}
     (h : Workspace B c n x σ) (hr : Run B buildReductionCertificate σ σ' C) :
@@ -88,7 +125,7 @@ lemma frontier_certificate {B C c n : ℕ} {x : List ℕ} {σ σ' : Env}
 /-- Running both trace partitions and the near verifier constructs a commit
 candidate whenever it accepts. The source charge is linear in the CSR input;
 shrinkage and log capacity are consequences, not additional run assumptions. -/
-lemma certificate_candidate_run {B c n bound : ℕ} {x : List ℕ}
+lemma certificate_candidate_run_full {B c n bound : ℕ} {x : List ℕ}
     {G : SimpleGraph (Fin n)} {σ : Env} {W : Finset ℕ}
     (hx : EncodesGraph x n G)
     (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
@@ -99,7 +136,7 @@ lemma certificate_candidate_run {B c n bound : ℕ} {x : List ℕ}
     (hnB : 2 * n + 1 < B) (htargetB : 2 * edgeCount x < B)
     (hdenomB : 2 * c ^ 2 < B) (hboundB : bound < B) :
     ∃ σ', Run B buildReductionCertificate σ σ' (2200 * (x.length + 1)) ∧
-      (σ'.vars "good" = 1 → Candidate B c n x σ') := by
+      (σ'.vars "good" = 1 → CertificateSnapshot bound G W σ' h) := by
   have arr (a : String) (h₁ : a ≠ "off") (h₂ : a ≠ "tgt") (h₃ : a ≠ "count") :=
     h.workspace.vertex_array h₁ h₂ h₃
   have habound : ∀ v < n, view σ "activeA" v < B := by
@@ -171,16 +208,43 @@ lemma certificate_candidate_run {B c n bound : ℕ} {x : List ℕ}
     (active_of_array hnextA).trans (ActiveBookkeeping.RepData.active_eq dataA)
   have hnextBSet : activeVertices n (view τ "nextB") = R :=
     (active_of_array hnextB).trans (ActiveBookkeeping.RepData.active_eq dataB)
-  refine ⟨frontier_certificate h hcost hgood, ?_, ?_, ?_, ?_, ?_⟩
-  · rw [hnextASet]; exact hcountA
-  · rw [hnextASet, active_of_array hactiveA]
-    exact dataA.reps_processed
-  · rw [hnextASet]
-    exact ActiveBookkeeping.ConcreteTracePartition.next_nonempty partA (h.nonemptyA hn)
-  · rw [hnextBSet]
-    exact ActiveBookkeeping.ConcreteTracePartition.next_nonempty partB (h.nonemptyB hn)
-  · rw [hnextASet, hcost.frame_var "acount" (by decide), h.activeCount]
-    exact concrete_partitions_shrink hc hG partB partA hWr hSr hW
-      (h.nonemptyB hn) hWcard
+  have hcand : Candidate B c n x τ := by
+    refine ⟨frontier_certificate h hcost hgood, ?_, ?_, ?_, ?_, ?_⟩
+    · rw [hnextASet]; exact hcountA
+    · rw [hnextASet, active_of_array hactiveA]
+      exact dataA.reps_processed
+    · rw [hnextASet]
+      exact ActiveBookkeeping.ConcreteTracePartition.next_nonempty partA (h.nonemptyA hn)
+    · rw [hnextBSet]
+      exact ActiveBookkeeping.ConcreteTracePartition.next_nonempty partB (h.nonemptyB hn)
+    · rw [hnextASet, hcost.frame_var "acount" (by decide), h.activeCount]
+      exact concrete_partitions_shrink hc hG partB partA hWr hSr hW
+        (h.nonemptyB hn) hWcard
+  refine ⟨hcand, ?_, ?_⟩
+  · exact ⟨nextA, nextB, repA, repB,
+      hactiveA, hactiveB, hnextA, hnextB, hrepA, hrepB⟩
+  · refine ⟨curB, labelB, tableB, repsB, nextB, repB, R,
+      curA, labelA, tableA, repsA, nextA, repA, S, ?_⟩
+    refine ⟨partB, dataB, ⟨partA⟩, dataA, ?_, ?_⟩
+    · intro v hv
+      exact hnear hgood v hv
+    · simpa only [activeFinset] using hred hgood
+
+/-- Backwards-compatible projection retaining the original candidate API. -/
+lemma certificate_candidate_run {B c n bound : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)} {σ : Env} {W : Finset ℕ}
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (h : Frontier B c n x σ) (hc : 1 ≤ c) (hn : 0 < n)
+    (hcsq : σ.vars "csq" = c ^ 2) (hbound : σ.vars "nearBound" = bound)
+    (henum : PrefixEnumerates (sampleSize (σ.vars "acount") c) (view σ "ord") W)
+    (hWr : ∀ v ∈ W, v < n)
+    (hnB : 2 * n + 1 < B) (htargetB : 2 * edgeCount x < B)
+    (hdenomB : 2 * c ^ 2 < B) (hboundB : bound < B) :
+    ∃ σ', Run B buildReductionCertificate σ σ' (2200 * (x.length + 1)) ∧
+      (σ'.vars "good" = 1 → Candidate B c n x σ') := by
+  obtain ⟨σ', hr, hcert⟩ := certificate_candidate_run_full hx hG h hc hn hcsq
+    hbound henum hWr hnB htargetB hdenomB hboundB
+  exact ⟨σ', hr, fun hgood => (hcert hgood).candidate⟩
 
 end Lax235315Proofs.Construction.CertificateFrontier
