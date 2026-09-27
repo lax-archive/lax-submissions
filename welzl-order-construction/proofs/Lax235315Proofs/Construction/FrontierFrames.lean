@@ -84,7 +84,7 @@ end Lax235315Proofs.Construction.FrontierFrames
 namespace Lax235315Proofs.Construction.RoundInvariant.Workspace
 
 /-- Method-style API for framing a workspace across a scratch assignment. -/
-theorem setVar {B c n : ℕ} {x : List ℕ} {σ : Lax808846Proofs.Imp.Env}
+lemma setVar {B c n : ℕ} {x : List ℕ} {σ : Lax808846Proofs.Imp.Env}
     (h : Lax235315Proofs.Construction.RoundInvariant.Workspace B c n x σ)
     (name : String) {v : ℕ} (hv : v < B)
     (hname : Lax235315Proofs.Construction.FrontierFrames.WorkspaceScratchName name) :
@@ -98,7 +98,7 @@ namespace Lax235315Proofs.Construction.RoundInvariant.Frontier
 
 /-- Method-style API for framing a successful frontier across a scratch
 assignment. -/
-theorem setVar {B c n : ℕ} {x : List ℕ} {σ : Lax808846Proofs.Imp.Env}
+lemma setVar {B c n : ℕ} {x : List ℕ} {σ : Lax808846Proofs.Imp.Env}
     (h : Lax235315Proofs.Construction.RoundInvariant.Frontier B c n x σ)
     (name : String) {v : ℕ} (hv : v < B)
     (hname : Lax235315Proofs.Construction.FrontierFrames.FrontierScratchName name) :
