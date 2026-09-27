@@ -140,37 +140,69 @@ claims. The paper's graph theorem is 1.4 in this supplied version.
 All these are supporting lemmas. The only theorem concepts remain the same
 three main statements, and all three are still open.
 
+## Further checked integration (2026-09-27)
+
+- `RoundInvariant.setup_frontier` establishes the numeric frontier from the
+  literal setup. `BitArrays` checks zero-one stores in the actual syntax;
+  this closes the distinction between deletion's zero test and membership's
+  one test. `ActiveBookkeeping` proves deletion/active conservation and
+  transfers concrete trace partitions to the numeric shrinking recurrence.
+- `AcceptedCommit` derives log capacity and valid round indices from the
+  frontier itself. `CertificateFrontier` runs both actual trace partitions
+  and the verifier, obtaining a shrinking commit candidate at cost
+  2200(|x|+1). `CertifiedBranch` includes the acceptance test and reject path.
+- `TapeBlocks` decomposes any sufficiently long binary suffix into its actual
+  eight L-bit keys per active vertex. `SamplingFrontier` derives workspace
+  preconditions, preserves the frontier, and returns the exact unused suffix,
+  sampled enumeration, range, and cardinality.
+- `ReductionRoundSource` executes the entire literal random round, including
+  collision rejection, at cost 4500(|x|+1)+120L|A|. `RoundPotential` shows that
+  a reserve of 24L|A| bits pays for the next block and remains sufficient after
+  acceptance. `ReductionLoopSource` composes all adaptive iterations of the
+  literal while loop. Starting at round zero with n active vertices, its cost
+  is at most 5360(|x|+1)(L+1)+4, with no tape-exhaustion assumption hidden in
+  the execution. The explicit initial bit reserve is still a precondition
+  to be derived from the public driver tape budget.
+- `NearCheckSource`, `VerifyNearSource`, `RoundVerifySource`, and
+  `RoundSamplePartitionSource` now provide exact acceptance iff lemmas,
+  preserving the previous interfaces. The converse is needed to turn the
+  mathematical good-sample event into actual program success.
+- `LinkedInitializeSource.linkedInitialize_run` verifies the full initial
+  active-vertex scan at cost 40(n+1), including empty and nonempty lists,
+  arbitrary bounded initial pointer values, and preserved arrays/tape/output.
+
 ## Next concrete leaves
 
-1. Package the active-round invariant, unchanged CSR arrays, workspace sizes,
-   exact deletion log, and remaining tape. The canonical initial state and
-   persistent value bounds are now checked.
-2. Compose the verified sampling, partitioning, and accepted/rejected round
-   paths under that invariant. Include collisions and failed near checks.
-3. Prove the entire reduction loop and outer linked-list reconstruction match
-   the public reconstruction relation. Connect base-list initialization,
-   recorded round slices, and the now-verified final traversal, including n=0
-   and n=1.
-4. Sum all source costs using the checked shrinking and key-reading bounds;
-   instantiate `MachineBridge.SourceTotal` and `SourceCorrect` and apply the
-   already proved machine-transfer lemmas.
-5. Identify the concrete program's adaptive bit blocks and bad events with
-   the sampling/key estimates. Apply the now-checked fixed-tape counting bridge
-   and instantiate `MachineBridge.SourceProbability`.
-6. Discharge the three contracts, then rerun the dependency audit. Only then is
+1. Compose setup, the overflow-avoiding `reduceAll` guards, the checked literal
+   while loop, and finish. Derive the loop's word-fit conditions and initial
+   24Ln tape reserve from the public source budget, including n=0 and n=1.
+2. Strengthen the loop invariant with exact reconstruction history: connect
+   the recorded vertex/representative slices to accepted concrete `Reduction`
+   certificates. The current frontier accounts for log capacity and counters,
+   not the semantic contents of the entire history.
+3. Compose linked initialization, all reverse round slices, and final traversal;
+   identify the output with the checked reconstruction relation. Then sum the
+   remaining driver/reconstruction costs and prove `SourceTotal`/`SourceCorrect`.
+4. Identify concrete adaptive key blocks and rejected samples with the finite
+   counting model. Use exact verifier acceptance, initial tape sufficiency,
+   and unused-suffix counting to prove `SourceProbability`.
+5. Discharge the three contracts and rerun the dependency audit. Only then is
    the original archive claim solved.
 
 ## Validated checkpoint
 
 `lax build --replay welzl-order-construction` passed on 2026-09-27:
-14 concepts, 10 local statements, 77 imported proof modules, and 8 annotated proofs. Seven proofs have
+14 concepts, 10 local statements, 89 imported proof modules, and 8 annotated proofs. Seven proofs have
 empty claim-assumption lists. The eighth concludes the original Lax195003
 claim relative to exactly the three open program contracts. Kernel replay
 passed for the entire submitted concept and proof inventory.
 
-The 508 warnings concern intentionally retained implementation helpers,
+The 614 archive warnings concern intentionally retained implementation helpers,
 dependencies on verified proof packages, and the deliberate use of the exact
-Lax11 type occurring in the original claim. There are no validation errors.
+Lax11 type occurring in the original claim. There are no validation errors. The newly integrated loop, round, setup,
+linked initialization, exact verifier, and tape-decomposition lemmas were also
+audited with `#print axioms`: each uses only `propext`, `Classical.choice`, and
+`Quot.sound`, with none of the three open construction contracts.
 
 ## Presentation convention
 

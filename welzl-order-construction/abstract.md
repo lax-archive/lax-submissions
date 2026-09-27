@@ -17,15 +17,19 @@ successful outputs, and its finite-tape success probability. A checked
 conditional assembly lemma shows that these three claims imply the exact
 registered statement of Lax195003. It does not discharge those assumptions.
 
-Checked implementation lemmas now cover canonical setup and persistent
-memory bounds, sharper random-key costs summed over shrinking active sets,
-the complete accepted-round log update, linked reconstruction insertions,
-and exact output traversal (including the empty list).
-A compiler bridge transfers complete source-level guarantees to each of the
-three exact machine contracts. Adaptive failure bounds allow later random
-block lengths to depend on earlier choices, and are proved equal to actual
-finite-tape failure fractions with unused suffixes counted. The whole-loop invariant and
-its connection to these bounds remain unfinished.
+Checked implementation lemmas cover canonical setup, persistent memory bounds,
+exact finite-tape sampling, both accepted and rejected round paths, and the
+entire guarded reduction loop with a near-linear source cost. The shrinking
+frontier preserves nonempty active sets, zero-one indicators, counter identities,
+and log capacity. The near verifier accepts exactly when its concrete
+representatives satisfy the required distance bounds. Linked-list initialization,
+individual logged insertions, and final output traversal are also verified.
+
+The remaining work is to connect the guarded loop to the complete driver and
+its reconstruction history, and identify the concrete adaptive random process
+with the proved finite-tape failure count. The compiler and counting bridges
+are checked, but these remaining connections are necessary to discharge the
+three main theorems.
 
 The submission imports the registered graph encoding, machine, graph-class,
 and Welzl-order definitions. All seven component proofs have only the
