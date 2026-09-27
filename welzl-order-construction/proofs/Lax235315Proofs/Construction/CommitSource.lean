@@ -255,4 +255,120 @@ lemma commitReduction_run {B n base round : ℕ} {σ : Env}
     exact (rrec.seq rtail).mono (by omega)
   · simpa [htend, hcount] using hend'
 
+private lemma removedList_mem_lt {active next : ℕ → ℕ} {start count n v : ℕ}
+    (hspan : start + count ≤ n)
+    (hv : v ∈ removedList active next start count) : v < n := by
+  induction count generalizing start with
+  | zero => simp [removedList] at hv
+  | succ count ih =>
+      by_cases h : active start = 1 ∧ next start = 0
+      · rw [show removedList active next start (count + 1) =
+            start :: removedList active next (start + 1) count by
+              simp [removedList, h]] at hv
+        simp only [List.mem_cons] at hv
+        rcases hv with rfl | hv
+        · omega
+        · apply ih (start := start + 1) (by omega) hv
+      · rw [show removedList active next start (count + 1) =
+            removedList active next (start + 1) count by
+              simp [removedList, h]] at hv
+        exact ih (start := start + 1) (by omega) hv
+
+private lemma removedList_mem_selected {active next : ℕ → ℕ} {start count v : ℕ}
+    (hv : v ∈ removedList active next start count) :
+    active v = 1 ∧ next v = 0 := by
+  induction count generalizing start with
+  | zero => simp [removedList] at hv
+  | succ count ih =>
+      by_cases h : active start = 1 ∧ next start = 0
+      · rw [show removedList active next start (count + 1) =
+            start :: removedList active next (start + 1) count by
+              simp [removedList, h]] at hv
+        simp only [List.mem_cons] at hv
+        rcases hv with rfl | hv
+        · exact h
+        · exact ih hv
+      · rw [show removedList active next start (count + 1) =
+            removedList active next (start + 1) count by
+              simp [removedList, h]] at hv
+        exact ih hv
+
+private lemma getD_lt_of_mem_lt {xs : List ℕ} {j n : ℕ}
+    (hj : j < xs.length) (hxs : ∀ x ∈ xs, x < n) : xs.getD j 0 < n := by
+  induction xs generalizing j with
+  | nil => simp at hj
+  | cons x xs ih =>
+      cases j with
+      | zero => simpa using hxs x (by simp)
+      | succ j =>
+          have hj' : j < xs.length := by simpa using hj
+          simpa using ih hj' (by
+            intro y hy
+            exact hxs y (by simp [hy]))
+
+/-- If the old log cells and every representative actually written by this
+reduction are below `n`, then the literal commit leaves every valid log cell
+below `n`. This includes both the appended interval and the preserved tail. -/
+lemma commitReduction_run_logValues_lt {B n base round : ℕ} {σ : Env}
+    {activeA activeB nextA nextB rep oldRemoved oldRep : ℕ → ℕ}
+    (hn : σ.vars "n" = n) (hbase : σ.vars "removedCount" = base)
+    (hround : σ.vars "round" = round)
+    (ha : σ.arrs "activeA" = arrOf n activeA)
+    (hb : σ.arrs "activeB" = arrOf n activeB)
+    (hna : σ.arrs "nextA" = arrOf n nextA)
+    (hnb : σ.arrs "nextB" = arrOf n nextB)
+    (hrep : σ.arrs "repA" = arrOf n rep)
+    (hrem : σ.arrs "removed" = arrOf n oldRemoved)
+    (hremRep : σ.arrs "removedRep" = arrOf n oldRep)
+    (hstartRange : round < (σ.arrs "roundStart").length)
+    (hendRange : round < (σ.arrs "roundEnd").length)
+    (hnB : n < B) (hrB : round + 1 < B)
+    (hbounded : ValuesBounded B σ)
+    (hcapacity : base + (removedList activeA nextA 0 n).length ≤ n)
+    (holdRemoved : ∀ i < n, oldRemoved i < n)
+    (holdRep : ∀ i < n, oldRep i < n)
+    (hnewRep : ∀ i < n, activeA i = 1 → nextA i = 0 → rep i < n) :
+    ∃ (σ' : Env) (rem : ℕ → ℕ) (remRep : ℕ → ℕ),
+      Run B commitReduction σ σ' (80 * (n + 1)) ∧
+      (∀ i < n, rem i < n ∧ remRep i < n) := by
+  obtain ⟨σ', rem, remRep, hrun, hactiveA', hactiveB', hround', hacount',
+      hremovedCount', hroundStart', hroundEnd', harrRemoved', harrRemovedRep',
+      hprefix, hsuffix, hprefixRep, hsuffixRep, htail, htailRep⟩ :=
+    commitReduction_run hn hbase hround ha hb hna hnb hrep hrem hremRep
+      hstartRange hendRange hnB hrB hbounded hcapacity
+  have hremovedValues : ∀ x ∈ removedList activeA nextA 0 n, x < n := by
+    intro x hx
+    exact removedList_mem_lt (start := 0) (by omega) hx
+  have hrepValues : ∀ x ∈ removedRepList activeA nextA rep 0 n, x < n := by
+    intro x hx
+    simp only [removedRepList, List.mem_map] at hx
+    obtain ⟨v, hv, rfl⟩ := hx
+    exact hnewRep v (removedList_mem_lt (start := 0) (by omega) hv)
+      (removedList_mem_selected hv).1 (removedList_mem_selected hv).2
+  refine ⟨σ', rem, remRep, hrun, ?_⟩
+  intro i hi
+  constructor
+  · by_cases hprefixI : i < base
+    · rw [hprefix i hprefixI]
+      exact holdRemoved i hi
+    · by_cases hsuffixI : i < base + (removedList activeA nextA 0 n).length
+      · have hj : i - base < (removedList activeA nextA 0 n).length := by omega
+        have hval := hsuffix (i - base) hj
+        have hindex : base + (i - base) = i := by omega
+        rw [← hindex, hval]
+        exact getD_lt_of_mem_lt hj hremovedValues
+      · exact (htail i (by omega) hi).symm ▸ holdRemoved i hi
+  · by_cases hprefixI : i < base
+    · rw [hprefixRep i hprefixI]
+      exact holdRep i hi
+    · by_cases hsuffixI : i < base + (removedList activeA nextA 0 n).length
+      · have hj : i - base < (removedList activeA nextA 0 n).length := by omega
+        have hjRep : i - base < (removedRepList activeA nextA rep 0 n).length := by
+          simpa [removedRepList] using hj
+        have hval := hsuffixRep (i - base) hj
+        have hindex : base + (i - base) = i := by omega
+        rw [← hindex, hval]
+        exact getD_lt_of_mem_lt hjRep hrepValues
+      · exact (htailRep i (by omega) hi).symm ▸ holdRep i hi
+
 end Lax235315Proofs.Construction.CommitSource
