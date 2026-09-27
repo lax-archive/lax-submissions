@@ -190,25 +190,24 @@ private lemma joined8_lengths {L : ℕ} {b : Fin 8 → List ℕ}
   simp [joined8, hlen]
   omega
 
-private lemma readKeys_body_spec {B n L : ℕ} {active : ℕ → ℕ}
+private lemma readKeys_body_cost {B n L : ℕ} {active : ℕ → ℕ}
     {original : Fin 8 → ℕ → ℕ} {bits : ℕ → Fin 8 → List ℕ}
     {rest : List ℕ}
     (hlen : ∀ v < n, ∀ d, (bits v d).length = L)
     (hbits : ∀ v < n, ∀ d x, x ∈ bits v d → x ≤ 1)
     (hactiveB : ∀ v < n, active v < B)
     (hpowB : 2 ^ L < B) (hnB : n < B) (htwoB : 2 < B) :
-    Spec B
-      (fun τ => ReadKeysInv n L active original bits rest τ ∧
-        τ.vars "v" < n)
+    ∀ τ, ReadKeysInv n L active original bits rest τ ∧
+      τ.vars "v" < n → ∃ τ', Run B
       (seqs [
         .ite (.eq (.get "activeA" (.var "v")) (.lit 1))
           (seqs [.store "ord" (.var "alen") (.var "v"),
             readAllKeyDigits, inc "alen"])
           .skip,
         inc "v"])
-      (fun τ τ' => ReadKeysInv n L active original bits rest τ' ∧
-        τ'.vars "v" = τ.vars "v" + 1)
-      (120 * L + 116) := by
+      τ τ' ((if active (τ.vars "v") = 1 then 120 * L else 0) + 116) ∧
+      ReadKeysInv n L active original bits rest τ' ∧
+        τ'.vars "v" = τ.vars "v" + 1 := by
   intro τ hτ
   rcases hτ with ⟨⟨hvle, hn, hL, halen, hactive, hord, hkeys, hinp⟩, hvn⟩
   have hvB : τ.vars "v" < B := hvn.trans hnB
@@ -287,7 +286,7 @@ private lemma readKeys_body_spec {B n L : ℕ} {active : ℕ → ℕ}
       exact (Run.seq (Run.ite_true htest rbranch) rv).mono (by
         simp [test]
         omega)
-    refine ⟨τ₄, rr, ?_, by simp [τ₄, τ₃]⟩
+    refine ⟨τ₄, by simpa [hav] using rr, ?_, by simp [τ₄, τ₃]⟩
     have hprefix : (scanList active 0 (τ.vars "v" + 1)).length =
         τ.vars "alen" + 1 := by
       rw [scanList_zero_add, if_pos hav, List.length_append, halen]
@@ -327,10 +326,10 @@ private lemma readKeys_body_spec {B n L : ℕ} {active : ℕ → ℕ}
             (seqs [.store "ord" (.var "alen") (.var "v"),
               readAllKeyDigits, inc "alen"])
             .skip,
-          inc "v"]) τ τ₁ (120 * L + 116) := by
+          inc "v"]) τ τ₁ 116 := by
       exact (Run.seq (Run.ite_false htest Run.skip) rv).mono (by
         simp [test])
-    refine ⟨τ₁, rr, ?_, by simp [τ₁]⟩
+    refine ⟨τ₁, by simpa [hav] using rr, ?_, by simp [τ₁]⟩
     have hprefix : (scanList active 0 (τ.vars "v" + 1)).length =
         τ.vars "alen" := by
       rw [scanList_zero_add, if_neg hav, List.append_nil, halen]
@@ -348,7 +347,7 @@ private lemma readKeys_body_spec {B n L : ℕ} {active : ℕ → ℕ}
 
 /-- `readKeys` consumes exactly the active vertices' key blocks, writes
 their increasing enumeration to `ord`, and records every decoded digit. -/
-lemma readKeys_run {B n L : ℕ} {σ : Env} {active ord : ℕ → ℕ}
+lemma readKeys_run_sharp {B n L : ℕ} {σ : Env} {active ord : ℕ → ℕ}
     {original : Fin 8 → ℕ → ℕ} {bits : ℕ → Fin 8 → List ℕ}
     {rest : List ℕ}
     (hn : σ.vars "n" = n) (hL : σ.vars "L" = L)
@@ -361,7 +360,7 @@ lemma readKeys_run {B n L : ℕ} {σ : Env} {active ord : ℕ → ℕ}
     (hactiveB : ∀ v < n, active v < B)
     (hpowB : 2 ^ L < B) (hnB : n < B) (htwoB : 2 < B) :
     ∃ σ' ord', Run B readKeys σ σ'
-        ((120 * L + 120) * n + 8) ∧
+        (120 * n + 120 * L * (scanList active 0 n).length + 8) ∧
       σ'.vars "alen" = (scanList active 0 n).length ∧
       σ'.vars "v" = n ∧ σ'.vars "n" = n ∧ σ'.vars "L" = L ∧
       σ'.arrs "ord" = arrOf n ord' ∧
@@ -385,11 +384,43 @@ lemma readKeys_run {B n L : ℕ} {σ : Env} {active ord : ℕ → ℕ}
       intro i hi
       simp [filledKey]
     · simpa [σ₀, scanList] using hinp
-  have hloop := Spec.forRangeZero (B := B) "v" "n"
-    (ReadKeysInv n L active original bits rest) n (120 * L + 116) hnB
-    (fun _ h => h.1) (fun _ h => h.2.1)
-    (readKeys_body_spec hlen hbits hactiveB hpowB hnB htwoB)
-  obtain ⟨σ', rloop, hI', hv'⟩ := hloop.run hI₀
+  let body : Com := seqs [
+    .ite (.eq (.get "activeA" (.var "v")) (.lit 1))
+      (seqs [.store "ord" (.var "alen") (.var "v"),
+        readAllKeyDigits, inc "alen"]) .skip,
+    inc "v"]
+  let I := ReadKeysInv n L active original bits rest
+  let Φ := fun τ : Env => 120 * (n - τ.vars "v") +
+    120 * L * (scanList active (τ.vars "v") (n - τ.vars "v")).length
+  have hloop : Spec B (fun τ => I τ ∧ τ.vars "v" = 0)
+      (.while (.lt (.var "v") (.var "n")) body)
+      (fun _ τ => I τ ∧ (Cond.lt (.var "v") (.var "n")).evalB B τ = some false)
+      (120 * n + 120 * L * (scanList active 0 n).length + 4) := by
+    apply Spec.while_potential I Φ
+    · intro τ hI
+      exact evalB_condLt_vars (hI.1.trans_lt hnB) (by rw [hI.2.1]; exact hnB)
+    · intro τ hI ht
+      have hvn : τ.vars "v" < n := by
+        have h := lt_of_condLt_true ht
+        rwa [hI.2.1] at h
+      obtain ⟨τ', hr, hI', hv'⟩ :=
+        readKeys_body_cost hlen hbits hactiveB hpowB hnB htwoB τ ⟨hI, hvn⟩
+      refine ⟨τ', _, hr, hI', ?_⟩
+      change 1 + 3 + _ + Φ τ' ≤ Φ τ
+      dsimp [Φ]
+      rw [hv', scanList_remaining hvn]
+      have hdrop : n - (τ.vars "v" + 1) + 1 = n - τ.vars "v" := by omega
+      split_ifs <;> (try simp only [List.length_cons]) <;> nlinarith
+    · exact fun _ h => h.1
+    · intro τ hτ
+      simp [Φ, hτ.2]
+  have rv₀ : Run B (.assign "v" (.lit 0)) σ₀ (σ₀.setVar "v" 0) 2 :=
+    Run.assign (evalB_lit (by omega))
+  obtain ⟨σ', rloop, hI', hfalse⟩ := hloop.run ⟨hI₀, by simp⟩
+  have hv' : σ'.vars "v" = n := by
+    have h := le_of_condLt_false hfalse
+    rw [hI'.2.1] at h
+    exact Nat.le_antisymm hI'.1 h
   rcases hI' with ⟨-, hn', hL', halen', -, hord', hkeys', hinp'⟩
   have halenFinal : σ'.vars "alen" = (scanList active 0 n).length := by
     simpa [hv'] using halen'
@@ -405,11 +436,39 @@ lemma readKeys_run {B n L : ℕ} {σ : Env} {active ord : ℕ → ℕ}
     simpa [hv'] using hkeys' d
   refine ⟨σ', ord', ?_, halenFinal, hv', hn', hL', hordFill.arr, hordval,
     hkeysFinal, ?_⟩
-  · have rr := r₀.seq rloop
-    have hcost : 2 + ((120 * L + 116 + 4) * n + 6) =
-        (120 * L + 120) * n + 8 := by ring
+  · have rr := r₀.seq (rv₀.seq rloop)
+    have hcost : 2 + (2 + (120 * n + 120 * L * (scanList active 0 n).length + 4)) =
+        120 * n + 120 * L * (scanList active 0 n).length + 8 := by ring
     rw [← hcost]
-    simpa [readKeys, seqs] using rr
+    simpa [readKeys, body, seqs] using rr
   · simpa [hv', scanList] using hinp'
+
+/-- The earlier uniform bound remains available for callers that do not yet
+use the active-set-sensitive charge. -/
+lemma readKeys_run {B n L : ℕ} {σ : Env} {active ord : ℕ → ℕ}
+    {original : Fin 8 → ℕ → ℕ} {bits : ℕ → Fin 8 → List ℕ}
+    {rest : List ℕ}
+    (hn : σ.vars "n" = n) (hL : σ.vars "L" = L)
+    (hactive : σ.arrs "activeA" = arrOf n active)
+    (hord : σ.arrs "ord" = arrOf n ord)
+    (hkeys : ∀ d, σ.arrs (keyName d) = arrOf n (original d))
+    (hinp : σ.inp = keyTape bits (scanList active 0 n) ++ rest)
+    (hlen : ∀ v < n, ∀ d, (bits v d).length = L)
+    (hbits : ∀ v < n, ∀ d x, x ∈ bits v d → x ≤ 1)
+    (hactiveB : ∀ v < n, active v < B)
+    (hpowB : 2 ^ L < B) (hnB : n < B) (htwoB : 2 < B) :
+    ∃ σ' ord', Run B readKeys σ σ' ((120 * L + 120) * n + 8) ∧
+      σ'.vars "alen" = (scanList active 0 n).length ∧
+      σ'.vars "v" = n ∧ σ'.vars "n" = n ∧ σ'.vars "L" = L ∧
+      σ'.arrs "ord" = arrOf n ord' ∧
+      (∀ i < (scanList active 0 n).length,
+        ord' i = (scanList active 0 n).getD i 0) ∧
+      (∀ d, σ'.arrs (keyName d) = arrOf n (filledKey original active bits n d)) ∧
+      σ'.inp = rest := by
+  obtain ⟨σ', ord', hr, hpost⟩ := readKeys_run_sharp hn hL hactive hord hkeys
+    hinp hlen hbits hactiveB hpowB hnB htwoB
+  refine ⟨σ', ord', hr.mono ?_, hpost⟩
+  have hlen := scanList_length_le active 0 n
+  nlinarith
 
 end Lax235315Proofs.Construction.ReadKeys

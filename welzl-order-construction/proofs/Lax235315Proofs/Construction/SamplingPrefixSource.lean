@@ -64,7 +64,7 @@ lemma samplingPrefix_run
     let sorted := radixSort8 q digits vertices
     ∃ σ' ord',
       Run B samplingPrefix σ σ'
-        (((120 * L + 120) * n + 8) +
+        ((120 * n + 120 * L * vertices.length + 8) +
           512 * (vertices.length + q + 1) +
           300 * (sorted.length + 1)) ∧
       σ'.vars "alen" = sorted.length ∧
@@ -81,7 +81,7 @@ lemma samplingPrefix_run
   let sorted := radixSort8 q digits vertices
   obtain ⟨σ₁, ord₁, rread, halen₁, -, hn₁, hL₁, hord₁, hordval₁,
       hkeys₁, hinp₁⟩ :=
-    readKeys_run hn hL hactive hord hkeys hinp hlen hbits hactiveB
+    readKeys_run_sharp hn hL hactive hord hkeys hinp hlen hbits hactiveB
       (by simpa [hq] using hqB) hnB htwoB
   have hqpow₁ : σ₁.vars "qpow" = q := by
     rw [rread.frame_var "qpow" (by decide), hqpow]
