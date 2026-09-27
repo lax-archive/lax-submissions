@@ -31,18 +31,8 @@ lemma sourceWordValue_lt {L : ℕ} (word : Fin L → Bool) :
 
 /-- Boolean source words correspond exactly to the values read by the source
 bit reader, viewed as elements of `Fin (2^L)`. -/
-def sourceWordEquiv (L : ℕ) : (Fin L → Bool) ≃ Fin (2 ^ L) := by
-  let f : (Fin L → Bool) → Fin (2 ^ L) := fun word =>
-    ⟨sourceWordValue word, sourceWordValue_lt word⟩
-  have hinj : Function.Injective f := by
-    intro word₁ word₂ h
-    apply boolWordValue_injective
-    have hv := congrArg Fin.val h
-    simpa [f, sourceWordValue, sourceWordBits, boolWordValue] using hv
-  have hcard : Fintype.card (Fin L → Bool) = Fintype.card (Fin (2 ^ L)) := by
-    simp
-  exact Equiv.ofBijective f
-    ((Fintype.bijective_iff_injective_and_card f).mpr ⟨hinj, hcard⟩)
+def sourceWordEquiv (L : ℕ) : (Fin L → Bool) ≃ Fin (2 ^ L) :=
+  boolWordEquiv L
 
 /-- The equivalence's numeric value is exactly what the source reader reads. -/
 @[simp] lemma sourceWordEquiv_val {L : ℕ} (word : Fin L → Bool) :

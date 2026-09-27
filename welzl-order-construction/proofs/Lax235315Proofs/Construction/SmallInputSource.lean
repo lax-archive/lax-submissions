@@ -180,4 +180,21 @@ lemma smallInput_welzlCom_run {c n T : ℕ} {G : SimpleGraph (Fin n)} {x : List 
   · rw [hout, hready.output, List.nil_append, range'_zero_eq_range]
     exact naturalOrder_small_encodes G hn
 
+/-- Every finite tape is successful on a graph with at most one vertex. -/
+lemma smallInput_sourceGoodTapes {c n T : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    (hx : EncodesGraph x n G) (hc : 1 ≤ c) (hn : n ≤ 1) :
+    sourceGoodTapes c n x (sourceCost 6000 n x) T = Set.univ := by
+  apply Set.eq_univ_of_forall
+  intro ρ
+  obtain ⟨τ, hr, hg, _⟩ := smallInput_welzlCom_run hx hc hn ρ
+  exact ⟨τ, hr, hg⟩
+
+/-- The exact successful-tape count is `2^T`, so the success probability in
+the small-input cases is one for every finite tape length. -/
+lemma smallInput_sourceGoodTapes_ncard {c n T : ℕ} {G : SimpleGraph (Fin n)}
+    {x : List ℕ} (hx : EncodesGraph x n G) (hc : 1 ≤ c) (hn : n ≤ 1) :
+    (sourceGoodTapes c n x (sourceCost 6000 n x) T).ncard = 2 ^ T := by
+  rw [smallInput_sourceGoodTapes hx hc hn]
+  simp
+
 end Lax235315Proofs.Construction.SmallInputSource
