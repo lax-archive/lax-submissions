@@ -54,6 +54,36 @@ lemma removedList_length_le (active next : ℕ → ℕ) (start count : ℕ) :
         exact Nat.succ_le_succ (ih (start + 1))
       · exact (ih (start + 1)).trans (Nat.le_succ count)
 
+lemma removedList_length_le_scanList
+    (active next : ℕ → ℕ) (start count : ℕ) :
+    (removedList active next start count).length ≤
+      (scanList active start count).length := by
+  induction count generalizing start with
+  | zero => simp [removedList, scanList]
+  | succ count ih =>
+      by_cases ha : active start = 1
+      · by_cases hn : next start = 0
+        · have hdel : active start = 1 ∧ next start = 0 := ⟨ha, hn⟩
+          simp only [removedList, if_pos hdel, scanList, if_pos ha,
+            List.length_cons]
+          exact Nat.succ_le_succ (ih (start + 1))
+        · have hnot : ¬ (active start = 1 ∧ next start = 0) := by
+            simp [ha, hn]
+          simp only [removedList, if_neg hnot, scanList, if_pos ha,
+            List.length_cons]
+          exact (ih (start + 1)).trans (Nat.le_succ _)
+      · have hnot : ¬ (active start = 1 ∧ next start = 0) := by
+          simp [ha]
+        simp only [removedList, if_neg hnot, scanList, if_neg ha]
+        exact ih (start + 1)
+
+lemma removedList_capacity_of_scanList
+    (active next : ℕ → ℕ) (base n : ℕ)
+    (hcapacity : base + (scanList active 0 n).length ≤ n) :
+    base + (removedList active next 0 n).length ≤ n := by
+  have hle := removedList_length_le_scanList active next 0 n
+  omega
+
 lemma removedList_append (active next : ℕ → ℕ) (start first second : ℕ) :
     removedList active next start (first + second) =
       removedList active next start first ++
@@ -513,6 +543,7 @@ lemma recordRemoved_run {B n base round roundCap : ℕ} {σ : Env}
       σ'.arrs "removed" = arrOf n removed' ∧
       σ'.arrs "removedRep" = arrOf n removedRep' ∧
       σ'.arrs "roundStart" = roundStarts' ∧
+      roundStarts' = (σ.arrs "roundStart").set round base ∧
       (∀ j < base, removed' j = oldRemoved j) ∧
       (∀ j < (removedList active next 0 n).length,
         removed' (base + j) = (removedList active next 0 n).getD j 0) ∧
@@ -575,7 +606,7 @@ lemma recordRemoved_run {B n base round roundCap : ℕ} {σ : Env}
     rw [hshape]
     exact (rstore.seq rloop).mono (by omega)
   refine ⟨σ₃, r', rr', roundStarts', rrun, ?_, hvn3, hn3,
-    hr3, hremoved3, hremovedRep3, hrs3, hprefix3, ?_, hprefixRep3, ?_⟩
+    hr3, hremoved3, hremovedRep3, hrs3, rfl, hprefix3, ?_, hprefixRep3, ?_⟩
   · simpa [hvn3] using hc3
   · simpa [hvn3] using hsuffix3
   · simpa [hvn3] using hsuffixRep3
