@@ -8,6 +8,7 @@ namespace Lax235315Proofs.Construction.RemovedRestoreBridge
 
 open Lax235315Proofs.Construction.ActiveBookkeeping
 open Lax235315Proofs.Construction.MarkingMath
+open Lax235315Proofs.Construction.ListCrossing
 open Lax235315Proofs.Construction.ConcreteReconstruction
 open Lax235315Proofs.Construction.PartitionResult
 open Lax235315Proofs.Construction.Reconstruction
@@ -87,6 +88,46 @@ lemma removedFinList_map_representative_val {n : ℕ}
       (removedRepList active next rep 0 n) := by
   simp [removedFinList, removedRepList]
 
+/-- Mapping an insertion through an injective encoding preserves its
+position and its target. -/
+lemma insertAfter_map {α β : Type*} [DecidableEq α] [DecidableEq β]
+    (f : α → β) (hf : Function.Injective f) (a x : α) (l : List α) :
+    (insertAfter a x l).map f = insertAfter (f a) (f x) (l.map f) := by
+  induction l with
+  | nil => rfl
+  | cons b l ih =>
+      by_cases h : b = a
+      · subst b
+        simp [insertAfter]
+      · have h' : f b ≠ f a := fun hfa => h (hf hfa)
+        simp [insertAfter, h, h', ih]
+
+/-- Restoration commutes with an injective encoding when the two
+representative maps agree on every vertex being restored. -/
+lemma restoreAfter_map {α β : Type*} [DecidableEq α] [DecidableEq β]
+    {f : α → β} (hf : Function.Injective f)
+    (repA : α → α) (repB : β → β) (current removed : List α)
+    (hrep : ∀ x ∈ removed, f (repA x) = repB (f x)) :
+    (restoreAfter repA current removed).map f =
+      restoreAfter repB (current.map f) (removed.map f) := by
+  induction removed generalizing current with
+  | nil => rfl
+  | cons x xs ih =>
+      have hx := hrep x (by simp)
+      have htail : ∀ y ∈ xs, f (repA y) = repB (f y) := by
+        intro y hy
+        exact hrep y (by simp [hy])
+      rw [restoreAfter_cons, ih _ htail, insertAfter_map f hf]
+      rw [hx]
+      rfl
+
+/-- The actual scan-order log retains exactly the same natural-number order
+when its `Fin n` entries are mapped through `Fin.val`. -/
+lemma removedFinList_map_val {n : ℕ} (active next : ℕ → ℕ) :
+    (removedFinList (n := n) active next).map Fin.val =
+      removedList active next 0 n := by
+  simp [removedFinList]
+
 /-- On every logged deletion, the abstract representative used by the
 restoration theorem is exactly the numeric `repOf` array entry. -/
 lemma removedFinList_concrete_representative_map {n : ℕ}
@@ -106,6 +147,22 @@ lemma removedFinList_concrete_representative_map {n : ℕ}
         exact hpart.representative_val v hscan.2.2.1
     _ = removedRepList active next repOf 0 n :=
       removedFinList_map_representative_val active next repOf
+
+/-- Mapping the restored `Fin n` order to numeric vertices is exactly the
+linked-list replay from the scanned deletion log and its `repOf` array. -/
+lemma ConcreteTracePartition.restore_removed_log_map_val {n : ℕ}
+    {G : SimpleGraph (Fin n)} {active next repOf : ℕ → ℕ}
+    {S : Set (Fin n)} {R : Finset ℕ}
+    (hpart : ConcreteTracePartition G active S R repOf)
+    (small : List (Fin n)) :
+    (restoreAfter hpart.partition.representative small
+      (removedFinList (n := n) active next)).map Fin.val =
+      restoreAfter repOf (small.map Fin.val) (removedList active next 0 n) := by
+  rw [restoreAfter_map Fin.val_injective]
+  · rw [removedFinList_map_val]
+  · intro v hv
+    have hscan := mem_removedList.mp (mem_removedFinList.mp hv)
+    exact hpart.representative_val v hscan.2.2.1
 
 /-- Replaying the actual deletion-log order gives the order-sensitive
 restoration theorem for the concrete partition produced by the arrays. -/
