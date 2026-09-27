@@ -132,7 +132,7 @@ lemma recordRemovedBody_run {B n i count cap : ℕ} {σ : Env}
     (hremovedRep : (σ.arrs "removedRep").length = cap)
     (hiB : i < B) (hcountB : count < B) (honeB : 1 < B)
     (hactiveB : active i < B) (hnextB : next i < B)
-    (hrepB : rep i < B)
+    (hrepB : active i = 1 → next i = 0 → rep i < B)
     (hcountSuccB : active i = 1 → next i = 0 → count + 1 < B)
     (hiSuccB : i + 1 < B) :
     ∃ σ', Run B recordRemovedBody σ σ' 40 ∧
@@ -167,9 +167,6 @@ lemma recordRemovedBody_run {B n i count cap : ℕ} {σ : Env}
   · have htestA' :
         (Cond.eq (.get "activeA" (.var "v")) (.lit 1)).evalB B σ = some true := by
       simpa [ha] using htestA
-    have hrepEval :
-        (Expr.get "repA" (.var "v")).evalB B σ = some (rep i) :=
-      evalB_get hvEval (by rw [hrep, getElem?_arrOf rep hi]) hrepB
     have htestN :
         (Cond.eq (.get "nextA" (.var "v")) (.lit 0)).evalB B σ =
           some (next i == 0) := by
@@ -178,6 +175,9 @@ lemma recordRemovedBody_run {B n i count cap : ℕ} {σ : Env}
     · have htestN' :
           (Cond.eq (.get "nextA" (.var "v")) (.lit 0)).evalB B σ = some true := by
         simpa [hn] using htestN
+      have hrepEval :
+          (Expr.get "repA" (.var "v")).evalB B σ = some (rep i) :=
+        evalB_get hvEval (by rw [hrep, getElem?_arrOf rep hi]) (hrepB ha hn)
       let σ₁ := σ.setArr "removed" count i
       have r₁ : Run B (.store "removed" (.var "removedCount") (.var "v"))
           σ σ₁ 3 := by
@@ -296,9 +296,9 @@ lemma recordRemovedBody_run {B n i count cap : ℕ} {σ : Env}
     · simp [σ₄, ha]
     · simp [σ₄, ha]
 
-/-- State invariant for the deletion scan. The occupied suffix of each log
-is exactly the filtered scan prefix, while every earlier log cell retains
-its value from before this reduction. -/
+/-- State invariant for the deletion scan. The newly occupied log interval is
+exactly the filtered scan prefix, earlier cells retain their old values, and
+the unused tail still matches its pre-reduction contents. -/
 def RecordInv (n base round : ℕ) (active next rep oldRemoved oldRemovedRep : ℕ → ℕ)
     (roundStarts : List ℕ) (τ : Env) : Prop :=
   ∃ r rr,
@@ -317,7 +317,11 @@ def RecordInv (n base round : ℕ) (active next rep oldRemoved oldRemovedRep : �
     (∀ j < base, rr j = oldRemovedRep j) ∧
     (∀ j < (removedList active next 0 (τ.vars "v")).length,
       rr (base + j) =
-        (removedRepList active next rep 0 (τ.vars "v")).getD j 0)
+        (removedRepList active next rep 0 (τ.vars "v")).getD j 0) ∧
+    (∀ j, base + (removedList active next 0 (τ.vars "v")).length ≤ j →
+      j < n → r j = oldRemoved j) ∧
+    (∀ j, base + (removedList active next 0 (τ.vars "v")).length ≤ j →
+      j < n → rr j = oldRemovedRep j)
 
 lemma removedList_prefix_length {active next : ℕ → ℕ} {v n : ℕ} (hv : v ≤ n) :
     (removedList active next 0 v).length ≤
@@ -353,7 +357,7 @@ lemma recordRemoved_body_spec {B n base round : ℕ}
     (hnB : n < B)
     (hactiveB : ∀ i < n, active i < B)
     (hnextB : ∀ i < n, next i < B)
-    (hrepB : ∀ i < n, rep i < B)
+    (hrepB : ∀ i < n, active i = 1 → next i = 0 → rep i < B)
     (hcapacity : base + (removedList active next 0 n).length ≤ n) :
     Spec B
       (fun τ => RecordInv n base round active next rep oldRemoved oldRemovedRep
@@ -365,7 +369,7 @@ lemma recordRemoved_body_spec {B n base round : ℕ}
   intro τ ⟨hI, hvlt⟩
   rcases hI with ⟨r, rr, hvle, hn, hround, hcount, hactive, hnext, hrep,
     hroundStarts, hremoved, hremovedRep, hprefix, hsuffix, hprefixRep,
-    hsuffixRep⟩
+    hsuffixRep, htail, htailRep⟩
   let i := τ.vars "v"
   let count := τ.vars "removedCount"
   have hi : i < n := by simpa [i] using hvlt
@@ -395,11 +399,10 @@ lemma recordRemoved_body_spec {B n base round : ℕ}
     rw [hremovedRep, length_arrOf]
   have hactiveBi : active i < B := hactiveB i hi
   have hnextBi : next i < B := hnextB i hi
-  have hrepBi : rep i < B := hrepB i hi
   obtain ⟨τ', hr, hv', hcount', hremoved', hremovedRep'⟩ :=
     recordRemovedBody_run (σ := τ) (active := active) (next := next) (rep := rep)
       (hvi := rfl) (hci := rfl) hi (hcountWhen) hactive hnext hrep hrlen hrrlen
-      hiB hcountB (by omega) hactiveBi hnextBi hrepBi hcountSuccWhen hiSuccB
+      hiB hcountB (by omega) hactiveBi hnextBi (hrepB i hi) hcountSuccWhen hiSuccB
   by_cases hhit : active i = 1 ∧ next i = 0
   · have hlist : removedList active next 0 (i + 1) =
         removedList active next 0 i ++ [i] := by
@@ -431,7 +434,7 @@ lemma recordRemoved_body_spec {B n base round : ℕ}
           simp
           omega
     refine ⟨τ', hr, ⟨⟨r', rr', ?_, ?_, ?_, hcount'Eq, ?_, ?_, ?_, ?_,
-      hremovedShape, hrepShape, ?_, ?_, ?_, ?_⟩, hv'⟩⟩
+      hremovedShape, hrepShape, ?_, ?_, ?_, ?_, ?_, ?_⟩, hv'⟩⟩
     · have : i + 1 ≤ n := Nat.succ_le_of_lt hi
       simpa [i, hv'] using this
     · exact (hr.frame_var "n" (by decide)).trans hn
@@ -488,6 +491,30 @@ lemma recordRemoved_body_spec {B n base round : ℕ}
           exact hget
         rw [hget']
         simp [rr', hcountEq]
+    · intro j hj hjn
+      have hnewLen : (removedList active next 0 (τ'.vars "v")).length =
+          (removedList active next 0 i).length + 1 := by
+        rw [hiv', hlist, List.length_append]
+        simp
+      have hj' := hj
+      rw [hnewLen] at hj'
+      have hjcount : count < j := by rw [hcountEq]; omega
+      have hne : j ≠ count := by omega
+      have hjold : base + (removedList active next 0 i).length ≤ j := by
+        omega
+      simpa [r', upd, hne] using htail j hjold hjn
+    · intro j hj hjn
+      have hnewLen : (removedList active next 0 (τ'.vars "v")).length =
+          (removedList active next 0 i).length + 1 := by
+        rw [hiv', hlist, List.length_append]
+        simp
+      have hj' := hj
+      rw [hnewLen] at hj'
+      have hjcount : count < j := by rw [hcountEq]; omega
+      have hne : j ≠ count := by omega
+      have hjold : base + (removedList active next 0 i).length ≤ j := by
+        omega
+      simpa [rr', upd, hne] using htailRep j hjold hjn
   · have hlist : removedList active next 0 (i + 1) =
         removedList active next 0 i := by
       rw [removedList_zero_succ]
@@ -505,7 +532,7 @@ lemma recordRemoved_body_spec {B n base round : ℕ}
       simpa [hcount, hhit', hlist, hv', i] using hcount'
     have hiv' : τ'.vars "v" = i + 1 := by simpa [i] using hv'
     refine ⟨τ', hr, ⟨⟨r, rr, ?_, ?_, ?_, hcount'Eq, ?_, ?_, ?_, ?_,
-      ?_, ?_, hprefix, ?_, hprefixRep, ?_⟩, hv'⟩⟩
+      ?_, ?_, hprefix, ?_, hprefixRep, ?_, ?_, ?_⟩, hv'⟩⟩
     · have : i + 1 ≤ n := Nat.succ_le_of_lt hi
       simpa [i, hv'] using this
     · exact (hr.frame_var "n" (by decide)).trans hn
@@ -518,6 +545,14 @@ lemma recordRemoved_body_spec {B n base round : ℕ}
     · exact hremovedRep'.trans hremovedRep
     · simpa [hlist, hiv'] using hsuffix
     · simpa [hrepList, hlist, hiv', i] using hsuffixRep
+    · intro j hj hjn
+      have hjold : base + (removedList active next 0 (τ.vars "v")).length ≤ j := by
+        simpa [hlist, hiv'] using hj
+      exact htail j hjold hjn
+    · intro j hj hjn
+      have hjold : base + (removedList active next 0 (τ.vars "v")).length ≤ j := by
+        simpa [hrepList, hlist, hiv', i] using hj
+      exact htailRep j hjold hjn
 
 lemma recordRemoved_run {B n base round roundCap : ℕ} {σ : Env}
     {active next rep oldRemoved oldRemovedRep : ℕ → ℕ}
@@ -533,7 +568,7 @@ lemma recordRemoved_run {B n base round roundCap : ℕ} {σ : Env}
     (hnB : n < B) (hroundB : round < B) (hbaseB : base < B)
     (hactiveB : ∀ i < n, active i < B)
     (hnextB : ∀ i < n, next i < B)
-    (hrepB : ∀ i < n, rep i < B)
+    (hrepB : ∀ i < n, active i = 1 → next i = 0 → rep i < B)
     (hcapacity : base + (removedList active next 0 n).length ≤ n) :
     ∃ σ' removed' removedRep' roundStarts',
       Run B recordRemoved σ σ' (50 * (n + 1)) ∧
@@ -550,7 +585,11 @@ lemma recordRemoved_run {B n base round roundCap : ℕ} {σ : Env}
       (∀ j < base, removedRep' j = oldRemovedRep j) ∧
       (∀ j < (removedList active next 0 n).length,
         removedRep' (base + j) =
-          (removedRepList active next rep 0 n).getD j 0) := by
+          (removedRepList active next rep 0 n).getD j 0) ∧
+      (∀ j, base + (removedList active next 0 n).length ≤ j → j < n →
+        removed' j = oldRemoved j) ∧
+      (∀ j, base + (removedList active next 0 n).length ≤ j → j < n →
+        removedRep' j = oldRemovedRep j) := by
   let roundStarts' := (σ.arrs "roundStart").set round base
   let σ₁ := σ.setArr "roundStart" round base
   have rstore : Run B (.store "roundStart" (.var "round") (.var "removedCount"))
@@ -568,34 +607,16 @@ lemma recordRemoved_run {B n base round roundCap : ℕ} {σ : Env}
     (roundStarts := roundStarts') hnB hactiveB hnextB hrepB hcapacity
   have hloop := Spec.forRangeZero (B := B) "v" "n" I n 40 hnB
     (fun τ h => by rcases h with ⟨r, rr, hv, hn', hr, hc, ha, hnx, hp, hrs,
-      hrem, hremrep, hpre, hsuf, hprerep, hsufrep⟩; exact hv)
+      hrem, hremrep, hpre, hsuf, hprerep, hsufrep, htail, htailrep⟩; exact hv)
     (fun τ h => by rcases h with ⟨r, rr, hv, hn', hr, hc, ha, hnx, hp, hrs,
-      hrem, hremrep, hpre, hsuf, hprerep, hsufrep⟩; exact hn') hbody
+      hrem, hremrep, hpre, hsuf, hprerep, hsufrep, htail, htailrep⟩; exact hn') hbody
   have hI0 : I (σ₁.setVar "v" 0) := by
-    refine ⟨oldRemoved, oldRemovedRep,
-      ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-    · simp [σ₁]
-    · simp [σ₁, hn]
-    · simp [σ₁, hround]
-    · simp [σ₁, hbase]
-    · simpa [σ₁] using hactive
-    · simpa [σ₁] using hnext
-    · simpa [σ₁] using hrep
-    · simp [roundStarts', σ₁]
-    · simpa [σ₁] using hremoved
-    · simpa [σ₁] using hremovedRep
-    · intro j hj
-      rfl
-    · intro j hj
-      simp at hj
-    · constructor
-      · intro j hj
-        rfl
-      · intro j hj
-        simp at hj
+    refine ⟨oldRemoved, oldRemovedRep, ?_⟩
+    simp [I, RecordInv, σ₁, roundStarts', hn, hround, hbase, hactive,
+      hnext, hrep, hremoved, hremovedRep]
   obtain ⟨σ₃, rloop, ⟨r', rr', hv3, hn3, hr3, hc3, ha3, hnxt3, hp3,
       hrs3, hremoved3, hremovedRep3, hprefix3, hsuffix3, hprefixRep3,
-      hsuffixRep3⟩, hvn3⟩ := hloop.run hI0
+      hsuffixRep3, htail3, htailRep3⟩, hvn3⟩ := hloop.run hI0
   have hshape : recordRemoved =
       seqs [
         .store "roundStart" (.var "round") (.var "removedCount"),
@@ -606,10 +627,15 @@ lemma recordRemoved_run {B n base round roundCap : ℕ} {σ : Env}
     rw [hshape]
     exact (rstore.seq rloop).mono (by omega)
   refine ⟨σ₃, r', rr', roundStarts', rrun, ?_, hvn3, hn3,
-    hr3, hremoved3, hremovedRep3, hrs3, rfl, hprefix3, ?_, hprefixRep3, ?_⟩
+    hr3, hremoved3, hremovedRep3, hrs3, rfl, hprefix3, ?_, hprefixRep3, ?_,
+    ?_, ?_⟩
   · simpa [hvn3] using hc3
   · simpa [hvn3] using hsuffix3
   · simpa [hvn3] using hsuffixRep3
+  · intro j hj hjn
+    exact htail3 j (by simpa [hvn3] using hj) hjn
+  · intro j hj hjn
+    exact htailRep3 j (by simpa [hvn3] using hj) hjn
 
 
 end Lax235315Proofs.Construction.RecordRemovedSource

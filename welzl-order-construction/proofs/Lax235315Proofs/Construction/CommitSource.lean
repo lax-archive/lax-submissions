@@ -183,8 +183,9 @@ lemma commitTail_run {B n round : ℕ} {σ : Env} {a b nextA nextB : ℕ → ℕ
 open Lax235315Proofs.Construction.RecordRemovedSource
 
 /-- The complete literal accepted-round commit preserves old log entries,
-appends exactly the removed vertices and representatives, adopts both new
-active sets, and records both boundaries of the new log interval. -/
+appends exactly the removed vertices and representatives, preserves the
+unused log tails, adopts both new active sets, and records both boundaries of
+the new log interval. -/
 lemma commitReduction_run {B n base round : ℕ} {σ : Env}
     {activeA activeB nextA nextB rep oldRemoved oldRep : ℕ → ℕ}
     (hn : σ.vars "n" = n) (hbase : σ.vars "removedCount" = base)
@@ -216,7 +217,11 @@ lemma commitReduction_run {B n base round : ℕ} {σ : Env}
         rem (base + j) = (removedList activeA nextA 0 n).getD j 0) ∧
       (∀ j < base, remRep j = oldRep j) ∧
       (∀ j < (removedList activeA nextA 0 n).length,
-        remRep (base + j) = (removedRepList activeA nextA rep 0 n).getD j 0) := by
+        remRep (base + j) = (removedRepList activeA nextA rep 0 n).getD j 0) ∧
+      (∀ j, base + (removedList activeA nextA 0 n).length ≤ j → j < n →
+        rem j = oldRemoved j) ∧
+      (∀ j, base + (removedList activeA nextA 0 n).length ≤ j → j < n →
+        remRep j = oldRep j) := by
   have arrBound (name : String) (f : ℕ → ℕ)
       (hf : σ.arrs name = arrOf n f) : ∀ i < n, f i < B := by
     intro i hi
@@ -224,10 +229,11 @@ lemma commitReduction_run {B n base round : ℕ} {σ : Env}
     rw [hf]
     exact List.mem_of_getElem? (getElem?_arrOf f hi)
   obtain ⟨τ, rem, remRep, starts, rrec, hcount, _, htn, htr,
-    htrem, htrep, htstart, hstarts, hprefix, hsuffix, hprefixRep, hsuffixRep⟩ :=
+    htrem, htrep, htstart, hstarts, hprefix, hsuffix, hprefixRep, hsuffixRep,
+    htail, htailRep⟩ :=
     recordRemoved_run hn hround hbase ha hna hrep hrem hremRep rfl hstartRange
       hnB (by omega) (by rw [← hbase]; exact hbounded.vars _) (arrBound _ _ ha)
-      (arrBound _ _ hna) (arrBound _ _ hrep) hcapacity
+      (arrBound _ _ hna) (fun i hi _ _ => arrBound _ _ hrep i hi) hcapacity
   have hta : τ.arrs "activeA" = arrOf n activeA :=
     (rrec.frame_arr "activeA" (by decide)).trans ha
   have htb : τ.arrs "activeB" = arrOf n activeB :=
@@ -243,7 +249,8 @@ lemma commitReduction_run {B n base round : ℕ} {σ : Env}
       (by simpa [htend] using hendRange) hrB (run_preserves rrec hbounded)
   refine ⟨σ', rem, remRep, ?_, ha', hb', hround', hac'.trans htnext,
     hcount'.trans hcount, hstart'.trans (htstart.trans hstarts), ?_,
-    hrem'.trans htrem, hrep'.trans htrep, hprefix, hsuffix, hprefixRep, hsuffixRep⟩
+    hrem'.trans htrem, hrep'.trans htrep, hprefix, hsuffix, hprefixRep, hsuffixRep,
+    htail, htailRep⟩
   · rw [commitReduction_eq]
     exact (rrec.seq rtail).mono (by omega)
   · simpa [htend, hcount] using hend'
