@@ -236,4 +236,74 @@ lemma initial_round_state_after_setup_guarded_prefix
     have rcond1 := Run.ite_false (c := .skip) hnFalseTape rcond2
     exact ⟨_, by simpa [reduceAll, seqs] using rcond1⟩
 
+
+/-- Choose the canonical loop boundary once using the empty tape.  Every finite
+random tape reaches this same boundary state, with only its unread input
+replaced.  This fixed witness is the one needed by adaptive probability
+counting. -/
+lemma initial_round_state_uniform_tapes
+    {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)}
+    (hx : EncodesGraph x n G)
+    (hc : 1 ≤ c) (hn : 1 < n)
+    (hlarge : 12 * c ^ 2 * Nat.clog 2 n < n) :
+    ∃ s : RoundState c n x G,
+      s.env.vars "round" = 0 ∧
+      ∀ {T : ℕ} (ρ : Fin T → Bool),
+        ∃ σ τ : Env,
+          Run (sourceBound c x) setup
+            (initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n))
+              ((c :: x) ++ bitTape ρ)) σ
+            (40 * (x.length + Nat.clog 2 n + 1)) ∧
+          Run (sourceBound c x) guardedRoundBoundaryPrefix σ τ 100 ∧
+          withInput s.env (bitTape ρ) = τ ∧
+          (∀ {τ' k},
+            Run (sourceBound c x)
+              (.while (.lt (.var "threshold") (.var "acount")) reductionRound)
+              τ τ' k →
+            ∃ K, Run (sourceBound c x) reduceAll σ τ' K) := by
+  let emptyBits : Fin 0 → Bool := Fin.elim0
+  obtain ⟨s, σ₀, τ₀, rsetup₀, rprefix₀, _rsource₀, hin₀, hsenv₀,
+    hround₀, _continue₀⟩ :=
+    initial_round_state_after_setup_guarded_prefix hx hc hn hlarge emptyBits
+  obtain ⟨σbase, rsetupBase, _hfrontBase, hbaseInp, _hrBase, _haBase⟩ :=
+    setup_frontier_ready (c := c) hx emptyBits
+  have hsetupEq : σ₀ = σbase := run_final_eq rsetup₀ rsetupBase
+  have hσ₀inp : σ₀.inp = [] := by
+    rw [hsetupEq]
+    simpa [bitTape, emptyBits] using hbaseInp
+  have hτ₀inp : τ₀.inp = [] := by
+    calc
+      τ₀.inp = σ₀.inp := rprefix₀.frame_inp (by decide)
+      _ = [] := hσ₀inp
+  refine ⟨s, hround₀, ?_⟩
+  intro T ρ
+  obtain ⟨sρ, σρ, τρ, rsetupρ, rprefixρ, _rsourceρ, _hinρ,
+    _hsenvρ, _hroundρ, continueρ⟩ :=
+    initial_round_state_after_setup_guarded_prefix hx hc hn hlarge ρ
+  have rsetupFrame := run_appendInput rsetup₀ (bitTape ρ)
+  have hsetupStart : appendInput
+      (initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n))
+        ((c :: x) ++ bitTape emptyBits)) (bitTape ρ) =
+      initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n))
+        ((c :: x) ++ bitTape ρ) := by
+    simp [appendInput, initEnv, bitTape, emptyBits]
+  rw [hsetupStart] at rsetupFrame
+  have hσρ : σρ = appendInput σ₀ (bitTape ρ) :=
+    run_final_eq rsetupρ rsetupFrame
+  have rprefixFrame := run_appendInput rprefix₀ (bitTape ρ)
+  have rprefixρ' := rprefixρ
+  rw [hσρ] at rprefixρ'
+  have hτρ : τρ = appendInput τ₀ (bitTape ρ) :=
+    run_final_eq rprefixρ' rprefixFrame
+  have hsameBoundary : withInput s.env (bitTape ρ) = τρ := by
+    calc
+      withInput s.env (bitTape ρ) =
+          withInput (withInput τ₀ []) (bitTape ρ) := by rw [hsenv₀]
+      _ = appendInput τ₀ (bitTape ρ) := by
+        simp [withInput, appendInput, hτ₀inp]
+      _ = τρ := hτρ.symm
+  refine ⟨σρ, τρ, rsetupρ, rprefixρ, hsameBoundary, ?_⟩
+  intro τ' k hwhile
+  exact continueρ hwhile
+
 end Lax235315Proofs.Construction.InitialRoundStateSource
