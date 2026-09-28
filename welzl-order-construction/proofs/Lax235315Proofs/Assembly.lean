@@ -8,9 +8,8 @@ import Mathlib.Data.Set.Card
 import Mathlib.Tactic
 
 /-!
-Assembly of the three construction contracts into the registered Welzl-order
-algorithm statement. The runtime and correctness contracts are discharged by
-the literal source driver; the finite-tape probability contract remains open.
+Assembly of the three proved construction contracts into the registered
+Welzl-order algorithm statement.
 -/
 
 namespace Lax235315Proofs.Assembly
@@ -96,13 +95,9 @@ lemma exists_program_of_contracts
 /--
 ---
 conclusion: Lax195003.WelzlOrdersComputation.exists_nearLinearTime_randomized_welzlOrder_program
-assumptions:
-  - Lax235315.ConstructionProbability.eventually_hasSuccessProbability
 ---
-**Conditional assembly for the near-linear Welzl-order algorithm.** This proof
-assembles the construction's three independent contracts. It is
-conditional only on the finite-tape probability claim. The runtime and
-output-correctness contracts are supplied by proved source-program lemmas.
+**Near-linear Welzl-order algorithm.** This proof assembles the construction's
+three independently proved contracts for the explicit source program.
 
 # Proof strategy
 
@@ -136,7 +131,7 @@ lemma exists_nearLinearTime_randomized_welzlOrder_program :
   obtain ⟨Kc, hKc, hCorrect⟩ :=
     Lax235315Proofs.ProgramContracts.eventually_hasCorrectOutput
   obtain ⟨Kp, hKp, hProbability⟩ :=
-    Lax235315.ConstructionProbability.eventually_hasSuccessProbability
+    Lax235315Proofs.ProgramContracts.eventually_hasSuccessProbability
   let K := Kr + Kc + Kp
   have hK : 1 ≤ K := by dsimp [K]; omega
   have hKrK : Kr ≤ K := by dsimp [K]; omega

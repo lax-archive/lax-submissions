@@ -1,6 +1,9 @@
 import Lax235315Proofs.Construction.HistoryDriverSource
 import Lax235315.ConstructionRuntime
 import Lax235315.ConstructionCorrectness
+import Lax235315.ConstructionProbability
+import Lax235315Proofs.Construction.SourceProbabilityBridge
+import Lax235315Proofs.Construction.LiteralGoodDispatch
 
 namespace Lax235315Proofs.ProgramContracts
 open Lax235315.ConstructionContracts
@@ -61,5 +64,37 @@ lemma eventually_hasCorrectOutput :
   refine ⟨60001, by omega, ?_⟩
   intro K hK
   exact correctness_of_source sourceTotal sourceCorrect (by omega) (by omega)
+
+/--
+---
+conclusion: Lax235315.ConstructionProbability.eventually_hasSuccessProbability
+---
+At least two thirds of the finite random tapes make the explicit construction
+program terminate successfully.
+
+# Proof strategy
+
+For each adaptive source round, interpret its exact fresh Boolean block as
+the literal random-key input. A block outside the graph-dependent bad set
+produces a collision-free good sample, so the literal verifier accepts and
+the stored reduction history advances. The finite adaptive protocol counts
+the bad blocks with a per-round conditional bound; its bit potential fits
+within the machine tape. Good paths are coupled to actual source executions,
+including the guarded prefix, every reduction round, and terminal output.
+The source compiler transfer yields the claimed word-RAM tape count. Empty,
+singleton, and initial no-round inputs are handled separately.
+
+# Attribution
+
+The sampling and contraction argument follows Dreier and Kuske,
+arXiv:2602.14625v1. The explicit source and word-RAM semantics use
+Lax808846.
+-/
+lemma eventually_hasSuccessProbability :
+    ∃ K₀ : ℕ, 1 ≤ K₀ ∧ ∀ K : ℕ, K₀ ≤ K → HasSuccessProbability K := by
+  apply Lax235315Proofs.Construction.SourceProbabilityBridge.eventually_hasSuccessProbability_of_accepted
+  intro c n x G hx hG hc s bits hbits
+  exact (Lax235315Proofs.Construction.LiteralGoodDispatch.source_good_block_accepted
+    hx hG hc s bits hbits).1
 
 end Lax235315Proofs.ProgramContracts
