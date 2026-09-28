@@ -6,6 +6,7 @@ import Lax235315Proofs.Construction.ActiveBookkeeping
 import Lax235315Proofs.Construction.AdaptiveBitBlocks
 import Lax235315Proofs.Construction.AdaptiveFailure
 import Lax235315Proofs.Construction.AdaptiveMachineBridge
+import Lax235315Proofs.Construction.AdaptiveStateProtocol
 import Lax235315Proofs.Construction.AdaptiveTapeCounting
 import Lax235315Proofs.Construction.BitArrays
 import Lax235315Proofs.Construction.BinaryWordEquiv
@@ -14,6 +15,7 @@ import Lax235315Proofs.Construction.CertifiedBranch
 import Lax235315Proofs.Construction.CollisionDetection
 import Lax235315Proofs.Construction.CommitSource
 import Lax235315Proofs.Construction.ConcreteReconstruction
+import Lax235315Proofs.Construction.ConcreteSampleAcceptance
 import Lax235315Proofs.Construction.Correctness
 import Lax235315Proofs.Construction.CostAccounting
 import Lax235315Proofs.Construction.Crossing
@@ -55,6 +57,8 @@ import Lax235315Proofs.Construction.NeighborhoodComplexity
 import Lax235315Proofs.Construction.OrderEncoding
 import Lax235315Proofs.Construction.PackedKeys
 import Lax235315Proofs.Construction.PaperRun
+import Lax235315Proofs.Construction.PositionFailureBits
+import Lax235315Proofs.Construction.PositionFailureBounds
 import Lax235315Proofs.Construction.PartitionCompleteSource
 import Lax235315Proofs.Construction.PartitionLoopSource
 import Lax235315Proofs.Construction.PartitionRefinement
