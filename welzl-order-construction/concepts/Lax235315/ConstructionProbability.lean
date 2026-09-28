@@ -11,10 +11,10 @@ reach the final halt with the success flag set.
 
 # Formalization notes
 
-This is an open probability obligation for the explicit program, not for an
-ideal uniform-sampling oracle. Its proof must account for collisions of the
-finite random keys, conditional sampling at every adaptive round, and the
-available tape length. Output quality is proved separately.
+This probability claim concerns the explicit program and its finite random
+keys. The proof accounts for key collisions, conditional sampling at every
+adaptive round, and the available tape length. Output quality is proved
+separately.
 -/
 
 namespace Lax235315.ConstructionProbability
