@@ -109,6 +109,7 @@ import Lax235315Proofs.Construction.SortedKeySampleBridge
 import Lax235315Proofs.Construction.SourceBounds
 import Lax235315Proofs.Construction.StoredHistory
 import Lax235315Proofs.Construction.TapeBlocks
+import Lax235315Proofs.Construction.TapeKeyAgreement
 import Lax235315Proofs.Construction.TracePartitions
 import Lax235315Proofs.Construction.VerifyNearSource
 import Lax235315Proofs.Construction.WelzlLog
