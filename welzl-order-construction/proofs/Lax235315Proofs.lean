@@ -25,6 +25,7 @@ import Lax235315Proofs.Construction.FiniteRandomKeys
 import Lax235315Proofs.Construction.FrontierFrames
 import Lax235315Proofs.Construction.GraphNeighborhood
 import Lax235315Proofs.Construction.GraphSampling
+import Lax235315Proofs.Construction.GraphAdaptiveProtocol
 import Lax235315Proofs.Construction.GoodSampleCertificate
 import Lax235315Proofs.Construction.GoodRoundBits
 import Lax235315Proofs.Construction.GuardedArithmetic
