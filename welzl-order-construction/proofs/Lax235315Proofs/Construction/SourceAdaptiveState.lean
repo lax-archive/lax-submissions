@@ -711,4 +711,27 @@ lemma sourceGoodTapes_of_good_reduceAll {c n T Cs Cr : ℕ}
   · simpa only [welzlCom, seqs] using hstep
   · exact hgood
 
+/-- When the initial active count already meets the stopping threshold, the
+source guard succeeds on every tape; the compiler transfer gives the machine
+probability bound without invoking the adaptive protocol. -/
+lemma machine_probability_of_small_guard {K c n w : ℕ}
+    {x : List ℕ} {G : SimpleGraph (Fin n)}
+    (hK : 60001 ≤ K) (hvalid : ValidInput K c n w G x)
+    (hguard : n ≤ 12 * c ^ 2 * Nat.clog 2 n) :
+    (2 / 3 : ℚ) * 2 ^ timeBudget K n x ≤
+      ((goodTapes w c x (timeBudget K n x)).ncard : ℚ) := by
+  have hT : sourceCost 6000 n x ≤ timeBudget K n x :=
+    sourceCost_le_timeBudget (by omega)
+  have hsource := guard_sourceGoodTapes_ncard
+    hvalid.2.2.1 hvalid.2.1 hvalid.1 hT hguard
+  have hsub := sourceGoodTapes_subset (by omega : 2500 ≤ K) hvalid
+    (cost_lift (by omega : 10 * 6000 + 1 ≤ K))
+  have hcard := Set.ncard_le_ncard hsub
+  rw [hsource] at hcard
+  have hcard' : (2 ^ timeBudget K n x : ℚ) ≤
+      ((goodTapes w c x (timeBudget K n x)).ncard : ℚ) := by
+    exact_mod_cast hcard
+  have hbase : (0 : ℚ) ≤ 2 ^ timeBudget K n x := by positivity
+  nlinarith
+
 end Lax235315Proofs.Construction.SourceAdaptiveState
