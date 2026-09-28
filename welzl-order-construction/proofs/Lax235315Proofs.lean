@@ -104,6 +104,7 @@ import Lax235315Proofs.Construction.SampleCountSource
 import Lax235315Proofs.Construction.Sampling
 import Lax235315Proofs.Construction.SamplingFrontier
 import Lax235315Proofs.Construction.SamplingPrefixSource
+import Lax235315Proofs.Construction.SampledGoodBranch
 import Lax235315Proofs.Construction.ScanIndexEquiv
 import Lax235315Proofs.Construction.ScanSampleTransport
 import Lax235315Proofs.Construction.SmallInputSource
