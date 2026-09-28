@@ -277,6 +277,36 @@ lemma nextState_shrinks {c n : ℕ} {x : List ℕ}
     rw [← haccepted.1.1.activeCount, ← s.frontier.activeCount]
     exact haccepted.1.2.2.1
 
+lemma nextState_some_env {c n : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)}
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c) (s : RoundState c n x G)
+    (bits : Fin (sourceWidth (some s)) → Bool)
+    (s' : RoundState c n x G)
+    (hnext : nextState hx hG hc (some s) bits = some s') :
+    s'.env = roundOutput s hx hG hc bits := by
+  classical
+  dsimp [nextState] at hnext
+  split_ifs at hnext with haccepted
+  · cases hnext
+    rfl
+
+lemma nextState_stops_after_accepted {c n : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)}
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c) (s : RoundState c n x G)
+    (bits : Fin (sourceWidth (some s)) → Bool)
+    (haccept : Accepted s (roundOutput s hx hG hc bits))
+    (hnext : nextState hx hG hc (some s) bits = none) :
+    (roundOutput s hx hG hc bits).vars "acount" ≤
+      12 * c ^ 2 * Nat.clog 2 n := by
+  classical
+  dsimp [nextState] at hnext
+  split_ifs at hnext with hcontinue
+  exact Nat.le_of_not_gt (fun h => hcontinue ⟨haccept, h⟩)
+
 noncomputable def sourceBad {c n : ℕ} {x : List ℕ}
     {G : SimpleGraph (Fin n)} (hL : 0 < Nat.clog 2 n) :
     ∀ state : Option (RoundState c n x G), Finset (Fin (sourceWidth state) → Bool)
