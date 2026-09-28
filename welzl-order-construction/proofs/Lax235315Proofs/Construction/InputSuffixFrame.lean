@@ -71,4 +71,13 @@ lemma run_appendInput {B K : ℕ} {c : Com} {σ σ' : Env}
   obtain ⟨k, hk, hstep⟩ := h
   exact ⟨k, hk, bigStepB_appendInput hstep tail⟩
 
+/-- A command run that reads no elements from an empty input can be reused
+unchanged on any input tape; the tape is preserved as the suffix. -/
+lemma run_on_any_input_of_empty {B K : ℕ} {c : Com} {σ σ' : Env}
+    (h : Run B c σ σ' K) (hin : σ.inp = []) (hout : σ'.inp = [])
+    (tail : List ℕ) :
+    Run B c {σ with inp := tail} {σ' with inp := tail} K := by
+  have h' := run_appendInput h tail
+  simpa [appendInput, hin, hout] using h'
+
 end Lax235315Proofs.Construction.InputSuffixFrame
