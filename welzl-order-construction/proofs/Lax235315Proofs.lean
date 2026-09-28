@@ -130,3 +130,4 @@ import Lax235315Proofs.ProgramContracts
 import Lax235315Proofs.ReconstructionBridge
 import Lax235315Proofs.Construction.PairedReductionRound
 import Lax235315Proofs.Construction.SourceGoodPathCoupling
+import Lax235315Proofs.Construction.SourceProbabilityBridge
