@@ -1,4 +1,5 @@
 import Lax235315Proofs.Construction.PositionFailureBits
+import Lax235315Proofs.Construction.ScanSampleTransport
 import Mathlib.Tactic
 
 /-! A bit block outside the counted failure event has distinct keys and a
@@ -12,6 +13,9 @@ open Lax235315Proofs.Construction.KeyFailureBounds
 open Lax235315Proofs.Construction.KeySamplingBounds
 open Lax235315Proofs.Construction.KeySampling
 open Lax235315Proofs.Construction.FiniteRandomKeys
+open Lax235315Proofs.Construction.ScanSampleTransport
+open Lax235315Proofs.Construction.MarkingMath
+open Lax235315Proofs.Construction.NearCounterCorrectness
 
 noncomputable section
 
@@ -52,6 +56,26 @@ lemma good_assignment_of_not_badRoundBits (a L s : ℕ) (hL : 0 < L)
   refine ⟨(⟨roundAssignmentEquiv a L hL ρ, hinj⟩ :
     KeyInjection (Fin a) ((2 ^ L) ^ 8)), ?_, rfl⟩
   simp [badInjections, hsample]
+
+/-- After relabeling positions by the literal active scan, a good bit block
+has a fixed-size active graph sample outside the graph's bad family. -/
+lemma good_graph_sample_of_not_badRoundBits
+    {n L s : ℕ} (active : ℕ → ℕ) (hL : 0 < L)
+    (bad : Finset (Finset (Fin n)))
+    (ρ : Fin (((activeVertices n active).card * 8) * L) → Bool)
+    (hs : s ≤ (activeVertices n active).card)
+    (hgood : ρ ∉ badRoundBits (activeVertices n active).card L s hL
+      (badPositionSamples active n bad)) :
+    ∃ f : KeyInjection (Fin (activeVertices n active).card) ((2 ^ L) ^ 8),
+      f.1 = roundAssignmentEquiv (activeVertices n active).card L hL ρ ∧
+      let W := liftSample active n (keySample f s)
+      W ⊆ activeFinset active ∧ W.card = s ∧ W ∉ bad := by
+  obtain ⟨f, hf, hnotbad⟩ := good_assignment_of_not_badRoundBits
+    (activeVertices n active).card L s hL (badPositionSamples active n bad) ρ hgood
+  refine ⟨f, hf, liftSample_subset_active active n _, ?_, ?_⟩
+  · rw [liftSample_card]
+    exact card_keySample f (by simpa using hs)
+  · simpa [badPositionSamples] using hnotbad
 
 end
 
