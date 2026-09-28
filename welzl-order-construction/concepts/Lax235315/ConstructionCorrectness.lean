@@ -12,9 +12,10 @@ vertex exactly once, in an order crossed at most
 
 # Formalization notes
 
-This is an open bridge from concrete machine execution to the deterministic
-contraction and reconstruction argument. No probability conclusion is assumed
-or asserted. Empty and singleton graphs are included in the contract.
+The annotated proof in `Lax235315Proofs.ProgramContracts` bridges concrete
+machine execution to the deterministic contraction and reconstruction
+argument. No probability conclusion is assumed or asserted. Empty and
+singleton graphs are included in the contract.
 -/
 
 namespace Lax235315.ConstructionCorrectness

@@ -11,7 +11,8 @@ K(|x|+1)(ceil(log₂ n)+1) steps, including unsuccessful random tapes.
 
 # Formalization notes
 
-This is an open implementation obligation for the explicit program.
+This implementation obligation is discharged by the annotated proof in
+`Lax235315Proofs.ProgramContracts` for the explicit program.
 It includes input reading, finite-bit sampling, the guarded arithmetic,
 partition refinement, near-twin checking and reconstruction. Source-level
 cost estimates alone do not discharge the registered word-RAM step bound.

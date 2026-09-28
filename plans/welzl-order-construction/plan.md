@@ -138,7 +138,8 @@ claims. The paper's graph theorem is 1.4 in this supplied version.
   event, conditional on successful source execution outside that failure set.
 
 All these are supporting lemmas. The only theorem concepts remain the same
-three main statements, and all three are still open.
+three main statements. The runtime and correctness statements were discharged
+on 2026-09-28; the probability statement remains open.
 
 ## Further checked integration (2026-09-27)
 
@@ -208,15 +209,14 @@ three main statements, and all three are still open.
 
 ## Next concrete leaves
 
-1. Strengthen accepted-round postconditions and the loop invariant with exact
-   reconstruction history. The completed certificate currently exposes only
-   `Candidate` to the driver; preserve its concrete partitions, verified near
-   bounds, and deletion-order `Reduction` instead of discarding them. Append
-   each exact stored slice and retain earlier intervals. Include valid indices
-   in all log cells and the zero-initialized unused tails.
-2. Derive `LoggedRestorations`, full enumeration, and the graph crossing bound
-   at loop exit. Compose finish with `setup_reduceAll_run`, including the
-   rejected natural-order path, to prove `SourceTotal` and `SourceCorrect`.
+1. **Completed 2026-09-28.** `RecordedCommit` preserves each certificate's
+   concrete partitions and appends its exact deletion slice and representative
+   values to `StoredHistory`. `HistoryRoundSource` and `HistoryLoopSource` carry
+   that history through accepted rounds and preserve the rejected paths.
+2. **Completed 2026-09-28.** `HistoryDriverSource` composes setup, the loop,
+   terminal reconstruction, and the rejected natural-order path, proving
+   `SourceTotal 6000` and `SourceCorrect 6000`. `ProgramContracts` transfers
+   those results to the registered machine runtime and correctness claims.
 3. Identify concrete adaptive key blocks and rejected samples with the finite
    counting model. Join row-major tape digits to `roundAssignmentEquiv`, and
    transport the actual sorted prefix through the active scan enumeration to
@@ -225,8 +225,10 @@ three main statements, and all three are still open.
    history-dependent block widths, the now-proved initial tape sufficiency,
    and unused-suffix counting to prove `SourceProbability`. The numeric
    real-to-rational seam is closed by `RationalFailureBounds`.
-4. Discharge the three contracts and rerun the dependency audit. Only then is
-   the original archive claim solved.
+4. The runtime and correctness contracts are discharged by
+   `ProgramContracts`; the assembly now depends only on the probability
+   contract. Discharge that last contract and rerun the dependency audit to
+   solve the original archive claim.
 
 ## Validated checkpoint
 
