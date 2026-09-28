@@ -26,6 +26,7 @@ import Lax235315Proofs.Construction.FrontierFrames
 import Lax235315Proofs.Construction.GraphNeighborhood
 import Lax235315Proofs.Construction.GraphSampling
 import Lax235315Proofs.Construction.GoodSampleCertificate
+import Lax235315Proofs.Construction.GoodRoundBits
 import Lax235315Proofs.Construction.GuardedArithmetic
 import Lax235315Proofs.Construction.GuardedDriverSource
 import Lax235315Proofs.Construction.HistoryDriverSource
@@ -89,6 +90,7 @@ import Lax235315Proofs.Construction.RoundInvariant
 import Lax235315Proofs.Construction.RoundPartitionSource
 import Lax235315Proofs.Construction.RoundBitReader
 import Lax235315Proofs.Construction.RoundPotential
+import Lax235315Proofs.Construction.RoundPrefixDeterminism
 import Lax235315Proofs.Construction.RoundSamplePartitionSource
 import Lax235315Proofs.Construction.RoundVerifySource
 import Lax235315Proofs.Construction.SampleCountSource
