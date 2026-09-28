@@ -41,7 +41,8 @@ lemma reduceAll_run_stored {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)} 
     (hreserve : 24 * Nat.clog 2 n * n ≤ σ.inp.length) :
     ∃ τ, Run (sourceBound c x) reduceAll σ τ
         (5500 * (x.length + 1) * (Nat.clog 2 n + 1)) ∧
-      HistoryDriverPost (sourceBound c x) c n x G τ := by
+      HistoryDriverPost (sourceBound c x) c n x G τ ∧
+      (n / c ^ 2 < 12 * Nat.clog 2 n → τ.vars "good" = 1) := by
   let B := sourceBound c x
   have hKbase : 1 ≤ (x.length + 1) * (Nat.clog 2 n + 1) :=
     Nat.succ_le_of_lt (Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _))
@@ -57,7 +58,8 @@ lemma reduceAll_run_stored {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)} 
   by_cases hsmalln : n < 2
   · have ht : (Cond.lt (.var "n") (.lit 2)).evalB B σ = some true := by
       rw [hnTest]; simp [hsmalln]
-    refine ⟨σ, ?_, ⟨h.workspace, Or.inl h, ?_⟩, fun _ => ⟨hstore⟩⟩
+    refine ⟨σ, ?_, (⟨⟨h.workspace, Or.inl h, ?_⟩,
+      fun _ => ⟨hstore⟩⟩ : HistoryDriverPost _ _ _ _ _ σ), fun _ => h.success⟩
     · exact (Run.ite_true ht Run.skip).mono (by
         simp only [Cond.size, Expr.size]; nlinarith)
     · intro hn; omega
@@ -72,7 +74,8 @@ lemma reduceAll_run_stored {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)} 
   by_cases hquot : n / c < c
   · have ht : (Cond.lt (.div (.var "n") (.var "c")) (.var "c")).evalB B σ = some true := by
       rw [hquotTest]; simp [Bop.apply, hquot]
-    refine ⟨σ, ?_, ⟨h.workspace, Or.inl h, ?_⟩, fun _ => ⟨hstore⟩⟩
+    refine ⟨σ, ?_, (⟨⟨h.workspace, Or.inl h, ?_⟩,
+      fun _ => ⟨hstore⟩⟩ : HistoryDriverPost _ _ _ _ _ σ), fun _ => h.success⟩
     · exact (Run.ite_false hnFalse (Run.ite_false hcFalse
         (Run.ite_true ht Run.skip))).mono (by norm_num [Cond.size, Expr.size]; nlinarith)
     · intro _; rw [hacount]; exact initial_count_le_threshold_of_quotient hc hn hquot
@@ -103,7 +106,8 @@ lemma reduceAll_run_stored {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)} 
   · have ht : (Cond.lt (.div (.var "n") (.var "csq"))
         (.mul (.lit 12) (.var "L"))).evalB B σ₁ = some true := by
       rw [hsTest]; simp [Bop.apply, hsquot]
-    refine ⟨σ₁, ?_, ⟨hf₁.workspace, Or.inl hf₁, ?_⟩, fun _ => ⟨hs₁⟩⟩
+    refine ⟨σ₁, ?_, (⟨⟨hf₁.workspace, Or.inl hf₁, ?_⟩,
+      fun _ => ⟨hs₁⟩⟩ : HistoryDriverPost _ _ _ _ _ σ₁), fun _ => hf₁.success⟩
     · exact (Run.ite_false hnFalse (Run.ite_false hcFalse
         (Run.ite_false hquotFalse (r₁.seq (Run.ite_true ht Run.skip))))).mono
         (by norm_num [Cond.size, Expr.size]; nlinarith)
@@ -149,7 +153,8 @@ lemma reduceAll_run_stored {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)} 
   obtain ⟨τ, rloop, hpost, hsmall⟩ := reductionLoop_run_initial_stored hx hG hloopStored hc hn
     (by simp [σ₃, σ₂, σ₁, hround]) (by simp [σ₃, σ₂, σ₁, hacount])
     hqB htwonB hedgeB hdenomB hboundB
-  refine ⟨τ, ?_, ⟨hpost.workspace, ?_, fun _ => hsmall⟩, ?_⟩
+  refine ⟨τ, ?_, (⟨⟨hpost.workspace, ?_, fun _ => hsmall⟩,
+    ?_⟩ : HistoryDriverPost _ _ _ _ _ τ), ?_⟩
   · exact (Run.ite_false hnFalse (Run.ite_false hcFalse
       (Run.ite_false hquotFalse (r₁.seq (Run.ite_false hsFalse
         (r₂.seq (r₃.seq rloop))))))).mono (by
@@ -157,6 +162,7 @@ lemma reduceAll_run_stored {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)} 
       nlinarith)
   · exact hpost.status.imp And.left id
   · intro hg; simpa only [hboundeq] using hpost.history hg
+  · exact fun hsmallguard => (hsquot hsmallguard).elim
 
 /-- Separate proofs of one deterministic source run have the same final state. -/
 lemma run_final_eq {B C C' : ℕ} {cmd : Com} {σ τ υ : Env}
@@ -175,10 +181,11 @@ lemma welzlCom_run_correct {c n T : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)
       (initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n))
         ((c :: x) ++ bitTape ρ)) τ (sourceCost 6000 n x) ∧
       (τ.vars "good" = 1 →
-        EncodesGraphWelzlOrder G 1 (12 * c ^ 2 * (Nat.clog 2 n) ^ 2) τ.out) := by
+        EncodesGraphWelzlOrder G 1 (12 * c ^ 2 * (Nat.clog 2 n) ^ 2) τ.out) ∧
+      (n / c ^ 2 < 12 * Nat.clog 2 n → τ.vars "good" = 1) := by
   by_cases hnsmall : n ≤ 1
   · obtain ⟨τ, hr, hg, ho⟩ := SmallInputSource.smallInput_welzlCom_run hx hc hnsmall ρ
-    refine ⟨τ, hr, fun _ => ?_⟩
+    refine ⟨τ, hr, (fun _ => ?_), fun _ => hg⟩
     simpa [Nat.clog_of_right_le_one hnsmall] using ho
   have hn : 1 < n := by omega
   obtain ⟨σ, rsetup, hfront, hin, hround, hacount⟩ := setup_frontier_ready (c := c) hx ρ
@@ -189,12 +196,13 @@ lemma welzlCom_run_correct {c n T : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)
   have hreserve : 24 * Nat.clog 2 n * n ≤ σ.inp.length := by
     rw [hin]
     simpa [bitTape] using initial_tape_reserve hx (by omega : 24 ≤ 6000) hT
-  obtain ⟨τ, rreduce, hpost⟩ := reduceAll_run_stored hx hG hfront hstore hc hround hacount hreserve
+  obtain ⟨τ, rreduce, hpost, hguardgood⟩ :=
+    reduceAll_run_stored hx hG hfront hstore hc hround hacount hreserve
   have hnB : n < sourceBound c x := by
     simpa only [hpost.workspace.vertices] using hpost.workspace.bounded.vars "n"
   obtain ⟨υ, rfinish, hgood, hinp, hcorrect⟩ :=
     finish_run hpost.toDriverPost hc hn hnB hpost.history
-  refine ⟨υ, ?_, hcorrect⟩
+  refine ⟨υ, ?_, hcorrect, fun hguard => hgood.trans (hguardgood hguard)⟩
   have hnlen : n + 1 ≤ x.length + 1 := by have := hx.length_eq; omega
   have hcost : 40 * (x.length + Nat.clog 2 n + 1) +
       (5500 * (x.length + 1) * (Nat.clog 2 n + 1) + 104 * (n + 1)) ≤
@@ -206,17 +214,38 @@ lemma welzlCom_run_correct {c n T : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)
 /-- Total execution of the literal source program, on all valid inputs. -/
 lemma sourceTotal : SourceTotal 6000 := by
   intro c n G x h T hT ρ
-  obtain ⟨τ, hr, _⟩ := welzlCom_run_correct h.2.2 h.2.1 h.1 hT ρ
+  obtain ⟨τ, hr, _, _⟩ := welzlCom_run_correct h.2.2 h.2.1 h.1 hT ρ
   exact ⟨τ, hr⟩
 
 /-- Determinism transfers the constructed output proof to every successful
 source execution appearing in the public correctness contract. -/
 lemma sourceCorrect : SourceCorrect 6000 := by
   intro c n G x h T hT ρ σ hr hg
-  obtain ⟨τ, hrun, hcorrect⟩ := welzlCom_run_correct h.2.2 h.2.1 h.1 hT ρ
+  obtain ⟨τ, hrun, hcorrect, _⟩ := welzlCom_run_correct h.2.2 h.2.1 h.1 hT ρ
   have heq := run_final_eq hr hrun
   subst τ
   exact hcorrect hg
 
-end Lax235315Proofs.Construction.HistoryDriverSource
+/-- The source's quotient guard skips randomized rounds. Consequently every
+finite random tape succeeds on this branch. -/
+lemma guard_sourceGoodTapes_eq_univ {c n T : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)} (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c) (hT : sourceCost 6000 n x ≤ T)
+    (hguard : n / c ^ 2 < 12 * Nat.clog 2 n) :
+    sourceGoodTapes c n x (sourceCost 6000 n x) T = Set.univ := by
+  apply Set.eq_univ_of_forall
+  intro ρ
+  obtain ⟨τ, hr, _, hgood⟩ := welzlCom_run_correct hx hG hc hT ρ
+  exact ⟨τ, hr, hgood hguard⟩
 
+lemma guard_sourceGoodTapes_ncard {c n T : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)} (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c) (hT : sourceCost 6000 n x ≤ T)
+    (hguard : n / c ^ 2 < 12 * Nat.clog 2 n) :
+    (sourceGoodTapes c n x (sourceCost 6000 n x) T).ncard = 2 ^ T := by
+  rw [guard_sourceGoodTapes_eq_univ hx hG hc hT hguard]
+  simp
+
+end Lax235315Proofs.Construction.HistoryDriverSource
