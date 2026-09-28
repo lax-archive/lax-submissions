@@ -57,13 +57,12 @@ lemma sortedPositionPrefix_eq_keySample
     ⟨roundAssignmentEquiv a L hL ρ, hinj⟩ hcomplete hnodup hsorted hs
 
 /-- If the literal radix output is collision-free, its key order transfers to
-the source scan positions. Mapping the abstract key sample back through the
-scan equivalence therefore yields precisely the literal sampled prefix.
+the source scan positions. The position list is built canonically by
+attaching each sorted vertex and applying the inverse scan equivalence.
 
-`hpositionKey` is the concrete packed-key agreement: it follows from
+`hactiveKey` is the concrete packed-key agreement: it follows from
 `literal_packedKey_eq_roundAssignment` when `digits` are the eight slices
-read by `ReadKeys`. `hpositionVertex` says that the position list is the
-inverse image, under `ScanIndexEquiv`, of the vertices in the radix output. -/
+read by `ReadKeys`. -/
 lemma radixPrefix_eq_liftedKeySample
     {n L s : ℕ} {active : ℕ → ℕ}
     (hL : 0 < L) (hn : 1 < n) (hclog : Nat.clog 2 n = L)
@@ -77,23 +76,21 @@ lemma radixPrefix_eq_liftedKeySample
     (hkeyBound : ∀ d v, v ∈ scanList active 0 n →
       digits d v < 2 ^ Nat.clog 2 n)
     (hcollision : ¬ HasAdjacentEqualDigits digits sorted)
-    {positions : List (Fin (activeVertices n active).card)}
-    (hcomplete : ∀ i, i ∈ positions) (hnodup : positions.Nodup)
-    (hlen : positions.length = sorted.length)
-    (hpositionVertex : ∀ i, (hi : i < sorted.length) →
-      sorted[i] = (scanIndexEquiv active n
-        (positions.get ⟨i, by simpa [hlen] using hi⟩)).val.val)
-    (hpositionKey : ∀ i, (hi : i < sorted.length) →
+    (hactiveKey : ∀ v : ActiveVertex n active,
       (roundAssignmentEquiv (activeVertices n active).card L hL ρ
-        (positions.get ⟨i, by simpa [hlen] using hi⟩)).val =
-        packedKey (2 ^ L) digits sorted[i])
+        ((scanIndexEquiv active n).symm v)).val =
+        packedKey (2 ^ L) digits v.val.val)
     (hs : s ≤ sorted.length) :
-    (liftSample active n
+    ∃ positions : List (Fin (activeVertices n active).card),
+      (∀ i : Fin (activeVertices n active).card, i ∈ positions) ∧
+      positions.Nodup ∧ positions.length = sorted.length ∧
+      positions.map (fun i => (scanIndexEquiv active n i).val.val) = sorted ∧
+      liftSample active n
         (keySample ⟨roundAssignmentEquiv
           (activeVertices n active).card L hL ρ, hinj⟩ s) =
-      Finset.map (scanVertex active n) ((positions.take s).toFinset)) ∧
-    sorted.take s = (positions.take s).map
-      (fun i => (scanIndexEquiv active n i).val.val) := by
+        Finset.map (scanVertex active n) ((positions.take s).toFinset) ∧
+      sorted.take s = (positions.take s).map
+        (fun i => (scanIndexEquiv active n i).val.val) := by
   let q := 2 ^ Nat.clog 2 n
   let f : KeyInjection (Fin (activeVertices n active).card) ((2 ^ L) ^ 8) :=
     ⟨roundAssignmentEquiv (activeVertices n active).card L hL ρ, hinj⟩
@@ -106,35 +103,85 @@ lemma radixPrefix_eq_liftedKeySample
     rw [hsortedDef]
     exact radixSort8_perm hverticesNodup hkeyBound
   have hsortedNodup : sorted.Nodup := hperm.symm.nodup hverticesNodup
+  have hvalidSorted : ∀ v ∈ sorted, v < n ∧ active v = 1 := by
+    intro v hv
+    have hscan := mem_scanList.mp (hperm.subset hv)
+    exact ⟨by omega, hscan.2.2⟩
   have hradix : sorted.Pairwise (LexOn digits digitOrder) := by
     rw [hsortedDef]
     exact radixSort8_pairwise
   have hstrict := pairwise_packedKey_lt_of_noAdjacent hq hbound hsortedNodup
     hradix hcollision
+  let posOf : ActiveVertex n active → Fin (activeVertices n active).card :=
+    (scanIndexEquiv active n).symm
+  let positions : List (Fin (activeVertices n active).card) :=
+    sorted.attach.map fun v => posOf
+      ⟨⟨v.val, (hvalidSorted v.val v.property).1⟩,
+        (hvalidSorted v.val v.property).2⟩
+  have hpositionsLength : positions.length = sorted.length := by
+    simp [positions]
+  have hpositionsNodup : positions.Nodup := by
+    apply List.Nodup.map (f := fun v : {w // w ∈ sorted} => posOf
+      ⟨⟨v.val, (hvalidSorted v.val v.property).1⟩,
+        (hvalidSorted v.val v.property).2⟩)
+    · intro v w hvw
+      apply Subtype.ext
+      have hinv := (Equiv.injective (scanIndexEquiv active n).symm) hvw
+      exact congrArg (fun z : ActiveVertex n active => z.val.val) hinv
+    · exact List.nodup_attach.mpr hsortedNodup
+  have hpositionsComplete :
+      ∀ i : Fin (activeVertices n active).card, i ∈ positions := by
+    intro i
+    let v := scanIndexEquiv active n i
+    have hscan : v.val.val ∈ scanList active 0 n := by
+      rw [mem_scanList]
+      exact ⟨by omega, by omega, v.property⟩
+    have hsortedMem : v.val.val ∈ sorted := hperm.symm.subset hscan
+    apply List.mem_map.mpr
+    refine ⟨⟨v.val.val, hsortedMem⟩, List.mem_attach _ _, ?_⟩
+    change posOf v = i
+    exact Equiv.symm_apply_apply (scanIndexEquiv active n) i
+  have hpositionsVertex :
+      positions.map (fun i => (scanIndexEquiv active n i).val.val) = sorted := by
+    simp [positions, posOf, List.map_map]
+  have hpositionKey : ∀ i, (hi : i < sorted.length) →
+      (roundAssignmentEquiv (activeVertices n active).card L hL ρ
+        (positions.get ⟨i, by simpa [hpositionsLength] using hi⟩)).val =
+        packedKey q digits sorted[i] := by
+    intro i hi
+    have hv := hvalidSorted sorted[i] (List.getElem_mem hi)
+    let v : ActiveVertex n active := ⟨⟨sorted[i], hv.1⟩, hv.2⟩
+    have hp : positions.get ⟨i, by simpa [hpositionsLength] using hi⟩ = posOf v := by
+      simp [positions, posOf, v]
+    rw [hp]
+    simpa [q, hqL] using hactiveKey v
   have hpositionsSorted : positions.Pairwise (fun i j =>
       (roundAssignmentEquiv (activeVertices n active).card L hL ρ i).val <
         (roundAssignmentEquiv (activeVertices n active).card L hL ρ j).val) := by
     rw [List.pairwise_iff_getElem]
     intro i j hi hj hij
-    have hi' : i < sorted.length := by simpa [hlen] using hi
-    have hj' : j < sorted.length := by simpa [hlen] using hj
+    have hi' : i < sorted.length := by simpa [hpositionsLength] using hi
+    have hj' : j < sorted.length := by simpa [hpositionsLength] using hj
     change (roundAssignmentEquiv (activeVertices n active).card L hL ρ
         (positions.get ⟨i, hi⟩)).val <
       (roundAssignmentEquiv (activeVertices n active).card L hL ρ
         (positions.get ⟨j, hj⟩)).val
-    rw [hpositionKey i hi', hpositionKey j hj', ← hqL]
+    rw [hpositionKey i hi', hpositionKey j hj']
     exact (List.pairwise_iff_getElem.mp hstrict) i j hi' hj' hij
   have hkeySample := sortedPositionPrefix_eq_keySample hL ρ hinj
-    hcomplete hnodup hpositionsSorted (by simpa [hlen] using hs)
-  constructor
+    hpositionsComplete hpositionsNodup hpositionsSorted
+      (by simpa [hpositionsLength] using hs)
+  have hprefix : sorted.take s = (positions.take s).map
+      (fun i => (scanIndexEquiv active n i).val.val) := by
+    calc
+      sorted.take s = (positions.map
+          (fun i => (scanIndexEquiv active n i).val.val)).take s := by
+            rw [hpositionsVertex]
+      _ = (positions.take s).map
+          (fun i => (scanIndexEquiv active n i).val.val) := List.map_take.symm
+  refine ⟨positions, hpositionsComplete, hpositionsNodup, hpositionsLength,
+    hpositionsVertex, ?_, hprefix⟩
   · rw [hkeySample]
     rfl
-  · apply List.ext_getElem
-    · simp [List.length_take, Nat.min_eq_left hs, hlen]
-    · intro i hi₁ hi₂
-      have hi' := hi₁
-      rw [List.length_take] at hi'
-      have hi : i < sorted.length := hi'.trans_le (Nat.min_le_right _ _)
-      simpa [List.getElem_take, List.getElem_map] using hpositionVertex i hi
 
 end Lax235315Proofs.Construction.SortedKeySampleBridge
