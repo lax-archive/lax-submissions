@@ -9,6 +9,7 @@ namespace Lax235315Proofs.Construction.RoundPrefixDeterminism
 
 open Lax235315Proofs.Construction.ReadKeys
 open Lax235315Proofs.Construction.RadixMath
+open Lax235315Proofs.Construction.CollisionDetection
 open Lax235315Proofs.Construction.TapeBlocks
 
 private lemma take_drop_block_eq {α : Type*} {s t : List α} {q off len : ℕ}
@@ -70,9 +71,62 @@ lemma filledKey_eq_of_shared_prefix
   · simp [filledKey, hi, hbits i hi.1]
   · simp [filledKey, hi]
 
+/-- The full radix-sorted scan is determined by the consumed source prefix. -/
+lemma sorted_eq_of_shared_prefix
+    {n L q : ℕ} {active : ℕ → ℕ} {s t : List ℕ}
+    {original : Fin 8 → ℕ → ℕ}
+    (hp : s.take (8 * L * (scanList active 0 n).length) =
+      t.take (8 * L * (scanList active 0 n).length)) :
+    radixSort8 q (filledKey original active (scanTapeBits active L s) n)
+      (scanList active 0 n) =
+    radixSort8 q (filledKey original active (scanTapeBits active L t) n)
+      (scanList active 0 n) := by
+  have hfilled := filledKey_eq_of_shared_prefix
+    (n := n) (L := L) (active := active) (s := s) (t := t)
+    (original := original) hp
+  rw [hfilled]
+
+/-- Collision detection on the sorted scan is also determined by the
+consumed source prefix. -/
+lemma sortedCollision_eq_of_shared_prefix
+    {n L q : ℕ} {active : ℕ → ℕ} {s t : List ℕ}
+    {original : Fin 8 → ℕ → ℕ}
+    (hp : s.take (8 * L * (scanList active 0 n).length) =
+      t.take (8 * L * (scanList active 0 n).length)) :
+    HasAdjacentEqualDigits (filledKey original active (scanTapeBits active L s) n)
+      (radixSort8 q (filledKey original active (scanTapeBits active L s) n)
+        (scanList active 0 n)) =
+    HasAdjacentEqualDigits (filledKey original active (scanTapeBits active L t) n)
+      (radixSort8 q (filledKey original active (scanTapeBits active L t) n)
+        (scanList active 0 n)) := by
+  have hfilled := filledKey_eq_of_shared_prefix
+    (n := n) (L := L) (active := active) (s := s) (t := t)
+    (original := original) hp
+  have hsorted := sorted_eq_of_shared_prefix
+    (n := n) (L := L) (q := q) (active := active) (s := s) (t := t)
+    (original := original) hp
+  rw [hfilled]
+
+/-- The literal sorted sample prefix selected by the sampling source is
+identical for any two tapes with a common consumed prefix. -/
+lemma sortedPrefix_eq_of_shared_prefix
+    {n L q sampleCount : ℕ} {active : ℕ → ℕ} {s t : List ℕ}
+    {original : Fin 8 → ℕ → ℕ}
+    (hp : s.take (8 * L * (scanList active 0 n).length) =
+      t.take (8 * L * (scanList active 0 n).length)) :
+    (radixSort8 q (filledKey original active (scanTapeBits active L s) n)
+      (scanList active 0 n)).take sampleCount =
+    (radixSort8 q (filledKey original active (scanTapeBits active L t) n)
+      (scanList active 0 n)).take sampleCount := by
+  have hsorted := sorted_eq_of_shared_prefix
+    (n := n) (L := L) (q := q) (active := active) (s := s) (t := t)
+    (original := original) hp
+  rw [hsorted]
+
 /-- The literal sorted sample selected by the sampling source is identical
-for any two tapes with a common consumed prefix. This is the sample-selection
-interface used to make the next reduction decision depend only on fresh bits. -/
+as a finite set for any two tapes with a common consumed prefix. This is the
+sample-selection interface used to make the next reduction decision depend
+only on fresh bits. -/
 lemma sortedSample_eq_of_shared_prefix
     {n L q sampleCount : ℕ} {active : ℕ → ℕ} {s t : List ℕ}
     {original : Fin 8 → ℕ → ℕ}
@@ -82,9 +136,9 @@ lemma sortedSample_eq_of_shared_prefix
       (scanList active 0 n)).take sampleCount).toFinset =
     ((radixSort8 q (filledKey original active (scanTapeBits active L t) n)
       (scanList active 0 n)).take sampleCount).toFinset := by
-  have hfilled := filledKey_eq_of_shared_prefix
-    (n := n) (L := L) (active := active) (s := s) (t := t)
-    (original := original) hp
-  simp [hfilled]
+  have hprefix := sortedPrefix_eq_of_shared_prefix
+    (n := n) (L := L) (q := q) (sampleCount := sampleCount)
+    (active := active) (s := s) (t := t) (original := original) hp
+  rw [hprefix]
 
 end Lax235315Proofs.Construction.RoundPrefixDeterminism
