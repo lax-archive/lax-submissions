@@ -56,4 +56,16 @@ lemma guarded_total_failure_le_one_six_rat {n c : ℕ}
   exact paper_total_failure_le_one_six_rat hn12 (clog_le_vertices n)
     le_rfl hthreshold
 
+/-- In the only case where the source actually enters the randomized loop,
+the failure budget follows directly from its initial loop test. -/
+lemma active_loop_total_failure_le_one_six_rat {n c : ℕ}
+    (hc : 1 ≤ c) (hn : 1 < n)
+    (hlarge : 12 * c ^ 2 * Nat.clog 2 n < n) :
+    (Nat.clog 2 n : ℚ) *
+        (1 / (n : ℚ) ^ 6 + (c : ℚ) ^ 2 / n) ≤ 1 / 6 := by
+  have hL : 1 ≤ Nat.clog 2 n := Nat.clog_pos (by omega) hn
+  have hn12 : 12 ≤ n := by nlinarith [hc, hL]
+  exact paper_total_failure_le_one_six_rat hn12 (clog_le_vertices n)
+    le_rfl hlarge.le
+
 end Lax235315Proofs.Construction.RationalFailureBounds
