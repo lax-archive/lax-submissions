@@ -12,3 +12,10 @@ The proofs discharge the original statements in [Planar Graph Classes
 (Lax68)](https://laxarchive.org/lax-68/index.html), without changing its
 definitions or assuming any open characterization theorem. Each proof is
 added to the archive after kernel validation.
+
+Together with the existing Lax68 proofs, finite-tree outerplanarity also
+settles finite-tree planarity and path outerplanarity and planarity. Thus all
+Lax68 statements labeled as theorems are proved in the combined proof
+network. The four statements labeled `opn` remain open: series-parallel
+planarity, Kuratowski's theorem, Wagner's theorem, and the excluded-minor
+characterization of outerplanarity.
