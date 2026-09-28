@@ -4,6 +4,7 @@ import Lax235315Proofs.Construction.GuardedArithmetic
 import Lax235315Proofs.Construction.RoundPotential
 import Lax235315Proofs.Construction.AdaptiveMachineBridge
 import Lax235315Proofs.Construction.InputSuffixFrame
+import Lax235315Proofs.Construction.RationalFailureBounds
 
 /-! Canonical round-boundary source states for an adaptive tape tree.  The
 input field is empty; each fresh block is appended only while executing the
@@ -31,6 +32,8 @@ open Lax235315Proofs.Construction.AdaptiveBitBlocks
 open Lax235315Proofs.Construction.PositionFailureBits
 open Lax235315Proofs.Construction.AdaptiveMachineBridge
 open Lax235315Proofs.Construction.InputSuffixFrame
+open Lax235315.ConstructionContracts
+open Lax235315Proofs.Construction.RationalFailureBounds
 open Lax11.GraphEncoding
 open Lax195003.WordRamRandomness
 
@@ -554,5 +557,75 @@ lemma source_success_count_of_good_paths {c n T : ℕ} {x : List ℕ}
     source_maxConsumedBits_le_tape hx hG hc hreserve
       (Nat.clog_pos (by omega) start.nontrivial) _ _
   exact success_count_of_protocol p ε hε hlocal hbits hbudget good hsuccess
+
+lemma machine_tape_reserve {K n : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)} (hx : EncodesGraph x n G)
+    (hK : 24 ≤ K) :
+    24 * Nat.clog 2 n * n ≤ timeBudget K n x := by
+  have hn : n ≤ x.length + 1 := by have := hx.length_eq; omega
+  have h₁ := Nat.mul_le_mul_left (24 * Nat.clog 2 n) hn
+  have h₂ := Nat.mul_le_mul_right (x.length + 1)
+    (Nat.mul_le_mul_left 24 (Nat.le_succ (Nat.clog 2 n)))
+  have h₃ := Nat.mul_le_mul_right
+    ((x.length + 1) * (Nat.clog 2 n + 1)) hK
+  dsimp [timeBudget]
+  nlinarith [h₁, h₂, h₃]
+
+lemma source_failure_budget {c n : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)} (s : RoundState c n x G)
+    (hc : 1 ≤ c) :
+    (Nat.clog 2 n : ℚ) *
+      (1 / (n : ℚ) ^ 6 + (c : ℚ) ^ 2 / n) ≤ 1 / 3 := by
+  have hcount : s.env.vars "acount" ≤ n := by
+    rw [s.frontier.activeCount]
+    exact activeVertices_card_le _ _
+  have hlarge : 12 * c ^ 2 * Nat.clog 2 n < n :=
+    lt_of_lt_of_le s.large hcount
+  have hbound := active_loop_total_failure_le_one_six_rat hc s.nontrivial hlarge
+  linarith
+
+/-- All numerical and probabilistic accounting is discharged for the literal
+source-state protocol.  The sole remaining input is that its good paths
+produce successful source executions. -/
+lemma machine_probability_of_source_good_paths {K c n w : ℕ}
+    {x : List ℕ} {G : SimpleGraph (Fin n)}
+    (hK : 60001 ≤ K) (hvalid : ValidInput K c n w G x)
+    (start : RoundState c n x G)
+    (hsuccess : ∀ ρ : Fin (timeBudget K n x) → Bool,
+      GoodPath
+        (protocol sourceWidth
+          (sourceBad (G := G) (x := x) (c := c)
+            (Nat.clog_pos (by omega) start.nontrivial))
+          (nextState hvalid.2.2.1 hvalid.2.1 hvalid.1)
+          (Nat.clog 2 n) (some start)) (timeBudget K n x)
+        (fits_of_maxConsumedBits _ _
+          (source_maxConsumedBits_le_tape hvalid.2.2.1 hvalid.2.1
+            hvalid.1 (machine_tape_reserve hvalid.2.2.1 (by omega))
+            (Nat.clog_pos (by omega) start.nontrivial) _ start)) ρ →
+      ρ ∈ sourceGoodTapes c n x (sourceCost 6000 n x) (timeBudget K n x)) :
+    (2 / 3 : ℚ) * 2 ^ timeBudget K n x ≤
+      ((goodTapes w c x (timeBudget K n x)).ncard : ℚ) := by
+  let p := protocol sourceWidth
+    (sourceBad (G := G) (x := x) (c := c)
+      (Nat.clog_pos (by omega) start.nontrivial))
+    (nextState hvalid.2.2.1 hvalid.2.1 hvalid.1)
+    (Nat.clog 2 n) (some start)
+  let ε : ℚ := 1 / (n : ℚ) ^ 6 + (c : ℚ) ^ 2 / n
+  have hε : 0 ≤ ε := by dsimp [ε]; positivity
+  have hNpow : n ≤ 2 ^ Nat.clog 2 n := Nat.le_pow_clog (by omega) n
+  have hlocal : LocallyBounded ε p :=
+    locallyBounded_source hvalid.2.2.1 hvalid.2.1 hvalid.1 hNpow
+      (Nat.clog_pos (by omega) start.nontrivial) _ _
+  have hreserve : 24 * Nat.clog 2 n * n ≤ timeBudget K n x :=
+    machine_tape_reserve hvalid.2.2.1 (by omega)
+  have hbits : maxConsumedBits p ≤ timeBudget K n x :=
+    source_maxConsumedBits_le_tape hvalid.2.2.1 hvalid.2.1 hvalid.1
+      hreserve (Nat.clog_pos (by omega) start.nontrivial) _ _
+  have hcost : 10 * sourceCost 6000 n x + 1 ≤ timeBudget K n x :=
+    cost_lift (by omega)
+  apply machine_success_count_of_protocol (by omega) hvalid hcost p ε hε
+    hlocal hbits (source_failure_budget start hvalid.1)
+  intro ρ hρ
+  exact hsuccess ρ ((goodPath_iff_not_mem_failingTapes p _ _ _).2 hρ)
 
 end Lax235315Proofs.Construction.SourceAdaptiveState
