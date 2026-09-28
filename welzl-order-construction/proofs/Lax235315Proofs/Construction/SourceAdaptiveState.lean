@@ -205,6 +205,10 @@ def Accepted {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)}
     τ.vars "acount" ≤ s.env.vars "acount" / 2 + c ^ 2 ∧
     Nonempty (Stored G (6 * c ^ 2 * Nat.clog 2 n) τ)
 
+lemma Accepted.good {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)}
+    {s : RoundState c n x G} {τ : Env} (h : Accepted s τ) :
+    τ.vars "good" = 1 := h.1.success
+
 noncomputable def roundOutput {c n : ℕ} {x : List ℕ}
     {G : SimpleGraph (Fin n)} (s : RoundState c n x G)
     (hx : EncodesGraph x n G)
@@ -291,6 +295,21 @@ lemma nextState_some_env {c n : ℕ} {x : List ℕ}
   split_ifs at hnext with haccepted
   · cases hnext
     rfl
+
+lemma nextState_some_round {c n : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)}
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c) (s : RoundState c n x G)
+    (bits : Fin (sourceWidth (some s)) → Bool)
+    (s' : RoundState c n x G)
+    (hnext : nextState hx hG hc (some s) bits = some s') :
+    s'.env.vars "round" = s.env.vars "round" + 1 := by
+  classical
+  dsimp [nextState] at hnext
+  split_ifs at hnext with haccepted
+  · cases hnext
+    exact haccepted.1.2.1
 
 lemma nextState_stops_after_accepted {c n : ℕ} {x : List ℕ}
     {G : SimpleGraph (Fin n)}
@@ -390,6 +409,87 @@ lemma source_maxConsumedBits_le_tape {c n T : ℕ} {x : List ℕ}
   have hcount := activeVertices_card_le n (view s.env "activeA")
   have hmul := Nat.mul_le_mul_left (24 * Nat.clog 2 n) hcount
   exact hbits.trans (hmul.trans hreserve)
+
+/-- The state reached after the protocol has consumed its allotted number of
+queries; a stopped state remains stopped while zero-width queries follow. -/
+noncomputable def endState {c n : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)}
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c) (hL : 0 < Nat.clog 2 n) :
+    (R : ℕ) → (state : Option (RoundState c n x G)) →
+    (T : ℕ) → Fits
+      (protocol sourceWidth (sourceBad (G := G) (x := x) (c := c) hL)
+        (nextState hx hG hc) R state) T → (Fin T → Bool) →
+      Option (RoundState c n x G)
+  | 0, state, _, _, _ => state
+  | R + 1, state, T, hfit, tape => by
+      obtain ⟨hk, hchild⟩ := hfit
+      let parts := splitEquiv hk tape
+      exact endState hx hG hc hL R (nextState hx hG hc state parts.1)
+        (T - sourceWidth state) (hchild parts.1) parts.2
+
+lemma endState_none {c n T R : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)}
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c) (hL : 0 < Nat.clog 2 n)
+    (hfit : Fits
+      (protocol sourceWidth (sourceBad (G := G) (x := x) (c := c) hL)
+        (nextState hx hG hc) R none) T)
+    (tape : Fin T → Bool) :
+    endState hx hG hc hL R none T hfit tape = none := by
+  induction R generalizing T with
+  | zero => rfl
+  | succ R ih =>
+      rcases hfit with ⟨hk, hchild⟩
+      let parts := splitEquiv hk tape
+      simpa [endState, nextState_none, parts] using
+        (ih (hchild parts.1) parts.2)
+
+/-- A large round-boundary state cannot survive all `clog n` adaptive
+queries: every continuing round increments its recorded round counter, whose
+frontier invariant keeps it strictly below that limit. -/
+lemma endState_none_after_remaining_rounds {c n : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)}
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c)
+    (hL : 0 < Nat.clog 2 n) :
+    ∀ {R T : ℕ} (s : RoundState c n x G),
+      s.env.vars "round" + R = Nat.clog 2 n →
+      (hfit : Fits
+        (protocol sourceWidth (sourceBad (G := G) (x := x) (c := c) hL)
+          (nextState hx hG hc) R (some s)) T) →
+      (tape : Fin T → Bool) →
+      endState hx hG hc hL R (some s) T hfit tape = none := by
+  intro R
+  induction R with
+  | zero =>
+      intro T s hround hfit tape
+      have hbound := s.frontier.shrinking.rounds_succ_le_clog hc s.nontrivial
+      omega
+  | succ R ih =>
+      intro T s hround hfit tape
+      rcases hfit with ⟨hk, hchild⟩
+      let parts := splitEquiv hk tape
+      cases hnext : nextState hx hG hc (some s) parts.1 with
+      | none =>
+          have hchild' : Fits
+              (protocol sourceWidth (sourceBad (G := G) (x := x) (c := c) hL)
+                (nextState hx hG hc) R none) (T - sourceWidth (some s)) := by
+            simpa only [hnext] using hchild parts.1
+          simpa [endState, parts, hnext] using
+            (endState_none hx hG hc hL hchild' parts.2)
+      | some s' =>
+          have hstep := nextState_some_round hx hG hc s parts.1 s' hnext
+          have hround' : s'.env.vars "round" + R = Nat.clog 2 n := by omega
+          have hchild' : Fits
+              (protocol sourceWidth (sourceBad (G := G) (x := x) (c := c) hL)
+                (nextState hx hG hc) R (some s')) (T - sourceWidth (some s)) := by
+            simpa only [hnext] using hchild parts.1
+          simpa [endState, parts, hnext] using
+            (ih s' hround' hchild' parts.2)
 
 lemma source_success_count_of_good_paths {c n T : ℕ} {x : List ℕ}
     {G : SimpleGraph (Fin n)}
