@@ -59,4 +59,74 @@ lemma maxConsumedBits_le_potential (potential : State → ℕ)
             width s + (potential s - width s) := Nat.add_le_add_left hsup _
         _ = potential s := by omega
 
+/-- A fixed tape avoids failure at a query exactly when its observed first
+block is good and its remaining suffix avoids failure in the selected child. -/
+lemma not_mem_failingTapes_query_iff {R k T : ℕ}
+    (badBlock : Finset (Tape k)) (child : Tape k → Protocol R)
+    (hk : k ≤ T) (hchild : ∀ bits, Fits (child bits) (T - k))
+    (tape : Tape T) :
+    tape ∉ failingTapes (.query badBlock child) T ⟨hk, hchild⟩ ↔
+      let parts := splitEquiv hk tape
+      parts.1 ∉ badBlock ∧
+        parts.2 ∉ failingTapes (child parts.1) (T - k) (hchild parts.1) := by
+  classical
+  let parts := splitEquiv hk tape
+  have hmem : tape ∈ failingTapes (.query badBlock child) T ⟨hk, hchild⟩ ↔
+      parts.1 ∈ badBlock ∨
+        parts.2 ∈ failingTapes (child parts.1) (T - k) (hchild parts.1) := by
+    constructor
+    · intro ht
+      simp only [failingTapes, Finset.mem_biUnion, Finset.mem_univ, true_and] at ht
+      obtain ⟨bits, hbits⟩ := ht
+      obtain ⟨suffix, hsuffix, heq⟩ := Finset.mem_image.mp hbits
+      have heqParts : (bits, suffix) = parts := by
+        have h := congrArg (splitEquiv hk) heq
+        simpa [parts] using h
+      have hbitsEq : bits = parts.1 := congrArg Prod.fst heqParts
+      have hsuffixEq : suffix = parts.2 := congrArg Prod.snd heqParts
+      by_cases hb : bits ∈ badBlock
+      · exact Or.inl (hbitsEq ▸ hb)
+      · right
+        simp only [if_neg hb] at hsuffix
+        rw [hbitsEq, hsuffixEq] at hsuffix
+        exact hsuffix
+    · intro ht
+      have hpair : (splitEquiv hk).symm parts = tape := by
+        simpa [parts] using (splitEquiv hk).symm_apply_apply tape
+      apply Finset.mem_biUnion.mpr
+      refine ⟨parts.1, Finset.mem_univ _, ?_⟩
+      apply Finset.mem_image.mpr
+      refine ⟨parts.2, ?_, by simpa using hpair⟩
+      rcases ht with hb | hs
+      · simp [hb]
+      · by_cases hb : parts.1 ∈ badBlock
+        · simp [hb]
+        · simpa [hb] using hs
+  simp [hmem, parts]
+
+/-- A good path through the decision tree reads only its own sequence of
+fresh prefixes, ignoring all tape bits after it stops. -/
+def GoodPath : {R : ℕ} → (p : Protocol R) → (T : ℕ) → Fits p T → Tape T → Prop
+  | _, .stop _, _, _, _ => True
+  | _, .query (k := k) badBlock child, T, hfit, tape => by
+      rcases hfit with ⟨hk, hchild⟩
+      let parts := splitEquiv hk tape
+      exact parts.1 ∉ badBlock ∧
+        GoodPath (child parts.1) (T - k) (hchild parts.1) parts.2
+
+/-- The recursive good-path predicate is precisely the complement of the
+finite failing-tape set used by the probability count. -/
+lemma goodPath_iff_not_mem_failingTapes {R : ℕ} (p : Protocol R)
+    (T : ℕ) (hfit : Fits p T) (tape : Tape T) :
+    GoodPath p T hfit tape ↔ tape ∉ failingTapes p T hfit := by
+  induction p generalizing T with
+  | stop r => simp [GoodPath, failingTapes]
+  | @query r k badBlock child ih =>
+      rcases hfit with ⟨hk, hchild⟩
+      rw [not_mem_failingTapes_query_iff badBlock child hk hchild tape]
+      dsimp [GoodPath]
+      exact and_congr Iff.rfl
+        (ih ((splitEquiv hk tape).1) (T - k) (hchild ((splitEquiv hk tape).1))
+          ((splitEquiv hk tape).2))
+
 end Lax235315Proofs.Construction.AdaptiveStateProtocol
