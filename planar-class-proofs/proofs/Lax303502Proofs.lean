@@ -16,3 +16,11 @@ import Lax303502Proofs.CycleDrawing
 import Lax303502Proofs.OuterConnectivity
 import Lax303502Proofs.LongestCycle
 import Lax303502Proofs.OuterplanarExcludedMinors
+import Lax303502Proofs.PathFans
+import Lax303502Proofs.FourFans
+import Lax303502Proofs.MinorRouting
+import Lax303502Proofs.TopologicalToMinor
+import Lax303502Proofs.KuratowskiMinorBridge
+import Lax303502Proofs.K5Split
+import Lax303502Proofs.KuratowskiObstructions
+import Lax303502Proofs.Wagner

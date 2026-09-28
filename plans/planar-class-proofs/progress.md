@@ -1,6 +1,6 @@
 # Direct proofs for planar graph classes
 
-Status: six former theorem gaps, series-parallel planarity, and outerplanar excluded minors closed; two `opn` statements still open.
+Status: five unconditional proofs; Wagner formalized with Kuratowski as its sole statement assumption. Kuratowski remains the independent gap.
 Updated 2026-09-28. Submission: [lax-303502](https://laxarchive.org/lax-303502/).
 
 The user's order is to finish unproved entries labeled `theorem`, then work on
@@ -22,8 +22,9 @@ finite outerplanar excluded-minor characterization.
 The tree proof also closes
 finite-tree planarity and path outerplanarity/planarity through the existing
 Lax68 proof network. There are 20 original entries labeled `theorem`; all are
-in the least fixed point of the combined proof network. None of the five new
-annotated proofs has a statement assumption. Full local `lax build --replay`
+in the least fixed point of the combined proof network. None of the first five
+annotated proofs has a statement assumption. The sixth, Wagner, has exactly
+the original Kuratowski statement as its assumption. Full local `lax build --replay`
 passed; warnings concern Lean-generated structure helper lemmas and the
 intentional reusable `outerplanar_minor` corollary.
 
@@ -33,8 +34,9 @@ Publication boundaries:
 - `14fd9be`: star planarity, independently accepted by Lax.
 - `ece79f7`: finite-tree outerplanarity, independently accepted by Lax.
 - `1b94bdd`: series-parallel planarity, independently accepted by Lax.
-- Next draft: outerplanar excluded minors, full local kernel replay passed;
-  publishing this commit as the next replaceable draft.
+- `dd76469`: outerplanar excluded minors, independently accepted by Lax.
+- Next draft: Wagner conditional on Kuratowski, with its minor/subdivision
+  bridge proved unconditionally.
 
 The original statements and definitions have not been modified. The new
 concept package is empty and the proof package requires the exact registered
@@ -75,9 +77,11 @@ algebraic proofs, not assumptions of a geometric picture.
    straightening route. The missing Lean development includes drawing/face
    topology, the three-connected contraction argument and the straightening
    bridge. No verified proof of the original statement has been produced.
-3. **Wagner.** The same theorem and Lemma 4.4.2 give the minor/subdivision
-   route. The graph-model conversions and the geometric theorem are not
-   formalized here. This remains open, not a corollary of an assumed axiom.
+3. **Wagner — conditional proof complete.** Theorem 4.4.6 and Lemma 4.4.2
+   give the route. The minor/subdivision conversions are now proved in full,
+   and Wagner follows using the original Kuratowski characterization as the
+   sole statement assumption, as explicitly authorized by the user.
+   Wagner is not yet unconditional; Kuratowski must still be discharged.
 4. **Outerplanar excluded minors — proved.** Diestel Exercise 23 states it. The worked
    [McGill MATH350 assignment 5 solution, problem 1](https://www.math.mcgill.ca/snorin/math350f2015/MATH350F15HW5Solutions.pdf)
    uses the cone graph and the planar forbidden-minor theorem. Formalizing
@@ -137,7 +141,8 @@ There are no `sorry`, new axioms, or uses of any open characterization theorem.
 The exact `Lax68.OuterplanarExcludedMinors.outerplanar_iff_excludedMinors` now
 has a direct proof in `Lax303502Proofs/OuterplanarExcludedMinors.lean`.
 The user explicitly permits dependencies on the other open statements, but
-none was needed. Kuratowski and Wagner remain the two unresolved entries.
+none was needed for outerplanarity. The later Wagner proof below now reduces
+that entry to Kuratowski.
 
 First checked Diestel, Chapter 4, Exercise 23: it states the characterization
 without a worked solution. Chartrand and Harary's *Planar Permutation Graphs*
@@ -172,3 +177,43 @@ lists only `propext`, `Classical.choice`, and `Quot.sound`. The 13 archive
 warnings are 12 automatically generated structure lemmas plus the intentional
 standalone corollary `outerplanar_minor`, retained as a reusable result.
 The archive must independently rebuild this commit before it is accepted.
+
+
+## Wagner via the unconditional obstruction bridge
+
+The user explicitly authorized dependencies on the other open statements.
+The new `Lax303502Proofs.planar_iff_excludedMinors` concludes the exact original
+Wagner statement with only
+`Lax68.KuratowskiPlanarity.planar_iff_kuratowskiFree` as a statement assumption.
+There is no reverse conditional proof that would create a dependency cycle.
+
+Human source: Diestel, *Graph Theory*, sixth edition, Chapter 4, Lemma 4.4.2
+(printed page 107), and Chapter 1, Proposition 1.7.3 (printed page 21).
+These sources were read before implementation; no alternative source was
+needed. The implementation follows their branch-tree argument with explicit
+paths, avoiding a separate minimal-tree classification.
+
+`PathFans` constructs the tripod for three terminals by stopping a path at
+its first contact with another path. `FourFans` attaches the fourth terminal
+at its first contact with that tripod. Contact at the center gives four
+arms; other contact gives disjoint connected sets with two attachments each
+and an edge between them. Repeated terminals and zero-length arms are
+included. `MinorRouting` chooses consistent inter-branch edges and combines
+local fans into the exact `TopologicalMinorModel` of Lax68.
+
+`K5Split` checks the six branch sets of the resulting K3,3 model, using two
+parts of the split branch set and the four other original branch sets.
+`KuratowskiMinorBridge` converts K3,3 minors into subdivisions.
+`TopologicalToMinor` contracts each routed path towards its lesser endpoint
+and retains its final edge. `KuratowskiObstructions` combines the cases into
+`excludedMinors_iff_kuratowskiFree`; this bridge works for arbitrary vertex
+types and uses only the three background axioms.
+
+Local Lean compilation passes. `#print axioms` confirms the bridge is
+unconditional and the Wagner proof has exactly the stated Kuratowski
+assumption. Full local `lax build --replay` passes in 24 seconds and extracts
+six proofs with exactly those assumptions. The 22 warnings concern 21
+automatically generated structure lemmas and the intentional standalone
+`outerplanar_minor` corollary. This commit is submitted for independent
+archive verification. The remaining foundational proof is the original
+finite Kuratowski characterization including the straight-line drawing step.

@@ -28,14 +28,25 @@ forbidden graph admits such an order. This follows the direct cycle argument
 in Leander's *On the bunkbed conjecture*, Theorem 14, with explicit proofs of
 the decompositions, minor witnesses, and geometric steps.
 
-The proofs discharge the original statements in [Planar Graph Classes
+These five proofs discharge the original statements in [Planar Graph Classes
 (Lax68)](https://laxarchive.org/lax-68/index.html), without changing its
-definitions or assuming any open characterization theorem. Each proof is
-added to the archive after kernel validation.
+definitions or assuming any open characterization theorem.
+
+The submission also formalizes Diestel's equivalence between containing a
+$K_5$ or $K_{3,3}$ minor and containing a subdivision of one of those graphs.
+Three-terminal branch sets are replaced by tripod paths. Four-terminal
+branch sets either give a four-arm fan or split into two connected pieces
+that expose a $K_{3,3}$ minor. This combinatorial bridge is unconditional.
+It yields the exact original Wagner characterization using Kuratowski's
+straight-line characterization as its sole statement assumption. Each proof
+is added to the archive after kernel validation.
 
 Together with the existing Lax68 proofs, finite-tree outerplanarity also
 settles finite-tree planarity and path outerplanarity and planarity. Thus all
 Lax68 statements labeled as theorems are proved in the combined proof
 network. Series-parallel planarity and the outerplanar excluded-minor
-characterization close two statements labeled `opn`. Two remain open:
-Kuratowski's theorem and Wagner's theorem.
+characterization close two statements labeled `opn` unconditionally.
+Wagner's theorem now has a checked proof conditional on Kuratowski's theorem.
+Kuratowski's straight-line characterization, which includes the straightening
+step, remains unproved; discharging it will also remove Wagner's remaining
+dependency.
