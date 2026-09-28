@@ -2,6 +2,7 @@ import Lax235315Proofs.Construction.HistoryRoundSource
 import Lax235315Proofs.Construction.GuardedAdaptiveProtocol
 import Lax235315Proofs.Construction.GuardedArithmetic
 import Lax235315Proofs.Construction.RoundPotential
+import Lax235315Proofs.Construction.AdaptiveMachineBridge
 
 /-! Canonical round-boundary source states for an adaptive tape tree.  The
 input field is empty; each fresh block is appended only while executing the
@@ -27,6 +28,7 @@ open Lax235315Proofs.Construction.AdaptiveStateProtocol
 open Lax235315Proofs.Construction.AdaptiveTapeCounting
 open Lax235315Proofs.Construction.AdaptiveBitBlocks
 open Lax235315Proofs.Construction.PositionFailureBits
+open Lax235315Proofs.Construction.AdaptiveMachineBridge
 open Lax11.GraphEncoding
 open Lax195003.WordRamRandomness
 
@@ -358,5 +360,38 @@ lemma source_maxConsumedBits_le_tape {c n T : ℕ} {x : List ℕ}
   have hcount := activeVertices_card_le n (view s.env "activeA")
   have hmul := Nat.mul_le_mul_left (24 * Nat.clog 2 n) hcount
   exact hbits.trans (hmul.trans hreserve)
+
+lemma source_success_count_of_good_paths {c n T : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)}
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c) (hNpow : n ≤ 2 ^ Nat.clog 2 n)
+    (hreserve : 24 * Nat.clog 2 n * n ≤ T)
+    (hbudget : (Nat.clog 2 n : ℚ) *
+      (1 / (n : ℚ) ^ 6 + (c : ℚ) ^ 2 / n) ≤ 1 / 3)
+    (start : RoundState c n x G) (good : Set (Fin T → Bool))
+    (hsuccess : ∀ ρ,
+      ρ ∉ failingTapes
+        (protocol sourceWidth
+          (sourceBad (G := G) (x := x) (c := c)
+            (Nat.clog_pos (by omega) start.nontrivial))
+          (nextState hx hG hc) (Nat.clog 2 n) (some start)) T
+        (fits_of_maxConsumedBits _ T
+          (source_maxConsumedBits_le_tape hx hG hc hreserve
+            (Nat.clog_pos (by omega) start.nontrivial) _ start)) → ρ ∈ good) :
+    (2 / 3 : ℚ) * 2 ^ T ≤ (good.ncard : ℚ) := by
+  let ε : ℚ := 1 / (n : ℚ) ^ 6 + (c : ℚ) ^ 2 / n
+  let p := protocol sourceWidth
+    (sourceBad (G := G) (x := x) (c := c)
+      (Nat.clog_pos (by omega) start.nontrivial))
+    (nextState hx hG hc) (Nat.clog 2 n) (some start)
+  have hε : 0 ≤ ε := by dsimp [ε]; positivity
+  have hlocal : LocallyBounded ε p :=
+    locallyBounded_source hx hG hc hNpow
+      (Nat.clog_pos (by omega) start.nontrivial) _ _
+  have hbits : maxConsumedBits p ≤ T :=
+    source_maxConsumedBits_le_tape hx hG hc hreserve
+      (Nat.clog_pos (by omega) start.nontrivial) _ _
+  exact success_count_of_protocol p ε hε hlocal hbits hbudget good hsuccess
 
 end Lax235315Proofs.Construction.SourceAdaptiveState
