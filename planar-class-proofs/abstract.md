@@ -1,10 +1,14 @@
-This submission proves that every finite star is outerplanar and planar by an explicit
-straight-line drawing on the unit circle. A rational parametrization supplies
-distinct vertex positions, and a tangent-line argument shows that no third
-vertex lies on an edge. Since all edges share the centre, disjoint-edge
-crossings are impossible.
+This submission gives direct geometric proofs that every finite tree is
+outerplanar and that every finite star is outerplanar and planar. All drawings
+place vertices on the unit circle using a rational parametrization.
+
+For trees, induction removes a leaf and then inserts it beside its neighbour
+in a gap between the existing circle parameters. An affine functional for
+the new chord separates it from all edges with disjoint endpoints. A tangent
+functional rules out vertices inside edges. The star proof is also given
+separately: all its edges share the centre.
 
 The proofs discharge the original statements in [Planar Graph Classes
 (Lax68)](https://laxarchive.org/lax-68/index.html), without changing its
-definitions or assuming any open characterization theorem. Further direct
-proofs will be added as they are verified.
+definitions or assuming any open characterization theorem. Each proof is
+added to the archive after kernel validation.

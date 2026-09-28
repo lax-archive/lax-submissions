@@ -15,6 +15,15 @@ bibEntries:
       year = {2025},
       url = {https://diestel-graph-theory.com/}
     }
+  - |
+    @techreport{PachTorocsik1992,
+      author = {J{\'a}nos Pach and Jen{\H{o}} T{\"o}r{\H{o}}csik},
+      title = {Layout of Rooted Trees},
+      institution = {Princeton University},
+      number = {CS-TR-369-92},
+      year = {1992},
+      url = {https://www.cs.princeton.edu/techreports/1992/369.pdf}
+    }
 issue:
   repositoryId: 1320232165
   number: 144
