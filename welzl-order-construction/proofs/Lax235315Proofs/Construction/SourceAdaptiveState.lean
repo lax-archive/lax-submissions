@@ -685,4 +685,30 @@ lemma finish_after_good_loop {c n : ℕ} {x : List ℕ}
     finish_run hpost hc hn hnB (fun _ => ⟨hstore⟩)
   exact ⟨τ, hr, hgood.trans hfront.success⟩
 
+/-- Once the literal driver is shown to reach an accepted loop exit, the
+verified terminal command and deterministic bounded source execution place
+the tape in the event counted by the probability contract. -/
+lemma sourceGoodTapes_of_good_reduceAll {c n T Cs Cr : ℕ}
+    {x : List ℕ} {G : SimpleGraph (Fin n)}
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c) (hn : 1 < n) (hT : sourceCost 6000 n x ≤ T)
+    (ρ : Fin T → Bool) {σ τ : Env}
+    (rsetup : Run (sourceBound c x) setup
+      (initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n))
+        ((c :: x) ++ bitTape ρ)) σ Cs)
+    (rreduce : Run (sourceBound c x) reduceAll σ τ Cr)
+    (hfront : Frontier (sourceBound c x) c n x τ)
+    (hstore : Stored G (6 * c ^ 2 * Nat.clog 2 n) τ)
+    (hsmall : τ.vars "acount" ≤ 12 * c ^ 2 * Nat.clog 2 n) :
+    ρ ∈ sourceGoodTapes c n x (sourceCost 6000 n x) T := by
+  obtain ⟨υ, rfinish, hgood⟩ :=
+    finish_after_good_loop hfront hstore hc hn hsmall
+  have hrun := rsetup.seq (rreduce.seq rfinish)
+  obtain ⟨k, _, hstep⟩ := hrun
+  apply sourceGoodTapes_of_bigStep_good hx hG hc hT ρ
+    (τ := υ) (k := k)
+  · simpa only [welzlCom, seqs] using hstep
+  · exact hgood
+
 end Lax235315Proofs.Construction.SourceAdaptiveState
