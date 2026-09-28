@@ -37,6 +37,8 @@ open Lax235315.ConstructionContracts
 open Lax235315Proofs.Construction.RationalFailureBounds
 open Lax235315Proofs.Construction.HistoryDriverSource
 open Lax235315Proofs.Construction.WelzlSetup
+open Lax235315Proofs.Construction.DriverFinish
+open Lax235315Proofs.Construction.GuardedDriverSource
 open Lax11.GraphEncoding
 open Lax195003.WordRamRandomness
 
@@ -665,5 +667,22 @@ lemma sourceGoodTapes_of_bigStep_good {c n T k : ℕ} {x : List ℕ}
       ((c :: x) ++ bitTape ρ)) τ k from ⟨k, le_rfl, hr⟩) hrun
   subst υ
   exact ⟨τ, hrun, hg⟩
+
+lemma finish_after_good_loop {c n : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)} {σ : Env}
+    (hfront : Frontier (sourceBound c x) c n x σ)
+    (hstore : Stored G (6 * c ^ 2 * Nat.clog 2 n) σ)
+    (hc : 1 ≤ c) (hn : 1 < n)
+    (hsmall : σ.vars "acount" ≤ 12 * c ^ 2 * Nat.clog 2 n) :
+    ∃ τ, Run (sourceBound c x) finish σ τ (104 * (n + 1)) ∧
+      τ.vars "good" = 1 := by
+  have hnB : n < sourceBound c x := by
+    simpa only [hfront.workspace.vertices] using
+      hfront.workspace.bounded.vars "n"
+  have hpost : DriverPost (sourceBound c x) c n x σ :=
+    ⟨hfront.workspace, Or.inl hfront, fun _ => hsmall⟩
+  obtain ⟨τ, hr, hgood, _, _⟩ :=
+    finish_run hpost hc hn hnB (fun _ => ⟨hstore⟩)
+  exact ⟨τ, hr, hgood.trans hfront.success⟩
 
 end Lax235315Proofs.Construction.SourceAdaptiveState
