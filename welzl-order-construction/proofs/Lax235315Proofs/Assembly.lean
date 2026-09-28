@@ -1,16 +1,16 @@
 import Lax235315.ConstructionRuntime
 import Lax235315.ConstructionCorrectness
 import Lax235315.ConstructionProbability
+import Lax235315Proofs.ProgramContracts
 import Lax195003.WelzlOrdersComputation
 import Lax808846Proofs.Machine
 import Mathlib.Data.Set.Card
 import Mathlib.Tactic
 
 /-!
-Conditional assembly of the three construction contracts into the registered
-Welzl-order algorithm statement.  This module proves only that the runtime,
-correctness, and probability claims suffice together; it does not prove any
-of those three open claims.
+Assembly of the three construction contracts into the registered Welzl-order
+algorithm statement. The runtime and correctness contracts are discharged by
+the literal source driver; the finite-tape probability contract remains open.
 -/
 
 namespace Lax235315Proofs.Assembly
@@ -97,14 +97,12 @@ lemma exists_program_of_contracts
 ---
 conclusion: Lax195003.WelzlOrdersComputation.exists_nearLinearTime_randomized_welzlOrder_program
 assumptions:
-  - Lax235315.ConstructionRuntime.eventually_hasRunningTimeBound
-  - Lax235315.ConstructionCorrectness.eventually_hasCorrectOutput
   - Lax235315.ConstructionProbability.eventually_hasSuccessProbability
 ---
 **Conditional assembly for the near-linear Welzl-order algorithm.** This proof
 assembles the construction's three independent contracts. It is
-conditional on their runtime, output-correctness, and finite-tape probability
-claims; it does not discharge those claims.
+conditional only on the finite-tape probability claim. The runtime and
+output-correctness contracts are supplied by proved source-program lemmas.
 
 # Proof strategy
 
@@ -116,8 +114,8 @@ lower bound from successful tapes to accepted tapes.
 
 # Attribution
 
-The conditional contracts are the three separate theorem concepts in this
-submission. The assembled target is the registered claim of Lax195003;
+The contracts are the three separate theorem concepts in this submission.
+The assembled target is the registered claim of Lax195003;
 the graph result is Theorem 1.4 in the supplied arXiv v1 PDF.
 -/
 lemma exists_nearLinearTime_randomized_welzlOrder_program :
@@ -134,9 +132,9 @@ lemma exists_nearLinearTime_randomized_welzlOrder_program :
             (EncodesGraphWelzlOrder G 1
               (12 * c ^ 2 * (Nat.clog 2 n) ^ 2)) := by
   obtain ⟨Kr, hKr, hRuntime⟩ :=
-    Lax235315.ConstructionRuntime.eventually_hasRunningTimeBound
+    Lax235315Proofs.ProgramContracts.eventually_hasRunningTimeBound
   obtain ⟨Kc, hKc, hCorrect⟩ :=
-    Lax235315.ConstructionCorrectness.eventually_hasCorrectOutput
+    Lax235315Proofs.ProgramContracts.eventually_hasCorrectOutput
   obtain ⟨Kp, hKp, hProbability⟩ :=
     Lax235315.ConstructionProbability.eventually_hasSuccessProbability
   let K := Kr + Kc + Kp
