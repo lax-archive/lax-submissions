@@ -35,6 +35,7 @@ import Lax235315Proofs.Construction.HistoryDriverSource
 import Lax235315Proofs.Construction.HistoryLoopSource
 import Lax235315Proofs.Construction.HistoryRoundSource
 import Lax235315Proofs.Construction.IndexedRestoreBridge
+import Lax235315Proofs.Construction.InputSuffixFrame
 import Lax235315Proofs.Construction.Iterations
 import Lax235315Proofs.Construction.KeyFailureBounds
 import Lax235315Proofs.Construction.KeySampling
