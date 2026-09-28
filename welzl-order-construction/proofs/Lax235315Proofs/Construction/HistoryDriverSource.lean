@@ -42,7 +42,7 @@ lemma reduceAll_run_stored {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)} 
     ∃ τ, Run (sourceBound c x) reduceAll σ τ
         (5500 * (x.length + 1) * (Nat.clog 2 n + 1)) ∧
       HistoryDriverPost (sourceBound c x) c n x G τ ∧
-      (n / c ^ 2 < 12 * Nat.clog 2 n → τ.vars "good" = 1) := by
+      (n ≤ 12 * c ^ 2 * Nat.clog 2 n → τ.vars "good" = 1) := by
   let B := sourceBound c x
   have hKbase : 1 ≤ (x.length + 1) * (Nat.clog 2 n + 1) :=
     Nat.succ_le_of_lt (Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _))
@@ -162,7 +162,31 @@ lemma reduceAll_run_stored {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)} 
       nlinarith)
   · exact hpost.status.imp And.left id
   · intro hg; simpa only [hboundeq] using hpost.history hg
-  · exact fun hsmallguard => (hsquot hsmallguard).elim
+  · intro hnsmall
+    have hnthreshold : n = 12 * c ^ 2 * Nat.clog 2 n := by
+      have hge := threshold_le_of_not_square_quotient hc hn hsquot
+      omega
+    have htest : (Cond.lt (.var "threshold") (.var "acount")).evalB B σ₃ =
+        some false := by
+      have hthreshold : σ₃.vars "threshold" = 12 * c ^ 2 * Nat.clog 2 n := by
+        simp [σ₃, σ₂]
+      have hcount : σ₃.vars "acount" = n := by
+        simp [σ₃, σ₂, σ₁, hacount]
+      rw [evalB_condLt (evalB_var (hloop.workspace.bounded.vars "threshold"))
+        (evalB_var (hloop.workspace.bounded.vars "acount"))]
+      rw [hthreshold, hcount]
+      have hnot : ¬ 12 * c ^ 2 * Nat.clog 2 n < n := by omega
+      simp [hnot]
+    have rskip : Run B
+        (.while (.lt (.var "threshold") (.var "acount")) reductionRound)
+        σ₃ σ₃ (1 + (Cond.lt (.var "threshold") (.var "acount")).size) :=
+      ⟨_, le_rfl, BigStepB.while_false htest⟩
+    have heq : τ = σ₃ := by
+      obtain ⟨_, _, hrun⟩ := rloop
+      obtain ⟨_, _, hskip⟩ := rskip
+      exact (hrun.bigStep.unique hskip.bigStep).1
+    subst τ
+    exact hf₃.success
 
 /-- Separate proofs of one deterministic source run have the same final state. -/
 lemma run_final_eq {B C C' : ℕ} {cmd : Com} {σ τ υ : Env}
@@ -182,7 +206,7 @@ lemma welzlCom_run_correct {c n T : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)
         ((c :: x) ++ bitTape ρ)) τ (sourceCost 6000 n x) ∧
       (τ.vars "good" = 1 →
         EncodesGraphWelzlOrder G 1 (12 * c ^ 2 * (Nat.clog 2 n) ^ 2) τ.out) ∧
-      (n / c ^ 2 < 12 * Nat.clog 2 n → τ.vars "good" = 1) := by
+      (n ≤ 12 * c ^ 2 * Nat.clog 2 n → τ.vars "good" = 1) := by
   by_cases hnsmall : n ≤ 1
   · obtain ⟨τ, hr, hg, ho⟩ := SmallInputSource.smallInput_welzlCom_run hx hc hnsmall ρ
     refine ⟨τ, hr, (fun _ => ?_), fun _ => hg⟩
@@ -232,7 +256,7 @@ lemma guard_sourceGoodTapes_eq_univ {c n T : ℕ} {x : List ℕ}
     {G : SimpleGraph (Fin n)} (hx : EncodesGraph x n G)
     (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
     (hc : 1 ≤ c) (hT : sourceCost 6000 n x ≤ T)
-    (hguard : n / c ^ 2 < 12 * Nat.clog 2 n) :
+    (hguard : n ≤ 12 * c ^ 2 * Nat.clog 2 n) :
     sourceGoodTapes c n x (sourceCost 6000 n x) T = Set.univ := by
   apply Set.eq_univ_of_forall
   intro ρ
@@ -243,7 +267,7 @@ lemma guard_sourceGoodTapes_ncard {c n T : ℕ} {x : List ℕ}
     {G : SimpleGraph (Fin n)} (hx : EncodesGraph x n G)
     (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
     (hc : 1 ≤ c) (hT : sourceCost 6000 n x ≤ T)
-    (hguard : n / c ^ 2 < 12 * Nat.clog 2 n) :
+    (hguard : n ≤ 12 * c ^ 2 * Nat.clog 2 n) :
     (sourceGoodTapes c n x (sourceCost 6000 n x) T).ncard = 2 ^ T := by
   rw [guard_sourceGoodTapes_eq_univ hx hG hc hT hguard]
   simp
