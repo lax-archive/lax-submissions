@@ -1,6 +1,6 @@
 # Direct proofs for planar graph classes
 
-Status: six former theorem gaps closed; four `opn` statements still open.
+Status: six former theorem gaps and series-parallel planarity closed; three `opn` statements still open.
 Updated 2026-09-28. Submission: [lax-303502](https://laxarchive.org/lax-303502/).
 
 The user's order is to finish unproved entries labeled `theorem`, then work on
@@ -17,10 +17,11 @@ statements that were absent from the current registered record.
 ## Completed
 
 The new submission contains unconditional proofs of star outerplanarity,
-star planarity, and finite-tree outerplanarity. The last proof also closes
+star planarity, finite-tree outerplanarity, and series-parallel planarity.
+The tree proof also closes
 finite-tree planarity and path outerplanarity/planarity through the existing
 Lax68 proof network. There are 20 original entries labeled `theorem`; all are
-in the least fixed point of the combined proof network. None of the three new
+in the least fixed point of the combined proof network. None of the four new
 annotated proofs has a statement assumption. Full local `lax build --replay`
 passed; the only warnings concern Lean-generated structure helper lemmas.
 
@@ -55,15 +56,15 @@ other old vertex, and therefore along every disjoint old edge. The circle's
 tangent functional excludes a third vertex on an edge. These are explicit
 algebraic proofs, not assumptions of a geometric picture.
 
-## Remaining `opn` statements and sources
+## `opn` statements and sources
 
-1. **Series-parallel planarity.** Searched the available Diestel Chapters 4
+1. **Series-parallel planarity — proved.** Searched the available Diestel Chapters 4
    and 12 and the book website; no explicit two-terminal straight-line
    construction was located there. Courcelle and Engelfriet,
    [Graph Structure and Monadic Second-Order Logic, Section 1.2.2, printed
    page 33](https://www.labri.fr/perso/courcell/Book/TheBook.pdf), give an
-   induction preserving both terminals on the outer face. This is the next
-   target; the strengthened geometric induction has not yet been formalized.
+   induction preserving both terminals on the outer face. The direct
+   straight-line realization is now formalized: see the construction below.
 2. **Kuratowski in straight-line form.** Diestel Chapter 4, Theorem 4.4.6,
    supplies the forbidden-subdivision proof; Exercise 15 supplies the
    straightening route. The missing Lean development includes drawing/face
@@ -86,22 +87,40 @@ original statements was located. Isabelle's
 uses combinatorial maps and a Kuratowski implication; it does not directly
 supply the required geometric Lean theorem.
 
-## Series-parallel implementation checkpoint
+## Series-parallel construction
 
-`SeriesParallelSupport.lean` is a checked scratch development, outside the
-submission packages. It proves that a two-terminal derivation has distinct
-terminals in its finite support, and that the final full-support condition
-implies the vertex type is finite. Checked with the submission's pinned
-`lake env lean`; it contains no `sorry` or new axioms. It does **not** prove
-series-parallel planarity and must not be advertised as closing that claim.
+The exact original `Lax68.SeriesParallelPlanar.seriesParallel_planar` now has
+an unconditional proof in `Lax303502Proofs/SeriesParallel.lean`. The existing
+source statements and all dependencies are unchanged. The new reference
+[Graph Representations (Lax683916)](https://laxarchive.org/lax-683916/index.html)
+was inspected: it supplies representation equivalences, not drawing theorems.
+The current `SimpleGraph` representation fits the induction directly, so no
+conversion or extra dependency was necessary.
 
-A concrete candidate invariant for the next proof is a supported drawing
-with source `(0,0)`, sink `(1,0)`, and every other vertex strictly inside the
-vertical strip and strictly above the baseline. Series composition uses
-separate left/right half-strips with the middle terminal lifted above the
-baseline. Parallel composition scales one drawing into a sufficiently thin
-region below the non-baseline edges of the other. Finiteness supplies the
-strict separation bounds. The missing work is proving injectivity, vertex/edge
-avoidance and edge disjointness after these two gluing operations, including
-a terminal edge present in both graphs. Do not replace this work by assuming
-planarity or by weakening the original concept.
+`PlaneCells.lean` treats an edge or a supported singleton vertex as a cell.
+Its intersection certificate says intersecting cells share an endpoint. It
+therefore supplies injectivity, vertex/edge avoidance and independent-edge
+disjointness uniformly, and has a generic gluing lemma.
+
+`TerminalGeometry.lean` keeps terminals at `(0,0)` and `(1,0)`, every supported
+vertex in `0 ≤ y ≤ min(x,1-x)`, and every nonterminal vertex at height at least
+`h > 0`, with `h ≤ 1`. A checked separation lemma says that if a segment enters
+the thinner triangle `y ≤ (h/2)x`, `y ≤ (h/2)(1-x)`, each nonterminal endpoint
+has zero coefficient. This handles shared terminal edges as well as cells
+meeting at either terminal.
+
+`SeriesParallelDrawing.lean` realizes the inductive constructors. Series uses
+`L(x,y)=(x/2,(y+x)/4)` and `R(x,y)=((1+x)/2,(y+1-x)/4)`, with the middle vertex
+at `(1/2,1/4)`. The half-strips meet only on their terminal boundary, and the
+new height bound is `min(hG,hH)/4`. Parallel scales the second drawing's
+vertical coordinate by `hG/2`; the new bound is `min(hG,(hG/2)*hH)`.
+No finite extrema are needed. The terminal support facts also show why
+isolated vertices outside an intermediate component do not enter the drawing
+certificate; the final full-support condition yields the original theorem.
+
+Validation: the pinned Lean build and full `lax build --replay` pass.
+The extracted proof has the exact original conclusion and `assumptions: []`.
+`#print axioms` lists only `propext`, `Classical.choice`, and `Quot.sound`.
+The new package retains only the support lemmas used by the construction;
+the additional finite-support results remain in the earlier scratch file.
+There are no `sorry`, new axioms, or uses of any open characterization theorem.

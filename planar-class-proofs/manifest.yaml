@@ -24,6 +24,14 @@ bibEntries:
       year = {1992},
       url = {https://www.cs.princeton.edu/techreports/1992/369.pdf}
     }
+  - |
+    @book{CourcelleEngelfriet2011,
+      author = {Bruno Courcelle and Joost Engelfriet},
+      title = {Graph Structure and Monadic Second-Order Logic, a Language Theoretic Approach},
+      year = {2011},
+      note = {April 2011 preprint, Section 1.2.2, page 33},
+      url = {https://www.labri.fr/perso/courcell/Book/TheBook.pdf}
+    }
 issue:
   repositoryId: 1320232165
   number: 144

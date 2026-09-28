@@ -2,3 +2,8 @@ import Lax303502Proofs.Circle
 import Lax303502Proofs.Stars
 import Lax303502Proofs.LeafGeometry
 import Lax303502Proofs.Trees
+import Lax303502Proofs.SeriesParallelSupport
+import Lax303502Proofs.PlaneCells
+import Lax303502Proofs.TerminalGeometry
+import Lax303502Proofs.SeriesParallelDrawing
+import Lax303502Proofs.SeriesParallel
