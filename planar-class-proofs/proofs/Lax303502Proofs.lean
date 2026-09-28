@@ -7,3 +7,12 @@ import Lax303502Proofs.PlaneCells
 import Lax303502Proofs.TerminalGeometry
 import Lax303502Proofs.SeriesParallelDrawing
 import Lax303502Proofs.SeriesParallel
+import Lax303502Proofs.CircleNormalization
+import Lax303502Proofs.CircularOrder
+import Lax303502Proofs.CircularMinors
+import Lax303502Proofs.MinorConstructions
+import Lax303502Proofs.CircularGluing
+import Lax303502Proofs.CycleDrawing
+import Lax303502Proofs.OuterConnectivity
+import Lax303502Proofs.LongestCycle
+import Lax303502Proofs.OuterplanarExcludedMinors

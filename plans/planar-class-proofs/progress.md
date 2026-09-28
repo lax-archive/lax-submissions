@@ -1,6 +1,6 @@
 # Direct proofs for planar graph classes
 
-Status: six former theorem gaps and series-parallel planarity closed; three `opn` statements still open.
+Status: six former theorem gaps, series-parallel planarity, and outerplanar excluded minors closed; two `opn` statements still open.
 Updated 2026-09-28. Submission: [lax-303502](https://laxarchive.org/lax-303502/).
 
 The user's order is to finish unproved entries labeled `theorem`, then work on
@@ -17,19 +17,24 @@ statements that were absent from the current registered record.
 ## Completed
 
 The new submission contains unconditional proofs of star outerplanarity,
-star planarity, finite-tree outerplanarity, and series-parallel planarity.
+star planarity, finite-tree outerplanarity, series-parallel planarity, and the
+finite outerplanar excluded-minor characterization.
 The tree proof also closes
 finite-tree planarity and path outerplanarity/planarity through the existing
 Lax68 proof network. There are 20 original entries labeled `theorem`; all are
-in the least fixed point of the combined proof network. None of the four new
+in the least fixed point of the combined proof network. None of the five new
 annotated proofs has a statement assumption. Full local `lax build --replay`
-passed; the only warnings concern Lean-generated structure helper lemmas.
+passed; warnings concern Lean-generated structure helper lemmas and the
+intentional reusable `outerplanar_minor` corollary.
 
 Publication boundaries:
 
 - `8d83502`: star outerplanarity, independently accepted by Lax.
 - `14fd9be`: star planarity, independently accepted by Lax.
 - `ece79f7`: finite-tree outerplanarity, independently accepted by Lax.
+- `1b94bdd`: series-parallel planarity, independently accepted by Lax.
+- Next draft: outerplanar excluded minors, full local kernel replay passed;
+  publishing this commit as the next replaceable draft.
 
 The original statements and definitions have not been modified. The new
 concept package is empty and the proof package requires the exact registered
@@ -73,12 +78,13 @@ algebraic proofs, not assumptions of a geometric picture.
 3. **Wagner.** The same theorem and Lemma 4.4.2 give the minor/subdivision
    route. The graph-model conversions and the geometric theorem are not
    formalized here. This remains open, not a corollary of an assumed axiom.
-4. **Outerplanar excluded minors.** Diestel Exercise 23 states it. The worked
+4. **Outerplanar excluded minors — proved.** Diestel Exercise 23 states it. The worked
    [McGill MATH350 assignment 5 solution, problem 1](https://www.math.mcgill.ca/snorin/math350f2015/MATH350F15HW5Solutions.pdf)
    uses the cone graph and the planar forbidden-minor theorem. Formalizing
    this route requires both the cone/minor equivalence and a bridge from an
    outer-face drawing to Lax68's circular straight-line certificate. Merely
    citing the still-open planar characterization would not close this gap.
+   The direct longest-cycle proof below avoids that bridge.
 
 The pinned mathlib tree and the current Lax database were searched for
 existing geometric planarity results. No reusable proof of these four
@@ -124,3 +130,45 @@ The extracted proof has the exact original conclusion and `assumptions: []`.
 The new package retains only the support lemmas used by the construction;
 the additional finite-support results remain in the earlier scratch file.
 There are no `sorry`, new axioms, or uses of any open characterization theorem.
+
+
+## Outerplanar excluded-minor characterization
+
+The exact `Lax68.OuterplanarExcludedMinors.outerplanar_iff_excludedMinors` now
+has a direct proof in `Lax303502Proofs/OuterplanarExcludedMinors.lean`.
+The user explicitly permits dependencies on the other open statements, but
+none was needed. Kuratowski and Wagner remain the two unresolved entries.
+
+First checked Diestel, Chapter 4, Exercise 23: it states the characterization
+without a worked solution. Chartrand and Harary's *Planar Permutation Graphs*
+(1967), Theorem 1, gives a forbidden-subdivision argument through Kuratowski.
+The direct construction used here is Madeleine Leander,
+[*On the bunkbed conjecture* (2009), Theorem 14, printed page 37](https://kurser.math.su.se/pluginfile.php/16103/mod_folder/content/0/2009/2009_07_report.pdf).
+That discussion moves from connected to 2-connected graphs without supplying
+the block reduction; our finite induction explicitly handles disconnected
+graphs and cut vertices, and only then applies the cycle argument.
+
+`CircleNormalization` rotates and rescales an arbitrary finite circle drawing
+away from the omitted point of the rational parametrization. `CircularOrder`
+proves the equivalence between intersecting chords and alternating endpoints.
+`CircularMinors` transports a circular order through connected disjoint minor
+branch sets and excludes circular drawings of the two forbidden graphs.
+
+For the converse, `MinorConstructions` constructs the actual connected branch
+sets for a cycle with nonconsecutive outside attachments and for alternating
+chords. `OuterConnectivity` constructs outside components, attachment paths,
+and partitions at disconnections. `LongestCycle` proves that a longest cycle
+is spanning in a graph without a cut vertex or a K2,3 minor. `CycleDrawing`
+uses the absence of K4 minors to put the spanning cycle on a circle.
+`CircularGluing` joins the smaller drawings in separate arcs, rotating their
+orders to put a shared cut vertex at parameter zero. The final finite
+induction includes empty, singleton, and acyclic graphs.
+
+The original concepts and dependency pins are unchanged. Local Lean checking
+passes for the exact original theorem. Full `lax build --replay` passed in
+27 seconds, with five extracted proofs and no statement assumptions for any
+of them. `#print axioms` for the original equivalence and each direction
+lists only `propext`, `Classical.choice`, and `Quot.sound`. The 13 archive
+warnings are 12 automatically generated structure lemmas plus the intentional
+standalone corollary `outerplanar_minor`, retained as a reusable result.
+The archive must independently rebuild this commit before it is accepted.

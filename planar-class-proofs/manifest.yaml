@@ -32,6 +32,16 @@ bibEntries:
       note = {April 2011 preprint, Section 1.2.2, page 33},
       url = {https://www.labri.fr/perso/courcell/Book/TheBook.pdf}
     }
+  - |
+    @mastersthesis{Leander2009,
+      author = {Madeleine Leander},
+      title = {On the bunkbed conjecture},
+      school = {Stockholm University},
+      year = {2009},
+      number = {2009:7},
+      note = {Theorem 14, page 37},
+      url = {https://kurser.math.su.se/pluginfile.php/16103/mod_folder/content/0/2009/2009_07_report.pdf}
+    }
 issue:
   repositoryId: 1320232165
   number: 144
