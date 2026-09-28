@@ -88,6 +88,24 @@ lemma maxConsumedBits_le_initial_reserve {n c L : ℕ}
     (width := width) (bad := bad G hLpos) (next := next)
     potential hstep R (some s)
 
+/-- The source's initial `24 L n` tape reserve fits every guarded query
+tree rooted at any active subset of the `n` vertices. -/
+lemma maxConsumedBits_le_tape {n c L T : ℕ}
+    (hL : 1 ≤ L) (hreserve : 24 * L * n ≤ T)
+    (next : ∀ state : Option (GuardedState n c L),
+      Tape (width state) → Option (GuardedState n c L))
+    (hstop : ∀ bits, next none bits = none)
+    (hshrink : ∀ s bits s', next (some s) bits = some s' →
+      (Lax235315Proofs.Construction.MarkingMath.activeVertices n s'.activeA).card ≤
+        (Lax235315Proofs.Construction.MarkingMath.activeVertices n s.activeA).card / 2 + c ^ 2)
+    (G : SimpleGraph (Fin n)) (hLpos : 0 < L) :
+    ∀ R s, maxConsumedBits (protocol width (bad G hLpos) next R (some s)) ≤ T := by
+  intro R s
+  have hbits := maxConsumedBits_le_initial_reserve hL next hstop hshrink G hLpos R s
+  have hcount := Lax235315Proofs.Construction.MarkingMath.activeVertices_card_le n s.activeA
+  have hmul := Nat.mul_le_mul_left (24 * L) hcount
+  exact hbits.trans (hmul.trans hreserve)
+
 end
 
 end Lax235315Proofs.Construction.GuardedAdaptiveProtocol
