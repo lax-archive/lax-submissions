@@ -1,5 +1,6 @@
 import Lax303502Proofs.Circle
 import Lax68.StarOuterplanar
+import Lax68.StarPlanar
 
 set_option autoImplicit false
 
@@ -61,5 +62,26 @@ theorem star_outerplanar {V : Type*} [Finite V] {G : SimpleGraph V} :
     exact (Set.disjoint_left.mp hd hc₁ hc₂).elim
   · intro v
     simpa using circlePoint_onCircle (f v)
+
+/--
+---
+conclusion: Lax68.StarPlanar.star_planar
+---
+Every finite star is planar.
+
+# Proof strategy
+
+Use the explicit circle drawing from `star_outerplanar` and retain its
+straight-line drawing certificate.
+
+# Attribution
+
+Immediate consequence of the circle construction in this submission.
+-/
+theorem star_planar {V : Type*} [Finite V] {G : SimpleGraph V} :
+    Lax68.Stars.IsStar G → Lax68.Planar.IsPlanar G := by
+  intro h
+  obtain ⟨D⟩ := star_outerplanar h
+  exact ⟨D.toStraightLineDrawing⟩
 
 end Lax303502Proofs
