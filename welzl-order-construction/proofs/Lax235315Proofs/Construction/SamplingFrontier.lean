@@ -109,6 +109,7 @@ lemma run
       σ'.arrs "ord" = arrOf n ord' ∧
       PrefixEnumerates sampleCount ord' (sorted.take sampleCount).toFinset ∧
       (∀ v ∈ (sorted.take sampleCount).toFinset, v < n) ∧
+      (sorted.take sampleCount).toFinset ⊆ activeVertices n (view σ "activeA") ∧
       (sorted.take sampleCount).toFinset.card = sampleCount := by
   let L := Nat.clog 2 n
   let q := 2 ^ L
@@ -191,6 +192,14 @@ lemma run
   have hsampleRange : ∀ v ∈ (sorted.take sampleCount).toFinset, v < n := by
     intro v hv
     exact hsortedRange v (List.mem_of_mem_take (List.mem_toFinset.mp hv))
+  have hsampleSubset : (sorted.take sampleCount).toFinset ⊆
+      activeVertices n active := by
+    intro v hv
+    apply mem_activeVertices.mpr
+    have hvSorted : v ∈ sorted :=
+      List.mem_of_mem_take (List.mem_toFinset.mp hv)
+    exact ⟨hverticesRange v (hperm.subset hvSorted),
+      (mem_scanList.mp (hperm.subset hvSorted)).2.2⟩
   have hsampleCard : (sorted.take sampleCount).toFinset.card = sampleCount := by
     rw [List.toFinset_card_of_nodup hsampleNodup]
     simp [List.length_take, Nat.min_eq_left hsampleSorted]
@@ -214,7 +223,8 @@ lemma run
     nlinarith [hacountLe, hradix]
   refine ⟨bits, ?_⟩
   dsimp only
-  refine ⟨σ', ord, hrun, hcoarse, sampling_frontier_preserved h hrun, ?_, hord, hprefix, ?_, ?_⟩
+  refine ⟨σ', ord, hrun, hcoarse, sampling_frontier_preserved h hrun, ?_, hord, hprefix, ?_, ?_, ?_⟩
   · simpa [rest, L, hverticesLength] using hinp'
   · simpa [sorted] using hsampleRange
+  · simpa [sorted] using hsampleSubset
   · simpa [sorted] using hsampleCard
