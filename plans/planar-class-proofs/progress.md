@@ -35,8 +35,10 @@ Publication boundaries:
 - `ece79f7`: finite-tree outerplanarity, independently accepted by Lax.
 - `1b94bdd`: series-parallel planarity, independently accepted by Lax.
 - `dd76469`: outerplanar excluded minors, independently accepted by Lax.
-- Next draft: Wagner conditional on Kuratowski, with its minor/subdivision
-  bridge proved unconditionally.
+- `6130776`: Wagner conditional on Kuratowski, independently accepted by Lax,
+  with its minor/subdivision bridge proved unconditionally.
+- Current checkpoint: unconditional contraction and drawing-stability
+  infrastructure for Kuratowski; no additional original statement discharged.
 
 The original statements and definitions have not been modified. The new
 concept package is empty and the proof package requires the exact registered
@@ -74,9 +76,9 @@ algebraic proofs, not assumptions of a geometric picture.
    straight-line realization is now formalized: see the construction below.
 2. **Kuratowski in straight-line form.** Diestel Chapter 4, Theorem 4.4.6,
    supplies the forbidden-subdivision proof; Exercise 15 supplies the
-   straightening route. The missing Lean development includes drawing/face
-   topology, the three-connected contraction argument and the straightening
-   bridge. No verified proof of the original statement has been produced.
+   straightening route. The three-connected contraction argument is now
+   formalized. Drawing/face topology, the geometric induction step and the
+   full original characterization remain unfinished.
 3. **Wagner — conditional proof complete.** Theorem 4.4.6 and Lemma 4.4.2
    give the route. The minor/subdivision conversions are now proved in full,
    and Wagner follows using the original Kuratowski characterization as the
@@ -176,7 +178,7 @@ of them. `#print axioms` for the original equivalence and each direction
 lists only `propext`, `Classical.choice`, and `Quot.sound`. The 13 archive
 warnings are 12 automatically generated structure lemmas plus the intentional
 standalone corollary `outerplanar_minor`, retained as a reusable result.
-The archive must independently rebuild this commit before it is accepted.
+The archive independently rebuilt and accepted this commit.
 
 
 ## Wagner via the unconditional obstruction bridge
@@ -214,6 +216,50 @@ unconditional and the Wagner proof has exactly the stated Kuratowski
 assumption. Full local `lax build --replay` passes in 24 seconds and extracts
 six proofs with exactly those assumptions. The 22 warnings concern 21
 automatically generated structure lemmas and the intentional standalone
-`outerplanar_minor` corollary. This commit is submitted for independent
-archive verification. The remaining foundational proof is the original
+`outerplanar_minor` corollary. The archive independently rebuilt and accepted
+commit `6130776` (workflow run `36427264264`). The remaining foundational proof is the original
 finite Kuratowski characterization including the straight-line drawing step.
+
+## Kuratowski checkpoint: contraction and drawing stability
+
+Human proof first: Diestel, [Chapter 3, Lemma 3.2.4, printed page 68](https://www.math.uni-hamburg.de/home/diestel/books/graph.theory/preview/Ch3.pdf),
+gives the minimal-component proof of a three-connected edge contraction.
+[Chapter 4, Lemma 4.4.3, printed pages 108–109](https://www.math.uni-hamburg.de/home/diestel/books/graph.theory/preview/Ch4.pdf)
+uses it in the Kuratowski induction. Kaiser's
+[lecture notes, pages 3–5](https://home.zcu.cz/~kaisert/vpdm/3_v3.pdf)
+were subsequently consulted for the convex straight-line version of the
+vertex expansion. That geometric step has not yet been formalized.
+
+`CutComponents` proves the attachment properties of components after
+deleting a separator. `ContractibleEdge` implements Diestel's argument:
+choose a smallest component behind a separator consisting of an edge and
+one further vertex; a second failed contraction would give a strictly
+smaller such component.
+
+`GraphQuotients` transports connectivity through vertex identifications
+and composes the exact Lax68 branch-set minor models. `EdgeContraction`
+identifies the ends of an edge, supplies the concrete minor model, and
+proves preservation of connectivity after deleting at most two vertices.
+The unconditional minor/subdivision bridge then proves preservation of
+Kuratowski-freeness. `ThreeConnectedContraction` combines these results with
+the exact vertex-count decrease. Its endpoint supplies a smaller
+three-connected Kuratowski-free graph whenever the original has at least
+five vertices, without any open statement assumption.
+
+`SmallPlanar` draws the complete graph on four vertices at `(0,0)`, `(3,0)`,
+`(0,3)`, and `(1,1)`, and pulls that drawing back to any graph with at most
+four vertices. `DrawingStability` includes isolated vertices as singleton
+cells. It proves that intersecting segments form a closed condition on
+their endpoints, using compactness of the two interpolation parameters.
+A finite intersection of the complementary open conditions then shows
+that sufficiently small perturbations preserve the original drawing
+certificate.
+
+All seven modules pass their narrow Lean builds, and the full
+`lax build planar-class-proofs --replay` passes. Axiom audits of the contraction,
+four-vertex planarity, and drawing-stability endpoints list only `propext`,
+`Classical.choice`, and `Quot.sound`. No new annotated original proof is claimed: the submission still has five unconditional original
+proofs and Wagner conditional on Kuratowski. Remaining work includes the
+geometric vertex expansion and face structure, reduction to the
+three-connected case, and the geometric obstruction direction. The user
+requested that this checkpoint be pushed and work stop afterward.

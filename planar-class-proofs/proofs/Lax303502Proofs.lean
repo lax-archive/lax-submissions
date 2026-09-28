@@ -24,3 +24,10 @@ import Lax303502Proofs.KuratowskiMinorBridge
 import Lax303502Proofs.K5Split
 import Lax303502Proofs.KuratowskiObstructions
 import Lax303502Proofs.Wagner
+import Lax303502Proofs.CutComponents
+import Lax303502Proofs.ContractibleEdge
+import Lax303502Proofs.GraphQuotients
+import Lax303502Proofs.EdgeContraction
+import Lax303502Proofs.ThreeConnectedContraction
+import Lax303502Proofs.SmallPlanar
+import Lax303502Proofs.DrawingStability

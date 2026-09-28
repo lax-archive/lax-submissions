@@ -50,3 +50,12 @@ Wagner's theorem now has a checked proof conditional on Kuratowski's theorem.
 Kuratowski's straight-line characterization, which includes the straightening
 step, remains unproved; discharging it will also remove Wagner's remaining
 dependency.
+
+As groundwork for Kuratowski, this checkpoint also proves Diestel's
+three-connected edge-contraction lemma (Lemma 3.2.4), constructs the
+contracted graph and its minor model, and proves preservation of
+Kuratowski-freeness. It gives an explicit straight-line drawing for every
+graph with at most four vertices and proves that sufficiently small
+perturbations preserve a finite straight-line drawing. These are auxiliary
+results; the geometric induction step and the full Kuratowski
+characterization remain unfinished.
