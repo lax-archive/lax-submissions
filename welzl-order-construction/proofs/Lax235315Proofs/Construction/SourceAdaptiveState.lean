@@ -5,6 +5,7 @@ import Lax235315Proofs.Construction.RoundPotential
 import Lax235315Proofs.Construction.AdaptiveMachineBridge
 import Lax235315Proofs.Construction.InputSuffixFrame
 import Lax235315Proofs.Construction.RationalFailureBounds
+import Lax235315Proofs.Construction.HistoryDriverSource
 
 /-! Canonical round-boundary source states for an adaptive tape tree.  The
 input field is empty; each fresh block is appended only while executing the
@@ -34,6 +35,8 @@ open Lax235315Proofs.Construction.AdaptiveMachineBridge
 open Lax235315Proofs.Construction.InputSuffixFrame
 open Lax235315.ConstructionContracts
 open Lax235315Proofs.Construction.RationalFailureBounds
+open Lax235315Proofs.Construction.HistoryDriverSource
+open Lax235315Proofs.Construction.WelzlSetup
 open Lax11.GraphEncoding
 open Lax195003.WordRamRandomness
 
@@ -641,5 +644,26 @@ lemma machine_probability_of_source_good_paths {K c n w : ℕ}
     hlocal hbits (source_failure_budget start hvalid.1)
   intro ρ hρ
   exact hsuccess ρ ((goodPath_iff_not_mem_failingTapes p _ _ _).2 hρ)
+
+/-- A successful big-step execution need not carry the final near-linear
+cost proof itself: determinism identifies its result with the already proved
+bounded total source run on the same tape. -/
+lemma sourceGoodTapes_of_bigStep_good {c n T k : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)}
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c) (hT : sourceCost 6000 n x ≤ T)
+    (ρ : Fin T → Bool) {τ : Env}
+    (hr : BigStepB (sourceBound c x) welzlCom
+      (initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n))
+        ((c :: x) ++ bitTape ρ)) τ k)
+    (hg : τ.vars "good" = 1) :
+    ρ ∈ sourceGoodTapes c n x (sourceCost 6000 n x) T := by
+  obtain ⟨υ, hrun, _, _⟩ := welzlCom_run_correct hx hG hc hT ρ
+  have heq := run_final_eq (show Run (sourceBound c x) welzlCom
+    (initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n))
+      ((c :: x) ++ bitTape ρ)) τ k from ⟨k, le_rfl, hr⟩) hrun
+  subst υ
+  exact ⟨τ, hrun, hg⟩
 
 end Lax235315Proofs.Construction.SourceAdaptiveState
