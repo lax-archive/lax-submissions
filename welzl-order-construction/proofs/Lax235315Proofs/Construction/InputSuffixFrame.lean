@@ -80,4 +80,14 @@ lemma run_on_any_input_of_empty {B K : ℕ} {c : Com} {σ σ' : Env}
   have h' := run_appendInput h tail
   simpa [appendInput, hin, hout] using h'
 
+/-- If a canonical run consumes its entire finite input prefix, adding any
+later tape leaves its non-input output unchanged and makes that tape the
+unread input. -/
+lemma run_on_any_tail_after_exact_prefix {B K : ℕ} {c : Com}
+    {σ σ' : Env} (h : Run B c σ σ' K) (hout : σ'.inp = [])
+    (tail : List ℕ) :
+    Run B c {σ with inp := σ.inp ++ tail} {σ' with inp := tail} K := by
+  have h' := run_appendInput h tail
+  simpa [appendInput, hout] using h'
+
 end Lax235315Proofs.Construction.InputSuffixFrame
