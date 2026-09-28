@@ -214,6 +214,20 @@ lemma Accepted.good {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)}
     {s : RoundState c n x G} {τ : Env} (h : Accepted s τ) :
     τ.vars "good" = 1 := h.1.success
 
+lemma Accepted.withBitTape {c n K : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)} {s : RoundState c n x G} {τ : Env}
+    (h : Accepted s τ) (tail : Fin K → Bool) :
+    Accepted s (withInput τ (bitTape tail)) := by
+  have hB : 2 < sourceBound c x := by dsimp [sourceBound]; omega
+  have hfront := frontier_withInput h.1 (bitTape tail)
+    (by intro v hv; have := bitTape_binary tail v hv; omega)
+    (bitTape_binary tail)
+  refine ⟨hfront, ?_, ?_, ?_⟩
+  · simpa [withInput] using h.2.1
+  · simpa [withInput] using h.2.2.1
+  · obtain ⟨hstore⟩ := h.2.2.2
+    exact ⟨stored_withInput hstore (bitTape tail)⟩
+
 noncomputable def roundOutput {c n : ℕ} {x : List ℕ}
     {G : SimpleGraph (Fin n)} (s : RoundState c n x G)
     (hx : EncodesGraph x n G)
