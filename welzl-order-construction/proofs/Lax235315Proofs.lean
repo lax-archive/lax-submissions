@@ -126,3 +126,5 @@ import Lax235315Proofs.Crossings
 import Lax235315Proofs.ProgramLink
 import Lax235315Proofs.ProgramContracts
 import Lax235315Proofs.ReconstructionBridge
+import Lax235315Proofs.Construction.PairedReductionRound
+import Lax235315Proofs.Construction.SourceGoodPathCoupling
