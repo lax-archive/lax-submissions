@@ -55,6 +55,7 @@ import Lax235315Proofs.Construction.NearSweepSource
 import Lax235315Proofs.Construction.NearVerification
 import Lax235315Proofs.Construction.NeighborScan
 import Lax235315Proofs.Construction.NeighborhoodComplexity
+import Lax235315Proofs.Construction.NumericSampleLift
 import Lax235315Proofs.Construction.OrderEncoding
 import Lax235315Proofs.Construction.PackedKeys
 import Lax235315Proofs.Construction.PaperRun
