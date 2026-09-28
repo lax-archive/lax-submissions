@@ -57,7 +57,12 @@ lemma initial_round_state_after_setup_guarded_prefix
         (initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n))
           ((c :: x) ++ bitTape ρ)) τ
         (40 * (x.length + Nat.clog 2 n + 1) + 100) ∧
-      τ.inp = bitTape ρ ∧ s.env = withInput τ [] := by
+      τ.inp = bitTape ρ ∧ s.env = withInput τ [] ∧
+      s.env.vars "round" = 0 ∧
+      (∀ {τ' k},
+        Run (sourceBound c x)
+          (.while (.lt (.var "threshold") (.var "acount")) reductionRound) τ τ' k →
+        ∃ K, Run (sourceBound c x) reduceAll τ₀ τ' K) := by
   let B := sourceBound c x
   let emptyBits : Fin 0 → Bool := Fin.elim0
   obtain ⟨σ, rsetup, hfront, hin, hround, hacount⟩ :=
@@ -191,6 +196,9 @@ lemma initial_round_state_after_setup_guarded_prefix
     simp [appendInput, initEnv, bitTape, emptyBits, List.append_assoc]
   rw [hsetupTapeStart] at rsetupTape
   have rprefixTape := run_appendInput rprefix (bitTape ρ)
+  have r₁Tape := run_appendInput r₁ (bitTape ρ)
+  have r₂Tape := run_appendInput r₂ (bitTape ρ)
+  have r₃Tape := run_appendInput r₃ (bitTape ρ)
   have hinitAppend : appendInput
       (initEnv (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n)) (c :: x))
       (bitTape ρ) =
@@ -205,8 +213,27 @@ lemma initial_round_state_after_setup_guarded_prefix
       _ = [] := hinEmpty
   have hstate : hboundary.env = withInput (appendInput σ₃ (bitTape ρ)) [] := by
     simp [hboundary, withInput, appendInput, σ₃, σ₂, σ₁, Env.setVar, hinEmpty]
+  have hroundBoundary : hboundary.env.vars "round" = 0 := by
+    simp [hboundary, σ₃, σ₂, σ₁, Env.setVar, hround]
   refine ⟨hboundary, appendInput σ (bitTape ρ), appendInput σ₃ (bitTape ρ),
-    rsetupTape, rprefixTape, ?_, hτinp, hstate⟩
-  simpa [hinitAppend] using rsourceTape
+    rsetupTape, rprefixTape, ?_, hτinp, hstate, hroundBoundary, ?_⟩
+  · simpa [hinitAppend] using rsourceTape
+  · intro τ' k hwhile
+    have hnFalseTape : (Cond.lt (.var "n") (.lit 2)).evalB B
+        (appendInput σ (bitTape ρ)) = some false := by simpa using hnFalse
+    have hcFalseTape : (Cond.eq (.var "c") (.lit 0)).evalB B
+        (appendInput σ (bitTape ρ)) = some false := by simpa using hcFalse
+    have hquotFalseTape : (Cond.lt (.div (.var "n") (.var "c")) (.var "c")).evalB B
+        (appendInput σ (bitTape ρ)) = some false := by simpa using hquotFalse
+    have hsFalseTape : (Cond.lt (.div (.var "n") (.var "csq"))
+        (.mul (.lit 12) (.var "L"))).evalB B
+        (appendInput σ₁ (bitTape ρ)) = some false := by simpa using hsFalse
+    have rcond4 := Run.ite_false (c := .skip) hsFalseTape
+      (r₂Tape.seq (r₃Tape.seq hwhile))
+    have rcond3 := Run.ite_false (c := .skip) hquotFalseTape
+      (r₁Tape.seq rcond4)
+    have rcond2 := Run.ite_false (c := .assign "good" (.lit 0)) hcFalseTape rcond3
+    have rcond1 := Run.ite_false (c := .skip) hnFalseTape rcond2
+    exact ⟨_, by simpa [reduceAll, seqs] using rcond1⟩
 
 end Lax235315Proofs.Construction.InitialRoundStateSource

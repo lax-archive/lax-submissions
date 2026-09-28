@@ -11,6 +11,7 @@ import Lax235315Proofs.Construction.AdaptiveTapeCounting
 import Lax235315Proofs.Construction.BitArrays
 import Lax235315Proofs.Construction.BinaryWordEquiv
 import Lax235315Proofs.Construction.CertificateFrontier
+import Lax235315Proofs.Construction.CanonicalLiteralSampleGood
 import Lax235315Proofs.Construction.CertifiedBranch
 import Lax235315Proofs.Construction.CollisionDetection
 import Lax235315Proofs.Construction.CommitSource
@@ -36,6 +37,7 @@ import Lax235315Proofs.Construction.HistoryLoopSource
 import Lax235315Proofs.Construction.HistoryRoundSource
 import Lax235315Proofs.Construction.IndexedRestoreBridge
 import Lax235315Proofs.Construction.InputSuffixFrame
+import Lax235315Proofs.Construction.InitialRoundStateSource
 import Lax235315Proofs.Construction.Iterations
 import Lax235315Proofs.Construction.KeyFailureBounds
 import Lax235315Proofs.Construction.KeySampling
