@@ -1,0 +1,56 @@
+specVersion: "1"
+id: lax-303502
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "Direct proofs for planar graph classes"
+authors:
+  - name: "Clemens Kuske"
+bibEntries:
+  - |
+    @software{Begue2026Schoenflies,
+      author = {{\'A}lvaro Begu{\'e}},
+      title = {The Jordan--Sch{\"o}nflies theorem in Lean},
+      year = {2026},
+      url = {https://github.com/alonamaloh/schoenflies-lean},
+      version = {05a43d29cde026618777db3d4e4316204ccca237},
+      note = {Polygonal separation and nonplanarity of the utility graph}
+    }
+  - |
+    @book{Diestel2025,
+      author = {Reinhard Diestel},
+      title = {Graph Theory},
+      edition = {6},
+      publisher = {Springer},
+      year = {2025},
+      url = {https://diestel-graph-theory.com/}
+    }
+  - |
+    @techreport{PachTorocsik1992,
+      author = {J{\'a}nos Pach and Jen{\H{o}} T{\"o}r{\H{o}}csik},
+      title = {Layout of Rooted Trees},
+      institution = {Princeton University},
+      number = {CS-TR-369-92},
+      year = {1992},
+      url = {https://www.cs.princeton.edu/techreports/1992/369.pdf}
+    }
+  - |
+    @book{CourcelleEngelfriet2011,
+      author = {Bruno Courcelle and Joost Engelfriet},
+      title = {Graph Structure and Monadic Second-Order Logic, a Language Theoretic Approach},
+      year = {2011},
+      note = {April 2011 preprint, Section 1.2.2, page 33},
+      url = {https://www.labri.fr/perso/courcell/Book/TheBook.pdf}
+    }
+  - |
+    @mastersthesis{Leander2009,
+      author = {Madeleine Leander},
+      title = {On the bunkbed conjecture},
+      school = {Stockholm University},
+      year = {2009},
+      number = {2009:7},
+      note = {Theorem 14, page 37},
+      url = {https://kurser.math.su.se/pluginfile.php/16103/mod_folder/content/0/2009/2009_07_report.pdf}
+    }
+issue:
+  repositoryId: 1320232165
+  number: 144
