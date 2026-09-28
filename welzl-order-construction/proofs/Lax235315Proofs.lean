@@ -43,6 +43,7 @@ import Lax235315Proofs.Construction.LinkedReconstruction
 import Lax235315Proofs.Construction.LinkedRoundsSource
 import Lax235315Proofs.Construction.LinkedSource
 import Lax235315Proofs.Construction.ListCrossing
+import Lax235315Proofs.Construction.LiteralSampleGood
 import Lax235315Proofs.Construction.MachineBridge
 import Lax235315Proofs.Construction.MarkingMath
 import Lax235315Proofs.Construction.MarkingSource
