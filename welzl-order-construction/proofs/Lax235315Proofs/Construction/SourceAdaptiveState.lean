@@ -290,6 +290,11 @@ def sourceWidth {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)} :
   | none => 0
   | some s => width (some (toGuardedState s))
 
+lemma sourceWidth_some {c n : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)} (s : RoundState c n x G) :
+    sourceWidth (some s) =
+      ((activeVertices n (view s.env "activeA")).card * 8) * Nat.clog 2 n := rfl
+
 noncomputable def nextState {c n : ℕ} {x : List ℕ}
     {G : SimpleGraph (Fin n)}
     (hx : EncodesGraph x n G)
