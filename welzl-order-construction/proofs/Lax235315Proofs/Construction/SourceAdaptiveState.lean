@@ -3,6 +3,7 @@ import Lax235315Proofs.Construction.GuardedAdaptiveProtocol
 import Lax235315Proofs.Construction.GuardedArithmetic
 import Lax235315Proofs.Construction.RoundPotential
 import Lax235315Proofs.Construction.AdaptiveMachineBridge
+import Lax235315Proofs.Construction.InputSuffixFrame
 
 /-! Canonical round-boundary source states for an adaptive tape tree.  The
 input field is empty; each fresh block is appended only while executing the
@@ -29,6 +30,7 @@ open Lax235315Proofs.Construction.AdaptiveTapeCounting
 open Lax235315Proofs.Construction.AdaptiveBitBlocks
 open Lax235315Proofs.Construction.PositionFailureBits
 open Lax235315Proofs.Construction.AdaptiveMachineBridge
+open Lax235315Proofs.Construction.InputSuffixFrame
 open Lax11.GraphEncoding
 open Lax195003.WordRamRandomness
 
@@ -231,6 +233,35 @@ lemma roundOutput_spec {c n : ℕ} {x : List ℕ}
       ((roundOutput s hx hG hc bits).vars "good" ≠ 1 ∧
         (roundOutput s hx hG hc bits).vars "acount" = 0)) := by
   exact Classical.choose_spec (round_on_block s hx hG hc bits)
+
+lemma roundOutput_on_tail {c n : ℕ} {x : List ℕ}
+    {G : SimpleGraph (Fin n)} (s : RoundState c n x G)
+    (hx : EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 1 ≤ c)
+    (bits : Fin (width (some (toGuardedState s))) → Bool)
+    (tail : List ℕ) :
+    Run (sourceBound c x) reductionRound
+      (withInput s.env (bitTape bits ++ tail))
+      (withInput (roundOutput s hx hG hc bits) tail)
+      (4500 * (x.length + 1) + 120 * Nat.clog 2 n * s.env.vars "acount") := by
+  have hs := roundOutput_spec s hx hG hc bits
+  have hr := run_on_any_tail_after_exact_prefix hs.1 hs.2.1 tail
+  simpa [withBlock, withInput] using hr
+
+lemma loopTest_withInput {B c n : ℕ} {x : List ℕ}
+    {σ : Env} (h : Frontier B c n x σ) (tail : List ℕ) :
+    (Cond.lt (.var "threshold") (.var "acount")).evalB B (withInput σ tail) =
+      some (decide (σ.vars "threshold" < σ.vars "acount")) := by
+  have ht : (Expr.var "threshold").evalB B (withInput σ tail) =
+      some (σ.vars "threshold") := by
+    simpa [withInput] using
+      (evalB_var (h.workspace.bounded.vars "threshold"))
+  have ha : (Expr.var "acount").evalB B (withInput σ tail) =
+      some (σ.vars "acount") := by
+    simpa [withInput] using
+      (evalB_var (h.workspace.bounded.vars "acount"))
+  rw [evalB_condLt ht ha]
 
 def sourceWidth {c n : ℕ} {x : List ℕ} {G : SimpleGraph (Fin n)} :
     Option (RoundState c n x G) → ℕ
