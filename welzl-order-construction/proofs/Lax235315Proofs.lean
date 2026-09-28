@@ -29,6 +29,7 @@ import Lax235315Proofs.Construction.GraphAdaptiveProtocol
 import Lax235315Proofs.Construction.GoodSampleCertificate
 import Lax235315Proofs.Construction.GoodRoundBits
 import Lax235315Proofs.Construction.GuardedArithmetic
+import Lax235315Proofs.Construction.GuardedAdaptiveProtocol
 import Lax235315Proofs.Construction.GuardedDriverSource
 import Lax235315Proofs.Construction.HistoryDriverSource
 import Lax235315Proofs.Construction.HistoryLoopSource
