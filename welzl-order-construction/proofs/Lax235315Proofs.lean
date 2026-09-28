@@ -85,6 +85,8 @@ import Lax235315Proofs.Construction.RecordedCommit
 import Lax235315Proofs.Construction.RecordedHistory
 import Lax235315Proofs.Construction.ReductionLoopSource
 import Lax235315Proofs.Construction.ReductionRoundSource
+import Lax235315Proofs.Construction.RoundPrefixDeterminism
+import Lax235315Proofs.Construction.DispatchRoundCoupling
 import Lax235315Proofs.Construction.RefineOneSource
 import Lax235315Proofs.Construction.RefineSplitMath
 import Lax235315Proofs.Construction.RefineSplitSource
