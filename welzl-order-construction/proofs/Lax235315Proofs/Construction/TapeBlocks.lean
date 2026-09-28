@@ -138,12 +138,13 @@ lemma exists_scanTapeBits {active : ℕ → ℕ} {n L : ℕ} {source : List ℕ}
     (hsource : ∀ x ∈ source, x ≤ 1)
     (hlen : 8 * L * (scanList active 0 n).length ≤ source.length) :
     ∃ bits : ℕ → Fin 8 → List ℕ,
+      bits = scanTapeBits active L source ∧
       (∀ v < n, ∀ d, (bits v d).length = L) ∧
       (∀ v < n, ∀ d x, x ∈ bits v d → x ≤ 1) ∧
       source = keyTape bits (scanList active 0 n) ++
         source.drop (8 * L * (scanList active 0 n).length) := by
   let bits := scanTapeBits active L source
-  refine ⟨bits, ?_, ?_, ?_⟩
+  refine ⟨bits, rfl, ?_, ?_, ?_⟩
   · intro v hv d
     by_cases ha : active v = 1
     · have hrank := scanList_prefix_length_le active hv ha
@@ -221,7 +222,7 @@ lemma samplingPrefix_run_source
   let vertices := scanList active 0 n
   let bits := scanTapeBits active L source
   let rest := source.drop (8 * L * vertices.length)
-  obtain ⟨bits', hbitsLen, hbitsBinary, hprefix⟩ :=
+  obtain ⟨bits', hbitsCanonical, hbitsLen, hbitsBinary, hprefix⟩ :=
     exists_scanTapeBits hsource (by simpa [vertices] using hlen)
   have hinput : σ.inp = keyTape bits' vertices ++ rest := by
     calc

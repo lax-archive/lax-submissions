@@ -108,6 +108,10 @@ lemma run
       σ'.inp = σ.inp.drop (8 * Nat.clog 2 n * σ.vars "acount") ∧
       σ'.arrs "ord" = arrOf n ord' ∧
       PrefixEnumerates sampleCount ord' (sorted.take sampleCount).toFinset ∧
+      σ'.vars "collision" = (if HasAdjacentEqualDigits digits sorted then 1 else 0) ∧
+      bits = scanTapeBits (view σ "activeA") (Nat.clog 2 n) σ.inp ∧
+      (∀ d v, v ∈ vertices → digits d v < 2 ^ Nat.clog 2 n) ∧
+      (∀ v ∈ sorted, ∀ d, digits d v < 2 ^ Nat.clog 2 n) ∧
       (∀ v ∈ (sorted.take sampleCount).toFinset, v < n) ∧
       (sorted.take sampleCount).toFinset ⊆ activeVertices n (view σ "activeA") ∧
       (sorted.take sampleCount).toFinset.card = sampleCount := by
@@ -147,7 +151,7 @@ lemma run
     simpa [L, hverticesLength] using htape
   have hsource : ∀ b ∈ σ.inp, b ≤ 1 := h.workspace.randomInput
   let rest := σ.inp.drop (8 * L * vertices.length)
-  obtain ⟨bits, hbitsLen, hbitsBinary, hinputPrefix⟩ :=
+  obtain ⟨bits, hbitsCanonical, hbitsLen, hbitsBinary, hinputPrefix⟩ :=
     exists_scanTapeBits hsource htape'
   have hinp : σ.inp = keyTape bits vertices ++ rest := by
     calc
@@ -180,6 +184,9 @@ lemma run
     simpa [q] using hvalue
   have hperm : List.Perm sorted vertices :=
     radixSort8_perm hverticesNodup hdigitQ
+  have hsortedBound : ∀ v ∈ sorted, ∀ d, digits d v < q := by
+    intro v hv d
+    exact hdigitQ d v (hperm.subset hv)
   have hsortedNodup : sorted.Nodup := hperm.symm.nodup hverticesNodup
   have hsortedLength : sorted.length = vertices.length := hperm.length_eq
   have hsortedRange : ∀ v ∈ sorted, v < n := by
@@ -223,8 +230,13 @@ lemma run
     nlinarith [hacountLe, hradix]
   refine ⟨bits, ?_⟩
   dsimp only
-  refine ⟨σ', ord, hrun, hcoarse, sampling_frontier_preserved h hrun, ?_, hord, hprefix, ?_, ?_, ?_⟩
+  refine ⟨σ', ord, hrun, hcoarse, sampling_frontier_preserved h hrun, ?_, hord,
+    hprefix, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simpa [rest, L, hverticesLength] using hinp'
+  · simpa [digits, sorted, q, L] using hcollision
+  · simpa [active, L] using hbitsCanonical
+  · simpa [vertices] using hdigitQ
+  · simpa [sorted, q] using hsortedBound
   · simpa [sorted] using hsampleRange
   · simpa [sorted] using hsampleSubset
   · simpa [sorted] using hsampleCard

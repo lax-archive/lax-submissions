@@ -153,7 +153,8 @@ lemma reductionRound_run_stored {B c n bound : ℕ} {x : List ℕ}
         (σ'.vars "good" ≠ 1 ∧ σ'.vars "acount" = 0)) := by
   have ha : 0 < σ.vars "acount" := by omega
   have hs := Sampling.sampleSize_le_self hc ha
-  obtain ⟨bits, τ, ord, hp, hcost, hfront, hinp, hord, hprefix, hrange, hcard⟩ :=
+  obtain ⟨bits, τ, ord, hp, hcost, hfront, hinp, hord, hprefix, hcollisions,
+      hbitsCanonical, hkeyBound, hsortedBound, hrange, hcard⟩ :=
     SamplingFrontier.run h htape hqB (by omega) (by omega) hs
   have hac := hp.frame_var "acount" (by decide)
   have hrnd := hp.frame_var "round" (by decide)

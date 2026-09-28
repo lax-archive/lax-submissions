@@ -195,6 +195,12 @@ lemma samplingFrontier_good_sample_dispatch
       τ.arrs "ord" = arrOf n ord ∧
       PrefixEnumerates (sampleSize (σ.vars "acount") c) ord
         (sorted.take (sampleSize (σ.vars "acount") c)).toFinset ∧
+      τ.vars "collision" =
+        (if Lax235315Proofs.Construction.CollisionDetection.HasAdjacentEqualDigits
+          digits sorted then 1 else 0) ∧
+      bits = TapeBlocks.scanTapeBits (view σ "activeA") (Nat.clog 2 n) σ.inp ∧
+      (∀ d v, v ∈ vertices → digits d v < 2 ^ Nat.clog 2 n) ∧
+      (∀ v ∈ sorted, ∀ d, digits d v < 2 ^ Nat.clog 2 n) ∧
       (∀ v ∈ (sorted.take (sampleSize (σ.vars "acount") c)).toFinset, v < n) ∧
       (sorted.take (sampleSize (σ.vars "acount") c)).toFinset ⊆
         activeVertices n (view σ "activeA") ∧
@@ -218,11 +224,13 @@ lemma samplingFrontier_good_sample_dispatch
   have ha : 0 < σ.vars "acount" := by omega
   have hs := Sampling.sampleSize_le_self hc ha
   obtain ⟨bits, τ, ord, hsampleRun, hcost, hfront, hinp, hord,
-      hprefix, hrange, hsubset, hcard⟩ :=
+      hprefix, hcollisions, hbitsCanonical, hkeyBound, hsortedBound,
+      hrange, hsubset, hcard⟩ :=
     SamplingFrontier.run h htape hqB (by omega) (by omega) hs
   refine ⟨bits, ?_⟩
   dsimp only
-  refine ⟨τ, ord, hsampleRun, hfront, hord, hprefix, hrange, hsubset, hcard, ?_⟩
+  refine ⟨τ, ord, hsampleRun, hfront, hord, hprefix, hcollisions,
+    hbitsCanonical, hkeyBound, hsortedBound, hrange, hsubset, hcard, ?_⟩
   intro hcollision hbad
   let W := (RadixMath.radixSort8 (2 ^ Nat.clog 2 n)
     (ReadKeys.filledKey (fun d => view σ (RandomKeysRead.keyName d))
