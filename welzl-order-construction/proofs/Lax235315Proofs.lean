@@ -110,6 +110,7 @@ import Lax235315Proofs.Construction.ScanSampleTransport
 import Lax235315Proofs.Construction.SmallInputSource
 import Lax235315Proofs.Construction.SortedKeySampleBridge
 import Lax235315Proofs.Construction.SourceBounds
+import Lax235315Proofs.Construction.SourceAdaptiveState
 import Lax235315Proofs.Construction.StoredHistory
 import Lax235315Proofs.Construction.TapeBlocks
 import Lax235315Proofs.Construction.TapeKeyAgreement
