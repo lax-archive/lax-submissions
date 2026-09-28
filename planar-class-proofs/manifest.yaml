@@ -7,11 +7,14 @@ authors:
   - name: "Clemens Kuske"
 bibEntries:
   - |
-      @book{Diestel2025,
-        author = {Reinhard Diestel},
-        title = {Graph Theory},
-        edition = {6},
-        publisher = {Springer},
-        year = {2025},
-        url = {https://diestel-graph-theory.com/}
-      }
+    @book{Diestel2025,
+      author = {Reinhard Diestel},
+      title = {Graph Theory},
+      edition = {6},
+      publisher = {Springer},
+      year = {2025},
+      url = {https://diestel-graph-theory.com/}
+    }
+issue:
+  repositoryId: 1320232165
+  number: 144
