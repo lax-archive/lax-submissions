@@ -81,4 +81,26 @@ lemma digitBlock_bitsValue {a L : ℕ} (ρ : Fin ((a * 8) * L) → Bool)
   rw [digitBlock_eq_bitTape]
   rfl
 
+/-- The eight source slices, when packed as radix digits, are the key in the
+existing round-assignment equivalence. -/
+lemma packedKey_digitBlocks_eq_roundAssignmentEquiv {a L : ℕ}
+    (hL : 0 < L) (ρ : Fin ((a * 8) * L) → Bool) (i : Fin a) :
+    Lax235315Proofs.Construction.PackedKeys.packedKey (2 ^ L)
+        (fun d _ => bitsValue
+          (TapeBlocks.digitBlock ((bitTape ρ).drop (8 * L * i.val)) L d)) 0 =
+      (roundAssignmentEquiv a L hL ρ i).val := by
+  let literalDigits : Fin 8 → ℕ → ℕ := fun d _ => bitsValue
+    (TapeBlocks.digitBlock ((bitTape ρ).drop (8 * L * i.val)) L d)
+  have hdigits : literalDigits = bitDigits (bitBlockEquiv a L ρ i) := by
+    funext d v
+    simpa [literalDigits, bitDigits] using (digitBlock_bitsValue ρ i d)
+  change Lax235315Proofs.Construction.PackedKeys.packedKey (2 ^ L)
+    literalDigits 0 = (roundAssignmentEquiv a L hL ρ i).val
+  rw [hdigits]
+  change Lax235315Proofs.Construction.PackedKeys.packedKey (2 ^ L)
+    (bitDigits (bitBlockEquiv a L ρ i)) 0 =
+      Lax235315Proofs.Construction.PackedKeys.packedKey (2 ^ L)
+        (bitDigits (bitBlockEquiv a L ρ i)) 0
+  rfl
+
 end Lax235315Proofs.Construction.RoundBitReader
