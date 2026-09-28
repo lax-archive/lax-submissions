@@ -1,5 +1,6 @@
 import Lax235315Proofs.Construction.GraphAdaptiveProtocol
 import Lax235315Proofs.Construction.RoundPotential
+import Lax235315Proofs.Construction.AdaptiveMachineBridge
 import Mathlib.Tactic
 
 /-! A stopping adaptive graph protocol with the source loop's bit reserve.
@@ -13,6 +14,7 @@ open Lax235315Proofs.Construction.AdaptiveStateProtocol
 open Lax235315Proofs.Construction.GraphAdaptiveProtocol
 open Lax235315Proofs.Construction.PositionFailureBits
 open Lax235315Proofs.Construction.RoundPotential
+open Lax235315Proofs.Construction.AdaptiveMachineBridge
 
 noncomputable section
 
@@ -105,6 +107,44 @@ lemma maxConsumedBits_le_tape {n c L T : ℕ}
   have hcount := Lax235315Proofs.Construction.MarkingMath.activeVertices_card_le n s.activeA
   have hmul := Nat.mul_le_mul_left (24 * L) hcount
   exact hbits.trans (hmul.trans hreserve)
+
+/-- The remaining concrete obligation is a source-success proof for each
+path avoiding the counted bad blocks. Once supplied, the adaptive count gives
+the desired two-thirds successful-tape bound. -/
+lemma success_count_of_guarded_protocol {n c L T : ℕ}
+    {G : SimpleGraph (Fin n)}
+    (hc : 1 ≤ c) (hn : 0 < n) (hL : 1 ≤ L)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hNpow : n ≤ 2 ^ L)
+    (hreserve : 24 * L * n ≤ T)
+    (hbudget : (L : ℚ) *
+      (1 / (n : ℚ) ^ 6 + (c : ℚ) ^ 2 / n) ≤ 1 / 3)
+    (next : ∀ state : Option (GuardedState n c L),
+      Tape (width state) → Option (GuardedState n c L))
+    (hstop : ∀ bits, next none bits = none)
+    (hshrink : ∀ s bits s', next (some s) bits = some s' →
+      (Lax235315Proofs.Construction.MarkingMath.activeVertices n s'.activeA).card ≤
+        (Lax235315Proofs.Construction.MarkingMath.activeVertices n s.activeA).card / 2 + c ^ 2)
+    (start : GuardedState n c L)
+    (good : Set (Tape T))
+    (hsuccess : ∀ ρ,
+      ρ ∉ failingTapes
+        (protocol width (bad G (by omega : 0 < L)) next L (some start)) T
+        (fits_of_maxConsumedBits _ T
+          (maxConsumedBits_le_tape hL hreserve next hstop hshrink G
+            (by omega : 0 < L) L start)) → ρ ∈ good) :
+    (2 / 3 : ℚ) * 2 ^ T ≤ (good.ncard : ℚ) := by
+  let ε : ℚ := 1 / (n : ℚ) ^ 6 + (c : ℚ) ^ 2 / n
+  let p := protocol width (bad G (by omega : 0 < L)) next L (some start)
+  have hε : 0 ≤ ε := by dsimp [ε]; positivity
+  have hlocal : LocallyBounded ε p :=
+    locallyBounded_guarded_queries hc hG hNpow (by omega : 0 < L) next L (some start)
+  have hbits : maxConsumedBits p ≤ T :=
+    maxConsumedBits_le_tape hL hreserve next hstop hshrink G
+      (by omega : 0 < L) L start
+  apply success_count_of_protocol p ε hε hlocal hbits hbudget good
+  intro ρ hρ
+  exact hsuccess ρ hρ
 
 end
 
