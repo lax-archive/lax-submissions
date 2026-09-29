@@ -71,5 +71,10 @@ characterization remain unfinished.
 A local vertex-splitting lemma now reverses a contraction under explicit
 half-plane conditions. It moves only one vertex and proves that every
 sufficiently small positive displacement yields a straight-line drawing.
-Deriving those conditions from the facial neighbour order, and preserving
-the convex-face invariant, remain separate obligations.
+The conditions are now derived from consecutive angular blocks of incident
+rays. A direction-choice lemma handles both bounded transition faces and
+the reflex gap at an outer boundary. Signed-area estimates preserve supplied
+strictly convex polygon boundaries under the same small displacement.
+These geometric lemmas still require the facial-cycle and neighbour-order
+data; extracting that data from the graph and completing the induction
+remain unfinished.

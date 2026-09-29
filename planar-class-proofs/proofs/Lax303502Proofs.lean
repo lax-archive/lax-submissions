@@ -85,3 +85,5 @@ import Lax303502Proofs.ThreeConnectedContraction
 import Lax303502Proofs.SmallPlanar
 import Lax303502Proofs.DrawingStability
 import Lax303502Proofs.VertexSplit
+import Lax303502Proofs.CyclicVertexSplit
+import Lax303502Proofs.ConvexVertexSplit

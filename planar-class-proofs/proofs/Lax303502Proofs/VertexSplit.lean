@@ -11,6 +11,8 @@ Here the sector is supplied by explicit linear inequalities, one separating
 functional per disjoint pair of incident cells. The conclusion is the exact
 Lax68 straight-line drawing certificate. This module does not yet derive
 the inequalities from a facial order or assert preservation of convex faces.
+The geometric ray-order and polygon-boundary steps are developed in
+`CyclicVertexSplit` and `ConvexVertexSplit`.
 -/
 
 set_option autoImplicit false

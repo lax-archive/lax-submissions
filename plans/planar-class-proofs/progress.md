@@ -434,3 +434,68 @@ Full `lax build planar-class-proofs --replay` passes in 1m01s, including
 51 seconds of kernel replay. The six original proof conclusions and their
 assumptions are unchanged. The helper warnings are intentional at this
 intermediate boundary; Kuratowski remains open.
+
+
+## Cyclic sectors and convex boundary preservation (2026-09-29)
+
+The next geometric step follows Diestel, Chapter 4, Lemma 4.4.3 and
+Exercise 19, with the convex expansion described by Kaiser, Lecture 3,
+page 4. These sources were read before formalization. The details below
+supply the signed-area argument omitted from the lecture notes.
+
+`CyclicVertexSplit` proves the incident-cell certificate from two
+consecutive blocks of rays. Angles are unwrapped over a full turn, and
+nonnegative radii include singleton cells. A block of width at most π
+lies in the intersection of the two closed half-planes through its
+boundary rays. The complementary block lies outside the open sector,
+so one of those two linear functionals separates each retained neighbour
+from the moved star. Shared boundary rays and semicircles are allowed.
+At least one of the two blocks spans at most π; swapping the blocks
+negates a valid displacement.
+
+Convexity imposes an additional direction choice. Write the four bordering
+angles as `l ≤ a < b ≤ r < l+2π`, with the moved block between `a` and `b`.
+When both transition gaps are less than π, choose the displacement angle
+between `max(a,r-π)` and `min(b,l+π)`. The hypotheses make this interval
+nonempty. If the left gap exceeds π, choose between `l+π` and `a`; if the
+right gap exceeds π, choose between `b` and `r-π`. In the latter cases an
+enlarged sector still separates the stars. `exists_convex_split_direction`
+proves the splitting certificate and all four corner signs in these three
+cases. Strict convexity excludes transition gaps equal to π.
+
+`ConvexVertexSplit` defines the usual strict supporting-edge certificate:
+every other polygon vertex lies strictly to the left of each oriented
+boundary edge. The half-plane inequalities hold on the actual convex hull.
+The corner lemmas prove that checking a line against the two neighbours
+of a convex polygon corner suffices for all other vertices. This connects
+the four ray signs above to the collapsed triangle tests.
+
+For a triangle with vertices drawn from the split placement, its signed
+area is exactly `A + t*B`. There is no quadratic term because only one
+vertex moves. Positive old areas remain positive for sufficiently small
+`t`; zero old areas become positive when `B > 0`. In particular, a triangle
+`x,y,z` collapsed at `x=y` has coefficient `cross(w,p(z)-p(x))`.
+`vertex_split_convex_small` gives one positive bound for both the exact
+straight-line drawing certificate and every supplied polygon boundary.
+
+The boundary lists and angular order are still inputs. These lemmas do
+not prove that the lists enumerate the faces, extract the order from a
+two-connected drawing, or prove the forbidden alternating-neighbour
+configurations. Those connections, the three-connected reduction, and
+the independent K5 obstruction still belong to the unfinished Kuratowski
+proof. No original statement or dependency pin was changed.
+
+
+Validation: the narrow module builds and the full
+`lax build planar-class-proofs --replay` pass. The expanded wheel example
+checks all five boundary lists under one common displacement bound. A
+separate outer-boundary example opens a triangle into a convex quadrilateral;
+its reversed displacement is proved to fail the boundary certificate.
+Run the examples with
+`lake env lean ../../plans/planar-class-proofs/VertexSplitExample.lean`
+from the proof package. Axiom audits of the angular direction choice,
+convex-hull support, corner propagation, combined split, and examples list
+only `propext`, `Classical.choice`, and `Quot.sound`.
+The original proof count remains five unconditional conclusions and Wagner
+conditional on Kuratowski. The new helper warnings are intentional until
+the remaining facial-data construction and induction use these endpoints.
