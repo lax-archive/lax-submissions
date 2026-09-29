@@ -67,3 +67,9 @@ graph with at most four vertices and proves that sufficiently small
 perturbations preserve a finite straight-line drawing. These are auxiliary
 results; the geometric induction step and the full Kuratowski
 characterization remain unfinished.
+
+A local vertex-splitting lemma now reverses a contraction under explicit
+half-plane conditions. It moves only one vertex and proves that every
+sufficiently small positive displacement yields a straight-line drawing.
+Deriving those conditions from the facial neighbour order, and preserving
+the convex-face invariant, remain separate obligations.

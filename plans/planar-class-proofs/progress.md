@@ -389,3 +389,48 @@ resubmitting the existing draft. This includes the independent K3,3 obstruction
 and the contraction and drawing-stability infrastructure. Earlier publication
 boundaries above describe historical checkpoints. The full characterization
 is still unfinished.
+
+## Local vertex splitting (2026-09-29)
+
+Following the user's request to keep the groundwork simple, `VertexSplit`
+isolates the geometric operation from the missing face theory. Human sources
+were checked first: Diestel, Chapter 4, Lemma 4.4.3 and Exercise 19, and
+Kaiser's Lecture 3, page 4 (links above). The stronger convex-drawing induction
+remains the intended route to avoid a separate straightening theorem.
+
+Write `p` for the contracted placement on the original vertex set, so
+`p x = p y = o`. `SplitDirection` requires, for every disjoint pair of
+incident cells `xa` and `yb`, a linear functional `f` with
+`f(p a-o) ≤ 0`, `f(p b-o) ≥ 0`, and `f(w) > 0`. The functionals may differ
+between edge pairs. Singleton cells are included, so injectivity and
+vertex-on-edge avoidance are covered by the same argument.
+
+The new placement keeps every vertex except `y` fixed and sets
+`p_t y = o + t*w`. For incident cells, applying `f` to a hypothetical
+intersection forces it to be the stationary endpoint `b`; the contracted
+drawing excludes that endpoint from the other cell. For all other cell
+pairs, the old segments are disjoint, and the finite openness argument in
+`DrawingStability` supplies a common positive bound on `t`.
+
+`vertex_split_small` proves that every sufficiently small positive `t`
+gives `SeparatedPlacement G p_t`; `planar_of_vertex_split` produces the
+exact original `Lax68.Planar.IsPlanar G` certificate. Neither result assumes
+an open archive statement. The local lemma does **not** yet establish the
+existence of `SplitDirection` from the combinatorial neighbour-order
+condition, or preserve the convex-face invariant. Those remain the next
+connections required by the intended induction; no new original
+Kuratowski/Wagner conclusion is claimed.
+
+A concrete check in `plans/planar-class-proofs/VertexSplitExample.lean`
+splits the explicit `K₄` drawing into a wheel on five vertices, using
+`w = (1,2)` and the two coordinate functionals. It includes a shared
+neighbour and cases with equality on a separating line. Running
+`lake env lean ../../plans/planar-class-proofs/VertexSplitExample.lean`
+from the proof package succeeds. Axiom audits for the general lemma,
+its planarity corollary, and the example list only `propext`,
+`Classical.choice`, and `Quot.sound`.
+
+Full `lax build planar-class-proofs --replay` passes in 1m01s, including
+51 seconds of kernel replay. The six original proof conclusions and their
+assumptions are unchanged. The helper warnings are intentional at this
+intermediate boundary; Kuratowski remains open.
