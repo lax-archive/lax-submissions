@@ -1,0 +1,12 @@
+build-output.json
+paper.pdf
+paper-web.tar
+lake-manifest.json
+.lake/
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+*.out
+*.synctex.gz
+main.pdf
