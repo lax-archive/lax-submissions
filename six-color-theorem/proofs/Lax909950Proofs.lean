@@ -1,8 +1,0 @@
-import Lax909950Proofs.Deletion
-import Lax909950Proofs.EdgeDensity
-import Lax909950Proofs.EulerFormula
-import Lax909950Proofs.Forest
-import Lax909950Proofs.Geometry
-import Lax909950Proofs.LowDegree
-import Lax909950Proofs.SixColoring
-import Lax909950Proofs.Winding
