@@ -23,10 +23,10 @@
 \maketitle
 \vspace{-1em}
 
-This catalog follows the chapter order of the supplied survey, retaining only
-chapters represented by formalized definitions. Chapter numbers match the
-survey. Arrows link to source concepts; marked passages open their Lean
-encodings alongside the PDF.
+This catalog follows the chapter structure of
+\href{https://doi.org/10.1137/1.9780898719796}{\emph{Graph Classes: A
+Survey}} by Brandst\"adt, Le, and Spinrad. It references formalized
+definitions of graph classes and width parameters.
 
 \begingroup
 \small
@@ -92,10 +92,9 @@ corresponding rungs. See \source{lax-68}{Lax68.Ladders}.
 
 \subsection{Some special graphs}
 
-The remaining examples follow the survey's special-graph discussion. Where
-the classes are nested, triangles lie among maximal outerplanar graphs, and
-outerplanar graphs lie among planar graphs. Grids, walls, series-parallel
-graphs, and triangulations provide further examples in this chapter.
+The inclusion chain is triangles, maximal outerplanar graphs, outerplanar
+graphs, and planar graphs. The list also includes grids, walls,
+series-parallel graphs, and triangulations.
 
 % lax begin Lax68.Triangles
 \textbf{Triangles.} This is the three-vertex complete graph, which is also a
@@ -174,6 +173,18 @@ edges until the remaining graph is acyclic. See
 
 The survey treats elimination and neighborhood-based orderings; these
 formalized concepts likewise use linear orders and reachability.
+
+% lax begin Lax195003.WelzlOrders
+\textbf{Welzl orders.} These orders bound how many times each set in a finite
+set system is crossed along consecutive positions. See
+\source{lax-195003}{Lax195003.WelzlOrders}.
+% lax end
+
+% lax begin Lax195003.WelzlOrdersInGraphs
+\textbf{Graph Welzl orders.} For a graph, the set system consists of
+neighborhoods at a fixed radius. See
+\source{lax-195003}{Lax195003.WelzlOrdersInGraphs}.
+% lax end
 
 % lax begin Lax199508.Admissibility
 \textbf{Admissibility.} Relative to an ordering, this parameter counts short

@@ -22,6 +22,12 @@ rev = "e9845c204d14a5678f9d64c0e6f4ca757d9dc9d0"
 subDir = "sparsity-lectures-v4-33/concepts"
 
 [[require]]
+name = "Lax195003"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "63ac657db4dd622a1a74f5adfb0f56b2193b3007"
+subDir = "welzl-orders/concepts"
+
+[[require]]
 name = "Lax710763"
 git = "https://github.com/lax-archive/lax-submissions"
 rev = "5e97e29d5a0c37894d1d49488a9ff5b560c3a5a6"
