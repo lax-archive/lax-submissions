@@ -1,0 +1,79 @@
+name = "Lax326031"
+defaultTargets = ["Lax326031"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+
+[[require]]
+name = "Lax68"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "f179bc81671b353be657432784d7dee68486b0bd"
+subDir = "planar-graph-classes-v4-33/concepts"
+
+[[require]]
+name = "Lax199508"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "e9845c204d14a5678f9d64c0e6f4ca757d9dc9d0"
+subDir = "sparsity-lectures-v4-33/concepts"
+
+[[require]]
+name = "Lax710763"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "5e97e29d5a0c37894d1d49488a9ff5b560c3a5a6"
+subDir = "monadic-dependence-neighborhood-complexity-v4-33/concepts"
+
+[[require]]
+name = "Lax871432"
+git = "https://github.com/tseppelt/lax-preservation-closure"
+rev = "1ec649072b019e5780d65f0868fc99b769865a84"
+subDir = "concepts"
+
+[[require]]
+name = "Lax214022"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "62feca320cf05d8b5157e8da4cfb84a8ff9d5b40"
+subDir = "cograph-welzl-orders/concepts"
+
+[[require]]
+name = "Lax9"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "516940643590249b6bec961242467c201bdfb98b"
+subDir = "merge-width-v4-33/concepts"
+
+[[require]]
+name = "Lax228581"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "1e200ffac8b69e63b802f0aaf1dfee79561ca39a"
+subDir = "twin-width-treewidth-separation-v433/concepts"
+
+[[require]]
+name = "Lax153141"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "bf77d7f88c195af43710fa96210d0695408564de"
+subDir = "twin-width-mixed-minor-number-v4-33/concepts"
+
+[[require]]
+name = "Lax271696"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "0503df0eaf4e41104b9a3aa31e3e028b5adf7a0e"
+subDir = "ram-linear-time/concepts"
+
+[[require]]
+name = "Lax379983"
+git = "https://github.com/bonborec/Lax"
+rev = "16be435d89ceb96605fbbd35bd1aeb7b68db9b70"
+subDir = "concepts"
+
+[[require]]
+name = "Lax762056"
+git = "https://github.com/EdouardBonnet/dms-conjecture"
+rev = "9b1cc5b95978a6f5e63bca5bcbf7262a1bd7a25c"
+subDir = "concepts"
+
+[[lean_lib]]
+name = "Lax326031"

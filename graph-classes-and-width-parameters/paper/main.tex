@@ -1,0 +1,209 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=28mm]{geometry}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{linkblue}{HTML}{174C77}
+\hypersetup{colorlinks=true,urlcolor=linkblue,linkcolor=linkblue,
+  pdftitle={Graph Classes and Width Parameters in Lax},pdfauthor={Clemens Kuske}}
+\newcommand{\source}[2]{\href{https://laxarchive.org/#1/#2.html}{\texttt{#1}}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+
+\title{Graph Classes and Width Parameters in Lax}
+\author{Clemens Kuske}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+This guide points to definitions in existing Lax submissions. Each marked
+passage opens the original concept and its Lean encoding beside the PDF. The
+source identifiers are also clickable in the PDF itself. The chapters are a
+reading order, not new definitions or claims of equivalence between
+formalizations. This submission has no concepts or proofs of its own.
+
+\section{Graph classes and closure}
+
+% lax begin Lax199508.GraphClasses
+\textbf{Graph classes.} The sparsity lectures use families of finite simple
+graphs on canonical vertex sets; see
+\source{lax-199508}{Lax199508.GraphClasses}.
+% lax end
+
+% lax begin Lax871432.GraphClasses
+\textbf{Isomorphism-closed graph classes.} A separate submission develops
+class operations in an isomorphism-invariant setting; see
+\source{lax-871432}{Lax871432.GraphClasses}.
+% lax end
+
+% lax begin Lax871432.ClosureProperties
+\textbf{Closure properties.} This concept covers induced-subgraph, minor,
+contraction, summand, and union closure. Induced-subgraph closure is the
+hereditary-class property; see
+\source{lax-871432}{Lax871432.ClosureProperties}.
+% lax end
+
+% lax begin Lax153141.GraphParameters
+\textbf{Graph parameters.} A common signature and functional equivalence of
+parameters appear in \source{lax-153141}{Lax153141.GraphParameters}.
+% lax end
+
+\section{Sparse graph classes}
+
+% lax begin Lax199508.NowhereDenseClasses
+\textbf{Nowhere dense classes.} The source uses excluded shallow clique
+minors; see \source{lax-199508}{Lax199508.NowhereDenseClasses}.
+% lax end
+
+% lax begin Lax199508.UniformQuasiWideness
+\textbf{Uniform quasi-wideness.} The distance-independent-set viewpoint is
+in \source{lax-199508}{Lax199508.UniformQuasiWideness}.
+% lax end
+
+% lax begin Lax710763.GraphClasses
+\textbf{Weakly sparse classes.} Exclusion of a complete bipartite subgraph
+is formalized in \source{lax-710763}{Lax710763.GraphClasses}.
+% lax end
+
+% lax begin Lax710763.MonadicDependence
+\textbf{Monadically dependent classes.} The transduction-based class property
+appears in \source{lax-710763}{Lax710763.MonadicDependence}.
+% lax end
+
+% lax begin Lax68.Planar
+\textbf{Planar graphs.} A straight-line drawing certificate is used in
+\source{lax-68}{Lax68.Planar}.
+% lax end
+
+% lax begin Lax68.Outerplanar
+\textbf{Outerplanar graphs.} The corresponding drawing-based concept is
+\source{lax-68}{Lax68.Outerplanar}.
+% lax end
+
+% lax begin Lax68.SeriesParallel
+\textbf{Series-parallel graphs.} Two-terminal series and parallel
+composition is treated in \source{lax-68}{Lax68.SeriesParallel}.
+% lax end
+
+\clearpage
+\section{Hereditary and forbidden-pattern classes}
+
+% lax begin Lax214022.Cographs
+\textbf{Cographs.} This submission characterizes the class by twin-width
+zero; see \source{lax-214022}{Lax214022.Cographs}.
+% lax end
+
+% lax begin Lax762056.InducedMinors
+\textbf{Induced-minor exclusion.} The containment relation itself is in
+\source{lax-762056}{Lax762056.InducedMinors}.
+% lax end
+
+% lax begin Lax762056.Grid
+\textbf{Excluded induced grid minors.} A class specified by forbidding an
+induced square-grid minor is represented in
+\source{lax-762056}{Lax762056.Grid}.
+% lax end
+
+% lax begin Lax9.ChiBoundedness
+\textbf{Chromatic versus clique number.} The $\chi$-bounded class property is
+formalized in \source{lax-9}{Lax9.ChiBoundedness}.
+% lax end
+
+\section{Width and deletion parameters}
+
+% lax begin Lax228581.Treewidth
+\textbf{Treewidth.} Tree decompositions and their width are defined in
+\source{lax-228581}{Lax228581.Treewidth}.
+% lax end
+
+% lax begin Lax228581.TwinWidth
+\textbf{Twin-width.} The partition-sequence formulation is in
+\source{lax-228581}{Lax228581.TwinWidth}.
+% lax end
+
+% lax begin Lax153141.MixedMinorNumber
+\textbf{Mixed minor number.} This ordered-adjacency-matrix parameter is in
+\source{lax-153141}{Lax153141.MixedMinorNumber}.
+% lax end
+
+% lax begin Lax9.MergeWidth
+\textbf{Merge-width.} Merge sequences and radius-dependent width appear in
+\source{lax-9}{Lax9.MergeWidth}.
+% lax end
+
+% lax begin Lax271696.CliqueExpr
+\textbf{Cliquewidth.} The $k$-expression formulation is in
+\source{lax-271696}{Lax271696.CliqueExpr}.
+% lax end
+
+% lax begin Lax379983.FeedbackVertexNumber
+\textbf{Feedback vertex number.} Deletion of vertices to an acyclic graph
+is measured in \source{lax-379983}{Lax379983.FeedbackVertexNumber}.
+% lax end
+
+% lax begin Lax379983.FeedbackEdgeNumber
+\textbf{Feedback edge number.} The edge-deletion counterpart is in
+\source{lax-379983}{Lax379983.FeedbackEdgeNumber}.
+% lax end
+
+\section{Sparsity measures and vertex orders}
+
+% lax begin Lax199508.ColoringNumbers
+\textbf{Generalized coloring numbers.} Weak and strong reachability through
+short paths are treated in \source{lax-199508}{Lax199508.ColoringNumbers}.
+% lax end
+
+% lax begin Lax199508.Admissibility
+\textbf{Admissibility.} The path-family parameter is in
+\source{lax-199508}{Lax199508.Admissibility}.
+% lax end
+
+% lax begin Lax199508.ShallowMinorDensity
+\textbf{Shallow-minor density.} A depth-dependent edge-density measure is in
+\source{lax-199508}{Lax199508.ShallowMinorDensity}.
+% lax end
+
+% lax begin Lax199508.NeighborhoodComplexity
+\textbf{Almost-linear neighborhood complexity.} Neighborhood traces on
+vertex sets are formalized in
+\source{lax-199508}{Lax199508.NeighborhoodComplexity}.
+% lax end
+
+% lax begin Lax9.NeighborhoodComplexity
+\textbf{Linear neighborhood complexity.} A separate formulation appears in
+\source{lax-9}{Lax9.NeighborhoodComplexity}.
+% lax end
+
+\section{Containment and example families}
+
+% lax begin Lax68.GraphMinors
+\textbf{Graph minors.} The branch-set formulation is in
+\source{lax-68}{Lax68.GraphMinors}.
+% lax end
+
+% lax begin Lax68.GraphTopologicalMinors
+\textbf{Topological minors.} The internally disjoint path formulation is in
+\source{lax-68}{Lax68.GraphTopologicalMinors}.
+% lax end
+
+% lax begin Lax68.GridsAndWalls
+\textbf{Grids and walls.} Canonical sparse examples appear in
+\source{lax-68}{Lax68.GridsAndWalls}.
+% lax end
+
+% lax begin Lax68.Trees
+\textbf{Trees.} The tree class is recorded in
+\source{lax-68}{Lax68.Trees}.
+% lax end
+
+% lax begin Lax68.Paths
+\textbf{Paths.} The finite path graphs are recorded in
+\source{lax-68}{Lax68.Paths}.
+% lax end
+
+\end{document}
