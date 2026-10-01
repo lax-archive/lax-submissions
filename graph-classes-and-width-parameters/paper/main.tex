@@ -42,54 +42,61 @@ These references collect graph classes, their closure properties, graph
 parameters, and elementary graph families.
 
 % lax begin Lax199508.GraphClasses
-\textbf{Graph classes.} The sparsity lectures represent a class by its finite
+\textbf{Graph classes.}
+% lax end
+The sparsity lectures represent a class by its finite
 simple graphs on canonical vertex sets, giving a common starting point for
 the later sparsity notions; see
 \source{lax-199508}{Lax199508.GraphClasses}.
-% lax end
 
 % lax begin Lax871432.GraphClasses
-\textbf{Isomorphism-closed graph classes.} Another treatment makes closure
+\textbf{Isomorphism-closed graph classes.}
+% lax end
+Another treatment makes closure
 under isomorphism explicit and provides union and intersection operations;
 see \source{lax-871432}{Lax871432.GraphClasses}.
-% lax end
 
 % lax begin Lax871432.ClosureProperties
-\textbf{Closure properties.} This concept groups closure under induced
+\textbf{Closure properties.}
+% lax end
+This concept groups closure under induced
 subgraphs, minors, contractions, disjoint-union summands, and disjoint union.
 In particular, induced-subgraph closure is the usual hereditary property;
 see \source{lax-871432}{Lax871432.ClosureProperties}.
-% lax end
 
 % lax begin Lax153141.GraphParameters
-\textbf{Graph parameters.} This concept gives a shared signature for
+\textbf{Graph parameters.}
+% lax end
+This concept gives a shared signature for
 natural-number graph parameters and records when two parameters bound one
 another up to functions; see
 \source{lax-153141}{Lax153141.GraphParameters}.
-% lax end
 
 % lax begin Lax68.Paths
-\textbf{Paths.} These are the finite path graphs, the simplest connected
+\textbf{Paths.}
+% lax end
+These are the finite path graphs, the simplest connected
 examples in the list; every path is a tree. See
 \source{lax-68}{Lax68.Paths}.
-% lax end
 
 % lax begin Lax68.Stars
-\textbf{Stars.} These trees have one centre joined to all other vertices;
+\textbf{Stars.}
+% lax end
+These trees have one centre joined to all other vertices;
 their leaves have no edges between them. See
 \source{lax-68}{Lax68.Stars}.
-% lax end
 
 % lax begin Lax68.Trees
-\textbf{Trees.} A tree is connected and acyclic, so both paths and stars
-form subclasses of the tree family. See \source{lax-68}{Lax68.Trees}.
+\textbf{Trees.}
 % lax end
+A tree is connected and acyclic, so both paths and stars
+form subclasses of the tree family. See \source{lax-68}{Lax68.Trees}.
 
 % lax begin Lax68.Ladders
-\textbf{Ladders.} A ladder is a two-row grid, with two paths joined by
-corresponding rungs. See \source{lax-68}{Lax68.Ladders}.
+\textbf{Ladders.}
 % lax end
-
+A ladder is a two-row grid, with two paths joined by
+corresponding rungs. See \source{lax-68}{Lax68.Ladders}.
 \subsection{Some special graphs}
 
 The inclusion chain is triangles, maximal outerplanar graphs, outerplanar
@@ -97,57 +104,63 @@ graphs, and planar graphs. The list also includes grids, walls,
 series-parallel graphs, and triangulations.
 
 % lax begin Lax68.Triangles
-\textbf{Triangles.} This is the three-vertex complete graph, which is also a
-maximal outerplanar graph. See \source{lax-68}{Lax68.Triangles}.
+\textbf{Triangles.}
 % lax end
+This is the three-vertex complete graph, which is also a
+maximal outerplanar graph. See \source{lax-68}{Lax68.Triangles}.
 
 % lax begin Lax68.MaximalOuterplanar
-\textbf{Maximal outerplanar graphs.} These outerplanar graphs are maximal
+\textbf{Maximal outerplanar graphs.}
+% lax end
+These outerplanar graphs are maximal
 under adding edges while preserving outerplanarity; every triangle is an
 example. See
 \source{lax-68}{Lax68.MaximalOuterplanar}.
-% lax end
 
 % lax begin Lax68.Outerplanar
-\textbf{Outerplanar graphs.} They admit a crossing-free drawing with every
+\textbf{Outerplanar graphs.}
+% lax end
+They admit a crossing-free drawing with every
 vertex on the outer face, so this family is contained in the planar graphs. See
 \source{lax-68}{Lax68.Outerplanar}.
-% lax end
 
 % lax begin Lax68.SeriesParallel
-\textbf{Series-parallel graphs.} This class is generated from a single edge
+\textbf{Series-parallel graphs.}
+% lax end
+This class is generated from a single edge
 by two-terminal series and parallel constructions. See
 \source{lax-68}{Lax68.SeriesParallel}.
-% lax end
 
 % lax begin Lax68.Triangulations
-\textbf{Triangulations.} These are maximal planar graphs, obtained by
+\textbf{Triangulations.}
+% lax end
+These are maximal planar graphs, obtained by
 triangulating the faces of a planar embedding. See
 \source{lax-68}{Lax68.Triangulations}.
-% lax end
 
 % lax begin Lax68.GridsAndWalls
-\textbf{Grids and walls.} Rectangular grids and their brick-wall variants
+\textbf{Grids and walls.}
+% lax end
+Rectangular grids and their brick-wall variants
 are standard planar examples and recurring structural patterns. See
 \source{lax-68}{Lax68.GridsAndWalls}.
-% lax end
 
 % lax begin Lax68.Planar
-\textbf{Planar graphs.} These graphs admit a drawing in the plane with no
+\textbf{Planar graphs.}
+% lax end
+These graphs admit a drawing in the plane with no
 crossing edges; the formalized entry records a straight-line drawing as a
 certificate. See \source{lax-68}{Lax68.Planar}.
-% lax end
-
 \surveychapter{1}{Perfection, Generalized Perfection, and Related Concepts}
 
 \subsection{Related concepts}
 
 % lax begin Lax9.ChiBoundedness
-\textbf{$\chi$-boundedness.} This class property bounds chromatic number as
+\textbf{$\chi$-boundedness.}
+% lax end
+This class property bounds chromatic number as
 a function of clique number, a control closely related to graph perfection.
 See \source{lax-9}{Lax9.ChiBoundedness}.
-% lax end
-
 \surveychapter{2}{Cycles, Chords, and Bridges}
 
 \subsection{Cycle deletion parameters}
@@ -156,17 +169,18 @@ These parameters count the deletions needed to remove all cycles, by deleting
 vertices or edges.
 
 % lax begin Lax379983.FeedbackVertexNumber
-\textbf{Feedback vertex number.} This measures the minimum number of vertices
+\textbf{Feedback vertex number.}
+% lax end
+This measures the minimum number of vertices
 to remove so the remaining graph is a forest. See
 \source{lax-379983}{Lax379983.FeedbackVertexNumber}.
-% lax end
 
 % lax begin Lax379983.FeedbackEdgeNumber
-\textbf{Feedback edge number.} This is the edge-deletion counterpart: remove
+\textbf{Feedback edge number.}
+% lax end
+This is the edge-deletion counterpart: remove
 edges until the remaining graph is acyclic. See
 \source{lax-379983}{Lax379983.FeedbackEdgeNumber}.
-% lax end
-
 \surveychapter{4}{Vertex and Edge Orderings}
 
 \subsection{Orderings and neighborhood measures}
@@ -175,116 +189,129 @@ The survey treats elimination and neighborhood-based orderings; these
 formalized concepts likewise use linear orders and reachability.
 
 % lax begin Lax195003.WelzlOrders
-\textbf{Welzl orders.} These orders bound how many times each set in a finite
+\textbf{Welzl orders.}
+% lax end
+These orders bound how many times each set in a finite
 set system is crossed along consecutive positions. See
 \source{lax-195003}{Lax195003.WelzlOrders}.
-% lax end
 
 % lax begin Lax195003.WelzlOrdersInGraphs
-\textbf{Graph Welzl orders.} For a graph, the set system consists of
+\textbf{Graph Welzl orders.}
+% lax end
+For a graph, the set system consists of
 neighborhoods at a fixed radius. See
 \source{lax-195003}{Lax195003.WelzlOrdersInGraphs}.
-% lax end
 
 % lax begin Lax199508.Admissibility
-\textbf{Admissibility.} Relative to an ordering, this parameter counts short
+\textbf{Admissibility.}
+% lax end
+Relative to an ordering, this parameter counts short
 paths from a vertex to earlier vertices that meet only at their start. See
 \source{lax-199508}{Lax199508.Admissibility}.
-% lax end
 
 % lax begin Lax199508.ColoringNumbers
-\textbf{Generalized coloring numbers.} Weak and strong reachability count
+\textbf{Generalized coloring numbers.}
+% lax end
+Weak and strong reachability count
 vertices accessible by short paths under a linear order; the parameters
 minimize the largest count over all orders. See
 \source{lax-199508}{Lax199508.ColoringNumbers}.
-% lax end
 
 % lax begin Lax199508.NeighborhoodComplexity
-\textbf{Almost-linear neighborhood complexity.} This bounds the number of
+\textbf{Almost-linear neighborhood complexity.}
+% lax end
+This bounds the number of
 distinct neighborhood traces on a vertex set by a near-linear function of
 its size. See \source{lax-199508}{Lax199508.NeighborhoodComplexity}.
-% lax end
 
 % lax begin Lax9.NeighborhoodComplexity
-\textbf{Linear neighborhood complexity.} This companion formulation asks for
+\textbf{Linear neighborhood complexity.}
+% lax end
+This companion formulation asks for
 a linear bound on distinct neighborhood traces. See
 \source{lax-9}{Lax9.NeighborhoodComplexity}.
-% lax end
-
 \surveychapter{6}{Forbidden Subgraphs}
 
 \subsection{Forbidden induced subgraphs}
 
 % lax begin Lax214022.Cographs
-\textbf{Cographs.} Their forbidden-pattern characterization uses the
+\textbf{Cographs.}
+% lax end
+Their forbidden-pattern characterization uses the
 four-vertex path; this is the same class referenced in the perfection
 chapter. See \source{lax-214022}{Lax214022.Cographs}.
-% lax end
 
 % lax begin Lax762056.InducedMinors
-\textbf{Induced minors.} This containment variant preserves adjacency and
+\textbf{Induced minors.}
+% lax end
+This containment variant preserves adjacency and
 non-adjacency between retained branch sets. See
 \source{lax-762056}{Lax762056.InducedMinors}.
-% lax end
 
 % lax begin Lax762056.Grid
-\textbf{Excluded induced grid minors.} This class excludes an induced minor
+\textbf{Excluded induced grid minors.}
+% lax end
+This class excludes an induced minor
 isomorphic to a square grid of the specified size. See
 \source{lax-762056}{Lax762056.Grid}.
-% lax end
 
 % lax begin Lax710763.GraphClasses
-\textbf{Weakly sparse classes.} The formalized property excludes a fixed
+\textbf{Weakly sparse classes.}
+% lax end
+The formalized property excludes a fixed
 complete bipartite graph as a subgraph. See
 \source{lax-710763}{Lax710763.GraphClasses}.
-% lax end
-
 \subsection{Forbidden minor characterizations}
 
 % lax begin Lax68.GraphMinors
-\textbf{Graph minors.} Branch sets package vertex deletion, edge deletion,
+\textbf{Graph minors.}
+% lax end
+Branch sets package vertex deletion, edge deletion,
 and contraction into one containment relation. See
 \source{lax-68}{Lax68.GraphMinors}.
-% lax end
 
 % lax begin Lax68.GraphTopologicalMinors
-\textbf{Topological minors.} Edges of the smaller graph are represented by
+\textbf{Topological minors.}
+% lax end
+Edges of the smaller graph are represented by
 internally disjoint paths. See
 \source{lax-68}{Lax68.GraphTopologicalMinors}.
-% lax end
 
 % lax begin Lax68.GridsAndWalls
-\textbf{Grids and walls.} These planar structures also serve as canonical
-patterns in minor containment. See \source{lax-68}{Lax68.GridsAndWalls}.
+\textbf{Grids and walls.}
 % lax end
+These planar structures also serve as canonical
+patterns in minor containment. See \source{lax-68}{Lax68.GridsAndWalls}.
 
 % lax begin Lax68.Outerplanar
-\textbf{Outerplanar graphs.} The drawing-based class also appears in the
+\textbf{Outerplanar graphs.}
+% lax end
+The drawing-based class also appears in the
 survey's discussion of planar structure. See
 \source{lax-68}{Lax68.Outerplanar}.
-% lax end
 
 % lax begin Lax68.Planar
-\textbf{Planar graphs.} Their forbidden-minor characterization is a central
-example in this chapter. See \source{lax-68}{Lax68.Planar}.
+\textbf{Planar graphs.}
 % lax end
+Their forbidden-minor characterization is a central
+example in this chapter. See \source{lax-68}{Lax68.Planar}.
 
 % lax begin Lax68.Triangulations
-\textbf{Triangulations.} These provide maximal planar examples alongside the
+\textbf{Triangulations.}
+% lax end
+These provide maximal planar examples alongside the
 planarity and minor references above. See
 \source{lax-68}{Lax68.Triangulations}.
-% lax end
-
 \surveychapter{8}{Matrices and Polyhedra}
 
 \subsection{Matrix-based graph parameters}
 
 % lax begin Lax153141.MixedMinorNumber
-\textbf{Mixed minor number.} This parameter detects fully mixed blocks in
+\textbf{Mixed minor number.}
+% lax end
+This parameter detects fully mixed blocks in
 ordered adjacency matrices and is comparable to twin-width. See
 \source{lax-153141}{Lax153141.MixedMinorNumber}.
-% lax end
-
 \surveychapter{9}{Distance Properties}
 
 \subsection{Distances, shallow minors, and sparse classes}
@@ -293,99 +320,108 @@ These concepts use bounded-radius reachability or shallow containment to
 describe structural sparsity.
 
 % lax begin Lax199508.UniformQuasiWideness
-\textbf{Uniform quasi-wideness.} Large vertex sets contain large
+\textbf{Uniform quasi-wideness.}
+% lax end
+Large vertex sets contain large
 distance-separated subsets after removing a bounded-size separator, uniformly
 over the class. See
 \source{lax-199508}{Lax199508.UniformQuasiWideness}.
-% lax end
 
 % lax begin Lax199508.ShallowMinorDensity
-\textbf{Shallow-minor density.} This records edge density after contractions
+\textbf{Shallow-minor density.}
+% lax end
+This records edge density after contractions
 of bounded depth, for each fixed radius. See
 \source{lax-199508}{Lax199508.ShallowMinorDensity}.
-% lax end
 
 % lax begin Lax199508.ShallowTopologicalMinors
-\textbf{Shallow topological minors.} This bounds the subdivision depth of
+\textbf{Shallow topological minors.}
+% lax end
+This bounds the subdivision depth of
 paths representing edges in a shallow topological minor. See
 \source{lax-199508}{Lax199508.ShallowTopologicalMinors}.
-% lax end
 
 % lax begin Lax199508.NowhereDenseClasses
-\textbf{Nowhere-dense graph classes.} At each fixed depth, some clique is
+\textbf{Nowhere-dense graph classes.}
+% lax end
+At each fixed depth, some clique is
 excluded as a shallow minor of every graph in the class. See
 \source{lax-199508}{Lax199508.NowhereDenseClasses}.
-% lax end
 
 % lax begin Lax710763.MonadicDependence
-\textbf{Monadically dependent classes.} These classes cannot produce every
+\textbf{Monadically dependent classes.}
+% lax end
+These classes cannot produce every
 graph through the specified first-order transductions with vertex colorings.
 See \source{lax-710763}{Lax710763.MonadicDependence}.
-% lax end
-
 \clearpage
 \surveychapter{10}{Algebraic Compositions and Recursive Definitions}
 
 \subsection{Trees, $k$-trees, and partial $k$-trees}
 
 % lax begin Lax68.Trees
-\textbf{Trees.} The recursively describable tree family appears here again
-alongside the basic graph reference. See \source{lax-68}{Lax68.Trees}.
+\textbf{Trees.}
 % lax end
+The recursively describable tree family appears here again
+alongside the basic graph reference. See \source{lax-68}{Lax68.Trees}.
 
 % lax begin Lax228581.Treewidth
-\textbf{Treewidth.} This parameter is defined by tree decompositions and
-their largest bag size. See \source{lax-228581}{Lax228581.Treewidth}.
+\textbf{Treewidth.}
 % lax end
-
+This parameter is defined by tree decompositions and
+their largest bag size. See \source{lax-228581}{Lax228581.Treewidth}.
 \subsection{Series-parallel graphs}
 
 % lax begin Lax68.SeriesParallel
-\textbf{Series-parallel graphs.} This class is generated by two-terminal
+\textbf{Series-parallel graphs.}
+% lax end
+This class is generated by two-terminal
 series and parallel composition. See
 \source{lax-68}{Lax68.SeriesParallel}.
-% lax end
-
 \subsection{Cographs and width parameters}
 
 % lax begin Lax214022.Cographs
-\textbf{Cographs.} The recursive and forbidden-path views of this class are
+\textbf{Cographs.}
+% lax end
+The recursive and forbidden-path views of this class are
 linked by the survey; its formalized entry also occurs in the earlier
 chapters. See \source{lax-214022}{Lax214022.Cographs}.
-% lax end
 
 % lax begin Lax271696.CliqueExpr
-\textbf{Cliquewidth.} A $k$-expression constructs a graph using $k$ labels;
+\textbf{Cliquewidth.}
+% lax end
+A $k$-expression constructs a graph using $k$ labels;
 bounded cliquewidth organizes classes by the number of labels needed. See
 \source{lax-271696}{Lax271696.CliqueExpr}.
-% lax end
 
 % lax begin Lax9.MergeWidth
-\textbf{Merge-width.} This width parameter measures merge sequences using
+\textbf{Merge-width.}
+% lax end
+This width parameter measures merge sequences using
 radius-dependent neighborhoods in partially resolved graphs. See
 \source{lax-9}{Lax9.MergeWidth}.
-% lax end
 
 % lax begin Lax228581.TwinWidth
-\textbf{Twin-width.} This partition-sequence parameter counts red neighbors
+\textbf{Twin-width.}
+% lax end
+This partition-sequence parameter counts red neighbors
 created as vertex parts merge, and applies to both sparse and dense classes.
 See \source{lax-228581}{Lax228581.TwinWidth}.
-% lax end
-
 \surveychapter{11}{Decompositions and Cutsets}
 
 \subsection{Graph decompositions and width}
 
 % lax begin Lax228581.Treewidth
-\textbf{Treewidth.} Tree decompositions cover vertices and edges while
+\textbf{Treewidth.}
+% lax end
+Tree decompositions cover vertices and edges while
 keeping each vertex's bags connected; their width is measured by the largest
 bag. See \source{lax-228581}{Lax228581.Treewidth}.
-% lax end
 
 % lax begin Lax228581.TwinWidth
-\textbf{Twin-width.} The sequence of merged vertex parts gives a second
+\textbf{Twin-width.}
+% lax end
+The sequence of merged vertex parts gives a second
 decomposition-based width measure. See
 \source{lax-228581}{Lax228581.TwinWidth}.
-% lax end
-
 \end{document}
