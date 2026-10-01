@@ -3,7 +3,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
-\usepackage[a4paper,margin=28mm]{geometry}
+\usepackage[a4paper,margin=25mm]{geometry}
 \usepackage{xcolor}
 \usepackage{hyperref}
 
@@ -12,7 +12,7 @@
   pdftitle={Graph Classes and Width Parameters in Lax},pdfauthor={Clemens Kuske}}
 \newcommand{\source}[2]{\href{https://laxarchive.org/#1/#2.html}{\texttt{#1}}}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{5pt}
+\setlength{\parskip}{4pt}
 
 \title{Graph Classes and Width Parameters in Lax}
 \author{Clemens Kuske}
@@ -20,12 +20,19 @@
 
 \begin{document}
 \maketitle
+\vspace{-1em}
 
 This guide points to definitions in existing Lax submissions. Each marked
 passage opens the original concept and its Lean encoding beside the PDF. The
 source identifiers are also clickable in the PDF itself. The chapters are a
 reading order, not new definitions or claims of equivalence between
 formalizations. This submission has no concepts or proofs of its own.
+
+\begingroup
+\small
+\setlength{\parskip}{0pt}
+\tableofcontents
+\endgroup
 
 \section{Graph classes and closure}
 
@@ -90,7 +97,6 @@ appears in \source{lax-710763}{Lax710763.MonadicDependence}.
 composition is treated in \source{lax-68}{Lax68.SeriesParallel}.
 % lax end
 
-\clearpage
 \section{Hereditary and forbidden-pattern classes}
 
 % lax begin Lax214022.Cographs
