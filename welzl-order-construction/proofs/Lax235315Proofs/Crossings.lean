@@ -1,11 +1,17 @@
-import Lax235315.SequenceCrossings
-import Lax235315.TwinInsertion
-import Lax235315.NearTwinStability
 import Mathlib.Tactic
 
 namespace Lax235315Proofs.Crossings
 
-open Lax235315.SequenceCrossings
+/-- Changes between adjacent bits in a membership sequence. -/
+def crossings : List Bool → ℕ
+  | [] => 0
+  | [_] => 0
+  | a :: b :: rest => (if a = b then 0 else 1) + crossings (b :: rest)
+
+/-- Number of positions at which two bit sequences disagree. -/
+def hamming : List Bool → List Bool → ℕ
+  | a :: rest, b :: rest' => (if a = b then 0 else 1) + hamming rest rest'
+  | _, _ => 0
 
 private lemma edge_change_bound (a b c d : Bool) :
     (if a = b then 0 else 1) ≤
@@ -46,9 +52,6 @@ private lemma crossings_le_add_head_change (xs ys : List Bool)
                   omega
 
 /--
----
-conclusion: Lax235315.TwinInsertion.crossings_duplicate
----
 Duplicating a membership bit beside itself preserves the crossing count.
 
 # Proof strategy
@@ -76,9 +79,6 @@ lemma crossings_duplicate (pre post : List Bool) (b : Bool) :
           rw [ih']
 
 /--
----
-conclusion: Lax235315.NearTwinStability.crossings_le_add_twice_hamming
----
 Changing membership at *k* positions changes the crossing count by at most
 *2k*.
 

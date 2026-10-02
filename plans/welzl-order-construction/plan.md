@@ -1,6 +1,6 @@
 # Welzl-order construction
 
-Status: proved locally; proof-only program refactor awaiting draft publication.
+Status: proved locally; supporting concepts removed from the draft surface.
 Submission: `lax-235315`, `welzl-order-construction/`.
 Source: Dreier--Kuske, arXiv:2602.14625v1, supplied PDF (14 pages).
 Target: `Lax195003.WelzlOrdersComputation.exists_nearLinearTime_randomized_welzlOrder_program`.
@@ -69,9 +69,9 @@ which claims have closed Lean proofs and which remain open in every milestone.
 | Finite-tape success probability | Proved lemma | ProgramContracts |
 | Original Lax195003 existential claim | Proved, without claim assumptions | Assembly |
 
-The seven mathematical support claims remain reviewable concepts. The
-compiled word-RAM witness and its three operational contracts are now defined
-in the proof package. `ProofProgram.program` is `compileProgram layout
+The mathematical support claims are helper results in the proof package,
+not public concepts. The compiled word-RAM witness and its three operational
+contracts are also defined in the proof package. `ProofProgram.program` is `compileProgram layout
 welzlCom`, where `welzlCom` is the readable IMP+ construction. There is no
 expanded instruction listing in the concept package. The three proved
 contracts refer to this same witness, and the assembly supplies it to the
@@ -88,7 +88,7 @@ two thirds of tapes. Empty, singleton, and initial no-round inputs have
 separate execution arguments.
 
 `lake build Lax235315Proofs` and `lax build welzl-order-construction --replay`
-pass with 9 concepts and 8 annotated proofs. `#print axioms` on each of the
+pass with no local concepts and one annotated proof of the external theorem. `#print axioms` on each of the
 three program-contract lemmas and the final assembly reports only `propext`,
 `Classical.choice`, and `Quot.sound`. The remaining archive warnings are
 nonfatal unused-helper and dependency notices.

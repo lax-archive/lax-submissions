@@ -1,6 +1,3 @@
-import Lax235315.NearTwinReplacement
-import Lax235315.UniformSampleAvoidance
-import Lax235315.RandomKeyCollisions
 import Lax235315Proofs.Construction.Crossing
 import Lax235315Proofs.Construction.Sampling
 import Lax235315Proofs.Construction.FiniteRandomKeys
@@ -10,9 +7,6 @@ open scoped symmDiff
 open Lax195003.WelzlOrders
 
 /--
----
-conclusion: Lax235315.NearTwinReplacement.crossingNumber_le_add_two_mul
----
 Near-twin replacement satisfies the exact registered crossing-number definition.
 
 # Proof strategy
@@ -34,9 +28,6 @@ lemma nearTwinReplacement {n k m : ℕ}
   Construction.Crossing.crossingNumber_le_add_two_mul hrep hπ
 
 /--
----
-conclusion: Lax235315.UniformSampleAvoidance.miss_fraction_le
----
 The fixed-size sample avoidance estimate holds as a finite counting inequality.
 
 # Proof strategy
@@ -61,9 +52,6 @@ lemma uniformSampleAvoidance {n : ℕ} {A X : Finset (Fin n)} {c N L : ℕ}
       Construction.Sampling.uniform_sample_miss_fraction_le hc hA hX hXcard hAN hNpow
 
 /--
----
-conclusion: Lax235315.RandomKeyCollisions.count_noninjective_le
----
 The noninjective key assignments satisfy the stated finite collision bound.
 
 # Proof strategy

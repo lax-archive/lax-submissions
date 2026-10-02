@@ -1,25 +1,25 @@
-import Lax235315.ReconstructionCorrectness
+import Lax235315Proofs.TwinReconstruction
 import Lax235315Proofs.Construction.Reconstruction
 import Lax235315Proofs.Construction.Correctness
 import Lax235315Proofs.Construction.ListCrossing
 
 namespace Lax235315Proofs.ReconstructionBridge
 
-open Lax235315.TwinReconstruction
+open Lax235315Proofs.TwinReconstruction
 open Lax235315Proofs.Construction.Reconstruction
 
 private lemma insertAfter_eq {n : ℕ} (a x : Fin n) (l : List (Fin n)) :
-    Lax235315.TwinReconstruction.insertAfter a x l =
+    Lax235315Proofs.TwinReconstruction.insertAfter a x l =
       Lax235315Proofs.Construction.ListCrossing.insertAfter a x l := by
   induction l with
   | nil => rfl
   | cons v rest ih =>
-      simp [Lax235315.TwinReconstruction.insertAfter,
+      simp [Lax235315Proofs.TwinReconstruction.insertAfter,
         Lax235315Proofs.Construction.ListCrossing.insertAfter, ih]
 
 private lemma twinExpansion_toConstruction {n : ℕ} {G : SimpleGraph (Fin n)}
     {B : Set (Fin n)} {small big : List (Fin n)}
-    (h : Lax235315.TwinReconstruction.TwinExpansion G B small big) :
+    (h : Lax235315Proofs.TwinReconstruction.TwinExpansion G B small big) :
     Lax235315Proofs.Construction.Reconstruction.TwinExpansion G B small big := by
   induction h with
   | refl => exact .refl _
@@ -29,7 +29,7 @@ private lemma twinExpansion_toConstruction {n : ℕ} {G : SimpleGraph (Fin n)}
 
 private def reduction_toConstruction {n k : ℕ} {G : SimpleGraph (Fin n)}
     {A B A' B' : Set (Fin n)} {small big : List (Fin n)}
-    (h : Lax235315.TwinReconstruction.Reduction G k A B A' B' small big) :
+    (h : Lax235315Proofs.TwinReconstruction.Reduction G k A B A' B' small big) :
     Lax235315Proofs.Construction.Reconstruction.Reduction G k A B A' B' small big :=
   { small_enumerates := h.small_enumerates
     big_enumerates := h.big_enumerates
@@ -40,7 +40,7 @@ private def reduction_toConstruction {n k : ℕ} {G : SimpleGraph (Fin n)}
 
 private lemma run_toCertifiedRun {n k q rounds : ℕ} {G : SimpleGraph (Fin n)}
     {A B : Set (Fin n)} {l : List (Fin n)}
-    (h : Lax235315.TwinReconstruction.Run G k q rounds A B l) :
+    (h : Lax235315Proofs.TwinReconstruction.Run G k q rounds A B l) :
     Lax235315Proofs.Construction.Reconstruction.CertifiedRun G k q rounds A B l := by
   induction h with
   | base enumerates small => exact .base enumerates small
@@ -48,9 +48,6 @@ private lemma run_toCertifiedRun {n k q rounds : ℕ} {G : SimpleGraph (Fin n)}
       exact .step (reduction_toConstruction reduction) ih
 
 /--
----
-conclusion: Lax235315.ReconstructionCorrectness.encodesGraphWelzlOrder
----
 The public reconstruction certificate has exactly the same content as the
 proof-side certificate, so the established crossing induction proves its
 encoded graph Welzl order.
@@ -68,7 +65,7 @@ Linear Neighborhood Complexity*, into the submitted certificate types.
 -/
 lemma encodesGraphWelzlOrder {n k q rounds bound : ℕ}
     (G : SimpleGraph (Fin n)) (l : List (Fin n))
-    (h : Lax235315.TwinReconstruction.Run G k q rounds Set.univ Set.univ l)
+    (h : Lax235315Proofs.TwinReconstruction.Run G k q rounds Set.univ Set.univ l)
     (hkq : 2 * k ≤ q) (hbound : (rounds + 1) * q ≤ bound) :
     Lax195003.WelzlOrdersInGraphs.EncodesGraphWelzlOrder G 1 bound (l.map Fin.val) := by
   exact Lax235315Proofs.Construction.Correctness.certifiedRun_encodesGraphWelzlOrder

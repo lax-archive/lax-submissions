@@ -1,12 +1,8 @@
-import Lax235315
 import Mathlib.Tactic
 
 namespace Lax235315Proofs
 
 /--
----
-conclusion: Lax235315.ContractionRecurrence.size_after_rounds
----
 The additive rounding error remains bounded by twice its per-round value
 after any number of halvings.
 

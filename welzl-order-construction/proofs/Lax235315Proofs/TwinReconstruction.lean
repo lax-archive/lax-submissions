@@ -2,28 +2,7 @@ import Mathlib.Combinatorics.SimpleGraph.Basic
 import Mathlib.Data.Set.Card
 import Mathlib.Data.Set.SymmDiff
 
-/-!
----
-title: Checked twin-contraction reconstruction
-type: definition
----
-A reconstruction starts with an order on a small remaining ground set and
-undoes checked contraction rounds. In each round it inserts removed ground
-vertices next to twins over the retained set-side representatives. Every
-old set-side vertex has a retained representative whose neighborhood differs
-on at most k active ground vertices.
-
-# Formalization notes
-
-The two sides are subsets of the same canonical vertex type, as in the
-graph-neighborhood bipartite representation. A round records concrete lists,
-actual adjacent twin insertions, and the checked symmetric-difference bound.
-It does not assume any crossing-number conclusion.
-The run relation describes deterministic reconstruction certificates. A
-separate implementation proof must show that the machine produces one.
--/
-
-namespace Lax235315.TwinReconstruction
+namespace Lax235315Proofs.TwinReconstruction
 open scoped symmDiff
 
 /-- Insert x immediately after the first occurrence of a, if a is present. -/
@@ -78,4 +57,4 @@ inductive Run {n : ℕ} (G : SimpleGraph (Fin n)) (k q : ℕ) :
       (tail : Run G k q rounds A' B' small) :
       Run G k q (rounds + 1) A B big
 
-end Lax235315.TwinReconstruction
+end Lax235315Proofs.TwinReconstruction
