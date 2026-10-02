@@ -22,7 +22,7 @@ open Lax235315Proofs.Construction.SmallInputSource
 open Lax235315Proofs.Construction.AdaptiveStateProtocol
 open Lax235315Proofs.Construction.AdaptiveTapeCounting
 open Lax235315Proofs.Construction.AdaptiveBitBlocks
-open Lax235315.ConstructionContracts
+open Lax235315Proofs.ConstructionContracts
 
 /-- The last source-level implication needed by the finite-tape count,
 assuming the two local facts that the canonical setup state is shared by all

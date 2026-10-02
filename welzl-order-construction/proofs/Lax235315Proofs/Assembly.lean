@@ -1,6 +1,3 @@
-import Lax235315.ConstructionRuntime
-import Lax235315.ConstructionCorrectness
-import Lax235315.ConstructionProbability
 import Lax235315Proofs.ProgramContracts
 import Lax195003.WelzlOrdersComputation
 import Lax808846Proofs.Machine
@@ -21,8 +18,8 @@ open Lax195003.WelzlOrdersInGraphs
 open Lax195003.WelzlOrdersNeighborhoodComplexity
 open Lax195003.WordRamRandomness
 open Lax808846.Ram
-open Lax235315.ConstructionContracts
-open Lax235315.ConstructionProgram
+open Lax235315Proofs.ConstructionContracts
+open Lax235315Proofs.ProofProgram
 
 /-- A tape counted as successful by the finite-tape contract is accepted by
 the registered randomized-computation predicate whenever the program's
@@ -109,7 +106,7 @@ lower bound from successful tapes to accepted tapes.
 
 # Attribution
 
-The contracts are the three separate theorem concepts in this submission.
+The contracts are three proved lemmas about the proof-local program witness.
 The assembled target is the registered claim of Lax195003;
 the graph result is Theorem 1.4 in the supplied arXiv v1 PDF.
 -/

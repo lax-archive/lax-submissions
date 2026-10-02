@@ -3,9 +3,9 @@ import Lax235315Proofs.ProgramLink
 import Lax808846Proofs.Simulation
 import Mathlib.Tactic
 
-/-! Lifting the source program to the exact public word-RAM contracts.
+/-! Lifting the source program to the proof-local word-RAM contracts.
 These lemmas discharge the compiler, address, terminal-state and success-flag
-bridges; they do not assume the public runtime, correctness or probability claims. -/
+bridges; they do not assume runtime, correctness or probability. -/
 
 namespace Lax235315Proofs.Construction.MachineBridge
 
@@ -15,7 +15,7 @@ open Lax808846Proofs.Compile Lax808846Proofs.Simulation Lax808846Proofs.Machine
 open Lax235315Proofs.Construction.WelzlProgram
 open Lax235315Proofs.Construction.WelzlSetup
 open Lax235315Proofs.ProgramLink
-open Lax235315.ConstructionProgram Lax235315.ConstructionContracts
+open Lax235315Proofs.ProofProgram Lax235315Proofs.ConstructionContracts
 open Lax195003.WordRamRandomness Lax195003.WelzlOrdersInGraphs
 open Lax195003.WelzlOrdersNeighborhoodComplexity
 open Lax11.GraphEncoding

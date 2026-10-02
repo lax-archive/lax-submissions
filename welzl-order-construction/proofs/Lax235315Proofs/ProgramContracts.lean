@@ -1,19 +1,14 @@
 import Lax235315Proofs.Construction.HistoryDriverSource
-import Lax235315.ConstructionRuntime
-import Lax235315.ConstructionCorrectness
-import Lax235315.ConstructionProbability
+import Lax235315Proofs.ConstructionContracts
 import Lax235315Proofs.Construction.SourceProbabilityBridge
 import Lax235315Proofs.Construction.LiteralGoodDispatch
 
 namespace Lax235315Proofs.ProgramContracts
-open Lax235315.ConstructionContracts
+open Lax235315Proofs.ConstructionContracts
 open Lax235315Proofs.Construction.MachineBridge
 open Lax235315Proofs.Construction.HistoryDriverSource
 
 /--
----
-conclusion: Lax235315.ConstructionRuntime.eventually_hasRunningTimeBound
----
 The fixed construction program halts within the claimed word-RAM budget on
 every admissible tape, including rejected attempts.
 
@@ -38,9 +33,6 @@ lemma eventually_hasRunningTimeBound :
   exact runtime_of_source sourceTotal (by omega) (by omega)
 
 /--
----
-conclusion: Lax235315.ConstructionCorrectness.eventually_hasCorrectOutput
----
 Every successful machine execution returns each vertex exactly once and
 satisfies the paper's `12 c² ceil(log₂ n)²` crossing bound.
 
@@ -66,9 +58,6 @@ lemma eventually_hasCorrectOutput :
   exact correctness_of_source sourceTotal sourceCorrect (by omega) (by omega)
 
 /--
----
-conclusion: Lax235315.ConstructionProbability.eventually_hasSuccessProbability
----
 At least two thirds of the finite random tapes make the explicit construction
 program terminate successfully.
 

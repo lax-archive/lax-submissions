@@ -1,15 +1,10 @@
-import Lax235315.ConstructionProgram
+import Lax235315Proofs.ProofProgram
 import Lax195003.WelzlOrdersComputation
 
 /-!
----
-title: Separate guarantees for the construction program
-type: definition
----
-The construction has three independent obligations. Every random tape must
-halt within the time budget. A run that reaches the final halt with its
-success flag set must output a suitable graph Welzl order. At least two
-thirds of all tapes must reach such a successful termination.
+The three predicates used to verify the compiled witness separate total
+running time, correctness of successful outputs,
+and the fraction of random tapes that terminate successfully.
 
 For a resource constant K, the time budget and tape length are both
 K(|x|+1)(ceil(log₂ n)+1). The word-size condition is exactly the condition
@@ -27,11 +22,11 @@ bound on K; taking a common upper bound permits their composition without
 guessing a numerical constant before the cost proof is complete.
 -/
 
-namespace Lax235315.ConstructionContracts
+namespace Lax235315Proofs.ConstructionContracts
 open Lax808846.Ram Lax11.GraphEncoding
 open Lax195003.WelzlOrdersNeighborhoodComplexity
 open Lax195003.WelzlOrdersInGraphs Lax195003.WordRamRandomness
-open Lax235315.ConstructionProgram
+open Lax235315Proofs.ProofProgram
 
 /-- The common step budget and random-tape length. -/
 def timeBudget (K n : ℕ) (x : List ℕ) : ℕ :=
@@ -77,4 +72,4 @@ noncomputable def HasSuccessProbability (K : ℕ) : Prop :=
       (2 / 3 : ℚ) * (2 ^ timeBudget K n x : ℚ) ≤
         ((goodTapes w c x (timeBudget K n x)).ncard : ℚ)
 
-end Lax235315.ConstructionContracts
+end Lax235315Proofs.ConstructionContracts

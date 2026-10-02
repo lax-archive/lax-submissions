@@ -126,6 +126,8 @@ import Lax235315Proofs.Construction.WelzlStraight
 import Lax235315Proofs.Contraction
 import Lax235315Proofs.Crossings
 import Lax235315Proofs.ProgramLink
+import Lax235315Proofs.ProofProgram
+import Lax235315Proofs.ConstructionContracts
 import Lax235315Proofs.ProgramContracts
 import Lax235315Proofs.ReconstructionBridge
 import Lax235315Proofs.Construction.PairedReductionRound

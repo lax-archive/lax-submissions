@@ -33,7 +33,7 @@ open Lax235315Proofs.Construction.AdaptiveBitBlocks
 open Lax235315Proofs.Construction.PositionFailureBits
 open Lax235315Proofs.Construction.AdaptiveMachineBridge
 open Lax235315Proofs.Construction.InputSuffixFrame
-open Lax235315.ConstructionContracts
+open Lax235315Proofs.ConstructionContracts
 open Lax235315Proofs.Construction.RationalFailureBounds
 open Lax235315Proofs.Construction.HistoryDriverSource
 open Lax235315Proofs.Construction.WelzlSetup

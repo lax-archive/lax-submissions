@@ -9,12 +9,12 @@ near-twin replacement in the registered set-system representation, the
 uniform-sample avoidance bound, the finite random-key collision bound, and
 correctness of checked reconstruction as an encoded graph Welzl order.
 
-The program is an explicit fixed sequence of 5,213 word-RAM instructions.
-Its readable source, compilation identity, and proofs for individual
-implementation stages are provided in the proof package. The three main
-theorem concepts have checked proofs: worst-case running time,
-successful-output correctness, and finite-tape success probability.
-Their assembly proves the registered statement of Lax195003.
+The word-RAM program is a witness inside the proof package, obtained by
+compiling a readable source program. The public concept surface does not
+expose its instruction sequence. Three checked proof lemmas establish
+worst-case running time, successful-output correctness, and finite-tape
+success probability for that same witness. Their assembly proves the
+registered existential statement of Lax195003.
 
 Checked implementation lemmas cover canonical setup, persistent memory bounds,
 exact finite-tape sampling, both accepted and rejected round paths, and the

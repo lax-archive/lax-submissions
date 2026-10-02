@@ -9,7 +9,7 @@ namespace Lax235315Proofs.Construction.AdaptiveMachineBridge
 open Lax235315Proofs.Construction.AdaptiveBitBlocks
 open Lax235315Proofs.Construction.AdaptiveTapeCounting
 open Lax235315Proofs.Construction.MachineBridge
-open Lax235315.ConstructionContracts
+open Lax235315Proofs.ConstructionContracts
 
 lemma success_count_of_protocol {R T : ℕ} (p : Protocol R) (ε : ℚ)
     (hε : 0 ≤ ε) (hlocal : LocallyBounded ε p)

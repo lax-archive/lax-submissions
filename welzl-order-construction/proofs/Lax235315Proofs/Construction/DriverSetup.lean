@@ -1,10 +1,10 @@
 import Lax235315Proofs.Construction.WelzlSetup
 import Lax235315Proofs.Construction.RadixEight
-import Lax235315.ConstructionContracts
+import Lax235315Proofs.ConstructionContracts
 import Mathlib.Tactic
 
 /-! The complete deterministic setup, with canonical CSR arrays and workspace
-sizes, stated in the same word bound as the public construction contracts. -/
+sizes, stated in the same word bound as the proof-local construction contracts. -/
 
 namespace Lax235315Proofs.Construction.DriverSetup
 
@@ -13,7 +13,7 @@ open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax235315Proofs.Construction.WelzlProgram
 open Lax235315Proofs.Construction.WelzlSetup
 open Lax235315Proofs.Construction.RadixEight
-open Lax235315.ConstructionContracts
+open Lax235315Proofs.ConstructionContracts
 
 /-- The fixed graph data and correctly sized workspace available after setup. -/
 structure Ready (c n : ℕ) (x bits : List ℕ) (σ : Env) : Prop where
