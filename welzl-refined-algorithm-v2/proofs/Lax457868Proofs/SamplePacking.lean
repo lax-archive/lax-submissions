@@ -20,7 +20,6 @@ open Lax808846Proofs.Reasoning.Lib
 open Lax457868Proofs.ReusedOriginal.Construction.WelzlProgram
 open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
 open Lax457868Proofs.ReusedOriginal.Construction.ReadKeys
-open Lax808846Proofs.Reasoning.Lib
 
 /-- Scan every vertex and append exactly those whose `sampleFlags` entry is
 one to the `ord` prefix.  The cursor and count use private names so the scan
@@ -346,10 +345,6 @@ private lemma packBody_run {B n : ℕ} {flags : ℕ → ℕ} {σ : Env}
 def flaggedVertices (n : ℕ) (flags : ℕ → ℕ) : Finset ℕ :=
   activeVertices n flags
 
-/-- This is exactly the prefix invariant expected by round partitioning. -/
-abbrev SampleOrderIs (count : ℕ) (ord : ℕ → ℕ) (S : Finset ℕ) : Prop :=
-  PrefixEnumerates count ord S
-
 /-- If the flags say exactly which in-range vertices occur in a draw list,
 then the active set represented by the flags is exactly the list's set of
 distinct draws. Repetitions in `draws` therefore have no effect. -/
@@ -574,8 +569,8 @@ def markAndPackSamples : Com := seqs [markDrawArray, packMarkedSamples]
 
 /-- Full source execution from a runtime draw-array prefix. The array may have
 capacity greater than the count; only its first `draws.length` values are
-read. The source is fixed independently of sampled values. The exact source
-cost is `20*n + 12*draws.length + 15`. -/
+read. The source is fixed independently of sampled values. Its source cost
+is at most `20*n + 12*draws.length + 15`. -/
 lemma markAndPackSamples_run {B n drawCap : ℕ} {σ : Env} {ord : ℕ → ℕ}
     {draws : List ℕ} {values : ℕ → ℕ}
     (hn : σ.vars "n" = n)
