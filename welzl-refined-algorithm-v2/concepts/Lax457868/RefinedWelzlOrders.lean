@@ -33,8 +33,14 @@ multiple of its expectation and return failure on timeout. Markov's inequality
 then gives success on at least two thirds of finite tapes, with every tape
 halting within the displayed bound. Repeating independent attempts until a
 valid order is returned recovers expected near-linear time. The runtime
-constant is existential; the displayed crossing constant is an explicit
-rounding-up of the paper's sampler parameters.
+constant is existential. The displayed crossing bound uses the paper's
+sampler parameter directly: `k` is rounded up as in Lemma 18, and the
+reconstruction contributes at most `2k` per round.
+
+More explicitly, Lemma 18 sets `s = ceil(64 log₂ c)` and
+`k = ceil(768 c^5 (s + 1) log₂ c)`, while Theorem 20 bounds crossings by
+`2k log₂ n`. Replacing each logarithm by its natural-number ceiling yields
+the displayed bound, with the additive `1` accounting for rounding up `k`.
 
 The program is existential and black-box at the concept level. Its concrete
 instruction sequence and the bridges from the refined sampler to the machine
@@ -62,7 +68,8 @@ axiom exists_refined_randomized_welzlOrder_program :
           SucceedsWithProbabilityAtLeastInTime
             (2 / 3 : ℚ) w p (c :: x) T T
             (EncodesGraphWelzlOrder G 1
-              (100000 * c ^ 5 * (Nat.clog 2 c + 1) ^ 2 *
-                (Nat.clog 2 n + 1)))
+              (2 * (768 * c ^ 5 *
+                (64 * Nat.clog 2 c + 1) * Nat.clog 2 c + 1) *
+                Nat.clog 2 n))
 
 end Lax457868.RefinedWelzlOrders
