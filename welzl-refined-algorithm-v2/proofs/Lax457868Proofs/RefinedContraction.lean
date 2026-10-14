@@ -74,7 +74,7 @@ lemma representative_incidence
   simp only [Finset.mem_filter, hb, true_and] at hbmem
   exact ⟨hra, Iff.of_eq hbmem.symm⟩
 
-/-- In a graph instance the sampler's public contract gives every retained
+/-- In a graph instance the sampler's internal contract gives every retained
 neighborhood representative a k-close original neighborhood. -/
 lemma graph_representative_near_twin {n c k : ℕ}
     (G : SimpleGraph (Fin n))

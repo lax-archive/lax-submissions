@@ -45,7 +45,7 @@ lemma neighborhoodFamily_eq_deduplicated
     rcases Finset.mem_image.mp hT with ⟨b, hb, rfl⟩
     exact ⟨b, hb, by simpa using hEq⟩
 
-/-- The public refined-sample contract can be checked on distinct labels and
+/-- The internal refined-sample contract can be checked on distinct labels and
 then read back for the original, possibly twin-heavy, vertex family. -/
 lemma refinedSample_iff_deduplicated
     (A W : Finset α) (C : Finset β) (N : β → Finset α) (m k : ℕ) :

@@ -1,5 +1,12 @@
 import Lax457868Proofs.RefinedWelzlOrders
 import Lax457868Proofs.CrossingStability
+import Lax457868Proofs.ContractionRounds
+import Lax457868Proofs.GraphTraceBounds
+import Lax457868Proofs.TwinExpansion
+import Lax457868Proofs.ListOrderBounds
+import Lax457868Proofs.RefinedContraction
+import Lax457868Proofs.AlgorithmRounds
+import Lax457868Proofs.ReductionPath
 import Lax457868Proofs.ParameterBounds
 import Lax457868Proofs.RefinedSample
 import Lax457868Proofs.RefinedSampleSpec

@@ -4,7 +4,7 @@ import Lax457868Proofs.SamplerPhases
 import Mathlib.Tactic
 
 /-!
-The public refined-sample contract follows from the deterministic sampler's
+The internal refined-sample contract follows from the deterministic sampler's
 pairwise correctness and its independently proved output subset and size
 bounds.
 -/
@@ -23,7 +23,7 @@ def neighborhoodFamily (B : Finset β) (N : β → Finset α) : SetSystem α :=
   {X | ∃ b ∈ B, (N b : Set α) = X}
 
 /-- Under the paper's quotient choices, every successful finite-choice run
-satisfies the public refined-sample contract. The only run-specific premise is
+satisfies the internal refined-sample contract. The only run-specific premise is
 that the sampler returns `out`; legal draws and scan orders are explicit in
 the sampler's inputs. -/
 lemma refinedSampler_IsRefinedSample
