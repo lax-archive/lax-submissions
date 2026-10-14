@@ -50,7 +50,7 @@ private lemma draws_toFinset (A : Finset α) {r : ℕ} (draw : Fin r → A) :
   ext x
   simp [drawSet, List.mem_toFinset, List.mem_ofFn]
 
-/-- Decode the finite random bits into an actual legal initial choice.
+/-- Decode the finite random choices into an actual legal initial choice.
 Outside `B`, the representative map is the identity. -/
 noncomputable def decodeChoice (A : Finset α) (B : Finset β)
     (N : β → Finset α) {r : ℕ} (draw : Fin r → A)
@@ -285,7 +285,7 @@ lemma rejection_probability_charge (A : Finset α) (B : Finset β)
 
 /-- A single initial attempt rejects with probability at most one half under
 the actual hierarchical finite law and the original linear shatter bound. -/
-theorem initialRejectProbability_le_half (A : Finset α) (B : Finset β)
+lemma initialRejectProbability_le_half (A : Finset α) (B : Finset β)
     (N : β → Finset α) (c : ℕ)
     (hA : A.Nonempty) (hN : ∀ b ∈ B, N b ⊆ A)
     (hc : 2 ≤ c) (hB : B.card ≤ c * A.card)
@@ -293,12 +293,12 @@ theorem initialRejectProbability_le_half (A : Finset α) (B : Finset β)
       (traceFamily (B.image N) S).card ≤ c * S.card) :
     initialRejectProbability A B N
       (A.card / (4 * c ^ 2))
-      (768 * c ^ 5 * (64 * c * Nat.clog 2 c + 1) * Nat.clog 2 c + 1)
-      (A.card / (4 * c ^ 2 * (64 * c * Nat.clog 2 c + 1))) ≤
+      (768 * c ^ 5 * (64 * Nat.clog 2 c + 1) * Nat.clog 2 c + 1)
+      (A.card / (4 * c ^ 2 * (64 * Nat.clog 2 c + 1))) ≤
       (1 / 2 : ℚ) := by
   let n := A.card
   let l := Nat.clog 2 c
-  let s := 64 * c * l
+  let s := 64 * l
   let D := 4 * c ^ 2 * (s + 1)
   let k := 768 * c ^ 5 * (s + 1) * l + 1
   let r := n / (4 * c ^ 2)
@@ -395,7 +395,7 @@ lemma deduplicated_linear_trace_bound (A : Finset α) (B : Finset β)
 omit [DecidableEq β] in
 /-- The half-rejection theorem with only the original nonempty-subset trace
 bound, applied to the distinct neighborhood labels. -/
-theorem deduplicated_initialRejectProbability_le_half
+lemma deduplicated_initialRejectProbability_le_half
     (A : Finset α) (B : Finset β) (N : β → Finset α) (c : ℕ)
     (hA : A.Nonempty) (hN : ∀ b ∈ B, N b ⊆ A)
     (hc : 2 ≤ c)
@@ -403,8 +403,8 @@ theorem deduplicated_initialRejectProbability_le_half
       (traceClasses N Y B).card ≤ c * Y.card) :
     initialRejectProbability A (B.image N) id
       (A.card / (4 * c ^ 2))
-      (768 * c ^ 5 * (64 * c * Nat.clog 2 c + 1) * Nat.clog 2 c + 1)
-      (A.card / (4 * c ^ 2 * (64 * c * Nat.clog 2 c + 1))) ≤
+      (768 * c ^ 5 * (64 * Nat.clog 2 c + 1) * Nat.clog 2 c + 1)
+      (A.card / (4 * c ^ 2 * (64 * Nat.clog 2 c + 1))) ≤
       (1 / 2 : ℚ) := by
   have hN' := image_neighborhoods_subset_of A B N hN
   have hB' : (B.image N).card ≤ c * A.card :=
