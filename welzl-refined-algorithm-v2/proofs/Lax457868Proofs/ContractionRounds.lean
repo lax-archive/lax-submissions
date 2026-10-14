@@ -91,15 +91,61 @@ def dualTraceClasses (N : β → Finset α) (A : Finset α)
 
 /-- Contract both sides of the incidence relation: first choose one vertex
 per neighborhood trace on `W`, then one ground vertex per incidence trace on
-the retained vertices. -/
+the retained vertices. The representative maps remain available to subsequent
+rounds. -/
 structure TraceContraction (A : Finset α) (B : Finset β)
     (N : β → Finset α) (W : Finset α) where
-  retainedB : Finset β
-  retainedB_subset : retainedB ⊆ B
-  retainedB_card : retainedB.card = (primalTraceClasses N W B).card
-  retainedA : Finset α
-  retainedA_subset : retainedA ⊆ A
-  retainedA_card : retainedA.card = (dualTraceClasses N A retainedB).card
+  bChoice : RepresentativeChoice B (fun b => N b ∩ W)
+  aChoice : RepresentativeChoice A
+    (fun a => (B.image bChoice.representative).filter fun b => a ∈ N b)
+
+/-- The retained family consists of the selected representatives of `B`. -/
+def TraceContraction.retainedB {A : Finset α} {B : Finset β}
+    {N : β → Finset α} {W : Finset α}
+    (contraction : TraceContraction A B N W) : Finset β :=
+  B.image contraction.bChoice.representative
+
+/-- The retained ground set consists of the selected representatives of `A`. -/
+def TraceContraction.retainedA {A : Finset α} {B : Finset β}
+    {N : β → Finset α} {W : Finset α}
+    (contraction : TraceContraction A B N W) : Finset α :=
+  A.image contraction.aChoice.representative
+
+/-- The selected B representatives stay in the original family. -/
+lemma TraceContraction.retainedB_subset {A : Finset α} {B : Finset β}
+    {N : β → Finset α} {W : Finset α}
+    (contraction : TraceContraction A B N W) : contraction.retainedB ⊆ B := by
+  intro b hb
+  rcases Finset.mem_image.mp hb with ⟨x, hx, rfl⟩
+  exact contraction.bChoice.representative_mem x hx
+
+/-- The selected B representatives are in one-to-one correspondence with
+neighborhood traces on the sample. -/
+lemma TraceContraction.retainedB_card {A : Finset α} {B : Finset β}
+    {N : β → Finset α} {W : Finset α}
+    (contraction : TraceContraction A B N W) :
+    contraction.retainedB.card = (primalTraceClasses N W B).card := by
+  dsimp [TraceContraction.retainedB, primalTraceClasses]
+  exact representative_image_card_eq B (fun b => N b ∩ W) contraction.bChoice
+
+/-- The selected A representatives stay in the original ground set. -/
+lemma TraceContraction.retainedA_subset {A : Finset α} {B : Finset β}
+    {N : β → Finset α} {W : Finset α}
+    (contraction : TraceContraction A B N W) : contraction.retainedA ⊆ A := by
+  intro a ha
+  rcases Finset.mem_image.mp ha with ⟨x, hx, rfl⟩
+  exact contraction.aChoice.representative_mem x hx
+
+/-- The selected A representatives are in one-to-one correspondence with
+incidence traces on the retained B vertices. -/
+lemma TraceContraction.retainedA_card {A : Finset α} {B : Finset β}
+    {N : β → Finset α} {W : Finset α}
+    (contraction : TraceContraction A B N W) :
+    contraction.retainedA.card = (dualTraceClasses N A contraction.retainedB).card := by
+  dsimp [TraceContraction.retainedA, TraceContraction.retainedB, dualTraceClasses]
+  exact representative_image_card_eq A
+    (fun a => (B.image contraction.bChoice.representative).filter fun b => a ∈ N b)
+    contraction.aChoice
 
 /-- A finite contraction exists by taking actual representatives of both
 finite label maps. -/
@@ -109,17 +155,7 @@ noncomputable def chooseTraceContraction (A : Finset α) (B : Finset β)
   let bChoice := chooseRepresentatives B (fun b => N b ∩ W)
   let B' := B.image bChoice.representative
   let aChoice := chooseRepresentatives A (fun a => B'.filter fun b => a ∈ N b)
-  refine ⟨B', ?_, ?_, A.image aChoice.representative, ?_, ?_⟩
-  · intro b hb
-    rcases Finset.mem_image.mp hb with ⟨x, hx, rfl⟩
-    exact bChoice.representative_mem x hx
-  · rw [representative_image_card_eq B (fun b => N b ∩ W) bChoice]
-    rfl
-  · intro a ha
-    rcases Finset.mem_image.mp ha with ⟨x, hx, rfl⟩
-    exact aChoice.representative_mem x hx
-  · rw [representative_image_card_eq A (fun a => B'.filter (fun b => a ∈ N b)) aChoice]
-    rfl
+  exact ⟨bChoice, aChoice⟩
 
 /-- A one-label bound also covers an empty trace ground set: there is at most
 one distinct trace, including when the original family is empty. -/
@@ -149,7 +185,7 @@ lemma dualTraceClasses_card_le_one_of_empty (N : β → Finset α)
 /-- The two representative contractions obey the refined linear size bound.
 The two exceptional empty cases use the fact that a trace family on an empty
 or singleton ground set has at most one member. -/
-theorem traceContraction_size_bound
+lemma traceContraction_size_bound
     (A : Finset α) (B : Finset β) (N : β → Finset α) (W : Finset α)
     (c : ℕ) (hc : 1 ≤ c)
     (hW : W ⊆ A)
@@ -236,7 +272,7 @@ lemma strict_quotient_step_to_size {n nnext c : ℕ}
 
 /-- Clearing denominators in the contraction recurrence gives the geometric
 bound after any number of rounds. -/
-theorem contraction_geometric_bound (n : ℕ → ℕ) (c : ℕ)
+lemma contraction_geometric_bound (n : ℕ → ℕ) (c : ℕ)
     (hstep : ∀ t, 2 * n (t + 1) ≤ n t + 2 * c ^ 2) (t : ℕ) :
     2 ^ t * n t ≤ n 0 + 2 * c ^ 2 * (2 ^ t - 1) := by
   induction t with
@@ -263,7 +299,7 @@ theorem contraction_geometric_bound (n : ℕ → ℕ) (c : ℕ)
 
 /-- The contracted size is at most `2k` after `clog2(n₀)-1` rounds when the
 paper's stronger cutoff `6c² ≤ k` holds. -/
-theorem contraction_logarithmic_rounds (n : ℕ → ℕ) (c k : ℕ)
+lemma contraction_logarithmic_rounds (n : ℕ → ℕ) (c k : ℕ)
     (hc : 2 ≤ c) (hk : 6 * c ^ 2 ≤ k)
     (hn0 : 2 ≤ n 0)
     (hstep : ∀ t, 2 * n (t + 1) ≤ n t + 2 * c ^ 2) :
