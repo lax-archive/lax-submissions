@@ -9,7 +9,7 @@ implementation are separate layers.
 
 namespace Lax457868Proofs.SamplerPhases
 
-variable {α β : Type*} [DecidableEq α]
+variable {α β : Type*} [DecidableEq α] [DecidableEq β]
 
 /-- The number of ground-set elements on which two neighborhoods disagree. -/
 def disagreement (N : β → Finset α) (b b' : β) : ℕ :=
@@ -46,7 +46,7 @@ def InitialChoice.sample {A : Finset α} {B : Finset β} {N : β → Finset α}
   choice.draws.toFinset
 
 /-- The chosen representatives identify exactly the initial trace classes. -/
-theorem InitialChoice.representative_eq_iff_same_trace
+lemma InitialChoice.representative_eq_iff_same_trace
     {A : Finset α} {B : Finset β} {N : β → Finset α} {r : ℕ}
     (choice : InitialChoice A B N r) (b b' : β)
     (hb : b ∈ B) (hb' : b' ∈ B) :
@@ -80,7 +80,7 @@ def chooseInitialAttempt {A : Finset α} {B : Finset β} {N : β → Finset α}
       else chooseInitialAttempt rest threshold cap
 
 /-- Any returned initial attempt passed the explicit exception-count check. -/
-theorem chooseInitialAttempt_sound {A : Finset α} {B : Finset β}
+lemma chooseInitialAttempt_sound {A : Finset α} {B : Finset β}
     {N : β → Finset α} {r : ℕ}
     (attempts : List (InitialChoice A B N r)) (threshold cap : ℕ)
     (chosen : InitialChoice A B N r)
@@ -104,29 +104,29 @@ def splitsExceptionPair (N : β → Finset α) (E : Finset β)
     ((a ∈ N b ∧ a ∉ N b') ∨ (a ∉ N b ∧ a ∈ N b'))
 
 /-- Executable finite search for a pair split by `a`. -/
-noncomputable def splitsExceptionPairB (N : β → Finset α) (E : Finset β)
+def splitsExceptionPairB (N : β → Finset α) (E : Finset β)
     (W : Finset α) (a : α) : Bool :=
-  E.toList.any fun b => E.toList.any fun b' =>
-    decide (trace N W b = trace N W b' ∧
-      ((a ∈ N b ∧ a ∉ N b') ∨ (a ∉ N b ∧ a ∈ N b')))
+  decide ((E.filter fun b =>
+    (E.filter fun b' => decide (trace N W b = trace N W b' ∧
+      ((a ∈ N b ∧ a ∉ N b') ∨ (a ∉ N b ∧ a ∈ N b')))).Nonempty).Nonempty)
 
 /-- The finite Boolean search succeeds exactly when an exception pair is split.
 -/
 lemma splitsExceptionPairB_eq_true_iff (N : β → Finset α) (E : Finset β)
     (W : Finset α) (a : α) :
     splitsExceptionPairB N E W a = true ↔ splitsExceptionPair N E W a := by
-  simp [splitsExceptionPairB, splitsExceptionPair, List.any_eq_true]
+  simp [splitsExceptionPairB, splitsExceptionPair, Finset.Nonempty]
 
 /-- One phase-two update: include the scanned vertex exactly when it splits an
 equal-trace pair of current exceptions. -/
-noncomputable def phase2Step (N : β → Finset α) (E : Finset β)
+def phase2Step (N : β → Finset α) (E : Finset β)
     (W : Finset α) (a : α) : Finset α :=
   if splitsExceptionPairB N E W a then insert a W else W
 
 /-- Scan a finite list of ground vertices from left to right, refining the
 sample whenever the current exceptions contain a pair that the vertex splits.
 -/
-noncomputable def phase2Scan (N : β → Finset α) (E : Finset β) :
+def phase2Scan (N : β → Finset α) (E : Finset β) :
     List α → Finset α → Finset α
   | [], W => W
   | a :: rest, W => phase2Scan N E rest (phase2Step N E W a)
@@ -145,109 +145,150 @@ def localTrialIsolates (N : β → Finset α) (B : Finset β)
   ∀ v ∈ B, trace N W b = trace N W v → v ≠ b →
     trace N (W ∪ draws.toFinset) b ≠ trace N (W ∪ draws.toFinset) v
 
+/-- Executable finite check for phase-three isolation. -/
+def localTrialIsolatesB (N : β → Finset α) (B : Finset β)
+    (W : Finset α) (b : β) (draws : List α) : Bool :=
+  decide (¬ (B.filter fun v => decide
+    (trace N W b = trace N W v ∧ v ≠ b ∧
+      trace N (W ∪ draws.toFinset) b = trace N (W ∪ draws.toFinset) v)).Nonempty)
+
+/-- The finite Boolean check is equivalent to the local isolation predicate. -/
+lemma localTrialIsolatesB_eq_true_iff (N : β → Finset α) (B : Finset β)
+    (W : Finset α) (b : β) (draws : List α) :
+    localTrialIsolatesB N B W b draws = true ↔
+      localTrialIsolates N B W b draws := by
+  simp [localTrialIsolatesB, localTrialIsolates, Finset.Nonempty]
+
 /-- Find the first supplied trial that passes the phase-three isolation check.
 Failure is explicit when all supplied trials fail. -/
-noncomputable def firstIsolatingTrial (N : β → Finset α) (B : Finset β)
+def firstIsolatingTrial (N : β → Finset α) (B : Finset β)
     (W : Finset α) (b : β) (X : Finset α) (s : ℕ) :
     List (LocalTrial X s) → Option (Finset α)
   | [] => none
-  | trial :: rest => by
-      classical
-      exact if localTrialIsolates N B W b trial.draws then
+  | trial :: rest =>
+      if localTrialIsolatesB N B W b trial.draws then
         some trial.draws.toFinset
       else firstIsolatingTrial N B W b X s rest
 
 /-- Every returned local trial passed the stated phase-three isolation check.
 -/
-theorem firstIsolatingTrial_sound (N : β → Finset α) (B : Finset β)
+lemma firstIsolatingTrial_sound (N : β → Finset α) (B : Finset β)
     (W : Finset α) (b : β) (X : Finset α) (s : ℕ)
     (trials : List (LocalTrial X s)) (drawSet : Finset α)
     (h : firstIsolatingTrial N B W b X s trials = some drawSet) :
     ∃ trial ∈ trials, trial.draws.toFinset = drawSet ∧
       localTrialIsolates N B W b trial.draws := by
-  classical
   induction trials with
   | nil => simp [firstIsolatingTrial] at h
   | cons trial rest ih =>
-      by_cases hok : localTrialIsolates N B W b trial.draws
+      by_cases hok : localTrialIsolatesB N B W b trial.draws = true
       · simp [firstIsolatingTrial, hok] at h
         cases h
-        exact ⟨trial, by simp, rfl, hok⟩
+        exact ⟨trial, by simp, rfl,
+          (localTrialIsolatesB_eq_true_iff N B W b trial.draws).mp hok⟩
       · have hrest : firstIsolatingTrial N B W b X s rest = some drawSet := by
           simpa [firstIsolatingTrial, hok] using h
         obtain ⟨other, hother, heq, hiso⟩ := ih hrest
         exact ⟨other, by simp [hother], heq, hiso⟩
 
+/-- Trace equality on a larger sample implies equality on a smaller sample. -/
+lemma trace_eq_of_sample_subset (N : β → Finset α) {U V : Finset α}
+    (hUV : U ⊆ V) (b b' : β)
+    (h : trace N V b = trace N V b') : trace N U b = trace N U b' := by
+  ext a
+  have hmem := congrArg (fun T : Finset α => a ∈ T) h
+  simp only [trace, Finset.mem_inter] at hmem ⊢
+  constructor
+  · rintro ⟨hab, haU⟩
+    exact ⟨(hmem.mp ⟨hab, hUV haU⟩).1, haU⟩
+  · rintro ⟨hab', haU⟩
+    exact ⟨(hmem.mpr ⟨hab', hUV haU⟩).1, haU⟩
+
+/-- Trace inequality persists when the sample is enlarged. -/
+lemma trace_ne_of_sample_subset (N : β → Finset α) {U V : Finset α}
+    (hUV : U ⊆ V) (b b' : β)
+    (h : trace N U b ≠ trace N U b') : trace N V b ≠ trace N V b' := by
+  intro hV
+  exact h (trace_eq_of_sample_subset N hUV b b' hV)
+
 /-- Phase three repairs one exception when its distance from the initial
 representative exceeds `2k/3`. Every attempted draw is supplied from the
 relevant symmetric difference; only a trial that passes the local isolation
 check is added. -/
-noncomputable def phase3Repair (N : β → Finset α) (B : Finset β)
-    (W : Finset α) (b rep : β) (k s : ℕ)
+def phase3Repair (N : β → Finset α) (B : Finset β)
+    (phaseTwoW accumulator : Finset α) (b rep : β) (k s : ℕ)
     (trials : List (LocalTrial
       ((N b \ N rep) ∪ (N rep \ N b)) s)) : Option (Finset α) :=
   if 2 * k < 3 * disagreement N b rep then
-    match firstIsolatingTrial N B W b
+    match firstIsolatingTrial N B phaseTwoW b
       ((N b \ N rep) ∪ (N rep \ N b)) s trials with
     | none => none
-    | some drawSet => some (W ∪ drawSet)
-  else some W
+    | some drawSet => some (accumulator ∪ drawSet)
+  else some accumulator
 
 /-- A returned repair for a far exception separates it from every member of
 its phase-two trace class. -/
 theorem phase3Repair_sound (N : β → Finset α) (B : Finset β)
-    (W W' : Finset α) (b rep : β) (k s : ℕ)
+    (phaseTwoW accumulator W' : Finset α) (b rep : β) (k s : ℕ)
     (trials : List (LocalTrial
       ((N b \ N rep) ∪ (N rep \ N b)) s))
     (hfar : 2 * k < 3 * disagreement N b rep)
-    (hret : phase3Repair N B W b rep k s trials = some W') :
-    ∀ v ∈ B, trace N W b = trace N W v → v ≠ b →
+    (hbase : phaseTwoW ⊆ accumulator)
+    (hret : phase3Repair N B phaseTwoW accumulator b rep k s trials = some W') :
+    ∀ v ∈ B, trace N phaseTwoW b = trace N phaseTwoW v → v ≠ b →
       trace N W' b ≠ trace N W' v := by
   classical
   let X := (N b \ N rep) ∪ (N rep \ N b)
-  cases htrial : firstIsolatingTrial N B W b X s trials with
+  cases htrial : firstIsolatingTrial N B phaseTwoW b X s trials with
   | none => simp [phase3Repair, hfar, X, htrial] at hret
   | some drawSet =>
       simp [phase3Repair, hfar, X, htrial] at hret
       cases hret
       obtain ⟨trial, _, hdraw, hisolate⟩ :=
-        firstIsolatingTrial_sound N B W b X s trials drawSet htrial
+        firstIsolatingTrial_sound N B phaseTwoW b X s trials drawSet htrial
+      have hsubset : phaseTwoW ∪ trial.draws.toFinset ⊆ accumulator ∪ drawSet := by
+        rw [hdraw]
+        exact Finset.union_subset_union hbase (by intro x hx; exact hx)
       intro v hv htrace hvb
-      simpa [hdraw] using hisolate v hv htrace hvb
+      exact trace_ne_of_sample_subset N hsubset b v (hisolate v hv htrace hvb)
 
 /-- Run local repairs in the supplied order of exceptions. Each exception has
 its own finite list of legal length-`s` trials; exhaustion at a far exception
 returns `none`. -/
-noncomputable def phase3Scan (N : β → Finset α) (B : Finset β)
+def phase3Scan (N : β → Finset α) (B : Finset β)
     (representative : β → β) (k s : ℕ)
     (trials : ∀ b : β, List (LocalTrial
       ((N b \ N (representative b)) ∪
         (N (representative b) \ N b)) s)) :
-    List β → Finset α → Option (Finset α)
-  | [], W => some W
-  | b :: rest, W =>
-      match phase3Repair N B W b (representative b) k s (trials b) with
+    List β → Finset α → Finset α → Option (Finset α)
+  | [], _, accumulator => some accumulator
+  | b :: rest, phaseTwoW, accumulator =>
+      match phase3Repair N B phaseTwoW accumulator b (representative b) k s (trials b) with
       | none => none
-      | some W' => phase3Scan N B representative k s trials rest W'
+      | some W' => phase3Scan N B representative k s trials rest phaseTwoW W'
 
 /-- Execute the three finite phases from explicit initial attempts and local
 trial lists. The result is `none` exactly when the supplied initial attempts
 or a required local-repair list are exhausted. -/
 noncomputable def runThreePhases (A : Finset α) (B : Finset β)
-    (N : β → Finset α) (r threshold cap k s : ℕ)
+    (N : β → Finset α) (r cap k s : ℕ)
     (initialAttempts : List (InitialChoice A B N r))
+    (groundOrder : List α) (groundOrder_finset : groundOrder.toFinset = A)
     (repairTrials : ∀ choice : InitialChoice A B N r, ∀ b : β,
       List (LocalTrial
         ((N b \ N (choice.representative b)) ∪
-          (N (choice.representative b) \ N b)) s)) :
+          (N (choice.representative b) \ N b)) s))
+    (exceptionOrder : ∀ choice : InitialChoice A B N r, List β)
+    (exceptionOrder_finset : ∀ choice,
+      (exceptionOrder choice).toFinset = choice.exceptions k) :
     Option (Finset α) :=
-  match chooseInitialAttempt initialAttempts threshold cap with
+  match chooseInitialAttempt initialAttempts k cap with
   | none => none
   | some choice =>
-      let E := choice.exceptions threshold
-      let W₂ := phase2Scan N E A.toList choice.sample
+      let E := choice.exceptions k
+      let W₂ := phase2Scan N E groundOrder choice.sample
       phase3Scan N B choice.representative k s (repairTrials choice)
-        E.toList W₂
+        (exceptionOrder choice) W₂ W₂
 
 /-- The phase-two scan never removes a previously sampled vertex. -/
 lemma phase2Scan_mono (N : β → Finset α) (E : Finset β)
@@ -261,19 +302,6 @@ lemma phase2Scan_mono (N : β → Finset α) (E : Finset β)
           · simp [phase2Step, hs]
           · simp [phase2Step, hs]
         _ ⊆ phase2Scan N E rest (phase2Step N E W a) := ih _
-
-/-- Trace equality descends to any smaller sample. -/
-lemma trace_eq_of_sample_subset (N : β → Finset α) {U V : Finset α}
-    (hUV : U ⊆ V) (b b' : β)
-    (h : trace N V b = trace N V b') : trace N U b = trace N U b' := by
-  ext a
-  have hmem := congrArg (fun T : Finset α => a ∈ T) h
-  simp only [trace, Finset.mem_inter] at hmem ⊢
-  constructor
-  · rintro ⟨hab, haU⟩
-    exact ⟨(hmem.mp ⟨hab, hUV haU⟩).1, haU⟩
-  · rintro ⟨hab', haU⟩
-    exact ⟨(hmem.mpr ⟨hab', hUV haU⟩).1, haU⟩
 
 /-- A scan over a list separates any two exceptions whose distinct
 neighborhoods are contained in the scanned ground set. -/
