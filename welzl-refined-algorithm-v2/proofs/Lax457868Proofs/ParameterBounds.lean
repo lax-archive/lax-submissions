@@ -9,7 +9,7 @@ namespace Lax457868Proofs.ParameterBounds
 
 /-- Lemma 18's sampler parameter, followed by the reconstruction's `2 * k`
 contribution per round, gives the explicit displayed bound. -/
-theorem refinedCrossingBound
+lemma refinedCrossingBound
     (C Lc Ln k : ℕ)
     (hk : k ≤ 768 * C * (64 * Lc + 1) * Lc + 1) :
     2 * k * Ln ≤
