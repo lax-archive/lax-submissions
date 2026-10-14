@@ -310,7 +310,9 @@ majority range is at most `2 c s 2^(s-q)`. -/
 lemma card_familySwapGood_le_of_traceBound
     {X : Finset α} {s q c : ℕ} (hq : q ≤ s)
     (F : Finset (Finset α)) (pairs : PairTape X s)
-    (htrace : ∀ Y : Finset α,
+    (hsupport : pairSupport pairs ⊆ X)
+    (hsupportNonempty : (pairSupport pairs).Nonempty)
+    (htrace : ∀ Y : Finset α, Y ⊆ X → Y.Nonempty →
       (F.image fun D => D ∩ Y).card ≤ c * Y.card) :
     (Finset.univ.filter fun swaps : Fin s → Bool =>
       familySwapGood F q pairs swaps).card ≤
@@ -331,7 +333,8 @@ lemma card_familySwapGood_le_of_traceBound
     dsimp [traced]
     calc
       (F.image fun D => D ∩ pairSupport pairs).card ≤
-          c * (pairSupport pairs).card := htrace (pairSupport pairs)
+          c * (pairSupport pairs).card :=
+        htrace (pairSupport pairs) hsupport hsupportNonempty
       _ ≤ c * (2 * s) := Nat.mul_le_mul_left c (pairSupport_card_le pairs)
   calc
     (Finset.univ.filter (fun swaps : Fin s → Bool =>
