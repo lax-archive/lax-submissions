@@ -1,7 +1,6 @@
 import Mathlib.Tactic
 import Lax457868.RefinedSample
 import Lax457868Proofs.SamplerDistance
-import Lax457868Proofs.SamplerSize
 
 /-!
 Finite deterministic phases for the refined sampler of Lemma 18. Randomness is
@@ -371,13 +370,15 @@ def runThreePhases (A : Finset α) (B : Finset β)
     (N : β → Finset α) (r cap k s : ℕ)
     (initialAttempts : List (InitialChoice A B N r))
     (groundOrder : List α) (_groundOrder_finset : groundOrder.toFinset = A)
+    (_groundOrder_nodup : groundOrder.Nodup)
     (repairTrials : ∀ choice : InitialChoice A B N r, ∀ b : β,
       List (LocalTrial
         ((N b \ N (choice.representative b)) ∪
           (N (choice.representative b) \ N b)) s))
     (exceptionOrder : ∀ choice : InitialChoice A B N r, List β)
     (_exceptionOrder_finset : ∀ choice,
-      (exceptionOrder choice).toFinset = choice.exceptions k) :
+      (exceptionOrder choice).toFinset = choice.exceptions k)
+    (_exceptionOrder_nodup : ∀ choice, (exceptionOrder choice).Nodup) :
     Option (Finset α) :=
   match chooseInitialAttempt initialAttempts k cap with
   | none => none
@@ -386,6 +387,30 @@ def runThreePhases (A : Finset α) (B : Finset β)
       let W₂ := phase2Scan N E groundOrder choice.sample
       phase3Scan N B choice.representative k s (repairTrials choice)
         (exceptionOrder choice) W₂ W₂
+
+/-- The full finite-choice algorithm includes Lemma 18's immediate-output
+branches. When the ground set already has at most `k` elements, or there are
+no vertices to distinguish, the empty sample is returned. Otherwise the
+three nontrivial phases are run on the supplied legal finite choices. -/
+def refinedSampler (A : Finset α) (B : Finset β)
+    (N : β → Finset α) (r cap k s : ℕ)
+    (initialAttempts : List (InitialChoice A B N r))
+    (groundOrder : List α) (_groundOrder_finset : groundOrder.toFinset = A)
+    (_groundOrder_nodup : groundOrder.Nodup)
+    (repairTrials : ∀ choice : InitialChoice A B N r, ∀ b : β,
+      List (LocalTrial
+        ((N b \ N (choice.representative b)) ∪
+          (N (choice.representative b) \ N b)) s))
+    (exceptionOrder : ∀ choice : InitialChoice A B N r, List β)
+    (_exceptionOrder_finset : ∀ choice,
+      (exceptionOrder choice).toFinset = choice.exceptions k)
+    (_exceptionOrder_nodup : ∀ choice, (exceptionOrder choice).Nodup) :
+    Option (Finset α) :=
+  if A.card ≤ k ∨ B = ∅ then some ∅
+  else runThreePhases A B N r cap k s initialAttempts groundOrder
+    _groundOrder_finset _groundOrder_nodup repairTrials exceptionOrder
+    _exceptionOrder_finset _exceptionOrder_nodup
+
 
 /-- The phase-two scan never removes a previously sampled vertex. -/
 lemma phase2Scan_mono (N : β → Finset α) (E : Finset β)
@@ -450,9 +475,9 @@ lemma phase2Scan_separates
 
 /-- After the complete ground-set scan, two exceptional vertices with
 identical traces have identical full neighborhoods. -/
-theorem phase2_separates_distinct_neighborhoods
+lemma phase2_separates_distinct_neighborhoods
     (A : Finset α) (B : Finset β) (N : β → Finset α)
-    (as : List α) (has : as.toFinset = A)
+    (as : List α) (has : as.toFinset = A) (_as_nodup : as.Nodup)
     (E : Finset β) (W : Finset α)
     (hN : ∀ b ∈ B, N b ⊆ A) (hE : E ⊆ B)
     (b b' : β) (hb : b ∈ E) (hb' : b' ∈ E)
@@ -473,12 +498,13 @@ theorem phase2_separates_distinct_neighborhoods
 
 /-- A successful three-phase scan has pairwise `k`-close neighborhoods
 whenever their final traces agree. -/
-theorem phase3Scan_pairwise_correct
+lemma phase3Scan_pairwise_correct
     (A : Finset α) (B : Finset β) (N : β → Finset α)
     (r k s : ℕ) (choice : InitialChoice A B N r)
-    (as : List α) (has : as.toFinset = A)
+    (as : List α) (has : as.toFinset = A) (_as_nodup : as.Nodup)
     (hN : ∀ b ∈ B, N b ⊆ A)
     (order : List β) (horder : order.toFinset = choice.exceptions k)
+    (_order_nodup : order.Nodup)
     (trials : ∀ b : β, List (LocalTrial
       ((N b \ N (choice.representative b)) ∪
         (N (choice.representative b) \ N b)) s))
@@ -526,7 +552,7 @@ theorem phase3Scan_pairwise_correct
       3 * disagreement N x (choice.representative x) ≤ 2 * k := by omega
   by_cases hbE : b ∈ E <;> by_cases hb'E : b' ∈ E
   · have hNeq : N b = N b' :=
-      phase2_separates_distinct_neighborhoods A B N as has E choice.sample hN hE
+      phase2_separates_distinct_neighborhoods A B N as has _as_nodup E choice.sample hN hE
         b b' hbE hb'E (by simpa [W₂] using htrace₂)
     simpa [SamplerDistance.disagreement, disagreement, hNeq]
   · by_cases hfar : 2 * k < 3 * disagreement N b (choice.representative b)
@@ -568,5 +594,60 @@ theorem phase3Scan_pairwise_correct
       simpa [disagreement, SamplerDistance.disagreement, hrep] using hY0
     exact SamplerDistance.disagreement_le_of_third_bounds
       (N b) (N b') (N (choice.representative b)) k hX hY
+
+/-- The full finite-choice sampler, including the empty-sample branches, is
+pairwise `k`-close on every successful run. -/
+lemma refinedSampler_pairwise_correct
+    (A : Finset α) (B : Finset β) (N : β → Finset α)
+    (r cap k s : ℕ) (initialAttempts : List (InitialChoice A B N r))
+    (groundOrder : List α) (hground : groundOrder.toFinset = A)
+    (hground_nodup : groundOrder.Nodup)
+    (repairTrials : ∀ choice : InitialChoice A B N r, ∀ b : β,
+      List (LocalTrial
+        ((N b \ N (choice.representative b)) ∪
+          (N (choice.representative b) \ N b)) s))
+    (exceptionOrder : ∀ choice : InitialChoice A B N r, List β)
+    (hexceptions : ∀ choice,
+      (exceptionOrder choice).toFinset = choice.exceptions k)
+    (hexceptions_nodup : ∀ choice, (exceptionOrder choice).Nodup)
+    (hN : ∀ b ∈ B, N b ⊆ A)
+    (result : Finset α)
+    (hret : refinedSampler A B N r cap k s initialAttempts groundOrder hground
+      hground_nodup repairTrials exceptionOrder hexceptions hexceptions_nodup =
+        some result) :
+    ∀ b ∈ B, ∀ b' ∈ B, trace N result b = trace N result b' →
+      disagreement N b b' ≤ k := by
+  classical
+  by_cases hearly : A.card ≤ k ∨ B = ∅
+  · have hresult : result = ∅ := by
+      simpa [refinedSampler, hearly] using hret.symm
+    subst result
+    intro b hb b' hb' _
+    rcases hearly with hsmall | hempty
+    · apply Nat.le_trans ?_ hsmall
+      apply Finset.card_le_card
+      intro a ha
+      rcases Finset.mem_union.mp ha with h | h
+      · exact hN b hb (Finset.mem_sdiff.mp h).1
+      · exact hN b' hb' (Finset.mem_sdiff.mp h).1
+    · rw [hempty] at hb
+      simp at hb
+  · have hrun : runThreePhases A B N r cap k s initialAttempts groundOrder hground
+        hground_nodup repairTrials exceptionOrder hexceptions hexceptions_nodup =
+        some result := by
+      simpa [refinedSampler, hearly] using hret
+    cases hchoose : chooseInitialAttempt initialAttempts k cap with
+    | none => simp [runThreePhases, hchoose] at hrun
+    | some choice =>
+        have hscan : phase3Scan N B choice.representative k s
+            (repairTrials choice) (exceptionOrder choice)
+            (phase2Scan N (choice.exceptions k) groundOrder choice.sample)
+            (phase2Scan N (choice.exceptions k) groundOrder choice.sample) =
+              some result := by
+          simpa [runThreePhases, hchoose] using hrun
+        exact phase3Scan_pairwise_correct A B N r k s choice groundOrder
+          hground hground_nodup hN (exceptionOrder choice) (hexceptions choice)
+          (hexceptions_nodup choice) (repairTrials choice) result hscan
+
 
 end Lax457868Proofs.SamplerPhases
