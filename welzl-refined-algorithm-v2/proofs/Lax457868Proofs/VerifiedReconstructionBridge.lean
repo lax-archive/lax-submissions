@@ -29,7 +29,7 @@ private lemma insertAfter_eq {α : Type*} [DecidableEq α] (representative new :
       simp [Lax235315Proofs.Construction.ListCrossing.insertAfter,
         Lax457868Proofs.TwinExpansion.insertAfter, ih]
 
-/-- The old list-ordered restoration is definitionally the same sequence of
+/-- The old list-ordered restoration agrees with the same sequence of
 insertions as the indexed refined round restoration. -/
 lemma restoreAfter_eq_insertAllTwins {α : Type*} [DecidableEq α]
     (representative : α → α) (small removed : List α) :
@@ -45,9 +45,8 @@ lemma restoreAfter_eq_insertAllTwins {α : Type*} [DecidableEq α]
       exact ih _
 
 /-- A refined sample and two actual source trace partitions give a checked
-original reduction. The larger list is exactly `restoreAfter` from the source
-reconstruction, while its crossing conclusion follows from the checked
-near-twin bound and the original generic crossing induction. -/
+original reduction for any duplicate-free enumerations of the retained and
+removed sets. The source representatives are retained unchanged. -/
 lemma restoreAfter_reduction {n c k : ℕ} {G : SimpleGraph (Fin n)}
     (A B W A' B' : Finset (Fin n))
     (hsample : IsRefinedSample
@@ -62,20 +61,11 @@ lemma restoreAfter_reduction {n c k : ℕ} {G : SimpleGraph (Fin n)}
       (A' : Set (Fin n)))
     (small removed : List (Fin n))
     (hsmall : Enumerates (A' : Set (Fin n)) small)
-    (hremoved : Enumerates ((A : Set (Fin n)) \ (A' : Set (Fin n))) removed)
-    (hsmallBound : ∀ b ∈ (B' : Set (Fin n)),
-      Lax235315Proofs.Construction.ListCrossing.crossingCount
-        (G.neighborSet b) small ≤ (A.card + 2 * c ^ 2 - 1) / (2 * c ^ 2)) :
-    ∃ _reduction : Reduction G k (A : Set (Fin n)) (B : Set (Fin n))
+    (hremoved : Enumerates ((A : Set (Fin n)) \ (A' : Set (Fin n))) removed) :
+    Nonempty (Reduction G k (A : Set (Fin n)) (B : Set (Fin n))
       (A' : Set (Fin n)) (B' : Set (Fin n)) small
       (Lax235315Proofs.Construction.ConcreteReconstruction.restoreAfter
-        hA.representative small removed),
-      ∀ b ∈ (B : Set (Fin n)),
-        Lax235315Proofs.Construction.ListCrossing.crossingCount
-          (G.neighborSet b)
-          (Lax235315Proofs.Construction.ConcreteReconstruction.restoreAfter
-            hA.representative small removed) ≤
-            (A.card + 2 * c ^ 2 - 1) / (2 * c ^ 2) + 2 * k := by
+        hA.representative small removed)) := by
   classical
   let contraction := traceContractionOfVerifiedPartitions G A B W B' A' hWA hB hA
   obtain ⟨hbig, hexpands⟩ :=
@@ -115,7 +105,35 @@ lemma restoreAfter_reduction {n c k : ℕ} {G : SimpleGraph (Fin n)}
     representative_mem := hB.representative_mem
     near := hnear
   }
-  refine ⟨reduction, ?_⟩
+  exact ⟨reduction⟩
+
+/-- The original crossing induction transports an arbitrary retained-order
+bound `q` to the restoration, with additive cost `2*k`. -/
+lemma restoreAfter_crossingCount_le {n c k q : ℕ} {G : SimpleGraph (Fin n)}
+    (A B W A' B' : Finset (Fin n))
+    (hsample : IsRefinedSample
+      (Lax457868Proofs.SamplerContract.neighborhoodFamily B
+        (Lax457868Proofs.GraphTraceBounds.finiteNeighborhood G A))
+      (A : Set (Fin n)) (W : Set (Fin n))
+      ((A.card + 2 * c ^ 2 - 1) / (2 * c ^ 2)) k)
+    (hWA : W ⊆ A)
+    (hB : TracePartition G (B : Set (Fin n)) (W : Set (Fin n))
+      (B' : Set (Fin n)))
+    (hA : TracePartition G (A : Set (Fin n)) (B' : Set (Fin n))
+      (A' : Set (Fin n)))
+    (small removed : List (Fin n))
+    (hsmall : Enumerates (A' : Set (Fin n)) small)
+    (hremoved : Enumerates ((A : Set (Fin n)) \ (A' : Set (Fin n))) removed)
+    (hsmallBound : ∀ b ∈ (B' : Set (Fin n)),
+      Lax235315Proofs.Construction.ListCrossing.crossingCount
+        (G.neighborSet b) small ≤ q) :
+    ∀ b ∈ (B : Set (Fin n)),
+      Lax235315Proofs.Construction.ListCrossing.crossingCount
+        (G.neighborSet b)
+        (Lax235315Proofs.Construction.ConcreteReconstruction.restoreAfter
+          hA.representative small removed) ≤ q + 2 * k := by
+  obtain ⟨reduction⟩ := restoreAfter_reduction A B W A' B' hsample hWA
+    hB hA small removed hsmall hremoved
   intro b hb
   exact reduction.crossingCount_le G hsmallBound b hb
 
