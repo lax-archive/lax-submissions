@@ -65,7 +65,7 @@ def missEquiv (X D : Finset α) (s : ℕ) :
 
 /-- The number of ordered length-`s` tapes from `X` that miss `D` is exactly
 `(|X \ D|)^s`. This is a count, independent of any probability axioms. -/
-theorem card_miss_tapes (X D : Finset α) (s : ℕ) :
+lemma card_miss_tapes (X D : Finset α) (s : ℕ) :
     Fintype.card {tape : Tape X s // Misses D tape} =
       (X.filter (fun a => a ∉ D)).card ^ s := by
   classical

@@ -149,7 +149,7 @@ lemma distinguishingFamily_card_le_of_trace_bound
 /-- A range meeting more than half of `X` is missed by at most a `2^-s`
 fraction of the uniform ordered tapes.  The probability inequality is stated
 as a cross-multiplied count inequality to avoid division-by-zero conventions. -/
-theorem majority_range_miss_count
+lemma majority_range_miss_count
     (X D : Finset α) (s : ℕ)
     (hmajority : 2 * (X ∩ D).card > X.card) :
     missSpace X D s * 2 ^ s ≤ (sampleSpace X s).card := by
@@ -171,7 +171,7 @@ theorem majority_range_miss_count
 /-- For a legal tape, failure of the phase-three local isolation predicate is
 equivalent to the tape missing one distinguishing range from the fixed
 phase-two trace class. -/
-theorem not_localTrialIsolates_iff_tape_misses_range
+lemma not_localTrialIsolates_iff_tape_misses_range
     (N : β → Finset α) (B : Finset β) (W : Finset α) (b : β)
     (X : Finset α) (s : ℕ) (tape : Tape X s) :
     ¬ localTrialIsolates N B W b tape.toList ↔
