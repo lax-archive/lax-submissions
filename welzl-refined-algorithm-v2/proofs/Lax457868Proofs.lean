@@ -41,6 +41,7 @@ import Lax457868Proofs.FairBitRam
 import Lax457868Proofs.IndexedDraws
 import Lax457868Proofs.VerifiedPartitionBridge
 import Lax457868Proofs.IndexedDrawBounds
+import Lax457868Proofs.EnumeratedDraws
 import Lax457868Proofs.VerifiedReconstructionBridge
 import Lax457868Proofs.VerifiedRoundPartitions
 import Lax457868Proofs.ReusedOriginal.Construction.CollisionDetection
