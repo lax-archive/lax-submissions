@@ -6,11 +6,11 @@ import Lax808846Proofs.Frame
 import Lax808846Proofs.Lib.Fill
 
 /-!
-Mark a supplied finite numeric draw list, then pack the distinct marked
+Mark the runtime sample-draw array prefix, then pack the distinct marked
 vertices into the array interface used by the round partition routine. The
-list is compiled into literal IMP+ stores; duplicate entries repeat an
-idempotent store. The packing scan reads a zero-one flag array and writes one
-entry per marked vertex in increasing vertex order.
+marking and packing code are fixed independently of sampled values. Duplicate
+draws repeat an idempotent store. The packing scan reads a zero-one flag array
+and writes one entry per marked vertex in increasing vertex order.
 -/
 
 namespace Lax457868Proofs.SamplePacking
@@ -40,38 +40,137 @@ def packMarkedSamples : Com :=
     .assign "sampleCursor" (.lit 0),
     .while (.lt (.var "sampleCursor") (.var "n")) packBody]
 
-/-- Compile a finite numeric draw list into literal flag writes. This is a
-source constructor specialized to the supplied list; repeated entries simply
-write one to the same cell again. -/
-def markSampleList : List ℕ → Com
-  | [] => .skip
-  | v :: rest => .seq (.store "sampleFlags" (.lit v) (.lit 1))
-      (markSampleList rest)
+/-- One fixed-code iteration reads the next sampled vertex from the runtime
+draw array, marks that vertex, then advances the cursor. -/
+private def markDrawBody : Com :=
+  seqs [
+    .store "sampleFlags" (.get "sampleDraws" (.var "drawCursor")) (.lit 1),
+    inc "drawCursor"]
 
-private lemma markSampleList_warrs (draws : List ℕ) :
-    (markSampleList draws).warrs = List.replicate draws.length "sampleFlags" := by
-  induction draws with
-  | nil => simp [markSampleList, Com.warrs]
-  | cons v rest ih =>
-      simp [markSampleList, Com.warrs, ih, List.replicate_succ, Nat.add_comm]
+/-- Fixed IMP+ code for marking the runtime draw-array prefix. The source does
+not depend on the sampled values or on the requested draw count. -/
+def markDrawArray : Com :=
+  seqs [
+    .assign "drawCursor" (.lit 0),
+    .while (.lt (.var "drawCursor") (.var "drawCount")) markDrawBody]
 
-private lemma markSampleList_wvars (draws : List ℕ) :
-    (markSampleList draws).wvars = [] := by
-  induction draws with
-  | nil => simp [markSampleList, Com.wvars]
-  | cons v rest ih => simp [markSampleList, Com.wvars, ih]
+/-- State invariant for the runtime mark loop: the flag array represents
+exactly the sample list prefix scanned so far. -/
+private def MarkDrawInv (n drawCount drawCap : ℕ) (draws : List ℕ)
+    (values initialFlags flags : ℕ → ℕ) (σ : Env) : Prop :=
+  σ.vars "n" = n ∧
+  σ.vars "drawCount" = drawCount ∧
+  σ.vars "drawCursor" ≤ drawCount ∧
+  σ.arrs "sampleDraws" = arrOf drawCap values ∧
+  σ.arrs "sampleFlags" = arrOf n flags ∧
+  ∀ v < n, flags v =
+    if v ∈ (draws.take (σ.vars "drawCursor")).toFinset then 1 else initialFlags v
 
-private lemma markSampleList_reads (draws : List ℕ) :
-    ¬ (markSampleList draws).reads := by
-  induction draws with
-  | nil => simp [markSampleList, Com.reads]
-  | cons v rest ih => simpa [markSampleList, Com.reads] using ih
-
-private lemma markSampleList_noWrite (draws : List ℕ) :
-    (markSampleList draws).NoWrite := by
-  induction draws with
-  | nil => simp [markSampleList, Com.NoWrite]
-  | cons v rest ih => simpa [markSampleList, Com.NoWrite] using ih
+private lemma markDrawBody_run {B n drawCount drawCap : ℕ}
+    {draws : List ℕ} {values initialFlags flags : ℕ → ℕ} {σ : Env}
+    (hI : MarkDrawInv n drawCount drawCap draws values initialFlags flags σ)
+    (hcursorLt : σ.vars "drawCursor" < drawCount)
+    (hcountLen : drawCount = draws.length)
+    (hdrawCountB : drawCount < B) (hnB : n < B) (honeB : 1 < B)
+    (hcap : drawCount ≤ drawCap)
+    (hrange : ∀ v ∈ draws, v < n)
+    (hvalues : ∀ i (hi : i < drawCount), values i = draws[i]) :
+    ∃ σ' flags', Run B markDrawBody σ σ' 8 ∧
+      MarkDrawInv n drawCount drawCap draws values initialFlags flags' σ' ∧
+      σ'.vars "drawCursor" = σ.vars "drawCursor" + 1 := by
+  rcases hI with ⟨hn, hcount, hcursor, hdraws, hflags, hseen⟩
+  let k := σ.vars "drawCursor"
+  have hk : k < drawCount := by simpa [k] using hcursorLt
+  have hkList : k < draws.length := by simpa [hcountLen] using hk
+  have hkCap : k < drawCap := lt_of_lt_of_le hk hcap
+  have hd : values k = draws[k] := hvalues k hk
+  have hvertex : values k < n := by
+    rw [hd]
+    exact hrange _ (List.getElem_mem hkList)
+  have hdB : values k < B := hvertex.trans hnB
+  have hcursorB : σ.vars "drawCursor" < B := hk.trans hdrawCountB
+  have hcursorEval : (Expr.var "drawCursor").evalB B σ = some k := by
+    simpa [k] using evalB_var hcursorB
+  have hdrawGet : (σ.arrs "sampleDraws")[k]? = some (values k) := by
+    rw [hdraws]
+    exact getElem?_arrOf values hkCap
+  have hdrawEval :
+      (Expr.get "sampleDraws" (.var "drawCursor")).evalB B σ = some (values k) :=
+    evalB_get hcursorEval hdrawGet hdB
+  have hstore : Run B
+      (.store "sampleFlags" (.get "sampleDraws" (.var "drawCursor")) (.lit 1))
+      σ (σ.setArr "sampleFlags" (values k) 1) 4 := by
+    apply Run.store hdrawEval (evalB_lit honeB)
+    simp [hflags]
+    exact hvertex
+  let flags' := upd flags (values k) 1
+  have hflags' : (σ.setArr "sampleFlags" (values k) 1).arrs "sampleFlags" =
+      arrOf n flags' := by
+    rw [arrs_setArr, if_pos rfl, hflags, set_arrOf_eq_upd]
+  have hcursor' : (σ.setArr "sampleFlags" (values k) 1).vars "drawCursor" = k := by
+    simp [k]
+  have hincEval :
+      (Expr.add (.var "drawCursor") (.lit 1)).evalB B
+        (σ.setArr "sampleFlags" (values k) 1) = some (k + 1) := by
+    apply evalB_bin
+      (by simpa [hcursor'] using evalB_var (by omega : k < B))
+      (evalB_lit honeB)
+    have hnext : k + 1 < B := by omega
+    simpa using hnext
+  let σ' := (σ.setArr "sampleFlags" (values k) 1).setVar "drawCursor" (k + 1)
+  have hinc : Run B (inc "drawCursor")
+      (σ.setArr "sampleFlags" (values k) 1) σ' 4 := by
+    simpa [inc, σ', Expr.size] using
+      (Run.assign (x := "drawCursor") hincEval)
+  have hrun : Run B markDrawBody σ σ' 8 := by
+    have h := Run.seq hstore hinc
+    simpa [markDrawBody, seqs] using h
+  have hflagsSeen : ∀ x < n,
+      flags' x = if x ∈ (draws.take (k + 1)).toFinset then 1 else initialFlags x := by
+    intro x hx
+    have hprev : flags x = if x ∈ (draws.take k).toFinset then 1 else initialFlags x := by
+      simpa [k] using hseen x hx
+    have hmem : x ∈ (draws.take (k + 1)).toFinset ↔
+        x ∈ (draws.take k).toFinset ∨ x = draws[k] := by
+      have ht : draws.take (k + 1) = draws.take k ++ [draws[k]] :=
+        List.take_succ_eq_append_getElem hkList
+      simp only [List.mem_toFinset, ht, List.mem_append, List.mem_cons,
+        List.not_mem_nil, or_false]
+    simp only [hmem]
+    by_cases heq : x = values k
+    · have heq' : x = draws[k] := by rw [← hd]; exact heq
+      have hnextmem : x ∈ (draws.take (k + 1)).toFinset :=
+        hmem.mpr (Or.inr heq')
+      change (if x = values k then 1 else flags x) =
+        if x ∈ (draws.take k).toFinset ∨ x = draws[k] then 1 else initialFlags x
+      rcases hmem.mp hnextmem with hold | hnext
+      · rw [if_pos heq, if_pos (Or.inl hold)]
+      · rw [if_pos heq, if_pos (Or.inr hnext)]
+    · have hne : x ≠ draws[k] := by
+        intro hEq
+        apply heq
+        rw [hd]
+        exact hEq
+      change (if x = values k then 1 else flags x) =
+        if x ∈ (draws.take k).toFinset ∨ x = draws[k] then 1 else initialFlags x
+      rw [if_neg heq]
+      by_cases hold : x ∈ (draws.take k).toFinset
+      · rw [hprev, if_pos hold, if_pos (Or.inl hold)]
+      · have hnot : ¬(x ∈ (draws.take k).toFinset ∨ x = draws[k]) :=
+          not_or.mpr ⟨hold, hne⟩
+        rw [hprev, if_neg hold, if_neg hnot]
+  have hdraws' : σ'.arrs "sampleDraws" = arrOf drawCap values := by
+    simp [σ', hdraws]
+  have hflagsFinal : σ'.arrs "sampleFlags" = arrOf n flags' := by
+    simpa [σ'] using hflags'
+  have hcursorFinal : σ'.vars "drawCursor" = k + 1 := by simp [σ']
+  refine ⟨σ', flags', hrun, ?_, hcursorFinal⟩
+  refine ⟨?_, ?_, ?_, hdraws', hflagsFinal, ?_⟩
+  · simpa [σ'] using hn
+  · simpa [σ'] using hcount
+  · rw [hcursorFinal]
+    omega
+  · simpa [hcursorFinal, k] using hflagsSeen
 
 /-- The loop invariant for packing. `ord` contains the active vertices in
 the scanned prefix, in increasing order, and `sampleCount` is its length. -/
@@ -401,97 +500,119 @@ lemma packMarkedSamples_run {B n : ℕ} {σ : Env} {flags ord : ℕ → ℕ}
   refine ⟨σ', packed, hrun, hflagsFinal, hordPacked, hprefix', hcard,
     hcursor, hframeArrs, hframeVars, hinp, hout⟩
 
-/-- The specialized source marks each distinct in-range draw with one; its
-input list is compiled into literal stores, so duplicate values are harmless.
+/-- Execute the fixed runtime-array marking loop. The caller proves that the
+array prefix contains `draws`; the code itself reads each entry dynamically.
+It handles duplicates by idempotent stores and costs `12*draws.length+6`.
 -/
-lemma markSampleList_run {B n : ℕ} {σ : Env} {flags : ℕ → ℕ}
-    {draws : List ℕ}
-    (harr : σ.arrs "sampleFlags" = arrOf n flags)
-    (hrange : ∀ v ∈ (draws : List ℕ), v < n)
-    (hnB : n < B) (honeB : 1 < B) :
-    ∃ σ' flags', Run B (markSampleList draws) σ σ'
-        (3 * draws.length + 1) ∧
-      σ'.arrs "sampleFlags" = arrOf n flags' ∧
-      ∀ i < n, flags' i = if i ∈ draws then 1 else flags i := by
-  induction draws generalizing σ flags with
-  | nil =>
-      refine ⟨σ, flags, Run.skip, ?_, ?_⟩
-      · exact harr
-      · intro i hi
-        simp
-  | cons v rest ih =>
-      have hvn : v < n := hrange v (by simp)
-      have hstore : Run B (.store "sampleFlags" (.lit v) (.lit 1))
-          σ (σ.setArr "sampleFlags" v 1) 3 := by
-        apply Run.store (evalB_lit (by omega : v < B))
-          (evalB_lit (by omega : 1 < B))
-        rw [harr, length_arrOf]
-        exact hvn
-      let flags₁ := upd flags v 1
-      have harr₁ : (σ.setArr "sampleFlags" v 1).arrs "sampleFlags" =
-          arrOf n flags₁ := by
-        rw [arrs_setArr, if_pos rfl, harr, set_arrOf_eq_upd]
-      obtain ⟨σ', flags', hrest, hflags', hproperty⟩ :=
-        ih (σ := σ.setArr "sampleFlags" v 1) (flags := flags₁) harr₁ (by
-          intro u hu
-          exact hrange u (by simp [hu]))
-      have hrun : Run B (markSampleList (v :: rest)) σ σ'
-          (3 * (v :: rest).length + 1) := by
-        have := Run.seq hstore hrest
-        have hcost : 3 + (3 * rest.length + 1) = 3 * (v :: rest).length + 1 := by
-          simp [List.length_cons, Nat.mul_add]
-          omega
-        rw [← hcost]
-        simpa [markSampleList] using this
-      refine ⟨σ', flags', hrun, hflags', ?_⟩
-      intro i hi
-      rw [hproperty i hi]
-      by_cases hiv : i = v
-      · subst i
-        simp [flags₁, upd]
-      · simp [flags₁, upd, hiv]
-
-/-- Run the specialized mark-list source constructor and then the verified
-packing scan. Given an in-range draw list and a zeroed flag array, the result
-is a duplicate-free `ord` prefix enumerating exactly `draws.toFinset`. The
-routine performs no input reads and costs `20*n + 3*draws.length + 10` source
-steps. The list is a compile-time source parameter, rather than a runtime tape.
--/
-def markAndPackSamples (draws : List ℕ) : Com :=
-  seqs [markSampleList draws, packMarkedSamples]
-
-/-- Full source execution for a compile-time supplied numeric draw list. The
-mark phase turns a zeroed flag array into the indicator of `draws.toFinset`,
-then the linear scan packs that set into the exact round-partition contract.
-The source cost is `20*n + 3*draws.length + 10`; it reads no input and changes
-only the sample flags, order array, count, and private cursor. -/
-lemma markAndPackSamples_run {B n : ℕ} {σ : Env} {ord : ℕ → ℕ}
-    {draws : List ℕ}
+lemma markDrawArray_run {B n drawCap : ℕ} {σ : Env} {draws : List ℕ}
+    {values : ℕ → ℕ}
     (hn : σ.vars "n" = n)
+    (hdrawCount : σ.vars "drawCount" = draws.length)
+    (hdraws : σ.arrs "sampleDraws" = arrOf drawCap values)
+    {initialFlags : ℕ → ℕ}
+    (hflags : σ.arrs "sampleFlags" = arrOf n initialFlags)
+    (hcapacity : draws.length ≤ drawCap)
+    (hvalues : ∀ i (hi : i < draws.length), values i = draws[i])
+    (hrange : ∀ v ∈ draws, v < n)
+    (hnB : n < B) (hdrawsB : draws.length < B) (honeB : 1 < B) :
+    ∃ σ' flags', Run B markDrawArray σ σ' (12 * draws.length + 6) ∧
+      σ'.arrs "sampleFlags" = arrOf n flags' ∧
+      (∀ i < n, flags' i = if i ∈ draws then 1 else initialFlags i) ∧
+      σ'.vars "drawCursor" = draws.length ∧
+      (∀ a, a ≠ "sampleFlags" → σ'.arrs a = σ.arrs a) ∧
+      (∀ v, v ≠ "drawCursor" → σ'.vars v = σ.vars v) ∧
+      σ'.inp = σ.inp ∧ σ'.out = σ.out := by
+  let I := fun τ => ∃ flags, MarkDrawInv n draws.length drawCap draws values
+      initialFlags flags τ
+  have hbody : Spec B (fun τ => I τ ∧ τ.vars "drawCursor" < draws.length)
+      markDrawBody
+      (fun σ₁ σ₂ => I σ₂ ∧ σ₂.vars "drawCursor" = σ₁.vars "drawCursor" + 1) 8 := by
+    intro τ ⟨hIExists, hcursor⟩
+    rcases hIExists with ⟨flags, hI⟩
+    obtain ⟨τ', flags', hr, hI', hc⟩ := markDrawBody_run hI hcursor rfl
+      hdrawsB hnB honeB hcapacity hrange
+      (by intro i hi; exact hvalues i (by simpa using hi))
+    exact ⟨τ', hr, ⟨flags', hI'⟩, hc⟩
+  have hloop := Spec.forRangeZero "drawCursor" "drawCount" I draws.length 8
+      hdrawsB
+      (fun _ h => by rcases h with ⟨flags, hI⟩; exact hI.2.2.1)
+      (fun τ h => by rcases h with ⟨flags, hI⟩; exact hI.2.1)
+      hbody
+  have hstart : I (σ.setVar "drawCursor" 0) := by
+    refine ⟨initialFlags, hn, hdrawCount, by simp, ?_, ?_, ?_⟩
+    · simpa using hdraws
+    · simpa using hflags
+    · intro i hi
+      simp
+  obtain ⟨σ', hloopRun, hfinal, hcursor⟩ := hloop.run (σ := σ) hstart
+  have hrun : Run B markDrawArray σ σ' (12 * draws.length + 6) := by
+    simpa [markDrawArray, markDrawBody, seqs] using hloopRun
+  rcases hfinal with ⟨flags, hn', hcount', hcursorLe, hdraws', hflags', hseen⟩
+  have hindicator : ∀ i < n, flags i = if i ∈ draws then 1 else initialFlags i := by
+    intro i hi
+    have hseen' := hseen i hi
+    rw [hcursor] at hseen'
+    simpa using hseen'
+  have hframeArrs : ∀ a, a ≠ "sampleFlags" → σ'.arrs a = σ.arrs a := by
+    intro a ha
+    exact hrun.frame_arr a (by
+      simp [markDrawArray, markDrawBody, seqs, inc, Com.warrs, ha])
+  have hframeVars : ∀ v, v ≠ "drawCursor" → σ'.vars v = σ.vars v := by
+    intro v hv
+    exact hrun.frame_var v (by
+      simp [markDrawArray, markDrawBody, seqs, inc, Com.wvars, hv])
+  have hinp := hrun.frame_inp (by
+    simp [markDrawArray, markDrawBody, seqs, inc, Com.reads])
+  have hout := hrun.out_eq (by
+    simp [markDrawArray, markDrawBody, seqs, inc, Com.NoWrite])
+  refine ⟨σ', flags, hrun, hflags', hindicator, hcursor,
+    hframeArrs, hframeVars, hinp, hout⟩
+
+/-! The complete fixed source routine first marks the runtime array prefix,
+then packs its distinct vertices. -/
+def markAndPackSamples : Com := seqs [markDrawArray, packMarkedSamples]
+
+/-- Full source execution from a runtime draw-array prefix. The array may have
+capacity greater than the count; only its first `draws.length` values are
+read. The source is fixed independently of sampled values. The exact source
+cost is `20*n + 12*draws.length + 15`. -/
+lemma markAndPackSamples_run {B n drawCap : ℕ} {σ : Env} {ord : ℕ → ℕ}
+    {draws : List ℕ} {values : ℕ → ℕ}
+    (hn : σ.vars "n" = n)
+    (hdrawCount : σ.vars "drawCount" = draws.length)
+    (hdraws : σ.arrs "sampleDraws" = arrOf drawCap values)
     (hflags : σ.arrs "sampleFlags" = arrOf n (fun _ => 0))
     (hord : σ.arrs "ord" = arrOf n ord)
+    (hcapacity : draws.length ≤ drawCap)
+    (hvalues : ∀ i (hi : i < draws.length), values i = draws[i])
     (hrange : ∀ v ∈ draws, v < n)
-    (hnB : n < B) (honeB : 1 < B) :
+    (hnB : n < B) (hdrawsB : draws.length < B) (honeB : 1 < B) :
     ∃ σ' : Env,
-      Run B (markAndPackSamples draws) σ σ'
-        (20 * n + 3 * draws.length + 10) ∧
+      Run B markAndPackSamples σ σ'
+        (20 * n + 12 * draws.length + 15) ∧
       σ'.arrs "sampleFlags" = arrOf n (fun i => if i ∈ draws then 1 else 0) ∧
       ∃ order : ℕ → ℕ, σ'.arrs "ord" = arrOf n order ∧
         PrefixEnumerates (σ'.vars "sampleCount") order draws.toFinset ∧
         σ'.vars "sampleCount" = draws.toFinset.card ∧
         σ'.vars "sampleCount" ≤ n ∧ σ'.vars "sampleCursor" = n ∧
+        σ'.vars "drawCursor" = draws.length ∧
         (∀ a, a ≠ "sampleFlags" → a ≠ "ord" →
           σ'.arrs a = σ.arrs a) ∧
         (∀ v, v ≠ "sampleCount" → v ≠ "sampleCursor" →
+          v ≠ "drawCursor" →
           σ'.vars v = σ.vars v) ∧
         σ'.inp = σ.inp ∧ σ'.out = σ.out := by
-  obtain ⟨σm, flags, hmark, hflagsm, hmarkValues⟩ :=
-    markSampleList_run (draws := draws) hflags hrange hnB honeB
+  obtain ⟨σm, flags, hmark, hflagsm, hmarkValues, hdrawCursor,
+      -, -, hinpm, houtm⟩ :=
+    markDrawArray_run hn hdrawCount hdraws hflags hcapacity hvalues hrange
+      hnB hdrawsB honeB
   have hnm : σm.vars "n" = n := by
-    rw [hmark.frame_var "n" (by simp [markSampleList_wvars])]
+    rw [hmark.frame_var "n" (by simp [markDrawArray, markDrawBody,
+      seqs, inc, Com.wvars])]
     exact hn
   have hordm : σm.arrs "ord" = arrOf n ord := by
-    rw [hmark.frame_arr "ord" (by simp [markSampleList_warrs])]
+    rw [hmark.frame_arr "ord" (by simp [markDrawArray, markDrawBody,
+      seqs, inc, Com.warrs])]
     exact hord
   have hflagsIndicator : ∀ i < n, flags i = if i ∈ draws then 1 else 0 := hmarkValues
   have hflags01m : ∀ i < n, flags i ≤ 1 := by
@@ -506,10 +627,10 @@ lemma markAndPackSamples_run {B n : ℕ} {σ : Env} {ord : ℕ → ℕ}
       -, -, hinpf, houtf⟩ :=
     packMarkedSamples_run hnm hflagsm hordm hflags01m hnB honeB
   have hrunRaw := Run.seq hmark hpack
-  have hrun : Run B (markAndPackSamples draws) σ σf
-      (20 * n + 3 * draws.length + 10) := by
-    change Run B ((markSampleList draws).seq packMarkedSamples) σ σf
-      (20 * n + 3 * draws.length + 10)
+  have hrun : Run B markAndPackSamples σ σf
+      (20 * n + 12 * draws.length + 15) := by
+    change Run B (markDrawArray.seq packMarkedSamples) σ σf
+      (20 * n + 12 * draws.length + 15)
     convert hrunRaw using 1 <;> omega
   have hprefixDraws : PrefixEnumerates (σf.vars "sampleCount") packed
       draws.toFinset := by
@@ -528,27 +649,30 @@ lemma markAndPackSamples_run {B n : ℕ} {σ : Env} {ord : ℕ → ℕ}
       σf.arrs a = σ.arrs a := by
     intro a hflag hordne
     exact hrun.frame_arr a (by
-      simp [markAndPackSamples, packMarkedSamples, packBody, seqs, Fill.put,
-        inc, Com.warrs, markSampleList_warrs, hflag, hordne])
+      simp [markAndPackSamples, markDrawArray, markDrawBody, packMarkedSamples,
+        packBody, seqs, Fill.put, inc, Com.warrs, hflag, hordne])
   have hframeVars : ∀ v, v ≠ "sampleCount" → v ≠ "sampleCursor" →
-      σf.vars v = σ.vars v := by
-    intro v hcount' hcursor'
+      v ≠ "drawCursor" → σf.vars v = σ.vars v := by
+    intro v hcount' hcursor' hdraw'
     exact hrun.frame_var v (by
-      simp [markAndPackSamples, packMarkedSamples, packBody, seqs, Fill.put,
-        inc, Com.wvars, markSampleList_wvars, hcount', hcursor'])
+      simp [markAndPackSamples, markDrawArray, markDrawBody, packMarkedSamples,
+        packBody, seqs, Fill.put, inc, Com.wvars, hcount', hcursor', hdraw'])
   have hinp := hrun.frame_inp (by
-    simp [markAndPackSamples, packMarkedSamples, packBody, seqs, Fill.put,
-      inc, Com.reads, markSampleList_reads])
+    simp [markAndPackSamples, markDrawArray, markDrawBody, packMarkedSamples,
+      packBody, seqs, Fill.put, inc, Com.reads])
   have hout := hrun.out_eq (by
-    simp [markAndPackSamples, packMarkedSamples, packBody, seqs, Fill.put,
-      inc, Com.NoWrite, markSampleList_noWrite])
+    simp [markAndPackSamples, markDrawArray, markDrawBody, packMarkedSamples,
+      packBody, seqs, Fill.put, inc, Com.NoWrite])
   have hflagsExact : σf.arrs "sampleFlags" =
       arrOf n (fun i => if i ∈ draws then 1 else 0) := by
     rw [hflagsf]
-    exact arrOf_congr (by
-      intro i hi
-      rw [hmarkValues i hi])
+    exact arrOf_congr hmarkValues
+  have hdrawCursorFinal : σf.vars "drawCursor" = draws.length := by
+    rw [hpack.frame_var "drawCursor" (by simp [packMarkedSamples, packBody,
+      seqs, Fill.put, inc, Com.wvars])]
+    exact hdrawCursor
   refine ⟨σf, hrun, hflagsExact, packed, hordf, hprefixDraws,
-    hcountDraws, hcountBound, hcursor, hframes, hframeVars, hinp, hout⟩
+    hcountDraws, hcountBound, hcursor, hdrawCursorFinal, hframes,
+    hframeVars, hinp, hout⟩
 
 end Lax457868Proofs.SamplePacking
