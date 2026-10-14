@@ -27,7 +27,7 @@ lemma card_union_three_le_sum {α : Type*} [DecidableEq α]
 `4*c^2*(s+1)*q` fits in a ground set of size `n`, then an initial block of
 size `floor(n/(4*c^2))`, followed by at most `q+s*q` repair points, fits in
 `ceil(n/(2*c^2))`. -/
-theorem sampler_budget_output_bound (n c s q : ℕ)
+lemma sampler_budget_output_bound (n c s q : ℕ)
     (hc : 0 < c)
     (hbudget : 4 * c ^ 2 * (s + 1) * q ≤ n) :
     n / (4 * c ^ 2) + q + s * q ≤ (n + 2 * c ^ 2 - 1) / (2 * c ^ 2) := by
@@ -73,11 +73,11 @@ theorem sampler_budget_output_bound (n c s q : ℕ)
 /-- If the phase-two and phase-three additions respect their respective
 budgets, their union with the initial sample respects the sampler's final
 cardinality bound. -/
-theorem sampler_union_card_bound {α : Type*} [DecidableEq α]
+lemma sampler_union_card_bound {α : Type*} [DecidableEq α]
     (initial phaseTwo phaseThree : Finset α) (n c s q : ℕ)
     (hc : 0 < c)
     (hbudget : 4 * c ^ 2 * (s + 1) * q ≤ n)
-    (hinitial : initial.card = n / (4 * c ^ 2))
+    (hinitial : initial.card ≤ n / (4 * c ^ 2))
     (hphaseTwo : phaseTwo.card ≤ q)
     (hphaseThree : phaseThree.card ≤ s * q) :
     (initial ∪ phaseTwo ∪ phaseThree).card ≤

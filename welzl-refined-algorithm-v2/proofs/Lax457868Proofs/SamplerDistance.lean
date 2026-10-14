@@ -46,8 +46,8 @@ lemma disagreement_triangle {α : Type*} [DecidableEq α]
     _ ≤ ((X \ Y) ∪ (Y \ X)).card + ((Y \ Z) ∪ (Z \ Y)).card :=
       Finset.card_union_le _ _
 
-/-- Two nonexceptional sets with the same sample trace disagree on at most `k`
-elements when each is within one third of `k` from the reference set. -/
+/-- Two nonexceptional sets disagree on at most `k` elements when each is
+within one third of `k` from the reference set. -/
 lemma disagreement_le_of_third_bounds {α : Type*} [DecidableEq α]
     (X Y R : Finset α) (k : ℕ)
     (hX : 3 * disagreement X R ≤ k)
