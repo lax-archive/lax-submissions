@@ -1,7 +1,7 @@
 import Lax457868Proofs.ContractionRounds
 import Lax457868Proofs.GraphTraceBounds
-import Lax235315Proofs.Construction.TracePartitions
-import Lax235315Proofs.Construction.PartitionResult
+import Lax457868Proofs.ReusedOriginal.Construction.TracePartitions
+import Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
 
 set_option autoImplicit false
 
@@ -15,9 +15,9 @@ namespace Lax457868Proofs.VerifiedPartitionBridge
 
 open Lax457868Proofs.ContractionRounds
 open Lax457868Proofs.GraphTraceBounds
-open Lax235315Proofs.Construction.TracePartitions
-open Lax235315Proofs.Construction.NeighborhoodComplexity
-open Lax235315Proofs.Construction.PartitionResult
+open Lax457868Proofs.ReusedOriginal.Construction.TracePartitions
+open Lax457868Proofs.ReusedOriginal.Construction.NeighborhoodComplexity
+open Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
 
 private lemma finiteNeighborhood_inter_coe_eq_trace {n : ℕ}
     (G : SimpleGraph (Fin n)) {A X : Finset (Fin n)} (hXA : X ⊆ A)

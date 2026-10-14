@@ -1,6 +1,6 @@
 import Mathlib.Tactic
-import Lax235315Proofs.Construction.RandomBits
-import Lax235315Proofs.Construction.RandomKeyEquiv
+import Lax457868Proofs.ReusedOriginal.Construction.RandomBits
+import Lax457868Proofs.ReusedOriginal.Construction.RandomKeyEquiv
 import Lax457868Proofs.FairBitIndices
 
 /-!
@@ -12,9 +12,9 @@ as one `readKeyDigit "key0"` operation.
 namespace Lax457868Proofs.FairBitRam
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
-open Lax235315Proofs.Construction.WelzlProgram
-open Lax235315Proofs.Construction.RandomBits
-open Lax235315Proofs.Construction.RandomKeyEquiv
+open Lax457868Proofs.ReusedOriginal.Construction.WelzlProgram
+open Lax457868Proofs.ReusedOriginal.Construction.RandomBits
+open Lax457868Proofs.ReusedOriginal.Construction.RandomKeyEquiv
 open Lax457868Proofs.FairBitIndices
 
 /-- The finite source command that reads blocks until one is accepted or the
@@ -133,7 +133,7 @@ lemma readBitBlock_run {B n v L : ℕ} {σ : Env} {g : ℕ → ℕ}
     rcases hb with ⟨i, rfl⟩
     cases bits i <;> decide
   obtain ⟨σ', g', hr, harr, hval, hframe, hinp', hv', hL'⟩ :=
-    Lax235315Proofs.Construction.RandomBits.readKeyDigit_run
+    Lax457868Proofs.ReusedOriginal.Construction.RandomBits.readKeyDigit_run
       hkey hv hvn hL hbs hinp hbits hpowB hnB htwoB
   refine ⟨σ', g', hr, harr, ?_, hframe, hinp', hv', hL'⟩
   rw [bitBlockValue_eq_bitsValue]

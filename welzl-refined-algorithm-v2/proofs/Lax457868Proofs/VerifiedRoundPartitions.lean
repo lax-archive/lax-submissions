@@ -1,6 +1,6 @@
 import Lax457868Proofs.VerifiedPartitionBridge
 import Lax457868Proofs.RefinedContraction
-import Lax235315Proofs.Construction.RoundPartitionSource
+import Lax457868Proofs.ReusedOriginal.Construction.RoundPartitionSource
 import Lax808846Proofs.Frame
 
 set_option autoImplicit false
@@ -16,13 +16,13 @@ open Lax457868Proofs.RefinedSampleSpec
 open Lax457868Proofs.SamplerContract
 open Lax195003.WelzlOrdersNeighborhoodComplexity
 open Lax457868Proofs.GraphTraceBounds
-open Lax235315Proofs.Construction.MarkingMath
-open Lax235315Proofs.Construction.PartitionCompleteSource
-open Lax235315Proofs.Construction.PartitionResult
-open Lax235315Proofs.Construction.RepresentativeMath
-open Lax235315Proofs.Construction.RoundPartitionSource
-open Lax235315Proofs.Construction.TracePartitions
-open Lax235315Proofs.Construction.WelzlProgram
+open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
+open Lax457868Proofs.ReusedOriginal.Construction.PartitionCompleteSource
+open Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
+open Lax457868Proofs.ReusedOriginal.Construction.RepresentativeMath
+open Lax457868Proofs.ReusedOriginal.Construction.RoundPartitionSource
+open Lax457868Proofs.ReusedOriginal.Construction.TracePartitions
+open Lax457868Proofs.ReusedOriginal.Construction.WelzlProgram
 open Lax808846Proofs.Imp
 open Lax808846Proofs.Reasoning
 open Lax808846Proofs.Reasoning.Lib
@@ -172,7 +172,7 @@ lemma runVerifiedRoundPartitions {B n targetCap sampleCount : ℕ}
   obtain ⟨σ₁, currentB, labelB, repClassB, repsB', nextB', repB', R,
     runB, hnextBCount, hactiveB', hclassB', hrepClassB', hrepsB',
     hnextB', hrepB', dataB, hmapB, certB⟩ :=
-    Lax235315Proofs.Construction.RoundPartitionSource.firstPartition_run
+    Lax457868Proofs.ReusedOriginal.Construction.RoundPartitionSource.firstPartition_run
       I.hx I.htargetCap I.hn I.hsampleCount I.hoff I.htarget
       I.hactiveBArray I.hord I.hclassB I.hclassSize I.hmarkedCount
       I.hstamp I.hmarked I.htouched I.hsplit I.hrepClass I.hrepsB
@@ -221,7 +221,7 @@ lemma runVerifiedRoundPartitions {B n targetCap sampleCount : ℕ}
   obtain ⟨σ₂, currentA, labelA, repClassA, repsA', nextA', repA', S,
     runA, hnextACount, hactiveA', hclassA', hrepClassA', hrepsA',
     hnextA', hrepA', dataA, hmapA, certA⟩ :=
-    Lax235315Proofs.Construction.RoundPartitionSource.secondPartition_run
+    Lax457868Proofs.ReusedOriginal.Construction.RoundPartitionSource.secondPartition_run
       I.hx I.htargetCap hn₁ hnextBCount hoff₁ htarget₁ hactiveA₁
       hrepsB' hclassA₁ hclassSize₁ hmarkedCount₁ hstamp₁ hmarked₁
       htouched₁ hsplit₁ hrepClassB' hrepsA₁ hnextA₁ hrepA₁ dataB

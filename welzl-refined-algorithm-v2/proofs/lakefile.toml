@@ -26,6 +26,12 @@ rev = "1ec4e4ddb612005237178975bbee285dfb403bb3"
 subDir = "ram-linear-time/concepts"
 
 [[require]]
+name = "Lax11Proofs"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "1ec4e4ddb612005237178975bbee285dfb403bb3"
+subDir = "ram-linear-time/proofs"
+
+[[require]]
 name = "Lax808846"
 git = "https://github.com/lax-archive/lax-submissions"
 rev = "9394e531cc51cb67a0214bca3f9264dfe97ba5c7"
@@ -36,12 +42,6 @@ name = "Lax808846Proofs"
 git = "https://github.com/lax-archive/lax-submissions"
 rev = "9394e531cc51cb67a0214bca3f9264dfe97ba5c7"
 subDir = "word-ram/proofs"
-
-[[require]]
-name = "Lax235315Proofs"
-git = "https://github.com/lax-archive/lax-submissions"
-rev = "33f2eca4379b6ff944489c7c59ac1990c286c21b"
-subDir = "welzl-order-construction/proofs"
 
 
 

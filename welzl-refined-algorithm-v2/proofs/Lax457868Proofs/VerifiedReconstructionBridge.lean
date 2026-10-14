@@ -1,7 +1,7 @@
 import Lax457868Proofs.RoundReconstruction
 import Lax457868Proofs.VerifiedPartitionBridge
-import Lax235315Proofs.Construction.ConcreteReconstruction
-import Lax235315Proofs.Construction.Reconstruction
+import Lax457868Proofs.ReusedOriginal.Construction.ConcreteReconstruction
+import Lax457868Proofs.ReusedOriginal.Construction.Reconstruction
 
 /-!
 Bridges between the original concrete list reconstruction and the refined
@@ -15,31 +15,31 @@ open scoped symmDiff
 open Lax457868Proofs.RefinedSampleSpec
 open Lax457868Proofs.VerifiedPartitionBridge
 open Lax457868Proofs.RoundReconstruction
-open Lax235315Proofs.Construction.ConcreteReconstruction
-open Lax235315Proofs.Construction.Reconstruction
-open Lax235315Proofs.Construction.TracePartitions
+open Lax457868Proofs.ReusedOriginal.Construction.ConcreteReconstruction
+open Lax457868Proofs.ReusedOriginal.Construction.Reconstruction
+open Lax457868Proofs.ReusedOriginal.Construction.TracePartitions
 
 private lemma insertAfter_eq {α : Type*} [DecidableEq α] (representative new : α)
     (order : List α) :
-    Lax235315Proofs.Construction.ListCrossing.insertAfter representative new order =
+    Lax457868Proofs.ReusedOriginal.Construction.ListCrossing.insertAfter representative new order =
       Lax457868Proofs.TwinExpansion.insertAfter representative new order := by
   induction order with
   | nil => rfl
   | cons first rest ih =>
-      simp [Lax235315Proofs.Construction.ListCrossing.insertAfter,
+      simp [Lax457868Proofs.ReusedOriginal.Construction.ListCrossing.insertAfter,
         Lax457868Proofs.TwinExpansion.insertAfter, ih]
 
 /-- The old list-ordered restoration agrees with the same sequence of
 insertions as the indexed refined round restoration. -/
 lemma restoreAfter_eq_insertAllTwins {α : Type*} [DecidableEq α]
     (representative : α → α) (small removed : List α) :
-    Lax235315Proofs.Construction.ConcreteReconstruction.restoreAfter
+    Lax457868Proofs.ReusedOriginal.Construction.ConcreteReconstruction.restoreAfter
         representative small removed =
       Lax457868Proofs.TwinExpansion.insertAllTwins representative small removed := by
   induction removed generalizing small with
   | nil => rfl
   | cons new rest ih =>
-      simp only [Lax235315Proofs.Construction.ConcreteReconstruction.restoreAfter_cons,
+      simp only [Lax457868Proofs.ReusedOriginal.Construction.ConcreteReconstruction.restoreAfter_cons,
         Lax457868Proofs.TwinExpansion.insertAllTwins]
       rw [insertAfter_eq]
       exact ih _
@@ -64,7 +64,7 @@ lemma restoreAfter_reduction {n c k : ℕ} {G : SimpleGraph (Fin n)}
     (hremoved : Enumerates ((A : Set (Fin n)) \ (A' : Set (Fin n))) removed) :
     Nonempty (Reduction G k (A : Set (Fin n)) (B : Set (Fin n))
       (A' : Set (Fin n)) (B' : Set (Fin n)) small
-      (Lax235315Proofs.Construction.ConcreteReconstruction.restoreAfter
+      (Lax457868Proofs.ReusedOriginal.Construction.ConcreteReconstruction.restoreAfter
         hA.representative small removed)) := by
   classical
   let contraction := traceContractionOfVerifiedPartitions G A B W B' A' hWA hB hA
@@ -96,7 +96,7 @@ lemma restoreAfter_reduction {n c k : ℕ} {G : SimpleGraph (Fin n)}
     exact hbound
   let reduction : Reduction G k (A : Set (Fin n)) (B : Set (Fin n))
       (A' : Set (Fin n)) (B' : Set (Fin n)) small
-      (Lax235315Proofs.Construction.ConcreteReconstruction.restoreAfter
+      (Lax457868Proofs.ReusedOriginal.Construction.ConcreteReconstruction.restoreAfter
         hA.representative small removed) := {
     small_enumerates := hsmall
     big_enumerates := hbig
@@ -125,12 +125,12 @@ lemma restoreAfter_crossingCount_le {n c k q : ℕ} {G : SimpleGraph (Fin n)}
     (hsmall : Enumerates (A' : Set (Fin n)) small)
     (hremoved : Enumerates ((A : Set (Fin n)) \ (A' : Set (Fin n))) removed)
     (hsmallBound : ∀ b ∈ (B' : Set (Fin n)),
-      Lax235315Proofs.Construction.ListCrossing.crossingCount
+      Lax457868Proofs.ReusedOriginal.Construction.ListCrossing.crossingCount
         (G.neighborSet b) small ≤ q) :
     ∀ b ∈ (B : Set (Fin n)),
-      Lax235315Proofs.Construction.ListCrossing.crossingCount
+      Lax457868Proofs.ReusedOriginal.Construction.ListCrossing.crossingCount
         (G.neighborSet b)
-        (Lax235315Proofs.Construction.ConcreteReconstruction.restoreAfter
+        (Lax457868Proofs.ReusedOriginal.Construction.ConcreteReconstruction.restoreAfter
           hA.representative small removed) ≤ q + 2 * k := by
   obtain ⟨reduction⟩ := restoreAfter_reduction A B W A' B' hsample hWA
     hB hA small removed hsmall hremoved
