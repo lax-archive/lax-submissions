@@ -51,7 +51,7 @@ def flattenBitBlocks {L t : ℕ}
 
 /-- Splitting off the first independent block exposes precisely the input
 prefix consumed by `readKeyDigit "key0"`. -/
-theorem flattenBitBlocks_succ {L t : ℕ}
+lemma flattenBitBlocks_succ {L t : ℕ}
     (tape : Fin (t + 1) → (Fin L → Bool)) :
     flattenBitBlocks tape =
       Lax195003.WordRamRandomness.bitTape (tape 0) ++
@@ -59,7 +59,7 @@ theorem flattenBitBlocks_succ {L t : ℕ}
   simp [flattenBitBlocks, List.ofFn_succ, List.flatMap_cons]
 
 /-- The flattened input contains exactly `L` words per block. -/
-theorem flattenBitBlocks_length {L t : ℕ}
+lemma flattenBitBlocks_length {L t : ℕ}
     (tape : Fin t → (Fin L → Bool)) :
     (flattenBitBlocks tape).length = t * L := by
   induction t with
@@ -72,7 +72,7 @@ theorem flattenBitBlocks_length {L t : ℕ}
 
 /-- The reader's most-significant-bit-first value agrees exactly with the
 finite fair-bit block decoder. -/
-theorem bitBlockValue_eq_bitsValue {L : ℕ} (bits : Fin L → Bool) :
+lemma bitBlockValue_eq_bitsValue {L : ℕ} (bits : Fin L → Bool) :
     bitBlockValue bits = bitsValue (Lax195003.WordRamRandomness.bitTape bits) := by
   unfold bitBlockValue
   symm
@@ -81,7 +81,7 @@ theorem bitBlockValue_eq_bitsValue {L : ℕ} (bits : Fin L → Bool) :
 /-- Reading a single fair-bit block through the existing `key0` reader stores
 the value decoded by `FairBitIndices.bitBlockValue`, consumes exactly the
 block, and retains the reader's exact source cost. -/
-theorem readBitBlock_run {B n v L : ℕ} {σ : Env} {g : ℕ → ℕ}
+lemma readBitBlock_run {B n v L : ℕ} {σ : Env} {g : ℕ → ℕ}
     {bits : Fin L → Bool} {rest : List ℕ}
     (hkey : σ.arrs "key0" = arrOf n g)
     (hv : σ.vars "v" = v) (hvn : v < n)
