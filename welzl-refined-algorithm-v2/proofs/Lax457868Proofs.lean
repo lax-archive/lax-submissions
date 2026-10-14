@@ -37,3 +37,6 @@ import Lax457868Proofs.SamplerTwinSuppression
 import Lax457868Proofs.SamplerUniformDraws
 import Lax457868Proofs.SamplerVCDimension
 import Lax457868Proofs.SamplerWeightedRetries
+import Lax457868Proofs.FairBitRam
+import Lax457868Proofs.IndexedDraws
+import Lax457868Proofs.VerifiedPartitionBridge
