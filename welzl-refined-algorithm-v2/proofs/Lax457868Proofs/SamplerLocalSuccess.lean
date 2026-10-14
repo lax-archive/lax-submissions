@@ -2,6 +2,7 @@ import Mathlib.Tactic
 import Lax457868Proofs.SamplerEpsilonNet
 import Lax457868Proofs.SamplerHitCount
 import Lax457868Proofs.SamplerTrialBound
+import Lax457868Proofs.SamplerRetries
 
 /-!
 Geometry of the ranges relevant to a phase-three local repair.  A far
@@ -356,5 +357,137 @@ lemma localTrial_failure_lt_half
     have := Nat.mul_le_mul_left (2 ^ q) hle
     omega
   simpa [X, s, bad] using hbad
+
+/-- The executable Boolean isolation check rejects exactly the tapes counted by
+the semantic local-failure set. -/
+lemma localTrialIsolatesB_false_iff
+    (N : β → Finset α) (B : Finset β) (W : Finset α) (b : β)
+    (draws : List α) :
+    localTrialIsolatesB N B W b draws = false ↔
+      ¬ localTrialIsolates N B W b draws := by
+  constructor
+  · intro hfalse htrue
+    have hbool := (localTrialIsolatesB_eq_true_iff N B W b draws).2 htrue
+    exact Bool.false_ne_true (hfalse.symm.trans hbool)
+  · intro hnot
+    cases hbool : localTrialIsolatesB N B W b draws with
+    | false => rfl
+    | true => exact (hnot ((localTrialIsolatesB_eq_true_iff N B W b draws).1 hbool)).elim
+
+/-- Decoding each uniform draw tape as its legal `LocalTrial` identifies the
+retry selector's rejected-outcome finset with the semantic tape-failure
+finset. -/
+lemma localTrialFailureSet_eq_localRejectedOutcomes
+    (N : β → Finset α) (B : Finset β) (W : Finset α) (b : β)
+    (X : Finset α) (s : ℕ) :
+    localTrialFailureSet N B W b X s =
+      Lax457868Proofs.SamplerRetries.localRejectedOutcomes
+        (fun tape : Tape X s => tape.toLocalTrial) N B W b := by
+  classical
+  unfold localTrialFailureSet Lax457868Proofs.SamplerRetries.localRejectedOutcomes
+  apply Finset.filter_congr
+  intro tape htape
+  simp only [Finset.mem_univ, true_and, Tape.toLocalTrial]
+  exact (localTrialIsolatesB_false_iff N B W b tape.toList).symm
+
+/-- The code-linked local selector has finite uniform expected attempt count at
+most two for the paper's sample size. The tape count is the exact same finite
+draw law used by the paired-swap estimate. -/
+lemma localActualFiniteMeanAttempts_le_two
+    (A : Finset α) (B : Finset β) (N : β → Finset α)
+    (r k c : ℕ) (choice : InitialChoice A B N r)
+    (as : List α) (has : as.toFinset = A) (hasNodup : as.Nodup)
+    (hN : ∀ b ∈ B, N b ⊆ A)
+    (hinj : ∀ b ∈ B, ∀ v ∈ B, N b = N v → b = v)
+    (b : β) (hb : b ∈ B)
+    (hfar : 2 * k < 3 * disagreement N b (choice.representative b))
+    (hc : 2 ≤ c)
+    (hshatter : ∀ Y : Finset α, Y ⊆ A → Y.Nonempty →
+      (traceClasses N Y B).card ≤ c * Y.card)
+    (t : ℕ) :
+    Lax457868Proofs.SamplerRetries.actualFiniteMeanAttempts
+      (Lax457868Proofs.SamplerRetries.localRejectedOutcomes
+        (fun tape : Tape
+          ((N b \ N (choice.representative b)) ∪
+            (N (choice.representative b) \ N b))
+          (64 * Nat.clog 2 c) => tape.toLocalTrial)
+        N B (phase2Scan N (choice.exceptions k) as choice.sample) b) t ≤ 2 := by
+  classical
+  let X := (N b \ N (choice.representative b)) ∪
+    (N (choice.representative b) \ N b)
+  let s := 64 * Nat.clog 2 c
+  let W := phase2Scan N (choice.exceptions k) as choice.sample
+  let decode : Tape X s → LocalTrial X s := fun tape => tape.toLocalTrial
+  have hsingle := localTrial_failure_lt_half A B N r k c choice as has
+    hasNodup hN hinj b hb hfar hc hshatter
+  have hdistpos : 0 < disagreement N b (choice.representative b) := by omega
+  have hXcard : X.card = disagreement N b (choice.representative b) := by
+    simp [X, SamplerPhases.disagreement]
+  have hXnonempty : X.Nonempty := Finset.card_pos.mp (by rw [hXcard]; omega)
+  have hclog : 0 < Nat.clog 2 c := Nat.clog_pos (by omega) hc
+  have hs : 0 < s := by dsimp [s]; omega
+  have hne : 0 < Fintype.card (Tape X s) := by
+    rw [Lax457868Proofs.SamplerUniformDraws.card_tapes]
+    exact Nat.pow_pos (Finset.card_pos.mpr hXnonempty)
+  have hhalf : 2 *
+      (Lax457868Proofs.SamplerRetries.localRejectedOutcomes decode N B W b).card ≤
+        Fintype.card (Tape X s) := by
+    rw [← localTrialFailureSet_eq_localRejectedOutcomes N B W b X s,
+      Lax457868Proofs.SamplerUniformDraws.card_tapes]
+    exact Nat.le_of_lt (by simpa [X, s, W] using hsingle)
+  simpa [X, s, W, decode] using
+    Lax457868Proofs.SamplerRetries.localActualFiniteMeanAttempts_le_two
+      (t := t) decode N B W b hne hhalf
+
+/-- The actual local retry selector is exhausted after `t` independent trials
+on at most a `2^-t` fraction of tapes, with the same paper parameters and
+geometric/shatter hypotheses as the single-trial bound. -/
+lemma localFailure_tape_count_le
+    (A : Finset α) (B : Finset β) (N : β → Finset α)
+    (r k c t : ℕ) (choice : InitialChoice A B N r)
+    (as : List α) (has : as.toFinset = A) (hasNodup : as.Nodup)
+    (hN : ∀ b ∈ B, N b ⊆ A)
+    (hinj : ∀ b ∈ B, ∀ v ∈ B, N b = N v → b = v)
+    (b : β) (hb : b ∈ B)
+    (hfar : 2 * k < 3 * disagreement N b (choice.representative b))
+    (hc : 2 ≤ c)
+    (hshatter : ∀ Y : Finset α, Y ⊆ A → Y.Nonempty →
+      (traceClasses N Y B).card ≤ c * Y.card) :
+    2 ^ t * (Lax457868Proofs.SamplerRetries.localFailureTapes (t := t)
+      (fun tape : Tape
+        ((N b \ N (choice.representative b)) ∪
+          (N (choice.representative b) \ N b))
+        (64 * Nat.clog 2 c) => tape.toLocalTrial)
+      N B (phase2Scan N (choice.exceptions k) as choice.sample) b).card ≤
+      Fintype.card (Lax457868Proofs.SamplerRetries.Tape
+        (Tape ((N b \ N (choice.representative b)) ∪
+          (N (choice.representative b) \ N b))
+          (64 * Nat.clog 2 c)) t) := by
+  classical
+  let X := (N b \ N (choice.representative b)) ∪
+    (N (choice.representative b) \ N b)
+  let s := 64 * Nat.clog 2 c
+  let W := phase2Scan N (choice.exceptions k) as choice.sample
+  let decode : Tape X s → LocalTrial X s := fun tape => tape.toLocalTrial
+  have hsingle := localTrial_failure_lt_half A B N r k c choice as has
+    hasNodup hN hinj b hb hfar hc hshatter
+  have hdistpos : 0 < disagreement N b (choice.representative b) := by omega
+  have hXcard : X.card = disagreement N b (choice.representative b) := by
+    simp [X, SamplerPhases.disagreement]
+  have hXnonempty : X.Nonempty := Finset.card_pos.mp (by rw [hXcard]; omega)
+  have hclog : 0 < Nat.clog 2 c := Nat.clog_pos (by omega) hc
+  have hs : 0 < s := by dsimp [s]; omega
+  have hne : 0 < Fintype.card (Tape X s) := by
+    rw [Lax457868Proofs.SamplerUniformDraws.card_tapes]
+    exact Nat.pow_pos (Finset.card_pos.mpr hXnonempty)
+  have hhalf : 2 *
+      (Lax457868Proofs.SamplerRetries.localRejectedOutcomes decode N B W b).card ≤
+        Fintype.card (Tape X s) := by
+    rw [← localTrialFailureSet_eq_localRejectedOutcomes N B W b X s,
+      Lax457868Proofs.SamplerUniformDraws.card_tapes]
+    exact Nat.le_of_lt (by simpa [X, s, W] using hsingle)
+  have hretry := Lax457868Proofs.SamplerRetries.localFailure_tape_count_le
+    (t := t) decode N B W b hhalf
+  simpa [X, s, W, decode] using hretry
 
 end Lax457868Proofs.SamplerLocalSuccess
