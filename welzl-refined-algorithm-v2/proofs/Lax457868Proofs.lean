@@ -9,6 +9,7 @@ import Lax457868Proofs.AlgorithmRounds
 import Lax457868Proofs.ReductionPath
 import Lax457868Proofs.RoundReconstruction
 import Lax457868Proofs.RefinedOrderCorrectness
+import Lax457868Proofs.FairBitIndices
 import Lax457868Proofs.ParameterBounds
 import Lax457868Proofs.RefinedSample
 import Lax457868Proofs.RefinedSampleSpec

@@ -1,3 +1,4 @@
 import Lax457868.RefinedWelzlOrders
 import Lax457868Proofs.ParameterBounds
 import Lax457868Proofs.RefinedOrderCorrectness
+import Lax457868Proofs.FairBitIndices
