@@ -127,6 +127,39 @@ def firstDecoded {α : Type*} : List (Option α) → Option α
   | none :: rest => firstDecoded rest
   | some x :: _ => some x
 
+/-- Run the first-decoded scan while counting each inspected block. -/
+def firstDecodedWithCount {α : Type*} : List (Option α) → Option α × ℕ
+  | [] => (none, 0)
+  | none :: rest =>
+      let (winner, count) := firstDecodedWithCount rest
+      (winner, count + 1)
+  | some x :: _ => (some x, 1)
+
+/-- The counted scan's first component is the first-decoded selector. -/
+lemma firstDecodedWithCount_fst {α : Type*} (xs : List (Option α)) :
+    (firstDecodedWithCount xs).1 = firstDecoded xs := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => cases x <;> simp [firstDecodedWithCount, firstDecoded, ih]
+
+/-- The count from the decoded scan is the number of entries inspected before
+the first non-`none` value, capped by the list length. -/
+lemma firstDecodedWithCount_snd {α : Type*} (xs : List (Option α)) :
+    (firstDecodedWithCount xs).2 =
+      attemptsUsed (fun x : Option α => decide (x = none)) xs := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => cases x <;> simp [firstDecodedWithCount, attemptsUsed, ih]
+
+/-- Counting scanned `none` values agrees with the generic rejected-attempt
+recursion. -/
+lemma attemptsUsed_map {α β : Type*} (bad : β → Bool) (f : α → β)
+    (xs : List α) :
+    attemptsUsed bad (xs.map f) = attemptsUsed (fun x => bad (f x)) xs := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => simp [attemptsUsed, ih]
+
 /-- The finite scan fails exactly when every listed block is rejected. -/
 lemma firstDecoded_eq_none_iff {α : Type*} (xs : List (Option α)) :
     firstDecoded xs = none ↔ ∀ x ∈ xs, x = none := by
@@ -143,6 +176,12 @@ def selectBitIndex (m : ℕ) (hm : 0 < m) (t : ℕ)
 /-- A length-`t` block tape is an ordered sequence and therefore allows
 repeated independent draws. -/
 abbrev BitTape (m t : ℕ) := Fin t → (Fin (Nat.clog 2 m) → Bool)
+
+/-- The complete counted decoded tape is exactly the selector result together
+with its actual number of inspected blocks. -/
+def selectBitIndexWithCount (m : ℕ) (hm : 0 < m) (t : ℕ)
+    (tape : BitTape m t) : Option (Fin m) × ℕ :=
+  firstDecodedWithCount ((List.ofFn tape).map (decodeBitIndex m hm))
 
 /-- The clog-sized block has enough values to represent every element of
 `Fin m`, including the boundary case `m = 1`, where the block is empty. -/
@@ -280,6 +319,28 @@ lemma failure_tail_bound (m : ℕ) (hm : 0 < m) (t : ℕ) :
 accepted block when one is found. -/
 def bitTapeAttemptsUsed (m t : ℕ) (tape : BitTape m t) : ℕ :=
   tapeAttemptsUsed (rejectedBlocks m) tape
+
+/-- The rejection predicate used by the generic finite sum is equivalent to a
+`none` result from decoding the concrete bit block. -/
+lemma decode_rejected_iff (m : ℕ) (hm : 0 < m)
+    (bits : Fin (Nat.clog 2 m) → Bool) :
+    bits ∈ rejectedBlocks m ↔ decodeBitIndex m hm bits = none := by
+  simp [rejectedBlocks, acceptedBlocks, decodeBitIndex_eq_none_iff,
+    Finset.mem_sdiff, Finset.mem_filter]
+
+/-- The counted concrete selector agrees pointwise with both its output and
+the retry count used in the existing finite mean bound. -/
+lemma selectBitIndexWithCount_eq (m : ℕ) (hm : 0 < m) (t : ℕ)
+    (tape : BitTape m t) :
+    selectBitIndexWithCount m hm t tape =
+      (selectBitIndex m hm t tape, bitTapeAttemptsUsed m t tape) := by
+  unfold selectBitIndexWithCount selectBitIndex bitTapeAttemptsUsed
+  apply Prod.ext
+  · exact firstDecodedWithCount_fst _
+  · rw [firstDecodedWithCount_snd, attemptsUsed_map]
+    congr 1
+    funext bits
+    simp [decode_rejected_iff m hm bits]
 
 /-- The mean capped number of inspected blocks is at most two, as a finite
 sum inequality. -/
