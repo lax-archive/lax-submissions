@@ -9,6 +9,8 @@ import Lax457868Proofs.SamplerEpsilonNet
 import Lax457868Proofs.SamplerFiniteMean
 import Lax457868Proofs.SamplerHitCount
 import Lax457868Proofs.SamplerInitialExpectation
+import Lax457868Proofs.SamplerInitialProbability
+import Lax457868Proofs.SamplerInitialRetries
 import Lax457868Proofs.SamplerLocalProbability
 import Lax457868Proofs.SamplerLocalSuccess
 import Lax457868Proofs.SamplerOneInclusion
@@ -22,3 +24,4 @@ import Lax457868Proofs.SamplerTrialBound
 import Lax457868Proofs.SamplerTwinSuppression
 import Lax457868Proofs.SamplerUniformDraws
 import Lax457868Proofs.SamplerVCDimension
+import Lax457868Proofs.SamplerWeightedRetries
