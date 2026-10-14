@@ -284,7 +284,7 @@ lemma runThreePhases_output_bound
         _ ≤ (A.card + 2 * c ^ 2 - 1) / (2 * c ^ 2) := by
           exact hbound
 
-/-- The public finite-choice sampler always returns a set inside the ground
+/-- Every successful finite-choice sampler run returns a set inside the ground
 set and obeys the paper's refined-sampler size ceiling, including the two
 immediate empty-output branches. -/
 lemma refinedSampler_output_bound
