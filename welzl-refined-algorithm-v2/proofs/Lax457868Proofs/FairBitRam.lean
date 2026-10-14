@@ -64,7 +64,7 @@ def decodeBlockIndex (m : ℕ) {L : ℕ} (bits : Fin L → Bool) : Option (Fin m
 def listSelection {L : ℕ} (m : ℕ) (blocks : List (Fin L → Bool)) :=
   firstDecodedWithCount (blocks.map (decodeBlockIndex m))
 
-private theorem runWhileTrue {B : ℕ} {b : Cond} {c : Com}
+private lemma runWhileTrue {B : ℕ} {b : Cond} {c : Com}
     {σ σ₁ σ₂ : Env} {P Q : ℕ}
     (hb : b.evalB B σ = some true)
     (hbody : Run B c σ σ₁ P)
