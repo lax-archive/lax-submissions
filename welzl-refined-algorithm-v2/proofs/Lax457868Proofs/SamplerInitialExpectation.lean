@@ -622,7 +622,7 @@ lemma sum_full_positionMean_le (A : Finset α) (B : Finset β)
 
 /-- The actual first moment of independent uniform draws and independent
 uniform representatives satisfies the initial one-inclusion estimate. -/
-theorem initialMeanZ_bound (A : Finset α) (B : Finset β)
+lemma initialMeanZ_bound (A : Finset α) (B : Finset β)
     (N : β → Finset α) (r d : ℕ)
     (hA : A.Nonempty) (hN : ∀ b ∈ B, N b ⊆ A)
     (hvc : (B.image N).vcDim ≤ d) :
@@ -647,7 +647,7 @@ theorem initialMeanZ_bound (A : Finset α) (B : Finset β)
 
 /-- The paper's explicit initial-distance constant follows from a linear
 trace bound and the floor-sized sample. -/
-theorem initialMeanZ_explicit_bound (A : Finset α) (B : Finset β)
+lemma initialMeanZ_explicit_bound (A : Finset α) (B : Finset β)
     (N : β → Finset α) (c : ℕ)
     (hA : A.Nonempty) (hN : ∀ b ∈ B, N b ⊆ A)
     (hc : 2 ≤ c) (hB : B.card ≤ c * A.card)

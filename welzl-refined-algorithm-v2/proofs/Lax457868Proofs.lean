@@ -6,7 +6,11 @@ import Lax457868Proofs.SamplerCharging
 import Lax457868Proofs.SamplerContract
 import Lax457868Proofs.SamplerDistance
 import Lax457868Proofs.SamplerEpsilonNet
+import Lax457868Proofs.SamplerFiniteMean
+import Lax457868Proofs.SamplerHitCount
+import Lax457868Proofs.SamplerInitialExpectation
 import Lax457868Proofs.SamplerLocalProbability
+import Lax457868Proofs.SamplerLocalSuccess
 import Lax457868Proofs.SamplerOneInclusion
 import Lax457868Proofs.SamplerOutputSize
 import Lax457868Proofs.SamplerPhases
@@ -15,5 +19,6 @@ import Lax457868Proofs.SamplerRepresentative
 import Lax457868Proofs.SamplerRetries
 import Lax457868Proofs.SamplerSize
 import Lax457868Proofs.SamplerTrialBound
+import Lax457868Proofs.SamplerTwinSuppression
 import Lax457868Proofs.SamplerUniformDraws
 import Lax457868Proofs.SamplerVCDimension
