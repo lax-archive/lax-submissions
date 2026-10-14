@@ -1,4 +1,5 @@
 import Lax457868Proofs.RefinedWelzlOrders
+import Lax457868Proofs.CrossingStability
 import Lax457868Proofs.ParameterBounds
 import Lax457868Proofs.RefinedSample
 import Lax457868Proofs.RefinedSampleSpec
