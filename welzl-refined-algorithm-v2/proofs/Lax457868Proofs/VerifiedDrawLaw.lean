@@ -59,6 +59,36 @@ def sourceDrawCost {X : Finset ℕ} (C : DrawContext X)
   (15 * Nat.clog 2 X.card + 30) *
     bitTapeAttemptsUsed X.card C.t tape + 19
 
+/-- The sum of the valid per-run source cost upper bounds over all retry
+tapes is at most `(30 * clog2 |X| + 79)` times the tape-space size. This is
+a finite mean-cost bound, not a claim that these upper bounds are exact run
+times. -/
+lemma sum_sourceDrawCost_le {X : Finset ℕ} (C : DrawContext X) :
+    ∑ tape : BitTape X.card C.t, sourceDrawCost C tape ≤
+      (30 * Nat.clog 2 X.card + 79) * Fintype.card (BitTape X.card C.t) := by
+  classical
+  let N := Fintype.card (BitTape X.card C.t)
+  have hsum :
+      ∑ tape : BitTape X.card C.t, sourceDrawCost C tape =
+        (15 * Nat.clog 2 X.card + 30) *
+          (∑ tape : BitTape X.card C.t,
+            bitTapeAttemptsUsed X.card C.t tape) + 19 * N := by
+    simp [sourceDrawCost, Finset.sum_add_distrib, Finset.mul_sum, N]; ring
+  have hattempts := sum_bitTapeAttemptsUsed_le_two X.card
+    C.domainNonempty C.t
+  rw [hsum]
+  calc
+    (15 * Nat.clog 2 X.card + 30) *
+        (∑ tape : BitTape X.card C.t,
+          bitTapeAttemptsUsed X.card C.t tape) + 19 * N
+      ≤ (15 * Nat.clog 2 X.card + 30) * (2 * N) + 19 * N := by
+        exact Nat.add_le_add_right
+          (Nat.mul_le_mul_left _ hattempts) _
+    _ = (30 * Nat.clog 2 X.card + 79) *
+          Fintype.card (BitTape X.card C.t) := by
+        simp only [N]
+        ring
+
 /-- Tapes on which the actual IMP+ source command finishes with `x` as its
 draw result. -/
 noncomputable def sourceDrawEvent {X : Finset ℕ} (C : DrawContext X)
