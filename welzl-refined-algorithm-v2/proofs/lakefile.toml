@@ -1,0 +1,37 @@
+name = "Lax457868Proofs"
+defaultTargets = ["Lax457868Proofs"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+
+[[require]]
+name = "Lax457868"
+path = "../concepts"
+
+[[require]]
+name = "Lax195003"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "63ac657db4dd622a1a74f5adfb0f56b2193b3007"
+subDir = "welzl-orders/concepts"
+
+[[require]]
+name = "Lax11"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "1ec4e4ddb612005237178975bbee285dfb403bb3"
+subDir = "ram-linear-time/concepts"
+
+[[require]]
+name = "Lax808846"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "9394e531cc51cb67a0214bca3f9264dfe97ba5c7"
+subDir = "word-ram/concepts"
+
+
+
+[[lean_lib]]
+name = "Lax457868Proofs"
