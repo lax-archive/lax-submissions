@@ -129,7 +129,7 @@ private def reindexPartition {n : ℕ} {G : SimpleGraph (Fin n)}
 /-- Run the first source command on the prefix, then the second on the exact
 representative list and count written by the first. All arrays the second
 command does not write are preserved using the source `Run.frame_arr` rule. -/
-theorem runVerifiedRoundPartitions {B n targetCap sampleCount : ℕ}
+lemma runVerifiedRoundPartitions {B n targetCap sampleCount : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
     {A Bset : Finset (Fin n)} {Wnum : Finset ℕ}
     (I : RoundPartitionInput B n targetCap sampleCount G x A Bset Wnum) :
@@ -153,10 +153,13 @@ theorem runVerifiedRoundPartitions {B n targetCap sampleCount : ℕ}
       RepData n currentB n I.activeB labelB repClassB repsB' nextB' R ∧
       RepData n currentA n I.activeA labelA repClassA repsA' nextA' S ∧
       σ₁.vars "nextBCount" = R.card ∧ σ₂.vars "nextACount" = S.card ∧
+      σ₂.vars "nextBCount" = R.card ∧
       σ₂.arrs "activeB" = arrOf n I.activeB ∧
       σ₂.arrs "repsB" = arrOf n repsB' ∧ σ₂.arrs "repB" = arrOf n repB' ∧
+      σ₂.arrs "nextB" = arrOf n nextB' ∧
       σ₂.arrs "activeA" = arrOf n I.activeA ∧
       σ₂.arrs "repsA" = arrOf n repsA' ∧ σ₂.arrs "repA" = arrOf n repA' ∧
+      σ₂.arrs "nextA" = arrOf n nextA' ∧
       ∃ contraction : TraceContraction A Bset (finiteNeighborhood G A)
           (finsetOfNumeric Wnum),
         (∀ b ∈ Bset, (contraction.bChoice.representative b).val = repB' b.val) ∧
@@ -229,6 +232,10 @@ theorem runVerifiedRoundPartitions {B n targetCap sampleCount : ℕ}
     (runA.frame_arr "activeB" (by decide)).trans hactiveB'
   have hrepsB₂ : σ₂.arrs "repsB" = arrOf n repsB' :=
     (runA.frame_arr "repsB" (by decide)).trans hrepsB'
+  have hnextB₂ : σ₂.arrs "nextB" = arrOf n nextB' :=
+    (runA.frame_arr "nextB" (by decide)).trans hnextB'
+  have hnextBCount₂ : σ₂.vars "nextBCount" = R.card :=
+    (runA.frame_var "nextBCount" (by decide)).trans hnextBCount
   have hrun := Run.seq runB runA
   let hB : ConcreteTracePartition G I.activeB (finSetAsSet Wnum) R repB' :=
     Classical.choice certB
@@ -256,7 +263,8 @@ theorem runVerifiedRoundPartitions {B n targetCap sampleCount : ℕ}
   refine ⟨σ₁, σ₂, currentB, currentA, R, S, labelB, repClassB,
     repsB', nextB', repB', labelA, repClassA, repsA', nextA', repA', hB, hA, ?_⟩
   refine ⟨runB, runA, hrun, dataB, dataA, hnextBCount, hnextACount,
-    ?_, hrepsB₂, hrepB₂, hactiveA', hrepsA', hrepA', ?_⟩
+    hnextBCount₂, ?_, hrepsB₂, hrepB₂, hnextB₂, hactiveA', hrepsA',
+    hrepA', hnextA', ?_⟩
   · exact hactiveB₂
   · refine ⟨contraction, ?_, ?_, ?_, ?_, ?_⟩
     · intro b hb
@@ -293,62 +301,6 @@ theorem runVerifiedRoundPartitions {B n targetCap sampleCount : ℕ}
         (PrefixEnumerates.entry_lt dataB.enum hRrange)
         dataB.enum.injective_on_prefix
       omega
-
-/-- For a refined-sample prefix, the source-selected neighborhood
-representative satisfies the existing near-twin conclusion. The source
-chooses representatives by its own order scan; this statement needs no
-uniform representative-selection assumption. -/
-lemma run_representative_near_twin {B n targetCap sampleCount c k : ℕ}
-    {G : SimpleGraph (Fin n)} {x : List ℕ}
-    {A Bset : Finset (Fin n)} {Wnum : Finset ℕ}
-    (I : RoundPartitionInput B n targetCap sampleCount G x A Bset Wnum)
-    (hsample : IsRefinedSample
-      (neighborhoodFamily Bset (finiteNeighborhood G A))
-      (A : Set (Fin n))
-      ((finsetOfNumeric (n := n) Wnum : Finset (Fin n)) : Set (Fin n))
-      ((A.card + 2 * c ^ 2 - 1) / (2 * c ^ 2)) k)
-    (b : Fin n) (hb : b ∈ Bset) :
-    ∃ contraction : TraceContraction A Bset (finiteNeighborhood G A)
-        (finsetOfNumeric (n := n) Wnum),
-      contraction.bChoice.representative b ∈ contraction.retainedB ∧
-      ((finiteNeighborhood G A b \
-          finiteNeighborhood G A
-            (contraction.bChoice.representative b)) ∪
-        (finiteNeighborhood G A
-          (contraction.bChoice.representative b) \
-          finiteNeighborhood G A b)).card ≤ k := by
-  rcases runVerifiedRoundPartitions I with
-    ⟨σ₁, σ₂, currentB, currentA, R, S, labelB, repClassB, repsB', nextB',
-      repB', labelA, repClassA, repsA', nextA', repA', hB, hA,
-      _, _, _, _, _, _, _, _, _, _, _, _, _, ⟨contraction, _, _, _, _, _⟩⟩
-  let Wfin := finsetOfNumeric (n := n) Wnum
-  exact ⟨contraction, (graph_representative_near_twin G A Bset Wfin hsample
-    contraction b hb).1, (graph_representative_near_twin G A Bset Wfin hsample
-    contraction b hb).2⟩
-
-/-- Linear neighborhood complexity and the refined-sample contract give the
-usual retained-ground-set size bound for the contraction produced by the
-two source runs. -/
-theorem run_retainedA_size_bound {B n targetCap sampleCount c k : ℕ}
-    {G : SimpleGraph (Fin n)} {x : List ℕ}
-    {A Bset : Finset (Fin n)} {Wnum : Finset ℕ}
-    (I : RoundPartitionInput B n targetCap sampleCount G x A Bset Wnum)
-    (hG : HasLinearNeighborhoodComplexityWithConstant G c) (hc : 2 ≤ c)
-    (hsample : IsRefinedSample
-      (neighborhoodFamily Bset (finiteNeighborhood G A))
-      (A : Set (Fin n))
-      ((finsetOfNumeric (n := n) Wnum : Finset (Fin n)) : Set (Fin n))
-      ((A.card + 2 * c ^ 2 - 1) / (2 * c ^ 2)) k) :
-    ∃ contraction : TraceContraction A Bset (finiteNeighborhood G A)
-        (finsetOfNumeric (n := n) Wnum),
-      2 * contraction.retainedA.card ≤ A.card + 2 * c ^ 2 := by
-  rcases runVerifiedRoundPartitions I with
-    ⟨σ₁, σ₂, currentB, currentA, R, S, labelB, repClassB, repsB', nextB',
-      repB', labelA, repClassA, repsA', nextA', repA', hB, hA,
-      _, _, _, _, _, _, _, _, _, _, _, _, _, ⟨contraction, _, _, _, _, _⟩⟩
-  let Wfin := finsetOfNumeric (n := n) Wnum
-  exact ⟨contraction, graph_traceContraction_size_bound hG hc A Bset Wfin
-    hsample contraction⟩
 
 end
 
