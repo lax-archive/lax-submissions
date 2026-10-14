@@ -375,7 +375,7 @@ def runThreePhases (A : Finset α) (B : Finset β)
       List (LocalTrial
         ((N b \ N (choice.representative b)) ∪
           (N (choice.representative b) \ N b)) s))
-    (exceptionOrder : ∀ choice : InitialChoice A B N r, List β)
+    (exceptionOrder : ∀ _choice : InitialChoice A B N r, List β)
     (_exceptionOrder_finset : ∀ choice,
       (exceptionOrder choice).toFinset = choice.exceptions k)
     (_exceptionOrder_nodup : ∀ choice, (exceptionOrder choice).Nodup) :
@@ -401,7 +401,7 @@ def refinedSampler (A : Finset α) (B : Finset β)
       List (LocalTrial
         ((N b \ N (choice.representative b)) ∪
           (N (choice.representative b) \ N b)) s))
-    (exceptionOrder : ∀ choice : InitialChoice A B N r, List β)
+    (exceptionOrder : ∀ _choice : InitialChoice A B N r, List β)
     (_exceptionOrder_finset : ∀ choice,
       (exceptionOrder choice).toFinset = choice.exceptions k)
     (_exceptionOrder_nodup : ∀ choice, (exceptionOrder choice).Nodup) :
@@ -554,7 +554,7 @@ lemma phase3Scan_pairwise_correct
   · have hNeq : N b = N b' :=
       phase2_separates_distinct_neighborhoods A B N as has _as_nodup E choice.sample hN hE
         b b' hbE hb'E (by simpa [W₂] using htrace₂)
-    simpa [SamplerDistance.disagreement, disagreement, hNeq]
+    simp [SamplerDistance.disagreement, disagreement, hNeq]
   · by_cases hfar : 2 * k < 3 * disagreement N b (choice.representative b)
     · have hvertex : b ≠ b' := by
         intro heq
@@ -606,7 +606,7 @@ lemma refinedSampler_pairwise_correct
       List (LocalTrial
         ((N b \ N (choice.representative b)) ∪
           (N (choice.representative b) \ N b)) s))
-    (exceptionOrder : ∀ choice : InitialChoice A B N r, List β)
+    (exceptionOrder : ∀ _choice : InitialChoice A B N r, List β)
     (hexceptions : ∀ choice,
       (exceptionOrder choice).toFinset = choice.exceptions k)
     (hexceptions_nodup : ∀ choice, (exceptionOrder choice).Nodup)
