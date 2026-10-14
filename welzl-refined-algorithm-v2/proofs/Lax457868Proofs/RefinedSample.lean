@@ -1,4 +1,4 @@
-import Lax457868.RefinedSample
+import Lax457868Proofs.RefinedSampleSpec
 
 /-!
 Elementary consequences of the refined-sample contract. The randomized
@@ -8,7 +8,7 @@ construction itself is not assumed here.
 namespace Lax457868Proofs.RefinedSample
 
 open Lax195003.WelzlOrders
-open Lax457868.RefinedSample
+open Lax457868Proofs.RefinedSampleSpec
 
 /-- Refinement is preserved when more ground-set elements are observed. -/
 lemma refinedSample_mono {α : Type*} (𝓕 : SetSystem α) (A W U : Set α)

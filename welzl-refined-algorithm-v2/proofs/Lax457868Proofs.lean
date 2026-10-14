@@ -1,6 +1,7 @@
 import Lax457868Proofs.RefinedWelzlOrders
 import Lax457868Proofs.ParameterBounds
 import Lax457868Proofs.RefinedSample
+import Lax457868Proofs.RefinedSampleSpec
 import Lax457868Proofs.SamplerAcceptance
 import Lax457868Proofs.SamplerCharging
 import Lax457868Proofs.SamplerContract

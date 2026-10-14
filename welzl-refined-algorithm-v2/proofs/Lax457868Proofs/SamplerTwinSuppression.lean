@@ -49,9 +49,9 @@ lemma neighborhoodFamily_eq_deduplicated
 then read back for the original, possibly twin-heavy, vertex family. -/
 lemma refinedSample_iff_deduplicated
     (A W : Finset α) (C : Finset β) (N : β → Finset α) (m k : ℕ) :
-    Lax457868.RefinedSample.IsRefinedSample
+    Lax457868Proofs.RefinedSampleSpec.IsRefinedSample
       (neighborhoodFamily C N) (A : Set α) (W : Set α) m k ↔
-    Lax457868.RefinedSample.IsRefinedSample
+    Lax457868Proofs.RefinedSampleSpec.IsRefinedSample
       (neighborhoodFamily (C.image N) id) (A : Set α) (W : Set α) m k := by
   rw [neighborhoodFamily_eq_deduplicated C N]
 

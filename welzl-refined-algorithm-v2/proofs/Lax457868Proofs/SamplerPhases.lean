@@ -1,5 +1,5 @@
 import Mathlib.Tactic
-import Lax457868.RefinedSample
+import Lax457868Proofs.RefinedSampleSpec
 import Lax457868Proofs.SamplerDistance
 
 /-!

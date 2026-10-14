@@ -1,4 +1,4 @@
-import Lax457868.RefinedSample
+import Lax457868Proofs.RefinedSampleSpec
 import Lax457868Proofs.SamplerOutputSize
 import Lax457868Proofs.SamplerPhases
 import Mathlib.Tactic
@@ -14,7 +14,7 @@ namespace Lax457868Proofs.SamplerContract
 open Lax195003.WelzlOrders
 open Lax457868Proofs.SamplerPhases
 open Lax457868Proofs.SamplerOutputSize
-open Lax457868.RefinedSample
+open Lax457868Proofs.RefinedSampleSpec
 
 variable {α β : Type*} [DecidableEq α] [DecidableEq β]
 
