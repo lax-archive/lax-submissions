@@ -40,3 +40,4 @@ import Lax457868Proofs.SamplerWeightedRetries
 import Lax457868Proofs.FairBitRam
 import Lax457868Proofs.IndexedDraws
 import Lax457868Proofs.VerifiedPartitionBridge
+import Lax457868Proofs.IndexedDrawBounds

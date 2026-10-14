@@ -86,7 +86,7 @@ noncomputable def failedBatchSet (X : Finset α) [DecidableEq α] (hX : 0 < X.ca
   Finset.univ.filter fun bits => successfulDrawTape X hX r t bits = none
 
 /-- Integer form of the finite-batch union bound. -/
-theorem failedBatch_count_bound (X : Finset α) [DecidableEq α] (hX : 0 < X.card)
+lemma failedBatch_count_bound (X : Finset α) [DecidableEq α] (hX : 0 < X.card)
     (r t : ℕ) :
     2 ^ t * (failedBatchSet X hX r t).card ≤
       r * Fintype.card (DrawBitTape X r t) := by
@@ -153,7 +153,7 @@ def batchReadBits (X : Finset α) (r t : ℕ)
 
 /-- The integer sum of total actual bit reads is at most twice the block length
 per requested draw, over the full equally likely batch tape space. -/
-theorem sum_batchReadBits_le_two (X : Finset α) (hX : 0 < X.card)
+lemma sum_batchReadBits_le_two (X : Finset α) (hX : 0 < X.card)
     (r t : ℕ) :
     ∑ bits : DrawBitTape X r t, batchReadBits X r t bits ≤
       2 * r * Nat.clog 2 X.card * Fintype.card (DrawBitTape X r t) := by
