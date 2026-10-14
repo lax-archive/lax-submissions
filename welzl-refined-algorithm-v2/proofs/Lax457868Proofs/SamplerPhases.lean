@@ -1,5 +1,7 @@
 import Mathlib.Tactic
 import Lax457868.RefinedSample
+import Lax457868Proofs.SamplerDistance
+import Lax457868Proofs.SamplerSize
 
 /-!
 Finite deterministic phases for the refined sampler of Lemma 18. Randomness is
@@ -228,7 +230,7 @@ def phase3Repair (N : β → Finset α) (B : Finset β)
 
 /-- A returned repair for a far exception separates it from every member of
 its phase-two trace class. -/
-theorem phase3Repair_sound (N : β → Finset α) (B : Finset β)
+lemma phase3Repair_sound (N : β → Finset α) (B : Finset β)
     (phaseTwoW accumulator W' : Finset α) (b rep : β) (k s : ℕ)
     (trials : List (LocalTrial
       ((N b \ N rep) ∪ (N rep \ N b)) s))
@@ -252,6 +254,26 @@ theorem phase3Repair_sound (N : β → Finset α) (B : Finset β)
       intro v hv htrace hvb
       exact trace_ne_of_sample_subset N hsubset b v (hisolate v hv htrace hvb)
 
+/-- A successful local repair never removes the current accumulator. -/
+lemma phase3Repair_extends (N : β → Finset α) (B : Finset β)
+    (phaseTwoW accumulator result : Finset α) (b rep : β) (k s : ℕ)
+    (trials : List (LocalTrial
+      ((N b \ N rep) ∪ (N rep \ N b)) s))
+    (hret : phase3Repair N B phaseTwoW accumulator b rep k s trials =
+      some result) : accumulator ⊆ result := by
+  by_cases hfar : 2 * k < 3 * disagreement N b rep
+  · simp [phase3Repair, hfar] at hret
+    cases htrial : firstIsolatingTrial N B phaseTwoW b
+      ((N b \ N rep) ∪ (N rep \ N b)) s trials with
+    | none => simp [htrial] at hret
+    | some drawSet =>
+        simp [htrial] at hret
+        cases hret
+        exact Finset.subset_union_left
+  · simp [phase3Repair, hfar] at hret
+    cases hret
+    exact by intro x hx; exact hx
+
 /-- Run local repairs in the supplied order of exceptions. Each exception has
 its own finite list of legal length-`s` trials; exhaustion at a far exception
 returns `none`. -/
@@ -267,19 +289,94 @@ def phase3Scan (N : β → Finset α) (B : Finset β)
       | none => none
       | some W' => phase3Scan N B representative k s trials rest phaseTwoW W'
 
+/-- A successful phase-three scan retains its phase-two sample and every
+previously accumulated repair draw. -/
+lemma phase3Scan_extends (N : β → Finset α) (B : Finset β)
+    (representative : β → β) (k s : ℕ)
+    (trials : ∀ b : β, List (LocalTrial
+      ((N b \ N (representative b)) ∪
+        (N (representative b) \ N b)) s)) :
+    ∀ (order : List β) (phaseTwoW accumulator result : Finset α),
+      phaseTwoW ⊆ accumulator →
+      phase3Scan N B representative k s trials order phaseTwoW accumulator =
+        some result → accumulator ⊆ result := by
+  intro order
+  induction order with
+  | nil =>
+      intro phaseTwoW accumulator result _ hret
+      simp [phase3Scan] at hret
+      cases hret
+      exact by intro x hx; exact hx
+  | cons b rest ih =>
+      intro phaseTwoW accumulator result hbase hret
+      cases hrep : phase3Repair N B phaseTwoW accumulator b
+          (representative b) k s (trials b) with
+      | none => simp [phase3Scan, hrep] at hret
+      | some accumulator' =>
+          have hret' : phase3Scan N B representative k s trials rest
+              phaseTwoW accumulator' = some result := by
+            simpa [phase3Scan, hrep] using hret
+          have hacc : accumulator ⊆ accumulator' :=
+            phase3Repair_extends N B phaseTwoW accumulator accumulator' b
+              (representative b) k s (trials b) hrep
+          exact hacc.trans (ih phaseTwoW accumulator' result
+            (hbase.trans hacc) hret')
+
+/-- Every far exception in the supplied phase-three order is isolated from its
+fixed phase-two trace class in any returned sample. -/
+lemma phase3Scan_far_isolated (N : β → Finset α) (B : Finset β)
+    (representative : β → β) (k s : ℕ)
+    (trials : ∀ b : β, List (LocalTrial
+      ((N b \ N (representative b)) ∪
+        (N (representative b) \ N b)) s)) :
+    ∀ (order : List β) (phaseTwoW accumulator result : Finset α)
+      (b : β), phaseTwoW ⊆ accumulator →
+      phase3Scan N B representative k s trials order phaseTwoW accumulator =
+        some result → b ∈ order →
+      2 * k < 3 * disagreement N b (representative b) →
+      ∀ v ∈ B, trace N phaseTwoW b = trace N phaseTwoW v → v ≠ b →
+        trace N result b ≠ trace N result v := by
+  intro order
+  induction order with
+  | nil => simp
+  | cons head rest ih =>
+      intro phaseTwoW accumulator result b hbase hret hb hfar
+      cases hrep : phase3Repair N B phaseTwoW accumulator head
+          (representative head) k s (trials head) with
+      | none => simp [phase3Scan, hrep] at hret
+      | some accumulator' =>
+          have hret' : phase3Scan N B representative k s trials rest
+              phaseTwoW accumulator' = some result := by
+            simpa [phase3Scan, hrep] using hret
+          have hacc : accumulator ⊆ accumulator' :=
+            phase3Repair_extends N B phaseTwoW accumulator accumulator' head
+              (representative head) k s (trials head) hrep
+          have hbase' : phaseTwoW ⊆ accumulator' := hbase.trans hacc
+          rcases List.mem_cons.mp hb with hbh | hbr
+          · subst head
+            have hnow := phase3Repair_sound N B phaseTwoW accumulator accumulator'
+              b (representative b) k s (trials b) hfar hbase hrep
+            have hfinal : accumulator' ⊆ result :=
+              phase3Scan_extends N B representative k s trials rest
+                phaseTwoW accumulator' result hbase' hret'
+            intro v hv htrace hvb
+            exact trace_ne_of_sample_subset N hfinal b v
+              (hnow v hv htrace hvb)
+          · exact ih phaseTwoW accumulator' result b hbase' hret' hbr hfar
+
 /-- Execute the three finite phases from explicit initial attempts and local
 trial lists. The result is `none` exactly when the supplied initial attempts
 or a required local-repair list are exhausted. -/
-noncomputable def runThreePhases (A : Finset α) (B : Finset β)
+def runThreePhases (A : Finset α) (B : Finset β)
     (N : β → Finset α) (r cap k s : ℕ)
     (initialAttempts : List (InitialChoice A B N r))
-    (groundOrder : List α) (groundOrder_finset : groundOrder.toFinset = A)
+    (groundOrder : List α) (_groundOrder_finset : groundOrder.toFinset = A)
     (repairTrials : ∀ choice : InitialChoice A B N r, ∀ b : β,
       List (LocalTrial
         ((N b \ N (choice.representative b)) ∪
           (N (choice.representative b) \ N b)) s))
     (exceptionOrder : ∀ choice : InitialChoice A B N r, List β)
-    (exceptionOrder_finset : ∀ choice,
+    (_exceptionOrder_finset : ∀ choice,
       (exceptionOrder choice).toFinset = choice.exceptions k) :
     Option (Finset α) :=
   match chooseInitialAttempt initialAttempts k cap with
@@ -305,7 +402,7 @@ lemma phase2Scan_mono (N : β → Finset α) (E : Finset β)
 
 /-- A scan over a list separates any two exceptions whose distinct
 neighborhoods are contained in the scanned ground set. -/
-theorem phase2Scan_separates
+lemma phase2Scan_separates
     (N : β → Finset α) (E : Finset β) (b b' : β)
     (hb : b ∈ E) (hb' : b' ∈ E) :
     ∀ (as : List α) (W : Finset α),
@@ -355,21 +452,121 @@ theorem phase2Scan_separates
 identical traces have identical full neighborhoods. -/
 theorem phase2_separates_distinct_neighborhoods
     (A : Finset α) (B : Finset β) (N : β → Finset α)
+    (as : List α) (has : as.toFinset = A)
     (E : Finset β) (W : Finset α)
     (hN : ∀ b ∈ B, N b ⊆ A) (hE : E ⊆ B)
     (b b' : β) (hb : b ∈ E) (hb' : b' ∈ E)
-    (hfinal : trace N (phase2Scan N E A.toList W) b =
-      trace N (phase2Scan N E A.toList W) b') :
+    (hfinal : trace N (phase2Scan N E as W) b =
+      trace N (phase2Scan N E as W) b') :
     N b = N b' := by
   classical
-  have hagree := phase2Scan_separates N E b b' hb hb' A.toList W hfinal
+  have hagree := phase2Scan_separates N E b b' hb hb' as W hfinal
   ext a
   by_cases ha : a ∈ A
-  · have h := hagree a (by simpa using ha)
+  · have h : a ∈ as.toFinset := by rw [has]; exact ha
+    have h := hagree a h
     exact h
   · have hNb := hN b (hE hb)
     have hNb' := hN b' (hE hb')
     have : a ∉ N b ∧ a ∉ N b' := ⟨fun hn => ha (hNb hn), fun hn => ha (hNb' hn)⟩
     simp [this]
+
+/-- A successful three-phase scan has pairwise `k`-close neighborhoods
+whenever their final traces agree. -/
+theorem phase3Scan_pairwise_correct
+    (A : Finset α) (B : Finset β) (N : β → Finset α)
+    (r k s : ℕ) (choice : InitialChoice A B N r)
+    (as : List α) (has : as.toFinset = A)
+    (hN : ∀ b ∈ B, N b ⊆ A)
+    (order : List β) (horder : order.toFinset = choice.exceptions k)
+    (trials : ∀ b : β, List (LocalTrial
+      ((N b \ N (choice.representative b)) ∪
+        (N (choice.representative b) \ N b)) s))
+    (result : Finset α)
+    (hret : phase3Scan N B choice.representative k s trials order
+      (phase2Scan N (choice.exceptions k) as choice.sample)
+      (phase2Scan N (choice.exceptions k) as choice.sample) = some result) :
+    ∀ b ∈ B, ∀ b' ∈ B,
+      trace N result b = trace N result b' →
+        disagreement N b b' ≤ k := by
+  classical
+  let W₂ := phase2Scan N (choice.exceptions k) as choice.sample
+  let E := choice.exceptions k
+  have hsample : choice.sample ⊆ W₂ := phase2Scan_mono N E as choice.sample
+  have hbase : W₂ ⊆ result :=
+    phase3Scan_extends N B choice.representative k s trials order W₂ W₂
+      result (by intro x hx; exact hx) hret
+  intro b hb b' hb' htrace
+  change SamplerDistance.disagreement (N b) (N b') ≤ k
+  have htrace₂ : trace N W₂ b = trace N W₂ b' :=
+    trace_eq_of_sample_subset N hbase b b' htrace
+  have htrace₀ : trace N choice.sample b = trace N choice.sample b' :=
+    trace_eq_of_sample_subset N hsample b b' htrace₂
+  have hrep : choice.representative b = choice.representative b' :=
+    (choice.representative_eq_iff_same_trace b b' hb hb').2 htrace₀
+  have hfar_isolated (x : β) (hx : x ∈ E)
+      (hfar : 2 * k < 3 * disagreement N x (choice.representative x)) :
+      ∀ y ∈ B, trace N W₂ x = trace N W₂ y → y ≠ x →
+        trace N result x ≠ trace N result y := by
+    have hxorder : x ∈ order := by
+      have hx' : x ∈ order.toFinset := by rw [horder]; exact hx
+      exact List.mem_toFinset.mp hx'
+    exact phase3Scan_far_isolated N B choice.representative k s trials
+      order W₂ W₂ result x (by intro z hz; exact hz) hret hxorder hfar
+  have hnonexc (x : β) (hx : x ∈ B) (hne : x ∉ E) :
+      3 * disagreement N x (choice.representative x) ≤ k := by
+    have hmem : ¬ k < 3 * disagreement N x (choice.representative x) := by
+      intro h
+      apply hne
+      exact Finset.mem_filter.mpr ⟨hx, h⟩
+    omega
+  have hE : E ⊆ B := Finset.filter_subset _ _
+  have hmild (x : β) (hx : x ∈ E)
+      (hnotfar : ¬ 2 * k < 3 * disagreement N x (choice.representative x)) :
+      3 * disagreement N x (choice.representative x) ≤ 2 * k := by omega
+  by_cases hbE : b ∈ E <;> by_cases hb'E : b' ∈ E
+  · have hNeq : N b = N b' :=
+      phase2_separates_distinct_neighborhoods A B N as has E choice.sample hN hE
+        b b' hbE hb'E (by simpa [W₂] using htrace₂)
+    simpa [SamplerDistance.disagreement, disagreement, hNeq]
+  · by_cases hfar : 2 * k < 3 * disagreement N b (choice.representative b)
+    · have hvertex : b ≠ b' := by
+        intro heq
+        subst b'
+        exact hb'E hbE
+      have hsep := hfar_isolated b hbE hfar b' hb' htrace₂ (Ne.symm hvertex)
+      exact False.elim (hsep htrace)
+    · have hX0 := hmild b hbE hfar
+      have hX : 3 * SamplerDistance.disagreement (N b) (N (choice.representative b)) ≤ 2 * k := by
+        simpa [disagreement, SamplerDistance.disagreement] using hX0
+      have hY0 := hnonexc b' hb' hb'E
+      have hY : 3 * SamplerDistance.disagreement (N b') (N (choice.representative b)) ≤ k := by
+        simpa [disagreement, SamplerDistance.disagreement, hrep] using hY0
+      exact SamplerDistance.disagreement_le_of_mild_exception_bounds
+        (N b) (N b') (N (choice.representative b)) k hX hY
+  · by_cases hfar : 2 * k < 3 * disagreement N b' (choice.representative b')
+    · have hvertex : b' ≠ b := by
+        intro heq
+        subst b'
+        exact hbE hb'E
+      have hsep := hfar_isolated b' hb'E hfar b hb htrace₂.symm (Ne.symm hvertex)
+      exact False.elim (hsep htrace.symm)
+    · have hX0 := hnonexc b hb hbE
+      have hX : 3 * SamplerDistance.disagreement (N b) (N (choice.representative b)) ≤ k := by
+        simpa [disagreement, SamplerDistance.disagreement] using hX0
+      have hY0 := hmild b' hb'E hfar
+      have hY : 3 * SamplerDistance.disagreement (N b') (N (choice.representative b)) ≤ 2 * k := by
+        simpa [disagreement, SamplerDistance.disagreement, hrep] using hY0
+      rw [SamplerDistance.disagreement_symm]
+      exact SamplerDistance.disagreement_le_of_mild_exception_bounds
+        (N b') (N b) (N (choice.representative b)) k hY hX
+  · have hX0 := hnonexc b hb hbE
+    have hX : 3 * SamplerDistance.disagreement (N b) (N (choice.representative b)) ≤ k := by
+      simpa [disagreement, SamplerDistance.disagreement] using hX0
+    have hY0 := hnonexc b' hb' hb'E
+    have hY : 3 * SamplerDistance.disagreement (N b') (N (choice.representative b)) ≤ k := by
+      simpa [disagreement, SamplerDistance.disagreement, hrep] using hY0
+    exact SamplerDistance.disagreement_le_of_third_bounds
+      (N b) (N b') (N (choice.representative b)) k hX hY
 
 end Lax457868Proofs.SamplerPhases
