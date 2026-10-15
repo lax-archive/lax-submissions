@@ -617,3 +617,12 @@ the existing `satMul`/`satAdd` at at most 14 source steps each, preserving
 other words, arrays, input and output. Products and sums are evaluated only
 after their safe guards. These are the primitives, not yet the complete
 cutoff command; logarithm/polynomial composition remains the next leaf.
+
+Reviewed `ClassRepresentativeMap.representativeClassMap_run_bits` composes
+the new class loop with the unchanged old `representativeMapLoop_run`. It
+proves actual flat-tape execution, the selected table prefix, correct mapping
+for every active vertex on success, and preservation of the old map on cap
+failure. The derived bound is `charge + 104*n + 22`; residual tape and frames
+are retained. Its independent target check and axiom query passed. No new
+map-loop proof or probability law was introduced. The preceding integrated
+class-loop/guarded-primitives kernel replay also passed (127 proof modules).
