@@ -574,3 +574,15 @@ choices and reuse that loop to construct the per-vertex map at `104*n+4`.
 For the new class loop retain a sum of actual per-class read costs: the existing
 `sum_classMultiplicity_of_bounded` and `clog₂ m≤m` allow a linear aggregate
 expected representative cost without adding an artificial logarithmic factor.
+
+The integrated kernel replay for these class adapters passed (123 proof modules).
+The next active leaves are the actual varying-class loop and a pure transport
+of numeric class choices to the existing `RepChoices` expectation theorem.
+
+Probability composition caution: for a fixed initial draw, successful capped
+class selectors can have the existing uniform product choice law. Across
+initial draws, however, the probability that every class selector succeeds can
+depend on the resulting class sizes. Do not claim that conditioning the entire
+algorithm on no cap exhaustion preserves the initial uniform draw law. Transfer
+bounds using explicit exhaustion events/coupling (or unnormalized probability
+bounds), reusing the stopped-prefix and adaptive counting results.
