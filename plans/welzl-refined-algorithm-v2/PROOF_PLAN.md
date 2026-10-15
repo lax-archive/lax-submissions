@@ -720,3 +720,17 @@ uses it to pack activeB into ord/alen with the existing packer (20*n+9),
 preserving sample flags/count, representatives, and the tape. Independent
 target builds and axiom checks passed. Full kernel replay also passed for
 the preceding exception-phase integration (133 modules).
+
+Reviewed initial draw, full-B partition/grouping, and touched cleanup:
+`initialDrawSampleSource_run_bits` composes clearing, log setup, capped
+sequential draws and conditional packing on arbitrary flat Boolean input,
+returning the exact unread suffix, explicit failure, sample size bound and
+frames. `fullSamplePartition_run` reuses the original partition and derives
+full-B classification from a packed sample; `groupActiveB_run` reuses the
+packer and radix to expose exact class slices, preserving initial repB.
+Class offsets are still mathematical until a runtime prefix table is built.
+`markDrawArrayWith_run` generalizes the existing marker without changing its
+one-valued API; `clearDrawSupport_run` resets only touched entries even for
+arbitrary old stamp values. All three independent target builds and axiom
+audits passed. Initial-attempt composition (representatives, distances,
+exception acceptance) and actual local-repair source remain open.

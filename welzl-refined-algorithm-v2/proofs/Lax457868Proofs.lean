@@ -133,3 +133,5 @@ import Lax457868Proofs.ExceptionRefinementScan
 import Lax457868Proofs.ExceptionPhaseSource
 import Lax457868Proofs.SourceRenaming
 import Lax457868Proofs.PackedActiveSource
+import Lax457868Proofs.FullSamplePartition
+import Lax457868Proofs.InitialDrawSampleSource
