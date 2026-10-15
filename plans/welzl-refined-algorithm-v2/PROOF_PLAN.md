@@ -152,11 +152,14 @@ half-rejection and mean-retry estimates to these executions.
 Prove cost bounds for domain construction, representative selection,
 distance computation, sample packing, and rejected attempts. A direct
 pairwise search is not an acceptable implementation of a linear-cost claim.
-In particular, scanning a representative's adjacency list once for every
-class member needs an expected-work argument: prove that a uniform class
-representative has expected replicated degree charge equal to the sum of
-the class members' degrees. This degree-cost identity is a new obligation;
-the existing one-inclusion charging lemmas do not establish it.
+Reuse the old batched CSR degree/intersection sweep instead of scanning a
+representative's adjacency list separately for every class member.
+`NearSweepSource.nearSweepLoop_run` and
+`NearCounterCorrectness.nearDistance_eq_neighborhood_symmDiff` provide a
+linear worst-case distance pass for any valid representative map. Adapt its
+output to collect the refined exceptional set. This removes the proposed
+replicated-degree expectation obligation for S1; it does not settle the
+cost of S3's individual symmetric-difference domains.
 
 ### S2. Exception separation
 
@@ -254,12 +257,14 @@ than paying an unnecessary extra logarithm. Account for every retry and
 failure path. Derive a universal expected-work constant from the proved
 local bounds.
 
-Keep the correlation between attempt cost and rejection. Prove a joint
-cost-until-first-success lemma for independent attempts, then apply it to
-the initial sampler and to local trials. A bound on the mean number of
-attempts alone does not justify multiplying by an unverified conditional
-mean cost. Likewise, justify the distribution of the accepted initial
-representatives before charging their later repair work.
+Use deterministic per-attempt bounds wherever the reused batched source
+passes provide them; multiplying such a bound by the proved mean attempt
+count does not require independence of cost and acceptance. Where only an
+expected per-attempt bound is available, retain the correlation between
+cost and rejection and prove a joint cost-until-first-success bound.
+Justify any claimed distribution of accepted initial representatives before
+using it to charge later repair work. The old program's total runtime does
+not establish these new sampler bounds.
 
 Allocate an explicit total failure budget between capped sampling and
 runtime truncation; for example, a split into two sixths is a possible
@@ -337,3 +342,42 @@ the efficient sampler phases S0–S4 and final assembly A1–A4.
 Validation of this boundary: all three targeted builds and the integrated
 `lax build welzl-refined-algorithm-v2 --replay` passed. The archive output
 still contains zero annotated proofs: the main conclusion remains open.
+
+## 9. Reuse audit of the earlier complete construction (2026-10-15)
+
+Checked exact accepted source: Lax235315 commit
+`33f2eca4379b6ff944489c7c59ac1990c286c21b`, proving the statement in
+Lax195003. Its old crossing bound is `12*c²*(clog₂ n)²`; that result alone
+does not imply `2*k*clog₂ n` for unbounded `n`. Reuse the common internals,
+not the old end-to-end claim. Existing attributed copies of 34 construction
+modules already supply the partition/reconstruction foundation. Additional
+copies retain attribution and only transport namespaces/imports.
+
+| Plan item | Checked reusable interface | Remaining obligation |
+| --- | --- | --- |
+| R1/R2 | New `StoppingPrefix` and `DrawBuffer` already checked | No replacement needed |
+| R3 | Old `SamplingPrefixSource` is random-key sorting without replacement; new `DrawBuffer` is the correct primitive | Fixed sequential rejection-draw loop using the actual residual tape |
+| R4 | Old `AdaptiveBitBlocks.failureMass_le`, `AdaptiveTapeCounting.failingTapes_fraction_eq_failureMass`, `AdaptiveStateProtocol.goodPath_iff_not_mem_failingTapes` | Adapt one-at-a-time rejection blocks and then actual adaptive sampler transitions; do not consume an entire reserved cap on early success |
+| S0 | `RoundPartitionSource.firstPartition_run`, `RepData.enum`, `ConcreteTracePartition`, plus current `SamplerTwinSuppression` | Use full active ground set as tests; connect the produced representative prefix to distinct full neighborhoods |
+| S1 | `SamplePacking.markAndPackSamples_run`; old `NearSweepSource.nearSweepLoop_run`, `NearCounterCorrectness.nearDistance_eq_neighborhood_symmDiff`, `VerifyNearSource.prepareNearSweep_run` | Uniform within-class representatives, exception collection, actual attempt/retry assembly |
+| S2 | `RefineOneSource.refineOne_run`, `PartitionRefinement.Classifies.refine`; current `SamplerRefinementBudget.phase2Scan_card_add_le` | Insert exactly when class count grows; scan candidates once and charge CSR blocks |
+| S3 | Current phase-three/local-success mathematics; old neighbor-scan primitives | Build actual symmetric-difference domains and execute/check local trials efficiently |
+| S4 | `SamplerContract.refinedSampler_IsRefinedSample` | Derive its legal choices and successful return from source execution |
+| W1 | Current `SaturatedCutoff`; old guarded arithmetic and logarithm code as patterns | Implement new guarded formula and the early c≥n branch in IMP+ |
+| W2 | Old fixed layout/source frame patterns | New arrays, word-sized timeout and all failure branches |
+| A1 | Current `VerifiedRoundPartitions.runVerifiedRoundPartitions` already reuses both old partition runs | Populate its input from sampler; update actual state/log |
+| A2 | Current `VerifiedReconstructionBridge`, `RefinedOrderCorrectness`; old history/restoration source as implementation templates | Construct path from executed loop and connect log/restoration invariants |
+| A3 | Existing shrink/round counting; old `HistoryDriverSource.sourceTotal` is specific to old sampler | Costs and failure budgets for refined phases and retries |
+| A4 | Registered `Lax808846Proofs.Simulation.compile_correct` is generic | Prove new layout/source obligations and public assembly; old `MachineBridge.sourceRun_terminal` and `runtime_of_source` are specialized to old `welzlCom` and are templates, not direct new-program theorems |
+
+Important distribution distinction: old
+`RepresentativeSource.representativeSelectLoop_run` picks the first active
+member of a class. It is suitable for removing duplicate neighborhoods, but
+is not uniform representative selection for the refined probability proof.
+
+Next audited implementation leaves: (1) reuse the three generic adaptive
+counting modules and connect them to the rejection selector; (2) specialize
+the verified partition to full-neighborhood deduplication; (3) reuse the
+batched near-distance source closure and expose exact numeric distances.
+All remain in the proof package. These leaves are independent; their results
+will be reviewed before starting dependent source assembly.
