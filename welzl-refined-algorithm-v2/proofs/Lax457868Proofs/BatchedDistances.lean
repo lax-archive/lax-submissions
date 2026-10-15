@@ -28,7 +28,7 @@ def batchedDistanceSweep : Com :=
 /-- One invocation computes all active-A degrees and representative
 intersections in one CSR sweep.  The result retains the representative map,
 both active masks, and the graph's CSR arrays. -/
-theorem batchedDistanceSweep_run
+lemma batchedDistanceSweep_run
     {B n targetCap : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {target off activeA activeB rep : ℕ → ℕ}
     {degree inter stamp neighbors : ℕ → ℕ} {σ : Env}
@@ -64,6 +64,9 @@ theorem batchedDistanceSweep_run
       σ'.arrs "activeA" = arrOf n activeA ∧
       σ'.arrs "activeB" = arrOf n activeB ∧
       σ'.arrs "repB" = arrOf n rep ∧
+      σ'.vars "n" = n ∧
+      σ'.inp = σ.inp ∧
+      σ'.out = σ.out ∧
       ∀ (b : ℕ) (hbN : b < n) (hb : activeB b = 1),
         nearDistance
             (degreePrefix target off activeA activeB n)
@@ -89,46 +92,23 @@ theorem batchedDistanceSweep_run
       300 * (n + targetCap + 1) := by
     rw [hpotential]
     omega
-  refine ⟨σ₂, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · have hr := rprepare.seq rsweep
-    simpa [batchedDistanceSweep, seqs] using hr.mono hcost
-  · rcases hfinished with
-      ⟨stamp', neighbors', ha, hn', hoff', htarget', hactiveA',
-        hactiveB', hrep', hstamp', hneighbors', hdegree', hinter',
-        hstampLe, hstampB⟩
-    rw [haFinal] at hdegree'
-    exact hdegree'
-  · rcases hfinished with
-      ⟨stamp', neighbors', ha, hn', hoff', htarget', hactiveA',
-        hactiveB', hrep', hstamp', hneighbors', hdegree', hinter',
-        hstampLe, hstampB⟩
-    rw [haFinal] at hinter'
-    exact hinter'
-  · rcases hfinished with
-      ⟨stamp', neighbors', ha, hn', hoff', htarget', hactiveA',
-        hactiveB', hrep', hstamp', hneighbors', hdegree', hinter',
-        hstampLe, hstampB⟩
-    exact hoff'
-  · rcases hfinished with
-      ⟨stamp', neighbors', ha, hn', hoff', htarget', hactiveA',
-        hactiveB', hrep', hstamp', hneighbors', hdegree', hinter',
-        hstampLe, hstampB⟩
-    exact htarget'
-  · rcases hfinished with
-      ⟨stamp', neighbors', ha, hn', hoff', htarget', hactiveA',
-        hactiveB', hrep', hstamp', hneighbors', hdegree', hinter',
-        hstampLe, hstampB⟩
-    exact hactiveA'
-  · rcases hfinished with
-      ⟨stamp', neighbors', ha, hn', hoff', htarget', hactiveA',
-        hactiveB', hrep', hstamp', hneighbors', hdegree', hinter',
-        hstampLe, hstampB⟩
-    exact hactiveB'
-  · rcases hfinished with
-      ⟨stamp', neighbors', ha, hn', hoff', htarget', hactiveA',
-        hactiveB', hrep', hstamp', hneighbors', hdegree', hinter',
-        hstampLe, hstampB⟩
-    exact hrep'
+  rcases hfinished with
+    ⟨stamp', neighbors', ha, hn', hoff', htarget', hactiveA',
+      hactiveB', hrep', hstamp', hneighbors', hdegree', hinter',
+      hstampLe, hstampB⟩
+  rw [haFinal] at hdegree' hinter'
+  have hr := rprepare.seq rsweep
+  have hinp := hr.frame_inp (by
+    simp [prepareNearSweep, sweepNearBody,
+      processActiveNearBody, collectNeighborBody, accumulateNearBody,
+      clearArray, seqs, inc, Com.reads])
+  have hout := hr.out_eq (by
+    simp [prepareNearSweep, sweepNearBody,
+      processActiveNearBody, collectNeighborBody, accumulateNearBody,
+      clearArray, seqs, inc, Com.NoWrite])
+  refine ⟨σ₂, ?_, hdegree', hinter', hoff', htarget', hactiveA',
+    hactiveB', hrep', hn', hinp, hout, ?_⟩
+  · simpa [batchedDistanceSweep, seqs] using hr.mono hcost
   · intro b hbN hb
     exact nearDistance_eq_neighborhood_symmDiff hx htargetCap hoffEq
       htargetEq hbN (hrepN b hbN hb) hb (hrepActive b hbN hb)
