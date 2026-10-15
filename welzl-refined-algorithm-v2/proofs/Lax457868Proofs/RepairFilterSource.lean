@@ -12,6 +12,15 @@ open Lax808846Proofs.Reasoning.Lib
 open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
 open Lax457868Proofs.ReusedOriginal.Construction.WelzlProgram
 open Lax457868Proofs.EnumeratedDraws
+open Lax457868Proofs.RepairDomainSource
+open Lax457868Proofs.SourceRenaming
+open Lax457868Proofs.ReusedOriginal.Construction.NearCollectSource
+open Lax457868Proofs.ReusedOriginal.Construction.NeighborScan
+open Lax11.GraphEncoding
+open Lax11Proofs.CC
+open Lax457868Proofs.SamplerPhases
+open Lax457868Proofs.ExceptionRefinementStep
+open Lax457868Proofs.ExceptionPhaseSource
 open scoped symmDiff
 
 noncomputable section
@@ -494,7 +503,7 @@ lemma appendSymmetricDifference_run
   have rzero : Run B (.assign "drawModulus" (.lit 0)) σ σ₀ 2 := by
     simpa [σ₀] using (Run.assign (evalB_lit (by omega : 0 < B)))
   have hprefix0 : PrefixEnumerates (σ₀.vars "drawModulus") domain ∅ := by
-    simpa [σ₀] using prefixEnumerates_zero domain
+    simp [σ₀, prefixEnumerates_zero]
   obtain ⟨σ₁, domain₁, rB, hdomain₁, hprefix₁,
     hcount₁, _hcursorB, _hblist₁, _hrmarks₁,
     _hblen₁, hn₁, hframeB, hvarsB, _hinpB, _houtB⟩ :=
@@ -510,8 +519,7 @@ lemma appendSymmetricDifference_run
       (by rw [prefixEnumerates_card hb blist BS hB];
           simpa using Finset.card_le_card hBrange)
       hr01
-      (by simpa [hBonly] using (Finset.disjoint_empty_left :
-        Disjoint (∅ : Finset ℕ) (BS \ RS)))
+      (by simp [hBonly])
       (by simpa [hBonly] using hcapB)
       hnB honeB
   have hprefixB : PrefixEnumerates (σ₁.vars "drawModulus") domain₁
@@ -590,6 +598,437 @@ lemma appendSymmetricDifference_run
   · exact hrun.out_eq (by
       simp [appendSymmetricDifference, appendBOnly, appendROnly,
         appendFiltered, appendFilteredBody, seqs, inc, Com.NoWrite])
+
+/-! The runtime repair builder reads its representative from the preserved
+`repB` array and derives both active neighborhoods from CSR. -/
+
+def repairDomainCore : Com :=
+  seqs [
+    .assign "repairRep" (.get "repB" (.var "repairB")),
+    collectRepairBAt,
+    collectRepairRAt,
+    appendSymmetricDifference]
+
+lemma repairDomainCore_run
+    {B n targetCap b : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {A : Finset ℕ} {rep blist rlist domain : ℕ → ℕ} {σ : Env}
+    (hx : EncodesGraph x n G)
+    (htargetCap : targetCap = 2 * edgeCount x)
+    (hA : A ⊆ Finset.range n)
+    (hn : σ.vars "n" = n)
+    (hbvar : σ.vars "repairB" = b)
+    (hrep : σ.arrs "repB" = arrOf n rep)
+    (hoff : σ.arrs "off" = arrOf (n + 1) (offset x))
+    (htarget : σ.arrs "tgt" = arrOf targetCap (target x))
+    (hactive : σ.arrs "activeA" = arrOf n (setFlag A))
+    (hbmarks : σ.arrs "repairBMarks" = arrOf n (fun _ => 0))
+    (hrmarks : σ.arrs "repairRMarks" = arrOf n (fun _ => 0))
+    (hblist : σ.arrs "repairBList" = arrOf n blist)
+    (hrlist : σ.arrs "repairRList" = arrOf n rlist)
+    (hdomain : σ.arrs "drawDomain" = arrOf n domain)
+    (hb : b < n) (hr : rep b < n)
+    (hn1B : n + 1 < B) (htargetCapB : targetCap < B) :
+    ∃ σ' domain' bmarks' rmarks' blist' rlist',
+      Run B repairDomainCore σ σ'
+        (54 * ((offset x (b + 1) - offset x b) +
+            (offset x (rep b + 1) - offset x (rep b))) +
+          24 * (((numericNeighborhood G b ∩ A).card) +
+            ((numericNeighborhood G (rep b) ∩ A).card)) + 61) ∧
+      σ'.arrs "drawDomain" = arrOf n domain' ∧
+      σ'.vars "drawModulus" =
+        ((numericNeighborhood G b ∩ A) ∆
+          (numericNeighborhood G (rep b) ∩ A)).card ∧
+      PrefixEnumerates (σ'.vars "drawModulus") domain'
+        ((numericNeighborhood G b ∩ A) ∆
+          (numericNeighborhood G (rep b) ∩ A)) ∧
+      σ'.arrs "repairBMarks" = arrOf n bmarks' ∧
+      σ'.arrs "repairRMarks" = arrOf n rmarks' ∧
+      σ'.arrs "repairBList" = arrOf n blist' ∧
+      σ'.arrs "repairRList" = arrOf n rlist' ∧
+      σ'.vars "repairBLen" = (numericNeighborhood G b ∩ A).card ∧
+      σ'.vars "repairRLen" = (numericNeighborhood G (rep b) ∩ A).card ∧
+      (∀ v < n, bmarks' v = 1 ↔ v ∈ numericNeighborhood G b ∩ A) ∧
+      (∀ v < n, rmarks' v = 1 ↔ v ∈ numericNeighborhood G (rep b) ∩ A) ∧
+      (∀ v < n, bmarks' v ≤ 1) ∧
+      (∀ v < n, rmarks' v ≤ 1) ∧
+      PrefixEnumerates (numericNeighborhood G b ∩ A).card blist'
+        (numericNeighborhood G b ∩ A) ∧
+      PrefixEnumerates (numericNeighborhood G (rep b) ∩ A).card rlist'
+        (numericNeighborhood G (rep b) ∩ A) ∧
+      σ'.arrs "repB" = arrOf n rep ∧
+      σ'.arrs "activeA" = arrOf n (setFlag A) ∧
+      σ'.vars "n" = n ∧
+      σ'.inp = σ.inp ∧ σ'.out = σ.out := by
+  let BS := numericNeighborhood G b ∩ A
+  let RS := numericNeighborhood G (rep b) ∩ A
+  have hAB : ∀ v < n, setFlag A v < B := by
+    intro v hv
+    by_cases hvA : v ∈ A <;> simp [setFlag, hvA] <;> omega
+  have honeB : 1 < B := by omega
+  let σ₀ := σ.setVar "repairRep" (rep b)
+  have hevalRep : (Expr.get "repB" (.var "repairB")).evalB B σ =
+      some (rep b) := by
+    apply evalB_get
+    · exact evalB_var (by rw [hbvar]; omega)
+    · rw [hrep, hbvar]
+      exact getElem?_arrOf rep hb
+    · omega
+  have rrep : Run B (.assign "repairRep" (.get "repB" (.var "repairB")))
+      σ σ₀ 3 := by
+    simpa [σ₀] using (Run.assign hevalRep)
+  have hσ₀var : σ₀.vars "repairRep" = rep b := by simp [σ₀]
+  have hσ₀arr : ∀ a, σ₀.arrs a = σ.arrs a := by
+    intro a; rfl
+  have hσ₀n : σ₀.vars "n" = n := by simpa [σ₀] using hn
+  have hσ₀b : σ₀.vars "repairB" = b := by simpa [σ₀] using hbvar
+  let ρB := repairCollectNames "repairBMarks" "repairBList" "repairBLen"
+  let ρR := repairCollectNames "repairRMarks" "repairRList" "repairRLen"
+  obtain ⟨σ₁, bm, bl, rB, hbm₁, hbl₁, hblen₁, henumB,
+    hmemB, hboundB, _hactiveB, _htargetB, _hjB, _htokenB, _hinpB, _houtB⟩ :=
+    collectNeighborhoodAt_run ρB "repairB" "activeA"
+      "repairBMarks" "repairBList" "repairBLen"
+      (by decide) (by decide)
+      (by decide) (by decide) (by decide) (by decide) (by decide)
+      (by decide) (by decide) (by decide) (by decide)
+      hx htargetCap hσ₀b hσ₀n
+      (by rw [hσ₀arr]; exact hoff)
+      (by rw [hσ₀arr]; exact htarget)
+      (by rw [hσ₀arr]; exact hactive)
+      (by rw [hσ₀arr]; exact hbmarks)
+      (by rw [hσ₀arr]; exact hblist)
+      hb hAB hn1B htargetCapB
+  have hkeepB (a : String) (ha : a ≠ "repairBMarks")
+      (hal : a ≠ "repairBList") : σ₁.arrs a = σ₀.arrs a :=
+    rB.frame_arr a (by
+      simp [collectNeighborhoodAt, prepareNeighborAt, ρB,
+        repairCollectNames, neighborhoodNames, renameCom,
+        collectNeighborBody, seqs, inc, Com.warrs]
+      change a ≠ "repairBMarks" ∧ a ≠ "repairBList"
+      exact ⟨ha, hal⟩)
+  have hkeepBVar (v : String) (hbtmp : v ≠ "b") (hj : v ≠ "j") (hjend : v ≠ "jend")
+      (htok : v ≠ "token") (hlen : v ≠ "repairBLen") :
+      σ₁.vars v = σ₀.vars v :=
+    rB.frame_var v (by
+      simp [collectNeighborhoodAt, prepareNeighborAt, ρB,
+        repairCollectNames, neighborhoodNames, renameCom,
+        collectNeighborBody, seqs, inc, Com.wvars, hj, hjend, htok, hlen]
+      change v ≠ "b" ∧ v ≠ "j"
+      exact ⟨hbtmp, hj⟩)
+  have hσ₁rep : σ₁.vars "repairRep" = rep b := by
+    rw [hkeepBVar "repairRep" (by decide) (by decide) (by decide)
+      (by decide) (by decide)]
+    exact hσ₀var
+  have hσ₁n : σ₁.vars "n" = n := by
+    rw [hkeepBVar "n" (by decide) (by decide) (by decide) (by decide) (by decide)]
+    exact hσ₀n
+  obtain ⟨σ₂, rm, rl, rR, hrm₂, hrl₂, hrlen₂, henumR,
+    hmemR, hboundR, _hactiveR, _htargetR, _hjR, _htokenR, _hinpR, _houtR⟩ :=
+    collectNeighborhoodAt_run ρR "repairRep" "activeA"
+      "repairRMarks" "repairRList" "repairRLen"
+      (by decide) (by decide)
+      (by decide) (by decide) (by decide) (by decide) (by decide)
+      (by decide) (by decide) (by decide) (by decide)
+      hx htargetCap hσ₁rep hσ₁n
+      (by rw [hkeepB "off" (by decide) (by decide), hσ₀arr]; exact hoff)
+      (by rw [hkeepB "tgt" (by decide) (by decide), hσ₀arr]; exact htarget)
+      (by rw [hkeepB "activeA" (by decide) (by decide), hσ₀arr]; exact hactive)
+      (by rw [hkeepB "repairRMarks" (by decide) (by decide), hσ₀arr]; exact hrmarks)
+      (by rw [hkeepB "repairRList" (by decide) (by decide), hσ₀arr]; exact hrlist)
+      hr hAB hn1B htargetCapB
+  have hkeepR (a : String) (ha : a ≠ "repairRMarks")
+      (hal : a ≠ "repairRList") : σ₂.arrs a = σ₁.arrs a :=
+    rR.frame_arr a (by
+      simp [collectNeighborhoodAt, prepareNeighborAt, ρR,
+        repairCollectNames, neighborhoodNames, renameCom,
+        collectNeighborBody, seqs, inc, Com.warrs]
+      change a ≠ "repairRMarks" ∧ a ≠ "repairRList"
+      exact ⟨ha, hal⟩)
+  have hkeepRVar (v : String) (hbtmp : v ≠ "b") (hj : v ≠ "j") (hjend : v ≠ "jend")
+      (htok : v ≠ "token") (hlen : v ≠ "repairRLen") :
+      σ₂.vars v = σ₁.vars v :=
+    rR.frame_var v (by
+      simp [collectNeighborhoodAt, prepareNeighborAt, ρR,
+        repairCollectNames, neighborhoodNames, renameCom,
+        collectNeighborBody, seqs, inc, Com.wvars, hj, hjend, htok, hlen]
+      change v ≠ "b" ∧ v ≠ "j"
+      exact ⟨hbtmp, hj⟩)
+  have hBset :
+      ReusedOriginal.Construction.NeighborScan.activeTargets
+        (target x) (setFlag A) (offset x b) (offset x (b + 1)) = BS := by
+    exact activeTargets_eq_numericNeighborhood_inter hx A b hb
+  have hRset :
+      ReusedOriginal.Construction.NeighborScan.activeTargets
+        (target x) (setFlag A) (offset x (rep b))
+        (offset x (rep b + 1)) = RS := by
+    exact activeTargets_eq_numericNeighborhood_inter hx A (rep b) hr
+  have hBrange : BS ⊆ Finset.range n := by
+    exact (Finset.inter_subset_right).trans hA
+  have hRrange : RS ⊆ Finset.range n := by
+    exact (Finset.inter_subset_right).trans hA
+  have hσ₂n : σ₂.vars "n" = n := by
+    rw [hkeepRVar "n" (by decide) (by decide) (by decide) (by decide) (by decide)]
+    exact hσ₁n
+  have hσ₂blen : σ₂.vars "repairBLen" = BS.card := by
+    rw [hkeepRVar "repairBLen" (by decide) (by decide) (by decide)
+      (by decide) (by decide), hblen₁, hBset]
+  have hσ₂bm : σ₂.arrs "repairBMarks" = arrOf n bm := by
+    rw [hkeepR "repairBMarks" (by decide) (by decide)]
+    exact hbm₁
+  have hσ₂bl : σ₂.arrs "repairBList" = arrOf n bl := by
+    rw [hkeepR "repairBList" (by decide) (by decide)]
+    exact hbl₁
+  have hσ₂domain : σ₂.arrs "drawDomain" = arrOf n domain := by
+    rw [hkeepR "drawDomain" (by decide) (by decide),
+      hkeepB "drawDomain" (by decide) (by decide), hσ₀arr]
+    exact hdomain
+  obtain ⟨σ₃, domain', rfilter, hdomain₃, henumX, hcountX, _hXrange,
+    hbl₃, hrl₃, hbm₃, hrm₃, hblen₃, hrlen₃, hn₃,
+    hframeArr₃, _hframeVar₃, _hinp₃, _hout₃⟩ :=
+    appendSymmetricDifference_run
+      hσ₂n hσ₂blen (by rw [hrlen₂, hRset])
+      hσ₂bl hrl₂ hσ₂bm hrm₂ hσ₂domain
+      (by simpa [hBset] using henumB)
+      (by simpa [hRset] using henumR)
+      hBrange hRrange
+      hboundB hboundR
+      (by simpa [hBset] using hmemB)
+      (by simpa [hRset] using hmemR)
+      (by omega) honeB
+  have rcore : Run B repairDomainCore σ σ₃
+      (54 * ((offset x (b + 1) - offset x b) +
+          (offset x (rep b + 1) - offset x (rep b))) +
+        24 * (BS.card + RS.card) + 61) := by
+    have hseq := rrep.seq (rB.seq (rR.seq rfilter))
+    have hbound : 3 + ((54 * (offset x (b + 1) - offset x b) + 22) +
+        ((54 * (offset x (rep b + 1) - offset x (rep b)) + 22) +
+          (24 * (BS.card + RS.card) + 14))) ≤
+      54 * ((offset x (b + 1) - offset x b) +
+        (offset x (rep b + 1) - offset x (rep b))) +
+        24 * (BS.card + RS.card) + 61 := by omega
+    simpa [repairDomainCore, collectRepairBAt, collectRepairRAt,
+      ρB, ρR, hBset, hRset, seqs] using hseq.mono hbound
+  refine ⟨σ₃, domain', bm, rm, bl, rl, ?_, hdomain₃, ?_, ?_,
+    hbm₃, hrm₃, hbl₃, hrl₃, ?_, ?_, ?_, ?_, hboundB, hboundR,
+    ?_, ?_, ?_, ?_, hn₃, ?_, ?_⟩
+  · simpa [BS, RS] using rcore
+  · simpa [BS, RS] using hcountX
+  · simpa [BS, RS] using henumX
+  · simpa [BS] using hblen₃
+  · simpa [RS] using hrlen₃
+  · simpa [hBset, BS] using hmemB
+  · simpa [hRset, RS] using hmemR
+  · simpa [hBset, BS] using henumB
+  · simpa [hRset, RS] using henumR
+  · rw [hframeArr₃ "repB" (by decide),
+      hkeepR "repB" (by decide) (by decide),
+      hkeepB "repB" (by decide) (by decide), hσ₀arr]
+    exact hrep
+  · rw [hframeArr₃ "activeA" (by decide),
+      hkeepR "activeA" (by decide) (by decide),
+      hkeepB "activeA" (by decide) (by decide), hσ₀arr]
+    exact hactive
+  · exact rcore.frame_inp (by
+      simp [repairDomainCore, collectRepairBAt, collectRepairRAt,
+        collectNeighborhoodAt, prepareNeighborAt, appendSymmetricDifference,
+        appendBOnly, appendROnly, appendFiltered, appendFilteredBody,
+        renameCom, collectNeighborBody, seqs, inc, Com.reads])
+  · exact rcore.out_eq (by
+      simp [repairDomainCore, collectRepairBAt, collectRepairRAt,
+        collectNeighborhoodAt, prepareNeighborAt, appendSymmetricDifference,
+        appendBOnly, appendROnly, appendFiltered, appendFilteredBody,
+        renameCom, collectNeighborBody, seqs, inc, Com.NoWrite])
+
+/-- Fixed local-repair draw builder. The private marks are cleared by
+walking their own collected lists, so the source can run again for the next
+exception with no full-vertex scratch reset. -/
+def repairDomainSource : Com :=
+  seqs [repairDomainCore, clearRepairBMarks, clearRepairRMarks]
+
+lemma repairDomainSource_run
+    {B n targetCap b : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {A : Finset ℕ} {rep blist rlist domain : ℕ → ℕ} {σ : Env}
+    (hx : EncodesGraph x n G)
+    (htargetCap : targetCap = 2 * edgeCount x)
+    (hA : A ⊆ Finset.range n)
+    (hn : σ.vars "n" = n)
+    (hbvar : σ.vars "repairB" = b)
+    (hrep : σ.arrs "repB" = arrOf n rep)
+    (hoff : σ.arrs "off" = arrOf (n + 1) (offset x))
+    (htarget : σ.arrs "tgt" = arrOf targetCap (target x))
+    (hactive : σ.arrs "activeA" = arrOf n (setFlag A))
+    (hbmarks : σ.arrs "repairBMarks" = arrOf n (fun _ => 0))
+    (hrmarks : σ.arrs "repairRMarks" = arrOf n (fun _ => 0))
+    (hblist : σ.arrs "repairBList" = arrOf n blist)
+    (hrlist : σ.arrs "repairRList" = arrOf n rlist)
+    (hdomain : σ.arrs "drawDomain" = arrOf n domain)
+    (hb : b < n) (hr : rep b < n)
+    (hn1B : n + 1 < B) (htargetCapB : targetCap < B) :
+    ∃ σ' domain' blist' rlist',
+      Run B repairDomainSource σ σ'
+        (54 * ((offset x (b + 1) - offset x b) +
+            (offset x (rep b + 1) - offset x (rep b))) +
+          36 * (((numericNeighborhood G b ∩ A).card) +
+            ((numericNeighborhood G (rep b) ∩ A).card)) + 73) ∧
+      σ'.arrs "drawDomain" = arrOf n domain' ∧
+      σ'.vars "drawModulus" =
+        ((numericNeighborhood G b ∩ A) ∆
+          (numericNeighborhood G (rep b) ∩ A)).card ∧
+      PrefixEnumerates (σ'.vars "drawModulus") domain'
+        ((numericNeighborhood G b ∩ A) ∆
+          (numericNeighborhood G (rep b) ∩ A)) ∧
+      ((numericNeighborhood G b ∩ A) ∆
+          (numericNeighborhood G (rep b) ∩ A)) ⊆ Finset.range n ∧
+      σ'.arrs "repairBMarks" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "repairRMarks" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "repairBList" = arrOf n blist' ∧
+      σ'.arrs "repairRList" = arrOf n rlist' ∧
+      σ'.vars "repairBLen" = (numericNeighborhood G b ∩ A).card ∧
+      σ'.vars "repairRLen" = (numericNeighborhood G (rep b) ∩ A).card ∧
+      σ'.arrs "repB" = arrOf n rep ∧
+      σ'.arrs "activeA" = arrOf n (setFlag A) ∧
+      σ'.arrs "off" = arrOf (n + 1) (offset x) ∧
+      σ'.arrs "tgt" = arrOf targetCap (target x) ∧
+      σ'.arrs "sampleFlags" = σ.arrs "sampleFlags" ∧
+      σ'.arrs "classB" = σ.arrs "classB" ∧
+      σ'.arrs "classSize" = σ.arrs "classSize" ∧
+      σ'.arrs "ord" = σ.arrs "ord" ∧
+      σ'.arrs "stamp" = σ.arrs "stamp" ∧
+      σ'.arrs "activeB" = σ.arrs "activeB" ∧
+      σ'.arrs "exceptionFlags" = σ.arrs "exceptionFlags" ∧
+      σ'.vars "sampleCount" = σ.vars "sampleCount" ∧
+      σ'.vars "n" = n ∧
+      σ'.inp = σ.inp ∧ σ'.out = σ.out := by
+  let BS := numericNeighborhood G b ∩ A
+  let RS := numericNeighborhood G (rep b) ∩ A
+  obtain ⟨σ₁, out, bm, rm, bl, rl, rcore, hout, hcount, henumX,
+    hbm, hrm, hbl, hrl, hblen, hrlen, hbmem, hrmem, hb01, hr01,
+    hbenum, hrenum, _hrep₁, _hactive₁, hn₁, _hinp₁, _hout₁⟩ :=
+    repairDomainCore_run hx htargetCap hA hn hbvar hrep hoff htarget
+      hactive hbmarks hrmarks hblist hrlist hdomain hb hr hn1B htargetCapB
+  have hBrange : BS ⊆ Finset.range n :=
+    (Finset.inter_subset_right).trans hA
+  have hRrange : RS ⊆ Finset.range n :=
+    (Finset.inter_subset_right).trans hA
+  let ρB := repairClearNames "repairBMarks" "repairBList" "repairBLen"
+  let ρR := repairClearNames "repairRMarks" "repairRList" "repairRLen"
+  obtain ⟨σ₂, rclearB, hzeroB, _hcursorB, _hinpB, _houtB⟩ :=
+    clearNeighborhoodSupport_run (B := B) (n := n) (h := BS.card)
+      (S := BS) (marks := bm) (list := bl) (σ := σ₁)
+      ρB "repairBMarks" "repairBList"
+      "repairBLen" (by decide) (by decide) (by decide)
+      (by decide) (by decide) hn₁ hblen hbm hbl hbenum hBrange
+      hb01 hbmem (by omega)
+  have hσ₂n : σ₂.vars "n" = n := by
+    rw [rclearB.frame_var "n" (by decide)]
+    exact hn₁
+  have hσ₂rlen : σ₂.vars "repairRLen" = RS.card := by
+    rw [rclearB.frame_var "repairRLen" (by decide)]
+    exact hrlen
+  have hσ₂rm : σ₂.arrs "repairRMarks" = arrOf n rm := by
+    rw [rclearB.frame_arr "repairRMarks" (by decide)]
+    exact hrm
+  have hσ₂rl : σ₂.arrs "repairRList" = arrOf n rl := by
+    rw [rclearB.frame_arr "repairRList" (by decide)]
+    exact hrl
+  obtain ⟨σ₃, rclearR, hzeroR, _hcursorR, _hinpR, _houtR⟩ :=
+    clearNeighborhoodSupport_run (B := B) (n := n) (h := RS.card)
+      (S := RS) (marks := rm) (list := rl) (σ := σ₂)
+      ρR "repairRMarks" "repairRList"
+      "repairRLen" (by decide) (by decide) (by decide)
+      (by decide) (by decide) hσ₂n hσ₂rlen hσ₂rm hσ₂rl hrenum hRrange
+      hr01 hrmem (by omega)
+  have rfinal : Run B repairDomainSource σ σ₃
+      (54 * ((offset x (b + 1) - offset x b) +
+          (offset x (rep b + 1) - offset x (rep b))) +
+        36 * (BS.card + RS.card) + 73) := by
+    have hseq := rcore.seq (rclearB.seq rclearR)
+    have hbound :
+        (54 * ((offset x (b + 1) - offset x b) +
+            (offset x (rep b + 1) - offset x (rep b))) +
+          24 * (BS.card + RS.card) + 61) +
+          ((12 * BS.card + 6) + (12 * RS.card + 6)) ≤
+        54 * ((offset x (b + 1) - offset x b) +
+          (offset x (rep b + 1) - offset x (rep b))) +
+          36 * (BS.card + RS.card) + 73 := by omega
+    simpa [repairDomainSource, ρB, ρR, clearRepairBMarks,
+      clearRepairRMarks, BS, RS, seqs] using hseq.mono hbound
+  have hfinalDomain : σ₃.arrs "drawDomain" = arrOf n out := by
+    rw [rclearR.frame_arr "drawDomain" (by decide),
+      rclearB.frame_arr "drawDomain" (by decide)]
+    exact hout
+  have hfinalCount : σ₃.vars "drawModulus" = (BS ∆ RS).card := by
+    rw [rclearR.frame_var "drawModulus" (by decide),
+      rclearB.frame_var "drawModulus" (by decide)]
+    exact hcount
+  have hfinalBZero : σ₃.arrs "repairBMarks" = arrOf n (fun _ => 0) := by
+    rw [rclearR.frame_arr "repairBMarks" (by decide)]
+    exact hzeroB
+  have hXrange : BS ∆ RS ⊆ Finset.range n := by
+    rw [Finset.symmDiff_def]
+    intro v hv
+    rcases Finset.mem_union.mp hv with hv | hv
+    · exact hBrange (Finset.mem_sdiff.mp hv).1
+    · exact hRrange (Finset.mem_sdiff.mp hv).1
+  refine ⟨σ₃, out, bl, rl, ?_, hfinalDomain, ?_, ?_, ?_, hfinalBZero,
+    hzeroR, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · simpa [BS, RS] using rfinal
+  · simpa [BS, RS] using hfinalCount
+  · rw [rclearR.frame_var "drawModulus" (by decide),
+      rclearB.frame_var "drawModulus" (by decide)]
+    simpa [BS, RS] using henumX
+  · simpa [BS, RS] using hXrange
+  · rw [rclearR.frame_arr "repairBList" (by decide),
+      rclearB.frame_arr "repairBList" (by decide)]
+    exact hbl
+  · rw [rclearR.frame_arr "repairRList" (by decide),
+      rclearB.frame_arr "repairRList" (by decide)]
+    exact hrl
+  · rw [rclearR.frame_var "repairBLen" (by decide),
+      rclearB.frame_var "repairBLen" (by decide)]
+    exact hblen
+  · rw [rclearR.frame_var "repairRLen" (by decide),
+      rclearB.frame_var "repairRLen" (by decide)]
+    exact hrlen
+  · exact (rfinal.frame_arr "repB" (by decide)).trans hrep
+  · exact (rfinal.frame_arr "activeA" (by decide)).trans hactive
+  · exact (rfinal.frame_arr "off" (by decide)).trans hoff
+  · exact (rfinal.frame_arr "tgt" (by decide)).trans htarget
+  · exact rfinal.frame_arr "sampleFlags" (by decide)
+  · exact rfinal.frame_arr "classB" (by decide)
+  · exact rfinal.frame_arr "classSize" (by decide)
+  · exact rfinal.frame_arr "ord" (by decide)
+  · exact rfinal.frame_arr "stamp" (by decide)
+  · exact rfinal.frame_arr "activeB" (by decide)
+  · exact rfinal.frame_arr "exceptionFlags" (by decide)
+  · exact rfinal.frame_var "sampleCount" (by decide)
+  · rw [rclearR.frame_var "n" (by decide),
+      rclearB.frame_var "n" (by decide)]
+    exact hn₁
+  · exact rfinal.frame_inp (by decide)
+  · exact rfinal.out_eq (by decide)
+
+/-- The exact source budget is bounded only by the two CSR degrees. Duplicate
+targets can only decrease the two distinct-neighbor counts. -/
+lemma repairDomainSource_cost_le
+    {n b : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    (hx : EncodesGraph x n G) (A : Finset ℕ)
+    (rep : ℕ → ℕ) (hb : b < n) (hr : rep b < n) :
+    54 * ((offset x (b + 1) - offset x b) +
+        (offset x (rep b + 1) - offset x (rep b))) +
+      36 * (((numericNeighborhood G b ∩ A).card) +
+        ((numericNeighborhood G (rep b) ∩ A).card)) + 73 ≤
+    90 * ((offset x (b + 1) - offset x b) +
+      (offset x (rep b + 1) - offset x (rep b))) + 73 := by
+  have hbcard : (numericNeighborhood G b ∩ A).card ≤
+      offset x (b + 1) - offset x b := by
+    rw [← activeTargets_eq_numericNeighborhood_inter hx A b hb]
+    exact card_activeTargets_le_interval
+  have hrcard : (numericNeighborhood G (rep b) ∩ A).card ≤
+      offset x (rep b + 1) - offset x (rep b) := by
+    rw [← activeTargets_eq_numericNeighborhood_inter hx A (rep b) hr]
+    exact card_activeTargets_le_interval
+  omega
 
 end
 
