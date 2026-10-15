@@ -94,3 +94,4 @@ import Lax457868Proofs.ReusedOriginal.Construction.NearSweepMath
 import Lax457868Proofs.ReusedOriginal.Construction.NearSweepSource
 import Lax457868Proofs.ReusedOriginal.Construction.NearVerification
 import Lax457868Proofs.ReusedOriginal.Construction.VerifyNearSource
+import Lax457868Proofs.DistinctNeighborhoodDomain

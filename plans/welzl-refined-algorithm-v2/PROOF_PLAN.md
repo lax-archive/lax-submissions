@@ -394,3 +394,12 @@ and unchanged input/output. Its worst-case source bound is
 pass; exception collection and retry execution are still separate tasks.
 The nine added source modules match the accepted original exactly after
 namespace transport and attribution.
+
+Reviewed boundary: `DistinctNeighborhoodDomain.runDistinctNeighborhoodSource`
+reuses the old full-trace partition on independent ground set A and nonempty
+family C. It returns the actual representative prefix, pairwise distinct
+neighborhoods, the same neighborhood image as C, and cost at most
+`900*(x.length+1)`. Its domain enumerations have explicit lookup lemmas tied
+to the actual representative array. Empty-family handling and constructing
+the full-A test prefix remain for source assembly. The targeted module build
+passed; no new public concepts were introduced.
