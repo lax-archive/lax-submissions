@@ -534,3 +534,20 @@ passed after these three additions (119 proof modules). A separate axiom audit
 of the new count adapters, history specialization, trace existence, and source
 Run returned only `propext`, `Classical.choice`, and `Quot.sound`. The public
 concept package is unchanged and the annotated main-proof count remains zero.
+
+Further lookup reuse check: `RadixPass.countPhase_run` and `prefixPhase_run`
+already compute class sizes and bucket starts. The full scatter mutates its
+count array, so a caller must preserve those starts or maintain a scalar
+cumulative class offset. The existing indexed selector reads only index
+`drawValue`; the next adapter must read `classOffset + drawValue` with a proved
+array bound, or copy each bucket into an existing zero-based domain. No new
+sorting or prefix-sum proof is needed. Uniform class choices are conditional
+on successful capped draws; exhaustion remains an explicit failure event in
+the final probability budget. This applies to classes of the current sampled
+family, not only the later exception family.
+
+The Lax11 supersession warning was checked against Lax271696: the used graph
+encoding and CC interfaces are namespace ports, and the separately pinned
+Lax808846 compiler revision is unchanged. The current validated pins remain
+appropriate for this proof batch; a dependency port is a separate mechanical
+task, not a missing mathematical proof.
