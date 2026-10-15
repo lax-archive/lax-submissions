@@ -753,3 +753,11 @@ this collector checkpoint is landed while its worker continues the filter.
 
 Full LAX build passed after the repair collector/class-offset integration
 (139 root-imported proof modules). Public concept and conclusion status unchanged.
+
+Reviewed `RepairFilterSource.appendSymmetricDifference_run`: two stable
+filters produce the exact symmetric difference, duplicate-free, with capacity
+proved from its vertex-range subset. Cost `24*(hb+hr)+14`; unrelated memory
+and tape are preserved. `clearNeighborhoodSupport_run` reuses the existing
+marker via static renaming, clearing each list's support in `12*h+6`. Both
+independent Lean checks and standard-background axiom audits passed. The
+collector/filter/cleanup composition is still being assembled.

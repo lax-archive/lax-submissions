@@ -137,3 +137,4 @@ import Lax457868Proofs.FullSamplePartition
 import Lax457868Proofs.InitialDrawSampleSource
 import Lax457868Proofs.RepairDomainSource
 import Lax457868Proofs.RepairClassOffsets
+import Lax457868Proofs.RepairFilterSource
