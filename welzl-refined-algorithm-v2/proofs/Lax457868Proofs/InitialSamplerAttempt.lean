@@ -327,6 +327,7 @@ lemma initialSamplerAttempt_run_bits
           (if drawFailed then 5 else 4 + stageCost)) ∧
       σ'.vars "attemptAccepted" = 0 ∧
       σ'.vars "n" = n ∧ σ'.vars "qpow" = Q ∧
+      σ'.vars "batchFailed" = (if drawFailed then 1 else 0) ∧
       (∀ a, a ∉ initialSamplerAttempt.warrs →
         σ'.arrs a = I.σ.arrs a) ∧
       (∀ v, v ∉ initialSamplerAttempt.wvars →
@@ -458,7 +459,7 @@ lemma initialSamplerAttempt_run_bits
         exact hinit.seq htail
       have haccepted : σd.vars "attemptAccepted" = 0 := hacceptedDraw
       refine ⟨σd, σd, tape, tail, values, used, true, 0,
-        hsplit, htrace, ?_, haccepted, hnSource, hqSource.trans hqpow₀,
+        hsplit, htrace, ?_, haccepted, hnSource, hqSource.trans hqpow₀, hbad,
         ?_, ?_, ?_, ?_⟩
       · simpa [initialSamplerAttempt, initialDrawSampleCost, Nat.add_assoc] using hwhole
       · intro a ha
@@ -739,6 +740,12 @@ lemma initialSamplerAttempt_run_bits
                 trace (numericNeighborhood G) W b') := hclassifies
       have hqpowFinal : σrep.vars "qpow" = Q := by
         exact hqRep
+      have hbadFinal : σrep.vars "batchFailed" = 0 := by
+        calc
+          σrep.vars "batchFailed" = σp.vars "batchFailed" :=
+            hrepRun.frame_var "batchFailed" (by decide)
+          _ = σd.vars "batchFailed" := hframePartVar "batchFailed" (by decide)
+          _ = 0 := by simpa [hbad]
       have hwholeArrFrame : ∀ a, a ∉ initialSamplerAttempt.warrs →
           σrep.arrs a = I.σ.arrs a := by
         intro a ha
@@ -750,7 +757,7 @@ lemma initialSamplerAttempt_run_bits
       refine ⟨σd, σrep, tape, tail, values, used, false,
         fullSamplePartitionCost x sampleOrd n W.card +
           (20 * n + 9 + repCharge + 64 * (xs.length + Q + 1) + 104 * n + 24),
-        hsplit, htrace, ?_, haccepted, hnRep, hqpowFinal,
+        hsplit, htrace, ?_, haccepted, hnRep, hqpowFinal, hbadFinal,
         hwholeArrFrame, hwholeVarFrame, ?_, ?_⟩
       · simpa [initialSamplerAttempt, Nat.add_assoc,
           Cond.size, Expr.size] using hwhole
