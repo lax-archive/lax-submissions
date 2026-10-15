@@ -381,9 +381,8 @@ is not uniform representative selection for the refined probability proof.
 
 The three audited implementation leaves below are now reviewed and landed:
 the bounded rejection protocol adapter, full-neighborhood domain adapter,
-and batched near-distance adapter. All remain in the proof package. The next
-dependent source leaf is exception collection from the computed counters;
-it does not by itself assemble an initial sampling attempt.
+and batched near-distance adapter. All remain in the proof package. Exception collection from the computed counters is also landed below.
+These components do not by themselves assemble an initial sampling attempt.
 
 Reviewed boundary: `BatchedDistances.batchedDistanceSweep_run` reuses the old
 clear/sweep source and returns the actual degree/intersection arrays, exact
@@ -431,3 +430,49 @@ within-class representatives, initial attempt/retry execution, and the later
 sampler phases remain open. The first economical worker left definitions
 only; a focused stronger worker completed the manual source proof using the
 old threshold-check proof pattern.
+
+## 10. Focused remaining-work recheck (2026-10-15)
+
+The uniform-representative **probability law is already proved** in
+`SamplerInitialProbability` (`RepChoices`, `decodeChoice`,
+`conditionalMeanZ_eq_repMean`) and its expectation dependencies. Only the
+actual uniform source selection and its distribution bridge are missing.
+Do not redo that probability mathematics.
+
+Phase two can reuse `RefineOneSource.refineOne_run` unchanged with
+`activeName = "exceptionFlags"`. Its compact-label and exact refinement
+postconditions permit comparing classCount before/after, then inserting a
+candidate exactly on strict growth. Required new work is the class-count /
+trace-count adapter and scan wrapper, initialization and empty-E case, not a
+new refinement engine. Reuse `traceClasses_card_lt_insert_of_split` for the
+already-proved forward implication.
+
+The current compiler is `Lax808846Proofs.Simulation` at dependency commit
+`9394e531cc51cb67a0214bca3f9264dfe97ba5c7`. Both `compile_correct` and
+`compileProgram_runsTo` are generic proved interfaces. Do not use the older
+Lax13 checkout as version evidence or reproduce the compiler proof. The old
+Welzl-specific layout/success-flag wrappers still need adaptation.
+
+Confirmed remaining groups:
+1. Sequential draws using exactly the unread suffix; adaptive probability
+   composition for actual calls (reuse DrawBuffer, StoppingPrefix,
+   RejectionProtocol and the old adaptive counting framework).
+2. Uniform class representative source selection and initial-attempt/retry
+   assembly (reuse its probability law, partition, packing, distances, and
+   exception collection).
+3. Phase-two scan/count wrapper and phase-three local-repair source execution
+   with chargeable costs (reuse refinement kernel, graph scans, pure phase
+   semantics and local success/retry bounds).
+4. Guarded cutoff source implementation and word-sized timeout control
+   (reuse SaturatedCutoff arithmetic facts and source loop primitives).
+5. Actual round/history/restoration assembly and executed reduction path
+   (reuse both partition runs, reconstruction bridge and final order lemma).
+6. Global expected-cost/failure aggregation, truncation, layout and generic
+   compiler lifting to the unchanged public theorem.
+
+Estimate communicated before implementation: 45–90 minutes for the next
+shared-tape source loop including review/checks; 10–25 hours of active proof
+work as a rough full-completion planning range, with substantial uncertainty
+in local-repair costs, timeout and final assembly. This is not a guarantee.
+Current independent leaves: shared-tape loop/source execution and the small
+class-count bridge enabling direct reuse of the old phase-two command.
