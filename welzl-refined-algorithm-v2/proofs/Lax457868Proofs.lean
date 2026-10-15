@@ -99,3 +99,4 @@ import Lax457868Proofs.RejectionProtocol
 import Lax457868Proofs.ReusedOriginal.Construction.AdaptiveBitBlocks
 import Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
 import Lax457868Proofs.ReusedOriginal.Construction.AdaptiveStateProtocol
+import Lax457868Proofs.ExceptionCollection

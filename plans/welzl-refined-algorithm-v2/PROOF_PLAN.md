@@ -418,3 +418,16 @@ Separate axiom queries for the distance Run, domain Run and lookup bridges,
 finite-tape rejection bound, and selector/evaluator equivalence returned only
 `propext`, `Classical.choice`, and `Quot.sound`. The archive conclusion remains
 open: the package still contains zero annotated proofs of the main theorem.
+
+Reviewed dependent boundary: `ExceptionCollection.collectAndPackExceptions_run`
+proves actual fixed source execution from concrete arrays, word bounds, and
+a runtime threshold. It returns exact zero-one exception flags, a duplicate-
+free packed enumeration and exact cardinality, preserves the numeric input
+arrays and random tape, and costs `94*n+15` source steps (collector `74*n+6`,
+packer `20*n+9`). Its exception set is numeric distance > threshold on active
+vertices; the preceding batched-distance adapter supplies the graph meaning.
+The source never receives the desired exception set as an input. Uniform
+within-class representatives, initial attempt/retry execution, and the later
+sampler phases remain open. The first economical worker left definitions
+only; a focused stronger worker completed the manual source proof using the
+old threshold-check proof pattern.

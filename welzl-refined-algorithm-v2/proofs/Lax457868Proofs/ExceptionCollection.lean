@@ -6,6 +6,10 @@ import Mathlib.Tactic
 /-!
 Fixed-source collection of the vertices whose restricted neighborhood
 distance from their representative exceeds the supplied threshold.
+
+The expression-evaluation proof adapts the attributed original
+`ReusedOriginal.Construction.NearCheckSource`; packing follows the verified
+scan pattern in `SamplePacking` and reuses its finite-prefix lemmas.
 -/
 
 namespace Lax457868Proofs.ExceptionCollection
