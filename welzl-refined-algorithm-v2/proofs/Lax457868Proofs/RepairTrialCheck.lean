@@ -1,6 +1,7 @@
 import Mathlib.Tactic
 import Lax457868Proofs.RepairDomainSource
 import Lax457868Proofs.RepairFilterSource
+import Lax457868Proofs.EnumeratedDraws
 import Lax457868Proofs.SamplePacking
 import Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
 import Lax457868Proofs.ReusedOriginal.Construction.WelzlProgram
@@ -12,9 +13,12 @@ namespace Lax457868Proofs.RepairTrialCheck
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax808846Proofs.Reasoning.Lib
+open Lax11.GraphEncoding Lax11Proofs.CC
 open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
 open Lax457868Proofs.ReusedOriginal.Construction.WelzlProgram
+open Lax457868Proofs.ReusedOriginal.Construction.NeighborScan
 open Lax457868Proofs.RepairFilterSource
+open Lax457868Proofs.EnumeratedDraws
 open Lax457868Proofs.RepairDomainSource
 open Lax457868Proofs.SamplePacking
 open Lax457868Proofs.SourceRenaming
@@ -34,13 +38,13 @@ def filterTraceRow : Com :=
 trace. The resulting count is zero exactly when the row trace is contained
 in the desired trace. -/
 lemma filterTraceRow_run
-    {B n h : ℕ} {σ : Env} {src marks : ℕ → ℕ} {S T : Finset ℕ}
+    {B n h : ℕ} {σ : Env} {src marks domain : ℕ → ℕ} {S T : Finset ℕ}
     (hn : σ.vars "n" = n)
     (hlen : σ.vars "trialRowLen" = h)
     (hcount : σ.vars "trialDiffCount" = 0)
     (hsrc : σ.arrs "trialRowList" = arrOf n src)
     (hmarks : σ.arrs "trialDesiredMarks" = arrOf n marks)
-    (hdomain : σ.arrs "trialDiffList" = arrOf n (fun _ => 0))
+    (hdomain : σ.arrs "trialDiffList" = arrOf n domain)
     (hrow : PrefixEnumerates h src S)
     (hSrange : S ⊆ Finset.range n)
     (hmarks01 : ∀ v < n, marks v ≤ 1)
@@ -80,8 +84,8 @@ lemma filterTraceRow_run
     change σ.arrs (ρ.array "trialDesiredMarks") = arrOf n marks
     simp [ρ, trialFilterNames]
     exact hmarks
-  have hdomainτ : τ.arrs "drawDomain" = arrOf n (fun _ => 0) := by
-    change σ.arrs (ρ.array "drawDomain") = arrOf n (fun _ => 0)
+  have hdomainτ : τ.arrs "drawDomain" = arrOf n domain := by
+    change σ.arrs (ρ.array "drawDomain") = arrOf n domain
     simp [ρ, trialFilterNames]
     exact hdomain
   have hset : (Stack.toList h src).toFinset = S := by
@@ -105,7 +109,7 @@ lemma filterTraceRow_run
     appendFiltered_run (srcName := "trialRowList")
       (marksName := "trialDesiredMarks") (lenName := "trialRowLen")
       (by decide) hnτ hlenτ hsrcτ hmarksτ hdomainτ
-      (by simpa [hcountτ] using (prefixEnumerates_zero (fun _ => 0)))
+      (by simpa [hcountτ] using prefixEnumerates_zero domain)
       hrow hSrange hrowCard hmarks01 (by simp) hcap hB honeB
   let σ' := renameEnv ρ τ'
   have hrun : Run B filterTraceRow σ σ' (24 * h + 6) := by
@@ -147,17 +151,6 @@ lemma filterTraceRow_run
         appendFilteredBody, seqs, inc, Com.wvars] <;> decide)
   · exact hinp
   · exact houtp
-
-/-- A duplicate-free row prefix has cardinality equal to its runtime length.
--/
-lemma prefixCard_eq {n h : ℕ} {src : ℕ → ℕ} {S : Finset ℕ}
-    (hrow : PrefixEnumerates h src S) : h = S.card := by
-  have hset : (Stack.toList h src).toFinset = S := by
-    ext v
-    simp [List.mem_toFinset, hrow.2 v]
-  have hcard : (Stack.toList h src).length = S.card := by
-    rw [← hset, List.toFinset_card_of_nodup hrow.1]
-  simpa [Stack.toList] using hcard
 
 /-- With equal cardinalities, an empty filtered difference certifies equal
 traces. -/
@@ -293,6 +286,290 @@ def trialRowClearNames : Names :=
 
 def clearTrialRowMarks : Com :=
   renameCom trialRowClearNames (markDrawArrayWith 0)
+
+def checkTraceRow : Com :=
+  seqs [filterTraceRow, setTraceEqualityFlag]
+
+def checkTraceRowAndClear : Com :=
+  seqs [.assign "trialDiffCount" (.lit 0), filterTraceRow,
+    setTraceEqualityFlag, clearTrialRowMarks]
+
+/-- Check a collected CSR row against the fixed desired trace, set the
+equality flag, and clear only that row's touched marks. -/
+lemma checkTraceRow_then_clear_run
+    {B n h d : ℕ} {σ : Env} {src rowMarks desiredMarks diffBuffer : ℕ → ℕ}
+    {S T : Finset ℕ}
+    (hn : σ.vars "n" = n)
+    (hrowLen : σ.vars "trialRowLen" = h)
+    (hdesiredLen : σ.vars "trialDesiredLen" = d)
+    (hrowList : σ.arrs "trialRowList" = arrOf n src)
+    (hrowMarks : σ.arrs "trialRowMarks" = arrOf n rowMarks)
+    (hdesiredMarks : σ.arrs "trialDesiredMarks" = arrOf n desiredMarks)
+    (hdiffList : σ.arrs "trialDiffList" = arrOf n diffBuffer)
+    (hrow : PrefixEnumerates h src S)
+    (hSrange : S ⊆ Finset.range n)
+    (hrowMarks01 : ∀ v < n, rowMarks v ≤ 1)
+    (hrowMarksMem : ∀ v < n, rowMarks v = 1 ↔ v ∈ S)
+    (hdesiredMarks01 : ∀ v < n, desiredMarks v ≤ 1)
+    (hdesiredMarksMem : ∀ v < n, desiredMarks v = 1 ↔ v ∈ T)
+    (hTrange : T ⊆ Finset.range n)
+    (hd : d = T.card) (hnB : n < B) (honeB : 1 < B) :
+    ∃ σ', Run B checkTraceRowAndClear σ σ' (36 * h + 26) ∧
+      (σ'.vars "trialTraceEqual" = 1 ↔ S = T) ∧
+      σ'.arrs "drawDomain" = σ.arrs "drawDomain" ∧
+      σ'.vars "drawModulus" = σ.vars "drawModulus" ∧
+      σ'.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
+      σ'.vars "repairClearCursor" = h ∧
+      σ'.arrs "trialRowList" = σ.arrs "trialRowList" ∧
+      σ'.arrs "trialDesiredMarks" = σ.arrs "trialDesiredMarks" ∧
+      σ'.arrs "sampleFlags" = σ.arrs "sampleFlags" ∧
+      σ'.arrs "ord" = σ.arrs "ord" ∧
+      σ'.arrs "classB" = σ.arrs "classB" ∧
+      σ'.arrs "classSize" = σ.arrs "classSize" := by
+  have hrowCard : h = S.card := prefixEnumerates_card h src S hrow
+  have hdesiredB : d < B := by
+    rw [hd]
+    exact lt_of_le_of_lt (by simpa using Finset.card_le_card hTrange) hnB
+  have hrowB : h < B := by
+    rw [hrowCard]
+    exact lt_of_le_of_lt (by simpa using Finset.card_le_card hSrange) hnB
+  let σ₀ := σ.setVar "trialDiffCount" 0
+  have rinit : Run B (.assign "trialDiffCount" (.lit 0)) σ σ₀ 2 := by
+    simpa [σ₀] using Run.assign (evalB_lit (by omega : 0 < B))
+  have hn₀ : σ₀.vars "n" = n := by simpa [σ₀, Env.setVar] using hn
+  have hrowLen₀ : σ₀.vars "trialRowLen" = h := by
+    simpa [σ₀, Env.setVar] using hrowLen
+  have hrowList₀ : σ₀.arrs "trialRowList" = arrOf n src := by
+    simpa [σ₀, Env.setVar] using hrowList
+  have hdesiredMarks₀ : σ₀.arrs "trialDesiredMarks" = arrOf n desiredMarks := by
+    simpa [σ₀, Env.setVar] using hdesiredMarks
+  have hdiffList₀ : σ₀.arrs "trialDiffList" = arrOf n diffBuffer := by
+    simpa [σ₀, Env.setVar] using hdiffList
+  have hdiffCount₀ : σ₀.vars "trialDiffCount" = 0 := by
+    simp [σ₀, Env.setVar]
+  obtain ⟨σ₁, diffList, rfilter, _hdiffList₁, _hdiffPrefix,
+    hdiffCount₁, _hcursor₁, hrowList₁, hdesiredMarks₁, hrowLen₁,
+    hn₁, hdrawDomain₁, hdrawModulus₁, _hinp₁, _hout₁⟩ :=
+    filterTraceRow_run hn₀ hrowLen₀ hdiffCount₀ hrowList₀ hdesiredMarks₀
+      hdiffList₀ hrow hSrange hdesiredMarks01 hdesiredMarksMem hnB honeB
+  have hdiffB : (S \ T).card < B := by
+    exact lt_of_le_of_lt
+      (by simpa using Finset.card_le_card (Finset.sdiff_subset.trans hSrange)) hnB
+  have hdesiredLen₁ : σ₁.vars "trialDesiredLen" = d := by
+    rw [rfilter.frame_var "trialDesiredLen" (by
+      simp [filterTraceRow, trialFilterNames, appendFiltered,
+        appendFilteredBody, seqs, inc, Com.wvars] <;> decide)]
+    simpa [σ₀, Env.setVar] using hdesiredLen
+  obtain ⟨σ₂, rflag, hflag, harr₂, hvars₂, _hinp₂, _hout₂⟩ :=
+    setTraceEqualityFlag_run hrowLen₁ hdesiredLen₁ hdiffCount₁
+      hrowB hdesiredB hdiffB honeB
+  have hflagEq : σ₂.vars "trialTraceEqual" = 1 ↔ S = T := by
+    rw [hflag]
+    constructor
+    · rintro ⟨hzero, heqLen⟩
+      have hdiffSet : S \ T = ∅ := Finset.card_eq_zero.mp hzero
+      have hsub : S ⊆ T := by
+        intro v hv
+        by_contra hnot
+        have hvdiff : v ∈ S \ T := Finset.mem_sdiff.mpr ⟨hv, hnot⟩
+        simpa [hdiffSet] using hvdiff
+      have hcards : S.card = T.card := by
+        calc S.card = h := hrowCard.symm
+          _ = d := heqLen
+          _ = T.card := hd
+      exact Finset.eq_of_subset_of_card_le hsub (by rw [hcards])
+    · intro hST
+      constructor
+      · simp [hST]
+      · calc h = S.card := hrowCard
+          _ = T.card := congrArg Finset.card hST
+          _ = d := hd.symm
+  have hdrawDomain₂ : σ₂.arrs "drawDomain" = σ.arrs "drawDomain" :=
+    (harr₂ "drawDomain").trans hdrawDomain₁ |>.trans (by simp [σ₀])
+  have hdrawModulus₂ : σ₂.vars "drawModulus" = σ.vars "drawModulus" :=
+    (hvars₂ "drawModulus" (by decide)).trans hdrawModulus₁ |>.trans (by simp [σ₀, Env.setVar])
+  have hn₂ : σ₂.vars "n" = n :=
+    (hvars₂ "n" (by decide)).trans hn₁
+  have hlen₂ : σ₂.vars "trialRowLen" = h :=
+    (hvars₂ "trialRowLen" (by decide)).trans hrowLen₁
+  have hmarks₂ : σ₂.arrs "trialRowMarks" = arrOf n rowMarks := by
+    have hmarks₁ : σ₁.arrs "trialRowMarks" = arrOf n rowMarks := by
+      rw [rfilter.frame_arr "trialRowMarks" (by
+        simp [filterTraceRow, trialFilterNames, appendFiltered,
+          appendFilteredBody, seqs, inc, Com.warrs] <;> decide)]
+      simpa [σ₀] using hrowMarks
+    exact (harr₂ "trialRowMarks").trans hmarks₁
+  have hlist₂ : σ₂.arrs "trialRowList" = arrOf n src :=
+    (harr₂ "trialRowList").trans hrowList₁
+  obtain ⟨σ₃, rclear, hzero, hcursor, _hinp₃, _hout₃⟩ :=
+    clearNeighborhoodSupport_run trialRowClearNames "trialRowMarks" "trialRowList" "trialRowLen"
+      (by simp [trialRowClearNames, repairClearNames] <;> decide)
+      (by simp [trialRowClearNames, repairClearNames] <;> decide)
+      (by simp [trialRowClearNames, repairClearNames] <;> decide)
+      (by simp [trialRowClearNames, repairClearNames] <;> decide)
+      (by simp [trialRowClearNames, repairClearNames] <;> decide)
+      hn₂ hlen₂ hmarks₂ hlist₂ hrow hSrange hrowMarks01 hrowMarksMem hnB
+  have hrun : Run B checkTraceRowAndClear σ σ₃ (36 * h + 26) := by
+    have hseq : Run B checkTraceRowAndClear σ σ₃
+        (2 + (24 * h + 6 + (12 + (12 * h + 6)))) := by
+      simpa [checkTraceRowAndClear, clearTrialRowMarks, trialRowClearNames,
+        repairClearNames, seqs, σ₀] using rinit.seq (rfilter.seq (rflag.seq rclear))
+    exact hseq.mono (by omega)
+  have hflagClear : σ₃.vars "trialTraceEqual" = σ₂.vars "trialTraceEqual" :=
+    rclear.frame_var "trialTraceEqual" (by decide)
+  have hdrawDomain₃ : σ₃.arrs "drawDomain" = σ.arrs "drawDomain" :=
+    (rclear.frame_arr "drawDomain" (by decide)).trans hdrawDomain₂
+  have hdrawModulus₃ : σ₃.vars "drawModulus" = σ.vars "drawModulus" :=
+    (rclear.frame_var "drawModulus" (by decide)).trans hdrawModulus₂
+  exact ⟨σ₃, hrun, hflagClear ▸ hflagEq, hdrawDomain₃, hdrawModulus₃,
+    hzero, hcursor,
+    hrun.frame_arr "trialRowList" (by decide),
+    hrun.frame_arr "trialDesiredMarks" (by decide),
+    hrun.frame_arr "sampleFlags" (by decide),
+    hrun.frame_arr "ord" (by decide),
+    hrun.frame_arr "classB" (by decide),
+    hrun.frame_arr "classSize" (by decide)⟩
+
+/-- Fixed names for obtaining a row directly from CSR with the fixed trial
+active mask and private row scratch arrays. -/
+def trialCollectNames : Names :=
+  neighborhoodNames "trialActive" "trialRowMarks" "trialRowList" "trialRowLen"
+
+def collectTrialRow : Com :=
+  collectNeighborhoodAt trialCollectNames "trialVertex" "trialRowLen"
+
+def collectCheckAndClearTrialRow : Com :=
+  seqs [collectTrialRow, checkTraceRowAndClear]
+
+/-- Actual CSR row collection followed by filtered trace comparison and
+touched-entry cleanup. The local cost depends on the selected CSR row and
+the collected row length, with no full-vertex clear between rows. -/
+lemma collectCheckAndClearTrialRow_run
+    {B n d targetCap b : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {σ : Env} {active rowMarks rowList desiredMarks diffBuffer : ℕ → ℕ}
+    {T : Finset ℕ}
+    (hx : EncodesGraph x n G)
+    (htargetCap : targetCap = 2 * edgeCount x)
+    (hvertex : σ.vars "trialVertex" = b)
+    (hn : σ.vars "n" = n)
+    (hoff : σ.arrs "off" = arrOf (n + 1) (offset x))
+    (htarget : σ.arrs "tgt" = arrOf targetCap (target x))
+    (hactive : σ.arrs "trialActive" = arrOf n active)
+    (hrowMarks : σ.arrs "trialRowMarks" = arrOf n (fun _ => 0))
+    (hrowList : σ.arrs "trialRowList" = arrOf n rowList)
+    (hdesiredLen : σ.vars "trialDesiredLen" = d)
+    (hdesiredMarks : σ.arrs "trialDesiredMarks" = arrOf n desiredMarks)
+    (hdiffList : σ.arrs "trialDiffList" = arrOf n diffBuffer)
+    (hdesiredMarks01 : ∀ v < n, desiredMarks v ≤ 1)
+    (hdesiredMarksMem : ∀ v < n, desiredMarks v = 1 ↔ v ∈ T)
+    (hTrange : T ⊆ Finset.range n)
+    (hd : d = T.card)
+    (hb : b < n)
+    (hactiveB : ∀ v < n, active v < B)
+    (hn1B : n + 1 < B) (htargetCapB : targetCap < B)
+    (hnB : n < B) (honeB : 1 < B) :
+    ∃ σ' rowList', Run B collectCheckAndClearTrialRow σ σ'
+        (54 * (offset x (b + 1) - offset x b) + 22 +
+          36 * (activeTargets (target x) active (offset x b) (offset x (b + 1))).card + 26) ∧
+      (σ'.vars "trialTraceEqual" = 1 ↔
+        activeTargets (target x) active (offset x b) (offset x (b + 1)) = T) ∧
+      σ'.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "drawDomain" = σ.arrs "drawDomain" ∧
+      σ'.vars "drawModulus" = σ.vars "drawModulus" ∧
+      σ'.arrs "trialRowList" = arrOf n rowList' ∧
+      PrefixEnumerates
+        (activeTargets (target x) active (offset x b) (offset x (b + 1))).card
+        rowList' (activeTargets (target x) active (offset x b) (offset x (b + 1))) ∧
+      (activeTargets (target x) active (offset x b) (offset x (b + 1))).card ≤
+        offset x (b + 1) - offset x b ∧
+      σ'.arrs "trialDesiredMarks" = σ.arrs "trialDesiredMarks" ∧
+      σ'.arrs "sampleFlags" = σ.arrs "sampleFlags" ∧
+      σ'.arrs "trialActive" = σ.arrs "trialActive" ∧
+      σ'.arrs "ord" = σ.arrs "ord" ∧
+      σ'.arrs "repB" = σ.arrs "repB" ∧
+      σ'.arrs "classB" = σ.arrs "classB" ∧
+      σ'.arrs "classSize" = σ.arrs "classSize" := by
+  let lo := offset x b
+  let hi := offset x (b + 1)
+  let R := activeTargets (target x) active lo hi
+  have hlohi : lo ≤ hi := hx.offset_mono b hb
+  have hhiCap : hi ≤ targetCap := by
+    change offset x (b + 1) ≤ targetCap
+    rw [htargetCap, ← hx.offset_last]
+    exact offset_mono' hx (by omega) le_rfl
+  have htargetRange : ∀ j, lo ≤ j → j < hi → target x j < n := by
+    intro j _ hjhi
+    apply hx.target_lt j
+    rw [← htargetCap]
+    exact hjhi.trans_le hhiCap
+  obtain ⟨σ₁, rowMarks', rowList', rcollect, hrowMarks₁, hrowList₁,
+    hrowLen₁, hrow₁, hrowMem₁, hrowBound₁, _hactive₁, _htarget₁,
+    _hj₁, _htoken₁, _hinp₁, _hout₁⟩ :=
+    collectNeighborhoodAt_run trialCollectNames "trialVertex" "trialActive"
+      "trialRowMarks" "trialRowList" "trialRowLen"
+      (by decide) (by decide)
+      (by simp [trialCollectNames, neighborhoodNames] <;> decide)
+      (by simp [trialCollectNames, neighborhoodNames] <;> decide)
+      (by simp [trialCollectNames, neighborhoodNames] <;> decide)
+      (by simp [trialCollectNames, neighborhoodNames] <;> decide)
+      (by simp [trialCollectNames, neighborhoodNames] <;> decide)
+      (by simp [trialCollectNames, neighborhoodNames] <;> decide)
+      (by simp [trialCollectNames, neighborhoodNames] <;> decide)
+      (by simp [trialCollectNames, neighborhoodNames] <;> decide)
+      (by simp [trialCollectNames, neighborhoodNames] <;> decide)
+      hx htargetCap hvertex hn hoff htarget hactive hrowMarks hrowList
+      hb hactiveB hn1B htargetCapB
+  have hrowRange : R ⊆ Finset.range n := by
+    dsimp [R, lo, hi]
+    exact activeTargets_subset_range htargetRange
+  have hrowMarksVals : ∀ v < n, rowMarks' v ≤ 1 := hrowBound₁
+  have hrowMarksMem' : ∀ v < n, rowMarks' v = 1 ↔ v ∈ R := by
+    simpa [R, lo, hi] using hrowMem₁
+  have hdesiredLen₁ : σ₁.vars "trialDesiredLen" = d := by
+    rw [rcollect.frame_var "trialDesiredLen" (by decide)]
+    exact hdesiredLen
+  have hdesiredMarks₁ : σ₁.arrs "trialDesiredMarks" = arrOf n desiredMarks := by
+    rw [rcollect.frame_arr "trialDesiredMarks" (by decide)]
+    exact hdesiredMarks
+  have hdiffList₁ : σ₁.arrs "trialDiffList" = arrOf n diffBuffer := by
+    rw [rcollect.frame_arr "trialDiffList" (by decide)]
+    exact hdiffList
+  have hcheckInput : σ₁.vars "n" = n := by
+    rw [rcollect.frame_var "n" (by decide)]
+    exact hn
+  obtain ⟨σ₂, rcheck, hflag₂, _hdrawDomain₂, _hdrawModulus₂,
+    hzero₂, hcursor₂, hrowList₂, _hdesired₂, _hsampleFlags₂,
+    _hord₂, _hclassB₂, _hclassSize₂⟩ :=
+    checkTraceRow_then_clear_run hcheckInput hrowLen₁ hdesiredLen₁
+      hrowList₁ hrowMarks₁ hdesiredMarks₁ hdiffList₁
+      (by simpa [R, lo, hi] using hrow₁) hrowRange hrowMarksVals
+      hrowMarksMem' hdesiredMarks01 hdesiredMarksMem hTrange hd hnB honeB
+  have hrun : Run B collectCheckAndClearTrialRow σ σ₂
+      (54 * (offset x (b + 1) - offset x b) + 22 + 36 * R.card + 26) := by
+    have hseq : Run B collectCheckAndClearTrialRow σ σ₂
+        ((54 * (offset x (b + 1) - offset x b) + 22) + (36 * R.card + 26)) := by
+      simpa [collectCheckAndClearTrialRow, collectTrialRow, seqs, R, lo, hi] using
+        rcollect.seq rcheck
+    simpa [R, lo, hi, Nat.add_assoc] using hseq
+  have hdrawDomain : σ₂.arrs "drawDomain" = σ.arrs "drawDomain" :=
+    (rcheck.frame_arr "drawDomain" (by decide)).trans
+      (rcollect.frame_arr "drawDomain" (by decide))
+  have hdrawModulus : σ₂.vars "drawModulus" = σ.vars "drawModulus" :=
+    (rcheck.frame_var "drawModulus" (by decide)).trans
+      (rcollect.frame_var "drawModulus" (by decide))
+  have hrowListOut : σ₂.arrs "trialRowList" = arrOf n rowList' :=
+    hrowList₂.trans hrowList₁
+  exact ⟨σ₂, rowList', hrun, by simpa [R, lo, hi] using hflag₂,
+    hzero₂, hdrawDomain, hdrawModulus, hrowListOut,
+    by simpa [R, lo, hi] using hrow₁,
+    by simpa [R, lo, hi] using card_activeTargets_le_interval,
+    hrun.frame_arr "trialDesiredMarks" (by decide),
+    hrun.frame_arr "sampleFlags" (by decide),
+    hrun.frame_arr "trialActive" (by decide),
+    hrun.frame_arr "ord" (by decide),
+    hrun.frame_arr "repB" (by decide),
+    hrun.frame_arr "classB" (by decide),
+    hrun.frame_arr "classSize" (by decide)⟩
 
 lemma clearTrialRowMarks_run
     {B n h : ℕ} {σ : Env} {src rowMarks : ℕ → ℕ} {S : Finset ℕ}
