@@ -122,3 +122,5 @@ import Lax457868Proofs.ClassOffsetDraw
 import Lax457868Proofs.DrawLogSetup
 import Lax457868Proofs.ReusedOriginal.Construction.WelzlLog
 import Lax457868Proofs.ClassChoiceTransport
+import Lax457868Proofs.ClassRepresentativeTrace
+import Lax457868Proofs.ClassRepresentativeLoop

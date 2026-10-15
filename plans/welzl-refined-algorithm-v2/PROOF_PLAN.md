@@ -593,3 +593,20 @@ existing `totalDistance` finite mean yields `conditionalMeanZ`; no probability
 lemma was recreated. Empty class families require no additional nonempty
 assumption. The targeted build passed. Actual shared-tape execution and its
 distribution coupling remain distinct obligations.
+
+Reviewed `ClassRepresentativeLoop.representativeClassLoop_run_bits`: a fixed
+source loop selects from successive contiguous classes on one flat fair-bit
+tape, returns the exact unread suffix, fills precisely the completed
+`repClass` prefix, and stops at first cap exhaustion. Trace existence follows
+from a proof-side sum of capped bit lengths; no large product is stored in a
+RAM word. Each completed position is proved to lie in its class slice. Cost
+is `12 + Σ_attempted ((15*L_d+30)*u_d + 12*L_d + 61)`, retaining actual attempt
+counts and per-class widths. Zero requests, zero cap, and singleton classes
+are covered. The target build and independent axiom queries passed.
+
+This closes the varying-class source loop leaf; the sorted arrays/class sizes
+still need assembly from the existing radix pass, followed by the unchanged
+representative-map loop. The existing choice-law transport is ready, but no
+whole flat-tape distribution or initial-attempt/retry theorem is claimed.
+The earlier class-choice integration also passed full kernel replay (124
+proof modules); a new integrated replay will include the loop.
