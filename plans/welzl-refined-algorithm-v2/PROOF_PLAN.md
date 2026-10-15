@@ -379,12 +379,11 @@ Important distribution distinction: old
 member of a class. It is suitable for removing duplicate neighborhoods, but
 is not uniform representative selection for the refined probability proof.
 
-Next audited implementation leaves: (1) reuse the three generic adaptive
-counting modules and connect them to the rejection selector; (2) specialize
-the verified partition to full-neighborhood deduplication; (3) reuse the
-batched near-distance source closure and expose exact numeric distances.
-All remain in the proof package. These leaves are independent; their results
-will be reviewed before starting dependent source assembly.
+The three audited implementation leaves below are now reviewed and landed:
+the bounded rejection protocol adapter, full-neighborhood domain adapter,
+and batched near-distance adapter. All remain in the proof package. The next
+dependent source leaf is exception collection from the computed counters;
+it does not by itself assemble an initial sampling attempt.
 
 Reviewed boundary: `BatchedDistances.batchedDistanceSweep_run` reuses the old
 clear/sweep source and returns the actual degree/intersection arrays, exact
@@ -412,3 +411,10 @@ modules are exact namespace-transported copies of the accepted old source.
 This closes the bounded rejection protocol leaf of R4, not R4 as a whole:
 flat-tape machine coupling and adaptive composition of all sampler draws
 remain. No machine Run or full sampler theorem is claimed here.
+
+Validation of the three reuse adapters: the integrated full `lax build
+welzl-refined-algorithm-v2 --replay` passed on 2026-10-15 (101 proof modules).
+Separate axiom queries for the distance Run, domain Run and lookup bridges,
+finite-tape rejection bound, and selector/evaluator equivalence returned only
+`propext`, `Classical.choice`, and `Quot.sound`. The archive conclusion remains
+open: the package still contains zero annotated proofs of the main theorem.
