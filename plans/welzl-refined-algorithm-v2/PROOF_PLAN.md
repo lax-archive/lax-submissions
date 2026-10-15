@@ -780,3 +780,14 @@ Explicit n/qpow preservation repairs the conservative syntactic frame gap.
 Independent target/axiom checks passed, including focused interface fixes.
 The command intentionally leaves attemptAccepted at zero: distance and
 exception acceptance are the next suffix, not an assumed successful outcome.
+
+Reviewed `InitialSamplerChoice.initialSamplerAttempt_run_choice`: successful
+source choices instantiate the existing InitialChoice, using neighborhoods
+restricted to A; failures remain explicit. The source also exports its final
+batchFailed guard. `InitialAttemptAcceptance.initialAttemptAcceptance_run`
+composes the old distance sweep and exception collector, compares the runtime
+cap, and repacks W. Its exact budget is
+`300*(n+targetCap+1)+(94*n+15)+8+(20*n+9)`. The numeric distance bridge and
+`attemptExceptions_div_three_eq` identify nearBound=k/3 with the paper's
+strict exception test. Independent target builds and axiom checks passed.
+The guarded wrapper joining selection and this suffix is next.

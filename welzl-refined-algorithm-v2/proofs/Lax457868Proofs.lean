@@ -139,3 +139,5 @@ import Lax457868Proofs.RepairDomainSource
 import Lax457868Proofs.RepairClassOffsets
 import Lax457868Proofs.RepairFilterSource
 import Lax457868Proofs.InitialSamplerAttempt
+import Lax457868Proofs.InitialSamplerChoice
+import Lax457868Proofs.InitialAttemptAcceptance
