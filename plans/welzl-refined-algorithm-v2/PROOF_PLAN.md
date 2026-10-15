@@ -319,9 +319,21 @@ Report completed proof interfaces and unresolved dependencies, not a
 percentage inferred from file counts. A full build with zero annotated
 proofs still means the headline theorem is open.
 
-Current status (2026-10-15): R2 is reviewed and landed from `be4e0ac5`.
-`DrawBuffer.countedIndexedDrawAppend_run_tape` verifies the actual fixed
-draw-and-append command, with exact buffer/count changes and residual input;
-its source bound is `(15*clog₂(m)+30)*attemptsUsed + 31`. R1 and W1 arithmetic
-are running in their assigned worktrees. All other uncompleted steps above
-remain open.
+Current status (2026-10-15): the first three worker leaves are reviewed and
+landed. R2 (`be4e0ac5`) verifies the fixed draw-and-append command, exact
+buffer/count changes, frames and residual input, with source bound
+`(15*clog₂(m)+30)*attemptsUsed + 31`. R1 (`8fdfa3c7`) proves exact stopped
+prefix/suffix equivalences and counts, with a source execution bridge.
+W1 arithmetic (`27efdf22`, declaration cleanup `e409a29c` and integration)
+proves guarded addition/multiplication, the exact capped cutoff, and the
+early `c ≥ n` branch. All cutoff results are supporting lemmas.
+
+These are supporting results, not a proof of the headline theorem. Next:
+R3 must compose actual draws into a fixed sequential loop on the same tape;
+R4 must lift the finite counting argument to changing domains and retries.
+The W1 IMP+ implementation and W2 memory/timeout bounds remain open, as do
+the efficient sampler phases S0–S4 and final assembly A1–A4.
+
+Validation of this boundary: all three targeted builds and the integrated
+`lax build welzl-refined-algorithm-v2 --replay` passed. The archive output
+still contains zero annotated proofs: the main conclusion remains open.

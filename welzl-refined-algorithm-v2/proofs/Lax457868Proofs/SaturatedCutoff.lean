@@ -190,7 +190,7 @@ the guarded arithmetic calculation above, so `clog₂ c` is only needed when
 def earlyWelzlCutoff (n c : ℕ) : ℕ :=
   if n ≤ c then n else saturatedWelzlCutoff n c
 
-theorem saturatedWelzlCutoff_eq (n c : ℕ) :
+lemma saturatedWelzlCutoff_eq (n c : ℕ) :
     saturatedWelzlCutoff n c = min n (2 * refinedCutoffK c) := by
   unfold saturatedWelzlCutoff refinedCutoffK
   simp [Id.run, satPow5_eq, satMul_eq_min, satAdd_eq_min,
@@ -198,13 +198,13 @@ theorem saturatedWelzlCutoff_eq (n c : ℕ) :
     min_add_clamped_left]
   rfl
 
-theorem saturatedWelzlCutoff_eq_limit_iff (n c : ℕ) :
+lemma saturatedWelzlCutoff_eq_limit_iff (n c : ℕ) :
     saturatedWelzlCutoff n c = n ↔ n ≤ 2 * refinedCutoffK c := by
   rw [saturatedWelzlCutoff_eq]
   simp only [Nat.min_def]
   split_ifs <;> omega
 
-theorem saturatedWelzlCutoff_exact_of_lt (n c : ℕ)
+lemma saturatedWelzlCutoff_exact_of_lt (n c : ℕ)
     (h : saturatedWelzlCutoff n c < n) :
     saturatedWelzlCutoff n c = 2 * refinedCutoffK c := by
   rw [saturatedWelzlCutoff_eq] at h ⊢
