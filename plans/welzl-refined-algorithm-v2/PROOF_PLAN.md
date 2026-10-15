@@ -319,6 +319,9 @@ Report completed proof interfaces and unresolved dependencies, not a
 percentage inferred from file counts. A full build with zero annotated
 proofs still means the headline theorem is open.
 
-Initial status: R1, R2 and W1 arithmetic assigned after this plan is saved;
-all remaining uncompleted steps above remain open. Update this paragraph
-with actual results at the next reviewed boundary.
+Current status (2026-10-15): R2 is reviewed and landed from `be4e0ac5`.
+`DrawBuffer.countedIndexedDrawAppend_run_tape` verifies the actual fixed
+draw-and-append command, with exact buffer/count changes and residual input;
+its source bound is `(15*clog₂(m)+30)*attemptsUsed + 31`. R1 and W1 arithmetic
+are running in their assigned worktrees. All other uncompleted steps above
+remain open.
