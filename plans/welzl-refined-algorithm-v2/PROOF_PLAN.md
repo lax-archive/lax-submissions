@@ -403,3 +403,12 @@ neighborhoods, the same neighborhood image as C, and cost at most
 to the actual representative array. Empty-family handling and constructing
 the full-A test prefix remain for source assembly. The targeted module build
 passed; no new public concepts were introduced.
+
+Reviewed boundary: `RejectionProtocol` applies the old adaptive finite-tape
+counting framework to one-at-a-time bounded rejection. It proves exact failure
+mass, the `2^(-t)` upper bound, a `t*clog₂(m)` bit cap, and pointwise agreement
+of its typed-block evaluator with `selectBitIndex`. The three reused adaptive
+modules are exact namespace-transported copies of the accepted old source.
+This closes the bounded rejection protocol leaf of R4, not R4 as a whole:
+flat-tape machine coupling and adaptive composition of all sampler draws
+remain. No machine Run or full sampler theorem is claimed here.

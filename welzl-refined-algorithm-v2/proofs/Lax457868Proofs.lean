@@ -95,3 +95,7 @@ import Lax457868Proofs.ReusedOriginal.Construction.NearSweepSource
 import Lax457868Proofs.ReusedOriginal.Construction.NearVerification
 import Lax457868Proofs.ReusedOriginal.Construction.VerifyNearSource
 import Lax457868Proofs.DistinctNeighborhoodDomain
+import Lax457868Proofs.RejectionProtocol
+import Lax457868Proofs.ReusedOriginal.Construction.AdaptiveBitBlocks
+import Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
+import Lax457868Proofs.ReusedOriginal.Construction.AdaptiveStateProtocol
