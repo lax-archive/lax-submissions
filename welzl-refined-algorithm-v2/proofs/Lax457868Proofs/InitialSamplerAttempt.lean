@@ -326,6 +326,11 @@ lemma initialSamplerAttempt_run_bits
           (values.length + if drawFailed then 1 else 0) values.length drawFailed +
           (if drawFailed then 5 else 4 + stageCost)) ∧
       σ'.vars "attemptAccepted" = 0 ∧
+      σ'.vars "n" = n ∧ σ'.vars "qpow" = Q ∧
+      (∀ a, a ∉ initialSamplerAttempt.warrs →
+        σ'.arrs a = I.σ.arrs a) ∧
+      (∀ v, v ∉ initialSamplerAttempt.wvars →
+        σ'.vars v = I.σ.vars v) ∧
       (drawFailed = true →
         σ'.vars "batchFailed" = 1 ∧
         σ'.arrs "sampleFlags" = arrOf n (fun _ => 0) ∧
@@ -338,6 +343,7 @@ lemma initialSamplerAttempt_run_bits
           W = (values.map (fun i => I.domain i.val)).toFinset ∧
           W ⊆ A ∧
           W.card ≤ r ∧
+          values.length = r ∧
           PrefixEnumerates sampleCount sampleOrd W ∧
           Run B fullSamplePartition σd σp
             (fullSamplePartitionCost x sampleOrd n sampleCount) ∧
@@ -349,6 +355,10 @@ lemma initialSamplerAttempt_run_bits
                 trace (numericNeighborhood G) W b')) ∧
           Run B initialRepresentativeSelection σp σ'
             (20 * n + 9 + repCharge + 64 * (xs.length + Q + 1) + 104 * n + 24) ∧
+          σ'.vars "n" = n ∧ σ'.vars "qpow" = Q ∧
+          σ'.vars "sampleCount" = W.card ∧
+          σ'.arrs "classB" = arrOf n label ∧
+          σ'.arrs "classSize" = arrOf n size ∧
           xs.Nodup ∧ xs.toFinset = activeVertices n I.activeB ∧
           ClassTrace size t (classStart size) 0 q
             (I.bits.drop (used * Nat.clog 2 m)) repValues repUsed repCharge repFailed ∧
@@ -359,7 +369,10 @@ lemma initialSamplerAttempt_run_bits
           (repFailed = false → ∃ mapped,
             σ'.arrs "repB" = arrOf n mapped ∧ σ'.vars "v" = n ∧
             (∀ w < n, I.activeB w = 1 →
-              w ∈ xs ∧ mapped w ∈ xs ∧ label (mapped w) = label w)) ∧
+              mapped w = writeClassReps sorted I.repClass 0 repValues (label w)) ∧
+            (∀ w < n, I.activeB w = 1 →
+              w ∈ xs ∧ mapped w ∈ xs ∧ label (mapped w) = label w ∧
+              mapped w = writeClassReps sorted I.repClass 0 repValues (label w))) ∧
           stageCost = fullSamplePartitionCost x sampleOrd n sampleCount +
             (20 * n + 9 + repCharge + 64 * (xs.length + Q + 1) + 104 * n + 24)) := by
   let σ₀ := I.σ.setVar "attemptAccepted" 0
@@ -445,8 +458,13 @@ lemma initialSamplerAttempt_run_bits
         exact hinit.seq htail
       have haccepted : σd.vars "attemptAccepted" = 0 := hacceptedDraw
       refine ⟨σd, σd, tape, tail, values, used, true, 0,
-        hsplit, htrace, ?_, haccepted, ?_, ?_⟩
+        hsplit, htrace, ?_, haccepted, hnSource, hqSource.trans hqpow₀,
+        ?_, ?_, ?_, ?_⟩
       · simpa [initialSamplerAttempt, initialDrawSampleCost, Nat.add_assoc] using hwhole
+      · intro a ha
+        exact hwhole.frame_arr a ha
+      · intro v hv
+        exact hwhole.frame_var v hv
       · intro _
         have hf := hdrawFailure rfl
         exact ⟨by simpa [hbad], hf.1, hf.2⟩
@@ -719,11 +737,21 @@ lemma initialSamplerAttempt_run_bits
             (label b = label b' ↔
               trace (numericNeighborhood G) W b =
                 trace (numericNeighborhood G) W b') := hclassifies
+      have hqpowFinal : σrep.vars "qpow" = Q := by
+        exact hqRep
+      have hwholeArrFrame : ∀ a, a ∉ initialSamplerAttempt.warrs →
+          σrep.arrs a = I.σ.arrs a := by
+        intro a ha
+        exact hwhole.frame_arr a ha
+      have hwholeVarFrame : ∀ v, v ∉ initialSamplerAttempt.wvars →
+          σrep.vars v = I.σ.vars v := by
+        intro v hv
+        exact hwhole.frame_var v hv
       refine ⟨σd, σrep, tape, tail, values, used, false,
         fullSamplePartitionCost x sampleOrd n W.card +
           (20 * n + 9 + repCharge + 64 * (xs.length + Q + 1) + 104 * n + 24),
-        hsplit, htrace,
-        ?_, haccepted, ?_, ?_⟩
+        hsplit, htrace, ?_, haccepted, hnRep, hqpowFinal,
+        hwholeArrFrame, hwholeVarFrame, ?_, ?_⟩
       · simpa [initialSamplerAttempt, Nat.add_assoc,
           Cond.size, Expr.size] using hwhole
       · intro hbadCase
@@ -732,17 +760,32 @@ lemma initialSamplerAttempt_run_bits
         refine ⟨W, sampleOrd, W.card, σp, q, label, size, xs, sorted,
           repValues, repUsed, repCharge, repFailed, rfl, hWsubset,
           (by simpa [W] using hsampleBound),
+          (by
+            have hcountEq := hdrawCount
+            have hcompleteEq := hdrawComplete.mp rfl
+            omega),
           (by simpa [W, hsampleCount] using hprefixDraw), hpartition,
           hsizes, hoccupied, htraceClass,
-          hrepRun, hnodup, hset, hclassTrace, hrepFailedVal, ?_, ?_, ?_, ?_⟩
+          hrepRun, hnRep, hqpowFinal,
+          (by
+            calc
+              σrep.vars "sampleCount" = σp.vars "sampleCount" :=
+                hrepRun.frame_var "sampleCount" (by decide)
+              _ = σd.vars "sampleCount" := hframePartVar "sampleCount" (by decide)
+              _ = W.card := hsampleCount),
+          hlabelRep, hsizeRep,
+          hnodup, hset, hclassTrace, hrepFailedVal, ?_, ?_, ?_, ?_⟩
         · intro hfailed
           exact (hrepFailure hfailed).1.trans hrepBP.symm
         · exact hflagsRep
         · simpa [RI, Nat.add_comm] using hinpRep
         · constructor
           · intro hsuccess
-            obtain ⟨mapped, hmap, hv, _, hclass⟩ := hrepSuccess hsuccess
-            exact ⟨mapped, hmap, hv, hclass⟩
+            obtain ⟨mapped, hmap, hv, hformula, hclass⟩ := hrepSuccess hsuccess
+            refine ⟨mapped, hmap, hv, hformula, ?_⟩
+            intro w hw hactive
+            obtain ⟨hmem, hmapped, hsame⟩ := hclass w hw hactive
+            exact ⟨hmem, hmapped, hsame, hformula w hw hactive⟩
           · rfl
 
 end Lax457868Proofs.InitialSamplerAttempt
