@@ -54,16 +54,17 @@ still describes it as future work. All implementation details remain proof-side.
 | Conditional order correctness | `ReductionPath`, `RefinedOrderCorrectness.output_encodes_graphWelzlOrder` | Actual source must construct the successful reduction path |
 | Partition execution | `FullSamplePartition.fullSamplePartition_run`, `ClassSizes.countDigit`, unchanged old refinement/partition sources; `VerifiedRoundPartitions` | Compose the initial attempt and refined round state |
 | Reconstruction and output | `VerifiedReconstructionBridge`, `RefinedHistoryOutput.History.reconstructAndWrite_clog2_bound` | Actual refined history/log construction; output execution already follows from a valid history |
-| Initial draws and packing | `InitialDrawSampleSource.initialDrawSampleSource_run_bits`, `SequentialDraws`, existing draw/lookup primitives | Compute runtime parameters, append acceptance, then retries/law |
+| Initial draws and packing | `InitialDrawSampleSource.initialDrawSampleSource_run_bits`, `SequentialDraws`, existing draw/lookup primitives | Compute runtime parameters and compose retries/law; guarded acceptance is assembled |
 | Stopped-prefix law | `StoppingPrefix`, `EnumeratedDraws`, `VerifiedDrawLaw`, `RejectionProtocol` | Actual adaptive sampler transitions, changing domains, retries and global finite-tape bound |
 | Packing and touched cleanup | `SamplePacking.markDrawArrayWith_run`, `clearDrawSupport_run`, `packMarkedSamples`; `PackedActiveSource.packActiveB_run` via `SourceRenaming` | Local-trial insertion/cleanup and final packing |
 | Distinct-neighborhood domain | `DistinctNeighborhoodDomain` using unchanged first partition | Full-ground initialization and empty-active-set branch |
-| Grouped representative execution | `GroupedClassRepresentatives.groupedClassRepresentatives_run_bits`, reusing old radix sort, `ClassRepresentativeLoop`, old representative map | `InitialSamplerAttempt.initialSamplerAttempt_run_bits` now composes initial draws, partition and representative selection; acceptance and distribution/cost coupling remain |
+| Grouped representative execution | `GroupedClassRepresentatives.groupedClassRepresentatives_run_bits`, reusing old radix sort, `ClassRepresentativeLoop`, old representative map | `InitialSamplerAttempt.initialSamplerAttempt_run_bits` now composes initial draws, partition and representative selection; guarded acceptance is assembled in `FullInitialAttempt`; distribution/cost coupling remain |
 | Representative choice mathematics | `ClassBucketDomain`, `ClassChoiceTransport` | Apply the existing finite-choice law to actual flat-tape execution without conditioning away failures |
-| Distance and exceptions | `BatchedDistances`, `ExceptionCollection` | Compose with selected representatives and exact acceptance checks |
+| Full initial attempt | `FullInitialAttempt.fullInitialAttempt_run_bits`, `InitialSamplerChoice`, `InitialAttemptAcceptance`; reuses `BatchedDistances` and `ExceptionCollection` | Parameter setup, actual retry loop and adaptive distribution/cost coupling |
 | Complete phase two | `ExceptionPhaseSource.exceptionPhase_run`, including initial exception partition, empty branch, scan and packing; existing size/separation lemmas | Compose after initial acceptance and before fixed full-B grouping |
 | Fixed full-B classes | `FullSamplePartition.groupActiveB_run`, unchanged radix, `RepairClassOffsets.repairClassOffsets_run` and `repairClassLookup_run` | Compose with the local domain/trial source |
 | Repair domain | `RepairFilterSource.repairDomainSource_run`: runtime representative lookup, duplicate-safe CSR neighborhoods, exact symmetric-difference domain, touched cleanup | Trial isolation checks and repair retry loop |
+| Repair row check | `RepairTrialCheck.collectCheckAndClearTrialRow_run`: actual CSR collection, trace equality, touched cleanup; arbitrary old difference buffer | Build desired trace, scan fixed class, trial insertion/cleanup and retry loop |
 | Guarded cutoff | `SaturatedCutoff`, `SaturatedCutoffSource`, `RefinedCutoffSource.refinedCutoffSource_run` | Discharge word-fit preconditions from final layout; timeout remains separate |
 | Compiler | Existing pinned `Lax808846Proofs.Simulation` | Apply to the complete source/layout and derived cost bound |
 
@@ -73,7 +74,7 @@ mean single indexed draw `30*clog₂(m)+79`; grouped representatives
 `300*(degree+1)+9`; guarded cutoff `12*clog₂(n)+252`. These are
 source-language bounds, not yet the public machine-time theorem.
 
-The outstanding substantial layers are parameter setup and initial-attempt/retry
+The outstanding substantial layers are parameter setup and initial retry-loop
 assembly, efficient phase-three source,
 whole-sampler probability/expected costs, timeout/layout, actual rounds/history,
 and the final compiler lift. The public theorem remains open.
@@ -791,3 +792,34 @@ cap, and repacks W. Its exact budget is
 `attemptExceptions_div_three_eq` identify nearBound=k/3 with the paper's
 strict exception test. Independent target builds and axiom checks passed.
 The guarded wrapper joining selection and this suffix is next.
+
+Retry-loop interface reminder: representative draws overwrite drawModulus
+with class sizes. Every new initial attempt must restore the A-domain length
+(and any other changed setup scalars) before invoking the checked one-attempt
+source; preservation of drawDomain alone is insufficient. Capped-draw failure
+must remain distinct from rejection by the exception-count test.
+
+Parameter reuse opportunity: in the outer nontrivial branch,
+A.card > min n (2*k) with A.card ≤ n forces the existing cutoff result to
+be exactly 2*k < n. After proving this branch fact, nearBound can be computed
+as cutoff/6 and farBound as cutoff/3, giving k/3 and (2*k)/3 respectively.
+Do not use these identities without the branch fact, or use cutoff/3 for
+the initial exception threshold. This may avoid exposing extra cutoff
+intermediates in the runtime setup.
+
+Reviewed and independently rebuilt `FullInitialAttempt.fullInitialAttempt_run_bits`:
+one fixed guarded source composes selection with distance/exception acceptance,
+retaining explicit capped failures and exact paper exceptions. Successful draw
+paths export their unread suffix even when representative selection fails. The
+failed draw-batch path retains its DrawTrace and selection Run, rather than
+an explicit unread-tape formula. No complete retry/law claim is made.
+
+Reviewed `RepairTrialCheck.collectCheckAndClearTrialRow_run`: actual CSR
+collection feeds the existing filtered append, checks difference count and
+trace lengths, and clears touched row marks. The difference buffer may contain
+arbitrary old values; only its count is reset, so no full-vertex clear is needed
+between rows. Exact source budget `54*degree+22+36*rowCard+26`, with
+`rowCard ≤ degree`. Fixed X, desired marks, sample/class data are preserved.
+Both independent axiom audits contain only the three background axioms.
+Next: initial retry-loop setup; desired-trace collection and fixed-class scan;
+local trial/retry assembly, then adaptive law/cost and outer machine assembly.
