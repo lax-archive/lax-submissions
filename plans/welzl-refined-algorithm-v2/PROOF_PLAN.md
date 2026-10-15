@@ -713,3 +713,10 @@ preserved. The bound adds the old refinementWork charge, the linear scan and
 packing; the original duplicate-free prefix lemma supplies its linear bound.
 Independent target build and axiom checks passed. Initial attempt assembly
 and the fixed full-B partition/local repair remain next.
+
+Reviewed `SourceRenaming.run_rename`: scalar/array permutations preserve
+bounded source semantics and the exact execution cost. `PackedActiveSource`
+uses it to pack activeB into ord/alen with the existing packer (20*n+9),
+preserving sample flags/count, representatives, and the tape. Independent
+target builds and axiom checks passed. Full kernel replay also passed for
+the preceding exception-phase integration (133 modules).
