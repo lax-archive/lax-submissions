@@ -823,3 +823,7 @@ between rows. Exact source budget `54*degree+22+36*rowCard+26`, with
 Both independent axiom audits contain only the three background axioms.
 Next: initial retry-loop setup; desired-trace collection and fixed-class scan;
 local trial/retry assembly, then adaptive law/cost and outer machine assembly.
+
+Final integrated `lax build --replay` passed: 145 proof modules, one public
+concept and zero annotated conclusions; kernel replay took 2m15s (2m39s total).
+The headline theorem remains open. Public concepts and abstract are unchanged.
