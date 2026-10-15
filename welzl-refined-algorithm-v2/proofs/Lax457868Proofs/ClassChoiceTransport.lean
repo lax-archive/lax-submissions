@@ -171,7 +171,7 @@ private lemma finiteMean_equiv_transport {Ω Ξ : Type*} [Fintype Ω] [Fintype �
 /-- The numeric product's finite mean of the existing sampler distance is
 exactly its established conditional mean. This only reindexes the already
 defined finite law; it introduces no new probability model. -/
-theorem numericChoicesMean_eq_conditionalMeanZ
+lemma numericChoicesMean_eq_conditionalMeanZ
     (hrange : ∀ b ∈ C, label b < q)
     (hoccupied : LabelsOccupyPrefix q label C)
     (hlabel : ∀ b ∈ C, ∀ b' ∈ C,
