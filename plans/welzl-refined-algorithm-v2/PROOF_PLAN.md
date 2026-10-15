@@ -52,16 +52,17 @@ still describes it as future work. All implementation details remain proof-side.
 | --- | --- | --- |
 | Sampler mathematics | `SamplerPhases`, `SamplerContract`, size/charging/one-inclusion/VC and initial/local probability/retry results | Derive legal successful choices from the final source |
 | Conditional order correctness | `ReductionPath`, `RefinedOrderCorrectness.output_encodes_graphWelzlOrder` | Actual source must construct the successful reduction path |
-| Partition execution | `VerifiedRoundPartitions.runVerifiedRoundPartitions`, unchanged old refinement/partition sources | Initialize and compose the refined round state |
+| Partition execution | `FullSamplePartition.fullSamplePartition_run`, `ClassSizes.countDigit`, unchanged old refinement/partition sources; `VerifiedRoundPartitions` | Compose the initial attempt and refined round state |
 | Reconstruction and output | `VerifiedReconstructionBridge`, `RefinedHistoryOutput.History.reconstructAndWrite_clog2_bound` | Actual refined history/log construction; output execution already follows from a valid history |
-| Fixed-domain sequential draws | `SequentialDraws.sequentialDraws_run_list`, reusing `DrawBuffer`, `IndexedDrawRam`, `FairBitRam` | Choose runtime counts/caps and couple the whole sampler law |
+| Initial draws and packing | `InitialDrawSampleSource.initialDrawSampleSource_run_bits`, `SequentialDraws`, existing draw/lookup primitives | Compute runtime parameters, compose representatives and acceptance, then retries/law |
 | Stopped-prefix law | `StoppingPrefix`, `EnumeratedDraws`, `VerifiedDrawLaw`, `RejectionProtocol` | Actual adaptive sampler transitions, changing domains, retries and global finite-tape bound |
-| Sample packing | `SamplePacking.markAndPackSamples_run`, `packMarkedSamples` | Compose after the initial draws and later sample insertions |
+| Packing and touched cleanup | `SamplePacking.markDrawArrayWith_run`, `clearDrawSupport_run`, `packMarkedSamples`; `PackedActiveSource.packActiveB_run` via `SourceRenaming` | Local-trial insertion/cleanup and final packing |
 | Distinct-neighborhood domain | `DistinctNeighborhoodDomain` using unchanged first partition | Full-ground initialization and empty-active-set branch |
 | Grouped representative execution | `GroupedClassRepresentatives.groupedClassRepresentatives_run_bits`, reusing old radix sort, `ClassRepresentativeLoop`, old representative map | Initial partition/attempt assembly and distribution/cost coupling |
 | Representative choice mathematics | `ClassBucketDomain`, `ClassChoiceTransport` | Apply the existing finite-choice law to actual flat-tape execution without conditioning away failures |
 | Distance and exceptions | `BatchedDistances`, `ExceptionCollection` | Compose with selected representatives and exact acceptance checks |
-| Phase-two scan | `ExceptionRefinementScan.exceptionRefinementScan_run`, `ExceptionRefinementStep`, `ExceptionRefinementBridge`, unchanged `refineOne_run` | Initial exception partition, full sampler assembly and transfer of existing phase-two size/separation results |
+| Complete phase two | `ExceptionPhaseSource.exceptionPhase_run`, including initial exception partition, empty branch, scan and packing; existing size/separation lemmas | Compose after initial acceptance and before fixed full-B grouping |
+| Fixed full-B classes | `FullSamplePartition.groupActiveB_run`, unchanged radix, exact sorted prefix and class slices | Materialize runtime class starts, then local domain/trial source |
 | Guarded cutoff | `SaturatedCutoff`, `SaturatedCutoffSource`, `RefinedCutoffSource.refinedCutoffSource_run` | Discharge word-fit preconditions from final layout; timeout remains separate |
 | Compiler | Existing pinned `Lax808846Proofs.Simulation` | Apply to the complete source/layout and derived cost bound |
 
@@ -71,8 +72,8 @@ mean single indexed draw `30*clog₂(m)+79`; grouped representatives
 `300*(degree+1)+9`; guarded cutoff `12*clog₂(n)+252`. These are
 source-language bounds, not yet the public machine-time theorem.
 
-The outstanding substantial layers are initial-attempt/retry assembly,
-phase-two initialization/scan integration, efficient phase-three source,
+The outstanding substantial layers are parameter setup and initial-attempt/retry
+assembly, efficient phase-three source,
 whole-sampler probability/expected costs, timeout/layout, actual rounds/history,
 and the final compiler lift. The public theorem remains open.
 
@@ -734,3 +735,7 @@ one-valued API; `clearDrawSupport_run` resets only touched entries even for
 arbitrary old stamp values. All three independent target builds and axiom
 audits passed. Initial-attempt composition (representatives, distances,
 exception acceptance) and actual local-repair source remain open.
+
+Integrated replay passed after the initial draw/full-B/cleanup batch: 137
+root-imported proof modules; one public concept and zero annotated conclusions.
+The public theorem remains open.
