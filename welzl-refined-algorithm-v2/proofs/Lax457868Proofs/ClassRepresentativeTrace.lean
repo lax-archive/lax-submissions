@@ -188,6 +188,29 @@ lemma ClassTrace.length_status (size : ℕ → ℕ) (t : ℕ) (start : ℕ → �
       · omega
       · simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hiff
 
+/-- Each completed choice is a position in that class's own contiguous slice.
+This is the bridge from the flat-tape execution trace to the bucket domains.
+-/
+lemma ClassTrace.values_in_slices (size : ℕ → ℕ) (t : ℕ) (start : ℕ → ℕ) :
+    ∀ {d r : ℕ} {bits : List Bool} {values : List ℕ}
+      {used charge : ℕ} {failed : Bool},
+      ClassTrace size t start d r bits values used charge failed →
+        ∀ j (hj : j < values.length),
+          start (d + j) ≤ values[j] ∧
+            values[j] < start (d + j) + size (d + j)
+  | _, _, _, _, _, _, _, .done _ _, j, hj => by simp at hj
+  | _, _, _, _, _, _, _, .failed _ _ _ _ _, j, hj => by simp at hj
+  | _, _, _, _, _, _, _, .accepted (d := d) (values := valuesTail)
+      tape tail i u hm hsel hnext, j, hj => by
+      cases j with
+      | zero =>
+          simp only [List.getElem_cons_zero, Nat.add_zero]
+          exact ⟨Nat.le_add_right _ _, Nat.add_lt_add_left i.isLt _⟩
+      | succ k =>
+          have hk : k < valuesTail.length := by simpa using hj
+          have h := ClassTrace.values_in_slices size t start hnext k hk
+          simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h
+
 /-- Every consumed bit belongs to the supplied flat tape. -/
 lemma ClassTrace.used_le (size : ℕ → ℕ) (t : ℕ) (start : ℕ → ℕ) :
     ∀ {d r : ℕ} {bits : List Bool} {values : List ℕ}
