@@ -25,14 +25,6 @@ def drawLogSetup : Com :=
     .assign "n" (.var "drawSavedN"),
     .assign "qpow" (.var "drawSavedQ")]
 
-private lemma clog_succ_le_pow (k : ℕ) : k + 1 ≤ 2 ^ k := by
-  induction k with
-  | zero => norm_num
-  | succ k ih =>
-      rw [Nat.pow_succ]
-      have hpos : 0 < 2 ^ k := by positivity
-      omega
-
 /-- The wrapper runs the source logarithm loop at the draw modulus. It writes
 `L = ⌈log₂ drawModulus⌉` and preserves `n`, `qpow`, arrays, tape, output, and
 the other draw parameters. Its cost is the source loop's cost plus five
@@ -58,7 +50,8 @@ lemma drawLogSetup_run {B m : ℕ} {σ : Env}
   let σ₂ := σ₁.setVar "drawSavedQ" q₀
   let σ₃ := σ₂.setVar "n" m
   have hlogB : Nat.clog 2 m + 1 < B := by
-    have hle := clog_succ_le_pow (Nat.clog 2 m)
+    have hle : Nat.clog 2 m + 1 ≤ 2 ^ Nat.clog 2 m :=
+      Nat.succ_le_of_lt (Nat.lt_two_pow_self (n := Nat.clog 2 m))
     omega
   obtain ⟨τ, hlogRun, hnτ, hLτ, hqτ⟩ :=
     computeLog_run (B := B) (n := m) (σ := σ₃) (by simp [σ₃, σ₂, σ₁, n₀])
