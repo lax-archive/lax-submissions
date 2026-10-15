@@ -191,6 +191,13 @@ preconditions of the final sampler theorem.
 
 ### W1. Saturated cutoff arithmetic
 
+First compare `c` with `n`. If `n ≤ c`, prove that the base-case bound already
+holds and return immediately without computing `clog₂ c`. This is essential
+for runtime: an arbitrarily large `c` occupies one input word, whereas `T`
+depends on `n`, so an unconditional `O(log c)` preprocessing loop would not
+meet the public claim. Only the `c < n` branch computes the logarithm; there
+`clog₂ c ≤ clog₂ n`.
+
 The machine cannot first compute an unbounded `c^5` or `k` and then test
 whether it fits. Construct guarded saturated addition/multiplication and
 prove that they compute `min limit (a+b)` and `min limit (a*b)` without
