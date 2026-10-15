@@ -191,8 +191,6 @@ lemma initialDrawSampleSource_run_tape
     (hrBuf : r ≤ bufferCap)
     (hrB : r < B) (htB : t < B) (hmB : m < B)
     (htwoB : 2 < B) (honeB : 1 < B)
-    (hbits : r * t * Nat.clog 2 m ≤
-      (tapeBits tape ++ tail).length)
     (hinp : σ.inp =
       (tapeBits tape ++ tail).map Bool.toNat ++ rest)
     (hpowB : 2 ^ Nat.clog 2 m < B) :
@@ -216,10 +214,15 @@ lemma initialDrawSampleSource_run_tape
             (values.map (fun i => domain i.val)).toFinset ∧
           σ'.vars "sampleCount" =
             (values.map (fun i => domain i.val)).toFinset.card ∧
-          (∀ i (hi : i < values.length), domain values[i].val ∈ A)) ∧
+          (∀ i (hi : i < values.length), domain values[i].val ∈ A) ∧
+          (values.map (fun i => domain i.val)).toFinset.card ≤ r) ∧
       σ'.inp = ((tapeBits tape ++ tail).drop
         (used * Nat.clog 2 m)).map Bool.toNat ++ rest ∧
       σ'.out = σ.out ∧
+      (∀ a, a ∉ initialDrawSampleSource.warrs →
+        σ'.arrs a = σ.arrs a) ∧
+      (∀ x, x ∉ initialDrawSampleSource.wvars →
+        σ'.vars x = σ.vars x) ∧
       (∀ j < n, j ≠ 0 → key' j = key j) ∧
       σ'.arrs "key0" = arrOf n key' ∧
       σ'.arrs "drawDomain" = arrOf domainCap domain := by
@@ -359,7 +362,7 @@ lemma initialDrawSampleSource_run_tape
     have hdomainF : σf.arrs "drawDomain" = arrOf domainCap domain :=
       (hpackArrayFrame "drawDomain" (by decide) (by decide)).trans hdomainD
     refine ⟨values, used, false, σf, key', htrace, hwhole, ?_, ?_, ?_, ?_,
-      ?_, ?_, ?_, hout, hkeyOutside, hkeyF, hdomainF⟩
+      ?_, ?_, ?_, hout, ?_, ?_, hkeyOutside, hkeyF, hdomainF⟩
     · calc
         σf.vars "batchFailed" = σd.vars "batchFailed" :=
           hpackVarsFrame "batchFailed" (by decide) (by decide) (by decide)
@@ -382,16 +385,27 @@ lemma initialDrawSampleSource_run_tape
       refine ⟨?_, packed, hordF, ?_, hcountF, ?_⟩
       · simpa [drawn] using hflagsF
       · simpa [drawn] using hprefixF
-      · intro i hi
-        have hmem : domain values[i].val ∈
-            Stack.toList m domain := by
-          simp only [Stack.toList, arrOf, List.mem_map, List.mem_range]
-          exact ⟨values[i].val, (values[i]'hi).isLt, rfl⟩
-        exact (henum.2 (domain values[i].val)).mp hmem
+      · constructor
+        · intro i hi
+          have hmem : domain values[i].val ∈
+              Stack.toList m domain := by
+            simp only [Stack.toList, arrOf, List.mem_map, List.mem_range]
+            exact ⟨values[i].val, (values[i]'hi).isLt, rfl⟩
+          exact (henum.2 (domain values[i].val)).mp hmem
+        · calc
+            (values.map (fun i => domain i.val)).toFinset.card ≤
+                (values.map (fun i => domain i.val)).length :=
+              List.toFinset_card_le _
+            _ = values.length := by simp
+            _ ≤ r := by omega
     · calc
         σf.inp = σd.inp := hpackInp
         _ = ((tapeBits tape ++ tail).drop
           (used * Nat.clog 2 m)).map Bool.toNat ++ rest := hinputFinal
+    · intro a ha
+      exact hwhole.frame_arr a ha
+    · intro x hx
+      exact hwhole.frame_var x hx
   | true =>
     have hbadOne : σd.vars "batchFailed" = 1 := by simpa [hbadD]
     have hcondFalse :
@@ -425,12 +439,99 @@ lemma initialDrawSampleSource_run_tape
         Com.NoWrite, seqs, inc]; decide)
     have hout : σd.out = σ.out := hdrawOut.trans hpreOut
     refine ⟨values, used, true, σd, key', htrace, hwhole, hbadOne,
-      hcountD, ?_, ?_, ?_, ?_, ?_, hout, hkeyOutside, hkeyD, hdomainD⟩
+      hcountD, ?_, ?_, ?_, ?_, ?_, hout, ?_, ?_, hkeyOutside, hkeyD, hdomainD⟩
     · simpa using hnum
     · simpa [hcountD] using hcomplete
     · intro _
       exact ⟨hflagsD, hsampleCountD⟩
     · intro hsuccess; cases hsuccess
     · exact hinputFinal
+    · intro a ha
+      exact hwhole.frame_arr a ha
+    · intro x hx
+      exact hwhole.frame_var x hx
+
+/-- Execute the fixed initial-sample source from an arbitrary flat Boolean
+tape. The block split is proof-side only; the final input is exactly the
+original tape after the consumed prefix, followed by its original suffix. -/
+lemma initialDrawSampleSource_run_bits
+    {B n m domainCap r t bufferCap : ℕ} {σ : Env}
+    {key domain oldDraws oldFlags ord : ℕ → ℕ} {A : Finset ℕ}
+    {bits : List Bool} {rest : List ℕ}
+    (hn : σ.vars "n" = n) (hnB : n < B)
+    (hqpow : σ.vars "qpow" < B)
+    (hmod : σ.vars "drawModulus" = m) (hmPos : 0 < m)
+    (hmCap : m ≤ domainCap) (henum : PrefixEnumerates m domain A)
+    (hAnonempty : A.Nonempty) (hA : A ⊆ Finset.range n)
+    (hkey : σ.arrs "key0" = arrOf n key)
+    (hdomain : σ.arrs "drawDomain" = arrOf domainCap domain)
+    (hdraws : σ.arrs "sampleDraws" = arrOf bufferCap oldDraws)
+    (hflags : σ.arrs "sampleFlags" = arrOf n oldFlags)
+    (hord : σ.arrs "ord" = arrOf n ord)
+    (htarget : σ.vars "batchTarget" = r)
+    (hcap : σ.vars "drawCap" = t)
+    (hrBuf : r ≤ bufferCap)
+    (hrB : r < B) (htB : t < B) (hmB : m < B)
+    (htwoB : 2 < B) (honeB : 1 < B)
+    (hbudget : r * t * Nat.clog 2 m ≤ bits.length)
+    (hinp : σ.inp = bits.map Bool.toNat ++ rest)
+    (hpowB : 2 ^ Nat.clog 2 m < B) :
+    ∃ (tape : Fin (r * t) → Fin (Nat.clog 2 m) → Bool)
+      (tail : List Bool),
+      bits = tapeBits tape ++ tail ∧
+      ∃ values used failed σ' key',
+        DrawTrace m hmPos t r (List.ofFn tape) values used failed ∧
+        Run B initialDrawSampleSource σ σ'
+          (initialDrawSampleCost n m used
+            (values.length + if failed then 1 else 0) values.length failed) ∧
+        σ'.vars "batchFailed" = (if failed then 1 else 0) ∧
+        σ'.vars "drawCount" = values.length ∧
+        values.length + (if failed then 1 else 0) ≤ r ∧
+        (failed = false ↔ σ'.vars "drawCount" = r) ∧
+        (failed = true → σ'.arrs "sampleFlags" = arrOf n (fun _ => 0) ∧
+          σ'.vars "sampleCount" = 0) ∧
+        (failed = false →
+          σ'.arrs "sampleFlags" =
+            arrOf n (fun v => if v ∈ (values.map (fun i => domain i.val)).toFinset then 1 else 0) ∧
+          ∃ packed : ℕ → ℕ,
+            σ'.arrs "ord" = arrOf n packed ∧
+            PrefixEnumerates (σ'.vars "sampleCount") packed
+              (values.map (fun i => domain i.val)).toFinset ∧
+            σ'.vars "sampleCount" =
+              (values.map (fun i => domain i.val)).toFinset.card ∧
+            (∀ i (hi : i < values.length), domain values[i].val ∈ A) ∧
+            (values.map (fun i => domain i.val)).toFinset.card ≤ r) ∧
+        σ'.inp = (bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ rest ∧
+        σ'.out = σ.out ∧
+        (∀ a, a ∉ initialDrawSampleSource.warrs →
+          σ'.arrs a = σ.arrs a) ∧
+        (∀ x, x ∉ initialDrawSampleSource.wvars →
+          σ'.vars x = σ.vars x) ∧
+        (∀ j < n, j ≠ 0 → key' j = key j) ∧
+        σ'.arrs "key0" = arrOf n key' ∧
+        σ'.arrs "drawDomain" = arrOf domainCap domain := by
+  obtain ⟨tape, tail, hsplit⟩ :=
+    splitTape (Nat.clog 2 m) (r * t) bits hbudget
+  have hfull : r * t * Nat.clog 2 m ≤ (tapeBits tape ++ tail).length := by
+    rw [← hsplit]
+    simpa using hbudget
+  have hinpTape : σ.inp = (tapeBits tape ++ tail).map Bool.toNat ++ rest := by
+    calc
+      σ.inp = bits.map Bool.toNat ++ rest := hinp
+      _ = (tapeBits tape ++ tail).map Bool.toNat ++ rest := by rw [hsplit]
+  obtain ⟨values, used, failed, σ', key', htrace, hrun, hbad, hcount,
+      hnum, hcomplete, hfailure, hsuccess, hinpFinal, hout, harrFrame,
+      hvarFrame, hkeyOutside, hkeyFinal, hdomainFinal⟩ :=
+    initialDrawSampleSource_run_tape (tape := tape) (tail := tail)
+      hn hnB hqpow hmod hmPos hmCap henum hAnonempty hA hkey hdomain hdraws
+      hflags hord htarget hcap hrBuf hrB htB hmB htwoB honeB hinpTape hpowB
+  refine ⟨tape, tail, hsplit, values, used, failed, σ', key', htrace, hrun,
+    hbad, hcount, hnum, hcomplete, hfailure, hsuccess, ?_, hout, harrFrame,
+    hvarFrame, hkeyOutside, hkeyFinal, hdomainFinal⟩
+  calc
+    σ'.inp = ((tapeBits tape ++ tail).drop (used * Nat.clog 2 m)).map
+        Bool.toNat ++ rest := hinpFinal
+    _ = (bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ rest := by
+      rw [← hsplit]
 
 end Lax457868Proofs.InitialDrawSampleSource
