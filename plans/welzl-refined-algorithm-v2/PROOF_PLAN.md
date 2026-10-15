@@ -626,3 +626,12 @@ failure. The derived bound is `charge + 104*n + 22`; residual tape and frames
 are retained. Its independent target check and axiom query passed. No new
 map-loop proof or probability law was introduced. The preceding integrated
 class-loop/guarded-primitives kernel replay also passed (127 proof modules).
+
+Reviewed `ExceptionRefinementStep.exceptionRefinementStep_run`: actual
+save/refine/count-test/mark source realizes one `phase2Step`, reusing
+`refineOne_run` and the existing count-growth equivalence. The new labels
+classify the updated sample also in the no-growth branch. It returns compact
+class sizes, occupied labels, cleared counters, bounded stamps, exact sample
+flags and frame facts, at `300*(degree(candidate)+1)+9`. Target build and
+independent axiom check passed. The candidate scan, stamp reset, initial
+exception partition and empty-exception branch remain to be assembled.
