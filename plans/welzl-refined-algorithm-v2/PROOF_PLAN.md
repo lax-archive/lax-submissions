@@ -497,3 +497,40 @@ Additional exact reuse found below specialized wrappers:
   runtime class-start/size loop, and sampling-law connection still need
   adapters. Choose a justified q/array capacity; do not assume a class count
   changes the allocated count-array length.
+
+
+Reviewed boundaries following this recheck:
+
+- `ExceptionRefinementBridge` proves that compact numeric labels have exactly
+  the trace-class cardinality and that strict count growth is equivalent to
+  `splitsExceptionPair`. Consequently the existing refinement command's
+  postconditions implement `phase2Step`. This is the semantic count adapter;
+  the outer phase-two scan, initialization, and empty-set source branch remain.
+- `RefinedHistoryOutput.History.reconstructAndWrite_clog2_bound` specializes
+  the existing actual output source proof to `2*k*clog₂ n`, retaining the real
+  recorded-history and concrete array premises. Its source cost is
+  `100*(n+1)`. The 14 added prerequisite modules were checked byte-for-byte
+  against accepted source `33f2eca4` after attribution/namespace transport.
+  Constructing that history from executed refined rounds is still required.
+- `SequentialDraws.sequentialDraws_run_list` proves the fixed repeated draw
+  source on one shared tape. Each next call starts at the exact unread suffix;
+  duplicate selections occupy separate cells. It stops at the first exhausted
+  rejection cap, preserves completed draws, and proves exact buffer cells,
+  failure status, and source cost
+  `(15*clog₂ m+30)*actualBlocks + 43*actualCalls + 10` with `actualCalls≤r`.
+  The sufficient `r*t` input length is a proof-side bound, never a stored RAM
+  product. Zero requests and zero cap are covered. This closes the fixed-domain
+  sequential execution leaf, not the adaptive sampler distribution bridge.
+
+All three worker target builds were independently replayed successfully before
+landing. These additions leave the public theorem unchanged and open. The next
+source leaf is uniform within-class representative selection using the already
+proved radix grouping and indexed selector, followed by initial-attempt/retry
+assembly. The remaining six groups above are still the completion checklist,
+with the completed sequential execution and count-adapter subparts removed.
+
+Integrated validation: full `lax build welzl-refined-algorithm-v2 --replay`
+passed after these three additions (119 proof modules). A separate axiom audit
+of the new count adapters, history specialization, trace existence, and source
+Run returned only `propext`, `Classical.choice`, and `Quot.sound`. The public
+concept package is unchanged and the annotated main-proof count remains zero.
