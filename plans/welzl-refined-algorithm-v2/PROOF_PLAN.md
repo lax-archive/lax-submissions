@@ -476,3 +476,24 @@ work as a rough full-completion planning range, with substantial uncertainty
 in local-repair costs, timeout and final assembly. This is not a guarantee.
 Current independent leaves: shared-tape loop/source execution and the small
 class-count bridge enabling direct reuse of the old phase-two command.
+
+Additional exact reuse found below specialized wrappers:
+
+- `RecordedHistory.History.reconstructAndWrite_correct` at the accepted old
+  commit is generic in `k`, terminal bound `q`, round count `R`, and desired
+  output bound. It already proves the concrete reconstruction/write routine
+  at `100*(n+1)`, including unchanged random input. Specialize `q=2*k` and
+  use `R+1≤clog₂ n` for the refined output bound. Constructing the recorded
+  history from actual refined rounds remains; reproducing reconstruction
+  execution or its correctness proof is unnecessary. A small specialization
+  and its exact attributed source closure are now assigned.
+- `RadixPass.radixPass_run` is generic in `keyName`; it is not restricted to
+  the old random keys. With the class-label array as key it groups class
+  members in one counting-sort pass at `64*(xs.length+q+1)`, preserving that
+  key array. `RadixMath.getD_bucketSort` identifies index
+  `startDigit label xs d+j` with index j of the d-th class filter. This is an
+  existing route to concrete uniform representative domains: do not build a
+  new sorting/grouping engine or reprove the fiber lookup. The offset lookup,
+  runtime class-start/size loop, and sampling-law connection still need
+  adapters. Choose a justified q/array capacity; do not assume a class count
+  changes the allocated count-array length.
