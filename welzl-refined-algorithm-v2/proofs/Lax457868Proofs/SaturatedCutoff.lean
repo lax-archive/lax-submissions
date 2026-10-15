@@ -19,7 +19,7 @@ computed only if the quotient test proves it is at most `limit`. -/
 def satMul (limit a b : ℕ) : ℕ :=
   if b = 0 then 0 else if a ≤ limit / b then a * b else limit
 
-theorem satAdd_eq_min (limit a b : ℕ) :
+lemma satAdd_eq_min (limit a b : ℕ) :
     satAdd limit a b = min limit (a + b) := by
   by_cases h : a ≤ limit ∧ b ≤ limit - a
   · simp [satAdd, h]
@@ -35,17 +35,17 @@ theorem satAdd_eq_min (limit a b : ℕ) :
     simp [satAdd, h, Nat.min_def]
     omega
 
-theorem satAdd_result_le (limit a b : ℕ) : satAdd limit a b ≤ limit := by
+lemma satAdd_result_le (limit a b : ℕ) : satAdd limit a b ≤ limit := by
   rw [satAdd_eq_min]
   exact min_le_left _ _
 
-theorem satAdd_safe_branch (limit a b : ℕ)
+lemma satAdd_safe_branch (limit a b : ℕ)
     (h : a ≤ limit ∧ b ≤ limit - a) :
     satAdd limit a b = a + b ∧ a + b ≤ limit := by
   simp [satAdd, h]
   omega
 
-theorem satMul_eq_min (limit a b : ℕ) :
+lemma satMul_eq_min (limit a b : ℕ) :
     satMul limit a b = min limit (a * b) := by
   by_cases hb : b = 0
   · subst b
@@ -64,24 +64,24 @@ theorem satMul_eq_min (limit a b : ℕ) :
       simp [satMul, hb, h, Nat.min_def]
       omega
 
-theorem satMul_result_le (limit a b : ℕ) : satMul limit a b ≤ limit := by
+lemma satMul_result_le (limit a b : ℕ) : satMul limit a b ≤ limit := by
   rw [satMul_eq_min]
   exact min_le_left _ _
 
-theorem satMul_safe_branch (limit a b : ℕ) (hb : b ≠ 0)
+lemma satMul_safe_branch (limit a b : ℕ) (hb : b ≠ 0)
     (h : a ≤ limit / b) :
     satMul limit a b = a * b ∧ a * b ≤ limit := by
   have hp : a * b ≤ limit := by
     exact (Nat.le_div_iff_mul_le (Nat.pos_of_ne_zero hb)).mp h
   simp [satMul, hb, h, hp]
 
-theorem satAdd_clamped_inputs (limit a b : ℕ) :
+lemma satAdd_clamped_inputs (limit a b : ℕ) :
     satAdd limit (min limit a) (min limit b) = satAdd limit a b := by
   rw [satAdd_eq_min, satAdd_eq_min]
   simp only [Nat.min_def]
   split_ifs <;> omega
 
-theorem satMul_clamped_inputs (limit a b : ℕ) :
+lemma satMul_clamped_inputs (limit a b : ℕ) :
     satMul limit (min limit a) (min limit b) = satMul limit a b := by
   rw [satMul_eq_min, satMul_eq_min]
   by_cases ha : a ≤ limit
@@ -117,15 +117,15 @@ theorem satMul_clamped_inputs (limit a b : ℕ) :
         simp [Nat.min_def, hal, hbl, h₂]
         omega
 
-theorem min_add_clamped_inputs (limit a b : ℕ) :
+lemma min_add_clamped_inputs (limit a b : ℕ) :
     min limit (min limit a + min limit b) = min limit (a + b) := by
   rw [← satAdd_eq_min, satAdd_clamped_inputs, satAdd_eq_min]
 
-theorem min_mul_clamped_inputs (limit a b : ℕ) :
+lemma min_mul_clamped_inputs (limit a b : ℕ) :
     min limit (min limit a * min limit b) = min limit (a * b) := by
   rw [← satMul_eq_min, satMul_clamped_inputs, satMul_eq_min]
 
-theorem min_mul_clamped_left (limit a b : ℕ) :
+lemma min_mul_clamped_left (limit a b : ℕ) :
     min limit (min limit a * b) = min limit (a * b) := by
   rw [← min_mul_clamped_inputs limit (min limit a) b]
   have h : min limit (min limit a) = min limit a :=
@@ -133,7 +133,7 @@ theorem min_mul_clamped_left (limit a b : ℕ) :
   rw [h]
   exact min_mul_clamped_inputs limit a b
 
-theorem min_mul_clamped_right (limit a b : ℕ) :
+lemma min_mul_clamped_right (limit a b : ℕ) :
     min limit (a * min limit b) = min limit (a * b) := by
   rw [← min_mul_clamped_inputs limit a (min limit b)]
   have h : min limit (min limit b) = min limit b :=
@@ -141,7 +141,7 @@ theorem min_mul_clamped_right (limit a b : ℕ) :
   rw [h]
   exact min_mul_clamped_inputs limit a b
 
-theorem min_add_clamped_left (limit a b : ℕ) :
+lemma min_add_clamped_left (limit a b : ℕ) :
     min limit (min limit a + b) = min limit (a + b) := by
   rw [← min_add_clamped_inputs limit (min limit a) b]
   have h : min limit (min limit a) = min limit a :=
@@ -149,7 +149,7 @@ theorem min_add_clamped_left (limit a b : ℕ) :
   rw [h]
   exact min_add_clamped_inputs limit a b
 
-theorem min_add_clamped_right (limit a b : ℕ) :
+lemma min_add_clamped_right (limit a b : ℕ) :
     min limit (a + min limit b) = min limit (a + b) := by
   rw [← min_add_clamped_inputs limit a (min limit b)]
   have h : min limit (min limit b) = min limit b :=
@@ -168,7 +168,7 @@ def satPow5 (limit c : ℕ) : ℕ :=
   let c4 := satMul limit c3 c
   satMul limit c4 c
 
-theorem satPow5_eq (limit c : ℕ) : satPow5 limit c = min limit (c ^ 5) := by
+lemma satPow5_eq (limit c : ℕ) : satPow5 limit c = min limit (c ^ 5) := by
   simp [satPow5, satMul_eq_min, min_mul_clamped_left, Nat.pow_succ]
 
 /-- Exact capped implementation of `min n (2*k)`.  Every intermediate is a
@@ -214,12 +214,12 @@ theorem saturatedWelzlCutoff_exact_of_lt (n c : ℕ)
     simp [Nat.min_eq_left hn] at h
   simp [Nat.min_eq_right (Nat.le_of_lt hlt)]
 
-theorem saturatedWelzlCutoff_le (n c : ℕ) :
+lemma saturatedWelzlCutoff_le (n c : ℕ) :
     saturatedWelzlCutoff n c ≤ n := by
   rw [saturatedWelzlCutoff_eq]
   exact min_le_left _ _
 
-theorem refinedCutoffK_ge_c (c : ℕ) (hc : 2 ≤ c) :
+lemma refinedCutoffK_ge_c (c : ℕ) (hc : 2 ≤ c) :
     c ≤ refinedCutoffK c := by
   let ℓ := Nat.clog 2 c
   have hℓpos : 0 < ℓ := Nat.clog_pos (by omega) (by omega)
@@ -240,7 +240,7 @@ theorem refinedCutoffK_ge_c (c : ℕ) (hc : 2 ≤ c) :
     _ ≤ (768 * c ^ 5 * (64 * ℓ + 1)) * ℓ := hterm'
     _ ≤ (768 * c ^ 5 * (64 * ℓ + 1)) * ℓ + 1 := Nat.le_add_right _ _
 
-theorem earlyWelzlCutoff_eq (n c : ℕ) (hc : 2 ≤ c) :
+lemma earlyWelzlCutoff_eq (n c : ℕ) (hc : 2 ≤ c) :
     earlyWelzlCutoff n c = min n (2 * refinedCutoffK c) := by
   by_cases hnc : n ≤ c
   · have hbound : n ≤ 2 * refinedCutoffK c := by
@@ -249,7 +249,7 @@ theorem earlyWelzlCutoff_eq (n c : ℕ) (hc : 2 ≤ c) :
     simp [earlyWelzlCutoff, hnc, Nat.min_eq_left hbound]
   · rw [earlyWelzlCutoff, if_neg hnc, saturatedWelzlCutoff_eq]
 
-theorem earlyWelzlCutoff_log_le (n c : ℕ) (h : ¬ n ≤ c) :
+lemma earlyWelzlCutoff_log_le (n c : ℕ) (h : ¬ n ≤ c) :
     Nat.clog 2 c ≤ Nat.clog 2 n := by
   exact Nat.clog_mono_right 2 (Nat.lt_of_not_ge h).le
 
