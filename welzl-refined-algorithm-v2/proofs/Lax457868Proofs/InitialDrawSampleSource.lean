@@ -225,7 +225,8 @@ lemma initialDrawSampleSource_run_tape
         σ'.vars x = σ.vars x) ∧
       (∀ j < n, j ≠ 0 → key' j = key j) ∧
       σ'.arrs "key0" = arrOf n key' ∧
-      σ'.arrs "drawDomain" = arrOf domainCap domain := by
+      σ'.arrs "drawDomain" = arrOf domainCap domain ∧
+      σ'.vars "n" = n ∧ σ'.vars "qpow" = σ.vars "qpow" := by
   have hdomainRange := draw_range_of_enum henum hA
   have hnpos : 0 < n := by
     obtain ⟨a, ha⟩ := hAnonempty
@@ -357,12 +358,25 @@ lemma initialDrawSampleSource_run_tape
         appendDrawIfFound, countedRejectionSelector, indexedDrawLookup,
         Com.NoWrite, seqs, inc]; decide)
     have hout : σf.out = σ.out := hpackOut.trans (hdrawOut.trans hpreOut)
+    have hnFinal : σf.vars "n" = n := by
+      calc
+        σf.vars "n" = σd.vars "n" :=
+          hpackVarsFrame "n" (by decide) (by decide) (by decide)
+        _ = τ.vars "n" := hdraw.frame_var "n" (by decide)
+        _ = n := hnτ
+    have hqFinal : σf.vars "qpow" = σ.vars "qpow" := by
+      calc
+        σf.vars "qpow" = σd.vars "qpow" :=
+          hpackVarsFrame "qpow" (by decide) (by decide) (by decide)
+        _ = τ.vars "qpow" := hdraw.frame_var "qpow" (by decide)
+        _ = σ.vars "qpow" := hqpowτ
     have hkeyF : σf.arrs "key0" = arrOf n key' :=
       (hpackArrayFrame "key0" (by decide) (by decide)).trans hkeyD
     have hdomainF : σf.arrs "drawDomain" = arrOf domainCap domain :=
       (hpackArrayFrame "drawDomain" (by decide) (by decide)).trans hdomainD
     refine ⟨values, used, false, σf, key', htrace, hwhole, ?_, ?_, ?_, ?_,
-      ?_, ?_, ?_, hout, ?_, ?_, hkeyOutside, hkeyF, hdomainF⟩
+      ?_, ?_, ?_, hout, ?_, ?_, hkeyOutside, hkeyF, hdomainF, hnFinal,
+      hqFinal⟩
     · calc
         σf.vars "batchFailed" = σd.vars "batchFailed" :=
           hpackVarsFrame "batchFailed" (by decide) (by decide) (by decide)
@@ -438,8 +452,13 @@ lemma initialDrawSampleSource_run_tape
         appendDrawIfFound, countedRejectionSelector, indexedDrawLookup,
         Com.NoWrite, seqs, inc]; decide)
     have hout : σd.out = σ.out := hdrawOut.trans hpreOut
+    have hnFinal : σd.vars "n" = n :=
+      (hdraw.frame_var "n" (by decide)).trans hnτ
+    have hqFinal : σd.vars "qpow" = σ.vars "qpow" :=
+      (hdraw.frame_var "qpow" (by decide)).trans hqpowτ
     refine ⟨values, used, true, σd, key', htrace, hwhole, hbadOne,
-      hcountD, ?_, ?_, ?_, ?_, ?_, hout, ?_, ?_, hkeyOutside, hkeyD, hdomainD⟩
+      hcountD, ?_, ?_, ?_, ?_, ?_, hout, ?_, ?_, hkeyOutside, hkeyD,
+      hdomainD, hnFinal, hqFinal⟩
     · simpa using hnum
     · simpa [hcountD] using hcomplete
     · intro _
@@ -509,7 +528,8 @@ lemma initialDrawSampleSource_run_bits
           σ'.vars x = σ.vars x) ∧
         (∀ j < n, j ≠ 0 → key' j = key j) ∧
         σ'.arrs "key0" = arrOf n key' ∧
-        σ'.arrs "drawDomain" = arrOf domainCap domain := by
+        σ'.arrs "drawDomain" = arrOf domainCap domain ∧
+        σ'.vars "n" = n ∧ σ'.vars "qpow" = σ.vars "qpow" := by
   obtain ⟨tape, tail, hsplit⟩ :=
     splitTape (Nat.clog 2 m) (r * t) bits hbudget
   have hfull : r * t * Nat.clog 2 m ≤ (tapeBits tape ++ tail).length := by
@@ -521,13 +541,13 @@ lemma initialDrawSampleSource_run_bits
       _ = (tapeBits tape ++ tail).map Bool.toNat ++ rest := by rw [hsplit]
   obtain ⟨values, used, failed, σ', key', htrace, hrun, hbad, hcount,
       hnum, hcomplete, hfailure, hsuccess, hinpFinal, hout, harrFrame,
-      hvarFrame, hkeyOutside, hkeyFinal, hdomainFinal⟩ :=
+      hvarFrame, hkeyOutside, hkeyFinal, hdomainFinal, hnFinal, hqFinal⟩ :=
     initialDrawSampleSource_run_tape (tape := tape) (tail := tail)
       hn hnB hqpow hmod hmPos hmCap henum hAnonempty hA hkey hdomain hdraws
       hflags hord htarget hcap hrBuf hrB htB hmB htwoB honeB hinpTape hpowB
   refine ⟨tape, tail, hsplit, values, used, failed, σ', key', htrace, hrun,
     hbad, hcount, hnum, hcomplete, hfailure, hsuccess, ?_, hout, harrFrame,
-    hvarFrame, hkeyOutside, hkeyFinal, hdomainFinal⟩
+    hvarFrame, hkeyOutside, hkeyFinal, hdomainFinal, hnFinal, hqFinal⟩
   calc
     σ'.inp = ((tapeBits tape ++ tail).drop (used * Nat.clog 2 m)).map
         Bool.toNat ++ rest := hinpFinal
