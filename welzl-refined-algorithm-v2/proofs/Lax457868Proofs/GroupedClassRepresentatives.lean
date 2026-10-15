@@ -62,8 +62,8 @@ private lemma bucketSlice_label (xs : List ℕ) (label : ℕ → ℕ)
 
 /-- Group the fixed input order by class, run the existing capped
 representative source, and map successful choices back to active vertices.
-The class-count array is supplied by the preceding partition state and is
-checked against the actual labels before the source runs. -/
+The class-size array carries the preceding partition's class sizes; the proof
+relates those counts to the label multiplicities. -/
 lemma groupedClassRepresentatives_run_bits
     {B n q Q t : ℕ} {σ : Env}
     {xs : List ℕ} {size ord label active repClass repB key0 scratch count : ℕ → ℕ}
@@ -77,7 +77,6 @@ lemma groupedClassRepresentatives_run_bits
     (hordArr : σ.arrs "ord" = arrOf n ord)
     (hordPrefix : ∀ i < xs.length, ord i = xs.getD i 0)
     (hcountArr : σ.arrs "count" = arrOf Q count)
-    (hcountZero : ∀ d < Q, count d = 0)
     (hscratchArr : σ.arrs "scratchOrder" = arrOf n scratch)
     (hlabelArr : σ.arrs "classB" = arrOf n label)
     (hactiveArr : σ.arrs "activeB" = arrOf n active)
@@ -85,7 +84,6 @@ lemma groupedClassRepresentatives_run_bits
     (hrepBArr : σ.arrs "repB" = arrOf n repB)
     (hkey0Arr : σ.arrs "key0" = arrOf n key0)
     (hactiveInXs : ∀ w < n, active w = 1 → w ∈ xs)
-    (hlabelsQ : ∀ w < n, active w = 1 → label w < q)
     (hactiveBound : ∀ w < n, active w < B)
     (hclassCount : σ.vars "classCount" = q)
     (halen : σ.vars "alen" = xs.length)
@@ -105,15 +103,25 @@ lemma groupedClassRepresentatives_run_bits
       (∀ i < xs.length, ord' i = (bucketSort Q label xs).getD i 0) ∧
       σ'.arrs "classB" = arrOf n label ∧
       σ'.arrs "activeB" = arrOf n active ∧
+      σ'.arrs "repClass" = arrOf n (writeClassReps ord' repClass 0 values) ∧
+      σ'.vars "repIndex" = values.length ∧
+      σ'.vars "repFailed" = (if failed then 1 else 0) ∧
+      (failed = false ↔ σ'.vars "repIndex" = q) ∧
+      values.length ≤ q ∧ used ≤ bits.length ∧
       σ'.vars "n" = n ∧ σ'.vars "qpow" = Q ∧
       σ'.vars "classCount" = q ∧ σ'.vars "drawCap" = t ∧
       σ'.inp = (bits.drop used).map Bool.toNat ++ rest ∧
       σ'.out = σ.out ∧
+      (∀ a, a ∉ groupedClassRepresentatives.warrs →
+        σ'.arrs a = σ.arrs a) ∧
       (failed = true → σ'.arrs "repB" = arrOf n repB ∧ σ'.vars "v" = 0) ∧
       (failed = false → ∃ mapped : ℕ → ℕ,
         σ'.arrs "repB" = arrOf n mapped ∧
-        σ'.vars "v" = n ∧ ∀ w < n, active w = 1 →
-          w ∈ xs ∧ mapped w ∈ xs ∧ label (mapped w) = label w) := by
+        σ'.vars "v" = n ∧
+        (∀ w < n, active w = 1 →
+          mapped w = writeClassReps ord' repClass 0 values (label w)) ∧
+        (∀ w < n, active w = 1 →
+          w ∈ xs ∧ mapped w ∈ xs ∧ label (mapped w) = label w)) := by
   have hclassStart : classStart size q = startDigit label xs q :=
     classStart_eq_startDigit hsizeCount q (by omega)
   have hstart : startDigit label xs q = xs.length := by
@@ -137,6 +145,9 @@ lemma groupedClassRepresentatives_run_bits
   have hqn : q ≤ n := hqCountLe.trans htotal
   have hsizePos : ∀ d < q, 0 < size d := hoccupied
   have hqB : Q < B := hQB
+  have hlabelsQ : ∀ w < n, active w = 1 → label w < q := by
+    intro w hw hactive
+    exact hlabelsInXs w (hactiveInXs w hw hactive)
   have hkeyLabelsQ : ∀ x ∈ xs, label x < Q := by
     intro x hx
     exact (hlabelsInXs x hx).trans_le hqQ
@@ -295,20 +306,27 @@ lemma groupedClassRepresentatives_run_bits
       σ₂.out = σ₁v.out := houtOut
       _ = σ₁.out := by simp [σ₁v]
       _ = σ.out := hradix.out_eq (by decide)
-  refine ⟨values, used, charge, failed, σ₂, ord₁, htrace, ?_,
-    hsizeOut, hordOut, ?_, hclassBfinal, hactiveBfinal, hnOut, hQfinal,
-    hcountOut, hcapOut, hinpOut, houtfinal, ?_, ?_⟩
-  · have hrun := hradix.seq (hvinit.seq hmapRun)
-    have hraw : Run B groupedClassRepresentatives σ σ₂
-        ((64 * (xs.length + Q + 1)) + (2 + (charge + 104 * n + 22))) := by
-      simpa [groupedClassRepresentatives, seqs] using hrun
-    exact hraw.mono (by omega)
+  have hrun := hradix.seq (hvinit.seq hmapRun)
+  have hraw : Run B groupedClassRepresentatives σ σ₂
+      ((64 * (xs.length + Q + 1)) + (2 + (charge + 104 * n + 22))) := by
+    simpa [groupedClassRepresentatives, seqs] using hrun
+  have hwhole : Run B groupedClassRepresentatives σ σ₂
+      (charge + 64 * (xs.length + Q + 1) + 104 * n + 24) :=
+    hraw.mono (by omega)
+  have harrGeneric : ∀ a, a ∉ groupedClassRepresentatives.warrs →
+      σ₂.arrs a = σ.arrs a := by
+    intro a ha
+    exact hwhole.frame_arr a ha
+  refine ⟨values, used, charge, failed, σ₂, ord₁, htrace, hwhole,
+    hsizeOut, hordOut, ?_, hclassBfinal, hactiveBfinal, hrepOut,
+    hindexOut, hfailedOut, hcomplete, hlen, hused, hnOut, hQfinal,
+    hcountOut, hcapOut, hinpOut, houtfinal, harrGeneric, ?_, ?_⟩
   · intro i hi
     exact hordval₁ i hi
   · intro hf
     exact hfailedMap hf
   · intro hf
     rcases hsuccessMap hf with ⟨mapped, hmapped, hvn, hcorrect⟩
-    exact ⟨mapped, hmapped, hvn, hsuccessLabel mapped hf hcorrect⟩
+    exact ⟨mapped, hmapped, hvn, hcorrect, hsuccessLabel mapped hf hcorrect⟩
 
 end Lax457868Proofs.GroupedClassRepresentatives
