@@ -127,3 +127,4 @@ import Lax457868Proofs.ClassRepresentativeLoop
 import Lax457868Proofs.SaturatedCutoffSource
 import Lax457868Proofs.ClassRepresentativeMap
 import Lax457868Proofs.ExceptionRefinementStep
+import Lax457868Proofs.GroupedClassRepresentatives

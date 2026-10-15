@@ -635,3 +635,12 @@ class sizes, occupied labels, cleared counters, bounded stamps, exact sample
 flags and frame facts, at `300*(degree(candidate)+1)+9`. Target build and
 independent axiom check passed. The candidate scan, stamp reset, initial
 exception partition and empty-exception branch remain to be assembled.
+
+Reviewed `GroupedClassRepresentatives.groupedClassRepresentatives_run_bits`:
+unchanged radix grouping, the class draw loop and unchanged representative map
+now compose into one actual source execution. It retains exact selected values,
+class membership, completion/failure flags, unread tape and memory frames.
+The bound is `charge + 64*(xs.length+Q+1) + 104*n + 24`; radix capacity Q
+remains distinct from class count q. Redundant cleared-counter and label-range
+preconditions were removed. Independent target and axiom checks passed.
+The preceding integrated replay passed, including the single-candidate step.
