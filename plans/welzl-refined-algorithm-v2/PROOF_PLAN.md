@@ -62,7 +62,8 @@ still describes it as future work. All implementation details remain proof-side.
 | Representative choice mathematics | `ClassBucketDomain`, `ClassChoiceTransport` | Apply the existing finite-choice law to actual flat-tape execution without conditioning away failures |
 | Distance and exceptions | `BatchedDistances`, `ExceptionCollection` | Compose with selected representatives and exact acceptance checks |
 | Complete phase two | `ExceptionPhaseSource.exceptionPhase_run`, including initial exception partition, empty branch, scan and packing; existing size/separation lemmas | Compose after initial acceptance and before fixed full-B grouping |
-| Fixed full-B classes | `FullSamplePartition.groupActiveB_run`, unchanged radix, exact sorted prefix and class slices | Materialize runtime class starts, then local domain/trial source |
+| Fixed full-B classes | `FullSamplePartition.groupActiveB_run`, unchanged radix, `RepairClassOffsets.repairClassOffsets_run` and `repairClassLookup_run` | Compose with the local domain/trial source |
+| Repair neighborhoods | `RepairDomainSource.collectNeighborhoodAt_run`: actual CSR offset reads, duplicate-safe private neighborhood lists and marks | Append symmetric-difference domain, touched cleanup, and trial isolation checks |
 | Guarded cutoff | `SaturatedCutoff`, `SaturatedCutoffSource`, `RefinedCutoffSource.refinedCutoffSource_run` | Discharge word-fit preconditions from final layout; timeout remains separate |
 | Compiler | Existing pinned `Lax808846Proofs.Simulation` | Apply to the complete source/layout and derived cost bound |
 
@@ -749,3 +750,6 @@ neighborhood and exact indicator marks at `54*degree+22`.
 steps. Independent target checks and background-only axiom audits passed.
 The symmetric-difference filter/cleanup and local trial checker remain next;
 this collector checkpoint is landed while its worker continues the filter.
+
+Full LAX build passed after the repair collector/class-offset integration
+(139 root-imported proof modules). Public concept and conclusion status unchanged.
