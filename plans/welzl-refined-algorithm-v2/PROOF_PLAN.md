@@ -54,11 +54,11 @@ still describes it as future work. All implementation details remain proof-side.
 | Conditional order correctness | `ReductionPath`, `RefinedOrderCorrectness.output_encodes_graphWelzlOrder` | Actual source must construct the successful reduction path |
 | Partition execution | `FullSamplePartition.fullSamplePartition_run`, `ClassSizes.countDigit`, unchanged old refinement/partition sources; `VerifiedRoundPartitions` | Compose the initial attempt and refined round state |
 | Reconstruction and output | `VerifiedReconstructionBridge`, `RefinedHistoryOutput.History.reconstructAndWrite_clog2_bound` | Actual refined history/log construction; output execution already follows from a valid history |
-| Initial draws and packing | `InitialDrawSampleSource.initialDrawSampleSource_run_bits`, `SequentialDraws`, existing draw/lookup primitives | Compute runtime parameters, compose representatives and acceptance, then retries/law |
+| Initial draws and packing | `InitialDrawSampleSource.initialDrawSampleSource_run_bits`, `SequentialDraws`, existing draw/lookup primitives | Compute runtime parameters, append acceptance, then retries/law |
 | Stopped-prefix law | `StoppingPrefix`, `EnumeratedDraws`, `VerifiedDrawLaw`, `RejectionProtocol` | Actual adaptive sampler transitions, changing domains, retries and global finite-tape bound |
 | Packing and touched cleanup | `SamplePacking.markDrawArrayWith_run`, `clearDrawSupport_run`, `packMarkedSamples`; `PackedActiveSource.packActiveB_run` via `SourceRenaming` | Local-trial insertion/cleanup and final packing |
 | Distinct-neighborhood domain | `DistinctNeighborhoodDomain` using unchanged first partition | Full-ground initialization and empty-active-set branch |
-| Grouped representative execution | `GroupedClassRepresentatives.groupedClassRepresentatives_run_bits`, reusing old radix sort, `ClassRepresentativeLoop`, old representative map | Initial partition/attempt assembly and distribution/cost coupling |
+| Grouped representative execution | `GroupedClassRepresentatives.groupedClassRepresentatives_run_bits`, reusing old radix sort, `ClassRepresentativeLoop`, old representative map | `InitialSamplerAttempt.initialSamplerAttempt_run_bits` now composes initial draws, partition and representative selection; acceptance and distribution/cost coupling remain |
 | Representative choice mathematics | `ClassBucketDomain`, `ClassChoiceTransport` | Apply the existing finite-choice law to actual flat-tape execution without conditioning away failures |
 | Distance and exceptions | `BatchedDistances`, `ExceptionCollection` | Compose with selected representatives and exact acceptance checks |
 | Complete phase two | `ExceptionPhaseSource.exceptionPhase_run`, including initial exception partition, empty branch, scan and packing; existing size/separation lemmas | Compose after initial acceptance and before fixed full-B grouping |
@@ -770,3 +770,13 @@ The source bound is at most `90*(CSRdegree(b)+CSRdegree(repB[b]))+73`;
 duplicate adjacency entries are allowed and the empty domain is handled.
 Independent target build and axiom checks passed. This completes the local
 repair domain construction, not yet the trial/retry source.
+
+Reviewed `InitialSamplerAttempt.initialSamplerAttempt_run_bits`: initial
+draws, full sample partition, active packing, radix grouping and class draws
+now execute as one fixed command. It retains actual DrawTrace/ClassTrace,
+exact unread suffix, explicit draw/representative failure, sample bounds,
+class-constant representative formula and the downstream state facts.
+Explicit n/qpow preservation repairs the conservative syntactic frame gap.
+Independent target/axiom checks passed, including focused interface fixes.
+The command intentionally leaves attemptAccepted at zero: distance and
+exception acceptance are the next suffix, not an assumed successful outcome.

@@ -138,3 +138,4 @@ import Lax457868Proofs.InitialDrawSampleSource
 import Lax457868Proofs.RepairDomainSource
 import Lax457868Proofs.RepairClassOffsets
 import Lax457868Proofs.RepairFilterSource
+import Lax457868Proofs.InitialSamplerAttempt
