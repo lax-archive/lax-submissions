@@ -351,7 +351,11 @@ Lax195003. Its old crossing bound is `12*c²*(clog₂ n)²`; that result alone
 does not imply `2*k*clog₂ n` for unbounded `n`. Reuse the common internals,
 not the old end-to-end claim. Existing attributed copies of 34 construction
 modules already supply the partition/reconstruction foundation. Additional
-copies retain attribution and only transport namespaces/imports.
+copies retain attribution and only transport namespaces/imports. The earlier
+archive validation run 38564057277 rejected a direct Lax235315Proofs draft
+dependency, despite the local CLI issuing only a warning; the attributed
+source-copy route has since passed archive validation. No registration of
+the older draft is part of this task.
 
 | Plan item | Checked reusable interface | Remaining obligation |
 | --- | --- | --- |
@@ -381,3 +385,12 @@ the verified partition to full-neighborhood deduplication; (3) reuse the
 batched near-distance source closure and expose exact numeric distances.
 All remain in the proof package. These leaves are independent; their results
 will be reviewed before starting dependent source assembly.
+
+Reviewed boundary: `BatchedDistances.batchedDistanceSweep_run` reuses the old
+clear/sweep source and returns the actual degree/intersection arrays, exact
+restricted-neighborhood distance interpretation, preserved graph/masks/map,
+and unchanged input/output. Its worst-case source bound is
+`300*(n+targetCap+1)`. No representative distribution is needed for this
+pass; exception collection and retry execution are still separate tasks.
+The nine added source modules match the accepted original exactly after
+namespace transport and attribution.
