@@ -2,6 +2,7 @@ import Lax457868Proofs.SourceRenaming
 import Lax457868Proofs.ReusedOriginal.Construction.NearCollectSource
 import Lax457868Proofs.ExceptionPhaseSource
 import Lax11Proofs.CCGraph
+import Lax457868Proofs.SamplePacking
 
 /-! Degree-local, duplicate-tolerant collection of the two active
 neighborhoods needed by a local repair draw. -/
@@ -20,6 +21,7 @@ open Lax457868Proofs.ReusedOriginal.Construction.WelzlProgram
 open Lax457868Proofs.ExceptionPhaseSource
 open Lax457868Proofs.SamplerPhases
 open Lax457868Proofs.ExceptionRefinementStep
+open Lax457868Proofs.SamplePacking
 
 noncomputable section
 
@@ -374,6 +376,106 @@ lemma activeTargets_eq_numericNeighborhood_inter
     refine ⟨by simpa [setFlag] using hA, ?_⟩
     obtain ⟨hv', hb', hAdj⟩ := hadj
     exact ⟨hb', hv', (G.adj_comm _ _).mp hAdj⟩
+
+/-- Rename the verified touched-entry clearing loop onto a private
+neighborhood mark/list pair. -/
+def repairClearNames (marks list len : String) : Names where
+  scalar := Equiv.swap "drawCount" len *
+    Equiv.swap "drawCursor" "repairClearCursor"
+  array := Equiv.swap "sampleDraws" list *
+    Equiv.swap "sampleFlags" marks
+
+def clearRepairBMarks : Com :=
+  renameCom (repairClearNames "repairBMarks" "repairBList" "repairBLen")
+    (markDrawArrayWith 0)
+
+def clearRepairRMarks : Com :=
+  renameCom (repairClearNames "repairRMarks" "repairRList" "repairRLen")
+    (markDrawArrayWith 0)
+
+/-- Clear exactly the marked neighborhood support by walking its own
+duplicate-free list. This permits the same zero-token scratch arrays to be
+reused at the next repair without a full-vertex initialization. -/
+lemma clearNeighborhoodSupport_run (ρ : Names)
+    (marksName listName lenName : String)
+    (hnMap : ρ.scalar "n" = "n")
+    (hcountMap : ρ.scalar "drawCount" = lenName)
+    (hcursorMap : ρ.scalar "drawCursor" = "repairClearCursor")
+    (hlistMap : ρ.array "sampleDraws" = listName)
+    (hmarksMap : ρ.array "sampleFlags" = marksName)
+    {B n h : ℕ} {S : Finset ℕ} {marks list : ℕ → ℕ} {σ : Env}
+    (hn : σ.vars "n" = n) (hlen : σ.vars lenName = h)
+    (hmarks : σ.arrs marksName = arrOf n marks)
+    (hlist : σ.arrs listName = arrOf n list)
+    (henum : PrefixEnumerates h list S)
+    (hSrange : S ⊆ Finset.range n)
+    (hmarks01 : ∀ v < n, marks v ≤ 1)
+    (hmarksMem : ∀ v < n, marks v = 1 ↔ v ∈ S)
+    (hnB : n < B) :
+    ∃ σ', Run B (renameCom ρ (markDrawArrayWith 0)) σ σ'
+        (12 * h + 6) ∧
+      σ'.arrs marksName = arrOf n (fun _ => 0) ∧
+      σ'.vars "repairClearCursor" = h ∧
+      σ'.inp = σ.inp ∧ σ'.out = σ.out := by
+  let τ := renameEnv ρ.inverse σ
+  let draws := Stack.toList h list
+  have hdrawsLen : draws.length = h := by simp [draws, Stack.toList]
+  have hhn : h ≤ n := by
+    have hset : draws.toFinset = S := by
+      ext v
+      simpa [draws] using henum.2 v
+    have hcard : draws.length = S.card := by
+      rw [← hset, List.toFinset_card_of_nodup henum.1]
+    rw [← hdrawsLen, hcard]
+    have hcard := Finset.card_le_card hSrange
+    simpa using hcard
+  have hnτ : τ.vars "n" = n := by
+    change σ.vars (ρ.scalar "n") = n
+    rw [hnMap]; exact hn
+  have hcountτ : τ.vars "drawCount" = draws.length := by
+    change σ.vars (ρ.scalar "drawCount") = draws.length
+    rw [hcountMap, hdrawsLen]; exact hlen
+  have hmarksτ : τ.arrs "sampleFlags" = arrOf n marks := by
+    change σ.arrs (ρ.array "sampleFlags") = arrOf n marks
+    rw [hmarksMap]; exact hmarks
+  have hlistτ : τ.arrs "sampleDraws" = arrOf n list := by
+    change σ.arrs (ρ.array "sampleDraws") = arrOf n list
+    rw [hlistMap]; exact hlist
+  have hvalues : ∀ i (hi : i < draws.length), list i = draws[i] := by
+    intro i hi
+    have hi' : i < h := by simpa [draws, Stack.toList] using hi
+    simp [draws, Stack.toList, arrOf]
+  have hrange : ∀ v ∈ draws, v < n := by
+    intro v hv
+    exact Finset.mem_range.mp (hSrange ((henum.2 v).mp hv))
+  have hsupport : ∀ i < n, marks i ≠ 0 → i ∈ draws := by
+    intro i hi hm
+    have hm1 : marks i = 1 := by have := hmarks01 i hi; omega
+    exact (henum.2 i).mpr ((hmarksMem i hi).mp hm1)
+  obtain ⟨τ', rclear, hzero, hcursor⟩ :=
+    clearDrawSupport_run hnτ hcountτ hlistτ hmarksτ (by rw [hdrawsLen]; exact hhn)
+      hvalues hrange hsupport hnB (by rw [hdrawsLen]; omega)
+  let σ' := renameEnv ρ τ'
+  have hrun : Run B (renameCom ρ (markDrawArrayWith 0)) σ σ'
+      (12 * h + 6) := by
+    simpa [τ, σ', hdrawsLen] using run_rename ρ rclear
+  refine ⟨σ', hrun, ?_, ?_, ?_, ?_⟩
+  · rw [← hmarksMap]
+    simpa [σ'] using hzero
+  · rw [← hcursorMap]
+    simpa [σ', hdrawsLen] using hcursor
+  · exact hrun.frame_inp (by
+      simp only [renameCom, markDrawArrayWith, seqs, Com.reads, false_or]
+      change ¬ (renameCom ρ (seqs [
+        .store "sampleFlags" (.get "sampleDraws" (.var "drawCursor")) (.lit 0),
+        inc "drawCursor"])).reads
+      simp [renameCom, seqs, inc, Com.reads])
+  · exact hrun.out_eq (by
+      simp only [renameCom, markDrawArrayWith, seqs, Com.NoWrite, true_and]
+      change (renameCom ρ (seqs [
+        .store "sampleFlags" (.get "sampleDraws" (.var "drawCursor")) (.lit 0),
+        inc "drawCursor"])).NoWrite
+      simp [renameCom, seqs, inc, Com.NoWrite])
 
 /-- Collect the selected vertex's distinct active-A neighbors into the
 private B list and mark them with one. -/
