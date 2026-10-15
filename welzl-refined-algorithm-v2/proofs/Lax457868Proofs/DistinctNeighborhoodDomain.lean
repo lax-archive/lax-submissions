@@ -35,7 +35,7 @@ occupied `ord` prefix enumerates exactly the active set `A`; no partition,
 representative, or desired result is supplied as input. -/
 structure DistinctNeighborhoodInput (B n targetCap sampleCount : ℕ)
     (G : SimpleGraph (Fin n)) (x : List ℕ)
-    (A : Finset (Fin n)) (Wnum : Finset ℕ) where
+    (A C : Finset (Fin n)) (Wnum : Finset ℕ) where
   σ : Env
   activeB : ℕ → ℕ
   ord : ℕ → ℕ
@@ -72,8 +72,8 @@ structure DistinctNeighborhoodInput (B n targetCap sampleCount : ℕ)
   henum : PrefixEnumerates sampleCount ord Wnum
   hWrange : ∀ v ∈ Wnum, v < n
   hWfull : finsetOfNumeric Wnum = A
-  hAactive : ∀ v : Fin n, v ∈ A ↔ activeB v.val = 1
-  hAnonempty : A.Nonempty
+  hCactive : ∀ v : Fin n, v ∈ C ↔ activeB v.val = 1
+  hCnonempty : C.Nonempty
   hsampleCountN : sampleCount ≤ n
   hnB : n < B
   htargetCapB : targetCap < B
@@ -94,13 +94,13 @@ private lemma finiteNeighborhood_coe_eq_trace {n : ℕ}
     neighborhoodTrace, Set.mem_inter_iff, SimpleGraph.mem_neighborSet]
   exact and_comm
 
-/-- Transport any duplicate-free enumeration through an injective image. -/
-noncomputable def imageDomainEnumeration {α β : Type*} [DecidableEq α]
+/-- The image map gives an equivalence of the corresponding finite subtypes. -/
+noncomputable def imageSubtypeEquiv {α β : Type*} [DecidableEq α]
     [DecidableEq β] (X : Finset α) (f : α → β)
-    (hinj : Set.InjOn f (X : Set α)) (enum : DomainEnumeration X) :
-    DomainEnumeration (X.image f) := by
+    (hinj : Set.InjOn f (X : Set α)) :
+    {x // x ∈ X} ≃ {y // y ∈ X.image f} := by
   classical
-  let e : {x // x ∈ X} ≃ {y // y ∈ X.image f} := Equiv.ofBijective
+  exact Equiv.ofBijective
       (fun x => (⟨f x.val, Finset.mem_image.mpr ⟨x.val, x.property, rfl⟩⟩ :
         {y // y ∈ X.image f}))
       ⟨(by
@@ -111,21 +111,39 @@ noncomputable def imageDomainEnumeration {α β : Type*} [DecidableEq α]
         intro y
         rcases Finset.mem_image.mp y.property with ⟨x, hx, hxy⟩
         exact ⟨⟨x, hx⟩, Subtype.ext hxy⟩)⟩
-  have hcard : X.card = (X.image f).card := by
-    simpa using Fintype.card_congr e
-  exact (finEquivOfEq hcard.symm).trans (enum.trans e)
 
-/-- Convert the source `RepData.enum` prefix to the corresponding `Fin n`
-representatives without changing its order. -/
-private noncomputable def numericRepresentativeEnumeration
+/-- An injective image preserves the cardinality of its source. -/
+lemma image_card_eq {α β : Type*} [DecidableEq α] [DecidableEq β]
+    (X : Finset α) (f : α → β) (hinj : Set.InjOn f (X : Set α)) :
+    X.card = (X.image f).card := by
+  simpa using Fintype.card_congr (imageSubtypeEquiv X f hinj)
+
+/-- Transport an enumeration through an injective image. -/
+noncomputable def imageDomainEnumeration {α β : Type*} [DecidableEq α]
+    [DecidableEq β] (X : Finset α) (f : α → β)
+    (hinj : Set.InjOn f (X : Set α)) (enum : DomainEnumeration X) :
+    DomainEnumeration (X.image f) :=
+  (finEquivOfEq (image_card_eq X f hinj).symm).trans
+    (enum.trans (imageSubtypeEquiv X f hinj))
+
+/-- The image enumeration applies the map at the input index, with only a
+cardinality cast between the two finite index types. -/
+lemma imageDomainEnumeration_lookup {α β : Type*} [DecidableEq α]
+    [DecidableEq β] (X : Finset α) (f : α → β)
+    (hinj : Set.InjOn f (X : Set α)) (enum : DomainEnumeration X)
+    (i : Fin (X.image f).card) :
+    (imageDomainEnumeration X f hinj enum i).val =
+      f (enum ((finEquivOfEq (image_card_eq X f hinj).symm) i)).val := by
+  rfl
+
+/-- Reinterpret the numeric representative set as its finite subset of `Fin n`. -/
+noncomputable def numericRepresentativeSubtypeEquiv
     {n current : ℕ} {active label repClass reps outActive : ℕ → ℕ}
     {R : Finset ℕ} (hdata : RepData n current n active label repClass
-      reps outActive R) : DomainEnumeration (finsetOfNumeric (n := n) R) := by
+      reps outActive R) : {r // r ∈ R} ≃
+        {v // v ∈ finsetOfNumeric (n := n) R} := by
   classical
-  let enumR := prefixDomainEnumeration R.card reps R hdata.enum
-  let e : {r // r ∈ R} ≃
-      {v // v ∈ finsetOfNumeric (n := n) R} :=
-    Equiv.ofBijective
+  exact Equiv.ofBijective
       (fun r => (⟨⟨r.val, (mem_activeVertices.mp
           (hdata.reps_processed r.property)).1⟩, by
         simp [finsetOfNumeric, r.property]⟩ :
@@ -142,17 +160,48 @@ private noncomputable def numericRepresentativeEnumeration
         · apply Subtype.ext
           apply Fin.ext
           rfl)⟩
-  have hcard : R.card = (finsetOfNumeric (n := n) R).card := by
-    simpa using Fintype.card_congr e
-  exact (finEquivOfEq hcard.symm).trans (enumR.trans e)
+
+/-- The source and `Fin n` representative sets have the same cardinality. -/
+lemma numericRepresentativeCard
+    {n current : ℕ} {active label repClass reps outActive : ℕ → ℕ}
+    {R : Finset ℕ} (hdata : RepData n current n active label repClass
+      reps outActive R) :
+    R.card = (finsetOfNumeric (n := n) R).card := by
+  simpa using Fintype.card_congr (numericRepresentativeSubtypeEquiv hdata)
+
+/-- Convert the source `RepData.enum` prefix to the corresponding `Fin n`
+representatives without changing its order. -/
+noncomputable def numericRepresentativeEnumeration
+    {n current : ℕ} {active label repClass reps outActive : ℕ → ℕ}
+    {R : Finset ℕ} (hdata : RepData n current n active label repClass
+      reps outActive R) : DomainEnumeration (finsetOfNumeric (n := n) R) :=
+  (finEquivOfEq (numericRepresentativeCard hdata).symm).trans
+    ((prefixDomainEnumeration R.card reps R hdata.enum).trans
+      (numericRepresentativeSubtypeEquiv hdata))
+
+/-- The numeric representative enumeration follows the occupied source
+`reps` prefix at every index. -/
+lemma numericRepresentativeEnumeration_lookup
+    {n current : ℕ} {active label repClass reps outActive : ℕ → ℕ}
+    {R : Finset ℕ} (hdata : RepData n current n active label repClass
+      reps outActive R) (i : Fin (finsetOfNumeric (n := n) R).card) :
+    (numericRepresentativeEnumeration hdata i).val.val = reps i.val := by
+  classical
+  have hprefix := prefixDomainEnumeration_lookup R.card reps R hdata.enum
+    ((finEquivOfEq (numericRepresentativeCard hdata).symm) i)
+  change (prefixDomainEnumeration R.card reps R hdata.enum
+      ((finEquivOfEq (numericRepresentativeCard hdata).symm) i)).val =
+    reps i.val
+  rw [hprefix]
+  rfl
 
 /-- Running `firstPartition` against every active vertex constructs the
 actual source representative set and map, and makes its representatives
 exactly the distinct full neighborhoods on `A`. -/
-theorem runDistinctNeighborhoodSource
+lemma runDistinctNeighborhoodSource
     {B n targetCap sampleCount : ℕ} {G : SimpleGraph (Fin n)}
-    {x : List ℕ} {A : Finset (Fin n)} {Wnum : Finset ℕ}
-    (I : DistinctNeighborhoodInput B n targetCap sampleCount G x A Wnum) :
+    {x : List ℕ} {A C : Finset (Fin n)} {Wnum : Finset ℕ}
+    (I : DistinctNeighborhoodInput B n targetCap sampleCount G x A C Wnum) :
     ∃ σ' current label repClass' repsB' nextB' repB' R,
       Run B (partition "activeB" "ord" "sampleCount" "classB"
         "repsB" "nextB" "repB" "nextBCount") I.σ σ'
@@ -167,19 +216,18 @@ theorem runDistinctNeighborhoodSource
       RepData n current n I.activeB label repClass' repsB' nextB' R ∧
       (∀ v < n, I.activeB v = 1 → repB' v = repClass' (label v)) ∧
       Nonempty (ConcreteTracePartition G I.activeB (A : Set (Fin n)) R repB') ∧
+      (finsetOfNumeric (n := n) R : Set (Fin n)) ⊆ (C : Set (Fin n)) ∧
       Set.InjOn (finiteNeighborhood G A)
         (finsetOfNumeric (n := n) R : Set (Fin n)) ∧
-      A.image (finiteNeighborhood G A) =
+      C.image (finiteNeighborhood G A) =
         (finsetOfNumeric (n := n) R).image (finiteNeighborhood G A) ∧
       (finsetOfNumeric (n := n) R).card =
         ((finsetOfNumeric (n := n) R).image (finiteNeighborhood G A)).card ∧
-      (∃ _enum : DomainEnumeration
-        ((finsetOfNumeric (n := n) R).image (finiteNeighborhood G A)),
-        partitionCost x I.ord n sampleCount ≤ 900 * (x.length + 1)) := by
+      partitionCost x I.ord n sampleCount ≤ 900 * (x.length + 1) := by
   classical
   have hactiveNonempty : (activeVertices n I.activeB).Nonempty := by
-    obtain ⟨v, hv⟩ := I.hAnonempty
-    exact ⟨v.val, mem_activeVertices.mpr ⟨v.isLt, (I.hAactive v).mp hv⟩⟩
+    obtain ⟨v, hv⟩ := I.hCnonempty
+    exact ⟨v.val, mem_activeVertices.mpr ⟨v.isLt, (I.hCactive v).mp hv⟩⟩
   obtain ⟨σ', current, label, repClass', repsB', nextB', repB', R,
     hrun, hcount, hactive, hclass, hrepClass, hreps, hnextB, hrepB,
     hdata, hmap, htrace⟩ :=
@@ -195,14 +243,14 @@ theorem runDistinctNeighborhoodSource
   let Rfin := finsetOfNumeric (n := n) R
   have hRset : (Rfin : Set (Fin n)) = finSetAsSet R :=
     coe_finsetOfNumeric (n := n) R
-  have hRinA : (Rfin : Set (Fin n)) ⊆ (A : Set (Fin n)) := by
+  have hRinC : (Rfin : Set (Fin n)) ⊆ (C : Set (Fin n)) := by
     intro r hr
     have hrR : r ∈ finSetAsSet R := by rw [← hRset]; exact hr
     have hractive := htraceA.partition.reps_mem hrR
     have hactive' : I.activeB r.val = 1 := by
       change r ∈ {v : Fin n | I.activeB v.val = 1} at hractive
       exact hractive
-    exact (I.hAactive r).mpr hactive'
+    exact (I.hCactive r).mpr hactive'
   have hinj : Set.InjOn (finiteNeighborhood G A) (Rfin : Set (Fin n)) := by
     intro u hu v hv huv
     have huR : u ∈ finSetAsSet R := by rw [← hRset]; exact hu
@@ -212,7 +260,7 @@ theorem runDistinctNeighborhoodSource
       have hcoe := congrArg (fun X : Finset (Fin n) => (X : Set (Fin n))) huv
       simpa [finiteNeighborhood_coe_eq_trace] using hcoe
     exact htraceA.partition.reps_separated huR hvR htraceEq
-  have himage : A.image (finiteNeighborhood G A) =
+  have himage : C.image (finiteNeighborhood G A) =
       Rfin.image (finiteNeighborhood G A) := by
     apply Finset.ext
     intro T
@@ -221,36 +269,33 @@ theorem runDistinctNeighborhoodSource
       rcases Finset.mem_image.mp hT with ⟨v, hv, rfl⟩
       let r := htraceA.partition.representative v
       have hrR : r ∈ finSetAsSet R :=
-        htraceA.partition.representative_mem v ((I.hAactive v).mp hv)
+        htraceA.partition.representative_mem v ((I.hCactive v).mp hv)
       have hrV : r ∈ {u : Fin n | I.activeB u.val = 1} :=
         htraceA.partition.reps_mem hrR
-      have hrA : r ∈ A := (I.hAactive r).mpr hrV
+      have hrC : r ∈ C := (I.hCactive r).mpr hrV
       have hrFin : r ∈ Rfin := by
         change r ∈ (Rfin : Set (Fin n))
         rw [hRset]
         exact hrR
-      have hsame := htraceA.partition.same_trace v ((I.hAactive v).mp hv)
+      have hsame := htraceA.partition.same_trace v ((I.hCactive v).mp hv)
       have hneigh : finiteNeighborhood G A r = finiteNeighborhood G A v := by
         apply Finset.coe_injective
         simpa [finiteNeighborhood_coe_eq_trace] using hsame
       exact Finset.mem_image.mpr ⟨r, hrFin, hneigh⟩
     · intro hT
       rcases Finset.mem_image.mp hT with ⟨r, hr, hT⟩
-      exact Finset.mem_image.mpr ⟨r, hRinA hr, hT⟩
+      exact Finset.mem_image.mpr ⟨r, hRinC hr, hT⟩
   have hcard : Rfin.card = (Rfin.image (finiteNeighborhood G A)).card := by
     symm
     exact Finset.card_image_iff.mpr (by
       intro u hu v hv huv
       exact hinj hu hv huv)
-  have hdomain : DomainEnumeration (Rfin.image (finiteNeighborhood G A)) := by
-    exact imageDomainEnumeration Rfin (finiteNeighborhood G A) hinj
-      (numericRepresentativeEnumeration hdata)
   have hcost := partitionCost_le_input I.hx I.hsampleCountN
     (PrefixEnumerates.entry_lt I.henum I.hWrange)
     I.henum.injective_on_prefix
   refine ⟨σ', current, label, repClass', repsB', nextB', repB', R,
     hrun, hcount, hactive, hclass, hrepClass, hreps, hnextB, hrepB,
-    hdata, hmap, ⟨htraceA⟩, hinj, himage, hcard, ⟨hdomain, hcost⟩⟩
+    hdata, hmap, ⟨htraceA⟩, hRinC, hinj, himage, hcard, hcost⟩
 
 end
 
