@@ -551,3 +551,26 @@ encoding and CC interfaces are namespace ports, and the separately pinned
 Lax808846 compiler revision is unchanged. The current validated pins remain
 appropriate for this proof batch; a dependency port is a separate mechanical
 task, not a missing mathematical proof.
+
+
+Reviewed next sampler components:
+- `ClassBucketDomain` uses `getD_bucketSort` and the existing prefix enumeration
+  API to identify each sorted class slice with its existing `RepFiber`. No
+  new uniform distribution or sorting argument is introduced.
+- `ClassOffsetDraw.countedClassOffsetDraw_run_tape` reuses the rejection source
+  and reads `ord[drawOffset+drawValue]` on success. Exact residual input and
+  failure preservation are proved, at `(15*clog₂ m+30)*attempts+21` source steps.
+- `DrawLogSetup.drawLogSetup_run` reuses the original `computeLog_run`, with
+  save/restore of `n` and `qpow`, at `12*clog₂ m+18`. `WelzlLog` is an exact
+  attributed namespace-transported source copy from `33f2eca4`; the elementary
+  power bound is reused from Lean core rather than proved again.
+The three target builds pass after supervisor review. These are prerequisites
+for the actual loop across classes, not a complete representative sampler yet.
+
+Additional direct reuse: `RepresentativeSource.representativeMapLoop_run`
+accepts any in-range per-class representatives, independent of the old
+first-representative selection rule. Fill `repClass` with the new random
+choices and reuse that loop to construct the per-vertex map at `104*n+4`.
+For the new class loop retain a sum of actual per-class read costs: the existing
+`sum_classMultiplicity_of_bounded` and `clog₂ m≤m` allow a linear aggregate
+expected representative cost without adding an artificial logarithmic factor.

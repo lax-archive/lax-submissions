@@ -117,3 +117,7 @@ import Lax457868Proofs.ReusedOriginal.Construction.RecordRemovedSource
 import Lax457868Proofs.ReusedOriginal.Construction.RecordedHistory
 import Lax457868Proofs.ReusedOriginal.Construction.RemovedRestoreBridge
 import Lax457868Proofs.SequentialDraws
+import Lax457868Proofs.ClassBucketDomain
+import Lax457868Proofs.ClassOffsetDraw
+import Lax457868Proofs.DrawLogSetup
+import Lax457868Proofs.ReusedOriginal.Construction.WelzlLog
