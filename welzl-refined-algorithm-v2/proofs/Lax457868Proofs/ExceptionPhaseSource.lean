@@ -49,7 +49,7 @@ private lemma adjn_fin_iff {n : ℕ} (G : SimpleGraph (Fin n))
   · intro hadj
     exact ⟨i.isLt, b.isLt, hadj⟩
 
-private lemma numeric_trace_iff {n : ℕ} (G : SimpleGraph (Fin n))
+lemma numeric_trace_iff {n : ℕ} (G : SimpleGraph (Fin n))
     {W : Finset ℕ} (hW : W ⊆ Finset.range n)
     (b b' : Fin n) :
     (neighborhoodTrace G (finSetAsSet W) b =
