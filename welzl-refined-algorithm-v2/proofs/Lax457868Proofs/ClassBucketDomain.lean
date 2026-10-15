@@ -24,8 +24,7 @@ def labelClass (xs : List ℕ) (label : ℕ → ℕ) (d : ℕ) : Finset ℕ :=
 /-- The `d`-slice of the stable bucket-sort output is a duplicate-free
 enumeration of the corresponding label class. -/
 lemma bucketSlice_prefixEnumerates (xs : List ℕ) (label : ℕ → ℕ)
-    (q d : ℕ) (hqd : d < q) (_hlabels : ∀ x ∈ xs, label x < q)
-    (hxs : xs.Nodup) :
+    (q d : ℕ) (hqd : d < q) (hxs : xs.Nodup) :
     Lax457868Proofs.ReusedOriginal.Construction.MarkingMath.PrefixEnumerates
       (countDigit label xs d)
       (fun i => (bucketSort q label xs).getD (startDigit label xs d + i) 0)
@@ -58,24 +57,21 @@ An empty class is allowed: `DomainEnumeration` has the unique empty-domain
 equivalence and needs no representative witness. -/
 noncomputable def bucketSliceDomainEnumeration (xs : List ℕ)
     (label : ℕ → ℕ) (q d : ℕ) (hqd : d < q)
-    (hlabels : ∀ x ∈ xs, label x < q) (hxs : xs.Nodup) :
+    (hxs : xs.Nodup) :
     DomainEnumeration (labelClass xs label d) :=
   prefixDomainEnumeration (countDigit label xs d)
     (fun i => (bucketSort q label xs).getD (startDigit label xs d + i) 0)
     (labelClass xs label d)
-    (bucketSlice_prefixEnumerates xs label q d hqd hlabels hxs)
+    (bucketSlice_prefixEnumerates xs label q d hqd hxs)
 
 /-- Lookup in the adapter is exactly lookup in the sorted class slice. -/
 lemma bucketSliceDomainEnumeration_lookup (xs : List ℕ)
     (label : ℕ → ℕ) (q d : ℕ) (hqd : d < q)
-    (hlabels : ∀ x ∈ xs, label x < q) (hxs : xs.Nodup)
+    (hxs : xs.Nodup)
     (i : Fin (labelClass xs label d).card) :
-    (bucketSliceDomainEnumeration xs label q d hqd hlabels hxs i).val =
-      (bucketSort q label xs).getD
-        (startDigit label xs d + ((finEquivOfEq
-          (prefixEnumerates_card _ _ _
-            (bucketSlice_prefixEnumerates xs label q d hqd hlabels hxs))).symm i).val) 0 := by
-  let hen := bucketSlice_prefixEnumerates xs label q d hqd hlabels hxs
+    (bucketSliceDomainEnumeration xs label q d hqd hxs i).val =
+      (bucketSort q label xs).getD (startDigit label xs d + i.val) 0 := by
+  let hen := bucketSlice_prefixEnumerates xs label q d hqd hxs
   let hcard := prefixEnumerates_card _ _ _ hen
   let i' := (finEquivOfEq hcard).symm i
   have hlookup := prefixDomainEnumeration_lookup _ _ _ hen i'
@@ -83,7 +79,7 @@ lemma bucketSliceDomainEnumeration_lookup (xs : List ℕ)
       (⟨i'.val, hcard ▸ i'.isLt⟩ : Fin (labelClass xs label d).card) = i := by
     apply Fin.ext
     rfl
-  simpa [bucketSliceDomainEnumeration, i', hindex] using hlookup
+  simpa [bucketSliceDomainEnumeration, i', hindex, finEquivOfEq] using hlookup
 
 /-- A label class equals the corresponding trace class whenever labels encode
 trace equality on the finite carrier. -/
