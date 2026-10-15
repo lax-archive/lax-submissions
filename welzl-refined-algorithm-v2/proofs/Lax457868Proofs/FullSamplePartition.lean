@@ -2,6 +2,8 @@ import Lax457868Proofs.ExceptionPhaseSource
 import Lax457868Proofs.ReusedOriginal.Construction.PartitionCompleteSource
 import Lax457868Proofs.ReusedOriginal.Construction.RoundPartitionSource
 import Lax457868Proofs.ReusedOriginal.Construction.RadixMath
+import Lax457868Proofs.PackedActiveSource
+import Lax457868Proofs.GroupedClassRepresentatives
 
 /-! One reusable full active-B partition on a packed sample.  The same source
 boundary applies before the initial representative draw and after phase two. -/
@@ -22,6 +24,13 @@ open Lax457868Proofs.ReusedOriginal.Construction.RoundPartitionSource
 open Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
 open Lax457868Proofs.ReusedOriginal.Construction.NeighborhoodComplexity
 open Lax457868Proofs.ReusedOriginal.Construction.WelzlProgram
+open Lax457868Proofs.PackedActiveSource
+open Lax457868Proofs.ReusedOriginal.Construction.RadixPass
+open Lax457868Proofs.GroupedClassRepresentatives
+open Lax457868Proofs.ClassBucketDomain
+open Lax457868Proofs.EnumeratedDraws
+open Lax457868Proofs.ClassRepresentativeLoop
+open Lax457868Proofs.SamplePacking
 
 noncomputable section
 
@@ -301,6 +310,218 @@ lemma Input.fullSamplePartitionCost_le_linear {B n targetCap sampleCount : ℕ}
     I.henum.injective_on_prefix
   rw [← I.htargetCap] at hwork
   unfold fullSamplePartitionCost
+  omega
+
+/-! A separate grouping pass consumes either full-B partition result.  It
+does not select representatives, so callers can choose whether the grouped
+domain is needed and avoid a second radix pass. -/
+
+def groupActiveB : Com := seqs [packActiveBSource, radixPass "classB"]
+
+/-- State produced by the partition, with the scratch arrays required by a
+single stable radix pass. -/
+structure GroupInput (B n q Q : ℕ) where
+  σ : Env
+  active : ℕ → ℕ
+  label : ℕ → ℕ
+  size : ℕ → ℕ
+  ord : ℕ → ℕ
+  count : ℕ → ℕ
+  scratch : ℕ → ℕ
+  repB : ℕ → ℕ
+  sampleFlags : ℕ → ℕ
+  hn : σ.vars "n" = n
+  hqpow : σ.vars "qpow" = Q
+  hclassCount : σ.vars "classCount" = q
+  hactive : σ.arrs "activeB" = arrOf n active
+  hlabel : σ.arrs "classB" = arrOf n label
+  hsize : σ.arrs "classSize" = arrOf n size
+  hord : σ.arrs "ord" = arrOf n ord
+  hcount : σ.arrs "count" = arrOf Q count
+  hscratch : σ.arrs "scratchOrder" = arrOf n scratch
+  hrepB : σ.arrs "repB" = arrOf n repB
+  hsampleFlags : σ.arrs "sampleFlags" = arrOf n sampleFlags
+  hsizes : ClassSizes n q active label size
+  hflags01 : ∀ v < n, active v ≤ 1
+  hqQ : q ≤ Q
+  hQB : Q < B
+  hnB : n < B
+  honeB : 1 < B
+
+/-- Pack the active vertices into `ord`, then group that one packed list by
+the already computed class labels.  The output prefix is the actual sorted
+array; `classStart` remains a mathematical address until a later source
+prefix-sum pass materializes it. -/
+lemma groupActiveB_run {B n q Q : ℕ} (I : GroupInput B n q Q) :
+    ∃ (σ' : Env) (xs : List ℕ) (sorted : ℕ → ℕ),
+      Run B groupActiveB I.σ σ'
+        (20 * n + 9 + 64 * ((activeVertices n I.active).card + Q + 1)) ∧
+      xs.Nodup ∧ xs.toFinset = activeVertices n I.active ∧
+      xs.length = (activeVertices n I.active).card ∧
+      σ'.vars "alen" = xs.length ∧
+      σ'.vars "classCount" = q ∧
+      σ'.vars "qpow" = Q ∧
+      σ'.arrs "ord" = arrOf n sorted ∧
+      (∀ i < xs.length,
+        sorted i = (bucketSort Q I.label xs).getD i 0) ∧
+      (∀ d < q, I.size d = countDigit I.label xs d) ∧
+      (∀ d ≤ q, classStart I.size d = startDigit I.label xs d) ∧
+      (∀ d < q, classStart I.size d + I.size d ≤ xs.length) ∧
+      (∀ d < q, PrefixEnumerates (I.size d)
+        (fun i => sorted (classStart I.size d + i))
+        (labelClass xs I.label d)) ∧
+      σ'.arrs "activeB" = arrOf n I.active ∧
+      σ'.arrs "classB" = arrOf n I.label ∧
+      σ'.arrs "classSize" = arrOf n I.size ∧
+      σ'.arrs "repB" = arrOf n I.repB ∧
+      σ'.arrs "sampleFlags" = arrOf n I.sampleFlags ∧
+      σ'.vars "n" = n ∧
+      σ'.vars "activePackCursor" = n ∧
+      σ'.vars "sampleCount" = I.σ.vars "sampleCount" ∧
+      σ'.inp = I.σ.inp ∧ σ'.out = I.σ.out ∧
+      (∀ a, a ∉ groupActiveB.warrs → σ'.arrs a = I.σ.arrs a) ∧
+      (∀ v, v ∉ groupActiveB.wvars → σ'.vars v = I.σ.vars v) := by
+  obtain ⟨σ₁, packed, rpack, hactive₁, hord₁, henum, halen₁,
+    _hcursor, hframeArr, hframeVar, _hinp, _hout⟩ :=
+    packActiveB_run I.hn I.hactive I.hord I.hflags01 I.hnB I.honeB
+  let xs := Stack.toList (σ₁.vars "alen") packed
+  have hset : xs.toFinset = activeVertices n I.active := by
+    ext v
+    simpa [xs, flaggedVertices] using (henum.2 v)
+  have hxs : xs.Nodup := henum.1
+  have hlen : xs.length = (activeVertices n I.active).card := by
+    simp [xs, halen₁, flaggedVertices]
+  have hxn : xs.length ≤ n := by
+    rw [hlen]
+    have hsub : activeVertices n I.active ⊆ Finset.range n := by
+      intro v hv
+      exact Finset.mem_range.mpr (mem_activeVertices.mp hv).1
+    simpa using Finset.card_le_card hsub
+  have hval : ∀ i < xs.length, packed i = xs.getD i 0 := by
+    intro i hi
+    have hi' : i < σ₁.vars "alen" := by simpa [xs, Stack.toList] using hi
+    change packed i = (arrOf (σ₁.vars "alen") packed).getD i 0
+    exact (getD_arrOf packed hi').symm
+  have hvertices : ∀ v ∈ xs, v < n := by
+    intro v hv
+    exact (mem_activeVertices.mp (hset ▸ List.mem_toFinset.mpr hv)).1
+  have hsizeCount := ClassSizes.countDigit I.hsizes xs hxs hset
+  have hkeys : ∀ v ∈ xs, I.label v < Q := by
+    intro v hv
+    have ha : v ∈ activeVertices n I.active := by
+      rw [← hset]; exact List.mem_toFinset.mpr hv
+    exact (I.hsizes.1 v (mem_activeVertices.mp ha).1
+      (mem_activeVertices.mp ha).2).trans_le I.hqQ
+  have hqpow₁ : σ₁.vars "qpow" = Q := by
+    rw [hframeVar "qpow" (by decide) (by decide)]
+    exact I.hqpow
+  have hlabel₁ : σ₁.arrs "classB" = arrOf n I.label := by
+    rw [hframeArr "classB" (by decide)]
+    exact I.hlabel
+  have hcount₁ : σ₁.arrs "count" = arrOf Q I.count := by
+    rw [hframeArr "count" (by decide)]
+    exact I.hcount
+  have hscratch₁ : σ₁.arrs "scratchOrder" = arrOf n I.scratch := by
+    rw [hframeArr "scratchOrder" (by decide)]
+    exact I.hscratch
+  obtain ⟨σ₂, sorted, rradix, halen₂, hqpow₂, hord₂, hsorted, hlabel₂⟩ :=
+    radixPass_run (keyName := "classB")
+      (xs := xs) (by simp [xs, Stack.toList])
+      hqpow₁ hord₁ hval hlabel₁ hcount₁ hscratch₁
+      (by decide) (by decide) (by decide)
+      hxn I.hnB I.hQB hxs hvertices hkeys
+  have hrun : Run B groupActiveB I.σ σ₂
+      (20 * n + 9 + 64 * ((activeVertices n I.active).card + Q + 1)) := by
+    simpa [groupActiveB, seqs, hlen] using rpack.seq rradix
+  have hstart : ∀ d ≤ q, classStart I.size d = startDigit I.label xs d :=
+    classStart_eq_startDigit hsizeCount
+  have htotal : (bucketSort Q I.label xs).length = xs.length :=
+    (bucketSort_perm hxs hkeys).length_eq
+  have hintervals : ∀ d < q,
+      classStart I.size d + I.size d ≤ xs.length := by
+    intro d hd
+    rw [hstart d (Nat.le_of_lt hd), hsizeCount d hd]
+    have hinterval := digit_intervals_separated I.label xs
+      (lt_of_lt_of_le hd I.hqQ)
+    have hfinal : startDigit I.label xs Q = xs.length := by
+      rw [← length_bucketSort_eq_startDigit]
+      exact htotal
+    omega
+  have hslices : ∀ d < q, PrefixEnumerates (I.size d)
+      (fun i => sorted (classStart I.size d + i))
+      (labelClass xs I.label d) := by
+    intro d hd
+    have hbase := bucketSlice_prefixEnumerates xs I.label Q d
+      (lt_of_lt_of_le hd I.hqQ) hxs
+    have hbound : ∀ i < I.size d,
+        classStart I.size d + i < xs.length := by
+      intro i hi
+      rw [hstart d (Nat.le_of_lt hd), hsizeCount d hd] at *
+      have hinterval := digit_intervals_separated I.label xs
+        (lt_of_lt_of_le hd I.hqQ)
+      have hfinal : startDigit I.label xs Q = xs.length := by
+        rw [← length_bucketSort_eq_startDigit]
+        exact htotal
+      omega
+    have hlist : Stack.toList (I.size d)
+        (fun i => sorted (classStart I.size d + i)) =
+        Stack.toList (countDigit I.label xs d)
+          (fun i => (bucketSort Q I.label xs).getD
+            (startDigit I.label xs d + i) 0) := by
+      rw [hsizeCount d hd]
+      change arrOf (countDigit I.label xs d) _ = arrOf _ _
+      apply arrOf_congr
+      intro i hi
+      rw [hstart d (Nat.le_of_lt hd)]
+      have hb := hbound i (by rwa [hsizeCount d hd])
+      rw [hstart d (Nat.le_of_lt hd)] at hb
+      exact hsorted _ hb
+    change (Stack.toList (I.size d)
+      (fun i => sorted (classStart I.size d + i))).Nodup ∧
+      ∀ v, v ∈ Stack.toList (I.size d)
+        (fun i => sorted (classStart I.size d + i)) ↔
+        v ∈ labelClass xs I.label d
+    rw [hlist]
+    exact hbase
+  refine ⟨σ₂, xs, sorted, hrun, hxs, hset, hlen, halen₂, ?_, hqpow₂,
+    hord₂, hsorted, hsizeCount, hstart, hintervals, hslices, ?_, hlabel₂,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [rradix.frame_var "classCount" (by decide),
+      hframeVar "classCount" (by decide) (by decide)]
+    exact I.hclassCount
+  · rw [rradix.frame_arr "activeB" (by decide)]
+    exact hactive₁
+  · rw [rradix.frame_arr "classSize" (by decide),
+      hframeArr "classSize" (by decide)]
+    exact I.hsize
+  · rw [rradix.frame_arr "repB" (by decide),
+      hframeArr "repB" (by decide)]
+    exact I.hrepB
+  · rw [rradix.frame_arr "sampleFlags" (by decide),
+      hframeArr "sampleFlags" (by decide)]
+    exact I.hsampleFlags
+  · rw [rradix.frame_var "n" (by decide),
+      hframeVar "n" (by decide) (by decide)]
+    exact I.hn
+  · rw [rradix.frame_var "activePackCursor" (by decide)]
+    exact _hcursor
+  · exact hrun.frame_var "sampleCount" (by decide)
+  · exact hrun.frame_inp (by decide)
+  · exact hrun.out_eq (by decide)
+  · intro a ha; exact hrun.frame_arr a ha
+  · intro v hv; exact hrun.frame_var v hv
+
+/-- When the radix table capacity is at most twice the vertex capacity, the
+separate pack-and-group source has a fixed linear budget. -/
+lemma GroupInput.groupActiveBCost_le_linear {B n q Q : ℕ}
+    (I : GroupInput B n q Q) (hQ : Q ≤ 2 * n) :
+    20 * n + 9 + 64 * ((activeVertices n I.active).card + Q + 1) ≤
+      212 * n + 73 := by
+  have hsub : activeVertices n I.active ⊆ Finset.range n := by
+    intro v hv
+    exact Finset.mem_range.mpr (mem_activeVertices.mp hv).1
+  have hcard : (activeVertices n I.active).card ≤ n := by
+    simpa using Finset.card_le_card hsub
   omega
 
 end
