@@ -30,7 +30,6 @@ lemma classOffsetDrawLookup_run_selected {B m ordCap offset : ℕ}
     (hfound : σ.vars "drawFound" = 1)
     (hdraw : σ.vars "drawValue" = i.val)
     (hoffset : σ.vars "drawOffset" = offset)
-    (hoffsetB : offset < B)
     (hmCap : offset + m ≤ ordCap)
     (hordCap : ordCap < B)
     (hord : σ.arrs "ord" = arrOf ordCap ord)
@@ -39,6 +38,7 @@ lemma classOffsetDrawLookup_run_selected {B m ordCap offset : ℕ}
       σ'.vars "drawVertex" = ord (offset + i.val) := by
   have hindexCap : offset + i.val < ordCap := by omega
   have hindexB : offset + i.val < B := lt_of_lt_of_le hindexCap hordCap.le
+  have hoffsetB : offset < B := by omega
   have hoffsetVarB : σ.vars "drawOffset" < B := by rw [hoffset]; exact hoffsetB
   have hdrawVarB : σ.vars "drawValue" < B := by rw [hdraw]; omega
   have hsum : (Expr.add (.var "drawOffset") (.var "drawValue")).evalB B σ =
@@ -92,7 +92,6 @@ lemma countedClassOffsetDraw_run_tape {B n v m t ordCap offset : ℕ}
     (hordValue : ∀ j < m, ord (offset + j) < B)
     (hactiveCap : offset + m ≤ ordCap)
     (hoffset : σ.vars "drawOffset" = offset)
-    (hkeyOffset : σ.vars "drawOffset" < B)
     (hv : σ.vars "v" = v) (hvn : v < n)
     (hL : σ.vars "L" = Nat.clog 2 m)
     (hmod : σ.vars "drawModulus" = m)
@@ -128,8 +127,7 @@ lemma countedClassOffsetDraw_run_tape {B n v m t ordCap offset : ℕ}
   have hoffset₁ : σ₁.vars "drawOffset" = offset :=
     (hselector.frame_var "drawOffset" (by decide)).trans hoffset
   have hoffsetB : offset < B := by
-    rw [← hoffset]
-    exact hkeyOffset
+    omega
   have hvertex₁ : σ₁.vars "drawVertex" = σ.vars "drawVertex" :=
     hselector.frame_var "drawVertex" (by decide)
   by_cases hsuccess : (selectBitIndexWithCount m hm t tape).1 ≠ none
@@ -140,7 +138,7 @@ lemma countedClassOffsetDraw_run_tape {B n v m t ordCap offset : ℕ}
       (hselected i hi).2
     obtain ⟨σ₂, hlookup, hvertex₂⟩ :=
       classOffsetDrawLookup_run_selected hfoundOne hdraw hoffset₁
-        hoffsetB hactiveCap hordCap hord₁ hordValue
+        hactiveCap hordCap hord₁ hordValue
     have hwhole : Run B (seqs [countedRejectionSelector, classOffsetDrawLookup])
         σ σ₂
         ((15 * Nat.clog 2 m + 30) * bitTapeAttemptsUsed m t tape + 21) := by
