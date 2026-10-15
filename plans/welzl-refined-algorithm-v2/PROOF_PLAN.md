@@ -42,23 +42,39 @@ Complete only when the annotated proof has the exact public type, has no
 unproved mathematical assumptions or self-dependence, passes full kernel
 replay, and the accepted draft records that proof.
 
-## 2. What is already checked
+## 2. Current checked interfaces (updated 2026-10-15)
 
-| Layer | Checked modules / interfaces | What it does not yet establish |
+This table supersedes the historical assignment/status snapshots below. Reuse
+these exact interfaces; do not recreate a component because an older entry
+still describes it as future work. All implementation details remain proof-side.
+
+| Layer | Checked modules / interfaces | Remaining connection |
 | --- | --- | --- |
-| Sampler mathematics | `SamplerPhases`, `SamplerContract`, the size, charging, one-inclusion, VC, initial-probability, local-probability and retry modules | Efficient execution of all phases by the final program |
-| Conditional order correctness | `ReductionPath`, `RefinedOrderCorrectness.output_encodes_graphWelzlOrder` | That the actual machine constructs a successful reduction path |
-| Old partition execution | `VerifiedRoundPartitions.runVerifiedRoundPartitions` | Construction of its input sample and surrounding round state |
-| Old reconstruction mathematics | `VerifiedReconstructionBridge` and `ReusedOriginal.Construction.Reconstruction` | Complete machine logging, reconstruction execution, and final output assembly |
-| One capped random index and lookup | `FairBitRam`, `IndexedDrawRam.countedIndexedDraw_run_tape` | A sequence of calls sharing one finite tape |
-| Actual single-draw law | `VerifiedDrawLaw.sourceDrawEvent_card_eq`, exhaustion tail, `sum_sourceDrawCost_le` | Adaptive composition or independence after conditioning on future success |
-| Arbitrary domain enumeration | `EnumeratedDraws.prefixDomainEnumeration_lookup` | Construction of every changing domain array |
-| Runtime sample marking and packing | `SamplePacking.markDrawArray_run`, `markAndPackSamples_run` | Filling the draw buffer and executing the three sampler phases |
+| Sampler mathematics | `SamplerPhases`, `SamplerContract`, size/charging/one-inclusion/VC and initial/local probability/retry results | Derive legal successful choices from the final source |
+| Conditional order correctness | `ReductionPath`, `RefinedOrderCorrectness.output_encodes_graphWelzlOrder` | Actual source must construct the successful reduction path |
+| Partition execution | `VerifiedRoundPartitions.runVerifiedRoundPartitions`, unchanged old refinement/partition sources | Initialize and compose the refined round state |
+| Reconstruction and output | `VerifiedReconstructionBridge`, `RefinedHistoryOutput.History.reconstructAndWrite_clog2_bound` | Actual refined history/log construction; output execution already follows from a valid history |
+| Fixed-domain sequential draws | `SequentialDraws.sequentialDraws_run_list`, reusing `DrawBuffer`, `IndexedDrawRam`, `FairBitRam` | Choose runtime counts/caps and couple the whole sampler law |
+| Stopped-prefix law | `StoppingPrefix`, `EnumeratedDraws`, `VerifiedDrawLaw`, `RejectionProtocol` | Actual adaptive sampler transitions, changing domains, retries and global finite-tape bound |
+| Sample packing | `SamplePacking.markAndPackSamples_run`, `packMarkedSamples` | Compose after the initial draws and later sample insertions |
+| Distinct-neighborhood domain | `DistinctNeighborhoodDomain` using unchanged first partition | Full-ground initialization and empty-active-set branch |
+| Grouped representative execution | `GroupedClassRepresentatives.groupedClassRepresentatives_run_bits`, reusing old radix sort, `ClassRepresentativeLoop`, old representative map | Initial partition/attempt assembly and distribution/cost coupling |
+| Representative choice mathematics | `ClassBucketDomain`, `ClassChoiceTransport` | Apply the existing finite-choice law to actual flat-tape execution without conditioning away failures |
+| Distance and exceptions | `BatchedDistances`, `ExceptionCollection` | Compose with selected representatives and exact acceptance checks |
+| Phase-two candidate step | `ExceptionRefinementBridge`, `ExceptionRefinementStep.exceptionRefinementStep_run`, unchanged `refineOne_run` | Outer scan is the active worker task; initial exception partition still needed |
+| Guarded cutoff | `SaturatedCutoff`, `SaturatedCutoffSource`, `RefinedCutoffSource.refinedCutoffSource_run` | Discharge word-fit preconditions from final layout; timeout remains separate |
+| Compiler | Existing pinned `Lax808846Proofs.Simulation` | Apply to the complete source/layout and derived cost bound |
 
-The source marking/packing routine is fixed code, supports repeated draws,
-and has bound `20*n + 12*r + 15` source steps from its stated initial state.
-The single-draw source cost has finite mean bound `30*clog₂(m) + 79`.
-These are source-language bounds; compiler overhead remains to be included.
+Some useful established source bounds: marking/packing `20*n+12*r+15`;
+mean single indexed draw `30*clog₂(m)+79`; grouped representatives
+`charge+64*(xs.length+Q+1)+104*n+24`; one exception candidate
+`300*(degree+1)+9`; guarded cutoff `12*clog₂(n)+252`. These are
+source-language bounds, not yet the public machine-time theorem.
+
+The outstanding substantial layers are initial-attempt/retry assembly,
+phase-two initialization/scan integration, efficient phase-three source,
+whole-sampler probability/expected costs, timeout/layout, actual rounds/history,
+and the final compiler lift. The public theorem remains open.
 
 ## 3. Randomness and sequential execution
 
@@ -281,7 +297,7 @@ proved requirements. Discharge the exact public existential claim and audit
 its axioms. Run full `lax build --replay`, push, update the draft, and verify
 the accepted commit and proof status. Do not register the submission.
 
-## 7. Dependency order and first assignments
+## 7. Dependency order and original assignments (historical)
 
 ```
 R1 (stopping prefixes) ----+--> R3 (batch) --> R4 (adaptive law) --+
@@ -324,7 +340,7 @@ Report completed proof interfaces and unresolved dependencies, not a
 percentage inferred from file counts. A full build with zero annotated
 proofs still means the headline theorem is open.
 
-Current status (2026-10-15): the first three worker leaves are reviewed and
+Initial boundary (historical; current status is in Section 2): the first three worker leaves are reviewed and
 landed. R2 (`be4e0ac5`) verifies the fixed draw-and-append command, exact
 buffer/count changes, frames and residual input, with source bound
 `(15*clog₂(m)+30)*attemptsUsed + 31`. R1 (`8fdfa3c7`) proves exact stopped
@@ -343,7 +359,10 @@ Validation of this boundary: all three targeted builds and the integrated
 `lax build welzl-refined-algorithm-v2 --replay` passed. The archive output
 still contains zero annotated proofs: the main conclusion remains open.
 
-## 9. Reuse audit of the earlier complete construction (2026-10-15)
+## 9. Initial reuse audit of the earlier complete construction (2026-10-15)
+
+The table records the initial audit. Section 2 and the later reviewed-boundary
+notes record which remaining obligations have since been closed.
 
 Checked exact accepted source: Lax235315 commit
 `33f2eca4379b6ff944489c7c59ac1990c286c21b`, proving the statement in
