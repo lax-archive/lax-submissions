@@ -610,3 +610,10 @@ representative-map loop. The existing choice-law transport is ready, but no
 whole flat-tape distribution or initial-attempt/retry theorem is claimed.
 The earlier class-choice integration also passed full kernel replay (124
 proof modules); a new integrated replay will include the loop.
+
+The guarded arithmetic source primitives are now checked:
+`SaturatedCutoffSource.satMulCommand_run` and `satAddCommand_run` implement
+the existing `satMul`/`satAdd` at at most 14 source steps each, preserving
+other words, arrays, input and output. Products and sums are evaluated only
+after their safe guards. These are the primitives, not yet the complete
+cutoff command; logarithm/polynomial composition remains the next leaf.
