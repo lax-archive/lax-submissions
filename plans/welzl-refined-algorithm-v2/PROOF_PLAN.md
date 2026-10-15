@@ -586,3 +586,10 @@ depend on the resulting class sizes. Do not claim that conditioning the entire
 algorithm on no cap exhaustion preserves the initial uniform draw law. Transfer
 bounds using explicit exhaustion events/coupling (or unnormalized probability
 bounds), reusing the stopped-prefix and adaptive counting results.
+
+Reviewed `ClassChoiceTransport`: explicit compact-label / trace-class and
+per-class product equivalences preserve representative lookup. Reindexing the
+existing `totalDistance` finite mean yields `conditionalMeanZ`; no probability
+lemma was recreated. Empty class families require no additional nonempty
+assumption. The targeted build passed. Actual shared-tape execution and its
+distribution coupling remain distinct obligations.
