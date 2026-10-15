@@ -739,3 +739,13 @@ exception acceptance) and actual local-repair source remain open.
 Integrated replay passed after the initial draw/full-B/cleanup batch: 137
 root-imported proof modules; one public concept and zero annotated conclusions.
 The public theorem remains open.
+
+Reviewed repair neighborhood collection and runtime class offsets:
+`collectNeighborhoodAt_run` reads actual CSR offsets, reuses the original
+collector through static renaming, and returns a duplicate-free active
+neighborhood and exact indicator marks at `54*degree+22`.
+`repairClassOffsets_run` builds prefix offsets from class sizes in `18*q+8`;
+`repairClassLookup_run` reads the selected exception's class interval in 11
+steps. Independent target checks and background-only axiom audits passed.
+The symmetric-difference filter/cleanup and local trial checker remain next;
+this collector checkpoint is landed while its worker continues the filter.

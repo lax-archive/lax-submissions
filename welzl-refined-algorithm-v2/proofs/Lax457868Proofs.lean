@@ -135,3 +135,5 @@ import Lax457868Proofs.SourceRenaming
 import Lax457868Proofs.PackedActiveSource
 import Lax457868Proofs.FullSamplePartition
 import Lax457868Proofs.InitialDrawSampleSource
+import Lax457868Proofs.RepairDomainSource
+import Lax457868Proofs.RepairClassOffsets
