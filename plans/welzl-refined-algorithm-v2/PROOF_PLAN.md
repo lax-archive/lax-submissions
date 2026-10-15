@@ -152,6 +152,11 @@ half-rejection and mean-retry estimates to these executions.
 Prove cost bounds for domain construction, representative selection,
 distance computation, sample packing, and rejected attempts. A direct
 pairwise search is not an acceptable implementation of a linear-cost claim.
+In particular, scanning a representative's adjacency list once for every
+class member needs an expected-work argument: prove that a uniform class
+representative has expected replicated degree charge equal to the sum of
+the class members' degrees. This degree-cost identity is a new obligation;
+the existing one-inclusion charging lemmas do not establish it.
 
 ### S2. Exception separation
 
@@ -248,6 +253,13 @@ vertex-related random-bit work using the shrinking active-set sizes, rather
 than paying an unnecessary extra logarithm. Account for every retry and
 failure path. Derive a universal expected-work constant from the proved
 local bounds.
+
+Keep the correlation between attempt cost and rejection. Prove a joint
+cost-until-first-success lemma for independent attempts, then apply it to
+the initial sampler and to local trials. A bound on the mean number of
+attempts alone does not justify multiplying by an unverified conditional
+mean cost. Likewise, justify the distribution of the accepted initial
+representatives before charging their later repair work.
 
 Allocate an explicit total failure budget between capped sampling and
 runtime truncation; for example, a split into two sixths is a possible
