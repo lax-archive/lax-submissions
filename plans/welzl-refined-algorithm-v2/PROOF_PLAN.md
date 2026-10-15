@@ -63,7 +63,7 @@ still describes it as future work. All implementation details remain proof-side.
 | Distance and exceptions | `BatchedDistances`, `ExceptionCollection` | Compose with selected representatives and exact acceptance checks |
 | Complete phase two | `ExceptionPhaseSource.exceptionPhase_run`, including initial exception partition, empty branch, scan and packing; existing size/separation lemmas | Compose after initial acceptance and before fixed full-B grouping |
 | Fixed full-B classes | `FullSamplePartition.groupActiveB_run`, unchanged radix, `RepairClassOffsets.repairClassOffsets_run` and `repairClassLookup_run` | Compose with the local domain/trial source |
-| Repair neighborhoods | `RepairDomainSource.collectNeighborhoodAt_run`: actual CSR offset reads, duplicate-safe private neighborhood lists and marks | Append symmetric-difference domain, touched cleanup, and trial isolation checks |
+| Repair domain | `RepairFilterSource.repairDomainSource_run`: runtime representative lookup, duplicate-safe CSR neighborhoods, exact symmetric-difference domain, touched cleanup | Trial isolation checks and repair retry loop |
 | Guarded cutoff | `SaturatedCutoff`, `SaturatedCutoffSource`, `RefinedCutoffSource.refinedCutoffSource_run` | Discharge word-fit preconditions from final layout; timeout remains separate |
 | Compiler | Existing pinned `Lax808846Proofs.Simulation` | Apply to the complete source/layout and derived cost bound |
 
@@ -761,3 +761,12 @@ and tape are preserved. `clearNeighborhoodSupport_run` reuses the existing
 marker via static renaming, clearing each list's support in `12*h+6`. Both
 independent Lean checks and standard-background axiom audits passed. The
 collector/filter/cleanup composition is still being assembled.
+
+Reviewed the complete `repairDomainSource_run`: the fixed command reads
+repB[repairB], collects the two restricted neighborhoods, filters the exact
+symmetric difference into drawDomain, and clears both private mark arrays.
+It preserves the original representative, fixed classes, sample, CSR and tape.
+The source bound is at most `90*(CSRdegree(b)+CSRdegree(repB[b]))+73`;
+duplicate adjacency entries are allowed and the empty domain is handled.
+Independent target build and axiom checks passed. This completes the local
+repair domain construction, not yet the trial/retry source.
