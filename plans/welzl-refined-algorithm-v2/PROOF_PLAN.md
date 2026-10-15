@@ -689,3 +689,18 @@ checked scan and existing phase-two budget/separation results. The initial
 sampler attempt still needs a single source composition of draws, packing,
 partition, grouped representatives, distance/exception collection and acceptance.
 Do not reimplement the source components listed in Section 2.
+
+Final integrated validation for this batch passed: all 132 proof modules are
+root-imported, the full `lax build --replay` succeeds, and the public concept
+and abstract remain unchanged. Newly checked main helper interfaces have only
+`propext`, `Classical.choice`, and `Quot.sound` as axioms. The archive output
+still has one concept and zero annotated conclusions; the main theorem is open.
+
+Phase-three assembly reminder: the phase-two scan classifies only E. Local
+repair needs fixed phase-two classes on all of B and the original sampled
+representative map. Reuse `partitionRefinePrefix_run` on the packed phase-two
+sample for all of B: this lower-level routine does not rebuild `repB`. Avoid
+blindly calling the fuller `firstPartition_run`, which also replaces `repB`.
+The threshold bridge must also match `k < 3*distance` exactly (the collector
+uses `nearBound < distance`, so set nearBound to the appropriate integer
+quotient and prove equivalence); do not silently drop the factor three.
