@@ -162,7 +162,7 @@ lemma satAddTo_run {B : ℕ} {σ : Env} (x y dest : String)
   · exact hwhole.out_eq (by simp [satAddTo, seqs, satAddCommand, Com.NoWrite])
 
 /-- The guarded polynomial sequence realizes `saturatedWelzlCutoff` with
-all arithmetic outputs below `n`. The logarithm word `L` is supplied by
+all saturated arithmetic outputs at most `n`. The logarithm word `L` is supplied by
 the caller, allowing the surrounding source to run the old log routine. -/
 lemma cutoffArithmetic_run {B n c L : ℕ} {σ : Env}
     (hn : σ.vars "n" = n) (hc : σ.vars "c" = c) (hL : σ.vars "L" = L)

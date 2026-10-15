@@ -644,3 +644,11 @@ The bound is `charge + 64*(xs.length+Q+1) + 104*n + 24`; radix capacity Q
 remains distinct from class count q. Redundant cleared-counter and label-range
 preconditions were removed. Independent target and axiom checks passed.
 The preceding integrated replay passed, including the single-candidate step.
+
+Reviewed `RefinedCutoffSource.refinedCutoffSource_run`: fixed source returns
+`min n (2 * refinedCutoffK c)` within `12*clog₂(n)+252` source steps. The
+`c ≥ n` branch avoids computing the logarithm. The other branch reuses the
+old logarithm and guarded capped arithmetic; it needs a logarithm power-fit
+bound only in that branch, not a word-fit assumption on c^5 or k. Input words
+n/c/qpow, arrays, input and output are preserved. Independent target build
+and axiom audit passed. Full timeout/layout integration remains open.
