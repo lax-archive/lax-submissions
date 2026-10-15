@@ -309,20 +309,18 @@ private lemma scanBody_run
 private lemma offset_prefix_le (offset : ℕ → ℕ) :
     ∀ n, (∀ j < n, offset j ≤ offset (j + 1)) →
       ∀ i ≤ n, offset i ≤ offset n := by
-  intro n
-  induction n with
-  | zero =>
-      intro _ i hi
-      have : i = 0 := by omega
-      subst i
-      rfl
-  | succ n ih =>
-      intro hmono i hi
-      by_cases h : i = n + 1
-      · subst i; rfl
-      · have hin : i ≤ n := by omega
-        exact (ih (by intro j hj; exact hmono j (by omega)) i hin).trans
-          (hmono n (by omega))
+  intro n hmono i hi
+  have h : MonotoneOn offset (Set.Icc 0 n) :=
+    monotoneOn_of_le_succ Set.ordConnected_Icc (by
+      intro j _ hj hnext
+      have hjlt : j < n := by
+        have hle := (Set.mem_Icc.mp hnext).2
+        change j + 1 ≤ n at hle
+        omega
+      change offset j ≤ offset (j + 1)
+      exact hmono j hjlt)
+  exact h (by simp only [Set.mem_Icc]; omega)
+    (by simp only [Set.mem_Icc]; omega) hi
 
 /-- The source while loop visits all numeric candidate indices.  Its
 potential charges each CSR interval exactly once and a fixed amount for
