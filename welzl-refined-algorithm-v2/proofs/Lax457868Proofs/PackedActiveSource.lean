@@ -77,7 +77,7 @@ private lemma activePackNames_inverse_array_ord :
 source active flags and all other arrays untouched. `alen` is the resulting
 number of active vertices; the packed prefix enumerates them without
 duplicates, in the same increasing order as the original scan. -/
-theorem packActiveB_run {B n : ℕ} {σ : Env} {flags ord : ℕ → ℕ}
+lemma packActiveB_run {B n : ℕ} {σ : Env} {flags ord : ℕ → ℕ}
     (hn : σ.vars "n" = n)
     (hactiveB : σ.arrs "activeB" = arrOf n flags)
     (hord : σ.arrs "ord" = arrOf n ord)

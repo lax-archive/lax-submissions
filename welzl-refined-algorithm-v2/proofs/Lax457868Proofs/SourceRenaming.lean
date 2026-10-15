@@ -40,7 +40,7 @@ def renameEnv (ρ : Names) (σ : Env) : Env :=
     inp := σ.inp
     out := σ.out }
 
-@[simp] theorem renameExpr_identity (e : Expr) :
+@[simp] lemma renameExpr_identity (e : Expr) :
     renameExpr Names.identity e = e := by
   induction e with
   | lit => rfl
@@ -52,7 +52,7 @@ def renameEnv (ρ : Names) (σ : Env) : Env :=
       change Expr.bin op (renameExpr Names.identity e) (renameExpr Names.identity f) = _
       rw [ih₁, ih₂]
 
-@[simp] theorem renameCond_identity (b : Cond) :
+@[simp] lemma renameCond_identity (b : Cond) :
     renameCond Names.identity b = b := by
   cases b with
   | eq e f =>
@@ -62,7 +62,7 @@ def renameEnv (ρ : Names) (σ : Env) : Env :=
       change Cond.lt (renameExpr Names.identity e) (renameExpr Names.identity f) = _
       rw [renameExpr_identity, renameExpr_identity]
 
-@[simp] theorem renameCom_identity (c : Com) :
+@[simp] lemma renameCom_identity (c : Com) :
     renameCom Names.identity c = c := by
   induction c with
   | skip => rfl
@@ -87,14 +87,14 @@ def renameEnv (ρ : Names) (σ : Env) : Env :=
       change Com.write (renameExpr Names.identity e) = _
       rw [renameExpr_identity]
 
-@[simp] theorem renameEnv_identity (σ : Env) :
+@[simp] lemma renameEnv_identity (σ : Env) :
     renameEnv Names.identity σ = σ := by
   cases σ <;> rfl
 
 def Names.inverse (ρ : Names) : Names :=
   ⟨ρ.scalar.symm, ρ.array.symm⟩
 
-@[simp] theorem renameEnv_inverse_left (ρ : Names) (σ : Env) :
+@[simp] lemma renameEnv_inverse_left (ρ : Names) (σ : Env) :
     renameEnv ρ (renameEnv ρ.inverse σ) = σ := by
   cases ρ with
   | mk scalar array =>
@@ -104,7 +104,7 @@ def Names.inverse (ρ : Names) : Names :=
           (fun a => arrs (array (array.symm a))) inp out = Env.mk vars arrs inp out
       congr 1 <;> funext x <;> simp [Equiv.apply_symm_apply]
 
-@[simp] theorem renameEnv_inverse_right (ρ : Names) (σ : Env) :
+@[simp] lemma renameEnv_inverse_right (ρ : Names) (σ : Env) :
     renameEnv ρ.inverse (renameEnv ρ σ) = σ := by
   cases ρ with
   | mk scalar array =>
@@ -114,15 +114,15 @@ def Names.inverse (ρ : Names) : Names :=
           (fun a => arrs (array.symm (array a))) inp out = Env.mk vars arrs inp out
       congr 1 <;> funext x <;> simp [Equiv.symm_apply_apply]
 
-@[simp] theorem renameEnv_vars (ρ : Names) (σ : Env) (x : String) :
+@[simp] lemma renameEnv_vars (ρ : Names) (σ : Env) (x : String) :
     (renameEnv ρ σ).vars (ρ.scalar x) = σ.vars x := by
   simp [renameEnv]
 
-@[simp] theorem renameEnv_arrs (ρ : Names) (σ : Env) (a : String) :
+@[simp] lemma renameEnv_arrs (ρ : Names) (σ : Env) (a : String) :
     (renameEnv ρ σ).arrs (ρ.array a) = σ.arrs a := by
   simp [renameEnv]
 
-@[simp] theorem renameEnv_setVar (ρ : Names) (σ : Env) (x : String) (v : ℕ) :
+@[simp] lemma renameEnv_setVar (ρ : Names) (σ : Env) (x : String) (v : ℕ) :
     renameEnv ρ (σ.setVar x v) = (renameEnv ρ σ).setVar (ρ.scalar x) v := by
   cases ρ with
   | mk scalar array =>
@@ -144,7 +144,7 @@ def Names.inverse (ρ : Names) : Names :=
           exact scalar.symm_apply_apply x
         simp [h, hy]
 
-@[simp] theorem renameEnv_setArr (ρ : Names) (σ : Env) (a : String) (i v : ℕ) :
+@[simp] lemma renameEnv_setArr (ρ : Names) (σ : Env) (a : String) (i v : ℕ) :
     renameEnv ρ (σ.setArr a i v) = (renameEnv ρ σ).setArr (ρ.array a) i v := by
   cases ρ with
   | mk scalar array =>
@@ -166,7 +166,7 @@ def Names.inverse (ρ : Names) : Names :=
           exact array.symm_apply_apply a
         simp [h, hy]
 
-@[simp] theorem renameEnv_readResult (ρ : Names) (σ : Env) (x : String)
+@[simp] lemma renameEnv_readResult (ρ : Names) (σ : Env) (x : String)
     (v : ℕ) (rest : List ℕ) :
     renameEnv ρ { σ.setVar x v with inp := rest } =
       { (renameEnv ρ σ).setVar (ρ.scalar x) v with inp := rest } := by
@@ -176,12 +176,12 @@ def Names.inverse (ρ : Names) : Names :=
     _ = { (renameEnv ρ σ).setVar (ρ.scalar x) v with inp := rest } := by
       rw [renameEnv_setVar]
 
-@[simp] theorem renameEnv_writeResult (ρ : Names) (σ : Env) (v : ℕ) :
+@[simp] lemma renameEnv_writeResult (ρ : Names) (σ : Env) (v : ℕ) :
     renameEnv ρ { σ with out := σ.out ++ [v] } =
       { renameEnv ρ σ with out := σ.out ++ [v] } := by
   cases σ <;> rfl
 
-@[simp] theorem renameExpr_size (ρ : Names) (e : Expr) :
+@[simp] lemma renameExpr_size (ρ : Names) (e : Expr) :
     (renameExpr ρ e).size = e.size := by
   induction e with
   | lit => rfl
@@ -189,11 +189,11 @@ def Names.inverse (ρ : Names) : Names :=
   | get a i ih => simp [renameExpr, ih]
   | bin op e f ih₁ ih₂ => simp [renameExpr, ih₁, ih₂]
 
-@[simp] theorem renameCond_size (ρ : Names) (b : Cond) :
+@[simp] lemma renameCond_size (ρ : Names) (b : Cond) :
     (renameCond ρ b).size = b.size := by
   cases b <;> simp [renameCond]
 
-theorem evalB_renameExpr (ρ : Names) (B : ℕ) (e : Expr) (σ : Env) :
+lemma evalB_renameExpr (ρ : Names) (B : ℕ) (e : Expr) (σ : Env) :
     (renameExpr ρ e).evalB B (renameEnv ρ σ) = e.evalB B σ := by
   induction e with
   | lit n => rfl
@@ -202,11 +202,11 @@ theorem evalB_renameExpr (ρ : Names) (B : ℕ) (e : Expr) (σ : Env) :
   | bin op e f ih₁ ih₂ =>
       simp [Expr.evalB, renameExpr, ih₁, ih₂]
 
-theorem evalB_renameCond (ρ : Names) (B : ℕ) (b : Cond) (σ : Env) :
+lemma evalB_renameCond (ρ : Names) (B : ℕ) (b : Cond) (σ : Env) :
     (renameCond ρ b).evalB B (renameEnv ρ σ) = b.evalB B σ := by
   cases b <;> simp [Cond.evalB, renameCond, evalB_renameExpr]
 
-theorem BigStepB.rename {B : ℕ} {c : Com} {σ σ' : Env} {k : ℕ}
+lemma BigStepB.rename {B : ℕ} {c : Com} {σ σ' : Env} {k : ℕ}
     (ρ : Names) (h : BigStepB B c σ σ' k) :
     BigStepB B (renameCom ρ c) (renameEnv ρ σ) (renameEnv ρ σ') k := by
   induction h with
@@ -251,7 +251,7 @@ theorem BigStepB.rename {B : ℕ} {c : Com} {σ σ' : Env} {k : ℕ}
         (BigStepB.write (e := renameExpr ρ e) ((evalB_renameExpr ρ B e σ).trans he))
 
 /-- Renaming a fixed source program preserves its exact cost bound. -/
-theorem run_rename {B K : ℕ} {c : Com} {σ σ' : Env} (ρ : Names)
+lemma run_rename {B K : ℕ} {c : Com} {σ σ' : Env} (ρ : Names)
     (h : Run B c σ σ' K) :
     Run B (renameCom ρ c) (renameEnv ρ σ) (renameEnv ρ σ') K := by
   obtain ⟨k, hk, hrun⟩ := h
