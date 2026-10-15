@@ -61,7 +61,7 @@ still describes it as future work. All implementation details remain proof-side.
 | Grouped representative execution | `GroupedClassRepresentatives.groupedClassRepresentatives_run_bits`, reusing old radix sort, `ClassRepresentativeLoop`, old representative map | Initial partition/attempt assembly and distribution/cost coupling |
 | Representative choice mathematics | `ClassBucketDomain`, `ClassChoiceTransport` | Apply the existing finite-choice law to actual flat-tape execution without conditioning away failures |
 | Distance and exceptions | `BatchedDistances`, `ExceptionCollection` | Compose with selected representatives and exact acceptance checks |
-| Phase-two candidate step | `ExceptionRefinementBridge`, `ExceptionRefinementStep.exceptionRefinementStep_run`, unchanged `refineOne_run` | Outer scan is the active worker task; initial exception partition still needed |
+| Phase-two scan | `ExceptionRefinementScan.exceptionRefinementScan_run`, `ExceptionRefinementStep`, `ExceptionRefinementBridge`, unchanged `refineOne_run` | Initial exception partition, full sampler assembly and transfer of existing phase-two size/separation results |
 | Guarded cutoff | `SaturatedCutoff`, `SaturatedCutoffSource`, `RefinedCutoffSource.refinedCutoffSource_run` | Discharge word-fit preconditions from final layout; timeout remains separate |
 | Compiler | Existing pinned `Lax808846Proofs.Simulation` | Apply to the complete source/layout and derived cost bound |
 
@@ -671,3 +671,21 @@ old logarithm and guarded capped arithmetic; it needs a logarithm power-fit
 bound only in that branch, not a word-fit assumption on c^5 or k. Input words
 n/c/qpow, arrays, input and output are preserved. Independent target build
 and axiom audit passed. Full timeout/layout integration remains open.
+
+Reviewed `ExceptionRefinementScan.exceptionRefinementScan_run`: fixed source
+clears stamps once and scans numeric candidates, reusing the single-candidate
+step on active vertices. Actual sample flags equal the existing `phase2Scan`;
+final labels classify that sample on exceptions, with compact sizes, occupied
+labels, cleared counters, bounded stamps and frames. Source cost is at most
+`300*(offset n-offset 0)+339*n+12`, hence `339*(n+targetCap+1)`, using
+telescoping CSR intervals and mathlib interval monotonicity. Initial stamps
+are arbitrary; initial compact exception partition remains a precondition.
+Independent build and axiom audit passed. The preceding grouped-representative
+and cutoff integration passed full kernel replay (131 proof modules).
+
+Next assembly boundary: initialize the exception partition with the existing
+`partitionRefinePrefix_run` (and handle empty exceptions), then apply the
+checked scan and existing phase-two budget/separation results. The initial
+sampler attempt still needs a single source composition of draws, packing,
+partition, grouped representatives, distance/exception collection and acceptance.
+Do not reimplement the source components listed in Section 2.
