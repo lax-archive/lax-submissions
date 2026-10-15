@@ -704,3 +704,12 @@ blindly calling the fuller `firstPartition_run`, which also replaces `repB`.
 The threshold bridge must also match `k < 3*distance` exactly (the collector
 uses `nearBound < distance`, so set nearBound to the appropriate integer
 quotient and prove equivalence); do not silently drop the factor three.
+
+Reviewed `ExceptionPhaseSource.exceptionPhase_run`: the actual exception-count
+branch handles the empty case; otherwise the original prefix partition creates
+the exception classification, the checked scan enlarges the sample, and the
+existing packer writes the final prefix. The original representative map is
+preserved. The bound adds the old refinementWork charge, the linear scan and
+packing; the original duplicate-free prefix lemma supplies its linear bound.
+Independent target build and axiom checks passed. Initial attempt assembly
+and the fixed full-B partition/local repair remain next.
