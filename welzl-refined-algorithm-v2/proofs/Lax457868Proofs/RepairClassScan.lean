@@ -1004,11 +1004,12 @@ private lemma scanSeparated_iff_class
         ⟨j, hj, hjstop, rfl⟩) hvb
 
 /-- The complete fixed lookup-and-scan source reads class bounds from the
-runtime arrays, then scans exactly the corresponding grouped slice. -/
+runtime arrays, then scans exactly the corresponding grouped slice. The
+grouped-B mask used to size `xs` is independent of the trial sample flags. -/
 lemma repairClassLookupAndScan_run
     {B n q targetCap b : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {σ : Env}
-    {size starts label ord active rowList desiredList diffBuffer : ℕ → ℕ}
+    {size starts label ord groupActive active rowList desiredList diffBuffer : ℕ → ℕ}
     {xs : List ℕ}
     (hx : EncodesGraph x n G)
     (htargetCap : targetCap = 2 * edgeCount x)
@@ -1030,9 +1031,9 @@ lemma repairClassLookupAndScan_run
     (hb : b < n) (hqle : q ≤ n) (hlabel : label b < q)
     (hstartTable : ∀ d < q, starts d = classStart size d)
     (hclassEnd : ∀ d < q, classStart size d + size d ≤ xs.length)
-    (hxsCard : xs.length = (activeVertices n active).card)
+    (hxsCard : xs.length = (activeVertices n groupActive).card)
     (hxsRange : xs.toFinset ⊆ Finset.range n)
-    (hactiveCard : (activeVertices n active).card ≤ n)
+    (hactiveCard : (activeVertices n groupActive).card ≤ n)
     (hslices : ∀ d < q, PrefixEnumerates (size d)
       (fun i => ord (classStart size d + i))
       (labelClass xs label d))
@@ -1189,19 +1190,59 @@ lemma classGraphTrace_iff_localTrialIsolates
       simpa [hC] using hv
     exact (h v hvc.1 hvc.2 hvb).symm
 
+/-- On the fixed old trace fibre, testing only the new draws gives the same
+isolation answer as testing the enlarged sample. Both sides are the same
+distinguishing-draw event, including when a draw also lies in the old sample. -/
+lemma classDrawTrace_iff_localTrialIsolates
+    {n : ℕ} (G : SimpleGraph (Fin n))
+    (B W C : Finset ℕ) (b : ℕ) (draws : List ℕ)
+    (hC : C = B.filter (fun v =>
+      trace (numericNeighborhood G) W b =
+        trace (numericNeighborhood G) W v)) :
+    (∀ v ∈ C, v ≠ b →
+      trace (numericNeighborhood G) draws.toFinset v ≠
+        trace (numericNeighborhood G) draws.toFinset b) ↔
+      localTrialIsolates (numericNeighborhood G) B W b draws := by
+  constructor
+  · intro h v hv hbase hvb
+    have hvC : v ∈ C := by
+      rw [hC]
+      exact Finset.mem_filter.mpr ⟨hv, hbase⟩
+    have hdraws : ∃ a ∈ draws,
+        a ∈ distinguishingRange (numericNeighborhood G) b v := by
+      exact (trace_ne_iff_draw_hits (numericNeighborhood G) ∅ b v draws
+        (by simp [trace])).mp (by simpa using (h v hvC hvb).symm)
+    exact (trace_ne_iff_draw_hits (numericNeighborhood G) W b v draws hbase).mpr
+      hdraws
+  · intro h v hvC hvb
+    have hv' : v ∈ B.filter (fun w =>
+        trace (numericNeighborhood G) W b =
+          trace (numericNeighborhood G) W w) := by
+      simpa [hC] using hvC
+    have hvB := (Finset.mem_filter.mp hv').1
+    have hbase := (Finset.mem_filter.mp hv').2
+    have hdraws : ∃ a ∈ draws,
+        a ∈ distinguishingRange (numericNeighborhood G) b v :=
+      (trace_ne_iff_draw_hits (numericNeighborhood G) W b v draws hbase).mp
+        (h v hvB hbase hvb)
+    have hsep :=
+      (trace_ne_iff_draw_hits (numericNeighborhood G) ∅ b v draws
+        (by simp [trace])).mpr hdraws
+    exact (by simpa using hsep.symm)
+
 /-- A checked scan result can be read as the existing local-trial event when
 the caller supplies the fixed old trace class and the trial's sample flags. -/
 lemma scanSuccess_iff_localTrialIsolates
     {n : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     (hx : EncodesGraph x n G)
     (B W C : Finset ℕ) (b : ℕ) (draws : List ℕ)
-    (hSrange : W ∪ draws.toFinset ⊆ Finset.range n)
+    (hSrange : draws.toFinset ⊆ Finset.range n)
     (hCrange : C ⊆ Finset.range n) (hb : b < n)
     (hC : C = B.filter (fun v =>
       trace (numericNeighborhood G) W b =
         trace (numericNeighborhood G) W v))
     {active : ℕ → ℕ} {σ' : Env}
-    (hactive : active = setFlag (W ∪ draws.toFinset))
+    (hactive : active = setFlag draws.toFinset)
     (hsuccess : σ'.vars "repairScanSuccess" = 1 ↔
       ∀ v ∈ C, v ≠ b →
         activeTargets (target x) active (offset x v)
@@ -1212,9 +1253,9 @@ lemma scanSuccess_iff_localTrialIsolates
       localTrialIsolates (numericNeighborhood G) B W b draws := by
   rw [hsuccess]
   simpa [hactive] using
-    (classScanCondition_iff_graphTrace hx (W ∪ draws.toFinset) C
+    (classScanCondition_iff_graphTrace hx draws.toFinset C
       hSrange hCrange hb).trans
-      (classGraphTrace_iff_localTrialIsolates G B W C b draws hC)
+      (classDrawTrace_iff_localTrialIsolates G B W C b draws hC)
 
 /-- For members of the fixed old trace class, the graph event above is
 equivalent to every other member being hit by a distinguishing draw. -/
