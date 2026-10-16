@@ -147,3 +147,4 @@ import Lax457868Proofs.InitialSamplerRetriesSource
 import Lax457868Proofs.RepairClassScan
 import Lax457868Proofs.LocalRepairSource
 import Lax457868Proofs.LocalRepairRetriesSource
+import Lax457868Proofs.LocalRepairPhase3

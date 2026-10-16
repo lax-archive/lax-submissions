@@ -901,3 +901,11 @@ Integrated release validation passed: all 149 proof modules are root-imported;
 full `lax build --replay` completed in 3m32s, including 2m49s kernel replay.
 The archive inspection reports one public concept and zero annotated
 conclusions. The headline theorem remains open.
+
+The exception-list assembly reuses `phase3Scan` through the checked
+`LocalRepairPhase3` adapters: restrict isolation to A, interpret an accepted
+trial as a singleton phase3Repair input, and glue a head trial list (including
+empty near-case lists) to an existing tail witness. Independent targeted
+compilation and three axiom audits passed. These witnesses support deterministic
+correctness and size reuse; they do not encode the discarded random attempts
+or establish their probability law. The actual exception-list source is in progress.

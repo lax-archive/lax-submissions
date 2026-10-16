@@ -97,8 +97,8 @@ private lemma phase3Scan_update_eq_of_not_mem
           simp [phase3Scan, Function.update_of_ne hxb, hstep,
             ih htailnot phaseTwoW next]
 
-/-- Glue a successful head repair to a successful tail scan, recording the
-head trial as its singleton witness while preserving the tail witnesses. -/
+/-- Glue a successful head repair to a successful tail scan, retaining the
+head trial list (possibly empty) while preserving the tail witnesses. -/
 lemma phase3Scan_prepend_trials
     (N : β → Finset α) (B : Finset β) (representative : β → β)
     (k s : ℕ)
