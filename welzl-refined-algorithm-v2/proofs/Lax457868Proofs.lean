@@ -145,3 +145,5 @@ import Lax457868Proofs.FullInitialAttempt
 import Lax457868Proofs.RepairTrialCheck
 import Lax457868Proofs.InitialSamplerRetriesSource
 import Lax457868Proofs.RepairClassScan
+import Lax457868Proofs.LocalRepairSource
+import Lax457868Proofs.LocalRepairRetriesSource

@@ -66,7 +66,8 @@ still describes it as future work. All implementation details remain proof-side.
 | Fixed full-B classes | `FullSamplePartition.groupActiveB_run`, unchanged radix, `RepairClassOffsets.repairClassOffsets_run` and `repairClassLookup_run` | Compose with the local domain/trial source |
 | Repair domain | `RepairFilterSource.repairDomainSource_run`: runtime representative lookup, duplicate-safe CSR neighborhoods, exact symmetric-difference domain, touched cleanup | Trial draws/marking and repair retry loop; complete fixed-class scan is now checked |
 | Repair row check | `RepairTrialCheck.collectCheckAndClearTrialRow_run`: actual CSR collection, trace equality, touched cleanup; arbitrary old difference buffer | Reused by the complete class scan; trial insertion/cleanup and retry loop remain |
-| Complete repair class scan | `RepairClassScan.repairClassLookupAndScan_run`, `scanSuccess_iff_localTrialIsolates`: runtime lookup, one-time desired trace, every fixed-class row, touched cleanup, S-only isolation bridge | Supply established grouping invariants and trial flags from local trial/retry assembly |
+| Complete repair class scan | `RepairClassScan.repairClassLookupAndScan_run`, `scanSuccess_iff_localTrialIsolates`: runtime lookup, one-time desired trace, every fixed-class row, touched cleanup, S-only isolation bridge | Reused inside the checked local trial and retry source |
+| Local repair and retries | `LocalRepairRetriesSource.localRepairOneException_run`: actual X-domain construction, near skip, fixed runtime-cap retries, successful s-draw repair or explicit failure/exhaustion, exact unread bits and cleared marks | Exception-list loop; adaptive law/expected-cost coupling; full sampler assembly |
 | Guarded cutoff | `SaturatedCutoff`, `SaturatedCutoffSource`, `RefinedCutoffSource.refinedCutoffSource_run` | Discharge word-fit preconditions from final layout; timeout remains separate |
 | Compiler | Existing pinned `Lax808846Proofs.Simulation` | Apply to the complete source/layout and derived cost bound |
 
@@ -871,3 +872,27 @@ Integrated release validation passed: all 147 proof modules are root-imported;
 full `lax build --replay` took 3m34s, including 2m41s kernel replay. The archive
 inspection still reports one concept and zero annotated conclusions. These
 are checked source-execution components; the main theorem remains open.
+
+
+Reviewed and landed `4103c5db`: the local trial, bounded retries and complete
+one-exception source are checked. The operation constructs X from arbitrary
+scratch contents, compares its cardinality to floor(2k/3), skips near/empty X
+with completed status, or draws and checks the entire fixed phase-two class.
+Only an accepted trial is merged into Wcurrent; rejection discards its private
+marks. Capped draw failure and retry exhaustion are distinct exits. The result
+exports an accepted list of exactly s elements of X, isolation relative to
+Wbase, the exact unread flat-bit suffix, attempts at most the runtime cap,
+n/qpow preservation, and all five touched mark arrays cleared.
+
+The source reuses SequentialDraws, SamplePacking, RepairClassScan,
+RepairFilterSource and DrawLogSetup. Its retry bound is
+`12*clog2(m)+24 + (15*clog2(m)+30)*used + attempts*(79*s+scanUpper+50)+14`,
+where `scanUpper = 66*CSRdegree(b)+classPotential+47`; the wrapper adds the
+existing domain-builder bound and one guard. Constants come from the component
+Run bounds, with no per-trial full-vertex clearing. Independent target build
+and seven axiom audits passed with only the three background axioms.
+
+Next is the exception-list loop and assembly with accepted initialization and
+phase two. The actual adaptive probability/expected-cost coupling, outer
+history/timeout, and RAM layout/compiler lift remain open. This boundary does
+not prove the headline theorem. No public concepts or abstract were changed.
