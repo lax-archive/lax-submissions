@@ -118,13 +118,16 @@ lemma fullInitialAttempt_run_bits
       σ'.arrs "activeA" = arrOf n (setFlag A) ∧
       σ'.arrs "activeB" = arrOf n I.activeB ∧
       σ'.vars "n" = n ∧
+      σ'.vars "qpow" = Q ∧
       (drawFailed = true → σ' = σsel ∧ σ'.vars "attemptAccepted" = 0 ∧
         σ'.arrs "sampleFlags" = arrOf n (fun _ => 0) ∧
-        σ'.vars "sampleCount" = 0) ∧
+        σ'.vars "sampleCount" = 0 ∧
+        σ'.inp = (I.bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ I.rest) ∧
       (drawFailed = false →
         ∃ (W : Finset ℕ) (repFailed : Bool) (repUsed : ℕ),
           W = (values.map (fun i => I.domain i.val)).toFinset ∧
           W ⊆ A ∧ values.length = r ∧
+          repUsed ≤ n * t * Nat.clog 2 n ∧
           σsel.vars "repFailed" = (if repFailed then 1 else 0) ∧
           σ'.inp = (I.bits.drop (used * Nat.clog 2 m + repUsed)).map
             Bool.toNat ++ I.rest ∧
@@ -162,7 +165,7 @@ lemma fullInitialAttempt_run_bits
               σ'.inp = (I.bits.drop (used * Nat.clog 2 m + repUsed)).map
                 Bool.toNat ++ I.rest)) := by
   obtain ⟨_σd, σsel, tape, tail, values, used, drawFailed, stageCost,
-    hbits, hdrawTrace, hsel, hacceptSel, hnSel, _hqSel, hbatchSel,
+    hbits, hdrawTrace, hsel, hacceptSel, hnSel, hqSel, hbatchSel,
     harrayFrame, hvarFrame, hdrawFailure, hdrawSuccess⟩ :=
       initialSamplerAttempt_run_bits I
   let selectionCost := 2 + initialDrawSampleCost n m used
@@ -207,17 +210,17 @@ lemma fullInitialAttempt_run_bits
           (hsel.seq hguard).mono hbound
       refine ⟨σsel, σsel, tape, tail, values, used, true, stageCost,
         hbits, hdrawTrace, hsel, hfull, hbatchSel, rfl, rfl,
-        hoffSel, htargetSel, hactiveASel, hactiveBSelRaw, hnSel, ?_, ?_⟩
+        hoffSel, htargetSel, hactiveASel, hactiveBSelRaw, hnSel, hqSel, ?_, ?_⟩
       · intro _
-        obtain ⟨_, hflags, hcount⟩ := hdrawFailure rfl
-        exact ⟨rfl, hacceptSel, hflags, hcount⟩
+        obtain ⟨_, hflags, hcount, hinpFailed⟩ := hdrawFailure rfl
+        exact ⟨rfl, hacceptSel, hflags, hcount, hinpFailed⟩
       · intro h; cases h
   | false =>
       obtain ⟨W, sampleOrd, sampleCount, σp, q, label, size, xs, sorted,
         repValues, repUsed, repCharge, repFailed, hW, hWA, _hWcard,
         hvaluesLen, _hprefix, _hpartRun, _hsizes, _hoccupied, hclasses,
         _hrepRun, _hnFinal, _hqFinal, hsampleCountSel, _hclassB, _hclassSize,
-        hordSel, _hnodup, hxs, _htrace, hrepVal, _hrepFailure,
+        hordSel, _hnodup, hxs, _htrace, hrepUsedLe, hrepVal, _hrepFailure,
         hsampleFlagsSel, hinpSel, hrepSuccess, _hstageCost⟩ :=
           hdrawSuccess rfl
       cases repFailed with
@@ -244,10 +247,10 @@ lemma fullInitialAttempt_run_bits
               (hsel.seq hguard).mono hbound
           refine ⟨σsel, σsel, tape, tail, values, used, false, stageCost,
             hbits, hdrawTrace, hsel, hfull, hbatchSel, rfl, rfl,
-            hoffSel, htargetSel, hactiveASel, hactiveBSelRaw, hnSel, ?_, ?_⟩
+            hoffSel, htargetSel, hactiveASel, hactiveBSelRaw, hnSel, hqSel, ?_, ?_⟩
           · intro h; cases h
           · intro _
-            refine ⟨W, true, repUsed, hW, hWA, hvaluesLen, hrepVal,
+            refine ⟨W, true, repUsed, hW, hWA, hvaluesLen, hrepUsedLe, hrepVal,
               hinpSel, ?_, ?_⟩
             · intro _
               refine ⟨rfl, hacceptSel, ?_, hsampleCountSel⟩
@@ -375,12 +378,15 @@ lemma fullInitialAttempt_run_bits
             (hsuffix.frame_arr "activeB" (by decide)).trans hactiveBSelRaw
           have hnFinal : σ'.vars "n" = n :=
             (hsuffix.frame_var "n" (by decide)).trans hnSel
+          have hqFinal : σ'.vars "qpow" = Q :=
+            (hsuffix.frame_var "qpow" (by decide)).trans hqSel
           refine ⟨σsel, σ', tape, tail, values, used, false, stageCost,
             hbits, hdrawTrace, hsel, hfull, hbatchFinal, hinp, hout,
-            hoffFinal, htargetFinal, hactiveAFinal, hactiveBFinalRaw, hnFinal, ?_, ?_⟩
+            hoffFinal, htargetFinal, hactiveAFinal, hactiveBFinalRaw, hnFinal,
+            hqFinal, ?_, ?_⟩
           · intro h; cases h
           · intro _
-            refine ⟨W, false, repUsed, hW, hWA, hvaluesLen, hrepVal,
+            refine ⟨W, false, repUsed, hW, hWA, hvaluesLen, hrepUsedLe, hrepVal,
               hinp.trans hinpSel, ?_, ?_⟩
             · intro h; cases h
             · intro _
