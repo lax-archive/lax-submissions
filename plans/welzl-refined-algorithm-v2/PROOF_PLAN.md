@@ -932,3 +932,8 @@ packed phase-three output into the complete sampler. The adaptive probability
 law and expected cost, outer history/timeout, and RAM compiler/layout connection
 remain open. This deterministic execution result does not close the headline
 claim; the public concept and abstract remain unchanged.
+
+Integrated release validation passed: all 151 proof modules are root-imported.
+Full `lax build --replay` completed in 3m53s, including 3m31s kernel replay.
+Archive inspection still reports one public concept and zero annotated
+conclusions; the headline theorem remains open.
