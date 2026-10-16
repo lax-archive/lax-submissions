@@ -13,6 +13,8 @@ open Lax808846Proofs.Reasoning.Lib
 open Lax11.GraphEncoding
 open Lax457868Proofs.InitialDrawSampleSource
 open Lax457868Proofs.ClassRepresentativeTrace
+open Lax457868Proofs.FairBitIndices
+open Lax457868Proofs.StoppingPrefix
 open Lax457868Proofs.ClassRepresentativeLoop
 open Lax457868Proofs.SequentialDraws
 open Lax457868Proofs.FullSamplePartition
@@ -177,6 +179,29 @@ private lemma bitBudget_le_uniform {size : ℕ → ℕ} {t d q width : ℕ}
       have hrec := ih (d := d + 1) htail
       nlinarith [hhead', hrec]
 
+/-- A class trace consumes no more than the reserved width for its classes. -/
+lemma classTrace_used_le_budget (size : ℕ → ℕ) (t : ℕ)
+    (start : ℕ → ℕ) :
+    ∀ {d q : ℕ} {bits : List Bool} {values : List ℕ}
+      {used charge : ℕ} {failed : Bool},
+      ClassTrace size t start d q bits values used charge failed →
+        used ≤ bitBudget size t d q
+  | _, _, _, _, _, _, _, .done _ _ => by simp [bitBudget]
+  | _, _, _, _, _, _, _, .failed (d := d) (r := r) tape _ u hm hsel => by
+      have hnone : selectBitIndex (size d) hm t tape = none := by
+        have h := congrArg Prod.fst hsel
+        simpa [selectBitIndexWithCount_eq (size d) hm t tape] using h
+      have hreject := (selectBitIndex_eq_none_iff (size d) hm t tape).mp hnone
+      have hcomplete := (selector_complete_rejection_iff (size d) hm t tape).mpr hreject
+      have hu : u = t := congrArg Prod.snd (hsel.symm.trans hcomplete)
+      simp [bitBudget, hu]
+  | _, _, _, _, _, _, _, .accepted (d := d) (r := r)
+      tape _ i u hm hsel hnext => by
+      have hu : u ≤ t := (stoppedEvent_bounds (size d) hm t u i tape hsel).2
+      have hrec := classTrace_used_le_budget size t start hnext
+      simp only [bitBudget]
+      nlinarith
+
 /-- The fixed representative-selection suffix executes from a full-sample
 partition state, retaining the actual capped representative trace, exact
 unread tape, and the failed/successful representative-map branch. -/
@@ -335,7 +360,8 @@ lemma initialSamplerAttempt_run_bits
       (drawFailed = true →
         σ'.vars "batchFailed" = 1 ∧
         σ'.arrs "sampleFlags" = arrOf n (fun _ => 0) ∧
-        σ'.vars "sampleCount" = 0) ∧
+        σ'.vars "sampleCount" = 0 ∧
+        σ'.inp = (I.bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ I.rest) ∧
       (drawFailed = false →
         ∃ (W : Finset ℕ) (sampleOrd : ℕ → ℕ) (sampleCount : ℕ)
           (σp : Env) (q : ℕ) (label size : ℕ → ℕ)
@@ -364,6 +390,7 @@ lemma initialSamplerAttempt_run_bits
           xs.Nodup ∧ xs.toFinset = activeVertices n I.activeB ∧
           ClassTrace size t (classStart size) 0 q
             (I.bits.drop (used * Nat.clog 2 m)) repValues repUsed repCharge repFailed ∧
+          repUsed ≤ n * t * Nat.clog 2 n ∧
           σ'.vars "repFailed" = (if repFailed then 1 else 0) ∧
           (repFailed = true → σ'.arrs "repB" = σp.arrs "repB") ∧
           σ'.arrs "sampleFlags" = arrOf n (fun v => if v ∈ W then 1 else 0) ∧
@@ -468,7 +495,7 @@ lemma initialSamplerAttempt_run_bits
         exact hwhole.frame_var v hv
       · intro _
         have hf := hdrawFailure rfl
-        exact ⟨by simpa [hbad], hf.1, hf.2⟩
+        exact ⟨by simpa [hbad], hf.1, hf.2, hdrawInp⟩
       · intro hsuccess
         cases hsuccess
   | false =>
@@ -782,7 +809,9 @@ lemma initialSamplerAttempt_run_bits
               _ = W.card := hsampleCount),
           hlabelRep, hsizeRep,
           hordRep,
-          hnodup, hset, hclassTrace, hrepFailedVal, ?_, ?_, ?_, ?_⟩
+          hnodup, hset, hclassTrace, ?_, hrepFailedVal, ?_, ?_, ?_, ?_⟩
+        · exact (classTrace_used_le_budget size t (classStart size) hclassTrace).trans
+            hbudgetN
         · intro hfailed
           exact (hrepFailure hfailed).1.trans hrepBP.symm
         · exact hflagsRep

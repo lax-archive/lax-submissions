@@ -128,13 +128,13 @@ lemma initialSamplerAttempt_run_choice
   refine ⟨σ', tape, tail, values, used, drawFailed, stageCost,
     hbits, hdrawTrace, hrun, hbatchFailed, ?_, ?_⟩
   · intro hfailed
-    exact ⟨(hdrawFailure hfailed).2.1, (hdrawFailure hfailed).2.2⟩
+    exact ⟨(hdrawFailure hfailed).2.1, (hdrawFailure hfailed).2.2.1⟩
   · intro hsuccess
     obtain ⟨W, sampleOrd, sampleCount, σp, q, label, size, xs, sorted,
       repValues, repUsed, repCharge, repFailed, hW, hWsubset, hWcard,
       hvaluesLength, _hprefix, _hpartition, _hsizes, _hoccupied, hclasses,
       _hselection, _hnFinal, _hqpowFinal, _hsampleCount, _hclassB,
-      _hclassSize, _hord, _hnodup, hxs, _htrace, hrepFailedVal,
+      _hclassSize, _hord, _hnodup, hxs, _htrace, _hrepUsedLe, hrepFailedVal,
       _hrepFailure, _hsampleFlags, _hinp, hrepSuccess, _hcost⟩ :=
         hdrawSuccess hsuccess
     let draws : List ℕ := values.map (fun i => I.domain i.val)
