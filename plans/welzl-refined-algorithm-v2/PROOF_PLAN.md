@@ -42,7 +42,7 @@ Complete only when the annotated proof has the exact public type, has no
 unproved mathematical assumptions or self-dependence, passes full kernel
 replay, and the accepted draft records that proof.
 
-## 2. Current checked interfaces (updated 2026-10-15)
+## 2. Current checked interfaces (updated 2026-10-16)
 
 This table supersedes the historical assignment/status snapshots below. Reuse
 these exact interfaces; do not recreate a component because an older entry
@@ -60,11 +60,13 @@ still describes it as future work. All implementation details remain proof-side.
 | Distinct-neighborhood domain | `DistinctNeighborhoodDomain` using unchanged first partition | Full-ground initialization and empty-active-set branch |
 | Grouped representative execution | `GroupedClassRepresentatives.groupedClassRepresentatives_run_bits`, reusing old radix sort, `ClassRepresentativeLoop`, old representative map | `InitialSamplerAttempt.initialSamplerAttempt_run_bits` now composes initial draws, partition and representative selection; guarded acceptance is assembled in `FullInitialAttempt`; distribution/cost coupling remain |
 | Representative choice mathematics | `ClassBucketDomain`, `ClassChoiceTransport` | Apply the existing finite-choice law to actual flat-tape execution without conditioning away failures |
-| Full initial attempt | `FullInitialAttempt.fullInitialAttempt_run_bits`, `InitialSamplerChoice`, `InitialAttemptAcceptance`; reuses `BatchedDistances` and `ExceptionCollection` | Parameter setup, actual retry loop and adaptive distribution/cost coupling |
+| Full initial attempt | `FullInitialAttempt.fullInitialAttempt_run_bits`, `InitialSamplerChoice`, `InitialAttemptAcceptance`; reuses `BatchedDistances` and `ExceptionCollection` | Parameter setup and adaptive distribution/cost coupling; fixed retry execution is now checked |
+| Initial retry execution | `InitialSamplerRetriesSource.initialSamplerRetriesSource_run` and `initialSamplerRetriesSource_zero_run`: fixed runtime cap, restored sampling setup, explicit exits, exact unread suffix | Ordered adaptive trace/law and expected-cost coupling; parameter setup |
 | Complete phase two | `ExceptionPhaseSource.exceptionPhase_run`, including initial exception partition, empty branch, scan and packing; existing size/separation lemmas | Compose after initial acceptance and before fixed full-B grouping |
 | Fixed full-B classes | `FullSamplePartition.groupActiveB_run`, unchanged radix, `RepairClassOffsets.repairClassOffsets_run` and `repairClassLookup_run` | Compose with the local domain/trial source |
-| Repair domain | `RepairFilterSource.repairDomainSource_run`: runtime representative lookup, duplicate-safe CSR neighborhoods, exact symmetric-difference domain, touched cleanup | Trial isolation checks and repair retry loop |
-| Repair row check | `RepairTrialCheck.collectCheckAndClearTrialRow_run`: actual CSR collection, trace equality, touched cleanup; arbitrary old difference buffer | Build desired trace, scan fixed class, trial insertion/cleanup and retry loop |
+| Repair domain | `RepairFilterSource.repairDomainSource_run`: runtime representative lookup, duplicate-safe CSR neighborhoods, exact symmetric-difference domain, touched cleanup | Trial draws/marking and repair retry loop; complete fixed-class scan is now checked |
+| Repair row check | `RepairTrialCheck.collectCheckAndClearTrialRow_run`: actual CSR collection, trace equality, touched cleanup; arbitrary old difference buffer | Reused by the complete class scan; trial insertion/cleanup and retry loop remain |
+| Complete repair class scan | `RepairClassScan.repairClassLookupAndScan_run`, `scanSuccess_iff_localTrialIsolates`: runtime lookup, one-time desired trace, every fixed-class row, touched cleanup, S-only isolation bridge | Supply established grouping invariants and trial flags from local trial/retry assembly |
 | Guarded cutoff | `SaturatedCutoff`, `SaturatedCutoffSource`, `RefinedCutoffSource.refinedCutoffSource_run` | Discharge word-fit preconditions from final layout; timeout remains separate |
 | Compiler | Existing pinned `Lax808846Proofs.Simulation` | Apply to the complete source/layout and derived cost bound |
 
@@ -74,8 +76,8 @@ mean single indexed draw `30*clog₂(m)+79`; grouped representatives
 `300*(degree+1)+9`; guarded cutoff `12*clog₂(n)+252`. These are
 source-language bounds, not yet the public machine-time theorem.
 
-The outstanding substantial layers are parameter setup and initial retry-loop
-assembly, efficient phase-three source,
+The outstanding substantial layers are parameter setup, local trial/retry and
+phase-three outer-loop assembly,
 whole-sampler probability/expected costs, timeout/layout, actual rounds/history,
 and the final compiler lift. The public theorem remains open.
 
