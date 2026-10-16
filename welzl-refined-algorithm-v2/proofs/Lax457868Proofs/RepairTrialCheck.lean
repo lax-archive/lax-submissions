@@ -190,6 +190,7 @@ lemma setTraceEqualityFlag_run
     (honeB : 1 < B) :
     ∃ σ', Run B setTraceEqualityFlag σ σ' 12 ∧
       (σ'.vars "trialTraceEqual" = 1 ↔ diff = 0 ∧ h = d) ∧
+      σ'.vars "trialTraceEqual" ≤ 1 ∧
       (∀ a, σ'.arrs a = σ.arrs a) ∧
       (∀ x, x ≠ "trialTraceEqual" → σ'.vars x = σ.vars x) ∧
       σ'.inp = σ.inp ∧ σ'.out = σ.out := by
@@ -232,8 +233,9 @@ lemma setTraceEqualityFlag_run
         simpa [setTraceEqualityFlag, Cond.size, Expr.size] using Run.ite_true ho ri
       have hrun : Run B setTraceEqualityFlag σ (σ₀.setVar "trialTraceEqual" 1) 12 := by
         simpa [setTraceEqualityFlag, seqs] using rinit.seq hr
-      refine ⟨σ₀.setVar "trialTraceEqual" 1, hrun, ?_, ?_, ?_, rfl, rfl⟩
+      refine ⟨σ₀.setVar "trialTraceEqual" 1, hrun, ?_, ?_, ?_, ?_, rfl, rfl⟩
       · simp [σ₀, Env.setVar, hd, hh]
+      · simp [σ₀, Env.setVar]
       · intro a; simp [σ₀, Env.setVar]
       · intro x hx; simp [σ₀, Env.setVar, hx]
     · have ha : Run B (seqs [.skip, .skip]) σ₀ σ₀ 2 := by
@@ -256,8 +258,9 @@ lemma setTraceEqualityFlag_run
         simpa [Cond.size, Expr.size] using Run.ite_true ho ri
       have hrun : Run B setTraceEqualityFlag σ σ₀ 12 := by
         simpa [setTraceEqualityFlag, seqs] using rinit.seq hr
-      refine ⟨σ₀, hrun, ?_, ?_, ?_, rfl, rfl⟩
+      refine ⟨σ₀, hrun, ?_, ?_, ?_, ?_, rfl, rfl⟩
       · simp [σ₀, Env.setVar, hd, hh]
+      · simp [σ₀, Env.setVar]
       · intro a; simp [σ₀, Env.setVar]
       · intro x hx; simp [σ₀, Env.setVar, hx]
   · have hfalse : (Cond.eq (.var "trialDiffCount") (.lit 0)).evalB B σ₀ =
@@ -275,8 +278,9 @@ lemma setTraceEqualityFlag_run
       simpa [Cond.size, Expr.size] using Run.ite_false hfalse rfalse
     have hrun : Run B setTraceEqualityFlag σ σ₀ 12 := by
       simpa [setTraceEqualityFlag, seqs] using rinit.seq hr
-    refine ⟨σ₀, hrun, ?_, ?_, ?_, rfl, rfl⟩
+    refine ⟨σ₀, hrun, ?_, ?_, ?_, ?_, rfl, rfl⟩
     · simp [σ₀, Env.setVar, hd]
+    · simp [σ₀, Env.setVar]
     · intro a; simp [σ₀, Env.setVar]
     · intro x hx; simp [σ₀, Env.setVar, hx]
 
@@ -316,6 +320,7 @@ lemma checkTraceRow_then_clear_run
     (hd : d = T.card) (hnB : n < B) (honeB : 1 < B) :
     ∃ σ', Run B checkTraceRowAndClear σ σ' (36 * h + 26) ∧
       (σ'.vars "trialTraceEqual" = 1 ↔ S = T) ∧
+      σ'.vars "trialTraceEqual" ≤ 1 ∧
       σ'.arrs "drawDomain" = σ.arrs "drawDomain" ∧
       σ'.vars "drawModulus" = σ.vars "drawModulus" ∧
       σ'.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
@@ -360,7 +365,7 @@ lemma checkTraceRow_then_clear_run
       simp [filterTraceRow, trialFilterNames, appendFiltered,
         appendFilteredBody, seqs, inc, Com.wvars] <;> decide)]
     simpa [σ₀, Env.setVar] using hdesiredLen
-  obtain ⟨σ₂, rflag, hflag, harr₂, hvars₂, _hinp₂, _hout₂⟩ :=
+  obtain ⟨σ₂, rflag, hflag, hflagLE, harr₂, hvars₂, _hinp₂, _hout₂⟩ :=
     setTraceEqualityFlag_run hrowLen₁ hdesiredLen₁ hdiffCount₁
       hrowB hdesiredB hdiffB honeB
   have hflagEq : σ₂.vars "trialTraceEqual" = 1 ↔ S = T := by
@@ -417,11 +422,14 @@ lemma checkTraceRow_then_clear_run
     exact hseq.mono (by omega)
   have hflagClear : σ₃.vars "trialTraceEqual" = σ₂.vars "trialTraceEqual" :=
     rclear.frame_var "trialTraceEqual" (by decide)
+  have hflagLEClear : σ₃.vars "trialTraceEqual" ≤ 1 := by
+    rw [hflagClear]
+    exact hflagLE
   have hdrawDomain₃ : σ₃.arrs "drawDomain" = σ.arrs "drawDomain" :=
     (rclear.frame_arr "drawDomain" (by decide)).trans hdrawDomain₂
   have hdrawModulus₃ : σ₃.vars "drawModulus" = σ.vars "drawModulus" :=
     (rclear.frame_var "drawModulus" (by decide)).trans hdrawModulus₂
-  exact ⟨σ₃, hrun, hflagClear ▸ hflagEq, hdrawDomain₃, hdrawModulus₃,
+  exact ⟨σ₃, hrun, hflagClear ▸ hflagEq, hflagLEClear, hdrawDomain₃, hdrawModulus₃,
     hzero, hcursor,
     hrun.frame_arr "trialRowList" (by decide),
     hrun.frame_arr "trialDesiredMarks" (by decide),
@@ -473,6 +481,7 @@ lemma collectCheckAndClearTrialRow_run
           36 * (activeTargets (target x) active (offset x b) (offset x (b + 1))).card + 26) ∧
       (σ'.vars "trialTraceEqual" = 1 ↔
         activeTargets (target x) active (offset x b) (offset x (b + 1)) = T) ∧
+      σ'.vars "trialTraceEqual" ≤ 1 ∧
       σ'.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
       σ'.arrs "drawDomain" = σ.arrs "drawDomain" ∧
       σ'.vars "drawModulus" = σ.vars "drawModulus" ∧
@@ -537,7 +546,7 @@ lemma collectCheckAndClearTrialRow_run
   have hcheckInput : σ₁.vars "n" = n := by
     rw [rcollect.frame_var "n" (by decide)]
     exact hn
-  obtain ⟨σ₂, rcheck, hflag₂, _hdrawDomain₂, _hdrawModulus₂,
+  obtain ⟨σ₂, rcheck, hflag₂, hflagLE₂, _hdrawDomain₂, _hdrawModulus₂,
     hzero₂, hcursor₂, hrowList₂, _hdesired₂, _hsampleFlags₂,
     _hord₂, _hclassB₂, _hclassSize₂⟩ :=
     checkTraceRow_then_clear_run hcheckInput hrowLen₁ hdesiredLen₁
@@ -560,7 +569,7 @@ lemma collectCheckAndClearTrialRow_run
   have hrowListOut : σ₂.arrs "trialRowList" = arrOf n rowList' :=
     hrowList₂.trans hrowList₁
   exact ⟨σ₂, rowList', hrun, by simpa [R, lo, hi] using hflag₂,
-    hzero₂, hdrawDomain, hdrawModulus, hrowListOut,
+    hflagLE₂, hzero₂, hdrawDomain, hdrawModulus, hrowListOut,
     by simpa [R, lo, hi] using hrow₁,
     by simpa [R, lo, hi] using card_activeTargets_le_interval,
     hrun.frame_arr "trialDesiredMarks" (by decide),
