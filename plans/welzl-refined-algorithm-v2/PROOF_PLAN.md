@@ -896,3 +896,8 @@ Next is the exception-list loop and assembly with accepted initialization and
 phase two. The actual adaptive probability/expected-cost coupling, outer
 history/timeout, and RAM layout/compiler lift remain open. This boundary does
 not prove the headline theorem. No public concepts or abstract were changed.
+
+Integrated release validation passed: all 149 proof modules are root-imported;
+full `lax build --replay` completed in 3m32s, including 2m49s kernel replay.
+The archive inspection reports one public concept and zero annotated
+conclusions. The headline theorem remains open.
