@@ -827,3 +827,40 @@ local trial/retry assembly, then adaptive law/cost and outer machine assembly.
 Final integrated `lax build --replay` passed: 145 proof modules, one public
 concept and zero annotated conclusions; kernel replay took 2m15s (2m39s total).
 The headline theorem remains open. Public concepts and abstract are unchanged.
+
+
+Reviewed and landed the fixed initial retry source and complete repair class scan.
+`InitialSamplerRetriesSource.initialSamplerRetriesSource_run` executes one fixed
+runtime-cap while loop, restoring the A-domain modulus and batch target after
+ordinary exception-count rejection. It returns acceptance with the actual
+InitialChoice, capped exception set, representative map and packed sample;
+capped random-draw failure and retry exhaustion are separate outcomes. It
+preserves n/qpow and exports the exact unread suffix on every exit. The source
+bound is `charges.sum + 28*charges.length + 22`, with at most the runtime cap
+many attempts. The separate zero-cap lemma needs no random bits or scratch
+setup. The existing one-attempt APIs now export failed-batch unread input and
+the representative bit-budget bound, rather than recreating their proofs.
+Each charge has a standalone checked full-attempt witness; the exported result
+is not yet an ordered execution trace coupled to the adaptive probability law.
+That coupling and its expected-cost bound remain open.
+
+`RepairClassScan.repairClassLookupAndScan_run` composes the existing runtime
+class lookup, one-time desired trace collection, the complete fixed class-slice
+loop, and touched desired-mark cleanup. Each row uses the existing checked
+collect/compare/clear operation. Its success flag is exactly separation from
+every other member of the fixed class; row and desired marks finish zero.
+The grouped B mask and trial sample mask are independent. The graph bridge
+`scanSuccess_iff_localTrialIsolates` proves that scanning only the trial draws
+is sufficient on the fixed old trace fibre. The source bound is
+`54*CSRdegree(b) + 12*|trace_S(b)| + 90*sum_slice_CSRdegrees + 70*sliceLength + 47`.
+It allows duplicate CSR entries and preserves the initial representative map,
+fixed classes, sample flags and X buffers. The row checker's Boolean flag bound
+was strengthened for the actual loop guard. Independent targeted builds and
+axiom audits passed; all audited lemmas use only the three background axioms.
+
+Next dependent source boundary: assemble local trial draws, marking, this scan,
+accept/discard cleanup and bounded local retries, reusing the existing X-domain
+construction and touched markers. Then connect accepted initialization through
+phase two and fixed full-B regrouping to the repair outer loop. Adaptive joint
+law/expected costs, outer history/timeout, and the final machine layout/compiler
+lift remain open. The public theorem and abstract are unchanged.
