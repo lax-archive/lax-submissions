@@ -909,3 +909,26 @@ empty near-case lists) to an existing tail witness. Independent targeted
 compilation and three axiom audits passed. These witnesses support deterministic
 correctness and size reuse; they do not encode the discarded random attempts
 or establish their probability law. The actual exception-list source is in progress.
+
+
+Reviewed and landed `e72f699d`: `ExceptionRepairLoop` executes one fixed while
+program over the actual packed exception array. It constructs each domain using
+the existing one-exception source, preserves the fixed phase-two classes and
+representatives, and retains earlier accepted repairs on a later failure.
+The exported ordered prefix records attempts, draws, exact consumed bit count,
+and recomputed per-call runtime bounds. Status 1 means all entries completed;
+status 2 is capped draw failure and status 3 retry exhaustion. All five touched
+mark arrays return zero. Empty exception lists are supported.
+
+Successful output is connected to the existing `phase3Scan`, reusing its sample
+size bound `|Wfinal| ≤ |Wstart| + s*e`. The success-guarded wrapper calls the
+existing `packMarkedSamples` once after the entire loop, exporting packed ord,
+sampleCount, enumeration and state frames. No full-vertex clear or packing was
+added per exception. Independent targeted compilation and two axiom audits
+passed, using only propext, Classical.choice and Quot.sound.
+
+Next: connect accepted initialization, phase two, full-B regrouping and this
+packed phase-three output into the complete sampler. The adaptive probability
+law and expected cost, outer history/timeout, and RAM compiler/layout connection
+remain open. This deterministic execution result does not close the headline
+claim; the public concept and abstract remain unchanged.
