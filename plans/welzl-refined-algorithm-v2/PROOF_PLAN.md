@@ -866,3 +866,8 @@ construction and touched markers. Then connect accepted initialization through
 phase two and fixed full-B regrouping to the repair outer loop. Adaptive joint
 law/expected costs, outer history/timeout, and the final machine layout/compiler
 lift remain open. The public theorem and abstract are unchanged.
+
+Integrated release validation passed: all 147 proof modules are root-imported;
+full `lax build --replay` took 3m34s, including 2m41s kernel replay. The archive
+inspection still reports one concept and zero annotated conclusions. These
+are checked source-execution components; the main theorem remains open.
