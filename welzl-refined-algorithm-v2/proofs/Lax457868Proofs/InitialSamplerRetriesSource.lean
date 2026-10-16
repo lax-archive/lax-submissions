@@ -2,7 +2,8 @@ import Lax457868Proofs.FullInitialAttempt
 
 /-! A fixed bounded retry loop for concrete initial attempts.  Each ordinary
 exception-count rejection restores the original A-domain sampling parameters
-before the next checked full attempt. -/
+before the next checked full attempt.  Coupling the ordered attempts to the
+adaptive probability law remains a separate proof. -/
 
 namespace Lax457868Proofs.InitialSamplerRetriesSource
 
@@ -77,8 +78,8 @@ def attemptCharge (n m _r _t targetCap used valueCount : ℕ)
     (if drawFailed then 5 else 4 + stageCost) + 9 +
     (300 * (n + targetCap + 1) + (94 * n + 15) + 8 + (20 * n + 9))
 
-/-- A charge with its actual checked full-attempt run and its exact
-draw/representative cost parameters. -/
+/-- A standalone checked full-attempt run witness for a charge and its
+cost parameters.  This predicate does not connect consecutive retry states. -/
 def CheckedAttemptCharge (B n m r t targetCap q : ℕ) : Prop :=
   ∃ (σ₀ σ₁ : Env) (used valueCount : ℕ)
     (drawFailed : Bool) (stageCost : ℕ),
@@ -965,11 +966,12 @@ lemma initialRetryWhile_run
                     · exact Or.inr (Or.inr ⟨hexhausted.1, by
                         simpa [List.length_cons] using congrArg Nat.succ hexhausted.2⟩)
 
-/-- Execute the fixed source with a runtime attempt cap.  Every element of
-`charges` is the concrete charge produced by a checked full attempt; the
-remaining input is precisely the unconsumed suffix of the supplied bit tape.
-Only ordinary exception-count rejection can start another attempt. -/
-theorem initialSamplerRetriesSource_run
+/-- Execute the fixed source with a runtime attempt cap.  Each element of
+`charges` has a standalone checked full-attempt charge witness, while the
+global execution bound sums those charges.  The remaining input is precisely
+the unconsumed suffix of the supplied bit tape.  Only ordinary exception-count
+rejection can start another attempt. -/
+lemma initialSamplerRetriesSource_run
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
     (attemptCap : ℕ)
@@ -1059,7 +1061,7 @@ theorem initialSamplerRetriesSource_run
 
 /-- A zero attempt cap exits without reading a random bit; this statement
 does not require even one attempt's bit budget or any scratch-array setup. -/
-theorem initialSamplerRetriesSource_zero_run
+lemma initialSamplerRetriesSource_zero_run
     {B m r : ℕ} {σ : Env}
     (hm : σ.vars "drawModulus" = m)
     (hr : σ.vars "batchTarget" = r)
