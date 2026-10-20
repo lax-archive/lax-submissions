@@ -3,6 +3,7 @@ import Lax457868Proofs.FlatTraceLaw
 import Lax457868Proofs.LocalRepairSource
 import Lax457868Proofs.SamplerLocalSuccess
 import Lax457868Proofs.SamplerRetries
+import Lax457868Proofs.EnumeratedDraws
 
 /-!
 The actual local selector may abort when one of its capped index draws fails.
@@ -31,6 +32,91 @@ lemma local_bitBudget (m t s : ℕ) :
         rw [ih (d + 1)]
         ring
   exact h 0 s
+
+/-- Ordered ideal index outputs, in the same list format as the source
+`DrawTrace`. -/
+def indexOutput {m s : ℕ} (tape : Fin s → Fin m) : List ℕ :=
+  List.ofFn fun i => (tape i).val
+
+lemma indexOutput_injective (m s : ℕ) :
+    Function.Injective (indexOutput (m := m) (s := s)) := by
+  intro a b hab
+  have hvalues : (fun i : Fin s => (a i).val) =
+      (fun i : Fin s => (b i).val) := List.ofFn_inj.mp hab
+  funext i
+  exact Fin.ext (congrFun hvalues i)
+
+lemma indexOutput_valid (m : ℕ) :
+    ∀ (d s : ℕ) (tape : Fin s → Fin m),
+      ValidOutput (fun _ => m) (fun _ => 0) d s (indexOutput tape)
+  | d, 0, tape => by
+      simpa [indexOutput] using
+        (ValidOutput.done (size := fun _ => m) (start := fun _ => 0) d)
+  | d, s + 1, tape => by
+      have hnext := indexOutput_valid m (d + 1) s (fun i => tape i.succ)
+      have hstep := ValidOutput.step (d := d) (r := s) (tape 0) hnext
+      simpa [indexOutput, List.ofFn_succ] using hstep
+
+lemma validOutput_exists_indexOutput (m : ℕ) :
+    ∀ {d s : ℕ} {output : List ℕ},
+      ValidOutput (fun _ => m) (fun _ => 0) d s output →
+        ∃ tape : Fin s → Fin m, indexOutput tape = output
+  | _, _, _, .done _ => ⟨Fin.elim0, by simp [indexOutput]⟩
+  | _, _, _, .step i hnext => by
+      obtain ⟨tail, htail⟩ := validOutput_exists_indexOutput m hnext
+      refine ⟨Fin.cons i tail, ?_⟩
+      simpa [indexOutput, List.ofFn_succ, htail]
+
+lemma outputVectors_eq_indexOutput_image (m d s : ℕ) :
+    outputVectors (fun _ => m) (fun _ => 0) d s =
+      (Finset.univ : Finset (Fin s → Fin m)).image indexOutput := by
+  classical
+  ext output
+  constructor
+  · intro houtput
+    obtain ⟨tape, htape⟩ := validOutput_exists_indexOutput m
+      (outputVectors.validOutput (fun _ => m) (fun _ => 0) houtput)
+    exact Finset.mem_image.mpr ⟨tape, Finset.mem_univ _, htape⟩
+  · intro houtput
+    obtain ⟨tape, _, rfl⟩ := Finset.mem_image.mp houtput
+    exact ValidOutput.mem_outputVectors (fun _ => m) (fun _ => 0)
+      (indexOutput_valid m d s tape)
+
+/-- Rejected ideal index tapes before decoding through the occupied
+source domain array. -/
+def localBadIndexTapes (m s : ℕ) (domain : ℕ → ℕ)
+    (N : ℕ → Finset ℕ) (B : Finset ℕ) (W : Finset ℕ) (b : ℕ) :
+    Finset (Fin s → Fin m) := by
+  classical
+  exact Finset.univ.filter fun tape =>
+    ¬ SamplerPhases.localTrialIsolates N B W b
+      ((indexOutput tape).map domain)
+
+/-- The source domain enumeration gives a bijection between ideal index
+tapes and uniform ordered tapes of elements of `X`. -/
+noncomputable def indexTapeEquiv (m s : ℕ) (domain : ℕ → ℕ)
+    (X : Finset ℕ)
+    (henum : ReusedOriginal.Construction.MarkingMath.PrefixEnumerates m domain X) :
+    (Fin s → Fin m) ≃ SamplerUniformDraws.Tape X s where
+  toFun tape i := EnumeratedDraws.prefixIndexEquiv m domain X henum (tape i)
+  invFun tape i := (EnumeratedDraws.prefixIndexEquiv m domain X henum).symm (tape i)
+  left_inv tape := by
+    funext i
+    exact (EnumeratedDraws.prefixIndexEquiv m domain X henum).symm_apply_apply (tape i)
+  right_inv tape := by
+    funext i
+    exact (EnumeratedDraws.prefixIndexEquiv m domain X henum).apply_symm_apply (tape i)
+
+lemma indexTapeEquiv_toList (m s : ℕ) (domain : ℕ → ℕ)
+    (X : Finset ℕ)
+    (henum : ReusedOriginal.Construction.MarkingMath.PrefixEnumerates m domain X)
+    (tape : Fin s → Fin m) :
+    (indexTapeEquiv m s domain X henum tape).toList =
+      (indexOutput tape).map domain := by
+  simp [SamplerUniformDraws.Tape.toList, indexTapeEquiv, indexOutput,
+    List.map_ofFn, EnumeratedDraws.prefixIndexEquiv]
+  funext i
+  rfl
 
 /-- A successful actual block trace with prescribed indices on one flat tape.
 The equality retains the exact block order and every unread bit. -/
