@@ -285,7 +285,7 @@ private def ReadyInput.withRetriesLeft
     hexceptionCap := by simpa [J] using R.hexceptionCap
   }
 
-private def ReadyInput.withSetup
+def ReadyInput.withSetup
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
     (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
