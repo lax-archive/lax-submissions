@@ -804,6 +804,66 @@ lemma readyAttemptRejected_badFiber
     initialSamplerAttempt_run_badFiber J.I σsel _ k cap choice mapped
       hselRun hbatchSel hrepSel hmappedSel hchoiceRep hbad
 
+/-- Finite event for an actual source attempt that continues retrying. -/
+noncomputable def readyAttemptRejectedFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) :
+    Finset (FlatTraceLaw.FlatTape N) := by
+  classical
+  exact Finset.univ.filter (readyAttemptRejected R hbudget)
+
+/-- The actual continuation event is at most half of all finite source
+tapes, including the selector-failure tapes in the denominator. -/
+lemma readyAttemptRejected_half
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
+    2 * (readyAttemptRejectedFiber R hbudget).card ≤ 2 ^ N := by
+  classical
+  let anchor : FlatTraceLaw.FlatTape N := fun _ => false
+  let J := R.reinput (List.ofFn anchor) (by simpa [attemptBitBudget] using hbudget)
+  let f : FlatTraceLaw.FlatTape N → FlatTraceLaw.FlatTape J.I.bits.length :=
+    fun ρ => (FlatTraceLaw.flatBitsEquiv _).symm
+      ⟨List.ofFn ρ, by simp [J, ReadyInput.reinput_bits]⟩
+  let E : Finset (FlatTraceLaw.FlatTape N) :=
+    readyAttemptRejectedFiber R hbudget
+  have hmaps : ∀ ρ ∈ E, f ρ ∈ sourceInitialBadFiber J.I k cap := by
+    intro ρ hρ
+    have hreject : readyAttemptRejected R hbudget ρ :=
+      by simpa [E, readyAttemptRejectedFiber] using hρ
+    have hbad := readyAttemptRejected_badFiber R hbudget ρ hreject
+    exact (readyBadFiber_reinput_eq R hbudget ρ anchor ρ).mp hbad
+  have hinj : ∀ ρ ∈ E, ∀ τ ∈ E, f ρ = f τ → ρ = τ := by
+    intro ρ _ τ _ heq
+    have hbits : List.ofFn ρ = List.ofFn τ := by
+      have h := congrArg FlatTraceLaw.flatBits heq
+      have hρ : FlatTraceLaw.flatBits (f ρ) = List.ofFn ρ := by
+        exact congrArg Subtype.val ((FlatTraceLaw.flatBitsEquiv _).apply_symm_apply
+          ⟨List.ofFn ρ, by simp [J, ReadyInput.reinput_bits]⟩)
+      have hτ : FlatTraceLaw.flatBits (f τ) = List.ofFn τ := by
+        exact congrArg Subtype.val ((FlatTraceLaw.flatBitsEquiv _).apply_symm_apply
+          ⟨List.ofFn τ, by simp [J, ReadyInput.reinput_bits]⟩)
+      simpa [hρ, hτ] using h
+    exact List.ofFn_injective hbits
+  have hcard : E.card ≤ (sourceInitialBadFiber J.I k cap).card :=
+    Finset.card_le_card_of_injOn f hmaps hinj
+  have hhalf : 2 * (sourceInitialBadFiber J.I k cap).card ≤
+      2 ^ J.I.bits.length :=
+    sourceInitialBadFiber_half J.I k cap (by exact hmass)
+  have hlen : J.I.bits.length = N := by simp [J, ReadyInput.reinput_bits]
+  have htotal := (Nat.mul_le_mul_left 2 hcard).trans hhalf
+  simpa [E, hlen] using htotal
+
 private lemma eq_zero_eval {B : ℕ} {σ : Env} {v : String} {z : ℕ}
     (hz : σ.vars v = z) (hzB : z < B) (hzero : 0 < B) :
     (Cond.eq (.var v) (.lit 0)).evalB B σ = some (z == 0) := by
