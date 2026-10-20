@@ -175,6 +175,65 @@ structure LoopInput (B n s t bufferCap targetCap q cap k e : ℕ)
   hpowB : 2 ^ Nat.clog 2 n < B
   hthreeB : 3 < B
 
+/-- Refill exactly the unread Boolean tape, retaining all graph metadata and
+all noninput source registers at an exception-loop stopping prefix. -/
+def LoopInput.reinput
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent) (bits : List Bool) :
+    LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent := by
+  let σ' := {R.σ with inp := bits.map Bool.toNat ++ R.rest}
+  exact {
+    R with
+    σ := σ'
+    bits := bits
+    hinput := rfl
+    hn := by simpa [σ'] using R.hn
+    hqpow := by simpa [σ'] using R.hqpow
+    htarget := by simpa [σ'] using R.htarget
+    hdrawCap := by simpa [σ'] using R.hdrawCap
+    hclassCount := by simpa [σ'] using R.hclassCount
+    hretryCap := by simpa [σ'] using R.hretryCap
+    hfarBound := by simpa [σ'] using R.hfarBound
+    hexceptionCount := by simpa [σ'] using R.hexceptionCount
+    hexceptionList := by simpa [σ'] using R.hexceptionList
+    hrep := by simpa [σ'] using R.hrep
+    hactive := by simpa [σ'] using R.hactive
+    hdrawDomainLength := by simpa [σ'] using R.hdrawDomainLength
+    hkeyLength := by simpa [σ'] using R.hkeyLength
+    hdrawsLength := by simpa [σ'] using R.hdrawsLength
+    hsample := by simpa [σ'] using R.hsample
+    htrialZero := by simpa [σ'] using R.htrialZero
+    hrowZero := by simpa [σ'] using R.hrowZero
+    hdesiredZero := by simpa [σ'] using R.hdesiredZero
+    hrowLength := by simpa [σ'] using R.hrowLength
+    hdesiredLength := by simpa [σ'] using R.hdesiredLength
+    hdiffLength := by simpa [σ'] using R.hdiffLength
+    hBListLength := by simpa [σ'] using R.hBListLength
+    hRListLength := by simpa [σ'] using R.hRListLength
+    hBMarksZero := by simpa [σ'] using R.hBMarksZero
+    hRMarksZero := by simpa [σ'] using R.hRMarksZero
+    hclassB := by simpa [σ'] using R.hclassB
+    hclassSize := by simpa [σ'] using R.hclassSize
+    hclassStart := by simpa [σ'] using R.hclassStart
+    hord := by simpa [σ'] using R.hord
+    hoff := by simpa [σ'] using R.hoff
+    htgt := by simpa [σ'] using R.htgt
+    hgroupActive := by simpa [σ'] using R.hgroupActive
+  }
+
+lemma LoopInput.reinput_state
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent) (bits : List Bool) :
+    (R.reinput bits).σ =
+      {R.σ with inp := bits.map Bool.toNat ++ R.rest} := rfl
+
 /-- Once distinct exceptions have distinct phase-two traces, their packed
 class labels are distinct. The fixed `ord` slices may therefore be charged
 at most once during the repair loop. -/
