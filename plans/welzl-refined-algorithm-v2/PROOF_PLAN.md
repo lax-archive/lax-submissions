@@ -1006,3 +1006,16 @@ a sufficiently long input prefix; no successful sample is supplied. Target
 build and axiom checks passed with only the three background axioms. Full
 kernel replay of the preceding clock/setup/flat-law checkpoint `e260a2cb`
 passed in 5m05s; the main annotated conclusion is still outstanding.
+
+Reviewed actual accepted-round/history commit (`5ffb238f`): source log
+intervals and representative entries extend Stored, with the contraction
+recurrence and partition cost preserved. Independent build and axiom audit
+passed. Initial source certificates now retain exact consumed-prefix runs
+and canonical active packing (`f9691efc`); the final adaptive initial-law
+aggregation is still in progress. Local output fibers are linked to the
+paper's uniform failure set (`c4f8b1de`), including the injective-neighborhood
+premise. Runtime clock initialization and the registered compiler transfer
+are checked (`b65c41e7`). Full-neighborhood deduplication must be executed
+before sampling: RefinedTwinDomain proves its initial coverage and that the
+two later trace partitions preserve separation. The concrete initial
+adapter, outer loop, retry expectation and final conclusion remain open.
