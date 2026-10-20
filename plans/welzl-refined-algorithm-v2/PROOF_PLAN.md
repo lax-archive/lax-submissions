@@ -973,3 +973,26 @@ selection. Zero-cap and size-one cases are checked. Both modules passed
 independent target builds and background-only axiom audits. Next are initial
 flat-law/source coupling, actual round/history assembly and quantitative clock
 proof. The headline theorem remains open.
+
+
+Full kernel replay of the complete sampler and flat trace law passed at
+`ec685e6c` (3m50s total, 3m18s kernel replay). It still reports one concept and
+zero annotated conclusions: the headline remains open.
+
+Reviewed and independently checked `ClockedSource` (`c6cb45f5`): one fixed
+instrumentation has an actual run bounded by a syntax-dependent factor times
+remaining capacity, including nested-loop timeout paths. Sufficient capacity
+preserves the exact original state/input/output, with cost at most 100 times
+the original source cost. Capacity is mathematical; two individually bounded
+counters suffice, so no whole-time-budget word-fit premise is introduced.
+
+Runtime initialization is now checked (`f6f4a2dc`). `RefinedSetup` reuses the
+original CSR reader and initialization, preserving zero scratch arrays and
+saving the refined logarithm. `PackedDomainSource` reuses the existing flag
+packer by static renaming. `SamplerRuntimeSetup` computes the ten parameter
+registers in 38 source steps; all intermediates fit because the nontrivial
+branch establishes 2K(c)<n. Retry and draw caps are n. Their global failure
+bound still needs the actual-tape coupling. Setup, domain packing and parameter
+lemmas passed target builds and background-only axiom audits. The remaining
+integration is the actual history driver, sampler/retry probability and
+expected cost, then the clock/compile bridge and annotated conclusion.
