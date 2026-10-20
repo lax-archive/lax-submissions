@@ -1,4 +1,5 @@
 import Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
+import Lax457868Proofs.SourceTapePrefix
 import Mathlib.Tactic
 
 /-! Finite averaging after a variable stopping prefix. A deterministic
@@ -21,6 +22,34 @@ lemma prefix_of_split {k N : ℕ} (h : k ≤ N) (ρ : Tape N) :
     (List.ofFn ρ).take k = List.ofFn ((splitEquiv h ρ).1) := by
   rw [boolTape_split h ρ]
   simp
+
+/-- Replay the actual source execution after replacing exactly its unread
+suffix. Its memory and output are unchanged. -/
+lemma run_replace_consumed_suffix {B K : ℕ}
+    {c : Lax808846Proofs.Imp.Com} {σ τ : Lax808846Proofs.Imp.Env}
+    (hrun : Lax808846Proofs.Reasoning.Run B c σ τ K)
+    (pre : List ℕ) (hin : σ.inp = pre ++ τ.inp) (tail : List ℕ) :
+    Lax808846Proofs.Reasoning.Run B c
+      {σ with inp := pre ++ tail} {τ with inp := tail} K := by
+  obtain ⟨k, hk, hbig⟩ := hrun
+  obtain ⟨actual, hactual, _, hreplay⟩ := SourceTapePrefix.consumed_prefix hbig
+  have heq : actual = pre := List.append_cancel_right (hactual.symm.trans hin)
+  subst actual
+  exact ⟨k, hk, hreplay tail⟩
+
+/-- A second run on the same observed prefix has the same final memory and
+output, even if its unread suffix and supplied cost bound differ. -/
+lemma run_result_same_prefix {B K J : ℕ}
+    {c : Lax808846Proofs.Imp.Com} {σ τ υ : Lax808846Proofs.Imp.Env}
+    (hrun : Lax808846Proofs.Reasoning.Run B c σ τ K)
+    (pre : List ℕ) (hin : σ.inp = pre ++ τ.inp) (tail : List ℕ)
+    (hother : Lax808846Proofs.Reasoning.Run B c
+      {σ with inp := pre ++ tail} υ J) :
+    υ = {τ with inp := tail} := by
+  have hrep := run_replace_consumed_suffix hrun pre hin tail
+  obtain ⟨_, _, ha⟩ := hrep
+  obtain ⟨_, _, hb⟩ := hother
+  exact (Lax808846Proofs.Imp.BigStep.unique ha.bigStep hb.bigStep).1.symm
 
 /-- The complete observed prefix includes rejected random blocks. -/
 def stoppedPrefix {N : ℕ} (used : Tape N → ℕ) (ρ : Tape N) : List Bool :=

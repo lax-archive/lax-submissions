@@ -317,6 +317,22 @@ lemma localTrialFailureSet_restricted_eq (A X B W : Finset ℕ)
   rw [Lax457868Proofs.LocalRepairPhase3.localTrialIsolates_restricted_iff
     N B hWA b tape.toList hdraw]
 
+/-- A trial that fails to isolate against a subgroup also fails against the
+full active vertex set. This preserves the actual phase-two sample from the
+full construction when the source scans only one group. -/
+lemma localTrialFailureSet_mono_group (N : ℕ → Finset ℕ)
+    (B C W X : Finset ℕ) (b s : ℕ) (hBC : B ⊆ C) :
+    SamplerLocalSuccess.localTrialFailureSet N B W b X s ⊆
+      SamplerLocalSuccess.localTrialFailureSet N C W b X s := by
+  classical
+  intro tape hbad
+  simp only [SamplerLocalSuccess.localTrialFailureSet,
+    Finset.mem_filter, Finset.mem_univ, true_and] at hbad ⊢
+  intro hgood
+  apply hbad
+  intro v hv htrace hne
+  exact hgood v (hBC hv) htrace hne
+
 /-- The paper's paired-swap half bound applies to the physical full-CSR
 source event through the active-ground-set restriction. -/
 lemma localFailure_half_restricted_paper
@@ -356,6 +372,37 @@ lemma localFailure_half_restricted_paper
   have heq := localTrialFailureSet_restricted_eq A X B W N b s hWA hXA
   rw [heq, hX, hW, hs]
   exact Nat.le_of_lt hsingle
+
+/-- Use the full phase-two choice and sample to bound an actual local scan
+restricted to one subgroup of the active vertices. -/
+lemma localFailure_half_restricted_paper_subgroup
+    (A B C W X : Finset ℕ) (N : ℕ → Finset ℕ)
+    (r k c b s : ℕ)
+    (choice : SamplerPhases.InitialChoice A C (fun v => N v ∩ A) r)
+    (as : List ℕ) (has : as.toFinset = A) (hasNodup : as.Nodup)
+    (hBC : B ⊆ C)
+    (hinj : ∀ u ∈ C, ∀ v ∈ C,
+      N u ∩ A = N v ∩ A → u = v)
+    (hb : b ∈ C)
+    (hfar : 2 * k < 3 * SamplerPhases.disagreement
+      (fun v => N v ∩ A) b (choice.representative b))
+    (hc : 2 ≤ c)
+    (hshatter : ∀ Y : Finset ℕ, Y ⊆ A → Y.Nonempty →
+      (SamplerPhases.traceClasses (fun v => N v ∩ A) Y C).card ≤
+        c * Y.card)
+    (hX : X = ((N b ∩ A) \ (N (choice.representative b) ∩ A)) ∪
+      ((N (choice.representative b) ∩ A) \ (N b ∩ A)))
+    (hW : W = SamplerPhases.phase2Scan (fun v => N v ∩ A)
+      (choice.exceptions k) as choice.sample)
+    (hs : s = 64 * Nat.clog 2 c)
+    (hWA : W ⊆ A) :
+    2 * (SamplerLocalSuccess.localTrialFailureSet N B W b X s).card ≤
+      X.card ^ s := by
+  have hfull := localFailure_half_restricted_paper A C W X N r k c
+    b s choice as has hasNodup hinj hb hfar hc hshatter hX hW hs hWA
+  have hsub := localTrialFailureSet_mono_group N B C W X b s hBC
+  have hcard := Finset.card_le_card hsub
+  nlinarith
 
 /-- The geometric ideal-draw half bound transfers to actual source draws,
 including exhausted selector calls in the complement of the retry event. -/
