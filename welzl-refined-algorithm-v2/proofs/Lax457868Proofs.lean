@@ -195,3 +195,6 @@ import Lax457868Proofs.InitialDrawMean
 import Lax457868Proofs.RepresentativeSourceMean
 import Lax457868Proofs.InitialAttemptMean
 import Lax457868Proofs.FullInitialAttemptMean
+import Lax457868Proofs.RefinedRoundPrefix
+import Lax457868Proofs.InitialAbortProbability
+import Lax457868Proofs.LocalSelectorAbort

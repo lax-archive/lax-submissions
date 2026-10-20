@@ -57,4 +57,21 @@ lemma actual_full_mean
     card_tape, nsmul_eq_mul] at hs
   nlinarith
 
+/-- Separate the input-linear scans from the active-size logarithmic draw
+work. The constants are collected from the checked component charges. -/
+lemma full_mean_coefficient_le (len : ℕ)
+    (hrm : r ≤ m) (hmn : m ≤ n) (hn : n ≤ len)
+    (htarget : targetCap ≤ len) (hQ : Q ≤ 2*n) :
+    r*(42*Nat.clog 2 m+133)+12*Nat.clog 2 m+1180*n+
+        624*targetCap+64*Q+571 ≤
+      1944*(len+1)+133*m*(Nat.clog 2 n+1) := by
+  have hlog : Nat.clog 2 m ≤ Nat.clog 2 n := Nat.clog_mono_right 2 hmn
+  have hlogn : Nat.clog 2 n ≤ n := Nat.clog_le_of_le_pow n.lt_two_pow_self.le
+  have hdraw : r*(42*Nat.clog 2 m+133) ≤ 133*m*(Nat.clog 2 n+1) := by
+    calc
+      _ ≤ m*(42*Nat.clog 2 m+133) := Nat.mul_le_mul_right _ hrm
+      _ ≤ m*(133*(Nat.clog 2 n+1)) := Nat.mul_le_mul_left _ (by omega)
+      _ = _ := by ring
+  omega
+
 end Lax457868Proofs.FullInitialAttemptMean
