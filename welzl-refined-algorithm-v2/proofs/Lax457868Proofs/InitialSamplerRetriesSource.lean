@@ -1073,7 +1073,7 @@ lemma initialRetryWhile_run
 global execution bound sums those charges.  The remaining input is precisely
 the unconsumed suffix of the supplied bit tape.  Only ordinary exception-count
 rejection can start another attempt. -/
-lemma initialSamplerRetriesSource_run
+lemma initialSamplerRetriesSource_run_withTrace
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
     (attemptCap : ℕ)
@@ -1093,7 +1093,14 @@ lemma initialSamplerRetriesSource_run
         (σ'.vars "initialRetryStatus" = 2 ∧
           (σ'.vars "batchFailed" = 1 ∨
             (σ'.vars "batchFailed" = 0 ∧ σ'.vars "repFailed" = 1))) ∨
-        (σ'.vars "initialRetryStatus" = 3 ∧ charges.length = attemptCap)) := by
+        (σ'.vars "initialRetryStatus" = 3 ∧ charges.length = attemptCap)) ∧
+      ∃ (S : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+        (rejects : List (ℕ × ℕ)),
+        S.I.bits = R.I.bits ∧ S.I.activeB = R.I.activeB ∧
+        SourceRejectionTrace S rejects ∧
+        charges.length ≤ rejects.length + 1 ∧
+        (σ'.vars "initialRetryStatus" = 3 →
+          charges.length = rejects.length) := by
   let σ₁ := R.I.σ.setVar "initialDomainSize" m
   let σ₂ := σ₁.setVar "initialBatchTarget" r
   let σ₃ := σ₂.setVar "initialRetriesLeft" attemptCap
@@ -1141,8 +1148,9 @@ lemma initialSamplerRetriesSource_run
     rw [hSstate]
     simp [σ₄]
   obtain ⟨σ', charges, consumed, hloop, hchecked, hlen, hconsumed, hinp,
-    hnFinal, hqFinal, houtcome⟩ :=
-    initialRetryWhile_run attemptCap S hSavedM hSavedR hLeft hStatus
+    hnFinal, hqFinal, houtcome, rejects, htrace, hatMost,
+    hexhausted⟩ :=
+    initialRetryWhile_run_withTrace attemptCap S hSavedM hSavedR hLeft hStatus
       hcapB (by
         change attemptCap * attemptBitBudget n m r t ≤ R.I.bits.length
         exact hbudget)
@@ -1150,7 +1158,7 @@ lemma initialSamplerRetriesSource_run
       initialRetryBody) σ₄ σ' (charges.sum + 28 * charges.length + 14) := by
     simpa [hSstate] using hloop
   refine ⟨σ', charges, consumed, ?_, hchecked, hlen, hconsumed, ?_,
-    hnFinal, hqFinal, ?_⟩
+    hnFinal, hqFinal, ?_, ?_⟩
   · have hwhole := hfirst.seq (hsecond.seq (hthird.seq (hfourth.seq hloop')))
     change Run B initialSamplerRetriesSource R.I.σ σ'
       (charges.sum + 28 * charges.length + 22)
@@ -1160,6 +1168,35 @@ lemma initialSamplerRetriesSource_run
     simpa only [hSbits, hSrest] using hinp
   · have hSactive : S.I.activeB = R.I.activeB := rfl
     simpa only [hSactive] using houtcome
+  · exact ⟨S, rejects, rfl, rfl, htrace, hatMost, hexhausted⟩
+
+/-- Compact source-loop interface, with the retained ordered trace erased. -/
+lemma initialSamplerRetriesSource_run
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (attemptCap : ℕ)
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hcap : R.I.σ.vars "initialRetryCap" = attemptCap)
+    (hcapB : attemptCap < B)
+    (hbudget : attemptCap * attemptBitBudget n m r t ≤ R.I.bits.length) :
+    ∃ (σ' : Env) (charges : List ℕ) (consumed : ℕ),
+      Run B initialSamplerRetriesSource R.I.σ σ'
+        (charges.sum + 28 * charges.length + 22) ∧
+      (∀ q ∈ charges, CheckedAttemptCharge B n m r t targetCap q) ∧
+      charges.length ≤ attemptCap ∧
+      consumed ≤ attemptCap * attemptBitBudget n m r t ∧
+      σ'.inp = (R.I.bits.drop consumed).map Bool.toNat ++ R.I.rest ∧
+      σ'.vars "n" = n ∧ σ'.vars "qpow" = Q ∧
+      (AcceptedResult G A (activeVertices n R.I.activeB) r k cap σ' ∨
+        (σ'.vars "initialRetryStatus" = 2 ∧
+          (σ'.vars "batchFailed" = 1 ∨
+            (σ'.vars "batchFailed" = 0 ∧ σ'.vars "repFailed" = 1))) ∨
+        (σ'.vars "initialRetryStatus" = 3 ∧ charges.length = attemptCap)) := by
+  obtain ⟨σ', charges, consumed, hrun, hchecked, hlen, hconsumed,
+    hinp, hn, hqpow, houtcome, _⟩ :=
+    initialSamplerRetriesSource_run_withTrace attemptCap R hcap hcapB hbudget
+  exact ⟨σ', charges, consumed, hrun, hchecked, hlen, hconsumed,
+    hinp, hn, hqpow, houtcome⟩
 
 /-- A zero attempt cap exits without reading a random bit; this statement
 does not require even one attempt's bit budget or any scratch-array setup. -/
