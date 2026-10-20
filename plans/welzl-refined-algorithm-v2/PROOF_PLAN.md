@@ -946,3 +946,11 @@ full-input scans and active-size draw charges into the required single-log
 runtime shape. Component expected charges and their actual-tape coupling
 remain to be supplied; this is not an unconditional runtime theorem. Targeted
 build and standard-background axiom audit passed.
+
+`SourceTapePrefix` proves that a bounded source derivation consumes at most
+its cost in input words and replays with any suffix after those consumed
+words. Thus a bounded clocked run established on a padded tape transfers to
+the original finite input whenever its length covers that cost. Arrays,
+scalars, output and exact execution cost are preserved. Targeted compilation
+and axiom audit passed (propext and Quot.sound only). This addresses finite
+tape transfer; the clock transformation and source-driver assembly are separate.
