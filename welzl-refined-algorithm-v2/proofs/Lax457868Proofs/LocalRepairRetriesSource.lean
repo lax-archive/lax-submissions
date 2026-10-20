@@ -1962,7 +1962,7 @@ private lemma preDomain_run
 /-- The far branch starts with an unprepared draw-domain buffer. The builder
 computes its modulus and enumeration; only then does the fixed retry program
 use the positive modulus. -/
-lemma localRepairOneException_run_far
+lemma localRepairOneException_run_far_trace
     {B n s t bufferCap targetCap q b cap k : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
     {groupedB Wbase Wcurrent A X : Finset ℕ}
@@ -2010,7 +2010,31 @@ lemma localRepairOneException_run_far
         (σ'.vars "repairRetryStatus" = 2 ∧
           σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent)) ∨
         (σ'.vars "repairRetryStatus" = 3 ∧ attempts = cap ∧
-          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) := by
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) ∧
+      ∃ Rafter : ReadyInput B n X.card n s t bufferCap targetCap q b
+          G x X groupedB Wbase Wcurrent,
+        Run B repairDomainSource P.σ Rafter.σ
+          (54 * ((offset x (b + 1) - offset x b) +
+            (offset x (rep b + 1) - offset x (rep b))) +
+            36 * (((numericNeighborhood G b ∩ A).card) +
+              ((numericNeighborhood G (rep b) ∩ A).card)) + 73) ∧
+        Rafter.bits = P.bits ∧ Rafter.rest = P.rest ∧
+        Rafter.scanUpper = P.scanUpper ∧
+        Run B localRepairRetriesSource Rafter.σ σ'
+          (12 * Nat.clog 2 X.card + 24 +
+            ((15 * Nat.clog 2 X.card + 30) * totalUsed +
+              attempts * (79 * s + P.scanUpper + 50) + 14)) ∧
+        (∃ rejected : ℕ,
+          rejected ≤ attempts ∧ attempts ≤ rejected + 1 ∧
+          FlatRejectedTrials X.card t s
+            (localBadOutputs X.card s Rafter.domain
+              (numericNeighborhood G) groupedB Wbase b)
+            rejected Rafter.bits) ∧
+        (∃ accepted : ℕ,
+          FlatRetryExecution X.card Rafter.hpositive t s
+            (localBadOutputs X.card s Rafter.domain
+              (numericNeighborhood G) groupedB Wbase b)
+            attempts Rafter.bits totalUsed accepted) := by
   obtain ⟨σd, domain', rd, hdomain, hmod, henum, hXrange,
     hBmarks, hRmarks, hsample, hn, hinpD⟩ :=
     preDomain_run P hA hrep hactive hbmarks hrmarks hblist hrlist hr hXeq
@@ -2089,8 +2113,9 @@ lemma localRepairOneException_run_far
     rw [rd.frame_var "repairRetryCap" (by decide)]
     exact hcap
   obtain ⟨σ', attempts, totalUsed, rr, hattempts, hused,
-    hinp, hn', hqpow, htrial, hrow, hdesired, hout⟩ :=
-    localRepairRetriesSource_run Rafter hcapAfter hcapB hbudget
+    hinp, hn', hqpow, htrial, hrow, hdesired, hout,
+    hreject, hfull⟩ :=
+    localRepairRetriesSource_run_trace Rafter hcapAfter hcapB hbudget
   have hfarAfter : σd.vars "repairFarBound" = (2 * k) / 3 := by
     rw [rd.frame_var "repairFarBound" (by decide)]
     exact hfar
@@ -2109,11 +2134,71 @@ lemma localRepairOneException_run_far
           attempts * (79 * s + P.scanUpper + 50) + 14))) := by
     simpa [Cond.size, Expr.size] using (Run.ite_true hcond rr)
   refine ⟨σ', attempts, totalUsed, ?_, hattempts, hused,
-    hinp, hn', ?_, htrial, hrow, hdesired, ?_, ?_, hout⟩
+    hinp, hn', ?_, htrial, hrow, hdesired, ?_, ?_, hout, ?_⟩
   · simpa [localRepairOneExceptionSource] using rd.seq rite
   · exact hqpow.trans (rd.frame_var "qpow" (by decide))
   · exact (rr.frame_arr "repairBMarks" (by decide)).trans hBmarks
   · exact (rr.frame_arr "repairRMarks" (by decide)).trans hRmarks
+  · exact ⟨Rafter, rd, rfl, rfl, rfl, rr, hreject, hfull⟩
+
+/-- Preserve the original far-branch interface for clients that only need
+the final source state. -/
+lemma localRepairOneException_run_far
+    {B n s t bufferCap targetCap q b cap k : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {groupedB Wbase Wcurrent A X : Finset ℕ}
+    {rep blist rlist : ℕ → ℕ}
+    (P : PreDomainInput B n s t bufferCap targetCap q b
+      G x groupedB Wbase Wcurrent)
+    (hA : A ⊆ Finset.range n)
+    (hrep : P.σ.arrs "repB" = arrOf n rep)
+    (hactive : P.σ.arrs "activeA" = arrOf n (setFlag A))
+    (hbmarks : P.σ.arrs "repairBMarks" = arrOf n (fun _ => 0))
+    (hrmarks : P.σ.arrs "repairRMarks" = arrOf n (fun _ => 0))
+    (hblist : P.σ.arrs "repairBList" = arrOf n blist)
+    (hrlist : P.σ.arrs "repairRList" = arrOf n rlist)
+    (hr : rep b < n)
+    (hXeq : X = ((numericNeighborhood G b ∩ A) ∆
+      (numericNeighborhood G (rep b) ∩ A)))
+    (hfar : P.σ.vars "repairFarBound" = (2 * k) / 3)
+    (hfarB : (2 * k) / 3 < B)
+    (hfarCase : (2 * k) / 3 < X.card)
+    (hcap : P.σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hpowB : 2 ^ Nat.clog 2 X.card < B)
+    (hbudget : cap * (s * t * Nat.clog 2 X.card) ≤ P.bits.length) :
+    ∃ (σ' : Env) (attempts totalUsed : ℕ),
+      Run B localRepairOneExceptionSource P.σ σ'
+        ((54 * ((offset x (b + 1) - offset x b) +
+            (offset x (rep b + 1) - offset x (rep b))) +
+            36 * (((numericNeighborhood G b ∩ A).card) +
+              ((numericNeighborhood G (rep b) ∩ A).card)) + 73) +
+          (4 + (12 * Nat.clog 2 X.card + 24 +
+            ((15 * Nat.clog 2 X.card + 30) * totalUsed +
+              attempts * (79 * s + P.scanUpper + 50) + 14)))) ∧
+      attempts ≤ cap ∧ totalUsed ≤ attempts * (s * t) ∧
+      σ'.inp = (P.bits.drop (totalUsed * Nat.clog 2 X.card)).map Bool.toNat ++ P.rest ∧
+      σ'.vars "n" = n ∧ σ'.vars "qpow" = P.σ.vars "qpow" ∧
+      σ'.arrs "trialActive" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "trialDesiredMarks" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "repairBMarks" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "repairRMarks" = arrOf n (fun _ => 0) ∧
+      ((σ'.vars "repairRetryStatus" = 1 ∧
+          ∃ D : List ℕ, D.length = s ∧ (∀ v ∈ D, v ∈ X) ∧
+            localTrialIsolates (numericNeighborhood G) groupedB Wbase b D ∧
+            σ'.arrs "sampleFlags" = arrOf n (setFlag (Wcurrent ∪ D.toFinset))) ∨
+        (σ'.vars "repairRetryStatus" = 2 ∧
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent)) ∨
+        (σ'.vars "repairRetryStatus" = 3 ∧ attempts = cap ∧
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) := by
+  obtain ⟨σ', attempts, totalUsed, hr, ha, hu, hinp, hn, hq,
+    htrial, hrow, hdesired, hBmarks, hRmarks, hout, _⟩ :=
+    localRepairOneException_run_far_trace P hA hrep hactive hbmarks
+      hrmarks hblist hrlist hr hXeq hfar hfarB hfarCase hcap hcapB
+      hpowB hbudget
+  exact ⟨σ', attempts, totalUsed, hr, ha, hu, hinp, hn, hq,
+    htrial, hrow, hdesired, hBmarks, hRmarks, hout⟩
 
 /-- The near branch also covers an empty symmetric difference. It runs the
 domain builder, assigns completed status, and reads no random bits. -/
