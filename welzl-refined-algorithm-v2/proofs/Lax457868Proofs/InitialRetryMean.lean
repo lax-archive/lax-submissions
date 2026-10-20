@@ -104,6 +104,47 @@ lemma tail_cost_of_not_rejected
   apply hnot
   exact ⟨σa, q, Run.of_bigStepB hfull, hbatch, hrep, haccept⟩
 
+/-- Replay an actual retry tail after changing only unread bits of the first
+attempt.  The machine state before the tail is the canonical rejected next
+state with that changed suffix. -/
+lemma rejected_tail_replay
+    (R J : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits bits' : List Bool)
+    (hbudget : attemptBitBudget n m r t ≤ bits.length)
+    (hbudget' : attemptBitBudget n m r t ≤ bits'.length)
+    {σa σb σd τ : Env} {q qb p pd u d : ℕ}
+    (hrun : Run B fullInitialAttempt
+      (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ σa q)
+    (hinp : σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest)
+    (hpre : bits.take d = bits'.take d)
+    (hdecision : Run B initialRetryDecision σa J.I.σ p)
+    (hJbits : J.I.bits = bits.drop d)
+    (hnextBudget : attemptBitBudget n m r t ≤ (bits'.drop d).length)
+    (hfull' : BigStepB B fullInitialAttempt
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ
+      σb qb)
+    (hdecision' : BigStepB B initialRetryDecision σb σd pd)
+    (htail : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σd τ u) :
+    BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ τ u := by
+  obtain ⟨hrun', hdec'⟩ :=
+    rejected_step_replay R J bits bits' hbudget hbudget' hrun hinp
+      hpre hdecision hJbits hnextBudget
+  have heqA : σb = {σa with inp := (bits'.drop d).map Bool.toNat ++ R.I.rest} := by
+    obtain ⟨_, _, hc⟩ := hrun'
+    exact (BigStep.unique hfull'.bigStep hc.bigStep).1
+  have heqD : σd =
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ := by
+    obtain ⟨_, _, hc⟩ := hdec'
+    exact (BigStep.unique (by simpa [heqA] using hdecision'.bigStep)
+      hc.bigStep).1
+  simpa only [heqD] using htail
+
 /-- Average a nonnegative continuation cost after one actual stopped
 attempt.  The conditional hypothesis is over completions of the observed
 prefix; it is not an independent fresh-tape assumption. -/
@@ -234,5 +275,170 @@ lemma actual_first_mean
   · apply actual_full_mean R N hb σa q
     intro ρ
     simpa [ReadyInput.reinput_state] using ha ρ
+
+/-- The actual tail family on a rejected stopped-prefix fiber is the retry
+loop from its canonical post-decision ReadyInput, so an induction mean bound
+applies to every completion of that very prefix. -/
+private lemma rejected_tail_conditional
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (N left : ℕ) (hleftTwo : 2 ≤ left) (hleftB : left < B)
+    (hsavedM : R.I.σ.vars "initialDomainSize" = m)
+    (hsavedR : R.I.σ.vars "initialBatchTarget" = r)
+    (hleft : R.I.σ.vars "initialRetriesLeft" = left)
+    (hstatus : R.I.σ.vars "initialRetryStatus" = 0)
+    (hbudget : left * attemptBitBudget n m r t ≤ N)
+    (hper : attemptBitBudget n m r t ≤ N)
+    [DecidablePred (readyAttemptRejected R hper)]
+    (attemptFinal decisionFinal final : Tape N → Env)
+    (attemptCost decisionCost tailCost : Tape N → ℕ)
+    (ha : ∀ ρ, BigStepB B fullInitialAttempt
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hper)).I.σ
+      (attemptFinal ρ) (attemptCost ρ))
+    (hd : ∀ ρ, BigStepB B initialRetryDecision
+      (attemptFinal ρ) (decisionFinal ρ) (decisionCost ρ))
+    (hu : ∀ ρ, BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      (decisionFinal ρ) (final ρ) (tailCost ρ))
+    (H : ℚ)
+    (hIH : ∀ (J : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+      (N' : ℕ),
+      J.I.activeB = R.I.activeB →
+      J.I.σ.vars "initialDomainSize" = m →
+      J.I.σ.vars "initialBatchTarget" = r →
+      J.I.σ.vars "initialRetriesLeft" = left - 1 →
+      J.I.σ.vars "initialRetryStatus" = 0 →
+      (left - 1) * attemptBitBudget n m r t ≤ N' →
+      (hper' : attemptBitBudget n m r t ≤ N') →
+      (final' : Tape N' → Env) → (cost' : Tape N' → ℕ) →
+      (∀ tail, BigStepB B
+        (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+        (J.reinput (List.ofFn tail)
+          (by simpa [attemptBitBudget] using hper')).I.σ
+        (final' tail) (cost' tail)) →
+      (∑ tail, (cost' tail : ℚ)) ≤ H * 2 ^ N')
+    (ρ : Tape N)
+    (hfirst : readyAttemptRejected R hper ρ) :
+    let used := readyAttemptConsumed R hper
+    (∑ suffix : Tape (N - used ρ),
+      if readyAttemptRejected R hper
+          ((splitEquiv (readyAttemptConsumed_le R hper ρ)).symm
+            ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1, suffix)) then
+        (tailCost ((splitEquiv (readyAttemptConsumed_le R hper ρ)).symm
+          ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1, suffix)) : ℚ)
+      else 0) ≤ H * 2 ^ (N - used ρ) := by
+  classical
+  let used := readyAttemptConsumed R hper
+  let bits := List.ofFn ρ
+  let Rρ := R.reinput bits (by simpa [attemptBitBudget, bits] using hper)
+  obtain ⟨σa, q, hrun, hbatch, hrep, haccept⟩ := hfirst
+  obtain ⟨d, J, p, hdBound, hinp, hJbits, hJrest, hJactive,
+    hdecision, hJsavedM, hJsavedR, hJleft, hJstatus, hJbudget⟩ :=
+    rejected_next_ready Rρ (left - 1) (by omega)
+      (by simpa [Rρ, ReadyInput.reinput_state] using hsavedM)
+      (by simpa [Rρ, ReadyInput.reinput_state] using hsavedR)
+      (by
+        have heq : left - 1 + 1 = left := by omega
+        simpa [Rρ, ReadyInput.reinput_state, heq] using hleft)
+      (by simpa [Rρ, ReadyInput.reinput_state] using hstatus)
+      (by omega)
+      (by
+        have heq : left - 1 + 1 = left := by omega
+        simpa [Rρ, bits, ReadyInput.reinput_bits, heq] using hbudget)
+      (by simpa [Rρ, bits] using hrun) hbatch hrep haccept
+  have hinp' : σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest := by
+    have hrest : Rρ.I.rest = R.I.rest := rfl
+    have hbits : Rρ.I.bits = bits := by
+      exact R.reinput_bits bits (by simpa [attemptBitBudget, bits] using hper)
+    simpa only [hbits, hrest] using hinp
+  have hJbits' : J.I.bits = bits.drop d := by
+    simpa [Rρ, ReadyInput.reinput_bits] using hJbits
+  have hused : d = used ρ := by
+    change d = readyAttemptConsumed R hper ρ
+    obtain ⟨σu, qu, hrunu, hinpu, hdu⟩ :=
+      readyAttemptConsumed_spec R hper ρ
+    have heq : σa = σu := by
+      obtain ⟨_, _, ha'⟩ := hrun
+      obtain ⟨_, _, hb'⟩ := hrunu
+      exact (BigStep.unique ha'.bigStep hb'.bigStep).1
+    have heqInp := hinp'.symm.trans (by simpa [heq, bits] using hinpu)
+    have hlen := congrArg List.length heqInp
+    simp only [List.length_append, List.length_map, List.length_drop] at hlen
+    have hdN : d ≤ N := hdBound.trans hper
+    have huN : used ρ ≤ N := readyAttemptConsumed_le R hper ρ
+    simp only [bits, List.length_ofFn] at hlen
+    omega
+  have htailN : J.I.bits.length = N - used ρ := by
+    rw [hJbits']
+    simp [bits, hused]
+  have htailBudget : (left - 1) * attemptBitBudget n m r t ≤
+      N - used ρ := by
+    rw [htailN] at hJbudget
+    exact hJbudget
+  have hperTail : attemptBitBudget n m r t ≤ N - used ρ := by
+    have hmul := Nat.mul_le_mul_right
+      (attemptBitBudget n m r t) (show 1 ≤ left - 1 by omega)
+    have hle : attemptBitBudget n m r t ≤
+        (left - 1) * attemptBitBudget n m r t := by simpa using hmul
+    exact hle.trans htailBudget
+  let extend : Tape (N - used ρ) → Tape N := fun suffix =>
+    (splitEquiv (readyAttemptConsumed_le R hper ρ)).symm
+      ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1, suffix)
+  have htailRun (suffix : Tape (N - used ρ)) :
+      BigStepB B
+        (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+        (J.reinput (List.ofFn suffix)
+          (by simpa [attemptBitBudget] using hperTail)).I.σ
+        (final (extend suffix)) (tailCost (extend suffix)) := by
+    let τ := extend suffix
+    have hpair : splitEquiv (readyAttemptConsumed_le R hper ρ) τ =
+        ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1, suffix) :=
+      Equiv.apply_symm_apply _ _
+    have hprefix : bits.take d = (List.ofFn τ).take d := by
+      rw [hused]
+      rw [StoppedPrefixAveraging.prefix_of_split
+        (readyAttemptConsumed_le R hper ρ),
+        StoppedPrefixAveraging.prefix_of_split
+        (readyAttemptConsumed_le R hper ρ), hpair]
+    have hdrop : (List.ofFn τ).drop d = List.ofFn suffix := by
+      rw [hused]
+      change (List.ofFn τ).drop (readyAttemptConsumed R hper ρ) =
+        List.ofFn suffix
+      rw [StoppedPrefixAveraging.boolTape_split
+        (readyAttemptConsumed_le R hper ρ) τ, hpair]
+      have hlen :
+          (List.ofFn ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1)).length =
+            used ρ := by simpa only [used] using
+              (List.length_ofFn (f := (splitEquiv
+                (readyAttemptConsumed_le R hper ρ) ρ).1))
+      have hle : readyAttemptConsumed R hper ρ ≤
+          (List.ofFn ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1)).length := by
+        simpa [used] using hlen.ge
+      rw [List.drop_append_of_le_length hle]
+      simp [hlen, used]
+    have hnextPer : attemptBitBudget n m r t ≤
+        ((List.ofFn τ).drop d).length := by
+      rw [hdrop]
+      simpa using hperTail
+    have hreplay := rejected_tail_replay R J bits (List.ofFn τ)
+      (by simpa [bits] using hper)
+      (by simpa using hper)
+      (by simpa [bits] using hrun)
+      hinp' hprefix hdecision hJbits' hnextPer
+      (ha τ) (hd τ) (hu τ)
+    simpa only [hdrop] using hreplay
+  have htailMean := hIH J (N - used ρ) hJactive hJsavedM hJsavedR
+    hJleft hJstatus htailBudget hperTail
+    (fun suffix => final (extend suffix))
+    (fun suffix => tailCost (extend suffix)) htailRun
+  dsimp [used]
+  calc
+    _ ≤ ∑ suffix : Tape (N - readyAttemptConsumed R hper ρ),
+        (tailCost (extend suffix) : ℚ) := by
+          apply Finset.sum_le_sum
+          intro suffix _
+          by_cases hf : readyAttemptRejected R hper (extend suffix)
+          · simp [extend, hf]
+          · simp [extend, hf]
+    _ ≤ H * 2 ^ (N - readyAttemptConsumed R hper ρ) := htailMean
 
 end Lax457868Proofs.InitialRetryMean
