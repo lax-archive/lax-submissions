@@ -350,7 +350,11 @@ lemma preparedRefinedRoundSource_run
               (A.card / (4 * c ^ 2 * (64 * Nat.clog 2 c + 1))) *
                 (n * ((64 * Nat.clog 2 c) * n * Nat.clog 2 n)) ∧
             τ.inp = (bits.drop used).map Bool.toNat ++ rest) ∨
-        τ.vars "acount" = 0) := by
+        τ.vars "acount" = 0 ∧
+          ((τ.vars "initialRetryStatus" = 2 ∨
+              τ.vars "initialRetryStatus" = 3) ∨
+            (τ.vars "repairRetryStatus" = 2 ∨
+              τ.vars "repairRetryStatus" = 3))) := by
   classical
   have hnpos : 0 < n := by
     obtain ⟨v, hv⟩ := hC
@@ -437,7 +441,7 @@ lemma preparedRefinedRoundSource_run
           (samplerCost + (1 + (Cond.eq (.var "initialRetryStatus") (.lit 1)).size + 2))) := by
       simpa only [preparedRefinedRoundSource] using hprep.seq hfail
     exact ⟨_, _, hwhole, by simpa [Env.setVar] using hsamFrame.1,
-      Or.inr (by simp [Env.setVar])⟩
+      Or.inr ⟨by simp [Env.setVar], Or.inl (by simpa [Env.setVar] using hfailInitial)⟩⟩
   · by_cases hinit : τsam.vars "initialRetryStatus" = 1
     · have hfail := failed_repair_round_run hsampler hinit hfailRepair
         (by have := R.hnB; omega : 3 < B)
@@ -448,7 +452,7 @@ lemma preparedRefinedRoundSource_run
                 (1 + (Cond.eq (.var "repairRetryStatus") (.lit 1)).size + 2)))) := by
         simpa only [preparedRefinedRoundSource] using hprep.seq hfail
       exact ⟨_, _, hwhole, by simpa [Env.setVar] using hsamFrame.1,
-        Or.inr (by simp [Env.setVar])⟩
+        Or.inr ⟨by simp [Env.setVar], Or.inr (by simpa [Env.setVar] using hfailRepair)⟩⟩
     · have hboundR :=
         Lax457868Proofs.RefinedRecordedCommit.run_preserves hprep hbounded
       have hboundOut :=
@@ -460,6 +464,6 @@ lemma preparedRefinedRoundSource_run
             (samplerCost + (1 + (Cond.eq (.var "initialRetryStatus") (.lit 1)).size + 2))) := by
         simpa only [preparedRefinedRoundSource] using hprep.seq hfail
       exact ⟨_, _, hwhole, by simpa [Env.setVar] using hsamFrame.1,
-        Or.inr (by simp [Env.setVar])⟩
+        Or.inr ⟨by simp [Env.setVar], Or.inr (by simpa [Env.setVar] using hfailRepair)⟩⟩
 
 end Lax457868Proofs.RefinedRoundDriver

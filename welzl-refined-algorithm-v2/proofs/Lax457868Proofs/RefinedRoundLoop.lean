@@ -207,7 +207,11 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
           3 * A'.card ≤ 2 * A.card ∧
           τ.vars "round" = σ.vars "round" + 1 ∧
           τ.vars "acount" = A'.card ∧ LoopReady B c G x rest τ) ∨
-        τ.vars "acount" = 0) := by
+        τ.vars "acount" = 0 ∧
+          ((τ.vars "initialRetryStatus" = 2 ∨
+              τ.vars "initialRetryStatus" = 3) ∨
+            (τ.vars "repairRetryStatus" = 2 ∨
+              τ.vars "repairRetryStatus" = 3))) := by
   have hbudget :
       n * Lax457868Proofs.InitialSamplerRetriesSource.attemptBitBudget n A.card
           (A.card / (4 * c ^ 2)) n +
@@ -372,7 +376,8 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
         · obtain ⟨τ, K', htail, hnTail, hresult'⟩ := ih A'.card
             (by omega) ρ' hready' hacount'
           exact ⟨τ, _, run_while_true htrue hstep htail, hnTail, hresult'⟩
-        · have hcut' : ρ'.vars "cutoffResult" = 2 * refinedCutoffK c := by
+        · obtain ⟨hfail, _hstatus⟩ := hfail
+          have hcut' : ρ'.vars "cutoffResult" = 2 * refinedCutoffK c := by
             rw [hstep.frame_var "cutoffResult" (by decide)]
             exact D.cutoff
           have hfalse := failed_guard_false hcut' hfail hlargeN hnB

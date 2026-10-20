@@ -28,6 +28,9 @@ structure LargeBodyFamily (B c n N : ℕ) (G : SimpleGraph (Fin n))
   events : Tape N → List RoundEvent
   run : ∀ tape, Run B algorithmBody {σ with inp := bitTape tape}
     (final tape) (cost tape)
+  quotient_run : ∀ tape,
+    Run B Lax457868Proofs.InitialNeighborhoodQuotient.initialQuotientSource
+      {σ with inp := bitTape tape} (quotient tape) (951 * (x.length + 1))
   trace : ∀ tape,
     TraceChain B c G x [] (quotient tape) (terminal tape) (events tape)
   length_le : ∀ tape, (events tape).length ≤ Nat.clog 2 n
@@ -74,10 +77,26 @@ noncomputable def large_body_family {B c n N : ℕ} {G : SimpleGraph (Fin n)}
         obtain ⟨i, rfl⟩ := hv
         cases tape i <;> simp <;> omega)
       hx hG hc hn2 hB hlargeN (by simpa using htape)
-  choose quotient terminal final cost events hrun htrace hlength hcost hlast hcorrect using hlong
+  choose quotient terminal final cost events hrun hquot htrace hlength hcost hlast hcorrect using hlong
   exact ⟨quotient, terminal, final, cost, events,
     (by intro tape; exact hrun tape),
-    htrace, hlength, hcost, hlast, hcorrect⟩
+    hquot, htrace, hlength, hcost, hlast, hcorrect⟩
+
+/-- Before each attempt, the recorded consumed prefix lies within the
+physical `N`-bit input tape. -/
+lemma LargeBodyFamily.usedBefore_le {B c n N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {σ : Env}
+    (F : LargeBodyFamily B c n N G x σ) (tape : Tape N) (i : ℕ) :
+    usedBefore (F.events tape) i ≤ N := by
+  have hquot : (F.quotient tape).inp = bitTape tape := by
+    rw [(F.quotient_run tape).frame_inp (by decide)]
+  have hchain := (F.trace tape).consumed_append
+  rw [hquot] at hchain
+  have htotal : ((F.events tape).flatMap fun e => e.consumed).length ≤ N := by
+    have hlen := congrArg List.length hchain
+    simp only [bitTape, List.length_ofFn, List.length_append] at hlen
+    omega
+  exact (usedBefore_le_total _ i).trans htotal
 
 /-- The per-round estimate is conditioned on the exact prefix consumed by
 earlier rounds. The active-size potential is fixed by that prefix. -/
