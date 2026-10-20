@@ -1138,6 +1138,43 @@ lemma SourceRejectionTrace.head_canonical
   · exact hsame.1.symm
   · exact ⟨σa, q, hrun', hbatch, hrep, haccept⟩
 
+/-- A rejected-prefix certificate indexed only by the actual machine
+environment. This removes proof-side array representation choices from the
+tail event used in stopped-prefix averaging. -/
+inductive RawRejected {B : ℕ} : Env → ℕ → Prop where
+  | zero (σ : Env) : RawRejected σ 0
+  | final (σ σa : Env) (q : ℕ)
+      (hrun : Run B fullInitialAttempt σ σa q)
+      (hbatch : σa.vars "batchFailed" = 0)
+      (hrep : σa.vars "repFailed" = 0)
+      (haccept : σa.vars "attemptAccepted" = 0) :
+      RawRejected σ 1
+  | step (σ σa τ : Env) (q p k : ℕ)
+      (hrun : Run B fullInitialAttempt σ σa q)
+      (hbatch : σa.vars "batchFailed" = 0)
+      (hrep : σa.vars "repFailed" = 0)
+      (haccept : σa.vars "attemptAccepted" = 0)
+      (hdecision : Run B initialRetryDecision σa τ p)
+      (htail : RawRejected (B := B) τ k) :
+      RawRejected σ (k + 1)
+
+lemma SourceRejectionTrace.raw
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    {R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A}
+    {rejects : List (ℕ × ℕ)}
+    (htrace : SourceRejectionTrace R rejects) :
+    RawRejected (B := B) R.I.σ rejects.length := by
+  induction htrace with
+  | nil R => exact RawRejected.zero R.I.σ
+  | last R σa q d hrun hinp hbound hbatch hrep haccept hbad hstopped =>
+      exact RawRejected.final R.I.σ σa q hrun hbatch hrep haccept
+  | step R J σa q d p rest hrun hinp hbound hbatch hrep haccept hbad hstopped
+        hdecision hbits htail ih =>
+      simpa [List.length_cons, Nat.add_comm] using
+        RawRejected.step R.I.σ σa J.I.σ q p rest.length hrun hbatch
+          hrep haccept hdecision ih
+
 /-- Execution of the single fixed while loop from a state whose runtime
 counter contains `fuel`, retaining every actual rejected attempt. -/
 lemma initialRetryWhile_run_withTrace
