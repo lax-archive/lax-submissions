@@ -1,6 +1,7 @@
 import Lax457868Proofs.ClassTraceMean
 import Lax457868Proofs.InitialSamplerRetriesSource
 import Lax457868Proofs.RepresentativeSourceMean
+import Lax457868Proofs.InitialAttemptMean
 
 /-! Failure counting for the actual adaptive flat source selectors. The next
 request starts at the unread suffix of the previous capped request, so the
@@ -21,6 +22,8 @@ open Lax457868Proofs.InitialSamplerRetriesSource
 open Lax457868Proofs.FullInitialAttempt
 open Lax457868Proofs.InitialSamplerAttempt
 open Lax457868Proofs.RepresentativeSourceMean
+open Lax457868Proofs.InitialAttemptMean
+open Lax457868Proofs.FullSamplePartition
 open Lax457868Proofs.InitialFlatLaw
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open scoped BigOperators
@@ -384,6 +387,136 @@ lemma readyAttemptBatchAbort_count
   have hcount := class_failure_count_bound (fun _ => m) t (fun _ => 0) r
     0 N (fun _ _ _ => R.I.hmPos) hbudget'
   exact (Nat.mul_le_mul_left _ (Finset.card_le_card hsub)).trans hcount
+
+/-- A failed representative flag in the actual initial program agrees with
+the class-selector trace at the deterministic post-draw partition state. -/
+lemma failedFlag_of_attempt_repFailed
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Input B n m domainCap r t bufferCap targetCap Q G x A)
+    (C : Cut I) (hf : C.failed = false)
+    (q : ℕ) (RI : RepresentativeInput B n q Q t)
+    (hbits : RI.bits = I.bits.drop (C.used * Nat.clog 2 m))
+    (hrest : RI.rest = I.rest)
+    (hpart : Run B fullSamplePartition C.drawFinal RI.σ
+      (384 * n + 324 * targetCap + 70))
+    {σsel : Env} {k : ℕ}
+    (hrun : Run B initialSamplerAttempt I.σ σsel k)
+    (hrep : σsel.vars "repFailed" = 1) :
+    failedFlag RI.size t (classStart RI.size) 0 q RI.bits = true := by
+  obtain ⟨σrep,xs,sorted,v,u,c,f,hrepRun,hnodup,hset,hlen,htrace,
+    hclassSize,hord,hsorted,hclassB,hactiveB,hsampleFlags,hflag,hindex,
+    hrepB,hinp,hout,hframe,hfailure,hsuccess⟩ :=
+      initialRepresentativeSelection_run_bits RI
+  have hs := hpart.seq hrepRun
+  have hg : (Cond.eq (.var "batchFailed") (.lit 0)).evalB B C.drawFinal =
+      some true := by
+    simp [Cond.evalB, Expr.evalB, fit, C.drawFlag, hf, I.honeB,
+      Nat.zero_lt_of_lt I.honeB]
+  have hafter : Run B afterDraw C.drawFinal σrep
+      (4 + (384 * n + 324 * targetCap + 70) +
+        (20 * n + 9 + c + 64 * (xs.length + Q + 1) + 104 * n + 24)) := by
+    have hh := Run.ite_true (d := .skip) hg hs
+    simpa [afterDraw, Cond.size, Expr.size, Nat.add_assoc] using hh
+  obtain ⟨_, _, hactualRun⟩ := hrun
+  obtain ⟨_, hactual, _⟩ := actual_decompose I C hactualRun
+  obtain ⟨_, _, hafterRun⟩ := hafter
+  have heq : σsel = σrep := (BigStep.unique hactual.bigStep hafterRun.bigStep).1
+  have hf' : f = true := by
+    cases f with
+    | true => rfl
+    | false => simp [hflag, heq] at hrep
+  simpa [hf'] using failedFlag_eq htrace
+
+/-- The initial sampler's batch flag is determined by the same actual draw
+execution retained in a `Cut`. -/
+lemma Cut.batch_flag
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Input B n m domainCap r t bufferCap targetCap Q G x A)
+    (C : Cut I) {σa : Env} {k : ℕ}
+    (hrun : Run B initialSamplerAttempt I.σ σa k) :
+    σa.vars "batchFailed" = (if C.failed then 1 else 0) := by
+  obtain ⟨σd,σf,tape,tail,values,used,failed,stageCost,hbits,htrace,hfull,
+    haccept,hn,hq,hbatch,harr,hvar,hfail,hpass,hdraw,hinp,hflag⟩ :=
+    initialSamplerAttempt_run_bits I
+  have hfinal : σa = σf := by
+    obtain ⟨_,_,ha⟩ := hrun
+    obtain ⟨_,_,hb⟩ := hfull
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hdrawEq : C.drawFinal = σd := by
+    obtain ⟨_,_,ha⟩ := C.drawRun
+    obtain ⟨_,_,hb⟩ := hdraw
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hh : (if failed then 1 else 0) = (if C.failed then 1 else 0) := by
+    calc
+      _ = σd.vars "batchFailed" := hflag.symm
+      _ = C.drawFinal.vars "batchFailed" := by rw [hdrawEq]
+      _ = _ := C.drawFlag
+  have hf : failed = C.failed := by
+    cases hf0 : failed <;> cases hc0 : C.failed
+    · rfl
+    · simp [hf0, hc0] at hh
+    · simp [hf0, hc0] at hh
+    · rfl
+  simpa [hfinal, hf] using hbatch
+
+/-- The second selector's actual failure flag in a complete attempt. -/
+def readyAttemptRepresentativeAbort
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ : Tape N) : Prop :=
+  ∃ σa : Env, ∃ q : ℕ,
+    Run B fullInitialAttempt
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.σ
+      σa q ∧ σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 1
+
+lemma readyAttemptRepresentativeAbort_cut
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) (ρ : Tape N)
+    (C : Cut (R.reinput (List.ofFn ρ)
+      (by simpa [attemptBitBudget] using hbudget)).I)
+    (habort : readyAttemptRepresentativeAbort R hbudget ρ) :
+    C.failed = false ∧
+      ∃ σsel : Env, ∃ j : ℕ,
+        Run B initialSamplerAttempt
+          (R.reinput (List.ofFn ρ)
+            (by simpa [attemptBitBudget] using hbudget)).I.σ σsel j ∧
+        σsel.vars "repFailed" = 1 := by
+  let J := R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)
+  obtain ⟨σr, qr, hrunr, hbatch0, hrep1⟩ := habort
+  obtain ⟨σsel, σa, tape, tail, values, used, drawFailed, stageCost,
+    hbits, htrace, hselRun, hpair, hbatch, hinpSel, houtSel,
+    hoff, htgt, hactiveA, hactiveB, hn, hqpow,
+    hdrawFailure, hdrawSuccess⟩ :=
+    fullInitialAttempt_run_bits_withTail J.I J.hactiveA J.hdegree J.hinter
+      J.hneighbors J.hexceptionFlags J.hexceptionList J.hnearBound
+      J.hexceptionCap J.hnB J.hkB J.hcapB
+  have hwhole := hpair.1
+  have hsuffix := hpair.2
+  have heq : σr = σa := by
+    obtain ⟨_,_,ha⟩ := hrunr
+    obtain ⟨_,_,hb⟩ := hwhole
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hbatchSel : σsel.vars "batchFailed" = 0 := by
+    calc
+      _ = σa.vars "batchFailed" := (hsuffix.frame_var "batchFailed" (by decide)).symm
+      _ = 0 := by simpa [heq] using hbatch0
+  have hrepSel : σsel.vars "repFailed" = 1 := by
+    calc
+      _ = σa.vars "repFailed" := (hsuffix.frame_var "repFailed" (by decide)).symm
+      _ = 1 := by simpa [heq] using hrep1
+  have hf := Cut.batch_flag J.I C hselRun
+  have hfalse : C.failed = false := by
+    cases hC : C.failed
+    · rfl
+    · simp [hC] at hf
+      omega
+  exact ⟨hfalse, σsel, _, hselRun, hrepSel⟩
 
 /-- Failed source representative selection from a fixed, factual partition
 state. The later initial-attempt proof conditions on its draw prefix to use
