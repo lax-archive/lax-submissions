@@ -294,6 +294,48 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
       hinput', htape'⟩
   · exact Or.inr hfail
 
+/-- The selected round charge is the unique actual big-step count, rather
+than an arbitrary upper bound supplied by `Run`. -/
+lemma round_step_actual {B c n : ℕ} {G : SimpleGraph (Fin n)}
+    {x rest : List ℕ} {A C : Finset ℕ} {bits : List Bool}
+    {sizes : List ℕ} {σ : Env}
+    (D : RoundData c n x A C σ)
+    (hA : A ⊆ Finset.range n) (hCsub : C ⊆ Finset.range n)
+    (hC : C.Nonempty) (hstore : Stored G (refinedCutoffK c) σ)
+    (hbounded : ValuesBounded B σ)
+    (hcapacity : σ.vars "removedCount" + A.card ≤ n)
+    (hroundCapacity : σ.vars "round" + A.card ≤ n)
+    (hacount : σ.vars "acount" = A.card)
+    (hsizesLen : sizes.length = σ.vars "round")
+    (hsizesSum : sizes.sum + 3 * A.card ≤ 3 * n)
+    (hpotential : 2 ^ (σ.vars "round") * (A.card - 2 * c ^ 2) ≤ n)
+    (hroundLog : σ.vars "round" + 1 ≤ Nat.clog 2 n)
+    (hout : σ.out = [])
+    (hinput : σ.inp = bits.map Bool.toNat ++ rest)
+    (htape : A.card * roundBitReserve c n ≤ bits.length)
+    (hx : Lax11.GraphEncoding.EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 2 ≤ c) (hB : 4 * (x.length + 1) ≤ B)
+    (hlarge : 2 * refinedCutoffK c < A.card) :
+    ∃ τ K, Run B preparedRefinedRoundSource σ τ K ∧
+      BigStepB B preparedRefinedRoundSource σ τ K ∧
+      τ.vars "n" = n ∧
+      ((∃ A' : Finset ℕ, A'.card < A.card ∧ 0 < A'.card ∧
+          3 * A'.card ≤ 2 * A.card ∧
+          τ.vars "round" = σ.vars "round" + 1 ∧
+          τ.vars "acount" = A'.card ∧ LoopReady B c G x rest τ) ∨
+        τ.vars "acount" = 0 ∧
+          ((τ.vars "initialRetryStatus" = 2 ∨
+              τ.vars "initialRetryStatus" = 3) ∨
+            (τ.vars "repairRetryStatus" = 2 ∨
+              τ.vars "repairRetryStatus" = 3))) := by
+  obtain ⟨τ, K, hrun, hn, hresult⟩ :=
+    round_step D hA hCsub hC hstore hbounded hcapacity hroundCapacity
+      hacount hsizesLen hsizesSum hpotential hroundLog hout hinput htape
+      hx hG hc hB hlarge
+  obtain ⟨k, _, hbig⟩ := hrun
+  exact ⟨τ, k, ⟨k, le_rfl, hbig⟩, hbig, hn, hresult⟩
+
 end Lax457868Proofs.RefinedRoundLoop
 
 
