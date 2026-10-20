@@ -1008,7 +1008,7 @@ lemma initialSamplerAttempt_run_jointFiber
   obtain ⟨_σd, σ', tape, tail, values, used, drawFailed, stageCost,
     hbits, hdrawTrace, hrun, _haccepted, _hn, _hqpow, _hbatchFailed,
     _harrFrame, _hvarFrame, _hdrawFailure, hdrawSuccess,
-    _hdrawRun, _hdrawInp⟩ :=
+    _hdrawRun, _hdrawInp, _hdrawFlag⟩ :=
       Lax457868Proofs.InitialSamplerAttempt.initialSamplerAttempt_run_bits I
   refine ⟨σ', tape, tail, values, used, drawFailed, stageCost,
     hbits, hdrawTrace, hrun, ?_⟩
@@ -1568,7 +1568,7 @@ lemma initialSamplerAttempt_run_sourceOutcome
   obtain ⟨σd, σ', tape, tail, values, used, drawFailed, stageCost,
     hbits, hdrawTrace, hrun, _haccepted, _hn, _hqpow, hbatchFailed,
     _harrFrame, _hvarFrame, _hdrawFailure, hdrawSuccess,
-    hdrawRun, hdrawInp⟩ :=
+    hdrawRun, hdrawInp, _hdrawFlag⟩ :=
       Lax457868Proofs.InitialSamplerAttempt.initialSamplerAttempt_run_bits I
   let attemptCost :=
     2 + initialDrawSampleCost n m used
@@ -1596,7 +1596,7 @@ lemma initialSamplerAttempt_run_sourceOutcome
     hrepSuccess hrepFalse
   rcases hsourceCert with
     ⟨_hclassCountFinal, _hxsLen, hxsScan, hqP,
-      hlabelP, hsizeP, hinP, hsorted⟩
+      hlabelP, hsizeP, hinP, hsorted, _hRI⟩
   let C := activeVertices n I.activeB
   have hrepC : ∀ b ∈ C, mapped b ∈ C := by
     intro b hb

@@ -302,6 +302,14 @@ lemma ReadyInput.reinput_state
     (R.reinput bits hbudget).I.σ =
       {R.I.σ with inp := bits.map Bool.toNat ++ R.I.rest} := rfl
 
+lemma ReadyInput.reinput_self_state
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A) :
+    (R.reinput R.I.bits R.I.hbudget).I.σ = R.I.σ := by
+  rw [ReadyInput.reinput_state]
+  simpa [← R.I.hinput]
+
 private lemma ready_after_rejection
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
@@ -606,6 +614,79 @@ lemma readyAttempt_same_prefix
   have hd'N : d' ≤ bits'.length := hd'.trans hbudget'
   have heq : d' = d := by omega
   exact ⟨heq, hsame⟩
+
+/-- Replay one rejected attempt and its retry-decision command after
+replacing the unread suffix. The next ready state changes only in its input. -/
+lemma rejected_step_replay
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R J : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits bits' : List Bool)
+    (hbudget : attemptBitBudget n m r t ≤ bits.length)
+    (hbudget' : attemptBitBudget n m r t ≤ bits'.length)
+    {σa : Env} {q d p : ℕ}
+    (hrun : Run B fullInitialAttempt
+      (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ σa q)
+    (hinp : σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest)
+    (hpre : bits.take d = bits'.take d)
+    (hdecision : Run B initialRetryDecision σa J.I.σ p)
+    (hJbits : J.I.bits = bits.drop d)
+    (hnextBudget : attemptBitBudget n m r t ≤ (bits'.drop d).length) :
+    let σb := {σa with inp := (bits'.drop d).map Bool.toNat ++ R.I.rest}
+    Run B fullInitialAttempt
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ σb q ∧
+    Run B initialRetryDecision σb
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ p := by
+  let pre := (bits.take d).map Bool.toNat
+  let tail := (bits'.drop d).map Bool.toNat ++ R.I.rest
+  have hinput :
+      (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ.inp =
+        pre ++ σa.inp := by
+    change bits.map Bool.toNat ++ R.I.rest = pre ++ σa.inp
+    rw [hinp]
+    dsimp [pre]
+    have hsplit := congrArg (List.map Bool.toNat) (List.take_append_drop d bits).symm
+    simp only [List.map_append] at hsplit
+    rw [hsplit]
+    simp only [List.append_assoc]
+  have hstart :
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ =
+        {(R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ with
+          inp := pre ++ tail} := by
+    change {R.I.σ with inp := bits'.map Bool.toNat ++ R.I.rest} =
+      {R.I.σ with inp := pre ++ tail}
+    have hsplit := congrArg (List.map Bool.toNat) (List.take_append_drop d bits').symm
+    simp only [List.map_append] at hsplit
+    have hinpEq : bits'.map Bool.toNat ++ R.I.rest = pre ++ tail := by
+      dsimp [pre, tail]
+      rw [hsplit, ← hpre]
+      simp only [List.append_assoc]
+    simp [hinpEq]
+  have hrun' : Run B fullInitialAttempt
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ
+      {σa with inp := tail} q := by
+    simpa only [hstart] using
+      StoppedPrefixAveraging.run_replace_consumed_suffix hrun pre hinput tail
+  have hdecinp : J.I.σ.inp = σa.inp :=
+    hdecision.frame_inp (by decide)
+  have hJrest : J.I.rest = R.I.rest := by
+    have h := J.I.hinput
+    rw [hJbits, hdecinp, hinp] at h
+    exact List.append_cancel_left h.symm
+  have hnextState :
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ =
+        {J.I.σ with inp := tail} := by
+    rw [ReadyInput.reinput_state]
+    simp [tail, hJrest]
+  have hdecision' : Run B initialRetryDecision {σa with inp := tail}
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ p := by
+    have hrep := StoppedPrefixAveraging.run_replace_consumed_suffix
+      hdecision [] (by simpa using hdecinp.symm) tail
+    simpa only [List.nil_append, hnextState] using hrep
+  exact ⟨hrun', hdecision'⟩
 
 /-- Actual bits consumed by one full attempt on a finite flat tape. -/
 noncomputable def readyAttemptConsumed
@@ -971,6 +1052,9 @@ inductive SourceRejectionTrace
       (hrun : Run B fullInitialAttempt R.I.σ σa q)
       (hinp : σa.inp = (R.I.bits.drop d).map Bool.toNat ++ R.I.rest)
       (hbound : d ≤ attemptBitBudget n m r t)
+      (hbatch : σa.vars "batchFailed" = 0)
+      (hrep : σa.vars "repFailed" = 0)
+      (haccept : σa.vars "attemptAccepted" = 0)
       (hbad : (FlatTraceLaw.flatBitsEquiv R.I.bits.length).symm
         ⟨R.I.bits, rfl⟩ ∈ sourceInitialBadFiber R.I k cap)
       (hstopped : ∃ ω : SamplerInitialRetries.InitialOutcome A
@@ -987,6 +1071,9 @@ inductive SourceRejectionTrace
       (hrun : Run B fullInitialAttempt R.I.σ σa q)
       (hinp : σa.inp = (R.I.bits.drop d).map Bool.toNat ++ R.I.rest)
       (hbound : d ≤ attemptBitBudget n m r t)
+      (hbatch : σa.vars "batchFailed" = 0)
+      (hrep : σa.vars "repFailed" = 0)
+      (haccept : σa.vars "attemptAccepted" = 0)
       (hbad : (FlatTraceLaw.flatBitsEquiv R.I.bits.length).symm
         ⟨R.I.bits, rfl⟩ ∈ sourceInitialBadFiber R.I k cap)
       (hstopped : ∃ ω : SamplerInitialRetries.InitialOutcome A
@@ -1000,6 +1087,347 @@ inductive SourceRejectionTrace
       (hbits : J.I.bits = R.I.bits.drop d)
       (htail : SourceRejectionTrace J rest) :
       SourceRejectionTrace R ((q, d) :: rest)
+
+lemma SourceRejectionTrace.head_rejected
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    {R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A}
+    {q d : ℕ} {rest : List (ℕ × ℕ)}
+    (htrace : SourceRejectionTrace R ((q, d) :: rest)) :
+    ∃ σa : Env, Run B fullInitialAttempt R.I.σ σa q ∧
+      σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 0 ∧
+      σa.vars "attemptAccepted" = 0 ∧
+      σa.inp = (R.I.bits.drop d).map Bool.toNat ++ R.I.rest ∧
+      d ≤ attemptBitBudget n m r t := by
+  cases htrace with
+  | last R σa q d hrun hinp hbound hbatch hrep haccept hbad hstopped =>
+      exact ⟨σa, hrun, hbatch, hrep, haccept, hinp, hbound⟩
+  | step R J σa q d p rest hrun hinp hbound hbatch hrep haccept hbad hstopped
+        hdecision hbits htail =>
+      exact ⟨σa, hrun, hbatch, hrep, haccept, hinp, hbound⟩
+
+/-- The bit count stored in a rejected source step is the canonical
+stopping time of the actual full-attempt Run. -/
+lemma SourceRejectionTrace.head_canonical
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    {R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A}
+    {q d : ℕ} {rest : List (ℕ × ℕ)}
+    (htrace : SourceRejectionTrace R ((q, d) :: rest)) :
+    let ρ := (FlatTraceLaw.flatBitsEquiv R.I.bits.length).symm ⟨R.I.bits, rfl⟩
+    d = readyAttemptConsumed R (by simpa [attemptBitBudget] using R.I.hbudget) ρ ∧
+      readyAttemptRejected R (by simpa [attemptBitBudget] using R.I.hbudget) ρ := by
+  let ρ := (FlatTraceLaw.flatBitsEquiv R.I.bits.length).symm ⟨R.I.bits, rfl⟩
+  have hbits : List.ofFn ρ = R.I.bits :=
+    congrArg Subtype.val
+      ((FlatTraceLaw.flatBitsEquiv R.I.bits.length).apply_symm_apply
+        ⟨R.I.bits, rfl⟩)
+  have hbudget : attemptBitBudget n m r t ≤ R.I.bits.length := by
+    simpa [attemptBitBudget] using R.I.hbudget
+  obtain ⟨σa, hrun, hbatch, hrep, haccept, hinp, hd⟩ :=
+    htrace.head_rejected
+  obtain ⟨σb, qb, hrunb, hinpb, hdb⟩ := readyAttemptConsumed_spec R hbudget ρ
+  have hrun' : Run B fullInitialAttempt
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.σ
+      σa q := by
+    simpa [hbits, ReadyInput.reinput_self_state] using hrun
+  have hsame := readyAttempt_same_prefix R (List.ofFn ρ) (List.ofFn ρ)
+    (by simpa using hbudget) (by simpa using hbudget)
+    hrun' hrunb (by simpa [hbits] using hinp) hinpb hd hdb rfl
+  constructor
+  · exact hsame.1.symm
+  · exact ⟨σa, q, hrun', hbatch, hrep, haccept⟩
+
+/-- A rejected-prefix certificate indexed only by the actual machine
+environment. This removes proof-side array representation choices from the
+tail event used in stopped-prefix averaging. -/
+inductive RawRejected {B : ℕ} : Env → ℕ → Prop where
+  | zero (σ : Env) : RawRejected σ 0
+  | final (σ σa : Env) (q : ℕ)
+      (hrun : Run B fullInitialAttempt σ σa q)
+      (hbatch : σa.vars "batchFailed" = 0)
+      (hrep : σa.vars "repFailed" = 0)
+      (haccept : σa.vars "attemptAccepted" = 0) :
+      RawRejected σ 1
+  | step (σ σa τ : Env) (q p k : ℕ)
+      (hrun : Run B fullInitialAttempt σ σa q)
+      (hbatch : σa.vars "batchFailed" = 0)
+      (hrep : σa.vars "repFailed" = 0)
+      (haccept : σa.vars "attemptAccepted" = 0)
+      (hdecision : Run B initialRetryDecision σa τ p)
+      (htail : RawRejected (B := B) τ k) :
+      RawRejected σ (k + 1)
+
+lemma SourceRejectionTrace.raw
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    {R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A}
+    {rejects : List (ℕ × ℕ)}
+    (htrace : SourceRejectionTrace R rejects) :
+    RawRejected (B := B) R.I.σ rejects.length := by
+  induction htrace with
+  | nil R => exact RawRejected.zero R.I.σ
+  | last R σa q d hrun hinp hbound hbatch hrep haccept hbad hstopped =>
+      exact RawRejected.final R.I.σ σa q hrun hbatch hrep haccept
+  | step R J σa q d p rest hrun hinp hbound hbatch hrep haccept hbad hstopped
+        hdecision hbits htail ih =>
+      simpa [List.length_cons, Nat.add_comm] using
+        RawRejected.step R.I.σ σa J.I.σ q p rest.length hrun hbatch
+          hrep haccept hdecision ih
+
+lemma RawRejected.head
+    {B : ℕ} {σ : Env} {j : ℕ}
+    (h : RawRejected (B := B) σ (j + 1)) :
+    ∃ σa q, Run B fullInitialAttempt σ σa q ∧
+      σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 0 ∧
+      σa.vars "attemptAccepted" = 0 := by
+  cases h with
+  | final σ σa q hrun hbatch hrep haccept =>
+      exact ⟨σa, q, hrun, hbatch, hrep, haccept⟩
+  | step σ σa τ q p k hrun hbatch hrep haccept hdecision htail =>
+      exact ⟨σa, q, hrun, hbatch, hrep, haccept⟩
+
+lemma RawRejected.tail_of_succ
+    {B : ℕ} {σ : Env} {j : ℕ}
+    (h : RawRejected (B := B) σ (j + 2)) :
+    ∃ σa τ q p, Run B fullInitialAttempt σ σa q ∧
+      σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 0 ∧
+      σa.vars "attemptAccepted" = 0 ∧
+      Run B initialRetryDecision σa τ p ∧ RawRejected (B := B) τ (j + 1) := by
+  cases h with
+  | step σ σa τ q p k hrun hbatch hrep haccept hdecision htail =>
+      exact ⟨σa, τ, q, p, hrun, hbatch, hrep, haccept, hdecision, htail⟩
+
+/-- After an actual ordinary rejection, the source decision has a canonical
+ready successor. Its unread bits are exactly the suffix of the original
+flat tape. -/
+lemma rejected_next_ready
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (fuel : ℕ)
+    (hpositive : 1 ≤ fuel)
+    (hsavedM : R.I.σ.vars "initialDomainSize" = m)
+    (hsavedR : R.I.σ.vars "initialBatchTarget" = r)
+    (hleft : R.I.σ.vars "initialRetriesLeft" = fuel + 1)
+    (hstatus : R.I.σ.vars "initialRetryStatus" = 0)
+    (hfuelB : fuel + 1 < B)
+    (hbudget : (fuel + 1) * attemptBitBudget n m r t ≤ R.I.bits.length)
+    {σa : Env} {q : ℕ}
+    (hrun : Run B fullInitialAttempt R.I.σ σa q)
+    (hbatch0 : σa.vars "batchFailed" = 0)
+    (hrep0 : σa.vars "repFailed" = 0)
+    (haccept0 : σa.vars "attemptAccepted" = 0) :
+    ∃ (d : ℕ) (J : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+      (p : ℕ),
+      d ≤ attemptBitBudget n m r t ∧
+      σa.inp = (R.I.bits.drop d).map Bool.toNat ++ R.I.rest ∧
+      J.I.bits = R.I.bits.drop d ∧ J.I.rest = R.I.rest ∧
+      J.I.activeB = R.I.activeB ∧
+      Run B initialRetryDecision σa J.I.σ p ∧
+      J.I.σ.vars "initialDomainSize" = m ∧
+      J.I.σ.vars "initialBatchTarget" = r ∧
+      J.I.σ.vars "initialRetriesLeft" = fuel ∧
+      J.I.σ.vars "initialRetryStatus" = 0 ∧
+      fuel * attemptBitBudget n m r t ≤ J.I.bits.length := by
+  have hper : attemptBitBudget n m r t ≤ R.I.bits.length := by
+    have hmul : attemptBitBudget n m r t ≤
+        (fuel + 1) * attemptBitBudget n m r t := by
+      nlinarith [Nat.zero_le (fuel * attemptBitBudget n m r t)]
+    exact hmul.trans hbudget
+  obtain ⟨d, σb, qb, hrunb, hinpb, hd⟩ :=
+    readyAttempt_run_consumed R R.I.bits hper
+  have hrunb' : Run B fullInitialAttempt R.I.σ σb qb := by
+    simpa [ReadyInput.reinput_self_state] using hrunb
+  have heq : σb = σa := by
+    obtain ⟨_, _, ha⟩ := hrunb'
+    obtain ⟨_, _, hb⟩ := hrun
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hinp : σa.inp = (R.I.bits.drop d).map Bool.toNat ++ R.I.rest := by
+    simpa [heq] using hinpb
+  obtain ⟨σsel, σc, tape, tail, values, used, drawFailed, stageCost,
+    hbits, htrace, hselRun, hfull, hbatch, hinpSel, houtSel,
+    hoff, htgt, hactiveA, hactiveB, hn, hqpow,
+    hdrawFailure, hdrawSuccess⟩ :=
+    fullInitialAttempt_run_bits R.I R.hactiveA R.hdegree R.hinter
+      R.hneighbors R.hexceptionFlags R.hexceptionList R.hnearBound
+      R.hexceptionCap R.hnB R.hkB R.hcapB
+  have heqc : σc = σa := by
+    obtain ⟨_, _, ha⟩ := hfull
+    obtain ⟨_, _, hb⟩ := hrun
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hnextBudget : fuel * attemptBitBudget n m r t ≤
+      (R.I.bits.drop d).length := drop_budget hbudget hd
+  obtain ⟨S, _hrestoreS, hSstate, hSbits, hSrest, hSactive⟩ :=
+    ready_after_rejection R hrun (by simpa [heqc] using hn)
+      (by simpa [heqc] using hqpow) (by simpa [heqc] using hoff)
+      (by simpa [heqc] using htgt) (by simpa [heqc] using hactiveA)
+      (by simpa [heqc] using hactiveB) hinp (by
+        have hperNext : attemptBitBudget n m r t ≤
+            fuel * attemptBitBudget n m r t := by
+          simpa using Nat.mul_le_mul_right
+            (attemptBitBudget n m r t) hpositive
+        exact hperNext.trans hnextBudget)
+  let J := S.withRetriesLeft fuel
+  let τ := (σa.setVar "drawModulus" m).setVar "batchTarget" r
+  let υ := τ.setVar "initialRetriesLeft" fuel
+  have hleftA : σa.vars "initialRetriesLeft" = fuel + 1 := by
+    rw [hrun.frame_var "initialRetriesLeft" (by decide)]
+    exact hleft
+  have hsavedMA : σa.vars "initialDomainSize" = m := by
+    rw [hrun.frame_var "initialDomainSize" (by decide)]
+    exact hsavedM
+  have hsavedRA : σa.vars "initialBatchTarget" = r := by
+    rw [hrun.frame_var "initialBatchTarget" (by decide)]
+    exact hsavedR
+  have hstatusA : σa.vars "initialRetryStatus" = 0 := by
+    rw [hrun.frame_var "initialRetryStatus" (by decide)]
+    exact hstatus
+  have hrestore : Run B restoreInitialDomainRuntime σa τ 4 :=
+    restore_runtime_run hsavedMA hsavedRA R.I.hmB R.I.hrB
+  have hleftτ : τ.vars "initialRetriesLeft" = fuel + 1 := by
+    simpa [τ] using hleftA
+  have hdecrement : Run B (.assign "initialRetriesLeft"
+      (.sub (.var "initialRetriesLeft") (.lit 1))) τ υ 4 :=
+    decrement_run hleftτ hfuelB R.I.honeB
+  have hrestoreDec : Run B
+      (restoreInitialDomainRuntime.seq
+        (.assign "initialRetriesLeft"
+          (.sub (.var "initialRetriesLeft") (.lit 1)))) σa υ 8 :=
+    hrestore.seq hdecrement
+  have hzeroB : 0 < B := by omega
+  have hbatchGuard : (Cond.eq (.var "batchFailed") (.lit 0)).evalB B σa =
+      some true := by simpa using eq_zero_eval hbatch0 hzeroB hzeroB
+  have hrepGuard : (Cond.eq (.var "repFailed") (.lit 0)).evalB B σa =
+      some true := by simpa using eq_zero_eval hrep0 hzeroB hzeroB
+  have hacceptGuard : (Cond.eq (.var "attemptAccepted") (.lit 1)).evalB B σa =
+      some false := by simpa using eq_one_eval haccept0 hzeroB R.I.honeB
+  have hinner : Run B
+      (.ite (.eq (.var "attemptAccepted") (.lit 1))
+        (.assign "initialRetryStatus" (.lit 1))
+        (restoreInitialDomainRuntime.seq
+          (.assign "initialRetriesLeft"
+            (.sub (.var "initialRetriesLeft") (.lit 1))))) σa υ 12 := by
+    simpa [Cond.size, Expr.size] using Run.ite_false hacceptGuard hrestoreDec
+  have hrepBranch : Run B
+      (.ite (.eq (.var "repFailed") (.lit 0))
+        (.ite (.eq (.var "attemptAccepted") (.lit 1))
+          (.assign "initialRetryStatus" (.lit 1))
+          (restoreInitialDomainRuntime.seq
+            (.assign "initialRetriesLeft"
+              (.sub (.var "initialRetriesLeft") (.lit 1)))))
+        (.assign "initialRetryStatus" (.lit 2))) σa υ 16 := by
+    simpa [Cond.size, Expr.size] using
+      (Run.ite_true (d := .assign "initialRetryStatus" (.lit 2))
+        hrepGuard hinner)
+  have hdecision : Run B initialRetryDecision σa υ 20 := by
+    simpa [initialRetryDecision, Cond.size, Expr.size] using
+      (Run.ite_true (d := .assign "initialRetryStatus" (.lit 2))
+        hbatchGuard hrepBranch)
+  have hJstate : J.I.σ = υ := by
+    change S.I.σ.setVar "initialRetriesLeft" fuel = υ
+    rw [hSstate]
+  refine ⟨d, J, 20, hd, hinp, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · change S.I.bits = R.I.bits.drop d
+    exact hSbits
+  · change S.I.rest = R.I.rest
+    exact hSrest
+  · change S.I.activeB = R.I.activeB
+    exact hSactive
+  · simpa [hJstate] using hdecision
+  · rw [hJstate]
+    simpa [υ, τ] using hsavedMA
+  · rw [hJstate]
+    simpa [υ, τ] using hsavedRA
+  · rw [hJstate]
+    simp [υ]
+  · rw [hJstate]
+    simpa [υ, τ] using hstatusA
+  · change fuel * attemptBitBudget n m r t ≤ S.I.bits.length
+    rw [hSbits]
+    exact hnextBudget
+
+/-- Finite flat tapes on which the concrete source has an ordered prefix of
+`j` ordinary rejected attempts. -/
+noncomputable def rawRejectedFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) (j : ℕ) :
+    Finset (FlatTraceLaw.FlatTape N) := by
+  classical
+  exact Finset.univ.filter fun ρ =>
+    RawRejected (B := B)
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.σ j
+
+lemma rawRejectedFiber_one_half
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
+    2 * (rawRejectedFiber R hbudget 1).card ≤ 2 ^ N := by
+  classical
+  have hsub : rawRejectedFiber R hbudget 1 ⊆
+      readyAttemptRejectedFiber R hbudget := by
+    intro ρ hρ
+    have hraw : RawRejected (B := B)
+        (R.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hbudget)).I.σ 1 := by
+      simpa [rawRejectedFiber] using hρ
+    obtain ⟨σa, q, hrun, hbatch, hrep, haccept⟩ :=
+      RawRejected.head (j := 0) hraw
+    simpa [readyAttemptRejectedFiber, readyAttemptRejected] using
+      (show readyAttemptRejected R hbudget ρ from
+        ⟨σa, q, hrun, hbatch, hrep, haccept⟩)
+  exact (Nat.mul_le_mul_left 2 (Finset.card_le_card hsub)).trans
+    (readyAttemptRejected_half R hbudget hmass)
+
+/-- A rejected trace on a different completion of the same consumed prefix
+has its remaining rejected trace in the canonical post-decision state. -/
+lemma RawRejected.tail_replay
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R J : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits bits' : List Bool)
+    (hbudget : attemptBitBudget n m r t ≤ bits.length)
+    (hbudget' : attemptBitBudget n m r t ≤ bits'.length)
+    {σa : Env} {q d p j : ℕ}
+    (hrun : Run B fullInitialAttempt
+      (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ σa q)
+    (hinp : σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest)
+    (hpre : bits.take d = bits'.take d)
+    (hdecision : Run B initialRetryDecision σa J.I.σ p)
+    (hJbits : J.I.bits = bits.drop d)
+    (hnextBudget : attemptBitBudget n m r t ≤ (bits'.drop d).length)
+    (hraw : RawRejected (B := B)
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ
+      (j + 2)) :
+    RawRejected (B := B)
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ (j + 1) := by
+  obtain ⟨σb, τb, qb, pb, hrunb, _, _, _, hdecisionb, htail⟩ :=
+    hraw.tail_of_succ
+  obtain ⟨hrun', hdecision'⟩ :=
+    rejected_step_replay R J bits bits' hbudget hbudget' hrun hinp
+      hpre hdecision hJbits hnextBudget
+  have heqA : σb = {σa with inp := (bits'.drop d).map Bool.toNat ++ R.I.rest} := by
+    obtain ⟨_, _, ha⟩ := hrunb
+    obtain ⟨_, _, hb⟩ := hrun'
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have heqJ : τb =
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ := by
+    obtain ⟨_, _, ha⟩ := hdecisionb
+    obtain ⟨_, _, hb⟩ := hdecision'
+    exact (BigStep.unique (by simpa [heqA] using ha.bigStep) hb.bigStep).1
+  simpa [heqJ] using htail
 
 /-- Execution of the single fixed while loop from a state whose runtime
 counter contains `fuel`, retaining every actual rejected attempt. -/
@@ -1380,7 +1808,8 @@ lemma initialRetryWhile_run_withTrace
                   · exact Or.inr (Or.inr ⟨by simp [σ'], by simp [hzero]⟩)
                   · refine ⟨[(q, d)], ?_, by simp, by simp⟩
                     exact SourceRejectionTrace.last R σa q d hfull'
-                      (by simpa [d] using hinpFinal) hd hreject hrejectStopped
+                      (by simpa [d] using hinpFinal) hd hbatch0 hrepA
+                      hacceptA hreject hrejectStopped
                 · have hpositive : 1 ≤ fuel := Nat.one_le_iff_ne_zero.mpr hzero
                   have hbudgetNext : fuel * attemptBitBudget n m r t ≤
                       (R.I.bits.drop d).length := drop_budget hbudget hd
@@ -1464,7 +1893,7 @@ lemma initialRetryWhile_run_withTrace
                   · refine ⟨(q, d) :: tailRejects, ?_, ?_, ?_⟩
                     · exact SourceRejectionTrace.step R J σa q d 20
                         tailRejects hfull' (by simpa [d] using hinpFinal)
-                        hd hreject hrejectStopped
+                        hd hbatch0 hrepA hacceptA hreject hrejectStopped
                         (by simpa [hJstate] using hdecision)
                         (by change S.I.bits = R.I.bits.drop d; exact hSbits)
                         htailTrace
