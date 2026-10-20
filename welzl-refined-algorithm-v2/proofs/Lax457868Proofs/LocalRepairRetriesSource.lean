@@ -1,6 +1,7 @@
 import Lax457868Proofs.LocalRepairSource
 import Lax457868Proofs.LocalFlatLaw
 import Lax457868Proofs.RepairFilterSource
+import Lax457868Proofs.SourceTapePrefix
 import Mathlib.Tactic
 
 /-! One fixed bounded retry loop for the concrete local repair trial. -/
@@ -216,7 +217,11 @@ lemma localRepairWhile_run_trace
         rejected ≤ attempts ∧ attempts ≤ rejected + 1 ∧
         FlatRejectedTrials m t s
           (localBadOutputs m s R.domain (numericNeighborhood G)
-            groupedB Wbase b) rejected R.bits) := by
+            groupedB Wbase b) rejected R.bits) ∧
+      (∃ accepted : ℕ,
+        FlatRetryExecution m R.hpositive t s
+          (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b) attempts R.bits totalUsed accepted) := by
   induction fuel generalizing R with
   | zero =>
     let σ' := R.σ.setVar "repairRetryStatus" 3
@@ -232,7 +237,9 @@ lemma localRepairWhile_run_trace
     · constructor
       · right; right
         simp [σ', R.hsample]
-      · exact ⟨0, by omega, by omega, FlatRejectedTrials.done R.bits⟩
+      · constructor
+        · exact ⟨0, by omega, by omega, FlatRejectedTrials.done R.bits⟩
+        · exact ⟨0, FlatRetryExecution.done R.bits⟩
   | succ fuel ih =>
     let L := Nat.clog 2 m
     let C := 15 * L + 30
@@ -295,7 +302,13 @@ lemma localRepairWhile_run_trace
       · constructor
         · right; left
           exact ⟨hstatus2, by rw [hflagsB]; exact hflagsA⟩
-        · exact ⟨0, by omega, by omega, FlatRejectedTrials.done R.bits⟩
+        · constructor
+          · exact ⟨0, by omega, by omega, FlatRejectedTrials.done R.bits⟩
+          · obtain ⟨blockTape, tail, hsplit, hdraw⟩ := htraceWitness
+            exact ⟨values.length,
+              FlatRetryExecution.final blockTape tail values used failed
+                (by simpa [ClassRepresentativeTrace.tapeBits] using hsplit)
+                hdraw⟩
     · have hfalse : failed = false := Bool.eq_false_iff.mpr hfailed
       have hlen : D.length = s := by simpa [D] using hcomplete hfalse
       have hle := hstatusLe hfalse
@@ -338,7 +351,8 @@ lemma localRepairWhile_run_trace
           omega
         have hfuelNext : fuel < B := by omega
         obtain ⟨σ', attempts', totalUsed', rrec, hattempts', htotalUsed',
-          hinp', hn', hqpow', htrial', hrow', hdesired', hout', htrace'⟩ :=
+          hinp', hn', hqpow', htrial', hrow', hdesired', hout', htrace',
+          hfull'⟩ :=
           ih Rnext hstatusNext hleftNext hLnext hvnext hfuelNext
             (by simpa [L] using hbudgetNext)
         have hinputFinal : σ'.inp =
@@ -362,6 +376,45 @@ lemma localRepairWhile_run_trace
             ((15 * Nat.clog 2 m + 30) * totalUsed' +
               attempts' * (79 * s + Rnext.scanUpper + 50) + 14) at rrec
           simpa [C, A, L, hUpper] using rrec
+        obtain ⟨blockTape, tail, hsplit, hdraw⟩ := htraceWitness
+        have hdrawFalse : SequentialDraws.DrawTrace m R.hpositive t s
+            (List.ofFn blockTape) values used false := by
+          simpa [hfalse] using hdraw
+        have hbudgetFlat :
+            ClassRepresentativeTrace.bitBudget (fun _ => m) t 0 s ≤
+              ((List.ofFn blockTape).flatMap List.ofFn ++ tail).length := by
+          rw [← ClassRepresentativeTrace.tapeBits, ← hsplit,
+            LocalFlatLaw.local_bitBudget]
+          simpa [L] using hbudgetOne
+        obtain ⟨stopAttempts, hflatRaw, hconsumed⟩ :=
+          LocalFlatLaw.drawTrace_success_flat_used m R.hpositive t s used
+            (List.ofFn blockTape) values tail hdrawFalse hbudgetFlat
+        have hflat : FlatTraceLaw.FlatClassSuccess (fun _ => m) t
+            (fun _ => 0) 0 s R.bits (values.map Fin.val) stopAttempts := by
+          have hbitsEq : (List.ofFn blockTape).flatMap List.ofFn ++ tail =
+              R.bits := by
+            simpa [ClassRepresentativeTrace.tapeBits] using hsplit.symm
+          rw [hbitsEq] at hflatRaw
+          exact hflatRaw
+        have hvalid : values.map Fin.val ∈
+            FlatTraceLaw.outputVectors (fun _ => m) (fun _ => 0) 0 s :=
+          FlatTraceLaw.ValidOutput.mem_outputVectors (fun _ => m)
+            (fun _ => 0)
+            (FlatTraceLaw.ValidPath.validOutput (fun _ => m) t
+              (fun _ => 0)
+              (FlatTraceLaw.FlatClassSuccess.validPath (fun _ => m) t
+                (fun _ => 0) hflat))
+        have hnot : ¬ localTrialIsolates (numericNeighborhood G)
+            groupedB Wbase b D := by
+          intro hiso
+          exact (by omega : σa.vars "repairRetryStatus" ≠ 1)
+            ((hsuccess hfalse).1.mpr hiso)
+        have hbad : values.map Fin.val ∈ localBadOutputs m s R.domain
+            (numericNeighborhood G) groupedB Wbase b := by
+          simp only [localBadOutputs, Finset.mem_filter]
+          constructor
+          · exact hvalid
+          · simpa [D, List.map_map, Function.comp_def] using hnot
         refine ⟨σ', attempts' + 1, used + totalUsed', ?_, by omega,
           htotal, ?_, hn', hqpowFinal, htrial', hrow', hdesired', ?_⟩
         · apply (runWhileTrue hguard rbody rrec').mono
@@ -382,59 +435,35 @@ lemma localRepairWhile_run_trace
             · right; right
               exact ⟨hexhaust'.1, by omega,
                 by simpa [Rnext] using hexhaust'.2.2⟩
-          · obtain ⟨rejected', hrejectLe, hattemptLe, hnextRaw⟩ := htrace'
-            obtain ⟨blockTape, tail, hsplit, hdraw⟩ := htraceWitness
-            have hdrawFalse : SequentialDraws.DrawTrace m R.hpositive t s
-                (List.ofFn blockTape) values used false := by
-              simpa [hfalse] using hdraw
-            have hbudgetFlat :
-                ClassRepresentativeTrace.bitBudget (fun _ => m) t 0 s ≤
-                  ((List.ofFn blockTape).flatMap List.ofFn ++ tail).length := by
-              rw [← ClassRepresentativeTrace.tapeBits, ← hsplit,
-                LocalFlatLaw.local_bitBudget]
-              simpa [L] using hbudgetOne
-            obtain ⟨stopAttempts, hflatRaw, hconsumed⟩ :=
-              LocalFlatLaw.drawTrace_success_flat_used m R.hpositive t s used
-                (List.ofFn blockTape) values tail hdrawFalse hbudgetFlat
-            have hflat : FlatTraceLaw.FlatClassSuccess (fun _ => m) t
-                (fun _ => 0) 0 s R.bits (values.map Fin.val) stopAttempts := by
-              have hbitsEq : (List.ofFn blockTape).flatMap List.ofFn ++ tail =
-                  R.bits := by
-                simpa [ClassRepresentativeTrace.tapeBits] using hsplit.symm
-              rw [hbitsEq] at hflatRaw
-              exact hflatRaw
-            have hvalid : values.map Fin.val ∈
-                FlatTraceLaw.outputVectors (fun _ => m) (fun _ => 0) 0 s :=
-              FlatTraceLaw.ValidOutput.mem_outputVectors (fun _ => m)
-                (fun _ => 0)
-                (FlatTraceLaw.ValidPath.validOutput (fun _ => m) t
-                  (fun _ => 0)
-                  (FlatTraceLaw.FlatClassSuccess.validPath (fun _ => m) t
-                    (fun _ => 0) hflat))
-            have hnot : ¬ localTrialIsolates (numericNeighborhood G)
-                groupedB Wbase b D := by
-              intro hiso
-              exact (by omega : σa.vars "repairRetryStatus" ≠ 1)
-                ((hsuccess hfalse).1.mpr hiso)
-            have hbad : values.map Fin.val ∈ localBadOutputs m s R.domain
-                (numericNeighborhood G) groupedB Wbase b := by
-              simp only [localBadOutputs, Finset.mem_filter]
-              constructor
-              · exact hvalid
-              · simpa [D, List.map_map, Function.comp_def] using hnot
-            have hnext : FlatRejectedTrials m t s
+          · constructor
+            · obtain ⟨rejected', hrejectLe, hattemptLe, hnextRaw⟩ := htrace'
+              have hnext : FlatRejectedTrials m t s
                 (localBadOutputs m s R.domain (numericNeighborhood G)
                   groupedB Wbase b) rejected'
                 (R.bits.drop (FlatTraceLaw.consumedBits (fun _ => m) 0
                   stopAttempts)) := by
-              change FlatRejectedTrials m t s
-                (localBadOutputs m s R.domain (numericNeighborhood G)
-                  groupedB Wbase b) rejected'
-                (R.bits.drop (used * L)) at hnextRaw
-              simpa [L, hconsumed] using hnextRaw
-            exact ⟨rejected' + 1, by omega, by omega,
-              FlatRejectedTrials.step (values.map Fin.val) stopAttempts
-                hbad hflat hnext⟩
+                change FlatRejectedTrials m t s
+                  (localBadOutputs m s R.domain (numericNeighborhood G)
+                    groupedB Wbase b) rejected'
+                  (R.bits.drop (used * L)) at hnextRaw
+                simpa [L, hconsumed] using hnextRaw
+              exact ⟨rejected' + 1, by omega, by omega,
+                FlatRejectedTrials.step (values.map Fin.val) stopAttempts
+                  hbad hflat hnext⟩
+            · obtain ⟨accepted', hnext⟩ := hfull'
+              have hnext' : FlatRetryExecution m R.hpositive t s
+                  (localBadOutputs m s R.domain (numericNeighborhood G)
+                    groupedB Wbase b) attempts'
+                  (R.bits.drop (used * L)) totalUsed' accepted' := by
+                change FlatRetryExecution m R.hpositive t s
+                  (localBadOutputs m s R.domain (numericNeighborhood G)
+                    groupedB Wbase b) attempts'
+                  (R.bits.drop (used * L)) totalUsed' accepted' at hnext
+                exact hnext
+              exact ⟨s + accepted',
+                FlatRetryExecution.rejected blockTape tail values used
+                  (by simpa [ClassRepresentativeTrace.tapeBits] using hsplit)
+                  hdrawFalse hbad hnext'⟩
       · have hstatus1 : σa.vars "repairRetryStatus" = 1 := by omega
         obtain ⟨hiff, haccept, _⟩ := hsuccess hfalse
         have hflagsA := haccept hstatus1
@@ -455,7 +484,13 @@ lemma localRepairWhile_run_trace
             · simpa [D] using hX
             · rw [hflagsB]
               exact hflagsA
-          · exact ⟨0, by omega, by omega, FlatRejectedTrials.done R.bits⟩
+          · constructor
+            · exact ⟨0, by omega, by omega, FlatRejectedTrials.done R.bits⟩
+            · obtain ⟨blockTape, tail, hsplit, hdraw⟩ := htraceWitness
+              exact ⟨values.length,
+                FlatRetryExecution.final blockTape tail values used failed
+                  (by simpa [ClassRepresentativeTrace.tapeBits] using hsplit)
+                  hdraw⟩
 
 
 /-- Preserve the original while-run interface for existing callers. -/
@@ -533,7 +568,11 @@ lemma localRepairRetriesSource_run_trace
         rejected ≤ attempts ∧ attempts ≤ rejected + 1 ∧
         FlatRejectedTrials m t s
           (localBadOutputs m s R.domain (numericNeighborhood G)
-            groupedB Wbase b) rejected R.bits) := by
+            groupedB Wbase b) rejected R.bits) ∧
+      (∃ accepted : ℕ,
+        FlatRetryExecution m R.hpositive t s
+          (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b) attempts R.bits totalUsed accepted) := by
   let L := Nat.clog 2 m
   let σ₁ := R.σ.setVar "repairRetriesLeft" cap
   let σ₂ := σ₁.setVar "repairRetryStatus" 0
@@ -675,6 +714,64 @@ lemma localRepairRetriesSource_run
   exact ⟨σ', attempts, totalUsed, hrun, hattempts, hused, hinp,
     hn, hq, htrial, hrow, hdesired, hout⟩
 
+/-- The exact number of input words consumed by a deterministic source run
+is stable when only unread input and the environment's input field change. -/
+lemma run_consumption_causal
+    {B K₁ K₂ u₁ u₂ : ℕ} {c : Com}
+    {σ₁ σ₂ τ₁ τ₂ : Env}
+    {bits₁ bits₂ rest₁ rest₂ : List ℕ}
+    (hvars : σ₁.vars = σ₂.vars)
+    (harrs : σ₁.arrs = σ₂.arrs)
+    (hout : σ₁.out = σ₂.out)
+    (hstart₁ : σ₁.inp = bits₁ ++ rest₁)
+    (hstart₂ : σ₂.inp = bits₂ ++ rest₂)
+    (hend₁ : τ₁.inp = bits₁.drop u₁ ++ rest₁)
+    (hend₂ : τ₂.inp = bits₂.drop u₂ ++ rest₂)
+    (hu₁ : u₁ ≤ bits₁.length)
+    (hu₁' : u₁ ≤ bits₂.length)
+    (hu₂ : u₂ ≤ bits₂.length)
+    (hprefix : bits₁.take u₁ = bits₂.take u₁)
+    (hrun₁ : Run B c σ₁ τ₁ K₁)
+    (hrun₂ : Run B c σ₂ τ₂ K₂) :
+    u₁ = u₂ := by
+  obtain ⟨k₁, _, hbig₁⟩ := hrun₁
+  obtain ⟨pre, hin, _, hreplay⟩ :=
+    SourceTapePrefix.consumed_prefix hbig₁
+  have hpreLen : pre.length = u₁ := by
+    have hlen := congrArg List.length hin
+    rw [hstart₁, hend₁] at hlen
+    simp only [List.length_append, List.length_drop] at hlen
+    omega
+  have hpre : pre = bits₁.take u₁ := by
+    have htake : σ₁.inp.take pre.length = pre := by
+      rw [hin]
+      simp
+    rw [hstart₁, hpreLen,
+      List.take_append_of_le_length hu₁] at htake
+    exact htake.symm
+  have hinput₂ : σ₂.inp = pre ++ (bits₂.drop u₁ ++ rest₂) := by
+    calc
+      σ₂.inp = bits₂ ++ rest₂ := hstart₂
+      _ = bits₂.take u₁ ++ (bits₂.drop u₁ ++ rest₂) := by
+        simp [← List.append_assoc, List.take_append_drop]
+      _ = pre ++ (bits₂.drop u₁ ++ rest₂) := by rw [hpre, hprefix]
+  have hstate : {σ₁ with inp := pre ++ (bits₂.drop u₁ ++ rest₂)} = σ₂ := by
+    rw [← hinput₂]
+    cases σ₁
+    cases σ₂
+    simp_all
+  have hreplay' : BigStepB B c σ₂
+      {τ₁ with inp := bits₂.drop u₁ ++ rest₂} k₁ := by
+    rw [← hstate]
+    exact hreplay _
+  obtain ⟨k₂, _, hbig₂⟩ := hrun₂
+  obtain ⟨heq, _⟩ := BigStep.unique hreplay'.bigStep hbig₂.bigStep
+  have hinpEq := congrArg Env.inp heq
+  simp only [hend₂] at hinpEq
+  have hlen := congrArg List.length hinpEq
+  simp only [List.length_append, List.length_drop] at hlen
+  omega
+
 /-- Every actual trial beyond position `j` certifies `j` consecutive
 completed, rejected stopped-prefix trials on the same original fair-bit tape. -/
 lemma localRepairRetriesSource_run_tail
@@ -697,15 +794,22 @@ lemma localRepairRetriesSource_run_tail
       (∀ j < attempts,
         tape ∈ retryRejectedFiber m t s j Nbits
           (localBadOutputs m s R.domain (numericNeighborhood G)
-            groupedB Wbase b)) := by
+            groupedB Wbase b)) ∧
+      σ'.inp = (R.bits.drop (totalUsed * Nat.clog 2 m)).map Bool.toNat ++
+        R.rest ∧
+      (∃ accepted : ℕ,
+        FlatRetryExecution m R.hpositive t s
+          (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b) attempts R.bits totalUsed accepted) := by
   have hbudgetBits : cap * (s * t * Nat.clog 2 m) ≤ R.bits.length := by
     rw [hbits, FlatTraceLaw.flatBits_length]
     exact hbudget
   obtain ⟨σ', attempts, totalUsed, hrun, hattempts, hused,
-    _, _, _, _, _, _, _, htrace⟩ :=
+    hinp, _, _, _, _, _, _, htrace, hfull⟩ :=
     localRepairRetriesSource_run_trace R hcap hcapB hbudgetBits
   obtain ⟨rejected, hrejectLe, hattemptLe, hflat⟩ := htrace
-  refine ⟨σ', attempts, totalUsed, hrun, hattempts, hused, ?_⟩
+  refine ⟨σ', attempts, totalUsed, hrun, hattempts, hused, ?_, hinp,
+    hfull⟩
   intro j hj
   have hjle : j ≤ rejected := by omega
   have hprefix := FlatRejectedTrials.prefix m t s
@@ -773,7 +877,8 @@ lemma localRepairRetriesSource_mean_attempts_le_two
                 attempts * (79 * s + (R tape).scanUpper + 50) + 14)) ∧
           totalUsed ≤ attempts * (s * t) := by
     intro tape
-    obtain ⟨σ', attempts, totalUsed, hrun, hattempts, hused, htail⟩ :=
+    obtain ⟨σ', attempts, totalUsed, hrun, hattempts, hused, htail,
+      _, _⟩ :=
       localRepairRetriesSource_run_tail (R tape) tape (hbits tape)
         (hcap tape) hcapB hbudget
     refine ⟨attempts, hattempts, ?_, σ', totalUsed, hrun, hused⟩
@@ -789,6 +894,169 @@ lemma localRepairRetriesSource_mean_attempts_le_two
       exact (hchosen tape).1
     · intro tape j hj
       exact (hchosen tape).2.1 j hj
+
+/-- One coherent choice of actual retry runs retains the whole stopped draw
+trace, exact unread bit suffix, and the same two-trial mean bound. -/
+lemma localRepairRetriesSource_mean_full_trace_le_two
+    {B n m domainCap s t bufferCap targetCap q b cap Nbits : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (domain : ℕ → ℕ)
+    (R : FlatTraceLaw.FlatTape Nbits →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hdomain : ∀ tape, (R tape).domain = domain)
+    (hcap : ∀ tape, (R tape).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hbudget : cap * (s * t * Nat.clog 2 m) ≤ Nbits)
+    (henum : PrefixEnumerates m domain X)
+    (hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase b X s).card ≤ X.card ^ s) :
+    ∃ (attempts used accepted : FlatTraceLaw.FlatTape Nbits → ℕ)
+      (finalState : FlatTraceLaw.FlatTape Nbits → Env),
+      (∀ tape,
+        Run B localRepairRetriesSource (R tape).σ (finalState tape)
+          (12 * Nat.clog 2 m + 24 +
+            ((15 * Nat.clog 2 m + 30) * used tape +
+              attempts tape * (79 * s + (R tape).scanUpper + 50) + 14)) ∧
+        attempts tape ≤ cap ∧ used tape ≤ attempts tape * (s * t) ∧
+        (finalState tape).inp =
+          ((R tape).bits.drop (used tape * Nat.clog 2 m)).map Bool.toNat ++
+            (R tape).rest ∧
+        FlatRetryExecution m (R tape).hpositive t s
+          (localBadOutputs m s domain (numericNeighborhood G)
+            groupedB Wbase b) (attempts tape) (R tape).bits
+            (used tape) (accepted tape)) ∧
+      (∑ tape : FlatTraceLaw.FlatTape Nbits,
+        (attempts tape : ℚ)) ≤ 2 * (2 ^ Nbits : ℚ) := by
+  classical
+  let bad := localBadOutputs m s domain (numericNeighborhood G)
+    groupedB Wbase b
+  have hvalid : bad ⊆ FlatTraceLaw.outputVectors (fun _ => m)
+      (fun _ => 0) 0 s := by
+    intro output houtput
+    exact (Finset.mem_filter.mp houtput).1
+  have hhalfBad : 2 * bad.card ≤
+      FlatTraceLaw.outputCount (fun _ => m) 0 s := by
+    rw [show bad = localBadOutputs m s domain (numericNeighborhood G)
+      groupedB Wbase b from rfl,
+      LocalFlatLaw.card_localBadOutputs_eq_failureSet m s domain X henum,
+      LocalFlatLaw.local_outputCount]
+    have hmX := EnumeratedDraws.prefixEnumerates_card m domain X henum
+    simpa [hmX] using hhalf
+  have hbudgetFlat : cap * ClassRepresentativeTrace.bitBudget
+      (fun _ => m) t 0 s ≤ Nbits := by
+    rw [LocalFlatLaw.local_bitBudget]
+    exact hbudget
+  have hex : ∀ tape : FlatTraceLaw.FlatTape Nbits,
+      ∃ (attempts used accepted : ℕ) (finalState : Env),
+        (∀ j < attempts, tape ∈ retryRejectedFiber m t s j Nbits bad) ∧
+        Run B localRepairRetriesSource (R tape).σ finalState
+          (12 * Nat.clog 2 m + 24 +
+            ((15 * Nat.clog 2 m + 30) * used +
+              attempts * (79 * s + (R tape).scanUpper + 50) + 14)) ∧
+        attempts ≤ cap ∧ used ≤ attempts * (s * t) ∧
+        finalState.inp =
+          ((R tape).bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++
+            (R tape).rest ∧
+        FlatRetryExecution m (R tape).hpositive t s bad attempts
+          (R tape).bits used accepted := by
+    intro tape
+    obtain ⟨finalState, attempts, used, hrun, hattempts, hused,
+      htail, hinp, accepted, hfull⟩ :=
+      localRepairRetriesSource_run_tail (R tape) tape (hbits tape)
+        (hcap tape) hcapB hbudget
+    refine ⟨attempts, used, accepted, finalState, ?_, hrun,
+      hattempts, hused, hinp, ?_⟩
+    · intro j hj
+      simpa [bad, hdomain tape] using htail j hj
+    · simpa [bad, hdomain tape] using hfull
+  choose attempts used accepted finalState hchosen using hex
+  refine ⟨attempts, used, accepted, finalState, ?_, ?_⟩
+  · intro tape
+    exact ⟨(hchosen tape).2.1, (hchosen tape).2.2⟩
+  · have hmean := LocalFlatLaw.sourceAttempts_sum_le_two m t s cap
+      Nbits bad hvalid hhalfBad hbudgetFlat attempts
+      (fun tape => (hchosen tape).2.2.1)
+      (fun tape j hj => (hchosen tape).1 j hj)
+    exact hmean
+
+/-- The actual block count is a stopping-time quantity: once its read bit
+prefix is fixed, changing every unread input bit cannot alter it. -/
+lemma localRepairRetriesSource_used_causal_bits
+    {B n m domainCap s t bufferCap targetCap q b cap Nbits : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (R : FlatTraceLaw.FlatTape Nbits →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hstate : ∀ tape tape',
+      (R tape).σ.vars = (R tape').σ.vars ∧
+      (R tape).σ.arrs = (R tape').σ.arrs ∧
+      (R tape).σ.out = (R tape').σ.out)
+    (hbudget : cap * (s * t * Nat.clog 2 m) ≤ Nbits)
+    (hL : 0 < Nat.clog 2 m)
+    (attempts used : FlatTraceLaw.FlatTape Nbits → ℕ)
+    (finalState : FlatTraceLaw.FlatTape Nbits → Env)
+    (hrun : ∀ tape, Run B localRepairRetriesSource
+      (R tape).σ (finalState tape)
+        (12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * used tape +
+            attempts tape * (79 * s + (R tape).scanUpper + 50) + 14)))
+    (hattempts : ∀ tape, attempts tape ≤ cap)
+    (hused : ∀ tape, used tape ≤ attempts tape * (s * t))
+    (hinp : ∀ tape, (finalState tape).inp =
+      ((R tape).bits.drop (used tape * Nat.clog 2 m)).map Bool.toNat ++
+        (R tape).rest) :
+    ∀ tape tape' k, k ≤ Nbits →
+      (FlatTraceLaw.flatBits tape).take k =
+        (FlatTraceLaw.flatBits tape').take k →
+      used tape * Nat.clog 2 m ≤ k → used tape' = used tape := by
+  intro tape tape' k hk hprefix hreach
+  let L := Nat.clog 2 m
+  have husedBits (a : FlatTraceLaw.FlatTape Nbits) :
+      used a * L ≤ Nbits := by
+    calc
+      used a * L ≤ (attempts a * (s * t)) * L :=
+        Nat.mul_le_mul_right L (hused a)
+      _ ≤ (cap * (s * t)) * L :=
+        Nat.mul_le_mul_right L
+          (Nat.mul_le_mul_right (s * t) (hattempts a))
+      _ = cap * (s * t * L) := by ring
+      _ ≤ Nbits := hbudget
+  have hprefixUsed :
+      (FlatTraceLaw.flatBits tape).take (used tape * L) =
+        (FlatTraceLaw.flatBits tape').take (used tape * L) := by
+    have hr : used tape * L ≤ k := by simpa [L] using hreach
+    have h := congrArg (List.take (used tape * L)) hprefix
+    simpa only [List.take_take, min_eq_left hr] using h
+  have hprefixWords :
+      ((FlatTraceLaw.flatBits tape).map Bool.toNat).take (used tape * L) =
+        ((FlatTraceLaw.flatBits tape').map Bool.toNat).take
+          (used tape * L) := by
+    simpa only [List.map_take] using
+      congrArg (List.map Bool.toNat) hprefixUsed
+  have hσ (a : FlatTraceLaw.FlatTape Nbits) :
+      (R a).σ.inp = (FlatTraceLaw.flatBits a).map Bool.toNat ++
+        (R a).rest := by
+    rw [(R a).hinput, hbits a]
+  have hτ (a : FlatTraceLaw.FlatTape Nbits) :
+      (finalState a).inp =
+        ((FlatTraceLaw.flatBits a).map Bool.toNat).drop (used a * L) ++
+          (R a).rest := by
+    rw [hinp a, hbits a]
+    simp [L, List.map_drop]
+  obtain ⟨hvars, harrs, hout⟩ := hstate tape tape'
+  have hwords := run_consumption_causal hvars harrs hout
+    (hσ tape) (hσ tape') (hτ tape) (hτ tape')
+    (by simpa [L, FlatTraceLaw.flatBits_length] using husedBits tape)
+    (by simpa [L, FlatTraceLaw.flatBits_length] using husedBits tape)
+    (by simpa [L, FlatTraceLaw.flatBits_length] using husedBits tape')
+    hprefixWords (hrun tape) (hrun tape')
+  exact (Nat.eq_of_mul_eq_mul_right hL hwords).symm
 
 /-- With a fixed scan upper bound, the weighted scan term in the actual
 source retry-run charge has mean at most twice one trial's scan allowance. -/
