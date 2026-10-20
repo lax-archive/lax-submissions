@@ -180,3 +180,6 @@ import Lax457868Proofs.RefinedProgramLayout
 import Lax457868Proofs.RefinedProgramProbability
 import Lax457868Proofs.RefinedFinalBridge
 import Lax457868Proofs.RefinedFailureBudget
+import Lax457868Proofs.RefinedReconstruction
+import Lax457868Proofs.RefinedRoundTrace
+import Lax457868Proofs.StoppedPrefixAveraging

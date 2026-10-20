@@ -1052,3 +1052,11 @@ initial outcome/continuation fibers are checked (9658476d, e0acfd15,
 cap (6a3b2f4b). Remaining work is actual initial retry mean, exception-loop
 aggregation, adaptive round composition, and cap-failure counting. Full
 LAX build of 696a95c5 passed in 1m58s with one concept and zero proofs.
+
+Checked actual large-branch reconstruction and positive accepted active sets;
+the chronological source trace now distinguishes terminal retry failure from
+successful contraction. Stopped-prefix averaging and deterministic suffix
+replay are checked, as are the actual local mean for arbitrary unused suffixes
+and disjoint exception-class scan charging. Full replay of cdeec135 passed
+(6m14s, one concept, zero annotated proofs). Main remains open pending actual
+initial retry mean, adaptive exception/round aggregation, and cap-failure count.
