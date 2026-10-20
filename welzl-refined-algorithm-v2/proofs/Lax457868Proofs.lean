@@ -183,3 +183,9 @@ import Lax457868Proofs.RefinedFailureBudget
 import Lax457868Proofs.RefinedReconstruction
 import Lax457868Proofs.RefinedRoundTrace
 import Lax457868Proofs.StoppedPrefixAveraging
+import Lax457868Proofs.ExceptionRepairCharge
+import Lax457868Proofs.SamplerRepresentativeCharge
+import Lax457868Proofs.NumericGraphProbability
+import Lax457868Proofs.ExceptionRepairMean
+import Lax457868Proofs.RefinedBodyExecution
+import Lax457868Proofs.RefinedBodyEstimate

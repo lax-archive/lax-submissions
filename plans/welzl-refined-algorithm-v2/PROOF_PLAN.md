@@ -1060,3 +1060,12 @@ replay are checked, as are the actual local mean for arbitrary unused suffixes
 and disjoint exception-class scan charging. Full replay of cdeec135 passed
 (6m14s, one concept, zero annotated proofs). Main remains open pending actual
 initial retry mean, adaptive exception/round aggregation, and cap-failure count.
+
+Full build of 91593ead passed (2m23s, zero annotated proofs). Actual body
+execution now retains its chronological trace and reduces BodyEstimate to
+trace mean and terminal-failure count (7473343b). Class scan charges are
+bounded by 156 times input length (3213cbb4); repeated representative-domain
+work has an exact uniform weighted mean (eefbaf90). Numeric graph trace,
+injectivity, and initial rejection-half premises are discharged directly
+from the maintained graph invariants (41b95610). Actual retry and adaptive
+mean composition remain in progress; main is still open.
