@@ -51,6 +51,47 @@ lemma run_result_same_prefix {B K J : ℕ}
   obtain ⟨_, _, hb⟩ := hother
   exact (Lax808846Proofs.Imp.BigStep.unique ha.bigStep hb.bigStep).1.symm
 
+/-- Stopping positions of two source runs agree when the second input
+extends the first run's consumed Boolean prefix. -/
+lemma bool_run_same_prefix {B K J d e : ℕ}
+    {c : Lax808846Proofs.Imp.Com} {σ τ υ : Lax808846Proofs.Imp.Env}
+    (bits other : List Bool) (rest : List ℕ)
+    (hr : Lax808846Proofs.Reasoning.Run B c
+      {σ with inp := bits.map Bool.toNat ++ rest} τ K)
+    (hs : Lax808846Proofs.Reasoning.Run B c
+      {σ with inp := other.map Bool.toNat ++ rest} υ J)
+    (hi : τ.inp = (bits.drop d).map Bool.toNat ++ rest)
+    (hj : υ.inp = (other.drop e).map Bool.toNat ++ rest)
+    (hd : d ≤ other.length) (he : e ≤ other.length)
+    (hp : bits.take d = other.take d) :
+    e = d ∧ υ = {τ with inp := (other.drop d).map Bool.toNat ++ rest} := by
+  let pre := (bits.take d).map Bool.toNat
+  let tail := (other.drop d).map Bool.toNat ++ rest
+  have hsplit (xs : List Bool) : xs.map Bool.toNat =
+      (xs.take d).map Bool.toNat ++ (xs.drop d).map Bool.toNat := by
+    simpa only [List.map_append] using congrArg (List.map Bool.toNat)
+      (List.take_append_drop d xs).symm
+  have hin : ({σ with inp := bits.map Bool.toNat ++ rest} :
+      Lax808846Proofs.Imp.Env).inp = pre ++ τ.inp := by
+    change bits.map Bool.toNat ++ rest = pre ++ τ.inp
+    rw [hi]
+    dsimp [pre]
+    rw [hsplit bits]
+    simp only [List.append_assoc]
+  have hother : ({σ with inp := other.map Bool.toNat ++ rest} :
+      Lax808846Proofs.Imp.Env) = {σ with inp := pre ++ tail} := by
+    have hh : other.map Bool.toNat ++ rest = pre ++ tail := by
+      rw [hsplit other, ← hp]
+      simp [pre, tail, List.append_assoc]
+    simp only [hh]
+  have hsame : υ = {τ with inp := tail} := by
+    apply run_result_same_prefix hr pre hin tail
+    simpa only [hother] using hs
+  have hlen := congrArg List.length (congrArg Lax808846Proofs.Imp.Env.inp hsame)
+  rw [hj] at hlen
+  simp only [tail, List.length_append, List.length_map, List.length_drop] at hlen
+  exact ⟨by omega, hsame⟩
+
 /-- The complete observed prefix includes rejected random blocks. -/
 def stoppedPrefix {N : ℕ} (used : Tape N → ℕ) (ρ : Tape N) : List Bool :=
   (List.ofFn ρ).take (used ρ)
