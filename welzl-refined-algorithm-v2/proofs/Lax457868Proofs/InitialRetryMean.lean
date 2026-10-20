@@ -1,4 +1,5 @@
 import Lax457868Proofs.FullInitialAttemptMean
+import Lax457868Proofs.InitialAbortProbability
 
 /-! Mean bounds for the actual source retry loop. -/
 namespace Lax457868Proofs.InitialRetryMean
@@ -7,11 +8,101 @@ open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax457868Proofs.InitialSamplerRetriesSource
 open Lax457868Proofs.FullInitialAttemptMean
 open Lax457868Proofs.FullInitialAttempt
+open Lax457868Proofs.InitialAbortProbability
 open Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
 open scoped BigOperators
 
 variable {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+
+/-- A zero-status retry decision after a checked full attempt is exactly an
+ordinary mathematical rejection.  The acceptance flag is Boolean on the
+selector-success path; this matters because scratch flags may be stale when
+selection aborts. -/
+lemma decision_zero_rejected
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    {σa σd : Env} {q p : ℕ}
+    (hstatus : R.I.σ.vars "initialRetryStatus" = 0)
+    (hfull : BigStepB B fullInitialAttempt R.I.σ σa q)
+    (hdecision : BigStepB B initialRetryDecision σa σd p)
+    (hzero : σd.vars "initialRetryStatus" = 0) :
+    σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 0 ∧
+      σa.vars "attemptAccepted" = 0 := by
+  have hrun : Run B fullInitialAttempt R.I.σ σa q :=
+    Run.of_bigStepB hfull
+  have hstatusA : σa.vars "initialRetryStatus" = 0 := by
+    rw [hrun.frame_var "initialRetryStatus" (by decide)]
+    exact hstatus
+  obtain ⟨hbatch0, hrep0, hnot1⟩ :=
+    decision_status_zero_rejected hstatusA hdecision hzero
+  obtain ⟨σsel, σc, tape, tail, values, used, drawFailed, stageCost,
+    hbits, htrace, hselRun, hfullCanon, hbatch, hinpSel, houtSel,
+    hoff, htgt, hactiveA, hactiveB, hn, hqpow,
+    hdrawFailure, hdrawSuccess⟩ :=
+    fullInitialAttempt_run_bits R.I R.hactiveA R.hdegree R.hinter
+      R.hneighbors R.hexceptionFlags R.hexceptionList R.hnearBound
+      R.hexceptionCap R.hnB R.hkB R.hcapB
+  have heq : σc = σa := by
+    obtain ⟨_, _, hc⟩ := hfullCanon
+    exact (BigStep.unique hc.bigStep hfull.bigStep).1
+  cases drawFailed with
+  | true =>
+      have hb : σc.vars "batchFailed" = 1 := by simpa using hbatch
+      rw [heq] at hb
+      omega
+  | false =>
+      obtain ⟨W, repFailed, repUsed, hW, hWA, hvaluesLen,
+        hrepLe, hrepVal, hinp, hrepFailure, hrepSuccess⟩ :=
+        hdrawSuccess rfl
+      cases repFailed with
+      | true =>
+          obtain ⟨hselEq, _, _, _⟩ := hrepFailure rfl
+          have hr : σc.vars "repFailed" = 1 := by
+            rw [hselEq]
+            simpa using hrepVal
+          rw [heq] at hr
+          omega
+      | false =>
+          obtain ⟨mapped, choice, packedExceptions, packedSample,
+            hmappedSel, hdraws, hchoiceSample, hchoiceRep,
+            hacceptRun, hExceptionsEq, hflags, hlist, hprefixE,
+            hcountE, hacceptBit, hsampleFlags, hord, hprefixW,
+            hcountW, hrepFinal, hactiveBFinal, hinpFinal⟩ :=
+            hrepSuccess rfl
+          have hbit : σa.vars "attemptAccepted" =
+              (if (choice.exceptions k).card ≤ cap then 1 else 0) := by
+            simpa [heq] using hacceptBit
+          constructor
+          · exact hbatch0
+          constructor
+          · exact hrep0
+          · by_cases hpass : (choice.exceptions k).card ≤ cap
+            · simp [hpass] at hbit
+              exact False.elim (hnot1 hbit)
+            · simpa [hpass] using hbit
+
+lemma tail_cost_of_not_rejected
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (N : ℕ) (hb : attemptBitBudget n m r t ≤ N)
+    (hstatus : R.I.σ.vars "initialRetryStatus" = 0)
+    (ρ : Tape N) {σa σd τ : Env} {q p u : ℕ}
+    (hfull : BigStepB B fullInitialAttempt
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hb)).I.σ
+      σa q)
+    (hdecision : BigStepB B initialRetryDecision σa σd p)
+    (htail : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σd τ u)
+    (hnot : ¬ readyAttemptRejected R hb ρ) : u = 4 := by
+  apply retryWhile_nonzero_cost _ htail
+  intro hzero
+  obtain ⟨hbatch, hrep, haccept⟩ :=
+    decision_zero_rejected
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hb))
+      (by simpa [ReadyInput.reinput_state] using hstatus)
+      hfull hdecision hzero
+  apply hnot
+  exact ⟨σa, q, Run.of_bigStepB hfull, hbatch, hrep, haccept⟩
 
 /-- Average a nonnegative continuation cost after one actual stopped
 attempt.  The conditional hypothesis is over completions of the observed
