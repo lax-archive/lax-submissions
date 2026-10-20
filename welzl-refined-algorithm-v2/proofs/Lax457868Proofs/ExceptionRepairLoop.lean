@@ -928,7 +928,8 @@ def FarStepTrace
         LocalFlatLaw.FlatRetryExecution X.card P.hpositive t s
           (LocalFlatLaw.localBadOutputs X.card s P.domain
             (numericNeighborhood G) groupedB Wbase b)
-          attempts P.bits used accepted)
+          attempts P.bits used accepted) ∧
+      σsource.vars "repairRetriesLeft" + attempts = cap
 
 /-- Execute one packed exception. The reported charge is the actual source
 charge for the near or far branch, with its actual attempts and bit use. -/
@@ -1006,7 +1007,7 @@ lemma one_step_run_trace
   · obtain ⟨σsource, attempts, used, rsource, hattempts, hused,
       hinp, hn, hqpow, htrial, hrow, hdesired,
       hBmarks', hRmarks', hout, Rafter, rd, hRbits,
-      hRrest, hRscan, rr, hreject, hfull⟩ :=
+      hRrest, hRscan, rr, hreject, hfull, hcount⟩ :=
       localRepairOneException_run_far_trace P R.hA hrepP hactiveP
         hBmarksP hRmarksP hblistP hrlistP hrange rfl
         hfarP R.hfarB hfar hcapP R.hcapB hpow
@@ -1044,8 +1045,9 @@ lemma one_step_run_trace
             LocalFlatLaw.FlatRetryExecution X.card Q.hpositive t s
               (LocalFlatLaw.localBadOutputs X.card s Q.domain
                 (numericNeighborhood G) groupedB Wbase b)
-              attempts Q.bits used accepted)
-      refine ⟨Rafter, ?_, ?_, ?_, ?_, σsource, ?_, hreject, hfull⟩
+              attempts Q.bits used accepted) ∧
+          σsource.vars "repairRetriesLeft" + attempts = cap
+      refine ⟨Rafter, ?_, ?_, ?_, ?_, σsource, ?_, hreject, hfull, hcount⟩
       · have rload' : Run B
             (.assign "repairB" (.get "exceptionList" (.var "exceptionIndex")))
             R.σ P.σ 3 := by simpa [hPσ] using rload
