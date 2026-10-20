@@ -2263,6 +2263,9 @@ lemma initialSamplerRetriesSource_run_withTrace
       ∃ (S : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
         (rejects : List (ℕ × ℕ)),
         S.I.bits = R.I.bits ∧ S.I.activeB = R.I.activeB ∧
+        S.I.σ = (((R.I.σ.setVar "initialDomainSize" m).setVar
+          "initialBatchTarget" r).setVar "initialRetriesLeft" attemptCap).setVar
+            "initialRetryStatus" 0 ∧
         SourceRejectionTrace S rejects ∧
         charges.length ≤ rejects.length + 1 ∧
         (σ'.vars "initialRetryStatus" = 3 →
@@ -2334,7 +2337,51 @@ lemma initialSamplerRetriesSource_run_withTrace
     simpa only [hSbits, hSrest] using hinp
   · have hSactive : S.I.activeB = R.I.activeB := rfl
     simpa only [hSactive] using houtcome
-  · exact ⟨S, rejects, rfl, rfl, htrace, hatMost, hexhausted⟩
+  · exact ⟨S, rejects, rfl, rfl, rfl, htrace, hatMost, hexhausted⟩
+
+/-- Exhaustion of the actual fixed source entails exactly `attemptCap`
+ordinary rejected full attempts, starting at the exact post-setup machine
+state. -/
+lemma source_status3_raw
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (attemptCap : ℕ)
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hcap : R.I.σ.vars "initialRetryCap" = attemptCap)
+    (hcapB : attemptCap < B)
+    (hbudget : attemptCap * attemptBitBudget n m r t ≤ R.I.bits.length)
+    {σout : Env} {cost : ℕ}
+    (hrun : Run B initialSamplerRetriesSource R.I.σ σout cost)
+    (hstatus : σout.vars "initialRetryStatus" = 3) :
+    ∃ S : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A,
+      S.I.bits = R.I.bits ∧ S.I.activeB = R.I.activeB ∧
+      S.I.σ = (((R.I.σ.setVar "initialDomainSize" m).setVar
+        "initialBatchTarget" r).setVar "initialRetriesLeft" attemptCap).setVar
+          "initialRetryStatus" 0 ∧
+      RawRejected (B := B) S.I.σ attemptCap := by
+  obtain ⟨σ', charges, consumed, hrun', hchecked, hlen, hconsumed,
+    hinp, hn, hqpow, houtcome, S, rejects, hbits, hactive, hsetup,
+    htrace, hatMost, hexhausted⟩ :=
+    initialSamplerRetriesSource_run_withTrace attemptCap R hcap hcapB hbudget
+  have heq : σout = σ' := by
+    obtain ⟨_, _, ha⟩ := hrun
+    obtain ⟨_, _, hb⟩ := hrun'
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hstatus' : σ'.vars "initialRetryStatus" = 3 := by
+    simpa [heq] using hstatus
+  have hcapLen : charges.length = attemptCap := by
+    rcases houtcome with hgood | habort | hexhaust
+    · obtain ⟨mapped, choice, packedExceptions, packedSample,
+        hgoodStatus, _⟩ := hgood
+      omega
+    · omega
+    · exact hexhaust.2
+  have hrejectLen : rejects.length = attemptCap := by
+    calc
+      rejects.length = charges.length := (hexhausted hstatus').symm
+      _ = attemptCap := hcapLen
+  refine ⟨S, hbits, hactive, hsetup, ?_⟩
+  simpa [hrejectLen] using htrace.raw
 
 /-- Compact source-loop interface, with the retained ordered trace erased. -/
 lemma initialSamplerRetriesSource_run
