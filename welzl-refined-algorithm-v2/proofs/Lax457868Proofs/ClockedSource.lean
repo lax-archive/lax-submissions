@@ -1146,7 +1146,7 @@ private lemma while_good {B S : ℕ} {b : Cond} {c : Com}
 /-- Every bounded source derivation has an actual clocked run at every
 well-formed initial clock.  Even when the clock expires, the run terminates
 with the flag set and zero remaining capacity. -/
-theorem clocked_good_of_bigStepB {B S k : ℕ} {c : Com} {σ σ' : Env}
+lemma clocked_good_of_bigStepB {B S k : ℕ} {c : Com} {σ σ' : Env}
     (hr : BigStepB B c σ σ' k) :
     Fresh c → ClockedGood B S c σ σ' ∧ ExtraGood B S c σ σ' := by
   induction hr with
@@ -1508,7 +1508,7 @@ private lemma while_success {B S k : ℕ} {b : Cond} {c : Com}
 /-- A clock with capacity at least the source charge finishes successfully.
 The number of successful ticks is at most that charge, and the instrumented
 source costs at most one hundred times the original run. -/
-theorem clocked_success_of_bigStepB {B S k : ℕ} {c : Com} {σ σ' : Env}
+lemma clocked_success_of_bigStepB {B S k : ℕ} {c : Com} {σ σ' : Env}
     (hr : BigStepB B c σ σ' k) :
     Fresh c →
       ClockedSuccess B S c σ σ' k ∧ ExtraSuccess B S c σ σ' k := by
@@ -2105,7 +2105,7 @@ private lemma while_timed {B S : ℕ} {b : Cond} {c : Com}
 /-- A source derivation supplies an actual clocked run with a cost bound
 proportional to the mathematical clock capacity, even if that capacity is
 far below the source's own running time. -/
-theorem clocked_timed_of_bigStepB {B S k : ℕ} {c : Com} {σ σ' : Env}
+lemma clocked_timed_of_bigStepB {B S k : ℕ} {c : Com} {σ σ' : Env}
     (hr : BigStepB B c σ σ' k) :
     Fresh c → ClockedTimed B S c σ σ' ∧ ExtraTimed B S c σ σ' := by
   induction hr with
@@ -2171,7 +2171,7 @@ original program does.  Its cost depends on the syntax and mathematical
 capacity, not on the potentially much larger original running time.  When
 capacity covers that running time, the original final state and tape are
 recovered and the cost is also bounded by the source charge. -/
-theorem clocked_run {B S k : ℕ} {c : Com} {σ σ' τ : Env}
+lemma clocked_run {B S k : ℕ} {c : Com} {σ σ' τ : Env}
     (hr : BigStepB B c σ σ' k) (hf : Fresh c)
     (hready : Ready B S τ) (hs : SameSource σ τ) :
     ∃ υ K, Run B (clocked c) τ υ K ∧
