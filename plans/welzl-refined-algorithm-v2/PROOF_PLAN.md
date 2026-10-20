@@ -996,3 +996,13 @@ bound still needs the actual-tape coupling. Setup, domain packing and parameter
 lemmas passed target builds and background-only axiom audits. The remaining
 integration is the actual history driver, sampler/retry probability and
 expected cost, then the clock/compile bridge and annotated conclusion.
+
+Checked the factual round-to-sampler adapter (`44f05241`). Two reused packing
+scans and the parameter assignments establish every complete-sampler input
+field in 40n+58 source steps. Initialization establishes its round workspace
+invariant, including cleared repair marks and Boolean next-set arrays. The
+adapter assumes only the current active sets, CSR encoding, word bounds and
+a sufficiently long input prefix; no successful sample is supplied. Target
+build and axiom checks passed with only the three background axioms. Full
+kernel replay of the preceding clock/setup/flat-law checkpoint `e260a2cb`
+passed in 5m05s; the main annotated conclusion is still outstanding.
