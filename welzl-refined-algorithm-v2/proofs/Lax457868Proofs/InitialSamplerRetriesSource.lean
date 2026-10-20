@@ -615,6 +615,79 @@ lemma readyAttempt_same_prefix
   have heq : d' = d := by omega
   exact ⟨heq, hsame⟩
 
+/-- Replay one rejected attempt and its retry-decision command after
+replacing the unread suffix. The next ready state changes only in its input. -/
+lemma rejected_step_replay
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R J : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits bits' : List Bool)
+    (hbudget : attemptBitBudget n m r t ≤ bits.length)
+    (hbudget' : attemptBitBudget n m r t ≤ bits'.length)
+    {σa : Env} {q d p : ℕ}
+    (hrun : Run B fullInitialAttempt
+      (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ σa q)
+    (hinp : σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest)
+    (hpre : bits.take d = bits'.take d)
+    (hdecision : Run B initialRetryDecision σa J.I.σ p)
+    (hJbits : J.I.bits = bits.drop d)
+    (hnextBudget : attemptBitBudget n m r t ≤ (bits'.drop d).length) :
+    let σb := {σa with inp := (bits'.drop d).map Bool.toNat ++ R.I.rest}
+    Run B fullInitialAttempt
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ σb q ∧
+    Run B initialRetryDecision σb
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ p := by
+  let pre := (bits.take d).map Bool.toNat
+  let tail := (bits'.drop d).map Bool.toNat ++ R.I.rest
+  have hinput :
+      (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ.inp =
+        pre ++ σa.inp := by
+    change bits.map Bool.toNat ++ R.I.rest = pre ++ σa.inp
+    rw [hinp]
+    dsimp [pre]
+    have hsplit := congrArg (List.map Bool.toNat) (List.take_append_drop d bits).symm
+    simp only [List.map_append] at hsplit
+    rw [hsplit]
+    simp only [List.append_assoc]
+  have hstart :
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ =
+        {(R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ with
+          inp := pre ++ tail} := by
+    change {R.I.σ with inp := bits'.map Bool.toNat ++ R.I.rest} =
+      {R.I.σ with inp := pre ++ tail}
+    have hsplit := congrArg (List.map Bool.toNat) (List.take_append_drop d bits').symm
+    simp only [List.map_append] at hsplit
+    have hinpEq : bits'.map Bool.toNat ++ R.I.rest = pre ++ tail := by
+      dsimp [pre, tail]
+      rw [hsplit, ← hpre]
+      simp only [List.append_assoc]
+    simp [hinpEq]
+  have hrun' : Run B fullInitialAttempt
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ
+      {σa with inp := tail} q := by
+    simpa only [hstart] using
+      StoppedPrefixAveraging.run_replace_consumed_suffix hrun pre hinput tail
+  have hdecinp : J.I.σ.inp = σa.inp :=
+    hdecision.frame_inp (by decide)
+  have hJrest : J.I.rest = R.I.rest := by
+    have h := J.I.hinput
+    rw [hJbits, hdecinp, hinp] at h
+    exact List.append_cancel_left h.symm
+  have hnextState :
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ =
+        {J.I.σ with inp := tail} := by
+    rw [ReadyInput.reinput_state]
+    simp [tail, hJrest]
+  have hdecision' : Run B initialRetryDecision {σa with inp := tail}
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ p := by
+    have hrep := StoppedPrefixAveraging.run_replace_consumed_suffix
+      hdecision [] (by simpa using hdecinp.symm) tail
+    simpa only [List.nil_append, hnextState] using hrep
+  exact ⟨hrun', hdecision'⟩
+
 /-- Actual bits consumed by one full attempt on a finite flat tape. -/
 noncomputable def readyAttemptConsumed
     {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
