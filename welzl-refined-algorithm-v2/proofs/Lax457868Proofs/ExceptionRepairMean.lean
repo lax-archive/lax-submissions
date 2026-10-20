@@ -140,6 +140,37 @@ lemma local_actual_mean_runtime
   intro tape _
   rw [(hparameters tape).1, (hparameters tape).2]
 
+/-- A status-three source event is contained in the exact stopped-prefix
+fiber of `cap` rejected trials. Its count decays geometrically on the full
+flat tape, including all unread bits. -/
+lemma actual_exhaustion_count_le
+    (m t s cap Nbits : ℕ) (bad : Finset (List ℕ))
+    (hvalid : bad ⊆ FlatTraceLaw.outputVectors (fun _ => m)
+      (fun _ => 0) 0 s)
+    (hhalf : 2 * bad.card ≤ FlatTraceLaw.outputCount (fun _ => m) 0 s)
+    (hbudget : cap * ClassRepresentativeTrace.bitBudget
+      (fun _ => m) t 0 s ≤ Nbits)
+    (exhausted : FlatTraceLaw.FlatTape Nbits → Prop)
+    [DecidablePred exhausted]
+    (htrace : ∀ tape, exhausted tape →
+      LocalFlatLaw.FlatRejectedTrials m t s bad cap
+        (FlatTraceLaw.flatBits tape)) :
+    2 ^ cap * (Finset.univ.filter exhausted).card ≤ 2 ^ Nbits := by
+  classical
+  have hsubset : (Finset.univ.filter exhausted) ⊆
+      LocalFlatLaw.retryRejectedFiber m t s cap Nbits bad := by
+    intro tape htape
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+      htrace tape (Finset.mem_filter.mp htape).2⟩
+  calc
+    2 ^ cap * (Finset.univ.filter exhausted).card ≤
+        2 ^ cap *
+          (LocalFlatLaw.retryRejectedFiber m t s cap Nbits bad).card :=
+      Nat.mul_le_mul_left _ (Finset.card_le_card hsubset)
+    _ ≤ 2 ^ Nbits :=
+      LocalFlatLaw.retryRejectedFiber_geometric m t s bad hvalid hhalf
+        cap Nbits hbudget
+
 /-- Keep the domain and repeated class-scan work explicit while replacing
 each local selector width by the one global width `clog 2 n`. The bound uses
 the actual successful draw count, so it has no factor of the selector cap. -/

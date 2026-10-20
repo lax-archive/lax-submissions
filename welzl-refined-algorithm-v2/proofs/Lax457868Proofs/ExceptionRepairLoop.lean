@@ -931,7 +931,11 @@ def FarStepTrace
           attempts P.bits used accepted) ∧
       σsource.vars "repairRetriesLeft" + attempts = cap ∧
       σsource.inp =
-        (P.bits.drop (used * Nat.clog 2 X.card)).map Bool.toNat ++ P.rest
+        (P.bits.drop (used * Nat.clog 2 X.card)).map Bool.toNat ++ P.rest ∧
+      (σsource.vars "repairRetryStatus" = 3 →
+        LocalFlatLaw.FlatRejectedTrials X.card t s
+          (LocalFlatLaw.localBadOutputs X.card s P.domain
+            (numericNeighborhood G) groupedB Wbase b) cap P.bits)
 
 /-- Execute one packed exception. The reported charge is the actual source
 charge for the near or far branch, with its actual attempts and bit use. -/
@@ -1050,9 +1054,13 @@ lemma one_step_run_trace
               attempts Q.bits used accepted) ∧
           σsource.vars "repairRetriesLeft" + attempts = cap ∧
           σsource.inp =
-            (Q.bits.drop (used * Nat.clog 2 X.card)).map Bool.toNat ++ Q.rest
+            (Q.bits.drop (used * Nat.clog 2 X.card)).map Bool.toNat ++ Q.rest ∧
+          (σsource.vars "repairRetryStatus" = 3 →
+            LocalFlatLaw.FlatRejectedTrials X.card t s
+              (LocalFlatLaw.localBadOutputs X.card s Q.domain
+                (numericNeighborhood G) groupedB Wbase b) cap Q.bits)
       refine ⟨Rafter, ?_, ?_, ?_, ?_, σsource, ?_, hreject, hfull,
-        hcount, ?_⟩
+        hcount, ?_, ?_⟩
       · have rload' : Run B
             (.assign "repairB" (.get "exceptionList" (.var "exceptionIndex")))
             R.σ P.σ 3 := by simpa [hPσ] using rload
@@ -1062,6 +1070,35 @@ lemma one_step_run_trace
       · exact hRscan.trans hscan
       · simpa [hRscan] using rr
       · simpa [hRbits, hRrest] using hinp
+      · intro hstatus3
+        have hcapAfter : Rafter.σ.vars "repairRetryCap" = cap := by
+          rw [rd.frame_var "repairRetryCap" (by decide)]
+          exact hcapP
+        have hbudgetAfter : cap * (s * t * Nat.clog 2 X.card) ≤
+            Rafter.bits.length := by
+          simpa [hRbits, hPbits, b, X] using hbudget
+        obtain ⟨σalt, aalt, ualt, ralt, _haalt, _hualt,
+          _hinalt, _hnalt, _hqalt, _htalt, _hralt, _hdalt,
+          _houtalt, _hrejectalt, _hfullalt, hcountalt,
+          hexhaustalt⟩ :=
+          localRepairRetriesSource_run_trace_exhaust Rafter
+            hcapAfter R.hcapB hbudgetAfter
+        obtain ⟨_, _, hbig⟩ := rr
+        obtain ⟨_, _, hbigAlt⟩ := ralt
+        have hσ : σsource = σalt :=
+          (BigStep.unique hbig.bigStep hbigAlt.bigStep).1
+        have ha : attempts = aalt := by
+          rw [hσ] at hcount
+          omega
+        have hstatusAlt : σalt.vars "repairRetryStatus" = 3 := by
+          rw [← hσ]
+          exact hstatus3
+        have haCap : attempts = cap := by
+          rcases hout with hsuccess | hfailure | hexhaust
+          · omega
+          · omega
+          · exact hexhaust.2.1
+        simpa [b, X, ← ha, haCap] using hexhaustalt hstatusAlt
     let bitsNext := R.bits.drop (used * Nat.clog 2 X.card)
     have hinp' : σsource.inp = bitsNext.map Bool.toNat ++ R.rest := by
       simpa [bitsNext, hPbits, hPrest] using hinp
