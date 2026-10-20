@@ -14,6 +14,18 @@ open Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
 variable {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
 
+/-- Replacing the unread bits leaves all runtime workspace facts unchanged. -/
+lemma runtime_reinput
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    {s repairCap : ℕ} (S : RuntimeInput R s repairCap)
+    (bits : List Bool)
+    (hb : r*t*Nat.clog 2 m+n*t*Nat.clog 2 n ≤ bits.length) :
+    RuntimeInput (R.reinput bits hb) s repairCap :=
+  ⟨S.hdomainCap,S.hsampleSize,S.hrepairCap,S.hfarBound,S.hstartLength,
+    S.htrialZero,S.hrowZero,S.hdesiredZero,S.hrowLength,S.hdesiredLength,
+    S.hdiffLength,S.hBListLength,S.hRListLength,S.hBMarksZero,S.hRMarksZero,
+    S.hsBuffer,S.hsB,S.hrepairCapB,S.hfarB⟩
+
 structure Cut
     (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
     (attemptCap : ℕ) where
@@ -112,6 +124,19 @@ lemma actual_accepted_tail
       simp only [Cond.size, Expr.size]
       omega
 
+lemma actual_nonaccepted_tail {σ τ : Env} {cost : ℕ}
+    (hs : σ.vars "initialRetryStatus" ≠ 1)
+    (ha : BigStepB B afterInitial σ τ cost) : cost = 5 := by
+  unfold afterInitial at ha
+  cases ha with
+  | ite_true hg _ =>
+    obtain ⟨a,b,ha,hb,he⟩ := evalB_condEq_iff.mp hg
+    obtain ⟨rfl,_⟩ := evalB_var_iff.mp ha
+    obtain ⟨rfl,_⟩ := evalB_lit_iff.mp hb
+    have h : σ.vars "initialRetryStatus" = 1 := by simpa using he
+    exact False.elim (hs h)
+  | ite_false _ hh => cases hh; rfl
+
 lemma actual_stopped_tail
     (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
     {attemptCap : ℕ} (C : Cut R attemptCap)
@@ -155,5 +180,73 @@ lemma cut_causal
     (C ρ).run (C η).run (C ρ).input (C η).input
     (by simpa using (C ρ).used_le.trans hb)
     (by simpa using (C η).used_le.trans hb) hp
+
+/-- Once the initial retry prefix has accepted, preparation is deterministic.
+Its same concrete repair state can therefore be used for every unread suffix. -/
+lemma accepted_tail_family
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    {s repairCap attemptCap N : ℕ} (S : RuntimeInput R s repairCap)
+    (C : Cut R attemptCap) (hs : C.final.vars "initialRetryStatus" = 1)
+    (final : Tape N → Env) (cost : Tape N → ℕ)
+    (ha : ∀ ρ, BigStepB B afterInitial
+      {C.final with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest}
+      (final ρ) (cost ρ)) :
+    ∃ choice : SamplerPhases.InitialChoice A (activeVertices n R.I.activeB)
+        (fun b => ExceptionPhaseSource.numericNeighborhood G b ∩ A) r,
+    ∃ q : ℕ,
+    ∃ L : ExceptionRepairLoop.LoopInput B n s t bufferCap targetCap q repairCap k
+        (choice.exceptions k).card G x (choice.exceptions k)
+        (activeVertices n R.I.activeB)
+        (ExceptionPhaseSource.phaseTwoSample G (choice.exceptions k) A choice.sample)
+        A (ExceptionPhaseSource.phaseTwoSample G (choice.exceptions k) A choice.sample),
+    ∃ repairCost : Tape N → ℕ,
+      (∀ ρ, BigStepB B ExceptionRepairLoop.exceptionRepairPackedSource
+        (L.reinput (List.ofFn ρ)).σ (final ρ) (repairCost ρ)) ∧
+      (∀ ρ, cost ρ ≤ repairCost ρ + (1229*n+987*targetCap+64*Q+575)) ∧
+      L.rest = R.I.rest ∧ (choice.exceptions k).card ≤ cap ∧
+      (∀ b ∈ activeVertices n R.I.activeB, choice.representative b = L.rep b) ∧
+      (∀ b < n, L.rep b = (C.final.arrs "repB").getD b 0) := by
+  classical
+  obtain ⟨choice,q,L,pc,fc,gc,oc,ip,pp,hprep,hpc,hfc,hgc,hoc,hip,hpp,hq,
+    hbits,hrest,hstatus,hcap,hrep,hbound⟩ := accepted_preparation_run R S C.run
+      C.vertices C.power (R.I.bits.drop C.used) C.input (C.accepted hs)
+  have hsameInput : C.final.inp = L.σ.inp := by
+    rw [L.hinput,hbits,hrest,C.input]
+  have hpre (ρ : Tape N) : Run B prepareRepairSource
+      {C.final with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest}
+      (L.reinput (List.ofFn ρ)).σ (pc+fc+gc+oc+2) := by
+    have h := run_replace_consumed_suffix hprep []
+      (by simpa using hsameInput) ((List.ofFn ρ).map Bool.toNat ++ R.I.rest)
+    simpa only [List.nil_append, ExceptionRepairLoop.LoopInput.reinput_state,hrest] using h
+  have hd (ρ : Tape N) : ∃ kr, BigStepB B
+      ExceptionRepairLoop.exceptionRepairPackedSource (L.reinput (List.ofFn ρ)).σ
+        (final ρ) kr ∧ cost ρ ≤ kr+(1229*n+987*targetCap+64*Q+575) := by
+    have hg : (Cond.eq (.var "initialRetryStatus") (.lit 1)).evalB B
+        {C.final with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest} = some true := by
+      simp [Cond.evalB,Expr.evalB,fit,hs,R.I.honeB]
+    have ht := ha ρ
+    generalize hcostρ : cost ρ = count at ht ⊢
+    generalize hfinalρ : final ρ = out at ht ⊢
+    change BigStepB B (.ite _ (prepareRepairSource.seq
+      ExceptionRepairLoop.exceptionRepairPackedSource) .skip) _ _ _ at ht
+    cases ht with
+    | ite_false hf _ => simp [Cond.evalB,Expr.evalB,fit,hs,R.I.honeB] at hf
+    | ite_true _ ht =>
+      cases ht with
+      | seq hp hr =>
+        obtain ⟨kp,hkp,hp'⟩ := hpre ρ
+        obtain ⟨he,hcost⟩ := BigStep.unique hp.bigStep hp'.bigStep
+        subst_vars
+        refine ⟨_,hr,?_⟩
+        simp only [Cond.size,Expr.size]
+        omega
+  choose repairCost hr hc using hd
+  refine ⟨choice,q,L,repairCost,hr,hc,hrest,hcap,hrep,?_⟩
+  intro b hb
+  have harr : C.final.arrs "repB" = arrOf n L.rep := by
+    rw [← hprep.frame_arr "repB" (by decide)]
+    exact L.hrep
+  rw [harr]
+  simp [arrOf,hb]
 
 end Lax457868Proofs.CompleteSamplerMean
