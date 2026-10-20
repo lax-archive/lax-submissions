@@ -175,6 +175,165 @@ structure LoopInput (B n s t bufferCap targetCap q cap k e : ℕ)
   hpowB : 2 ^ Nat.clog 2 n < B
   hthreeB : 3 < B
 
+/-- Once distinct exceptions have distinct phase-two traces, their packed
+class labels are distinct. The fixed `ord` slices may therefore be charged
+at most once during the repair loop. -/
+lemma LoopInput.label_injective_on_exceptions
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (hseparate : ∀ u ∈ E, ∀ v ∈ E,
+      trace (numericNeighborhood G) Wbase u =
+        trace (numericNeighborhood G) Wbase v → u = v) :
+    ∀ u ∈ E, ∀ v ∈ E, R.label u = R.label v → u = v := by
+  intro u hu v hv hlabelEq
+  have hvClass : v ∈ labelClass R.xs R.label (R.label v) := by
+    rw [R.hclassFibre v hv]
+    simp [R.hEgroup hv]
+  rw [← hlabelEq, R.hclassFibre u hu] at hvClass
+  have htrace := (Finset.mem_filter.mp hvClass).2
+  exact hseparate u hu v hv htrace
+
+/-- The full phase-two scan separates exceptions by their neighborhoods on
+the active ground set, which is the exact invariant needed by the fixed
+class-slice charge. -/
+lemma LoopInput.separate_exceptions_of_phase2
+    {B n s t bufferCap targetCap q cap k e r : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (choice : InitialChoice A groupedB
+      (fun v => numericNeighborhood G v ∩ A) r)
+    (as : List ℕ) (has : as.toFinset = A) (hasNodup : as.Nodup)
+    (hE : E = choice.exceptions k)
+    (hW : Wbase = phase2Scan
+      (fun v => numericNeighborhood G v ∩ A) E as choice.sample)
+    (hinj : ∀ u ∈ E, ∀ v ∈ E,
+      numericNeighborhood G u ∩ A = numericNeighborhood G v ∩ A → u = v) :
+    ∀ u ∈ E, ∀ v ∈ E,
+      trace (numericNeighborhood G) Wbase u =
+        trace (numericNeighborhood G) Wbase v → u = v := by
+  intro u hu v hv htrace
+  have hWA : Wbase ⊆ A := R.hWbase.trans R.hWcurrentA
+  have hrestrict (w : ℕ) :
+      trace (fun z => numericNeighborhood G z ∩ A) Wbase w =
+        trace (numericNeighborhood G) Wbase w := by
+    ext a
+    simp only [trace, Finset.mem_inter]
+    constructor
+    · rintro ⟨⟨haN, _⟩, haW⟩
+      exact ⟨haN, haW⟩
+    · rintro ⟨haN, haW⟩
+      exact ⟨⟨haN, hWA haW⟩, haW⟩
+  have htrace' : trace (fun w => numericNeighborhood G w ∩ A) Wbase u =
+      trace (fun w => numericNeighborhood G w ∩ A) Wbase v := by
+    rw [hrestrict, hrestrict]
+    exact htrace
+  have hN : ∀ w ∈ groupedB,
+      numericNeighborhood G w ∩ A ⊆ A := by
+    intro w _
+    exact Finset.inter_subset_right
+  have hrestricted := phase2_separates_distinct_neighborhoods
+    A groupedB (fun w => numericNeighborhood G w ∩ A)
+    as has hasNodup E choice.sample hN R.hEgroup u v hu hv
+    (by simpa [hW] using htrace')
+  exact hinj u hu v hv hrestricted
+
+/-- Selected contiguous class slices are disjoint, so their actual slot
+charges sum to at most one pass over the complete order array. -/
+lemma sum_class_potential_le_total
+    (size label weight : ℕ → ℕ) (E : Finset ℕ)
+    (q length : ℕ)
+    (hlabel : ∀ b ∈ E, label b < q)
+    (hclassEnd : ∀ d < q,
+      classStart size d + size d ≤ length)
+    (hinj : Set.InjOn label E) :
+    (∑ b ∈ E, repairClassPotential
+      (classStart size (label b) + size (label b))
+      (classStart size (label b)) weight) ≤
+      ∑ i ∈ Finset.Ico 0 length, weight i := by
+  classical
+  let D := E.image label
+  let slice (d : ℕ) := Finset.Ico (classStart size d)
+    (classStart size d + size d)
+  have hpair : (D : Set ℕ).PairwiseDisjoint slice := by
+    intro d hd d' hd' hne
+    apply Finset.disjoint_left.mpr
+    intro i hi hi'
+    have hi₁ : classStart size d ≤ i ∧
+        i < classStart size d + size d := Finset.mem_Ico.mp hi
+    have hi₂ : classStart size d' ≤ i ∧
+        i < classStart size d' + size d' := Finset.mem_Ico.mp hi'
+    rcases lt_or_gt_of_ne hne with hlt | hgt
+    · have hsep : classStart size d + size d ≤
+          classStart size d' := by
+        calc
+          _ = classStart size (d + 1) := by rfl
+          _ ≤ classStart size d' :=
+            classStart_mono size (by omega)
+      omega
+    · have hsep : classStart size d' + size d' ≤
+          classStart size d := by
+        calc
+          _ = classStart size (d' + 1) := by rfl
+          _ ≤ classStart size d :=
+            classStart_mono size (by omega)
+      omega
+  have hsubset : D.biUnion slice ⊆ Finset.Ico 0 length := by
+    intro i hi
+    obtain ⟨d, hd, hid⟩ := Finset.mem_biUnion.mp hi
+    obtain ⟨b, hb, rfl⟩ := Finset.mem_image.mp hd
+    have hstop := hclassEnd (label b) (hlabel b hb)
+    have hii := Finset.mem_Ico.mp hid
+    exact Finset.mem_Ico.mpr ⟨Nat.zero_le _, by omega⟩
+  calc
+    _ = ∑ d ∈ D, ∑ i ∈ slice d, weight i := by
+      rw [Finset.sum_image hinj]
+      simp [repairClassPotential_eq_sum_Ico, D, slice]
+    _ = ∑ i ∈ D.biUnion slice, weight i :=
+      (Finset.sum_biUnion hpair).symm
+    _ ≤ ∑ i ∈ Finset.Ico 0 length, weight i :=
+      Finset.sum_le_sum_of_subset_of_nonneg hsubset
+        (by intro i hi hnot; exact Nat.zero_le _)
+
+/-- Any subset of the packed exceptions pays for each fixed class slice at
+most once. This isolates the scan contribution for outer-loop averaging. -/
+lemma LoopInput.sum_classScanCharge_le
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (S : Finset ℕ) (hSE : S ⊆ E)
+    (hseparate : ∀ u ∈ E, ∀ v ∈ E,
+      trace (numericNeighborhood G) Wbase u =
+        trace (numericNeighborhood G) Wbase v → u = v) :
+    (∑ b ∈ S, classScanCharge x R.size R.label R.ord b) ≤
+      66 * (∑ b ∈ S, (offset x (b + 1) - offset x b)) +
+        (∑ i ∈ Finset.Ico 0 R.xs.length,
+          repairClassSlotWeight x R.ord i) + 47 * S.card := by
+  classical
+  have hinj : Set.InjOn R.label S := by
+    intro u hu v hv heq
+    exact R.label_injective_on_exceptions hseparate u (hSE hu)
+      v (hSE hv) heq
+  have hpot := sum_class_potential_le_total R.size R.label
+    (repairClassSlotWeight x R.ord) S q R.xs.length
+    (fun b hb => R.hlabel b (hSE hb)) R.hclassEnd hinj
+  have heq : (∑ b ∈ S, classScanCharge x R.size R.label R.ord b) =
+      66 * (∑ b ∈ S, (offset x (b + 1) - offset x b)) +
+      (∑ b ∈ S, repairClassPotential
+        (classStart R.size (R.label b) + R.size (R.label b))
+        (classStart R.size (R.label b))
+        (repairClassSlotWeight x R.ord)) + 47 * S.card := by
+    simp [classScanCharge, Finset.sum_add_distrib, Finset.mul_sum]
+    ring
+  rw [heq]
+  omega
+
 /-- The prepared one-exception record is obtained only after the array read
 has placed the current packed vertex into `repairB`. -/
 def LoopInput.preDomain
