@@ -261,6 +261,46 @@ private def ReadyInput.withSetup
     hexceptionCap := by simpa [J, σ₄, σ₃, σ₂, σ₁] using R.hexceptionCap
   }
 
+/-- Vary the unused flat random tape while preserving every noninput source
+register and proof-side graph/domain parameter. -/
+def ReadyInput.reinput
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits : List Bool)
+    (hbudget : r * t * Nat.clog 2 m + n * t * Nat.clog 2 n ≤ bits.length) :
+    ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A := by
+  let J := InitialFlatLaw.reinputInitialAttempt R.I bits hbudget
+  exact {
+    R with
+    I := J
+    hactiveA := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hactiveA
+    hdegree := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hdegree
+    hinter := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hinter
+    hneighbors := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hneighbors
+    hexceptionFlags := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hexceptionFlags
+    hexceptionList := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hexceptionList
+    hnearBound := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hnearBound
+    hexceptionCap := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hexceptionCap
+  }
+
+lemma ReadyInput.reinput_bits
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits : List Bool)
+    (hbudget : r * t * Nat.clog 2 m + n * t * Nat.clog 2 n ≤ bits.length) :
+    (R.reinput bits hbudget).I.bits = bits := rfl
+
+lemma ReadyInput.reinput_state
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits : List Bool)
+    (hbudget : r * t * Nat.clog 2 m + n * t * Nat.clog 2 n ≤ bits.length) :
+    (R.reinput bits hbudget).I.σ =
+      {R.I.σ with inp := bits.map Bool.toNat ++ R.I.rest} := rfl
+
 private lemma ready_after_rejection
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
