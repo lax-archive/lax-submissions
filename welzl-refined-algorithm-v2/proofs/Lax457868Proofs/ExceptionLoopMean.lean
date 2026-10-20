@@ -169,4 +169,67 @@ lemma body_mean
       _ ≤ (D+21:ℕ)*(2^N:ℚ) := by simpa [mul_comm] using hs
       _ ≤ _ := mul_le_mul_of_nonneg_right (by exact_mod_cast hc) (by positivity)
 
+/-- A source call cannot consume beyond its uniform reserved bit segment. -/
+lemma stepRecord_used_bound
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (i N : ℕ) (hb : cap * (s*t*Nat.clog 2 n) ≤ N)
+    (ρ : FlatTape N)
+    (z : StepRecord (R.reinput (flatBits ρ)) i) :
+    z.used * Nat.clog 2 (farDomain G A R.rep (R.exceptionList i)).card ≤ N := by
+  have hlog : Nat.clog 2 (farDomain G A R.rep (R.exceptionList i)).card ≤
+      Nat.clog 2 n := Nat.clog_mono_right 2 (far_card_le R (R.exceptionList i))
+  have hu : z.used ≤ cap*(s*t) :=
+    z.used_le.trans (Nat.mul_le_mul_right (s*t) z.attempts_le)
+  calc
+    _ ≤ (cap*(s*t))*Nat.clog 2 n := by gcongr
+    _ = cap*(s*t*Nat.clog 2 n) := by ring
+    _ ≤ N := hb
+
+/-- Determinism of the actual body fixes the poststate and stopping position
+on every completion of its consumed Boolean prefix. -/
+lemma stepRecord_same_prefix
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (i N : ℕ) (hb : cap * (s*t*Nat.clog 2 n) ≤ N)
+    (F : ∀ ρ : FlatTape N, StepRecord (R.reinput (flatBits ρ)) i)
+    (ρ τ : FlatTape N)
+    (hp : (flatBits ρ).take
+      ((F ρ).used * Nat.clog 2
+        (farDomain G A R.rep (R.exceptionList i)).card) =
+      (flatBits τ).take
+      ((F ρ).used * Nat.clog 2
+        (farDomain G A R.rep (R.exceptionList i)).card)) :
+    (F τ).used * Nat.clog 2
+        (farDomain G A R.rep (R.exceptionList i)).card =
+      (F ρ).used * Nat.clog 2
+        (farDomain G A R.rep (R.exceptionList i)).card ∧
+    (F τ).next.σ = {(F ρ).next.σ with inp :=
+      ((flatBits τ).drop ((F ρ).used * Nat.clog 2
+        (farDomain G A R.rep (R.exceptionList i)).card)).map Bool.toNat ++ R.rest} := by
+  have hrestρ : (F ρ).next.rest = R.rest := (F ρ).fixed.2.2.2.2.2.1
+  have hrestτ : (F τ).next.rest = R.rest := (F τ).fixed.2.2.2.2.2.1
+  have hinρ : (F ρ).next.σ.inp =
+      ((flatBits ρ).drop ((F ρ).used * Nat.clog 2
+        (farDomain G A R.rep (R.exceptionList i)).card)).map Bool.toNat ++ R.rest := by
+    rw [(F ρ).next.hinput, (F ρ).bits, hrestρ]
+    rfl
+  have hinτ : (F τ).next.σ.inp =
+      ((flatBits τ).drop ((F τ).used * Nat.clog 2
+        (farDomain G A R.rep (R.exceptionList i)).card)).map Bool.toNat ++ R.rest := by
+    rw [(F τ).next.hinput, (F τ).bits, hrestτ]
+    rfl
+  have hrρ : Run B exceptionRepairBody
+      {R.σ with inp := (flatBits ρ).map Bool.toNat ++ R.rest}
+      (F ρ).next.σ (F ρ).bodyCost := by
+    simpa only [LoopInput.reinput_state] using (F ρ).run
+  have hrτ : Run B exceptionRepairBody
+      {R.σ with inp := (flatBits τ).map Bool.toNat ++ R.rest}
+      (F τ).next.σ (F τ).bodyCost := by
+    simpa only [LoopInput.reinput_state] using (F τ).run
+  exact bool_run_same_prefix (flatBits ρ) (flatBits τ) R.rest
+    hrρ hrτ hinρ hinτ
+    (by simpa [flatBits] using stepRecord_used_bound R i N hb ρ (F ρ))
+    (by simpa [flatBits] using stepRecord_used_bound R i N hb τ (F τ)) hp
+
 end Lax457868Proofs.ExceptionLoopMean
