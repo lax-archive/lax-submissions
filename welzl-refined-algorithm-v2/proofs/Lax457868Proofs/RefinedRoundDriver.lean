@@ -74,7 +74,7 @@ open Lax457868Proofs.ExceptionPhaseSource
 open Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
 open Lax457868Proofs.ExceptionRepairLoop
 
-private lemma accepted_prepared_round
+lemma accepted_prepared_round
     {B c n : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
     {A C W : Finset ℕ} {σ : Env}
     (D : RoundData c n x A C σ)
@@ -302,7 +302,7 @@ open Lax457868Proofs.ExceptionPhaseSource
 open Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
 open Lax457868Proofs.ExceptionRepairLoop
 
-private lemma failed_initial_ne {B K : ℕ} {σ τ : Env}
+lemma failed_initial_ne {B K : ℕ} {σ τ : Env}
     (hrun : Run B completeSamplerSource σ τ K)
     (hbound : τ.vars "initialRetryStatus" < B)
     (hne : τ.vars "initialRetryStatus" ≠ 1)

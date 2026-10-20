@@ -10,6 +10,43 @@ open Lax457868Proofs.StoppingPrefix
 open Lax457868Proofs.InitialAbortProbability
 open Lax457868Proofs.LocalRepairRetriesSource
 
+/-- The rejection predicate only reads occupied domain cells. In particular,
+uninitialized cells past the selector modulus cannot affect either failure
+count. -/
+lemma localBadOutputs_congr_domain (m s : ℕ) (d₁ d₂ : ℕ → ℕ)
+    (N : ℕ → Finset ℕ) (B W : Finset ℕ) (b : ℕ)
+    (h : ∀ j, j < m → d₁ j = d₂ j) :
+    LocalFlatLaw.localBadOutputs m s d₁ N B W b =
+      LocalFlatLaw.localBadOutputs m s d₂ N B W b := by
+  classical
+  ext output
+  simp only [LocalFlatLaw.localBadOutputs, Finset.mem_filter]
+  constructor
+  · rintro ⟨hvalid, hbad⟩
+    refine ⟨hvalid, ?_⟩
+    obtain ⟨indices, _, houtput⟩ := Finset.mem_image.mp
+      ((LocalFlatLaw.outputVectors_eq_indexOutput_image m 0 s) ▸ hvalid)
+    subst output
+    have heq : (LocalFlatLaw.indexOutput indices).map d₁ =
+        (LocalFlatLaw.indexOutput indices).map d₂ := by
+      simp only [LocalFlatLaw.indexOutput, List.map_ofFn]
+      congr 1
+      funext i
+      exact h _ (indices i).isLt
+    rwa [← heq]
+  · rintro ⟨hvalid, hbad⟩
+    refine ⟨hvalid, ?_⟩
+    obtain ⟨indices, _, houtput⟩ := Finset.mem_image.mp
+      ((LocalFlatLaw.outputVectors_eq_indexOutput_image m 0 s) ▸ hvalid)
+    subst output
+    have heq : (LocalFlatLaw.indexOutput indices).map d₁ =
+        (LocalFlatLaw.indexOutput indices).map d₂ := by
+      simp only [LocalFlatLaw.indexOutput, List.map_ofFn]
+      congr 1
+      funext i
+      exact h _ (indices i).isLt
+    rwa [heq]
+
 /-- A successful constant-width selector trace can be followed by a failed
 trace on precisely its unread suffix. -/
 lemma classTrace_splice_failed (m t : ℕ) :
