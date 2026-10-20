@@ -957,4 +957,113 @@ lemma decision_status_two_selector
           (Run.of_bigStepB hrestore).frame_var "initialRetryStatus" (by decide)
         omega
 
+/-- Chronological actual full-attempt chain ending in a capped selector
+abort. The index counts the final attempt as well as preceding rejections. -/
+inductive RawSelectorAbort {B : ℕ} : Env → ℕ → Prop where
+  | final (σ σa : Env) (q : ℕ)
+      (hrun : Run B fullInitialAttempt σ σa q)
+      (habort : σa.vars "batchFailed" = 1 ∨
+        (σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 1)) :
+      RawSelectorAbort σ 1
+  | step (σ σa τ : Env) (q p j : ℕ)
+      (hrun : Run B fullInitialAttempt σ σa q)
+      (hbatch : σa.vars "batchFailed" = 0)
+      (hrep : σa.vars "repFailed" = 0)
+      (haccept : σa.vars "attemptAccepted" = 0)
+      (hdecision : Run B initialRetryDecision σa τ p)
+      (htail : RawSelectorAbort (B := B) τ (j + 1)) :
+      RawSelectorAbort σ (j + 2)
+
+lemma RawSelectorAbort.head
+    {B : ℕ} {σ : Env}
+    (h : RawSelectorAbort (B := B) σ 1) :
+    ∃ σa q, Run B fullInitialAttempt σ σa q ∧
+      (σa.vars "batchFailed" = 1 ∨
+        (σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 1)) := by
+  cases h with
+  | final σ σa q hrun habort => exact ⟨σa, q, hrun, habort⟩
+
+lemma RawSelectorAbort.tail_of_succ
+    {B : ℕ} {σ : Env} {j : ℕ}
+    (h : RawSelectorAbort (B := B) σ (j + 2)) :
+    ∃ σa τ q p, Run B fullInitialAttempt σ σa q ∧
+      σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 0 ∧
+      σa.vars "attemptAccepted" = 0 ∧
+      Run B initialRetryDecision σa τ p ∧
+      RawSelectorAbort (B := B) τ (j + 1) := by
+  cases h with
+  | step σ σa τ q p j hrun hb hr ha hd ht =>
+      exact ⟨σa, τ, q, p, hrun, hb, hr, ha, hd, ht⟩
+
+noncomputable def rawSelectorAbortFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) (j : ℕ) : Finset (Tape N) := by
+  classical
+  exact Finset.univ.filter fun ρ =>
+    RawSelectorAbort (B := B)
+      (R.reinput (List.ofFn ρ)
+        (by simpa [attemptBitBudget] using hbudget)).I.σ j
+
+lemma rawSelectorAbortFiber_one
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) :
+    2 ^ t * (rawSelectorAbortFiber R hbudget 1).card ≤
+      (r + n) * 2 ^ N := by
+  classical
+  have hsub : rawSelectorAbortFiber R hbudget 1 ⊆
+      readyAttemptSelectorAbortFiber R hbudget := by
+    intro ρ hρ
+    have hraw : RawSelectorAbort (B := B)
+        (R.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hbudget)).I.σ 1 := by
+      simpa [rawSelectorAbortFiber] using hρ
+    obtain ⟨σa,q,hrun,habort⟩ := hraw.head
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, σa, q, hrun, habort⟩
+  exact (Nat.mul_le_mul_left _ (Finset.card_le_card hsub)).trans
+    (readyAttemptSelectorAbort_count R hbudget)
+
+/-- The selector-abort tail on a completion of an already consumed prefix
+starts in the actual post-decision state for that prefix. -/
+lemma RawSelectorAbort.tail_replay
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R J : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits bits' : List Bool)
+    (hbudget : attemptBitBudget n m r t ≤ bits.length)
+    (hbudget' : attemptBitBudget n m r t ≤ bits'.length)
+    {σa : Env} {q d p j : ℕ}
+    (hrun : Run B fullInitialAttempt
+      (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ σa q)
+    (hinp : σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest)
+    (hpre : bits.take d = bits'.take d)
+    (hdecision : Run B initialRetryDecision σa J.I.σ p)
+    (hJbits : J.I.bits = bits.drop d)
+    (hnextBudget : attemptBitBudget n m r t ≤ (bits'.drop d).length)
+    (hraw : RawSelectorAbort (B := B)
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ
+      (j + 2)) :
+    RawSelectorAbort (B := B)
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ (j + 1) := by
+  obtain ⟨σb, τb, qb, pb, hrunb, _, _, _, hdecisionb, htail⟩ :=
+    hraw.tail_of_succ
+  obtain ⟨hrun', hdecision'⟩ :=
+    rejected_step_replay R J bits bits' hbudget hbudget' hrun hinp
+      hpre hdecision hJbits hnextBudget
+  have heqA : σb = {σa with inp := (bits'.drop d).map Bool.toNat ++ R.I.rest} := by
+    obtain ⟨_, _, ha⟩ := hrunb
+    obtain ⟨_, _, hb⟩ := hrun'
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have heqJ : τb =
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ := by
+    obtain ⟨_, _, ha⟩ := hdecisionb
+    obtain ⟨_, _, hb⟩ := hdecision'
+    exact (BigStep.unique (by simpa [heqA] using ha.bigStep) hb.bigStep).1
+  simpa [heqJ] using htail
+
 end Lax457868Proofs.InitialAbortProbability
