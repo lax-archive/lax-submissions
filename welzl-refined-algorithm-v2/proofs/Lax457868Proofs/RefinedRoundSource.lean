@@ -368,7 +368,7 @@ private lemma numeric_image_finset {n : ℕ} {S : Finset ℕ}
     refine ⟨⟨i, Finset.mem_range.mp (hS hi)⟩, ?_, rfl⟩
     simpa [finsetOfNumeric] using hi
 
-private lemma numeric_card_eq {n : ℕ} {S : Finset ℕ}
+lemma numeric_card_eq {n : ℕ} {S : Finset ℕ}
     (hS : S ⊆ Finset.range n) :
     (finsetOfNumeric (n := n) S).card = S.card := by
   have himage := numeric_image_finset hS

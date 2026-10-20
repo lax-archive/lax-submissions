@@ -47,7 +47,7 @@ private lemma firstDecodedWithCount_pos {α : Type*}
   | cons x xs ih =>
       cases x <;> simp [firstDecodedWithCount] at *
 
-private lemma firstDecodedWithCount_le_length {α : Type*}
+lemma firstDecodedWithCount_le_length {α : Type*}
     (xs : List (Option α)) :
     (firstDecodedWithCount xs).2 ≤ xs.length := by
   induction xs with

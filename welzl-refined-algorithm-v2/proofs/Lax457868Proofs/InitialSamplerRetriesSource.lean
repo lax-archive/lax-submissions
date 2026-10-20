@@ -1,5 +1,6 @@
 import Lax457868Proofs.FullInitialAttempt
 import Lax457868Proofs.InitialFlatLaw
+import Lax457868Proofs.StoppedPrefixAveraging
 
 /-! A fixed bounded retry loop for concrete initial attempts.  Each ordinary
 exception-count rejection restores the original A-domain sampling parameters
@@ -261,6 +262,46 @@ private def ReadyInput.withSetup
     hexceptionCap := by simpa [J, σ₄, σ₃, σ₂, σ₁] using R.hexceptionCap
   }
 
+/-- Vary the unused flat random tape while preserving every noninput source
+register and proof-side graph/domain parameter. -/
+def ReadyInput.reinput
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits : List Bool)
+    (hbudget : r * t * Nat.clog 2 m + n * t * Nat.clog 2 n ≤ bits.length) :
+    ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A := by
+  let J := InitialFlatLaw.reinputInitialAttempt R.I bits hbudget
+  exact {
+    R with
+    I := J
+    hactiveA := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hactiveA
+    hdegree := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hdegree
+    hinter := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hinter
+    hneighbors := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hneighbors
+    hexceptionFlags := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hexceptionFlags
+    hexceptionList := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hexceptionList
+    hnearBound := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hnearBound
+    hexceptionCap := by simpa [J, InitialFlatLaw.reinputInitialAttempt] using R.hexceptionCap
+  }
+
+lemma ReadyInput.reinput_bits
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits : List Bool)
+    (hbudget : r * t * Nat.clog 2 m + n * t * Nat.clog 2 n ≤ bits.length) :
+    (R.reinput bits hbudget).I.bits = bits := rfl
+
+lemma ReadyInput.reinput_state
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits : List Bool)
+    (hbudget : r * t * Nat.clog 2 m + n * t * Nat.clog 2 n ≤ bits.length) :
+    (R.reinput bits hbudget).I.σ =
+      {R.I.σ with inp := bits.map Bool.toNat ++ R.I.rest} := rfl
+
 private lemma ready_after_rejection
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
@@ -459,6 +500,369 @@ private lemma draw_consumed_le {m r t used : ℕ} {hm : 0 < m}
     used * Nat.clog 2 m ≤ r * t * Nat.clog 2 m := by
   have hu := (DrawTrace.used_and_calls m hm t htrace).1
   exact Nat.mul_le_mul_right _ (by simpa using hu)
+
+/-- The complete attempt has a definite consumed-bit prefix even when a
+bounded selector aborts. The suffix equation refers to the actual source
+input, including the fixed unread input after the finite flat tape. -/
+lemma readyAttempt_run_consumed
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits : List Bool)
+    (hbudget : attemptBitBudget n m r t ≤ bits.length) :
+    ∃ d : ℕ, ∃ σa : Env, ∃ q : ℕ,
+      Run B fullInitialAttempt (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ σa q ∧
+      σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest ∧
+      d ≤ attemptBitBudget n m r t := by
+  let J := R.reinput bits (by simpa [attemptBitBudget] using hbudget)
+  obtain ⟨σsel, σa, tape, tail, values, used, drawFailed, stageCost,
+    hbits, htrace, hselRun, hfull, hbatch, hinpSel, houtSel,
+    hoff, htgt, hactiveA, hactiveB, hn, hqpow,
+    hdrawFailure, hdrawSuccess⟩ :=
+    fullInitialAttempt_run_bits J.I J.hactiveA J.hdegree J.hinter
+      J.hneighbors J.hexceptionFlags J.hexceptionList J.hnearBound
+      J.hexceptionCap J.hnB J.hkB J.hcapB
+  have hdrawLe : used * Nat.clog 2 m ≤ r * t * Nat.clog 2 m :=
+    draw_consumed_le htrace
+  let q := attemptCharge n m r t targetCap used values.length drawFailed stageCost
+  have hfull' : Run B fullInitialAttempt J.I.σ σa q := by
+    simpa [q, attemptCharge] using hfull
+  cases drawFailed with
+  | true =>
+      obtain ⟨_, _, _, _, hinp⟩ := hdrawFailure rfl
+      refine ⟨used * Nat.clog 2 m, σa, q, ?_, ?_, ?_⟩
+      · exact hfull'
+      · simpa [J, ReadyInput.reinput, InitialFlatLaw.reinputInitialAttempt] using hinp
+      · exact hdrawLe.trans (Nat.le_add_right _ _)
+  | false =>
+      obtain ⟨W, repFailed, repUsed, hW, hWA, hvaluesLen,
+        hrepLe, hrepVal, hinp, hrepFailure, hrepSuccess⟩ := hdrawSuccess rfl
+      refine ⟨used * Nat.clog 2 m + repUsed, σa, q, ?_, ?_, ?_⟩
+      · exact hfull'
+      · simpa [J, ReadyInput.reinput, InitialFlatLaw.reinputInitialAttempt] using hinp
+      · dsimp [attemptBitBudget]
+        omega
+
+/-- Two actual full-attempt runs reading the same consumed prefix stop at
+the same bit position and have identical noninput output and memory. -/
+lemma readyAttempt_same_prefix
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits bits' : List Bool)
+    (hbudget : attemptBitBudget n m r t ≤ bits.length)
+    (hbudget' : attemptBitBudget n m r t ≤ bits'.length)
+    {σa σb : Env} {q q' d d' : ℕ}
+    (hrun : Run B fullInitialAttempt
+      (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ σa q)
+    (hrun' : Run B fullInitialAttempt
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ σb q')
+    (hinp : σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest)
+    (hinp' : σb.inp = (bits'.drop d').map Bool.toNat ++ R.I.rest)
+    (hd : d ≤ attemptBitBudget n m r t)
+    (hd' : d' ≤ attemptBitBudget n m r t)
+    (hpre : bits.take d = bits'.take d) :
+    d' = d ∧
+      σb = {σa with inp := (bits'.drop d).map Bool.toNat ++ R.I.rest} := by
+  let pre := (bits.take d).map Bool.toNat
+  let tail := (bits'.drop d).map Bool.toNat ++ R.I.rest
+  have hsplit : bits.map Bool.toNat =
+      (bits.take d).map Bool.toNat ++ (bits.drop d).map Bool.toNat := by
+    simpa only [List.map_append] using
+      congrArg (List.map Bool.toNat) (List.take_append_drop d bits).symm
+  have hsplit' : bits'.map Bool.toNat =
+      (bits'.take d).map Bool.toNat ++ (bits'.drop d).map Bool.toNat := by
+    simpa only [List.map_append] using
+      congrArg (List.map Bool.toNat) (List.take_append_drop d bits').symm
+  have hinput :
+      (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ.inp =
+        pre ++ σa.inp := by
+    change bits.map Bool.toNat ++ R.I.rest = pre ++ σa.inp
+    rw [hinp]
+    dsimp [pre]
+    rw [hsplit]
+    simp only [List.append_assoc]
+  have hother :
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ =
+        {(R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ with
+          inp := pre ++ tail} := by
+    change {R.I.σ with inp := bits'.map Bool.toNat ++ R.I.rest} =
+      {R.I.σ with inp := pre ++ tail}
+    have hinpEq : bits'.map Bool.toNat ++ R.I.rest = pre ++ tail := by
+      dsimp [pre, tail]
+      rw [hsplit', ← hpre]
+      simp only [List.append_assoc]
+    simp [hinpEq]
+  have hsame : σb = {σa with inp := tail} := by
+    apply StoppedPrefixAveraging.run_result_same_prefix hrun pre hinput tail
+    simpa [hother] using hrun'
+  have hdrop : (bits'.drop d').map Bool.toNat = (bits'.drop d).map Bool.toNat := by
+    have h : σb.inp = tail := by simpa using congrArg Env.inp hsame
+    rw [hinp'] at h
+    exact List.append_cancel_right h
+  have hlength := congrArg List.length hdrop
+  simp only [List.length_map, List.length_drop] at hlength
+  have hdN : d ≤ bits'.length := hd.trans hbudget'
+  have hd'N : d' ≤ bits'.length := hd'.trans hbudget'
+  have heq : d' = d := by omega
+  exact ⟨heq, hsame⟩
+
+/-- Actual bits consumed by one full attempt on a finite flat tape. -/
+noncomputable def readyAttemptConsumed
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ : FlatTraceLaw.FlatTape N) : ℕ :=
+  Classical.choose (readyAttempt_run_consumed R (List.ofFn ρ) (by
+    simpa using hbudget))
+
+lemma readyAttemptConsumed_spec
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ : FlatTraceLaw.FlatTape N) :
+    ∃ σa : Env, ∃ q : ℕ,
+      Run B fullInitialAttempt
+        (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.σ
+        σa q ∧
+      σa.inp = ((List.ofFn ρ).drop (readyAttemptConsumed R hbudget ρ)).map
+        Bool.toNat ++ R.I.rest ∧
+      readyAttemptConsumed R hbudget ρ ≤ attemptBitBudget n m r t := by
+  exact Classical.choose_spec
+    (readyAttempt_run_consumed R (List.ofFn ρ) (by simpa using hbudget))
+
+lemma readyAttemptConsumed_le
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ : FlatTraceLaw.FlatTape N) :
+    readyAttemptConsumed R hbudget ρ ≤ N := by
+  obtain ⟨σa, q, hrun, hinp, hd⟩ := readyAttemptConsumed_spec R hbudget ρ
+  exact hd.trans hbudget
+
+lemma readyAttemptConsumed_causal
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ τ : FlatTraceLaw.FlatTape N)
+    (hpre : (List.ofFn ρ).take (readyAttemptConsumed R hbudget ρ) =
+      (List.ofFn τ).take (readyAttemptConsumed R hbudget ρ)) :
+    readyAttemptConsumed R hbudget τ = readyAttemptConsumed R hbudget ρ := by
+  obtain ⟨σa, q, hrun, hinp, hd⟩ := readyAttemptConsumed_spec R hbudget ρ
+  obtain ⟨σb, q', hrun', hinp', hd'⟩ := readyAttemptConsumed_spec R hbudget τ
+  exact (readyAttempt_same_prefix R (List.ofFn ρ) (List.ofFn τ)
+    (by simpa using hbudget) (by simpa using hbudget)
+    hrun hrun' hinp hinp' hd hd' hpre).1
+
+/-- The source loop continues precisely after a successful capped selection
+whose actual acceptance scan rejects the sampled representatives. -/
+def readyAttemptRejected
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ : FlatTraceLaw.FlatTape N) : Prop :=
+  ∃ σa : Env, ∃ q : ℕ,
+    Run B fullInitialAttempt
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.σ
+      σa q ∧
+    σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 0 ∧
+    σa.vars "attemptAccepted" = 0
+
+lemma readyAttemptRejected_of_same_prefix
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ τ : FlatTraceLaw.FlatTape N)
+    (hpre : (List.ofFn ρ).take (readyAttemptConsumed R hbudget ρ) =
+      (List.ofFn τ).take (readyAttemptConsumed R hbudget ρ))
+    (hreject : readyAttemptRejected R hbudget ρ) :
+    readyAttemptRejected R hbudget τ := by
+  obtain ⟨σr, qr, hrunr, hbatch, hrep, haccept⟩ := hreject
+  obtain ⟨σa, q, hruna, hinp, hd⟩ := readyAttemptConsumed_spec R hbudget ρ
+  obtain ⟨σb, q', hrunb, hinp', hd'⟩ := readyAttemptConsumed_spec R hbudget τ
+  have hrEq : σr = σa := by
+    obtain ⟨_, _, ha⟩ := hrunr
+    obtain ⟨_, _, hb⟩ := hruna
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hsame := (readyAttempt_same_prefix R (List.ofFn ρ) (List.ofFn τ)
+    (by simpa using hbudget) (by simpa using hbudget)
+    hruna hrunb hinp hinp' hd hd' hpre).2
+  refine ⟨σb, q', hrunb, ?_, ?_, ?_⟩
+  · simpa [hsame, hrEq] using hbatch
+  · simpa [hsame, hrEq] using hrep
+  · simpa [hsame, hrEq] using haccept
+
+/-- Reinputting a ready state changes only the concrete random input. The
+source outcome event is evaluated by replacing that input with its candidate
+flat tape, so the event itself is invariant under reinput. -/
+lemma readyBadFiber_reinput_eq
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ τ υ : FlatTraceLaw.FlatTape N) :
+    (FlatTraceLaw.flatBitsEquiv _).symm
+      ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩ ∈
+      sourceInitialBadFiber
+        (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I
+        k cap ↔
+    (FlatTraceLaw.flatBitsEquiv _).symm
+      ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩ ∈
+      sourceInitialBadFiber
+        (R.reinput (List.ofFn τ) (by simpa [attemptBitBudget] using hbudget)).I
+        k cap := by
+  simp only [sourceInitialBadFiber, Finset.mem_biUnion,
+    sourceInitialOutcomeFiber, Finset.mem_filter, Finset.mem_univ, true_and]
+  have hflatρ : FlatTraceLaw.flatBits
+      ((FlatTraceLaw.flatBitsEquiv
+        (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.bits.length).symm
+        ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩) = List.ofFn υ :=
+    congrArg Subtype.val ((FlatTraceLaw.flatBitsEquiv
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.bits.length).apply_symm_apply
+      ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩)
+  have hflatτ : FlatTraceLaw.flatBits
+      ((FlatTraceLaw.flatBitsEquiv
+        (R.reinput (List.ofFn τ) (by simpa [attemptBitBudget] using hbudget)).I.bits.length).symm
+        ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩) = List.ofFn υ :=
+    congrArg Subtype.val ((FlatTraceLaw.flatBitsEquiv
+      (R.reinput (List.ofFn τ) (by simpa [attemptBitBudget] using hbudget)).I.bits.length).apply_symm_apply
+      ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩)
+  rw [hflatρ, hflatτ]
+  simp only [ReadyInput.reinput, InitialFlatLaw.reinputInitialAttempt]
+  constructor
+  · rintro ⟨ω, hbad, ⟨w⟩⟩
+    refine ⟨ω, hbad, ⟨?_⟩⟩
+    exact { w with }
+  · rintro ⟨ω, hbad, ⟨w⟩⟩
+    refine ⟨ω, hbad, ⟨?_⟩⟩
+    exact { w with }
+
+/-- Every actual source continuation belongs to the single-attempt bad
+fiber; capped draw or representative failures are excluded. -/
+lemma readyAttemptRejected_badFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ : FlatTraceLaw.FlatTape N)
+    (hreject : readyAttemptRejected R hbudget ρ) :
+    (FlatTraceLaw.flatBitsEquiv _).symm
+      ⟨List.ofFn ρ, by simp [ReadyInput.reinput_bits]⟩ ∈
+      sourceInitialBadFiber
+        (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I
+        k cap := by
+  let J := R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)
+  obtain ⟨σr, qr, hrunr, hrbatch, hrrep, hraccept⟩ := hreject
+  obtain ⟨σsel, σa, tape, tail, values, used, drawFailed, stageCost,
+    hbits, htrace, hselRun, hfull, hbatch, hinpSel, houtSel,
+    hoff, htgt, hactiveA, hactiveB, hn, hqpow,
+    hdrawFailure, hdrawSuccess⟩ :=
+    fullInitialAttempt_run_bits J.I J.hactiveA J.hdegree J.hinter
+      J.hneighbors J.hexceptionFlags J.hexceptionList J.hnearBound
+      J.hexceptionCap J.hnB J.hkB J.hcapB
+  have heq : σr = σa := by
+    obtain ⟨_, _, ha⟩ := hrunr
+    obtain ⟨_, _, hb⟩ := hfull
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hbatch0 : σa.vars "batchFailed" = 0 := by simpa [heq] using hrbatch
+  have hrep0 : σa.vars "repFailed" = 0 := by simpa [heq] using hrrep
+  have haccept0 : σa.vars "attemptAccepted" = 0 := by simpa [heq] using hraccept
+  have hdrawOK : drawFailed = false := by
+    cases drawFailed with
+    | false => rfl
+    | true => simp [hbatch] at hbatch0
+  obtain ⟨W, repFailed, repUsed, hW, hWA, hvaluesLen,
+    hrepLe, hrepVal, hinp, hrepFailure, hrepSuccess⟩ := hdrawSuccess hdrawOK
+  have hrepOK : repFailed = false := by
+    cases repFailed with
+    | false => rfl
+    | true =>
+        obtain ⟨hselEq, _, _, _⟩ := hrepFailure rfl
+        simp [hselEq, hrepVal] at hrep0
+  obtain ⟨mapped, choice, packedExceptions, packedSample,
+    hmappedSel, hdraws, hchoiceSample, hchoiceRep,
+    hacceptRun, hExceptionsEq, hflags, hlist, hprefixE,
+    hcountE, hacceptBit, hsampleFlags, hord, hprefixW,
+    hcountW, hrepFinal, hactiveBFinal, hinpFinal⟩ := hrepSuccess hrepOK
+  have hbatchSel : σsel.vars "batchFailed" = 0 := by
+    calc
+      _ = σa.vars "batchFailed" := (hacceptRun.frame_var "batchFailed" (by decide)).symm
+      _ = 0 := hbatch0
+  have hrepSel : σsel.vars "repFailed" = 0 := by simpa [hrepOK] using hrepVal
+  have hbad : cap < (choice.exceptions k).card := by
+    by_contra h
+    have hpass : (choice.exceptions k).card ≤ cap := Nat.le_of_not_gt h
+    simp [hpass] at hacceptBit
+    omega
+  simpa [J, ReadyInput.reinput_bits] using
+    initialSamplerAttempt_run_badFiber J.I σsel _ k cap choice mapped
+      hselRun hbatchSel hrepSel hmappedSel hchoiceRep hbad
+
+/-- Finite event for an actual source attempt that continues retrying. -/
+noncomputable def readyAttemptRejectedFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) :
+    Finset (FlatTraceLaw.FlatTape N) := by
+  classical
+  exact Finset.univ.filter (readyAttemptRejected R hbudget)
+
+/-- The actual continuation event is at most half of all finite source
+tapes, including the selector-failure tapes in the denominator. -/
+lemma readyAttemptRejected_half
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
+    2 * (readyAttemptRejectedFiber R hbudget).card ≤ 2 ^ N := by
+  classical
+  let anchor : FlatTraceLaw.FlatTape N := fun _ => false
+  let J := R.reinput (List.ofFn anchor) (by simpa [attemptBitBudget] using hbudget)
+  let f : FlatTraceLaw.FlatTape N → FlatTraceLaw.FlatTape J.I.bits.length :=
+    fun ρ => (FlatTraceLaw.flatBitsEquiv _).symm
+      ⟨List.ofFn ρ, by simp [J, ReadyInput.reinput_bits]⟩
+  let E : Finset (FlatTraceLaw.FlatTape N) :=
+    readyAttemptRejectedFiber R hbudget
+  have hmaps : ∀ ρ ∈ E, f ρ ∈ sourceInitialBadFiber J.I k cap := by
+    intro ρ hρ
+    have hreject : readyAttemptRejected R hbudget ρ :=
+      by simpa [E, readyAttemptRejectedFiber] using hρ
+    have hbad := readyAttemptRejected_badFiber R hbudget ρ hreject
+    exact (readyBadFiber_reinput_eq R hbudget ρ anchor ρ).mp hbad
+  have hinj : ∀ ρ ∈ E, ∀ τ ∈ E, f ρ = f τ → ρ = τ := by
+    intro ρ _ τ _ heq
+    have hbits : List.ofFn ρ = List.ofFn τ := by
+      have h := congrArg FlatTraceLaw.flatBits heq
+      have hρ : FlatTraceLaw.flatBits (f ρ) = List.ofFn ρ := by
+        exact congrArg Subtype.val ((FlatTraceLaw.flatBitsEquiv _).apply_symm_apply
+          ⟨List.ofFn ρ, by simp [J, ReadyInput.reinput_bits]⟩)
+      have hτ : FlatTraceLaw.flatBits (f τ) = List.ofFn τ := by
+        exact congrArg Subtype.val ((FlatTraceLaw.flatBitsEquiv _).apply_symm_apply
+          ⟨List.ofFn τ, by simp [J, ReadyInput.reinput_bits]⟩)
+      simpa [hρ, hτ] using h
+    exact List.ofFn_injective hbits
+  have hcard : E.card ≤ (sourceInitialBadFiber J.I k cap).card :=
+    Finset.card_le_card_of_injOn f hmaps hinj
+  have hhalf : 2 * (sourceInitialBadFiber J.I k cap).card ≤
+      2 ^ J.I.bits.length :=
+    sourceInitialBadFiber_half J.I k cap (by exact hmass)
+  have hlen : J.I.bits.length = N := by simp [J, ReadyInput.reinput_bits]
+  have htotal := (Nat.mul_le_mul_left 2 hcard).trans hhalf
+  simpa [E, hlen] using htotal
 
 private lemma eq_zero_eval {B : ℕ} {σ : Env} {v : String} {z : ℕ}
     (hz : σ.vars v = z) (hzB : z < B) (hzero : 0 < B) :
