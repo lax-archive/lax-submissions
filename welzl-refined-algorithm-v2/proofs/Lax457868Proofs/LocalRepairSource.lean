@@ -760,7 +760,7 @@ lemma localRepairTrial_run_blocks
 
 /-- The same concrete trial reads a flat fair-bit prefix and exposes exactly
 the unread suffix, including the unused part of the final capped call. -/
-lemma localRepairTrial_run_bits
+lemma localRepairTrial_run_bits_trace
     {B n m domainCap s t bufferCap targetCap q b : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
     {X groupedB Wbase Wcurrent : Finset ℕ}
@@ -774,6 +774,10 @@ lemma localRepairTrial_run_bits
       Run B localRepairTrial R.σ σ'
         ((15 * Nat.clog 2 m + 30) * used + 79 * s +
           R.scanCharge (values.map (fun i => R.domain i.val)) + 38) ∧
+      (∃ (tape : Fin (s * t) → Fin (Nat.clog 2 m) → Bool)
+          (tail : List Bool),
+        R.bits = tapeBits tape ++ tail ∧
+        DrawTrace m R.hpositive t s (List.ofFn tape) values used failed) ∧
       used ≤ s * t ∧
       (failed = false → values.length = s) ∧
       σ'.inp = (R.bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ R.rest ∧
@@ -824,10 +828,52 @@ lemma localRepairTrial_run_bits
         simpa [blocks] using raw_tape_tail (L := Nat.clog 2 m)
           (k := s * t) (used := used) (rest := R.rest) hu
       _ = _ := by rw [← hsplit]
-  exact ⟨values, used, failed, σ', rtrial, hu, hcomplete, hinpFlat,
+  exact ⟨values, used, failed, σ', rtrial,
+    ⟨tape, tail, hsplit, htrace⟩, hu, hcomplete, hinpFlat,
     hX, htrial, hrow, hdesired, hn, hqpow, hfail, hstatus, hsuccess⟩
 
 
+
+/-- The same concrete trial reads a flat fair-bit prefix and exposes exactly
+the unread suffix, including the unused part of the final capped call. -/
+lemma localRepairTrial_run_bits
+    {B n m domainCap s t bufferCap targetCap q b : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (R : ReadyInput B n m domainCap s t bufferCap targetCap q b
+      G x X groupedB Wbase Wcurrent)
+    (hL : R.σ.vars "L" = Nat.clog 2 m)
+    (hv : R.σ.vars "v" = b)
+    (hbudget : s * t * Nat.clog 2 m ≤ R.bits.length) :
+    ∃ (values : List (Fin m)) (used : ℕ) (failed : Bool)
+      (σ' : Env),
+      Run B localRepairTrial R.σ σ'
+        ((15 * Nat.clog 2 m + 30) * used + 79 * s +
+          R.scanCharge (values.map (fun i => R.domain i.val)) + 38) ∧
+      used ≤ s * t ∧
+      (failed = false → values.length = s) ∧
+      σ'.inp = (R.bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ R.rest ∧
+      (∀ v ∈ values.map (fun i => R.domain i.val), v ∈ X) ∧
+      σ'.arrs "trialActive" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "trialDesiredMarks" = arrOf n (fun _ => 0) ∧
+      σ'.vars "n" = n ∧ σ'.vars "qpow" = R.σ.vars "qpow" ∧
+      (failed = true →
+        σ'.vars "repairRetryStatus" = 2 ∧
+        σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent)) ∧
+      (failed = false → σ'.vars "repairRetryStatus" ≤ 1) ∧
+      (failed = false →
+        (σ'.vars "repairRetryStatus" = 1 ↔
+          localTrialIsolates (numericNeighborhood G) groupedB Wbase b
+            (values.map (fun i => R.domain i.val))) ∧
+        (σ'.vars "repairRetryStatus" = 1 →
+          σ'.arrs "sampleFlags" = arrOf n
+            (setFlag (Wcurrent ∪ (values.map (fun i => R.domain i.val)).toFinset))) ∧
+        (σ'.vars "repairRetryStatus" = 0 →
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) := by
+  obtain ⟨values, used, failed, σ', hrun, _, hrest⟩ :=
+    localRepairTrial_run_bits_trace R hL hv hbudget
+  exact ⟨values, used, failed, σ', hrun, hrest⟩
 
 
 end

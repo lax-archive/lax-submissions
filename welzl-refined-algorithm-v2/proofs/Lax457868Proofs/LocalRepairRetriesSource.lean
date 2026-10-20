@@ -1,4 +1,5 @@
 import Lax457868Proofs.LocalRepairSource
+import Lax457868Proofs.LocalFlatLaw
 import Lax457868Proofs.RepairFilterSource
 import Mathlib.Tactic
 
@@ -9,6 +10,7 @@ namespace Lax457868Proofs.LocalRepairRetriesSource
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax808846Proofs.Reasoning.Lib
 open Lax457868Proofs.LocalRepairSource
+open Lax457868Proofs.LocalFlatLaw
 open Lax457868Proofs.DrawLogSetup
 open Lax457868Proofs.RepairFilterSource
 open Lax457868Proofs.ClassBucketDomain
@@ -178,7 +180,7 @@ private lemma retry_body_attempt {B fuel K : ℕ} {σ σa : Env}
 /-- The fixed while-command consumes at most `fuel` trials. Every successful
 trial contributes exactly `s` draws in the unchanged domain, while rejection
 and capped random-draw failure leave the current sample untouched. -/
-lemma localRepairWhile_run
+lemma localRepairWhile_run_trace
     {B n m domainCap s t bufferCap targetCap q b : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
     {X groupedB Wbase Wcurrent : Finset ℕ}
@@ -209,7 +211,12 @@ lemma localRepairWhile_run
         (σ'.vars "repairRetryStatus" = 2 ∧
           σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent)) ∨
         (σ'.vars "repairRetryStatus" = 3 ∧ attempts = fuel ∧
-          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) := by
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) ∧
+      (∃ rejected : ℕ,
+        rejected ≤ attempts ∧ attempts ≤ rejected + 1 ∧
+        FlatRejectedTrials m t s
+          (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b) rejected R.bits) := by
   induction fuel generalizing R with
   | zero =>
     let σ' := R.σ.setVar "repairRetryStatus" 3
@@ -222,8 +229,10 @@ lemma localRepairWhile_run
     · simpa [σ'] using R.htrialZero
     · simpa [σ'] using R.hrowZero
     · simpa [σ'] using R.hdesiredZero
-    · right; right
-      simp [σ', R.hsample]
+    · constructor
+      · right; right
+        simp [σ', R.hsample]
+      · exact ⟨0, by omega, by omega, FlatRejectedTrials.done R.bits⟩
   | succ fuel ih =>
     let L := Nat.clog 2 m
     let C := 15 * L + 30
@@ -235,10 +244,10 @@ lemma localRepairWhile_run
           apply Nat.le_mul_of_pos_left
           omega
         _ ≤ R.bits.length := hbudget
-    obtain ⟨values, used, failed, σa, rtrial, hused, hcomplete,
+    obtain ⟨values, used, failed, σa, rtrial, htraceWitness, hused, hcomplete,
       hinp, hX, htrial, hrow, hdesired, hn, hqpow,
       hfail, hstatusLe, hsuccess⟩ :=
-      localRepairTrial_run_bits R hL hv hbudgetOne
+      localRepairTrial_run_bits_trace R hL hv hbudgetOne
     let D := values.map (fun i => R.domain i.val)
     let K := C * used + 79 * s + R.scanCharge D + 38
     have rtrial' : Run B localRepairTrial R.σ σa K := by
@@ -283,8 +292,10 @@ lemma localRepairWhile_run
         dsimp [K, C, A, L]
         omega
       · simpa using hused
-      · right; left
-        exact ⟨hstatus2, by rw [hflagsB]; exact hflagsA⟩
+      · constructor
+        · right; left
+          exact ⟨hstatus2, by rw [hflagsB]; exact hflagsA⟩
+        · exact ⟨0, by omega, by omega, FlatRejectedTrials.done R.bits⟩
     · have hfalse : failed = false := Bool.eq_false_iff.mpr hfailed
       have hlen : D.length = s := by simpa [D] using hcomplete hfalse
       have hle := hstatusLe hfalse
@@ -327,7 +338,7 @@ lemma localRepairWhile_run
           omega
         have hfuelNext : fuel < B := by omega
         obtain ⟨σ', attempts', totalUsed', rrec, hattempts', htotalUsed',
-          hinp', hn', hqpow', htrial', hrow', hdesired', hout'⟩ :=
+          hinp', hn', hqpow', htrial', hrow', hdesired', hout', htrace'⟩ :=
           ih Rnext hstatusNext hleftNext hLnext hvnext hfuelNext
             (by simpa [L] using hbudgetNext)
         have hinputFinal : σ'.inp =
@@ -360,16 +371,70 @@ lemma localRepairWhile_run
           dsimp [K, A]
           nlinarith [hcharge]
         · simpa [Nat.clog, L] using hinputFinal
-        · rcases hout' with hsuccess' | hfailure' | hexhaust'
-          · left
-            obtain ⟨hz, D', hD'⟩ := hsuccess'
-            refine ⟨hz, D', ?_⟩
-            simpa [Rnext] using hD'
-          · right; left
-            exact ⟨hfailure'.1, by simpa [Rnext] using hfailure'.2⟩
-          · right; right
-            exact ⟨hexhaust'.1, by omega,
-              by simpa [Rnext] using hexhaust'.2.2⟩
+        · constructor
+          · rcases hout' with hsuccess' | hfailure' | hexhaust'
+            · left
+              obtain ⟨hz, D', hD'⟩ := hsuccess'
+              refine ⟨hz, D', ?_⟩
+              simpa [Rnext] using hD'
+            · right; left
+              exact ⟨hfailure'.1, by simpa [Rnext] using hfailure'.2⟩
+            · right; right
+              exact ⟨hexhaust'.1, by omega,
+                by simpa [Rnext] using hexhaust'.2.2⟩
+          · obtain ⟨rejected', hrejectLe, hattemptLe, hnextRaw⟩ := htrace'
+            obtain ⟨blockTape, tail, hsplit, hdraw⟩ := htraceWitness
+            have hdrawFalse : SequentialDraws.DrawTrace m R.hpositive t s
+                (List.ofFn blockTape) values used false := by
+              simpa [hfalse] using hdraw
+            have hbudgetFlat :
+                ClassRepresentativeTrace.bitBudget (fun _ => m) t 0 s ≤
+                  ((List.ofFn blockTape).flatMap List.ofFn ++ tail).length := by
+              rw [← ClassRepresentativeTrace.tapeBits, ← hsplit,
+                LocalFlatLaw.local_bitBudget]
+              simpa [L] using hbudgetOne
+            obtain ⟨stopAttempts, hflatRaw, hconsumed⟩ :=
+              LocalFlatLaw.drawTrace_success_flat_used m R.hpositive t s used
+                (List.ofFn blockTape) values tail hdrawFalse hbudgetFlat
+            have hflat : FlatTraceLaw.FlatClassSuccess (fun _ => m) t
+                (fun _ => 0) 0 s R.bits (values.map Fin.val) stopAttempts := by
+              have hbitsEq : (List.ofFn blockTape).flatMap List.ofFn ++ tail =
+                  R.bits := by
+                simpa [ClassRepresentativeTrace.tapeBits] using hsplit.symm
+              rw [hbitsEq] at hflatRaw
+              exact hflatRaw
+            have hvalid : values.map Fin.val ∈
+                FlatTraceLaw.outputVectors (fun _ => m) (fun _ => 0) 0 s :=
+              FlatTraceLaw.ValidOutput.mem_outputVectors (fun _ => m)
+                (fun _ => 0)
+                (FlatTraceLaw.ValidPath.validOutput (fun _ => m) t
+                  (fun _ => 0)
+                  (FlatTraceLaw.FlatClassSuccess.validPath (fun _ => m) t
+                    (fun _ => 0) hflat))
+            have hnot : ¬ localTrialIsolates (numericNeighborhood G)
+                groupedB Wbase b D := by
+              intro hiso
+              exact (by omega : σa.vars "repairRetryStatus" ≠ 1)
+                ((hsuccess hfalse).1.mpr hiso)
+            have hbad : values.map Fin.val ∈ localBadOutputs m s R.domain
+                (numericNeighborhood G) groupedB Wbase b := by
+              simp only [localBadOutputs, Finset.mem_filter]
+              constructor
+              · exact hvalid
+              · simpa [D, List.map_map, Function.comp_def] using hnot
+            have hnext : FlatRejectedTrials m t s
+                (localBadOutputs m s R.domain (numericNeighborhood G)
+                  groupedB Wbase b) rejected'
+                (R.bits.drop (FlatTraceLaw.consumedBits (fun _ => m) 0
+                  stopAttempts)) := by
+              change FlatRejectedTrials m t s
+                (localBadOutputs m s R.domain (numericNeighborhood G)
+                  groupedB Wbase b) rejected'
+                (R.bits.drop (used * L)) at hnextRaw
+              simpa [L, hconsumed] using hnextRaw
+            exact ⟨rejected' + 1, by omega, by omega,
+              FlatRejectedTrials.step (values.map Fin.val) stopAttempts
+                hbad hflat hnext⟩
       · have hstatus1 : σa.vars "repairRetryStatus" = 1 := by omega
         obtain ⟨hiff, haccept, _⟩ := hsuccess hfalse
         have hflagsA := haccept hstatus1
@@ -384,17 +449,59 @@ lemma localRepairWhile_run
           dsimp [K, C, A, L]
           omega
         · simpa using hused
-        · left
-          refine ⟨hstatus1B, D, hlen, ?_, (hiff.mp hstatus1), ?_⟩
-          · simpa [D] using hX
-          · rw [hflagsB]
-            exact hflagsA
+        · constructor
+          · left
+            refine ⟨hstatus1B, D, hlen, ?_, (hiff.mp hstatus1), ?_⟩
+            · simpa [D] using hX
+            · rw [hflagsB]
+              exact hflagsA
+          · exact ⟨0, by omega, by omega, FlatRejectedTrials.done R.bits⟩
+
+
+/-- Preserve the original while-run interface for existing callers. -/
+lemma localRepairWhile_run
+    {B n m domainCap s t bufferCap targetCap q b : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (fuel : ℕ)
+    (R : ReadyInput B n m domainCap s t bufferCap targetCap q b
+      G x X groupedB Wbase Wcurrent)
+    (hstatus : R.σ.vars "repairRetryStatus" = 0)
+    (hleft : R.σ.vars "repairRetriesLeft" = fuel)
+    (hL : R.σ.vars "L" = Nat.clog 2 m)
+    (hv : R.σ.vars "v" = b)
+    (hfuelB : fuel < B)
+    (hbudget : fuel * (s * t * Nat.clog 2 m) ≤ R.bits.length) :
+    ∃ (σ' : Env) (attempts totalUsed : ℕ),
+      Run B (.while (.eq (.var "repairRetryStatus") (.lit 0))
+        localRepairRetryBody) R.σ σ'
+        ((15 * Nat.clog 2 m + 30) * totalUsed +
+          attempts * (79 * s + R.scanUpper + 50) + 14) ∧
+      attempts ≤ fuel ∧ totalUsed ≤ attempts * (s * t) ∧
+      σ'.inp = (R.bits.drop (totalUsed * Nat.clog 2 m)).map Bool.toNat ++ R.rest ∧
+      σ'.vars "n" = n ∧ σ'.vars "qpow" = R.σ.vars "qpow" ∧
+      σ'.arrs "trialActive" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "trialDesiredMarks" = arrOf n (fun _ => 0) ∧
+      ((σ'.vars "repairRetryStatus" = 1 ∧
+          ∃ D : List ℕ, D.length = s ∧ (∀ v ∈ D, v ∈ X) ∧
+            localTrialIsolates (numericNeighborhood G) groupedB Wbase b D ∧
+            σ'.arrs "sampleFlags" = arrOf n (setFlag (Wcurrent ∪ D.toFinset))) ∨
+        (σ'.vars "repairRetryStatus" = 2 ∧
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent)) ∨
+        (σ'.vars "repairRetryStatus" = 3 ∧ attempts = fuel ∧
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) := by
+  obtain ⟨σ', attempts, totalUsed, hrun, hattempts, hused,
+    hinp, hn, hq, htrial, hrow, hdesired, hout, _⟩ :=
+    localRepairWhile_run_trace fuel R hstatus hleft hL hv hfuelB hbudget
+  exact ⟨σ', attempts, totalUsed, hrun, hattempts, hused,
+    hinp, hn, hq, htrial, hrow, hdesired, hout⟩
 
 /-- The full one-exception source initializes its retry register, computes the
 draw width once, and runs the bounded while-command. The returned bit suffix
 is exact; the charge includes logarithm setup once and only used draw bits
 thereafter. -/
-lemma localRepairRetriesSource_run
+lemma localRepairRetriesSource_run_trace
     {B n m domainCap s t bufferCap targetCap q b cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
     {X groupedB Wbase Wcurrent : Finset ℕ}
@@ -421,7 +528,12 @@ lemma localRepairRetriesSource_run
         (σ'.vars "repairRetryStatus" = 2 ∧
           σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent)) ∨
         (σ'.vars "repairRetryStatus" = 3 ∧ attempts = cap ∧
-          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) := by
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) ∧
+      (∃ rejected : ℕ,
+        rejected ≤ attempts ∧ attempts ≤ rejected + 1 ∧
+        FlatRejectedTrials m t s
+          (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b) rejected R.bits) := by
   let L := Nat.clog 2 m
   let σ₁ := R.σ.setVar "repairRetriesLeft" cap
   let σ₂ := σ₁.setVar "repairRetryStatus" 0
@@ -510,10 +622,10 @@ lemma localRepairRetriesSource_run
     change σ₄.vars "v" = b
     simp [σ₄]
   obtain ⟨σ', attempts, totalUsed, rloop, hattempts, hused,
-    hinp, hn, hq, htrial, hrow, hdesired, hout⟩ :=
-    localRepairWhile_run cap Rready hstatus4 hleft4 hL4 hv4 hcapB hbudget
+    hinp, hn, hq, htrial, hrow, hdesired, hout, htrace⟩ :=
+    localRepairWhile_run_trace cap Rready hstatus4 hleft4 hL4 hv4 hcapB hbudget
   refine ⟨σ', attempts, totalUsed, ?_, hattempts, hused, hinp,
-    hn, ?_, htrial, hrow, hdesired, ?_⟩
+    hn, ?_, htrial, hrow, hdesired, hout, ?_⟩
   · have hUpperReady : Rready.scanUpper = R.scanUpper := rfl
     rw [hUpperReady] at rloop
     change Run B (.while (.eq (.var "repairRetryStatus") (.lit 0))
@@ -525,7 +637,384 @@ lemma localRepairRetriesSource_run
     simp [localRepairRetriesSource, L]
     omega
   · exact hq.trans hq4eq
-  · exact hout
+  · simpa [Rready] using htrace
+
+
+/-- Preserve the original source-run interface for existing callers. -/
+lemma localRepairRetriesSource_run
+    {B n m domainCap s t bufferCap targetCap q b cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (R : ReadyInput B n m domainCap s t bufferCap targetCap q b
+      G x X groupedB Wbase Wcurrent)
+    (hcap : R.σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hbudget : cap * (s * t * Nat.clog 2 m) ≤ R.bits.length) :
+    ∃ (σ' : Env) (attempts totalUsed : ℕ),
+      Run B localRepairRetriesSource R.σ σ'
+        (12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * totalUsed +
+            attempts * (79 * s + R.scanUpper + 50) + 14)) ∧
+      attempts ≤ cap ∧ totalUsed ≤ attempts * (s * t) ∧
+      σ'.inp = (R.bits.drop (totalUsed * Nat.clog 2 m)).map Bool.toNat ++ R.rest ∧
+      σ'.vars "n" = n ∧ σ'.vars "qpow" = R.σ.vars "qpow" ∧
+      σ'.arrs "trialActive" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "trialDesiredMarks" = arrOf n (fun _ => 0) ∧
+      ((σ'.vars "repairRetryStatus" = 1 ∧
+          ∃ D : List ℕ, D.length = s ∧ (∀ v ∈ D, v ∈ X) ∧
+            localTrialIsolates (numericNeighborhood G) groupedB Wbase b D ∧
+            σ'.arrs "sampleFlags" = arrOf n (setFlag (Wcurrent ∪ D.toFinset))) ∨
+        (σ'.vars "repairRetryStatus" = 2 ∧
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent)) ∨
+        (σ'.vars "repairRetryStatus" = 3 ∧ attempts = cap ∧
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) := by
+  obtain ⟨σ', attempts, totalUsed, hrun, hattempts, hused, hinp,
+    hn, hq, htrial, hrow, hdesired, hout, _⟩ :=
+    localRepairRetriesSource_run_trace R hcap hcapB hbudget
+  exact ⟨σ', attempts, totalUsed, hrun, hattempts, hused, hinp,
+    hn, hq, htrial, hrow, hdesired, hout⟩
+
+/-- Every actual trial beyond position `j` certifies `j` consecutive
+completed, rejected stopped-prefix trials on the same original fair-bit tape. -/
+lemma localRepairRetriesSource_run_tail
+    {B n m domainCap s t bufferCap targetCap q b cap Nbits : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (R : ReadyInput B n m domainCap s t bufferCap targetCap q b
+      G x X groupedB Wbase Wcurrent)
+    (tape : FlatTraceLaw.FlatTape Nbits)
+    (hbits : R.bits = FlatTraceLaw.flatBits tape)
+    (hcap : R.σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hbudget : cap * (s * t * Nat.clog 2 m) ≤ Nbits) :
+    ∃ (σ' : Env) (attempts totalUsed : ℕ),
+      Run B localRepairRetriesSource R.σ σ'
+        (12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * totalUsed +
+            attempts * (79 * s + R.scanUpper + 50) + 14)) ∧
+      attempts ≤ cap ∧ totalUsed ≤ attempts * (s * t) ∧
+      (∀ j < attempts,
+        tape ∈ retryRejectedFiber m t s j Nbits
+          (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b)) := by
+  have hbudgetBits : cap * (s * t * Nat.clog 2 m) ≤ R.bits.length := by
+    rw [hbits, FlatTraceLaw.flatBits_length]
+    exact hbudget
+  obtain ⟨σ', attempts, totalUsed, hrun, hattempts, hused,
+    _, _, _, _, _, _, _, htrace⟩ :=
+    localRepairRetriesSource_run_trace R hcap hcapB hbudgetBits
+  obtain ⟨rejected, hrejectLe, hattemptLe, hflat⟩ := htrace
+  refine ⟨σ', attempts, totalUsed, hrun, hattempts, hused, ?_⟩
+  intro j hj
+  have hjle : j ≤ rejected := by omega
+  have hprefix := FlatRejectedTrials.prefix m t s
+    (localBadOutputs m s R.domain (numericNeighborhood G)
+      groupedB Wbase b) hflat j hjle
+  rw [hbits] at hprefix
+  simpa [retryRejectedFiber] using hprefix
+
+/-- The actual bounded local-retry source has mean attempt count at most two
+on a uniform flat-bit input family. Each selected witness is a real source
+`Run` with the exact unread suffix and its original runtime upper bound. -/
+lemma localRepairRetriesSource_mean_attempts_le_two
+    {B n m domainCap s t bufferCap targetCap q b cap Nbits : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (domain : ℕ → ℕ)
+    (R : FlatTraceLaw.FlatTape Nbits →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hdomain : ∀ tape, (R tape).domain = domain)
+    (hcap : ∀ tape, (R tape).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hbudget : cap * (s * t * Nat.clog 2 m) ≤ Nbits)
+    (henum : PrefixEnumerates m domain X)
+    (hhalf : 2 *
+      (Lax457868Proofs.SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase b X s).card ≤ X.card ^ s) :
+    ∃ attempts : FlatTraceLaw.FlatTape Nbits → ℕ,
+      (∀ tape, attempts tape ≤ cap ∧
+        ∃ (σ' : Env) (totalUsed : ℕ),
+          Run B localRepairRetriesSource (R tape).σ σ'
+            (12 * Nat.clog 2 m + 24 +
+              ((15 * Nat.clog 2 m + 30) * totalUsed +
+                attempts tape * (79 * s + (R tape).scanUpper + 50) + 14)) ∧
+          totalUsed ≤ attempts tape * (s * t)) ∧
+      (∑ tape : FlatTraceLaw.FlatTape Nbits, (attempts tape : ℚ)) ≤
+        2 * (2 ^ Nbits : ℚ) := by
+  classical
+  let bad := localBadOutputs m s domain (numericNeighborhood G)
+    groupedB Wbase b
+  have hvalid : bad ⊆ FlatTraceLaw.outputVectors (fun _ => m)
+      (fun _ => 0) 0 s := by
+    intro output houtput
+    exact (Finset.mem_filter.mp houtput).1
+  have hhalfBad : 2 * bad.card ≤
+      FlatTraceLaw.outputCount (fun _ => m) 0 s := by
+    rw [show bad = localBadOutputs m s domain (numericNeighborhood G)
+      groupedB Wbase b from rfl,
+      LocalFlatLaw.card_localBadOutputs_eq_failureSet m s domain X henum,
+      LocalFlatLaw.local_outputCount]
+    have hmX := EnumeratedDraws.prefixEnumerates_card m domain X henum
+    simpa [hmX] using hhalf
+  have hbudgetFlat : cap * ClassRepresentativeTrace.bitBudget
+      (fun _ => m) t 0 s ≤ Nbits := by
+    rw [LocalFlatLaw.local_bitBudget]
+    exact hbudget
+  have hex : ∀ tape : FlatTraceLaw.FlatTape Nbits,
+      ∃ attempts : ℕ, attempts ≤ cap ∧
+        (∀ j < attempts, tape ∈ retryRejectedFiber m t s j Nbits bad) ∧
+        ∃ (σ' : Env) (totalUsed : ℕ),
+          Run B localRepairRetriesSource (R tape).σ σ'
+            (12 * Nat.clog 2 m + 24 +
+              ((15 * Nat.clog 2 m + 30) * totalUsed +
+                attempts * (79 * s + (R tape).scanUpper + 50) + 14)) ∧
+          totalUsed ≤ attempts * (s * t) := by
+    intro tape
+    obtain ⟨σ', attempts, totalUsed, hrun, hattempts, hused, htail⟩ :=
+      localRepairRetriesSource_run_tail (R tape) tape (hbits tape)
+        (hcap tape) hcapB hbudget
+    refine ⟨attempts, hattempts, ?_, σ', totalUsed, hrun, hused⟩
+    intro j hj
+    simpa [bad, hdomain tape] using htail j hj
+  choose attempts hchosen using hex
+  refine ⟨attempts, ?_, ?_⟩
+  · intro tape
+    exact ⟨(hchosen tape).1, (hchosen tape).2.2⟩
+  · apply LocalFlatLaw.sourceAttempts_sum_le_two m t s cap Nbits bad
+      hvalid hhalfBad hbudgetFlat attempts
+    · intro tape
+      exact (hchosen tape).1
+    · intro tape j hj
+      exact (hchosen tape).2.1 j hj
+
+/-- With a fixed scan upper bound, the weighted scan term in the actual
+source retry-run charge has mean at most twice one trial's scan allowance. -/
+lemma localRepairRetriesSource_mean_scan_charge_le_two
+    {B n m domainCap s t bufferCap targetCap q b cap Nbits scanUpper : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (domain : ℕ → ℕ)
+    (R : FlatTraceLaw.FlatTape Nbits →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hdomain : ∀ tape, (R tape).domain = domain)
+    (hscan : ∀ tape, (R tape).scanUpper = scanUpper)
+    (hcap : ∀ tape, (R tape).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hbudget : cap * (s * t * Nat.clog 2 m) ≤ Nbits)
+    (henum : PrefixEnumerates m domain X)
+    (hhalf : 2 *
+      (Lax457868Proofs.SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase b X s).card ≤ X.card ^ s) :
+    ∃ attempts : FlatTraceLaw.FlatTape Nbits → ℕ,
+      (∀ tape, attempts tape ≤ cap ∧
+        ∃ (σ' : Env) (totalUsed : ℕ),
+          Run B localRepairRetriesSource (R tape).σ σ'
+            (12 * Nat.clog 2 m + 24 +
+              ((15 * Nat.clog 2 m + 30) * totalUsed +
+                attempts tape * (79 * s + scanUpper + 50) + 14)) ∧
+          totalUsed ≤ attempts tape * (s * t)) ∧
+      (∑ tape : FlatTraceLaw.FlatTape Nbits, (attempts tape : ℚ)) ≤
+        2 * (2 ^ Nbits : ℚ) ∧
+      (∑ tape : FlatTraceLaw.FlatTape Nbits,
+        (attempts tape * scanUpper : ℚ)) ≤
+          2 * scanUpper * (2 ^ Nbits : ℚ) := by
+  obtain ⟨attempts, hrun, hmean⟩ :=
+    localRepairRetriesSource_mean_attempts_le_two domain R hbits hdomain
+      hcap hcapB hbudget henum hhalf
+  refine ⟨attempts, ?_, hmean, ?_⟩
+  · intro tape
+    obtain ⟨hattempts, σ', totalUsed, hsource, hused⟩ := hrun tape
+    refine ⟨hattempts, σ', totalUsed, ?_, hused⟩
+    simpa [hscan tape] using hsource
+  · have hnonneg : (0 : ℚ) ≤ scanUpper := by positivity
+    have hsum : (∑ tape : FlatTraceLaw.FlatTape Nbits,
+        (attempts tape * scanUpper : ℚ)) =
+        (scanUpper : ℚ) *
+          (∑ tape : FlatTraceLaw.FlatTape Nbits, (attempts tape : ℚ)) := by
+      simp [Finset.mul_sum, mul_comm]
+    rw [hsum]
+    nlinarith [hmean]
+
+/-- The paired-swap local failure estimate supplies the half premise for the
+actual retry source family, yielding the two-trial and scan-charge bounds. -/
+lemma localRepairRetriesSource_mean_scan_charge_paper
+    {B n m domainCap s t bufferCap targetCap q b cap Nbits scanUpper : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent A : Finset ℕ}
+    (r k c : ℕ)
+    (choice : SamplerPhases.InitialChoice A groupedB
+      (numericNeighborhood G) r)
+    (as : List ℕ) (has : as.toFinset = A) (hasNodup : as.Nodup)
+    (hN : ∀ v ∈ groupedB, numericNeighborhood G v ⊆ A)
+    (hinj : ∀ u ∈ groupedB, ∀ v ∈ groupedB,
+      numericNeighborhood G u = numericNeighborhood G v → u = v)
+    (hb : b ∈ groupedB)
+    (hfar : 2 * k < 3 * SamplerPhases.disagreement
+      (numericNeighborhood G) b (choice.representative b))
+    (hc : 2 ≤ c)
+    (hshatter : ∀ Y : Finset ℕ, Y ⊆ A → Y.Nonempty →
+      (SamplerPhases.traceClasses (numericNeighborhood G) Y groupedB).card ≤
+        c * Y.card)
+    (hX : X = (numericNeighborhood G b \ numericNeighborhood G
+      (choice.representative b)) ∪
+      (numericNeighborhood G (choice.representative b) \
+        numericNeighborhood G b))
+    (hW : Wbase = SamplerPhases.phase2Scan (numericNeighborhood G)
+      (choice.exceptions k) as choice.sample)
+    (hs : s = 64 * Nat.clog 2 c)
+    (domain : ℕ → ℕ)
+    (R : FlatTraceLaw.FlatTape Nbits →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hdomain : ∀ tape, (R tape).domain = domain)
+    (hscan : ∀ tape, (R tape).scanUpper = scanUpper)
+    (hcap : ∀ tape, (R tape).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hbudget : cap * (s * t * Nat.clog 2 m) ≤ Nbits)
+    (henum : PrefixEnumerates m domain X) :
+    ∃ attempts : FlatTraceLaw.FlatTape Nbits → ℕ,
+      (∀ tape, attempts tape ≤ cap ∧
+        ∃ (σ' : Env) (totalUsed : ℕ),
+          Run B localRepairRetriesSource (R tape).σ σ'
+            (12 * Nat.clog 2 m + 24 +
+              ((15 * Nat.clog 2 m + 30) * totalUsed +
+                attempts tape * (79 * s + scanUpper + 50) + 14)) ∧
+          totalUsed ≤ attempts tape * (s * t)) ∧
+      (∑ tape : FlatTraceLaw.FlatTape Nbits, (attempts tape : ℚ)) ≤
+        2 * (2 ^ Nbits : ℚ) ∧
+      (∑ tape : FlatTraceLaw.FlatTape Nbits,
+        (attempts tape * scanUpper : ℚ)) ≤
+          2 * scanUpper * (2 ^ Nbits : ℚ) := by
+  have hsingle := SamplerLocalSuccess.localTrial_failure_lt_half
+    A groupedB (numericNeighborhood G) r k c choice as has hasNodup
+    hN hinj b hb hfar hc hshatter
+  have hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase b X s).card ≤ X.card ^ s := by
+    subst X
+    subst Wbase
+    subst s
+    exact Nat.le_of_lt hsingle
+  exact localRepairRetriesSource_mean_scan_charge_le_two domain R hbits
+    hdomain hscan hcap hcapB hbudget henum hhalf
+
+/-- The actual source charge, including draw work and fixed setup, has the
+two-trial average bound under the paper's local failure hypotheses. -/
+lemma localRepairRetriesSource_mean_runtime_paper
+    {B n m domainCap s t bufferCap targetCap q b cap Nbits scanUpper : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent A : Finset ℕ}
+    (r k c : ℕ)
+    (choice : SamplerPhases.InitialChoice A groupedB
+      (numericNeighborhood G) r)
+    (as : List ℕ) (has : as.toFinset = A) (hasNodup : as.Nodup)
+    (hN : ∀ v ∈ groupedB, numericNeighborhood G v ⊆ A)
+    (hinj : ∀ u ∈ groupedB, ∀ v ∈ groupedB,
+      numericNeighborhood G u = numericNeighborhood G v → u = v)
+    (hb : b ∈ groupedB)
+    (hfar : 2 * k < 3 * SamplerPhases.disagreement
+      (numericNeighborhood G) b (choice.representative b))
+    (hc : 2 ≤ c)
+    (hshatter : ∀ Y : Finset ℕ, Y ⊆ A → Y.Nonempty →
+      (SamplerPhases.traceClasses (numericNeighborhood G) Y groupedB).card ≤
+        c * Y.card)
+    (hX : X = (numericNeighborhood G b \ numericNeighborhood G
+      (choice.representative b)) ∪
+      (numericNeighborhood G (choice.representative b) \
+        numericNeighborhood G b))
+    (hW : Wbase = SamplerPhases.phase2Scan (numericNeighborhood G)
+      (choice.exceptions k) as choice.sample)
+    (hs : s = 64 * Nat.clog 2 c)
+    (domain : ℕ → ℕ)
+    (R : FlatTraceLaw.FlatTape Nbits →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hdomain : ∀ tape, (R tape).domain = domain)
+    (hscan : ∀ tape, (R tape).scanUpper = scanUpper)
+    (hcap : ∀ tape, (R tape).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hbudget : cap * (s * t * Nat.clog 2 m) ≤ Nbits)
+    (henum : PrefixEnumerates m domain X) :
+    ∃ (attempts totalUsed : FlatTraceLaw.FlatTape Nbits → ℕ)
+      (finalState : FlatTraceLaw.FlatTape Nbits → Env),
+      (∀ tape, Run B localRepairRetriesSource (R tape).σ (finalState tape)
+        (12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * totalUsed tape +
+            attempts tape * (79 * s + scanUpper + 50) + 14)) ∧
+        totalUsed tape ≤ attempts tape * (s * t)) ∧
+      (∑ tape : FlatTraceLaw.FlatTape Nbits,
+        ((12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * totalUsed tape +
+            attempts tape * (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ)) ≤
+        ((12 * Nat.clog 2 m + 38 +
+          2 * ((15 * Nat.clog 2 m + 30) * (s * t) +
+            79 * s + scanUpper + 50) : ℕ) : ℚ) * (2 ^ Nbits : ℚ) := by
+  classical
+  obtain ⟨attempts, hsource, hmean, _⟩ :=
+    localRepairRetriesSource_mean_scan_charge_paper r k c choice as has
+      hasNodup hN hinj hb hfar hc hshatter hX hW hs domain R hbits
+      hdomain hscan hcap hcapB hbudget henum
+  have hex : ∀ tape : FlatTraceLaw.FlatTape Nbits,
+      ∃ (finalState : Env) (totalUsed : ℕ),
+        Run B localRepairRetriesSource (R tape).σ finalState
+          (12 * Nat.clog 2 m + 24 +
+            ((15 * Nat.clog 2 m + 30) * totalUsed +
+              attempts tape * (79 * s + scanUpper + 50) + 14)) ∧
+        totalUsed ≤ attempts tape * (s * t) := by
+    intro tape
+    obtain ⟨_, finalState, totalUsed, hrun, hused⟩ := hsource tape
+    exact ⟨finalState, totalUsed, hrun, hused⟩
+  choose finalState totalUsed hchosen using hex
+  refine ⟨attempts, totalUsed, finalState, hchosen, ?_⟩
+  let setup : ℕ := 12 * Nat.clog 2 m + 38
+  let trial : ℕ := (15 * Nat.clog 2 m + 30) * (s * t) +
+    79 * s + scanUpper + 50
+  have hpoint (tape : FlatTraceLaw.FlatTape Nbits) :
+      12 * Nat.clog 2 m + 24 +
+        ((15 * Nat.clog 2 m + 30) * totalUsed tape +
+          attempts tape * (79 * s + scanUpper + 50) + 14) ≤
+      setup + attempts tape * trial := by
+    have hmul := Nat.mul_le_mul_left (15 * Nat.clog 2 m + 30)
+      (hchosen tape).2
+    dsimp [setup, trial]
+    nlinarith
+  have hsum :
+      (∑ tape : FlatTraceLaw.FlatTape Nbits,
+        ((12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * totalUsed tape +
+            attempts tape * (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ)) ≤
+      ∑ tape : FlatTraceLaw.FlatTape Nbits,
+        ((setup + attempts tape * trial : ℕ) : ℚ) := by
+    apply Finset.sum_le_sum
+    intro tape _
+    exact_mod_cast hpoint tape
+  have hcount : Fintype.card (FlatTraceLaw.FlatTape Nbits) = 2 ^ Nbits := by
+    simp [FlatTraceLaw.FlatTape, Fintype.card_fun]
+  have hsumEq :
+      (∑ tape : FlatTraceLaw.FlatTape Nbits,
+        ((setup + attempts tape * trial : ℕ) : ℚ)) =
+      (setup : ℚ) * (2 ^ Nbits : ℚ) +
+        (trial : ℚ) *
+          ∑ tape : FlatTraceLaw.FlatTape Nbits, (attempts tape : ℚ) := by
+    simp [Nat.cast_add, Nat.cast_mul, Finset.sum_add_distrib,
+      Finset.mul_sum, hcount, mul_comm]
+  rw [hsumEq] at hsum
+  have htrialNonneg : (0 : ℚ) ≤ trial := by positivity
+  have hbound :
+      (setup : ℚ) * (2 ^ Nbits : ℚ) +
+        (trial : ℚ) *
+          (∑ tape : FlatTraceLaw.FlatTape Nbits, (attempts tape : ℚ)) ≤
+      ((setup + 2 * trial : ℕ) : ℚ) * (2 ^ Nbits : ℚ) := by
+    push_cast
+    nlinarith [hmean]
+  exact hsum.trans (by simpa [setup, trial] using hbound)
 
 /-- The domain filter changes only the prepared draw domain and its modulus.
 All fixed Step 2 class data and the accumulated sample survive it. -/

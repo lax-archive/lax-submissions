@@ -380,6 +380,49 @@ lemma actualLocalRejectedFiber_half_paper
   exact actualLocalRejectedFiber_half_of_failureSet
     X.card hpositive t s Nbits domain X henum N B W b hbudget hhalf
 
+private lemma classTrace_append (size : ℕ → ℕ) (t : ℕ)
+    (start : ℕ → ℕ) :
+    ∀ {d r : ℕ} {bits : List Bool} {values : List ℕ}
+      {used charge : ℕ} {failed : Bool},
+      ClassTrace size t start d r bits values used charge failed →
+      ∀ extra : List Bool,
+        ClassTrace size t start d r (bits ++ extra) values used charge failed
+  | _, _, _, _, _, _, _, .done d bits, extra =>
+      ClassTrace.done d (bits ++ extra)
+  | _, _, _, _, _, _, _, .failed tape tail u hm hsel, extra => by
+      simpa only [List.append_assoc] using
+        (ClassTrace.failed tape (tail ++ extra) u hm hsel)
+  | _, _, _, _, _, _, _, .accepted (d := d) (r := r)
+      (values := values) (used := used) (charge := charge)
+      (failed := failed) tape tail i u hm hsel hnext, extra => by
+      have hnext' := classTrace_append size t start hnext extra
+      have hnext'' : ClassTrace size t start (d + 1) r
+          ((tapeBits tape).drop (u * Nat.clog 2 (size d)) ++
+            (tail ++ extra)) values used charge failed := by
+        simpa only [List.append_assoc] using hnext'
+      simpa only [List.append_assoc] using
+        (ClassTrace.accepted (size := size) (t := t) (start := start)
+          (d := d) (r := r) tape (tail ++ extra) i u hm hsel hnext'')
+
+/-- A successful source draw on a reserved block prefix retains the rest of
+the input and records exactly the number of bits it consumed. -/
+lemma drawTrace_success_flat_used (m : ℕ) (hm : 0 < m)
+    (t s used : ℕ) (blocks : List (Fin (Nat.clog 2 m) → Bool))
+    (values : List (Fin m)) (extra : List Bool)
+    (htrace : DrawTrace m hm t s blocks values used false)
+    (hbudget : bitBudget (fun _ => m) t 0 s ≤
+      (blocks.flatMap List.ofFn ++ extra).length) :
+    ∃ attempts,
+      FlatClassSuccess (fun _ => m) t (fun _ => 0) 0 s
+        (blocks.flatMap List.ofFn ++ extra) (values.map Fin.val) attempts ∧
+      consumedBits (fun _ => m) 0 attempts = used * Nat.clog 2 m := by
+  obtain ⟨charge, hclass⟩ :=
+    InitialFlatLaw.drawTrace_to_classTrace m hm t 0 htrace
+  have hclassExtra := classTrace_append (fun _ => m) t (fun _ => 0)
+    hclass extra
+  exact InitialFlatLaw.classTrace_success_flat_used (fun _ => m) t
+    (fun _ => 0) hclassExtra hbudget
+
 /-- A source trial on a fixed flat tape exposes an actual draw trace. If its
 scan rejects after all draws succeed, that tape belongs to the rejecting
 fiber; an exhausted capped selector has status `2` and is excluded. -/
@@ -451,6 +494,21 @@ inductive FlatRejectedTrials (m t s : ℕ) (bad : Finset (List ℕ)) :
       (hnext : FlatRejectedTrials m t s bad k
         (bits.drop (consumedBits (fun _ => m) 0 attempts))) :
       FlatRejectedTrials m t s bad (k + 1) bits
+
+lemma FlatRejectedTrials.prefix (m t s : ℕ) (bad : Finset (List ℕ)) :
+    ∀ {k : ℕ} {bits : List Bool},
+      FlatRejectedTrials m t s bad k bits →
+      ∀ j ≤ k, FlatRejectedTrials m t s bad j bits
+  | _, _, .done bits, j, hj => by
+      have hj0 : j = 0 := by omega
+      subst j
+      exact FlatRejectedTrials.done bits
+  | _, _, .step output attempts hbad hflat hnext, j, hj => by
+      cases j with
+      | zero => exact FlatRejectedTrials.done _
+      | succ j =>
+          exact FlatRejectedTrials.step output attempts hbad hflat
+            (FlatRejectedTrials.prefix m t s bad hnext j (by omega))
 
 /-- Fair-bit tapes on which the first `k` local trials all successfully draw
 and reject, with exact stopped-prefix reuse between trials. -/
@@ -711,6 +769,102 @@ lemma flatRetryWeightedScan_le_two (m t s cap Nbits charge : ℕ)
     hvalid hhalf hbudget
   have hcharge : (0 : ℚ) ≤ charge := by positivity
   nlinarith
+
+/-- A source-attempt count whose `j`th attempt requires the first `j`
+rejections has mean at most two on uniform flat tapes. -/
+lemma sourceAttempts_sum_le_two (m t s cap Nbits : ℕ)
+    (bad : Finset (List ℕ))
+    (hvalid : bad ⊆ outputVectors (fun _ => m) (fun _ => 0) 0 s)
+    (hhalf : 2 * bad.card ≤ outputCount (fun _ => m) 0 s)
+    (hbudget : cap * bitBudget (fun _ => m) t 0 s ≤ Nbits)
+    (attempts : FlatTape Nbits → ℕ)
+    (hcap : ∀ tape, attempts tape ≤ cap)
+    (htail : ∀ tape j, j < attempts tape →
+      tape ∈ retryRejectedFiber m t s j Nbits bad) :
+    (∑ tape : FlatTape Nbits, (attempts tape : ℚ)) ≤
+      2 * (2 ^ Nbits : ℚ) := by
+  classical
+  have hcount (n cap' : ℕ) (hle : n ≤ cap') :
+      (∑ j ∈ Finset.range cap', if j < n then (1 : ℚ) else 0) = n := by
+    induction cap' generalizing n with
+    | zero =>
+        have hn : n = 0 := by omega
+        subst n
+        simp
+    | succ cap' ih =>
+        rw [Finset.sum_range_succ]
+        by_cases hn : n ≤ cap'
+        · rw [ih n hn]
+          simp [Nat.not_lt.mpr hn]
+        · have hn' : n = cap' + 1 := by omega
+          subst n
+          have hall : (∑ x ∈ Finset.range cap',
+              if x < cap' + 1 then (1 : ℚ) else 0) = cap' := by
+            simp only [Finset.sum_ite, Finset.sum_const_zero,
+              Finset.sum_const, nsmul_eq_mul]
+            have hfilter : (Finset.range cap').filter (fun x => x ≤ cap') =
+                Finset.range cap' := by
+              ext x
+              simp only [Finset.mem_filter, Finset.mem_range]
+              omega
+            simp [hfilter]
+          rw [hall]
+          simp
+  have hsplit : (∑ tape : FlatTape Nbits, (attempts tape : ℚ)) =
+      ∑ j ∈ Finset.range cap,
+        ((Finset.univ.filter fun tape : FlatTape Nbits => j < attempts tape).card : ℚ) := by
+    calc
+      (∑ tape : FlatTape Nbits, (attempts tape : ℚ)) =
+          ∑ tape : FlatTape Nbits,
+            ∑ j ∈ Finset.range cap,
+              if j < attempts tape then (1 : ℚ) else 0 := by
+        apply Finset.sum_congr rfl
+        intro tape _
+        exact (hcount (attempts tape) cap (hcap tape)).symm
+      _ = ∑ j ∈ Finset.range cap,
+          ∑ tape : FlatTape Nbits,
+            if j < attempts tape then (1 : ℚ) else 0 := by
+        rw [Finset.sum_comm]
+      _ = ∑ j ∈ Finset.range cap,
+          ((Finset.univ.filter fun tape : FlatTape Nbits =>
+            j < attempts tape).card : ℚ) := by
+        apply Finset.sum_congr rfl
+        intro j _
+        simp
+  have htailCard (j : ℕ) :
+      (Finset.univ.filter fun tape : FlatTape Nbits =>
+        j < attempts tape).card ≤
+          (retryRejectedFiber m t s j Nbits bad).card := by
+    apply Finset.card_le_card
+    intro tape htape
+    exact htail tape j (Finset.mem_filter.mp htape).2
+  have hmean := flatRetryTailMean_le_two m t s cap Nbits bad
+    hvalid hhalf hbudget
+  rw [hsplit]
+  have hsum : (∑ j ∈ Finset.range cap,
+      ((Finset.univ.filter fun tape : FlatTape Nbits =>
+        j < attempts tape).card : ℚ)) ≤
+      ∑ j ∈ Finset.range cap,
+        ((retryRejectedFiber m t s j Nbits bad).card : ℚ) := by
+    apply Finset.sum_le_sum
+    intro j _
+    exact_mod_cast htailCard j
+  have hdenom : (0 : ℚ) < 2 ^ Nbits := pow_pos (by norm_num) _
+  have hscale : (∑ j ∈ Finset.range cap,
+      ((retryRejectedFiber m t s j Nbits bad).card : ℚ)) =
+      (2 ^ Nbits : ℚ) * flatRetryTailMean m t s cap Nbits bad := by
+    simp [flatRetryTailMean, Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro j _
+    field_simp
+  calc
+    (∑ j ∈ Finset.range cap,
+      ((Finset.univ.filter fun tape : FlatTape Nbits =>
+        j < attempts tape).card : ℚ)) ≤
+      ∑ j ∈ Finset.range cap,
+        ((retryRejectedFiber m t s j Nbits bad).card : ℚ) := hsum
+    _ = (2 ^ Nbits : ℚ) * flatRetryTailMean m t s cap Nbits bad := hscale
+    _ ≤ 2 * (2 ^ Nbits : ℚ) := by nlinarith [hmean]
 
 end
 end Lax457868Proofs.LocalFlatLaw
