@@ -40,6 +40,7 @@ def LoopReady {n : ℕ} (B c : ℕ) (G : SimpleGraph (Fin n))
     sizes.sum + 3 * A.card ≤ 3 * n ∧
     2 ^ (σ.vars "round") * (A.card - 2 * c ^ 2) ≤ n ∧
     σ.vars "round" ≤ Nat.clog 2 n ∧
+    σ.out = [] ∧
     σ.inp = bits.map Bool.toNat ++ rest ∧
     A.card * roundBitReserve c n ≤ bits.length
 
@@ -144,7 +145,7 @@ lemma initial_loopReady {B c n : ℕ} {G : SimpleGraph (Fin n)}
     exact (Classical.choice htrace).reps_separated
   refine ⟨Finset.range n, C, bits, [], D, Finset.Subset.rfl, hCsub, hC, hsep,
     ⟨hstore⟩, run_preserves hrun hbounded,
-    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simp [hused]
   · simp [hround]
   · simpa using hacount
@@ -152,6 +153,7 @@ lemma initial_loopReady {B c n : ℕ} {G : SimpleGraph (Fin n)}
   · simp
   · simp [hround]
   · simp [hround]
+  · rw [hrun.out_eq (by decide), R.output]
   · rw [hrun.frame_inp (by decide), R.input]
   · simpa using htape
 
@@ -187,6 +189,7 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
     (hsizesSum : sizes.sum + 3 * A.card ≤ 3 * n)
     (hpotential : 2 ^ (σ.vars "round") * (A.card - 2 * c ^ 2) ≤ n)
     (_hroundLog : σ.vars "round" ≤ Nat.clog 2 n)
+    (hout : σ.out = [])
     (hinput : σ.inp = bits.map Bool.toNat ++ rest)
     (htape : A.card * roundBitReserve c n ≤ bits.length)
     (hx : Lax11.GraphEncoding.EncodesGraph x n G)
@@ -267,7 +270,8 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
       sizes ++ [A.card],
       hdata, hSrange, hRrange, hRnonempty, hsep', hstored, hbounded',
       hcapacity', hroundCapacity', hacount', hsizesLen', hsizesSum',
-      hpotential', hroundLog', hinput', htape'⟩
+      hpotential', hroundLog', (hrun.out_eq (by decide)).trans hout,
+      hinput', htape'⟩
   · exact Or.inr hfail
 
 end Lax457868Proofs.RefinedRoundLoop
@@ -333,7 +337,7 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
       have hreadyKeep := hreadyρ
       obtain ⟨A, C, bits, sizes, D, hA, hCsub, hC, hsep, ⟨hstore⟩, hbounded,
         hcapacity, hroundCapacity, hacount, hsizesLen, hsizesSum,
-        hpotential, hroundLog,
+        hpotential, hroundLog, hout,
         hinput, htape⟩ := hreadyρ
       have hAm : A.card = m := by omega
       have hguard := guard_eval D hA hacount hlargeN hB hx
@@ -342,7 +346,7 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
           simpa [hlarge] using hguard
         obtain ⟨ρ', K, hstep, hresult⟩ := round_step D hA hCsub hC hstore
           hbounded hcapacity hroundCapacity hacount hsizesLen hsizesSum
-          hpotential hroundLog
+          hpotential hroundLog hout
           hinput htape hx hG hc hB hlarge
         rcases hresult with ⟨A', hstrict, hacount', hready'⟩ | hfail
         · obtain ⟨τ, K', htail, hresult'⟩ := ih A'.card
@@ -361,7 +365,7 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
           Or.inr ⟨hreadyKeep, by omega⟩⟩
   have hreadyKeep := hready
   obtain ⟨A, C, bits, sizes, D, hA, hC, hne, hsep, hs, hb, hcap, hrc,
-    hac, hlen, hsum, hpot, hlog, hin, ht⟩ := hready
+    hac, hlen, hsum, hpot, hlog, hout, hin, ht⟩ := hready
   exact core A.card σ hreadyKeep hac
 
 end Lax457868Proofs.RefinedRoundLoop
