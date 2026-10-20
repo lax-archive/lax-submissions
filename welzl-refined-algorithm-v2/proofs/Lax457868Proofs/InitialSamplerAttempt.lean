@@ -430,7 +430,8 @@ lemma initialSamplerAttempt_run_bits
         (initialDrawSampleCost n m used
           (values.length + if drawFailed then 1 else 0)
           values.length drawFailed) ∧
-      σd.inp = (I.bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ I.rest := by
+      σd.inp = (I.bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ I.rest ∧
+      σd.vars "batchFailed" = (if drawFailed then 1 else 0) := by
   let σ₀ := I.σ.setVar "attemptAccepted" 0
   have hBpos : 0 < B := Nat.lt_trans (by decide) I.htwoB
   have hinit : Run B (.assign "attemptAccepted" (.lit 0)) I.σ σ₀ 2 := by
@@ -515,7 +516,7 @@ lemma initialSamplerAttempt_run_bits
       have haccepted : σd.vars "attemptAccepted" = 0 := hacceptedDraw
       refine ⟨σd, σd, tape, tail, values, used, true, 0,
         hsplit, htrace, ?_, haccepted, hnSource, hqSource.trans hqpow₀, hbad,
-        ?_, ?_, ?_, ?_, hdraw, hdrawInp⟩
+        ?_, ?_, ?_, ?_, hdraw, hdrawInp, hbad⟩
       · simpa [initialSamplerAttempt, initialDrawSampleCost, Nat.add_assoc] using hwhole
       · intro a ha
         exact hwhole.frame_arr a ha
@@ -814,7 +815,7 @@ lemma initialSamplerAttempt_run_bits
         fullSamplePartitionCost x sampleOrd n W.card +
           (20 * n + 9 + repCharge + 64 * (xs.length + Q + 1) + 104 * n + 24),
         hsplit, htrace, ?_, haccepted, hnRep, hqpowFinal, hbadFinal,
-        hwholeArrFrame, hwholeVarFrame, ?_, ?_, hdraw, hdrawInp⟩
+        hwholeArrFrame, hwholeVarFrame, ?_, ?_, hdraw, hdrawInp, hbad⟩
       · simpa [initialSamplerAttempt, Nat.add_assoc,
           Cond.size, Expr.size] using hwhole
       · intro hbadCase

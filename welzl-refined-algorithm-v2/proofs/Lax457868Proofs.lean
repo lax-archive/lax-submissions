@@ -191,3 +191,7 @@ import Lax457868Proofs.RefinedBodyExecution
 import Lax457868Proofs.RefinedBodyEstimate
 import Lax457868Proofs.InitialOutcomeCharge
 import Lax457868Proofs.ClassTraceMean
+import Lax457868Proofs.InitialDrawMean
+import Lax457868Proofs.RepresentativeSourceMean
+import Lax457868Proofs.InitialAttemptMean
+import Lax457868Proofs.FullInitialAttemptMean

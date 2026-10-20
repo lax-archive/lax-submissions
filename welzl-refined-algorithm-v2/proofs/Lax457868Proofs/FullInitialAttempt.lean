@@ -83,7 +83,7 @@ lemma exception_flags_eq_setFlag {n u : ℕ} {x : List ℕ}
 return with the initialized zero bit; the successful branch computes exactly
 the exception set of the proof-side `InitialChoice`. The selection-state Run
 and draw trace are retained for coupling to the randomized argument. -/
-lemma fullInitialAttempt_run_bits
+lemma fullInitialAttempt_run_bits_withTail
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
     (I : Input B n m domainCap r t bufferCap targetCap Q G x A)
@@ -106,11 +106,14 @@ lemma fullInitialAttempt_run_bits
         (2 + initialDrawSampleCost n m used
           (values.length + if drawFailed then 1 else 0) values.length drawFailed +
           (if drawFailed then 5 else 4 + stageCost)) ∧
-      Run B fullInitialAttempt I.σ σ'
+      (Run B fullInitialAttempt I.σ σ'
         (2 + initialDrawSampleCost n m used
           (values.length + if drawFailed then 1 else 0) values.length drawFailed +
           (if drawFailed then 5 else 4 + stageCost) + 9 +
           (300 * (n + targetCap + 1) + (94 * n + 15) + 8 + (20 * n + 9))) ∧
+      Run B (.ite (.eq (.var "batchFailed") (.lit 0))
+          (.ite (.eq (.var "repFailed") (.lit 0)) initialAttemptAcceptance .skip) .skip) σsel σ'
+        (9 + (300 * (n + targetCap + 1) + (94 * n + 15) + 8 + (20 * n + 9)))) ∧
       σ'.vars "batchFailed" = (if drawFailed then 1 else 0) ∧
       σ'.inp = σsel.inp ∧ σ'.out = σsel.out ∧
       σ'.arrs "off" = arrOf (n + 1) (offset x) ∧
@@ -210,7 +213,7 @@ lemma fullInitialAttempt_run_bits
         simpa [fullInitialAttempt, selectionCost, suffixCost] using
           (hsel.seq hguard).mono hbound
       refine ⟨σsel, σsel, tape, tail, values, used, true, stageCost,
-        hbits, hdrawTrace, hsel, hfull, hbatchSel, rfl, rfl,
+        hbits, hdrawTrace, hsel, ⟨hfull, hguard.mono (by omega)⟩, hbatchSel, rfl, rfl,
         hoffSel, htargetSel, hactiveASel, hactiveBSelRaw, hnSel, hqSel, ?_, ?_⟩
       · intro _
         obtain ⟨_, hflags, hcount, hinpFailed⟩ := hdrawFailure rfl
@@ -248,7 +251,7 @@ lemma fullInitialAttempt_run_bits
             simpa [fullInitialAttempt, selectionCost, suffixCost] using
               (hsel.seq hguard).mono hbound
           refine ⟨σsel, σsel, tape, tail, values, used, false, stageCost,
-            hbits, hdrawTrace, hsel, hfull, hbatchSel, rfl, rfl,
+            hbits, hdrawTrace, hsel, ⟨hfull, hguard.mono (by omega)⟩, hbatchSel, rfl, rfl,
             hoffSel, htargetSel, hactiveASel, hactiveBSelRaw, hnSel, hqSel, ?_, ?_⟩
           · intro h; cases h
           · intro _
@@ -383,7 +386,7 @@ lemma fullInitialAttempt_run_bits
           have hqFinal : σ'.vars "qpow" = Q :=
             (hsuffix.frame_var "qpow" (by decide)).trans hqSel
           refine ⟨σsel, σ', tape, tail, values, used, false, stageCost,
-            hbits, hdrawTrace, hsel, hfull, hbatchFinal, hinp, hout,
+            hbits, hdrawTrace, hsel, ⟨hfull, hguard.mono (by omega)⟩, hbatchFinal, hinp, hout,
             hoffFinal, htargetFinal, hactiveAFinal, hactiveBFinalRaw, hnFinal,
             hqFinal, ?_, ?_⟩
           · intro h; cases h
@@ -403,6 +406,95 @@ lemma fullInitialAttempt_run_bits
               · simpa only [hEeq] using hcountE
               · simpa only [hEeq] using hacceptE
               · exact hinp.trans hinpSel
+
+/-- Original execution interface, projected from the suffix-retaining version. -/
+lemma fullInitialAttempt_run_bits
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Input B n m domainCap r t bufferCap targetCap Q G x A)
+    {degree inter neighbors exceptionFlags exceptionList : ℕ → ℕ}
+    (hactiveA : I.σ.arrs "activeA" = arrOf n (setFlag A))
+    (hdegree : I.σ.arrs "degree" = arrOf n degree)
+    (hinter : I.σ.arrs "inter" = arrOf n inter)
+    (hneighbors : I.σ.arrs "neighbors" = arrOf n neighbors)
+    (hexceptionFlags : I.σ.arrs "exceptionFlags" = arrOf n exceptionFlags)
+    (hexceptionList : I.σ.arrs "exceptionList" = arrOf n exceptionList)
+    (hnearBound : I.σ.vars "nearBound" = k / 3)
+    (hexceptionCap : I.σ.vars "exceptionCap" = cap)
+    (hnB : 2 * n + 1 < B) (hkB : k / 3 < B) (hcapB : cap < B) :
+    ∃ (σsel σ' : Env) (tape : Fin (r * t) → Fin (Nat.clog 2 m) → Bool)
+      (tail : List Bool) (values : List (Fin m)) (used : ℕ)
+      (drawFailed : Bool) (stageCost : ℕ),
+      I.bits = tapeBits tape ++ tail ∧
+      DrawTrace m I.hmPos t r (List.ofFn tape) values used drawFailed ∧
+      Run B initialSamplerAttempt I.σ σsel
+        (2 + initialDrawSampleCost n m used
+          (values.length + if drawFailed then 1 else 0) values.length drawFailed +
+          (if drawFailed then 5 else 4 + stageCost)) ∧
+      Run B fullInitialAttempt I.σ σ'
+        (2 + initialDrawSampleCost n m used
+          (values.length + if drawFailed then 1 else 0) values.length drawFailed +
+          (if drawFailed then 5 else 4 + stageCost) + 9 +
+          (300 * (n + targetCap + 1) + (94 * n + 15) + 8 + (20 * n + 9))) ∧
+      σ'.vars "batchFailed" = (if drawFailed then 1 else 0) ∧
+      σ'.inp = σsel.inp ∧ σ'.out = σsel.out ∧
+      σ'.arrs "off" = arrOf (n + 1) (offset x) ∧
+      σ'.arrs "tgt" = arrOf targetCap (target x) ∧
+      σ'.arrs "activeA" = arrOf n (setFlag A) ∧
+      σ'.arrs "activeB" = arrOf n I.activeB ∧
+      σ'.vars "n" = n ∧
+      σ'.vars "qpow" = Q ∧
+      (drawFailed = true → σ' = σsel ∧ σ'.vars "attemptAccepted" = 0 ∧
+        σ'.arrs "sampleFlags" = arrOf n (fun _ => 0) ∧
+        σ'.vars "sampleCount" = 0 ∧
+        σ'.inp = (I.bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ I.rest) ∧
+      (drawFailed = false →
+        ∃ (W : Finset ℕ) (repFailed : Bool) (repUsed : ℕ),
+          W = (values.map (fun i => I.domain i.val)).toFinset ∧
+          W ⊆ A ∧ values.length = r ∧
+          repUsed ≤ n * t * Nat.clog 2 n ∧
+          σsel.vars "repFailed" = (if repFailed then 1 else 0) ∧
+          σ'.inp = (I.bits.drop (used * Nat.clog 2 m + repUsed)).map
+            Bool.toNat ++ I.rest ∧
+          (repFailed = true → σ' = σsel ∧ σ'.vars "attemptAccepted" = 0 ∧
+            σ'.arrs "sampleFlags" = arrOf n (setFlag W) ∧
+            σ'.vars "sampleCount" = W.card) ∧
+          (repFailed = false →
+            ∃ (mapped : ℕ → ℕ) (choice : InitialChoice A
+                (activeVertices n I.activeB)
+                (fun b => numericNeighborhood G b ∩ A) r)
+              (packedExceptions packedSample : ℕ → ℕ),
+              σsel.arrs "repB" = arrOf n mapped ∧
+              choice.draws = values.map (fun i => I.domain i.val) ∧
+              choice.sample = W ∧
+              (∀ b ∈ activeVertices n I.activeB,
+                choice.representative b = mapped b) ∧
+              Run B initialAttemptAcceptance σsel σ'
+                (300 * (n + targetCap + 1) + (94 * n + 15) + 8 + (20 * n + 9)) ∧
+              attemptExceptions n (k / 3) x A (activeVertices n I.activeB) mapped =
+                choice.exceptions k ∧
+              σ'.arrs "exceptionFlags" =
+                arrOf n (setFlag (choice.exceptions k)) ∧
+              σ'.arrs "exceptionList" = arrOf n packedExceptions ∧
+              PrefixEnumerates (σ'.vars "exceptionCount") packedExceptions
+                (choice.exceptions k) ∧
+              σ'.vars "exceptionCount" = (choice.exceptions k).card ∧
+              σ'.vars "attemptAccepted" =
+                (if (choice.exceptions k).card ≤ cap then 1 else 0) ∧
+              σ'.arrs "sampleFlags" = arrOf n (setFlag W) ∧
+              σ'.arrs "ord" = arrOf n packedSample ∧
+              PrefixEnumerates (σ'.vars "sampleCount") packedSample W ∧
+              σ'.vars "sampleCount" = W.card ∧
+              σ'.arrs "repB" = arrOf n mapped ∧
+              σ'.arrs "activeB" = arrOf n (setFlag (activeVertices n I.activeB)) ∧
+              σ'.inp = (I.bits.drop (used * Nat.clog 2 m + repUsed)).map
+                Bool.toNat ++ I.rest)) := by
+  obtain ⟨σsel, σ', tape, tail, values, used, drawFailed, stageCost,
+    hbits, htrace, hsel, hfull, hrest⟩ :=
+    fullInitialAttempt_run_bits_withTail I hactiveA hdegree hinter hneighbors
+      hexceptionFlags hexceptionList hnearBound hexceptionCap hnB hkB hcapB
+  exact ⟨σsel, σ', tape, tail, values, used, drawFailed, stageCost,
+    hbits, htrace, hsel, hfull.1, hrest⟩
 
 end
 
