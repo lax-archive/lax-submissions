@@ -1,5 +1,7 @@
 import Lax457868Proofs.RefinedRoundDriver
 import Lax457868Proofs.AlgorithmRounds
+import Lax457868Proofs.RefinedTwinDomain
+import Lax457868Proofs.InitialNeighborhoodQuotient
 
 /-! The literal outer reduction loop, with an explicit finite tape reserve.
 The loop state contains only facts read from the actual setup and previous
@@ -24,6 +26,10 @@ def LoopReady {n : ℕ} (B c : ℕ) (G : SimpleGraph (Fin n))
   ∃ A C : Finset ℕ, ∃ bits : List Bool,
     RoundData c n x A C σ ∧
     A ⊆ Finset.range n ∧ C ⊆ Finset.range n ∧ C.Nonempty ∧
+    Set.InjOn
+      (Lax457868Proofs.ReusedOriginal.Construction.NeighborhoodComplexity.neighborhoodTrace
+        G (Lax457868Proofs.ReusedOriginal.Construction.PartitionResult.finSetAsSet A))
+      (Lax457868Proofs.ReusedOriginal.Construction.PartitionResult.finSetAsSet C) ∧
     Nonempty (Stored G (refinedCutoffK c) σ) ∧
     ValuesBounded B σ ∧
     σ.vars "removedCount" + A.card ≤ n ∧
@@ -58,11 +64,100 @@ end Lax457868Proofs.RefinedRoundLoop
 namespace Lax457868Proofs.RefinedRoundLoop
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
+open Lax457868Proofs.RefinedRoundInput
+open Lax457868Proofs.RefinedRoundSource
+open Lax457868Proofs.RefinedTapeReserve
+open Lax457868Proofs.RefinedRecordedCommit
+open Lax457868Proofs.ReusedOriginal.Construction.TracePartitions
+open Lax457868Proofs.ReusedOriginal.Construction.WelzlProgram
+open Lax457868Proofs.ReusedOriginal.Construction.WelzlSetup
+open Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
+open Lax457868Proofs.ExceptionRefinementStep
+
+/-- The actual full-neighborhood quotient installs the first loop state.
+Its representatives cover all original neighborhoods, and the old history is
+still empty. -/
+lemma initial_loopReady {B c n : ℕ} {G : SimpleGraph (Fin n)}
+    {x rest : List ℕ} {bits : List Bool} {σ τ : Env} {C : Finset ℕ}
+    (R : Lax457868Proofs.RefinedSetup.Ready c n x
+      (bits.map Bool.toNat ++ rest) σ)
+    (hbounded : ValuesBounded B σ)
+    (hrun : Run B Lax457868Proofs.InitialNeighborhoodQuotient.initialQuotientSource σ τ
+      (951 * (x.length + 1)))
+    (D : RoundData c n x (Finset.range n) C τ)
+    (hCsub : C ⊆ Finset.range n) (hC : C.Nonempty)
+    (htrace : Nonempty (TracePartition G Set.univ Set.univ (finSetAsSet C)))
+    (htape : n * roundBitReserve c n ≤ bits.length) :
+    LoopReady B c G x rest τ := by
+  classical
+  have hround : τ.vars "round" = 0 :=
+    (hrun.frame_var "round" (by decide)).trans R.round
+  have hused : τ.vars "removedCount" = 0 :=
+    (hrun.frame_var "removedCount" (by decide)).trans R.removedCount
+  have hacount : τ.vars "acount" = n :=
+    (hrun.frame_var "acount" (by decide)).trans R.activeCount
+  have hremoved : τ.arrs "removed" = arrOf n (fun _ => 0) := by
+    rw [hrun.frame_arr "removed" (by decide),
+      R.scratch "removed" (by decide) (by decide) (by decide) (by decide)]
+    simp [welzlExt, arrOf]
+  have hremovedRep : τ.arrs "removedRep" = arrOf n (fun _ => 0) := by
+    rw [hrun.frame_arr "removedRep" (by decide),
+      R.scratch "removedRep" (by decide) (by decide) (by decide) (by decide)]
+    simp [welzlExt, arrOf]
+  have hcover : ∀ v : Fin n, ∃ b ∈ finSetAsSet C,
+      ∀ a : Fin n, G.Adj v a ↔ G.Adj b a := by
+    intro v
+    obtain ⟨b, hb, hne⟩ :=
+      Lax457868Proofs.RefinedTwinDomain.full_partition_covers
+        (Classical.choice htrace) v
+    refine ⟨b, hb, ?_⟩
+    intro a
+    exact Set.ext_iff.mp hne a
+  have hstore : Stored G (refinedCutoffK c) τ :=
+    initialCovered G (finSetAsSet C) hcover hround hused
+      (by
+        intro i hi
+        rw [view_of_array D.activeA hi]
+        simp [setFlag, hi])
+      (by
+        intro v
+        rw [view_of_array D.activeB v.isLt]
+        simp [setFlag, finSetAsSet])
+      (by
+        intro i hi
+        rw [view_of_array hremoved hi])
+      (by
+        intro i hi
+        rw [view_of_array hremovedRep hi])
+  have hfull : finSetAsSet (n := n) (Finset.range n) = Set.univ := by
+    ext v
+    simp [finSetAsSet]
+  have hsep : Set.InjOn
+      (Lax457868Proofs.ReusedOriginal.Construction.NeighborhoodComplexity.neighborhoodTrace
+        G (finSetAsSet (Finset.range n))) (finSetAsSet C) := by
+    rw [hfull]
+    exact (Classical.choice htrace).reps_separated
+  refine ⟨Finset.range n, C, bits, D, Finset.Subset.rfl, hCsub, hC, hsep,
+    ⟨hstore⟩, run_preserves hrun hbounded, ?_, ?_, ?_, ?_, ?_⟩
+  · simp [hused]
+  · simp [hround]
+  · simpa using hacount
+  · rw [hrun.frame_inp (by decide), R.input]
+  · simpa using htape
+
+end Lax457868Proofs.RefinedRoundLoop
+
+namespace Lax457868Proofs.RefinedRoundLoop
+
+open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax457868Proofs.RefinedRoundDriver
 open Lax457868Proofs.RefinedRoundInput
 open Lax457868Proofs.RefinedRoundSource
 open Lax457868Proofs.RefinedTapeReserve
 open Lax457868Proofs.RefinedRecordedCommit
+open Lax457868Proofs.ReusedOriginal.Construction.TracePartitions
+open Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
+open Lax457868Proofs.ExceptionRefinementStep
 
 set_option maxRecDepth 4000
 
@@ -128,8 +223,19 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
       omega
     have hroundCapacity' : τ.vars "round" + Snum.card ≤ n := by
       omega
+    have hpartB' : TracePartition G (finSetAsSet C)
+        (finSetAsSet W) (finSetAsSet Rnum) := by
+      simpa [finSetAsSet, setFlag] using (Classical.choice hpartB).partition
+    have hpartA' : TracePartition G (finSetAsSet A)
+        (finSetAsSet Rnum) (finSetAsSet Snum) := by
+      simpa [finSetAsSet, setFlag] using (Classical.choice hpartA).partition
+    have hW' : finSetAsSet (n := n) W ⊆ finSetAsSet (n := n) A := by
+      intro v hv
+      exact hWsub hv
+    have hsep' := Lax457868Proofs.RefinedTwinDomain.dual_partition_separated
+      hW' hpartB' hpartA'
     exact Or.inl ⟨Snum, hstrict, hacount', Snum, Rnum, bits.drop used,
-      hdata, hSrange, hRrange, hRnonempty, hstored, hbounded',
+      hdata, hSrange, hRrange, hRnonempty, hsep', hstored, hbounded',
       hcapacity', hroundCapacity', hacount', hinput', htape'⟩
   · exact Or.inr hfail
 
@@ -194,7 +300,7 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
     | h m ih =>
       intro ρ hreadyρ hm
       have hreadyKeep := hreadyρ
-      obtain ⟨A, C, bits, D, hA, hCsub, hC, ⟨hstore⟩, hbounded,
+      obtain ⟨A, C, bits, D, hA, hCsub, hC, hsep, ⟨hstore⟩, hbounded,
         hcapacity, hroundCapacity, hacount, hinput, htape⟩ := hreadyρ
       have hAm : A.card = m := by omega
       have hguard := guard_eval D hA hacount hlargeN hB hx
@@ -219,7 +325,7 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
         exact ⟨ρ, 1 + roundGuard.size, Run.while_false hfalse,
           Or.inr ⟨hreadyKeep, by omega⟩⟩
   have hreadyKeep := hready
-  obtain ⟨A, C, bits, D, hA, hC, hne, hs, hb, hcap, hrc, hac, hin, ht⟩ := hready
+  obtain ⟨A, C, bits, D, hA, hC, hne, hsep, hs, hb, hcap, hrc, hac, hin, ht⟩ := hready
   exact core A.card σ hreadyKeep hac
 
 end Lax457868Proofs.RefinedRoundLoop
