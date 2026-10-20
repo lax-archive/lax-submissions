@@ -1360,7 +1360,7 @@ private lemma suffix_cons {e : ℕ} (entry : ℕ → ℕ)
     simp [Stack.toList]
   simpa [hget] using List.drop_eq_getElem_cons hil
 
-private lemma loop_guard {B : ℕ} {σ : Env} {i stop : ℕ}
+lemma loop_guard {B : ℕ} {σ : Env} {i stop : ℕ}
     (hindex : σ.vars "exceptionIndex" = i)
     (hstop : σ.vars "exceptionStop" = stop)
     (hiB : i < B) (hstopB : stop < B) :
@@ -1383,7 +1383,7 @@ private lemma runWhileTrue {B : ℕ} {b : Cond} {c : Com}
 
 /-- Structural induction on the remaining packed prefix. The proof runs the
 same fixed while command at every stage; only the state and read index vary. -/
-private lemma loop_run_aux
+lemma loop_run_aux
     {B n s t bufferCap targetCap q cap k e : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
     {E groupedB Wbase A : Finset ℕ}
@@ -1633,7 +1633,7 @@ private lemma loop_run_aux
 
 /-- The three scalar assignments establish the loop guard and completed
 status even when the packed exception list is empty. -/
-private lemma initialize_loop
+lemma initialize_loop
     {B n s t bufferCap targetCap q cap k e : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
     {E groupedB Wbase A Wcurrent : Finset ℕ}
