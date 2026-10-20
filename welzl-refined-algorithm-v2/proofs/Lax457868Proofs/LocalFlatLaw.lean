@@ -5,6 +5,7 @@ import Lax457868Proofs.SamplerLocalSuccess
 import Lax457868Proofs.SamplerRetries
 import Lax457868Proofs.EnumeratedDraws
 import Lax457868Proofs.InitialFlatLaw
+import Lax457868Proofs.LocalRepairPhase3
 
 /-!
 The actual local selector may abort when one of its capped index draws fails.
@@ -296,6 +297,66 @@ lemma card_localBadOutputs_eq_failureSet
   exact (Finset.card_image_of_injective _
     (indexTapeEquiv m s domain X henum).injective).symm
 
+/-- The local failure event is unchanged by restricting graph neighborhoods
+to the active ground set when the base sample and all possible draws lie
+there. -/
+lemma localTrialFailureSet_restricted_eq (A X B W : Finset ℕ)
+    (N : ℕ → Finset ℕ) (b s : ℕ)
+    (hWA : W ⊆ A) (hXA : X ⊆ A) :
+    SamplerLocalSuccess.localTrialFailureSet N B W b X s =
+      SamplerLocalSuccess.localTrialFailureSet
+        (fun v => N v ∩ A) B W b X s := by
+  classical
+  ext tape
+  have hdraw : tape.toList.toFinset ⊆ A := by
+    intro v hv
+    exact hXA (SamplerUniformDraws.Tape.toList_mem tape
+      (List.mem_toFinset.mp hv))
+  simp only [SamplerLocalSuccess.localTrialFailureSet,
+    Finset.mem_filter, Finset.mem_univ, true_and]
+  rw [Lax457868Proofs.LocalRepairPhase3.localTrialIsolates_restricted_iff
+    N B hWA b tape.toList hdraw]
+
+/-- The paper's paired-swap half bound applies to the physical full-CSR
+source event through the active-ground-set restriction. -/
+lemma localFailure_half_restricted_paper
+    (A B W X : Finset ℕ) (N : ℕ → Finset ℕ)
+    (r k c b s : ℕ)
+    (choice : SamplerPhases.InitialChoice A B (fun v => N v ∩ A) r)
+    (as : List ℕ) (has : as.toFinset = A) (hasNodup : as.Nodup)
+    (hinj : ∀ u ∈ B, ∀ v ∈ B,
+      N u ∩ A = N v ∩ A → u = v)
+    (hb : b ∈ B)
+    (hfar : 2 * k < 3 * SamplerPhases.disagreement
+      (fun v => N v ∩ A) b (choice.representative b))
+    (hc : 2 ≤ c)
+    (hshatter : ∀ Y : Finset ℕ, Y ⊆ A → Y.Nonempty →
+      (SamplerPhases.traceClasses (fun v => N v ∩ A) Y B).card ≤
+        c * Y.card)
+    (hX : X = ((N b ∩ A) \ (N (choice.representative b) ∩ A)) ∪
+      ((N (choice.representative b) ∩ A) \ (N b ∩ A)))
+    (hW : W = SamplerPhases.phase2Scan (fun v => N v ∩ A)
+      (choice.exceptions k) as choice.sample)
+    (hs : s = 64 * Nat.clog 2 c)
+    (hWA : W ⊆ A) :
+    2 * (SamplerLocalSuccess.localTrialFailureSet N B W b X s).card ≤
+      X.card ^ s := by
+  have hXA : X ⊆ A := by
+    rw [hX]
+    intro v hv
+    rcases Finset.mem_union.mp hv with hv | hv
+    · exact (Finset.mem_inter.mp (Finset.mem_sdiff.mp hv).1).2
+    · exact (Finset.mem_inter.mp (Finset.mem_sdiff.mp hv).1).2
+  have hN : ∀ v ∈ B, N v ∩ A ⊆ A := by
+    intro v _
+    exact Finset.inter_subset_right
+  have hsingle := SamplerLocalSuccess.localTrial_failure_lt_half A B
+    (fun v => N v ∩ A) r k c choice as has hasNodup hN hinj b hb
+    hfar hc hshatter
+  have heq := localTrialFailureSet_restricted_eq A X B W N b s hWA hXA
+  rw [heq, hX, hW, hs]
+  exact Nat.le_of_lt hsingle
+
 /-- The geometric ideal-draw half bound transfers to actual source draws,
 including exhausted selector calls in the complement of the retry event. -/
 lemma actualLocalRejectedFiber_half (m : ℕ) (hm : 0 < m)
@@ -509,6 +570,138 @@ lemma FlatRejectedTrials.prefix (m t s : ℕ) (bad : Finset (List ℕ)) :
       | succ j =>
           exact FlatRejectedTrials.step output attempts hbad hflat
             (FlatRejectedTrials.prefix m t s bad hnext j (by omega))
+
+/-- The whole local retry execution, including its final successful or
+selector-failed trial. The accepted-block count is explicit so that its
+expectation can pay for the exact number of blocks inspected. -/
+inductive FlatRetryExecution (m : ℕ) (hm : 0 < m) (t s : ℕ)
+    (bad : Finset (List ℕ)) : ℕ → List Bool → ℕ → ℕ → Prop
+  | done (bits : List Bool) :
+      FlatRetryExecution m hm t s bad 0 bits 0 0
+  | final {bits : List Bool} (blockTape : Fin (s * t) →
+      (Fin (Nat.clog 2 m) → Bool)) (tail : List Bool)
+      (values : List (Fin m)) (used : ℕ) (failed : Bool)
+      (hbits : bits = (List.ofFn blockTape).flatMap List.ofFn ++ tail)
+      (hdraw : SequentialDraws.DrawTrace m hm t s
+        (List.ofFn blockTape) values used failed) :
+      FlatRetryExecution m hm t s bad 1 bits used values.length
+  | rejected {bits : List Bool} {k tailUsed tailAccepted : ℕ}
+      (blockTape : Fin (s * t) → (Fin (Nat.clog 2 m) → Bool))
+      (tail : List Bool) (values : List (Fin m)) (used : ℕ)
+      (hbits : bits = (List.ofFn blockTape).flatMap List.ofFn ++ tail)
+      (hdraw : SequentialDraws.DrawTrace m hm t s
+        (List.ofFn blockTape) values used false)
+      (hbad : values.map Fin.val ∈ bad)
+      (hnext : FlatRetryExecution m hm t s bad k
+        (bits.drop (used * Nat.clog 2 m)) tailUsed tailAccepted) :
+      FlatRetryExecution m hm t s bad (k + 1) bits
+        (used + tailUsed) (s + tailAccepted)
+
+lemma FlatRetryExecution.accepted_le (m : ℕ) (hm : 0 < m)
+    (t s : ℕ) (bad : Finset (List ℕ)) :
+    ∀ {k : ℕ} {bits : List Bool} {used accepted : ℕ},
+      FlatRetryExecution m hm t s bad k bits used accepted →
+      accepted ≤ k * s
+  | _, _, _, _, .done _ => by simp
+  | _, _, _, _, .final _ _ _ _ _ _ hdraw => by
+      have hlen := (SequentialDraws.DrawTrace.length_and_status m hm t hdraw).1
+      simpa using hlen
+  | _, _, _, _, .rejected _ _ _ _ _ _ _ hnext => by
+      have hrec := FlatRetryExecution.accepted_le m hm t s bad hnext
+      simpa [Nat.add_mul, Nat.add_comm] using Nat.add_le_add_left hrec s
+
+/-- A capped selector can inspect many rejected blocks, but at most its first
+accepted block. This counts the actual stopped prefix. -/
+lemma selector_accepted_prefix_le_one (m : ℕ) (hm : 0 < m) :
+    ∀ blocks : List (Fin (Nat.clog 2 m) → Bool),
+      ((blocks.take
+          ((FairBitIndices.firstDecodedWithCount
+            (blocks.map (FairBitIndices.decodeBitIndex m hm))).2)).filter
+          (fun block => block ∈ FairBitIndices.acceptedBlocks m)).length ≤ 1 := by
+  intro blocks
+  induction blocks with
+  | nil => simp
+  | cons block blocks ih =>
+      by_cases hdec : FairBitIndices.decodeBitIndex m hm block = none
+      · have hreject : block ∉ FairBitIndices.acceptedBlocks m := by
+          simp [FairBitIndices.acceptedBlocks,
+            FairBitIndices.decodeBitIndex_eq_none_iff] at hdec ⊢
+          omega
+        simpa [FairBitIndices.firstDecodedWithCount, hdec, hreject,
+          List.take_succ_cons] using ih
+      · have haccept : block ∈ FairBitIndices.acceptedBlocks m := by
+          simp [FairBitIndices.acceptedBlocks,
+            FairBitIndices.decodeBitIndex] at hdec ⊢
+          omega
+        obtain ⟨i, hi⟩ : ∃ i, FairBitIndices.decodeBitIndex m hm block = some i := by
+          cases h : FairBitIndices.decodeBitIndex m hm block with
+          | none => contradiction
+          | some i => exact ⟨i, rfl⟩
+        simp [FairBitIndices.firstDecodedWithCount, hi, haccept]
+
+lemma firstDecodedWithCount_count_le_length {α : Type*} :
+    ∀ xs : List (Option α),
+      (FairBitIndices.firstDecodedWithCount xs).2 ≤ xs.length := by
+  intro xs
+  induction xs with
+  | nil => simp [FairBitIndices.firstDecodedWithCount]
+  | cons x xs ih =>
+      cases x <;> simp [FairBitIndices.firstDecodedWithCount] at *
+      omega
+
+/-- A complete draw trace inspects at most one accepted block for each
+requested index, even if its final capped selector fails. -/
+lemma DrawTrace.accepted_prefix_le_requests (m : ℕ) (hm : 0 < m)
+    (t : ℕ) :
+    ∀ {r : ℕ} {blocks : List (Fin (Nat.clog 2 m) → Bool)}
+      {values : List (Fin m)} {used : ℕ} {failed : Bool},
+      SequentialDraws.DrawTrace m hm t r blocks values used failed →
+      ((blocks.take used).filter
+        (fun block => block ∈ FairBitIndices.acceptedBlocks m)).length ≤ r
+  | _, _, _, _, _, .done _ => by simp
+  | _, _, _, _, _, .failed tape tail u hsel => by
+      have huEq :
+          (FairBitIndices.firstDecodedWithCount
+            ((List.ofFn tape).map (FairBitIndices.decodeBitIndex m hm))).2 = u := by
+        simpa only [FairBitIndices.selectBitIndexWithCount] using
+          congrArg Prod.snd hsel
+      have hu : u ≤ t := by
+        have h := firstDecodedWithCount_count_le_length
+          ((List.ofFn tape).map (FairBitIndices.decodeBitIndex m hm))
+        rw [huEq] at h
+        simpa using h
+      have htake : (List.ofFn tape ++ tail).take u =
+          (List.ofFn tape).take u := by
+        simp [List.take_append, Nat.sub_eq_zero_of_le hu]
+      rw [htake]
+      have h := selector_accepted_prefix_le_one m hm (List.ofFn tape)
+      rw [huEq] at h
+      omega
+  | _, _, _, _, _, .accepted (used := usedNext) tape tail i u hsel hnext => by
+      have huEq :
+          (FairBitIndices.firstDecodedWithCount
+            ((List.ofFn tape).map (FairBitIndices.decodeBitIndex m hm))).2 = u := by
+        simpa only [FairBitIndices.selectBitIndexWithCount] using
+          congrArg Prod.snd hsel
+      have hu : u ≤ t := by
+        have h := firstDecodedWithCount_count_le_length
+          ((List.ofFn tape).map (FairBitIndices.decodeBitIndex m hm))
+        rw [huEq] at h
+        simpa using h
+      have hfirst := selector_accepted_prefix_le_one m hm (List.ofFn tape)
+      have hfirst' :
+          (((List.ofFn tape).take u).filter
+            (fun block => block ∈ FairBitIndices.acceptedBlocks m)).length ≤ 1 := by
+        simpa only [huEq] using hfirst
+      have hrec := DrawTrace.accepted_prefix_le_requests m hm t hnext
+      have htake : (List.ofFn tape ++ tail).take (u + usedNext) =
+          (List.ofFn tape).take u ++
+            ((List.ofFn tape).drop u ++ tail).take usedNext := by
+        rw [List.take_add]
+        simp [List.take_append, List.drop_append,
+          Nat.sub_eq_zero_of_le hu]
+      rw [htake, List.filter_append, List.length_append]
+      omega
 
 /-- Fair-bit tapes on which the first `k` local trials all successfully draw
 and reject, with exact stopped-prefix reuse between trials. -/
@@ -865,6 +1058,348 @@ lemma sourceAttempts_sum_le_two (m t s cap Nbits : ℕ)
         ((retryRejectedFiber m t s j Nbits bad).card : ℚ) := hsum
     _ = (2 ^ Nbits : ℚ) * flatRetryTailMean m t s cap Nbits bad := hscale
     _ ≤ 2 * (2 ^ Nbits : ℚ) := by nlinarith [hmean]
+
+/-- A prefix-controlled reader checks whether to stop before inspecting the
+next block. Its decision can depend on all blocks already read. -/
+def prefixReadCount {Ω : Type*} (stop : List Ω → Bool) :
+    List Ω → List Ω → ℕ
+  | _, [] => 0
+  | pre, a :: rest =>
+      if stop pre then 0 else
+        1 + prefixReadCount stop (pre ++ [a]) rest
+
+/-- Accepted blocks among those actually inspected by a prefix-controlled
+reader. -/
+def prefixAcceptedCount {Ω : Type*} [DecidableEq Ω]
+    (accepted : Finset Ω) (stop : List Ω → Bool) :
+    List Ω → List Ω → ℕ
+  | _, [] => 0
+  | pre, a :: rest =>
+      if stop pre then 0 else
+        (if a ∈ accepted then 1 else 0) +
+          prefixAcceptedCount accepted stop (pre ++ [a]) rest
+
+/-- For any adaptive stopping rule, fair independent blocks give at most two
+reads per accepted block when at least half of blocks are accepted. This is
+the finite-tape form of the stopped-prefix draw-cost inequality. -/
+lemma sum_prefixReadCount_le_two_accepted
+    {Ω : Type*} [Fintype Ω] [DecidableEq Ω]
+    (accepted : Finset Ω) (stop : List Ω → Bool)
+    (hhalf : Fintype.card Ω ≤ 2 * accepted.card) :
+    ∀ (N : ℕ) (pre : List Ω),
+      (∑ tape : Fin N → Ω,
+        prefixReadCount stop pre (List.ofFn tape)) ≤
+        2 * (∑ tape : Fin N → Ω,
+          prefixAcceptedCount accepted stop pre (List.ofFn tape)) := by
+  intro N
+  induction N with
+  | zero => intro pre; simp [prefixReadCount, prefixAcceptedCount]
+  | succ N ih =>
+      intro pre
+      by_cases hstop : stop pre
+      · simp [prefixReadCount, prefixAcceptedCount, hstop]
+      · let e : Ω × (Fin N → Ω) ≃ (Fin (N + 1) → Ω) :=
+          Fin.consEquiv (fun _ : Fin (N + 1) => Ω)
+        have hread :
+            (∑ tape : Fin (N + 1) → Ω,
+              prefixReadCount stop pre (List.ofFn tape)) =
+            Fintype.card Ω ^ (N + 1) +
+              ∑ a : Ω, ∑ tail : Fin N → Ω,
+                prefixReadCount stop (pre ++ [a]) (List.ofFn tail) := by
+          calc
+            _ = ∑ pair : Ω × (Fin N → Ω),
+                prefixReadCount stop pre (List.ofFn (e pair)) := by
+                  exact Fintype.sum_equiv e.symm _ _
+                    (by intro tape; simp only [Equiv.apply_symm_apply])
+            _ = ∑ a : Ω, ∑ tail : Fin N → Ω,
+                  (1 + prefixReadCount stop (pre ++ [a])
+                    (List.ofFn tail)) := by
+                  rw [Fintype.sum_prod_type]
+                  apply Fintype.sum_congr
+                  intro a
+                  apply Fintype.sum_congr
+                  intro tail
+                  simp [e, prefixReadCount, hstop, List.ofFn_succ]
+            _ = _ := by
+                  simp [Finset.sum_add_distrib, pow_succ, mul_comm]
+        have haccept :
+            (∑ tape : Fin (N + 1) → Ω,
+              prefixAcceptedCount accepted stop pre (List.ofFn tape)) =
+            accepted.card * Fintype.card Ω ^ N +
+              ∑ a : Ω, ∑ tail : Fin N → Ω,
+                prefixAcceptedCount accepted stop (pre ++ [a])
+                  (List.ofFn tail) := by
+          calc
+            _ = ∑ pair : Ω × (Fin N → Ω),
+                prefixAcceptedCount accepted stop pre
+                  (List.ofFn (e pair)) := by
+                  exact Fintype.sum_equiv e.symm _ _
+                    (by intro tape; simp only [Equiv.apply_symm_apply])
+            _ = ∑ a : Ω, ∑ tail : Fin N → Ω,
+                  ((if a ∈ accepted then 1 else 0) +
+                    prefixAcceptedCount accepted stop (pre ++ [a])
+                      (List.ofFn tail)) := by
+                  rw [Fintype.sum_prod_type]
+                  apply Fintype.sum_congr
+                  intro a
+                  apply Fintype.sum_congr
+                  intro tail
+                  simp [e, prefixAcceptedCount, hstop, List.ofFn_succ]
+            _ = _ := by
+                  simp [Finset.sum_add_distrib, Finset.sum_ite,
+                    Finset.sum_const, pow_succ]
+        have htail :
+            (∑ a : Ω, ∑ tail : Fin N → Ω,
+              prefixReadCount stop (pre ++ [a]) (List.ofFn tail)) ≤
+            2 * (∑ a : Ω, ∑ tail : Fin N → Ω,
+              prefixAcceptedCount accepted stop (pre ++ [a])
+                (List.ofFn tail)) := by
+          rw [Finset.mul_sum]
+          exact Finset.sum_le_sum (fun a _ => ih (pre ++ [a]))
+        have hfirst := Nat.mul_le_mul_right (Fintype.card Ω ^ N) hhalf
+        have hfirst' : Fintype.card Ω ^ (N + 1) ≤
+            2 * (accepted.card * Fintype.card Ω ^ N) := by
+          rw [pow_succ]
+          nlinarith [hfirst]
+        rw [hread, haccept]
+        omega
+
+/-- The concrete `clog2 m` decoder satisfies the accepted-block half premise
+used by the adaptive stopping inequality. -/
+lemma acceptedBitBlocks_half (m : ℕ) (hm : 0 < m) :
+    Fintype.card (Fin (Nat.clog 2 m) → Bool) ≤
+      2 * (FairBitIndices.acceptedBlocks m).card := by
+  classical
+  have hpartition : (FairBitIndices.acceptedBlocks m).card +
+      (FairBitIndices.rejectedBlocks m).card =
+        Fintype.card (Fin (Nat.clog 2 m) → Bool) := by
+    have hsub : FairBitIndices.acceptedBlocks m ⊆
+        (Finset.univ : Finset (Fin (Nat.clog 2 m) → Bool)) :=
+      Finset.subset_univ _
+    have hle := Finset.card_le_card hsub
+    have hle' : (FairBitIndices.acceptedBlocks m).card ≤
+        Fintype.card (Fin (Nat.clog 2 m) → Bool) := by
+      simpa using hle
+    simp only [FairBitIndices.rejectedBlocks, Finset.card_sdiff,
+      Finset.inter_univ]
+    rw [Finset.card_univ]
+    omega
+  have hreject := FairBitIndices.rejectedBlocks_half m hm
+  omega
+
+lemma sum_prefixReadCount_le_two_decoded (m : ℕ) (hm : 0 < m)
+    (stop : List (Fin (Nat.clog 2 m) → Bool) → Bool) (N : ℕ) :
+    (∑ tape : Fin N → (Fin (Nat.clog 2 m) → Bool),
+      prefixReadCount stop [] (List.ofFn tape)) ≤
+      2 * (∑ tape : Fin N → (Fin (Nat.clog 2 m) → Bool),
+        prefixAcceptedCount (FairBitIndices.acceptedBlocks m) stop []
+          (List.ofFn tape)) :=
+  sum_prefixReadCount_le_two_accepted
+    (FairBitIndices.acceptedBlocks m) stop (acceptedBitBlocks_half m hm) N []
+
+/-- Any bounded read count stable under replacing its unread suffix defines
+a common stopping rule on the observed prefix. -/
+noncomputable def stopForUsed {Ω : Type*} [Fintype Ω]
+    {N : ℕ} (used : (Fin N → Ω) → ℕ) (pre : List Ω) : Bool := by
+  classical
+  exact decide (∃ tape : Fin N → Ω,
+    pre = (List.ofFn tape).take pre.length ∧ used tape ≤ pre.length)
+
+lemma stopForUsed_iff {Ω : Type*} [Fintype Ω]
+    {N : ℕ} (used : (Fin N → Ω) → ℕ)
+    (hcausal : ∀ tape tape' k, k ≤ N →
+      (List.ofFn tape).take k = (List.ofFn tape').take k →
+      used tape ≤ k → used tape' = used tape)
+    (tape : Fin N → Ω) (pre rest : List Ω)
+    (hjoin : pre ++ rest = List.ofFn tape) :
+    stopForUsed used pre = true ↔ used tape ≤ pre.length := by
+  classical
+  have hpre : pre = (List.ofFn tape).take pre.length := by
+    rw [← hjoin]
+    simp
+  have hlen : pre.length ≤ N := by
+    rw [← List.length_ofFn (f := tape), ← hjoin]
+    simp
+  simp only [stopForUsed, decide_eq_true_eq]
+  constructor
+  · rintro ⟨other, hother, hused⟩
+    have hsame : (List.ofFn other).take pre.length =
+        (List.ofFn tape).take pre.length := by
+      rw [← hother, ← hpre]
+    have heq := hcausal other tape pre.length hlen hsame hused
+    omega
+  · intro hused
+    exact ⟨tape, hpre, hused⟩
+
+lemma prefixReadCount_stopForUsed {Ω : Type*} [Fintype Ω]
+    {N : ℕ} (used : (Fin N → Ω) → ℕ)
+    (hbound : ∀ tape, used tape ≤ N)
+    (hcausal : ∀ tape tape' k, k ≤ N →
+      (List.ofFn tape).take k = (List.ofFn tape').take k →
+      used tape ≤ k → used tape' = used tape)
+    (tape : Fin N → Ω) :
+    prefixReadCount (stopForUsed used) [] (List.ofFn tape) = used tape := by
+  classical
+  have hrec : ∀ (rest pre : List Ω),
+      pre ++ rest = List.ofFn tape → pre.length ≤ used tape →
+      prefixReadCount (stopForUsed used) pre rest =
+        used tape - pre.length := by
+    intro rest
+    induction rest with
+    | nil =>
+        intro pre hjoin hle
+        have hlen : pre.length = N := by
+          have h := congrArg List.length hjoin
+          simpa using h
+        have hu : used tape = N := by have hb := hbound tape; omega
+        simp [prefixReadCount, hu, hlen]
+    | cons a rest ih =>
+        intro pre hjoin hle
+        have hstop := stopForUsed_iff used hcausal tape pre (a :: rest) hjoin
+        by_cases heq : used tape ≤ pre.length
+        · have hused : used tape = pre.length := by omega
+          simp [prefixReadCount, hstop.mpr heq, hused]
+        · have hlt : pre.length < used tape := by omega
+          have hjoin' : (pre ++ [a]) ++ rest = List.ofFn tape := by
+            simpa [List.append_assoc] using hjoin
+          have hle' : (pre ++ [a]).length ≤ used tape := by simp; omega
+          have htail := ih (pre ++ [a]) hjoin' hle'
+          simp [prefixReadCount, (Bool.eq_false_iff).mpr
+            (fun h => heq (hstop.mp h)), htail]
+          omega
+  simpa using hrec (List.ofFn tape) [] (by simp) (Nat.zero_le _)
+
+/-- Accepted observations of a prefix-controlled reader are precisely the
+accepted elements in the prefix it consumed. -/
+lemma prefixAcceptedCount_eq_filter_take {Ω : Type*} [DecidableEq Ω]
+    (accepted : Finset Ω) (stop : List Ω → Bool) :
+    ∀ (pre rest : List Ω),
+      prefixAcceptedCount accepted stop pre rest =
+        ((rest.take (prefixReadCount stop pre rest)).filter
+          (fun a => a ∈ accepted)).length := by
+  intro pre rest
+  induction rest generalizing pre with
+  | nil => simp [prefixAcceptedCount, prefixReadCount]
+  | cons a rest ih =>
+      by_cases hstop : stop pre
+      · simp [prefixAcceptedCount, prefixReadCount, hstop]
+      · simp [prefixAcceptedCount, prefixReadCount, hstop,
+          ih (pre ++ [a]), List.take_succ_cons, Nat.add_comm 1]
+        split <;> simp_all <;> omega
+
+/-- A causal count of actually read blocks has the same two-to-one bound,
+without requiring callers to present its stopping predicate. -/
+lemma sum_causalUsed_le_two_accepted
+    {Ω : Type*} [Fintype Ω] [DecidableEq Ω]
+    (accepted : Finset Ω) (hhalf : Fintype.card Ω ≤ 2 * accepted.card)
+    {N : ℕ} (used : (Fin N → Ω) → ℕ)
+    (hbound : ∀ tape, used tape ≤ N)
+    (hcausal : ∀ tape tape' k, k ≤ N →
+      (List.ofFn tape).take k = (List.ofFn tape').take k →
+      used tape ≤ k → used tape' = used tape) :
+    (∑ tape : Fin N → Ω, used tape) ≤
+      2 * (∑ tape : Fin N → Ω,
+        (((List.ofFn tape).take (used tape)).filter
+          (fun a => a ∈ accepted)).length) := by
+  classical
+  let stop := stopForUsed used
+  have hmean := sum_prefixReadCount_le_two_accepted accepted stop hhalf N []
+  have hread (tape : Fin N → Ω) :
+      prefixReadCount stop [] (List.ofFn tape) = used tape :=
+    prefixReadCount_stopForUsed used hbound hcausal tape
+  have haccept (tape : Fin N → Ω) :
+      prefixAcceptedCount accepted stop [] (List.ofFn tape) =
+      (((List.ofFn tape).take (used tape)).filter
+        (fun a => a ∈ accepted)).length := by
+    simpa [stop, hread tape] using
+      prefixAcceptedCount_eq_filter_take accepted stop [] (List.ofFn tape)
+  simpa only [hread, haccept] using hmean
+
+/-- If each completed source trial has at most `s` successful decodes and the
+actual trial count has mean at most two, causal selector reads have mean at
+most `4s`. -/
+lemma sum_causalUsed_le_four_trials
+    {Ω : Type*} [Fintype Ω] [DecidableEq Ω]
+    (accepted : Finset Ω) (hhalf : Fintype.card Ω ≤ 2 * accepted.card)
+    {N s : ℕ} (used attempts : (Fin N → Ω) → ℕ)
+    (hbound : ∀ tape, used tape ≤ N)
+    (hcausal : ∀ tape tape' k, k ≤ N →
+      (List.ofFn tape).take k = (List.ofFn tape').take k →
+      used tape ≤ k → used tape' = used tape)
+    (haccepted : ∀ tape,
+      (((List.ofFn tape).take (used tape)).filter
+        (fun a => a ∈ accepted)).length ≤ s * attempts tape)
+    (hmean : (∑ tape : Fin N → Ω, attempts tape) ≤
+      2 * Fintype.card Ω ^ N) :
+    (∑ tape : Fin N → Ω, used tape) ≤
+      4 * s * Fintype.card Ω ^ N := by
+  classical
+  have hread := sum_causalUsed_le_two_accepted accepted hhalf used
+    hbound hcausal
+  have hacc :
+      (∑ tape : Fin N → Ω,
+        (((List.ofFn tape).take (used tape)).filter
+          (fun a => a ∈ accepted)).length) ≤
+        s * (∑ tape : Fin N → Ω, attempts tape) := by
+    rw [Finset.mul_sum]
+    exact Finset.sum_le_sum (fun tape _ => haccepted tape)
+  nlinarith [hread, hacc, hmean]
+
+/-- Regrouping a flat bit tape into equal-width blocks preserves every bit
+in order, including the zero-width case. -/
+noncomputable def blockTapeBitsEquiv (N L : ℕ) :
+    (Fin N → Fin L → Bool) ≃ FlatTape (N * L) :=
+  (Equiv.ofBijective
+    (fun tape : Fin N → Fin L → Bool =>
+      (⟨ClassRepresentativeTrace.tapeBits tape,
+        ClassRepresentativeTrace.tapeBits_length tape⟩ :
+          {bits : List Bool // bits.length = N * L})) (by
+      constructor
+      · intro tape tape' heq
+        exact FlatTraceLaw.tapeBits_injective L N
+          (congrArg Subtype.val heq)
+      · intro bits
+        obtain ⟨tape, tail, hbits⟩ :=
+          ClassRepresentativeTrace.splitTape L N bits.1 (by
+            simpa [bits.2])
+        have htail : tail = [] := by
+          have hlen : bits.1.length = N * L + tail.length := by
+            simpa [ClassRepresentativeTrace.tapeBits_length] using
+              congrArg List.length hbits
+          have hzero : tail.length = 0 := by rw [bits.2] at hlen; omega
+          exact List.length_eq_zero_iff.mp hzero
+        refine ⟨tape, ?_⟩
+        apply Subtype.ext
+        simpa [htail] using hbits.symm)).trans
+      (flatBitsEquiv (N * L)).symm
+
+lemma flatBits_blockTapeBitsEquiv (N L : ℕ)
+    (tape : Fin N → Fin L → Bool) :
+    flatBits (blockTapeBitsEquiv N L tape) =
+      ClassRepresentativeTrace.tapeBits tape := by
+  have h := (flatBitsEquiv (N * L)).apply_symm_apply
+    (⟨ClassRepresentativeTrace.tapeBits tape,
+      ClassRepresentativeTrace.tapeBits_length tape⟩ :
+      {bits : List Bool // bits.length = N * L})
+  exact congrArg Subtype.val h
+
+/-- Taking complete fixed-width blocks commutes with flattening. -/
+lemma flatMap_take_blocks (L k : ℕ)
+    (blocks : List (Fin L → Bool)) :
+    ((blocks.take k).flatMap List.ofFn) =
+      (blocks.flatMap List.ofFn).take (k * L) := by
+  induction k generalizing blocks with
+  | zero => simp
+  | succ k ih =>
+      cases blocks with
+      | nil => simp
+      | cons block blocks =>
+          simp only [List.take_succ_cons, List.flatMap_cons]
+          rw [Nat.succ_mul, List.take_append]
+          simp only [List.length_ofFn, Nat.add_sub_cancel_left,
+            List.take_of_length_le (by omega : L ≤ (List.ofFn block).length)]
+          rw [ih]
+          simp [Nat.add_comm, List.append_assoc]
 
 end
 end Lax457868Proofs.LocalFlatLaw
