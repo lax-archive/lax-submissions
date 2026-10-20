@@ -151,3 +151,5 @@ import Lax457868Proofs.LocalRepairPhase3
 import Lax457868Proofs.ExceptionRepairLoop
 import Lax457868Proofs.RefinedRoundCost
 import Lax457868Proofs.SourceTapePrefix
+import Lax457868Proofs.CompleteSamplerSource
+import Lax457868Proofs.FlatTraceLaw

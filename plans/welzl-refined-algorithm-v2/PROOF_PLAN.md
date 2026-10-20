@@ -954,3 +954,22 @@ the original finite input whenever its length covers that cost. Arrays,
 scalars, output and exact execution cost are preserved. Targeted compilation
 and axiom audit passed (propext and Quot.sound only). This addresses finite
 tape transfer; the clock transformation and source-driver assembly are separate.
+
+Reviewed and integrated complete sampler assembly (`97b1c479`, `a6a845e2`).
+One fixed command executes initial retries, exception refinement, full-B
+regrouping, offsets and the packed exception-repair loop. Success exports an
+actual refined sample with packed enumeration and the same concrete initial
+choice and ordered repair trace. Initial and local capped failures are explicit;
+all exits preserve n/qpow, graph and active sets, lengths and cleared repair
+marks. Preparation and repair costs retain their component formulas. Initial
+attempt charge witnesses still need the ordered probability/cost coupling.
+
+Reviewed `FlatTraceLaw` (`beec47cf`, `d39a8706`): exact output-fiber counts
+for actual variable-width ClassTrace executions on one flat tape, summed over
+actual stopping counts. For each fixed sample-dependent class-size vector the
+successful kernel is bounded by the ideal uniform law; failure remains missing
+mass. This does not condition the initial sample on successful representative
+selection. Zero-cap and size-one cases are checked. Both modules passed
+independent target builds and background-only axiom audits. Next are initial
+flat-law/source coupling, actual round/history assembly and quantitative clock
+proof. The headline theorem remains open.
