@@ -73,6 +73,53 @@ def initialSamplerRetriesSource : Com :=
           (.while (.eq (.var "initialRetryStatus") (.lit 0))
             initialRetryBody))))
 
+/-- In a nonempty retry iteration, the source executes a complete actual
+attempt before testing its outcome.  This retains the exact machine costs of
+the attempt and of the remaining loop. -/
+lemma retryWhile_first_attempt {B : ℕ} {σ τ : Env} {cost left : ℕ}
+    (hleft : σ.vars "initialRetriesLeft" = left)
+    (hstatus : σ.vars "initialRetryStatus" = 0)
+    (hpositive : 0 < left) (hleftB : left < B)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) :
+    ∃ σa σd q p u,
+      BigStepB B fullInitialAttempt σ σa q ∧
+      BigStepB B initialRetryDecision σa σd p ∧
+      BigStepB B
+        (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+        σd τ u ∧
+      cost = 1 + (Cond.eq (.var "initialRetryStatus") (.lit 0)).size +
+        1 + (Cond.eq (.var "initialRetriesLeft") (.lit 0)).size +
+        (q + p) + u := by
+  cases hrun with
+  | while_false hguard =>
+      have hvar : (Expr.var "initialRetryStatus").evalB B σ = some 0 := by
+        rw [evalB_var_iff]
+        exact ⟨hstatus.symm, by rw [hstatus]; omega⟩
+      have hlit : (Expr.lit 0).evalB B σ = some 0 := evalB_lit (by omega)
+      have htrue : (Cond.eq (.var "initialRetryStatus") (.lit 0)).evalB B σ =
+          some true := by rw [evalB_condEq hvar hlit]; simp
+      simp [htrue] at hguard
+  | while_true hguard hbody htail =>
+      unfold initialRetryBody at hbody
+      cases hbody with
+      | ite_true hzero hset =>
+          have hfalse : (Cond.eq (.var "initialRetriesLeft") (.lit 0)).evalB B σ =
+              some false := by
+            have hvar : (Expr.var "initialRetriesLeft").evalB B σ = some left := by
+              rw [evalB_var_iff]
+              exact ⟨hleft.symm, by rw [hleft]; exact hleftB⟩
+            have hlit : (Expr.lit 0).evalB B σ = some 0 :=
+              evalB_lit (by omega)
+            rw [evalB_condEq hvar hlit]
+            simp [Nat.ne_of_gt hpositive]
+          simp [hfalse] at hzero
+      | ite_false hnonzero hseq =>
+          cases hseq with
+          | seq hattempt hdecision =>
+              exact ⟨_, _, _, _, _, hattempt, hdecision, htail, by omega⟩
+
 /-- The charge from the checked one-attempt theorem, with the actual number
 of bits used by the draw and the actual representative stage charge. -/
 def attemptCharge (n m _r _t targetCap used valueCount : ℕ)
