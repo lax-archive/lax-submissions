@@ -957,6 +957,127 @@ lemma decision_status_two_selector
           (Run.of_bigStepB hrestore).frame_var "initialRetryStatus" (by decide)
         omega
 
+lemma decision_status_zero_decrements
+    {B : ℕ} {σa σd : Env} {p left : ℕ}
+    (hleft : σa.vars "initialRetriesLeft" = left)
+    (h : BigStepB B initialRetryDecision σa σd p)
+    (hzero : σd.vars "initialRetryStatus" = 0) :
+    σd.vars "initialRetriesLeft" = left - 1 := by
+  unfold initialRetryDecision at h
+  cases h with
+  | ite_false hbatch hset =>
+      cases hset with
+      | assign he =>
+          have hv := (evalB_lit_iff.mp he).1
+          simp at hzero
+          omega
+  | ite_true hbatch hinner =>
+      cases hinner with
+      | ite_false hrep hset =>
+          cases hset with
+          | assign he =>
+              have hv := (evalB_lit_iff.mp he).1
+              simp at hzero
+              omega
+      | ite_true hrep hacceptBranch =>
+          cases hacceptBranch with
+          | ite_true haccept hset =>
+              cases hset with
+              | assign he =>
+                  have hv := (evalB_lit_iff.mp he).1
+                  simp at hzero
+                  omega
+          | ite_false haccept hrestoreDec =>
+              cases hrestoreDec with
+              | seq hrestore hdec =>
+                  have hleftτ : _ :=
+                    ((Run.of_bigStepB hrestore).frame_var "initialRetriesLeft"
+                      (by decide)).trans hleft
+                  cases hdec with
+                  | assign he =>
+                      obtain ⟨m, n, hm, hn, hv, _⟩ := evalB_bin_iff.mp he
+                      have hm' := (evalB_var_iff.mp hm).1
+                      have hn' := (evalB_lit_iff.mp hn).1
+                      simp [Bop.apply] at hv
+                      simp at hzero ⊢
+                      omega
+
+lemma retryWhile_nonzero_identity
+    {B : ℕ} {σ τ : Env} {q : ℕ}
+    (hstatus : σ.vars "initialRetryStatus" ≠ 0)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ q) : τ = σ := by
+  cases hrun with
+  | while_false _ => rfl
+  | while_true hguard _ _ =>
+      have hzero := (guard_var_eq_lit hguard).2 rfl
+      exact False.elim (hstatus hzero)
+
+lemma fullInitialAttempt_accept_bit
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    {σa : Env} {q : ℕ}
+    (hrun : Run B fullInitialAttempt R.I.σ σa q) :
+    σa.vars "attemptAccepted" = 0 ∨ σa.vars "attemptAccepted" = 1 := by
+  obtain ⟨σsel, σ', tape, tail, values, used, drawFailed, stageCost,
+    hbits, htrace, hselRun, hfull, hbatch, hinpSel, houtSel,
+    hoff, htgt, hactiveA, hactiveB, hn, hqpow,
+    hdrawFailure, hdrawSuccess⟩ :=
+    fullInitialAttempt_run_bits R.I R.hactiveA R.hdegree R.hinter
+      R.hneighbors R.hexceptionFlags R.hexceptionList R.hnearBound
+      R.hexceptionCap R.hnB R.hkB R.hcapB
+  have heq : σa = σ' := by
+    obtain ⟨_, _, ha⟩ := hrun
+    obtain ⟨_, _, hb⟩ := hfull
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  subst σa
+  cases drawFailed with
+  | true =>
+      exact Or.inl (hdrawFailure rfl).2.1
+  | false =>
+      obtain ⟨W, repFailed, repUsed, hW, hWA, hvaluesLen,
+        hrepLe, hrepVal, hinp, hrepFailure, hrepSuccess⟩ :=
+        hdrawSuccess rfl
+      cases repFailed with
+      | true => exact Or.inl (hrepFailure rfl).2.1
+      | false =>
+          obtain ⟨mapped, choice, packedExceptions, packedSample,
+            hmap, hchoice, hsample, hchoiceRep, hacceptRun,
+            hexception, hflags, hlist, hprefixE, hcountE,
+            haccept, hsampleFlags, hord, hprefixW, hcountW,
+            hrepB, hactiveFinal, hinpFinal⟩ := hrepSuccess rfl
+          rw [haccept]
+          split <;> simp
+
+lemma retryWhile_zero_status_three
+    {B : ℕ} {σ τ : Env} {q : ℕ}
+    (hleft : σ.vars "initialRetriesLeft" = 0)
+    (hstatus : σ.vars "initialRetryStatus" = 0)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ q) : τ.vars "initialRetryStatus" = 3 := by
+  cases hrun with
+  | while_false hguard =>
+      have hzero := (guard_var_eq_lit hguard).1 hstatus
+      cases hzero
+  | while_true hguard hbody htail =>
+      unfold initialRetryBody at hbody
+      cases hbody with
+      | ite_false hzero hseq =>
+          have hz := (guard_var_eq_lit hzero).1 hleft
+          cases hz
+      | ite_true hzero hset =>
+          cases hset with
+          | assign he =>
+              have hv := (evalB_lit_iff.mp he).1
+              cases hv
+              have hnext : _ := retryWhile_nonzero_identity (σ := σ.setVar "initialRetryStatus" 3)
+                (by simp) htail
+              simpa [hnext] using (show (σ.setVar "initialRetryStatus" 3).vars
+                "initialRetryStatus" = 3 by simp)
+
 /-- Chronological actual full-attempt chain ending in a capped selector
 abort. The index counts the final attempt as well as preceding rejections. -/
 inductive RawSelectorAbort {B : ℕ} : Env → ℕ → Prop where
@@ -1315,5 +1436,168 @@ lemma rawSelectorAbortFiber_count_of_left
             (fuel + 2)).card ≤ (r + n) * 2 ^ N := by
         exact_mod_cast hq
       convert hfinalNat using 1 <;> congr 1 <;> omega
+
+/-- A selector-aborting execution of the concrete retry while has a final
+aborting attempt after a definite chronological number of ordinary rejects. -/
+lemma retryWhile_status_two_raw
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ} :
+    ∀ (fuel : ℕ)
+      (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+      (σ' : Env) (q : ℕ),
+      R.I.σ.vars "initialDomainSize" = m →
+      R.I.σ.vars "initialBatchTarget" = r →
+      R.I.σ.vars "initialRetriesLeft" = fuel →
+      R.I.σ.vars "initialRetryStatus" = 0 →
+      fuel < B →
+      fuel * attemptBitBudget n m r t ≤ R.I.bits.length →
+      BigStepB B
+        (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+        R.I.σ σ' q →
+      σ'.vars "initialRetryStatus" = 2 ∧
+        (σ'.vars "batchFailed" = 1 ∨
+          (σ'.vars "batchFailed" = 0 ∧ σ'.vars "repFailed" = 1)) →
+      ∃ j, 1 ≤ j ∧ j ≤ fuel ∧ RawSelectorAbort (B := B) R.I.σ j := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro R σ' q hsavedM hsavedR hleft hstatus hB hbudget hrun hfinal
+      have h3 := retryWhile_zero_status_three hleft hstatus hrun
+      omega
+  | succ fuel ih =>
+      intro R σ' q hsavedM hsavedR hleft hstatus hB hbudget hrun hfinal
+      obtain ⟨σa, σd, qa, pd, u, hfull, hdecision, htail, hcost⟩ :=
+        retryWhile_first_attempt hleft hstatus (by omega) hB hrun
+      have hfullRun : Run B fullInitialAttempt R.I.σ σa qa :=
+        Run.of_bigStepB hfull
+      have hdecisionRun : Run B initialRetryDecision σa σd pd :=
+        Run.of_bigStepB hdecision
+      have hstatusA : σa.vars "initialRetryStatus" = 0 := by
+        exact (hfullRun.frame_var "initialRetryStatus" (by decide)).trans hstatus
+      by_cases hzeroD : σd.vars "initialRetryStatus" = 0
+      · obtain ⟨hbatch, hrep, hnotAccept⟩ :=
+          decision_status_zero_rejected hstatusA hdecision hzeroD
+        have haccept : σa.vars "attemptAccepted" = 0 := by
+          rcases fullInitialAttempt_accept_bit R hfullRun with h0 | h1
+          · exact h0
+          · exact False.elim (hnotAccept h1)
+        by_cases hfuel : fuel = 0
+        · have hleftD : σd.vars "initialRetriesLeft" = 0 := by
+            have hleftA : σa.vars "initialRetriesLeft" = fuel + 1 :=
+              (hfullRun.frame_var "initialRetriesLeft" (by decide)).trans hleft
+            have hleftDec : σd.vars "initialRetriesLeft" = fuel := by
+              have hd := decision_status_zero_decrements hleftA hdecision hzeroD
+              omega
+            simpa [hfuel] using hleftDec
+          have h3 := retryWhile_zero_status_three hleftD hzeroD htail
+          omega
+        · obtain ⟨d, J, p, hd, hinp, hJbits, hJrest, hJactive,
+            hdecisionJ, hJsavedM, hJsavedR, hJleft, hJstatus,
+            hJbudget⟩ :=
+            rejected_next_ready R fuel (by omega) hsavedM hsavedR hleft
+              hstatus hB hbudget hfullRun hbatch hrep haccept
+          have heqD : σd = J.I.σ := by
+            obtain ⟨_, _, hb⟩ := hdecisionJ
+            exact (BigStep.unique hdecision.bigStep hb.bigStep).1
+          obtain ⟨j, hjpos, hjbound, hraw⟩ :=
+            ih J σ' u hJsavedM hJsavedR hJleft hJstatus
+              (by omega) hJbudget (by simpa [heqD] using htail) hfinal
+          obtain ⟨j0, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : j ≠ 0)
+          exact ⟨j0 + 2, by omega, by omega,
+            RawSelectorAbort.step R.I.σ σa J.I.σ qa p j0 hfullRun
+              hbatch hrep haccept hdecisionJ hraw⟩
+      · have heqTail : σ' = σd := retryWhile_nonzero_identity hzeroD htail
+        have hflagsD : σd.vars "batchFailed" = 1 ∨
+            (σd.vars "batchFailed" = 0 ∧ σd.vars "repFailed" = 1) := by
+          simpa [heqTail] using hfinal.2
+        have hbFrame : σd.vars "batchFailed" = σa.vars "batchFailed" :=
+          hdecisionRun.frame_var "batchFailed" (by decide)
+        have hrFrame : σd.vars "repFailed" = σa.vars "repFailed" :=
+          hdecisionRun.frame_var "repFailed" (by decide)
+        have hflagsA : σa.vars "batchFailed" = 1 ∨
+            (σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 1) := by
+          simpa [hbFrame, hrFrame] using hflagsD
+        exact ⟨1, by omega, by omega,
+          RawSelectorAbort.final R.I.σ σa qa hfullRun hflagsA⟩
+
+/-- Status 2 of the actual fixed retry source is witnessed by one of the
+chronological selector-abort chains, starting after its four setup writes. -/
+lemma source_status_two_raw
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (attemptCap : ℕ)
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hcap : R.I.σ.vars "initialRetryCap" = attemptCap)
+    (hcapB : attemptCap < B)
+    (hbudget : attemptCap * attemptBitBudget n m r t ≤ R.I.bits.length)
+    {σout : Env} {cost : ℕ}
+    (hrun : Run B initialSamplerRetriesSource R.I.σ σout cost)
+    (htwo : σout.vars "initialRetryStatus" = 2) :
+    ∃ S : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A,
+      S.I.bits = R.I.bits ∧ S.I.activeB = R.I.activeB ∧
+      S.I.σ = (((R.I.σ.setVar "initialDomainSize" m).setVar
+        "initialBatchTarget" r).setVar "initialRetriesLeft" attemptCap).setVar
+          "initialRetryStatus" 0 ∧
+      ∃ j, 1 ≤ j ∧ j ≤ attemptCap ∧ RawSelectorAbort (B := B) S.I.σ j := by
+  obtain ⟨τ, charges, consumed, hsource, hchecked, hlen, hused, hinp,
+    hn, hq, houtcome, S, rejects, hSbits, hSactive, hSstate,
+    htrace, hatMost, hexhausted⟩ :=
+    initialSamplerRetriesSource_run_withTrace attemptCap R hcap hcapB hbudget
+  have heqOut : τ = σout := by
+    obtain ⟨_, _, ha⟩ := hsource
+    obtain ⟨_, _, hb⟩ := hrun
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hfinal : τ.vars "initialRetryStatus" = 2 ∧
+      (τ.vars "batchFailed" = 1 ∨
+        (τ.vars "batchFailed" = 0 ∧ τ.vars "repFailed" = 1)) := by
+    have ht : τ.vars "initialRetryStatus" = 2 := by simpa [heqOut] using htwo
+    rcases houtcome with hacc | hsel | hexhaust
+    · unfold AcceptedResult at hacc
+      rcases hacc with ⟨_, _, _, _, hstatus, _⟩
+      omega
+    · exact hsel
+    · omega
+  obtain ⟨qactual, hle, hbig⟩ := hsource
+  unfold initialSamplerRetriesSource at hbig
+  cases hbig with
+  | seq hfirst htail1 =>
+    cases htail1 with
+    | seq hsecond htail2 =>
+      cases htail2 with
+      | seq hthird htail3 =>
+        cases htail3 with
+        | seq hfourth hloop =>
+          cases hfirst with
+          | assign he1 =>
+            have hv1 := (evalB_var_iff.mp he1).1
+            cases hsecond with
+            | assign he2 =>
+              have hv2 := (evalB_var_iff.mp he2).1
+              cases hthird with
+              | assign he3 =>
+                have hv3 := (evalB_var_iff.mp he3).1
+                cases hfourth with
+                | assign he4 =>
+                  have hv4 := (evalB_lit_iff.mp he4).1
+                  rename_i qloop v3 v2 v1 v0
+                  have hloopS : BigStepB B
+                      (.while (.eq (.var "initialRetryStatus") (.lit 0))
+                        initialRetryBody) S.I.σ τ qloop := by
+                    simpa [hSstate, hv1, hv2, hv3, hv4,
+                      R.I.hdrawModulus, R.I.hbatchTarget, hcap] using hloop
+                  have hSavedM : S.I.σ.vars "initialDomainSize" = m := by
+                    simp [hSstate]
+                  have hSavedR : S.I.σ.vars "initialBatchTarget" = r := by
+                    simp [hSstate]
+                  have hLeft : S.I.σ.vars "initialRetriesLeft" = attemptCap := by
+                    simp [hSstate]
+                  have hStatus : S.I.σ.vars "initialRetryStatus" = 0 := by
+                    simp [hSstate]
+                  have hBudget : attemptCap * attemptBitBudget n m r t ≤
+                      S.I.bits.length := by simpa [hSbits] using hbudget
+                  obtain ⟨j, hjpos, hjbound, hraw⟩ :=
+                    retryWhile_status_two_raw attemptCap S τ qloop hSavedM
+                      hSavedR hLeft hStatus hcapB hBudget hloopS hfinal
+                  exact ⟨S, hSbits, hSactive, hSstate, j, hjpos, hjbound, hraw⟩
 
 end Lax457868Proofs.InitialAbortProbability
