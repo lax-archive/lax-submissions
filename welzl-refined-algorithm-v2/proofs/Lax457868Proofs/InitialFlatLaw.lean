@@ -32,6 +32,7 @@ open Lax457868Proofs.InitialDrawSampleSource
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
 open Lax457868Proofs.ReusedOriginal.Construction.RadixMath
+open Lax457868Proofs.ReusedOriginal.Construction.ReadKeys
 
 /-- A prescribed stopped path followed by an arbitrary event on precisely
 the bits that remain after its actual consumed prefix. -/
@@ -898,10 +899,11 @@ lemma initialSource_success_jointFiber
           (2 ^ I.bits.length : ℚ) ≤
         outcomeWeight A (activeVertices n I.activeB)
           (fun b => numericNeighborhood G b ∩ A) r ⟨draw, reps⟩ ∧
-      ∀ b ∈ activeVertices n I.activeB,
+      (∀ b ∈ activeVertices n I.activeB,
         (outcomeChoice A (activeVertices n I.activeB)
           (fun b => numericNeighborhood G b ∩ A) r
-          ⟨draw, reps⟩).representative b = mapped b := by
+          ⟨draw, reps⟩).representative b = mapped b) ∧
+      draw = sourceOrderedDraw A m r I.domain I.henum values hlen := by
   classical
   let C := activeVertices n I.activeB
   let Nhood := fun b => numericNeighborhood G b ∩ A
@@ -924,7 +926,7 @@ lemma initialSource_success_jointFiber
     exact hclasses b hb b' hb'
   let reps := numericChoicesEquiv draw label q hrange hoccupied hlabel
     (mappedNumericChoices C label q hoccupied mapped hrepC hrepLabel)
-  refine ⟨draw, reps, hdrawSet, ?_, ?_, ?_⟩
+  refine ⟨draw, reps, hdrawSet, ?_, ?_, ?_, rfl⟩
   · have hfirst : bitBudget (fun _ => m) t 0 r ≤ I.bits.length :=
       le_trans (Nat.le_add_right _ _)
         (initialSource_jointBudget I q label size hsizes hoccupied)
@@ -1039,7 +1041,7 @@ lemma initialSamplerAttempt_run_jointFiber
     intro b hb
     obtain ⟨hbn, hbactive⟩ := mem_activeVertices.mp hb
     exact hformulaSource b hbn hbactive
-  obtain ⟨draw, reps, hdrawSet, hmem, hprob, hrepresentative⟩ :=
+  obtain ⟨draw, reps, hdrawSet, hmem, hprob, hrepresentative, _hordered⟩ :=
     initialSource_success_jointFiber I tape tail values used hbits
       (by simpa [hdrawOK] using hdrawTrace) W hW hWA hlen
       q label size sorted repValues repUsed repCharge
@@ -1305,6 +1307,413 @@ lemma run_twoPhase_sameConsumedPrefix
     (by simp) hnoRead hsecond (by simpa using hsecond')
   simpa [hdraw] using hpart
 
+/-- Equality of partition arrays recovers equality of each live class label
+or class size, while leaving irrelevant out-of-range function values free. -/
+lemma arrOf_eq_on {n : ℕ} {f g : ℕ → ℕ}
+    (h : arrOf n f = arrOf n g) (i : ℕ) (hi : i < n) :
+    f i = g i := by
+  have hf := getD_arrOf f hi
+  have hg := getD_arrOf g hi
+  exact hf.symm.trans ((congrArg (fun xs : List ℕ => xs.getD i 0) h).trans hg)
+
+private lemma stoppedPrefix_cast {m m' u : ℕ} (heq : m = m')
+    (hm : 0 < m) (i : Fin m) (pre : BitTape m u)
+    (hp : stoppedEvent m hm u u i pre) :
+    ∃ (i' : Fin m') (pre' : BitTape m' u) (hm' : 0 < m'),
+      i'.val = i.val ∧ tapeBits pre' = tapeBits pre ∧
+        stoppedEvent m' hm' u u i' pre' := by
+  subst m'
+  exact ⟨i, pre, hm, rfl, rfl, hp⟩
+
+private lemma flatClassSuccess_congr_live
+    (size size' start start' : ℕ → ℕ) (t : ℕ) :
+    ∀ {d r : ℕ} {bits : List Bool} {values attempts : List ℕ},
+      FlatClassSuccess size t start d r bits values attempts →
+      (∀ j < r, size (d + j) = size' (d + j)) →
+      (∀ j < r, start (d + j) = start' (d + j)) →
+      FlatClassSuccess size' t start' d r bits values attempts
+  | _, _, _, _, _, .done d bits, _, _ => by
+      simpa using (FlatClassSuccess.done d bits)
+  | _, _, _, _, _, .step (d := d) (r := r) (v := v) i pre rest hm hu hp hnext,
+      hsize, hstart => by
+      have hsd : size d = size' d := by simpa using hsize 0 (by omega)
+      have hst : start d = start' d := by simpa using hstart 0 (by omega)
+      have hsizeNext : ∀ j < r, size (d + 1 + j) = size' (d + 1 + j) := by
+        intro j hj
+        have h := hsize (j + 1) (by omega)
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h
+      have hstartNext : ∀ j < r, start (d + 1 + j) = start' (d + 1 + j) := by
+        intro j hj
+        have h := hstart (j + 1) (by omega)
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h
+      have hnext' := flatClassSuccess_congr_live size size' start start' t
+        hnext hsizeNext hstartNext
+      obtain ⟨i', pre', hm', hiVal, hpreBits, hp'⟩ :=
+        stoppedPrefix_cast hsd hm i pre hp
+      rw [hst, ← hiVal, ← hpreBits]
+      exact FlatClassSuccess.step i' pre' rest hm' hu hp' hnext'
+
+private lemma classTrace_success_congr_live
+    (size size' start start' : ℕ → ℕ) (t d q : ℕ)
+    (bits : List Bool) (values : List ℕ) (used charge : ℕ)
+    (htrace : ClassTrace size t start d q bits values used charge false)
+    (hsize : ∀ j < q, size (d + j) = size' (d + j))
+    (hstart : ∀ j < q, start (d + j) = start' (d + j))
+    (hbudget : bitBudget size' t d q ≤ bits.length) :
+    ∃ used' charge',
+      ClassTrace size' t start' d q bits values used' charge' false := by
+  obtain ⟨attempts, hflat⟩ :=
+    classTrace_success_to_flat size t start htrace rfl
+  have hflat' := flatClassSuccess_congr_live size size' start start' t
+    hflat hsize hstart
+  obtain ⟨used', charge', htrace', _, _⟩ :=
+    flatClassSuccess_to_classTrace size' t start' hflat' hbudget
+  exact ⟨used', charge', htrace'⟩
+
+private def reinputInitialAttempt
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A)
+    (bits : List Bool)
+    (hbudget : r * t * Nat.clog 2 m + n * t * Nat.clog 2 n ≤ bits.length) :
+    Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A := by
+  refine { I with
+    σ := {I.σ with inp := bits.map Bool.toNat ++ I.rest},
+    bits := bits,
+    hinput := rfl,
+    hbudget := hbudget,
+    hn := ?_, hQpow := ?_, hactiveBCount := ?_, hdrawModulus := ?_,
+    hbatchTarget := ?_, hdrawCap := ?_, hkey0 := ?_, hdrawDomain := ?_,
+    hsampleDraws := ?_, hsampleFlags := ?_, hord := ?_, hoff := ?_,
+    htarget := ?_, hactiveB := ?_, hclassB := ?_, hclassSize := ?_,
+    hmarkedCount := ?_, hstamp := ?_, htouched := ?_, hsplit := ?_,
+    hrepB := ?_, hcount := ?_, hscratch := ?_, hrepClass := ?_ }
+  all_goals simp only [Env.mk.injEq] <;> first
+    | exact I.hn | exact I.hQpow | exact I.hactiveBCount
+    | exact I.hdrawModulus | exact I.hbatchTarget | exact I.hdrawCap
+    | exact I.hkey0 | exact I.hdrawDomain | exact I.hsampleDraws
+    | exact I.hsampleFlags | exact I.hord | exact I.hoff
+    | exact I.htarget | exact I.hactiveB | exact I.hclassB
+    | exact I.hclassSize | exact I.hmarkedCount | exact I.hstamp
+    | exact I.htouched | exact I.hsplit | exact I.hrepB
+    | exact I.hcount | exact I.hscratch | exact I.hrepClass
+
+private noncomputable def indicesOfOutcome
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A)
+    (ω : InitialOutcome A (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r) : List ℕ :=
+  List.ofFn fun j : Fin r =>
+    ((prefixDomainEnumeration m I.domain A I.henum).symm (ω.1 j)).val
+
+private lemma sourceOrderedDraw_indices_eq
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A)
+    (ω : InitialOutcome A (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r)
+    (values : List (Fin m)) (hlen : values.length = r)
+    (hdraw : sourceOrderedDraw A m r I.domain I.henum values hlen = ω.1) :
+    values.map Fin.val = indicesOfOutcome I ω := by
+  apply List.ext_getElem
+  · simp [hlen, indicesOfOutcome]
+  · intro j hj hj'
+    have hjr : j < r := by simpa [hlen] using hj
+    let enum := prefixDomainEnumeration m I.domain A I.henum
+    have hcard : m = A.card := prefixEnumerates_card m I.domain A I.henum
+    let idx : Fin A.card := ⟨(values[j]'(by simpa [hlen] using hjr)).val,
+      by simpa [← hcard] using (values[j]'(by simpa [hlen] using hjr)).isLt⟩
+    have heq := congrArg (fun f : Fin r → A => f ⟨j, hjr⟩) hdraw
+    change enum idx = ω.1 ⟨j, hjr⟩ at heq
+    have heq' := congrArg enum.symm heq
+    have heqVal := congrArg Fin.val heq'
+    simpa [indicesOfOutcome, enum, idx] using heqVal
+
+/-- One complete successful source execution, recording the exact first
+consumed prefix and the partition arrays that determine the second modulus. -/
+structure SourceInitialOutcomeWitness
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A)
+    (bits : List Bool)
+    (ω : InitialOutcome A (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r) where
+  σd : Env
+  σp : Env
+  σfinal : Env
+  values : List (Fin m)
+  valuesLength : values.length = r
+  attempts : List ℕ
+  used : ℕ
+  q : ℕ
+  label : ℕ → ℕ
+  size : ℕ → ℕ
+  sorted : ℕ → ℕ
+  mapped : ℕ → ℕ
+  repValues : List ℕ
+  repUsed : ℕ
+  repCharge : ℕ
+  drawCost : ℕ
+  partitionCost : ℕ
+  attemptCost : ℕ
+  drawFlat : FlatClassSuccess (fun _ => m) t (fun _ => 0) 0 r
+    bits (values.map Fin.val) attempts
+  consumed : consumedBits (fun _ => m) 0 attempts =
+    used * Nat.clog 2 m
+  drawRun : Run B initialDrawSampleSource
+    ({I.σ with inp := bits.map Bool.toNat ++ I.rest}.setVar "attemptAccepted" 0)
+    σd drawCost
+  drawInput : σd.inp =
+    (bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ I.rest
+  partitionRun : Run B FullSamplePartition.fullSamplePartition σd σp partitionCost
+  partitionInput : σp.inp = σd.inp
+  partitionCount : σp.vars "classCount" = q
+  partitionLabel : σp.arrs "classB" = arrOf n label
+  partitionSize : σp.arrs "classSize" = arrOf n size
+  classSizes : ClassSizes n q I.activeB label size
+  occupied : LabelsOccupyPrefix q label (activeVertices n I.activeB)
+  classifies : ∀ b ∈ activeVertices n I.activeB,
+    ∀ b' ∈ activeVertices n I.activeB,
+      (label b = label b' ↔
+        trace (fun z => numericNeighborhood G z ∩ A)
+          (drawSet A ω.1) b =
+        trace (fun z => numericNeighborhood G z ∩ A)
+          (drawSet A ω.1) b')
+  sortedPrefix : ∀ i < (scanList I.activeB 0 n).length,
+    sorted i = (bucketSort Q label (scanList I.activeB 0 n)).getD i 0
+  classTrace : ClassTrace size t (classStart size) 0 q
+    (bits.drop (used * Nat.clog 2 m)) repValues repUsed repCharge false
+  attemptRun : Run B initialSamplerAttempt
+    {I.σ with inp := bits.map Bool.toNat ++ I.rest} σfinal attemptCost
+  resultArray : σfinal.arrs "repB" = arrOf n mapped
+  orderedDraw : sourceOrderedDraw A m r I.domain I.henum values
+    valuesLength = ω.1
+  formula : ∀ b ∈ activeVertices n I.activeB,
+    mapped b = writeClassReps sorted I.repClass 0 repValues (label b)
+  representative : ∀ b ∈ activeVertices n I.activeB,
+    (outcomeChoice A (activeVertices n I.activeB)
+      (fun z => numericNeighborhood G z ∩ A) r ω).representative b = mapped b
+
+/-- Finite event for one exact successful abstract outcome of the executed
+initial sampler on a uniformly chosen length-`N` flat tape. -/
+noncomputable def sourceInitialOutcomeFiber
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A)
+    (ω : InitialOutcome A (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r) :
+    Finset (FlatTape I.bits.length) := by
+  classical
+  exact Finset.univ.filter fun tape =>
+    Nonempty (SourceInitialOutcomeWitness I (flatBits tape) ω)
+
+lemma initialSamplerAttempt_run_sourceOutcome
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A) :
+    ∃ σ' : Env, ∃ attemptCost : ℕ,
+      Run B initialSamplerAttempt I.σ σ' attemptCost ∧
+      (σ'.vars "batchFailed" = 0 → σ'.vars "repFailed" = 0 →
+        ∃ ω : InitialOutcome A (activeVertices n I.activeB)
+          (fun b => numericNeighborhood G b ∩ A) r,
+          (flatBitsEquiv I.bits.length).symm ⟨I.bits, rfl⟩ ∈
+            sourceInitialOutcomeFiber I ω) := by
+  classical
+  obtain ⟨σd, σ', tape, tail, values, used, drawFailed, stageCost,
+    hbits, hdrawTrace, hrun, _haccepted, _hn, _hqpow, hbatchFailed,
+    _harrFrame, _hvarFrame, _hdrawFailure, hdrawSuccess,
+    hdrawRun, hdrawInp⟩ :=
+      Lax457868Proofs.InitialSamplerAttempt.initialSamplerAttempt_run_bits I
+  let attemptCost :=
+    2 + initialDrawSampleCost n m used
+      (values.length + if drawFailed then 1 else 0)
+      values.length drawFailed +
+      (if drawFailed then 5 else 4 + stageCost)
+  refine ⟨σ', attemptCost, hrun, ?_⟩
+  intro hbatchOK hrepOK
+  have hdrawOK : drawFailed = false := by
+    cases drawFailed with
+    | false => rfl
+    | true => simp [hbatchFailed] at hbatchOK
+  obtain ⟨W, sampleOrd, sampleCount, σp, q, label, size, xs, sorted,
+    repValues, repUsed, repCharge, repFailed, hW, hWA, _hWcard,
+    hlen, _hprefix, hpartition, hsizes, hoccupied, hclasses,
+    _hselection, _hnFinal, _hqpowFinal, _hsampleCount, _hclassB,
+    _hclassSize, _hord, hnodup, hxs, hclass, _hrepUsedLe,
+    hrepFailedVal, _hrepFailure, _hsampleFlags, _hinp,
+    hrepSuccess, _hcost, hsourceCert⟩ := hdrawSuccess hdrawOK
+  have hrepFalse : repFailed = false := by
+    cases repFailed with
+    | false => rfl
+    | true => simp [hrepFailedVal] at hrepOK
+  obtain ⟨mapped, hmappedArr, _hvFinal, hformulaSource, hrepClass⟩ :=
+    hrepSuccess hrepFalse
+  rcases hsourceCert with
+    ⟨_hclassCountFinal, _hxsLen, hxsScan, hqP,
+      hlabelP, hsizeP, hinP, hsorted⟩
+  let C := activeVertices n I.activeB
+  have hrepC : ∀ b ∈ C, mapped b ∈ C := by
+    intro b hb
+    obtain ⟨hbn, hbactive⟩ := mem_activeVertices.mp hb
+    change mapped b ∈ activeVertices n I.activeB
+    rw [← hxs]
+    exact List.mem_toFinset.mpr (hrepClass b hbn hbactive).2.1
+  have hrepLabel : ∀ b ∈ C, label (mapped b) = label b := by
+    intro b hb
+    obtain ⟨hbn, hbactive⟩ := mem_activeVertices.mp hb
+    exact (hrepClass b hbn hbactive).2.2
+  have hformula : ∀ b ∈ C,
+      mapped b = writeClassReps sorted I.repClass 0 repValues (label b) := by
+    intro b hb
+    obtain ⟨hbn, hbactive⟩ := mem_activeVertices.mp hb
+    exact hformulaSource b hbn hbactive
+  obtain ⟨draw, reps, hdrawSet, _hmem, _hprob, hrepresentative, hordered⟩ :=
+    initialSource_success_jointFiber I tape tail values used hbits
+      (by simpa [hdrawOK] using hdrawTrace) W hW hWA hlen
+      q label size sorted repValues repUsed repCharge
+      (by simpa [hrepFalse] using hclass) hsizes hoccupied
+      hclasses mapped hrepC hrepLabel hformula
+  obtain ⟨charge, hdrawClass⟩ :=
+    drawTrace_to_classTrace m I.hmPos t 0
+      (by simpa [hdrawOK] using hdrawTrace)
+  have hdrawClass' := classTrace_append (fun _ => m) t
+    (fun _ => 0) hdrawClass tail
+  have hfirstBudget : bitBudget (fun _ => m) t 0 r ≤ I.bits.length := by
+    rw [constant_bitBudget]
+    exact (Nat.le_add_right _ _).trans I.hbudget
+  have hdrawClassBits : ClassTrace (fun _ => m) t (fun _ => 0) 0 r
+      I.bits (values.map Fin.val) (used * Nat.clog 2 m) charge false := by
+    simpa [hbits, tapeBits] using hdrawClass'
+  obtain ⟨attempts, hflat, hconsumed⟩ :=
+    classTrace_success_flat_used (fun _ => m) t (fun _ => 0)
+      hdrawClassBits hfirstBudget
+  have hclassifies : ∀ b ∈ C, ∀ b' ∈ C,
+      (label b = label b' ↔
+        trace (fun z => numericNeighborhood G z ∩ A)
+          (drawSet A draw) b =
+        trace (fun z => numericNeighborhood G z ∩ A)
+          (drawSet A draw) b') := by
+    intro b hb b' hb'
+    rw [hdrawSet, restrictedNeighborhood_trace_eq _ hWA,
+      restrictedNeighborhood_trace_eq _ hWA]
+    exact hclasses b hb b' hb'
+  let ω : InitialOutcome A C
+      (fun b => numericNeighborhood G b ∩ A) r := ⟨draw, reps⟩
+  refine ⟨ω, ?_⟩
+  simp only [sourceInitialOutcomeFiber, Finset.mem_filter,
+    Finset.mem_univ, true_and]
+  have hflatBits : flatBits ((flatBitsEquiv I.bits.length).symm
+      ⟨I.bits, rfl⟩) = I.bits :=
+    congrArg Subtype.val ((flatBitsEquiv I.bits.length).apply_symm_apply _)
+  rw [hflatBits]
+  change Nonempty (SourceInitialOutcomeWitness I I.bits ω)
+  have hinputEnv : {I.σ with inp := I.bits.map Bool.toNat ++ I.rest} =
+      I.σ := by
+    rw [← I.hinput]
+  refine ⟨{
+    σd := σd, σp := σp, σfinal := σ', values := values,
+    valuesLength := hlen, attempts := attempts, used := used,
+    q := q, label := label, size := size, sorted := sorted,
+    mapped := mapped, repValues := repValues,
+    repUsed := repUsed, repCharge := repCharge,
+    drawCost := initialDrawSampleCost n m used values.length values.length false,
+    partitionCost := FullSamplePartition.fullSamplePartitionCost x sampleOrd n sampleCount,
+    attemptCost := attemptCost,
+    drawFlat := hflat, consumed := hconsumed,
+    drawRun := by simpa [hinputEnv, hdrawOK] using hdrawRun,
+    drawInput := hdrawInp,
+    partitionRun := hpartition, partitionInput := hinP,
+    partitionCount := hqP, partitionLabel := hlabelP,
+    partitionSize := hsizeP, classSizes := hsizes,
+    occupied := hoccupied, classifies := hclassifies,
+    sortedPrefix := by simpa [hxsScan] using hsorted,
+    classTrace := by simpa [hrepFalse] using hclass,
+    attemptRun := by simpa [hinputEnv] using hrun,
+    resultArray := hmappedArr, orderedDraw := hordered.symm,
+    formula := hformula, representative := hrepresentative
+  }⟩
+
+lemma SourceInitialOutcomeWitness.outputCount_eq_ideal
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    {I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A}
+    {bits : List Bool}
+    {ω : InitialOutcome A (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r}
+    (w : SourceInitialOutcomeWitness I bits ω) :
+    outputCount w.size 0 w.q =
+      Fintype.card (RepChoices A (activeVertices n I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) ω.1) := by
+  have hrange : ∀ b ∈ activeVertices n I.activeB, w.label b < w.q := by
+    intro b hb
+    obtain ⟨hbn, hactive⟩ := mem_activeVertices.mp hb
+    exact w.classSizes.1 b hbn hactive
+  exact (repChoices_card_eq_outputCount ω.1 w.label w.size
+    hrange w.occupied w.classifies w.classSizes.2).symm
+
+lemma SourceInitialOutcomeWitness.partition_eq_of_consumedPrefix
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    {I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A}
+    {bits bits' : List Bool}
+    {ω : InitialOutcome A (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r}
+    (w : SourceInitialOutcomeWitness I bits ω)
+    (w' : SourceInitialOutcomeWitness I bits' ω)
+    (hattempts : w.attempts = w'.attempts)
+    (hprefix : bits.take (consumedBits (fun _ => m) 0 w.attempts) =
+      bits'.take (consumedBits (fun _ => m) 0 w.attempts)) :
+    w'.σp = {w.σp with inp := w'.σd.inp} := by
+  let u := consumedBits (fun _ => m) 0 w.attempts
+  let pre := (bits.take u).map Bool.toNat
+  let rest := (bits.drop u).map Bool.toNat ++ I.rest
+  let rest' := (bits'.drop u).map Bool.toNat ++ I.rest
+  let σ₀ := {I.σ with inp := bits.map Bool.toNat ++ I.rest}.setVar
+    "attemptAccepted" 0
+  let σ₀' := {I.σ with inp := bits'.map Bool.toNat ++ I.rest}.setVar
+    "attemptAccepted" 0
+  have hsplit (ys : List Bool) :
+      ys.map Bool.toNat ++ I.rest =
+        (ys.take u).map Bool.toNat ++
+          ((ys.drop u).map Bool.toNat ++ I.rest) := by
+    calc
+      ys.map Bool.toNat ++ I.rest =
+          ((ys.map Bool.toNat).take u ++
+            (ys.map Bool.toNat).drop u) ++ I.rest := by
+            rw [List.take_append_drop]
+      _ = _ := by
+        rw [List.map_take, List.map_drop, List.append_assoc]
+  have hinput : σ₀.inp = pre ++ rest := by
+    change bits.map Bool.toNat ++ I.rest = _
+    exact hsplit bits
+  have houtput : w.σd.inp = rest := by
+    rw [w.drawInput, ← w.consumed]
+  have hσ₀' : σ₀' = {σ₀ with inp := pre ++ rest'} := by
+    have hpre' : (bits'.take u).map Bool.toNat = pre := by
+      exact congrArg (List.map Bool.toNat) hprefix.symm
+    have hinp' : bits'.map Bool.toNat ++ I.rest = pre ++ rest' := by
+      rw [hsplit bits', hpre']
+    simp only [σ₀, σ₀', Env.setVar]
+    rw [hinp']
+  have hdrawRun' : Run B initialDrawSampleSource
+      {σ₀ with inp := pre ++ rest'} w'.σd w'.drawCost := by
+    rw [← hσ₀']
+    exact w'.drawRun
+  have hpart := run_twoPhase_sameConsumedPrefix pre rest rest'
+    hinput houtput w.drawRun hdrawRun' w.partitionRun
+    w.partitionInput w'.partitionRun
+  exact hpart
+
 /-- Fixing every bit consumed by the first stage leaves exactly the
 fixed-length suffix event. In particular the rejected selector blocks are
 part of the condition, rather than being averaged away. -/
@@ -1507,6 +1916,22 @@ lemma flatClassSuccess_iff_consumedPrefix (size : ℕ → ℕ) (t : ℕ)
     have h' := flatClassSuccess_append_suffix size t start h
       (bits.drop (consumedBits size d attempts))
     simpa only [List.take_append_drop] using h'
+
+/-- Occupied classes always admit a numeric output vector, including when
+the capped selector later aborts before producing one. -/
+lemma exists_validOutput_of_positive (size start : ℕ → ℕ)
+    (d q : ℕ) (hpos : ∀ j < q, 0 < size (d + j)) :
+    ∃ values, ValidOutput size start d q values := by
+  induction q generalizing d with
+  | zero => exact ⟨[], ValidOutput.done d⟩
+  | succ q ih =>
+      have hd : 0 < size d := by simpa using hpos 0 (by omega)
+      obtain ⟨tail, htail⟩ := ih (d + 1) (by
+        intro j hj
+        have h := hpos (j + 1) (by omega)
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h)
+      exact ⟨start d :: tail,
+        ValidOutput.step ⟨0, hd⟩ htail⟩
 
 /-- On one stopped first-stage path, class sizes and the desired numeric
 representative vector may depend on the entire consumed bit prefix. -/
