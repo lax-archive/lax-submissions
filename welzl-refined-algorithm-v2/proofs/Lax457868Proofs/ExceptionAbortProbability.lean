@@ -359,4 +359,73 @@ lemma StepChain.no_shorter_same_prefix
           rw [hguardEq, hfalse] at hguard
           contradiction
 
+/-- Once a local retry reports failure, the actual repair loop has no
+subsequent body call: its stop index is already the current index. -/
+lemma StepChain.nil_of_guard_false
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    {R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart}
+    {σfinal : Env} {steps : List ExecutedException}
+    (hchain : StepChain R σfinal steps)
+    (hfalse : (Cond.lt (.var "exceptionIndex")
+      (.var "exceptionStop")).evalB B R.σ = some false) :
+    steps = [] ∧ σfinal = R.σ := by
+  cases hchain with
+  | nil => exact ⟨rfl, rfl⟩
+  | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed hfar
+      hfailedFar hfailureTrace hfailedStop htail =>
+      rw [hfalse] at hguard
+      contradiction
+
+/-- The source failure certificate belongs to the last actual exception
+call, with every earlier call captured in chronological order. -/
+lemma StepChain.failed_final_step
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    {R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart}
+    {σfinal : Env} {steps : List ExecutedException}
+    (hchain : StepChain R σfinal steps)
+    (hstart : R.σ.vars "repairRetryStatus" ≠ 2 ∧
+      R.σ.vars "repairRetryStatus" ≠ 3)
+    (hfinal : σfinal.vars "repairRetryStatus" = 2 ∨
+      σfinal.vars "repairRetryStatus" = 3) :
+    ∃ pref z, steps = pref ++ [z] ∧
+      ∃ (W Wnext : Finset ℕ)
+        (Rcur : LoopInput B n s t bufferCap targetCap q cap k e
+          G x E groupedB Wbase A W)
+        (Rnext : LoopInput B n s t bufferCap targetCap q cap k e
+          G x E groupedB Wbase A Wnext)
+        (i : ℕ),
+        z.vertex = Rcur.exceptionList i ∧
+        FarStepTrace Rcur i z.attempts z.used ∧
+        FarStepFailureTrace Rcur i z.attempts z.used
+          (Rnext.σ.vars "repairRetryStatus") ∧
+        (Rnext.σ.vars "repairRetryStatus" = 2 ∨
+          Rnext.σ.vars "repairRetryStatus" = 3) ∧
+        σfinal = Rnext.σ := by
+  induction hchain with
+  | nil R hguard =>
+      rcases hfinal with h2 | h3
+      · exact False.elim (hstart.1 h2)
+      · exact False.elim (hstart.2 h3)
+  | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed hfar
+      hfailedFar hfailureTrace hfailedStop htail ih =>
+      by_cases hf : Rnext.σ.vars "repairRetryStatus" = 2 ∨
+        Rnext.σ.vars "repairRetryStatus" = 3
+      · obtain ⟨htailNil, hfinalEq⟩ :=
+          StepChain.nil_of_guard_false htail (hfailedStop hf)
+        subst tail
+        refine ⟨[], z, rfl, _, _, R, Rnext, i,
+          hvertex, hfar (hfailedFar hf), hfailureTrace hf, hf, ?_⟩
+        exact hfinalEq
+      · obtain ⟨pref, z', heq, W, Wnext', Rcur, Rnext', j,
+          hz', hfar', htrace', hf', hfinalEq⟩ :=
+            ih ⟨by tauto, by tauto⟩ hfinal
+        exact ⟨z :: pref, z', by simp [heq], W, Wnext', Rcur,
+          Rnext', j, hz', hfar', htrace', hf', hfinalEq⟩
+
 end Lax457868Proofs.ExceptionAbortProbability
