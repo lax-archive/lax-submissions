@@ -24,6 +24,7 @@ open Lax457868Proofs.EnumeratedDraws
 open Lax457868Proofs.SamplerInitialProbability
 open Lax457868Proofs.SamplerInitialExpectation
 open Lax457868Proofs.SamplerInitialRetries
+open Lax457868Proofs.SamplerWeightedRetries
 open Lax457868Proofs.SamplerPhases
 open Lax457868Proofs.ExceptionPhaseSource
 open Lax457868Proofs.InitialSamplerChoice
@@ -2570,6 +2571,98 @@ lemma sourceInitialOutcomeFiber_probability_le_outcomeWeight
           (fun b => numericNeighborhood G b ∩ A) ω.1) : ℚ)) ≤
       (2 ^ I.bits.length : ℚ) := by exact_mod_cast hnat'
   simpa [mul_assoc] using hnatQ
+
+/-- Completed actual initial attempts whose decoded exception predicate
+rejects. A failed capped selector has no successful outcome witness and is
+outside this retry-continuation event. -/
+noncomputable def sourceInitialBadFiber
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A)
+    (threshold cap : ℕ) : Finset (FlatTape I.bits.length) := by
+  classical
+  exact ((Finset.univ : Finset (InitialOutcome A
+      (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r)).filter fun ω =>
+        outcomeBad A (activeVertices n I.activeB)
+          (fun b => numericNeighborhood G b ∩ A) r threshold cap ω = true
+      ).biUnion (sourceInitialOutcomeFiber I)
+
+lemma sourceInitialBadFiber_probability_le_badMass
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A)
+    (threshold cap : ℕ) :
+    ((sourceInitialBadFiber I threshold cap).card : ℚ) /
+      (2 ^ I.bits.length : ℚ) ≤
+    badMass
+      (outcomeWeight A (activeVertices n I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (outcomeBad A (activeVertices n I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r threshold cap) := by
+  classical
+  let bad : Finset (InitialOutcome A (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r) :=
+    Finset.univ.filter fun ω =>
+      outcomeBad A (activeVertices n I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r threshold cap ω = true
+  have hcard : (sourceInitialBadFiber I threshold cap).card ≤
+      ∑ ω ∈ bad, (sourceInitialOutcomeFiber I ω).card := by
+    exact Finset.card_biUnion_le
+  have hcardQ : ((sourceInitialBadFiber I threshold cap).card : ℚ) ≤
+      ∑ ω ∈ bad, ((sourceInitialOutcomeFiber I ω).card : ℚ) := by
+    exact_mod_cast hcard
+  have hden : 0 < (2 ^ I.bits.length : ℚ) := by positivity
+  calc
+    ((sourceInitialBadFiber I threshold cap).card : ℚ) /
+        (2 ^ I.bits.length : ℚ) ≤
+      (∑ ω ∈ bad, ((sourceInitialOutcomeFiber I ω).card : ℚ)) /
+        (2 ^ I.bits.length : ℚ) :=
+          (div_le_div_iff₀ hden hden).mpr (by nlinarith [hcardQ])
+    _ = ∑ ω ∈ bad,
+        ((sourceInitialOutcomeFiber I ω).card : ℚ) /
+          (2 ^ I.bits.length : ℚ) := by simp [Finset.sum_div]
+    _ ≤ ∑ ω ∈ bad,
+        outcomeWeight A (activeVertices n I.activeB)
+          (fun b => numericNeighborhood G b ∩ A) r ω := by
+            apply Finset.sum_le_sum
+            intro ω _
+            exact sourceInitialOutcomeFiber_probability_le_outcomeWeight I ω
+    _ = badMass
+        (outcomeWeight A (activeVertices n I.activeB)
+          (fun b => numericNeighborhood G b ∩ A) r)
+        (outcomeBad A (activeVertices n I.activeB)
+          (fun b => numericNeighborhood G b ∩ A) r threshold cap) := by
+            simp [badMass, bad, Finset.sum_filter]
+
+/-- The actual retry-continuation event inherits any half-mass bound on
+mathematical rejection; selector exhaustion contributes zero continuation
+mass. -/
+lemma sourceInitialBadFiber_half
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A)
+    (threshold cap : ℕ)
+    (hmass : badMass
+      (outcomeWeight A (activeVertices n I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (outcomeBad A (activeVertices n I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r threshold cap) ≤
+          (1 / 2 : ℚ)) :
+    2 * (sourceInitialBadFiber I threshold cap).card ≤
+      2 ^ I.bits.length := by
+  have hprob := (sourceInitialBadFiber_probability_le_badMass
+    I threshold cap).trans hmass
+  have hden : 0 < (2 ^ I.bits.length : ℚ) := by positivity
+  have hq : (2 : ℚ) *
+      ((sourceInitialBadFiber I threshold cap).card : ℚ) ≤
+      (2 ^ I.bits.length : ℚ) := by
+    have h := (div_le_iff₀ hden).mp hprob
+    nlinarith
+  exact_mod_cast hq
 
 /-- Occupied classes always admit a numeric output vector, including when
 the capped selector later aborts before producing one. -/
