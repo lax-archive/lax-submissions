@@ -17,9 +17,19 @@ open Lax11.GraphEncoding
 open Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
 open scoped BigOperators
 
-/-- The concrete algorithm's pending global source estimate: actual runs on
-all tapes, correct output outside a small failure event, and an unconditional
-near-linear mean cost. No ideal sampler or successful sample is assumed. -/
+/-- Exact all-tape execution, output, mean-cost, and failure obligations at
+one initialized input. -/
+def BodyEstimate (B c n : ℕ) (G : SimpleGraph (Fin n))
+    (x : List ℕ) (σ : Env) (N M : ℕ) : Prop :=
+  ∃ (final : Tape N → Env) (cost : Tape N → ℕ) (bad : Finset (Tape N)),
+    (∀ ρ, Run B algorithmBody {σ with inp := bitTape ρ} (final ρ) (cost ρ)) ∧
+    (∀ ρ, ρ ∉ bad → EncodesGraphWelzlOrder G 1
+      (2 * refinedCutoffK c * Nat.clog 2 n) (final ρ).out) ∧
+    (∑ ρ, cost ρ) ≤ M * (x.length + 1) * (Nat.clog 2 n + 1) * 2 ^ N ∧
+    6 * bad.card ≤ 2 ^ N
+
+/-- The concrete algorithm's pending global source estimate. No ideal
+sampler or successful sample is assumed. -/
 def BodyLaw (M : ℕ) : Prop :=
   ∀ (B c n : ℕ) (G : SimpleGraph (Fin n)),
     2 ≤ c → 2 ≤ n → HasLinearNeighborhoodComplexityWithConstant G c →
@@ -28,12 +38,61 @@ def BodyLaw (M : ℕ) : Prop :=
     ∀ σ : Env, RefinedSetup.Ready c n x [] σ →
       RefinedRecordedCommit.ValuesBounded B σ →
       ∀ N : ℕ, n * roundBitReserve c n ≤ N →
-      ∃ (final : Tape N → Env) (cost : Tape N → ℕ) (bad : Finset (Tape N)),
-        (∀ ρ, Run B algorithmBody {σ with inp := bitTape ρ} (final ρ) (cost ρ)) ∧
-        (∀ ρ, ρ ∉ bad → EncodesGraphWelzlOrder G 1
-          (2 * refinedCutoffK c * Nat.clog 2 n) (final ρ).out) ∧
-        (∑ ρ, cost ρ) ≤ M * (x.length + 1) * (Nat.clog 2 n + 1) * 2 ^ N ∧
-        6 * bad.card ≤ 2 ^ N
+      BodyEstimate B c n G x σ N M
+
+/-- Changing only the unread suffix preserves the initialized workspace. -/
+lemma ready_with_input {c n : ℕ} {x old : List ℕ} {σ : Env}
+    (R : RefinedSetup.Ready c n x old σ) (bits : List ℕ) :
+    RefinedSetup.Ready c n x bits {σ with inp := bits} :=
+  { R with input := rfl }
+
+/-- The small-input branch satisfies the full source estimate on every
+tape, with no failure event and a ten-step-per-vertex mean coefficient. -/
+lemma bodyEstimate_small {B c n N M : ℕ} {G : SimpleGraph (Fin n)}
+    {x : List ℕ} {σ : Env}
+    (R : RefinedSetup.Ready c n x [] σ) (hx : EncodesGraph x n G)
+    (hn : 2 ≤ n) (hnB : n < B) (hM : 10 ≤ M)
+    (hsmall : n ≤ 2 * refinedCutoffK c) :
+    BodyEstimate B c n G x σ N M := by
+  classical
+  have hex (ρ : Tape N) :=
+    algorithmBody_small_run (G := G) (ready_with_input R (bitTape ρ)) hn hnB hsmall
+  choose final hrun hcorrect using hex
+  let cost : Tape N → ℕ := fun _ =>
+    1 + (Cond.lt (.var "cutoffResult") (.var "acount")).size + (10 * n + 6)
+  have hcost : ∀ ρ, cost ρ ≤ M * (x.length + 1) * (Nat.clog 2 n + 1) := by
+    intro ρ
+    have hxlen := hx.length_eq
+    have hnx : n ≤ x.length := by omega
+    calc
+      cost ρ = 10 * (n + 1) := by dsimp [cost, Cond.size, Expr.size]; ring
+      _ ≤ M * (x.length + 1) := Nat.mul_le_mul hM (by omega)
+      _ ≤ M * (x.length + 1) * (Nat.clog 2 n + 1) := by
+        exact (Nat.mul_one (M * (x.length + 1))).symm.le.trans
+          (Nat.mul_le_mul_left _ (by omega : 1 ≤ Nat.clog 2 n + 1))
+  refine ⟨final, cost, ∅, hrun, fun ρ _ => hcorrect ρ, ?_, by simp⟩
+  calc
+    (∑ ρ, cost ρ) ≤ ∑ _ρ : Tape N,
+        M * (x.length + 1) * (Nat.clog 2 n + 1) :=
+      Finset.sum_le_sum (fun ρ _ => hcost ρ)
+    _ = _ := by simp [card_tape, Nat.mul_comm]
+
+/-- All remaining sampler work can be confined to the true large-input
+branch; the complete small-input case is already discharged. -/
+lemma bodyLaw_of_large {M : ℕ} (hM : 10 ≤ M)
+    (hlarge : ∀ (B c n : ℕ) (G : SimpleGraph (Fin n)),
+      2 ≤ c → 2 ≤ n → HasLinearNeighborhoodComplexityWithConstant G c →
+      ∀ x : List ℕ, EncodesGraph x n G →
+      4 * (x.length + 1) ≤ B → 768 < B → 2 * refinedCutoffK c < n →
+      ∀ σ : Env, RefinedSetup.Ready c n x [] σ →
+        RefinedRecordedCommit.ValuesBounded B σ →
+        ∀ N : ℕ, n * roundBitReserve c n ≤ N →
+        BodyEstimate B c n G x σ N M) : BodyLaw M := by
+  intro B c n G hc hn hNC x hx hB h768 σ R hb N hN
+  by_cases hsmall : n ≤ 2 * refinedCutoffK c
+  · have hxlen := hx.length_eq
+    exact bodyEstimate_small R hx hn (by omega) hM hsmall
+  · exact hlarge B c n G hc hn hNC x hx hB h768 (by omega) σ R hb N hN
 
 /-- A single derived constant pays for source words, layout addresses, the
 clocked source time, and the compiler's final halt instruction. -/
