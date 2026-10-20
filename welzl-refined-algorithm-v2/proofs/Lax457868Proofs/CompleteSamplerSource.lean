@@ -707,8 +707,21 @@ private lemma accepted_preparation_run
         (phaseTwoSample G (choice.exceptions k) A choice.sample)
         A (phaseTwoSample G (choice.exceptions k) A choice.sample),
       ∃ phaseCost partitionCost groupCost offsetCost : ℕ,
+      ∃ initialPacked phaseTwoPacked : ℕ → ℕ,
         Run B prepareRepairSource τ L.σ
           (phaseCost + partitionCost + groupCost + offsetCost + 2) ∧
+        phaseCost = exceptionPhaseCost x initialPacked n choice.sample.card targetCap ∧
+        partitionCost = fullSamplePartitionCost x phaseTwoPacked n
+          (phaseTwoSample G (choice.exceptions k) A choice.sample).card ∧
+        groupCost = 20 * n + 9 +
+          64 * ((activeVertices n R.I.activeB).card + Q + 1) ∧
+        offsetCost = 18 * q + 8 ∧
+        PrefixEnumerates choice.sample.card initialPacked choice.sample ∧
+        PrefixEnumerates
+          (phaseTwoSample G (choice.exceptions k) A choice.sample).card
+          phaseTwoPacked
+          (phaseTwoSample G (choice.exceptions k) A choice.sample) ∧
+        L.σ.vars "qpow" = Q ∧
         L.bits = bits ∧
         L.rest = R.I.rest ∧
         τ.vars "initialRetryStatus" = 1 ∧
@@ -907,8 +920,11 @@ private lemma accepted_preparation_run
       (by intro d hd; simp [hd])
       (by simpa [hHsize] using hends) hqLe
   refine ⟨choice, q, L, phaseCost, partitionCost, groupCost, offsetCost,
+    I.ord, P.ord, ?_, rfl, rfl, ?_, rfl, I.henum, P.henum,
     ?_, hLbits, hLrest, hstatus, hcap, ?_⟩
   · simpa [hLσ] using rprep
+  · simp [groupCost, hHactive, hPactive, hIactive]
+  · simpa [hLσ] using hqpow₆
   · intro b hb
     rw [hLrep]
     exact hrepChoice b hb
@@ -1079,6 +1095,126 @@ private lemma successful_physical_trace_refined_sample
 
 end
 
+/-- The physical state preserved for another sampler round. Scratch lists are
+tracked by their lengths; all five repair marks have been cleared. -/
+def FinalFrame
+    {B n m domainCap r t bufferCap targetCap Q k initialCap s repairCap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k initialCap G x A)
+    (_S : RuntimeInput R s repairCap) (σ : Env) : Prop :=
+  σ.vars "n" = n ∧ σ.vars "qpow" = Q ∧
+  σ.arrs "activeA" = arrOf n (setFlag A) ∧
+  σ.arrs "activeB" = arrOf n R.I.activeB ∧
+  σ.arrs "off" = arrOf (n + 1) (offset x) ∧
+  σ.arrs "tgt" = arrOf targetCap (target x) ∧
+  (σ.arrs "drawDomain").length = n ∧
+  (σ.arrs "key0").length = n ∧
+  (σ.arrs "sampleDraws").length = bufferCap ∧
+  σ.arrs "trialActive" = arrOf n (fun _ => 0) ∧
+  σ.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
+  σ.arrs "trialDesiredMarks" = arrOf n (fun _ => 0) ∧
+  σ.arrs "repairBMarks" = arrOf n (fun _ => 0) ∧
+  σ.arrs "repairRMarks" = arrOf n (fun _ => 0) ∧
+  (σ.arrs "trialRowList").length = n ∧
+  (σ.arrs "trialDesiredList").length = n ∧
+  (σ.arrs "trialDiffList").length = n ∧
+  (σ.arrs "repairBList").length = n ∧
+  (σ.arrs "repairRList").length = n
+
+/-- The accepted branch retains the concrete initial choice, both checked
+preparation orders, the phase-three trace, and both exact source charges. -/
+def AcceptedExecution
+    {B n m domainCap r t bufferCap targetCap Q k initialCap s repairCap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k initialCap G x A)
+    (_S : RuntimeInput R s repairCap)
+    (τ σout : Env) (Wfinal : Finset ℕ)
+    (consumed phaseCost partitionCost groupCost offsetCost
+      repairCost : ℕ) : Prop :=
+  ∃ choice : InitialChoice A (activeVertices n R.I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r,
+  ∃ q : ℕ,
+  ∃ L : LoopInput B n s t bufferCap targetCap q repairCap k
+      (choice.exceptions k).card G x (choice.exceptions k)
+      (activeVertices n R.I.activeB)
+      (phaseTwoSample G (choice.exceptions k) A choice.sample)
+      A (phaseTwoSample G (choice.exceptions k) A choice.sample),
+  ∃ Lfinal : LoopInput B n s t bufferCap targetCap q repairCap k
+      (choice.exceptions k).card G x (choice.exceptions k)
+      (activeVertices n R.I.activeB)
+      (phaseTwoSample G (choice.exceptions k) A choice.sample) A Wfinal,
+  ∃ steps : List ExecutedException,
+  ∃ initialPacked phaseTwoPacked : ℕ → ℕ,
+    τ.vars "initialRetryStatus" = 1 ∧
+    σout.vars "initialRetryStatus" = 1 ∧
+    (choice.exceptions k).card ≤ initialCap ∧
+    (∀ b ∈ activeVertices n R.I.activeB,
+      choice.representative b = L.rep b) ∧
+    phaseCost = exceptionPhaseCost x initialPacked n choice.sample.card targetCap ∧
+    partitionCost = fullSamplePartitionCost x phaseTwoPacked n
+      (phaseTwoSample G (choice.exceptions k) A choice.sample).card ∧
+    groupCost = 20 * n + 9 +
+      64 * ((activeVertices n R.I.activeB).card + Q + 1) ∧
+    offsetCost = 18 * q + 8 ∧
+    PrefixEnumerates choice.sample.card initialPacked choice.sample ∧
+    PrefixEnumerates
+      (phaseTwoSample G (choice.exceptions k) A choice.sample).card
+      phaseTwoPacked
+      (phaseTwoSample G (choice.exceptions k) A choice.sample) ∧
+    L.σ.vars "qpow" = Q ∧
+    Run B prepareRepairSource τ L.σ
+      (phaseCost + partitionCost + groupCost + offsetCost + 2) ∧
+    Run B exceptionRepairPackedSource L.σ σout
+      (10 + traceRunCost x G A L.rep L.size L.label L.ord s k steps +
+        (if Lfinal.σ.vars "repairRetryStatus" = 1 then 20 * n + 13 else 5)) ∧
+    repairCost = 2 + (10 + traceRunCost x G A L.rep L.size L.label L.ord s k steps +
+      (if Lfinal.σ.vars "repairRetryStatus" = 1 then 20 * n + 13 else 5)) ∧
+    L.bits = R.I.bits.drop consumed ∧ L.rest = R.I.rest ∧
+    (choice.exceptions k).card * (repairCap * (s * t * Nat.clog 2 n)) ≤
+      L.bits.length ∧
+    Lfinal.bits = L.bits.drop (traceBitCost G A L.rep steps) ∧
+    SameFixed L Lfinal ∧
+    steps.map ExecutedException.vertex =
+      (Stack.toList (choice.exceptions k).card L.exceptionList).take steps.length ∧
+    (∀ z ∈ steps, z.attempts ≤ repairCap ∧ z.used ≤ z.attempts * (s * t)) ∧
+    σout.inp = Lfinal.bits.map Bool.toNat ++ L.rest ∧
+    (∀ a, a ≠ "ord" → σout.arrs a = Lfinal.σ.arrs a) ∧
+    (∀ v, v ≠ "sampleCount" → v ≠ "sampleCursor" →
+      σout.vars v = Lfinal.σ.vars v)
+
+private lemma finalFrame_of_run
+    {B n m domainCap r t bufferCap targetCap Q k initialCap s repairCap
+      cost : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k initialCap G x A)
+    (S : RuntimeInput R s repairCap)
+    {σ : Env} (hrun : Run B completeSamplerSource R.I.σ σ cost)
+    (hn : σ.vars "n" = n) (hqpow : σ.vars "qpow" = Q)
+    (htrial : σ.arrs "trialActive" = arrOf n (fun _ => 0))
+    (hrow : σ.arrs "trialRowMarks" = arrOf n (fun _ => 0))
+    (hdesired : σ.arrs "trialDesiredMarks" = arrOf n (fun _ => 0))
+    (hBmarks : σ.arrs "repairBMarks" = arrOf n (fun _ => 0))
+    (hRmarks : σ.arrs "repairRMarks" = arrOf n (fun _ => 0)) :
+    FinalFrame R S σ := by
+  have hlen (a : String) : (σ.arrs a).length = (R.I.σ.arrs a).length :=
+    run_array_length_eq hrun a
+  have harr {a : String} (ha : a ∉ completeSamplerSource.warrs) :
+      σ.arrs a = R.I.σ.arrs a := hrun.frame_arr a ha
+  refine ⟨hn, hqpow, ?_, ?_, ?_, ?_, ?_, ?_, ?_, htrial,
+    hrow, hdesired, hBmarks, hRmarks, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [harr (by decide)]; exact R.hactiveA
+  · rw [harr (by decide)]; exact R.I.hactiveB
+  · rw [harr (by decide)]; exact R.I.hoff
+  · rw [harr (by decide)]; exact R.I.htarget
+  · rw [hlen, R.I.hdrawDomain]; simp [arrOf, S.hdomainCap]
+  · rw [hlen, R.I.hkey0]; simp [arrOf]
+  · rw [hlen, R.I.hsampleDraws]; simp [arrOf]
+  · rw [hlen]; exact S.hrowLength
+  · rw [hlen]; exact S.hdesiredLength
+  · rw [hlen]; exact S.hdiffLength
+  · rw [hlen]; exact S.hBListLength
+  · rw [hlen]; exact S.hRListLength
+
 
 /-- Execute the fixed full source. Initial and local capped failures remain
 explicit statuses; the successful packed sample satisfies the mathematical
@@ -1113,6 +1249,7 @@ lemma completeSamplerSource_run
         σout.inp = (R.I.bits.drop (usedInitial + usedRepair)).map Bool.toNat ++
           R.I.rest ∧
         usedInitial ≤ attemptCap * attemptBitBudget n m r t) ∧
+      FinalFrame R S σout ∧
       ((∃ (W : Finset ℕ) (packed : ℕ → ℕ),
           σout.vars "repairRetryStatus" = 1 ∧
           σout.arrs "sampleFlags" = arrOf n (setFlag W) ∧
@@ -1123,7 +1260,14 @@ lemma completeSamplerSource_run
             (neighborhoodFamily (activeVertices n R.I.activeB)
               (fun b => numericNeighborhood G b ∩ A))
             (A : Set ℕ) (W : Set ℕ)
-            ((A.card + 2 * c ^ 2 - 1) / (2 * c ^ 2)) k) ∨
+            ((A.card + 2 * c ^ 2 - 1) / (2 * c ^ 2)) k ∧
+          (∃ τ : Env, ∃ consumed : ℕ,
+            Run B initialSamplerRetriesSource R.I.σ τ
+              (charges.sum + 28 * charges.length + 22) ∧
+            τ.inp = (R.I.bits.drop consumed).map Bool.toNat ++ R.I.rest ∧
+            consumed ≤ attemptCap * attemptBitBudget n m r t ∧
+            AcceptedExecution R S τ σout W consumed phaseCost partitionCost
+              groupCost offsetCost repairCost)) ∨
         (σout.vars "initialRetryStatus" = 2 ∨
           σout.vars "initialRetryStatus" = 3) ∨
         (σout.vars "repairRetryStatus" = 2 ∨
@@ -1147,10 +1291,27 @@ lemma completeSamplerSource_run
   have hBthree : 3 < B := by
     have := R.hnB
     omega
+  have hfailedFrame {cost : ℕ}
+      (hrun : Run B completeSamplerSource R.I.σ τ cost) :
+      FinalFrame R S τ := by
+    apply finalFrame_of_run R S hrun hnInitial hqInitial
+    · rw [rinitial.frame_arr "trialActive" (by decide)]
+      exact S.htrialZero
+    · rw [rinitial.frame_arr "trialRowMarks" (by decide)]
+      exact S.hrowZero
+    · rw [rinitial.frame_arr "trialDesiredMarks" (by decide)]
+      exact S.hdesiredZero
+    · rw [rinitial.frame_arr "repairBMarks" (by decide)]
+      exact S.hBMarksZero
+    · rw [rinitial.frame_arr "repairRMarks" (by decide)]
+      exact S.hRMarksZero
   rcases houtcome with haccepted | hdrawFailure | hexhausted
   · let bits := R.I.bits.drop consumed
     obtain ⟨choice, q, L, phaseCost, partitionCost, groupCost,
-      offsetCost, rprep, hLbits, hLrest, hstatus, hcapChoice, hrepChoice⟩ :=
+      offsetCost, initialPacked, phaseTwoPacked, rprep, hphaseCost,
+      hpartitionCost, hgroupCost, hoffsetCost, hinitialPrefix,
+      hphaseTwoPrefix, hLqpow, hLbits, hLrest, hstatus, hcapChoice,
+      hrepChoice⟩ :=
       accepted_preparation_run R S rinitial hnInitial hqInitial bits
         hinputInitial haccepted
     have hrepairBudget :
@@ -1162,7 +1323,7 @@ lemma completeSamplerSource_run
       simp only [bits, List.length_drop]
       omega
     obtain ⟨Wfinal, Lfinal, steps, σout, rrepair,
-      hbitsFinal, _hfixed, _hsteps, _hvalid, hinputOut,
+      hbitsFinal, hfixed, hsteps, hvalid, hinputOut,
       hrepairOutcome⟩ := exceptionRepairPacked_run L hrepairBudget
     let repairCost := 10 + traceRunCost x G A L.rep L.size L.label L.ord s k steps +
       (if Lfinal.σ.vars "repairRetryStatus" = 1 then 20 * n + 13 else 5)
@@ -1188,17 +1349,59 @@ lemma completeSamplerSource_run
           (2 + repairCost) := by
       simp [initialCost, guardCost, guard, prepCost]
       omega
+    have hmarksOut :
+        σout.arrs "trialActive" = arrOf n (fun _ => 0) ∧
+        σout.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
+        σout.arrs "trialDesiredMarks" = arrOf n (fun _ => 0) ∧
+        σout.arrs "repairBMarks" = arrOf n (fun _ => 0) ∧
+        σout.arrs "repairRMarks" = arrOf n (fun _ => 0) := by
+      rcases hrepairOutcome with hsuccess | hfailure
+      · obtain ⟨_, _, _, _, _, _, _, _, _, _, harrFrame, _,
+          _, _, _⟩ := hsuccess
+        exact ⟨(harrFrame "trialActive" (by decide)).trans Lfinal.htrialZero,
+          (harrFrame "trialRowMarks" (by decide)).trans Lfinal.hrowZero,
+          (harrFrame "trialDesiredMarks" (by decide)).trans Lfinal.hdesiredZero,
+          (harrFrame "repairBMarks" (by decide)).trans Lfinal.hBMarksZero,
+          (harrFrame "repairRMarks" (by decide)).trans Lfinal.hRMarksZero⟩
+      · obtain ⟨_, _, heq⟩ := hfailure
+        subst σout
+        exact ⟨Lfinal.htrialZero, Lfinal.hrowZero, Lfinal.hdesiredZero,
+          Lfinal.hBMarksZero, Lfinal.hRMarksZero⟩
+    have hnOut : σout.vars "n" = n := by
+      rcases hrepairOutcome with hsuccess | hfailure
+      · obtain ⟨_, _, _, _, _, _, _, _, _, _, _, hvarFrame,
+          _, _, _⟩ := hsuccess
+        rw [hvarFrame "n" (by decide) (by decide)]
+        exact Lfinal.hn
+      · obtain ⟨_, _, heq⟩ := hfailure
+        rw [heq]
+        exact Lfinal.hn
+    have hqFinal : Lfinal.σ.vars "qpow" = Q :=
+      hfixed.qpow.trans hLqpow
+    have hqOut : σout.vars "qpow" = Q := by
+      rcases hrepairOutcome with hsuccess | hfailure
+      · obtain ⟨_, _, _, _, _, _, _, _, _, _, _, hvarFrame,
+          _, _, _⟩ := hsuccess
+        rw [hvarFrame "qpow" (by decide) (by decide)]
+        exact hqFinal
+      · obtain ⟨_, _, heq⟩ := hfailure
+        rw [heq]
+        exact hqFinal
+    have hframe : FinalFrame R S σout :=
+      finalFrame_of_run R S rwhole hnOut hqOut hmarksOut.1
+        hmarksOut.2.1 hmarksOut.2.2.1 hmarksOut.2.2.2.1
+        hmarksOut.2.2.2.2
     refine ⟨σout, charges, phaseCost, partitionCost, groupCost,
       offsetCost, 2 + repairCost,
       initialCost + (guardCost + (prepCost + repairCost)),
-      rwhole, hchecked, hcharges, hcost, ?_, ?_⟩
+      rwhole, hchecked, hcharges, hcost, ?_, hframe, ?_⟩
     · refine ⟨consumed, traceBitCost G A L.rep steps, ?_, hconsumed⟩
       simpa [hinputOut, hbitsFinal, hLbits, hLrest, bits,
         List.drop_drop, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
     rcases hrepairOutcome with hsuccess | hfailure
     · obtain ⟨hrepairStatus, _hindex, _hstepsLen,
         packed, trials, hsample, hord, hprefix, hcount,
-        _hcursor, _harrFrame, hvarFrame, _houtFrame,
+        _hcursor, harrFrame, hvarFrame, _houtFrame,
         hscan, _hcard⟩ := hsuccess
       have hrepairStatusOut : σout.vars "repairRetryStatus" = 1 := by
         rw [hvarFrame "repairRetryStatus" (by decide) (by decide)]
@@ -1213,9 +1416,27 @@ lemma completeSamplerSource_run
         hc hr hinitialCap choice hcapChoice L.rep hrepChoice
         (Stack.toList (choice.exceptions k).card L.exceptionList)
         horderSet L.hprefix.1 trials hscan
+      have hstatusOut : σout.vars "initialRetryStatus" = 1 := by
+        rw [rrepair.frame_var "initialRetryStatus" (by decide)]
+        rw [rprep.frame_var "initialRetryStatus" (by decide)]
+        exact hstatus
+      have hexecution : AcceptedExecution R S τ σout Wfinal consumed phaseCost
+          partitionCost groupCost offsetCost (2 + repairCost) := by
+        refine ⟨choice, q, L, Lfinal, steps,
+          initialPacked, phaseTwoPacked, hstatus, hstatusOut,
+          hcapChoice, hrepChoice, hphaseCost, hpartitionCost,
+          hgroupCost, hoffsetCost, hinitialPrefix, hphaseTwoPrefix,
+          hLqpow, rprep, ?_, ?_, hLbits, hLrest, hrepairBudget,
+          hbitsFinal, hfixed, hsteps, hvalid, hinputOut,
+          ?_, ?_⟩
+        · simpa [repairCost] using rrepair
+        · rfl
+        · exact harrFrame
+        · exact hvarFrame
       exact Or.inl ⟨Wfinal, packed, hrepairStatusOut,
         hsample, hord, hprefix, hcount,
-        hcontract⟩
+        hcontract, τ, consumed, rinitial, hinputInitial,
+        hconsumed, hexecution⟩
     · rcases hfailure with ⟨hstatusRepair, _hindex, heq⟩
       exact Or.inr (Or.inr (by simpa [heq] using hstatusRepair))
   · obtain ⟨hstatus, _hfailureKind⟩ := hdrawFailure
@@ -1233,7 +1454,7 @@ lemma completeSamplerSource_run
       simpa [completeSamplerSource, guard, guardCost, initialCost,
         Nat.add_assoc] using h
     refine ⟨τ, charges, 0, 0, 0, 0, 1, initialCost + guardCost + 1,
-      rwhole, hchecked, hcharges, ?_, ?_,
+      rwhole, hchecked, hcharges, ?_, ?_, hfailedFrame rwhole,
       Or.inr (Or.inl (Or.inl hstatus))⟩
     · simp [initialCost, guardCost, guard]
     · refine ⟨consumed, 0, ?_, hconsumed⟩
@@ -1253,7 +1474,7 @@ lemma completeSamplerSource_run
       simpa [completeSamplerSource, guard, guardCost, initialCost,
         Nat.add_assoc] using h
     refine ⟨τ, charges, 0, 0, 0, 0, 1, initialCost + guardCost + 1,
-      rwhole, hchecked, hcharges, ?_, ?_,
+      rwhole, hchecked, hcharges, ?_, ?_, hfailedFrame rwhole,
       Or.inr (Or.inl (Or.inr hstatus))⟩
     · simp [initialCost, guardCost, guard]
     · refine ⟨consumed, 0, ?_, hconsumed⟩
