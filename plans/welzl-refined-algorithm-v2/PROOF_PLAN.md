@@ -1052,3 +1052,22 @@ initial outcome/continuation fibers are checked (9658476d, e0acfd15,
 cap (6a3b2f4b). Remaining work is actual initial retry mean, exception-loop
 aggregation, adaptive round composition, and cap-failure counting. Full
 LAX build of 696a95c5 passed in 1m58s with one concept and zero proofs.
+
+Checked actual large-branch reconstruction and positive accepted active sets;
+the chronological source trace now distinguishes terminal retry failure from
+successful contraction. Stopped-prefix averaging and deterministic suffix
+replay are checked, as are the actual local mean for arbitrary unused suffixes
+and disjoint exception-class scan charging. Full replay of cdeec135 passed
+(6m14s, one concept, zero annotated proofs). Main remains open pending actual
+initial retry mean, adaptive exception/round aggregation, and cap-failure count.
+
+Full build of 91593ead passed (2m23s, zero annotated proofs). Actual body
+execution now retains its chronological trace and reduces BodyEstimate to
+trace mean and terminal-failure count (7473343b). Class scan charges are
+bounded by 156 times input length (3213cbb4); repeated representative-domain
+work has an exact uniform weighted mean (eefbaf90). Numeric graph trace,
+injectivity, and initial rejection-half premises are discharged directly
+from the maintained graph invariants (41b95610). Actual retry and adaptive
+mean composition remain in progress; main is still open.
+
+- 2026-10-20: Checked actual representative-selector mean (variable widths, consumed suffix, and aborts), bounded by 163 times total class size; actual initial continuation fiber is at most one half. Reviewed chronological round contraction/length and conditional global aggregation, and retained machine retry counters. Main theorem remains open pending actual retry/repair mean and cap-failure composition.

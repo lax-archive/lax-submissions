@@ -203,9 +203,15 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
     (hlarge : 2 * refinedCutoffK c < A.card) :
     ∃ τ K, Run B preparedRefinedRoundSource σ τ K ∧
       τ.vars "n" = n ∧
-      ((∃ A' : Finset ℕ, A'.card < A.card ∧
+      ((∃ A' : Finset ℕ, A'.card < A.card ∧ 0 < A'.card ∧
+          3 * A'.card ≤ 2 * A.card ∧
+          τ.vars "round" = σ.vars "round" + 1 ∧
           τ.vars "acount" = A'.card ∧ LoopReady B c G x rest τ) ∨
-        τ.vars "acount" = 0) := by
+        τ.vars "acount" = 0 ∧
+          ((τ.vars "initialRetryStatus" = 2 ∨
+              τ.vars "initialRetryStatus" = 3) ∨
+            (τ.vars "repairRetryStatus" = 2 ∨
+              τ.vars "repairRetryStatus" = 3))) := by
   have hbudget :
       n * Lax457868Proofs.InitialSamplerRetriesSource.attemptBitBudget n A.card
           (A.card / (4 * c ^ 2)) n +
@@ -267,18 +273,68 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
     have hpartA' : TracePartition G (finSetAsSet A)
         (finSetAsSet Rnum) (finSetAsSet Snum) := by
       simpa [finSetAsSet, setFlag] using (Classical.choice hpartA).partition
+    have hSpositive : 0 < Snum.card := by
+      obtain ⟨a, ha⟩ : A.Nonempty := Finset.card_pos.mp (by omega)
+      let v : Fin n := ⟨a, Finset.mem_range.mp (hA ha)⟩
+      have hv : v ∈ finSetAsSet A := ha
+      have hrep := hpartA'.representative_mem v hv
+      have : Snum.Nonempty := ⟨(hpartA'.representative v).val, hrep⟩
+      exact Finset.card_pos.mpr this
     have hW' : finSetAsSet (n := n) W ⊆ finSetAsSet (n := n) A := by
       intro v hv
       exact hWsub hv
     have hsep' := Lax457868Proofs.RefinedTwinDomain.dual_partition_separated
       hW' hpartB' hpartA'
-    exact Or.inl ⟨Snum, hstrict, hacount', Snum, Rnum, bits.drop used,
+    exact Or.inl ⟨Snum, hstrict, hSpositive, hcontract, hround, hacount',
+      Snum, Rnum, bits.drop used,
       sizes ++ [A.card],
       hdata, hSrange, hRrange, hRnonempty, hsep', hstored, hbounded',
       hcapacity', hroundCapacity', hacount', hsizesLen', hsizesSum',
       hpotential', hroundLog', (hrun.out_eq (by decide)).trans hout,
       hinput', htape'⟩
   · exact Or.inr hfail
+
+/-- The selected round charge is the unique actual big-step count, rather
+than an arbitrary upper bound supplied by `Run`. -/
+lemma round_step_actual {B c n : ℕ} {G : SimpleGraph (Fin n)}
+    {x rest : List ℕ} {A C : Finset ℕ} {bits : List Bool}
+    {sizes : List ℕ} {σ : Env}
+    (D : RoundData c n x A C σ)
+    (hA : A ⊆ Finset.range n) (hCsub : C ⊆ Finset.range n)
+    (hC : C.Nonempty) (hstore : Stored G (refinedCutoffK c) σ)
+    (hbounded : ValuesBounded B σ)
+    (hcapacity : σ.vars "removedCount" + A.card ≤ n)
+    (hroundCapacity : σ.vars "round" + A.card ≤ n)
+    (hacount : σ.vars "acount" = A.card)
+    (hsizesLen : sizes.length = σ.vars "round")
+    (hsizesSum : sizes.sum + 3 * A.card ≤ 3 * n)
+    (hpotential : 2 ^ (σ.vars "round") * (A.card - 2 * c ^ 2) ≤ n)
+    (hroundLog : σ.vars "round" + 1 ≤ Nat.clog 2 n)
+    (hout : σ.out = [])
+    (hinput : σ.inp = bits.map Bool.toNat ++ rest)
+    (htape : A.card * roundBitReserve c n ≤ bits.length)
+    (hx : Lax11.GraphEncoding.EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 2 ≤ c) (hB : 4 * (x.length + 1) ≤ B)
+    (hlarge : 2 * refinedCutoffK c < A.card) :
+    ∃ τ K, Run B preparedRefinedRoundSource σ τ K ∧
+      BigStepB B preparedRefinedRoundSource σ τ K ∧
+      τ.vars "n" = n ∧
+      ((∃ A' : Finset ℕ, A'.card < A.card ∧ 0 < A'.card ∧
+          3 * A'.card ≤ 2 * A.card ∧
+          τ.vars "round" = σ.vars "round" + 1 ∧
+          τ.vars "acount" = A'.card ∧ LoopReady B c G x rest τ) ∨
+        τ.vars "acount" = 0 ∧
+          ((τ.vars "initialRetryStatus" = 2 ∨
+              τ.vars "initialRetryStatus" = 3) ∨
+            (τ.vars "repairRetryStatus" = 2 ∨
+              τ.vars "repairRetryStatus" = 3))) := by
+  obtain ⟨τ, K, hrun, hn, hresult⟩ :=
+    round_step D hA hCsub hC hstore hbounded hcapacity hroundCapacity
+      hacount hsizesLen hsizesSum hpotential hroundLog hout hinput htape
+      hx hG hc hB hlarge
+  obtain ⟨k, _, hbig⟩ := hrun
+  exact ⟨τ, k, ⟨k, le_rfl, hbig⟩, hbig, hn, hresult⟩
 
 end Lax457868Proofs.RefinedRoundLoop
 
@@ -357,11 +413,13 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
           hbounded hcapacity hroundCapacity hacount hsizesLen hsizesSum
           hpotential hroundLog hout
           hinput htape hx hG hc hB hlarge
-        rcases hresult with ⟨A', hstrict, hacount', hready'⟩ | hfail
+        rcases hresult with ⟨A', hstrict, _hpositive, _hcontract, _hround,
+            hacount', hready'⟩ | hfail
         · obtain ⟨τ, K', htail, hnTail, hresult'⟩ := ih A'.card
             (by omega) ρ' hready' hacount'
           exact ⟨τ, _, run_while_true htrue hstep htail, hnTail, hresult'⟩
-        · have hcut' : ρ'.vars "cutoffResult" = 2 * refinedCutoffK c := by
+        · obtain ⟨hfail, _hstatus⟩ := hfail
+          have hcut' : ρ'.vars "cutoffResult" = 2 * refinedCutoffK c := by
             rw [hstep.frame_var "cutoffResult" (by decide)]
             exact D.cutoff
           have hfalse := failed_guard_false hcut' hfail hlargeN hnB
