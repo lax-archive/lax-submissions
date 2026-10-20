@@ -36,6 +36,7 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
     (htape : n * Lax457868Proofs.RefinedTapeReserve.roundBitReserve c n ≤ bits.length) :
     ∃ ρ υ τ K events,
       Run B algorithmBody σ τ K ∧
+      Run B initialQuotientSource σ ρ (951 * (x.length + 1)) ∧
       TraceChain B c G x rest ρ υ events ∧
       events.length ≤ Nat.clog 2 n ∧
       K ≤ 1 + (Cond.lt (.var "cutoffResult") (.var "acount")).size +
@@ -91,7 +92,7 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
     let Ktotal := 1 + (Cond.lt (.var "cutoffResult") (.var "acount")).size +
       (951 * (x.length + 1) + Kloop +
         (1 + (Cond.eq (.var "acount") (.lit 0)).size + (10 * n + 6)))
-    refine ⟨ρ, υ, τ, Ktotal, events, ?_, hchain, hlength', ?_, hlast,
+    refine ⟨ρ, υ, τ, Ktotal, events, ?_, hquot, hchain, hlength', ?_, hlast,
       Or.inl hzero⟩
     · simpa [algorithmBody, roundGuard, Ktotal] using hrun
     · dsimp [Ktotal]
@@ -112,7 +113,7 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
       let Ktotal := 1 + (Cond.lt (.var "cutoffResult") (.var "acount")).size +
         (951 * (x.length + 1) + Kloop +
           (1 + (Cond.eq (.var "acount") (.lit 0)).size + 100 * (n + 1)))
-      refine ⟨ρ, υ, τ, Ktotal, events, ?_, hchain, hlength', ?_, hlast,
+      refine ⟨ρ, υ, τ, Ktotal, events, ?_, hquot, hchain, hlength', ?_, hlast,
         Or.inr hcorrect⟩
       · simpa [algorithmBody, roundGuard, Ktotal] using hrun
       · dsimp [Ktotal]

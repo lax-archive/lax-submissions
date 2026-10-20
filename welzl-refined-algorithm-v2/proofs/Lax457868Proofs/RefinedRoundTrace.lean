@@ -41,7 +41,9 @@ inductive TraceChain {n : ℕ} (B c : ℕ) (G : SimpleGraph (Fin n))
           LoopReady B c G x rest ρ ∧ 0 < ρ.vars "acount" ∧
           3 * ρ.vars "acount" ≤ 2 * active ∧
           ρ.vars "round" = σ.vars "round" + 1
-        else ρ.vars "acount" = 0)
+        else ρ.vars "acount" = 0 ∧
+          ((ρ.vars "initialRetryStatus" = 2 ∨ ρ.vars "initialRetryStatus" = 3) ∨
+            (ρ.vars "repairRetryStatus" = 2 ∨ ρ.vars "repairRetryStatus" = 3)))
       (hstop : accepted = false → tail = [])
       (htail : TraceChain B c G x rest ρ τ tail) :
       TraceChain B c G x rest σ τ
@@ -67,6 +69,41 @@ def failedAt (events : List RoundEvent) (i : ℕ) : Bool :=
   match events[i]? with
   | none => false
   | some event => !event.accepted
+
+def failureStatus (ρ : Env) : Prop :=
+  (ρ.vars "initialRetryStatus" = 2 ∨ ρ.vars "initialRetryStatus" = 3) ∨
+    (ρ.vars "repairRetryStatus" = 2 ∨ ρ.vars "repairRetryStatus" = 3)
+
+/-- A failed recorded iteration is an actual sampler-status failure. -/
+lemma TraceChain.failedAt_status {n B c : ℕ} {G : SimpleGraph (Fin n)}
+    {x rest : List ℕ} {σ τ : Env} {events : List RoundEvent}
+    (h : TraceChain B c G x rest σ τ events) (i : ℕ)
+    (hfail : failedAt events i = true) :
+    ∃ event, events[i]? = some event ∧ failureStatus event.exit := by
+  induction h generalizing i with
+  | nil => simp [failedAt] at hfail
+  | cons hready hguard hactive hrun hinput hconsumed houtcome hstop htail ih =>
+    rename_i σ0 ρ0 τ0 tail active cost accepted consumed
+    cases i with
+    | zero =>
+      have ha : accepted = false := by
+        simpa [failedAt] using hfail
+      have hs := houtcome
+      simp only [ha, Bool.cond_false] at hs
+      exact ⟨{ entry := σ0, exit := ρ0, active, consumed, cost, accepted },
+        rfl, hs.2⟩
+    | succ j =>
+      have hj : failedAt tail j = true := by simpa [failedAt] using hfail
+      obtain ⟨event, hevent, hstatus⟩ := ih j hj
+      exact ⟨event, by simpa using hevent, hstatus⟩
+
+def usedBefore (events : List RoundEvent) (i : ℕ) : ℕ :=
+  ((events.take i).flatMap fun event => event.consumed).length
+
+lemma usedBefore_le_total (events : List RoundEvent) (i : ℕ) :
+    usedBefore events i ≤ (events.flatMap fun event => event.consumed).length := by
+  exact (List.IsPrefix.length_le
+    ((List.take_prefix i events).flatMap fun event => event.consumed))
 
 lemma TraceChain.active_contract {n B c : ℕ} {G : SimpleGraph (Fin n)}
     {x rest : List ℕ} {σ τ : Env} {events : List RoundEvent}
@@ -240,10 +277,11 @@ lemma round_while_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
             obtain ⟨before, e, heq, hefalse⟩ := hlast hzero
             exact ⟨(RoundEvent.mk ρ ρ' A.card pre K true) :: before,
               e, by simp [heq], hefalse⟩
-        · have hcut' : ρ'.vars "cutoffResult" = 2 * refinedCutoffK c := by
+        · obtain ⟨hzero, hstatus⟩ := hfail
+          have hcut' : ρ'.vars "cutoffResult" = 2 * refinedCutoffK c := by
             rw [hstepKeep.frame_var "cutoffResult" (by decide)]
             exact D.cutoff
-          have hfalse := failed_guard_false hcut' hfail hlargeN hnB
+          have hfalse := failed_guard_false hcut' hzero hlargeN hnB
           have htail : Run B (.while roundGuard preparedRefinedRoundSource)
               ρ' ρ' (1 + roundGuard.size) := Run.while_false hfalse
           refine ⟨ρ', 1 + roundGuard.size + K + (1 + roundGuard.size),
@@ -251,8 +289,8 @@ lemma round_while_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
                consumed := pre, cost := K, accepted := false }],
             run_while_true htrue hstepKeep htail,
             TraceChain.cons (accepted := false) hreadyKeep htrue hacount hstepKeep hpre hpreCost
-              (by simpa using hfail) (by intro _; rfl) (TraceChain.nil ρ'),
-            ?_, ?_, hnStep, Or.inl hfail, ?_⟩
+              (by simpa using And.intro hzero hstatus) (by intro _; rfl) (TraceChain.nil ρ'),
+            ?_, ?_, hnStep, Or.inl hzero, ?_⟩
           · simp [traceCost, Nat.add_assoc]
           · simp only [List.length_singleton]
             omega
