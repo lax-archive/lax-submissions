@@ -1019,3 +1019,18 @@ are checked (`b65c41e7`). Full-neighborhood deduplication must be executed
 before sampling: RefinedTwinDomain proves its initial coverage and that the
 two later trace partitions preserve separation. The concrete initial
 adapter, outer loop, retry expectation and final conclusion remain open.
+
+
+Integrated the executed full-neighborhood quotient and coverage-based stored
+history (`d098c0b2`, `6b2fe47b`), and the prepared-round driver (`88ac3875`).
+The latter runs the complete sampler and accepted commit from factual round
+inputs, with explicit stopping runs on retry failure. Exact-prefix initial
+fiber domination and local retry mean-attempt bounds are checked, but their
+complete source mean-cost aggregation remains in progress. The final Markov
+and bounded-clock conversion and long-analysis-tape to public-short-tape
+probability bridge are checked (`d4c7b167`). Independent target builds and
+axiom audits passed with only the three background axioms. Full replay of
+`4687bfb5` passed (1m58s compilation, 6m40s replay); it reports zero annotated
+proofs. Actual outer-loop/reconstruction, global adaptive mean cost and cap
+failure counting, concrete layout instantiation and the main conclusion
+remain to be connected.

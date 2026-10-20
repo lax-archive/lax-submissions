@@ -169,3 +169,7 @@ import Lax457868Proofs.RefinedRoundSource
 import Lax457868Proofs.RefinedClockSetup
 import Lax457868Proofs.RefinedMachineBridge
 import Lax457868Proofs.RefinedTwinDomain
+import Lax457868Proofs.InitialNeighborhoodQuotient
+import Lax457868Proofs.RefinedRoundDriver
+import Lax457868Proofs.RefinedClockProbability
+import Lax457868Proofs.RefinedFiniteTape
