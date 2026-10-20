@@ -1,0 +1,113 @@
+import Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
+import Mathlib.Tactic
+
+/-! Finite averaging after a variable stopping prefix. A deterministic
+source run fixes its consumed prefix and leaves a uniformly counted suffix.
+This lemma composes retry and round estimates without discarding rejected
+bits or replacing an adaptive process by an independent product. -/
+namespace Lax457868Proofs.StoppedPrefixAveraging
+open Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
+open scoped BigOperators
+
+lemma boolTape_split {k N : ℕ} (h : k ≤ N) (ρ : Tape N) :
+    List.ofFn ρ = List.ofFn ((splitEquiv h ρ).1) ++
+      List.ofFn ((splitEquiv h ρ).2) := by
+  obtain ⟨s, rfl⟩ := Nat.exists_eq_add_of_le h
+  simp only [splitEquiv, Equiv.coe_fn_mk, Nat.add_sub_cancel_left]
+  rw [List.ofFn_add]
+  congr 2
+
+lemma prefix_of_split {k N : ℕ} (h : k ≤ N) (ρ : Tape N) :
+    (List.ofFn ρ).take k = List.ofFn ((splitEquiv h ρ).1) := by
+  rw [boolTape_split h ρ]
+  simp
+
+/-- The complete observed prefix includes rejected random blocks. -/
+def stoppedPrefix {N : ℕ} (used : Tape N → ℕ) (ρ : Tape N) : List Bool :=
+  (List.ofFn ρ).take (used ρ)
+
+lemma prefix_eq_iff_split {N : ℕ} (used : Tape N → ℕ)
+    (hbound : ∀ ρ, used ρ ≤ N)
+    (hcausal : ∀ ρ τ, (List.ofFn ρ).take (used ρ) =
+      (List.ofFn τ).take (used ρ) → used τ = used ρ)
+    (ρ τ : Tape N) :
+    stoppedPrefix used τ = stoppedPrefix used ρ ↔
+      (splitEquiv (hbound ρ) τ).1 = (splitEquiv (hbound ρ) ρ).1 := by
+  constructor
+  · intro heq
+    have hlen := congrArg List.length heq
+    simp only [stoppedPrefix, List.length_take, List.length_ofFn,
+      Nat.min_eq_left (hbound τ), Nat.min_eq_left (hbound ρ)] at hlen
+    have hh : (List.ofFn τ).take (used ρ) =
+        (List.ofFn ρ).take (used ρ) := by
+      simpa only [stoppedPrefix, hlen] using heq
+    rw [prefix_of_split (hbound ρ), prefix_of_split (hbound ρ)] at hh
+    exact List.ofFn_injective hh
+  · intro heq
+    have hh : (List.ofFn ρ).take (used ρ) =
+        (List.ofFn τ).take (used ρ) := by
+      rw [prefix_of_split (hbound ρ), prefix_of_split (hbound ρ), heq]
+    have hu := hcausal ρ τ hh
+    simpa only [stoppedPrefix, hu] using hh.symm
+
+/-- A stopped-prefix fiber consists of exactly all completions of that
+prefix, each once. -/
+lemma sum_prefix_fiber {N : ℕ} (used : Tape N → ℕ)
+    (hbound : ∀ ρ, used ρ ≤ N)
+    (hcausal : ∀ ρ τ, (List.ofFn ρ).take (used ρ) =
+      (List.ofFn τ).take (used ρ) → used τ = used ρ)
+    (X : Tape N → ℚ) (ρ : Tape N) :
+    (∑ τ ∈ (Finset.univ.filter fun τ =>
+      stoppedPrefix used τ = stoppedPrefix used ρ), X τ) =
+    ∑ tail : Tape (N - used ρ),
+      X ((splitEquiv (hbound ρ)).symm ((splitEquiv (hbound ρ) ρ).1, tail)) := by
+  classical
+  let E := splitEquiv (hbound ρ)
+  rw [Finset.sum_filter]
+  calc
+    (∑ τ, if stoppedPrefix used τ = stoppedPrefix used ρ then X τ else 0) =
+      ∑ pair : Tape (used ρ) × Tape (N - used ρ),
+        if pair.1 = (E ρ).1 then X (E.symm pair) else 0 := by
+          apply Fintype.sum_equiv E
+          intro τ
+          simp only [Equiv.symm_apply_apply]
+          simp only [prefix_eq_iff_split used hbound hcausal ρ τ, E]
+    _ = _ := by
+      rw [Fintype.sum_prod_type, Finset.sum_comm]
+      simp [E]
+
+/-- Conditional bounds on every actual stopped-prefix fiber combine into
+an unconditional mean bound. `Y` may be a state potential or the indicator
+of an already-observed rejection event times a tail bound. -/
+lemma sum_le_of_stopped_prefix {N : ℕ} (used : Tape N → ℕ)
+    (hbound : ∀ ρ, used ρ ≤ N)
+    (hcausal : ∀ ρ τ, (List.ofFn ρ).take (used ρ) =
+      (List.ofFn τ).take (used ρ) → used τ = used ρ)
+    (X Y : Tape N → ℚ)
+    (hY : ∀ ρ τ, (List.ofFn ρ).take (used ρ) =
+      (List.ofFn τ).take (used ρ) → Y τ = Y ρ)
+    (hmean : ∀ ρ, (∑ tail : Tape (N - used ρ),
+      X ((splitEquiv (hbound ρ)).symm ((splitEquiv (hbound ρ) ρ).1, tail))) ≤
+        Y ρ * 2 ^ (N - used ρ)) :
+    (∑ ρ, X ρ) ≤ ∑ ρ, Y ρ := by
+  classical
+  let prefixes := Finset.univ.image (stoppedPrefix used)
+  have maps : ∀ ρ ∈ (Finset.univ : Finset (Tape N)),
+      stoppedPrefix used ρ ∈ prefixes := fun ρ hρ => Finset.mem_image_of_mem _ hρ
+  rw [← Finset.sum_fiberwise_of_maps_to maps X,
+    ← Finset.sum_fiberwise_of_maps_to maps Y]
+  apply Finset.sum_le_sum
+  intro pre hpre
+  obtain ⟨ρ, _, rfl⟩ := Finset.mem_image.mp hpre
+  rw [sum_prefix_fiber used hbound hcausal X ρ,
+    sum_prefix_fiber used hbound hcausal Y ρ]
+  have hy (tail : Tape (N - used ρ)) :
+      Y ((splitEquiv (hbound ρ)).symm
+        ((splitEquiv (hbound ρ) ρ).1, tail)) = Y ρ := by
+    apply hY
+    rw [prefix_of_split (hbound ρ), prefix_of_split (hbound ρ)]
+    simp
+  simp only [hy, Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  simpa [card_tape, mul_comm] using hmean ρ
+
+end Lax457868Proofs.StoppedPrefixAveraging
