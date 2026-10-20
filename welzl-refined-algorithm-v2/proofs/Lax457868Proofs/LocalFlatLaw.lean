@@ -226,6 +226,75 @@ def localBadOutputs (m s : ℕ) (domain : ℕ → ℕ)
   exact (outputVectors (fun _ => m) (fun _ => 0) 0 s).filter fun output =>
     ¬ SamplerPhases.localTrialIsolates N B W b (output.map domain)
 
+lemma localBadOutputs_eq_indexImage (m s : ℕ) (domain : ℕ → ℕ)
+    (N : ℕ → Finset ℕ) (B : Finset ℕ) (W : Finset ℕ) (b : ℕ) :
+    localBadOutputs m s domain N B W b =
+      (localBadIndexTapes m s domain N B W b).image indexOutput := by
+  classical
+  ext output
+  simp only [localBadOutputs, localBadIndexTapes,
+    outputVectors_eq_indexOutput_image, Finset.mem_filter,
+    Finset.mem_image, Finset.mem_univ, true_and]
+  constructor
+  · rintro ⟨⟨tape, houtput⟩, hbad⟩
+    subst output
+    exact ⟨tape, hbad, rfl⟩
+  · rintro ⟨tape, hbad, houtput⟩
+    subst output
+    exact ⟨⟨tape, rfl⟩, hbad⟩
+
+lemma card_localBadOutputs_eq_indexBad (m s : ℕ) (domain : ℕ → ℕ)
+    (N : ℕ → Finset ℕ) (B : Finset ℕ) (W : Finset ℕ) (b : ℕ) :
+    (localBadOutputs m s domain N B W b).card =
+      (localBadIndexTapes m s domain N B W b).card := by
+  rw [localBadOutputs_eq_indexImage]
+  exact Finset.card_image_of_injective _ (indexOutput_injective m s)
+
+lemma localBadIndexTapes_image_eq_failureSet
+    (m s : ℕ) (domain : ℕ → ℕ) (X : Finset ℕ)
+    (henum : ReusedOriginal.Construction.MarkingMath.PrefixEnumerates m domain X)
+    (N : ℕ → Finset ℕ) (B : Finset ℕ) (W : Finset ℕ) (b : ℕ) :
+    (localBadIndexTapes m s domain N B W b).image
+      (indexTapeEquiv m s domain X henum) =
+        SamplerLocalSuccess.localTrialFailureSet N B W b X s := by
+  classical
+  ext tape
+  constructor
+  · intro hmem
+    obtain ⟨indices, hbad, rfl⟩ := Finset.mem_image.mp hmem
+    have hreject : ¬ SamplerPhases.localTrialIsolates N B W b
+        ((indexOutput indices).map domain) := by
+      simpa [localBadIndexTapes] using hbad
+    change (indexTapeEquiv m s domain X henum indices) ∈
+      SamplerLocalSuccess.localTrialFailureSet N B W b X s
+    simp only [SamplerLocalSuccess.localTrialFailureSet,
+      Finset.mem_filter, Finset.mem_univ, true_and]
+    rw [indexTapeEquiv_toList]
+    exact hreject
+  · intro hmem
+    let indices := (indexTapeEquiv m s domain X henum).symm tape
+    have hreject : ¬ SamplerPhases.localTrialIsolates N B W b tape.toList := by
+      simpa [SamplerLocalSuccess.localTrialFailureSet] using hmem
+    apply Finset.mem_image.mpr
+    refine ⟨indices, ?_, ?_⟩
+    · have hrejectIndices : ¬ SamplerPhases.localTrialIsolates N B W b
+          ((indexOutput indices).map domain) := by
+        rw [← indexTapeEquiv_toList m s domain X henum indices]
+        simpa [indices] using hreject
+      simpa [localBadIndexTapes] using hrejectIndices
+    · exact (indexTapeEquiv m s domain X henum).apply_symm_apply tape
+
+lemma card_localBadOutputs_eq_failureSet
+    (m s : ℕ) (domain : ℕ → ℕ) (X : Finset ℕ)
+    (henum : ReusedOriginal.Construction.MarkingMath.PrefixEnumerates m domain X)
+    (N : ℕ → Finset ℕ) (B : Finset ℕ) (W : Finset ℕ) (b : ℕ) :
+    (localBadOutputs m s domain N B W b).card =
+      (SamplerLocalSuccess.localTrialFailureSet N B W b X s).card := by
+  rw [card_localBadOutputs_eq_indexBad]
+  rw [← localBadIndexTapes_image_eq_failureSet m s domain X henum N B W b]
+  exact (Finset.card_image_of_injective _
+    (indexTapeEquiv m s domain X henum).injective).symm
+
 /-- The geometric ideal-draw half bound transfers to actual source draws,
 including exhausted selector calls in the complement of the retry event. -/
 lemma actualLocalRejectedFiber_half (m : ℕ) (hm : 0 < m)
@@ -242,6 +311,73 @@ lemma actualLocalRejectedFiber_half (m : ℕ) (hm : 0 < m)
   · intro output houtput
     exact (Finset.mem_filter.mp houtput).1
   · exact hideal
+
+lemma local_outputCount (m d s : ℕ) :
+    outputCount (fun _ => m) d s = m ^ s := by
+  induction s generalizing d with
+  | zero => simp [outputCount]
+  | succ s ih =>
+      simp only [outputCount]
+      rw [ih (d + 1)]
+      simp [pow_succ, Nat.mul_comm]
+
+/-- The semantic uniform failure set supplies the exact ideal count premise
+for the actual stopped-prefix law, via the source domain enumeration. -/
+lemma actualLocalRejectedFiber_half_of_failureSet
+    (m : ℕ) (hm : 0 < m) (t s Nbits : ℕ)
+    (domain : ℕ → ℕ) (X : Finset ℕ)
+    (henum : ReusedOriginal.Construction.MarkingMath.PrefixEnumerates m domain X)
+    (N : ℕ → Finset ℕ) (B : Finset ℕ) (W : Finset ℕ) (b : ℕ)
+    (hbudget : bitBudget (fun _ => m) t 0 s ≤ Nbits)
+    (hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet N B W b X s).card ≤ X.card ^ s) :
+    2 * (actualRejectedFiber m hm t s Nbits
+      (localBadOutputs m s domain N B W b)).card ≤ 2 ^ Nbits := by
+  apply actualLocalRejectedFiber_half m hm t s Nbits domain N B W b hbudget
+  rw [card_localBadOutputs_eq_failureSet m s domain X henum N B W b,
+    local_outputCount]
+  have hmX : m = X.card :=
+    EnumeratedDraws.prefixEnumerates_card m domain X henum
+  simpa [hmX] using hhalf
+
+/-- Under the paper's far-exception and shatter hypotheses, the actual
+capped sequential local draws reject and retry on at most half of flat tapes.
+This is unconditional; selector exhaustion is an abort, not a retry. -/
+lemma actualLocalRejectedFiber_half_paper
+    (A : Finset ℕ) (B : Finset ℕ) (N : ℕ → Finset ℕ)
+    (r k c : ℕ) (choice : SamplerPhases.InitialChoice A B N r)
+    (as : List ℕ) (has : as.toFinset = A) (hasNodup : as.Nodup)
+    (hN : ∀ b ∈ B, N b ⊆ A)
+    (hinj : ∀ b ∈ B, ∀ v ∈ B, N b = N v → b = v)
+    (b : ℕ) (hb : b ∈ B)
+    (hfar : 2 * k < 3 * SamplerPhases.disagreement N b
+      (choice.representative b))
+    (hc : 2 ≤ c)
+    (hshatter : ∀ Y : Finset ℕ, Y ⊆ A → Y.Nonempty →
+      (SamplerPhases.traceClasses N Y B).card ≤ c * Y.card)
+    (X W : Finset ℕ) (s t Nbits : ℕ) (domain : ℕ → ℕ)
+    (hX : X = (N b \ N (choice.representative b)) ∪
+      (N (choice.representative b) \ N b))
+    (hW : W = SamplerPhases.phase2Scan N (choice.exceptions k)
+      as choice.sample)
+    (hs : s = 64 * Nat.clog 2 c)
+    (henum : ReusedOriginal.Construction.MarkingMath.PrefixEnumerates
+      X.card domain X)
+    (hpositive : 0 < X.card)
+    (hbudget : bitBudget (fun _ => X.card) t 0 s ≤ Nbits) :
+    2 * (actualRejectedFiber X.card hpositive t s Nbits
+      (localBadOutputs X.card s domain N B W b)).card ≤ 2 ^ Nbits := by
+  have hsingle := SamplerLocalSuccess.localTrial_failure_lt_half
+    A B N r k c choice as has hasNodup hN hinj b hb hfar hc hshatter
+  have hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet N B W b X s).card ≤
+        X.card ^ s := by
+    subst X
+    subst W
+    subst s
+    exact Nat.le_of_lt hsingle
+  exact actualLocalRejectedFiber_half_of_failureSet
+    X.card hpositive t s Nbits domain X henum N B W b hbudget hhalf
 
 /-- A source trial on a fixed flat tape exposes an actual draw trace. If its
 scan rejects after all draws succeed, that tape belongs to the rejecting
