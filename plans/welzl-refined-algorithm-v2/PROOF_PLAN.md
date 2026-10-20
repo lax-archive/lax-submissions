@@ -937,3 +937,12 @@ Integrated release validation passed: all 151 proof modules are root-imported.
 Full `lax build --replay` completed in 3m53s, including 3m31s kernel replay.
 Archive inspection still reports one public concept and zero annotated
 conclusions; the headline theorem remains open.
+
+Reviewed `RefinedRoundCost`: above the stopping threshold, the existing
+contraction recurrence implies a two-thirds contraction. Telescoping bounds
+the sum of active sizes over an actual successful path by three times its
+initial size. Together with the existing round-count bound, this combines
+full-input scans and active-size draw charges into the required single-log
+runtime shape. Component expected charges and their actual-tape coupling
+remain to be supplied; this is not an unconditional runtime theorem. Targeted
+build and standard-background axiom audit passed.
