@@ -38,8 +38,11 @@ inductive TraceChain {n : ℕ} (B c : ℕ) (G : SimpleGraph (Fin n))
       (hinput : σ.inp = consumed ++ ρ.inp)
       (hconsumed : consumed.length ≤ cost)
       (houtcome : if accepted then
-          LoopReady B c G x rest ρ ∧ 0 < ρ.vars "acount"
+          LoopReady B c G x rest ρ ∧ 0 < ρ.vars "acount" ∧
+          3 * ρ.vars "acount" ≤ 2 * active ∧
+          ρ.vars "round" = σ.vars "round" + 1
         else ρ.vars "acount" = 0)
+      (hstop : accepted = false → tail = [])
       (htail : TraceChain B c G x rest ρ τ tail) :
       TraceChain B c G x rest σ τ
         ({ entry := σ, exit := ρ, active, consumed, cost, accepted } :: tail)
@@ -48,6 +51,78 @@ def traceCost (events : List RoundEvent) : ℕ :=
   (events.map fun e => 1 + roundGuard.size + e.cost).sum +
     (1 + roundGuard.size)
 
+/-- Zero-padded active size and source charge at the given chronological
+attempt index. -/
+def activeAt : List RoundEvent → ℕ → ℕ
+  | [], _ => 0
+  | event :: _, 0 => event.active
+  | _ :: tail, i + 1 => activeAt tail i
+
+def chargeAt : List RoundEvent → ℕ → ℕ
+  | [], _ => 0
+  | event :: _, 0 => 1 + roundGuard.size + event.cost
+  | _ :: tail, i + 1 => chargeAt tail i
+
+def failedAt (events : List RoundEvent) (i : ℕ) : Bool :=
+  match events[i]? with
+  | none => false
+  | some event => !event.accepted
+
+lemma TraceChain.active_contract {n B c : ℕ} {G : SimpleGraph (Fin n)}
+    {x rest : List ℕ} {σ τ : Env} {events : List RoundEvent}
+    (h : TraceChain B c G x rest σ τ events) (i : ℕ) :
+    3 * activeAt events (i + 1) ≤ 2 * activeAt events i := by
+  induction h generalizing i with
+  | nil => simp [activeAt]
+  | cons hready hguard hactive hrun hinput hconsumed houtcome hstop htail ih =>
+    rename_i σ0 ρ0 τ0 tail active cost accepted consumed
+    cases i with
+    | succ i => simpa only [activeAt] using ih i
+    | zero =>
+      by_cases ha : accepted = true
+      · have hcontract : 3 * ρ0.vars "acount" ≤ 2 * active := by
+          have hh := houtcome
+          simp only [ha, Bool.cond_true] at hh
+          exact hh.2.2.1
+        cases htail with
+        | nil => simp [activeAt]
+        | cons hready' hguard' hactive' hrun' hinput' hconsumed' houtcome'
+            hstop' htail' =>
+          simp only [activeAt]
+          omega
+      · have hf : accepted = false := by cases accepted <;> simp_all
+        have hempty := hstop hf
+        subst tail
+        simp [activeAt]
+
+lemma TraceChain.first_active_le {n B c : ℕ} {G : SimpleGraph (Fin n)}
+    {x rest : List ℕ} {σ τ : Env} {events : List RoundEvent}
+    (h : TraceChain B c G x rest σ τ events) : activeAt events 0 ≤ n := by
+  cases h with
+  | nil => simp [activeAt]
+  | cons hready _ hactive _ _ _ _ _ _ =>
+    obtain ⟨A, C, bits, sizes, D, hA, _, _, _, _, _, _, _, hacount,
+      _, _, _, _, _, _, _⟩ := hready
+    have hcard : A.card ≤ n := by simpa using Finset.card_le_card hA
+    simp only [activeAt]
+    omega
+
+lemma sum_chargeAt_pad (events : List RoundEvent) (R : ℕ)
+    (hlen : events.length ≤ R) :
+    (∑ i ∈ Finset.range R, chargeAt events i) =
+      (events.map fun e => 1 + roundGuard.size + e.cost).sum := by
+  induction events generalizing R with
+  | nil => simp [chargeAt]
+  | cons event tail ih =>
+    cases R with
+    | zero => simp at hlen
+    | succ R =>
+      have htail : tail.length ≤ R := by simpa using hlen
+      rw [Finset.sum_range_succ']
+      simp only [chargeAt, List.map_cons, List.sum_cons]
+      rw [ih R htail]
+      omega
+
 /-- The records partition the one physical input prefix read by the loop. -/
 lemma TraceChain.consumed_append {n B c : ℕ} {G : SimpleGraph (Fin n)}
     {x rest : List ℕ} {σ τ : Env} {events : List RoundEvent}
@@ -55,7 +130,7 @@ lemma TraceChain.consumed_append {n B c : ℕ} {G : SimpleGraph (Fin n)}
     σ.inp = (events.flatMap fun e => e.consumed) ++ τ.inp := by
   induction h with
   | nil => simp
-  | cons _ _ _ _ hinput _ _ _ ih =>
+  | cons _ _ _ _ hinput _ _ _ _ ih =>
     rw [hinput, ih]
     simp only [List.flatMap_cons, List.append_assoc]
 
@@ -69,7 +144,7 @@ lemma TraceChain.consumed_length_le_cost {n B c : ℕ}
       (events.map fun e => e.cost).sum := by
   induction h with
   | nil => simp
-  | cons _ _ _ _ _ hconsumed _ _ ih =>
+  | cons _ _ _ _ _ hconsumed _ _ _ ih =>
     simp only [List.flatMap_cons, List.length_append, List.map_cons, List.sum_cons]
     omega
 
@@ -97,6 +172,7 @@ lemma round_while_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
       Run B (.while roundGuard preparedRefinedRoundSource) σ τ K ∧
       TraceChain B c G x rest σ τ events ∧
       K = traceCost events ∧
+      events.length + σ.vars "round" ≤ Nat.clog 2 n ∧
       τ.vars "n" = n ∧
       (τ.vars "acount" = 0 ∨
         (LoopReady B c G x rest τ ∧ τ.vars "acount" ≤ 2 * refinedCutoffK c)) ∧
@@ -112,6 +188,7 @@ lemma round_while_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
         Run B (.while roundGuard preparedRefinedRoundSource) ρ τ K ∧
         TraceChain B c G x rest ρ τ events ∧
         K = traceCost events ∧
+        events.length + ρ.vars "round" ≤ Nat.clog 2 n ∧
         τ.vars "n" = n ∧
         (τ.vars "acount" = 0 ∨
           (LoopReady B c G x rest τ ∧ τ.vars "acount" ≤ 2 * refinedCutoffK c)) ∧
@@ -138,8 +215,9 @@ lemma round_while_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
         obtain ⟨pre, hpre, hpreLen, _⟩ :=
           Lax457868Proofs.SourceTapePrefix.consumed_prefix hbig
         have hpreCost : pre.length ≤ K := hpreLen.trans hk
-        rcases hresult with ⟨A', hstrict, hpositive', hacount', hready'⟩ | hfail
-        · obtain ⟨τ, K', events, htail, hchain, hcost, hnTail,
+        rcases hresult with ⟨A', hstrict, hpositive', hcontract', hround',
+            hacount', hready'⟩ | hfail
+        · obtain ⟨τ, K', events, htail, hchain, hcost, hlength, hnTail,
             hresult', hlast⟩ :=
             ih A'.card (by omega) ρ' hready' (by omega) hacount'
           refine ⟨τ, 1 + roundGuard.size + K + K',
@@ -149,10 +227,15 @@ lemma round_while_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
             TraceChain.cons (accepted := true) hreadyKeep htrue hacount
               hstepKeep hpre hpreCost
               (by simpa using
-                (show LoopReady B c G x rest ρ' ∧ 0 < ρ'.vars "acount" from
-                  ⟨hready', by omega⟩)) hchain,
-            ?_, hnTail, hresult', ?_⟩
+                (show LoopReady B c G x rest ρ' ∧ 0 < ρ'.vars "acount" ∧
+                    3 * ρ'.vars "acount" ≤ 2 * A.card ∧
+                    ρ'.vars "round" = ρ.vars "round" + 1 from
+                  ⟨hready', by omega, by omega, hround'⟩))
+              (by simp) hchain,
+            ?_, ?_, hnTail, hresult', ?_⟩
           · simp [traceCost, hcost, Nat.add_assoc]
+          · simp only [List.length_cons]
+            omega
           · intro hzero
             obtain ⟨before, e, heq, hefalse⟩ := hlast hzero
             exact ⟨(RoundEvent.mk ρ ρ' A.card pre K true) :: before,
@@ -168,15 +251,18 @@ lemma round_while_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
                consumed := pre, cost := K, accepted := false }],
             run_while_true htrue hstepKeep htail,
             TraceChain.cons (accepted := false) hreadyKeep htrue hacount hstepKeep hpre hpreCost
-              (by simpa using hfail) (TraceChain.nil ρ'),
-            ?_, hnStep, Or.inl hfail, ?_⟩
+              (by simpa using hfail) (by intro _; rfl) (TraceChain.nil ρ'),
+            ?_, ?_, hnStep, Or.inl hfail, ?_⟩
           · simp [traceCost, Nat.add_assoc]
+          · simp only [List.length_singleton]
+            omega
           · intro _
             exact ⟨[], RoundEvent.mk ρ ρ' A.card pre K false, rfl, rfl⟩
       · have hfalse : roundGuard.evalB B ρ = some false := by
           simpa [hlarge] using hguard
         exact ⟨ρ, 1 + roundGuard.size, [], Run.while_false hfalse,
-          TraceChain.nil ρ, rfl, D.vertices,
+          TraceChain.nil ρ, rfl, by simp; omega,
+          D.vertices,
           Or.inr ⟨hreadyKeep, by omega⟩,
           by intro hzero; omega⟩
   have hreadyKeep := hready
