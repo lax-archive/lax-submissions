@@ -34,7 +34,8 @@ inductive TraceChain {n : ℕ} (B c : ℕ) (G : SimpleGraph (Fin n))
       (hready : LoopReady B c G x rest σ)
       (hguard : roundGuard.evalB B σ = some true)
       (hactive : σ.vars "acount" = active)
-      (hrun : Run B preparedRefinedRoundSource σ ρ cost)
+      (hrun : Run B preparedRefinedRoundSource σ ρ cost ∧
+        BigStepB B preparedRefinedRoundSource σ ρ cost)
       (hinput : σ.inp = consumed ++ ρ.inp)
       (hconsumed : consumed.length ≤ cost)
       (houtcome : if accepted then
@@ -74,12 +75,48 @@ def failureStatus (ρ : Env) : Prop :=
   (ρ.vars "initialRetryStatus" = 2 ∨ ρ.vars "initialRetryStatus" = 3) ∨
     (ρ.vars "repairRetryStatus" = 2 ∨ ρ.vars "repairRetryStatus" = 3)
 
+/-- Every recorded charge is the actual bounded big-step count for that
+physical iteration, including accepted and failed iterations. -/
+lemma TraceChain.event_actual {n B c : ℕ} {G : SimpleGraph (Fin n)}
+    {x rest : List ℕ} {σ τ : Env} {events : List RoundEvent}
+    (h : TraceChain B c G x rest σ τ events) (i : ℕ) {event : RoundEvent}
+    (hevent : events[i]? = some event) :
+    BigStepB B preparedRefinedRoundSource event.entry event.exit event.cost := by
+  induction h generalizing i event with
+  | nil => simp at hevent
+  | cons hready hguard hactive hrun hinput hconsumed houtcome hstop htail ih =>
+    cases i with
+    | zero =>
+      simp only [List.getElem?_cons_zero, Option.some.injEq] at hevent
+      subst event
+      exact hrun.2
+    | succ j =>
+      apply ih j
+      simpa using hevent
+
+/-- Any new source proof can bound the same recorded charge: determinism
+identifies its actual count with the record, even when its `Run` bound differs. -/
+lemma TraceChain.event_cost_le_of_run {n B c K : ℕ}
+    {G : SimpleGraph (Fin n)} {x rest : List ℕ}
+    {σ τ υ : Env} {events : List RoundEvent}
+    (h : TraceChain B c G x rest σ τ events) (i : ℕ)
+    {event : RoundEvent} (hevent : events[i]? = some event)
+    (hrun : Run B preparedRefinedRoundSource event.entry υ K) :
+    event.cost ≤ K ∧ υ = event.exit := by
+  have hactual := h.event_actual i hevent
+  obtain ⟨k, hk, hother⟩ := hrun
+  have heq := BigStep.unique hactual.bigStep hother.bigStep
+  exact ⟨by omega, heq.1.symm⟩
+
 /-- A failed recorded iteration is an actual sampler-status failure. -/
 lemma TraceChain.failedAt_status {n B c : ℕ} {G : SimpleGraph (Fin n)}
     {x rest : List ℕ} {σ τ : Env} {events : List RoundEvent}
     (h : TraceChain B c G x rest σ τ events) (i : ℕ)
     (hfail : failedAt events i = true) :
-    ∃ event, events[i]? = some event ∧ failureStatus event.exit := by
+    ∃ event, events[i]? = some event ∧
+      LoopReady B c G x rest event.entry ∧
+      BigStepB B preparedRefinedRoundSource event.entry event.exit event.cost ∧
+      failureStatus event.exit := by
   induction h generalizing i with
   | nil => simp [failedAt] at hfail
   | cons hready hguard hactive hrun hinput hconsumed houtcome hstop htail ih =>
@@ -91,11 +128,11 @@ lemma TraceChain.failedAt_status {n B c : ℕ} {G : SimpleGraph (Fin n)}
       have hs := houtcome
       simp only [ha, Bool.cond_false] at hs
       exact ⟨{ entry := σ0, exit := ρ0, active, consumed, cost, accepted },
-        rfl, hs.2⟩
+        rfl, hready, hrun.2, hs.2⟩
     | succ j =>
       have hj : failedAt tail j = true := by simpa [failedAt] using hfail
-      obtain ⟨event, hevent, hstatus⟩ := ih j hj
-      exact ⟨event, by simpa using hevent, hstatus⟩
+      obtain ⟨event, hevent, hready', hrun', hstatus⟩ := ih j hj
+      exact ⟨event, by simpa using hevent, hready', hrun', hstatus⟩
 
 def usedBefore (events : List RoundEvent) (i : ℕ) : ℕ :=
   ((events.take i).flatMap fun event => event.consumed).length
@@ -244,7 +281,7 @@ lemma round_while_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
       by_cases hlarge : 2 * refinedCutoffK c < A.card
       · have htrue : roundGuard.evalB B ρ = some true := by
           simpa [hlarge] using hguard
-        obtain ⟨ρ', K, hstep, hnStep, hresult⟩ := round_step D hA hCsub hC hstore
+        obtain ⟨ρ', K, hstep, hactual, hnStep, hresult⟩ := round_step_actual D hA hCsub hC hstore
           hbounded hcapacity hroundCapacity hacount hsizesLen hsizesSum
           hpotential hroundLog hout hinput htape hx hG hc hB hlarge
         have hstepKeep := hstep
@@ -262,7 +299,7 @@ lemma round_while_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
               consumed := pre, cost := K, accepted := true } :: events,
             run_while_true htrue hstepKeep htail,
             TraceChain.cons (accepted := true) hreadyKeep htrue hacount
-              hstepKeep hpre hpreCost
+              ⟨hstepKeep, hactual⟩ hpre hpreCost
               (by simpa using
                 (show LoopReady B c G x rest ρ' ∧ 0 < ρ'.vars "acount" ∧
                     3 * ρ'.vars "acount" ≤ 2 * A.card ∧
@@ -288,7 +325,8 @@ lemma round_while_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
             [{ entry := ρ, exit := ρ', active := A.card,
                consumed := pre, cost := K, accepted := false }],
             run_while_true htrue hstepKeep htail,
-            TraceChain.cons (accepted := false) hreadyKeep htrue hacount hstepKeep hpre hpreCost
+            TraceChain.cons (accepted := false) hreadyKeep htrue hacount
+              ⟨hstepKeep, hactual⟩ hpre hpreCost
               (by simpa using And.intro hzero hstatus) (by intro _; rfl) (TraceChain.nil ρ'),
             ?_, ?_, hnStep, Or.inl hzero, ?_⟩
           · simp [traceCost, Nat.add_assoc]
