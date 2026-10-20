@@ -421,8 +421,11 @@ lemma initialSamplerAttempt_run_bits
             σp.arrs "classB" = arrOf n label ∧
             σp.arrs "classSize" = arrOf n size ∧
             σp.inp = σd.inp ∧
-            ∀ i < xs.length,
-              sorted i = (bucketSort Q label xs).getD i 0)) ∧
+            (∀ i < xs.length,
+              sorted i = (bucketSort Q label xs).getD i 0) ∧
+            ∃ RI : RepresentativeInput B n q Q t,
+              RI.σ = σp ∧ RI.bits = I.bits.drop (used * Nat.clog 2 m) ∧
+              RI.rest = I.rest)) ∧
       Run B initialDrawSampleSource (I.σ.setVar "attemptAccepted" 0) σd
         (initialDrawSampleCost n m used
           (values.length + if drawFailed then 1 else 0)
@@ -850,6 +853,6 @@ lemma initialSamplerAttempt_run_bits
             obtain ⟨hmem, hmapped, hsame⟩ := hclass w hw hactive
             exact ⟨hmem, hmapped, hsame⟩
           · exact ⟨rfl, hclassCountRep, hlen, hxsScan,
-              hq, hlabel, hsize, hinP, hsorted⟩
+              hq, hlabel, hsize, hinP, hsorted, RI, rfl, rfl, rfl⟩
 
 end Lax457868Proofs.InitialSamplerAttempt

@@ -1596,7 +1596,7 @@ lemma initialSamplerAttempt_run_sourceOutcome
     hrepSuccess hrepFalse
   rcases hsourceCert with
     ⟨_hclassCountFinal, _hxsLen, hxsScan, hqP,
-      hlabelP, hsizeP, hinP, hsorted⟩
+      hlabelP, hsizeP, hinP, hsorted, _hRI⟩
   let C := activeVertices n I.activeB
   have hrepC : ∀ b ∈ C, mapped b ∈ C := by
     intro b hb
