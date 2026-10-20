@@ -13,6 +13,89 @@ open scoped BigOperators
 variable {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
 
+/-- Average a nonnegative continuation cost after one actual stopped
+attempt.  The conditional hypothesis is over completions of the observed
+prefix; it is not an independent fresh-tape assumption. -/
+private lemma stopped_retry_tail_mean {N : ℕ}
+    (used : Tape N → ℕ) (first : Tape N → Prop)
+    [DecidablePred first] (tailCost : Tape N → ℕ) (H : ℚ)
+    (hH : 0 ≤ H)
+    (hbound : ∀ ρ, used ρ ≤ N)
+    (hcausal : ∀ ρ τ,
+      (List.ofFn ρ).take (used ρ) = (List.ofFn τ).take (used ρ) →
+      used τ = used ρ)
+    (hfirst : ∀ ρ τ,
+      (List.ofFn ρ).take (used ρ) = (List.ofFn τ).take (used ρ) →
+      (first τ ↔ first ρ))
+    (hhalf : 2 * (Finset.univ.filter first).card ≤ 2 ^ N)
+    (hstop : ∀ ρ, ¬ first ρ → tailCost ρ ≤ 4)
+    (hmean : ∀ ρ, first ρ →
+      (∑ suffix : Tape (N - used ρ),
+        (if first ((splitEquiv (hbound ρ)).symm
+          ((splitEquiv (hbound ρ) ρ).1, suffix)) then
+          (tailCost ((splitEquiv (hbound ρ)).symm
+            ((splitEquiv (hbound ρ) ρ).1, suffix)) : ℚ) else 0)) ≤
+          H * 2 ^ (N - used ρ)) :
+    2 * (∑ ρ, (tailCost ρ : ℚ)) ≤ (H + 8) * 2 ^ N := by
+  classical
+  let X : Tape N → ℚ := fun ρ => if first ρ then tailCost ρ else 0
+  let Y : Tape N → ℚ := fun ρ => if first ρ then H else 0
+  have hY : ∀ ρ τ,
+      (List.ofFn ρ).take (used ρ) = (List.ofFn τ).take (used ρ) →
+      Y τ = Y ρ := by
+    intro ρ τ hp
+    simp only [Y]
+    by_cases hf : first ρ
+    · have ht : first τ := (hfirst ρ τ hp).mpr hf
+      simp [hf, ht]
+    · have ht : ¬ first τ := fun h => hf ((hfirst ρ τ hp).mp h)
+      simp [hf, ht]
+  have hconditional : ∀ ρ,
+      (∑ suffix : Tape (N - used ρ),
+        X ((splitEquiv (hbound ρ)).symm
+          ((splitEquiv (hbound ρ) ρ).1, suffix))) ≤
+          Y ρ * 2 ^ (N - used ρ) := by
+    intro ρ
+    by_cases hf : first ρ
+    · simpa [X, Y, hf] using hmean ρ hf
+    · have hf' : ∀ suffix : Tape (N - used ρ),
+          ¬ first ((splitEquiv (hbound ρ)).symm
+            ((splitEquiv (hbound ρ) ρ).1, suffix)) := by
+        intro suffix
+        have hp : (List.ofFn ρ).take (used ρ) =
+            (List.ofFn ((splitEquiv (hbound ρ)).symm
+              ((splitEquiv (hbound ρ) ρ).1, suffix))).take (used ρ) := by
+          rw [StoppedPrefixAveraging.prefix_of_split (hbound ρ),
+            StoppedPrefixAveraging.prefix_of_split (hbound ρ)]
+          simp
+        exact fun hh => hf ((hfirst ρ _ hp).mp hh)
+      simp [X, Y, hf, hf']
+  have hX := StoppedPrefixAveraging.sum_le_of_stopped_prefix used
+    hbound hcausal X Y hY hconditional
+  have hYsum : (∑ ρ, Y ρ) =
+      H * ((Finset.univ.filter first).card : ℚ) := by
+    simp only [Y]
+    rw [← Finset.sum_filter]
+    simp [Finset.sum_const, mul_comm]
+  have hhalfQ : 2 * ((Finset.univ.filter first).card : ℚ) ≤
+      (2 ^ N : ℚ) := by exact_mod_cast hhalf
+  have hpoint : ∀ ρ, (tailCost ρ : ℚ) ≤ X ρ + 4 := by
+    intro ρ
+    by_cases hf : first ρ
+    · simp [X, hf]
+    · simp [X, hf]
+      exact_mod_cast hstop ρ hf
+  have hsum := Finset.sum_le_sum
+    (fun ρ (_ : ρ ∈ (Finset.univ : Finset (Tape N))) => hpoint ρ)
+  simp only [Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ,
+    card_tape, nsmul_eq_mul] at hsum
+  simp only [Nat.cast_pow, Nat.cast_ofNat] at hsum
+  rw [hYsum] at hX
+  have hweighted : 2 * H * ((Finset.univ.filter first).card : ℚ) ≤
+      H * 2 ^ N := by
+    nlinarith only [mul_le_mul_of_nonneg_left hhalfQ hH]
+  linear_combination 2 * hsum + 2 * hX + hweighted
+
 /-- The first actual retry iteration has the previously established full
 attempt mean.  This statement retains the actual tail BigStep and cost for
 the renewal estimate. -/
