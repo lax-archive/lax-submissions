@@ -894,9 +894,45 @@ private lemma assemble_failure
     change σnext.vars "qpow" = R.σ.vars "qpow"
     simpa [σnext] using hqpow.trans (rload.frame_var "qpow" (by decide))
 
+/-- The actual prepared local retry run for a far exception, including every
+rejected trial and the first accepted or failed selector prefix. -/
+def FarStepTrace
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (i attempts used : ℕ) : Prop :=
+  let b := R.exceptionList i
+  let X := (numericNeighborhood G b ∩ A) ∆
+    (numericNeighborhood G (R.rep b) ∩ A)
+  ∃ P : ReadyInput B n X.card n s t bufferCap targetCap q b
+      G x X groupedB Wbase Wcurrent,
+    Run B ((Com.assign "repairB" (.get "exceptionList" (.var "exceptionIndex"))).seq
+      repairDomainSource) R.σ P.σ
+        (3 + domainCharge x G A R.rep b) ∧
+    P.bits = R.bits ∧ P.rest = R.rest ∧
+    P.scanUpper = classScanCharge x R.size R.label R.ord b ∧
+    ∃ σsource : Env,
+      Run B localRepairRetriesSource P.σ σsource
+        (12 * Nat.clog 2 X.card + 24 +
+          ((15 * Nat.clog 2 X.card + 30) * used +
+            attempts * (79 * s + P.scanUpper + 50) + 14)) ∧
+      (∃ rejected : ℕ,
+        rejected ≤ attempts ∧ attempts ≤ rejected + 1 ∧
+        LocalFlatLaw.FlatRejectedTrials X.card t s
+          (LocalFlatLaw.localBadOutputs X.card s P.domain
+            (numericNeighborhood G) groupedB Wbase b)
+          rejected P.bits) ∧
+      (∃ accepted : ℕ,
+        LocalFlatLaw.FlatRetryExecution X.card P.hpositive t s
+          (LocalFlatLaw.localBadOutputs X.card s P.domain
+            (numericNeighborhood G) groupedB Wbase b)
+          attempts P.bits used accepted)
+
 /-- Execute one packed exception. The reported charge is the actual source
 charge for the near or far branch, with its actual attempts and bit use. -/
-private lemma one_step
+lemma one_step_run_trace
     {B n s t bufferCap targetCap q cap k e i : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
     {E groupedB Wbase A Wcurrent : Finset ℕ}
@@ -938,7 +974,11 @@ private lemma one_step
             Rnext.σ.vars "repairRetryStatus" = 3) ∧
           Rnext.σ.vars "exceptionIndex" = i ∧
           Rnext.σ.vars "exceptionStop" = i ∧
-          Wnext = Wcurrent)) := by
+          Wnext = Wcurrent)) ∧
+      ((2 * k) / 3 <
+        (((numericNeighborhood G (R.exceptionList i) ∩ A) ∆
+          (numericNeighborhood G (R.rep (R.exceptionList i)) ∩ A))).card →
+        FarStepTrace R i attempts used) := by
   let b := R.exceptionList i
   let X := ((numericNeighborhood G b ∩ A) ∆
     (numericNeighborhood G (R.rep b) ∩ A))
@@ -965,8 +1005,9 @@ private lemma one_step
   by_cases hfar : (2 * k) / 3 < X.card
   · obtain ⟨σsource, attempts, used, rsource, hattempts, hused,
       hinp, hn, hqpow, htrial, hrow, hdesired,
-      hBmarks', hRmarks', hout⟩ :=
-      localRepairOneException_run_far P R.hA hrepP hactiveP
+      hBmarks', hRmarks', hout, Rafter, rd, hRbits,
+      hRrest, hRscan, rr, hreject, hfull⟩ :=
+      localRepairOneException_run_far_trace P R.hA hrepP hactiveP
         hBmarksP hRmarksP hblistP hrlistP hrange rfl
         hfarP R.hfarB hfar hcapP R.hcapB hpow
         (by simpa [hPbits, b, X] using hbudget)
@@ -980,6 +1021,39 @@ private lemma one_step
     have hcharge : Kfar = oneExceptionCharge x G A R.rep s
         (classScanCharge x R.size R.label R.ord b) b k attempts used := by
       simp [Kfar, oneExceptionCharge, X, Nat.not_le.mpr hfar]
+    have hFarTrace : FarStepTrace R i attempts used := by
+      change ∃ Q : ReadyInput B n X.card n s t bufferCap targetCap q b
+          G x X groupedB Wbase Wcurrent,
+        Run B ((Com.assign "repairB" (.get "exceptionList" (.var "exceptionIndex"))).seq
+          repairDomainSource) R.σ Q.σ
+            (3 + domainCharge x G A R.rep b) ∧
+        Q.bits = R.bits ∧ Q.rest = R.rest ∧
+        Q.scanUpper = classScanCharge x R.size R.label R.ord b ∧
+        ∃ σsource : Env,
+          Run B localRepairRetriesSource Q.σ σsource
+            (12 * Nat.clog 2 X.card + 24 +
+              ((15 * Nat.clog 2 X.card + 30) * used +
+                attempts * (79 * s + Q.scanUpper + 50) + 14)) ∧
+          (∃ rejected : ℕ,
+            rejected ≤ attempts ∧ attempts ≤ rejected + 1 ∧
+            LocalFlatLaw.FlatRejectedTrials X.card t s
+              (LocalFlatLaw.localBadOutputs X.card s Q.domain
+                (numericNeighborhood G) groupedB Wbase b)
+              rejected Q.bits) ∧
+          (∃ accepted : ℕ,
+            LocalFlatLaw.FlatRetryExecution X.card Q.hpositive t s
+              (LocalFlatLaw.localBadOutputs X.card s Q.domain
+                (numericNeighborhood G) groupedB Wbase b)
+              attempts Q.bits used accepted)
+      refine ⟨Rafter, ?_, ?_, ?_, ?_, σsource, ?_, hreject, hfull⟩
+      · have rload' : Run B
+            (.assign "repairB" (.get "exceptionList" (.var "exceptionIndex")))
+            R.σ P.σ 3 := by simpa [hPσ] using rload
+        simpa [domainCharge, b, X] using rload'.seq rd
+      · exact hRbits.trans hPbits
+      · exact hRrest.trans hPrest
+      · exact hRscan.trans hscan
+      · simpa [hRscan] using rr
     let bitsNext := R.bits.drop (used * Nat.clog 2 X.card)
     have hinp' : σsource.inp = bitsNext.map Bool.toNat ++ R.rest := by
       simpa [bitsNext, hPbits, hPrest] using hinp
@@ -1005,7 +1079,7 @@ private lemma one_step
           hinp' hn hqpow' hsample hstatus htrial hrow hdesired
           hBmarks' hRmarks' hWbaseNext hWnextA
       refine ⟨Wnext, Rnext, attempts, used, Kfar, ?_, hcharge,
-        hattempts, hused, ?_, hfixed, Or.inl ?_⟩
+        hattempts, hused, ?_, hfixed, Or.inl ?_, fun _ => hFarTrace⟩
       · simpa [hstatusNext] using rbody
       · simpa [hbits, bitsNext, b, X]
       · exact ⟨hstatusNext, hindexNext, hstopNext, headTrials, hhead⟩
@@ -1016,7 +1090,7 @@ private lemma one_step
           hinp' hn hqpow' hsample hstatus (Or.inl rfl)
           htrial hrow hdesired hBmarks' hRmarks'
       refine ⟨Wcurrent, Rnext, attempts, used, Kfar, ?_, hcharge,
-        hattempts, hused, ?_, hfixed, Or.inr ?_⟩
+        hattempts, hused, ?_, hfixed, Or.inr ?_, fun _ => hFarTrace⟩
       · simpa [hstatusNext] using rbody
       · simpa [hbits, bitsNext, b, X]
       · exact ⟨Or.inl hstatusNext, hindexNext, hstopNext, rfl⟩
@@ -1027,7 +1101,7 @@ private lemma one_step
           hinp' hn hqpow' hsample hstatus (Or.inr rfl)
           htrial hrow hdesired hBmarks' hRmarks'
       refine ⟨Wcurrent, Rnext, attempts, used, Kfar, ?_, hcharge,
-        hattempts, hused, ?_, hfixed, Or.inr ?_⟩
+        hattempts, hused, ?_, hfixed, Or.inr ?_, fun _ => hFarTrace⟩
       · simpa [hstatusNext] using rbody
       · simpa [hbits, bitsNext, b, X]
       · exact ⟨Or.inr hstatusNext, hindexNext, hstopNext, rfl⟩
@@ -1052,12 +1126,14 @@ private lemma one_step
     have hhead := near_phase3Repair G A groupedB Wbase Wcurrent
       b (R.rep b) k s hnear
     refine ⟨Wcurrent, Rnext, 0, 0, domainCharge x G A R.rep b + 6,
-      ?_, ?_, by omega, by simp, ?_, hfixed, Or.inl ?_⟩
+      ?_, ?_, by omega, by simp, ?_, hfixed, Or.inl ?_, ?_⟩
     · simpa [hstatusNext] using rbody
     · simp [oneExceptionCharge, hnear, hscan, domainCharge,
         classScanCharge, b, X]
     · simpa [hbits]
     · exact ⟨hstatusNext, hindexNext, hstopNext, [], hhead⟩
+    · intro hfar'
+      exact False.elim (hfar hfar')
 
 /-- A recorded source call. Every field in a produced record comes from the
 checked one-exception Run; the charge is recomputed from its actual vertex,
@@ -1216,8 +1292,9 @@ private lemma loop_run_aux
           (.var "exceptionStop")).evalB B R.σ = some true := by
         simpa [hi] using loop_guard hindex hstop hiB heB
       obtain ⟨Wnext, Rnext, attempts, used, charge, rbody, hcharge,
-        hattempts, hused, hbits, hfixed, hout⟩ :=
-        one_step R hindex hstop hi (by simpa [b, X] using hcallBudget)
+        hattempts, hused, hbits, hfixed, hout, _hFarTrace⟩ :=
+        one_step_run_trace R hindex hstop hi
+          (by simpa [b, X] using hcallBudget)
       let step : ExecutedException :=
         ⟨b, attempts, used, Rnext.σ.vars "repairRetryStatus" = 1⟩
       rcases hout with hsuccess | hfailure
