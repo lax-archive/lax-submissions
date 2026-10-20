@@ -19,6 +19,59 @@ open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax808846Proofs.Reasoning.Lib
 open scoped symmDiff
 
+/-- The fixed symmetric-difference domain of one packed exception. -/
+private noncomputable def farDomain {n : ℕ} (G : SimpleGraph (Fin n))
+    (A : Finset ℕ) (rep : ℕ → ℕ) (b : ℕ) : Finset ℕ :=
+  (numericNeighborhood G b ∩ A) ∆
+    (numericNeighborhood G (rep b) ∩ A)
+
+/-- Hide the dependent choice of the actual domain-preparation result from
+later finite-sum elaboration. Its source certificate is projected below. -/
+private noncomputable def chosenFarPrepared
+    {B n s t bufferCap targetCap q cap k e i a u : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (bits : List Bool)
+    (hfar : FarStepTrace (R.reinput bits) i a u) :
+    ReadyInput B n (farDomain G A R.rep (R.exceptionList i)).card n
+      s t bufferCap targetCap q (R.exceptionList i) G x
+      (farDomain G A R.rep (R.exceptionList i)) groupedB Wbase Wcurrent :=
+  Classical.choose hfar
+
+private lemma chosenFarPrepared_spec
+    {B n s t bufferCap targetCap q cap k e i a u : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (bits : List Bool)
+    (hfar : FarStepTrace (R.reinput bits) i a u) :
+    let P := chosenFarPrepared R bits hfar
+    let b := R.exceptionList i
+    let X := farDomain G A R.rep b
+    Run B ((Com.assign "repairB" (.get "exceptionList" (.var "exceptionIndex"))).seq
+      RepairFilterSource.repairDomainSource)
+      (R.reinput bits).σ P.σ (3 + domainCharge x G A R.rep b) ∧
+    P.bits = bits ∧ P.rest = R.rest ∧
+    P.scanUpper = classScanCharge x R.size R.label R.ord b ∧
+    ∃ σsource : Env,
+      Run B localRepairRetriesSource P.σ σsource
+        (12 * Nat.clog 2 X.card + 24 +
+          ((15 * Nat.clog 2 X.card + 30) * u +
+            a * (79 * s + P.scanUpper + 50) + 14)) ∧
+      σsource.vars "repairRetriesLeft" + a = cap ∧
+      σsource.inp =
+        (P.bits.drop (u * Nat.clog 2 X.card)).map Bool.toNat ++ P.rest := by
+  unfold chosenFarPrepared
+  obtain ⟨hr, hb, hrest, hscan, σsource, hrun,
+    _hreject, _hfull, hcount, hinp, _hexhaust, _hselector⟩ :=
+    Classical.choose_spec hfar
+  exact ⟨hr, hb, hrest, hscan, σsource, hrun, hcount, hinp⟩
+
+attribute [irreducible] chosenFarPrepared
+
 /-- Two actual executions of the same local retry source agree on their
 trial count. At positive selector width the exact unread suffix also fixes the
 number of inspected blocks. -/
@@ -139,6 +192,170 @@ lemma local_actual_mean_runtime
   apply Finset.sum_congr rfl
   intro tape _
   rw [(hparameters tape).1, (hparameters tape).2]
+
+private def localActualCharge (L s scan a u : ℕ) : ℕ :=
+  12 * L + 24 + ((15 * L + 30) * u + a * (79 * s + scan + 50) + 14)
+
+private def localMeanBound (L s scan : ℕ) : ℕ :=
+  12 * L + 38 + 4 * s * (15 * L + 30) +
+    2 * (79 * s + scan + 50)
+
+private lemma local_actual_mean_runtime_short
+    {B n m domainCap s t bufferCap targetCap q b cap Nblocks Ntail scan : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (domain : ℕ → ℕ)
+    (P : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m + Ntail) →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ ρ, (P ρ).bits = FlatTraceLaw.flatBits ρ)
+    (hstate : ∀ ρ τ,
+      (P ρ).σ.vars = (P τ).σ.vars ∧
+      (P ρ).σ.arrs = (P τ).σ.arrs ∧
+      (P ρ).σ.out = (P τ).σ.out)
+    (hdomain : ∀ ρ j, j < domainCap → (P ρ).domain j = domain j)
+    (hscan : ∀ ρ, (P ρ).scanUpper = scan)
+    (hcap : ∀ ρ, (P ρ).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hblocks : cap * (s * t) ≤ Nblocks)
+    (hL : 0 < Nat.clog 2 m)
+    (henum : PrefixEnumerates m domain X)
+    (hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase b X s).card ≤ X.card ^ s)
+    (attempts used : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail) → ℕ)
+    (finalState : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail) → Env)
+    (hactual : ∀ ρ,
+      Run B localRepairRetriesSource (P ρ).σ (finalState ρ)
+        (localActualCharge (Nat.clog 2 m) s (P ρ).scanUpper
+          (attempts ρ) (used ρ)) ∧
+      (finalState ρ).vars "repairRetriesLeft" + attempts ρ = cap ∧
+      (finalState ρ).inp =
+        ((P ρ).bits.drop (used ρ * Nat.clog 2 m)).map Bool.toNat ++
+          (P ρ).rest ∧
+      attempts ρ ≤ cap ∧ used ρ ≤ attempts ρ * (s * t)) :
+    (∑ ρ, ((localActualCharge (Nat.clog 2 m) s scan
+      (attempts ρ) (used ρ) : ℕ) : ℚ)) ≤
+      (localMeanBound (Nat.clog 2 m) s scan : ℚ) *
+        (2 ^ (Nblocks * Nat.clog 2 m + Ntail) : ℚ) := by
+  have hmean := local_actual_mean_runtime domain P hbits hstate hdomain
+    hscan hcap hcapB hblocks hL henum hhalf attempts used finalState
+    (by
+      intro ρ
+      have ha := hactual ρ
+      rw [hscan ρ] at ha
+      simpa only [localActualCharge] using ha)
+  simpa only [localActualCharge, localMeanBound] using hmean
+
+set_option maxHeartbeats 2000000 in
+/-- Conditional expected charge for actual far-repair source runs after
+refilling the unread tape at a fixed exception state. -/
+lemma far_step_mean_on_reinputs
+    {B n s t bufferCap targetCap q cap k e i Nblocks Ntail : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (hblocks : cap * (s * t) ≤ Nblocks)
+    (hL : 0 < Nat.clog 2 (farDomain G A R.rep (R.exceptionList i)).card)
+    (hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase (R.exceptionList i)
+        (farDomain G A R.rep (R.exceptionList i)) s).card ≤
+        (farDomain G A R.rep (R.exceptionList i)).card ^ s)
+    (attempts used : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 (farDomain G A R.rep (R.exceptionList i)).card +
+        Ntail) → ℕ)
+    (hfar : ∀ ρ, FarStepTrace
+      (R.reinput (FlatTraceLaw.flatBits ρ)) i (attempts ρ) (used ρ))
+    (hvalid : ∀ ρ, attempts ρ ≤ cap ∧
+      used ρ ≤ attempts ρ * (s * t)) :
+    let L := Nat.clog 2 (farDomain G A R.rep (R.exceptionList i)).card
+    let scan := classScanCharge x R.size R.label R.ord (R.exceptionList i)
+    (∑ ρ, ((localActualCharge L s scan (attempts ρ) (used ρ) : ℕ) : ℚ)) ≤
+      (localMeanBound L s scan : ℚ) *
+        (2 ^ (Nblocks * L + Ntail) : ℚ) := by
+  classical
+  let b := R.exceptionList i
+  let X := farDomain G A R.rep b
+  let L := Nat.clog 2 X.card
+  let N := Nblocks * L + Ntail
+  let T := FlatTraceLaw.FlatTape N
+  let F (ρ : T) := R.reinput (FlatTraceLaw.flatBits ρ)
+  let P (ρ : T) := chosenFarPrepared R (FlatTraceLaw.flatBits ρ) (hfar ρ)
+  have hP (ρ : T) := chosenFarPrepared_spec R (FlatTraceLaw.flatBits ρ)
+    (hfar ρ)
+  let ρzero : T := fun _ => false
+  let domain := (P ρzero).domain
+  have hfixed (ρ τ : T) :
+      (P τ).σ = {(P ρ).σ with inp :=
+        (FlatTraceLaw.flatBits τ).map Bool.toNat ++ R.rest} := by
+    obtain ⟨rρ, hbρ, hrρ, _, _⟩ := hP ρ
+    obtain ⟨rτ, _hbτ, _hrτ, _, _⟩ := hP τ
+    have hin : (F ρ).σ.inp = [] ++ (P ρ).σ.inp := by
+      simp only [List.nil_append]
+      have hp := (P ρ).hinput
+      rw [hbρ, hrρ] at hp
+      exact (F ρ).hinput.trans hp.symm
+    have hstart : (F τ).σ = {(F ρ).σ with inp :=
+        ((FlatTraceLaw.flatBits τ).map Bool.toNat) ++ R.rest} := by
+      simp [F, LoopInput.reinput_state]
+    have rr : Run B
+        ((Com.assign "repairB" (.get "exceptionList" (.var "exceptionIndex"))).seq
+          RepairFilterSource.repairDomainSource)
+        {(F ρ).σ with inp := [] ++
+          ((FlatTraceLaw.flatBits τ).map Bool.toNat ++ R.rest)}
+        (P τ).σ (3 + domainCharge x G A R.rep b) := by
+      simpa only [List.nil_append, ← hstart] using rτ
+    have hsame := StoppedPrefixAveraging.run_result_same_prefix
+      rρ [] hin ((FlatTraceLaw.flatBits τ).map Bool.toNat ++ R.rest) rr
+    simpa using hsame
+  have hstate (ρ τ : T) :
+      (P ρ).σ.vars = (P τ).σ.vars ∧
+      (P ρ).σ.arrs = (P τ).σ.arrs ∧
+      (P ρ).σ.out = (P τ).σ.out := by
+    rw [hfixed ρ τ]
+    simp
+  have hdomain (ρ : T) (j : ℕ) (hj : j < n) :
+      (P ρ).domain j = domain j := by
+    have harr : arrOf n (P ρ).domain = arrOf n domain := by
+      calc
+        arrOf n (P ρ).domain = (P ρ).σ.arrs "drawDomain" :=
+          (P ρ).hdomain.symm
+        _ = (P ρzero).σ.arrs "drawDomain" := (hstate ρ ρzero).2.1 ▸ rfl
+        _ = arrOf n domain := (P ρzero).hdomain
+    exact InitialFlatLaw.arrOf_eq_on harr j hj
+  have hbits (ρ : T) : (P ρ).bits = FlatTraceLaw.flatBits ρ :=
+    (hP ρ).2.1
+  have hscan (ρ : T) : (P ρ).scanUpper =
+      classScanCharge x R.size R.label R.ord b :=
+    (hP ρ).2.2.2.1
+  have hcap (ρ : T) : (P ρ).σ.vars "repairRetryCap" = cap := by
+    have hprep := (hP ρ).1
+    have hh := hprep.frame_var "repairRetryCap" (by decide)
+    simpa [F, LoopInput.reinput_state] using hh.trans R.hretryCap
+  let finalState (ρ : T) : Env := Classical.choose ((hP ρ).2.2.2.2)
+  have hactual (ρ : T) :
+      Run B localRepairRetriesSource (P ρ).σ (finalState ρ)
+        (localActualCharge L s (P ρ).scanUpper (attempts ρ) (used ρ)) ∧
+      (finalState ρ).vars "repairRetriesLeft" + attempts ρ = cap ∧
+      (finalState ρ).inp =
+        ((P ρ).bits.drop (used ρ * L)).map Bool.toNat ++ (P ρ).rest ∧
+      attempts ρ ≤ cap ∧ used ρ ≤ attempts ρ * (s * t) := by
+    have hs := Classical.choose_spec ((hP ρ).2.2.2.2)
+    exact ⟨hs.1, hs.2.1, hs.2.2, (hvalid ρ).1, (hvalid ρ).2⟩
+  exact local_actual_mean_runtime_short
+    (B := B) (n := n) (m := X.card) (domainCap := n)
+    (s := s) (t := t) (bufferCap := bufferCap)
+    (targetCap := targetCap) (q := q) (b := b) (cap := cap)
+    (Nblocks := Nblocks) (Ntail := Ntail)
+    (scan := classScanCharge x R.size R.label R.ord b)
+    (G := G) (x := x) (X := X) (groupedB := groupedB)
+    (Wbase := Wbase) (Wcurrent := Wcurrent)
+    domain P hbits hstate hdomain hscan hcap R.hcapB hblocks hL
+    (P ρzero).henum hhalf attempts used finalState hactual
 
 /-- A status-three source event is contained in the exact stopped-prefix
 fiber of `cap` rejected trials. Its count decays geometrically on the full
