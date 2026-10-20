@@ -2589,6 +2589,87 @@ noncomputable def sourceInitialBadFiber
           (fun b => numericNeighborhood G b ∩ A) r threshold cap ω = true
       ).biUnion (sourceInitialOutcomeFiber I)
 
+/-- If the full attempt's acceptance scan rejects after successful
+selection, its exact bit tape lies in the actual continuation fiber. -/
+lemma initialSamplerAttempt_run_badFiber
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A)
+    (σsel : Env) (K threshold cap : ℕ)
+    (choice : InitialChoice A (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r)
+    (mapped : ℕ → ℕ)
+    (hsel : Run B initialSamplerAttempt I.σ σsel K)
+    (hbatch : σsel.vars "batchFailed" = 0)
+    (hrep : σsel.vars "repFailed" = 0)
+    (harray : σsel.arrs "repB" = arrOf n mapped)
+    (hchoice : ∀ b ∈ activeVertices n I.activeB,
+      choice.representative b = mapped b)
+    (hbad : cap < (choice.exceptions threshold).card) :
+    (flatBitsEquiv I.bits.length).symm ⟨I.bits, rfl⟩ ∈
+      sourceInitialBadFiber I threshold cap := by
+  classical
+  obtain ⟨σsource, Ksource, hsourceRun, houtcome⟩ :=
+    initialSamplerAttempt_run_sourceOutcome I
+  have hfinal : σsource = σsel := by
+    obtain ⟨_, _, hbig⟩ := hsourceRun
+    obtain ⟨_, _, hbig'⟩ := hsel
+    exact (BigStep.unique hbig.bigStep hbig'.bigStep).1
+  obtain ⟨ω, hω⟩ := houtcome (by simpa [hfinal] using hbatch)
+    (by simpa [hfinal] using hrep)
+  have hbits : flatBits ((flatBitsEquiv I.bits.length).symm
+      ⟨I.bits, rfl⟩) = I.bits :=
+    congrArg Subtype.val
+      ((flatBitsEquiv I.bits.length).apply_symm_apply ⟨I.bits, rfl⟩)
+  obtain ⟨w⟩ := (Finset.mem_filter.mp hω).2
+  have hinputState :
+      {I.σ with inp := I.bits.map Bool.toNat ++ I.rest} = I.σ := by
+    simp [← I.hinput]
+  have hfinalW : w.σfinal = σsel := by
+    have hwRunRaw : Run B initialSamplerAttempt
+        {I.σ with inp := I.bits.map Bool.toNat ++ I.rest}
+        w.σfinal w.attemptCost := by
+      simpa only [hbits] using w.attemptRun
+    have hwRun : Run B initialSamplerAttempt I.σ w.σfinal
+        w.attemptCost := by simpa only [hinputState] using hwRunRaw
+    obtain ⟨_, _, hbig⟩ := hwRun
+    obtain ⟨_, _, hbig'⟩ := hsel
+    exact (BigStep.unique hbig.bigStep hbig'.bigStep).1
+  have hmapped : ∀ b ∈ activeVertices n I.activeB,
+      w.mapped b = mapped b := by
+    intro b hb
+    have hbn : b < n := (mem_activeVertices.mp hb).1
+    have harr : arrOf n w.mapped = arrOf n mapped := by
+      calc
+        arrOf n w.mapped = w.σfinal.arrs "repB" := w.resultArray.symm
+        _ = σsel.arrs "repB" := by rw [hfinalW]
+        _ = arrOf n mapped := harray
+    exact arrOf_eq_on harr b hbn
+  have hexceptions :
+      (outcomeChoice A (activeVertices n I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r ω).exceptions threshold =
+      choice.exceptions threshold := by
+    ext b
+    simp only [InitialChoice.exceptions, Finset.mem_filter]
+    constructor
+    · rintro ⟨hb, hd⟩
+      refine ⟨hb, ?_⟩
+      rw [w.representative b hb, hmapped b hb,
+        ← hchoice b hb] at hd
+      exact hd
+    · rintro ⟨hb, hd⟩
+      refine ⟨hb, ?_⟩
+      rw [w.representative b hb, hmapped b hb,
+        ← hchoice b hb]
+      exact hd
+  have hbadω : outcomeBad A (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r threshold cap ω = true := by
+    simp [outcomeBad, hexceptions, hbad]
+  apply Finset.mem_biUnion.mpr
+  refine ⟨ω, ?_, hω⟩
+  exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hbadω⟩
+
 lemma sourceInitialBadFiber_probability_le_badMass
     {B n m domainCap r t bufferCap targetCap Q : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
