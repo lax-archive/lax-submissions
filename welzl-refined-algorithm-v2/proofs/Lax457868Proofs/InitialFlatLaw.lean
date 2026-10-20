@@ -3,6 +3,7 @@ import Lax457868Proofs.ClassChoiceTransport
 import Lax457868Proofs.InitialSamplerAttempt
 import Lax457868Proofs.InitialSamplerChoice
 import Lax457868Proofs.SamplerInitialRetries
+import Lax457868Proofs.SourceTapePrefix
 
 /-!
 Flat-tape counting at the actual initial-attempt boundary. The first draw
@@ -1258,87 +1259,6 @@ lemma numericRepValues_unique_of_mapped
     rw [hlookupA, hlookupB] at hmaps
     exact hinj a[d] hposA b[d] hposB hmaps
 
-private lemma expr_eval_replace_input (e : Expr) (σ : Env)
-    (inp : List ℕ) : e.eval {σ with inp := inp} = e.eval σ := by
-  induction e with
-  | lit _ => rfl
-  | var _ => rfl
-  | get _ i ih => simp only [Expr.eval, ih]
-  | bin _ e f ihe ihf => simp only [Expr.eval, ihe, ihf]
-
-private lemma cond_eval_replace_input (b : Cond) (σ : Env)
-    (inp : List ℕ) : b.eval {σ with inp := inp} = b.eval σ := by
-  cases b <;> simp only [Cond.eval, expr_eval_replace_input]
-
-/-- A deterministic IMP execution reads a finite prefix; replacing exactly
-the unread suffix transports the same derivation and cost. -/
-private lemma bigStep_consumedPrefix
-    {c : Com} {σ σ' : Env} {k : ℕ}
-    (h : BigStep c σ σ' k) :
-    ∃ pre : List ℕ, σ.inp = pre ++ σ'.inp ∧
-      ∀ more : List ℕ,
-        BigStep c {σ with inp := pre ++ more}
-          {σ' with inp := more} k := by
-  induction h with
-  | skip =>
-      refine ⟨[], rfl, ?_⟩
-      intro more
-      exact BigStep.skip
-  | assign he =>
-      refine ⟨[], rfl, fun more => ?_⟩
-      have he' := (expr_eval_replace_input _ _ more).trans he
-      simpa [Env.setVar] using (BigStep.assign he')
-  | store hi he hk =>
-      refine ⟨[], rfl, fun more => ?_⟩
-      have hi' := (expr_eval_replace_input _ _ more).trans hi
-      have he' := (expr_eval_replace_input _ _ more).trans he
-      simpa [Env.setArr] using (BigStep.store hi' he' hk)
-  | seq h₁ h₂ ih₁ ih₂ =>
-      obtain ⟨pre₁, hin₁, htransport₁⟩ := ih₁
-      obtain ⟨pre₂, hin₂, htransport₂⟩ := ih₂
-      refine ⟨pre₁ ++ pre₂, ?_, ?_⟩
-      · rw [hin₁, hin₂, List.append_assoc]
-      · intro more
-        simpa [List.append_assoc] using
-          BigStep.seq (htransport₁ (pre₂ ++ more)) (htransport₂ more)
-  | ite_true hb hc ih =>
-      obtain ⟨pre, hin, htransport⟩ := ih
-      refine ⟨pre, hin, fun more => ?_⟩
-      exact BigStep.ite_true
-        ((cond_eval_replace_input _ _ _).trans hb) (htransport more)
-  | ite_false hb hd ih =>
-      obtain ⟨pre, hin, htransport⟩ := ih
-      refine ⟨pre, hin, fun more => ?_⟩
-      exact BigStep.ite_false
-        ((cond_eval_replace_input _ _ _).trans hb) (htransport more)
-  | while_true hb hc hw ihc ihw =>
-      obtain ⟨pre₁, hin₁, htransport₁⟩ := ihc
-      obtain ⟨pre₂, hin₂, htransport₂⟩ := ihw
-      refine ⟨pre₁ ++ pre₂, ?_, ?_⟩
-      · rw [hin₁, hin₂, List.append_assoc]
-      · intro more
-        simpa [List.append_assoc] using
-          BigStep.while_true
-            ((cond_eval_replace_input _ _ _).trans hb)
-            (htransport₁ (pre₂ ++ more)) (htransport₂ more)
-  | while_false hb =>
-      refine ⟨[], rfl, fun more => ?_⟩
-      exact BigStep.while_false
-        ((cond_eval_replace_input _ _ _).trans hb)
-  | read hin =>
-      rename_i σread xread vread restRead
-      refine ⟨[vread], ?_, ?_⟩
-      · simpa using hin
-      · intro more
-        simpa [Env.setVar, hin] using
-          (BigStep.read (σ := {σread with inp := vread :: more})
-            (x := xread) (v := vread)
-            (rest := more) (by rfl))
-  | write he =>
-      refine ⟨[], rfl, fun more => ?_⟩
-      have he' := (expr_eval_replace_input _ _ more).trans he
-      simpa using (BigStep.write he')
-
 /-- Two bounded source runs with the same initial state and consumed input
 prefix have identical scalar/array/output states; only their unread input
 suffixes differ. -/
@@ -1350,18 +1270,17 @@ lemma run_same_consumedPrefix
     (h : Run B c σ τ K)
     (h' : Run B c {σ with inp := pre ++ rest'} τ' K') :
     τ' = {τ with inp := rest'} := by
-  obtain ⟨k, _, hbig⟩ := h.bigStep
-  obtain ⟨k', _, hbig'⟩ := h'.bigStep
-  obtain ⟨read, hsplit, htransport⟩ := bigStep_consumedPrefix hbig
+  obtain ⟨k, _, hbig⟩ := h
+  obtain ⟨k', _, hbig'⟩ := h'
+  obtain ⟨read, hsplit, _, htransport⟩ :=
+    Lax457868Proofs.SourceTapePrefix.consumed_prefix hbig
   have hread : read = pre := by
     rw [houtput] at hsplit
     rw [hinput] at hsplit
     exact List.append_cancel_right hsplit.symm
   subst read
   have htransport' := htransport rest'
-  have hstart : {σ with inp := pre ++ rest'} =
-      {σ with inp := pre ++ rest'} := rfl
-  obtain ⟨hfinal, _⟩ := BigStep.unique htransport' hbig'
+  obtain ⟨hfinal, _⟩ := BigStep.unique htransport'.bigStep hbig'.bigStep
   exact hfinal.symm
 
 end Lax457868Proofs.InitialFlatLaw

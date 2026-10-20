@@ -417,6 +417,10 @@ lemma initialSamplerAttempt_run_bits
           (σ'.vars "classCount" = q ∧
             xs.length = (activeVertices n I.activeB).card ∧
             xs = scanList I.activeB 0 n ∧
+            σp.vars "classCount" = q ∧
+            σp.arrs "classB" = arrOf n label ∧
+            σp.arrs "classSize" = arrOf n size ∧
+            σp.inp = σd.inp ∧
             ∀ i < xs.length,
               sorted i = (bucketSort Q label xs).getD i 0)) ∧
       Run B initialDrawSampleSource (I.σ.setVar "attemptAccepted" 0) σd
@@ -845,6 +849,7 @@ lemma initialSamplerAttempt_run_bits
             intro w hw hactive
             obtain ⟨hmem, hmapped, hsame⟩ := hclass w hw hactive
             exact ⟨hmem, hmapped, hsame⟩
-          · exact ⟨rfl, hclassCountRep, hlen, hxsScan, hsorted⟩
+          · exact ⟨rfl, hclassCountRep, hlen, hxsScan,
+              hq, hlabel, hsize, hinP, hsorted⟩
 
 end Lax457868Proofs.InitialSamplerAttempt
