@@ -203,7 +203,7 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
     (hlarge : 2 * refinedCutoffK c < A.card) :
     ∃ τ K, Run B preparedRefinedRoundSource σ τ K ∧
       τ.vars "n" = n ∧
-      ((∃ A' : Finset ℕ, A'.card < A.card ∧
+      ((∃ A' : Finset ℕ, A'.card < A.card ∧ 0 < A'.card ∧
           τ.vars "acount" = A'.card ∧ LoopReady B c G x rest τ) ∨
         τ.vars "acount" = 0) := by
   have hbudget :
@@ -267,12 +267,19 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
     have hpartA' : TracePartition G (finSetAsSet A)
         (finSetAsSet Rnum) (finSetAsSet Snum) := by
       simpa [finSetAsSet, setFlag] using (Classical.choice hpartA).partition
+    have hSpositive : 0 < Snum.card := by
+      obtain ⟨a, ha⟩ : A.Nonempty := Finset.card_pos.mp (by omega)
+      let v : Fin n := ⟨a, Finset.mem_range.mp (hA ha)⟩
+      have hv : v ∈ finSetAsSet A := ha
+      have hrep := hpartA'.representative_mem v hv
+      have : Snum.Nonempty := ⟨(hpartA'.representative v).val, hrep⟩
+      exact Finset.card_pos.mpr this
     have hW' : finSetAsSet (n := n) W ⊆ finSetAsSet (n := n) A := by
       intro v hv
       exact hWsub hv
     have hsep' := Lax457868Proofs.RefinedTwinDomain.dual_partition_separated
       hW' hpartB' hpartA'
-    exact Or.inl ⟨Snum, hstrict, hacount', Snum, Rnum, bits.drop used,
+    exact Or.inl ⟨Snum, hstrict, hSpositive, hacount', Snum, Rnum, bits.drop used,
       sizes ++ [A.card],
       hdata, hSrange, hRrange, hRnonempty, hsep', hstored, hbounded',
       hcapacity', hroundCapacity', hacount', hsizesLen', hsizesSum',
@@ -357,7 +364,7 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
           hbounded hcapacity hroundCapacity hacount hsizesLen hsizesSum
           hpotential hroundLog hout
           hinput htape hx hG hc hB hlarge
-        rcases hresult with ⟨A', hstrict, hacount', hready'⟩ | hfail
+        rcases hresult with ⟨A', hstrict, _hpositive, hacount', hready'⟩ | hfail
         · obtain ⟨τ, K', htail, hnTail, hresult'⟩ := ih A'.card
             (by omega) ρ' hready' hacount'
           exact ⟨τ, _, run_while_true htrue hstep htail, hnTail, hresult'⟩
