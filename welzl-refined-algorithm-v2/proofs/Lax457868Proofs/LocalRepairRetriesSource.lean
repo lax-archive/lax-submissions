@@ -30,6 +30,29 @@ noncomputable section
 
 set_option maxHeartbeats 2000000
 
+/-- The actual ordered retry prefix ends in a capped selector failure.
+Earlier trials are complete and rejected; the final failed draw is kept with
+its exact unread tail. -/
+inductive FlatSelectorFailed (m : ℕ) (hm : 0 < m) (t s : ℕ)
+    (bad : Finset (List ℕ)) : ℕ → List Bool → Prop
+  | final {bits : List Bool}
+      (blockTape : Fin (s * t) → (Fin (Nat.clog 2 m) → Bool))
+      (tail : List Bool) (values : List (Fin m)) (used : ℕ)
+      (hbits : bits = (List.ofFn blockTape).flatMap List.ofFn ++ tail)
+      (hdraw : SequentialDraws.DrawTrace m hm t s
+        (List.ofFn blockTape) values used true) :
+      FlatSelectorFailed m hm t s bad 1 bits
+  | rejected {bits : List Bool} {k : ℕ}
+      (blockTape : Fin (s * t) → (Fin (Nat.clog 2 m) → Bool))
+      (tail : List Bool) (values : List (Fin m)) (used : ℕ)
+      (hbits : bits = (List.ofFn blockTape).flatMap List.ofFn ++ tail)
+      (hdraw : SequentialDraws.DrawTrace m hm t s
+        (List.ofFn blockTape) values used false)
+      (hbad : values.map Fin.val ∈ bad)
+      (hnext : FlatSelectorFailed m hm t s bad k
+        (bits.drop (used * Nat.clog 2 m))) :
+      FlatSelectorFailed m hm t s bad (k + 1) bits
+
 /-- A rejected trial preserves every fixed class and domain input. Length
 preservation suffices for the scratch arrays overwritten by the scan. -/
 private def ReadyInput.afterRejected
@@ -226,6 +249,10 @@ lemma localRepairWhile_run_trace
       (σ'.vars "repairRetryStatus" = 3 →
         FlatRejectedTrials m t s
           (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b) attempts R.bits) ∧
+      (σ'.vars "repairRetryStatus" = 2 →
+        FlatSelectorFailed m R.hpositive t s
+          (localBadOutputs m s R.domain (numericNeighborhood G)
             groupedB Wbase b) attempts R.bits) := by
   induction fuel generalizing R with
   | zero =>
@@ -248,8 +275,11 @@ lemma localRepairWhile_run_trace
           · exact ⟨0, FlatRetryExecution.done R.bits⟩
           · constructor
             · simp [σ', hleft]
-            · intro _
-              exact FlatRejectedTrials.done R.bits
+            · constructor
+              · intro _
+                exact FlatRejectedTrials.done R.bits
+              · intro hstatus2
+                simp [σ'] at hstatus2
   | succ fuel ih =>
     let L := Nat.clog 2 m
     let C := 15 * L + 30
@@ -322,8 +352,14 @@ lemma localRepairWhile_run_trace
                   hdraw⟩
             · constructor
               · simp [σb, hleftA]
-              · intro hstatus3
-                omega
+              · constructor
+                · intro hstatus3
+                  omega
+                · intro _
+                  obtain ⟨blockTape, tail, hsplit, hdraw⟩ := htraceWitness
+                  exact FlatSelectorFailed.final blockTape tail values used
+                    (by simpa [ClassRepresentativeTrace.tapeBits] using hsplit)
+                    (by simpa [hfailed] using hdraw)
     · have hfalse : failed = false := Bool.eq_false_iff.mpr hfailed
       have hlen : D.length = s := by simpa [D] using hcomplete hfalse
       have hle := hstatusLe hfalse
@@ -367,7 +403,7 @@ lemma localRepairWhile_run_trace
         have hfuelNext : fuel < B := by omega
         obtain ⟨σ', attempts', totalUsed', rrec, hattempts', htotalUsed',
           hinp', hn', hqpow', htrial', hrow', hdesired', hout', htrace',
-          hfull', hcount', hexhaustTrace'⟩ :=
+          hfull', hcount', hexhaustTrace', hselectorTrace'⟩ :=
           ih Rnext hstatusNext hleftNext hLnext hvnext hfuelNext
             (by simpa [L] using hbudgetNext)
         have hinputFinal : σ'.inp =
@@ -482,21 +518,31 @@ lemma localRepairWhile_run_trace
                     hdrawFalse hbad hnext'⟩
               · constructor
                 · omega
-                · intro hstatus3
-                  have hnextRaw := hexhaustTrace' hstatus3
-                  change FlatRejectedTrials m t s
-                    (localBadOutputs m s R.domain
-                      (numericNeighborhood G) groupedB Wbase b)
-                    attempts' (R.bits.drop (used * L)) at hnextRaw
-                  have hnext : FlatRejectedTrials m t s
+                · constructor
+                  · intro hstatus3
+                    have hnextRaw := hexhaustTrace' hstatus3
+                    change FlatRejectedTrials m t s
                       (localBadOutputs m s R.domain
                         (numericNeighborhood G) groupedB Wbase b)
-                      attempts' (R.bits.drop
-                        (FlatTraceLaw.consumedBits (fun _ => m) 0
-                          stopAttempts)) := by
-                    simpa [L, hconsumed] using hnextRaw
-                  exact FlatRejectedTrials.step
-                    (values.map Fin.val) stopAttempts hbad hflat hnext
+                      attempts' (R.bits.drop (used * L)) at hnextRaw
+                    have hnext : FlatRejectedTrials m t s
+                        (localBadOutputs m s R.domain
+                          (numericNeighborhood G) groupedB Wbase b)
+                        attempts' (R.bits.drop
+                          (FlatTraceLaw.consumedBits (fun _ => m) 0
+                            stopAttempts)) := by
+                      simpa [L, hconsumed] using hnextRaw
+                    exact FlatRejectedTrials.step
+                      (values.map Fin.val) stopAttempts hbad hflat hnext
+                  · intro hstatus2
+                    have hnextRaw := hselectorTrace' hstatus2
+                    change FlatSelectorFailed m R.hpositive t s
+                      (localBadOutputs m s R.domain
+                        (numericNeighborhood G) groupedB Wbase b)
+                      attempts' (R.bits.drop (used * L)) at hnextRaw
+                    exact FlatSelectorFailed.rejected blockTape tail values used
+                      (by simpa [ClassRepresentativeTrace.tapeBits] using hsplit)
+                      hdrawFalse hbad hnextRaw
       · have hstatus1 : σa.vars "repairRetryStatus" = 1 := by omega
         obtain ⟨hiff, haccept, _⟩ := hsuccess hfalse
         have hflagsA := haccept hstatus1
@@ -527,8 +573,11 @@ lemma localRepairWhile_run_trace
                     hdraw⟩
               · constructor
                 · simp [σb, hleftA]
-                · intro hstatus3
-                  omega
+                · constructor
+                  · intro hstatus3
+                    omega
+                  · intro hstatus2
+                    omega
 
 
 /-- Preserve the original while-run interface for existing callers. -/
@@ -574,7 +623,7 @@ lemma localRepairWhile_run
 draw width once, and runs the bounded while-command. The returned bit suffix
 is exact; the charge includes logarithm setup once and only used draw bits
 thereafter. -/
-lemma localRepairRetriesSource_run_trace_exhaust
+lemma localRepairRetriesSource_run_trace_failure
     {B n m domainCap s t bufferCap targetCap q b cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
     {X groupedB Wbase Wcurrent : Finset ℕ}
@@ -614,6 +663,10 @@ lemma localRepairRetriesSource_run_trace_exhaust
       σ'.vars "repairRetriesLeft" + attempts = cap ∧
       (σ'.vars "repairRetryStatus" = 3 →
         FlatRejectedTrials m t s
+          (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b) attempts R.bits) ∧
+      (σ'.vars "repairRetryStatus" = 2 →
+        FlatSelectorFailed m R.hpositive t s
           (localBadOutputs m s R.domain (numericNeighborhood G)
             groupedB Wbase b) attempts R.bits) := by
   let L := Nat.clog 2 m
@@ -720,6 +773,56 @@ lemma localRepairRetriesSource_run_trace_exhaust
     omega
   · exact hq.trans hq4eq
   · simpa [Rready] using htrace
+
+lemma localRepairRetriesSource_run_trace_exhaust
+    {B n m domainCap s t bufferCap targetCap q b cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (R : ReadyInput B n m domainCap s t bufferCap targetCap q b
+      G x X groupedB Wbase Wcurrent)
+    (hcap : R.σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hbudget : cap * (s * t * Nat.clog 2 m) ≤ R.bits.length) :
+    ∃ (σ' : Env) (attempts totalUsed : ℕ),
+      Run B localRepairRetriesSource R.σ σ'
+        (12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * totalUsed +
+            attempts * (79 * s + R.scanUpper + 50) + 14)) ∧
+      attempts ≤ cap ∧ totalUsed ≤ attempts * (s * t) ∧
+      σ'.inp = (R.bits.drop (totalUsed * Nat.clog 2 m)).map Bool.toNat ++ R.rest ∧
+      σ'.vars "n" = n ∧ σ'.vars "qpow" = R.σ.vars "qpow" ∧
+      σ'.arrs "trialActive" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "trialRowMarks" = arrOf n (fun _ => 0) ∧
+      σ'.arrs "trialDesiredMarks" = arrOf n (fun _ => 0) ∧
+      ((σ'.vars "repairRetryStatus" = 1 ∧
+          ∃ D : List ℕ, D.length = s ∧ (∀ v ∈ D, v ∈ X) ∧
+            localTrialIsolates (numericNeighborhood G) groupedB Wbase b D ∧
+            σ'.arrs "sampleFlags" = arrOf n (setFlag (Wcurrent ∪ D.toFinset))) ∨
+        (σ'.vars "repairRetryStatus" = 2 ∧
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent)) ∨
+        (σ'.vars "repairRetryStatus" = 3 ∧ attempts = cap ∧
+          σ'.arrs "sampleFlags" = arrOf n (setFlag Wcurrent))) ∧
+      (∃ rejected : ℕ,
+        rejected ≤ attempts ∧ attempts ≤ rejected + 1 ∧
+        FlatRejectedTrials m t s
+          (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b) rejected R.bits) ∧
+      (∃ accepted : ℕ,
+        FlatRetryExecution m R.hpositive t s
+          (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b) attempts R.bits totalUsed accepted) ∧
+      σ'.vars "repairRetriesLeft" + attempts = cap ∧
+      (σ'.vars "repairRetryStatus" = 3 →
+        FlatRejectedTrials m t s
+          (localBadOutputs m s R.domain (numericNeighborhood G)
+            groupedB Wbase b) attempts R.bits) := by
+  obtain ⟨σ', attempts, totalUsed, hrun, ha, hu, hinp,
+    hn, hq, htrial, hrow, hdesired, hout, hreject, hfull,
+    hcount, hexhaust, _hselector⟩ :=
+    localRepairRetriesSource_run_trace_failure R hcap hcapB hbudget
+  exact ⟨σ', attempts, totalUsed, hrun, ha, hu, hinp,
+    hn, hq, htrial, hrow, hdesired, hout, hreject, hfull,
+    hcount, hexhaust⟩
 
 lemma localRepairRetriesSource_run_trace
     {B n m domainCap s t bufferCap targetCap q b cap : ℕ}
