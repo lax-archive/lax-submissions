@@ -1600,4 +1600,135 @@ lemma source_status_two_raw
                       hSavedR hLeft hStatus hcapB hBudget hloopS hfinal
                   exact ⟨S, hSbits, hSactive, hSstate, j, hjpos, hjbound, hraw⟩
 
+lemma setup_ready_rest
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (attemptCap : ℕ)
+    (R S : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbits : S.I.bits = R.I.bits)
+    (hstate : S.I.σ = (((R.I.σ.setVar "initialDomainSize" m).setVar
+      "initialBatchTarget" r).setVar "initialRetriesLeft" attemptCap).setVar
+        "initialRetryStatus" 0) : S.I.rest = R.I.rest := by
+  have hinp : S.I.σ.inp = R.I.σ.inp := by
+    simpa using congrArg Env.inp hstate
+  rw [S.I.hinput, R.I.hinput, hbits] at hinp
+  exact List.append_cancel_left hinp
+
+lemma setup_ready_reinput_state
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (attemptCap : ℕ)
+    (R S : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbits : S.I.bits = R.I.bits)
+    (hstate : S.I.σ = (((R.I.σ.setVar "initialDomainSize" m).setVar
+      "initialBatchTarget" r).setVar "initialRetriesLeft" attemptCap).setVar
+        "initialRetryStatus" 0)
+    (bits : List Bool)
+    (hbudget : attemptBitBudget n m r t ≤ bits.length) :
+    (S.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ =
+      (((((R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ).setVar
+        "initialDomainSize" m).setVar "initialBatchTarget" r).setVar
+          "initialRetriesLeft" attemptCap).setVar "initialRetryStatus" 0 := by
+  have hrest := setup_ready_rest attemptCap R S hbits hstate
+  simp only [ReadyInput.reinput, InitialFlatLaw.reinputInitialAttempt]
+  rw [hrest, hstate]
+  rfl
+
+/-- Actual flat tapes on which the fixed initial retry source stops because
+a selector aborts, independently of the source's arbitrary cost bound. -/
+noncomputable def sourceSelectorAbortFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hper : attemptBitBudget n m r t ≤ N) : Finset (Tape N) := by
+  classical
+  exact Finset.univ.filter fun ρ =>
+    ∃ σout cost,
+      Run B initialSamplerRetriesSource
+        (R.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hper)).I.σ σout cost ∧
+      σout.vars "initialRetryStatus" = 2
+
+lemma sourceSelectorAbort_count
+    {B n m domainCap r t bufferCap targetCap Q k cap N attemptCap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hcap : R.I.σ.vars "initialRetryCap" = attemptCap)
+    (hcapB : attemptCap < B)
+    (hbudget : attemptCap * attemptBitBudget n m r t ≤ N)
+    (hper : attemptBitBudget n m r t ≤ N) :
+    2 ^ t * (sourceSelectorAbortFiber R hper).card ≤
+      attemptCap * (r + n) * 2 ^ N := by
+  classical
+  let bits0 := List.replicate N false
+  let R0 := R.reinput bits0 (by simpa [attemptBitBudget, bits0] using hper)
+  have hcap0 : R0.I.σ.vars "initialRetryCap" = attemptCap := by
+    simpa [R0, ReadyInput.reinput, InitialFlatLaw.reinputInitialAttempt] using hcap
+  have hbudget0 : attemptCap * attemptBitBudget n m r t ≤ R0.I.bits.length := by
+    simpa [R0, ReadyInput.reinput_bits, bits0] using hbudget
+  obtain ⟨σout0, charges0, consumed0, hrun0, hchecked0, hlen0,
+    hused0, hinp0, hn0, hq0, houtcome0, S0, rejects0, hSbits0,
+    hSactive0, hSstate0, htrace0, hatMost0, hexhausted0⟩ :=
+    initialSamplerRetriesSource_run_withTrace attemptCap R0 hcap0 hcapB hbudget0
+  have hSavedM : S0.I.σ.vars "initialDomainSize" = m := by
+    simp [hSstate0]
+  have hSavedR : S0.I.σ.vars "initialBatchTarget" = r := by
+    simp [hSstate0]
+  have hLeft : S0.I.σ.vars "initialRetriesLeft" = attemptCap := by
+    simp [hSstate0]
+  have hStatus : S0.I.σ.vars "initialRetryStatus" = 0 := by
+    simp [hSstate0]
+  have hbudgetS : attemptCap * attemptBitBudget n m r t ≤ N := hbudget
+  have hsub : sourceSelectorAbortFiber R hper ⊆
+      (Finset.range attemptCap).biUnion
+        (fun i => rawSelectorAbortFiber S0 hper (i + 1)) := by
+    intro ρ hρ
+    obtain ⟨σout, cost, hrun, htwo⟩ :=
+      (Finset.mem_filter.mp hρ).2
+    let bits := List.ofFn ρ
+    let Rρ := R.reinput bits (by simpa [attemptBitBudget, bits] using hper)
+    have hcapρ : Rρ.I.σ.vars "initialRetryCap" = attemptCap := by
+      simpa [Rρ, ReadyInput.reinput, InitialFlatLaw.reinputInitialAttempt] using hcap
+    have hbudgetρ : attemptCap * attemptBitBudget n m r t ≤ Rρ.I.bits.length := by
+      simpa [Rρ, ReadyInput.reinput_bits, bits] using hbudget
+    obtain ⟨Sρ, hSbitsρ, hSactiveρ, hSstateρ, j, hjpos, hjbound, hraw⟩ :=
+      source_status_two_raw attemptCap Rρ hcapρ hcapB hbudgetρ hrun htwo
+    have hR0ρ : (R0.reinput bits
+        (by simpa [attemptBitBudget, bits] using hper)).I.σ = Rρ.I.σ := by
+      rfl
+    have hstateEq : Sρ.I.σ =
+        (S0.reinput bits
+          (by simpa [attemptBitBudget, bits] using hper)).I.σ := by
+      rw [hSstateρ, setup_ready_reinput_state attemptCap R0 S0
+        hSbits0 hSstate0 bits (by simpa [bits] using hper), hR0ρ]
+    obtain ⟨i, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : j ≠ 0)
+    apply Finset.mem_biUnion.mpr
+    refine ⟨i, Finset.mem_range.mpr (by omega), ?_⟩
+    simp only [rawSelectorAbortFiber, Finset.mem_filter, Finset.mem_univ,
+      true_and]
+    simpa [hstateEq, bits] using hraw
+  have hcardUnion : ((Finset.range attemptCap).biUnion
+      (fun i => rawSelectorAbortFiber S0 hper (i + 1))).card ≤
+      ∑ i ∈ Finset.range attemptCap,
+        (rawSelectorAbortFiber S0 hper (i + 1)).card :=
+    Finset.card_biUnion_le
+  calc
+    2 ^ t * (sourceSelectorAbortFiber R hper).card ≤
+        2 ^ t * ((Finset.range attemptCap).biUnion
+          (fun i => rawSelectorAbortFiber S0 hper (i + 1))).card :=
+      Nat.mul_le_mul_left _ (Finset.card_le_card hsub)
+    _ ≤ 2 ^ t * (∑ i ∈ Finset.range attemptCap,
+          (rawSelectorAbortFiber S0 hper (i + 1)).card) :=
+      Nat.mul_le_mul_left _ hcardUnion
+    _ = ∑ i ∈ Finset.range attemptCap,
+          2 ^ t * (rawSelectorAbortFiber S0 hper (i + 1)).card := by
+      rw [Finset.mul_sum]
+    _ ≤ ∑ _i ∈ Finset.range attemptCap, (r + n) * 2 ^ N := by
+      apply Finset.sum_le_sum
+      intro i hi
+      exact rawSelectorAbortFiber_count_of_left i N attemptCap S0
+        hSavedM hSavedR hLeft hStatus
+        (by simpa using Finset.mem_range.mp hi) hcapB hbudgetS hper
+    _ = attemptCap * (r + n) * 2 ^ N := by simp; ring
+
 end Lax457868Proofs.InitialAbortProbability
