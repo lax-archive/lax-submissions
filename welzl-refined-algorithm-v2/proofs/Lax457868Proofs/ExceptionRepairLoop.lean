@@ -929,7 +929,9 @@ def FarStepTrace
           (LocalFlatLaw.localBadOutputs X.card s P.domain
             (numericNeighborhood G) groupedB Wbase b)
           attempts P.bits used accepted) ∧
-      σsource.vars "repairRetriesLeft" + attempts = cap
+      σsource.vars "repairRetriesLeft" + attempts = cap ∧
+      σsource.inp =
+        (P.bits.drop (used * Nat.clog 2 X.card)).map Bool.toNat ++ P.rest
 
 /-- Execute one packed exception. The reported charge is the actual source
 charge for the near or far branch, with its actual attempts and bit use. -/
@@ -1046,8 +1048,11 @@ lemma one_step_run_trace
               (LocalFlatLaw.localBadOutputs X.card s Q.domain
                 (numericNeighborhood G) groupedB Wbase b)
               attempts Q.bits used accepted) ∧
-          σsource.vars "repairRetriesLeft" + attempts = cap
-      refine ⟨Rafter, ?_, ?_, ?_, ?_, σsource, ?_, hreject, hfull, hcount⟩
+          σsource.vars "repairRetriesLeft" + attempts = cap ∧
+          σsource.inp =
+            (Q.bits.drop (used * Nat.clog 2 X.card)).map Bool.toNat ++ Q.rest
+      refine ⟨Rafter, ?_, ?_, ?_, ?_, σsource, ?_, hreject, hfull,
+        hcount, ?_⟩
       · have rload' : Run B
             (.assign "repairB" (.get "exceptionList" (.var "exceptionIndex")))
             R.σ P.σ 3 := by simpa [hPσ] using rload
@@ -1056,6 +1061,7 @@ lemma one_step_run_trace
       · exact hRrest.trans hPrest
       · exact hRscan.trans hscan
       · simpa [hRscan] using rr
+      · simpa [hRbits, hRrest] using hinp
     let bitsNext := R.bits.drop (used * Nat.clog 2 X.card)
     have hinp' : σsource.inp = bitsNext.map Bool.toNat ++ R.rest := by
       simpa [bitsNext, hPbits, hPrest] using hinp

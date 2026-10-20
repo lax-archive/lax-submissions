@@ -10,11 +10,135 @@ namespace Lax457868Proofs.ExceptionRepairMean
 open Lax457868Proofs.ExceptionRepairLoop
 open Lax457868Proofs.RefinedTapeReserve
 open Lax457868Proofs.LocalRepairRetriesSource
+open Lax457868Proofs.LocalRepairSource
+open Lax457868Proofs.ClassBucketDomain
+open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
 open Lax457868Proofs.ExceptionPhaseSource
 open Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax808846Proofs.Reasoning.Lib
 open scoped symmDiff
+
+/-- Two actual executions of the same local retry source agree on their
+trial count. At positive selector width the exact unread suffix also fixes the
+number of inspected blocks. -/
+lemma retry_parameters_same
+    {B n m domainCap s t bufferCap targetCap q b cap a u a' u' K K' : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (P : ReadyInput B n m domainCap s t bufferCap targetCap q b
+      G x X groupedB Wbase Wcurrent)
+    {σ τ : Env}
+    (hrun : Run B localRepairRetriesSource P.σ σ K)
+    (hrun' : Run B localRepairRetriesSource P.σ τ K')
+    (hcount : σ.vars "repairRetriesLeft" + a = cap)
+    (hcount' : τ.vars "repairRetriesLeft" + a' = cap)
+    (hinp : σ.inp =
+      (P.bits.drop (u * Nat.clog 2 m)).map Bool.toNat ++ P.rest)
+    (hinp' : τ.inp =
+      (P.bits.drop (u' * Nat.clog 2 m)).map Bool.toNat ++ P.rest)
+    (hu : u * Nat.clog 2 m ≤ P.bits.length)
+    (hu' : u' * Nat.clog 2 m ≤ P.bits.length) :
+    a = a' ∧ (0 < Nat.clog 2 m → u = u') := by
+  obtain ⟨_, _, hbig⟩ := hrun
+  obtain ⟨_, _, hbig'⟩ := hrun'
+  have heq : σ = τ := (BigStep.unique hbig.bigStep hbig'.bigStep).1
+  constructor
+  · rw [heq] at hcount
+    omega
+  · intro hL
+    have hlength : P.bits.length - u * Nat.clog 2 m =
+        P.bits.length - u' * Nat.clog 2 m := by
+      have hinpEq : σ.inp = τ.inp := congrArg Env.inp heq
+      have h := congrArg List.length (hinp.symm.trans (hinpEq.trans hinp'))
+      simp only [List.length_append, List.length_map,
+        List.length_drop] at h
+      omega
+    have hmul : u * Nat.clog 2 m = u' * Nat.clog 2 m := by omega
+    exact Nat.eq_of_mul_eq_mul_right hL hmul
+
+/-- A conditional mean bound for the actual local retry executions. The
+recorded attempts and inspected blocks are identified with the canonical
+stopped-trace family by source determinism and the final unread suffix. -/
+lemma local_actual_mean_runtime
+    {B n m domainCap s t bufferCap targetCap q b cap Nblocks Ntail scanUpper : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (domain : ℕ → ℕ)
+    (R : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail) →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hstate : ∀ tape tape',
+      (R tape).σ.vars = (R tape').σ.vars ∧
+      (R tape).σ.arrs = (R tape').σ.arrs ∧
+      (R tape).σ.out = (R tape').σ.out)
+    (hdomain : ∀ tape j, j < domainCap → (R tape).domain j = domain j)
+    (hscan : ∀ tape, (R tape).scanUpper = scanUpper)
+    (hcap : ∀ tape, (R tape).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hblocks : cap * (s * t) ≤ Nblocks)
+    (hL : 0 < Nat.clog 2 m)
+    (henum : PrefixEnumerates m domain X)
+    (hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase b X s).card ≤ X.card ^ s)
+    (attempts used : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail) → ℕ)
+    (finalState : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail) → Env)
+    (hactual : ∀ tape,
+      Run B localRepairRetriesSource (R tape).σ (finalState tape)
+        (12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * used tape +
+            attempts tape * (79 * s + scanUpper + 50) + 14)) ∧
+      (finalState tape).vars "repairRetriesLeft" + attempts tape = cap ∧
+      (finalState tape).inp =
+        ((R tape).bits.drop (used tape * Nat.clog 2 m)).map Bool.toNat ++
+          (R tape).rest ∧
+      attempts tape ≤ cap ∧ used tape ≤ attempts tape * (s * t)) :
+    (∑ tape : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail),
+      ((12 * Nat.clog 2 m + 24 +
+        ((15 * Nat.clog 2 m + 30) * used tape +
+          attempts tape * (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ)) ≤
+      ((12 * Nat.clog 2 m + 38 +
+        4 * s * (15 * Nat.clog 2 m + 30) +
+        2 * (79 * s + scanUpper + 50) : ℕ) : ℚ) *
+          (2 ^ (Nblocks * Nat.clog 2 m + Ntail) : ℚ) := by
+  classical
+  obtain ⟨attempts', used', finalState', hmodel, hmean⟩ :=
+    localRepairRetriesSource_mean_runtime_stopped_suffix_domain_prefix_trace
+      domain R hbits hstate hdomain hscan hcap hcapB hblocks henum hhalf
+  have husedBound (tape : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail))
+      (a u : ℕ) (ha : a ≤ cap) (hu : u ≤ a * (s * t)) :
+      u * Nat.clog 2 m ≤ (R tape).bits.length := by
+    have hlen : (R tape).bits.length =
+        Nblocks * Nat.clog 2 m + Ntail := by
+      rw [hbits tape, FlatTraceLaw.flatBits_length]
+    rw [hlen]
+    calc
+      u * Nat.clog 2 m ≤ (a * (s * t)) * Nat.clog 2 m :=
+        Nat.mul_le_mul_right _ hu
+      _ ≤ (cap * (s * t)) * Nat.clog 2 m :=
+        Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ ha)
+      _ ≤ Nblocks * Nat.clog 2 m := Nat.mul_le_mul_right _ hblocks
+      _ ≤ Nblocks * Nat.clog 2 m + Ntail := Nat.le_add_right _ _
+  have hparameters (tape : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail)) :
+      attempts tape = attempts' tape ∧ used tape = used' tape := by
+    obtain ⟨hr, hc, hi, ha, hu⟩ := hactual tape
+    obtain ⟨hr', hc', hi', ha', hu'⟩ := hmodel tape
+    exact ⟨(retry_parameters_same (R tape) hr hr' hc hc' hi hi'
+      (husedBound tape _ _ ha hu) (husedBound tape _ _ ha' hu')).1,
+      (retry_parameters_same (R tape) hr hr' hc hc' hi hi'
+      (husedBound tape _ _ ha hu) (husedBound tape _ _ ha' hu')).2 hL⟩
+  convert hmean using 1
+  apply Finset.sum_congr rfl
+  intro tape _
+  rw [(hparameters tape).1, (hparameters tape).2]
 
 /-- Keep the domain and repeated class-scan work explicit while replacing
 each local selector width by the one global width `clog 2 n`. The bound uses
