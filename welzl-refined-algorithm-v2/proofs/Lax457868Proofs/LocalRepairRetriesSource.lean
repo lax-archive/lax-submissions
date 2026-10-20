@@ -1058,6 +1058,355 @@ lemma localRepairRetriesSource_used_causal_bits
     hprefixWords (hrun tape) (hrun tape')
   exact (Nat.eq_of_mul_eq_mul_right hL hwords).symm
 
+/-- The exact stopped block count in a family of actual local retry Runs has
+mean at most four blocks per requested local index. -/
+lemma localRepairRetriesSource_mean_used_posWidth
+    {B n m domainCap s t bufferCap targetCap q b cap Nblocks : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (R : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m) →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hstate : ∀ tape tape',
+      (R tape).σ.vars = (R tape').σ.vars ∧
+      (R tape).σ.arrs = (R tape').σ.arrs ∧
+      (R tape).σ.out = (R tape').σ.out)
+    (hblocks : cap * (s * t) ≤ Nblocks)
+    (hL : 0 < Nat.clog 2 m)
+    (attempts used accepted :
+      FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m) → ℕ)
+    (finalState : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m) → Env)
+    (hrun : ∀ tape, Run B localRepairRetriesSource
+      (R tape).σ (finalState tape)
+        (12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * used tape +
+            attempts tape * (79 * s + (R tape).scanUpper + 50) + 14)))
+    (hattempts : ∀ tape, attempts tape ≤ cap)
+    (hused : ∀ tape, used tape ≤ attempts tape * (s * t))
+    (hinp : ∀ tape, (finalState tape).inp =
+      ((R tape).bits.drop (used tape * Nat.clog 2 m)).map Bool.toNat ++
+        (R tape).rest)
+    (hfull : ∀ tape,
+      LocalFlatLaw.FlatRetryExecution m (R tape).hpositive t s
+        (LocalFlatLaw.localBadOutputs m s (R tape).domain
+          (numericNeighborhood G) groupedB Wbase b)
+        (attempts tape) (R tape).bits (used tape) (accepted tape))
+    (hmean : (∑ tape : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 m), (attempts tape : ℚ)) ≤
+        2 * (2 ^ (Nblocks * Nat.clog 2 m) : ℚ)) :
+    (∑ tape : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m),
+      used tape) ≤ 4 * s * 2 ^ (Nblocks * Nat.clog 2 m) := by
+  classical
+  let L := Nat.clog 2 m
+  let E := LocalFlatLaw.blockTapeBitsEquiv Nblocks L
+  let attemptsB : (Fin Nblocks → Fin L → Bool) → ℕ :=
+    fun tape => attempts (E tape)
+  let usedB : (Fin Nblocks → Fin L → Bool) → ℕ :=
+    fun tape => used (E tape)
+  have hbudget : cap * (s * t * L) ≤ Nblocks * L := by
+    have h := Nat.mul_le_mul_right L hblocks
+    nlinarith
+  have hbound (tape : Fin Nblocks → Fin L → Bool) :
+      usedB tape ≤ Nblocks := by
+    dsimp [usedB]
+    exact (hused (E tape)).trans
+      ((Nat.mul_le_mul_right (s * t) (hattempts (E tape))).trans
+        hblocks)
+  have hcausal (tape tape' : Fin Nblocks → Fin L → Bool) (k : ℕ)
+      (hk : k ≤ Nblocks)
+      (hpre : (List.ofFn tape).take k = (List.ofFn tape').take k)
+      (hread : usedB tape ≤ k) : usedB tape' = usedB tape := by
+    have hpreBits : (FlatTraceLaw.flatBits (E tape)).take (k * L) =
+        (FlatTraceLaw.flatBits (E tape')).take (k * L) := by
+      rw [LocalFlatLaw.flatBits_blockTapeBitsEquiv,
+        LocalFlatLaw.flatBits_blockTapeBitsEquiv]
+      change ((List.ofFn tape).flatMap List.ofFn).take (k * L) =
+        ((List.ofFn tape').flatMap List.ofFn).take (k * L)
+      rw [← LocalFlatLaw.flatMap_take_blocks,
+        ← LocalFlatLaw.flatMap_take_blocks, hpre]
+    exact localRepairRetriesSource_used_causal_bits R hbits hstate
+      hbudget hL attempts used finalState hrun hattempts hused hinp
+      (E tape) (E tape') (k * L) (Nat.mul_le_mul_right L hk)
+      hpreBits (Nat.mul_le_mul_right L hread)
+  have haccepted (tape : Fin Nblocks → Fin L → Bool) :
+      (((List.ofFn tape).take (usedB tape)).filter
+        (fun a => a ∈ FairBitIndices.acceptedBlocks m)).length ≤
+          s * attemptsB tape := by
+    have hsize : attemptsB tape * (s * t) ≤ Nblocks :=
+      (Nat.mul_le_mul_right (s * t) (hattempts (E tape))).trans hblocks
+    have hflat := LocalFlatLaw.flatBits_blockTapeBitsEquiv Nblocks L tape
+    have h := LocalFlatLaw.FlatRetryExecution.accepted_prefix_le
+      m (R (E tape)).hpositive t s
+      (LocalFlatLaw.localBadOutputs m s (R (E tape)).domain
+        (numericNeighborhood G) groupedB Wbase b)
+      (hfull (E tape)) (List.ofFn tape)
+      (by simpa [L, ClassRepresentativeTrace.tapeBits] using
+        (hbits (E tape)).trans hflat)
+      (by simpa using hsize)
+    simpa [attemptsB, usedB, Nat.mul_comm] using h
+  have hmeanB : (∑ tape : Fin Nblocks → Fin L → Bool, attemptsB tape) ≤
+      2 * Fintype.card (Fin L → Bool) ^ Nblocks := by
+    have hsum :
+        (∑ tape : Fin Nblocks → Fin L → Bool,
+          (attemptsB tape : ℚ)) =
+        ∑ tape : FlatTraceLaw.FlatTape (Nblocks * L),
+          (attempts tape : ℚ) := by
+      exact Fintype.sum_equiv E _ _ (by intro tape; rfl)
+    have hcard : Fintype.card (Fin L → Bool) ^ Nblocks =
+        2 ^ (Nblocks * L) := by
+      simp [Fintype.card_fun, ← pow_mul, Nat.mul_comm]
+    have hcardQ : (2 ^ (Nblocks * L) : ℚ) =
+        (Fintype.card (Fin L → Bool) : ℚ) ^ Nblocks := by
+      exact_mod_cast hcard.symm
+    have hq : ((∑ tape : Fin Nblocks → Fin L → Bool,
+        attemptsB tape : ℕ) : ℚ) ≤
+        ((2 * Fintype.card (Fin L → Bool) ^ Nblocks : ℕ) : ℚ) := by
+      simp only [Nat.cast_sum, Nat.cast_mul, Nat.cast_pow,
+        Nat.cast_ofNat]
+      rw [hsum]
+      simpa only [L, hcardQ] using hmean
+    exact_mod_cast hq
+  have hboundSum := LocalFlatLaw.sum_causalUsed_le_four_trials
+    (FairBitIndices.acceptedBlocks m)
+    (LocalFlatLaw.acceptedBitBlocks_half m (R (E (fun _ => fun _ => false))).hpositive)
+    usedB attemptsB hbound hcausal haccepted hmeanB
+  have hsum :
+      (∑ tape : Fin Nblocks → Fin L → Bool, usedB tape) =
+      ∑ tape : FlatTraceLaw.FlatTape (Nblocks * L), used tape := by
+    exact Fintype.sum_equiv E _ _ (by intro tape; rfl)
+  have hcard : Fintype.card (Fin L → Bool) ^ Nblocks =
+      2 ^ (Nblocks * L) := by
+    simp [Fintype.card_fun, ← pow_mul, Nat.mul_comm]
+  change (∑ tape : Fin Nblocks → Fin L → Bool, usedB tape) ≤
+    4 * s * Fintype.card (Fin L → Bool) ^ Nblocks at hboundSum
+  rw [hsum, hcard] at hboundSum
+  simpa [L] using hboundSum
+
+lemma localRepairRetriesSource_mean_used_one
+    {B n domainCap s t bufferCap targetCap q b Nblocks : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (R : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 1) →
+      ReadyInput B n 1 domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (attempts used accepted :
+      FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 1) → ℕ)
+    (hfull : ∀ tape,
+      LocalFlatLaw.FlatRetryExecution 1 (R tape).hpositive t s
+        (LocalFlatLaw.localBadOutputs 1 s (R tape).domain
+          (numericNeighborhood G) groupedB Wbase b)
+        (attempts tape) (R tape).bits (used tape) (accepted tape))
+    (hmean : (∑ tape : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 1), (attempts tape : ℚ)) ≤
+        2 * (2 ^ (Nblocks * Nat.clog 2 1) : ℚ)) :
+    (∑ tape : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 1),
+      used tape) ≤ 4 * s * 2 ^ (Nblocks * Nat.clog 2 1) := by
+  classical
+  have hpoint (tape : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 1)) : used tape ≤ s * attempts tape := by
+    have h := LocalFlatLaw.FlatRetryExecution.used_le_requests_one
+      (R tape).hpositive t s
+      (LocalFlatLaw.localBadOutputs 1 s (R tape).domain
+        (numericNeighborhood G) groupedB Wbase b) (hfull tape)
+    simpa [Nat.mul_comm] using h
+  have hsum :
+      (∑ tape : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 1),
+        used tape) ≤
+      s * (∑ tape : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 1), attempts tape) := by
+    rw [Finset.mul_sum]
+    exact Finset.sum_le_sum (fun tape _ => hpoint tape)
+  have hmeanNat :
+      (∑ tape : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 1), attempts tape) ≤ 2 := by
+    have hq : (((∑ tape : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 1), attempts tape) : ℕ) : ℚ) ≤ 2 := by
+      simpa using hmean
+    exact_mod_cast hq
+  have hclog : Nat.clog 2 1 = 0 := by norm_num
+  simp only [hclog, Nat.mul_zero, pow_zero, mul_one] at *
+  nlinarith
+
+/-- Actual local repair retries, on one common finite tape, have source
+charge linear in the local draw count and scan allowance. The capped selector
+parameter `t` occurs only in the tape reserve, not in the mean charge. -/
+lemma localRepairRetriesSource_mean_runtime_stopped
+    {B n m domainCap s t bufferCap targetCap q b cap Nblocks scanUpper : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (domain : ℕ → ℕ)
+    (R : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m) →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hstate : ∀ tape tape',
+      (R tape).σ.vars = (R tape').σ.vars ∧
+      (R tape).σ.arrs = (R tape').σ.arrs ∧
+      (R tape).σ.out = (R tape').σ.out)
+    (hdomain : ∀ tape, (R tape).domain = domain)
+    (hscan : ∀ tape, (R tape).scanUpper = scanUpper)
+    (hcap : ∀ tape, (R tape).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hblocks : cap * (s * t) ≤ Nblocks)
+    (henum : PrefixEnumerates m domain X)
+    (hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase b X s).card ≤ X.card ^ s) :
+    ∃ (attempts used : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m) → ℕ)
+      (finalState : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 m) → Env),
+      (∀ tape, Run B localRepairRetriesSource (R tape).σ
+        (finalState tape)
+          (12 * Nat.clog 2 m + 24 +
+            ((15 * Nat.clog 2 m + 30) * used tape +
+              attempts tape * (79 * s + scanUpper + 50) + 14))) ∧
+      (∑ tape : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m),
+        ((12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * used tape +
+            attempts tape * (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ)) ≤
+        ((12 * Nat.clog 2 m + 38 +
+          4 * s * (15 * Nat.clog 2 m + 30) +
+          2 * (79 * s + scanUpper + 50) : ℕ) : ℚ) *
+          (2 ^ (Nblocks * Nat.clog 2 m) : ℚ) := by
+  classical
+  have hbudget : cap * (s * t * Nat.clog 2 m) ≤
+      Nblocks * Nat.clog 2 m := by
+    have h := Nat.mul_le_mul_right (Nat.clog 2 m) hblocks
+    nlinarith
+  obtain ⟨attempts, used, accepted, finalState, hsource, hmean⟩ :=
+    localRepairRetriesSource_mean_full_trace_le_two domain R hbits
+      hdomain hcap hcapB hbudget henum hhalf
+  have hrun (tape : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m)) :
+      Run B localRepairRetriesSource (R tape).σ (finalState tape)
+        (12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * used tape +
+            attempts tape * (79 * s + scanUpper + 50) + 14)) := by
+    simpa [hscan tape] using (hsource tape).1
+  have husedMean :
+      (∑ tape : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m),
+        used tape) ≤ 4 * s * 2 ^ (Nblocks * Nat.clog 2 m) := by
+    by_cases hmone : m = 1
+    · subst m
+      exact localRepairRetriesSource_mean_used_one R attempts used accepted
+        (fun tape => by simpa [hdomain tape] using
+          (hsource tape).2.2.2.2) hmean
+    · have hmpos : 0 < m :=
+        (R (Classical.choice (inferInstance : Nonempty
+          (FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m))))).hpositive
+      have hL : 0 < Nat.clog 2 m :=
+        Nat.clog_pos (by decide) (by omega)
+      exact localRepairRetriesSource_mean_used_posWidth R hbits hstate
+        hblocks hL attempts used accepted finalState
+        (fun tape => (hsource tape).1)
+        (fun tape => (hsource tape).2.1)
+        (fun tape => (hsource tape).2.2.1)
+        (fun tape => (hsource tape).2.2.2.1)
+        (fun tape => by simpa [hdomain tape] using
+          (hsource tape).2.2.2.2) hmean
+  refine ⟨attempts, used, finalState, hrun, ?_⟩
+  have hcount : Fintype.card
+      (FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m)) =
+        2 ^ (Nblocks * Nat.clog 2 m) := by
+    simp [FlatTraceLaw.FlatTape, Fintype.card_fun]
+  have husedQ :
+      (∑ tape : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m),
+        (used tape : ℚ)) ≤
+      4 * s * (2 ^ (Nblocks * Nat.clog 2 m) : ℚ) := by
+    exact_mod_cast husedMean
+  have hsum :
+      (∑ tape : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m),
+        ((12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * used tape +
+            attempts tape * (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ)) =
+      (12 * Nat.clog 2 m + 38 : ℚ) *
+        (2 ^ (Nblocks * Nat.clog 2 m) : ℚ) +
+      (15 * Nat.clog 2 m + 30 : ℚ) *
+        (∑ tape : FlatTraceLaw.FlatTape
+          (Nblocks * Nat.clog 2 m), (used tape : ℚ)) +
+      (79 * s + scanUpper + 50 : ℚ) *
+        (∑ tape : FlatTraceLaw.FlatTape
+          (Nblocks * Nat.clog 2 m), (attempts tape : ℚ)) := by
+    simp [Nat.cast_add, Nat.cast_mul, Finset.sum_add_distrib,
+      Finset.mul_sum, hcount]
+    simp [mul_comm, mul_left_comm, mul_assoc]
+    ring
+  rw [hsum]
+  have hdrawNonneg : (0 : ℚ) ≤ 15 * Nat.clog 2 m + 30 := by positivity
+  have htrialNonneg : (0 : ℚ) ≤ 79 * s + scanUpper + 50 := by positivity
+  push_cast
+  nlinarith [husedQ, hmean]
+
+/-- The paper hypotheses use neighborhoods restricted to the active set;
+the source scans physical CSR rows. This theorem connects them without
+requiring any full graph neighborhood to lie in the active set. -/
+lemma localRepairRetriesSource_mean_runtime_restricted_paper
+    {B n m domainCap s t bufferCap targetCap q b cap Nblocks scanUpper : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent A : Finset ℕ}
+    (r k c : ℕ)
+    (choice : SamplerPhases.InitialChoice A groupedB
+      (fun v => numericNeighborhood G v ∩ A) r)
+    (as : List ℕ) (has : as.toFinset = A) (hasNodup : as.Nodup)
+    (hinj : ∀ u ∈ groupedB, ∀ v ∈ groupedB,
+      numericNeighborhood G u ∩ A = numericNeighborhood G v ∩ A → u = v)
+    (hb : b ∈ groupedB)
+    (hfar : 2 * k < 3 * SamplerPhases.disagreement
+      (fun v => numericNeighborhood G v ∩ A) b (choice.representative b))
+    (hc : 2 ≤ c)
+    (hshatter : ∀ Y : Finset ℕ, Y ⊆ A → Y.Nonempty →
+      (SamplerPhases.traceClasses
+        (fun v => numericNeighborhood G v ∩ A) Y groupedB).card ≤
+          c * Y.card)
+    (hX : X = ((numericNeighborhood G b ∩ A) \
+      (numericNeighborhood G (choice.representative b) ∩ A)) ∪
+      ((numericNeighborhood G (choice.representative b) ∩ A) \
+        (numericNeighborhood G b ∩ A)))
+    (hW : Wbase = SamplerPhases.phase2Scan
+      (fun v => numericNeighborhood G v ∩ A)
+        (choice.exceptions k) as choice.sample)
+    (hs : s = 64 * Nat.clog 2 c)
+    (hWA : Wbase ⊆ A)
+    (domain : ℕ → ℕ)
+    (R : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m) →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hstate : ∀ tape tape',
+      (R tape).σ.vars = (R tape').σ.vars ∧
+      (R tape).σ.arrs = (R tape').σ.arrs ∧
+      (R tape).σ.out = (R tape').σ.out)
+    (hdomain : ∀ tape, (R tape).domain = domain)
+    (hscan : ∀ tape, (R tape).scanUpper = scanUpper)
+    (hcap : ∀ tape, (R tape).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hblocks : cap * (s * t) ≤ Nblocks)
+    (henum : PrefixEnumerates m domain X) :
+    ∃ (attempts used : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m) → ℕ)
+      (finalState : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 m) → Env),
+      (∀ tape, Run B localRepairRetriesSource (R tape).σ
+        (finalState tape)
+          (12 * Nat.clog 2 m + 24 +
+            ((15 * Nat.clog 2 m + 30) * used tape +
+              attempts tape * (79 * s + scanUpper + 50) + 14))) ∧
+      (∑ tape : FlatTraceLaw.FlatTape (Nblocks * Nat.clog 2 m),
+        ((12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * used tape +
+            attempts tape * (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ)) ≤
+        ((12 * Nat.clog 2 m + 38 +
+          4 * s * (15 * Nat.clog 2 m + 30) +
+          2 * (79 * s + scanUpper + 50) : ℕ) : ℚ) *
+          (2 ^ (Nblocks * Nat.clog 2 m) : ℚ) := by
+  have hhalf := LocalFlatLaw.localFailure_half_restricted_paper
+    A groupedB Wbase X (numericNeighborhood G) r k c b s choice as
+    has hasNodup hinj hb hfar hc hshatter hX hW hs hWA
+  exact localRepairRetriesSource_mean_runtime_stopped domain R hbits
+    hstate hdomain hscan hcap hcapB hblocks henum hhalf
+
 /-- With a fixed scan upper bound, the weighted scan term in the actual
 source retry-run charge has mean at most twice one trial's scan allowance. -/
 lemma localRepairRetriesSource_mean_scan_charge_le_two
