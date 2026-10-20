@@ -133,7 +133,7 @@ private lemma phase2Scan_range {n : ℕ} (N : ℕ → Finset ℕ)
       simpa [phase2Scan] using ih (phase2Step N E W a) hstep
         (by intro v hv; exact has v (by simp [hv]))
 
-private lemma flagged_setFlag {n : ℕ} {S : Finset ℕ}
+lemma flagged_setFlag {n : ℕ} {S : Finset ℕ}
     (hS : S ⊆ Finset.range n) :
     flaggedVertices n (setFlag S) = S := by
   ext v
