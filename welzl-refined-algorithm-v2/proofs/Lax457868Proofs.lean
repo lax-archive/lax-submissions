@@ -189,3 +189,5 @@ import Lax457868Proofs.NumericGraphProbability
 import Lax457868Proofs.ExceptionRepairMean
 import Lax457868Proofs.RefinedBodyExecution
 import Lax457868Proofs.RefinedBodyEstimate
+import Lax457868Proofs.InitialOutcomeCharge
+import Lax457868Proofs.ClassTraceMean

@@ -1069,3 +1069,5 @@ work has an exact uniform weighted mean (eefbaf90). Numeric graph trace,
 injectivity, and initial rejection-half premises are discharged directly
 from the maintained graph invariants (41b95610). Actual retry and adaptive
 mean composition remain in progress; main is still open.
+
+- 2026-10-20: Checked actual representative-selector mean (variable widths, consumed suffix, and aborts), bounded by 163 times total class size; actual initial continuation fiber is at most one half. Reviewed chronological round contraction/length and conditional global aggregation, and retained machine retry counters. Main theorem remains open pending actual retry/repair mean and cap-failure composition.
