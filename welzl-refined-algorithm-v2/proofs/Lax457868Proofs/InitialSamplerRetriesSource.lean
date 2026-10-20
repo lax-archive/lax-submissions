@@ -302,6 +302,14 @@ lemma ReadyInput.reinput_state
     (R.reinput bits hbudget).I.σ =
       {R.I.σ with inp := bits.map Bool.toNat ++ R.I.rest} := rfl
 
+lemma ReadyInput.reinput_self_state
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A) :
+    (R.reinput R.I.bits R.I.hbudget).I.σ = R.I.σ := by
+  rw [ReadyInput.reinput_state]
+  simpa [← R.I.hinput]
+
 private lemma ready_after_rejection
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
@@ -1024,6 +1032,38 @@ lemma SourceRejectionTrace.head_rejected
   | step R J σa q d p rest hrun hinp hbound hbatch hrep haccept hbad hstopped
         hdecision hbits htail =>
       exact ⟨σa, hrun, hbatch, hrep, haccept, hinp, hbound⟩
+
+/-- The bit count stored in a rejected source step is the canonical
+stopping time of the actual full-attempt Run. -/
+lemma SourceRejectionTrace.head_canonical
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    {R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A}
+    {q d : ℕ} {rest : List (ℕ × ℕ)}
+    (htrace : SourceRejectionTrace R ((q, d) :: rest)) :
+    let ρ := (FlatTraceLaw.flatBitsEquiv R.I.bits.length).symm ⟨R.I.bits, rfl⟩
+    d = readyAttemptConsumed R (by simpa [attemptBitBudget] using R.I.hbudget) ρ ∧
+      readyAttemptRejected R (by simpa [attemptBitBudget] using R.I.hbudget) ρ := by
+  let ρ := (FlatTraceLaw.flatBitsEquiv R.I.bits.length).symm ⟨R.I.bits, rfl⟩
+  have hbits : List.ofFn ρ = R.I.bits :=
+    congrArg Subtype.val
+      ((FlatTraceLaw.flatBitsEquiv R.I.bits.length).apply_symm_apply
+        ⟨R.I.bits, rfl⟩)
+  have hbudget : attemptBitBudget n m r t ≤ R.I.bits.length := by
+    simpa [attemptBitBudget] using R.I.hbudget
+  obtain ⟨σa, hrun, hbatch, hrep, haccept, hinp, hd⟩ :=
+    htrace.head_rejected
+  obtain ⟨σb, qb, hrunb, hinpb, hdb⟩ := readyAttemptConsumed_spec R hbudget ρ
+  have hrun' : Run B fullInitialAttempt
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.σ
+      σa q := by
+    simpa [hbits, ReadyInput.reinput_self_state] using hrun
+  have hsame := readyAttempt_same_prefix R (List.ofFn ρ) (List.ofFn ρ)
+    (by simpa using hbudget) (by simpa using hbudget)
+    hrun' hrunb (by simpa [hbits] using hinp) hinpb hd hdb rfl
+  constructor
+  · exact hsame.1.symm
+  · exact ⟨σa, q, hrun', hbatch, hrep, haccept⟩
 
 /-- Execution of the single fixed while loop from a state whose runtime
 counter contains `fuel`, retaining every actual rejected attempt. -/
