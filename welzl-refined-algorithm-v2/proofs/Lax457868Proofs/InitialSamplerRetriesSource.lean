@@ -1443,7 +1443,7 @@ private lemma sum_indicator_const {α : Type} [Fintype α]
 /-- The actual sequential retry source has a geometric rejected-prefix
 count, with each attempt beginning at the unread suffix of the previous
 source Run. Selector aborts contribute no rejected continuation. -/
-lemma rawRejectedFiber_geometric
+lemma rawRejectedFiber_geometric_of_left
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
     (active : ℕ → ℕ)
@@ -1454,15 +1454,16 @@ lemma rawRejectedFiber_geometric
       (SamplerInitialRetries.outcomeBad A
         (activeVertices n active)
         (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
-    ∀ (fuel N : ℕ)
+    ∀ (fuel N left : ℕ)
       (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A),
       R.I.activeB = active →
       R.I.σ.vars "initialDomainSize" = m →
       R.I.σ.vars "initialBatchTarget" = r →
-      R.I.σ.vars "initialRetriesLeft" = fuel + 1 →
+      R.I.σ.vars "initialRetriesLeft" = left →
       R.I.σ.vars "initialRetryStatus" = 0 →
-      fuel + 1 < B →
-      (fuel + 1) * attemptBitBudget n m r t ≤ N →
+      fuel + 1 ≤ left →
+      left < B →
+      left * attemptBitBudget n m r t ≤ N →
       (hperInput : attemptBitBudget n m r t ≤ N) →
       2 ^ (fuel + 1) *
         (rawRejectedFiber R hperInput (fuel + 1)).card ≤ 2 ^ N := by
@@ -1470,7 +1471,8 @@ lemma rawRejectedFiber_geometric
   intro fuel
   induction fuel with
   | zero =>
-      intro N R hactive hsavedM hsavedR hleft hstatus hB hbudget hperInput
+      intro N left R hactive hsavedM hsavedR hleft hstatus hleftBound hB
+        hbudget hperInput
       have hmassR : SamplerWeightedRetries.badMass
           (SamplerInitialRetries.outcomeWeight A
             (activeVertices n R.I.activeB)
@@ -1482,7 +1484,8 @@ lemma rawRejectedFiber_geometric
         exact hmass
       simpa using rawRejectedFiber_one_half R hperInput hmassR
   | succ fuel ih =>
-      intro N R hactive hsavedM hsavedR hleft hstatus hB hbudget hperInput
+      intro N left R hactive hsavedM hsavedR hleft hstatus hleftBound hB
+        hbudget hperInput
       let per := attemptBitBudget n m r t
       have hper : per ≤ N := by simpa [per] using hperInput
       let used : FlatTraceLaw.FlatTape N → ℕ :=
@@ -1537,17 +1540,18 @@ lemma rawRejectedFiber_geometric
           obtain ⟨σa, q, hrun, hbatch, hrep, haccept⟩ := hfirst
           obtain ⟨d, J, p, hd, hinp, hJbits, hJrest, hJactive,
             hdecision, hJsavedM, hJsavedR, hJleft, hJstatus, hJbudget⟩ :=
-            rejected_next_ready Rρ (fuel + 1) (by omega)
+            rejected_next_ready Rρ (left - 1) (by omega)
               (by change R.I.σ.vars "initialDomainSize" = m; exact hsavedM)
               (by change R.I.σ.vars "initialBatchTarget" = r; exact hsavedR)
-              (by change R.I.σ.vars "initialRetriesLeft" = fuel + 2;
-                  convert hleft using 1 <;> omega)
+              (by change R.I.σ.vars "initialRetriesLeft" = left - 1 + 1;
+                  rw [hleft]; omega)
               (by change R.I.σ.vars "initialRetryStatus" = 0; exact hstatus)
               (by omega)
-              (by change (fuel + 2) * per ≤ bits.length
+              (by change (left - 1 + 1) * per ≤ bits.length
+                  have heq : left - 1 + 1 = left := by omega
+                  rw [heq]
                   simpa only [bits, List.length_ofFn, per] using
-                    (show (fuel + 2) * attemptBitBudget n m r t ≤ N by
-                      convert hbudget using 1 <;> omega))
+                    hbudget)
               hrun hbatch hrep haccept
           have hused : d = used ρ := by
             change d = readyAttemptConsumed R hper ρ
@@ -1572,19 +1576,19 @@ lemma rawRejectedFiber_geometric
             rw [hJbits]
             change (bits.drop d).length = N - used ρ
             simp only [List.length_drop, bits, List.length_ofFn, hused]
-          have htailBudget : (fuel + 1) * per ≤ N - used ρ := by
+          have htailBudget : (left - 1) * per ≤ N - used ρ := by
             rw [htailN] at hJbudget
             exact hJbudget
           have hJactiveZero : J.I.activeB = active := by
             change J.I.activeB = R.I.activeB at hJactive
             exact hJactive.trans hactive
           have hperTail : per ≤ N - used ρ := by
-            have hpos : 1 ≤ fuel + 1 := by omega
+            have hpos : 1 ≤ left - 1 := by omega
             have hmul := Nat.mul_le_mul_right per hpos
-            have hle : per ≤ (fuel + 1) * per := by simpa using hmul
+            have hle : per ≤ (left - 1) * per := by simpa using hmul
             exact hle.trans htailBudget
-          have htailHalf := ih (N - used ρ) J hJactiveZero
-            hJsavedM hJsavedR hJleft hJstatus (by omega)
+          have htailHalf := ih (N - used ρ) (left - 1) J hJactiveZero
+            hJsavedM hJsavedR hJleft hJstatus (by omega) (by omega)
             (by simpa [per] using htailBudget)
             (by simpa [per] using hperTail)
           let E := rawRejectedFiber J (by simpa [per] using hperTail)
@@ -1727,6 +1731,31 @@ lemma rawRejectedFiber_geometric
             (fuel + 2)).card ≤ 2 ^ N := by
         exact_mod_cast hfinalQ
       convert hfinalNat using 1 <;> congr 1 <;> omega
+
+/-- Matching the runtime retry counter to the rejected-prefix length gives
+the usual geometric exhaustion bound. -/
+lemma rawRejectedFiber_geometric
+    {B n m domainCap r t bufferCap targetCap Q k cap N fuel : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hsavedM : R.I.σ.vars "initialDomainSize" = m)
+    (hsavedR : R.I.σ.vars "initialBatchTarget" = r)
+    (hleft : R.I.σ.vars "initialRetriesLeft" = fuel + 1)
+    (hstatus : R.I.σ.vars "initialRetryStatus" = 0)
+    (hB : fuel + 1 < B)
+    (hbudget : (fuel + 1) * attemptBitBudget n m r t ≤ N)
+    (hper : attemptBitBudget n m r t ≤ N)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
+    2 ^ (fuel + 1) * (rawRejectedFiber R hper (fuel + 1)).card ≤ 2 ^ N := by
+  exact rawRejectedFiber_geometric_of_left R.I.activeB hmass fuel N
+    (fuel + 1) R rfl hsavedM hsavedR hleft hstatus (by omega) hB
+    hbudget hper
 
 /-- Execution of the single fixed while loop from a state whose runtime
 counter contains `fuel`, retaining every actual rejected attempt. -/
