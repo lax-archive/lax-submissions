@@ -836,7 +836,7 @@ def jointWeight (size : ℕ → ℕ) (t d r N : ℕ) : ℕ :=
 /-- Exact joint output count for the actual varying-width `ClassTrace` on
 one uniform flat tape. Each summand retains its exact consumed-bit count;
 the last `N-consumedBits` bits are uniformly unrestricted. -/
-theorem card_outputFiber_sum (size : ℕ → ℕ) (t : ℕ)
+lemma card_outputFiber_sum (size : ℕ → ℕ) (t : ℕ)
     (start : ℕ → ℕ) (d r N : ℕ) (values : List ℕ)
     (hbudget : bitBudget size t d r ≤ N) :
     (outputFiber size t start d r N values).card =
@@ -868,7 +868,7 @@ theorem card_outputFiber_sum (size : ℕ → ℕ) (t : ℕ)
 their valid Cartesian output space, with a subprobability weight that
 depends on the fixed class sizes. This is an unconditional flat-tape law:
 selector failure contributes the missing mass and is never conditioned away. -/
-theorem card_outputFiber_valid (size : ℕ → ℕ) (t : ℕ)
+lemma card_outputFiber_valid (size : ℕ → ℕ) (t : ℕ)
     (start : ℕ → ℕ) (d r N : ℕ) (values : List ℕ)
     (hbudget : bitBudget size t d r ≤ N)
     (hvalid : ValidOutput size start d r values) :
@@ -883,7 +883,7 @@ theorem card_outputFiber_valid (size : ℕ → ℕ) (t : ℕ)
   simp [pathWeight, hpath]
 
 /-- Every two valid joint outputs have the same exact flat-tape count. -/
-theorem card_outputFiber_eq (size : ℕ → ℕ) (t : ℕ)
+lemma card_outputFiber_eq (size : ℕ → ℕ) (t : ℕ)
     (start : ℕ → ℕ) (d r N : ℕ) (x y : List ℕ)
     (hbudget : bitBudget size t d r ≤ N)
     (hx : ValidOutput size start d r x)
@@ -895,7 +895,7 @@ theorem card_outputFiber_eq (size : ℕ → ℕ) (t : ℕ)
 
 /-- No concrete successful trace can produce an output outside the ideal
 Cartesian product of the requested class slices. -/
-theorem card_outputFiber_invalid (size : ℕ → ℕ) (t : ℕ)
+lemma card_outputFiber_invalid (size : ℕ → ℕ) (t : ℕ)
     (start : ℕ → ℕ) (d r N : ℕ) (values : List ℕ)
     (hbudget : bitBudget size t d r ≤ N)
     (hinvalid : ¬ ValidOutput size start d r values) :
@@ -962,7 +962,7 @@ private lemma outputFiber_disjoint (size : ℕ → ℕ) (t : ℕ)
 
 /-- The exact total mass of successful flat tapes. It is the number of
 ideal output vectors times their common subprobability numerator. -/
-theorem card_successFiber (size : ℕ → ℕ) (t : ℕ)
+lemma card_successFiber (size : ℕ → ℕ) (t : ℕ)
     (start : ℕ → ℕ) (d r N : ℕ)
     (hbudget : bitBudget size t d r ≤ N) :
     (successFiber size t start d r N).card =
@@ -990,7 +990,7 @@ The inequality is in integer cross-multiplied form: the left side is the
 number of ideal outputs times the tapes producing any one valid output, and
 `2^N` is the number of fair-bit tapes. It applies separately to each initial
 sample determining `size`, without conditioning that sample on success. -/
-theorem outputFiber_le_ideal_uniform (size : ℕ → ℕ) (t : ℕ)
+lemma outputFiber_le_ideal_uniform (size : ℕ → ℕ) (t : ℕ)
     (start : ℕ → ℕ) (d r N : ℕ) (values : List ℕ)
     (hbudget : bitBudget size t d r ≤ N)
     (hvalid : ValidOutput size start d r values) :
@@ -1004,7 +1004,7 @@ theorem outputFiber_le_ideal_uniform (size : ℕ → ℕ) (t : ℕ)
 
 /-- With no attempts allowed, a requested class has no successful output
 on any flat tape, regardless of the unused suffix length. -/
-theorem card_outputFiber_zero_cap (size start : ℕ → ℕ)
+lemma card_outputFiber_zero_cap (size start : ℕ → ℕ)
     (d r N : ℕ) (values : List ℕ)
     (hbudget : bitBudget size 0 d (r + 1) ≤ N) :
     (outputFiber size 0 start d (r + 1) N values).card = 0 := by
@@ -1014,7 +1014,7 @@ theorem card_outputFiber_zero_cap (size start : ℕ → ℕ)
 /-- Exact selector-failure deficit for this fixed class-size vector.
 In particular the success-conditioned initial sample is weighted by the
 sample-specific `jointWeight`; it need not be uniform. -/
-theorem card_failureFiber (size : ℕ → ℕ) (t : ℕ)
+lemma card_failureFiber (size : ℕ → ℕ) (t : ℕ)
     (start : ℕ → ℕ) (d r N : ℕ)
     (hbudget : bitBudget size t d r ≤ N) :
     (failureFiber size t start d r N).card =
@@ -1046,7 +1046,7 @@ private lemma bitBudget_one (t d r : ℕ) :
 
 /-- A positive cap on size-one classes consumes no bits and cannot fail.
 The statement permits any number of further unread bits on the tape. -/
-theorem card_failureFiber_one (t : ℕ) (ht : 0 < t)
+lemma card_failureFiber_one (t : ℕ) (ht : 0 < t)
     (start : ℕ → ℕ) (d r N : ℕ) :
     (failureFiber (fun _ => 1) t start d r N).card = 0 := by
   classical
