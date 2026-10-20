@@ -1006,3 +1006,39 @@ a sufficiently long input prefix; no successful sample is supplied. Target
 build and axiom checks passed with only the three background axioms. Full
 kernel replay of the preceding clock/setup/flat-law checkpoint `e260a2cb`
 passed in 5m05s; the main annotated conclusion is still outstanding.
+
+Reviewed actual accepted-round/history commit (`5ffb238f`): source log
+intervals and representative entries extend Stored, with the contraction
+recurrence and partition cost preserved. Independent build and axiom audit
+passed. Initial source certificates now retain exact consumed-prefix runs
+and canonical active packing (`f9691efc`); the final adaptive initial-law
+aggregation is still in progress. Local output fibers are linked to the
+paper's uniform failure set (`c4f8b1de`), including the injective-neighborhood
+premise. Runtime clock initialization and the registered compiler transfer
+are checked (`b65c41e7`). Full-neighborhood deduplication must be executed
+before sampling: RefinedTwinDomain proves its initial coverage and that the
+two later trace partitions preserve separation. The concrete initial
+adapter, outer loop, retry expectation and final conclusion remain open.
+
+
+Integrated the executed full-neighborhood quotient and coverage-based stored
+history (`d098c0b2`, `6b2fe47b`), and the prepared-round driver (`88ac3875`).
+The latter runs the complete sampler and accepted commit from factual round
+inputs, with explicit stopping runs on retry failure. Exact-prefix initial
+fiber domination and local retry mean-attempt bounds are checked, but their
+complete source mean-cost aggregation remains in progress. The final Markov
+and bounded-clock conversion and long-analysis-tape to public-short-tape
+probability bridge are checked (`d4c7b167`). Independent target builds and
+axiom audits passed with only the three background axioms. Full replay of
+`4687bfb5` passed (1m58s compilation, 6m40s replay); it reports zero annotated
+proofs. Actual outer-loop/reconstruction, global adaptive mean cost and cap
+failure counting, concrete layout instantiation and the main conclusion
+remain to be connected.
+
+Integrated checked outer-loop coverage/separation and actual local stopped-read
+trace (dcbb78e6, ff0f62b6). The fixed full source command and compiler layout
+are now checked (2835e767), including deterministic initialization on arbitrary
+random suffixes and a word budget derived from the layout. Numeric logarithmic
+round potential and total charge summation are checked (fa714ffc). Actual
+initial/local mean-cost laws, their adaptive composition, and the annotated
+main conclusion remain outstanding; no main proof is claimed.

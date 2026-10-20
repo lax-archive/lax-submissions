@@ -37,7 +37,8 @@ structure Stored {n : ℕ} (G : SimpleGraph (Fin n)) (k : ℕ) (σ : Env) where
   history : History G k (σ.vars "round") A C boundary
     (view σ "removed") (view σ "removedRep")
   initialA : A 0 = Set.univ
-  initialC : C 0 = Set.univ
+  initialC : ∀ v : Fin n, ∃ b ∈ C 0,
+    ∀ a : Fin n, G.Adj v a ↔ G.Adj b a
   currentA : A (σ.vars "round") = {v : Fin n | view σ "activeA" v.val = 1}
   currentC : C (σ.vars "round") = {v : Fin n | view σ "activeB" v.val = 1}
   starts : ∀ r < σ.vars "round", view σ "roundStart" r = boundary r
@@ -78,21 +79,25 @@ def Stored.frame {n k : ℕ} {G : SimpleGraph (Fin n)} {σ τ : Env}
   removedBound := by simpa only [view, hr] using h.removedBound
   representativeBound := by simpa only [view, hp] using h.representativeBound
 
-/-- At zero rounds, all vertices are active and both logs contain zero. -/
-def initial {n k : ℕ} (G : SimpleGraph (Fin n)) {σ : Env}
+/-- At zero rounds, an initial representative set covers every full
+neighborhood. No reduction has yet removed a ground vertex. -/
+def initialCovered {n k : ℕ} (G : SimpleGraph (Fin n)) {σ : Env}
+    (C₀ : Set (Fin n))
+    (hcover : ∀ v : Fin n, ∃ b ∈ C₀,
+      ∀ a : Fin n, G.Adj v a ↔ G.Adj b a)
     (hround : σ.vars "round" = 0) (hused : σ.vars "removedCount" = 0)
     (ha : ∀ i < n, view σ "activeA" i = 1)
-    (hb : ∀ i < n, view σ "activeB" i = 1)
+    (hb : ∀ v : Fin n, view σ "activeB" v.val = 1 ↔ v ∈ C₀)
     (hr : ∀ i < n, view σ "removed" i = 0)
     (hp : ∀ i < n, view σ "removedRep" i = 0) : Stored G k σ where
   A := fun _ => Set.univ
-  C := fun _ => Set.univ
+  C := fun _ => C₀
   boundary := fun _ => 0
   history := ⟨by intro r hr; omega⟩
   initialA := rfl
-  initialC := rfl
+  initialC := hcover
   currentA := by ext v; simp [ha v.val v.isLt]
-  currentC := by ext v; simp [hb v.val v.isLt]
+  currentC := by ext v; simpa using (hb v).symm
   starts := by intro r hr; omega
   ends := by intro r hr; omega
   monotone := by intros; omega
@@ -100,6 +105,17 @@ def initial {n k : ℕ} (G : SimpleGraph (Fin n)) {σ : Env}
   used := hused.symm
   removedBound := by intro i hi; rw [hr i hi]; omega
   representativeBound := by intro i hi; rw [hp i hi]; omega
+
+/-- The all-active initial state is the special case of full-neighborhood
+coverage by every vertex. -/
+def initial {n k : ℕ} (G : SimpleGraph (Fin n)) {σ : Env}
+    (hround : σ.vars "round" = 0) (hused : σ.vars "removedCount" = 0)
+    (ha : ∀ i < n, view σ "activeA" i = 1)
+    (hb : ∀ i < n, view σ "activeB" i = 1)
+    (hr : ∀ i < n, view σ "removed" i = 0)
+    (hp : ∀ i < n, view σ "removedRep" i = 0) : Stored G k σ :=
+  initialCovered G Set.univ (by intro v; exact ⟨v, Set.mem_univ _, fun _ => Iff.rfl⟩)
+    hround hused ha (by intro v; simp [hb v.val v.isLt]) hr hp
 
 
 /-- Append an accepted step to the concrete history. The premises are the
@@ -624,7 +640,7 @@ private lemma scan_setFlag_length {n : ℕ} {A : Finset ℕ}
     _ = A.card := by rw [hset]
 
 /-- Syntax check for a scratch array written only with Boolean literals. -/
-private def onlyBitStores (name : String) : Com → Prop
+def onlyBitStores (name : String) : Com → Prop
   | .skip => True
   | .assign _ _ => True
   | .store a _ e => a ≠ name ∨ e = .lit 0 ∨ e = .lit 1
@@ -634,7 +650,7 @@ private def onlyBitStores (name : String) : Com → Prop
   | .read _ => True
   | .write _ => True
 
-private def arrayBits (σ : Env) (name : String) : Prop :=
+def arrayBits (σ : Env) (name : String) : Prop :=
   ∀ v ∈ σ.arrs name, v ≤ 1
 
 private lemma onlyBitStores_preserves_step {B K : ℕ} {c : Com} {σ τ : Env}
@@ -668,7 +684,7 @@ private lemma onlyBitStores_preserves_step {B K : ℕ} {c : Com} {σ τ : Env}
   | read _ => exact hbits
   | write _ => exact hbits
 
-private lemma onlyBitStores_preserves {B K : ℕ} {c : Com} {σ τ : Env}
+lemma onlyBitStores_preserves {B K : ℕ} {c : Com} {σ τ : Env}
     (h : Run B c σ τ K) {name : String}
     (hsafe : onlyBitStores name c) (hbits : arrayBits σ name) :
     arrayBits τ name := by
@@ -682,7 +698,7 @@ private lemma partitionA_onlyBitStores :
   simp [onlyBitStores, partition, seqs, clearArray, initPartition,
     refineOne, refineMarkBody, inc]
 
-private lemma partitionB_onlyBitStores :
+lemma partitionB_onlyBitStores :
     onlyBitStores "nextB"
       (partition "activeB" "ord" "sampleCount" "classB"
         "repsB" "nextB" "repB" "nextBCount") := by
@@ -841,7 +857,9 @@ lemma accepted_commit_run
       Nonempty (Lax457868Proofs.ReusedOriginal.Construction.PartitionResult.ConcreteTracePartition
         G (setFlag A) (finSetAsSet Rnum) Snum repA) ∧
       Nonempty (Lax457868Proofs.ReusedOriginal.Construction.PartitionResult.ConcreteTracePartition
-        G R.I.activeB (finSetAsSet W) Rnum repB) := by
+        G R.I.activeB (finSetAsSet W) Rnum repB) ∧
+      Snum ⊆ Finset.range n ∧ Rnum ⊆ Finset.range n ∧
+      Snum ⊆ A ∧ Rnum ⊆ activeVertices n R.I.activeB := by
   classical
   obtain ⟨I, hIσ, hIA, hIB⟩ :=
     partition_input_of_sampler R S hscratch hrun hframe hord hcount hsample hC
@@ -973,7 +991,7 @@ lemma accepted_commit_run
     hnextA₂, hnextB₂, hrepA₂, hnextAValues, hnextBValues,
     hactiveAFlag, hactiveBFlag,
     ?_, ?_, ?_, hrem₃, hrep₃, ?_, ?_, ?_, ?_, hshrink, hcost,
-    ?_, ?_, ?_⟩
+    ?_, ?_, ?_, hSrange, ?_, ?_, ?_⟩
   · simpa only [hIA] using hremovedCount₃
   · simpa only [hIA] using hstart₃
   · simpa only [hIA] using hend₃
@@ -984,6 +1002,13 @@ lemma accepted_commit_run
   · simpa only [hIA] using dataA
   · exact ⟨by simpa only [hIA] using hA⟩
   · exact ⟨by simpa only [hIB] using hB⟩
+  · intro v hv
+    exact Finset.mem_range.mpr
+      (mem_activeVertices.mp (dataB.reps_processed hv)).1
+  · intro v hv
+    have ha := (mem_activeVertices.mp (dataA.reps_processed hv)).2
+    simpa [hIA, setFlag] using ha
+  · simpa only [hIB] using dataB.reps_processed
 
 /-- The two acceptance guards execute the exact partition/commit suffix after
 the concrete sampler. All three charges are added in source order. -/
@@ -1031,7 +1056,7 @@ lemma accepted_round_run
   obtain ⟨σ₂, σ₃, Rnum, Snum, nextA, nextB, repA, rem, remRep,
     partCostB, partCostA, currentA, labelA, repClassA, repsA, repB,
     hsuffix, _, _, hround₃, hacount₃,
-    _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hshrink, hcost, _, _, _⟩ :=
+    _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hshrink, hcost, _, _, _, _, _, _, _⟩ :=
     accepted_commit_run R S hscratch hnextABits hnextBBits hbounded hcapacity hround hG hc
       hrun hframe hord hcount hsample hC
   have hB : 1 < B := R.I.honeB
@@ -1091,6 +1116,7 @@ lemma accepted_commit_stored_run
       ((A.card + 2 * c ^ 2 - 1) / (2 * c ^ 2)) k)
     (hC : (activeVertices n R.I.activeB).Nonempty) :
     ∃ σ₂ σ₃ : Env, ∃ Rnum Snum : Finset ℕ,
+      ∃ nextA nextB repA repB : ℕ → ℕ,
       ∃ partCostB partCostA : ℕ,
       Run B ((partition "activeB" "ord" "sampleCount" "classB"
         "repsB" "nextB" "repB" "nextBCount").seq
@@ -1101,7 +1127,18 @@ lemma accepted_commit_stored_run
       σ₃.vars "round" = R.I.σ.vars "round" + 1 ∧
       σ₃.vars "acount" = Snum.card ∧
       2 * Snum.card ≤ A.card + 2 * c ^ 2 ∧
-      partCostB + partCostA ≤ 1800 * (x.length + 1) := by
+      partCostB + partCostA ≤ 1800 * (x.length + 1) ∧
+      NextFrame n Q bufferCap targetCap x σ₃ nextA nextB ∧
+      σ₃.arrs "activeA" = arrOf n (setFlag Snum) ∧
+      σ₃.arrs "activeB" = arrOf n (setFlag Rnum) ∧
+      (∀ v ∈ σ₃.arrs "nextA", v ≤ 1) ∧
+      (∀ v ∈ σ₃.arrs "nextB", v ≤ 1) ∧
+      Lax457868Proofs.RefinedRecordedCommit.ValuesBounded B σ₃ ∧
+      σ₃.vars "removedCount" + Snum.card ≤ n ∧
+      Nonempty (ConcreteTracePartition G (setFlag A) (finSetAsSet Rnum) Snum repA) ∧
+      Nonempty (ConcreteTracePartition G R.I.activeB (finSetAsSet W) Rnum repB) ∧
+      Snum ⊆ Finset.range n ∧ Rnum ⊆ Finset.range n ∧
+      Snum ⊆ A ∧ Rnum ⊆ activeVertices n R.I.activeB := by
   classical
   obtain ⟨σ₂, σ₃, Rnum, Snum, nextA, nextB, repA, rem, remRep,
     partCostB, partCostA, currentA, labelA, repClassA, repsA, repB,
@@ -1110,7 +1147,8 @@ lemma accepted_commit_stored_run
     hrepA₂, hbitsA, hbitsB, hactiveAFlag, hactiveBFlag,
     hremovedCount₃, hstart₃, hend₃,
     hrem₃, hrep₃, hprefix, hsuffixRem, hprefixRep, hsuffixRep,
-    hshrink, hcost, dataA, ⟨partA⟩, ⟨partB⟩⟩ :=
+    hshrink, hcost, dataA, ⟨partA⟩, ⟨partB⟩, hSrange, hRrange,
+    hSsub, hRsub⟩ :=
     accepted_commit_run R S hscratch hnextABits hnextBBits hbounded hcapacity hround
       hG hc hrun hframe hord hcount hsample hC
   let hstoreσ := hstore.frame
@@ -1441,8 +1479,63 @@ lemma accepted_commit_stored_run
     hstarts hends hremovedPrefix hrepPrefix
     (fun i hi => (hlogBound i hi).1) (fun i hi => (hlogBound i hi).2)
     (by simpa [round, hround₂] using hstep)
-  exact ⟨σ₂, σ₃, Rnum, Snum, partCostB, partCostA,
-    hsuffix, ⟨hstored⟩, hround₃, hacount₃, hshrink, hcost⟩
+  have hbits₂A : arrayBits σ₂ "nextA" := by
+    have hsigma : arrayBits σ "nextA" := by
+      unfold arrayBits
+      rw [hrun.frame_arr "nextA" (by decide)]
+      exact hnextABits
+    exact onlyBitStores_preserves hpart (by
+      simp [onlyBitStores, partition, seqs, clearArray, initPartition,
+        refineOne, refineMarkBody, inc]) hsigma
+  have hbits₂B : arrayBits σ₂ "nextB" := by
+    have hsigma : arrayBits σ "nextB" := by
+      unfold arrayBits
+      rw [hrun.frame_arr "nextB" (by decide)]
+      exact hnextBBits
+    exact onlyBitStores_preserves hpart (by
+      simp [onlyBitStores, partition, seqs, clearArray, initPartition,
+        refineOne, refineMarkBody, inc]) hsigma
+  have hbits₃A : arrayBits σ₃ "nextA" := by
+    unfold arrayBits
+    rw [hcommit.frame_arr "nextA" (by decide)]
+    exact hbits₂A
+  have hbits₃B : arrayBits σ₃ "nextB" := by
+    unfold arrayBits
+    rw [hcommit.frame_arr "nextB" (by decide)]
+    exact hbits₂B
+  have hsub : activeVertices n nextA ⊆ activeVertices n (setFlag A) := by
+    intro v hv
+    have hvn := (mem_activeVertices.mp hv).1
+    have hvS : v ∈ Snum := (dataA.out_mem v hvn).1
+      (mem_activeVertices.mp hv).2
+    exact dataA.reps_processed hvS
+  have hconserve :=
+    Lax457868Proofs.ReusedOriginal.Construction.ActiveBookkeeping.removed_length_add_next
+      hbitsA hsub
+  have hnextSet : activeVertices n nextA = Snum := by
+    ext v
+    simp only [mem_activeVertices]
+    constructor
+    · rintro ⟨hv, hflag⟩
+      exact (dataA.out_mem v hv).1 hflag
+    · intro hv
+      have hvn := (mem_activeVertices.mp (dataA.reps_processed hv)).1
+      exact ⟨hvn, (dataA.out_mem v hvn).2 hv⟩
+  have holdSet : activeVertices n (setFlag A) = A := by
+    ext v
+    simp only [mem_activeVertices, setFlag, Finset.mem_filter, Finset.mem_range]
+    constructor
+    · intro h; exact (by simpa using h.2)
+    · intro hv; exact ⟨Finset.mem_range.mp (R.I.hA hv), by simp [hv]⟩
+  have hcapNext : σ₃.vars "removedCount" + Snum.card ≤ n := by
+    rw [hremovedCount₃]
+    rw [hnextSet, holdSet] at hconserve
+    omega
+  exact ⟨σ₂, σ₃, Rnum, Snum, nextA, nextB, repA, repB, partCostB, partCostA,
+    hsuffix, ⟨hstored⟩, hround₃, hacount₃, hshrink, hcost,
+    hnextFrame, hactiveAFlag, hactiveBFlag, hbits₃A, hbits₃B,
+    Lax457868Proofs.RefinedRecordedCommit.run_preserves hcommit hbounded₂,
+    hcapNext, ⟨partA⟩, ⟨partB⟩, hSrange, hRrange, hSsub, hRsub⟩
 
 
 end
