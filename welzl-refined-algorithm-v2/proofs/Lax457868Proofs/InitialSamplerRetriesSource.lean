@@ -1084,6 +1084,17 @@ lemma retryWhile_zero_cost {B : ℕ} {σ τ : Env} {cost : ℕ}
   have heq := BigStep.unique hrun.bigStep hcanon.bigStep
   omega
 
+lemma retryWhile_zero_status {B : ℕ} {σ τ : Env} {cost : ℕ}
+    (hstatus : σ.vars "initialRetryStatus" = 0)
+    (hleft : σ.vars "initialRetriesLeft" = 0)
+    (h3B : 3 < B)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) : τ.vars "initialRetryStatus" = 3 := by
+  obtain ⟨_, _, hcanon⟩ := empty_loop_run hstatus hleft h3B
+  have heq := (BigStep.unique hrun.bigStep hcanon.bigStep).1
+  simp [heq]
+
 /-- A finished retry loop has the fixed cost of its final false guard. -/
 lemma retryWhile_stopped_cost {B : ℕ} {σ τ : Env} {cost status : ℕ}
     (hstatus : σ.vars "initialRetryStatus" = status)
@@ -1110,6 +1121,20 @@ lemma retryWhile_nonzero_cost {B : ℕ} {σ τ : Env} {cost : ℕ}
     (hrun : BigStepB B
       (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
       σ τ cost) : cost = 4 := by
+  cases hrun with
+  | while_false _ => rfl
+  | while_true hguard _ _ =>
+      obtain ⟨a, c, ha, hc, hbool⟩ := evalB_condEq_iff.mp hguard
+      obtain ⟨rfl, _⟩ := evalB_var_iff.mp ha
+      obtain ⟨rfl, _⟩ := evalB_lit_iff.mp hc
+      simp at hbool
+      exact False.elim (hnotzero hbool)
+
+lemma retryWhile_nonzero_state {B : ℕ} {σ τ : Env} {cost : ℕ}
+    (hnotzero : σ.vars "initialRetryStatus" ≠ 0)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) : τ = σ := by
   cases hrun with
   | while_false _ => rfl
   | while_true hguard _ _ =>
