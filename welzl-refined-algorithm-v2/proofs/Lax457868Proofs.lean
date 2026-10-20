@@ -153,3 +153,7 @@ import Lax457868Proofs.RefinedRoundCost
 import Lax457868Proofs.SourceTapePrefix
 import Lax457868Proofs.CompleteSamplerSource
 import Lax457868Proofs.FlatTraceLaw
+import Lax457868Proofs.ClockedSource
+import Lax457868Proofs.PackedDomainSource
+import Lax457868Proofs.SamplerRuntimeSetup
+import Lax457868Proofs.RefinedSetup
