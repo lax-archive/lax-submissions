@@ -1347,6 +1347,88 @@ lemma rejected_next_ready
     rw [hSbits]
     exact hnextBudget
 
+/-- Finite flat tapes on which the concrete source has an ordered prefix of
+`j` ordinary rejected attempts. -/
+noncomputable def rawRejectedFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) (j : ℕ) :
+    Finset (FlatTraceLaw.FlatTape N) := by
+  classical
+  exact Finset.univ.filter fun ρ =>
+    RawRejected (B := B)
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.σ j
+
+lemma rawRejectedFiber_one_half
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
+    2 * (rawRejectedFiber R hbudget 1).card ≤ 2 ^ N := by
+  classical
+  have hsub : rawRejectedFiber R hbudget 1 ⊆
+      readyAttemptRejectedFiber R hbudget := by
+    intro ρ hρ
+    have hraw : RawRejected (B := B)
+        (R.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hbudget)).I.σ 1 := by
+      simpa [rawRejectedFiber] using hρ
+    obtain ⟨σa, q, hrun, hbatch, hrep, haccept⟩ :=
+      RawRejected.head (j := 0) hraw
+    simpa [readyAttemptRejectedFiber, readyAttemptRejected] using
+      (show readyAttemptRejected R hbudget ρ from
+        ⟨σa, q, hrun, hbatch, hrep, haccept⟩)
+  exact (Nat.mul_le_mul_left 2 (Finset.card_le_card hsub)).trans
+    (readyAttemptRejected_half R hbudget hmass)
+
+/-- A rejected trace on a different completion of the same consumed prefix
+has its remaining rejected trace in the canonical post-decision state. -/
+lemma RawRejected.tail_replay
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R J : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (bits bits' : List Bool)
+    (hbudget : attemptBitBudget n m r t ≤ bits.length)
+    (hbudget' : attemptBitBudget n m r t ≤ bits'.length)
+    {σa : Env} {q d p j : ℕ}
+    (hrun : Run B fullInitialAttempt
+      (R.reinput bits (by simpa [attemptBitBudget] using hbudget)).I.σ σa q)
+    (hinp : σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest)
+    (hpre : bits.take d = bits'.take d)
+    (hdecision : Run B initialRetryDecision σa J.I.σ p)
+    (hJbits : J.I.bits = bits.drop d)
+    (hnextBudget : attemptBitBudget n m r t ≤ (bits'.drop d).length)
+    (hraw : RawRejected (B := B)
+      (R.reinput bits' (by simpa [attemptBitBudget] using hbudget')).I.σ
+      (j + 2)) :
+    RawRejected (B := B)
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ (j + 1) := by
+  obtain ⟨σb, τb, qb, pb, hrunb, _, _, _, hdecisionb, htail⟩ :=
+    hraw.tail_of_succ
+  obtain ⟨hrun', hdecision'⟩ :=
+    rejected_step_replay R J bits bits' hbudget hbudget' hrun hinp
+      hpre hdecision hJbits hnextBudget
+  have heqA : σb = {σa with inp := (bits'.drop d).map Bool.toNat ++ R.I.rest} := by
+    obtain ⟨_, _, ha⟩ := hrunb
+    obtain ⟨_, _, hb⟩ := hrun'
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have heqJ : τb =
+      (J.reinput (bits'.drop d)
+        (by simpa [attemptBitBudget] using hnextBudget)).I.σ := by
+    obtain ⟨_, _, ha⟩ := hdecisionb
+    obtain ⟨_, _, hb⟩ := hdecision'
+    exact (BigStep.unique (by simpa [heqA] using ha.bigStep) hb.bigStep).1
+  simpa [heqJ] using htail
+
 /-- Execution of the single fixed while loop from a state whose runtime
 counter contains `fuel`, retaining every actual rejected attempt. -/
 lemma initialRetryWhile_run_withTrace
