@@ -177,3 +177,6 @@ import Lax457868Proofs.RefinedTapeReserve
 import Lax457868Proofs.RefinedRoundLoop
 import Lax457868Proofs.RefinedProgramSource
 import Lax457868Proofs.RefinedProgramLayout
+import Lax457868Proofs.RefinedProgramProbability
+import Lax457868Proofs.RefinedFinalBridge
+import Lax457868Proofs.RefinedFailureBudget
