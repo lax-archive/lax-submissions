@@ -1371,7 +1371,7 @@ private lemma classTrace_success_congr_live
     flatClassSuccess_to_classTrace size' t start' hflat' hbudget
   exact ⟨used', charge', htrace'⟩
 
-private def reinputInitialAttempt
+def reinputInitialAttempt
     {B n m domainCap r t bufferCap targetCap Q : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
     (I : Lax457868Proofs.InitialSamplerAttempt.Input
