@@ -24,6 +24,7 @@ open Lax457868Proofs.ReusedOriginal.Construction.RadixEight
 open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
 open Lax457868Proofs.ExceptionRefinementStep
 open Lax457868Proofs.ExceptionPhaseSource
+open Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
 
 noncomputable section
 
@@ -1428,6 +1429,304 @@ lemma RawRejected.tail_replay
     obtain ⟨_, _, hb⟩ := hdecision'
     exact (BigStep.unique (by simpa [heqA] using ha.bigStep) hb.bigStep).1
   simpa [heqJ] using htail
+
+private lemma sum_indicator_const {α : Type} [Fintype α]
+    (P : α → Prop) [DecidablePred P] (c : ℚ) :
+    (∑ a : α, if P a then c else 0) =
+      c * ((Finset.univ.filter P).card : ℚ) := by
+  classical
+  calc
+    (∑ a : α, if P a then c else 0) =
+        ∑ a ∈ Finset.univ.filter P, c := by rw [Finset.sum_filter]
+    _ = c * ((Finset.univ.filter P).card : ℚ) := by simp [mul_comm]
+
+/-- The actual sequential retry source has a geometric rejected-prefix
+count, with each attempt beginning at the unread suffix of the previous
+source Run. Selector aborts contribute no rejected continuation. -/
+lemma rawRejectedFiber_geometric
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (active : ℕ → ℕ)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n active)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n active)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
+    ∀ (fuel N : ℕ)
+      (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A),
+      R.I.activeB = active →
+      R.I.σ.vars "initialDomainSize" = m →
+      R.I.σ.vars "initialBatchTarget" = r →
+      R.I.σ.vars "initialRetriesLeft" = fuel + 1 →
+      R.I.σ.vars "initialRetryStatus" = 0 →
+      fuel + 1 < B →
+      (fuel + 1) * attemptBitBudget n m r t ≤ N →
+      (hperInput : attemptBitBudget n m r t ≤ N) →
+      2 ^ (fuel + 1) *
+        (rawRejectedFiber R hperInput (fuel + 1)).card ≤ 2 ^ N := by
+  classical
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro N R hactive hsavedM hsavedR hleft hstatus hB hbudget hperInput
+      have hmassR : SamplerWeightedRetries.badMass
+          (SamplerInitialRetries.outcomeWeight A
+            (activeVertices n R.I.activeB)
+            (fun b => numericNeighborhood G b ∩ A) r)
+          (SamplerInitialRetries.outcomeBad A
+            (activeVertices n R.I.activeB)
+            (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ) := by
+        rw [hactive]
+        exact hmass
+      simpa using rawRejectedFiber_one_half R hperInput hmassR
+  | succ fuel ih =>
+      intro N R hactive hsavedM hsavedR hleft hstatus hB hbudget hperInput
+      let per := attemptBitBudget n m r t
+      have hper : per ≤ N := by simpa [per] using hperInput
+      let used : FlatTraceLaw.FlatTape N → ℕ :=
+        readyAttemptConsumed R (by simpa [per] using hper)
+      let first : FlatTraceLaw.FlatTape N → Prop :=
+        readyAttemptRejected R (by simpa [per] using hper)
+      let many : FlatTraceLaw.FlatTape N → Prop := fun ρ =>
+        RawRejected (B := B)
+          (R.reinput (List.ofFn ρ)
+            (by simpa [attemptBitBudget, per] using hper)).I.σ (fuel + 2)
+      let X : FlatTraceLaw.FlatTape N → ℚ := fun ρ =>
+        if many ρ then (2 ^ (fuel + 1) : ℚ) else 0
+      let Y : FlatTraceLaw.FlatTape N → ℚ := fun ρ =>
+        if first ρ then 1 else 0
+      have husedBound : ∀ ρ, used ρ ≤ N := by
+        intro ρ
+        exact readyAttemptConsumed_le R (by simpa [per] using hper) ρ
+      have husedCausal : ∀ ρ τ,
+          (List.ofFn ρ).take (used ρ) =
+            (List.ofFn τ).take (used ρ) → used τ = used ρ := by
+        intro ρ τ hpre
+        exact readyAttemptConsumed_causal R
+          (by simpa [per] using hper) ρ τ hpre
+      have hY : ∀ ρ τ,
+          (List.ofFn ρ).take (used ρ) =
+            (List.ofFn τ).take (used ρ) → Y τ = Y ρ := by
+        intro ρ τ hpre
+        by_cases hρ : first ρ
+        · have hτ : first τ :=
+            readyAttemptRejected_of_same_prefix R
+              (by simpa [per] using hper) ρ τ hpre hρ
+          simp [Y, hρ, hτ]
+        · have hτ : ¬ first τ := by
+            intro hτ
+            have hu := husedCausal ρ τ hpre
+            have hpre' : (List.ofFn τ).take (used τ) =
+                (List.ofFn ρ).take (used τ) := by simpa [hu] using hpre.symm
+            exact hρ (readyAttemptRejected_of_same_prefix R
+              (by simpa [per] using hper) τ ρ hpre' hτ)
+          simp [Y, hρ, hτ]
+      have hmean : ∀ ρ, (∑ tail : FlatTraceLaw.FlatTape (N - used ρ),
+          X ((splitEquiv (husedBound ρ)).symm
+            ((splitEquiv (husedBound ρ) ρ).1, tail))) ≤
+            Y ρ * 2 ^ (N - used ρ) := by
+        intro ρ
+        by_cases hfirst : first ρ
+        · let bits := List.ofFn ρ
+          let Rρ := R.reinput bits (by
+            change attemptBitBudget n m r t ≤ bits.length
+            simpa only [bits, List.length_ofFn, per] using hper)
+          have hfirstProof : first ρ := hfirst
+          obtain ⟨σa, q, hrun, hbatch, hrep, haccept⟩ := hfirst
+          obtain ⟨d, J, p, hd, hinp, hJbits, hJrest, hJactive,
+            hdecision, hJsavedM, hJsavedR, hJleft, hJstatus, hJbudget⟩ :=
+            rejected_next_ready Rρ (fuel + 1) (by omega)
+              (by change R.I.σ.vars "initialDomainSize" = m; exact hsavedM)
+              (by change R.I.σ.vars "initialBatchTarget" = r; exact hsavedR)
+              (by change R.I.σ.vars "initialRetriesLeft" = fuel + 2;
+                  convert hleft using 1 <;> omega)
+              (by change R.I.σ.vars "initialRetryStatus" = 0; exact hstatus)
+              (by omega)
+              (by change (fuel + 2) * per ≤ bits.length
+                  simpa only [bits, List.length_ofFn, per] using
+                    (show (fuel + 2) * attemptBitBudget n m r t ≤ N by
+                      convert hbudget using 1 <;> omega))
+              hrun hbatch hrep haccept
+          have hused : d = used ρ := by
+            change d = readyAttemptConsumed R hper ρ
+            obtain ⟨σu, qu, hrunu, hinpu, hdu⟩ :=
+              readyAttemptConsumed_spec R (by simpa [per] using hper) ρ
+            have heq : σa = σu := by
+              obtain ⟨_, _, ha⟩ := hrun
+              obtain ⟨_, _, hb⟩ := hrunu
+              exact (BigStep.unique ha.bigStep hb.bigStep).1
+            change σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest at hinp
+            have heqInp := hinp.symm.trans (by simpa [heq, bits] using hinpu)
+            have hlen := congrArg List.length heqInp
+            simp only [List.length_append, List.length_map, List.length_drop] at hlen
+            have hdN : d ≤ N := hd.trans hper
+            have huN : readyAttemptConsumed R hper ρ ≤ N :=
+              readyAttemptConsumed_le R hper ρ
+            have hbitsLen : bits.length = N := by simp [bits]
+            simp only [List.length_ofFn] at hlen
+            omega
+          have htailN : J.I.bits.length = N - used ρ := by
+            change J.I.bits.length = N - used ρ
+            rw [hJbits]
+            change (bits.drop d).length = N - used ρ
+            simp only [List.length_drop, bits, List.length_ofFn, hused]
+          have htailBudget : (fuel + 1) * per ≤ N - used ρ := by
+            rw [htailN] at hJbudget
+            exact hJbudget
+          have hJactiveZero : J.I.activeB = active := by
+            change J.I.activeB = R.I.activeB at hJactive
+            exact hJactive.trans hactive
+          have hperTail : per ≤ N - used ρ := by
+            have hpos : 1 ≤ fuel + 1 := by omega
+            have hmul := Nat.mul_le_mul_right per hpos
+            have hle : per ≤ (fuel + 1) * per := by simpa using hmul
+            exact hle.trans htailBudget
+          have htailHalf := ih (N - used ρ) J hJactiveZero
+            hJsavedM hJsavedR hJleft hJstatus (by omega)
+            (by simpa [per] using htailBudget)
+            (by simpa [per] using hperTail)
+          let E := rawRejectedFiber J (by simpa [per] using hperTail)
+            (fuel + 1)
+          have htailMem (tail : FlatTraceLaw.FlatTape (N - used ρ)) :
+              many ((splitEquiv (husedBound ρ)).symm
+                ((splitEquiv (husedBound ρ) ρ).1, tail)) →
+                tail ∈ E := by
+            intro hmany
+            let τ := (splitEquiv (husedBound ρ)).symm
+              ((splitEquiv (husedBound ρ) ρ).1, tail)
+            have hsplit := StoppedPrefixAveraging.boolTape_split (husedBound ρ) τ
+            have hpair : splitEquiv (husedBound ρ) τ =
+                ((splitEquiv (husedBound ρ) ρ).1, tail) :=
+              Equiv.apply_symm_apply _ _
+            have hprefix : bits.take d = (List.ofFn τ).take d := by
+              rw [hused]
+              rw [StoppedPrefixAveraging.prefix_of_split (husedBound ρ),
+                StoppedPrefixAveraging.prefix_of_split (husedBound ρ), hpair]
+            have hdrop : (List.ofFn τ).drop d = List.ofFn tail := by
+              rw [hused, hsplit, hpair]
+              simp
+            have hnextPer : per ≤ ((List.ofFn τ).drop d).length := by
+              rw [hdrop]
+              simpa only [List.length_ofFn] using hperTail
+            have hrawTail := RawRejected.tail_replay R J bits (List.ofFn τ)
+              (by simpa only [per, bits, List.length_ofFn] using hper)
+              (by simpa only [per, List.length_ofFn] using hper)
+              (by simpa only [bits] using hrun)
+              (by change σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest;
+                  exact hinp)
+              hprefix hdecision (by change J.I.bits = bits.drop d; exact hJbits)
+              (by simpa [per] using hnextPer) hmany
+            simp only [E, rawRejectedFiber, Finset.mem_filter,
+              Finset.mem_univ, true_and]
+            simpa only [hdrop] using hrawTail
+          have hsumX :
+              (∑ tail : FlatTraceLaw.FlatTape (N - used ρ),
+                X ((splitEquiv (husedBound ρ)).symm
+                  ((splitEquiv (husedBound ρ) ρ).1,
+                    tail))) ≤
+                (2 ^ (fuel + 1) : ℚ) * (E.card : ℚ) := by
+            calc
+              _ ≤ ∑ tail : FlatTraceLaw.FlatTape (N - used ρ),
+                  if tail ∈ E then (2 ^ (fuel + 1) : ℚ) else 0 := by
+                    apply Finset.sum_le_sum
+                    intro tail _
+                    by_cases h : many
+                        ((splitEquiv (husedBound ρ)).symm
+                          ((splitEquiv (husedBound ρ) ρ).1,
+                            tail))
+                    · have hmem := htailMem tail h
+                      simp [X, h, hmem]
+                    · simp only [X, if_neg h]
+                      by_cases hmem : tail ∈ E
+                      · simp [hmem]
+                      · simp [hmem]
+              _ = _ := by
+                rw [sum_indicator_const]
+                simp [E]
+          have hq : (2 ^ (fuel + 1) : ℚ) * (E.card : ℚ) ≤
+              2 ^ (N - used ρ) := by
+            exact_mod_cast (by simpa [E] using htailHalf)
+          have hYρ : Y ρ = 1 := by simp [Y, hfirstProof]
+          rw [hYρ, one_mul]
+          exact hsumX.trans hq
+        · have hzero : ∀ tail : FlatTraceLaw.FlatTape (N - used ρ),
+              X ((splitEquiv (husedBound ρ)).symm
+                ((splitEquiv (husedBound ρ) ρ).1,
+                  tail)) = 0 := by
+            intro tail
+            let τ := (splitEquiv (husedBound ρ)).symm
+              ((splitEquiv (husedBound ρ) ρ).1, tail)
+            have hprefix : (List.ofFn ρ).take (used ρ) =
+                (List.ofFn τ).take (used ρ) := by
+              rw [StoppedPrefixAveraging.prefix_of_split (husedBound ρ),
+                StoppedPrefixAveraging.prefix_of_split (husedBound ρ)]
+              simp [τ]
+            have hnot : ¬ many τ := by
+              intro hmany
+              obtain ⟨σa, q, hrun, hbatch, hrep, haccept⟩ :=
+                RawRejected.head (j := fuel + 1) hmany
+              have hrejτ : first τ := ⟨σa, q, hrun, hbatch, hrep, haccept⟩
+              have husedτ := husedCausal ρ τ hprefix
+              have hprefix' : (List.ofFn τ).take (used τ) =
+                  (List.ofFn ρ).take (used τ) := by
+                simpa [husedτ] using hprefix.symm
+              exact hfirst (readyAttemptRejected_of_same_prefix R
+                (by simpa [per] using hper) τ ρ hprefix' hrejτ)
+            change X τ = 0
+            simp [X, hnot]
+          simp [hzero, Y, hfirst]
+      have havg := StoppedPrefixAveraging.sum_le_of_stopped_prefix used
+        husedBound husedCausal X Y hY hmean
+      have hsumX : (∑ ρ : FlatTraceLaw.FlatTape N, X ρ) =
+          (2 ^ (fuel + 1) : ℚ) *
+            ((rawRejectedFiber R (by simpa [per] using hper)
+              (fuel + 2)).card : ℚ) := by
+        have hh := sum_indicator_const many (2 ^ (fuel + 1) : ℚ)
+        have hE : rawRejectedFiber R (by simpa [per] using hper)
+            (fuel + 2) = Finset.univ.filter many := rfl
+        rw [hE]
+        exact hh
+      have hsumY : (∑ ρ : FlatTraceLaw.FlatTape N, Y ρ) =
+          ((readyAttemptRejectedFiber R
+            (by simpa [per] using hper)).card : ℚ) := by
+        have hh := sum_indicator_const first 1
+        have hE : readyAttemptRejectedFiber R
+            (by simpa [per] using hper) = Finset.univ.filter first := rfl
+        rw [hE]
+        simpa only [one_mul] using hh
+      have hq : (2 ^ (fuel + 1) : ℚ) *
+          ((rawRejectedFiber R (by simpa [per] using hper)
+            (fuel + 2)).card : ℚ) ≤
+          ((readyAttemptRejectedFiber R
+            (by simpa [per] using hper)).card : ℚ) := by
+        simpa [hsumX, hsumY] using havg
+      have hmassR : SamplerWeightedRetries.badMass
+          (SamplerInitialRetries.outcomeWeight A
+            (activeVertices n R.I.activeB)
+            (fun b => numericNeighborhood G b ∩ A) r)
+          (SamplerInitialRetries.outcomeBad A
+            (activeVertices n R.I.activeB)
+            (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ) := by
+        rw [hactive]
+        exact hmass
+      have hhalf := readyAttemptRejected_half R
+        (by simpa [per] using hper) hmassR
+      have hhalfQ : 2 *
+          ((readyAttemptRejectedFiber R
+            (by simpa [per] using hper)).card : ℚ) ≤ 2 ^ N := by
+        exact_mod_cast hhalf
+      have hfinalQ : (2 ^ (fuel + 2) : ℚ) *
+          ((rawRejectedFiber R (by simpa [per] using hper)
+            (fuel + 2)).card : ℚ) ≤ 2 ^ N := by
+        rw [show fuel + 2 = (fuel + 1) + 1 by omega, pow_succ]
+        nlinarith
+      have hfinalNat : 2 ^ (fuel + 2) *
+          (rawRejectedFiber R (by simpa [per] using hper)
+            (fuel + 2)).card ≤ 2 ^ N := by
+        exact_mod_cast hfinalQ
+      convert hfinalNat using 1 <;> congr 1 <;> omega
 
 /-- Execution of the single fixed while loop from a state whose runtime
 counter contains `fuel`, retaining every actual rejected attempt. -/
