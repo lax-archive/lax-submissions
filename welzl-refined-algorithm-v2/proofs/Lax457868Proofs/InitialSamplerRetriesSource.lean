@@ -2412,6 +2412,96 @@ lemma source_status3_raw
   refine ⟨S, hbits, hactive, hsetup, ?_⟩
   simpa [hrejectLen] using htrace.raw
 
+/-- Actual source tapes ending at the fixed retry cap. -/
+noncomputable def sourceExhaustedFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hper : attemptBitBudget n m r t ≤ N) :
+    Finset (FlatTraceLaw.FlatTape N) := by
+  classical
+  exact Finset.univ.filter fun ρ =>
+    ∃ (σout : Env) (cost : ℕ),
+      Run B initialSamplerRetriesSource
+        (R.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hper)).I.σ σout cost ∧
+      σout.vars "initialRetryStatus" = 3
+
+/-- Exact source exhaustion is bounded by the geometric all-rejection
+event. The first cap setup runs before any random bit is read. -/
+lemma sourceExhaustedFiber_geometric
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (attemptCap : ℕ)
+    (hcap : R.I.σ.vars "initialRetryCap" = attemptCap)
+    (hcapB : attemptCap < B)
+    (hpositive : 0 < attemptCap)
+    (hbudget : attemptCap * attemptBitBudget n m r t ≤ N)
+    (hper : attemptBitBudget n m r t ≤ N)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
+    2 ^ attemptCap * (sourceExhaustedFiber R hper).card ≤ 2 ^ N := by
+  classical
+  let S0 := R.withSetup attemptCap
+  have hSsavedM : S0.I.σ.vars "initialDomainSize" = m := by
+    simp [S0, ReadyInput.withSetup]
+  have hSsavedR : S0.I.σ.vars "initialBatchTarget" = r := by
+    simp [S0, ReadyInput.withSetup]
+  have hSleft : S0.I.σ.vars "initialRetriesLeft" = attemptCap := by
+    simp [S0, ReadyInput.withSetup]
+  have hSstatus : S0.I.σ.vars "initialRetryStatus" = 0 := by
+    simp [S0, ReadyInput.withSetup]
+  have hSmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n S0.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n S0.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ) := by
+    exact hmass
+  have hsub : sourceExhaustedFiber R hper ⊆
+      rawRejectedFiber S0 hper attemptCap := by
+    intro ρ hρ
+    obtain ⟨σout, cost, hrun, hstatus⟩ :
+        ∃ (σout : Env) (cost : ℕ),
+          Run B initialSamplerRetriesSource
+            (R.reinput (List.ofFn ρ)
+              (by simpa [attemptBitBudget] using hper)).I.σ σout cost ∧
+          σout.vars "initialRetryStatus" = 3 := by
+      simpa [sourceExhaustedFiber] using hρ
+    let Rρ := R.reinput (List.ofFn ρ)
+      (by simpa [attemptBitBudget] using hper)
+    obtain ⟨S, hbits, hactive, hsetup, hraw⟩ :=
+      source_status3_raw attemptCap Rρ
+        (by change R.I.σ.vars "initialRetryCap" = attemptCap; exact hcap)
+        hcapB (by simpa [Rρ, ReadyInput.reinput_bits] using hbudget)
+        hrun hstatus
+    have hstate : S.I.σ =
+        (S0.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hper)).I.σ := by
+      rw [hsetup]
+      rfl
+    have hraw' : RawRejected (B := B)
+        (S0.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hper)).I.σ attemptCap := by
+      simpa [hstate] using hraw
+    simpa [rawRejectedFiber] using hraw'
+  have hgeom := rawRejectedFiber_geometric S0 hSsavedM hSsavedR
+    (fuel := attemptCap - 1)
+    (by simpa [Nat.sub_add_cancel hpositive] using hSleft)
+    hSstatus (by omega) (by simpa [Nat.sub_add_cancel hpositive] using hbudget)
+    hper hSmass
+  have hcount : 2 ^ attemptCap *
+      (rawRejectedFiber S0 hper attemptCap).card ≤ 2 ^ N := by
+    simpa [Nat.sub_add_cancel hpositive] using hgeom
+  exact (Nat.mul_le_mul_left _ (Finset.card_le_card hsub)).trans hcount
+
 /-- Compact source-loop interface, with the retained ordered trace erased. -/
 lemma initialSamplerRetriesSource_run
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
