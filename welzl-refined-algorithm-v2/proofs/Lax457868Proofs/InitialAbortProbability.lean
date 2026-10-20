@@ -862,4 +862,99 @@ lemma readyAttemptSelectorAbort_count
       (readyAttemptRepresentativeAbort_count R hbudget)
     _ = (r + n) * 2 ^ N := by ring
 
+private lemma guard_var_eq_lit
+    {B : ℕ} {σ : Env} {v : String} {z : ℕ} {b : Bool}
+    (h : (Cond.eq (.var v) (.lit z)).evalB B σ = some b) :
+    (σ.vars v = z ↔ b = true) := by
+  obtain ⟨a, c, ha, hc, hb⟩ := evalB_condEq_iff.mp h
+  obtain ⟨rfl, _⟩ := evalB_var_iff.mp ha
+  obtain ⟨rfl, _⟩ := evalB_lit_iff.mp hc
+  subst b
+  simp
+
+/-- A completed retry decision with zero status is precisely the branch
+that rejected a valid sample and continues to the next attempt. -/
+lemma decision_status_zero_rejected
+    {B : ℕ} {σa σd : Env} {p : ℕ}
+    (hstatus : σa.vars "initialRetryStatus" = 0)
+    (h : BigStepB B initialRetryDecision σa σd p)
+    (hzero : σd.vars "initialRetryStatus" = 0) :
+    σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 0 ∧
+      σa.vars "attemptAccepted" ≠ 1 := by
+  unfold initialRetryDecision at h
+  cases h with
+  | ite_false hbatch hset =>
+    cases hset with
+    | assign he =>
+      have hv := (evalB_lit_iff.mp he).1
+      simp at hzero
+      omega
+  | ite_true hbatch hinner =>
+    have hb : σa.vars "batchFailed" = 0 :=
+      (guard_var_eq_lit hbatch).2 rfl
+    cases hinner with
+    | ite_false hrep hset =>
+      cases hset with
+      | assign he =>
+        have hv := (evalB_lit_iff.mp he).1
+        simp at hzero
+        omega
+    | ite_true hrep hacceptBranch =>
+      have hr : σa.vars "repFailed" = 0 :=
+        (guard_var_eq_lit hrep).2 rfl
+      cases hacceptBranch with
+      | ite_true haccept hset =>
+        cases hset with
+        | assign he =>
+          have hv := (evalB_lit_iff.mp he).1
+          simp at hzero
+          omega
+      | ite_false haccept hrestore =>
+        have ha : σa.vars "attemptAccepted" ≠ 1 := by
+          intro h1
+          have hh := (guard_var_eq_lit haccept).1 h1
+          cases hh
+        have hs : σd.vars "initialRetryStatus" =
+            σa.vars "initialRetryStatus" :=
+          (Run.of_bigStepB hrestore).frame_var "initialRetryStatus" (by decide)
+        exact ⟨hb, hr, ha⟩
+
+lemma decision_status_two_selector
+    {B : ℕ} {σa σd : Env} {p : ℕ}
+    (hstatus : σa.vars "initialRetryStatus" = 0)
+    (h : BigStepB B initialRetryDecision σa σd p)
+    (htwo : σd.vars "initialRetryStatus" = 2) :
+    σa.vars "batchFailed" ≠ 0 ∨
+      (σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" ≠ 0) := by
+  unfold initialRetryDecision at h
+  cases h with
+  | ite_false hbatch hset =>
+    left
+    intro hb
+    have hh := (guard_var_eq_lit hbatch).1 hb
+    cases hh
+  | ite_true hbatch hinner =>
+    have hb : σa.vars "batchFailed" = 0 :=
+      (guard_var_eq_lit hbatch).2 rfl
+    right
+    refine ⟨hb, ?_⟩
+    cases hinner with
+    | ite_false hrep hset =>
+      intro hr
+      have hh := (guard_var_eq_lit hrep).1 hr
+      cases hh
+    | ite_true hrep hacceptBranch =>
+      cases hacceptBranch with
+      | ite_true haccept hset =>
+        cases hset with
+        | assign he =>
+          have hv := (evalB_lit_iff.mp he).1
+          simp at htwo
+          omega
+      | ite_false haccept hrestore =>
+        have hs : σd.vars "initialRetryStatus" =
+            σa.vars "initialRetryStatus" :=
+          (Run.of_bigStepB hrestore).frame_var "initialRetryStatus" (by decide)
+        omega
+
 end Lax457868Proofs.InitialAbortProbability
