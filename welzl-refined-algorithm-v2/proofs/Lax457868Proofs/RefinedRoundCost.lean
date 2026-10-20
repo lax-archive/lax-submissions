@@ -20,6 +20,34 @@ lemma active_size_contracts {a b c k : ℕ}
     3 * b ≤ 2 * a := by
   nlinarith
 
+/-- The shifted halving potential is preserved by each accepted source
+round, including a final round whose active set falls below the shift. -/
+lemma round_potential_step {a b c r n : ℕ}
+    (hstep : 2 * b ≤ a + 2 * c ^ 2)
+    (hpot : 2 ^ r * (a - 2 * c ^ 2) ≤ n) :
+    2 ^ (r + 1) * (b - 2 * c ^ 2) ≤ n := by
+  by_cases hb : b ≤ 2 * c ^ 2
+  · simp [Nat.sub_eq_zero_of_le hb]
+  · have ha : 2 * c ^ 2 ≤ a := by omega
+    have hsub : 2 * (b - 2 * c ^ 2) ≤ a - 2 * c ^ 2 := by omega
+    calc
+      _ = 2 ^ r * (2 * (b - 2 * c ^ 2)) := by rw [pow_succ]; ring
+      _ ≤ 2 ^ r * (a - 2 * c ^ 2) := Nat.mul_le_mul_left _ hsub
+      _ ≤ n := hpot
+
+/-- A true guard leaves enough shifted active size to force the next round
+counter below the original logarithmic bound. -/
+lemma round_counter_after_guard {a c k r n : ℕ}
+    (hc : 1 ≤ c) (hk : 6 * c ^ 2 ≤ k)
+    (hguard : 2 * k < a)
+    (hpot : 2 ^ r * (a - 2 * c ^ 2) ≤ n) :
+    r + 1 ≤ Nat.clog 2 n := by
+  have hc2 : 1 ≤ c ^ 2 := by nlinarith
+  have hshift : 2 ≤ a - 2 * c ^ 2 := by omega
+  have hp : 0 < 2 ^ r := by positivity
+  have hpn : 2 ^ r < n := by nlinarith
+  exact Nat.succ_le_of_lt ((Nat.lt_clog_iff_pow_lt (by decide)).mpr hpn)
+
 /-- Telescope the contraction, retaining the terminal potential. -/
 lemma active_size_sum_potential (a : ℕ → ℕ) (r : ℕ)
     (hstep : ∀ i < r, 3 * a (i + 1) ≤ 2 * a i) :
@@ -74,5 +102,44 @@ lemma successful_path_total_charge {n c k M D ℓ : ℕ}
       Nat.add_le_add (Nat.mul_le_mul_right _ hrounds)
         (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left D hs))
     _ = _ := by ring
+
+/-- Aggregate per-round source means over complete tapes. Stopped paths are
+padded with zero active size and zero cost. No independence between rounds,
+or conditioning on a successful path, is assumed. -/
+lemma expected_total_charge {Ω : Type*} [Fintype Ω]
+    (active charge : Ω → ℕ → ℕ) (R M D ℓ L : ℕ)
+    (hrounds : R ≤ L + 1)
+    (hfirst : ∀ ρ, active ρ 0 ≤ ℓ + 1)
+    (hstep : ∀ ρ i, i < R → 3 * active ρ (i + 1) ≤ 2 * active ρ i)
+    (hmean : ∀ i < R, (∑ ρ, charge ρ i) ≤
+      ∑ ρ, (M * (ℓ + 1) + D * active ρ i * (L + 1))) :
+    (∑ ρ, ∑ i ∈ Finset.range R, charge ρ i) ≤
+      (M + 3 * D) * (ℓ + 1) * (L + 1) * Fintype.card Ω := by
+  have hp (ρ : Ω) :
+      (∑ i ∈ Finset.range R, (M * (ℓ + 1) + D * active ρ i * (L + 1))) ≤
+        (M + 3 * D) * (ℓ + 1) * (L + 1) := by
+    have hsum := active_size_sum_potential (active ρ) R (hstep ρ)
+    have hs : (∑ i ∈ Finset.range R, active ρ i) ≤ 3 * (ℓ + 1) := by
+      have hf := hfirst ρ
+      omega
+    calc
+      _ = R * (M * (ℓ + 1)) +
+          D * (∑ i ∈ Finset.range R, active ρ i) * (L + 1) := by
+        simp only [Finset.sum_add_distrib, Finset.sum_mul, Finset.mul_sum,
+          Finset.sum_const, Finset.card_range, nsmul_eq_mul, Nat.cast_id]
+      _ ≤ (L + 1) * (M * (ℓ + 1)) + D * (3 * (ℓ + 1)) * (L + 1) :=
+        Nat.add_le_add (Nat.mul_le_mul_right _ hrounds)
+          (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left D hs))
+      _ = _ := by ring
+  calc
+    _ = ∑ i ∈ Finset.range R, ∑ ρ, charge ρ i := Finset.sum_comm
+    _ ≤ ∑ i ∈ Finset.range R, ∑ ρ,
+        (M * (ℓ + 1) + D * active ρ i * (L + 1)) :=
+      Finset.sum_le_sum fun i hi => hmean i (Finset.mem_range.mp hi)
+    _ = ∑ ρ, ∑ i ∈ Finset.range R,
+        (M * (ℓ + 1) + D * active ρ i * (L + 1)) := Finset.sum_comm
+    _ ≤ ∑ _ρ : Ω, (M + 3 * D) * (ℓ + 1) * (L + 1) :=
+      Finset.sum_le_sum fun ρ _ => hp ρ
+    _ = _ := by simp [Nat.mul_comm]
 
 end Lax457868Proofs.RefinedRoundCost
