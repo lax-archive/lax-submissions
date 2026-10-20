@@ -1435,6 +1435,10 @@ inductive StepChain
           Rnext.σ.vars "repairRetryStatus" = 3) →
         FarStepFailureTrace R i z.attempts z.used
           (Rnext.σ.vars "repairRetryStatus"))
+      (hfailedStop : (Rnext.σ.vars "repairRetryStatus" = 2 ∨
+          Rnext.σ.vars "repairRetryStatus" = 3) →
+        (Cond.lt (.var "exceptionIndex")
+          (.var "exceptionStop")).evalB B Rnext.σ = some false)
       {σfinal : Env} (htail : StepChain Rnext σfinal tail) :
       StepChain R σfinal (z :: tail)
 
@@ -1649,6 +1653,8 @@ lemma loop_run_aux
           · simpa [step, b, X] using hFarTrace
           · simpa [step, b, X] using hfailedFar
           · simpa [step] using hfailureTrace
+          · intro hs
+            rcases hs with hs | hs <;> omega
           · exact hchainTail
         refine ⟨Wfinal, Rfinal, step :: tailSteps, rloop,
           hbitsFinal, hfixedFinal, hmap, hvalid, ?_, hchain⟩
@@ -1708,6 +1714,8 @@ lemma loop_run_aux
           · simpa [step, b, X] using hFarTrace
           · simpa [step, b, X] using hfailedFar
           · simpa [step] using hfailureTrace
+          · intro _
+            exact hguardStop
           · exact StepChain.nil Rnext hguardStop
         refine ⟨Wcurrent, Rnext, [step], rloop, ?_, hfixed,
           ?_, ?_, Or.inr ?_, hchain⟩
