@@ -1404,7 +1404,10 @@ inductive StepChain
     {W : Finset ℕ} →
       LoopInput B n s t bufferCap targetCap q cap k e
         G x E groupedB Wbase A W → Env → List ExecutedException → Prop
-  | nil (R) : StepChain R R.σ []
+  | nil (R)
+      (hguard : (Cond.lt (.var "exceptionIndex")
+        (.var "exceptionStop")).evalB B R.σ = some false) :
+      StepChain R R.σ []
   | cons {W Wnext : Finset ℕ}
       (R : LoopInput B n s t bufferCap targetCap q cap k e
         G x E groupedB Wbase A W)
@@ -1412,6 +1415,8 @@ inductive StepChain
         G x E groupedB Wbase A Wnext)
       (i : ℕ) (z : ExecutedException) (tail : List ExecutedException)
       (hindex : R.σ.vars "exceptionIndex" = i)
+      (hguard : (Cond.lt (.var "exceptionIndex")
+        (.var "exceptionStop")).evalB B R.σ = some true)
       (hvertex : z.vertex = R.exceptionList i)
       (hbody : ∃ K, Run B exceptionRepairBody R.σ Rnext.σ K)
       (hbits : Rnext.bits = R.bits.drop
@@ -1528,7 +1533,7 @@ lemma loop_run_aux
         exact List.drop_eq_nil_of_le (by simpa [Stack.toList] using
           (show e ≤ i by omega))
       refine ⟨Wcurrent, R, [], ?_, by simp [traceBitCost],
-        SameFixed.refl R, by simp, by simp, Or.inl ?_, StepChain.nil R⟩
+        SameFixed.refl R, by simp, by simp, Or.inl ?_, StepChain.nil R hguard⟩
       · simpa [traceRunCost] using rloop
       · refine ⟨hstatus, by simpa [hie] using hindex, hstop, rfl, ?_⟩
         refine ⟨fun _ => [], ?_⟩
@@ -1636,7 +1641,7 @@ lemma loop_run_aux
         have hfixedFinal : SameFixed R Rfinal :=
           SameFixed.trans hfixed hfixedTail
         have hchain : StepChain R Rfinal.σ (step :: tailSteps) := by
-          apply StepChain.cons R Rnext i step tailSteps hindex
+          apply StepChain.cons R Rnext i step tailSteps hindex hguard
           · rfl
           · exact ⟨_, rbody⟩
           · simpa [ExecutedException.bitCost, step, b, X] using hbits
@@ -1695,7 +1700,7 @@ lemma loop_run_aux
           omega
         subst Wnext
         have hchain : StepChain R Rnext.σ [step] := by
-          apply StepChain.cons R Rnext i step [] hindex
+          apply StepChain.cons R Rnext i step [] hindex hguard
           · rfl
           · exact ⟨_, rbody⟩
           · simpa [ExecutedException.bitCost, step, b, X] using hbits
@@ -1703,7 +1708,7 @@ lemma loop_run_aux
           · simpa [step, b, X] using hFarTrace
           · simpa [step, b, X] using hfailedFar
           · simpa [step] using hfailureTrace
-          · exact StepChain.nil Rnext
+          · exact StepChain.nil Rnext hguardStop
         refine ⟨Wcurrent, Rnext, [step], rloop, ?_, hfixed,
           ?_, ?_, Or.inr ?_, hchain⟩
         · simpa [traceBitCost, ExecutedException.bitCost, step, b, X]
