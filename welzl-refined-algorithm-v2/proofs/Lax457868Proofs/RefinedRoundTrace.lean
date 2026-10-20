@@ -15,6 +15,15 @@ open Lax457868Proofs.RefinedRoundSource
 set_option maxRecDepth 4000
 set_option maxHeartbeats 1000000
 
+/-- A terminating source while-loop exits through its false guard. -/
+lemma while_exit_guard {B : ℕ} {b : Cond} {c : Com}
+    {σ τ : Env} {k : ℕ} (h : BigStepB B (.while b c) σ τ k) :
+    b.evalB B τ = some false := by
+  cases h with
+  | while_false hb => exact hb
+  | while_true hb hc hw => exact while_exit_guard hw
+termination_by k
+
 structure RoundEvent where
   entry : Env
   exit : Env
