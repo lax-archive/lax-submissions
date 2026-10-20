@@ -48,6 +48,31 @@ def traceCost (events : List RoundEvent) : ℕ :=
   (events.map fun e => 1 + roundGuard.size + e.cost).sum +
     (1 + roundGuard.size)
 
+/-- The records partition the one physical input prefix read by the loop. -/
+lemma TraceChain.consumed_append {n B c : ℕ} {G : SimpleGraph (Fin n)}
+    {x rest : List ℕ} {σ τ : Env} {events : List RoundEvent}
+    (h : TraceChain B c G x rest σ τ events) :
+    σ.inp = (events.flatMap fun e => e.consumed) ++ τ.inp := by
+  induction h with
+  | nil => simp
+  | cons _ _ _ _ hinput _ _ _ ih =>
+    rw [hinput, ih]
+    simp only [List.flatMap_cons, List.append_assoc]
+
+/-- The total number of read words is bounded by the recorded source
+charges; this follows from the physical input-prefix certificate. -/
+lemma TraceChain.consumed_length_le_cost {n B c : ℕ}
+    {G : SimpleGraph (Fin n)} {x rest : List ℕ}
+    {σ τ : Env} {events : List RoundEvent}
+    (h : TraceChain B c G x rest σ τ events) :
+    (events.flatMap fun e => e.consumed).length ≤
+      (events.map fun e => e.cost).sum := by
+  induction h with
+  | nil => simp
+  | cons _ _ _ _ _ hconsumed _ _ ih =>
+    simp only [List.flatMap_cons, List.length_append, List.map_cons, List.sum_cons]
+    omega
+
 private lemma run_while_true {B K K' : ℕ} {b : Cond} {c : Com}
     {σ σ' σ'' : Env} (hb : b.evalB B σ = some true)
     (hbody : Run B c σ σ' K)
