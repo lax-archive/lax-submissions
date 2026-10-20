@@ -197,3 +197,5 @@ import Lax457868Proofs.InitialAttemptMean
 import Lax457868Proofs.FullInitialAttemptMean
 import Lax457868Proofs.RefinedRoundPrefix
 import Lax457868Proofs.RefinedRoundMean
+import Lax457868Proofs.CompleteSamplerMean
+import Lax457868Proofs.NumericRepairProbability
