@@ -37,7 +37,8 @@ structure Stored {n : ℕ} (G : SimpleGraph (Fin n)) (k : ℕ) (σ : Env) where
   history : History G k (σ.vars "round") A C boundary
     (view σ "removed") (view σ "removedRep")
   initialA : A 0 = Set.univ
-  initialC : C 0 = Set.univ
+  initialC : ∀ v : Fin n, ∃ b ∈ C 0,
+    ∀ a : Fin n, G.Adj v a ↔ G.Adj b a
   currentA : A (σ.vars "round") = {v : Fin n | view σ "activeA" v.val = 1}
   currentC : C (σ.vars "round") = {v : Fin n | view σ "activeB" v.val = 1}
   starts : ∀ r < σ.vars "round", view σ "roundStart" r = boundary r
@@ -78,21 +79,25 @@ def Stored.frame {n k : ℕ} {G : SimpleGraph (Fin n)} {σ τ : Env}
   removedBound := by simpa only [view, hr] using h.removedBound
   representativeBound := by simpa only [view, hp] using h.representativeBound
 
-/-- At zero rounds, all vertices are active and both logs contain zero. -/
-def initial {n k : ℕ} (G : SimpleGraph (Fin n)) {σ : Env}
+/-- At zero rounds, an initial representative set covers every full
+neighborhood. No reduction has yet removed a ground vertex. -/
+def initialCovered {n k : ℕ} (G : SimpleGraph (Fin n)) {σ : Env}
+    (C₀ : Set (Fin n))
+    (hcover : ∀ v : Fin n, ∃ b ∈ C₀,
+      ∀ a : Fin n, G.Adj v a ↔ G.Adj b a)
     (hround : σ.vars "round" = 0) (hused : σ.vars "removedCount" = 0)
     (ha : ∀ i < n, view σ "activeA" i = 1)
-    (hb : ∀ i < n, view σ "activeB" i = 1)
+    (hb : ∀ v : Fin n, view σ "activeB" v.val = 1 ↔ v ∈ C₀)
     (hr : ∀ i < n, view σ "removed" i = 0)
     (hp : ∀ i < n, view σ "removedRep" i = 0) : Stored G k σ where
   A := fun _ => Set.univ
-  C := fun _ => Set.univ
+  C := fun _ => C₀
   boundary := fun _ => 0
   history := ⟨by intro r hr; omega⟩
   initialA := rfl
-  initialC := rfl
+  initialC := hcover
   currentA := by ext v; simp [ha v.val v.isLt]
-  currentC := by ext v; simp [hb v.val v.isLt]
+  currentC := by ext v; simpa using (hb v).symm
   starts := by intro r hr; omega
   ends := by intro r hr; omega
   monotone := by intros; omega
@@ -100,6 +105,17 @@ def initial {n k : ℕ} (G : SimpleGraph (Fin n)) {σ : Env}
   used := hused.symm
   removedBound := by intro i hi; rw [hr i hi]; omega
   representativeBound := by intro i hi; rw [hp i hi]; omega
+
+/-- The all-active initial state is the special case of full-neighborhood
+coverage by every vertex. -/
+def initial {n k : ℕ} (G : SimpleGraph (Fin n)) {σ : Env}
+    (hround : σ.vars "round" = 0) (hused : σ.vars "removedCount" = 0)
+    (ha : ∀ i < n, view σ "activeA" i = 1)
+    (hb : ∀ i < n, view σ "activeB" i = 1)
+    (hr : ∀ i < n, view σ "removed" i = 0)
+    (hp : ∀ i < n, view σ "removedRep" i = 0) : Stored G k σ :=
+  initialCovered G Set.univ (by intro v; exact ⟨v, Set.mem_univ _, fun _ => Iff.rfl⟩)
+    hround hused ha (by intro v; simp [hb v.val v.isLt]) hr hp
 
 
 /-- Append an accepted step to the concrete history. The premises are the
@@ -842,7 +858,8 @@ lemma accepted_commit_run
         G (setFlag A) (finSetAsSet Rnum) Snum repA) ∧
       Nonempty (Lax457868Proofs.ReusedOriginal.Construction.PartitionResult.ConcreteTracePartition
         G R.I.activeB (finSetAsSet W) Rnum repB) ∧
-      Snum ⊆ Finset.range n ∧ Rnum ⊆ Finset.range n := by
+      Snum ⊆ Finset.range n ∧ Rnum ⊆ Finset.range n ∧
+      Snum ⊆ A ∧ Rnum ⊆ activeVertices n R.I.activeB := by
   classical
   obtain ⟨I, hIσ, hIA, hIB⟩ :=
     partition_input_of_sampler R S hscratch hrun hframe hord hcount hsample hC
@@ -974,7 +991,7 @@ lemma accepted_commit_run
     hnextA₂, hnextB₂, hrepA₂, hnextAValues, hnextBValues,
     hactiveAFlag, hactiveBFlag,
     ?_, ?_, ?_, hrem₃, hrep₃, ?_, ?_, ?_, ?_, hshrink, hcost,
-    ?_, ?_, ?_, hSrange, ?_⟩
+    ?_, ?_, ?_, hSrange, ?_, ?_, ?_⟩
   · simpa only [hIA] using hremovedCount₃
   · simpa only [hIA] using hstart₃
   · simpa only [hIA] using hend₃
@@ -988,6 +1005,10 @@ lemma accepted_commit_run
   · intro v hv
     exact Finset.mem_range.mpr
       (mem_activeVertices.mp (dataB.reps_processed hv)).1
+  · intro v hv
+    have ha := (mem_activeVertices.mp (dataA.reps_processed hv)).2
+    simpa [hIA, setFlag] using ha
+  · simpa only [hIB] using dataB.reps_processed
 
 /-- The two acceptance guards execute the exact partition/commit suffix after
 the concrete sampler. All three charges are added in source order. -/
@@ -1035,7 +1056,7 @@ lemma accepted_round_run
   obtain ⟨σ₂, σ₃, Rnum, Snum, nextA, nextB, repA, rem, remRep,
     partCostB, partCostA, currentA, labelA, repClassA, repsA, repB,
     hsuffix, _, _, hround₃, hacount₃,
-    _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hshrink, hcost, _, _, _, _, _⟩ :=
+    _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hshrink, hcost, _, _, _, _, _, _, _⟩ :=
     accepted_commit_run R S hscratch hnextABits hnextBBits hbounded hcapacity hround hG hc
       hrun hframe hord hcount hsample hC
   have hB : 1 < B := R.I.honeB
@@ -1116,7 +1137,8 @@ lemma accepted_commit_stored_run
       σ₃.vars "removedCount" + Snum.card ≤ n ∧
       Nonempty (ConcreteTracePartition G (setFlag A) (finSetAsSet Rnum) Snum repA) ∧
       Nonempty (ConcreteTracePartition G R.I.activeB (finSetAsSet W) Rnum repB) ∧
-      Snum ⊆ Finset.range n ∧ Rnum ⊆ Finset.range n := by
+      Snum ⊆ Finset.range n ∧ Rnum ⊆ Finset.range n ∧
+      Snum ⊆ A ∧ Rnum ⊆ activeVertices n R.I.activeB := by
   classical
   obtain ⟨σ₂, σ₃, Rnum, Snum, nextA, nextB, repA, rem, remRep,
     partCostB, partCostA, currentA, labelA, repClassA, repsA, repB,
@@ -1125,7 +1147,8 @@ lemma accepted_commit_stored_run
     hrepA₂, hbitsA, hbitsB, hactiveAFlag, hactiveBFlag,
     hremovedCount₃, hstart₃, hend₃,
     hrem₃, hrep₃, hprefix, hsuffixRem, hprefixRep, hsuffixRep,
-    hshrink, hcost, dataA, ⟨partA⟩, ⟨partB⟩, hSrange, hRrange⟩ :=
+    hshrink, hcost, dataA, ⟨partA⟩, ⟨partB⟩, hSrange, hRrange,
+    hSsub, hRsub⟩ :=
     accepted_commit_run R S hscratch hnextABits hnextBBits hbounded hcapacity hround
       hG hc hrun hframe hord hcount hsample hC
   let hstoreσ := hstore.frame
@@ -1512,7 +1535,7 @@ lemma accepted_commit_stored_run
     hsuffix, ⟨hstored⟩, hround₃, hacount₃, hshrink, hcost,
     hnextFrame, hactiveAFlag, hactiveBFlag, hbits₃A, hbits₃B,
     Lax457868Proofs.RefinedRecordedCommit.run_preserves hcommit hbounded₂,
-    hcapNext, ⟨partA⟩, ⟨partB⟩, hSrange, hRrange⟩
+    hcapNext, ⟨partA⟩, ⟨partB⟩, hSrange, hRrange, hSsub, hRsub⟩
 
 
 end
