@@ -971,6 +971,9 @@ inductive SourceRejectionTrace
       (hrun : Run B fullInitialAttempt R.I.σ σa q)
       (hinp : σa.inp = (R.I.bits.drop d).map Bool.toNat ++ R.I.rest)
       (hbound : d ≤ attemptBitBudget n m r t)
+      (hbatch : σa.vars "batchFailed" = 0)
+      (hrep : σa.vars "repFailed" = 0)
+      (haccept : σa.vars "attemptAccepted" = 0)
       (hbad : (FlatTraceLaw.flatBitsEquiv R.I.bits.length).symm
         ⟨R.I.bits, rfl⟩ ∈ sourceInitialBadFiber R.I k cap)
       (hstopped : ∃ ω : SamplerInitialRetries.InitialOutcome A
@@ -987,6 +990,9 @@ inductive SourceRejectionTrace
       (hrun : Run B fullInitialAttempt R.I.σ σa q)
       (hinp : σa.inp = (R.I.bits.drop d).map Bool.toNat ++ R.I.rest)
       (hbound : d ≤ attemptBitBudget n m r t)
+      (hbatch : σa.vars "batchFailed" = 0)
+      (hrep : σa.vars "repFailed" = 0)
+      (haccept : σa.vars "attemptAccepted" = 0)
       (hbad : (FlatTraceLaw.flatBitsEquiv R.I.bits.length).symm
         ⟨R.I.bits, rfl⟩ ∈ sourceInitialBadFiber R.I k cap)
       (hstopped : ∃ ω : SamplerInitialRetries.InitialOutcome A
@@ -1000,6 +1006,24 @@ inductive SourceRejectionTrace
       (hbits : J.I.bits = R.I.bits.drop d)
       (htail : SourceRejectionTrace J rest) :
       SourceRejectionTrace R ((q, d) :: rest)
+
+lemma SourceRejectionTrace.head_rejected
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    {R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A}
+    {q d : ℕ} {rest : List (ℕ × ℕ)}
+    (htrace : SourceRejectionTrace R ((q, d) :: rest)) :
+    ∃ σa : Env, Run B fullInitialAttempt R.I.σ σa q ∧
+      σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 0 ∧
+      σa.vars "attemptAccepted" = 0 ∧
+      σa.inp = (R.I.bits.drop d).map Bool.toNat ++ R.I.rest ∧
+      d ≤ attemptBitBudget n m r t := by
+  cases htrace with
+  | last R σa q d hrun hinp hbound hbatch hrep haccept hbad hstopped =>
+      exact ⟨σa, hrun, hbatch, hrep, haccept, hinp, hbound⟩
+  | step R J σa q d p rest hrun hinp hbound hbatch hrep haccept hbad hstopped
+        hdecision hbits htail =>
+      exact ⟨σa, hrun, hbatch, hrep, haccept, hinp, hbound⟩
 
 /-- Execution of the single fixed while loop from a state whose runtime
 counter contains `fuel`, retaining every actual rejected attempt. -/
@@ -1380,7 +1404,8 @@ lemma initialRetryWhile_run_withTrace
                   · exact Or.inr (Or.inr ⟨by simp [σ'], by simp [hzero]⟩)
                   · refine ⟨[(q, d)], ?_, by simp, by simp⟩
                     exact SourceRejectionTrace.last R σa q d hfull'
-                      (by simpa [d] using hinpFinal) hd hreject hrejectStopped
+                      (by simpa [d] using hinpFinal) hd hbatch0 hrepA
+                      hacceptA hreject hrejectStopped
                 · have hpositive : 1 ≤ fuel := Nat.one_le_iff_ne_zero.mpr hzero
                   have hbudgetNext : fuel * attemptBitBudget n m r t ≤
                       (R.I.bits.drop d).length := drop_budget hbudget hd
@@ -1464,7 +1489,7 @@ lemma initialRetryWhile_run_withTrace
                   · refine ⟨(q, d) :: tailRejects, ?_, ?_, ?_⟩
                     · exact SourceRejectionTrace.step R J σa q d 20
                         tailRejects hfull' (by simpa [d] using hinpFinal)
-                        hd hreject hrejectStopped
+                        hd hbatch0 hrepA hacceptA hreject hrejectStopped
                         (by simpa [hJstate] using hdecision)
                         (by change S.I.bits = R.I.bits.drop d; exact hSbits)
                         htailTrace
