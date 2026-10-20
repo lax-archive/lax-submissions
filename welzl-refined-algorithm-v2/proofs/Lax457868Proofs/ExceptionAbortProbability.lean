@@ -40,11 +40,11 @@ lemma StepChain.failed_far_step
       FarStepFailureTrace Rcur i z.attempts z.used
         (Rnext.σ.vars "repairRetryStatus") := by
   induction hchain with
-  | nil R =>
+  | nil R hguard =>
       rcases hfinal with h2 | h3
       · exact False.elim (hstart.1 h2)
       · exact False.elim (hstart.2 h3)
-  | cons R Rnext i z tail hindex hvertex hbody hbits hfixed hfar
+  | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed hfar
       hfailedFar hfailureTrace htail ih =>
       by_cases hnext : Rnext.σ.vars "repairRetryStatus" = 2 ∨
           Rnext.σ.vars "repairRetryStatus" = 3
@@ -61,6 +61,52 @@ def repeatRepairBody : ℕ → Com
   | 0 => .skip
   | j + 1 => exceptionRepairBody.seq (repeatRepairBody j)
 
+/-- An initial segment of actual exception calls. It need not terminate the
+while loop, so it carries no false guard at its endpoint. -/
+inductive StepPrefix
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A : Finset ℕ} :
+    {W : Finset ℕ} →
+      LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A W → Env → List ExecutedException → Prop
+  | nil (R) : StepPrefix R R.σ []
+  | cons {W Wnext : Finset ℕ}
+      (R : LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A W)
+      (Rnext : LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A Wnext)
+      (i : ℕ) (z : ExecutedException) (tail : List ExecutedException)
+      (hindex : R.σ.vars "exceptionIndex" = i)
+      (hguard : (Cond.lt (.var "exceptionIndex")
+        (.var "exceptionStop")).evalB B R.σ = some true)
+      (hvertex : z.vertex = R.exceptionList i)
+      (hbody : ∃ K, Run B exceptionRepairBody R.σ Rnext.σ K)
+      (hbits : Rnext.bits = R.bits.drop
+        (ExecutedException.bitCost G A R.rep z))
+      (hfixed : SameFixed R Rnext)
+      {σfinal : Env} (htail : StepPrefix Rnext σfinal tail) :
+      StepPrefix R σfinal (z :: tail)
+
+lemma StepPrefix.repeat_run
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    {R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart}
+    {σfinal : Env} {steps : List ExecutedException}
+    (hprefix : StepPrefix R σfinal steps) :
+    ∃ K, Run B (repeatRepairBody steps.length) R.σ σfinal K := by
+  induction hprefix with
+  | nil R => exact ⟨1, by simpa [repeatRepairBody] using
+        (Run.skip : Run B .skip R.σ R.σ 1)⟩
+  | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed htail ih =>
+      obtain ⟨K, hrun⟩ := hbody
+      obtain ⟨L, htailRun⟩ := ih
+      exact ⟨K + L, by
+        simpa [repeatRepairBody, List.length_cons, Nat.add_assoc] using
+          hrun.seq htailRun⟩
+
 lemma StepChain.repeat_run
     {B n s t bufferCap targetCap q cap k e : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
@@ -71,9 +117,9 @@ lemma StepChain.repeat_run
     (hchain : StepChain R σfinal steps) :
     ∃ K, Run B (repeatRepairBody steps.length) R.σ σfinal K := by
   induction hchain with
-  | nil R => exact ⟨1, by simpa [repeatRepairBody] using
+  | nil R hguard => exact ⟨1, by simpa [repeatRepairBody] using
         (Run.skip : Run B .skip R.σ R.σ 1)⟩
-  | cons R Rnext i z tail hindex hvertex hbody hbits hfixed hfar
+  | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed hfar
       hfailedFar hfailureTrace htail ih =>
       obtain ⟨K, hrun⟩ := hbody
       obtain ⟨L, htailRun⟩ := ih
@@ -95,24 +141,24 @@ lemma StepChain.split_at
         G x E groupedB Wbase A Wmid)
       (pref suffix : List ExecutedException),
       steps = pref ++ suffix ∧ pref.length = j ∧
-      StepChain R Rmid.σ pref ∧ StepChain Rmid σfinal suffix ∧
+      StepPrefix R Rmid.σ pref ∧ StepChain Rmid σfinal suffix ∧
       Rmid.rep = R.rep ∧ Rmid.rest = R.rest ∧
       Rmid.bits = R.bits.drop (traceBitCost G A R.rep pref) := by
   induction hchain with
-  | nil R =>
+  | nil R hguard =>
       intro j hj
       have hj0 : j = 0 := by simpa using hj
       subst j
-      exact ⟨_, R, [], [], rfl, rfl, StepChain.nil R,
-        StepChain.nil R, rfl, rfl, by simp [traceBitCost]⟩
-  | cons R Rnext i z tail hindex hvertex hbody hbits hfixed hfar
+      exact ⟨_, R, [], [], rfl, rfl, StepPrefix.nil R,
+        StepChain.nil R hguard, rfl, rfl, by simp [traceBitCost]⟩
+  | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed hfar
       hfailedFar hfailureTrace htail ih =>
       intro j hj
       cases j with
       | zero =>
           exact ⟨_, R, [], z :: tail, rfl, rfl,
-            StepChain.nil R,
-            StepChain.cons R Rnext i z tail hindex hvertex hbody hbits
+            StepPrefix.nil R,
+            StepChain.cons R Rnext i z tail hindex hguard hvertex hbody hbits
               hfixed hfar hfailedFar hfailureTrace htail,
             rfl, rfl, by simp [traceBitCost]⟩
       | succ j =>
@@ -123,8 +169,8 @@ lemma StepChain.split_at
             ?_, ?_, ?_⟩
           · simp [heq]
           · simp [hlen]
-          · exact StepChain.cons R Rnext i z pref hindex hvertex hbody
-              hbits hfixed hfar hfailedFar hfailureTrace hpref
+          · exact StepPrefix.cons R Rnext i z pref hindex hguard hvertex hbody
+              hbits hfixed hpref
           · exact hrep.trans hfixed.2.1
           · exact hrest.trans hfixed.2.2.2.2.2.1
           · rw [hbitsPref, hfixed.2.1, hbits]
@@ -145,8 +191,8 @@ lemma StepChain.prefix_replay
     (Pτ : LoopInput B n s t bufferCap targetCap q cap k e
       G x E groupedB Wbase A Wτ)
     (prefρ prefτ : List ExecutedException)
-    (hchainρ : StepChain (R.reinput bits) Pρ.σ prefρ)
-    (hchainτ : StepChain (R.reinput other) Pτ.σ prefτ)
+    (hchainρ : StepPrefix (R.reinput bits) Pρ.σ prefρ)
+    (hchainτ : StepPrefix (R.reinput other) Pτ.σ prefτ)
     (hlenρ : prefρ.length = j) (hlenτ : prefτ.length = j)
     (hrestρ : Pρ.rest = R.rest) (hrestτ : Pτ.rest = R.rest)
     (hbitsρ : Pρ.bits = bits.drop (traceBitCost G A R.rep prefρ))
@@ -159,8 +205,8 @@ lemma StepChain.prefix_replay
       Pτ.σ = {Pρ.σ with inp :=
         (other.drop (traceBitCost G A R.rep prefρ)).map Bool.toNat ++
           R.rest} := by
-  obtain ⟨K, hrunρ⟩ := StepChain.repeat_run hchainρ
-  obtain ⟨J, hrunτ⟩ := StepChain.repeat_run hchainτ
+  obtain ⟨K, hrunρ⟩ := StepPrefix.repeat_run hchainρ
+  obtain ⟨J, hrunτ⟩ := StepPrefix.repeat_run hchainτ
   have hstartρ : (R.reinput bits).σ =
       {R.σ with inp := bits.map Bool.toNat ++ R.rest} :=
     LoopInput.reinput_state R bits
