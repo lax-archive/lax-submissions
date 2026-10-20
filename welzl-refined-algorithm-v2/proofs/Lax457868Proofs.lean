@@ -157,3 +157,8 @@ import Lax457868Proofs.ClockedSource
 import Lax457868Proofs.PackedDomainSource
 import Lax457868Proofs.SamplerRuntimeSetup
 import Lax457868Proofs.RefinedSetup
+import Lax457868Proofs.ReusedOriginal.Construction.WelzlSetup
+import Lax457868Proofs.ReusedOriginal.Construction.DriverSetup
+import Lax457868Proofs.ReusedOriginal.Construction.SourceBounds
+import Lax457868Proofs.InitialFlatLaw
+import Lax457868Proofs.LocalFlatLaw
