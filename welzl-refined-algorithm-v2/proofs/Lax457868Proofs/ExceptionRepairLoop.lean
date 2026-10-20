@@ -989,7 +989,12 @@ lemma one_step_run_trace
       ((2 * k) / 3 <
         (((numericNeighborhood G (R.exceptionList i) ∩ A) ∆
           (numericNeighborhood G (R.rep (R.exceptionList i)) ∩ A))).card →
-        FarStepTrace R i attempts used) := by
+        FarStepTrace R i attempts used) ∧
+      ((Rnext.σ.vars "repairRetryStatus" = 2 ∨
+          Rnext.σ.vars "repairRetryStatus" = 3) →
+        (2 * k) / 3 <
+          (((numericNeighborhood G (R.exceptionList i) ∩ A) ∆
+            (numericNeighborhood G (R.rep (R.exceptionList i)) ∩ A))).card) := by
   let b := R.exceptionList i
   let X := ((numericNeighborhood G b ∩ A) ∆
     (numericNeighborhood G (R.rep b) ∩ A))
@@ -1156,7 +1161,8 @@ lemma one_step_run_trace
           hinp' hn hqpow' hsample hstatus htrial hrow hdesired
           hBmarks' hRmarks' hWbaseNext hWnextA
       refine ⟨Wnext, Rnext, attempts, used, Kfar, ?_, hcharge,
-        hattempts, hused, ?_, hfixed, Or.inl ?_, fun _ => hFarTrace⟩
+        hattempts, hused, ?_, hfixed, Or.inl ?_, fun _ => hFarTrace,
+        fun _ => hfar⟩
       · simpa [hstatusNext] using rbody
       · simpa [hbits, bitsNext, b, X]
       · exact ⟨hstatusNext, hindexNext, hstopNext, headTrials, hhead⟩
@@ -1167,7 +1173,8 @@ lemma one_step_run_trace
           hinp' hn hqpow' hsample hstatus (Or.inl rfl)
           htrial hrow hdesired hBmarks' hRmarks'
       refine ⟨Wcurrent, Rnext, attempts, used, Kfar, ?_, hcharge,
-        hattempts, hused, ?_, hfixed, Or.inr ?_, fun _ => hFarTrace⟩
+        hattempts, hused, ?_, hfixed, Or.inr ?_, fun _ => hFarTrace,
+        fun _ => hfar⟩
       · simpa [hstatusNext] using rbody
       · simpa [hbits, bitsNext, b, X]
       · exact ⟨Or.inl hstatusNext, hindexNext, hstopNext, rfl⟩
@@ -1178,7 +1185,8 @@ lemma one_step_run_trace
           hinp' hn hqpow' hsample hstatus (Or.inr rfl)
           htrial hrow hdesired hBmarks' hRmarks'
       refine ⟨Wcurrent, Rnext, attempts, used, Kfar, ?_, hcharge,
-        hattempts, hused, ?_, hfixed, Or.inr ?_, fun _ => hFarTrace⟩
+        hattempts, hused, ?_, hfixed, Or.inr ?_, fun _ => hFarTrace,
+        fun _ => hfar⟩
       · simpa [hstatusNext] using rbody
       · simpa [hbits, bitsNext, b, X]
       · exact ⟨Or.inr hstatusNext, hindexNext, hstopNext, rfl⟩
@@ -1203,7 +1211,7 @@ lemma one_step_run_trace
     have hhead := near_phase3Repair G A groupedB Wbase Wcurrent
       b (R.rep b) k s hnear
     refine ⟨Wcurrent, Rnext, 0, 0, domainCharge x G A R.rep b + 6,
-      ?_, ?_, by omega, by simp, ?_, hfixed, Or.inl ?_, ?_⟩
+      ?_, ?_, by omega, by simp, ?_, hfixed, Or.inl ?_, ?_, ?_⟩
     · simpa [hstatusNext] using rbody
     · simp [oneExceptionCharge, hnear, hscan, domainCharge,
         classScanCharge, b, X]
@@ -1211,6 +1219,8 @@ lemma one_step_run_trace
     · exact ⟨hstatusNext, hindexNext, hstopNext, [], hhead⟩
     · intro hfar'
       exact False.elim (hfar hfar')
+    · intro hstatusFail
+      rcases hstatusFail with htwo | hthree <;> omega
 
 /-- A recorded source call. Every field in a produced record comes from the
 checked one-exception Run; the charge is recomputed from its actual vertex,
@@ -1245,6 +1255,41 @@ def traceRunCost {n : ℕ} (x : List ℕ) (G : SimpleGraph (Fin n))
     (A : Finset ℕ) (rep size label ord : ℕ → ℕ)
     (s k : ℕ) (steps : List ExecutedException) : ℕ :=
   (steps.map (ExecutedException.runCost x G A rep size label ord s k)).sum
+
+/-- Ordered source calls retained alongside the compact numeric exception
+trace. A far call carries the actual prepared local retry Run and its stopped
+rejection/selector traces; later calls start in its actual poststate. -/
+inductive StepChain
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A : Finset ℕ} :
+    {W : Finset ℕ} →
+      LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A W → Env → List ExecutedException → Prop
+  | nil (R) : StepChain R R.σ []
+  | cons {W Wnext : Finset ℕ}
+      (R : LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A W)
+      (Rnext : LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A Wnext)
+      (i : ℕ) (z : ExecutedException) (tail : List ExecutedException)
+      (hindex : R.σ.vars "exceptionIndex" = i)
+      (hvertex : z.vertex = R.exceptionList i)
+      (hbody : ∃ K, Run B exceptionRepairBody R.σ Rnext.σ K)
+      (hbits : Rnext.bits = R.bits.drop
+        (ExecutedException.bitCost G A R.rep z))
+      (hfixed : SameFixed R Rnext)
+      (hfar : (2 * k) / 3 <
+        (((numericNeighborhood G z.vertex ∩ A) ∆
+          (numericNeighborhood G (R.rep z.vertex) ∩ A))).card →
+        FarStepTrace R i z.attempts z.used)
+      (hfailedFar : (Rnext.σ.vars "repairRetryStatus" = 2 ∨
+          Rnext.σ.vars "repairRetryStatus" = 3) →
+        (2 * k) / 3 <
+          (((numericNeighborhood G z.vertex ∩ A) ∆
+            (numericNeighborhood G (R.rep z.vertex) ∩ A))).card)
+      {σfinal : Env} (htail : StepChain Rnext σfinal tail) :
+      StepChain R σfinal (z :: tail)
 
 private lemma suffix_cons {e : ℕ} (entry : ℕ → ℕ)
     {i : ℕ} (hi : i < e) :
@@ -1322,7 +1367,8 @@ private lemma loop_run_aux
             Rfinal.σ.vars "exceptionIndex" < e ∧
             Rfinal.σ.vars "exceptionStop" =
               Rfinal.σ.vars "exceptionIndex" ∧
-            steps.length ≤ fuel)) := by
+            steps.length ≤ fuel)) ∧
+        StepChain R Rfinal.σ steps := by
   induction fuel with
   | zero =>
       intro Wcurrent R i hremaining hindex hstop hstatus hbudget
@@ -1340,7 +1386,7 @@ private lemma loop_run_aux
         exact List.drop_eq_nil_of_le (by simpa [Stack.toList] using
           (show e ≤ i by omega))
       refine ⟨Wcurrent, R, [], ?_, by simp [traceBitCost],
-        SameFixed.refl R, by simp, by simp, Or.inl ?_⟩
+        SameFixed.refl R, by simp, by simp, Or.inl ?_, StepChain.nil R⟩
       · simpa [traceRunCost] using rloop
       · refine ⟨hstatus, by simpa [hie] using hindex, hstop, rfl, ?_⟩
         refine ⟨fun _ => [], ?_⟩
@@ -1369,7 +1415,7 @@ private lemma loop_run_aux
           (.var "exceptionStop")).evalB B R.σ = some true := by
         simpa [hi] using loop_guard hindex hstop hiB heB
       obtain ⟨Wnext, Rnext, attempts, used, charge, rbody, hcharge,
-        hattempts, hused, hbits, hfixed, hout, _hFarTrace⟩ :=
+        hattempts, hused, hbits, hfixed, hout, hFarTrace, hfailedFar⟩ :=
         one_step_run_trace R hindex hstop hi
           (by simpa [b, X] using hcallBudget)
       let step : ExecutedException :=
@@ -1400,7 +1446,8 @@ private lemma loop_run_aux
               Nat.add_left_comm] using hbudget
           omega
         obtain ⟨Wfinal, Rfinal, tailSteps, rtail,
-          hbitsTail, hfixedTail, hmapTail, hvalidTail, houtTail⟩ :=
+          hbitsTail, hfixedTail, hmapTail, hvalidTail, houtTail,
+          hchainTail⟩ :=
           ih Rnext (i + 1) (by omega) hindexNext hstopNext
             hstatusNext hbudgetTail
         have hrepEq : Rnext.rep = R.rep := hfixed.2.1
@@ -1445,8 +1492,17 @@ private lemma loop_run_aux
           · exact hvalidTail z htail
         have hfixedFinal : SameFixed R Rfinal :=
           SameFixed.trans hfixed hfixedTail
+        have hchain : StepChain R Rfinal.σ (step :: tailSteps) := by
+          apply StepChain.cons R Rnext i step tailSteps hindex
+          · rfl
+          · exact ⟨_, rbody⟩
+          · simpa [ExecutedException.bitCost, step, b, X] using hbits
+          · exact hfixed
+          · simpa [step, b, X] using hFarTrace
+          · simpa [step, b, X] using hfailedFar
+          · exact hchainTail
         refine ⟨Wfinal, Rfinal, step :: tailSteps, rloop,
-          hbitsFinal, hfixedFinal, hmap, hvalid, ?_⟩
+          hbitsFinal, hfixedFinal, hmap, hvalid, ?_, hchain⟩
         rcases houtTail with htailSuccess | htailFailure
         · rw [hrepEq, hexceptionEq] at htailSuccess
           obtain ⟨hstatusFinal, hindexFinal, hstopFinal,
@@ -1494,8 +1550,17 @@ private lemma loop_run_aux
             step, b, hnot, hcharge]
           omega
         subst Wnext
+        have hchain : StepChain R Rnext.σ [step] := by
+          apply StepChain.cons R Rnext i step [] hindex
+          · rfl
+          · exact ⟨_, rbody⟩
+          · simpa [ExecutedException.bitCost, step, b, X] using hbits
+          · exact hfixed
+          · simpa [step, b, X] using hFarTrace
+          · simpa [step, b, X] using hfailedFar
+          · exact StepChain.nil Rnext
         refine ⟨Wcurrent, Rnext, [step], rloop, ?_, hfixed,
-          ?_, ?_, Or.inr ?_⟩
+          ?_, ?_, Or.inr ?_, hchain⟩
         · simpa [traceBitCost, ExecutedException.bitCost, step, b, X]
             using hbits
         · rw [suffix_cons R.exceptionList hi]
@@ -1638,7 +1703,7 @@ lemma exceptionRepairLoop_run
   have hbudgetInit : e * (cap * (s * t * Nat.clog 2 n)) ≤
       Rinit.bits.length := by simpa [hbitsInit] using hbudget
   obtain ⟨Wfinal, Rfinal, steps, rloop, hbitsFinal,
-    hfixedFinal, hmap, hvalid, hout⟩ :=
+    hfixedFinal, hmap, hvalid, hout, _hchain⟩ :=
     loop_run_aux e Rinit 0 (by simp) hindexInit hstopInit
       hstatusInit hbudgetInit
   have hrepEq : Rinit.rep = R.rep := hfixedInit.2.1
@@ -1679,6 +1744,68 @@ lemma exceptionRepairLoop_run
       exact Or.inl ⟨hstatus, hindex, hstop, hlen,
         trials, hscan, hbound⟩
     · exact Or.inr hfailure
+
+/-- Companion to `exceptionRepairLoop_run` retaining every actual local call.
+The chain starts after initialization and ends at the actual loop poststate;
+each link carries its source Run, exact bit drop, and far-branch retry trace. -/
+lemma exceptionRepairLoop_run_chain
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart)
+    (hbudget : e * (cap * (s * t * Nat.clog 2 n)) ≤ R.bits.length) :
+    ∃ (Rinit : LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A Wstart)
+      (Wfinal : Finset ℕ)
+      (Rfinal : LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A Wfinal)
+      (steps : List ExecutedException),
+      Run B exceptionRepairInit R.σ Rinit.σ 6 ∧
+      SameFixed R Rinit ∧ Rinit.bits = R.bits ∧
+      StepChain Rinit Rfinal.σ steps ∧
+      Run B exceptionRepairLoopSource R.σ Rfinal.σ
+        (10 + traceRunCost x G A R.rep R.size R.label R.ord s k steps) ∧
+      Rfinal.bits = R.bits.drop (traceBitCost G A R.rep steps) ∧
+      steps.map ExecutedException.vertex =
+        (Stack.toList e R.exceptionList).take steps.length ∧
+      (∀ z ∈ steps, z.attempts ≤ cap ∧ z.used ≤ z.attempts * (s * t)) ∧
+      ((Rfinal.σ.vars "repairRetryStatus" = 1 ∧ steps.length = e) ∨
+        ((Rfinal.σ.vars "repairRetryStatus" = 2 ∨
+            Rfinal.σ.vars "repairRetryStatus" = 3) ∧
+          steps.length ≤ e)) := by
+  obtain ⟨Rinit, rinit, hbitsInit, hfixedInit,
+    hindexInit, hstopInit, hstatusInit⟩ := initialize_loop R
+  have hbudgetInit : e * (cap * (s * t * Nat.clog 2 n)) ≤
+      Rinit.bits.length := by simpa [hbitsInit] using hbudget
+  obtain ⟨Wfinal, Rfinal, steps, rloop, hbitsFinal,
+    _hfixedFinal, hmap, hvalid, hout, hchain⟩ :=
+    loop_run_aux e Rinit 0 (by simp) hindexInit hstopInit
+      hstatusInit hbudgetInit
+  have hrepEq : Rinit.rep = R.rep := hfixedInit.2.1
+  have hsizeEq : Rinit.size = R.size := hfixedInit.2.2.1
+  have hlabelEq : Rinit.label = R.label := hfixedInit.2.2.2.1
+  have hordEq : Rinit.ord = R.ord := hfixedInit.2.2.2.2.1
+  have hexceptionEq : Rinit.exceptionList = R.exceptionList := hfixedInit.1
+  have rloop' : Run B
+      (.while (.lt (.var "exceptionIndex") (.var "exceptionStop"))
+        exceptionRepairBody) Rinit.σ Rfinal.σ
+      (4 + traceRunCost x G A R.rep R.size R.label R.ord s k steps) := by
+    simpa [hrepEq, hsizeEq, hlabelEq, hordEq] using rloop
+  have rwhole : Run B exceptionRepairLoopSource R.σ Rfinal.σ
+      (10 + traceRunCost x G A R.rep R.size R.label R.ord s k steps) := by
+    have rr := rinit.seq rloop'
+    have rr' := rr.mono (by omega : 6 +
+      (4 + traceRunCost x G A R.rep R.size R.label R.ord s k steps) ≤
+      10 + traceRunCost x G A R.rep R.size R.label R.ord s k steps)
+    simpa [exceptionRepairLoopSource] using rr'
+  refine ⟨Rinit, Wfinal, Rfinal, steps, rinit, hfixedInit,
+    hbitsInit, hchain, rwhole, ?_, ?_, hvalid, ?_⟩
+  · simpa [hrepEq, hbitsInit] using hbitsFinal
+  · simpa [hexceptionEq] using hmap
+  · rcases hout with hsuccess | hfailure
+    · exact Or.inl ⟨hsuccess.1, hsuccess.2.2.2.1⟩
+    · exact Or.inr ⟨hfailure.1, hfailure.2.2.2⟩
 
 private lemma flagged_setFlag {n : ℕ} {W : Finset ℕ}
     (hW : W ⊆ Finset.range n) :
