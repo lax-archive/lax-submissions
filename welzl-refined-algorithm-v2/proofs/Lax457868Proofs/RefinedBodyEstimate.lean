@@ -98,6 +98,34 @@ lemma LargeBodyFamily.usedBefore_le {B c n N : ℕ}
     omega
   exact (usedBefore_le_total _ i).trans htotal
 
+/-- At a fixed chronological index, the failed-round tape fiber splits into
+the two actual selector-status fibers of that same source event. -/
+lemma LargeBodyFamily.failed_index_le_status_fibers {B c n N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {σ : Env}
+    (F : LargeBodyFamily B c n N G x σ) (i : ℕ) :
+    ((Finset.univ.filter fun tape : Tape N =>
+      failedAt (F.events tape) i = true).card) ≤
+      ((Finset.univ.filter fun tape : Tape N =>
+        initialFailureAt (F.events tape) i = true).card) +
+      ((Finset.univ.filter fun tape : Tape N =>
+        repairFailureAt (F.events tape) i = true).card) := by
+  classical
+  let bad : Finset (Tape N) := Finset.univ.filter fun tape =>
+    failedAt (F.events tape) i = true
+  let initial : Finset (Tape N) := Finset.univ.filter fun tape =>
+    initialFailureAt (F.events tape) i = true
+  let repair : Finset (Tape N) := Finset.univ.filter fun tape =>
+    repairFailureAt (F.events tape) i = true
+  have hsub : bad ⊆ initial ∪ repair := by
+    intro tape htape
+    have hfailed : failedAt (F.events tape) i = true := by
+      simpa [bad] using htape
+    rcases (F.trace tape).failedAt_initial_or_repair i hfailed with hinit | hrep
+    · exact Finset.mem_union_left _ (by simpa [initial] using hinit)
+    · exact Finset.mem_union_right _ (by simpa [repair] using hrep)
+  simpa only [bad, initial, repair] using
+    (Finset.card_le_card hsub).trans (Finset.card_union_le initial repair)
+
 /-- The per-round estimate is conditioned on the exact prefix consumed by
 earlier rounds. The active-size potential is fixed by that prefix. -/
 def PrefixRoundMeanAt {B c n N M D : ℕ} {G : SimpleGraph (Fin n)}

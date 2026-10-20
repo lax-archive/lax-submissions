@@ -134,6 +134,37 @@ lemma TraceChain.failedAt_status {n B c : ℕ} {G : SimpleGraph (Fin n)}
       obtain ⟨event, hevent, hready', hrun', hstatus⟩ := ih j hj
       exact ⟨event, by simpa using hevent, hready', hrun', hstatus⟩
 
+def initialFailureAt (events : List RoundEvent) (i : ℕ) : Bool :=
+  match events[i]? with
+  | none => false
+  | some event =>
+    (event.exit.vars "initialRetryStatus" == 2) ||
+      (event.exit.vars "initialRetryStatus" == 3)
+
+def repairFailureAt (events : List RoundEvent) (i : ℕ) : Bool :=
+  match events[i]? with
+  | none => false
+  | some event =>
+    (event.exit.vars "repairRetryStatus" == 2) ||
+      (event.exit.vars "repairRetryStatus" == 3)
+
+/-- A failed chronological round belongs to an actual initial-selector or
+repair-selector status fiber at that same index. -/
+lemma TraceChain.failedAt_initial_or_repair {n B c : ℕ}
+    {G : SimpleGraph (Fin n)} {x rest : List ℕ}
+    {σ τ : Env} {events : List RoundEvent}
+    (h : TraceChain B c G x rest σ τ events) (i : ℕ)
+    (hfailed : failedAt events i = true) :
+    initialFailureAt events i = true ∨ repairFailureAt events i = true := by
+  obtain ⟨event, hevent, _, _, hstatus⟩ := h.failedAt_status i hfailed
+  rcases hstatus with hinitial | hrepair
+  · rcases hinitial with h2 | h3
+    · exact Or.inl (by simp [initialFailureAt, hevent, h2])
+    · exact Or.inl (by simp [initialFailureAt, hevent, h3])
+  · rcases hrepair with h2 | h3
+    · exact Or.inr (by simp [repairFailureAt, hevent, h2])
+    · exact Or.inr (by simp [repairFailureAt, hevent, h3])
+
 def usedBefore (events : List RoundEvent) (i : ℕ) : ℕ :=
   ((events.take i).flatMap fun event => event.consumed).length
 
