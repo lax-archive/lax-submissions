@@ -1,5 +1,6 @@
 import Lax457868Proofs.FullInitialAttemptMean
 import Lax457868Proofs.InitialAbortProbability
+import Lax457868Proofs.InitialPhysicalReward
 
 /-! Mean bounds for the actual source retry loop. -/
 namespace Lax457868Proofs.InitialRetryMean
@@ -84,6 +85,85 @@ lemma decision_zero_rejected
             · simp [hpass] at hbit
               exact False.elim (hnot1 hbit)
             · simpa [hpass] using hbit
+
+lemma decision_one_selector_success {B : ℕ} {σa σd : Env} {p : ℕ}
+    (hstatus : σa.vars "initialRetryStatus" = 0)
+    (h : BigStepB B initialRetryDecision σa σd p)
+    (hone : σd.vars "initialRetryStatus" = 1) :
+    σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 0 ∧
+      σa.vars "attemptAccepted" = 1 := by
+  unfold initialRetryDecision at h
+  cases h with
+  | ite_false _ hset =>
+      cases hset with
+      | assign he =>
+          obtain ⟨rfl, _⟩ := evalB_lit_iff.mp he
+          simp at hone
+  | ite_true hbatch hrep =>
+      have hb : σa.vars "batchFailed" = 0 := by
+        obtain ⟨a,c,ha,hc,hbool⟩ := evalB_condEq_iff.mp hbatch
+        obtain ⟨rfl,_⟩ := evalB_var_iff.mp ha
+        obtain ⟨rfl,_⟩ := evalB_lit_iff.mp hc
+        simpa using hbool
+      cases hrep with
+      | ite_false _ hset =>
+          cases hset with
+          | assign he =>
+              obtain ⟨rfl, _⟩ := evalB_lit_iff.mp he
+              simp at hone
+      | ite_true hrep haccept =>
+          have hr : σa.vars "repFailed" = 0 := by
+            obtain ⟨a,c,ha,hc,hbool⟩ := evalB_condEq_iff.mp hrep
+            obtain ⟨rfl,_⟩ := evalB_var_iff.mp ha
+            obtain ⟨rfl,_⟩ := evalB_lit_iff.mp hc
+            simpa using hbool
+          cases haccept with
+          | ite_false _ hrestore =>
+              have hframe : σd.vars "initialRetryStatus" =
+                  σa.vars "initialRetryStatus" :=
+                (Run.of_bigStepB hrestore).frame_var "initialRetryStatus"
+                  (by decide)
+              omega
+          | ite_true hacc hset =>
+              have ha : σa.vars "attemptAccepted" = 1 := by
+                obtain ⟨a,c,hav,hcv,hbool⟩ := evalB_condEq_iff.mp hacc
+                obtain ⟨rfl,_⟩ := evalB_var_iff.mp hav
+                obtain ⟨rfl,_⟩ := evalB_lit_iff.mp hcv
+                simpa using hbool
+              exact ⟨hb,hr,ha⟩
+
+lemma decision_rejected_status_zero {B : ℕ} {σa σd : Env} {p : ℕ}
+    (hstatus : σa.vars "initialRetryStatus" = 0)
+    (hbatch : σa.vars "batchFailed" = 0)
+    (hrep : σa.vars "repFailed" = 0)
+    (haccept : σa.vars "attemptAccepted" = 0)
+    (h : BigStepB B initialRetryDecision σa σd p) :
+    σd.vars "initialRetryStatus" = 0 := by
+  unfold initialRetryDecision at h
+  cases h with
+  | ite_false hguard _ =>
+      obtain ⟨a,c,ha,hc,hbool⟩ := evalB_condEq_iff.mp hguard
+      obtain ⟨rfl,_⟩ := evalB_var_iff.mp ha
+      obtain ⟨rfl,_⟩ := evalB_lit_iff.mp hc
+      simp [hbatch] at hbool
+  | ite_true _ hinner =>
+      cases hinner with
+      | ite_false hguard _ =>
+          obtain ⟨a,c,ha,hc,hbool⟩ := evalB_condEq_iff.mp hguard
+          obtain ⟨rfl,_⟩ := evalB_var_iff.mp ha
+          obtain ⟨rfl,_⟩ := evalB_lit_iff.mp hc
+          simp [hrep] at hbool
+      | ite_true _ hbranch =>
+          cases hbranch with
+          | ite_true hguard _ =>
+              obtain ⟨a,c,ha,hc,hbool⟩ := evalB_condEq_iff.mp hguard
+              obtain ⟨rfl,_⟩ := evalB_var_iff.mp ha
+              obtain ⟨rfl,_⟩ := evalB_lit_iff.mp hc
+              simp [haccept] at hbool
+          | ite_false _ hrestore =>
+              rw [(Run.of_bigStepB hrestore).frame_var
+                "initialRetryStatus" (by decide)]
+              exact hstatus
 
 lemma tail_cost_of_not_rejected
     (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
@@ -274,6 +354,74 @@ private lemma stopped_retry_tail_mean {N : ℕ}
       H * 2 ^ N := by
     nlinarith only [mul_le_mul_of_nonneg_left hhalfQ hH]
   linear_combination 2 * hsum + 2 * hX + hweighted
+
+/-- A reward earned only on a rejected branch has at most half the uniform
+continuation mean. -/
+private lemma stopped_retry_reward_mean {N : ℕ}
+    (used : Tape N → ℕ) (first : Tape N → Prop)
+    [DecidablePred first] (reward : Tape N → ℚ) (H : ℚ)
+    (hH : 0 ≤ H)
+    (hbound : ∀ ρ, used ρ ≤ N)
+    (hcausal : ∀ ρ τ,
+      (List.ofFn ρ).take (used ρ) = (List.ofFn τ).take (used ρ) →
+      used τ = used ρ)
+    (hfirst : ∀ ρ τ,
+      (List.ofFn ρ).take (used ρ) = (List.ofFn τ).take (used ρ) →
+      (first τ ↔ first ρ))
+    (hhalf : 2 * (Finset.univ.filter first).card ≤ 2 ^ N)
+    (hzero : ∀ ρ, ¬ first ρ → reward ρ = 0)
+    (hmean : ∀ ρ, first ρ →
+      (∑ suffix : Tape (N - used ρ),
+        reward ((splitEquiv (hbound ρ)).symm
+          ((splitEquiv (hbound ρ) ρ).1, suffix))) ≤
+          H * 2 ^ (N - used ρ)) :
+    2 * (∑ ρ, reward ρ) ≤ H * 2 ^ N := by
+  classical
+  let Y : Tape N → ℚ := fun ρ => if first ρ then H else 0
+  have hY : ∀ ρ τ,
+      (List.ofFn ρ).take (used ρ) = (List.ofFn τ).take (used ρ) →
+      Y τ = Y ρ := by
+    intro ρ τ hp
+    simp only [Y]
+    by_cases hf : first ρ
+    · have ht : first τ := (hfirst ρ τ hp).mpr hf
+      simp [hf, ht]
+    · have ht : ¬ first τ := fun h => hf ((hfirst ρ τ hp).mp h)
+      simp [hf, ht]
+  have hconditional : ∀ ρ,
+      (∑ suffix : Tape (N - used ρ),
+        reward ((splitEquiv (hbound ρ)).symm
+          ((splitEquiv (hbound ρ) ρ).1, suffix))) ≤
+          Y ρ * 2 ^ (N - used ρ) := by
+    intro ρ
+    by_cases hf : first ρ
+    · simpa [Y, hf] using hmean ρ hf
+    · have hf' : ∀ suffix : Tape (N - used ρ),
+          ¬ first ((splitEquiv (hbound ρ)).symm
+            ((splitEquiv (hbound ρ) ρ).1, suffix)) := by
+        intro suffix
+        have hp : (List.ofFn ρ).take (used ρ) =
+            (List.ofFn ((splitEquiv (hbound ρ)).symm
+              ((splitEquiv (hbound ρ) ρ).1, suffix))).take (used ρ) := by
+          rw [StoppedPrefixAveraging.prefix_of_split (hbound ρ),
+            StoppedPrefixAveraging.prefix_of_split (hbound ρ)]
+          simp
+        exact fun hh => hf ((hfirst ρ _ hp).mp hh)
+      simp [Y, hf, hzero, hf']
+  have hX := StoppedPrefixAveraging.sum_le_of_stopped_prefix used
+    hbound hcausal reward Y hY hconditional
+  have hYsum : (∑ ρ, Y ρ) =
+      H * ((Finset.univ.filter first).card : ℚ) := by
+    simp only [Y]
+    rw [← Finset.sum_filter]
+    simp [Finset.sum_const, mul_comm]
+  have hhalfQ : 2 * ((Finset.univ.filter first).card : ℚ) ≤
+      (2 ^ N : ℚ) := by exact_mod_cast hhalf
+  rw [hYsum] at hX
+  have hweighted : 2 * H * ((Finset.univ.filter first).card : ℚ) ≤
+      H * 2 ^ N := by
+    nlinarith only [mul_le_mul_of_nonneg_left hhalfQ hH]
+  nlinarith only [hX, hweighted]
 
 /-- The first actual retry iteration has the previously established full
 attempt mean.  This statement retains the actual tail BigStep and cost for
@@ -488,12 +636,182 @@ private lemma rejected_tail_conditional
           · simp [extend, hf]
     _ ≤ H * 2 ^ (N - readyAttemptConsumed R hper ρ) := htailMean
 
+private lemma rejected_tail_conditional_reward
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (N left : ℕ) (hleftTwo : 2 ≤ left) (hleftB : left < B)
+    (hsavedM : R.I.σ.vars "initialDomainSize" = m)
+    (hsavedR : R.I.σ.vars "initialBatchTarget" = r)
+    (hleft : R.I.σ.vars "initialRetriesLeft" = left)
+    (hstatus : R.I.σ.vars "initialRetryStatus" = 0)
+    (hbudget : left * attemptBitBudget n m r t ≤ N)
+    (hper : attemptBitBudget n m r t ≤ N)
+    [DecidablePred (readyAttemptRejected R hper)]
+    (attemptFinal decisionFinal final : Tape N → Env)
+    (attemptCost decisionCost tailCost : Tape N → ℕ)
+    (ha : ∀ ρ, BigStepB B fullInitialAttempt
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hper)).I.σ
+      (attemptFinal ρ) (attemptCost ρ))
+    (hd : ∀ ρ, BigStepB B initialRetryDecision
+      (attemptFinal ρ) (decisionFinal ρ) (decisionCost ρ))
+    (hu : ∀ ρ, BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      (decisionFinal ρ) (final ρ) (tailCost ρ))
+    (reward : Env → ℚ) (hreward : ∀ σ, 0 ≤ reward σ)
+    (H : ℚ)
+    (hIH : ∀ (J : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+      (N' : ℕ),
+      J.I.activeB = R.I.activeB →
+      J.I.σ.vars "initialDomainSize" = m →
+      J.I.σ.vars "initialBatchTarget" = r →
+      J.I.σ.vars "initialRetriesLeft" = left - 1 →
+      J.I.σ.vars "initialRetryStatus" = 0 →
+      (left - 1) * attemptBitBudget n m r t ≤ N' →
+      (hper' : attemptBitBudget n m r t ≤ N') →
+      (final' : Tape N' → Env) → (cost' : Tape N' → ℕ) →
+      (∀ tail, BigStepB B
+        (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+        (J.reinput (List.ofFn tail)
+          (by simpa [attemptBitBudget] using hper')).I.σ
+        (final' tail) (cost' tail)) →
+      (∑ tail, reward (final' tail)) ≤ H * 2 ^ N')
+    (ρ : Tape N)
+    (hfirst : readyAttemptRejected R hper ρ) :
+    let used := readyAttemptConsumed R hper
+    (∑ suffix : Tape (N - used ρ),
+      if readyAttemptRejected R hper
+          ((splitEquiv (readyAttemptConsumed_le R hper ρ)).symm
+            ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1, suffix)) then
+        reward (final ((splitEquiv (readyAttemptConsumed_le R hper ρ)).symm
+          ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1, suffix)))
+      else 0) ≤ H * 2 ^ (N - used ρ) := by
+  classical
+  let used := readyAttemptConsumed R hper
+  let bits := List.ofFn ρ
+  let Rρ := R.reinput bits (by simpa [attemptBitBudget, bits] using hper)
+  obtain ⟨σa, q, hrun, hbatch, hrep, haccept⟩ := hfirst
+  obtain ⟨d, J, p, hdBound, hinp, hJbits, hJrest, hJactive,
+    hdecision, hJsavedM, hJsavedR, hJleft, hJstatus, hJbudget⟩ :=
+    rejected_next_ready Rρ (left - 1) (by omega)
+      (by simpa [Rρ, ReadyInput.reinput_state] using hsavedM)
+      (by simpa [Rρ, ReadyInput.reinput_state] using hsavedR)
+      (by
+        have heq : left - 1 + 1 = left := by omega
+        simpa [Rρ, ReadyInput.reinput_state, heq] using hleft)
+      (by simpa [Rρ, ReadyInput.reinput_state] using hstatus)
+      (by omega)
+      (by
+        have heq : left - 1 + 1 = left := by omega
+        simpa [Rρ, bits, ReadyInput.reinput_bits, heq] using hbudget)
+      (by simpa [Rρ, bits] using hrun) hbatch hrep haccept
+  have hinp' : σa.inp = (bits.drop d).map Bool.toNat ++ R.I.rest := by
+    have hrest : Rρ.I.rest = R.I.rest := rfl
+    have hbits : Rρ.I.bits = bits := by
+      exact R.reinput_bits bits (by simpa [attemptBitBudget, bits] using hper)
+    simpa only [hbits, hrest] using hinp
+  have hJbits' : J.I.bits = bits.drop d := by
+    simpa [Rρ, ReadyInput.reinput_bits] using hJbits
+  have hused : d = used ρ := by
+    change d = readyAttemptConsumed R hper ρ
+    obtain ⟨σu, qu, hrunu, hinpu, hdu⟩ :=
+      readyAttemptConsumed_spec R hper ρ
+    have heq : σa = σu := by
+      obtain ⟨_, _, ha'⟩ := hrun
+      obtain ⟨_, _, hb'⟩ := hrunu
+      exact (BigStep.unique ha'.bigStep hb'.bigStep).1
+    have heqInp := hinp'.symm.trans (by simpa [heq, bits] using hinpu)
+    have hlen := congrArg List.length heqInp
+    simp only [List.length_append, List.length_map, List.length_drop] at hlen
+    have hdN : d ≤ N := hdBound.trans hper
+    have huN : used ρ ≤ N := readyAttemptConsumed_le R hper ρ
+    simp only [bits, List.length_ofFn] at hlen
+    omega
+  have htailN : J.I.bits.length = N - used ρ := by
+    rw [hJbits']
+    simp [bits, hused]
+  have htailBudget : (left - 1) * attemptBitBudget n m r t ≤
+      N - used ρ := by
+    rw [htailN] at hJbudget
+    exact hJbudget
+  have hperTail : attemptBitBudget n m r t ≤ N - used ρ := by
+    have hmul := Nat.mul_le_mul_right
+      (attemptBitBudget n m r t) (show 1 ≤ left - 1 by omega)
+    have hle : attemptBitBudget n m r t ≤
+        (left - 1) * attemptBitBudget n m r t := by simpa using hmul
+    exact hle.trans htailBudget
+  let extend : Tape (N - used ρ) → Tape N := fun suffix =>
+    (splitEquiv (readyAttemptConsumed_le R hper ρ)).symm
+      ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1, suffix)
+  have htailRun (suffix : Tape (N - used ρ)) :
+      BigStepB B
+        (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+        (J.reinput (List.ofFn suffix)
+          (by simpa [attemptBitBudget] using hperTail)).I.σ
+        (final (extend suffix)) (tailCost (extend suffix)) := by
+    let τ := extend suffix
+    have hpair : splitEquiv (readyAttemptConsumed_le R hper ρ) τ =
+        ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1, suffix) :=
+      Equiv.apply_symm_apply _ _
+    have hprefix : bits.take d = (List.ofFn τ).take d := by
+      rw [hused]
+      rw [StoppedPrefixAveraging.prefix_of_split
+        (readyAttemptConsumed_le R hper ρ),
+        StoppedPrefixAveraging.prefix_of_split
+        (readyAttemptConsumed_le R hper ρ), hpair]
+    have hdrop : (List.ofFn τ).drop d = List.ofFn suffix := by
+      rw [hused]
+      change (List.ofFn τ).drop (readyAttemptConsumed R hper ρ) =
+        List.ofFn suffix
+      rw [StoppedPrefixAveraging.boolTape_split
+        (readyAttemptConsumed_le R hper ρ) τ, hpair]
+      have hlen :
+          (List.ofFn ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1)).length =
+            used ρ := by simpa only [used] using
+              (List.length_ofFn (f := (splitEquiv
+                (readyAttemptConsumed_le R hper ρ) ρ).1))
+      have hle : readyAttemptConsumed R hper ρ ≤
+          (List.ofFn ((splitEquiv (readyAttemptConsumed_le R hper ρ) ρ).1)).length := by
+        simpa [used] using hlen.ge
+      rw [List.drop_append_of_le_length hle]
+      simp [hlen, used]
+    have hnextPer : attemptBitBudget n m r t ≤
+        ((List.ofFn τ).drop d).length := by
+      rw [hdrop]
+      simpa using hperTail
+    have hreplay := rejected_tail_replay R J bits (List.ofFn τ)
+      (by simpa [bits] using hper)
+      (by simpa using hper)
+      (by simpa [bits] using hrun)
+      hinp' hprefix hdecision hJbits' hnextPer
+      (ha τ) (hd τ) (hu τ)
+    simpa only [hdrop] using hreplay
+  have htailMean := hIH J (N - used ρ) hJactive hJsavedM hJsavedR
+    hJleft hJstatus htailBudget hperTail
+    (fun suffix => final (extend suffix))
+    (fun suffix => tailCost (extend suffix)) htailRun
+  dsimp [used]
+  calc
+    _ ≤ ∑ suffix : Tape (N - readyAttemptConsumed R hper ρ),
+        reward (final (extend suffix)) := by
+          apply Finset.sum_le_sum
+          intro suffix _
+          by_cases hf : readyAttemptRejected R hper (extend suffix)
+          · simp [extend, hf]
+          · simp [extend, hf]
+            exact hreward _
+    _ ≤ H * 2 ^ (N - readyAttemptConsumed R hper ρ) := htailMean
+
 def fullCoefficient (n m r targetCap Q : ℕ) : ℕ :=
   r*(42*Nat.clog 2 m+133)+12*Nat.clog 2 m+1180*n+
     624*targetCap+64*Q+571
 
 def retryCoefficient (n m r targetCap Q : ℕ) : ℕ :=
   2*fullCoefficient n m r targetCap Q+70
+
+def acceptedRepReward (n : ℕ) (active : ℕ → ℕ)
+    (weight : ℕ → ℚ) (σ : Env) : ℚ :=
+  if σ.vars "initialRetryStatus" = 1 then
+    ∑ b ∈ activeVertices n active, weight ((σ.arrs "repB").getD b 0)
+  else 0
 
 /-- Actual finite flat-tape mean cost of the bounded initial retry loop. -/
 lemma actual_retry_mean
@@ -688,6 +1006,246 @@ lemma actual_retry_mean
           nlinarith only [hq, hpmean, htail,
             show (0 : ℚ) ≤ 2 ^ N by positivity]
 
+/-- The accepted physical representative charge of the actual retry loop is
+at most twice its one-attempt charge.  Aborted and exhausted tapes contribute
+zero. -/
+lemma actual_retry_reward
+    (active : ℕ → ℕ) (weight : ℕ → ℚ)
+    (hweight : ∀ b, 0 ≤ weight b)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n active)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n active)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
+    ∀ (left N : ℕ)
+      (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A),
+      R.I.activeB = active →
+      R.I.σ.vars "initialDomainSize" = m →
+      R.I.σ.vars "initialBatchTarget" = r →
+      R.I.σ.vars "initialRetriesLeft" = left →
+      R.I.σ.vars "initialRetryStatus" = 0 →
+      left < B →
+      left * attemptBitBudget n m r t ≤ N →
+      (hper : attemptBitBudget n m r t ≤ N) →
+      (final : Tape N → Env) → (cost : Tape N → ℕ) →
+      (∀ ρ, BigStepB B
+        (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+        (R.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hper)).I.σ
+        (final ρ) (cost ρ)) →
+      (∑ ρ, acceptedRepReward n active weight (final ρ)) ≤
+        (2 * ∑ b ∈ activeVertices n active, weight b) * 2 ^ N := by
+  classical
+  let W : ℚ := ∑ b ∈ activeVertices n active, weight b
+  have hW : 0 ≤ W := by
+    dsimp [W]
+    apply Finset.sum_nonneg
+    intro b _
+    exact hweight b
+  have hreward : ∀ σ, 0 ≤ acceptedRepReward n active weight σ := by
+    intro σ
+    unfold acceptedRepReward
+    split
+    · apply Finset.sum_nonneg
+      intro b _
+      exact hweight _
+    · exact le_refl _
+  intro left
+  induction left with
+  | zero =>
+      intro N R hactive hsavedM hsavedR hleft hstatus hB hbudget hper
+        final cost hrun
+      have h3B : 3 < B := by
+        obtain ⟨a, ha⟩ := R.I.hAnonempty
+        have han := Finset.mem_range.mp (R.I.hA ha)
+        have hbound := R.hnB
+        omega
+      have hz (ρ : Tape N) :
+          acceptedRepReward n active weight (final ρ) = 0 := by
+        have hstatus3 := retryWhile_zero_status
+          (by simpa [ReadyInput.reinput_state] using hstatus)
+          (by simpa [ReadyInput.reinput_state] using hleft)
+          h3B (hrun ρ)
+        simp [acceptedRepReward, hstatus3]
+      simp only [hz, Finset.sum_const_zero]
+      exact mul_nonneg (mul_nonneg (by positivity) hW) (by positivity)
+  | succ fuel ih =>
+      intro N R hactive hsavedM hsavedR hleft hstatus hB hbudget hper
+        final cost hrun
+      obtain ⟨σa, σd, q, p, u, ha, hd, hu, _, _, _⟩ :=
+        actual_first_mean R N (fuel + 1) hleft hstatus (by omega)
+          hB hper final cost hrun
+      let first := readyAttemptRejected R hper
+      let atReward : Tape N → ℚ := fun ρ =>
+        if (σd ρ).vars "initialRetryStatus" = 1 then
+          ∑ b ∈ activeVertices n active,
+            weight (((σa ρ).arrs "repB").getD b 0)
+        else 0
+      let tailReward : Tape N → ℚ := fun ρ =>
+        if first ρ then acceptedRepReward n active weight (final ρ) else 0
+      have hlocal : (∑ ρ, atReward ρ) ≤ W * 2 ^ N := by
+        have hm := InitialPhysicalReward.actual_full_reward_le R hper σa q
+          (fun ρ => by
+            simpa [ReadyInput.reinput_state, FlatTraceLaw.flatBits,
+              List.map_ofFn] using
+              (Run.of_bigStepB (ha ρ)))
+          (fun ρ => (σd ρ).vars "initialRetryStatus" = 1)
+          (fun ρ hone => by
+            have hs : (σa ρ).vars "initialRetryStatus" = 0 := by
+              rw [(Run.of_bigStepB (ha ρ)).frame_var
+                "initialRetryStatus" (by decide)]
+              simpa [ReadyInput.reinput_state] using hstatus
+            obtain ⟨hb,hr,_⟩ :=
+              decision_one_selector_success hs (hd ρ) hone
+            exact ⟨hb,hr⟩) weight hweight
+        simpa [atReward, W, hactive] using hm
+      have hpoint (ρ : Tape N) :
+          acceptedRepReward n active weight (final ρ) ≤
+            atReward ρ + tailReward ρ := by
+        by_cases hzero : (σd ρ).vars "initialRetryStatus" = 0
+        · have hf : first ρ := by
+            obtain ⟨hb,hr,hacc⟩ := decision_zero_rejected
+              (R.reinput (List.ofFn ρ)
+                (by simpa [attemptBitBudget] using hper))
+              (by simpa [ReadyInput.reinput_state] using hstatus)
+              (ha ρ) (hd ρ) hzero
+            exact ⟨σa ρ, q ρ, Run.of_bigStepB (ha ρ), hb, hr, hacc⟩
+          simp [atReward, tailReward, hzero, hf]
+        · have heq := retryWhile_nonzero_state hzero (hu ρ)
+          have harr := (Run.of_bigStepB (hd ρ)).frame_arr "repB" (by decide)
+          by_cases hone : (σd ρ).vars "initialRetryStatus" = 1
+          · have ht : 0 ≤ tailReward ρ := by
+              dsimp [tailReward]
+              split <;> simp only [hreward, le_refl]
+            simp only [acceptedRepReward, heq, hone, atReward, if_true]
+            rw [harr]
+            linarith
+          · have hat : 0 ≤ atReward ρ := by simp [atReward, hone]
+            have ht : 0 ≤ tailReward ρ := by
+              dsimp [tailReward]
+              split
+              · exact hreward _
+              · exact le_refl _
+            simp [acceptedRepReward, heq, hone] at *
+            linarith
+      have hsum : (∑ ρ, acceptedRepReward n active weight (final ρ)) ≤
+          (∑ ρ, atReward ρ) + (∑ ρ, tailReward ρ) := by
+        calc
+          _ ≤ ∑ ρ, (atReward ρ + tailReward ρ) := by
+            apply Finset.sum_le_sum
+            intro ρ _
+            exact hpoint ρ
+          _ = _ := Finset.sum_add_distrib
+      cases fuel with
+      | zero =>
+          have h3B : 3 < B := by
+            obtain ⟨a, ha'⟩ := R.I.hAnonempty
+            have han := Finset.mem_range.mp (R.I.hA ha')
+            have hbound := R.hnB
+            omega
+          have htailZero (ρ : Tape N) : tailReward ρ = 0 := by
+            by_cases hf : first ρ
+            · have hf' : first ρ := hf
+              obtain ⟨σw,qw,hw,hbw,hrw,haw⟩ := hf
+              have heqA : σw = σa ρ := by
+                obtain ⟨_,_,h1⟩ := hw
+                exact (BigStep.unique h1.bigStep (ha ρ).bigStep).1
+              have hstatusA : (σa ρ).vars "initialRetryStatus" = 0 := by
+                rw [(Run.of_bigStepB (ha ρ)).frame_var
+                  "initialRetryStatus" (by decide)]
+                simpa [ReadyInput.reinput_state] using hstatus
+              have hzeroD := decision_rejected_status_zero hstatusA
+                (by simpa [heqA] using hbw)
+                (by simpa [heqA] using hrw)
+                (by simpa [heqA] using haw) (hd ρ)
+              have hleftA : (σa ρ).vars "initialRetriesLeft" = 1 := by
+                rw [(Run.of_bigStepB (ha ρ)).frame_var
+                  "initialRetriesLeft" (by decide)]
+                simpa [ReadyInput.reinput_state] using hleft
+              have hleftD := decision_zero_left_one hleftA (hd ρ) hzeroD
+              have hfinal3 := retryWhile_zero_status hzeroD hleftD h3B (hu ρ)
+              simp [tailReward, hf', acceptedRepReward, hfinal3]
+            · simp [tailReward, hf]
+          have htailSum : (∑ ρ, tailReward ρ) = 0 := by simp [htailZero]
+          rw [htailSum] at hsum
+          nlinarith only [hsum, hlocal, hW,
+            show (0 : ℚ) ≤ 2 ^ N by positivity]
+      | succ fuel' =>
+          let used := readyAttemptConsumed R hper
+          have hmassR : SamplerWeightedRetries.badMass
+              (SamplerInitialRetries.outcomeWeight A
+                (activeVertices n R.I.activeB)
+                (fun b => numericNeighborhood G b ∩ A) r)
+              (SamplerInitialRetries.outcomeBad A
+                (activeVertices n R.I.activeB)
+                (fun b => numericNeighborhood G b ∩ A) r k cap) ≤
+                (1 / 2 : ℚ) := by rw [hactive]; exact hmass
+          have hhalf : 2 * (Finset.univ.filter first).card ≤ 2 ^ N := by
+            simpa [first, readyAttemptRejectedFiber] using
+              readyAttemptRejected_half R hper hmassR
+          have husedBound : ∀ ρ, used ρ ≤ N :=
+            readyAttemptConsumed_le R hper
+          have husedCausal : ∀ ρ τ,
+              (List.ofFn ρ).take (used ρ) =
+                (List.ofFn τ).take (used ρ) → used τ = used ρ :=
+            readyAttemptConsumed_causal R hper
+          have hfirstCausal : ∀ ρ τ,
+              (List.ofFn ρ).take (used ρ) =
+                (List.ofFn τ).take (used ρ) →
+              (first τ ↔ first ρ) := by
+            intro ρ τ hpre
+            constructor
+            · intro hτ
+              have hu' := husedCausal ρ τ hpre
+              have hpre' : (List.ofFn τ).take (used τ) =
+                  (List.ofFn ρ).take (used τ) := by
+                simpa [hu'] using hpre.symm
+              exact readyAttemptRejected_of_same_prefix R hper τ ρ hpre' hτ
+            · exact readyAttemptRejected_of_same_prefix R hper ρ τ hpre
+          have hIH : ∀ (J : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+              (N' : ℕ),
+              J.I.activeB = R.I.activeB →
+              J.I.σ.vars "initialDomainSize" = m →
+              J.I.σ.vars "initialBatchTarget" = r →
+              J.I.σ.vars "initialRetriesLeft" = fuel' + 1 →
+              J.I.σ.vars "initialRetryStatus" = 0 →
+              (fuel' + 1) * attemptBitBudget n m r t ≤ N' →
+              (hper' : attemptBitBudget n m r t ≤ N') →
+              (final' : Tape N' → Env) → (cost' : Tape N' → ℕ) →
+              (∀ tail, BigStepB B
+                (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+                (J.reinput (List.ofFn tail)
+                  (by simpa [attemptBitBudget] using hper')).I.σ
+                (final' tail) (cost' tail)) →
+              (∑ tail, acceptedRepReward n active weight (final' tail)) ≤
+                (2 * W) * 2 ^ N' := by
+            intro J N' hJa hJm hJr hJl hJs hJb hJp f c hr
+            exact ih N' J (hJa.trans hactive) hJm hJr hJl hJs
+              (by omega) hJb hJp f c hr
+          have hconditional : ∀ ρ, first ρ →
+              (∑ suffix : Tape (N - used ρ),
+                tailReward ((splitEquiv (husedBound ρ)).symm
+                  ((splitEquiv (husedBound ρ) ρ).1, suffix))) ≤
+                  (2 * W) * 2 ^ (N - used ρ) := by
+            intro ρ hf
+            simpa [tailReward, first, used] using
+              rejected_tail_conditional_reward R N (fuel' + 2) (by omega)
+                hB hsavedM hsavedR hleft hstatus hbudget hper
+                σa σd final q p u ha hd hu
+                (acceptedRepReward n active weight) hreward (2 * W)
+                (by
+                  intro J N' hJa hJm hJr hJl hJs hJb hJp f c hr
+                  exact hIH J N' hJa hJm hJr (by simpa using hJl) hJs
+                    (by simpa using hJb) hJp f c hr) ρ hf
+          have htail := stopped_retry_reward_mean used first tailReward
+            (2 * W) (by nlinarith only [hW]) husedBound husedCausal
+            hfirstCausal hhalf (by intro ρ hf; simp [tailReward, hf])
+            hconditional
+          nlinarith only [hsum, hlocal, htail,
+            show (0 : ℚ) ≤ 2 ^ N by positivity]
+
 /-- The four deterministic assignments before the retry while loop cost
 exactly eight steps and leave the canonical ready setup state. -/
 lemma source_setup_decompose
@@ -826,5 +1384,61 @@ lemma actual_source_mean
         exact_mod_cast hcost ρ
       _ = _ := by simp [Finset.sum_add_distrib, Nat.cast_pow, mul_comm]
   nlinarith only [hsum, hmean]
+
+/-- Physical accepted representative charge of `initialSamplerRetriesSource`
+on a finite flat tape.  Selector abort and retry exhaustion have zero charge. -/
+lemma actual_source_reward_le
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (attemptCap N : ℕ)
+    (hcap : R.I.σ.vars "initialRetryCap" = attemptCap)
+    (hcapB : attemptCap < B)
+    (hbudget : attemptCap * attemptBitBudget n m r t ≤ N)
+    (hper : attemptBitBudget n m r t ≤ N)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ))
+    (weight : ℕ → ℚ) (hweight : ∀ b, 0 ≤ weight b)
+    (final : Tape N → Env) (cost : Tape N → ℕ)
+    (hrun : ∀ ρ, BigStepB B initialSamplerRetriesSource
+      (R.reinput (List.ofFn ρ)
+        (by simpa [attemptBitBudget] using hper)).I.σ
+      (final ρ) (cost ρ)) :
+    (∑ ρ, if (final ρ).vars "initialRetryStatus" = 1 then
+      (∑ b ∈ activeVertices n R.I.activeB,
+        weight (((final ρ).arrs "repB").getD b 0)) else 0) ≤
+      (2 * ∑ b ∈ activeVertices n R.I.activeB, weight b) * 2 ^ N := by
+  classical
+  let S := R.withSetup attemptCap
+  have hSactive : S.I.activeB = R.I.activeB := rfl
+  have hSM : S.I.σ.vars "initialDomainSize" = m := by
+    simp [S, ReadyInput.withSetup]
+  have hSR : S.I.σ.vars "initialBatchTarget" = r := by
+    simp [S, ReadyInput.withSetup]
+  have hSleft : S.I.σ.vars "initialRetriesLeft" = attemptCap := by
+    simp [S, ReadyInput.withSetup]
+  have hSstatus : S.I.σ.vars "initialRetryStatus" = 0 := by
+    simp [S, ReadyInput.withSetup]
+  have hd (ρ : Tape N) :=
+    source_setup_decompose
+      (R.reinput (List.ofFn ρ)
+        (by simpa [attemptBitBudget] using hper))
+      attemptCap (by simpa [ReadyInput.reinput_state] using hcap)
+      hcapB (hrun ρ)
+  choose loopCost hloop _ using hd
+  have hloop' (ρ : Tape N) : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      (S.reinput (List.ofFn ρ)
+        (by simpa [attemptBitBudget] using hper)).I.σ
+      (final ρ) (loopCost ρ) := by
+    simpa [S, ReadyInput.withSetup, ReadyInput.reinput_state, Env.setVar]
+      using hloop ρ
+  have hm := actual_retry_reward R.I.activeB weight hweight hmass
+    attemptCap N S hSactive hSM hSR hSleft hSstatus hcapB hbudget
+    hper final loopCost hloop'
+  simpa [acceptedRepReward] using hm
 
 end Lax457868Proofs.InitialRetryMean
