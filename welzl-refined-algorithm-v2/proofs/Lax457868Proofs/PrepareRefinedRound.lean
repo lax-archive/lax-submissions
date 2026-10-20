@@ -54,7 +54,7 @@ lemma prepareRefinedRound_run {B c n : ℕ} {σ : Env}
   have h1B : 1 < B := by have h := (parameter_bounds hc2 hlarge).2.2.2.2.2; omega
   have haFlags : flaggedVertices n (setFlag A) = A := flagged_setFlag hA
   have hcFlags : flaggedVertices n (setFlag C) = C := flagged_setFlag hC
-  obtain ⟨σ₁, packedB, rB, hb₁, ho₁, hprefixB, hcountB, hcursorB, hfaB, hfvB, hiB, houtB⟩ :=
+  obtain ⟨σ₁, packedB, rB, hb₁, ho₁, hprefixB, hcountB, hcursorB, hfaB, hfvB, hiB, houtB, _hpackedCellsB⟩ :=
     packActiveB_run hn hb ho (by intro v hv; simp [setFlag]; split_ifs <;> omega) hnB h1B
   rw [hcFlags] at hcountB
   let σ₂ := σ₁.setVar "activeBCount" C.card

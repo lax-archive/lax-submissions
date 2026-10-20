@@ -43,6 +43,7 @@ structure Ready (c n : ℕ) (x bits : List ℕ) (σ : Env) : Prop where
     σ.arrs a = List.replicate (welzlExt n (edgeCount x) (2 ^ Nat.clog 2 n) a) 0
   input : σ.inp = bits
   output : σ.out = []
+  edges : σ.vars "m" = edgeCount x
 
 /-- Real setup execution from the encoded input. Word bounds concern input
 words and linear workspace extents, and never require a running-time value
@@ -116,5 +117,6 @@ lemma refinedSetupSource_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
     rfl
   · exact hin₁.trans hr.input
   · exact hout₁.trans hr.output
+  · exact (htail.frame_var "m" (by decide)).trans hr.edges
 
 end Lax457868Proofs.RefinedSetup

@@ -123,7 +123,8 @@ lemma initialSamplerAttempt_run_choice
                 choice.representative b = mapped b)) := by
   obtain ⟨_σd, σ', tape, tail, values, used, drawFailed, stageCost,
     hbits, hdrawTrace, hrun, _haccepted, _hn, _hqpow, hbatchFailed,
-    _harrFrame, _hvarFrame, hdrawFailure, hdrawSuccess⟩ :=
+    _harrFrame, _hvarFrame, hdrawFailure, hdrawSuccess,
+    _hdrawRun, _hdrawInp⟩ :=
       initialSamplerAttempt_run_bits I
   refine ⟨σ', tape, tail, values, used, drawFailed, stageCost,
     hbits, hdrawTrace, hrun, hbatchFailed, ?_, ?_⟩
@@ -135,7 +136,8 @@ lemma initialSamplerAttempt_run_choice
       hvaluesLength, _hprefix, _hpartition, _hsizes, _hoccupied, hclasses,
       _hselection, _hnFinal, _hqpowFinal, _hsampleCount, _hclassB,
       _hclassSize, _hord, _hnodup, hxs, _htrace, _hrepUsedLe, hrepFailedVal,
-      _hrepFailure, _hsampleFlags, _hinp, hrepSuccess, _hcost⟩ :=
+      _hrepFailure, _hsampleFlags, _hinp, hrepSuccess, _hcost,
+      _hsourceCert⟩ :=
         hdrawSuccess hsuccess
     let draws : List ℕ := values.map (fun i => I.domain i.val)
     have hrepSuccessVal : σ'.vars "repFailed" =

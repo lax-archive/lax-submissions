@@ -166,7 +166,8 @@ lemma fullInitialAttempt_run_bits
                 Bool.toNat ++ I.rest)) := by
   obtain ⟨_σd, σsel, tape, tail, values, used, drawFailed, stageCost,
     hbits, hdrawTrace, hsel, hacceptSel, hnSel, hqSel, hbatchSel,
-    harrayFrame, hvarFrame, hdrawFailure, hdrawSuccess⟩ :=
+    harrayFrame, hvarFrame, hdrawFailure, hdrawSuccess,
+    _hdrawRun, _hdrawInp⟩ :=
       initialSamplerAttempt_run_bits I
   let selectionCost := 2 + initialDrawSampleCost n m used
     (values.length + if drawFailed then 1 else 0) values.length drawFailed +
@@ -221,7 +222,8 @@ lemma fullInitialAttempt_run_bits
         hvaluesLen, _hprefix, _hpartRun, _hsizes, _hoccupied, hclasses,
         _hrepRun, _hnFinal, _hqFinal, hsampleCountSel, _hclassB, _hclassSize,
         hordSel, _hnodup, hxs, _htrace, hrepUsedLe, hrepVal, _hrepFailure,
-        hsampleFlagsSel, hinpSel, hrepSuccess, _hstageCost⟩ :=
+        hsampleFlagsSel, hinpSel, hrepSuccess, _hstageCost,
+        _hsourceCert⟩ :=
           hdrawSuccess rfl
       cases repFailed with
       | true =>

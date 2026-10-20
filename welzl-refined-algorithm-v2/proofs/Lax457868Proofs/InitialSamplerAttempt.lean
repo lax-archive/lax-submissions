@@ -26,6 +26,7 @@ open Lax457868Proofs.ReusedOriginal.Construction.RadixMath
 open Lax457868Proofs.ReusedOriginal.Construction.WelzlProgram
 open Lax457868Proofs.SourceRenaming
 open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
+open Lax457868Proofs.ReusedOriginal.Construction.ReadKeys
 open Lax457868Proofs.ReusedOriginal.Construction.NeighborhoodComplexity
 open Lax457868Proofs.SamplePacking
 open Lax457868Proofs.ExceptionRefinementStep
@@ -233,9 +234,10 @@ lemma initialRepresentativeSelection_run_bits {B n q Q t : ℕ}
         (∀ w < n, I.active w = 1 →
           mapped w = writeClassReps sorted I.repClass 0 values (I.label w)) ∧
         (∀ w < n, I.active w = 1 →
-          w ∈ xs ∧ mapped w ∈ xs ∧ I.label (mapped w) = I.label w)) := by
+          w ∈ xs ∧ mapped w ∈ xs ∧ I.label (mapped w) = I.label w)) ∧
+      xs = scanList I.active 0 n := by
   obtain ⟨σ₁, packed, hpack, hactive₁, hord₁, hprefix₁, halen₁,
-      _, hframeArr₁, hframeVar₁, hinput₁, hout₁⟩ :=
+      _, hframeArr₁, hframeVar₁, hinput₁, hout₁, hpackedCells₁⟩ :=
     packActiveB_run I.hn I.hactive I.hord I.hflags01 I.hnB I.honeB
   let xs := Stack.toList (σ₁.vars "alen") packed
   have hset : xs.toFinset = activeVertices n I.active := by
@@ -244,6 +246,15 @@ lemma initialRepresentativeSelection_run_bits {B n q Q t : ℕ}
   have hnodup : xs.Nodup := hprefix₁.1
   have hlen : xs.length = (activeVertices n I.active).card := by
     simp [xs, halen₁, flaggedVertices]
+  have hxsScan : xs = scanList I.active 0 n := by
+    apply List.ext_getElem
+    · rw [hlen, scanList_length_eq_card]
+      rfl
+    · intro i hi hj
+      have hi' : i < σ₁.vars "alen" := by simpa [xs, Stack.toList] using hi
+      have hcell := hpackedCells₁ i hi'
+      simpa [xs, Stack.toList, List.getD_eq_getElem?_getD,
+        List.getElem?_eq_getElem hj] using hcell
   have hxn : xs.length ≤ n := by
     rw [hlen]
     have hsub : activeVertices n I.active ⊆ Finset.range n := by
@@ -330,7 +341,7 @@ lemma initialRepresentativeSelection_run_bits {B n q Q t : ℕ}
   refine ⟨σ₂, xs, sorted, values, used, charge, failed, hrun, hnodup,
     hset, hlen, htrace, hsize', hord', hsorted, hlabel', hactive', ?_,
     hrepFailed, hcomplete, hnum, hused, hn', hQpow', hclassCount', hcap',
-    hinp', hout'.trans hout₁, hrepFailure, hrepSuccess⟩
+    hinp', hout'.trans hout₁, hrepFailure, hrepSuccess, hxsScan⟩
   exact (hframe' "sampleFlags" (by decide)).trans
     ((hpack.frame_arr "sampleFlags" (by decide)).trans I.hsampleFlags)
 
@@ -402,7 +413,21 @@ lemma initialSamplerAttempt_run_bits
             (∀ w < n, I.activeB w = 1 →
               w ∈ xs ∧ mapped w ∈ xs ∧ label (mapped w) = label w)) ∧
           stageCost = fullSamplePartitionCost x sampleOrd n sampleCount +
-            (20 * n + 9 + repCharge + 64 * (xs.length + Q + 1) + 104 * n + 24)) := by
+            (20 * n + 9 + repCharge + 64 * (xs.length + Q + 1) + 104 * n + 24) ∧
+          (σ'.vars "classCount" = q ∧
+            xs.length = (activeVertices n I.activeB).card ∧
+            xs = scanList I.activeB 0 n ∧
+            σp.vars "classCount" = q ∧
+            σp.arrs "classB" = arrOf n label ∧
+            σp.arrs "classSize" = arrOf n size ∧
+            σp.inp = σd.inp ∧
+            ∀ i < xs.length,
+              sorted i = (bucketSort Q label xs).getD i 0)) ∧
+      Run B initialDrawSampleSource (I.σ.setVar "attemptAccepted" 0) σd
+        (initialDrawSampleCost n m used
+          (values.length + if drawFailed then 1 else 0)
+          values.length drawFailed) ∧
+      σd.inp = (I.bits.drop (used * Nat.clog 2 m)).map Bool.toNat ++ I.rest := by
   let σ₀ := I.σ.setVar "attemptAccepted" 0
   have hBpos : 0 < B := Nat.lt_trans (by decide) I.htwoB
   have hinit : Run B (.assign "attemptAccepted" (.lit 0)) I.σ σ₀ 2 := by
@@ -487,7 +512,7 @@ lemma initialSamplerAttempt_run_bits
       have haccepted : σd.vars "attemptAccepted" = 0 := hacceptedDraw
       refine ⟨σd, σd, tape, tail, values, used, true, 0,
         hsplit, htrace, ?_, haccepted, hnSource, hqSource.trans hqpow₀, hbad,
-        ?_, ?_, ?_, ?_⟩
+        ?_, ?_, ?_, ?_, hdraw, hdrawInp⟩
       · simpa [initialSamplerAttempt, initialDrawSampleCost, Nat.add_assoc] using hwhole
       · intro a ha
         exact hwhole.frame_arr a ha
@@ -714,7 +739,8 @@ lemma initialSamplerAttempt_run_bits
           hrepRun, hnodup, hset, hlen, hclassTrace, hsizeRep, hordRep,
           hsorted, hlabelRep, hactiveRep, hflagsRep, hrepFailedVal,
           hrepComplete, hrepNum, hrepUsedBound, hnRep, hqRep, hclassCountRep,
-          hcapRep, hinpRep, houtRep, hrepFailure, hrepSuccess⟩ :=
+          hcapRep, hinpRep, houtRep, hrepFailure, hrepSuccess,
+          hxsScan⟩ :=
         initialRepresentativeSelection_run_bits RI
       have hpartAndRep : Run B
           (fullSamplePartition.seq initialRepresentativeSelection)
@@ -785,7 +811,7 @@ lemma initialSamplerAttempt_run_bits
         fullSamplePartitionCost x sampleOrd n W.card +
           (20 * n + 9 + repCharge + 64 * (xs.length + Q + 1) + 104 * n + 24),
         hsplit, htrace, ?_, haccepted, hnRep, hqpowFinal, hbadFinal,
-        hwholeArrFrame, hwholeVarFrame, ?_, ?_⟩
+        hwholeArrFrame, hwholeVarFrame, ?_, ?_, hdraw, hdrawInp⟩
       · simpa [initialSamplerAttempt, Nat.add_assoc,
           Cond.size, Expr.size] using hwhole
       · intro hbadCase
@@ -823,6 +849,7 @@ lemma initialSamplerAttempt_run_bits
             intro w hw hactive
             obtain ⟨hmem, hmapped, hsame⟩ := hclass w hw hactive
             exact ⟨hmem, hmapped, hsame⟩
-          · rfl
+          · exact ⟨rfl, hclassCountRep, hlen, hxsScan,
+              hq, hlabel, hsize, hinP, hsorted⟩
 
 end Lax457868Proofs.InitialSamplerAttempt

@@ -252,7 +252,7 @@ lemma initialAttemptAcceptance_run
     by_cases hWv : v ∈ W <;> simp [setFlag, hWv]
   obtain ⟨σ₄, packedSample, rpack, hsampleFlags₄, hord₄,
     hsampleEnum₄, hsampleCount₄, _hsampleCursor₄,
-    hframeArr₄, hframeVar₄, _hinp₄, _hout₄⟩ :=
+    hframeArr₄, hframeVar₄, _hinp₄, _hout₄, _hpackedCells₄⟩ :=
     packMarkedSamples_run hn₃ hflags₃ hord₃ hflags01 hnltB honeB
   have hflaggedW : flaggedVertices n (setFlag W) = W := by
     ext v
