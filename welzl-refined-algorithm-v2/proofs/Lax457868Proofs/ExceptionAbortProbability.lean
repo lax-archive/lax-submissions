@@ -45,7 +45,7 @@ lemma StepChain.failed_far_step
       · exact False.elim (hstart.1 h2)
       · exact False.elim (hstart.2 h3)
   | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed hfar
-      hfailedFar hfailureTrace htail ih =>
+      hfailedFar hfailureTrace hfailedStop htail ih =>
       by_cases hnext : Rnext.σ.vars "repairRetryStatus" = 2 ∨
           Rnext.σ.vars "repairRetryStatus" = 3
       · refine ⟨z, by simp, _, _, R, Rnext, i, hvertex, ?_, hnext,
@@ -120,12 +120,61 @@ lemma StepChain.repeat_run
   | nil R hguard => exact ⟨1, by simpa [repeatRepairBody] using
         (Run.skip : Run B .skip R.σ R.σ 1)⟩
   | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed hfar
-      hfailedFar hfailureTrace htail ih =>
+      hfailedFar hfailureTrace hfailedStop htail ih =>
       obtain ⟨K, hrun⟩ := hbody
       obtain ⟨L, htailRun⟩ := ih
       exact ⟨K + L, by
         simpa [repeatRepairBody, List.length_cons, Nat.add_assoc] using
           hrun.seq htailRun⟩
+
+lemma StepChain.toPrefix
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    {R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart}
+    {σfinal : Env} {steps : List ExecutedException}
+    (hchain : StepChain R σfinal steps) :
+    StepPrefix R σfinal steps := by
+  induction hchain with
+  | nil R hguard => exact StepPrefix.nil R
+  | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed hfar
+      hfailedFar hfailureTrace hfailedStop htail ih =>
+      exact StepPrefix.cons R Rnext i z tail hindex hguard hvertex hbody
+        hbits hfixed ih
+
+lemma StepChain.end_guard_false
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    {R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart}
+    {σfinal : Env} {steps : List ExecutedException}
+    (hchain : StepChain R σfinal steps) :
+    (Cond.lt (.var "exceptionIndex") (.var "exceptionStop")).evalB B
+      σfinal = some false := by
+  induction hchain with
+  | nil R hguard => exact hguard
+  | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed hfar
+      hfailedFar hfailureTrace hfailedStop htail ih => exact ih
+
+lemma traceBitCost_append_le {n : ℕ} (G : SimpleGraph (Fin n))
+    (A : Finset ℕ) (rep : ℕ → ℕ)
+    (pref suffix : List ExecutedException) :
+    traceBitCost G A rep pref ≤ traceBitCost G A rep (pref ++ suffix) := by
+  simp only [traceBitCost, List.map_append, List.sum_append]
+  omega
+
+lemma guard_same_noninput {B : ℕ} {σ τ : Env}
+    (hvars : σ.vars = τ.vars) :
+    (Cond.lt (.var "exceptionIndex") (.var "exceptionStop")).evalB B σ =
+      (Cond.lt (.var "exceptionIndex") (.var "exceptionStop")).evalB B τ := by
+  cases σ with
+  | mk vs arrs inp out =>
+      cases τ with
+      | mk ws arrs' inp' out' =>
+          cases hvars
+          rfl
 
 /-- Every chronological pref can be cut at its actual post-call state. -/
 lemma StepChain.split_at
@@ -152,14 +201,14 @@ lemma StepChain.split_at
       exact ⟨_, R, [], [], rfl, rfl, StepPrefix.nil R,
         StepChain.nil R hguard, rfl, rfl, by simp [traceBitCost]⟩
   | cons R Rnext i z tail hindex hguard hvertex hbody hbits hfixed hfar
-      hfailedFar hfailureTrace htail ih =>
+      hfailedFar hfailureTrace hfailedStop htail ih =>
       intro j hj
       cases j with
       | zero =>
           exact ⟨_, R, [], z :: tail, rfl, rfl,
             StepPrefix.nil R,
             StepChain.cons R Rnext i z tail hindex hguard hvertex hbody hbits
-              hfixed hfar hfailedFar hfailureTrace htail,
+              hfixed hfar hfailedFar hfailureTrace hfailedStop htail,
             rfl, rfl, by simp [traceBitCost]⟩
       | succ j =>
           obtain ⟨Wmid, Rmid, pref, suffix, heq, hlen,
@@ -229,5 +278,85 @@ lemma StepChain.prefix_replay
     simpa [hstartτ, hlenτ] using hrunτ
   exact StoppedPrefixAveraging.bool_run_same_prefix bits other R.rest
     hrunρ' hrunτ' hendρ hendτ hboundρ hboundτ hprefix
+
+/-- A completion with the same observed prefix cannot stop before the
+reference completion: at the first alleged early stop its guard would be
+both true and false in the same non-input state. -/
+lemma StepChain.no_shorter_same_prefix
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart)
+    (bits other : List Bool)
+    {σρ στ : Env} {stepsρ stepsτ : List ExecutedException}
+    (hchainρ : StepChain (R.reinput bits) σρ stepsρ)
+    (hchainτ : StepChain (R.reinput other) στ stepsτ)
+    (hboundρ : traceBitCost G A R.rep stepsρ ≤ other.length)
+    (hboundτ : traceBitCost G A R.rep stepsτ ≤ other.length)
+    (hprefix : bits.take (traceBitCost G A R.rep stepsρ) =
+      other.take (traceBitCost G A R.rep stepsρ)) :
+    stepsρ.length ≤ stepsτ.length := by
+  by_contra hlt
+  have hl : stepsτ.length ≤ stepsρ.length := by omega
+  obtain ⟨Wρ, Pρ, prefρ, suffixρ, heqρ, hlenρ, hprefρ,
+    hsuffixρ, _, hrestρ, hbitsρ⟩ :=
+      StepChain.split_at hchainρ stepsτ.length hl
+  obtain ⟨Wτ, Pτ, prefτ, suffixτ, heqτ, hlenτ, hprefτ,
+    hsuffixτ, _, hrestτ, hbitsτ⟩ :=
+      StepChain.split_at hchainτ stepsτ.length le_rfl
+  have hdle : traceBitCost G A R.rep prefρ ≤
+      traceBitCost G A R.rep stepsρ := by
+    rw [heqρ]
+    exact traceBitCost_append_le G A R.rep prefρ suffixρ
+  have hboundρ' : traceBitCost G A R.rep prefρ ≤ other.length :=
+    hdle.trans hboundρ
+  have hboundτ' : traceBitCost G A R.rep prefτ ≤ other.length := by
+    have hsufnil : suffixτ = [] := by
+      have hlen := congrArg List.length heqτ
+      simp only [List.length_append] at hlen
+      have : suffixτ.length = 0 := by omega
+      exact List.length_eq_zero_iff.mp this
+    subst suffixτ
+    simpa [heqτ] using hboundτ
+  have hprefix' : bits.take (traceBitCost G A R.rep prefρ) =
+      other.take (traceBitCost G A R.rep prefρ) := by
+    have hh := congrArg (List.take (traceBitCost G A R.rep prefρ)) hprefix
+    simpa [List.take_take, Nat.min_eq_left hdle] using hh
+  have hrepρ : (R.reinput bits).rep = R.rep := rfl
+  have hrepτ : (R.reinput other).rep = R.rep := rfl
+  have hstate := StepChain.prefix_replay R bits other Pρ Pτ prefρ prefτ
+    hprefρ hprefτ hlenρ hlenτ (by simpa [LoopInput.reinput] using hrestρ)
+    (by simpa [LoopInput.reinput] using hrestτ)
+    (by simpa [LoopInput.reinput] using hbitsρ)
+    (by simpa [LoopInput.reinput] using hbitsτ)
+    hboundρ' hboundτ' hprefix'
+  have hvars : Pρ.σ.vars = Pτ.σ.vars := by
+    rw [hstate.2]
+  have hguardEq := guard_same_noninput (B := B) hvars
+  have hsufρne : suffixρ ≠ [] := by
+    intro hz
+    subst suffixρ
+    have hh := congrArg List.length heqρ
+    simp only [List.length_append, List.length_nil, Nat.add_zero] at hh
+    omega
+  cases suffixρ with
+  | nil => contradiction
+  | cons z zs =>
+      cases hsuffixρ with
+      | cons P Pnext i z zs hindex hguard hvertex hbody hbits hfixed hfar
+          hfailedFar hfailureTrace hfailedStop htail =>
+          have hfalse : (Cond.lt (.var "exceptionIndex")
+              (.var "exceptionStop")).evalB B Pτ.σ = some false := by
+            have hsufnil : suffixτ = [] := by
+              have hlen := congrArg List.length heqτ
+              simp only [List.length_append] at hlen
+              have : suffixτ.length = 0 := by omega
+              exact List.length_eq_zero_iff.mp this
+            subst suffixτ
+            cases hsuffixτ with
+            | nil P => assumption
+          rw [hguardEq, hfalse] at hguard
+          contradiction
 
 end Lax457868Proofs.ExceptionAbortProbability
