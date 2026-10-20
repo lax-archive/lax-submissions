@@ -71,6 +71,74 @@ lemma actual_decompose
     subst_vars
     exact ⟨_,_,hi,ht,rfl⟩
 
+/-- The accepted continuation contains the actual packed repair execution;
+all deterministic preparation contributes the computed additive bound. -/
+lemma actual_accepted_tail
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    {s repairCap attemptCap : ℕ} (S : RuntimeInput R s repairCap)
+    (C : Cut R attemptCap) (hs : C.final.vars "initialRetryStatus" = 1)
+    {τ : Env} {cost : ℕ} (ha : BigStepB B afterInitial C.final τ cost) :
+    ∃ choice : SamplerPhases.InitialChoice A (activeVertices n R.I.activeB)
+        (fun b => ExceptionPhaseSource.numericNeighborhood G b ∩ A) r,
+    ∃ q : ℕ,
+    ∃ L : ExceptionRepairLoop.LoopInput B n s t bufferCap targetCap q repairCap k
+        (choice.exceptions k).card G x (choice.exceptions k)
+        (activeVertices n R.I.activeB)
+        (ExceptionPhaseSource.phaseTwoSample G (choice.exceptions k) A choice.sample)
+        A (ExceptionPhaseSource.phaseTwoSample G (choice.exceptions k) A choice.sample),
+    ∃ repairCost : ℕ,
+      BigStepB B ExceptionRepairLoop.exceptionRepairPackedSource L.σ τ repairCost ∧
+      cost ≤ repairCost + (1229*n+987*targetCap+64*Q+575) ∧
+      L.bits = R.I.bits.drop C.used ∧ L.rest = R.I.rest ∧
+      (choice.exceptions k).card ≤ cap ∧
+      (∀ b ∈ activeVertices n R.I.activeB, choice.representative b = L.rep b) := by
+  obtain ⟨choice,q,L,pc,fc,gc,oc,ip,pp,hprep,hpc,hfc,hgc,hoc,hip,hpp,hq,
+    hbits,hrest,hstatus,hcap,hrep,hbound⟩ := accepted_preparation_run R S C.run
+      C.vertices C.power (R.I.bits.drop C.used) C.input (C.accepted hs)
+  have hg : (Cond.eq (.var "initialRetryStatus") (.lit 1)).evalB B C.final =
+      some true := by
+    simp [Cond.evalB, Expr.evalB, fit, hs, R.I.honeB]
+  change BigStepB B (.ite _ (prepareRepairSource.seq
+    ExceptionRepairLoop.exceptionRepairPackedSource) .skip) C.final τ cost at ha
+  cases ha with
+  | ite_false hf _ => simp [hg] at hf
+  | ite_true _ ht =>
+    cases ht with
+    | seq hp hr =>
+      obtain ⟨kp,hkp,hp'⟩ := hprep
+      obtain ⟨he,hcost⟩ := BigStep.unique hp.bigStep hp'.bigStep
+      subst_vars
+      refine ⟨choice,q,L,_,hr,?_,hbits,hrest,hcap,hrep⟩
+      simp only [Cond.size, Expr.size]
+      omega
+
+lemma actual_stopped_tail
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    {attemptCap : ℕ} (C : Cut R attemptCap)
+    (hs : C.final.vars "initialRetryStatus" ≠ 1)
+    {τ : Env} {cost : ℕ} (ha : BigStepB B afterInitial C.final τ cost) :
+    τ = C.final ∧ cost = 5 := by
+  have hstatus := C.status
+  have hb : C.final.vars "initialRetryStatus" < B := by
+    have := R.hnB
+    have hn : 0 < n := by
+      obtain ⟨a,ha⟩ := R.I.hAnonempty
+      have := Finset.mem_range.mp (R.I.hA ha)
+      omega
+    omega
+  have hg : (Cond.eq (.var "initialRetryStatus") (.lit 1)).evalB B C.final =
+      some false := by
+    simp [Cond.evalB, Expr.evalB, fit, hb, hs, R.I.honeB]
+  have hr := Run.ite_false (c := completeSamplerTail) hg (Run.skip (B := B))
+  obtain ⟨j,hj,hh⟩ := hr
+  obtain ⟨he,hk⟩ := BigStep.unique ha.bigStep hh.bigStep
+  constructor
+  · exact he
+  · change BigStepB B (.ite _ _ .skip) C.final C.final j at hh
+    cases hh with
+    | ite_true ht _ => simp [hg] at ht
+    | ite_false _ ht => cases ht; simpa [Cond.size,Expr.size] using hk
+
 /-- Replaying an unread suffix preserves the actual retry stopping state,
 including its acceptance status and all representative arrays. -/
 lemma cut_causal
