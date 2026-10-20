@@ -18,6 +18,7 @@ open Lax457868Proofs.RefinedTapeReserve
 open Lax457868Proofs.RefinedRecordedCommit
 
 set_option maxRecDepth 4000
+set_option maxHeartbeats 1000000
 
 def roundGuard : Cond := .lt (.var "cutoffResult") (.var "acount")
 
@@ -39,7 +40,7 @@ def LoopReady {n : ℕ} (B c : ℕ) (G : SimpleGraph (Fin n))
     sizes.length = σ.vars "round" ∧
     sizes.sum + 3 * A.card ≤ 3 * n ∧
     2 ^ (σ.vars "round") * (A.card - 2 * c ^ 2) ≤ n ∧
-    σ.vars "round" ≤ Nat.clog 2 n ∧
+    σ.vars "round" + 1 ≤ Nat.clog 2 n ∧
     σ.out = [] ∧
     σ.inp = bits.map Bool.toNat ++ rest ∧
     A.card * roundBitReserve c n ≤ bits.length
@@ -91,6 +92,7 @@ lemma initial_loopReady {B c n : ℕ} {G : SimpleGraph (Fin n)}
     (hrun : Run B Lax457868Proofs.InitialNeighborhoodQuotient.initialQuotientSource σ τ
       (951 * (x.length + 1)))
     (D : RoundData c n x (Finset.range n) C τ)
+    (hn2 : 2 ≤ n)
     (hCsub : C ⊆ Finset.range n) (hC : C.Nonempty)
     (htrace : Nonempty (TracePartition G Set.univ Set.univ (finSetAsSet C)))
     (htape : n * roundBitReserve c n ≤ bits.length) :
@@ -152,7 +154,9 @@ lemma initial_loopReady {B c n : ℕ} {G : SimpleGraph (Fin n)}
   · simp [hround]
   · simp
   · simp [hround]
-  · simp [hround]
+  · rw [hround]
+    have hh := Nat.clog_pos (by omega : 1 < 2) (by omega : 1 < n)
+    omega
   · rw [hrun.out_eq (by decide), R.output]
   · rw [hrun.frame_inp (by decide), R.input]
   · simpa using htape
@@ -172,6 +176,7 @@ open Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
 open Lax457868Proofs.ExceptionRefinementStep
 
 set_option maxRecDepth 4000
+set_option maxHeartbeats 1000000
 
 /-- One true outer-loop iteration either installs a strictly smaller factual
 round state, with enough untouched tape for every later round, or executes
@@ -188,7 +193,7 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
     (hsizesLen : sizes.length = σ.vars "round")
     (hsizesSum : sizes.sum + 3 * A.card ≤ 3 * n)
     (hpotential : 2 ^ (σ.vars "round") * (A.card - 2 * c ^ 2) ≤ n)
-    (_hroundLog : σ.vars "round" ≤ Nat.clog 2 n)
+    (_hroundLog : σ.vars "round" + 1 ≤ Nat.clog 2 n)
     (hout : σ.out = [])
     (hinput : σ.inp = bits.map Bool.toNat ++ rest)
     (htape : A.card * roundBitReserve c n ≤ bits.length)
@@ -197,6 +202,7 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
     (hc : 2 ≤ c) (hB : 4 * (x.length + 1) ≤ B)
     (hlarge : 2 * refinedCutoffK c < A.card) :
     ∃ τ K, Run B preparedRefinedRoundSource σ τ K ∧
+      τ.vars "n" = n ∧
       ((∃ A' : Finset ℕ, A'.card < A.card ∧
           τ.vars "acount" = A'.card ∧ LoopReady B c G x rest τ) ∨
         τ.vars "acount" = 0) := by
@@ -212,10 +218,10 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
         (show 1 ≤ A.card by omega)
       simpa using hh
     exact (hr.trans hres).trans htape
-  obtain ⟨τ, K, hrun, hresult⟩ := preparedRefinedRoundSource_run D hx hG hc
+  obtain ⟨τ, K, hrun, hn, hresult⟩ := preparedRefinedRoundSource_run D hx hG hc
     hA hCsub hC hlarge hB hbounded hstore hcapacity
     (by omega : σ.vars "round" < n) hinput hbudget
-  refine ⟨τ, K, hrun, ?_⟩
+  refine ⟨τ, K, hrun, hn, ?_⟩
   rcases hresult with ⟨haccepted, hbounded', used, hused, hinput'⟩ | hfail
   · obtain ⟨W, Rnum, Snum, repA, repB, samplerCost, partCostB, partCostA,
       hcostEq, hdata, hstored, hround, hacount', hcapacity', hshrink,
@@ -251,9 +257,9 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
       rw [hround]
       exact Lax457868Proofs.RefinedRoundCost.round_potential_step
         hshrink hpotential
-    have hroundLog' : τ.vars "round" ≤ Nat.clog 2 n := by
+    have hroundLog' : τ.vars "round" + 1 ≤ Nat.clog 2 n := by
       rw [hround]
-      exact Lax457868Proofs.RefinedRoundCost.round_counter_after_guard
+      exact Lax457868Proofs.RefinedRoundCost.round_counter_with_terminal_after_guard
         (by omega : 1 ≤ c) hk hlarge hpotential
     have hpartB' : TracePartition G (finSetAsSet C)
         (finSetAsSet W) (finSetAsSet Rnum) := by
@@ -287,6 +293,7 @@ open Lax457868Proofs.RefinedTapeReserve
 open Lax457868Proofs.RefinedRecordedCommit
 
 set_option maxRecDepth 4000
+set_option maxHeartbeats 1000000
 
 private lemma run_while_true {B K K' : ℕ} {b : Cond} {c : Com}
     {σ σ' σ'' : Env} (hb : b.evalB B σ = some true)
@@ -320,6 +327,7 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
     (hlargeN : 2 * refinedCutoffK c < n)
     (hready : LoopReady B c G x rest σ) :
     ∃ τ K, Run B (.while roundGuard preparedRefinedRoundSource) σ τ K ∧
+      τ.vars "n" = n ∧
       (τ.vars "acount" = 0 ∨
         (LoopReady B c G x rest τ ∧ τ.vars "acount" ≤ 2 * refinedCutoffK c)) := by
   have hnB : n < B := by
@@ -328,6 +336,7 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
   have core : ∀ m : ℕ, ∀ ρ : Env,
       LoopReady B c G x rest ρ → ρ.vars "acount" = m →
       ∃ τ K, Run B (.while roundGuard preparedRefinedRoundSource) ρ τ K ∧
+        τ.vars "n" = n ∧
         (τ.vars "acount" = 0 ∨
           (LoopReady B c G x rest τ ∧ τ.vars "acount" ≤ 2 * refinedCutoffK c)) := by
     intro m
@@ -344,25 +353,26 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
       by_cases hlarge : 2 * refinedCutoffK c < A.card
       · have htrue : roundGuard.evalB B ρ = some true := by
           simpa [hlarge] using hguard
-        obtain ⟨ρ', K, hstep, hresult⟩ := round_step D hA hCsub hC hstore
+        obtain ⟨ρ', K, hstep, hnStep, hresult⟩ := round_step D hA hCsub hC hstore
           hbounded hcapacity hroundCapacity hacount hsizesLen hsizesSum
           hpotential hroundLog hout
           hinput htape hx hG hc hB hlarge
         rcases hresult with ⟨A', hstrict, hacount', hready'⟩ | hfail
-        · obtain ⟨τ, K', htail, hresult'⟩ := ih A'.card
+        · obtain ⟨τ, K', htail, hnTail, hresult'⟩ := ih A'.card
             (by omega) ρ' hready' hacount'
-          exact ⟨τ, _, run_while_true htrue hstep htail, hresult'⟩
+          exact ⟨τ, _, run_while_true htrue hstep htail, hnTail, hresult'⟩
         · have hcut' : ρ'.vars "cutoffResult" = 2 * refinedCutoffK c := by
             rw [hstep.frame_var "cutoffResult" (by decide)]
             exact D.cutoff
           have hfalse := failed_guard_false hcut' hfail hlargeN hnB
           have htail : Run B (.while roundGuard preparedRefinedRoundSource)
               ρ' ρ' (1 + roundGuard.size) := Run.while_false hfalse
-          exact ⟨ρ', _, run_while_true htrue hstep htail, Or.inl hfail⟩
+          exact ⟨ρ', _, run_while_true htrue hstep htail,
+            hnStep, Or.inl hfail⟩
       · have hfalse : roundGuard.evalB B ρ = some false := by
           simpa [hlarge] using hguard
         exact ⟨ρ, 1 + roundGuard.size, Run.while_false hfalse,
-          Or.inr ⟨hreadyKeep, by omega⟩⟩
+          D.vertices, Or.inr ⟨hreadyKeep, by omega⟩⟩
   have hreadyKeep := hready
   obtain ⟨A, C, bits, sizes, D, hA, hC, hne, hsep, hs, hb, hcap, hrc,
     hac, hlen, hsum, hpot, hlog, hout, hin, ht⟩ := hready

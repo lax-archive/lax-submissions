@@ -342,6 +342,7 @@ lemma preparedRefinedRoundSource_run
         (n * ((64 * Nat.clog 2 c) * n * Nat.clog 2 n)) ≤ bits.length) :
     ∃ τ : Env, ∃ cost : ℕ,
       Run B preparedRefinedRoundSource σ τ cost ∧
+      τ.vars "n" = n ∧
       ((AcceptedRound G c x A C σ τ cost ∧
           Lax457868Proofs.RefinedRecordedCommit.ValuesBounded B τ ∧
           ∃ used : ℕ,
@@ -422,7 +423,7 @@ lemma preparedRefinedRoundSource_run
         (bits.drop (consumed + traceBitCost G A L.rep steps)).map Bool.toNat ++ rest := by
       rw [hinputFrame]
       exact hinputSam
-    refine ⟨τout, _, hwhole, Or.inl ⟨?_, hboundedOut,
+    refine ⟨τout, _, hwhole, hdata.vertices, Or.inl ⟨?_, hboundedOut,
       consumed + traceBitCost G A L.rep steps, husedTotal, hinputOut⟩⟩
     refine ⟨W, Rnum, Snum, repA, repB, samplerCost, partCostB, partCostA,
       rfl, hdata, hstored, hroundOut, hacountOut, hcapOut, hshrink,
@@ -435,7 +436,8 @@ lemma preparedRefinedRoundSource_run
         ((40 * n + 58) +
           (samplerCost + (1 + (Cond.eq (.var "initialRetryStatus") (.lit 1)).size + 2))) := by
       simpa only [preparedRefinedRoundSource] using hprep.seq hfail
-    exact ⟨_, _, hwhole, Or.inr (by simp [Env.setVar])⟩
+    exact ⟨_, _, hwhole, by simpa [Env.setVar] using hsamFrame.1,
+      Or.inr (by simp [Env.setVar])⟩
   · by_cases hinit : τsam.vars "initialRetryStatus" = 1
     · have hfail := failed_repair_round_run hsampler hinit hfailRepair
         (by have := R.hnB; omega : 3 < B)
@@ -445,7 +447,8 @@ lemma preparedRefinedRoundSource_run
               (1 + (Cond.eq (.var "initialRetryStatus") (.lit 1)).size +
                 (1 + (Cond.eq (.var "repairRetryStatus") (.lit 1)).size + 2)))) := by
         simpa only [preparedRefinedRoundSource] using hprep.seq hfail
-      exact ⟨_, _, hwhole, Or.inr (by simp [Env.setVar])⟩
+      exact ⟨_, _, hwhole, by simpa [Env.setVar] using hsamFrame.1,
+        Or.inr (by simp [Env.setVar])⟩
     · have hboundR :=
         Lax457868Proofs.RefinedRecordedCommit.run_preserves hprep hbounded
       have hboundOut :=
@@ -456,6 +459,7 @@ lemma preparedRefinedRoundSource_run
           ((40 * n + 58) +
             (samplerCost + (1 + (Cond.eq (.var "initialRetryStatus") (.lit 1)).size + 2))) := by
         simpa only [preparedRefinedRoundSource] using hprep.seq hfail
-      exact ⟨_, _, hwhole, Or.inr (by simp [Env.setVar])⟩
+      exact ⟨_, _, hwhole, by simpa [Env.setVar] using hsamFrame.1,
+        Or.inr (by simp [Env.setVar])⟩
 
 end Lax457868Proofs.RefinedRoundDriver
