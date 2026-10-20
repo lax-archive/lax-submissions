@@ -1,5 +1,6 @@
 import Lax457868Proofs.RefinedRoundSource
 import Lax457868Proofs.RefinedRoundInput
+import Lax457868Proofs.RefinedTapeReserve
 
 /-! Sequential refined reduction rounds from the source workspace. -/
 
@@ -71,6 +72,7 @@ open Lax457868Proofs.InitialSamplerRetriesSource
 open Lax457868Proofs.RefinedSampleSpec
 open Lax457868Proofs.ExceptionPhaseSource
 open Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
+open Lax457868Proofs.ExceptionRepairLoop
 
 private lemma accepted_prepared_round
     {B c n : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
@@ -111,7 +113,8 @@ private lemma accepted_prepared_round
           (samplerCost +
             (1 + (Cond.eq (.var "initialRetryStatus") (.lit 1)).size +
               (1 + (Cond.eq (.var "repairRetryStatus") (.lit 1)).size +
-                (partCostB + (partCostA + 80 * (n + 1))))))) ∧
+              (partCostB + (partCostA + 80 * (n + 1))))))) ∧
+      τout.inp = τ.inp ∧
       RoundData c n x Snum Rnum τout ∧
       Nonempty (Stored G (refinedCutoffK c) τout) ∧
       τout.vars "round" = σ.vars "round" + 1 ∧
@@ -225,7 +228,8 @@ private lemma accepted_prepared_round
       simp [setFlag, hb]
     have hrep := partB.partition.representative_mem bf hbflag
     exact ⟨(partB.partition.representative bf).val, hrep⟩
-  refine ⟨τout, Rnum, Snum, partCostB, partCostA, hwhole, hdata,
+  refine ⟨τout, Rnum, Snum, partCostB, partCostA, hwhole,
+    hsuffix.frame_inp (by decide), hdata,
     hstored, ?_, hacountOut, hcapOut, hshrink, hcost, hSrange, hRrange,
     hSsub, hRsubC, hWsubA, hRnonempty,
     repA, repB, hpartA, hpartB⟩
@@ -295,6 +299,7 @@ open Lax457868Proofs.InitialSamplerRetriesSource
 open Lax457868Proofs.RefinedSampleSpec
 open Lax457868Proofs.ExceptionPhaseSource
 open Lax457868Proofs.ReusedOriginal.Construction.PartitionResult
+open Lax457868Proofs.ExceptionRepairLoop
 
 private lemma failed_initial_ne {B K : ℕ} {σ τ : Env}
     (hrun : Run B completeSamplerSource σ τ K)
@@ -336,7 +341,13 @@ lemma preparedRefinedRoundSource_run
         (n * ((64 * Nat.clog 2 c) * n * Nat.clog 2 n)) ≤ bits.length) :
     ∃ τ : Env, ∃ cost : ℕ,
       Run B preparedRefinedRoundSource σ τ cost ∧
-      (AcceptedRound G c x A C σ τ cost ∨ τ.vars "acount" = 0) := by
+      ((AcceptedRound G c x A C σ τ cost ∧
+          ∃ used : ℕ,
+            used ≤ n * attemptBitBudget n A.card (A.card / (4 * c ^ 2)) n +
+              (A.card / (4 * c ^ 2 * (64 * Nat.clog 2 c + 1))) *
+                (n * ((64 * Nat.clog 2 c) * n * Nat.clog 2 n)) ∧
+            τ.inp = (bits.drop used).map Bool.toNat ++ rest) ∨
+        τ.vars "acount" = 0) := by
   classical
   have hnpos : 0 < n := by
     obtain ⟨v, hv⟩ := hC
@@ -377,15 +388,40 @@ lemma preparedRefinedRoundSource_run
         hsample, haccepted⟩ := hsuccess
     obtain ⟨τpre, consumed, hrunPre, hinputPre, husedPre,
       hacceptedExecution⟩ := haccepted
-    obtain ⟨_, _, _, _, _, _, _, _, hstatus₁, _⟩ := hacceptedExecution
-    obtain ⟨τout, Rnum, Snum, partCostB, partCostA, hwhole, hdata,
+    obtain ⟨choice, q, L, Lfinal, steps, initialPacked, phaseTwoPacked,
+      hprestatus, hstatus₁, hcapChoice, hrepChoice, hphaseCost,
+      hpartCost, hgroupCost, hoffsetCost, hinitialPrefix, hphasePrefix,
+      hLqpow, hrprep, hrrepair, hrepairCost, hLbits, hLrest,
+      hrepairBudget, hLfinalBits, hfixed, hmap, hsteps,
+      hinputFinal, harrFinal, hvarsFinal⟩ := hacceptedExecution
+    obtain ⟨τout, Rnum, Snum, partCostB, partCostA, hwhole, hinputFrame, hdata,
         hstored, hroundOut, hacountOut, hcapOut, hshrink, hcost,
         hSrange, hRrange, hSsub, hRsubC, hWsubA, hRnonempty,
         repA, repB, hpartA, hpartB⟩ :=
       accepted_prepared_round D hstore hbounded hcapacity hround hG hc
         hCsub R S hprep hCarray hsampler hsamFrame hstatus₁ hstatus₂
         ⟨packed, hordArray, hprefix⟩ hcount hsample hC
-    refine ⟨τout, _, hwhole, Or.inl ?_⟩
+    have hstepLen := Lax457868Proofs.RefinedTapeReserve.steps_length_le hmap
+    have hrepairBits := Lax457868Proofs.RefinedTapeReserve.traceBitCost_le
+      (G := G) (rep := L.rep) hA hstepLen hsteps
+    have hrepairTotal : traceBitCost G A L.rep steps ≤
+        (A.card / (4 * c ^ 2 * (64 * Nat.clog 2 c + 1))) *
+          (n * ((64 * Nat.clog 2 c) * n * Nat.clog 2 n)) := by
+      exact hrepairBits.trans (Nat.mul_le_mul_right _ hcapChoice)
+    have husedTotal : consumed + traceBitCost G A L.rep steps ≤
+        n * attemptBitBudget n A.card (A.card / (4 * c ^ 2)) n +
+          (A.card / (4 * c ^ 2 * (64 * Nat.clog 2 c + 1))) *
+            (n * ((64 * Nat.clog 2 c) * n * Nat.clog 2 n)) := by omega
+    have hinputSam : τsam.inp =
+        (bits.drop (consumed + traceBitCost G A L.rep steps)).map Bool.toNat ++ rest := by
+      rw [hLfinalBits, hLbits, hbits, hLrest, hrest] at hinputFinal
+      simpa only [List.drop_drop] using hinputFinal
+    have hinputOut : τout.inp =
+        (bits.drop (consumed + traceBitCost G A L.rep steps)).map Bool.toNat ++ rest := by
+      rw [hinputFrame]
+      exact hinputSam
+    refine ⟨τout, _, hwhole, Or.inl ⟨?_,
+      consumed + traceBitCost G A L.rep steps, husedTotal, hinputOut⟩⟩
     refine ⟨W, Rnum, Snum, repA, repB, samplerCost, partCostB, partCostA,
       rfl, hdata, hstored, hroundOut, hacountOut, hcapOut, hshrink,
       hcost, hSrange, hRrange, hSsub, hRsubC, hWsubA, hRnonempty,
