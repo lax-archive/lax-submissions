@@ -841,7 +841,8 @@ lemma accepted_commit_run
       Nonempty (Lax457868Proofs.ReusedOriginal.Construction.PartitionResult.ConcreteTracePartition
         G (setFlag A) (finSetAsSet Rnum) Snum repA) ∧
       Nonempty (Lax457868Proofs.ReusedOriginal.Construction.PartitionResult.ConcreteTracePartition
-        G R.I.activeB (finSetAsSet W) Rnum repB) := by
+        G R.I.activeB (finSetAsSet W) Rnum repB) ∧
+      Snum ⊆ Finset.range n ∧ Rnum ⊆ Finset.range n := by
   classical
   obtain ⟨I, hIσ, hIA, hIB⟩ :=
     partition_input_of_sampler R S hscratch hrun hframe hord hcount hsample hC
@@ -973,7 +974,7 @@ lemma accepted_commit_run
     hnextA₂, hnextB₂, hrepA₂, hnextAValues, hnextBValues,
     hactiveAFlag, hactiveBFlag,
     ?_, ?_, ?_, hrem₃, hrep₃, ?_, ?_, ?_, ?_, hshrink, hcost,
-    ?_, ?_, ?_⟩
+    ?_, ?_, ?_, hSrange, ?_⟩
   · simpa only [hIA] using hremovedCount₃
   · simpa only [hIA] using hstart₃
   · simpa only [hIA] using hend₃
@@ -984,6 +985,9 @@ lemma accepted_commit_run
   · simpa only [hIA] using dataA
   · exact ⟨by simpa only [hIA] using hA⟩
   · exact ⟨by simpa only [hIB] using hB⟩
+  · intro v hv
+    exact Finset.mem_range.mpr
+      (mem_activeVertices.mp (dataB.reps_processed hv)).1
 
 /-- The two acceptance guards execute the exact partition/commit suffix after
 the concrete sampler. All three charges are added in source order. -/
@@ -1031,7 +1035,7 @@ lemma accepted_round_run
   obtain ⟨σ₂, σ₃, Rnum, Snum, nextA, nextB, repA, rem, remRep,
     partCostB, partCostA, currentA, labelA, repClassA, repsA, repB,
     hsuffix, _, _, hround₃, hacount₃,
-    _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hshrink, hcost, _, _, _⟩ :=
+    _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hshrink, hcost, _, _, _, _, _⟩ :=
     accepted_commit_run R S hscratch hnextABits hnextBBits hbounded hcapacity hround hG hc
       hrun hframe hord hcount hsample hC
   have hB : 1 < B := R.I.honeB
@@ -1111,7 +1115,8 @@ lemma accepted_commit_stored_run
       Lax457868Proofs.RefinedRecordedCommit.ValuesBounded B σ₃ ∧
       σ₃.vars "removedCount" + Snum.card ≤ n ∧
       Nonempty (ConcreteTracePartition G (setFlag A) (finSetAsSet Rnum) Snum repA) ∧
-      Nonempty (ConcreteTracePartition G R.I.activeB (finSetAsSet W) Rnum repB) := by
+      Nonempty (ConcreteTracePartition G R.I.activeB (finSetAsSet W) Rnum repB) ∧
+      Snum ⊆ Finset.range n ∧ Rnum ⊆ Finset.range n := by
   classical
   obtain ⟨σ₂, σ₃, Rnum, Snum, nextA, nextB, repA, rem, remRep,
     partCostB, partCostA, currentA, labelA, repClassA, repsA, repB,
@@ -1120,7 +1125,7 @@ lemma accepted_commit_stored_run
     hrepA₂, hbitsA, hbitsB, hactiveAFlag, hactiveBFlag,
     hremovedCount₃, hstart₃, hend₃,
     hrem₃, hrep₃, hprefix, hsuffixRem, hprefixRep, hsuffixRep,
-    hshrink, hcost, dataA, ⟨partA⟩, ⟨partB⟩⟩ :=
+    hshrink, hcost, dataA, ⟨partA⟩, ⟨partB⟩, hSrange, hRrange⟩ :=
     accepted_commit_run R S hscratch hnextABits hnextBBits hbounded hcapacity hround
       hG hc hrun hframe hord hcount hsample hC
   let hstoreσ := hstore.frame
@@ -1507,7 +1512,7 @@ lemma accepted_commit_stored_run
     hsuffix, ⟨hstored⟩, hround₃, hacount₃, hshrink, hcost,
     hnextFrame, hactiveAFlag, hactiveBFlag, hbits₃A, hbits₃B,
     Lax457868Proofs.RefinedRecordedCommit.run_preserves hcommit hbounded₂,
-    hcapNext, ⟨partA⟩, ⟨partB⟩⟩
+    hcapNext, ⟨partA⟩, ⟨partB⟩, hSrange, hRrange⟩
 
 
 end
