@@ -117,6 +117,7 @@ private lemma accepted_prepared_round
       τout.inp = τ.inp ∧
       RoundData c n x Snum Rnum τout ∧
       Nonempty (Stored G (refinedCutoffK c) τout) ∧
+      Lax457868Proofs.RefinedRecordedCommit.ValuesBounded B τout ∧
       τout.vars "round" = σ.vars "round" + 1 ∧
       τout.vars "acount" = Snum.card ∧
       τout.vars "removedCount" + Snum.card ≤ n ∧
@@ -230,7 +231,7 @@ private lemma accepted_prepared_round
     exact ⟨(partB.partition.representative bf).val, hrep⟩
   refine ⟨τout, Rnum, Snum, partCostB, partCostA, hwhole,
     hsuffix.frame_inp (by decide), hdata,
-    hstored, ?_, hacountOut, hcapOut, hshrink, hcost, hSrange, hRrange,
+    hstored, hboundedOut, ?_, hacountOut, hcapOut, hshrink, hcost, hSrange, hRrange,
     hSsub, hRsubC, hWsubA, hRnonempty,
     repA, repB, hpartA, hpartB⟩
   rw [hroundOut, hprep.frame_var "round" (by decide)]
@@ -342,6 +343,7 @@ lemma preparedRefinedRoundSource_run
     ∃ τ : Env, ∃ cost : ℕ,
       Run B preparedRefinedRoundSource σ τ cost ∧
       ((AcceptedRound G c x A C σ τ cost ∧
+          Lax457868Proofs.RefinedRecordedCommit.ValuesBounded B τ ∧
           ∃ used : ℕ,
             used ≤ n * attemptBitBudget n A.card (A.card / (4 * c ^ 2)) n +
               (A.card / (4 * c ^ 2 * (64 * Nat.clog 2 c + 1))) *
@@ -395,7 +397,7 @@ lemma preparedRefinedRoundSource_run
       hrepairBudget, hLfinalBits, hfixed, hmap, hsteps,
       hinputFinal, harrFinal, hvarsFinal⟩ := hacceptedExecution
     obtain ⟨τout, Rnum, Snum, partCostB, partCostA, hwhole, hinputFrame, hdata,
-        hstored, hroundOut, hacountOut, hcapOut, hshrink, hcost,
+        hstored, hboundedOut, hroundOut, hacountOut, hcapOut, hshrink, hcost,
         hSrange, hRrange, hSsub, hRsubC, hWsubA, hRnonempty,
         repA, repB, hpartA, hpartB⟩ :=
       accepted_prepared_round D hstore hbounded hcapacity hround hG hc
@@ -420,7 +422,7 @@ lemma preparedRefinedRoundSource_run
         (bits.drop (consumed + traceBitCost G A L.rep steps)).map Bool.toNat ++ rest := by
       rw [hinputFrame]
       exact hinputSam
-    refine ⟨τout, _, hwhole, Or.inl ⟨?_,
+    refine ⟨τout, _, hwhole, Or.inl ⟨?_, hboundedOut,
       consumed + traceBitCost G A L.rep steps, husedTotal, hinputOut⟩⟩
     refine ⟨W, Rnum, Snum, repA, repB, samplerCost, partCostB, partCostA,
       rfl, hdata, hstored, hroundOut, hacountOut, hcapOut, hshrink,

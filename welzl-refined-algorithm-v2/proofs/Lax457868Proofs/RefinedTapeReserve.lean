@@ -1,4 +1,5 @@
 import Lax457868Proofs.ExceptionRepairLoop
+import Lax457868Proofs.InitialSamplerRetriesSource
 import Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
 import Mathlib.Tactic
 
@@ -67,5 +68,31 @@ lemma steps_length_le {e : ℕ} {steps : List ExecutedException}
   have h := congrArg List.length hmap
   simp at h
   omega
+
+end Lax457868Proofs.RefinedTapeReserve
+
+namespace Lax457868Proofs.RefinedTapeReserve
+
+open Lax457868Proofs.InitialSamplerRetriesSource
+
+/-- A uniform reserve for one reduction round, obtained by replacing the
+current active size by the full vertex count in the exact source budget. -/
+def roundBitReserve (c n : ℕ) : ℕ :=
+  n * (n * n * Nat.clog 2 n + n * n * Nat.clog 2 n) +
+    n * (n * ((64 * Nat.clog 2 c) * n * Nat.clog 2 n))
+
+lemma round_budget_le {c n m : ℕ} (hm : m ≤ n) :
+    n * attemptBitBudget n m (m / (4 * c ^ 2)) n +
+      (m / (4 * c ^ 2 * (64 * Nat.clog 2 c + 1))) *
+        (n * ((64 * Nat.clog 2 c) * n * Nat.clog 2 n)) ≤
+      roundBitReserve c n := by
+  have hdiv₁ : m / (4 * c ^ 2) ≤ n :=
+    (Nat.div_le_self _ _).trans hm
+  have hdiv₂ : m / (4 * c ^ 2 * (64 * Nat.clog 2 c + 1)) ≤ n :=
+    (Nat.div_le_self _ _).trans hm
+  have hlog : Nat.clog 2 m ≤ Nat.clog 2 n :=
+    Nat.clog_mono_right 2 hm
+  unfold roundBitReserve attemptBitBudget
+  gcongr
 
 end Lax457868Proofs.RefinedTapeReserve
