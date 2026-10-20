@@ -1339,6 +1339,149 @@ lemma localRepairRetriesSource_mean_runtime_stopped
   push_cast
   nlinarith [husedQ, hmean]
 
+/-- Conditioning on an arbitrary unread suffix extends the stopped local
+runtime law to a flat tape whose length need not be divisible by the local
+selector width. -/
+lemma localRepairRetriesSource_mean_runtime_stopped_suffix
+    {B n m domainCap s t bufferCap targetCap q b cap Nblocks Ntail scanUpper : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (domain : ℕ → ℕ)
+    (R : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail) →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hstate : ∀ tape tape',
+      (R tape).σ.vars = (R tape').σ.vars ∧
+      (R tape).σ.arrs = (R tape').σ.arrs ∧
+      (R tape).σ.out = (R tape').σ.out)
+    (hdomain : ∀ tape, (R tape).domain = domain)
+    (hscan : ∀ tape, (R tape).scanUpper = scanUpper)
+    (hcap : ∀ tape, (R tape).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hblocks : cap * (s * t) ≤ Nblocks)
+    (henum : PrefixEnumerates m domain X)
+    (hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase b X s).card ≤ X.card ^ s) :
+    ∃ (attempts used : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail) → ℕ)
+      (finalState : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 m + Ntail) → Env),
+      (∀ tape, Run B localRepairRetriesSource (R tape).σ
+        (finalState tape)
+          (12 * Nat.clog 2 m + 24 +
+            ((15 * Nat.clog 2 m + 30) * used tape +
+              attempts tape * (79 * s + scanUpper + 50) + 14))) ∧
+      (∑ tape : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 m + Ntail),
+        ((12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * used tape +
+            attempts tape * (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ)) ≤
+        ((12 * Nat.clog 2 m + 38 +
+          4 * s * (15 * Nat.clog 2 m + 30) +
+          2 * (79 * s + scanUpper + 50) : ℕ) : ℚ) *
+          (2 ^ (Nblocks * Nat.clog 2 m + Ntail) : ℚ) := by
+  classical
+  let P := Nblocks * Nat.clog 2 m
+  let E := Fin.appendEquiv (α := Bool) P Ntail
+  let Rpre (suffix : FlatTraceLaw.FlatTape Ntail)
+      (preTape : FlatTraceLaw.FlatTape P) :
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent :=
+    let full := E (preTape, suffix)
+    let base := R full
+    { base with
+      bits := FlatTraceLaw.flatBits preTape
+      rest := (FlatTraceLaw.flatBits suffix).map Bool.toNat ++ base.rest
+      hinput := by
+        rw [base.hinput, hbits full]
+        have he : full = Fin.append preTape suffix := rfl
+        rw [he]
+        simp [FlatTraceLaw.flatBits, List.ofFn_fin_append,
+          List.map_append, List.append_assoc] }
+  have hfamily (suffix : FlatTraceLaw.FlatTape Ntail) :
+      ∃ (attempts used : FlatTraceLaw.FlatTape P → ℕ)
+        (finalState : FlatTraceLaw.FlatTape P → Env),
+        (∀ preTape, Run B localRepairRetriesSource
+          (Rpre suffix preTape).σ (finalState preTape)
+            (12 * Nat.clog 2 m + 24 +
+              ((15 * Nat.clog 2 m + 30) * used preTape +
+                attempts preTape * (79 * s + scanUpper + 50) + 14))) ∧
+        (∑ preTape : FlatTraceLaw.FlatTape P,
+          ((12 * Nat.clog 2 m + 24 +
+            ((15 * Nat.clog 2 m + 30) * used preTape +
+              attempts preTape * (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ)) ≤
+          ((12 * Nat.clog 2 m + 38 +
+            4 * s * (15 * Nat.clog 2 m + 30) +
+            2 * (79 * s + scanUpper + 50) : ℕ) : ℚ) *
+            (2 ^ P : ℚ) := by
+    have hpreBits : ∀ preTape, (Rpre suffix preTape).bits =
+        FlatTraceLaw.flatBits preTape := by intro preTape; rfl
+    have hpreState : ∀ preTape preTape',
+        (Rpre suffix preTape).σ.vars = (Rpre suffix preTape').σ.vars ∧
+        (Rpre suffix preTape).σ.arrs = (Rpre suffix preTape').σ.arrs ∧
+        (Rpre suffix preTape).σ.out = (Rpre suffix preTape').σ.out := by
+      intro preTape preTape'
+      exact hstate (E (preTape, suffix)) (E (preTape', suffix))
+    exact localRepairRetriesSource_mean_runtime_stopped domain
+      (Rpre suffix) hpreBits hpreState
+      (fun preTape => hdomain (E (preTape, suffix)))
+      (fun preTape => hscan (E (preTape, suffix)))
+      (fun preTape => hcap (E (preTape, suffix)))
+      hcapB hblocks henum hhalf
+  choose attemptsP usedP finalP hrunP hmeanP using hfamily
+  let attempts (full : FlatTraceLaw.FlatTape (P + Ntail)) : ℕ :=
+    attemptsP (E.symm full).2 (E.symm full).1
+  let used (full : FlatTraceLaw.FlatTape (P + Ntail)) : ℕ :=
+    usedP (E.symm full).2 (E.symm full).1
+  let finalState (full : FlatTraceLaw.FlatTape (P + Ntail)) : Env :=
+    finalP (E.symm full).2 (E.symm full).1
+  refine ⟨attempts, used, finalState, ?_, ?_⟩
+  · intro full
+    have h := hrunP (E.symm full).2 (E.symm full).1
+    have he : E ((E.symm full).1, (E.symm full).2) = full :=
+      E.apply_symm_apply full
+    change Run B localRepairRetriesSource
+      (R (E ((E.symm full).1, (E.symm full).2))).σ
+      (finalState full)
+        (12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * used full +
+            attempts full * (79 * s + scanUpper + 50) + 14)) at h
+    rw [he] at h
+    exact h
+  · have hsum :
+        (∑ full : FlatTraceLaw.FlatTape (P + Ntail),
+          ((12 * Nat.clog 2 m + 24 +
+            ((15 * Nat.clog 2 m + 30) * used full +
+              attempts full * (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ)) =
+        ∑ suffix : FlatTraceLaw.FlatTape Ntail,
+          ∑ preTape : FlatTraceLaw.FlatTape P,
+            ((12 * Nat.clog 2 m + 24 +
+              ((15 * Nat.clog 2 m + 30) * usedP suffix preTape +
+                attemptsP suffix preTape *
+                  (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ) := by
+      calc
+        _ = ∑ pair : FlatTraceLaw.FlatTape P ×
+            FlatTraceLaw.FlatTape Ntail,
+            ((12 * Nat.clog 2 m + 24 +
+              ((15 * Nat.clog 2 m + 30) *
+                usedP pair.2 pair.1 +
+                attemptsP pair.2 pair.1 *
+                  (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ) := by
+              exact Fintype.sum_equiv E.symm _ _
+                (by intro full; simp [attempts, used])
+        _ = _ := by rw [Fintype.sum_prod_type, Finset.sum_comm]
+    rw [hsum]
+    have htotal := Finset.sum_le_sum
+      (s := (Finset.univ : Finset (FlatTraceLaw.FlatTape Ntail)))
+      (fun suffix _ => hmeanP suffix)
+    have hcard : Fintype.card (FlatTraceLaw.FlatTape Ntail) =
+        2 ^ Ntail := by simp [FlatTraceLaw.FlatTape, Fintype.card_fun]
+    simpa [P, pow_add, hcard, mul_assoc, mul_comm, mul_left_comm]
+      using htotal
+
 /-- The paper hypotheses use neighborhoods restricted to the active set;
 the source scans physical CSR rows. This theorem connects them without
 requiring any full graph neighborhood to lie in the active set. -/
