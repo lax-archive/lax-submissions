@@ -54,6 +54,34 @@ def initialRetryDecision : Com :=
       (.assign "initialRetryStatus" (.lit 2)))
     (.assign "initialRetryStatus" (.lit 2))
 
+/-- Every decision branch is read-free and takes at most twenty steps. -/
+lemma retryDecision_cost_le {B p : ℕ} {σ τ : Env}
+    (hrun : BigStepB B initialRetryDecision σ τ p) : p ≤ 20 := by
+  unfold initialRetryDecision at hrun
+  cases hrun with
+  | ite_false _ hset =>
+      cases hset
+      simp [Cond.size, Expr.size]
+  | ite_true _ hrep =>
+      cases hrep with
+      | ite_false _ hset =>
+          cases hset
+          simp [Cond.size, Expr.size]
+      | ite_true _ haccept =>
+          cases haccept with
+          | ite_true _ hset =>
+              cases hset
+              simp [Cond.size, Expr.size]
+          | ite_false _ hrestore =>
+              cases hrestore with
+              | seq hfirst hlast =>
+                  cases hfirst with
+                  | seq ha hb =>
+                      cases ha
+                      cases hb
+                      cases hlast
+                      simp [Cond.size, Expr.size]
+
 /-- One iteration of the fixed retry loop.  An empty remaining budget sets
 exhaustion without calling the sampler.  On an ordinary rejected attempt the
 machine restores the original sampling registers and decrements the counter.
