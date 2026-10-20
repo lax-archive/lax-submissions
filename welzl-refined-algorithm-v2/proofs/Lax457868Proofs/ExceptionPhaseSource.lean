@@ -336,7 +336,7 @@ lemma exceptionPhase_run {B n targetCap sampleCount : ℕ}
       (rscan.frame_arr "ord" (by decide)).trans hord₁
     obtain ⟨σ₃, packed, rpack, hsample₃, hord₃,
       henum₃, hcount₃, _hcursor₃, _harrFrame₃,
-      _hvarFrame₃, _hinp₃, _hout₃⟩ :=
+      _hvarFrame₃, _hinp₃, _hout₃, _hpackedCells₃⟩ :=
       packMarkedSamples_run hn₂ hsample₂ hord₂
         hFlags01 I.hnB I.honeB
     have hrun : Run B exceptionPhase I.σ σ₃
@@ -400,7 +400,7 @@ lemma exceptionPhase_run {B n targetCap sampleCount : ℕ}
       simpa [hSampleEmpty] using hFlags01
     obtain ⟨σ₃, packed, rpack, hsample₃, hord₃,
       henum₃, hcount₃, _hcursor₃, _harrFrame₃,
-      _hvarFrame₃, _hinp₃, _hout₃⟩ :=
+      _hvarFrame₃, _hinp₃, _hout₃, _hpackedCells₃⟩ :=
       packMarkedSamples_run I.hn I.hsampleFlags I.hord
         hFlags01W I.hnB I.honeB
     have hrun : Run B exceptionPhase I.σ σ₃

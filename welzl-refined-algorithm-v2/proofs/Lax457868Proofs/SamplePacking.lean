@@ -415,7 +415,9 @@ lemma packMarkedSamples_run {B n : ℕ} {σ : Env} {flags ord : ℕ → ℕ}
       (∀ a, a ≠ "ord" → σ'.arrs a = σ.arrs a) ∧
       (∀ v, v ≠ "sampleCount" → v ≠ "sampleCursor" →
         σ'.vars v = σ.vars v) ∧
-      σ'.inp = σ.inp ∧ σ'.out = σ.out := by
+      σ'.inp = σ.inp ∧ σ'.out = σ.out ∧
+      (∀ i < σ'.vars "sampleCount",
+        packed i = (scanList flags 0 n).getD i 0) := by
   have hbody : Spec B (fun τ => PackInv n flags τ ∧ τ.vars "sampleCursor" < n)
       packBody
       (fun σ₁ σ₂ => PackInv n flags σ₂ ∧
@@ -496,7 +498,7 @@ lemma packMarkedSamples_run {B n : ℕ} {σ : Env} {flags ord : ℕ → ℕ}
   have hout := hrun.out_eq (by simp [packMarkedSamples, packBody,
     packTest, seqs, Fill.put, inc, Com.NoWrite])
   refine ⟨σ', packed, hrun, hflagsFinal, hordPacked, hprefix', hcard,
-    hcursor, hframeArrs, hframeVars, hinp, hout⟩
+    hcursor, hframeArrs, hframeVars, hinp, hout, hordCells⟩
 
 /-- Execute the fixed runtime-array marking loop. The caller proves that the
 array prefix contains `draws`; the code itself reads each entry dynamically.
@@ -687,7 +689,7 @@ lemma markAndPackSamples_run {B n drawCap : ℕ} {σ : Env} {ord : ℕ → ℕ}
     rw [hflagsIndicator i hi]
     split_ifs <;> simp_all
   obtain ⟨σf, packed, hpack, hflagsf, hordf, hprefix, hcount, hcursor,
-      -, -, hinpf, houtf⟩ :=
+      -, -, hinpf, houtf, _hpackedCells⟩ :=
     packMarkedSamples_run hnm hflagsm hordm hflags01m hnB honeB
   have hrunRaw := Run.seq hmark hpack
   have hrun : Run B markAndPackSamples σ σf

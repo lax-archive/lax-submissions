@@ -382,7 +382,7 @@ lemma groupActiveB_run {B n q Q : ℕ} (I : GroupInput B n q Q) :
       (∀ a, a ∉ groupActiveB.warrs → σ'.arrs a = I.σ.arrs a) ∧
       (∀ v, v ∉ groupActiveB.wvars → σ'.vars v = I.σ.vars v) := by
   obtain ⟨σ₁, packed, rpack, hactive₁, hord₁, henum, halen₁,
-    _hcursor, hframeArr, hframeVar, _hinp, _hout⟩ :=
+    _hcursor, hframeArr, hframeVar, _hinp, _hout, _hpackedCells⟩ :=
     packActiveB_run I.hn I.hactive I.hord I.hflags01 I.hnB I.honeB
   let xs := Stack.toList (σ₁.vars "alen") packed
   have hset : xs.toFinset = activeVertices n I.active := by

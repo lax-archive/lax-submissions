@@ -1431,7 +1431,8 @@ lemma exceptionRepairPacked_run
       by_cases hv : v ∈ Wfinal <;> simp [setFlag, hv]
     have hnB : n < B := by have := R.hn1B; omega
     obtain ⟨σout, packed, rpack, hflags, hord, hprefix,
-      hcount, hcursor, harrFrame, hvarFrame, hinpPack, houtPack⟩ :=
+      hcount, hcursor, harrFrame, hvarFrame, hinpPack, houtPack,
+      _hpackedCells⟩ :=
       packMarkedSamples_run Rfinal.hn Rfinal.hsample Rfinal.hord
         hflags01 hnB honeB
     have hWrange : Wfinal ⊆ Finset.range n :=

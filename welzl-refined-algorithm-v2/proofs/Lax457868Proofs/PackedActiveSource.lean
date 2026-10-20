@@ -7,6 +7,7 @@ namespace Lax457868Proofs.PackedActiveSource
 
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
+open Lax457868Proofs.ReusedOriginal.Construction.ReadKeys
 open Lax457868Proofs.SamplePacking
 open Lax457868Proofs.SourceRenaming
 
@@ -93,7 +94,9 @@ lemma packActiveB_run {B n : ℕ} {σ : Env} {flags ord : ℕ → ℕ}
       (∀ a, a ≠ "ord" → σ'.arrs a = σ.arrs a) ∧
       (∀ v, v ≠ "alen" → v ≠ "activePackCursor" →
         σ'.vars v = σ.vars v) ∧
-      σ'.inp = σ.inp ∧ σ'.out = σ.out := by
+      σ'.inp = σ.inp ∧ σ'.out = σ.out ∧
+      (∀ i < σ'.vars "alen",
+        packed i = (scanList flags 0 n).getD i 0) := by
   let ρ := activePackNames
   let τ := renameEnv ρ.inverse σ
   have hstart : renameEnv ρ τ = σ := by
@@ -111,7 +114,7 @@ lemma packActiveB_run {B n : ℕ} {σ : Env} {flags ord : ℕ → ℕ}
     rw [activePackNames_fixed_ord]
     exact hord
   obtain ⟨τ', packed, hrun, hflags', hord', hprefix, hcount, hcursor,
-    hframeArr, hframeVar, hinp, hout⟩ :=
+    hframeArr, hframeVar, hinp, hout, hcells⟩ :=
       packMarkedSamples_run hnτ hflagsτ hordτ hflags01 hnB honeB
   let σ' := renameEnv ρ τ'
   have hrun' : Run B packActiveBSource σ σ' (20 * n + 9) := by
@@ -178,6 +181,10 @@ lemma packActiveB_run {B n : ℕ} {σ : Env} {flags ord : ℕ → ℕ}
     rw [← hstart]
     simpa [σ', renameEnv] using hout
   exact ⟨σ', packed, hrun', hactiveB', hord'', hprefix', hcount', hcursor',
-    hframeArr', hframeVar', hinp', hout'⟩
+    hframeArr', hframeVar', hinp', hout', by
+      intro i hi
+      apply hcells i
+      change i < τ'.vars (ρ.scalar.symm "alen") at hi
+      rwa [activePackNames_inverse_scalar_alen] at hi⟩
 
 end Lax457868Proofs.PackedActiveSource
