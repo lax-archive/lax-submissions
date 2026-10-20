@@ -658,6 +658,152 @@ lemma readyAttemptConsumed_causal
     (by simpa using hbudget) (by simpa using hbudget)
     hrun hrun' hinp hinp' hd hd' hpre).1
 
+/-- The source loop continues precisely after a successful capped selection
+whose actual acceptance scan rejects the sampled representatives. -/
+def readyAttemptRejected
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ : FlatTraceLaw.FlatTape N) : Prop :=
+  ∃ σa : Env, ∃ q : ℕ,
+    Run B fullInitialAttempt
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.σ
+      σa q ∧
+    σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 0 ∧
+    σa.vars "attemptAccepted" = 0
+
+lemma readyAttemptRejected_of_same_prefix
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ τ : FlatTraceLaw.FlatTape N)
+    (hpre : (List.ofFn ρ).take (readyAttemptConsumed R hbudget ρ) =
+      (List.ofFn τ).take (readyAttemptConsumed R hbudget ρ))
+    (hreject : readyAttemptRejected R hbudget ρ) :
+    readyAttemptRejected R hbudget τ := by
+  obtain ⟨σr, qr, hrunr, hbatch, hrep, haccept⟩ := hreject
+  obtain ⟨σa, q, hruna, hinp, hd⟩ := readyAttemptConsumed_spec R hbudget ρ
+  obtain ⟨σb, q', hrunb, hinp', hd'⟩ := readyAttemptConsumed_spec R hbudget τ
+  have hrEq : σr = σa := by
+    obtain ⟨_, _, ha⟩ := hrunr
+    obtain ⟨_, _, hb⟩ := hruna
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hsame := (readyAttempt_same_prefix R (List.ofFn ρ) (List.ofFn τ)
+    (by simpa using hbudget) (by simpa using hbudget)
+    hruna hrunb hinp hinp' hd hd' hpre).2
+  refine ⟨σb, q', hrunb, ?_, ?_, ?_⟩
+  · simpa [hsame, hrEq] using hbatch
+  · simpa [hsame, hrEq] using hrep
+  · simpa [hsame, hrEq] using haccept
+
+/-- Reinputting a ready state changes only the concrete random input. The
+source outcome event is evaluated by replacing that input with its candidate
+flat tape, so the event itself is invariant under reinput. -/
+lemma readyBadFiber_reinput_eq
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ τ υ : FlatTraceLaw.FlatTape N) :
+    (FlatTraceLaw.flatBitsEquiv _).symm
+      ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩ ∈
+      sourceInitialBadFiber
+        (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I
+        k cap ↔
+    (FlatTraceLaw.flatBitsEquiv _).symm
+      ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩ ∈
+      sourceInitialBadFiber
+        (R.reinput (List.ofFn τ) (by simpa [attemptBitBudget] using hbudget)).I
+        k cap := by
+  simp only [sourceInitialBadFiber, Finset.mem_biUnion,
+    sourceInitialOutcomeFiber, Finset.mem_filter, Finset.mem_univ, true_and]
+  have hflatρ : FlatTraceLaw.flatBits
+      ((FlatTraceLaw.flatBitsEquiv
+        (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.bits.length).symm
+        ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩) = List.ofFn υ :=
+    congrArg Subtype.val ((FlatTraceLaw.flatBitsEquiv
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.bits.length).apply_symm_apply
+      ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩)
+  have hflatτ : FlatTraceLaw.flatBits
+      ((FlatTraceLaw.flatBitsEquiv
+        (R.reinput (List.ofFn τ) (by simpa [attemptBitBudget] using hbudget)).I.bits.length).symm
+        ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩) = List.ofFn υ :=
+    congrArg Subtype.val ((FlatTraceLaw.flatBitsEquiv
+      (R.reinput (List.ofFn τ) (by simpa [attemptBitBudget] using hbudget)).I.bits.length).apply_symm_apply
+      ⟨List.ofFn υ, by simp [ReadyInput.reinput_bits]⟩)
+  rw [hflatρ, hflatτ]
+  simp only [ReadyInput.reinput, InitialFlatLaw.reinputInitialAttempt]
+  constructor
+  · rintro ⟨ω, hbad, ⟨w⟩⟩
+    refine ⟨ω, hbad, ⟨?_⟩⟩
+    exact { w with }
+  · rintro ⟨ω, hbad, ⟨w⟩⟩
+    refine ⟨ω, hbad, ⟨?_⟩⟩
+    exact { w with }
+
+/-- Every actual source continuation belongs to the single-attempt bad
+fiber; capped draw or representative failures are excluded. -/
+lemma readyAttemptRejected_badFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ : FlatTraceLaw.FlatTape N)
+    (hreject : readyAttemptRejected R hbudget ρ) :
+    (FlatTraceLaw.flatBitsEquiv _).symm
+      ⟨List.ofFn ρ, by simp [ReadyInput.reinput_bits]⟩ ∈
+      sourceInitialBadFiber
+        (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I
+        k cap := by
+  let J := R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)
+  obtain ⟨σr, qr, hrunr, hrbatch, hrrep, hraccept⟩ := hreject
+  obtain ⟨σsel, σa, tape, tail, values, used, drawFailed, stageCost,
+    hbits, htrace, hselRun, hfull, hbatch, hinpSel, houtSel,
+    hoff, htgt, hactiveA, hactiveB, hn, hqpow,
+    hdrawFailure, hdrawSuccess⟩ :=
+    fullInitialAttempt_run_bits J.I J.hactiveA J.hdegree J.hinter
+      J.hneighbors J.hexceptionFlags J.hexceptionList J.hnearBound
+      J.hexceptionCap J.hnB J.hkB J.hcapB
+  have heq : σr = σa := by
+    obtain ⟨_, _, ha⟩ := hrunr
+    obtain ⟨_, _, hb⟩ := hfull
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hbatch0 : σa.vars "batchFailed" = 0 := by simpa [heq] using hrbatch
+  have hrep0 : σa.vars "repFailed" = 0 := by simpa [heq] using hrrep
+  have haccept0 : σa.vars "attemptAccepted" = 0 := by simpa [heq] using hraccept
+  have hdrawOK : drawFailed = false := by
+    cases drawFailed with
+    | false => rfl
+    | true => simp [hbatch] at hbatch0
+  obtain ⟨W, repFailed, repUsed, hW, hWA, hvaluesLen,
+    hrepLe, hrepVal, hinp, hrepFailure, hrepSuccess⟩ := hdrawSuccess hdrawOK
+  have hrepOK : repFailed = false := by
+    cases repFailed with
+    | false => rfl
+    | true =>
+        obtain ⟨hselEq, _, _, _⟩ := hrepFailure rfl
+        simp [hselEq, hrepVal] at hrep0
+  obtain ⟨mapped, choice, packedExceptions, packedSample,
+    hmappedSel, hdraws, hchoiceSample, hchoiceRep,
+    hacceptRun, hExceptionsEq, hflags, hlist, hprefixE,
+    hcountE, hacceptBit, hsampleFlags, hord, hprefixW,
+    hcountW, hrepFinal, hactiveBFinal, hinpFinal⟩ := hrepSuccess hrepOK
+  have hbatchSel : σsel.vars "batchFailed" = 0 := by
+    calc
+      _ = σa.vars "batchFailed" := (hacceptRun.frame_var "batchFailed" (by decide)).symm
+      _ = 0 := hbatch0
+  have hrepSel : σsel.vars "repFailed" = 0 := by simpa [hrepOK] using hrepVal
+  have hbad : cap < (choice.exceptions k).card := by
+    by_contra h
+    have hpass : (choice.exceptions k).card ≤ cap := Nat.le_of_not_gt h
+    simp [hpass] at hacceptBit
+    omega
+  simpa [J, ReadyInput.reinput_bits] using
+    initialSamplerAttempt_run_badFiber J.I σsel _ k cap choice mapped
+      hselRun hbatchSel hrepSel hmappedSel hchoiceRep hbad
+
 private lemma eq_zero_eval {B : ℕ} {σ : Env} {v : String} {z : ℕ}
     (hz : σ.vars v = z) (hzB : z < B) (hzero : 0 < B) :
     (Cond.eq (.var v) (.lit 0)).evalB B σ = some (z == 0) := by
