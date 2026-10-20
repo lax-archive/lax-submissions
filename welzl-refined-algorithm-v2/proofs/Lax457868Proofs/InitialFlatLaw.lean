@@ -3,6 +3,7 @@ import Lax457868Proofs.ClassChoiceTransport
 import Lax457868Proofs.InitialSamplerAttempt
 import Lax457868Proofs.InitialSamplerChoice
 import Lax457868Proofs.SamplerInitialRetries
+import Lax457868Proofs.SourceTapePrefix
 
 /-!
 Flat-tape counting at the actual initial-attempt boundary. The first draw
@@ -30,6 +31,7 @@ open Lax457868Proofs.InitialSamplerAttempt
 open Lax457868Proofs.InitialDrawSampleSource
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
+open Lax457868Proofs.ReusedOriginal.Construction.RadixMath
 
 /-- A prescribed stopped path followed by an arbitrary event on precisely
 the bits that remain after its actual consumed prefix. -/
@@ -1002,7 +1004,8 @@ lemma initialSamplerAttempt_run_jointFiber
               ⟨draw, reps⟩).representative b = mapped b) := by
   obtain ⟨_σd, σ', tape, tail, values, used, drawFailed, stageCost,
     hbits, hdrawTrace, hrun, _haccepted, _hn, _hqpow, _hbatchFailed,
-    _harrFrame, _hvarFrame, _hdrawFailure, hdrawSuccess⟩ :=
+    _harrFrame, _hvarFrame, _hdrawFailure, hdrawSuccess,
+    _hdrawRun, _hdrawInp⟩ :=
       Lax457868Proofs.InitialSamplerAttempt.initialSamplerAttempt_run_bits I
   refine ⟨σ', tape, tail, values, used, drawFailed, stageCost,
     hbits, hdrawTrace, hrun, ?_⟩
@@ -1013,7 +1016,7 @@ lemma initialSamplerAttempt_run_jointFiber
     _hselection, _hnFinal, _hqpowFinal, _hsampleCount, _hclassB,
     _hclassSize, _hord, _hnodup, hxs, hclass, _hrepUsedLe,
     hrepFailedVal, _hrepFailure, _hsampleFlags, _hinp,
-    hrepSuccess, _hcost⟩ := hdrawSuccess hdrawOK
+    hrepSuccess, _hcost, _hsourceCert⟩ := hdrawSuccess hdrawOK
   have hrepFalse : repFailed = false := by
     cases repFailed with
     | false => rfl
@@ -1044,5 +1047,240 @@ lemma initialSamplerAttempt_run_jointFiber
       hclasses mapped hrepC hrepLabel hformula
   exact ⟨W, q, size, repValues, mapped, draw, reps,
     hmappedArr, hdrawSet, hmem, hprob, hrepresentative⟩
+
+/-- Compact class sizes fill exactly the active prefix of the sorted array. -/
+lemma classStart_eq_card_of_sizes (C : Finset ℕ) (label size : ℕ → ℕ)
+    (q : ℕ) (hrange : ∀ b ∈ C, label b < q)
+    (hsizes : ∀ d < q, size d = classMultiplicity label C d) :
+    classStart size q = C.card := by
+  have hsum : ∀ k, classStart size k =
+      ∑ d ∈ Finset.range k, size d := by
+    intro k
+    induction k with
+    | zero => simp [classStart]
+    | succ k ih => simp [classStart, ih, Finset.sum_range_succ]
+  rw [hsum]
+  have heq : (∑ d ∈ Finset.range q, size d) =
+      ∑ d ∈ Finset.range q, classMultiplicity label C d := by
+    apply Finset.sum_congr rfl
+    intro d hd
+    exact hsizes d (Finset.mem_range.mp hd)
+  rw [heq]
+  exact sum_classMultiplicity_of_bounded hrange
+
+private lemma validOutput_length_and_bound (size : ℕ → ℕ) :
+    ∀ {d q : ℕ} {values : List ℕ},
+      ValidOutput size (classStart size) d q values →
+      values.length = q ∧
+      ∀ v ∈ values, v < classStart size (d + q)
+  | _, _, _, .done _ => by simp
+  | _, _, _, .step (d := d) (r := r) i hnext => by
+      obtain ⟨hlen, hbound⟩ := validOutput_length_and_bound size hnext
+      constructor
+      · simp [hlen]
+      · intro v hv
+        simp only [List.mem_cons] at hv
+        rcases hv with rfl | hv
+        · have hhead : classStart size d + i.val <
+              classStart size (d + 1) := by
+            simp only [classStart]
+            omega
+          exact hhead.trans_le (classStart_mono size (by omega))
+        · have htail := hbound v hv
+          simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using htail
+
+/-- Sum conditional class-selector bounds over disjoint *concrete* stopped
+draw prefixes. The class-size vector may change with the entire first-stage
+prefix; only its ideal output count has to agree. -/
+lemma adaptiveInitialFiber_le_ideal
+    (m : ℕ) (hm : 0 < m) (t r N k : ℕ)
+    (indices : List ℕ)
+    (size start : List ℕ → ℕ → ℕ)
+    (q : List ℕ → ℕ) (repValues : List ℕ → List ℕ)
+    (hindices : ValidOutput (fun _ => m) (fun _ => 0) 0 r indices)
+    (hfirstBudget : bitBudget (fun _ => m) t 0 r ≤ N)
+    (hrep : ∀ a ∈ attemptVectors t r,
+      ValidOutput (size a) (start a) 0 (q a) (repValues a))
+    (hbudget : ∀ a ∈ attemptVectors t r,
+      bitBudget (fun _ => m) t 0 r +
+        bitBudget (size a) t 0 (q a) ≤ N)
+    (hcount : ∀ a ∈ attemptVectors t r,
+      outputCount (size a) 0 (q a) = k) :
+    m ^ r * k *
+      ((attemptVectors t r).biUnion fun a =>
+        initialPathFiber m t r N indices a
+          (size a) (start a) (q a) (repValues a)).card ≤ 2 ^ N := by
+  classical
+  let J := fun a => initialPathFiber m t r N indices a
+    (size a) (start a) (q a) (repValues a)
+  let K := fun a => pathFiber (fun _ => m) t (fun _ => 0) 0 r N indices a
+  have hsub (a : List ℕ) : J a ⊆ K a := by
+    intro tape ht
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+      (Finset.mem_filter.mp ht).2.1⟩
+  have hJdisj : ∀ a ∈ attemptVectors t r, ∀ b ∈ attemptVectors t r,
+      a ≠ b → Disjoint (J a) (J b) := by
+    intro a _ b _ hab
+    exact (pathFiber_disjoint (fun _ => m) t (fun _ => 0)
+      0 r N indices hab).mono (hsub a) (hsub b)
+  have hcardJ (a : List ℕ) (ha : a ∈ attemptVectors t r) :
+      (J a).card = stoppedWeight (fun _ => m) 0 a *
+        jointWeight (size a) t 0 (q a)
+          (N - consumedBits (fun _ => m) 0 a) := by
+    have hpath := ValidOutput.validPath_of_mem (fun _ => m) t
+      (fun _ => 0) hindices a ha
+    have h := card_initialPath_classOutput m hm t r N indices a
+      (size a) (start a) (q a) (repValues a)
+      hpath (hrep a ha) (hbudget a ha)
+    simpa [J, initialPathFiber, ← card_flatPredicate] using h
+  have hcardK (a : List ℕ) (ha : a ∈ attemptVectors t r) :
+      (K a).card = stoppedWeight (fun _ => m) 0 a *
+        2 ^ (N - consumedBits (fun _ => m) 0 a) := by
+    have hpath := ValidOutput.validPath_of_mem (fun _ => m) t
+      (fun _ => 0) hindices a ha
+    have h := card_flatClassSuccess (fun _ => m) t (fun _ => 0)
+      hpath N hfirstBudget
+    have hcard := card_flatPredicate N
+      (fun bits => FlatClassSuccess (fun _ => m) t (fun _ => 0)
+        0 r bits indices a)
+    simpa [K, pathFiber] using hcard.symm.trans h
+  have hper (a : List ℕ) (ha : a ∈ attemptVectors t r) :
+      k * (J a).card ≤ (K a).card := by
+    have hpath := ValidOutput.validPath_of_mem (fun _ => m) t
+      (fun _ => 0) hindices a ha
+    have hconsumed := ValidPath.consumedBits_le_budget
+      (fun _ => m) t (fun _ => 0) hpath
+    have htail : bitBudget (size a) t 0 (q a) ≤
+        N - consumedBits (fun _ => m) 0 a := by
+      have hb := hbudget a ha
+      omega
+    have hclass := outputFiber_le_ideal_uniform (size a) t
+      (start a) 0 (q a)
+      (N - consumedBits (fun _ => m) 0 a) (repValues a)
+      htail (hrep a ha)
+    rw [card_outputFiber_valid (size a) t (start a) 0 (q a)
+      (N - consumedBits (fun _ => m) 0 a) (repValues a)
+      htail (hrep a ha), hcount a ha] at hclass
+    rw [hcardJ a ha, hcardK a ha]
+    nlinarith [Nat.mul_le_mul_left (stoppedWeight (fun _ => m) 0 a) hclass]
+  have hsum : k * ((attemptVectors t r).biUnion J).card ≤
+      (outputFiber (fun _ => m) t (fun _ => 0) 0 r N indices).card := by
+    rw [Finset.card_biUnion hJdisj,
+      outputFiber_eq_biUnion (fun _ => m) t (fun _ => 0)
+        0 r N indices hfirstBudget,
+      Finset.card_biUnion]
+    · rw [Finset.mul_sum]
+      exact Finset.sum_le_sum fun a ha => hper a ha
+    · intro a ha b hb hab
+      exact pathFiber_disjoint (fun _ => m) t (fun _ => 0)
+        0 r N indices hab
+  have hfirst := outputFiber_le_ideal_uniform (fun _ => m) t
+    (fun _ => 0) 0 r N indices hfirstBudget hindices
+  rw [outputCount_const m 0 r] at hfirst
+  calc
+    m ^ r * k * ((attemptVectors t r).biUnion J).card =
+        m ^ r * (k * ((attemptVectors t r).biUnion J).card) := by ring
+    _ ≤ m ^ r *
+        (outputFiber (fun _ => m) t (fun _ => 0) 0 r N indices).card :=
+      Nat.mul_le_mul_left _ hsum
+    _ ≤ 2 ^ N := hfirst
+
+private lemma sorted_prefix_injective (xs : List ℕ) (sorted label : ℕ → ℕ)
+    (Q q : ℕ) (hxs : xs.Nodup)
+    (hlabel : ∀ b ∈ xs, label b < Q)
+    (hsorted : ∀ i < xs.length,
+      sorted i = (bucketSort Q label xs).getD i 0) :
+    ∀ i < xs.length, ∀ j < xs.length,
+      sorted i = sorted j → i = j := by
+  intro i hi j hj hij
+  have hlen : (bucketSort Q label xs).length = xs.length :=
+    length_bucketSort hxs hlabel
+  have hi' : i < (bucketSort Q label xs).length := by rwa [hlen]
+  have hj' : j < (bucketSort Q label xs).length := by rwa [hlen]
+  apply ((nodup_bucketSort hxs).getElem_inj_iff (hi := hi')
+    (hj := hj')).mp
+  have hget := (hsorted i hi).symm.trans (hij.trans (hsorted j hj))
+  simpa [List.getD_eq_getElem?_getD,
+    List.getElem?_eq_getElem hi', List.getElem?_eq_getElem hj'] using hget
+
+/-- For a fixed source partition and sorted class array, the abstract
+representative map determines the numeric class-position vector uniquely. -/
+lemma numericRepValues_unique_of_mapped
+    (C : Finset ℕ) (label size sorted repClass : ℕ → ℕ)
+    (q : ℕ) (xs : List ℕ) (Q : ℕ)
+    (hrange : ∀ b ∈ C, label b < q)
+    (hoccupied : LabelsOccupyPrefix q label C)
+    (hsizes : ∀ d < q, size d = classMultiplicity label C d)
+    (hxs : xs.Nodup) (hxsSet : xs.toFinset = C)
+    (hlen : xs.length = C.card)
+    (hsorted : ∀ i < xs.length,
+      sorted i = (bucketSort Q label xs).getD i 0)
+    (hqQ : q ≤ Q)
+    (a b : List ℕ)
+    (ha : ValidOutput size (classStart size) 0 q a)
+    (hb : ValidOutput size (classStart size) 0 q b)
+    (mapped : ℕ → ℕ)
+    (hmapA : ∀ v ∈ C,
+      mapped v = writeClassReps sorted repClass 0 a (label v))
+    (hmapB : ∀ v ∈ C,
+      mapped v = writeClassReps sorted repClass 0 b (label v)) :
+    a = b := by
+  classical
+  have hlabelXs : ∀ v ∈ xs, label v < Q := by
+    intro v hv
+    exact (hrange v (hxsSet ▸ List.mem_toFinset.mpr hv)).trans_le hqQ
+  have hinj := sorted_prefix_injective xs sorted label Q q hxs hlabelXs hsorted
+  obtain ⟨hlenA, hboundA⟩ := validOutput_length_and_bound size ha
+  obtain ⟨hlenB, hboundB⟩ := validOutput_length_and_bound size hb
+  have hcap : classStart size q = xs.length :=
+    (classStart_eq_card_of_sizes C label size q hrange hsizes).trans hlen.symm
+  apply List.ext_getElem
+  · omega
+  · intro d hda hdb
+    have hd : d < q := by omega
+    let w := labelWitness label q ⟨d, hd⟩ hoccupied
+    have hwC : w.1 ∈ C := (Finset.mem_filter.mp w.2).1
+    have hwLabel : label w.1 = d := (Finset.mem_filter.mp w.2).2
+    have hposA : a[d] < xs.length := by
+      rw [← hcap]
+      simpa using hboundA a[d] (List.getElem_mem hda)
+    have hposB : b[d] < xs.length := by
+      rw [← hcap]
+      simpa using hboundB b[d] (List.getElem_mem hdb)
+    have hmaps : writeClassReps sorted repClass 0 a d =
+        writeClassReps sorted repClass 0 b d := by
+      have hA := hmapA w.1 hwC
+      have hB := hmapB w.1 hwC
+      rw [hwLabel] at hA hB
+      exact hA.symm.trans hB
+    have hlookupA := writeClassReps_at sorted repClass 0 a d hda
+    have hlookupB := writeClassReps_at sorted repClass 0 b d hdb
+    simp only [zero_add] at hlookupA hlookupB
+    rw [hlookupA, hlookupB] at hmaps
+    exact hinj a[d] hposA b[d] hposB hmaps
+
+/-- Two bounded source runs with the same initial state and consumed input
+prefix have identical scalar/array/output states; only their unread input
+suffixes differ. -/
+lemma run_same_consumedPrefix
+    {B : ℕ} {c : Com} {σ τ τ' : Env} {K K' : ℕ}
+    (pre rest rest' : List ℕ)
+    (hinput : σ.inp = pre ++ rest)
+    (houtput : τ.inp = rest)
+    (h : Run B c σ τ K)
+    (h' : Run B c {σ with inp := pre ++ rest'} τ' K') :
+    τ' = {τ with inp := rest'} := by
+  obtain ⟨k, _, hbig⟩ := h
+  obtain ⟨k', _, hbig'⟩ := h'
+  obtain ⟨read, hsplit, _, htransport⟩ :=
+    Lax457868Proofs.SourceTapePrefix.consumed_prefix hbig
+  have hread : read = pre := by
+    rw [houtput] at hsplit
+    rw [hinput] at hsplit
+    exact List.append_cancel_right hsplit.symm
+  subst read
+  have htransport' := htransport rest'
+  obtain ⟨hfinal, _⟩ := BigStep.unique htransport'.bigStep hbig'.bigStep
+  exact hfinal.symm
 
 end Lax457868Proofs.InitialFlatLaw

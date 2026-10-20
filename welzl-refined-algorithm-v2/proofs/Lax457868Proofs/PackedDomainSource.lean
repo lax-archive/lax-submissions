@@ -55,7 +55,7 @@ lemma packDomainSource_run {B n : ℕ} {σ : Env} {flags domain : ℕ → ℕ}
   have hdom₀ : σ₀.arrs "ord" = arrOf n domain := by
     change σ.arrs (ρ.array "ord") = arrOf n domain
     rwa [hdomρ]
-  obtain ⟨τ₀, packed, hr, ha, hd, hp, hc, hi, hfa, hfv, hin, hout⟩ :=
+  obtain ⟨τ₀, packed, hr, ha, hd, hp, hc, hi, hfa, hfv, hin, hout, _hpackedCells⟩ :=
     packMarkedSamples_run hn₀ hactive₀ hdom₀ hflags hnB honeB
   let τ := renameEnv ρ τ₀
   have hr' : Run B packDomainSource σ τ (20 * n + 9) := by
