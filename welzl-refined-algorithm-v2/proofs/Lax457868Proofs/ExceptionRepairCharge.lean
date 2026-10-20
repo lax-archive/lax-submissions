@@ -136,5 +136,32 @@ lemma sum_classScanCharge_le_input
   have hlen := R.hgraph.length_eq
   omega
 
+/-- Domain construction pays once for each exception row and once for its
+initial representative row. Only the latter term needs averaging over the
+initial random choice. -/
+lemma sum_domainCharge_le
+    {n : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    (hx : EncodesGraph x n G) (A E : Finset ℕ) (rep : ℕ → ℕ)
+    (hE : E ⊆ Finset.range n) (hrep : ∀ b ∈ E, rep b < n) :
+    (∑ b ∈ E, domainCharge x G A rep b) ≤
+      90 * (2 * edgeCount x) + 73 * n +
+        90 * (∑ b ∈ E, Lax11Proofs.CC.deg x (rep b)) := by
+  have hpoint (b : ℕ) (hb : b ∈ E) :=
+    Lax457868Proofs.RepairFilterSource.repairDomainSource_cost_le
+      hx A rep (Finset.mem_range.mp (hE hb)) (hrep b hb)
+  have hsum := Finset.sum_le_sum (fun b hb => hpoint b hb)
+  change (∑ b ∈ E, domainCharge x G A rep b) ≤
+    ∑ b ∈ E, (90 * (Lax11Proofs.CC.deg x b + Lax11Proofs.CC.deg x (rep b)) + 73) at hsum
+  have hd := Lax11Proofs.CC.sum_deg_le hx
+    (fun v hv => Finset.mem_range.mp (hE hv))
+  have hcard : E.card ≤ n := by simpa using Finset.card_le_card hE
+  have heq : (∑ b ∈ E, (90 * (Lax11Proofs.CC.deg x b + Lax11Proofs.CC.deg x (rep b)) + 73)) =
+      90 * (∑ b ∈ E, Lax11Proofs.CC.deg x b) +
+        90 * (∑ b ∈ E, Lax11Proofs.CC.deg x (rep b)) + 73 * E.card := by
+    simp [mul_add, Finset.sum_add_distrib, Finset.mul_sum]
+    ring
+  rw [heq] at hsum
+  omega
+
 end
 end Lax457868Proofs.ExceptionRepairCharge
