@@ -1034,3 +1034,11 @@ axiom audits passed with only the three background axioms. Full replay of
 proofs. Actual outer-loop/reconstruction, global adaptive mean cost and cap
 failure counting, concrete layout instantiation and the main conclusion
 remain to be connected.
+
+Integrated checked outer-loop coverage/separation and actual local stopped-read
+trace (dcbb78e6, ff0f62b6). The fixed full source command and compiler layout
+are now checked (2835e767), including deterministic initialization on arbitrary
+random suffixes and a word budget derived from the layout. Numeric logarithmic
+round potential and total charge summation are checked (fa714ffc). Actual
+initial/local mean-cost laws, their adaptive composition, and the annotated
+main conclusion remain outstanding; no main proof is claimed.
