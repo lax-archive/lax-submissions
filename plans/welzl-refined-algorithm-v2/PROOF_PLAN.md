@@ -937,3 +937,72 @@ Integrated release validation passed: all 151 proof modules are root-imported.
 Full `lax build --replay` completed in 3m53s, including 3m31s kernel replay.
 Archive inspection still reports one public concept and zero annotated
 conclusions; the headline theorem remains open.
+
+Reviewed `RefinedRoundCost`: above the stopping threshold, the existing
+contraction recurrence implies a two-thirds contraction. Telescoping bounds
+the sum of active sizes over an actual successful path by three times its
+initial size. Together with the existing round-count bound, this combines
+full-input scans and active-size draw charges into the required single-log
+runtime shape. Component expected charges and their actual-tape coupling
+remain to be supplied; this is not an unconditional runtime theorem. Targeted
+build and standard-background axiom audit passed.
+
+`SourceTapePrefix` proves that a bounded source derivation consumes at most
+its cost in input words and replays with any suffix after those consumed
+words. Thus a bounded clocked run established on a padded tape transfers to
+the original finite input whenever its length covers that cost. Arrays,
+scalars, output and exact execution cost are preserved. Targeted compilation
+and axiom audit passed (propext and Quot.sound only). This addresses finite
+tape transfer; the clock transformation and source-driver assembly are separate.
+
+Reviewed and integrated complete sampler assembly (`97b1c479`, `a6a845e2`).
+One fixed command executes initial retries, exception refinement, full-B
+regrouping, offsets and the packed exception-repair loop. Success exports an
+actual refined sample with packed enumeration and the same concrete initial
+choice and ordered repair trace. Initial and local capped failures are explicit;
+all exits preserve n/qpow, graph and active sets, lengths and cleared repair
+marks. Preparation and repair costs retain their component formulas. Initial
+attempt charge witnesses still need the ordered probability/cost coupling.
+
+Reviewed `FlatTraceLaw` (`beec47cf`, `d39a8706`): exact output-fiber counts
+for actual variable-width ClassTrace executions on one flat tape, summed over
+actual stopping counts. For each fixed sample-dependent class-size vector the
+successful kernel is bounded by the ideal uniform law; failure remains missing
+mass. This does not condition the initial sample on successful representative
+selection. Zero-cap and size-one cases are checked. Both modules passed
+independent target builds and background-only axiom audits. Next are initial
+flat-law/source coupling, actual round/history assembly and quantitative clock
+proof. The headline theorem remains open.
+
+
+Full kernel replay of the complete sampler and flat trace law passed at
+`ec685e6c` (3m50s total, 3m18s kernel replay). It still reports one concept and
+zero annotated conclusions: the headline remains open.
+
+Reviewed and independently checked `ClockedSource` (`c6cb45f5`): one fixed
+instrumentation has an actual run bounded by a syntax-dependent factor times
+remaining capacity, including nested-loop timeout paths. Sufficient capacity
+preserves the exact original state/input/output, with cost at most 100 times
+the original source cost. Capacity is mathematical; two individually bounded
+counters suffice, so no whole-time-budget word-fit premise is introduced.
+
+Runtime initialization is now checked (`f6f4a2dc`). `RefinedSetup` reuses the
+original CSR reader and initialization, preserving zero scratch arrays and
+saving the refined logarithm. `PackedDomainSource` reuses the existing flag
+packer by static renaming. `SamplerRuntimeSetup` computes the ten parameter
+registers in 38 source steps; all intermediates fit because the nontrivial
+branch establishes 2K(c)<n. Retry and draw caps are n. Their global failure
+bound still needs the actual-tape coupling. Setup, domain packing and parameter
+lemmas passed target builds and background-only axiom audits. The remaining
+integration is the actual history driver, sampler/retry probability and
+expected cost, then the clock/compile bridge and annotated conclusion.
+
+Checked the factual round-to-sampler adapter (`44f05241`). Two reused packing
+scans and the parameter assignments establish every complete-sampler input
+field in 40n+58 source steps. Initialization establishes its round workspace
+invariant, including cleared repair marks and Boolean next-set arrays. The
+adapter assumes only the current active sets, CSR encoding, word bounds and
+a sufficiently long input prefix; no successful sample is supplied. Target
+build and axiom checks passed with only the three background axioms. Full
+kernel replay of the preceding clock/setup/flat-law checkpoint `e260a2cb`
+passed in 5m05s; the main annotated conclusion is still outstanding.

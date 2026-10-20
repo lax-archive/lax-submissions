@@ -458,7 +458,8 @@ lemma refinedCutoffSource_run {B n c : ℕ} {σ : Env}
       σ'.vars "cutoffResult" = min n (2 * refinedCutoffK c) ∧
       σ'.vars "n" = σ.vars "n" ∧ σ'.vars "c" = σ.vars "c" ∧
       σ'.vars "qpow" = σ.vars "qpow" ∧
-      (∀ a, σ'.arrs a = σ.arrs a) ∧ σ'.inp = σ.inp ∧ σ'.out = σ.out := by
+      (∀ a, σ'.arrs a = σ.arrs a) ∧ σ'.inp = σ.inp ∧ σ'.out = σ.out ∧
+      (c < n → σ'.vars "L" = Nat.clog 2 c) := by
   let σ₀ := σ.setVar "drawModulus" c
   have hmod : Run B (.assign "drawModulus" (.var "c")) σ σ₀ 2 := by
     have hcb : σ.vars "c" < B := by rw [hc]; exact hcB
@@ -553,7 +554,12 @@ lemma refinedCutoffSource_run {B n c : ℕ} {σ : Env}
     have houtρσ : ρ.out = σ.out := by
       rw [houtρ, houtτ]
       exact hmod.out_eq (by simp [Com.NoWrite])
-    refine ⟨ρ, hwhole.mono hcostle, hresult, hnρ, hcρ, hqρ, harrρσ, hinρσ, houtρσ⟩
+    refine ⟨ρ, hwhole.mono hcostle, hresult, hnρ, hcρ, hqρ, harrρσ, hinρσ, houtρσ, ?_⟩
+    intro _
+    have hf := harith.frame_var "L" (by
+      simp [cutoffArithmetic, seqs, satMulTo, satAddTo, satMulCommand,
+        satAddCommand, Com.wvars])
+    exact hf.trans hLτ
   · let ρ := σ₀.setVar "cutoffResult" n
     have hnEval : (Expr.var "n").evalB B σ₀ = some n := by
       simpa [hn₀] using (evalB_var (x := "n") hnB₀)
@@ -575,7 +581,7 @@ lemma refinedCutoffSource_run {B n c : ℕ} {σ : Env}
       simp [ρ, earlyWelzlCutoff, Nat.not_lt_of_ge (Nat.le_of_not_gt hlate)]
     refine ⟨ρ, hwhole.mono (by
       have hclog : Nat.clog 2 n ≤ 12 * Nat.clog 2 n := by omega
-      omega), hresult, ?_, ?_, ?_, ?_, ?_, ?_⟩
+      omega), hresult, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
     · simp [ρ, σ₀, hn]
     · simp [ρ, σ₀, hc]
     · simp [ρ, σ₀]
@@ -595,5 +601,6 @@ lemma refinedCutoffSource_run {B n c : ℕ} {σ : Env}
           satAddTo, satMulCommand, satAddCommand, computeLog, inc])
       rw [hb]
       exact hmod.out_eq (by simp [Com.NoWrite])
+    · exact fun h => (hlate h).elim
 
 end Lax457868Proofs.RefinedCutoffSource

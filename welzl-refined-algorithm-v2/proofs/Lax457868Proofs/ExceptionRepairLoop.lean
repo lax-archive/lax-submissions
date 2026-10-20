@@ -312,8 +312,8 @@ def LoopInput.afterBody
     hWcurrentA := hWnextA
   }
 
-/-- The mathematical enumeration and class tables stay fixed across the
-source loop. These equalities concern the witnesses for the physical arrays. -/
+/-- The mathematical enumeration, class tables, and restored draw-log register
+stay fixed across the source loop. -/
 def SameFixed
     {B n s t bufferCap targetCap q cap k e : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
@@ -324,7 +324,18 @@ def SameFixed
       G x E groupedB Wbase A W') : Prop :=
   R'.exceptionList = R.exceptionList ∧ R'.rep = R.rep ∧
     R'.size = R.size ∧ R'.label = R.label ∧ R'.ord = R.ord ∧
-    R'.rest = R.rest
+    R'.rest = R.rest ∧ R'.σ.vars "qpow" = R.σ.vars "qpow"
+
+lemma SameFixed.qpow
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A W W' : Finset ℕ}
+    {R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A W}
+    {R' : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A W'}
+    (h : SameFixed R R') :
+    R'.σ.vars "qpow" = R.σ.vars "qpow" := h.2.2.2.2.2.2
 
 private lemma SameFixed.refl
     {B n s t bufferCap targetCap q cap k e : ℕ}
@@ -332,7 +343,7 @@ private lemma SameFixed.refl
     {E groupedB Wbase A W : Finset ℕ}
     (R : LoopInput B n s t bufferCap targetCap q cap k e
       G x E groupedB Wbase A W) : SameFixed R R := by
-  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 private lemma SameFixed.trans
     {B n s t bufferCap targetCap q cap k e : ℕ}
@@ -349,7 +360,8 @@ private lemma SameFixed.trans
     h'.2.2.1.trans h.2.2.1,
     h'.2.2.2.1.trans h.2.2.2.1,
     h'.2.2.2.2.1.trans h.2.2.2.2.1,
-    h'.2.2.2.2.2.trans h.2.2.2.2.2⟩
+    h'.2.2.2.2.2.1.trans h.2.2.2.2.2.1,
+    h'.2.2.2.2.2.2.trans h.2.2.2.2.2.2⟩
 
 /-- The machine's symmetric difference is a subset of the fixed ground set. -/
 private lemma difference_subset_ground {n : ℕ} (G : SimpleGraph (Fin n))
@@ -630,7 +642,9 @@ private lemma assemble_success
     simpa [σnext] using hstopSource
   · change σnext.vars "repairRetryStatus" = 1
     simpa [σnext] using hstatus
-  · exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+  · refine ⟨rfl, rfl, rfl, rfl, rfl, rfl, ?_⟩
+    change σnext.vars "qpow" = R.σ.vars "qpow"
+    simpa [σnext] using hqpow.trans (rload.frame_var "qpow" (by decide))
 
 private lemma assemble_failure
     {B n s t bufferCap targetCap q cap k e i K z : ℕ}
@@ -717,7 +731,9 @@ private lemma assemble_failure
     simp [σnext]
   · change σnext.vars "repairRetryStatus" = z
     simpa [σnext] using hstatus
-  · exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+  · refine ⟨rfl, rfl, rfl, rfl, rfl, rfl, ?_⟩
+    change σnext.vars "qpow" = R.σ.vars "qpow"
+    simpa [σnext] using hqpow.trans (rload.frame_var "qpow" (by decide))
 
 /-- Execute one packed exception. The reported charge is the actual source
 charge for the near or far branch, with its actual attempts and bit use. -/
@@ -1254,7 +1270,7 @@ private lemma initialize_loop
     htgt := by simpa [σ₃, σ₂, σ₁] using R.htgt
     hgroupActive := by simpa [σ₃, σ₂, σ₁] using R.hgroupActive
   }
-  refine ⟨Rinit, rinit, rfl, ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩,
+  refine ⟨Rinit, rinit, rfl, ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩,
     ?_, ?_, ?_⟩
   · change σ₃.vars "exceptionIndex" = 0
     simp [σ₃, σ₂, σ₁]
@@ -1415,7 +1431,7 @@ lemma exceptionRepairPacked_run
     hmap, hvalid, hout⟩ := exceptionRepairLoop_run R hbudget
   have hinputFinal : Rfinal.σ.inp =
       Rfinal.bits.map Bool.toNat ++ R.rest := by
-    rw [Rfinal.hinput, hfixed.2.2.2.2.2]
+    rw [Rfinal.hinput, hfixed.2.2.2.2.2.1]
   have honeB : 1 < B := by have := R.hthreeB; omega
   rcases hout with hsuccess | hfailure
   · obtain ⟨hstatus, hindex, _hstop, hlen, trials,
