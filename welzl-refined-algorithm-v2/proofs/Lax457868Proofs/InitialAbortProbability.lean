@@ -1,5 +1,6 @@
 import Lax457868Proofs.ClassTraceMean
 import Lax457868Proofs.InitialSamplerRetriesSource
+import Lax457868Proofs.RepresentativeSourceMean
 
 /-! Failure counting for the actual adaptive flat source selectors. The next
 request starts at the unread suffix of the previous capped request, so the
@@ -9,6 +10,7 @@ blocks. -/
 namespace Lax457868Proofs.InitialAbortProbability
 
 open Lax457868Proofs.ClassRepresentativeTrace
+open Lax457868Proofs.ClassRepresentativeLoop
 open Lax457868Proofs.ClassTraceMean
 open Lax457868Proofs.FairBitIndices
 open Lax457868Proofs.FlatTraceLaw
@@ -17,6 +19,8 @@ open Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
 open Lax457868Proofs.StoppedPrefixAveraging
 open Lax457868Proofs.InitialSamplerRetriesSource
 open Lax457868Proofs.FullInitialAttempt
+open Lax457868Proofs.InitialSamplerAttempt
+open Lax457868Proofs.RepresentativeSourceMean
 open Lax457868Proofs.InitialFlatLaw
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open scoped BigOperators
@@ -379,6 +383,55 @@ lemma readyAttemptBatchAbort_count
     omega
   have hcount := class_failure_count_bound (fun _ => m) t (fun _ => 0) r
     0 N (fun _ _ _ => R.I.hmPos) hbudget'
+  exact (Nat.mul_le_mul_left _ (Finset.card_le_card hsub)).trans hcount
+
+/-- Failed source representative selection from a fixed, factual partition
+state. The later initial-attempt proof conditions on its draw prefix to use
+this bound when the partition depends on the sample. -/
+def representativeAbort
+    {B n q Q t N : ℕ} (I : RepresentativeInput B n q Q t)
+    (hb : bitBudget I.size t 0 q ≤ N) (ρ : Tape N) : Prop :=
+  ∃ σa : Env, ∃ k : ℕ,
+    Run B initialRepresentativeSelection
+      (reinput I (List.ofFn ρ) (by simpa using hb)).σ σa k ∧
+    σa.vars "repFailed" = 1
+
+noncomputable def representativeAbortFiber
+    {B n q Q t N : ℕ} (I : RepresentativeInput B n q Q t)
+    (hb : bitBudget I.size t 0 q ≤ N) : Finset (Tape N) := by
+  classical
+  exact Finset.univ.filter (representativeAbort I hb)
+
+lemma representativeAbort_count
+    {B n q Q t N : ℕ} (I : RepresentativeInput B n q Q t)
+    (hb : bitBudget I.size t 0 q ≤ N) :
+    2 ^ t * (representativeAbortFiber I hb).card ≤ q * 2 ^ N := by
+  classical
+  have hsub : representativeAbortFiber I hb ⊆
+      Finset.univ.filter (fun ρ : Tape N =>
+        failedFlag I.size t (classStart I.size) 0 q (List.ofFn ρ) = true) := by
+    intro ρ hρ
+    have habort : representativeAbort I hb ρ := by
+      simpa [representativeAbortFiber] using hρ
+    obtain ⟨σa, ka, hra, hfailed⟩ := habort
+    let J := reinput I (List.ofFn ρ) (by simpa using hb)
+    obtain ⟨σb,xs,sorted,v,u,c,f,hrb,hnodup,hset,hlen,htrace,
+      hclassSize,hord,hsorted,hclassB,hactiveB,hsampleFlags,hflag,hindex,
+      hrepB,hinp,hout,hframe,hfailure,hsuccess⟩ :=
+      initialRepresentativeSelection_run_bits J
+    have heq : σa = σb := by
+      obtain ⟨_,_,ha⟩ := hra
+      obtain ⟨_,_,hb⟩ := hrb
+      exact (BigStep.unique ha.bigStep hb.bigStep).1
+    have hf : f = true := by
+      cases f with
+      | true => rfl
+      | false => simp [hflag, heq] at hfailed
+    have hflag' : failedFlag I.size t (classStart I.size) 0 q (List.ofFn ρ) = true := by
+      simpa [hf, J, reinput] using failedFlag_eq htrace
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hflag'⟩
+  have hcount := class_failure_count_bound I.size t (classStart I.size) q
+    0 N (fun j _ hj => I.hoccupied j (by omega)) hb
   exact (Nat.mul_le_mul_left _ (Finset.card_le_card hsub)).trans hcount
 
 end Lax457868Proofs.InitialAbortProbability
