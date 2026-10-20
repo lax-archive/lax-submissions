@@ -48,6 +48,21 @@ lemma round_counter_after_guard {a c k r n : ℕ}
   have hpn : 2 ^ r < n := by nlinarith
   exact Nat.succ_le_of_lt ((Nat.lt_clog_iff_pow_lt (by decide)).mpr hpn)
 
+/-- Reserve the terminal reconstruction contribution as well as the round
+just executed. A true guard leaves more than two units of shifted mass. -/
+lemma round_counter_with_terminal_after_guard {a c k r n : ℕ}
+    (hc : 1 ≤ c) (hk : 6 * c ^ 2 ≤ k)
+    (hguard : 2 * k < a)
+    (hpot : 2 ^ r * (a - 2 * c ^ 2) ≤ n) :
+    r + 2 ≤ Nat.clog 2 n := by
+  have hc2 : 1 ≤ c ^ 2 := by nlinarith
+  have hshift : 3 ≤ a - 2 * c ^ 2 := by omega
+  have hp : 0 < 2 ^ r := by positivity
+  have hpn : 2 ^ (r + 1) < n := by
+    rw [pow_succ]
+    nlinarith
+  exact Nat.succ_le_of_lt ((Nat.lt_clog_iff_pow_lt (by decide)).mpr hpn)
+
 /-- Telescope the contraction, retaining the terminal potential. -/
 lemma active_size_sum_potential (a : ℕ → ℕ) (r : ℕ)
     (hstep : ∀ i < r, 3 * a (i + 1) ≤ 2 * a i) :

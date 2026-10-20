@@ -1042,3 +1042,13 @@ random suffixes and a word budget derived from the layout. Numeric logarithmic
 round potential and total charge summation are checked (fa714ffc). Actual
 initial/local mean-cost laws, their adaptive composition, and the annotated
 main conclusion remain outstanding; no main proof is claimed.
+
+The exact public RAM contract is now derived from the explicit pending
+BodyLaw source estimate (c26ca716), with standard-background-only axiom
+audit. The small-input BodyEstimate is discharged and the large-case
+reduction is checked (178db30f); no annotated main proof is claimed. Actual
+initial outcome/continuation fibers are checked (9658476d, e0acfd15,
+1b75add1). Actual local retry mean runtime is now independent of selector
+cap (6a3b2f4b). Remaining work is actual initial retry mean, exception-loop
+aggregation, adaptive round composition, and cap-failure counting. Full
+LAX build of 696a95c5 passed in 1m58s with one concept and zero proofs.
