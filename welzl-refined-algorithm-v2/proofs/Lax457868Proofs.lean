@@ -201,3 +201,4 @@ import Lax457868Proofs.LocalSelectorAbort
 import Lax457868Proofs.RefinedRoundMean
 import Lax457868Proofs.CompleteSamplerMean
 import Lax457868Proofs.NumericRepairProbability
+import Lax457868Proofs.InitialRetryMean
