@@ -198,3 +198,4 @@ import Lax457868Proofs.FullInitialAttemptMean
 import Lax457868Proofs.RefinedRoundPrefix
 import Lax457868Proofs.InitialAbortProbability
 import Lax457868Proofs.LocalSelectorAbort
+import Lax457868Proofs.RefinedRoundMean
