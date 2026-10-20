@@ -1105,6 +1105,20 @@ lemma retryWhile_stopped_cost {B : ℕ} {σ τ : Env} {cost status : ℕ}
   have heq := BigStep.unique hrun.bigStep hcanon.bigStep
   exact heq.2
 
+lemma retryWhile_nonzero_cost {B : ℕ} {σ τ : Env} {cost : ℕ}
+    (hnotzero : σ.vars "initialRetryStatus" ≠ 0)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) : cost = 4 := by
+  cases hrun with
+  | while_false _ => rfl
+  | while_true hguard _ _ =>
+      obtain ⟨a, c, ha, hc, hbool⟩ := evalB_condEq_iff.mp hguard
+      obtain ⟨rfl, _⟩ := evalB_var_iff.mp ha
+      obtain ⟨rfl, _⟩ := evalB_lit_iff.mp hc
+      simp at hbool
+      exact False.elim (hnotzero hbool)
+
 private lemma retry_body_attempt {B fuel q p : ℕ} {σ σa τ : Env}
     (hleft : σ.vars "initialRetriesLeft" = fuel + 1)
     (hfuelB : fuel + 1 < B) (hzeroB : 0 < B)
