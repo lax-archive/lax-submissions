@@ -204,6 +204,8 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
     ∃ τ K, Run B preparedRefinedRoundSource σ τ K ∧
       τ.vars "n" = n ∧
       ((∃ A' : Finset ℕ, A'.card < A.card ∧ 0 < A'.card ∧
+          3 * A'.card ≤ 2 * A.card ∧
+          τ.vars "round" = σ.vars "round" + 1 ∧
           τ.vars "acount" = A'.card ∧ LoopReady B c G x rest τ) ∨
         τ.vars "acount" = 0) := by
   have hbudget :
@@ -279,7 +281,8 @@ lemma round_step {B c n : ℕ} {G : SimpleGraph (Fin n)} {x rest : List ℕ}
       exact hWsub hv
     have hsep' := Lax457868Proofs.RefinedTwinDomain.dual_partition_separated
       hW' hpartB' hpartA'
-    exact Or.inl ⟨Snum, hstrict, hSpositive, hacount', Snum, Rnum, bits.drop used,
+    exact Or.inl ⟨Snum, hstrict, hSpositive, hcontract, hround, hacount',
+      Snum, Rnum, bits.drop used,
       sizes ++ [A.card],
       hdata, hSrange, hRrange, hRnonempty, hsep', hstored, hbounded',
       hcapacity', hroundCapacity', hacount', hsizesLen', hsizesSum',
@@ -364,7 +367,8 @@ lemma round_while_run {B c n : ℕ} {G : SimpleGraph (Fin n)}
           hbounded hcapacity hroundCapacity hacount hsizesLen hsizesSum
           hpotential hroundLog hout
           hinput htape hx hG hc hB hlarge
-        rcases hresult with ⟨A', hstrict, _hpositive, hacount', hready'⟩ | hfail
+        rcases hresult with ⟨A', hstrict, _hpositive, _hcontract, _hround,
+            hacount', hready'⟩ | hfail
         · obtain ⟨τ, K', htail, hnTail, hresult'⟩ := ih A'.card
             (by omega) ρ' hready' hacount'
           exact ⟨τ, _, run_while_true htrue hstep htail, hnTail, hresult'⟩

@@ -37,6 +37,7 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
     ∃ ρ υ τ K events,
       Run B algorithmBody σ τ K ∧
       TraceChain B c G x rest ρ υ events ∧
+      events.length ≤ Nat.clog 2 n ∧
       K ≤ 1 + (Cond.lt (.var "cutoffResult") (.var "acount")).size +
         951 * (x.length + 1) + traceCost events +
         1 + (Cond.eq (.var "acount") (.lit 0)).size + 100 * (n + 1) ∧
@@ -63,8 +64,13 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
   have hpositive : 0 < ρ.vars "acount" := by
     rw [(hquot.frame_var "acount" (by decide)).trans R.activeCount]
     omega
-  obtain ⟨υ, Kloop, events, hloop, hchain, hcost, hnυ, hresult, hlast⟩ :=
+  obtain ⟨υ, Kloop, events, hloop, hchain, hcost, hlength, hnυ,
+    hresult, hlast⟩ :=
     round_while_run_traced hx hG hc hB hlargeN hready hpositive
+  have hlength' : events.length ≤ Nat.clog 2 n := by
+    have hround : ρ.vars "round" = 0 :=
+      (hquot.frame_var "round" (by decide)).trans R.round
+    omega
   by_cases hzero : υ.vars "acount" = 0
   · have hguard0 : (Cond.eq (.var "acount") (.lit 0)).evalB B υ = some true := by
       rw [evalB_condEq
@@ -85,7 +91,8 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
     let Ktotal := 1 + (Cond.lt (.var "cutoffResult") (.var "acount")).size +
       (951 * (x.length + 1) + Kloop +
         (1 + (Cond.eq (.var "acount") (.lit 0)).size + (10 * n + 6)))
-    refine ⟨ρ, υ, τ, Ktotal, events, ?_, hchain, ?_, hlast, Or.inl hzero⟩
+    refine ⟨ρ, υ, τ, Ktotal, events, ?_, hchain, hlength', ?_, hlast,
+      Or.inl hzero⟩
     · simpa [algorithmBody, roundGuard, Ktotal] using hrun
     · dsimp [Ktotal]
       rw [← hcost]
@@ -105,7 +112,8 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
       let Ktotal := 1 + (Cond.lt (.var "cutoffResult") (.var "acount")).size +
         (951 * (x.length + 1) + Kloop +
           (1 + (Cond.eq (.var "acount") (.lit 0)).size + 100 * (n + 1)))
-      refine ⟨ρ, υ, τ, Ktotal, events, ?_, hchain, ?_, hlast, Or.inr hcorrect⟩
+      refine ⟨ρ, υ, τ, Ktotal, events, ?_, hchain, hlength', ?_, hlast,
+        Or.inr hcorrect⟩
       · simpa [algorithmBody, roundGuard, Ktotal] using hrun
       · dsimp [Ktotal]
         rw [← hcost]
