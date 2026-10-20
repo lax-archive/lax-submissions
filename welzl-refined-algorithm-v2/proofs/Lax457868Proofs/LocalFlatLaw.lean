@@ -4,6 +4,7 @@ import Lax457868Proofs.LocalRepairSource
 import Lax457868Proofs.SamplerLocalSuccess
 import Lax457868Proofs.SamplerRetries
 import Lax457868Proofs.EnumeratedDraws
+import Lax457868Proofs.InitialFlatLaw
 
 /-!
 The actual local selector may abort when one of its capped index draws fails.
@@ -437,6 +438,279 @@ lemma localRepairTrial_run_flat
     simp only [actualDrawOutputFiber, Finset.mem_filter,
       Finset.mem_univ, true_and]
     exact ⟨blocks, values, used, hbits, by simpa [hf] using htrace, rfl⟩
+
+/-- Every continuing retry consumes precisely its successful stopped
+prefix; the next trial starts on the untouched suffix. -/
+inductive FlatRejectedTrials (m t s : ℕ) (bad : Finset (List ℕ)) :
+    ℕ → List Bool → Prop
+  | done (bits : List Bool) : FlatRejectedTrials m t s bad 0 bits
+  | step {k : ℕ} {bits : List Bool} (output attempts : List ℕ)
+      (hbad : output ∈ bad)
+      (hflat : FlatClassSuccess (fun _ => m) t (fun _ => 0) 0 s
+        bits output attempts)
+      (hnext : FlatRejectedTrials m t s bad k
+        (bits.drop (consumedBits (fun _ => m) 0 attempts))) :
+      FlatRejectedTrials m t s bad (k + 1) bits
+
+/-- Fair-bit tapes on which the first `k` local trials all successfully draw
+and reject, with exact stopped-prefix reuse between trials. -/
+def retryRejectedFiber (m t s k Nbits : ℕ) (bad : Finset (List ℕ)) :
+    Finset (FlatTape Nbits) := by
+  classical
+  exact Finset.univ.filter fun tape =>
+    FlatRejectedTrials m t s bad k (flatBits tape)
+
+private lemma card_flatPredicate (Nbits : ℕ) (P : List Bool → Prop)
+    [DecidablePred (fun tape : FlatTape Nbits => P (flatBits tape))] :
+    Nat.card {bits : List Bool // bits.length = Nbits ∧ P bits} =
+      (Finset.univ.filter fun tape : FlatTape Nbits => P (flatBits tape)).card := by
+  classical
+  let e : {tape : FlatTape Nbits // P (flatBits tape)} ≃
+      {bits : List Bool // bits.length = Nbits ∧ P bits} := {
+    toFun := fun tape => ⟨flatBits tape.1, flatBits_length tape.1, tape.2⟩
+    invFun := fun bits => ⟨(flatBitsEquiv Nbits).symm ⟨bits.1, bits.2.1⟩,
+      by
+        have heq : flatBits ((flatBitsEquiv Nbits).symm
+            ⟨bits.1, bits.2.1⟩) = bits.1 :=
+          congrArg Subtype.val
+            ((flatBitsEquiv Nbits).apply_symm_apply ⟨bits.1, bits.2.1⟩)
+        simpa only [heq] using bits.2.2⟩
+    left_inv := by
+      intro tape
+      apply Subtype.ext
+      exact (flatBitsEquiv Nbits).left_inv tape.1
+    right_inv := by
+      intro bits
+      apply Subtype.ext
+      change flatBits ((flatBitsEquiv Nbits).symm
+        ⟨bits.1, bits.2.1⟩) = bits.1
+      exact congrArg Subtype.val
+        ((flatBitsEquiv Nbits).right_inv ⟨bits.1, bits.2.1⟩)
+  }
+  rw [← Nat.card_congr e, Nat.card_eq_fintype_card]
+  simp [Fintype.card_subtype]
+
+/-- One prescribed rejecting trial path followed by `k` further
+rejecting trials on its actual unread suffix. -/
+def retryPathFiber (m t s k Nbits : ℕ) (bad : Finset (List ℕ))
+    (output attempts : List ℕ) : Finset (FlatTape Nbits) := by
+  classical
+  exact Finset.univ.filter fun tape =>
+    InitialFlatLaw.TerminalFlatEvent (fun _ => m) t (fun _ => 0) 0 s
+      output attempts (FlatRejectedTrials m t s bad k) (flatBits tape)
+
+lemma card_retryPathFiber (m t s k Nbits : ℕ)
+    (bad : Finset (List ℕ)) (output attempts : List ℕ)
+    (hpath : ValidPath (fun _ => m) t (fun _ => 0) 0 s output attempts)
+    (hbudget : bitBudget (fun _ => m) t 0 s ≤ Nbits) :
+    (retryPathFiber m t s k Nbits bad output attempts).card =
+      stoppedWeight (fun _ => m) 0 attempts *
+        (retryRejectedFiber m t s k
+          (Nbits - consumedBits (fun _ => m) 0 attempts) bad).card := by
+  classical
+  change (Finset.univ.filter fun tape : FlatTape Nbits =>
+    InitialFlatLaw.TerminalFlatEvent (fun _ => m) t (fun _ => 0) 0 s
+      output attempts (FlatRejectedTrials m t s bad k) (flatBits tape)).card = _
+  rw [← card_flatPredicate]
+  rw [InitialFlatLaw.card_terminalFlatEvent (fun _ => m) t (fun _ => 0)
+    hpath Nbits hbudget]
+  rw [card_flatPredicate]
+  rfl
+
+lemma retryRejectedFiber_succ_subset (m t s k Nbits : ℕ)
+    (bad : Finset (List ℕ)) :
+    retryRejectedFiber m t s (k + 1) Nbits bad ⊆
+      bad.biUnion fun output =>
+        (attemptVectors t s).biUnion fun attempts =>
+          retryPathFiber m t s k Nbits bad output attempts := by
+  classical
+  intro tape htape
+  have htrace : FlatRejectedTrials m t s bad (k + 1)
+      (flatBits tape) := by
+    simpa [retryRejectedFiber] using htape
+  cases htrace with
+  | step output attempts hbad hflat hnext =>
+      have hattempts := FlatClassSuccess.attempts_mem (fun _ => m) t
+        (fun _ => 0) hflat
+      apply Finset.mem_biUnion.mpr
+      refine ⟨output, hbad, Finset.mem_biUnion.mpr
+        ⟨attempts, hattempts, ?_⟩⟩
+      simpa only [retryPathFiber, Finset.mem_filter, Finset.mem_univ,
+        true_and] using
+        (show InitialFlatLaw.TerminalFlatEvent (fun _ => m) t
+          (fun _ => 0) 0 s output attempts (FlatRejectedTrials m t s bad k)
+          (flatBits tape) from ⟨hflat, hnext⟩)
+
+/-- Repeated rejected trials retain the geometric bound on a single flat
+tape, despite each trial starting after a variable-length stopped prefix. -/
+lemma retryRejectedFiber_geometric (m : ℕ)
+    (t s : ℕ) (bad : Finset (List ℕ))
+    (hvalid : bad ⊆ outputVectors (fun _ => m) (fun _ => 0) 0 s)
+    (hhalf : 2 * bad.card ≤ outputCount (fun _ => m) 0 s) :
+    ∀ (k Nbits : ℕ),
+      k * bitBudget (fun _ => m) t 0 s ≤ Nbits →
+      2 ^ k * (retryRejectedFiber m t s k Nbits bad).card ≤ 2 ^ Nbits := by
+  intro k
+  induction k with
+  | zero =>
+      intro Nbits _
+      simp only [pow_zero, one_mul]
+      have hsub : retryRejectedFiber m t s 0 Nbits bad ⊆
+          (Finset.univ : Finset (FlatTape Nbits)) := Finset.subset_univ _
+      simpa [FlatTape] using Finset.card_le_card hsub
+  | succ k ih =>
+      intro Nbits hbudgetAll
+      let D := bitBudget (fun _ => m) t 0 s
+      have hbudgetOne : D ≤ Nbits := by
+        calc
+          D ≤ (k + 1) * D := by
+            apply Nat.le_mul_of_pos_left
+            omega
+          _ ≤ Nbits := hbudgetAll
+      let weight := jointWeight (fun _ => m) t 0 s Nbits
+      have hpathBound (output attempts : List ℕ)
+          (houtput : output ∈ bad) (hattempts : attempts ∈ attemptVectors t s) :
+          2 ^ k * (retryPathFiber m t s k Nbits bad output attempts).card ≤
+            stoppedWeight (fun _ => m) 0 attempts *
+              2 ^ (Nbits - consumedBits (fun _ => m) 0 attempts) := by
+        have hpath : ValidPath (fun _ => m) t (fun _ => 0) 0 s
+            output attempts :=
+          ValidOutput.validPath_of_mem (fun _ => m) t (fun _ => 0)
+            (outputVectors.validOutput (fun _ => m) (fun _ => 0)
+              (hvalid houtput)) attempts hattempts
+        have hconsumed := ValidPath.consumedBits_le_budget
+          (fun _ => m) t (fun _ => 0) hpath
+        have hremain : k * D ≤ Nbits - consumedBits (fun _ => m) 0 attempts := by
+          have htotal : k * D + D ≤ Nbits := by
+            simpa [D, Nat.succ_mul, Nat.add_comm, Nat.add_left_comm,
+              Nat.add_assoc] using hbudgetAll
+          omega
+        rw [card_retryPathFiber m t s k Nbits bad output attempts
+          hpath hbudgetOne]
+        calc
+          2 ^ k * (stoppedWeight (fun _ => m) 0 attempts *
+              (retryRejectedFiber m t s k
+                (Nbits - consumedBits (fun _ => m) 0 attempts) bad).card) =
+              stoppedWeight (fun _ => m) 0 attempts *
+                (2 ^ k * (retryRejectedFiber m t s k
+                  (Nbits - consumedBits (fun _ => m) 0 attempts) bad).card) := by ring
+          _ ≤ stoppedWeight (fun _ => m) 0 attempts *
+                2 ^ (Nbits - consumedBits (fun _ => m) 0 attempts) :=
+              Nat.mul_le_mul_left _ (ih _ hremain)
+      have hinner (output : List ℕ) (houtput : output ∈ bad) :
+          2 ^ k * ((attemptVectors t s).biUnion fun attempts =>
+            retryPathFiber m t s k Nbits bad output attempts).card ≤ weight := by
+        calc
+          2 ^ k * ((attemptVectors t s).biUnion fun attempts =>
+              retryPathFiber m t s k Nbits bad output attempts).card ≤
+            2 ^ k * (∑ attempts ∈ attemptVectors t s,
+              (retryPathFiber m t s k Nbits bad output attempts).card) :=
+            Nat.mul_le_mul_left _ Finset.card_biUnion_le
+          _ = ∑ attempts ∈ attemptVectors t s,
+              2 ^ k * (retryPathFiber m t s k Nbits bad output attempts).card := by
+            rw [Finset.mul_sum]
+          _ ≤ ∑ attempts ∈ attemptVectors t s,
+              stoppedWeight (fun _ => m) 0 attempts *
+                2 ^ (Nbits - consumedBits (fun _ => m) 0 attempts) := by
+            apply Finset.sum_le_sum
+            intro attempts hattempts
+            exact hpathBound output attempts houtput hattempts
+          _ = weight := rfl
+      have hbadBound : 2 ^ k *
+          (retryRejectedFiber m t s (k + 1) Nbits bad).card ≤
+            bad.card * weight := by
+        calc
+          2 ^ k * (retryRejectedFiber m t s (k + 1) Nbits bad).card ≤
+            2 ^ k * (bad.biUnion fun output =>
+              (attemptVectors t s).biUnion fun attempts =>
+                retryPathFiber m t s k Nbits bad output attempts).card :=
+            Nat.mul_le_mul_left _ (Finset.card_le_card
+              (retryRejectedFiber_succ_subset m t s k Nbits bad))
+          _ ≤ 2 ^ k * (∑ output ∈ bad,
+              ((attemptVectors t s).biUnion fun attempts =>
+                retryPathFiber m t s k Nbits bad output attempts).card) :=
+            Nat.mul_le_mul_left _ Finset.card_biUnion_le
+          _ = ∑ output ∈ bad,
+              2 ^ k * ((attemptVectors t s).biUnion fun attempts =>
+                retryPathFiber m t s k Nbits bad output attempts).card := by
+            rw [Finset.mul_sum]
+          _ ≤ ∑ _output ∈ bad, weight := by
+            apply Finset.sum_le_sum
+            intro output houtput
+            exact hinner output houtput
+          _ = bad.card * weight := by simp
+      have htotal : outputCount (fun _ => m) 0 s * weight ≤ 2 ^ Nbits := by
+        rw [← card_successFiber (fun _ => m) t (fun _ => 0) 0 s Nbits
+          hbudgetOne]
+        simpa [FlatTape] using
+          (Finset.card_le_card
+            (Finset.subset_univ
+              (successFiber (fun _ => m) t (fun _ => 0) 0 s Nbits)))
+      calc
+        2 ^ (k + 1) * (retryRejectedFiber m t s (k + 1) Nbits bad).card =
+            2 * (2 ^ k * (retryRejectedFiber m t s (k + 1) Nbits bad).card) := by
+          rw [pow_succ]
+          ring
+        _ ≤ 2 * (bad.card * weight) := Nat.mul_le_mul_left 2 hbadBound
+        _ = (2 * bad.card) * weight := by ring
+        _ ≤ outputCount (fun _ => m) 0 s * weight :=
+          Nat.mul_le_mul_right weight hhalf
+        _ ≤ 2 ^ Nbits := htotal
+
+/-- The tail-sum mean number of attempts for stopped-prefix retries on the
+uniform flat-tape space. A selector abort can only reduce this count. -/
+def flatRetryTailMean (m t s cap Nbits : ℕ)
+    (bad : Finset (List ℕ)) : ℚ :=
+  ∑ j ∈ Finset.range cap,
+    ((retryRejectedFiber m t s j Nbits bad).card : ℚ) / (2 ^ Nbits : ℚ)
+
+lemma flatRetryTailMean_le_two (m t s cap Nbits : ℕ)
+    (bad : Finset (List ℕ))
+    (hvalid : bad ⊆ outputVectors (fun _ => m) (fun _ => 0) 0 s)
+    (hhalf : 2 * bad.card ≤ outputCount (fun _ => m) 0 s)
+    (hbudget : cap * bitBudget (fun _ => m) t 0 s ≤ Nbits) :
+    flatRetryTailMean m t s cap Nbits bad ≤ 2 := by
+  unfold flatRetryTailMean
+  calc
+    (∑ j ∈ Finset.range cap,
+      ((retryRejectedFiber m t s j Nbits bad).card : ℚ) / (2 ^ Nbits : ℚ)) ≤
+        ∑ j ∈ Finset.range cap, (1 / 2 : ℚ) ^ j := by
+      apply Finset.sum_le_sum
+      intro j hj
+      have hjle : j * bitBudget (fun _ => m) t 0 s ≤ Nbits := by
+        calc
+          j * bitBudget (fun _ => m) t 0 s ≤
+            cap * bitBudget (fun _ => m) t 0 s :=
+              Nat.mul_le_mul_right _ (Nat.le_of_lt (Finset.mem_range.mp hj))
+          _ ≤ Nbits := hbudget
+      have hnat := retryRejectedFiber_geometric m t s bad hvalid hhalf
+        j Nbits hjle
+      have hq : (2 ^ j : ℚ) *
+          ((retryRejectedFiber m t s j Nbits bad).card : ℚ) ≤
+            (2 ^ Nbits : ℚ) := by exact_mod_cast hnat
+      have hpN : (0 : ℚ) < 2 ^ Nbits := pow_pos (by norm_num) _
+      have hpj : (0 : ℚ) < 2 ^ j := pow_pos (by norm_num) _
+      rw [show (1 / 2 : ℚ) ^ j = 1 / (2 ^ j : ℚ) by
+        rw [one_div_pow]]
+      apply (div_le_div_iff₀ hpN hpj).2
+      simpa [mul_comm] using hq
+    _ = 2 - 2 * (1 / 2 : ℚ) ^ cap :=
+      SamplerRetries.half_geometric_sum_eq cap
+    _ ≤ 2 := by
+      nlinarith [pow_nonneg (show (0 : ℚ) ≤ 1 / 2 by norm_num) cap]
+
+/-- A uniform per-trial scan charge inherits the same two-trial mean bound. -/
+lemma flatRetryWeightedScan_le_two (m t s cap Nbits charge : ℕ)
+    (bad : Finset (List ℕ))
+    (hvalid : bad ⊆ outputVectors (fun _ => m) (fun _ => 0) 0 s)
+    (hhalf : 2 * bad.card ≤ outputCount (fun _ => m) 0 s)
+    (hbudget : cap * bitBudget (fun _ => m) t 0 s ≤ Nbits) :
+    (charge : ℚ) * flatRetryTailMean m t s cap Nbits bad ≤
+      2 * charge := by
+  have hmean := flatRetryTailMean_le_two m t s cap Nbits bad
+    hvalid hhalf hbudget
+  have hcharge : (0 : ℚ) ≤ charge := by positivity
+  nlinarith
 
 end
 end Lax457868Proofs.LocalFlatLaw
