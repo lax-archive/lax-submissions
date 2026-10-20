@@ -688,4 +688,143 @@ lemma actual_retry_mean
           nlinarith only [hq, hpmean, htail,
             show (0 : ℚ) ≤ 2 ^ N by positivity]
 
+/-- The four deterministic assignments before the retry while loop cost
+exactly eight steps and leave the canonical ready setup state. -/
+lemma source_setup_decompose
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (attemptCap : ℕ)
+    (hcap : R.I.σ.vars "initialRetryCap" = attemptCap)
+    (hcapB : attemptCap < B)
+    {τ : Env} {cost : ℕ}
+    (hrun : BigStepB B initialSamplerRetriesSource R.I.σ τ cost) :
+    ∃ loopCost,
+      BigStepB B
+        (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+        (R.withSetup attemptCap).I.σ τ loopCost ∧
+      cost ≤ 8 + loopCost := by
+  let σ₁ := R.I.σ.setVar "initialDomainSize" m
+  let σ₂ := σ₁.setVar "initialBatchTarget" r
+  let σ₃ := σ₂.setVar "initialRetriesLeft" attemptCap
+  let σ₄ := σ₃.setVar "initialRetryStatus" 0
+  have hfirstEval : (Expr.var "drawModulus").evalB B R.I.σ = some m := by
+    rw [evalB_var_iff]
+    exact ⟨R.I.hdrawModulus.symm, by rw [R.I.hdrawModulus]; exact R.I.hmB⟩
+  have hfirst : Run B (.assign "initialDomainSize" (.var "drawModulus"))
+      R.I.σ σ₁ 2 := by
+    simpa [σ₁] using (Run.assign (x := "initialDomainSize") hfirstEval)
+  have hsecondEval : (Expr.var "batchTarget").evalB B σ₁ = some r := by
+    rw [evalB_var_iff]
+    constructor
+    · simpa [σ₁] using R.I.hbatchTarget.symm
+    · simpa [σ₁, R.I.hbatchTarget] using R.I.hrB
+  have hsecond : Run B (.assign "initialBatchTarget" (.var "batchTarget"))
+      σ₁ σ₂ 2 := by
+    simpa [σ₂] using (Run.assign (x := "initialBatchTarget") hsecondEval)
+  have hthirdEval : (Expr.var "initialRetryCap").evalB B σ₂ =
+      some attemptCap := by
+    rw [evalB_var_iff]
+    constructor
+    · simpa [σ₂, σ₁] using hcap.symm
+    · simpa [σ₂, σ₁, hcap] using hcapB
+  have hthird : Run B (.assign "initialRetriesLeft" (.var "initialRetryCap"))
+      σ₂ σ₃ 2 := by
+    simpa [σ₃] using (Run.assign (x := "initialRetriesLeft") hthirdEval)
+  have hfourth : Run B (.assign "initialRetryStatus" (.lit 0))
+      σ₃ σ₄ 2 := by
+    simpa [σ₄] using
+      (Run.assign (x := "initialRetryStatus") (evalB_lit (by omega : 0 < B)))
+  unfold initialSamplerRetriesSource at hrun
+  cases hrun with
+  | seq h₁ hrest₁ =>
+    cases hrest₁ with
+    | seq h₂ hrest₂ =>
+      cases hrest₂ with
+      | seq h₃ hrest₃ =>
+        cases hrest₃ with
+        | seq h₄ hloop =>
+          obtain ⟨_, hk₁, hc₁⟩ := hfirst
+          have he₁ := BigStep.unique h₁.bigStep hc₁.bigStep
+          obtain ⟨_, hk₂, hc₂⟩ := hsecond
+          have he₂ := (BigStep.unique
+            (by simpa [he₁.1] using h₂.bigStep) hc₂.bigStep)
+          obtain ⟨_, hk₃, hc₃⟩ := hthird
+          have he₃ := (BigStep.unique
+            (by simpa [he₂.1] using h₃.bigStep) hc₃.bigStep)
+          obtain ⟨_, hk₄, hc₄⟩ := hfourth
+          have he₄ := (BigStep.unique
+            (by simpa [he₃.1] using h₄.bigStep) hc₄.bigStep)
+          have hloop' : ∃ loopCost, BigStepB B
+              (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+              (R.withSetup attemptCap).I.σ τ loopCost := by
+            exact ⟨_, by simpa [ReadyInput.withSetup, σ₄, σ₃, σ₂, σ₁, he₄.1]
+              using hloop⟩
+          obtain ⟨loopCost, hloop'⟩ := hloop'
+          refine ⟨loopCost, hloop', ?_⟩
+          have hEqCost := (BigStep.unique
+            (by simpa [ReadyInput.withSetup, σ₄, σ₃, σ₂, σ₁, he₄.1]
+              using hloop.bigStep) hloop'.bigStep).2
+          omega
+
+/-- Exact source-program mean, including its four saved-register setup
+assignments. -/
+lemma actual_source_mean
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (attemptCap N : ℕ)
+    (hcap : R.I.σ.vars "initialRetryCap" = attemptCap)
+    (hcapB : attemptCap < B)
+    (hbudget : attemptCap * attemptBitBudget n m r t ≤ N)
+    (hper : attemptBitBudget n m r t ≤ N)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ))
+    (final : Tape N → Env) (cost : Tape N → ℕ)
+    (hrun : ∀ ρ, BigStepB B initialSamplerRetriesSource
+      (R.reinput (List.ofFn ρ)
+        (by simpa [attemptBitBudget] using hper)).I.σ
+      (final ρ) (cost ρ)) :
+    (∑ ρ, (cost ρ : ℚ)) ≤
+      (retryCoefficient n m r targetCap Q + 8) * 2 ^ N := by
+  classical
+  let S := R.withSetup attemptCap
+  have hSactive : S.I.activeB = R.I.activeB := rfl
+  have hSM : S.I.σ.vars "initialDomainSize" = m := by
+    simp [S, ReadyInput.withSetup]
+  have hSR : S.I.σ.vars "initialBatchTarget" = r := by
+    simp [S, ReadyInput.withSetup]
+  have hSleft : S.I.σ.vars "initialRetriesLeft" = attemptCap := by
+    simp [S, ReadyInput.withSetup]
+  have hSstatus : S.I.σ.vars "initialRetryStatus" = 0 := by
+    simp [S, ReadyInput.withSetup]
+  have hSbits : S.I.bits = R.I.bits := rfl
+  have hd (ρ : Tape N) :=
+    source_setup_decompose
+      (R.reinput (List.ofFn ρ)
+        (by simpa [attemptBitBudget] using hper))
+      attemptCap (by simpa [ReadyInput.reinput_state] using hcap)
+      hcapB (hrun ρ)
+  choose loopCost hloop hcost using hd
+  have hloop' (ρ : Tape N) : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      (S.reinput (List.ofFn ρ)
+        (by simpa [attemptBitBudget] using hper)).I.σ
+      (final ρ) (loopCost ρ) := by
+    simpa [S, ReadyInput.withSetup, ReadyInput.reinput_state, Env.setVar]
+      using hloop ρ
+  have hmean := actual_retry_mean R.I.activeB hmass attemptCap N S
+    hSactive hSM hSR hSleft hSstatus hcapB hbudget hper
+    final loopCost hloop'
+  have hsum : (∑ ρ, (cost ρ : ℚ)) ≤
+      8 * 2 ^ N + (∑ ρ, (loopCost ρ : ℚ)) := by
+    calc
+      _ ≤ ∑ ρ : Tape N, ((8 : ℚ) + loopCost ρ) := by
+        apply Finset.sum_le_sum
+        intro ρ _
+        exact_mod_cast hcost ρ
+      _ = _ := by simp [Finset.sum_add_distrib, Nat.cast_pow, mul_comm]
+  nlinarith only [hsum, hmean]
+
 end Lax457868Proofs.InitialRetryMean

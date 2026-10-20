@@ -200,6 +200,26 @@ def localMeanBound (L s scan : ℕ) : ℕ :=
   12 * L + 38 + 4 * s * (15 * L + 30) +
     2 * (79 * s + scan + 50)
 
+lemma localMeanBound_expanded (L s scan : ℕ) :
+    localMeanBound L s scan =
+      2 * scan + (12 + 60 * s) * L + 278 * s + 138 := by
+  unfold localMeanBound
+  ring
+
+lemma oneExceptionCharge_far_eq
+    {n s k : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {A : Finset ℕ} (rep : ℕ → ℕ) (scan b a u : ℕ)
+    (hfar : (2 * k) / 3 < (farDomain G A rep b).card) :
+    oneExceptionCharge x G A rep s scan b k a u =
+      domainCharge x G A rep b + 4 +
+        localActualCharge (Nat.clog 2 (farDomain G A rep b).card)
+          s scan a u := by
+  have hnear : ¬ (((numericNeighborhood G b ∩ A) ∆
+      (numericNeighborhood G (rep b) ∩ A))).card ≤ (2 * k) / 3 :=
+    Nat.not_le.mpr (by simpa [farDomain] using hfar)
+  simp [oneExceptionCharge, farDomain, localActualCharge, hnear]
+  omega
+
 private lemma local_actual_mean_runtime_short
     {B n m domainCap s t bufferCap targetCap q b cap Nblocks Ntail scan : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
