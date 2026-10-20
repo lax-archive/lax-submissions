@@ -317,6 +317,22 @@ lemma localTrialFailureSet_restricted_eq (A X B W : Finset ℕ)
   rw [Lax457868Proofs.LocalRepairPhase3.localTrialIsolates_restricted_iff
     N B hWA b tape.toList hdraw]
 
+/-- A trial that fails to isolate against a subgroup also fails against the
+full active vertex set. This preserves the actual phase-two sample from the
+full construction when the source scans only one group. -/
+lemma localTrialFailureSet_mono_group (N : ℕ → Finset ℕ)
+    (B C W X : Finset ℕ) (b s : ℕ) (hBC : B ⊆ C) :
+    SamplerLocalSuccess.localTrialFailureSet N B W b X s ⊆
+      SamplerLocalSuccess.localTrialFailureSet N C W b X s := by
+  classical
+  intro tape hbad
+  simp only [SamplerLocalSuccess.localTrialFailureSet,
+    Finset.mem_filter, Finset.mem_univ, true_and] at hbad ⊢
+  intro hgood
+  apply hbad
+  intro v hv htrace hne
+  exact hgood v (hBC hv) htrace hne
+
 /-- The paper's paired-swap half bound applies to the physical full-CSR
 source event through the active-ground-set restriction. -/
 lemma localFailure_half_restricted_paper
@@ -356,6 +372,37 @@ lemma localFailure_half_restricted_paper
   have heq := localTrialFailureSet_restricted_eq A X B W N b s hWA hXA
   rw [heq, hX, hW, hs]
   exact Nat.le_of_lt hsingle
+
+/-- Use the full phase-two choice and sample to bound an actual local scan
+restricted to one subgroup of the active vertices. -/
+lemma localFailure_half_restricted_paper_subgroup
+    (A B C W X : Finset ℕ) (N : ℕ → Finset ℕ)
+    (r k c b s : ℕ)
+    (choice : SamplerPhases.InitialChoice A C (fun v => N v ∩ A) r)
+    (as : List ℕ) (has : as.toFinset = A) (hasNodup : as.Nodup)
+    (hBC : B ⊆ C)
+    (hinj : ∀ u ∈ C, ∀ v ∈ C,
+      N u ∩ A = N v ∩ A → u = v)
+    (hb : b ∈ C)
+    (hfar : 2 * k < 3 * SamplerPhases.disagreement
+      (fun v => N v ∩ A) b (choice.representative b))
+    (hc : 2 ≤ c)
+    (hshatter : ∀ Y : Finset ℕ, Y ⊆ A → Y.Nonempty →
+      (SamplerPhases.traceClasses (fun v => N v ∩ A) Y C).card ≤
+        c * Y.card)
+    (hX : X = ((N b ∩ A) \ (N (choice.representative b) ∩ A)) ∪
+      ((N (choice.representative b) ∩ A) \ (N b ∩ A)))
+    (hW : W = SamplerPhases.phase2Scan (fun v => N v ∩ A)
+      (choice.exceptions k) as choice.sample)
+    (hs : s = 64 * Nat.clog 2 c)
+    (hWA : W ⊆ A) :
+    2 * (SamplerLocalSuccess.localTrialFailureSet N B W b X s).card ≤
+      X.card ^ s := by
+  have hfull := localFailure_half_restricted_paper A C W X N r k c
+    b s choice as has hasNodup hinj hb hfar hc hshatter hX hW hs hWA
+  have hsub := localTrialFailureSet_mono_group N B C W X b s hBC
+  have hcard := Finset.card_le_card hsub
+  nlinarith
 
 /-- The geometric ideal-draw half bound transfers to actual source draws,
 including exhausted selector calls in the complement of the retry event. -/
@@ -606,7 +653,7 @@ lemma FlatRetryExecution.accepted_le (m : ℕ) (hm : 0 < m)
   | _, _, _, _, .final _ _ _ _ _ _ hdraw => by
       have hlen := (SequentialDraws.DrawTrace.length_and_status m hm t hdraw).1
       simpa using hlen
-  | _, _, _, _, .rejected _ _ _ _ _ _ _ hnext => by
+  | _, _, _, _, .rejected _ _ _ _ _ hdraw _ hnext => by
       have hrec := FlatRetryExecution.accepted_le m hm t s bad hnext
       simpa [Nat.add_mul, Nat.add_comm] using Nat.add_le_add_left hrec s
 
@@ -1400,6 +1447,177 @@ lemma flatMap_take_blocks (L k : ℕ)
             List.take_of_length_le (by omega : L ≤ (List.ofFn block).length)]
           rw [ih]
           simp [Nat.add_comm, List.append_assoc]
+
+lemma flatMap_drop_blocks (L k : ℕ)
+    (blocks : List (Fin L → Bool)) :
+    ((blocks.drop k).flatMap List.ofFn) =
+      (blocks.flatMap List.ofFn).drop (k * L) := by
+  induction k generalizing blocks with
+  | zero => simp
+  | succ k ih =>
+      cases blocks with
+      | nil => simp
+      | cons block blocks =>
+          simp only [List.drop_succ_cons, List.flatMap_cons]
+          rw [Nat.succ_mul, List.drop_append]
+          simpa [List.length_ofFn, ih blocks, Nat.add_comm,
+            Nat.add_left_comm, Nat.add_assoc]
+
+/-- Fixed-width flattening is injective on lists of the same length; this
+also covers zero-width blocks because their type is a singleton. -/
+lemma flatMap_ofFn_injective_of_length (L : ℕ) :
+    ∀ (a b : List (Fin L → Bool)), a.length = b.length →
+      a.flatMap List.ofFn = b.flatMap List.ofFn → a = b := by
+  intro a
+  induction a with
+  | nil =>
+      intro b hlen _
+      cases b with
+      | nil => rfl
+      | cons _ _ => simp at hlen
+  | cons x xs ih =>
+      intro b hlen hflat
+      cases b with
+      | nil => simp at hlen
+      | cons y ys =>
+          have hhead : List.ofFn x = List.ofFn y := by
+            have h := congrArg (List.take L) hflat
+            simpa [List.flatMap_cons, List.take_append,
+              List.length_ofFn] using h
+          have htail : xs.flatMap List.ofFn = ys.flatMap List.ofFn := by
+            have h := congrArg (List.drop L) hflat
+            simpa [List.flatMap_cons, List.drop_append,
+              List.length_ofFn] using h
+          have hxy : x = y := List.ofFn_inj.mp hhead
+          have hxs : xs = ys := ih ys (by simpa using hlen) htail
+          simp [hxy, hxs]
+
+lemma flatMap_prefix_blocks (L k : ℕ)
+    (blocks : List (Fin L → Bool))
+    (tape : Fin k → Fin L → Bool) (tail : List Bool)
+    (hbound : k ≤ blocks.length)
+    (hflat : blocks.flatMap List.ofFn =
+      (List.ofFn tape).flatMap List.ofFn ++ tail) :
+    blocks.take k = List.ofFn tape ∧
+      (blocks.drop k).flatMap List.ofFn = tail := by
+  have hlen : ((List.ofFn tape).flatMap List.ofFn).length = k * L := by
+    simpa [ClassRepresentativeTrace.tapeBits] using
+      ClassRepresentativeTrace.tapeBits_length tape
+  have hpreBits : (blocks.take k).flatMap List.ofFn =
+      (List.ofFn tape).flatMap List.ofFn := by
+    rw [flatMap_take_blocks]
+    rw [hflat]
+    simp [List.take_append, hlen]
+  have hpre : blocks.take k = List.ofFn tape :=
+    flatMap_ofFn_injective_of_length L _ _
+      (by simp [List.length_take, Nat.min_eq_left hbound]) hpreBits
+  refine ⟨hpre, ?_⟩
+  have hsplit : blocks.flatMap List.ofFn =
+      (blocks.take k).flatMap List.ofFn ++
+        (blocks.drop k).flatMap List.ofFn := by
+    rw [← List.flatMap_append, List.take_append_drop]
+  rw [hpre] at hsplit
+  rw [hflat] at hsplit
+  exact List.append_cancel_left hsplit.symm
+
+lemma FlatRetryExecution.used_le (m : ℕ) (hm : 0 < m)
+    (t s : ℕ) (bad : Finset (List ℕ)) :
+    ∀ {k : ℕ} {bits : List Bool} {used accepted : ℕ},
+      FlatRetryExecution m hm t s bad k bits used accepted →
+      used ≤ k * (s * t)
+  | _, _, _, _, .done _ => by simp
+  | _, _, _, _, .final _ _ _ _ _ _ hdraw => by
+      have hu := (SequentialDraws.DrawTrace.used_and_calls m hm t hdraw).1
+      simpa using hu
+  | _, _, _, _, .rejected _ _ _ _ _ hdraw _ hnext => by
+      have hu := (SequentialDraws.DrawTrace.used_and_calls m hm t hdraw).1
+      have hrec := FlatRetryExecution.used_le m hm t s bad hnext
+      simp only [List.length_ofFn] at hu
+      simp only [Nat.succ_mul]
+      omega
+
+/-- On the same full block tape as the source execution, successful block
+decodes in the consumed prefix number at most `s` per actual trial. -/
+lemma FlatRetryExecution.accepted_prefix_le (m : ℕ) (hm : 0 < m)
+    (t s : ℕ) (bad : Finset (List ℕ)) :
+    ∀ {k : ℕ} {bits : List Bool} {used accepted : ℕ},
+      FlatRetryExecution m hm t s bad k bits used accepted →
+      ∀ blocks : List (Fin (Nat.clog 2 m) → Bool),
+        bits = blocks.flatMap List.ofFn →
+        k * (s * t) ≤ blocks.length →
+        ((blocks.take used).filter
+          (fun block => block ∈ FairBitIndices.acceptedBlocks m)).length ≤ k * s
+  | _, _, _, _, .done _, blocks, _, _ => by simp
+  | _, _, _, _, .final blockTape tail values u failed hbits hdraw,
+      blocks, hflat, hsize => by
+      have hparts := flatMap_prefix_blocks (Nat.clog 2 m) (s * t)
+        blocks blockTape tail (by simpa using hsize)
+        (hflat.symm.trans hbits)
+      have hu := (SequentialDraws.DrawTrace.used_and_calls m hm t hdraw).1
+      have hprefix : blocks.take u = (List.ofFn blockTape).take u := by
+        have h := congrArg (List.take u) hparts.1
+        simpa [List.take_take, Nat.min_eq_left (by simpa using hu)] using h
+      rw [hprefix]
+      simpa using DrawTrace.accepted_prefix_le_requests m hm t hdraw
+  | _, _, _, _, .rejected (bits := bits) (k := k) (tailUsed := tailUsed)
+      blockTape tail values u hbits hdraw hbad hnext,
+      blocks, hflat, hsize => by
+      have hsize' : s * t + k * (s * t) ≤ blocks.length := by
+        simpa only [Nat.succ_mul, one_mul, Nat.add_comm] using hsize
+      have hparts := flatMap_prefix_blocks (Nat.clog 2 m) (s * t)
+        blocks blockTape tail (by omega)
+        (hflat.symm.trans hbits)
+      have hu := (SequentialDraws.DrawTrace.used_and_calls m hm t hdraw).1
+      have hu' : u ≤ s * t := by simpa using hu
+      have hfirst :
+          (((blocks.take u).filter
+            (fun block => block ∈ FairBitIndices.acceptedBlocks m))).length ≤ s := by
+        have hprefix : blocks.take u = (List.ofFn blockTape).take u := by
+          have h := congrArg (List.take u) hparts.1
+          simpa [List.take_take, Nat.min_eq_left hu'] using h
+        rw [hprefix]
+        exact DrawTrace.accepted_prefix_le_requests m hm t hdraw
+      have htailSize : k * (s * t) ≤ (blocks.drop u).length := by
+        simp only [List.length_drop]
+        omega
+      have htailFlat : bits.drop (u * Nat.clog 2 m) =
+          (blocks.drop u).flatMap List.ofFn := by
+        rw [hflat, flatMap_drop_blocks]
+      have hrec := FlatRetryExecution.accepted_prefix_le m hm t s bad
+        hnext (blocks.drop u) htailFlat htailSize
+      rw [List.take_add, List.filter_append, List.length_append]
+      rw [Nat.succ_mul]
+      omega
+
+lemma acceptedBlocks_one : FairBitIndices.acceptedBlocks 1 = Finset.univ := by
+  classical
+  ext block
+  simp [FairBitIndices.acceptedBlocks, FairBitIndices.bitBlockValue,
+    Lax195003.WordRamRandomness.bitTape]
+
+lemma DrawTrace.used_le_requests_one (hm : 0 < 1) (t : ℕ)
+    {r : ℕ} {blocks : List (Fin (Nat.clog 2 1) → Bool)}
+    {values : List (Fin 1)} {used : ℕ} {failed : Bool}
+    (htrace : SequentialDraws.DrawTrace 1 hm t r blocks values used failed) :
+    used ≤ r := by
+  have haccepted := DrawTrace.accepted_prefix_le_requests 1 hm t htrace
+  have hused := (SequentialDraws.DrawTrace.used_and_calls 1 hm t htrace).1
+  rw [acceptedBlocks_one] at haccepted
+  simpa [List.length_take, Nat.min_eq_left hused] using haccepted
+
+lemma FlatRetryExecution.used_le_requests_one (hm : 0 < 1)
+    (t s : ℕ) (bad : Finset (List ℕ)) :
+    ∀ {k : ℕ} {bits : List Bool} {used accepted : ℕ},
+      FlatRetryExecution 1 hm t s bad k bits used accepted →
+      used ≤ k * s
+  | _, _, _, _, .done _ => by simp
+  | _, _, _, _, .final _ _ _ _ _ _ hdraw => by
+      simpa using DrawTrace.used_le_requests_one hm t hdraw
+  | _, _, _, _, .rejected _ _ _ _ _ hdraw _ hnext => by
+      have hu := DrawTrace.used_le_requests_one hm t hdraw
+      have hrec := FlatRetryExecution.used_le_requests_one hm t s bad hnext
+      rw [Nat.succ_mul]
+      omega
 
 end
 end Lax457868Proofs.LocalFlatLaw
