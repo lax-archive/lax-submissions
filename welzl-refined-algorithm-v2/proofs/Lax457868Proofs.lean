@@ -173,3 +173,7 @@ import Lax457868Proofs.InitialNeighborhoodQuotient
 import Lax457868Proofs.RefinedRoundDriver
 import Lax457868Proofs.RefinedClockProbability
 import Lax457868Proofs.RefinedFiniteTape
+import Lax457868Proofs.RefinedTapeReserve
+import Lax457868Proofs.RefinedRoundLoop
+import Lax457868Proofs.RefinedProgramSource
+import Lax457868Proofs.RefinedProgramLayout
