@@ -54,6 +54,34 @@ def initialRetryDecision : Com :=
       (.assign "initialRetryStatus" (.lit 2)))
     (.assign "initialRetryStatus" (.lit 2))
 
+/-- Every decision branch is read-free and takes at most twenty steps. -/
+lemma retryDecision_cost_le {B p : ℕ} {σ τ : Env}
+    (hrun : BigStepB B initialRetryDecision σ τ p) : p ≤ 20 := by
+  unfold initialRetryDecision at hrun
+  cases hrun with
+  | ite_false _ hset =>
+      cases hset
+      simp [Cond.size, Expr.size]
+  | ite_true _ hrep =>
+      cases hrep with
+      | ite_false _ hset =>
+          cases hset
+          simp [Cond.size, Expr.size]
+      | ite_true _ haccept =>
+          cases haccept with
+          | ite_true _ hset =>
+              cases hset
+              simp [Cond.size, Expr.size]
+          | ite_false _ hrestore =>
+              cases hrestore with
+              | seq hfirst hlast =>
+                  cases hfirst with
+                  | seq ha hb =>
+                      cases ha
+                      cases hb
+                      cases hlast
+                      simp [Cond.size, Expr.size]
+
 /-- One iteration of the fixed retry loop.  An empty remaining budget sets
 exhaustion without calling the sampler.  On an ordinary rejected attempt the
 machine restores the original sampling registers and decrements the counter.
@@ -72,6 +100,53 @@ def initialSamplerRetriesSource : Com :=
         ((Com.assign "initialRetryStatus" (.lit 0)).seq
           (.while (.eq (.var "initialRetryStatus") (.lit 0))
             initialRetryBody))))
+
+/-- In a nonempty retry iteration, the source executes a complete actual
+attempt before testing its outcome.  This retains the exact machine costs of
+the attempt and of the remaining loop. -/
+lemma retryWhile_first_attempt {B : ℕ} {σ τ : Env} {cost left : ℕ}
+    (hleft : σ.vars "initialRetriesLeft" = left)
+    (hstatus : σ.vars "initialRetryStatus" = 0)
+    (hpositive : 0 < left) (hleftB : left < B)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) :
+    ∃ σa σd q p u,
+      BigStepB B fullInitialAttempt σ σa q ∧
+      BigStepB B initialRetryDecision σa σd p ∧
+      BigStepB B
+        (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+        σd τ u ∧
+      cost = 1 + (Cond.eq (.var "initialRetryStatus") (.lit 0)).size +
+        1 + (Cond.eq (.var "initialRetriesLeft") (.lit 0)).size +
+        (q + p) + u := by
+  cases hrun with
+  | while_false hguard =>
+      have hvar : (Expr.var "initialRetryStatus").evalB B σ = some 0 := by
+        rw [evalB_var_iff]
+        exact ⟨hstatus.symm, by rw [hstatus]; omega⟩
+      have hlit : (Expr.lit 0).evalB B σ = some 0 := evalB_lit (by omega)
+      have htrue : (Cond.eq (.var "initialRetryStatus") (.lit 0)).evalB B σ =
+          some true := by rw [evalB_condEq hvar hlit]; simp
+      simp [htrue] at hguard
+  | while_true hguard hbody htail =>
+      unfold initialRetryBody at hbody
+      cases hbody with
+      | ite_true hzero hset =>
+          have hfalse : (Cond.eq (.var "initialRetriesLeft") (.lit 0)).evalB B σ =
+              some false := by
+            have hvar : (Expr.var "initialRetriesLeft").evalB B σ = some left := by
+              rw [evalB_var_iff]
+              exact ⟨hleft.symm, by rw [hleft]; exact hleftB⟩
+            have hlit : (Expr.lit 0).evalB B σ = some 0 :=
+              evalB_lit (by omega)
+            rw [evalB_condEq hvar hlit]
+            simp [Nat.ne_of_gt hpositive]
+          simp [hfalse] at hzero
+      | ite_false hnonzero hseq =>
+          cases hseq with
+          | seq hattempt hdecision =>
+              exact ⟨_, _, _, _, _, hattempt, hdecision, htail, by omega⟩
 
 /-- The charge from the checked one-attempt theorem, with the actual number
 of bits used by the draw and the actual representative stage charge. -/
@@ -996,6 +1071,39 @@ private lemma empty_loop_run {B : ℕ} {σ : Env}
       (Run.while_false (c := initialRetryBody) hstop)
   have hwhole := runWhileTrue hguard hbody htail
   exact hwhole.mono (by simp [Cond.size, Expr.size])
+
+/-- Exact executions with no attempts left pay only the exhaustion step. -/
+lemma retryWhile_zero_cost {B : ℕ} {σ τ : Env} {cost : ℕ}
+    (hstatus : σ.vars "initialRetryStatus" = 0)
+    (hleft : σ.vars "initialRetriesLeft" = 0)
+    (h3B : 3 < B)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) : cost ≤ 14 := by
+  obtain ⟨_, hbound, hcanon⟩ := empty_loop_run hstatus hleft h3B
+  have heq := BigStep.unique hrun.bigStep hcanon.bigStep
+  omega
+
+/-- A finished retry loop has the fixed cost of its final false guard. -/
+lemma retryWhile_stopped_cost {B : ℕ} {σ τ : Env} {cost status : ℕ}
+    (hstatus : σ.vars "initialRetryStatus" = status)
+    (hstatusB : status < B) (hnotzero : status ≠ 0)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) : cost = 4 := by
+  have hvar : (Expr.var "initialRetryStatus").evalB B σ = some status := by
+    rw [evalB_var_iff]
+    exact ⟨hstatus.symm, by rw [hstatus]; exact hstatusB⟩
+  have hlit : (Expr.lit 0).evalB B σ = some 0 := evalB_lit (by omega)
+  have hfalse : (Cond.eq (.var "initialRetryStatus") (.lit 0)).evalB B σ =
+      some false := by rw [evalB_condEq hvar hlit]; simp [hnotzero]
+  have hcanon : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ σ 4 := by
+    simpa [Cond.size, Expr.size] using
+      (BigStepB.while_false (c := initialRetryBody) hfalse)
+  have heq := BigStep.unique hrun.bigStep hcanon.bigStep
+  exact heq.2
 
 private lemma retry_body_attempt {B fuel q p : ℕ} {σ σa τ : Env}
     (hleft : σ.vars "initialRetriesLeft" = fuel + 1)
