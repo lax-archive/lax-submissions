@@ -1283,6 +1283,28 @@ lemma run_same_consumedPrefix
   obtain ⟨hfinal, _⟩ := BigStep.unique htransport'.bigStep hbig'.bigStep
   exact hfinal.symm
 
+/-- A first source phase consumes a fixed prefix, then a read-free phase
+computes the same partition state on every possible unread suffix. -/
+lemma run_twoPhase_sameConsumedPrefix
+    {B : ℕ} {first second : Com}
+    {σ σd σd' σp σp' : Env}
+    {K K' L L' : ℕ}
+    (pre rest rest' : List ℕ)
+    (hinput : σ.inp = pre ++ rest)
+    (hdrawInput : σd.inp = rest)
+    (hfirst : Run B first σ σd K)
+    (hfirst' : Run B first {σ with inp := pre ++ rest'} σd' K')
+    (hsecond : Run B second σd σp L)
+    (hnoRead : σp.inp = σd.inp)
+    (hsecond' : Run B second σd' σp' L') :
+    σp' = {σp with inp := σd'.inp} := by
+  have hdraw := run_same_consumedPrefix pre rest rest' hinput
+    hdrawInput hfirst hfirst'
+  rw [hdraw] at hsecond'
+  have hpart := run_same_consumedPrefix [] σd.inp rest'
+    (by simp) hnoRead hsecond (by simpa using hsecond')
+  simpa [hdraw] using hpart
+
 /-- Fixing every bit consumed by the first stage leaves exactly the
 fixed-length suffix event. In particular the rejected selector blocks are
 part of the condition, rather than being averaged away. -/
