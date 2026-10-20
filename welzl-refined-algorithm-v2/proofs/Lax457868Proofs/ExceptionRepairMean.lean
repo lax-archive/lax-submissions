@@ -20,7 +20,7 @@ open Lax808846Proofs.Reasoning.Lib
 open scoped symmDiff
 
 /-- The fixed symmetric-difference domain of one packed exception. -/
-private noncomputable def farDomain {n : ℕ} (G : SimpleGraph (Fin n))
+noncomputable def farDomain {n : ℕ} (G : SimpleGraph (Fin n))
     (A : Finset ℕ) (rep : ℕ → ℕ) (b : ℕ) : Finset ℕ :=
   (numericNeighborhood G b ∩ A) ∆
     (numericNeighborhood G (rep b) ∩ A)
@@ -193,10 +193,10 @@ lemma local_actual_mean_runtime
   intro tape _
   rw [(hparameters tape).1, (hparameters tape).2]
 
-private def localActualCharge (L s scan a u : ℕ) : ℕ :=
+def localActualCharge (L s scan a u : ℕ) : ℕ :=
   12 * L + 24 + ((15 * L + 30) * u + a * (79 * s + scan + 50) + 14)
 
-private def localMeanBound (L s scan : ℕ) : ℕ :=
+def localMeanBound (L s scan : ℕ) : ℕ :=
   12 * L + 38 + 4 * s * (15 * L + 30) +
     2 * (79 * s + scan + 50)
 
@@ -356,6 +356,37 @@ lemma far_step_mean_on_reinputs
     (Wbase := Wbase) (Wcurrent := Wcurrent)
     domain P hbits hstate hdomain hscan hcap R.hcapB hblocks hL
     (P ρzero).henum hhalf attempts used finalState hactual
+
+/-- The fixed-stage source mean on any sufficiently long remaining flat tape.
+The decomposition into full-width selector blocks and unused tail bits is
+derived from the length inequality; no divisibility hypothesis is needed. -/
+lemma far_step_mean_any_tape
+    {B n s t bufferCap targetCap q cap k e i N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (hbudget : (cap * (s * t)) *
+      Nat.clog 2 (farDomain G A R.rep (R.exceptionList i)).card ≤ N)
+    (hL : 0 < Nat.clog 2 (farDomain G A R.rep (R.exceptionList i)).card)
+    (hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase (R.exceptionList i)
+        (farDomain G A R.rep (R.exceptionList i)) s).card ≤
+        (farDomain G A R.rep (R.exceptionList i)).card ^ s)
+    (attempts used : FlatTraceLaw.FlatTape N → ℕ)
+    (hfar : ∀ ρ, FarStepTrace
+      (R.reinput (FlatTraceLaw.flatBits ρ)) i (attempts ρ) (used ρ))
+    (hvalid : ∀ ρ, attempts ρ ≤ cap ∧
+      used ρ ≤ attempts ρ * (s * t)) :
+    let L := Nat.clog 2 (farDomain G A R.rep (R.exceptionList i)).card
+    let scan := classScanCharge x R.size R.label R.ord (R.exceptionList i)
+    (∑ ρ, ((localActualCharge L s scan (attempts ρ) (used ρ) : ℕ) : ℚ)) ≤
+      (localMeanBound L s scan : ℚ) * (2 ^ N : ℚ) := by
+  obtain ⟨Ntail, hN⟩ := Nat.exists_eq_add_of_le hbudget
+  subst N
+  exact far_step_mean_on_reinputs R le_rfl hL hhalf attempts used
+    hfar hvalid
 
 /-- A status-three source event is contained in the exact stopped-prefix
 fiber of `cap` rejected trials. Its count decays geometrically on the full
