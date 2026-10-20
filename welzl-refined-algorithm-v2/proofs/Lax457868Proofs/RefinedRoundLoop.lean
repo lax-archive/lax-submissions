@@ -45,7 +45,7 @@ def LoopReady {n : ℕ} (B c : ℕ) (G : SimpleGraph (Fin n))
     σ.inp = bits.map Bool.toNat ++ rest ∧
     A.card * roundBitReserve c n ≤ bits.length
 
-private lemma guard_eval {B c n : ℕ} {G : SimpleGraph (Fin n)}
+lemma guard_eval {B c n : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {A C : Finset ℕ} {σ : Env}
     (D : RoundData c n x A C σ)
     (hA : A ⊆ Finset.range n) (hacount : σ.vars "acount" = A.card)
@@ -304,7 +304,7 @@ private lemma run_while_true {B K K' : ℕ} {b : Cond} {c : Com}
   obtain ⟨k', hk', hbs'⟩ := htail
   exact ⟨1 + b.size + k + k', by omega, .while_true hb hbs hbs'⟩
 
-private lemma failed_guard_false {B c n : ℕ} {σ : Env}
+lemma failed_guard_false {B c n : ℕ} {σ : Env}
     (hcut : σ.vars "cutoffResult" = 2 * refinedCutoffK c)
     (hzero : σ.vars "acount" = 0)
     (hlargeN : 2 * refinedCutoffK c < n) (hnB : n < B) :
