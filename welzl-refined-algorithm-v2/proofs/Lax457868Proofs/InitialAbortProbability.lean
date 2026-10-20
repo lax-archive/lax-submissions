@@ -1,6 +1,7 @@
 import Lax457868Proofs.ClassTraceMean
 import Lax457868Proofs.InitialSamplerRetriesSource
 import Lax457868Proofs.RepresentativeSourceMean
+import Lax457868Proofs.InitialAttemptMean
 
 /-! Failure counting for the actual adaptive flat source selectors. The next
 request starts at the unread suffix of the previous capped request, so the
@@ -21,6 +22,9 @@ open Lax457868Proofs.InitialSamplerRetriesSource
 open Lax457868Proofs.FullInitialAttempt
 open Lax457868Proofs.InitialSamplerAttempt
 open Lax457868Proofs.RepresentativeSourceMean
+open Lax457868Proofs.InitialAttemptMean
+open Lax457868Proofs.FullSamplePartition
+open Lax457868Proofs.SequentialDraws
 open Lax457868Proofs.InitialFlatLaw
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open scoped BigOperators
@@ -385,6 +389,134 @@ lemma readyAttemptBatchAbort_count
     0 N (fun _ _ _ => R.I.hmPos) hbudget'
   exact (Nat.mul_le_mul_left _ (Finset.card_le_card hsub)).trans hcount
 
+/-- A failed representative flag in the actual initial program agrees with
+the class-selector trace at the deterministic post-draw partition state. -/
+lemma failedFlag_of_attempt_repFailed
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Input B n m domainCap r t bufferCap targetCap Q G x A)
+    (C : Cut I) (hf : C.failed = false)
+    (q : ℕ) (RI : RepresentativeInput B n q Q t)
+    (hpart : Run B fullSamplePartition C.drawFinal RI.σ
+      (384 * n + 324 * targetCap + 70))
+    {σsel : Env} {k : ℕ}
+    (hrun : Run B initialSamplerAttempt I.σ σsel k)
+    (hrep : σsel.vars "repFailed" = 1) :
+    failedFlag RI.size t (classStart RI.size) 0 q RI.bits = true := by
+  obtain ⟨σrep,xs,sorted,v,u,c,f,hrepRun,hnodup,hset,hlen,htrace,
+    hclassSize,hord,hsorted,hclassB,hactiveB,hsampleFlags,hflag,hindex,
+    hrepB,hinp,hout,hframe,hfailure,hsuccess⟩ :=
+      initialRepresentativeSelection_run_bits RI
+  have hs := hpart.seq hrepRun
+  have hg : (Cond.eq (.var "batchFailed") (.lit 0)).evalB B C.drawFinal =
+      some true := by
+    simp [Cond.evalB, Expr.evalB, fit, C.drawFlag, hf,
+      Nat.zero_lt_of_lt I.honeB]
+  have hafter : Run B afterDraw C.drawFinal σrep
+      (4 + (384 * n + 324 * targetCap + 70) +
+        (20 * n + 9 + c + 64 * (xs.length + Q + 1) + 104 * n + 24)) := by
+    have hh := Run.ite_true (d := .skip) hg hs
+    simpa [afterDraw, Cond.size, Expr.size, Nat.add_assoc] using hh
+  obtain ⟨_, _, hactualRun⟩ := hrun
+  obtain ⟨_, hactual, _⟩ := actual_decompose I C hactualRun
+  obtain ⟨_, _, hafterRun⟩ := hafter
+  have heq : σsel = σrep := (BigStep.unique hactual.bigStep hafterRun.bigStep).1
+  have hf' : f = true := by
+    cases f with
+    | true => rfl
+    | false => simp [hflag, heq] at hrep
+  simpa [hf'] using failedFlag_eq htrace
+
+/-- The initial sampler's batch flag is determined by the same actual draw
+execution retained in a `Cut`. -/
+lemma Cut.batch_flag
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Input B n m domainCap r t bufferCap targetCap Q G x A)
+    (C : Cut I) {σa : Env} {k : ℕ}
+    (hrun : Run B initialSamplerAttempt I.σ σa k) :
+    σa.vars "batchFailed" = (if C.failed then 1 else 0) := by
+  obtain ⟨σd,σf,tape,tail,values,used,failed,stageCost,hbits,htrace,hfull,
+    haccept,hn,hq,hbatch,harr,hvar,hfail,hpass,hdraw,hinp,hflag⟩ :=
+    initialSamplerAttempt_run_bits I
+  have hfinal : σa = σf := by
+    obtain ⟨_,_,ha⟩ := hrun
+    obtain ⟨_,_,hb⟩ := hfull
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hdrawEq : C.drawFinal = σd := by
+    obtain ⟨_,_,ha⟩ := C.drawRun
+    obtain ⟨_,_,hb⟩ := hdraw
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hh : (if failed then 1 else 0) = (if C.failed then 1 else 0) := by
+    calc
+      _ = σd.vars "batchFailed" := hflag.symm
+      _ = C.drawFinal.vars "batchFailed" := by rw [hdrawEq]
+      _ = _ := C.drawFlag
+  have hf : failed = C.failed := by
+    cases hf0 : failed <;> cases hc0 : C.failed
+    · rfl
+    · simp [hf0, hc0] at hh
+    · simp [hf0, hc0] at hh
+    · rfl
+  simpa [hfinal, hf] using hbatch
+
+/-- The second selector's actual failure flag in a complete attempt. -/
+def readyAttemptRepresentativeAbort
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ : Tape N) : Prop :=
+  ∃ σa : Env, ∃ q : ℕ,
+    Run B fullInitialAttempt
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.σ
+      σa q ∧ σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 1
+
+lemma readyAttemptRepresentativeAbort_cut
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) (ρ : Tape N)
+    (C : Cut (R.reinput (List.ofFn ρ)
+      (by simpa [attemptBitBudget] using hbudget)).I)
+    (habort : readyAttemptRepresentativeAbort R hbudget ρ) :
+    C.failed = false ∧
+      ∃ σsel : Env, ∃ j : ℕ,
+        Run B initialSamplerAttempt
+          (R.reinput (List.ofFn ρ)
+            (by simpa [attemptBitBudget] using hbudget)).I.σ σsel j ∧
+        σsel.vars "repFailed" = 1 := by
+  let J := R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)
+  obtain ⟨σr, qr, hrunr, hbatch0, hrep1⟩ := habort
+  obtain ⟨σsel, σa, tape, tail, values, used, drawFailed, stageCost,
+    hbits, htrace, hselRun, hpair, hbatch, hinpSel, houtSel,
+    hoff, htgt, hactiveA, hactiveB, hn, hqpow,
+    hdrawFailure, hdrawSuccess⟩ :=
+    fullInitialAttempt_run_bits_withTail J.I J.hactiveA J.hdegree J.hinter
+      J.hneighbors J.hexceptionFlags J.hexceptionList J.hnearBound
+      J.hexceptionCap J.hnB J.hkB J.hcapB
+  have hwhole := hpair.1
+  have hsuffix := hpair.2
+  have heq : σr = σa := by
+    obtain ⟨_,_,ha⟩ := hrunr
+    obtain ⟨_,_,hb⟩ := hwhole
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hbatchSel : σsel.vars "batchFailed" = 0 := by
+    calc
+      _ = σa.vars "batchFailed" := (hsuffix.frame_var "batchFailed" (by decide)).symm
+      _ = 0 := by simpa [heq] using hbatch0
+  have hrepSel : σsel.vars "repFailed" = 1 := by
+    calc
+      _ = σa.vars "repFailed" := (hsuffix.frame_var "repFailed" (by decide)).symm
+      _ = 1 := by simpa [heq] using hrep1
+  have hf := Cut.batch_flag J.I C hselRun
+  have hfalse : C.failed = false := by
+    cases hC : C.failed
+    · rfl
+    · simp [hC] at hf
+      omega
+  exact ⟨hfalse, σsel, _, hselRun, hrepSel⟩
+
 /-- Failed source representative selection from a fixed, factual partition
 state. The later initial-attempt proof conditions on its draw prefix to use
 this bound when the partition depends on the sample. -/
@@ -433,5 +565,301 @@ lemma representativeAbort_count
   have hcount := class_failure_count_bound I.size t (classStart I.size) q
     0 N (fun j _ hj => I.hoccupied j (by omega)) hb
   exact (Nat.mul_le_mul_left _ (Finset.card_le_card hsub)).trans hcount
+
+lemma RepresentativeInput.classCount_le_n
+    {B n q Q t : ℕ} (I : RepresentativeInput B n q Q t) : q ≤ n := by
+  have hq : q ≤ ∑ j ∈ Finset.range q, I.size j := by
+    calc
+      q = ∑ j ∈ Finset.range q, (1 : ℕ) := by simp
+      _ ≤ ∑ j ∈ Finset.range q, I.size j := by
+        apply Finset.sum_le_sum
+        intro j hj
+        exact I.hoccupied j (Finset.mem_range.mp hj)
+  rw [RepresentativeSourceMean.class_sizes_sum I] at hq
+  have hcard : (ReusedOriginal.Construction.MarkingMath.activeVertices n I.active).card ≤ n := by
+    have hsub : ReusedOriginal.Construction.MarkingMath.activeVertices n I.active ⊆
+        Finset.range n := by
+      intro v hv
+      exact Finset.mem_range.mpr
+        (ReusedOriginal.Construction.MarkingMath.mem_activeVertices.mp hv).1
+    simpa using Finset.card_le_card hsub
+  omega
+
+noncomputable def readyAttemptRepresentativeAbortFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) : Finset (Tape N) := by
+  classical
+  exact Finset.univ.filter (readyAttemptRepresentativeAbort R hbudget)
+
+/-- Canonical actual draw cut for every flat tape. -/
+noncomputable def chosenCut
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) (ρ : Tape N) :
+    Cut (R.reinput (List.ofFn ρ)
+      (by simpa [attemptBitBudget] using hbudget)).I :=
+  Classical.choice (cut_exists _)
+
+lemma chosenCut_used_le
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) (ρ : Tape N) :
+    (chosenCut R hbudget ρ).used * Nat.clog 2 m ≤ N := by
+  let J := R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)
+  obtain ⟨tape, tail, hbits, htrace⟩ := (chosenCut R hbudget ρ).trace
+  have hu := (DrawTrace.used_and_calls m J.I.hmPos t htrace).1
+  simp only [List.length_ofFn] at hu
+  have hmul := Nat.mul_le_mul_right (Nat.clog 2 m) hu
+  dsimp [attemptBitBudget] at hbudget
+  omega
+
+lemma chosenCut_causal
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ τ : Tape N)
+    (hp : (List.ofFn ρ).take
+        ((chosenCut R hbudget ρ).used * Nat.clog 2 m) =
+      (List.ofFn τ).take
+        ((chosenCut R hbudget ρ).used * Nat.clog 2 m)) :
+    (chosenCut R hbudget τ).used * Nat.clog 2 m =
+        (chosenCut R hbudget ρ).used * Nat.clog 2 m ∧
+    (chosenCut R hbudget τ).drawFinal =
+      {(chosenCut R hbudget ρ).drawFinal with
+        inp := ((List.ofFn τ).drop
+          ((chosenCut R hbudget ρ).used * Nat.clog 2 m)).map Bool.toNat ++
+          R.I.rest} := by
+  exact bool_run_same_prefix (σ := R.I.σ.setVar "attemptAccepted" 0)
+    (List.ofFn ρ) (List.ofFn τ) R.I.rest
+    (chosenCut R hbudget ρ).drawRun (chosenCut R hbudget τ).drawRun
+    (chosenCut R hbudget ρ).drawInput (chosenCut R hbudget τ).drawInput
+    (by simpa using chosenCut_used_le R hbudget ρ)
+    (by simpa using chosenCut_used_le R hbudget τ) hp
+
+lemma chosenCut_repAbort_failedFlag
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N)
+    (ρ τ : Tape N)
+    (hp : (List.ofFn ρ).take
+        ((chosenCut R hbudget ρ).used * Nat.clog 2 m) =
+      (List.ofFn τ).take
+        ((chosenCut R hbudget ρ).used * Nat.clog 2 m))
+    (hf : (chosenCut R hbudget ρ).failed = false)
+    (q : ℕ) (RI : RepresentativeInput B n q Q t)
+    (hbits : RI.bits = (R.reinput (List.ofFn ρ)
+      (by simpa [attemptBitBudget] using hbudget)).I.bits.drop
+        ((chosenCut R hbudget ρ).used * Nat.clog 2 m))
+    (hrest : RI.rest = R.I.rest)
+    (hpart : Run B fullSamplePartition (chosenCut R hbudget ρ).drawFinal RI.σ
+      (384 * n + 324 * targetCap + 70))
+    (habort : readyAttemptRepresentativeAbort R hbudget τ) :
+    failedFlag RI.size t (classStart RI.size) 0 q
+      ((List.ofFn τ).drop
+        ((chosenCut R hbudget ρ).used * Nat.clog 2 m)) = true := by
+  let Cρ := chosenCut R hbudget ρ
+  let Cτ := chosenCut R hbudget τ
+  let Jτ := R.reinput (List.ofFn τ) (by simpa [attemptBitBudget] using hbudget)
+  let tail := (List.ofFn τ).drop (Cρ.used * Nat.clog 2 m)
+  have hcausal := chosenCut_causal R hbudget ρ τ hp
+  have hb : bitBudget RI.size t 0 q ≤ tail.length := by
+    have hlen : RI.bits.length = tail.length := by
+      rw [hbits]
+      simp [tail, Cρ, ReadyInput.reinput_bits]
+    exact RI.hbudget.trans_eq hlen
+  let RIτ := RepresentativeSourceMean.reinput RI tail hb
+  have hpartτ : Run B fullSamplePartition Cτ.drawFinal RIτ.σ
+      (384 * n + 324 * targetCap + 70) := by
+    let tailInp := tail.map Bool.toNat ++ R.I.rest
+    have hp' : Run B fullSamplePartition
+        {Cρ.drawFinal with inp := tailInp}
+        {RI.σ with inp := tailInp}
+        (384 * n + 324 * targetCap + 70) := by
+      simpa only [List.nil_append] using run_replace_consumed_suffix hpart []
+        (by simpa using (hpart.frame_inp (by decide)).symm) tailInp
+    rw [show Cτ.drawFinal = {Cρ.drawFinal with inp := tailInp} from
+      by simpa [Cρ, Cτ, tail, tailInp] using hcausal.2]
+    simpa [RIτ, RepresentativeSourceMean.reinput, tailInp, hrest] using hp'
+  obtain ⟨hfailτ, σsel, j, hselRun, hrep⟩ :=
+    readyAttemptRepresentativeAbort_cut R hbudget τ Cτ habort
+  have hh := failedFlag_of_attempt_repFailed Jτ.I Cτ hfailτ q RIτ hpartτ
+    hselRun hrep
+  simpa [RIτ, RepresentativeSourceMean.reinput, tail] using hh
+
+/-- The actual representative-selector abort has probability at most
+`n·2⁻ᵗ`, even though the class sizes depend on the initial draw. -/
+lemma readyAttemptRepresentativeAbort_count
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) :
+    2 ^ t * (readyAttemptRepresentativeAbortFiber R hbudget).card ≤
+      n * 2 ^ N := by
+  classical
+  let used (ρ : Tape N) := (chosenCut R hbudget ρ).used * Nat.clog 2 m
+  have hu (ρ : Tape N) : used ρ ≤ N := chosenCut_used_le R hbudget ρ
+  have hc (ρ τ : Tape N)
+      (hp : (List.ofFn ρ).take (used ρ) = (List.ofFn τ).take (used ρ)) :
+      used τ = used ρ :=
+    (chosenCut_causal R hbudget ρ τ hp).1
+  let X (ρ : Tape N) : ℚ :=
+    if readyAttemptRepresentativeAbort R hbudget ρ then 1 else 0
+  let Y (_ : Tape N) : ℚ := (n : ℚ) / 2 ^ t
+  have hmean := sum_le_of_stopped_prefix used hu hc X Y
+    (by intros; rfl) (by
+      intro ρ
+      let Cρ := chosenCut R hbudget ρ
+      let f (η : Tape (N - used ρ)) :=
+        (splitEquiv (hu ρ)).symm ((splitEquiv (hu ρ) ρ).1, η)
+      have hpre (η : Tape (N - used ρ)) :
+          (List.ofFn ρ).take (used ρ) =
+            (List.ofFn (f η)).take (used ρ) := by
+        rw [prefix_of_split (hu ρ), prefix_of_split (hu ρ)]
+        simp [f]
+      cases hf : Cρ.failed with
+      | true =>
+        have hzero (η : Tape (N - used ρ)) :
+            ¬ readyAttemptRepresentativeAbort R hbudget (f η) := by
+          intro habort
+          have hfalse := (readyAttemptRepresentativeAbort_cut R hbudget
+            (f η) (chosenCut R hbudget (f η)) habort).1
+          have hstate := (chosenCut_causal R hbudget ρ (f η) (hpre η)).2
+          have hflag := congrArg (fun e : Env => e.vars "batchFailed") hstate
+          have hflagρ := Cρ.drawFlag
+          have hflagτ := (chosenCut R hbudget (f η)).drawFlag
+          simp [Cρ, hf, hfalse] at hflagρ hflagτ
+          simp [hflagρ, hflagτ] at hflag
+        have hsum0 : (∑ η : Tape (N - used ρ), X (f η)) = 0 := by
+          simp [X, hzero]
+        rw [hsum0]
+        dsimp [Y]
+        positivity
+      | false =>
+        let Jρ := R.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hbudget)
+        obtain ⟨q, RI, hbits, hrest, hpart⟩ := Cρ.post hf
+        have hb : bitBudget RI.size t 0 q ≤ N - used ρ := by
+          have hlen : RI.bits.length = N - used ρ := by
+            rw [hbits]
+            simp [Jρ, Cρ, used, ReadyInput.reinput_bits]
+          exact RI.hbudget.trans_eq hlen
+        have hq : q ≤ n := RepresentativeInput.classCount_le_n RI
+        let bad : Finset (Tape (N - used ρ)) := Finset.univ.filter fun η =>
+          readyAttemptRepresentativeAbort R hbudget (f η)
+        let traceBad : Finset (Tape (N - used ρ)) := Finset.univ.filter fun η =>
+          failedFlag RI.size t (classStart RI.size) 0 q (List.ofFn η) = true
+        have hsub : bad ⊆ traceBad := by
+          intro η hη
+          have habort : readyAttemptRepresentativeAbort R hbudget (f η) := by
+            simpa [bad] using hη
+          have hh := chosenCut_repAbort_failedFlag R hbudget ρ (f η)
+            (hpre η) hf q RI hbits hrest hpart habort
+          have hdrop : (List.ofFn (f η)).drop (used ρ) = List.ofFn η := by
+            rw [boolTape_split (hu ρ) (f η)]
+            simp [f]
+          rw [hdrop] at hh
+          exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hh⟩
+        have hcount := class_failure_count_bound RI.size t (classStart RI.size) q
+          0 (N - used ρ) (fun j _ hj => RI.hoccupied j (by omega)) hb
+        have hNat : 2 ^ t * bad.card ≤ n * 2 ^ (N - used ρ) := by
+          calc
+            _ ≤ 2 ^ t * traceBad.card := Nat.mul_le_mul_left _
+              (Finset.card_le_card hsub)
+            _ ≤ q * 2 ^ (N - used ρ) := by simpa [traceBad] using hcount
+            _ ≤ n * 2 ^ (N - used ρ) := Nat.mul_le_mul_right _ hq
+        have hsumX : (∑ η : Tape (N - used ρ), X (f η)) =
+            (bad.card : ℚ) := by
+          rw [Finset.card_filter]
+          push_cast
+          rfl
+        rw [hsumX]
+        dsimp [Y]
+        have hNatQ : (2 ^ t : ℚ) * (bad.card : ℚ) ≤
+            (n : ℚ) * 2 ^ (N - used ρ) := by exact_mod_cast hNat
+        rw [div_mul_eq_mul_div]
+        exact (le_div_iff₀ (by positivity : (0 : ℚ) < 2 ^ t)).2
+          (by simpa [mul_comm, mul_left_comm, mul_assoc] using hNatQ))
+  have hsumX : (∑ ρ : Tape N, X ρ) =
+      ((readyAttemptRepresentativeAbortFiber R hbudget).card : ℚ) := by
+    change (∑ ρ : Tape N,
+      if readyAttemptRepresentativeAbort R hbudget ρ then (1 : ℚ) else 0) =
+      ((Finset.univ.filter (readyAttemptRepresentativeAbort R hbudget)).card : ℚ)
+    rw [Finset.card_filter]
+    push_cast
+    rfl
+  have hsumY : (∑ ρ : Tape N, Y ρ) =
+      (n : ℚ) / 2 ^ t * 2 ^ N := by
+    simp [Y, mul_comm]
+  rw [hsumX, hsumY] at hmean
+  rw [div_mul_eq_mul_div] at hmean
+  have hq : (2 ^ t : ℚ) *
+      ((readyAttemptRepresentativeAbortFiber R hbudget).card : ℚ) ≤
+      (n : ℚ) * 2 ^ N := by
+    have hp : (0 : ℚ) < 2 ^ t := by positivity
+    have hh := (le_div_iff₀ hp).mp hmean
+    simpa [mul_comm, mul_left_comm, mul_assoc] using hh
+  exact_mod_cast hq
+
+/-- Either capped selector in one actual full initial attempt aborts. -/
+def readyAttemptSelectorAbort
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) (ρ : Tape N) : Prop :=
+  ∃ σa : Env, ∃ q : ℕ,
+    Run B fullInitialAttempt
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hbudget)).I.σ
+      σa q ∧
+    (σa.vars "batchFailed" = 1 ∨
+      (σa.vars "batchFailed" = 0 ∧ σa.vars "repFailed" = 1))
+
+noncomputable def readyAttemptSelectorAbortFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) : Finset (Tape N) := by
+  classical
+  exact Finset.univ.filter (readyAttemptSelectorAbort R hbudget)
+
+lemma readyAttemptSelectorAbort_count
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hbudget : attemptBitBudget n m r t ≤ N) :
+    2 ^ t * (readyAttemptSelectorAbortFiber R hbudget).card ≤
+      (r + n) * 2 ^ N := by
+  classical
+  have hsub : readyAttemptSelectorAbortFiber R hbudget ⊆
+      readyAttemptBatchAbortFiber R hbudget ∪
+        readyAttemptRepresentativeAbortFiber R hbudget := by
+    intro ρ hρ
+    obtain ⟨σa, q, hrun, hb | hr⟩ :=
+      (Finset.mem_filter.mp (show ρ ∈ Finset.univ.filter
+        (readyAttemptSelectorAbort R hbudget) from
+          by simpa [readyAttemptSelectorAbortFiber] using hρ)).2
+    · exact Finset.mem_union_left _
+        (Finset.mem_filter.mpr ⟨Finset.mem_univ _, σa, q, hrun, hb⟩)
+    · exact Finset.mem_union_right _
+        (Finset.mem_filter.mpr ⟨Finset.mem_univ _, σa, q, hrun, hr.1, hr.2⟩)
+  have hcard : (readyAttemptSelectorAbortFiber R hbudget).card ≤
+      (readyAttemptBatchAbortFiber R hbudget).card +
+        (readyAttemptRepresentativeAbortFiber R hbudget).card :=
+    (Finset.card_le_card hsub).trans (Finset.card_union_le _ _)
+  calc
+    _ ≤ 2 ^ t * ((readyAttemptBatchAbortFiber R hbudget).card +
+      (readyAttemptRepresentativeAbortFiber R hbudget).card) :=
+        Nat.mul_le_mul_left _ hcard
+    _ = 2 ^ t * (readyAttemptBatchAbortFiber R hbudget).card +
+        2 ^ t * (readyAttemptRepresentativeAbortFiber R hbudget).card := by ring
+    _ ≤ r * 2 ^ N + n * 2 ^ N := Nat.add_le_add
+      (readyAttemptBatchAbort_count R hbudget)
+      (readyAttemptRepresentativeAbort_count R hbudget)
+    _ = (r + n) * 2 ^ N := by ring
 
 end Lax457868Proofs.InitialAbortProbability
