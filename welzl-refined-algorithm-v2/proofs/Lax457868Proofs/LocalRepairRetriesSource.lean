@@ -2358,5 +2358,83 @@ lemma localRepairOneException_run
     · simpa using hinp
     · exact Or.inl ⟨hstatus, Or.inl ⟨hnearCase, hsample⟩⟩
 
+/-- Only occupied domain-buffer cells affect a retry. Replace the arbitrary
+function used to represent the fixed array by a common one, preserving every
+source state and all positive-prefix enumeration facts. -/
+def ReadyInput.retarget_domain
+    {B n m domainCap s t bufferCap targetCap q b : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (R : ReadyInput B n m domainCap s t bufferCap targetCap q b
+      G x X groupedB Wbase Wcurrent)
+    (domain : ℕ → ℕ)
+    (hagree : ∀ j < domainCap, R.domain j = domain j) :
+    ReadyInput B n m domainCap s t bufferCap targetCap q b
+      G x X groupedB Wbase Wcurrent := by
+  have hlist : Stack.toList m R.domain = Stack.toList m domain := by
+    apply List.ext_getElem
+    · simp [Stack.toList]
+    · intro i hi hi'
+      have him : i < m := by simpa [Stack.toList] using hi
+      have hic : i < domainCap := him.trans_le R.hdomainCap
+      simpa [Stack.toList] using hagree i hic
+  have henum : PrefixEnumerates m domain X := by
+    simpa only [PrefixEnumerates, ← hlist] using R.henum
+  exact { R with
+    domain := domain
+    hdomain := R.hdomain.trans (arrOf_congr hagree)
+    henum := henum }
+
+/-- The local mean theorem only needs a common domain on occupied buffer
+indices. It does not require arbitrary values beyond `domainCap` to agree. -/
+lemma localRepairRetriesSource_mean_runtime_stopped_suffix_domain_prefix
+    {B n m domainCap s t bufferCap targetCap q b cap Nblocks Ntail scanUpper : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (domain : ℕ → ℕ)
+    (R : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail) →
+      ReadyInput B n m domainCap s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (hbits : ∀ tape, (R tape).bits = FlatTraceLaw.flatBits tape)
+    (hstate : ∀ tape tape',
+      (R tape).σ.vars = (R tape').σ.vars ∧
+      (R tape).σ.arrs = (R tape').σ.arrs ∧
+      (R tape).σ.out = (R tape').σ.out)
+    (hdomain : ∀ tape j, j < domainCap → (R tape).domain j = domain j)
+    (hscan : ∀ tape, (R tape).scanUpper = scanUpper)
+    (hcap : ∀ tape, (R tape).σ.vars "repairRetryCap" = cap)
+    (hcapB : cap < B)
+    (hblocks : cap * (s * t) ≤ Nblocks)
+    (henum : PrefixEnumerates m domain X)
+    (hhalf : 2 *
+      (SamplerLocalSuccess.localTrialFailureSet
+        (numericNeighborhood G) groupedB Wbase b X s).card ≤ X.card ^ s) :
+    ∃ (attempts used : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 m + Ntail) → ℕ)
+      (finalState : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 m + Ntail) → Env),
+      (∀ tape, Run B localRepairRetriesSource (R tape).σ
+        (finalState tape)
+          (12 * Nat.clog 2 m + 24 +
+            ((15 * Nat.clog 2 m + 30) * used tape +
+              attempts tape * (79 * s + scanUpper + 50) + 14))) ∧
+      (∑ tape : FlatTraceLaw.FlatTape
+        (Nblocks * Nat.clog 2 m + Ntail),
+        ((12 * Nat.clog 2 m + 24 +
+          ((15 * Nat.clog 2 m + 30) * used tape +
+            attempts tape * (79 * s + scanUpper + 50) + 14) : ℕ) : ℚ)) ≤
+        ((12 * Nat.clog 2 m + 38 +
+          4 * s * (15 * Nat.clog 2 m + 30) +
+          2 * (79 * s + scanUpper + 50) : ℕ) : ℚ) *
+          (2 ^ (Nblocks * Nat.clog 2 m + Ntail) : ℚ) := by
+  let R' (tape : FlatTraceLaw.FlatTape
+      (Nblocks * Nat.clog 2 m + Ntail)) :=
+    ReadyInput.retarget_domain (R tape) domain (hdomain tape)
+  simpa only [R', ReadyInput.retarget_domain] using
+    (localRepairRetriesSource_mean_runtime_stopped_suffix domain R'
+      (fun tape => hbits tape) hstate
+      (fun _ => rfl) hscan hcap hcapB hblocks henum hhalf)
+
 end
 end Lax457868Proofs.LocalRepairRetriesSource
