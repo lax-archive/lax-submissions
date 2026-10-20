@@ -1527,6 +1527,8 @@ structure SourceInitialOutcomeWitness
     (bits.drop (used * Nat.clog 2 m)) repValues repUsed repCharge false
   attemptRun : Run B initialSamplerAttempt
     {I.σ with inp := bits.map Bool.toNat ++ I.rest} σfinal attemptCost
+  attemptInput : σfinal.inp =
+    (bits.drop (used * Nat.clog 2 m + repUsed)).map Bool.toNat ++ I.rest
   resultArray : σfinal.arrs "repB" = arrOf n mapped
   orderedDraw : sourceOrderedDraw A m r I.domain I.henum values
     valuesLength = ω.1
@@ -1584,7 +1586,7 @@ lemma initialSamplerAttempt_run_sourceOutcome
     hlen, _hprefix, hpartition, hsizes, hoccupied, hclasses,
     _hselection, _hnFinal, _hqpowFinal, _hsampleCount, _hclassB,
     _hclassSize, _hord, hnodup, hxs, hclass, _hrepUsedLe,
-    hrepFailedVal, _hrepFailure, _hsampleFlags, _hinp,
+    hrepFailedVal, _hrepFailure, _hsampleFlags, hinpSource,
     hrepSuccess, _hcost, hsourceCert⟩ := hdrawSuccess hdrawOK
   have hrepFalse : repFailed = false := by
     cases repFailed with
@@ -1673,6 +1675,7 @@ lemma initialSamplerAttempt_run_sourceOutcome
     sortedPrefix := by simpa [hxsScan] using hsorted,
     classTrace := by simpa [hrepFalse] using hclass,
     attemptRun := by simpa [hinputEnv] using hrun,
+    attemptInput := hinpSource,
     resultArray := hmappedArr, orderedDraw := hordered.symm,
     formula := hformula, representative := hrepresentative
   }⟩
@@ -2669,6 +2672,75 @@ lemma initialSamplerAttempt_run_badFiber
   apply Finset.mem_biUnion.mpr
   refine ⟨ω, ?_, hω⟩
   exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hbadω⟩
+
+/-- The source witness inside a rejecting fiber consumed exactly the prefix
+reported by the checked selection Run. This identifies the split point for
+the following retry, including all rejected selector blocks. -/
+lemma sourceInitialBadFiber_consumed
+    {B n m domainCap r t bufferCap targetCap Q : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (I : Lax457868Proofs.InitialSamplerAttempt.Input
+      B n m domainCap r t bufferCap targetCap Q G x A)
+    (σsel : Env) (K d threshold cap : ℕ)
+    (hsel : Run B initialSamplerAttempt I.σ σsel K)
+    (hinp : σsel.inp = (I.bits.drop d).map Bool.toNat ++ I.rest)
+    (hd : d ≤ I.bits.length)
+    (hbad : (flatBitsEquiv I.bits.length).symm ⟨I.bits, rfl⟩ ∈
+      sourceInitialBadFiber I threshold cap) :
+    ∃ ω : InitialOutcome A (activeVertices n I.activeB)
+      (fun b => numericNeighborhood G b ∩ A) r,
+      outcomeBad A (activeVertices n I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r threshold cap ω = true ∧
+      ∃ w : SourceInitialOutcomeWitness I I.bits ω,
+        d = w.used * Nat.clog 2 m + w.repUsed := by
+  classical
+  obtain ⟨ω, hωbad, hω⟩ := Finset.mem_biUnion.mp hbad
+  have hbadω := (Finset.mem_filter.mp hωbad).2
+  have hbits : flatBits ((flatBitsEquiv I.bits.length).symm
+      ⟨I.bits, rfl⟩) = I.bits :=
+    congrArg Subtype.val
+      ((flatBitsEquiv I.bits.length).apply_symm_apply ⟨I.bits, rfl⟩)
+  have hw : Nonempty (SourceInitialOutcomeWitness I I.bits ω) := by
+    simpa only [sourceInitialOutcomeFiber, Finset.mem_filter,
+      Finset.mem_univ, true_and, hbits] using hω
+  obtain ⟨w⟩ := hw
+  have hstate : {I.σ with inp := I.bits.map Bool.toNat ++ I.rest} = I.σ := by
+    simp [← I.hinput]
+  have hwRun : Run B initialSamplerAttempt I.σ w.σfinal
+      w.attemptCost := by simpa only [hstate] using w.attemptRun
+  have hfinal : w.σfinal = σsel := by
+    obtain ⟨_, _, hbig⟩ := hwRun
+    obtain ⟨_, _, hbig'⟩ := hsel
+    exact (BigStep.unique hbig.bigStep hbig'.bigStep).1
+  have hdropLen :
+      (I.bits.drop (w.used * Nat.clog 2 m + w.repUsed)).length =
+      (I.bits.drop d).length := by
+    have heq :
+        (I.bits.drop (w.used * Nat.clog 2 m + w.repUsed)).map Bool.toNat ++
+            I.rest = (I.bits.drop d).map Bool.toNat ++ I.rest := by
+      rw [← w.attemptInput, hfinal]
+      exact hinp
+    have hmap := List.append_cancel_right heq
+    simpa only [List.length_map] using congrArg List.length hmap
+  have hdrawBudget : bitBudget (fun _ => m) t 0 r ≤ I.bits.length := by
+    rw [constant_bitBudget]
+    exact (Nat.le_add_right _ _).trans I.hbudget
+  have hdrawLe : w.used * Nat.clog 2 m ≤ I.bits.length := by
+    rw [← w.consumed]
+    exact (ValidPath.consumedBits_le_budget (fun _ => m) t
+      (fun _ => 0) (FlatClassSuccess.validPath (fun _ => m) t
+        (fun _ => 0) w.drawFlat)).trans hdrawBudget
+  have hrepLe : w.repUsed ≤
+      (I.bits.drop (w.used * Nat.clog 2 m)).length :=
+    ClassTrace.used_le w.size t (classStart w.size) w.classTrace
+  have htotal : w.used * Nat.clog 2 m + w.repUsed ≤
+      I.bits.length := by
+    simp only [List.length_drop] at hrepLe
+    omega
+  have heq : d = w.used * Nat.clog 2 m + w.repUsed := by
+    simp only [List.length_drop] at hdropLen
+    omega
+  exact ⟨ω, hbadω, w, heq⟩
 
 lemma sourceInitialBadFiber_probability_le_badMass
     {B n m domainCap r t bufferCap targetCap Q : ℕ}
