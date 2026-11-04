@@ -30,7 +30,6 @@ paper:
   folder: paper
   main: main.tex
   engine: pdflatex
-initialOwners:
-  - jan3er
-  - nmaehlmann
-  - szymtor
+issue:
+  repositoryId: 1320232165
+  number: 215
