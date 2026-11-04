@@ -1,0 +1,70 @@
+
+\section{Number of types over a set of parameters}\label{sec:types-over-sets}
+In this section we prove \Cref{thm:type-bound}, which bounds the number of types of $k$-tuples over a set $U$ of parameters polynomially in $|U|$.
+
+We use a consequence of locality of first-order logic, which bounds the number of types of tuples that are far from $U$.
+The following result is an adaptation of~\cite[Corollary~16]{number-of-types}. We provide a self-contained proof in \Cref{app:gaifman}.
+
+% lax begin Lax185574.SeparatingTypesTuples
+\begin{restatable}{lemma}{septypestuples}\label{lem:sep-types-tuple}
+    For every $q,k,c\in\N$ there are numbers $r=r(q)$ and $T=T(q,k,c)$ with the following property. Let $H$ be a graph expanded by at most $c$ unary predicates, and let $U\subseteq V(H)$ be finite. Fix a tuple $\bar u$ of vertices of $U$ of finite length.
+    Let $F \coloneqq \{a\in V(H) \,:\, \dist^H(a,U) > r\}$.
+    Then
+    \[
+      \left|
+        \{
+        \tp_q^H(\bar a\bar u/U) \,:\, \bar a \in F^k
+        \}
+      \right|
+      \leq
+      T(q,k,c).
+    \]
+\end{restatable}
+% lax end
+
+We now prove \Cref{thm:type-bound} by combining \Cref{lem:sep-types-tuple} with the Closure Theorem for Tuples (\Cref{thm:closuresTuples}).
+
+{\typeboundgeneraltrue\thmtypes*}
+
+% lax begin Lax185574Proofs.TypeBound.typeCountOver_le
+\begin{proof}
+    Fix $G\in\CC$, its expansion $G^+$ by $c$ unary predicates, and a finite set $U\subseteq V(G)$.
+    Let $r=r(q)$ and $T$ be given by \Cref{lem:sep-types-tuple}, and put $\overline{U}\coloneqq V(G)\setminus U$.
+    By the Closure Theorem for Tuples (\Cref{thm:closuresTuples}) for $\CC$, radius $r$, and $k$, there is some $s\leq O_{\CC,q,k}(1)$ and some set $\HH$ of $\poly_{\CC,q,k}(|U|)$ many $s$-flips of $G$ such that every $\bar v\in\overline{U}^k$ has some $H(\bar v)\in\HH$ with $\dist^{H(\bar v)}(\bar v,U)>r$.
+    Note that $s$ and $\HH$ do not depend on the unary predicates of $G^+$.
+    For each $H\in\HH$, fix a partition $\QQ_H$ of $V(G)$ into at most $s$ parts such that $H$ is a $\QQ_H$-flip of $G$, and let $H^+$ be the expansion of $H$ by the $c$ unary predicates of $G^+$ and by at most $s$ unary predicates marking the parts of $\QQ_H$.
+    The edge relation of $G$ is quantifier-free definable in $H^+$, by flipping back the pairs of parts that are flipped in $H$.
+    Substituting this definition for every edge atom turns each formula over $G^+$ with parameters from $U$ into a formula over $H^+$ with the same parameters and quantifier rank that is satisfied by the same tuples.
+    Hence, for every $H$ and tuple $\bar w$ of vertices,
+    \begin{center}
+        $\tp_q^{G^+}(\bar w/U)$ depends only on $\tp_q^{H^+}(\bar w/U)$.
+    \end{center}
+
+    We want to bound the number of types of tuples $\bar v \in V(G)^k$ over $U$.
+    By padding and permuting $2k$-tuples, up to a multiplicative factor of $O_k(1)$, it suffices to bound the number of types for the slightly longer tuples of the form $\bar a\bar u$ with $\bar a \in \overline{U}^k$ and $\bar u \in U^k$.
+
+    For $H\in\HH$, let $F_H\coloneqq\{w\in V(G) \,:\, \dist^H(w,U)>r\} \subseteq \overline{U}$.
+    As $\bar a\in\overline{U}^k$ lies in $F_{H(\bar a)}^k$ for some $H(\bar a) \in \HH$, we have
+    \[
+        \{\tp_q^{G^+}(\bar a\bar u/U) \,:\, \bar a\in\overline{U}^k,\ \bar u\in U^k\}
+        =
+        \bigcup_{H\in\HH}\ \bigcup_{\bar u\in U^k}
+        \{\tp_q^{G^+}(\bar a\bar u/U) \,:\, \bar a\in F_H^k\}.
+    \]
+    It remains to bound each of the $|\HH|\cdot|U|^k$ terms on the right.
+    So fix $H\in\HH$ and $\bar u\in U^k$.
+    As $H^+$ has at most $c+s$ unary predicates, \Cref{lem:sep-types-tuple}, applied to $H^+$, $U$, and $\bar u$, gives
+    \[
+        \left|\{\tp_q^{H^+}(\bar a\bar u/U) \,:\, \bar a\in F_H^k\}\right|
+        \leq T(q,k,c+s).
+    \]
+    Since $\tp_q^{G^+}(\bar a\bar u/U)$ depends only on $\tp_q^{H^+}(\bar a\bar u/U)$, the same bound holds with $G^+$ in place of $H^+$.
+    Hence,
+    \[
+        \left|\{\tp_q^{G^+}(\bar a\bar u/U) \,:\, \bar a\in\overline{U}^k,\ \bar u\in U^k\}\right|
+        \leq|\HH|\cdot|U|^k\cdot T(q,k,c+s)
+        \leq O_{\CC,q,k,c}(1)\cdot\poly_{\CC,q,k}(|U|),
+    \]
+    where we use $T(q,k,c+s)\leq O_{\CC,q,k,c}(1)$, as $s\leq O_{\CC,q,k}(1)$, and $|\HH|\leq\poly_{\CC,q,k}(|U|)$.
+\end{proof}
+% lax end

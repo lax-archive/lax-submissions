@@ -1,0 +1,45 @@
+name = "Lax185574Proofs"
+defaultTargets = ["Lax185574Proofs"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
+
+[[require]]
+name = "Lax185574"
+path = "../concepts"
+
+[[lean_lib]]
+name = "Lax185574Proofs"
+
+# the word RAM and its proofs (stepping lemmas, IMP+ compiler), lax-808846
+[[require]]
+name = "Lax808846"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "9394e531cc51cb67a0214bca3f9264dfe97ba5c7"
+subDir = "word-ram/concepts"
+
+[[require]]
+name = "Lax808846Proofs"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "9394e531cc51cb67a0214bca3f9264dfe97ba5c7"
+subDir = "word-ram/proofs"
+
+# almost linear neighborhood complexity of monadically dependent classes
+# (thm:mondep-1-types of the companion paper), Lax710763
+[[require]]
+name = "Lax710763"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "5e97e29d5a0c37894d1d49488a9ff5b560c3a5a6"
+subDir = "monadic-dependence-neighborhood-complexity-v4-33/concepts"
+
+# CSR graph encoding (EncodesGraph), lax-271696
+[[require]]
+name = "Lax271696"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "0503df0eaf4e41104b9a3aa31e3e028b5adf7a0e"
+subDir = "ram-linear-time/concepts"

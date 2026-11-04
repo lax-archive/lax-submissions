@@ -1,0 +1,36 @@
+specVersion: "1"
+id: lax-185574
+leanVersion: "v4.33.0"
+mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
+title: "First-Order Model Checking on Monadically Dependent Graph Classes"
+authors:
+  - name: Jan Dreier
+    github: jan3er
+  - name: Nikolas Mählmann
+    orcid: "0000-0003-3657-7736"
+    github: nmaehlmann
+  - name: Szymon Toruńczyk
+    github: szymtor
+bibEntries:
+  - |
+    @misc{DreierMahlmannTorunczyk2026,
+      author = {Dreier, Jan and M{\"a}hlmann, Nikolas and Toru{\'n}czyk, Szymon},
+      title  = {First-Order Model Checking on Monadically Dependent Graph Classes},
+      note   = {To appear in arXiv},
+      year   = {2026}
+    }
+  - |
+    @misc{DreierMahlmannPilipczukTorunczyk2026,
+      author = {Dreier, Jan and M{\"a}hlmann, Nikolas and Pilipczuk, Micha{\l} and Toru{\'n}czyk, Szymon},
+      title  = {Monadically Dependent Graph Classes Have Almost Bounded Merge-Width},
+      note   = {To appear in arXiv},
+      year   = {2026}
+    }
+paper:
+  folder: paper
+  main: main.tex
+  engine: pdflatex
+initialOwners:
+  - jan3er
+  - nmaehlmann
+  - szymtor

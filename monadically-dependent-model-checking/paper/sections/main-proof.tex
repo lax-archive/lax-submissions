@@ -1,0 +1,241 @@
+\section{Proof of the main theorem}\label{sec:main-proof}
+
+The upcoming Parts~\ref{part:types}, \ref{part:definable-construction-sequences}, and~\ref{part:mc} prove three independent results.
+This section combines them into the main result, \Cref{thm:main}. It does so via two theorems that are connected by the following type-based width notion.
+
+% lax begin Lax185574.Width
+\begin{restatable}{definition}{defrqwidth}\label{res:width}
+For $r,q\in\N$,
+the \emph{radius-$r$ depth-$q$ width}
+of a construction sequence $G_1,\ldots,G_\lambda$
+is defined as:
+   $$\max_{t\in[\lambda-1]}\max_{v\in V(G)}|\Types^{G_t}_{q,q}({\Ball^{G_{t+1}}_r(v)})|.$$
+  \end{restatable}
+% lax end
+
+The offset between $G_t$ and $G_{t+1}$ mirrors the offset between $\PP_{i-1}$ and $R_i$ in the width definition of chains and of merge sequences (see \Cref{def:chain-width,def:merge-sequence}).
+
+% lax begin Lax185574.FewTypes
+\begin{theorem}\label{thm:skel-few-types}
+  Let $\CC$ be a monadically dependent graph class, $r,q\in\N$, and let $\eps>0$ be a rational.
+  There is a constant $\alpha\ge1$ depending only on $\CC$ and $q$ such that every $n$-vertex graph $G\in\CC$
+  has a construction sequence of \text{radius-$r$} depth-$q$ width $O_{\CC,r,q,\eps}(n^{\alpha\eps})$ and length $O_{\CC,r,q,\eps}(n^{1+\alpha\eps})$.
+  Moreover, there is an algorithm (independent of~$\CC$) which, given $r,q\in\N$, a rational $\eps>0$, and an $n$-vertex graph $G\in\CC$,
+  computes such a construction sequence in time $\widehat O_{\CC,r,q,\eps}(n^3)$.
+\end{theorem}
+% lax end
+\noindent
+It is important that $\alpha$ does not depend on $\eps$, as this allows us to make the exponent $\alpha\eps$ of the width as small as we like.
+The upcoming \Cref{sec:skel-few-types} assembles \Cref{thm:skel-few-types} from the key results of
+\Cref{part:types,part:definable-construction-sequences}.
+
+\newcommand{\mcdepth}{q}
+% lax begin Lax185574.ConstructionModelChecking
+\begin{restatable}{theorem}{mcthm}\label{thm:mc}
+  There is an algorithm which, given
+  a sentence $\phi$ and an $n$-vertex graph~$G$ together with its construction sequence of length $\lambda$, determines whether $G\models\phi$ in time
+  $\lambda\cdot n^2\cdot\poly_{\phi}(K)$,
+  where $K$ is the radius-$r$ depth-$\mcdepth$ width of the construction sequence,
+  for some $r$ and $\mcdepth$ which are computable from $\phi$.
+\end{restatable}
+
+% lax end
+
+\begin{proof}
+  See \Cref{part:mc}.
+\end{proof}
+
+From these two theorems, we can derive
+\Cref{thm:main} without much effort.
+The only subtlety is that the algorithm does not know $\CC$, so it cannot choose $\eps$ itself.
+
+\mainthm*
+
+% lax begin Lax185574Proofs.ModelChecking.exists_program_modelChecking
+\begin{proof}[Proof of \Cref{thm:main}]
+  Let $\phi$ be the input sentence, and let $r,q$ be the numbers from \Cref{thm:mc}.
+  For $j\ge1$, let $\mathcal A_j$ be the algorithm that computes a construction sequence of $G$ by \Cref{thm:skel-few-types} with $r,q$, and $\eps\coloneqq1/j$,
+  and then decides whether $G\models\phi$ by \Cref{thm:mc}.
+
+  Fix a monadically dependent graph class $\CC$, and let $\alpha\ge1$ be the constant from \Cref{thm:skel-few-types} for $\CC$ and $q$.
+  Let $c\ge1$ be such that the polynomial in \Cref{thm:mc} is $O_\phi(K^c)$.
+  On $n$-vertex graphs $G\in\CC$, the sequence computed by $\mathcal A_j$ has radius-$r$ depth-$q$ width $K\le O_{\CC,\phi,j}(n^{\alpha/j})$ and length $\lambda\le O_{\CC,\phi,j}(n^{1+\alpha/j})$.
+  So $\mathcal A_j$ runs in time
+  \[
+    \widehat O_{\CC,\phi,j}(n^3)+O_\phi(\lambda\cdot n^2\cdot K^c)
+    \le O_{\CC,\phi,j}(n^{3+\beta/j}),
+  \]
+  where $\beta\coloneqq(c+1)\alpha$.
+  Since $\beta/j>0$, the subpolynomial factor hidden by $\widehat O$ is absorbed by $n^{\beta/j}$.
+  The number $\beta$ depends on $\CC$ and $\phi$, but not on~$j$.
+
+  The algorithm does not know $\CC$, so it cannot choose $j$.
+  Instead, it runs all algorithms $\mathcal A_j$ in parallel, giving $\mathcal A_j$ a $2^{-j}$ share of the computation, and returns the first answer.
+  Its answer is correct, as every $\mathcal A_j$ correctly solves the model checking problem on every input graph.
+
+  For the running time, let $\eps>0$ and $j\coloneqq\lceil2\beta/\eps\rceil$.
+  If $\mathcal A_j$ halts within time $T$, then it completes within the first $2^jT$ simulated steps, so the algorithm halts within time
+  \[
+    O\bigl(2^jT\log(2^jT+2)\bigr)=O_j\bigl(T\log(T+2)\bigr).
+  \]
+  Hence, on $n$-vertex graphs in $\CC$, the algorithm runs in time
+  \[
+    O_{\CC,\phi,\eps}\bigl(n^{3+\beta/j}\log(n+2)\bigr)
+    \le O_{\CC,\phi,\eps}(n^{3+\eps}),
+  \]
+  since $\beta/j\le\eps/2$ and $\log(n+2)=O_\eps(n^{\eps/2})$.
+\end{proof}
+% lax end
+
+\subsection{Proving \texorpdfstring{\Cref{thm:skel-few-types} from \Cref{part:types,part:definable-construction-sequences}}{Theorem \getrefnumber{thm:skel-few-types} from Parts I and II}}\label{sec:skel-few-types}
+
+We first state the key results of the two parts, and derive \Cref{thm:skel-few-types} afterwards.
+
+\subsubsection{The key result of \texorpdfstring{\Cref{part:types}}{Part I}}\label{sec:skel-part-types}
+
+The key ingredient towards proving \Cref{thm:skel-few-types} is the following type bound derived in \Cref{part:types}.
+
+% lax begin Lax185574.TypeBound
+\newif\iftypeboundgeneral
+\begin{restatable}{theorem}{thmtypes}\label{thm:type-bound}
+
+Let $\CC$ be a monadically dependent graph class and $k,q,c\in\N$.
+For every \iftypeboundgeneral(possibly infinite) \fi graph $G \in \CC$, expansion $G^+$ of $G$ by $c$ unary predicates, and \iftypeboundgeneral finite \fi subset $U \subseteq V(G)$,
+\[
+    \left|\Types^{G^+}_{k,q}(V(G)/U)\right| \leq O_{\CC,q,k,c}(1)\cdot \poly_{\CC,q,k}(|U|).
+\]
+
+\end{restatable}
+% lax end
+
+The number $c$ of unary predicates affects only the constant factor, not the degree of the polynomial.
+This matters, as our construction sequences use $O(r/\eps)$ unary predicates, while the constant $\alpha$ in \Cref{thm:skel-few-types} must not depend on $\eps$.
+
+\subsubsection{The key result of \texorpdfstring{\Cref{part:definable-construction-sequences}}{Part II}}\label{sec:skel-part-defseq}
+
+The type bound counts types in $G$, while the width (\Cref{res:width}) counts types in the partial graphs $G_t$.
+To bridge this gap, \Cref{part:definable-construction-sequences} produces a construction sequence in which local balls of $G_t$ are defined by formulas in $G$.
+
+% lax begin Lax185574.LocalDefinability
+\begin{restatable}{definition}{defpartialdef}\label{def:partial-definable}
+Let $G$ be a graph with vertex set $V$ and let $H$ be a partial graph with vertex set $W\subseteq V$.
+For $q,c,w\in \N$,
+we say that $H$ is \emph{definable} in $G$  by formulas of quantifier rank $q$ using $c$ unary predicates and $w$ parameters, if
+there is an expansion $G^+$ of $G$ by $c$ unary predicates
+and a set $S\subseteq V(G)$ of parameters with $|S|\le w$,
+such that for every relation symbol $Q$ of $H$ (when viewed as a relational structure) of arity $k$ there is some formula $\phi_Q(x_1,\ldots,x_k)$ of quantifier rank $q$ with parameters from $S$
+such that
+$$G^+\models\phi_Q(\bar v)\quad\iff\quad \bar v\in W^k\text{ and }H\models Q(\bar v)\qquad\quad\text{for all $\bar v\in V^k$.}$$
+\end{restatable}
+
+The vertex set $W$ of $H$ is the union of its parts, so it is defined by the disjunction of the formulas defining the parts.
+
+\begin{restatable}{definition}{defskellocdef}\label{def:skel-loc-def}
+  Let $G$ be a graph and $r,c,s,q_0\in\N$.
+  A construction sequence $G_1,\ldots,G_\lambda$ of $G$ is \emph{radius-$r$ definable} with $c$ unary predicates, $s$ parameters, and quantifier rank $q_0$
+  if for all $t\in[\lambda-1]$ and $v\in V(G)$, the induced partial graph
+  \[
+      G_t[\Ball^{G_{t+1}}_r(v)]
+  \]
+  is definable in $G$ by formulas of quantifier rank $q_0$ using $c$ unary predicates and $s$ parameters.
+\end{restatable}
+
+\noindent Note that the expansion and the parameters may depend on $t$ and $v$.
+% lax end
+
+\medskip
+
+The key result of \Cref{part:definable-construction-sequences} is the following theorem.
+% lax begin Lax185574.DefinableSequences
+\begin{restatable}{theorem}{thmskeldefseq}\label{thm:skel-def-seq}
+  Let $r\ge 1$ be an integer, $\eps>0$ be a rational, and $\CC$ be a monadically dependent graph class. There is a constant $\delta\ge1$ depending only on $\CC$ such that every $n$-vertex graph $G\in\CC$
+  has a construction sequence of $G$ which is radius-$r$ definable with $O(r/\eps)$ unary predicates, $O_{\CC,r,\eps}(n^{\delta\eps})$ parameters, and quantifier rank $7$, and has length $O_{\CC,r,\eps}(n^{1+\delta\eps})$. Moreover, there is an algorithm (independent of $\CC$)
+  which, given $r$, $\eps$, and $G$, computes such a sequence, and runs in time $\widehat O_{\CC,r,\eps}(n^3)$ whenever $G\in\CC$.
+\end{restatable}
+% lax end
+
+For nowhere dense classes, the following stronger bounds follow easily from known results. The proof is given in \Cref{sec:nd}.
+
+\begin{restatable}{theorem}{thmnddefseq}\label{thm:nd-def-seq}
+  Let $\CC$ be a nowhere dense graph class, $r\in\N$, and $\eps>0$.
+  Every $n$-vertex graph $G\in\CC$ has a radius-$r$ definable construction sequence with one unary predicate, $O_{\CC,r,\eps}(n^\eps)$ parameters, quantifier rank $0$, and length $O_{\CC,r,\eps}(n^{1+\eps})$.
+  Such a sequence can be computed in time $O_{\CC,r,\eps}(n^{1+\eps})$.
+\end{restatable}
+
+In particular, \Cref{thm:nd-def-seq}, together with the results of \Cref{part:types,part:mc}, gives an alternative proof of the result of Grohe, Kreutzer, and Siebertz~\cite{gks} that first-order model checking is fixed-parameter tractable on nowhere dense classes.
+(Alternatively, in nowhere dense classes one can replace the type bound from \Cref{part:types}  by a stronger bound deducible from \cite{number-of-types}).
+
+\subsubsection{Assembling the parts}\label{sec:skel-assembly}
+
+We use the following consequence of Gaifman locality, proved in \Cref{app:gaifman}.
+
+% lax begin Lax185574.LocalToGlobal
+\begin{restatable}[Corollary of Gaifman locality]{lemma}{lemLocalToGlobal}\label{lem:local-to-global}
+For every $k,q,\alpha \in\N$, there are numbers $h=h(q)$ and $q'=q'(k,q,\alpha)$ computable from $k,q,\alpha$,
+ with the following property.
+Fix a finite relational signature $\sigma$ of arity at most $\alpha$ and a $\sigma$-structure $A$.
+Then, for all $\bar a\in V(A)^k$
+and $B\supseteq \Ball_h^A(\bar a)$,
+$\tp_q^A(\bar a)$ depends only on
+ $\tp_{q'}^{A[B]}(\bar a)$.
+\end{restatable}
+% lax end
+
+% lax begin Lax185574.DefinableToTypes
+\begin{lemma}\label{lem:skel-def-to-types}
+  For every $q\in\N$, there is $h\in\N$, computable from $q$, such that the following holds for every monadically dependent graph class $\CC$ and all $r,c,s,q_0\in\N$.
+  If a construction sequence of a graph $G\in\CC$ is radius-$(r+h)$ definable with $c$ unary predicates, $s$ parameters, and rank $q_0$,
+  then its radius-$r$ depth-$q$ width is at most $O_{\CC,q,q_0,c}(1)\cdot\poly_{\CC,q,q_0}(s)$.
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.DefinableToTypes.width_le_of_isRadiusDefinable
+\begin{proof}
+  We will apply \Cref{lem:local-to-global} to partial graphs from a construction sequence of $G$.
+  These partial graphs will have a finite signature $\sigma$ with up to $|V(G)|$ unary predicates marking the partition, but the arity is fixed to $\alpha=2$.
+  Hence, we can choose $h\coloneqq h(q)$ and $q'\coloneqq q'(q,q,2)$ from \Cref{lem:local-to-global}.
+  Let $G_1,\ldots,G_\lambda$ be a construction sequence of $G\in\CC$ which is radius-$(r+h)$ definable with $c$ unary predicates, $s$ parameters, and rank $q_0$.
+  Fix $t\in[\lambda-1]$ and $v\in V(G)$, and let $B\coloneqq\Ball^{G_{t+1}}_r(v)$ and $W\coloneqq\Ball^{G_{t+1}}_{r+h}(v)$.
+  By \Cref{res:width}, we have to bound $\left|\Types^{G_t}_{q,q}(B)\right|$.
+
+  First, we move from $G_t$ to the partial graph $G_t[W]$.
+  As $G_{t+1}$ has all resolved pairs of $G_t$, every tuple $\bar u\in B^q$ satisfies $\Ball^{G_t}_h(\bar u)\subseteq W$.
+  So by \Cref{lem:local-to-global}, $\tp^{G_t}_q(\bar u)$ is determined by $\tp^{G_t[W]}_{q'}(\bar u)$, and hence
+  \[
+    \left|\Types^{G_t}_{q,q}(B)\right|
+    \le\left|\Types^{G_t[W]}_{q,q'}(W)\right|.
+  \]
+
+  Next, we move from $G_t[W]$ to $G$.
+  By assumption, $G_t[W]$ is definable in an expansion $G^+$ of $G$ by $c$ unary predicates, by formulas of quantifier rank $q_0$ with parameters from a set $S$ of at most $s$ vertices.
+  Replace every atom of a formula over $G_t[W]$ by its defining formula, and restrict every quantifier to the vertex set of $G_t[W]$.
+  This turns a formula of quantifier rank $q'$ over $G_t[W]$ into a formula of quantifier rank at most $q'+q_0$ over $G^+$ with parameters from $S$,
+  which holds for the same tuples from $W$.
+  So for every $\bar u\in W^q$, $\tp^{G_t[W]}_{q'}(\bar u)$ is determined by $\tp^{G^+}_{q'+q_0}(\bar u/S)$.
+
+  Together with \Cref{thm:type-bound}, we obtain
+  \[
+    \left|\Types^{G_t}_{q,q}(B)\right|
+    \le\left|\Types^{G_t[W]}_{q,q'}(W)\right|
+    \le\left|\Types^{G^+}_{q,q'+q_0}(V(G)/S)\right|
+    \le O_{\CC,q,q'+q_0,c}(1)\cdot\poly_{\CC,q,q'+q_0}(s).
+  \]
+  As $q'$ depends only on $q$, this is the claimed bound $O_{\CC,q,q_0,c}(1)\cdot\poly_{\CC,q,q_0}(s)$.
+\end{proof}
+% lax end
+
+% lax begin Lax185574Proofs.FewTypes.exists_program_fewTypes
+\begin{proof}[Proof of \Cref{thm:skel-few-types}]
+  Let $\CC$ be a monadically dependent graph class containing $G$.
+  Let $h$ be the number given by \Cref{lem:skel-def-to-types} for depth $q$.
+  We run the algorithm of \Cref{thm:skel-def-seq} with radius $r+h$ and $\eps$, which takes time $\widehat O_{\CC,r,q,\eps}(n^3)$.
+
+  By \Cref{thm:skel-def-seq}, there is a constant $\delta\ge1$ depending only on $\CC$ such that the sequence is radius-$(r+h)$ definable with $c\le O((r+h)/\eps)\le O_{r,q,\eps}(1)$ unary predicates, $s\le O_{\CC,r,q,\eps}(n^{\delta\eps})$ parameters, and rank $q_0\coloneqq7$,
+  and it has length $O_{\CC,r,q,\eps}(n^{1+\delta\eps})$.
+  By \Cref{lem:skel-def-to-types}, there is an integer $D\ge1$ such that its radius-$r$ depth-$q$ width is at most
+  \[
+    O_{\CC,q,q_0,c}(1)\cdot\poly_{\CC,q,q_0}(s)\le O_{\CC,r,q,\eps}(n^{D\delta\eps}),
+  \]
+  where we used $q_0=7$ and $c\le O_{r,q,\eps}(1)$. As $D$ depends only on $\CC$ and $q$, we can choose $\alpha\coloneqq D\delta$ to satisfy the statement.
+  Since $D\ge1$ and $\delta\ge1$, we have $\alpha\ge \delta\ge1$, so this choice also bounds the sequence length by $O_{\CC,r,q,\eps}(n^{1+\alpha\eps})$.
+\end{proof}
+% lax end

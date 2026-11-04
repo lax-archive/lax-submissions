@@ -1,0 +1,179 @@
+\section{Corollary of Gaifman's locality theorem}\label{app:gaifman}
+In this appendix, we prove \Cref{lem:local-to-global} and \Cref{lem:sep-types-tuple}.
+
+\newcommand{\adj}{\mathrm{adj}}
+
+We will use Gaifman's Locality Theorem~\cite{gaifman}.
+We recommend~\cite[Section~4.1]{logic-graphs-algorithms} for an introduction.
+First some definitions.
+
+% lax begin Lax185574.LocalFormulas
+Fix a finite relational signature $\sigma$ of arity $\alpha$.
+Two $\sigma$-formulas $\phi(\bar x)$ and $\psi(\bar x)$ are \emph{equivalent} if for every $\sigma$-structure $A$ and every tuple $\bar a \in V(A)^{|\bar x|}$
+    \[
+    A\models \phi(\bar a) \Leftrightarrow A \models \psi(\bar a).
+    \]
+
+Let $\adj_\sigma(x_1,x_2)$ be the formula that tests whether $x_1$ and $x_2$ are adjacent in the Gaifman graph.
+More precisely, $\adj_\sigma$ tests for every  relation $R \in \sigma$ of arity $\beta$ with $2\le\beta \leq \alpha$, whether $x_1\neq x_2$ and there exist elements $x_3, \ldots, x_\beta$ such that some permutation of $x_1, \ldots, x_\beta$ satisfies $R$.
+Thus, the quantifier rank of $\adj_\sigma$ can be bounded by $\alpha - 2$.
+We can naturally derive a formula $\dist(x_1,x_2) \leq r$ checking whether $x_1$ and $x_2$ have distance at most $r$ in the Gaifman graph.
+We can (generously) bound the quantifier rank of $(\dist(x_1,x_2) \leq r)$ by $r + \alpha$ (quantifying candidate vertices for the path and then checking the required adjacencies ``in parallel'').
+
+A $\sigma$-formula $\phi(\bar x)$ is \emph{$r$-local}
+if every quantifier appearing in $\phi(\bar x)$ is of the form \mbox{$\forall y \in \Ball_s(\bar x)$} or $\exists y \in \Ball_s(\bar x)$ for some $s \leq r$, where the ball checks are implemented using the $\dist$ formulas (which we exempt from this condition).
+A sentence $\psi$ is \emph{basic $r$-local} if there is some $r' \leq r$ such that $\psi$ is of the form
+\[
+  \exists x_1, \ldots, x_m \bigwedge_{1 \leq i < j \leq m} \dist(x_i,x_j) > 2r'
+  \wedge
+  \bigwedge_{1 \leq i \leq m} \phi(x_i)
+\]
+for an $r'$-local formula $\phi$.
+
+Intuitively: whether an $r$-local formula holds on a tuple depends only on the $r$-ball of that tuple, as made precise in the following lemma.
+% lax end
+
+% lax begin Lax185574.LocalSubstructure
+\begin{lemma}\label{lem:local-substructure}
+Let $\phi(\bar x)$ be an $r$-local $\sigma$-formula, let $A$ be a $\sigma$-structure, let $\bar a \in V(A)^{|\bar x|}$, and let $\Ball_r^A(\bar a)\subseteq B\subseteq V(A)$.
+Then $A \models \phi(\bar a) \Leftrightarrow A[B] \models \phi(\bar a)$.
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.LocalSubstructure.realize_iff_realize_induced
+\begin{proof}
+When $\phi$ is evaluated in $A[B]$, its bounded quantifiers range over balls in the Gaifman graph of $A[B]$, which for arity above two can have fewer edges than the Gaifman graph of $A$ restricted to $B$.
+Still, $\Ball_s^{A[B]}(\bar a)=\Ball_s^A(\bar a)$ for all $s\le r$, since a shortest path from $\bar a$ of length at most $r$ survives in $A[B]$:
+every tuple witnessing its $j$-th edge has all entries at distance at most $j\le r$ from $\bar a$, hence in $B$.
+So the bounded quantifiers of $\phi$ range over the same subsets of $B$ in $A$ and in $A[B]$, and since $A[B]$ is an induced substructure of $A$, the claim follows.
+\end{proof}
+% lax end
+
+The following theorem is one of the key tools for limiting the expressiveness of first-order logic.
+
+\newcommand{\loc}{\mathrm{loc}}
+% lax begin Lax185574.GaifmanLocality
+\begin{theorem}[Gaifman's Locality Theorem \cite{gaifman}]
+    \label{fact:gaifman}
+    For all $\alpha,q,k \in \N$ there is a $p = p(\alpha,q,k)$ computable from $\alpha,q,k$  with the following property.
+    Let $\sigma$ be a finite relational signature of arity at most $\alpha$.
+    Every $\sigma$-formula $\phi(\bar x)$ of quantifier rank at most $q$ and with $|\bar x| \leq k$ free variables is equivalent to a $\sigma$-formula $\phi^\loc(\bar x)$, computable from $\phi$, that is a Boolean combination of basic $7^q$-local sentences and $7^q$-local formulas, \textbf{\textup{each of quantifier rank at most $\textit{p}$}}.
+\end{theorem}
+% lax end
+
+% lax begin Lax185574Proofs.GaifmanLocality.exists_local_equivalent
+The above theorem was proven in \cite{gaifman}, but the paper does not explicitly state the highlighted bound $p$ on the quantifier rank.
+Analyzing the proof in \cite{gaifman} shows that, indeed, there exists a bound $p$ that only depends on $\alpha$, $q$, and $k$, but not on the specific choice of the signature $\sigma$.
+This observation is made explicit in the recent rank-preserving locality theorems presented in~\cite{locality-note} and~\cite{vanbergerem2026rank}.
+In all three papers~\cite{gaifman,locality-note,vanbergerem2026rank}, the dependence of $p$ on the arity $\alpha$ is subtle.
+Each of them produces a formula in some extension of first-order logic (FO).
+While these extensions of FO are equivalent in expressive power to plain FO, they each contain predicates measuring distances in the Gaifman graph of a structure.
+As discussed above, converting such distance formulas to plain FO introduces an additional nesting of quantifiers depending on the arity $\alpha$.
+% lax end
+
+\lemLocalToGlobal*
+
+% lax begin Lax185574Proofs.LocalToGlobal.rankType_eq_of_rankType_induced_eq
+\begin{proof}
+Let $h\coloneqq 7^q$, and let $q'\coloneqq p$ be given by \Cref{fact:gaifman} for $\alpha,q,k$.
+Let $\bar a,\bar b\in V(A)^k$, $B_a\supseteq \Ball_h^A(\bar a)$ and $B_b\supseteq \Ball_h^A(\bar b)$ with $\tp_{q'}^{A[B_a]}(\bar a)=\tp_{q'}^{A[B_b]}(\bar b)$.
+By \Cref{fact:gaifman}, every formula $\phi(\bar x)$ of quantifier rank at most $q$ is equivalent to a Boolean combination of sentences and $h$-local formulas of quantifier rank at most $q'$.
+The sentences have a fixed truth value in $A$ independent of $\bar a$ and $\bar b$.
+For an $h$-local formula $\psi(\bar x)$ of quantifier rank at most $q'$,
+\[
+  A\models\psi(\bar a)
+  \iff
+  A[B_a]\models\psi(\bar a)
+  \iff
+  A[B_b]\models\psi(\bar b)
+  \iff
+  A\models\psi(\bar b),
+\]
+where the middle equivalence follows from the assumed equality of the $q'$-types.
+The first and third equivalences follow from \Cref{lem:local-substructure}.
+Hence, $A\models\phi(\bar a)\iff A\models\phi(\bar b)$ for all formulas of quantifier rank at most $q$, so $\tp_q^A(\bar a)=\tp_q^A(\bar b)$.
+\end{proof}
+% lax end
+
+% lax begin Lax185574.SeparatingTypes
+\begin{lemma}\label{lem:sep-types}
+    For every $q,k,c\in\N$ there are numbers $r=r(q)$ and $T=T(q,k,c)$ with the following property. Let $H$ be a graph expanded by at most $c$ unary predicates, and let $U\subseteq V(H)$ be finite.
+
+    Consider the set $F \coloneqq \{a\in V(H) \,:\, \dist^H(a,U) > r\}$ of vertices that are far from $U$. We can bound
+    \[
+      |\Types^H_{k,q}(F/U)|\leq T(q,k,c).
+    \]
+\end{lemma}
+% lax end
+
+% lax begin Lax185574Proofs.SeparatingTypes.typeCountOver_far_le
+\begin{proof}
+  Let $h$ and $q'$ be given by \Cref{lem:local-to-global} for $k$, $q$, and $\alpha=2$.
+  Since $h=h(q)$, the radius $r\coloneqq h+1$ depends only on $q$.
+
+  Let $H^+$ be the expansion of $H$ by the unary predicates $P_u\coloneqq\{u\}$ and $N_u\coloneqq N^H(u)$ for all $u\in U$.
+  Then $H^+$ has a finite relational signature of arity two, and its Gaifman graph is the underlying graph of $H$.
+  Take a formula with parameters from $U$.
+  Replace every atom $x=u$ or $u=x$ by $P_u(x)$, every atom $E(x,u)$ or $E(u,x)$ by $N_u(x)$, and every atom without variables by its truth value in $H$.
+  This gives a parameter-free formula in the signature of $H^+$ that has the same quantifier rank and is satisfied by the same tuples.
+  Hence $\tp^{H^+}_q(\bar a)$ determines $\tp^H_q(\bar a/U)$.
+
+  Let $\bar a\in F^k$ and $B\coloneqq \Ball^{H^+}_h(\bar a)$.
+  Every $w\in B$ satisfies $\dist^H(w,U)>r-h=1$, so $B$ avoids $U$ and all neighbors of vertices in $U$.
+  Thus every $P_u$ and $N_u$ is empty in $H^+[B]$.
+  So $H^+[B]$ is the induced subgraph $H[B]$ expanded by empty predicates.
+  Then $\tp^{H[B]}_{q'}(\bar a)$ determines $\tp^{H^+[B]}_{q'}(\bar a)$.
+  By \Cref{lem:local-to-global}, $\tp^{H^+[B]}_{q'}(\bar a)$ determines $\tp^{H^+}_q(\bar a)$, and hence $\tp^H_q(\bar a/U)$.
+  Here we crucially use that $h$ and $q'$ do not depend on the signature of $H^+$, which grows with $|U|$.
+  So $|\Types^H_{k,q}(F/U)|$ is at most the number of parameter-free rank-$q'$ types of $k$-tuples in graphs with $c$ unary predicates.
+  This number is finite and depends only on $q'$, $k$, and $c$, hence only on $q$, $k$, and $c$.
+  Call it $T(q,k,c)$.
+\end{proof}
+% lax end
+
+The following is an adaptation of~\cite[Corollary~16]{number-of-types}.
+\septypestuples*
+% lax begin Lax185574Proofs.SeparatingTypesTuples.ncard_rankTypeOver_append_le
+\begin{proof}
+  Let $r=r(q)$ and $T=T(q,k,c)$ be given by \Cref{lem:sep-types},
+  yielding the desired bound
+  \[
+  \left|
+    \{
+    \tp_q^H(\bar a/U) \,:\, \bar a \in F^k
+    \}
+  \right|
+  \leq
+  T(q,k,c)
+  \]
+  in case no tuple $\bar u$ is involved.
+  To lift that result, it remains to show that for a fixed tuple $\bar u$ with elements from $U$, the type
+  $\tp^H_q(\bar a\bar u/U)$ depends only on $\tp^H_q(\bar a/U)$.
+  More precisely, it suffices to show that there exists a map $\phi \mapsto \phi_{\bar u}$ such that every formula
+  $\phi(\bar x \bar y)$ with
+
+  \begin{center}
+    quantifier rank ${\leq}q$,
+    \qquad
+    $|\bar x| = k$ and $|\bar y| = |\bar u|$,
+    \qquad
+    and parameters from $U$
+  \end{center}
+  gets mapped to a formula $\phi_{\bar u}(\bar x)$ of the same quantifier rank and again with parameters from $U$ such that
+  for every $\bar a \in F^k$
+  \[
+    \phi\in\tp^H_q(\bar a\bar u/U)
+    \iff H\models\phi(\bar a\bar u)
+    \iff H\models\phi_{\bar u}(\bar a)
+    \iff \phi_{\bar u}\in\tp^H_q(\bar a/U).
+  \]
+  We can obtain a suitable $\phi_{\bar u}(\bar x)$ from $\phi(\bar x \bar y)$ by substituting in $\phi$ each free variable $y_i \in \bar y$ with the corresponding parameter $u_i \in \bar u$ from $U$.
+  This translation depends only on $\bar u$ and not on $\bar a$.
+  It does not change the quantifier rank, and still all parameters of $\phi_{\bar u}$ are contained in $U$.
+\end{proof}
+% lax end
+\begin{remark}
+  In \Cref{lem:sep-types-tuple},
+  the bound crucially relies on $\bar u$ being fixed, as the translation $\phi\mapsto\phi_{\bar u}$ differs for different $\bar u$.
+  Without fixing $\bar u$ there is no bound independent of $|U|$:
+  for $k=1$, $a\in F$, and $\bar u=(u)$ ranging over $U$, the formulas $\psi_u(xy) \coloneqq (y=u)$ (each using a different parameter $u$) show that the tuples $au$ realize $|U|$ different types over $U$.
+\end{remark}

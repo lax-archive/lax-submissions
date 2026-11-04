@@ -1,0 +1,927 @@
+ \part{Model checking with type trees}
+ \label{part:mc}
+
+ In this part we prove:
+{\renewcommand{\mcdepth}{d}\mcthm*}
+
+\section{Preliminaries}\label{sec:mc-prelims}
+
+In \Cref{part:mc},
+unless stated otherwise, $G$ denotes a partial graph.
+We slightly extend the notions of partial graphs and of construction sequences.
+
+% lax begin Lax185574.PartialGraphs
+\paragraph{Partial graphs.}
+To track parts over time, we give them names.
+Fix a countably infinite set of unary symbols, called \emph{colors}.
+We regard a partial graph $G$ as a relational structure with the two symmetric binary relations $E$ and $N$ and a unary relation $Y$ for every color $Y$.
+The vertices of color $Y$ form its color class $Y^G$, and the nonempty color classes are the parts of $G$.
+We write $|G|\coloneqq|V(G)|$ and $\size G\coloneqq|V(G)|+|R(G)|$ for the size of the representation of a partial graph $G$.
+% lax end
+% lax begin Lax185574.DistanceMatrix
+The \emph{distance matrix} of $G$ is the $|G|\times|G|$ matrix $D_G$ with entries $D_G(u,v)\coloneqq\dist^G(u,v)\in\N\cup\set\infty$.
+Passing it as an additional input to the algorithms below saves time, as distances need not be recomputed repeatedly.
+% lax end
+
+% lax begin Lax185574.ConstructionSequences
+\paragraph{Construction sequences.}
+For colors $P,Q$ and a partial graph $G$, we define three partial graphs
+$\merge PQ(G)$ (for $P\neq Q$), $\resolve+PQ(G)$, and $\resolve-PQ(G)$, as the partial graph $H$ obtained from $G$ by leaving all relations of $G$ unchanged, apart from redefining the following:
+\begin{align*}
+\merge PQ(G)\colon\quad&
+P^{H}\coloneqq P^G\cup Q^G,
+\qquad
+Q^{H}\coloneqq\emptyset
+&&\text{for $P\ne Q$},\\
+\resolve+PQ(G)\colon\quad&
+E(H)\coloneqq E(G)\cup\bigl(P^GQ^G\setminus N(G)\bigr),\\
+\resolve-PQ(G)\colon\quad&
+N(H)\coloneqq N(G)\cup\bigl(P^GQ^G\setminus E(G)\bigr).
+\end{align*}
+After either resolve, every pair in $P^GQ^G$ is resolved.
+In this representation, every step of a construction sequence $G_1,\ldots,G_\lambda$ (\Cref{sec:tech-overview}) has the form $G_{t+1}=\merge PQ(G_t)$, $\resolve+PQ(G_t)$, or $\resolve-PQ(G_t)$ for some colors $P,Q$.
+% lax end
+
+\section{Distance logic}\label{sec:dist-rank}
+
+Following \cite{mw-arxiv,mw-stoc} (and earlier work by \cite{gks}),
+we define a logic called \distFO, extending first-order logic by distance atoms, and a suitable notion of rank. We then define compact representations of types tailored to this logic.
+
+\subsection{Distance logic and distance rank}
+
+% lax begin Lax185574.DistanceLogic
+\paragraph{First-order distance logic.}
+The logic \distFO extends first-order logic by additionally allowing the following two types of atoms:
+\begin{quote}
+     For each radius \(r \in \N\), \distFO introduces
+        a \emph{binary distance atom} \(\dist(x,y) \le r\) expressing that the distance between \(x\) and \(y\) is at most \(r\).
+
+     For each radius \(r \in \N\) and color \(Y\), \distFO introduces
+        a \emph{unary distance atom} \({\dist(x,Y) < r}\) expressing that the distance from \(x\) to \(Y\) is smaller than \(r\),
+        equivalent to \({\exists y~Y(y) \land \dist(x,y) < r}\).
+\end{quote}
+In both cases, we call \(r\) the \emph{radius} of the distance atom.
+Distance atoms are expressible in first-order logic, but only with quantifiers.
+Treating them as atoms lets us measure distances without increasing the quantifier rank, as in~\cite{gks}.
+
+\paragraph{Horizon functions.}
+We fix sufficiently fast-growing horizon functions as in \cite{locality-note}:
+\begin{equation}\label{eq:horizon-def}
+\rhom(k,q)\coloneqq 9^{(k+q+1)q}
+\qquad\text{and}\qquad
+\rhop(k,q)\coloneqq 9^{(k+q)(q+1)}.
+\end{equation}
+They satisfy the two identities
+\begin{equation}\label{eq:horizon}
+\rhop(k,q)=9^k\rhom(k,q)\quad\text{for all $k,q\in\N$},
+\qquad
+\rhom(k,q)=9^q\rhop(k+1,q-1)\quad\text{for $q\ge1$}.
+\end{equation}
+In particular, as $9^q\ge2$,
+\begin{equation}\label{eq:horizon-cons}
+\rhop(k,q)\ge\rhom(k,q)\ge2\rhop(k+1,q-1)\quad\text{for all $k\in\N$ and $q\ge1$}.
+\end{equation}
+
+\paragraph{Distance rank.}
+Let $k,q\in\N$.
+A \distFO formula has \emph{distance rank \((k,q)\)} if it is a Boolean combination of
+\begin{itemize}
+\item first-order atoms: relational symbols in the signature or equality, applied to variables,
+\item binary distance atoms with radius $r\le\rhom(k,q)$,
+\item unary distance atoms with radius $r\le\rhop(k,q)$,
+\item
+formulas
+\[
+\exists y~\Bigl(\dist(x_i,y)\le \rhop(k+1,q-1)\land\phi(\tup x y)\Bigr),
+\]
+where \(q \ge 1\), $x_i$ is a variable in $\tup x$, and $\phi(\tup x y)$ has distance rank $(k+1,q-1)$.
+\end{itemize}
+
+A formula with distance rank \((k,q)\) has quantifier rank at most \(q\).
+Observe by \eqref{eq:horizon-cons} that
+the distance atoms have progressively shorter radii as one traverses the quantifiers
+inwards.
+
+Formulas of distance rank $(k,q)$ are called \emph{local} formulas of distance rank $(k,q)$ in
+\cite{mw-arxiv,locality-note}, as opposed to the more general formulas which also allow the unrestricted quantification $\exists y\, \psi(\tup x y)$. Since we only consider local formulas in this paper, we omit this adjective.
+
+% lax end
+
+\subsection{Type trees}
+\label{sec:typetrees}
+ In the context of usual first-order logic, the \emph{type} of quantifier rank $q$ of a tuple $\tup a$ in a structure $A$ is defined as the set of all formulas of quantifier rank $q$ that are satisfied by $\tup a$ in $A$ (see \Cref{sec:prelims}). It is well known~\cite{Scott1979}
+  that for structures over a finite relational signature, such types can be identified with \emph{trees}, also called \emph{Hintikka types},
+defined recursively as follows:
+$$\tree_q^A(\tup a)=\begin{cases}
+\atp^A(\tup a)&\text{if $q=0$,}\\
+\setof{\tree_{q-1}^A(\tup a b)}{b\in V(A)}&\text{if $q>0$}.
+\end{cases}$$
+In the setting of \distFO formulas of distance rank $(k,q)$, the (local) \emph{type of distance rank $(k,q)$} of a tuple $\tup a$
+is defined  \cite{mw-arxiv} as the set of (local) \distFO formulas of distance rank $(k,q)$ satisfied by $\tup a$.
+In this section, we adapt the construction of trees to this setting. This is useful in the algorithmic context, as trees are much smaller objects than types.
+
+% lax begin Lax185574.TypeTrees
+\paragraph{Type trees.}
+In the two definitions below, let $G$ be a partial graph, $k,q\in\N$, and $\tup a\in V(G)^{\le k}$, and put $\ell\coloneqq|\tup a|$.
+The \emph{atomic $(k,q)$-type}, denoted $\atp_{k,q}(\tup a)$, is the set of all atomic formulas $\phi$
+of distance rank \((k,q)\)
+with free variables among $x_1,\ldots,x_\ell$, such that $G\models\phi(\tup a)$. Note that this set is finite, as an atom mentioning a color that does not occur in $G$ is not satisfiable in~$G$.
+
+Define the \emph{$(k,q)$-type tree} of $\tup a$ as
+\[
+\tree_{k,q}\bigl(\tup a\bigr)
+\coloneqq
+\bigl(\atp_{k,q}(\tup a),\mathcal E_{k,q}(\tup a)\bigr)
+\]
+where $\mathcal E_{k,q}(\tup a)=\emptyset$ if $q=0$, and otherwise
+\[
+\mathcal E_{k,q}\bigl(\tup a\bigr)
+\coloneqq
+\setof{\bigl(i,\tree_{k+1,q-1}(\tup a b)\bigr)}{i\in[\ell],\ b\in V(G),\ \dist(a_i,b)\le\rhop(k+1,q-1)}.
+\]
+
+Note that type trees are ``local'' in the sense that new vertices are always quantified close to previous ones (see \Cref{lem:locality}).
+The members of $\mathcal E_{k,q}(\tup a)$ are the \emph{extensions} of $\tree_{k,q}(\tup a)$. The position $i$ of an extension $(i,\mu)$ is called the \emph{guard}, and we say that $i$ \emph{admits} $b$ if $\dist(a_i,b)\le\rhop(k+1,q-1)$.
+We view $\tree_{k,q}(\tup a)$ as a labeled, rooted tree
+ of depth $q$,
+with the root labeled $\atp_{k,q}(\tup a)$ and the root of each type tree $\mu$ of an extension $(i,\mu)\in \mathcal E_{k,q}(\tup a)$ attached as a child of the root via an edge labeled $i$.
+We call $\ell$ the \emph{arity} of the type tree, and $(k,q)$ its \emph{rank}.
+
+\paragraph{Representation.}
+Type trees are represented in the standard RAM model in a canonical (say, sorted,
+duplicate-free) form, so that equality of two type trees $\tau_1,\tau_2$ can be
+tested in time $O(\size{\tau_1}+\size{\tau_2})$.
+By $\size\tau$ we denote the size of this representation (which includes $k,q$, and $\ell$).
+% lax end
+
+% lax begin Lax185574.CanonicalForm
+% lax begin Lax185574Proofs.CanonicalForm.exists_program_canonical
+\begin{observation}[canonical form]\label{obs:canonical}
+A type tree given by a representation whose sets need not be sorted or duplicate-free can be brought into canonical form in polynomial time.
+\end{observation}
+% lax end
+% lax end
+
+The next lemma states that the type trees indeed represent the types. It is the reason for computing type trees in the first place.
+
+% lax begin Lax185574.Evaluation
+\begin{lemma}[evaluation]\label{lem:eval}
+Let $\phi(\tup x)$ be a \distFO formula of distance rank $(k,q)$, \(G\) be a partial graph and $\tup a\in V(G)^{\ell}$ with $\ell=|\tup x|\le k$.
+Then whether $G\models\phi(\tup a)$ holds is decidable in polynomial time, given $\tree^G_{k,q}(\tup a)$ and $\phi$.
+\end{lemma}
+% lax end
+
+\textbf{Notation.} For a $(k,q)$-type tree $\tau=\tree^G_{k,q}(\tup a)$
+and a \distFO formula $\phi(\tup x)$ of distance rank $(k,q)$,
+we write $\tau \models\phi$, if $G\models\phi(\tup a)$.
+The lemma implies that this does not depend on $G$ and $\tup a$, only on the type tree $\tau$.
+
+% lax begin Lax185574Proofs.Evaluation.exists_program_eval
+\begin{proof}[Proof of \Cref{lem:eval}]
+By induction on $q$.
+Write $\tau\coloneqq\tree_{k,q}(\tup a)$.
+By definition of distance rank, $\phi$ is a Boolean combination of atoms and of existential components, and we evaluate these components separately.
+An atom holds of $\tup a$ if and only if it occurs in the root label $\atp_{k,q}(\tup a)$ of $\tau$.
+Now let $q\ge1$ and put $H\coloneqq\rhop(k+1,q-1)$.
+Every existential component $\chi$ of $\phi$ can be written as $$\exists y~(\dist(x_i,y)\le H\land\psi(\tup x y))$$ with $i\in[\ell]$ and $\psi$ of distance rank $(k+1,q-1)$.
+By the inductive assumption, whether $G\models\psi(\tup c)$ holds is determined by $\tree_{k+1,q-1}(\tup c)$ and $\psi$, and by the notation above, this holds if $\tree_{k+1,q-1}(\tup c)\models \psi$.
+Unfolding the semantics, then applying the inductive assumption, and finally the definition of $\mathcal E_{k,q}(\tup a)$, we obtain
+\begin{align*}
+G\models\chi(\tup a)
+&\iff\exists b\in V(G)\colon\ \dist(a_i,b)\le H\ \text{and}\ G\models\psi(\tup ab)\\
+&\iff\exists b\in V(G)\colon\ \dist(a_i,b)\le H\ \text{and}\ \tree_{k+1,q-1}(\tup ab)\models\psi\\
+&\iff\exists\mu\colon\ (i,\mu)\in\mathcal E_{k,q}(\tup a)\ \text{and}\ \mu\models\psi.
+\end{align*}
+So $\chi$ is decided by evaluating $\psi$, via the inductive assumption, on the extensions of $\tau$ with guard~$i$.
+
+This proof yields a polynomial-time algorithm.
+\end{proof}
+% lax end
+
+% lax begin Lax185574.TreeEquivalence
+\begin{corollary}\label{cor:tp-tree}
+   Fix $\ell\le k$ and $q$,  a partial graph $G$, and  $\tup a,\tup b\in V(G)^\ell$. Then $\tree^G_{k,q}(\tup a)=\tree^G_{k,q}(\tup b)$ if and only if $G\models \phi(\tup a)\Leftrightarrow \phi(\tup b)$ for every \distFO formula $\phi(\tup x)$  of distance rank $(k,q)$ with $|\tup x|=\ell$.
+\end{corollary}
+% lax end
+% lax begin Lax185574Proofs.TreeEquivalence.tree_eq_iff
+\begin{proof}
+   The rightwards implication follows from \Cref{lem:eval}. The converse is proved by an easy induction on $q$.
+\end{proof}
+% lax end
+
+% lax begin Lax185574.TreeLocality
+\begin{lemma}[locality]\label{lem:locality}
+Let $k\ge1$, $q\in\N$, let $G$ be a partial graph, and let $a\in V(G)$.
+Every node at depth $j$ of $\tree_{k,q}(a)$ is $\tree_{k+j,q-j}(\tup v)$ for some tuple $\tup v$ from $\Ball_{\rhop(k,q)}(a)$, and every color mentioned in the root label intersects this ball.
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.TreeLocality.ball_of_guarded
+\begin{proof}
+By the definition of extensions and induction on $j$, a node at depth $j$ is $\tree_{k+j,q-j}(\tup v)$ for a tuple $\tup v=(v_0,\ldots,v_j)$ with $v_0=a$ in which every $v_i$ with $i\ge1$ is within distance $\rhop(k+i,q-i)$ of an earlier entry.
+By induction on $i$ and the triangle inequality, $\dist(a,v_i)\le\sum_{i'=1}^{i}\rhop(k+i',q-i')$.
+The root label mentions colors only in atoms $Y(x_i)$ and $\dist(x_i,Y)<r$ with $r\le\rhop(k+j,q-j)$, and such an atom holds of $\tup v$ only if a vertex of $Y$ is within distance $r$ of $v_i$.
+Hence every entry of $\tup v$, and some vertex of every color in an atom in the root label, is within distance
+\[
+\sum_{i=1}^{j}\rhop(k+i,q-i)+\rhop(k+j,q-j)\le\rhop(k,q)
+\]
+of $a$, where the inequality uses $\rhop(k+i,q-i)\le2^{-i}\rhop(k,q)$, which follows by applying \eqref{eq:horizon-cons} $i$ times.
+\end{proof}
+% lax end
+
+\subsection{Operations on type trees}
+
+% lax begin Lax185574.Restriction
+\begin{lemma}[ordered coordinate restriction]\label{lem:restrict}
+There is an operation $\restriction$ on type trees
+such that for all \(k,q\in\N\), partial graphs \(G\),
+tuples $\tup w\in V(G)^{\ell}$ for $\ell\le k$ and ordered lists $J$ of distinct positions in $[\ell]$,
+\[
+\tree_{k,q}(\tup w)\restriction J
+=
+\tree_{k,q}(\tup w\restriction J).
+\]
+Given $\tau$ and $J$ one can compute $\tau\restriction J$ in time polynomial in $\size\tau$.
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.Restriction.exists_program_restrict
+\begin{proof}
+By induction on $q$.
+Let $J=(j_1,\ldots,j_p)$, and $H\coloneqq\rhop(k+1,q-1)$.
+Renaming variables gives
+\[
+\atp_{k,q}(\tup w\restriction J)=\setof{\psi(x_1,\ldots,x_p)}{\psi(x_{j_1},\ldots,x_{j_p})\in\atp_{k,q}(\tup w)},
+\]
+which settles the root label.
+Let $q\ge1$, and put $J^+\coloneqq(j_1,\ldots,j_p,\ell+1)$, so that $(\tup w\restriction J)\,b=(\tup w b)\restriction J^+$ for every vertex $b$.
+Unfolding the definition of $\mathcal E_{k,q}(\tup w\restriction J)$, then applying the inductive assumption, and finally the definition of $\mathcal E_{k,q}(\tup w)$, we obtain
+\begin{align*}
+\mathcal E_{k,q}(\tup w\restriction J)
+&=\setof{\bigl(i,\ \tree_{k+1,q-1}((\tup w b)\restriction J^+)\bigr)}{i\in[p],\ b\in V(G),\ \dist(w_{j_i},b)\le H}\\
+&=\setof{\bigl(i,\ \tree_{k+1,q-1}(\tup w b)\restriction J^+\bigr)}{i\in[p],\ b\in V(G),\ \dist(w_{j_i},b)\le H}\\
+&=\setof{(i,\ \mu\restriction J^+)}{i\in[p],\ (j_i,\mu)\in\mathcal E_{k,q}(\tup w)}.
+\end{align*}
+So the guard $j_i$ is renumbered to $i$, as the variable $x_{j_i}$ is renamed to $x_i$ in the root.
+The right-hand side depends only on $\tree_{k,q}(\tup w)$ and $J$ and we define $\tau\restriction J$ accordingly.
+It is computed by one pass over $\tau$, followed by restoring canonical form. As no subtree grows, this takes polynomial time by \Cref{obs:canonical}.
+\end{proof}
+% lax end
+
+% lax begin Lax185574.RankShift
+\begin{lemma}[rank shift]\label{lem:shift}
+There is a polynomial-time algorithm which maps
+$\tree_{k,q}(\tup a)$ to $\tree_{k+1,q-1}(\tup a)$ for all \(k\in\N\), \(q\ge1\),
+partial graphs \(G\) and nonempty $\tup a\in V(G)^{\le k}$.
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.RankShift.exists_program_shift
+\begin{proof}
+Since $\dist(a_1,a_1)=0$, the guard $1$ admits $a_1$, so $\tree_{k,q}(\tup a)$ has an extension $(1,\mu)$.
+Every such $\mu$ is $\tree_{k+1,q-1}(\tup ab)$ for some vertex $b$, and applying the algorithm of \Cref{lem:restrict} yields
+$\mu\restriction(1,\ldots,|\tup a|)=\tree_{k+1,q-1}(\tup a)$.
+\end{proof}
+% lax end
+
+The following is an adaptation of \cite[Lemma~3.1]{locality-note}.
+% lax begin Lax185574.FarComposition
+\begin{lemma}[far composition]\label{lem:compose}
+There is an operation $\ast$ on type trees
+such that for all \(k,q\in\N\), partial graphs \(G\) and
+nonempty tuples $\tup a_1,\tup a_2$ with $|\tup a_1\tup a_2|\le k$ and $\dist(\tup a_1,\tup a_2)>\rhom(k,q)$,
+\[
+\tree_{k,q}(\tup a_1)\ast\tree_{k,q}(\tup a_2)
+=
+\tree_{k,q}(\tup a_1\tup a_2).
+\]
+Given $\tau_1,\tau_2$ one can compute $\tau_1\ast\tau_2$ in time $\poly_{k,q}(\size{\tau_1}+\size{\tau_2})$.
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.FarComposition.exists_program_compose
+\begin{proof}
+By induction on $q$.
+Write $\ell_i\coloneqq|\tup a_i|$ and $\tau_i\coloneqq\tree_{k,q}(\tup a_i)$. Note that \(\ell_i\) can be deduced from~$\tau_i$.
+
+Consider an atom of distance rank $(k,q)$ that mentions variables of both $\tup a_1$ and $\tup a_2$.
+If the atom was true, we would have $\dist(\tup a_1,\tup a_2)\le1$ for an equality, edge, or non-edge atom, and $\dist(\tup a_1,\tup a_2)\le\rhom(k,q)$ for a binary distance atom, each contradicting $\dist(\tup a_1,\tup a_2)>\rhom(k,q)$.
+Every other atom mentions only variables of $\tup a_1$ or only variables of $\tup a_2$, and whether it holds is recorded in $\atp_{k,q}(\tup a_1)$ or $\atp_{k,q}(\tup a_2)$.
+Hence $\atp_{k,q}(\tup a_1\tup a_2)$ is determined by $\atp_{k,q}(\tup a_1)$ and $\atp_{k,q}(\tup a_2)$.
+This settles the root label.
+
+Let now \(q \ge 1\).
+Put $H\coloneqq\rhop(k+1,q-1)$, and let $\ast$ also denote the operation given by the inductive assumption for rank $(k+1,q-1)$.
+Write $\tup a_1\tup a_2=(c_1,\ldots,c_{\ell_1+\ell_2})$, and split $\mathcal E_{k,q}(\tup a_1\tup a_2)$ by guards into $\mathcal E_1\cup\mathcal E_2$, where
+\begin{align*}
+\mathcal E_1&\coloneqq\setof{\bigl(i,\ \tree_{k+1,q-1}(\tup a_1\tup a_2 b)\bigr)}{i\in[\ell_1],\ b\in V(G),\ \dist(c_i,b)\le H},\\
+\mathcal E_2&\coloneqq\setof{\bigl(i,\ \tree_{k+1,q-1}(\tup a_1\tup a_2 b)\bigr)}{\ell_1<i\le\ell_1+\ell_2,\ b\in V(G),\ \dist(c_i,b)\le H}.
+\end{align*}
+
+Consider $\mathcal E_1$, and let $i,b$ satisfy its conditions.
+Then $\dist(\tup a_1,b)\le H$, and the triangle inequality, the hypothesis, \eqref{eq:horizon-cons} and \eqref{eq:horizon} give
+\[
+\dist(\tup a_1b,\tup a_2)
+\;\ge\;\dist(\tup a_1,\tup a_2)-\dist(\tup a_1,b)
+\;>\;\rhom(k,q)-H
+\;\ge\;H
+\;\ge\;\rhom(k+1,q-1).
+\]
+Hence, we may apply the inductive assumption for rank $(k+1,q-1)$ to the tuples $\tup a_1b$ and $\tup a_2$.
+Moreover, let $J$ be the list of positions with $\tup a_1\tup a_2 b=(\tup a_1 b\tup a_2)\restriction J$.
+Applying in this order the property of \(J\), \Cref{lem:restrict} and the inductive assumption, and finally the definition of $\mathcal E_{k,q}(\tup a_1)$, we obtain
+\begin{align*}
+\mathcal E_1
+&=\setof{\bigl(i,\ \tree_{k+1,q-1}(\tup a_1 b\tup a_2)\restriction J\bigr)}{i\in[\ell_1],\ b\in V(G),\ \dist(c_i,b)\le H}\\
+&=\setof{\bigl(i,\ \bigl(\tree_{k+1,q-1}(\tup a_1b)\ast\tree_{k+1,q-1}(\tup a_2)\bigr)\restriction J\bigr)}{i\in[\ell_1],\ b\in V(G),\ \dist(c_i,b)\le H}\\
+&=\setof{\bigl(i,\ \bigl(\mu\ast\tree_{k+1,q-1}(\tup a_2)\bigr)\restriction J\bigr)}{(i,\mu)\in\mathcal E_{k,q}(\tup a_1)},
+\end{align*}
+where $\tree_{k+1,q-1}(\tup a_2)$ is obtained from $\tau_2$ by \Cref{lem:shift}.
+Symmetrically, with the guard $i$ of $\tup a_2$ renumbered to $\ell_1+i$ as the variables of its root are shifted by $\ell_1$, and without reordering since $\tup a_1\tup a_2 b$ already ends with $b$,
+\[
+\mathcal E_2
+=\setof{\bigl(\ell_1+i,\ \tree_{k+1,q-1}(\tup a_1)\ast\mu\bigr)}{(i,\mu)\in\mathcal E_{k,q}(\tup a_2)}.
+\]
+The right-hand sides depend only on $\tau_1$ and $\tau_2$ and we define $\tau_1\ast\tau_2$ accordingly.
+By \Cref{lem:restrict,lem:shift} and the inductive assumption, the work per input extension is $\poly_{k,q}(\size {\tau_1}+\size{\tau_2})$, and the recursion has fixed depth $q$. Restoring canonical form by \Cref{obs:canonical} stays within this bound, which proves the stated running time.
+\end{proof}
+% lax end
+
+\section{Scatter types and far trees}\label{sec:localglobal}
+
+The type tree of a tuple $\tup a$ records extensions only by vertices near $\tup a$.
+A resolve, however, can bring vertices far from $\tup a$ within guard range, so lifting type trees through a resolve (\Cref{sec:merge-resolve}) also requires the type trees of such far away vertices.
+For a vertex $b$ far from $\tup a$, the type tree of $\tup ab$ is obtained from those of $\tup a$ and $b$ by far composition (\Cref{lem:compose}).
+As for quantifiers over far witnesses in the proof of Gaifman's locality theorem, it therefore suffices to know which type trees are realized far from $\tup a$.
+We collect them in the \emph{far tree} of $\tup a$.
+
+The far tree is not determined by the type tree of $\tup a$ alone. It also depends on global information about $G$.
+As in Gaifman's proof, this global information is captured by an analogue of the basic local sentences, which we call the \emph{scatter type} of $G$.
+In this section we show that the far tree of $\tup a$ is computable from the type tree of $\tup a$ and the scatter type of $G$.
+
+\Cref{sec:stp} defines scatter types, and \Cref{sec:ftree} uses them to compute the far tree.
+The model checking algorithm maintains the type trees of all vertices, and \Cref{lem:compute-stp} shows that the scatter type can be computed from these.
+
+\subsection{Scatter types}\label{sec:stp}
+
+% lax begin Lax185574.ScatterTypes
+Let $G$ be a partial graph.
+A set $S$ of vertices of $G$ is \emph{$r$-scattered} if all vertices in $S$ have pairwise distance larger than $r$ in $G$.
+Fix, once and for all, a linear order on $V(G)$. The algorithms below use it without further mention.
+For a set $X\subseteq V(G)$ and $r\in\N$, let $S_r(X)$ denote the inclusion-wise maximal $r$-scattered subset of $X$ constructed by the greedy process that repeatedly adds the least available vertex.
+% lax begin Lax185574.TypeTrees
+If $\nu$ is a type tree of distance rank $(k,q)$ and arity one, write
+\[
+[\nu]^G
+\coloneqq
+\setof{b\in V(G)}{\tree_{k,q}(b)=\nu}
+\]
+for the set of its realizations.
+% lax end
+
+\begin{definition}[scatter type]\label{def:stp}
+Let $G$ be a partial graph and $k,q\in\N$. The \emph{$(k,q)$-scatter type} $\stp_{k,q}^G$ is the function  with domain
+\begin{align*}
+\bigl\{(r,\tree_{k+i,q-i}(b))\ \big|\
+i\in[q],\ b\in V(G),\ r\in[9^{k+i}\rhom(k+i,q-i)]\bigr\}
+\end{align*}
+defined by
+\[
+\stp^G_{k,q}(r,\nu)
+\coloneqq
+\min\bigl(|S_r([\nu]^G)|,\ k+q\bigr).
+\]
+For $q=0$ the domain is empty and $\stp_{k,0}$ is the empty function. We write $\stp_{k,q}=\stp^{G}_{k,q}$.
+\end{definition}
+
+We represent a scatter type canonically as a sorted list of its triples
+$(r,\nu,\stp_{k,q}(r,\nu))$, using the canonical representation of $\nu$.
+Its representation size, denoted by $\size{\stp_{k,q}}$, is the total size of
+this list, including the encodings of the radii and values.
+% lax end
+
+% lax begin Lax185574.ScatterTypeRestriction
+\begin{lemma}\label{obs:stp-restrict}
+For every partial graph $G$ and $q\ge 1$, the function $\stp_{k+1,q-1}$ is the restriction of $\stp_{k,q}$ to $\operatorname{domain}(\stp_{k+1,q-1})$.
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.ScatterTypeRestriction.stp_restrict
+\begin{proof}
+Level $i$ of $\operatorname{domain}(\stp_{k+1,q-1})$ equals level $i+1$ of $\operatorname{domain}(\stp_{k,q})$: the ranks $\bigl((k+1)+i,(q-1)-i\bigr)=\bigl(k+(i+1),q-(i+1)\bigr)$ and the radius bounds coincide, the value caps $(k+1)+(q-1)=k+q$ coincide, and both functions use the same canonical set $S_r([\nu]^G)$.
+\end{proof}
+% lax end
+
+In the model checking application, the type trees of all vertices are maintained by a dynamic-programming algorithm, and the scatter type is computed from them.
+Recall that $|G|=|V(G)|$ and $\size G=|V(G)|+|R(G)|$.
+
+% lax begin Lax185574.ComputeScatterType
+\begin{lemma}\label{lem:compute-stp}
+There is an algorithm which, given a nonempty partial graph $G$, numbers
+$k\ge1$ and $q\in\N$, its distance matrix $D_G$, and the family
+$(\tree_{k,q}(a):a\in V(G))$, computes $\stp^G_{k,q}$ in time
+\[
+|G|^2\cdot
+\poly_{k,q}\left(\max_{a\in V(G)}\size{\tree_{k,q}(a)}\right).
+\]
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.ComputeScatterType.exists_program_stp
+\begin{proof}
+Put $M\coloneqq\max_{a\in V(G)}\size{\tree_{k,q}(a)}$.
+For every $a\in V(G)$ and $i\in[q]$, applying \Cref{lem:shift} $i$ times to $\tree_{k,q}(a)$ yields $\tree_{k+i,q-i}(a)$, of size $\poly_{k,q}(M)$.
+This takes $|G|\cdot\poly_{k,q}(M)$ time and gives $\operatorname{domain}(\stp_{k,q})$, as each radius is $O_{k,q}(1)$; in particular, $|\operatorname{domain}(\stp_{k,q})|=O_{k,q}(|G|)$.
+
+For each $(r,\nu)\in \operatorname{domain}(\stp_{k,q})$, run the greedy process defining $S_r([\nu]^G)$, stopping after $k+q$ vertices were discovered.
+It scans $V(G)$ in order, testing membership in $[\nu]^G$ by comparing the trees computed above with $\nu$. After adding a vertex $v$, scan the row $D_G(v,\cdot)$ and mark all vertices $u$ with $D_G(v,u)\le r$ as unavailable.
+At most $k+q$ rows are scanned, so one run takes $|G|\cdot\poly_{k,q}(M)$ time, and the $|\operatorname{domain}(\stp_{k,q})|=O_{k,q}(|G|)$ runs together take the stated time.
+\end{proof}
+% lax end
+
+\subsection{The far tree}\label{sec:ftree}
+
+% lax begin Lax185574.FarTrees
+\begin{definition}\label{def:ftree}
+For a partial graph $G$, $k\in\N$, $q\ge1$, and a nonempty tuple $\tup a\in V(G)^{\le k}$, define
+\[
+\ftree_{k,q}(\tup a)\coloneqq
+\setof{\tree_{k+1,q-1}(b)}{b\in V(G),\ \dist(\tup a,b)>\rhom(k+1,q-1)}.
+\]
+\end{definition}
+% lax end
+
+The goal of this subsection is to compute $\ftree_{k,q}(\tup a)$ from $\tree_{k,q}(\tup a)$ and $\stp_{k,q}$ (\Cref{lem:to-ftree}).
+% lax begin Lax185574Proofs.Clustering.clustering
+Our main tool is the following clustering lemma~\cite[Corollary~3.4 and Lemma~3.5]{locality-note}.
+% lax end
+
+% lax begin Lax185574.Clustering
+\begin{lemma}[{\cite{locality-note}}]\label{lem:clustering}
+Let $r\in\N$, let $\ell\ge1$, let $G$ be a graph, and let $\tup a=(a_1,\ldots,a_\ell)\in V(G)^\ell$.
+There exist a radius $\crad$ with $r\le \crad\le9^{\ell-1}r$ and a partition $\mathcal B$ of $\set{a_1,\ldots,a_\ell}$ with the following property.
+
+For every $X\subseteq V(G)$, inclusion-wise maximal $4\crad$-scattered subset $S \subseteq X$, and $H\ge4\crad+r$,
+\[
+\exists x\in X\colon \dist^G(x,\tup a)>r
+\quad\Longleftrightarrow\quad
+\begin{aligned}[t]
+&\exists x\in X\colon r<\dist^G(x,\tup a)\le H,\\[-2pt]
+&\text{or}\quad \bigl|\setoff{B\in\mathcal B}{\exists x\in X\colon \dist^G(x,B)\le r}\bigr|< |S|.
+\end{aligned}
+\]
+Moreover, the radius $\crad$ and the partition $\mathcal B$ can be determined by tests of the form $\dist^G(a_i,a_j)\le s$, where $i,j\in[\ell]$ and $s\le8\cdot9^{\ell-1}r$.
+\end{lemma}
+% lax end
+
+% lax begin Lax185574.ToFarTree
+\begin{lemma}\label{lem:to-ftree}
+Fix $k\in\N$ and $q\ge1$, let $G$ be a partial graph, and let $\tup a\in V(G)^{\le k}$ be nonempty.
+Then $\ftree_{k,q}(\tup a)$ is computable from $\tree_{k,q}(\tup a)$ and $\stp_{k,q}$ in time
+\[
+\size{\stp_{k,q}}\cdot
+\poly_{k,q}\bigl(\size{\tree_{k,q}(\tup a)}\bigr).
+\]
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.ToFarTree.exists_program_ftree
+\begin{proof}
+Let
+$\tau\coloneqq\tree_{k,q}(\tup a)$,
+$\sigma\coloneqq\stp_{k,q}$,
+$r\coloneqq\rhom(k+1,q-1)$,
+$H\coloneqq\rhop(k+1,q-1)$, and
+$\ell\coloneqq|\tup a|$.
+The entries with $i=1$ in the domain of $\sigma$ let us compute the set
+\[
+\mathcal T
+\coloneqq
+\setoff{\tree_{k+1,q-1}(b)}{b\in V(G)}.
+\]
+Then
+\[
+\ftree_{k,q}(\tup a) =\setoff{\nu\in\mathcal T}{\exists b\in[\nu]^G\colon\dist(\tup a,b)>r}.
+\]
+
+\paragraph{Rewriting the target.}
+The tree $\tau$ only records vertices within distance $H$ of $\tup a$, while a vertex $b\in[\nu]^G$ with $\dist(\tup a,b)>r$ may be farther away than $H$.
+We will now use \Cref{lem:clustering} to replace the existence of such a vertex by two conditions that we can check.
+Apply the lemma with radius $r$ to the Gaifman graph of $G$ (with vertex set $V(G)$ and edge set $R(G)$) and to $\tup a$, and obtain a radius $\crad$ and a partition $\mathcal B$ of $\set{a_1,\ldots,a_\ell}$.
+Since $\ell\le k$,
+\[
+4\crad\le4\cdot9^{\ell-1}r\le9^{k+1}r,
+\qquad
+4\crad+r\le(4\cdot9^{\ell-1}+1)r\le9^{k}r\le H.
+\]
+The first chain shows that $(4\crad,\nu)$ lies in the domain of $\sigma$ for every $\nu\in\mathcal T$. The second is the hypothesis $H\ge4\crad+r$ of \Cref{lem:clustering}, so the lemma applies to every $X\subseteq V(G)$ together with $S_{4\crad}(X)$.
+Define
+\begin{align*}
+\mathcal N&\coloneqq\setof{\tree_{k+1,q-1}(b)}{b\in V(G),\ r<\dist(\tup a,b)\le H},\\
+\mathcal N_B&\coloneqq\setof{\tree_{k+1,q-1}(b)}{b\in V(G),\ \dist(b,B)\le r}
+\qquad\text{for $B\in\mathcal B$.}
+\end{align*}
+For $\nu\in\mathcal T$, \Cref{lem:clustering} applied to $X\coloneqq[\nu]^G$ and $S\coloneqq S_{4\crad}([\nu]^G)$ states that
+\[
+\exists b\in[\nu]^G\colon\dist(\tup a,b)>r
+\quad\Longleftrightarrow\quad
+\nu\in\mathcal N\ \text{ or }\ \bigl|\setoff{B\in\mathcal B}{\nu\in\mathcal N_B}\bigr|<|S_{4\crad}([\nu]^G)|.
+\]
+As $\sigma(4\crad,\nu)=\min(|S_{4\crad}([\nu]^G)|,k+q)$ by \Cref{def:stp}, and $\bigl|\setoff{B\in\mathcal B}{\nu\in\mathcal N_B}\bigr|\le|\mathcal B|\le\ell\le k<k+q$, we can equivalently replace the bound $|S_{4\crad}([\nu]^G)|$ above by $\sigma(4\crad,\nu)$.
+Therefore,
+\[
+\ftree_{k,q}(\tup a)
+=\setoff{\nu\in\mathcal T}{\nu\in\mathcal N\ \text{ or }\ \bigl|\setoff{B\in\mathcal B}{\nu\in\mathcal N_B}\bigr|<\sigma(4\crad,\nu)}.
+\]
+In this expression, $\mathcal T$ and the values $\sigma(4\crad,\nu)$ can be read from $\sigma$.
+It remains to compute $\crad$, $\mathcal B$, $\mathcal N$, and the sets $\mathcal N_B$ from $\tau$.
+
+\paragraph{Reading $\crad$ and $\mathcal B$ off $\tau$.}
+By \Cref{lem:clustering}, $\crad$ and $\mathcal B$ are determined by tests $\dist(a_i,a_j)\le s$ with $i,j\in[\ell]$ and
+\[
+s\le8\cdot9^{\ell-1}r\le9^kr\le H\le\rhom(k,q).
+\]
+These are binary distance atoms of radius at most $\rhom(k,q)$ and hence determined by the label $\atp_{k,q}(\tup a)$ of the root of $\tau$.
+We represent every set $B\in\mathcal B$ by its set of positions $I_B\coloneqq\setof{i\in[\ell]}{a_i\in B}$, which is determined by the equality atoms in the root atomic type of $\tau$.
+
+\paragraph{Reading $\mathcal N$ and $\mathcal N_B$ off $\tau$.}
+The trees attached to the root of $\tau$ are exactly
+the trees $\tree_{k+1,q-1}(\tup ab)$ with $b\in V(G)$ and $\dist(\tup a,b)\le H$.
+Such a tree $\mu$ determines two things about $b$: by \Cref{lem:restrict}, $\mu\restriction{(\ell+1)}=\tree_{k+1,q-1}(b)$, and since the root atomic type $\atp_{k+1,q-1}(\tup ab)$ of $\mu$ contains the binary distance atoms of radius at most $\rhom(k+1,q-1)=r$, we have $\mu\models\dist(x_{j},x_{\ell+1})\le r$ if and only if $\dist(a_{j},b)\le r$, for every $j\in[\ell]$.
+Therefore,
+\[
+\mathcal N
+=\setof{\mu\restriction{(\ell+1)}}{(i,\mu)\in\mathcal E_{k,q}(\tup a),\ \mu\models\textstyle\bigwedge_{j\in[\ell]}\dist(x_{j},x_{\ell+1})>r}.
+\]
+Likewise, since $r\le H$, the condition $\dist(b,B)\le r$ implies $\dist(\tup a,b)\le H$, and
+\[
+\mathcal N_B
+=\setof{\mu\restriction{(\ell+1)}}{(i,\mu)\in\mathcal E_{k,q}(\tup a),\ \mu\models\textstyle\bigvee_{j\in I_B}\dist(x_{j},x_{\ell+1})\le r}.
+\]
+The right-hand sides depend only on $\tau$.
+Substituting them into the expression for $\ftree_{k,q}(\tup a)$ above gives a description in terms of $\tau$ and $\sigma$ only.
+
+\paragraph{Running time.}
+The radius $\crad$ and the sets $I_B$ are read off the root label of $\tau$.
+For all extensions $(i,\mu)$ of $\tau$, the trees $\mu\restriction({\ell+1})$ are obtained by \Cref{lem:restrict} and the atoms $\dist(x_{j},x_{\ell+1})\le r$ are read off the root of $\mu$, in time $\poly_{k,q}(\size\tau)$ in total.
+Collecting them yields $\mathcal N$ and the at most $k$ sets $\mathcal N_B$ within the same bound.
+The expression for $\ftree_{k,q}(\tup a)$ is then evaluated by one scan of $\sigma$: for every entry $(4\crad,\nu,\sigma(4\crad,\nu))$ with $\nu$ of rank $(k+1,q-1)$, membership of $\nu$ in $\mathcal N$ and in each $\mathcal N_B$ is tested by comparing $\nu$ with every element of these at most $k+1$ sets, in time $O(k\cdot\size\tau\cdot(\size\nu+\size\tau))$.
+Summed over all entries of $\sigma$ this is $O(\size\sigma\cdot\poly_{k,q}(\size\tau))$, which gives the stated running time.
+\end{proof}
+% lax end
+
+\section{Lifting type trees through merges and resolves}
+\label{sec:merge-resolve}
+The model checking algorithm will process
+the construction sequence step by step and maintain the type trees of all vertices.
+We first show how to lift type trees through a merge, and then through a resolve.
+
+% lax begin Lax185574.MergeLift
+\begin{lemma}[merge lift]\label{lem:merge-lift}
+Fix $\ell\le k$ and $q\in\N$.
+Let $G$ be a partial graph and $\tup a\in V(G)^\ell$.
+Given
+$\tree^G_{k,q}(\tup a)$ and two distinct colors $P,Q$, one can compute
+ $\tree^{H}_{k,q}(\tup a)$, where $H=\merge PQ(G)$,
+in time
+\[
+\poly_{k,q}(\size{\tree^G_{k,q}(\tup a)}).
+\]
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.MergeLift.exists_program_mergeLift
+\begin{proof}
+We proceed by induction on $q$.
+
+\paragraph{Root labels.}
+The partial graphs $G$ and $H$ have the same resolved pairs, so all distances agree, and only the colors $P$ and $Q$ change.
+Hence, for every vertex $u$ and $s\in\N$,
+\begin{align*}
+H\models P(u)&\quad\Longleftrightarrow\quad G\models P(u)\lor Q(u),\\
+H\models Q(u)&\quad\Longleftrightarrow\quad\textit{false},\\
+H\models\dist(u,P)<s&\quad\Longleftrightarrow\quad G\models(\dist(u,P)<s)\lor(\dist(u,Q)<s),\\
+H\models\dist(u,Q)<s&\quad\Longleftrightarrow\quad\textit{false},
+\end{align*}
+and every other atom has the same interpretation in $G$ and $H$.
+This allows us to rewrite every atom \(\phi\)
+into a quantifier-free formula \(\phi'\)
+of the same distance rank, so that
+$H\models\phi(\tup a)$ if and only if $G\models\phi'(\tup a)$.
+Since whether or not $G\models\phi'(\tup a)$ is determined by $\atp^G_{k,q}(\tup a)$, it follows that the new root label $\atp^{H}_{k,q}(\tup a)$ can be computed  from $\atp^G_{k,q}(\tup a)$.
+Only atoms mentioning $P$ or $Q$ change, so the new root label is obtained by one pass over the old root label and is no larger.
+This settles the root label.
+
+\paragraph{Extensions.}
+Let $q\ge1$.
+Since $\dist^{H}=\dist^G$, every guard admits the same vertices in $G$ and $H$, so the inductive assumption gives $\mathcal E^{H}_{k,q}(\tup a)=\setof{(i,F(\mu))}{(i,\mu)\in\mathcal E^G_{k,q}(\tup a)}$,
+where $F(\mu)$ is obtained inductively.
+Together with the root label, this gives $\tree^{H}_{k,q}(\tup a)$.
+
+\paragraph{Running time.}
+The transformation replaces atoms in the label of every node and keeps the guards, so it visits each node of the input tree once, and no tree grows.
+By \Cref{obs:canonical}, restoring canonical form takes time polynomial  in the size of the tree.
+\end{proof}
+% lax end
+
+A resolve can bring vertices far from a tuple within guard range.
+Their type trees are not recorded in the old type tree of the tuple, and we obtain them from the far tree instead.
+
+% lax begin Lax185574.ResolveLift
+\begin{lemma}[resolve lift]\label{lem:resolve-lift}
+Let $k\ge1$ and $q\in\N$.
+Given a partial graph $G$, its distance matrix $D_G$, colors $P,Q$,
+a sign $\pm$, and
+$(\tree^G_{k,q}(a):a\in V(G))$, one can compute
+$H=\resolve\pm PQ(G)$, its distance matrix $D_H$, and
+$(\tree^{H}_{k,q}(a):a\in V(G))$ in time
+\[
+|G|^2\cdot\poly_{k,q}(M+T),
+\]
+where
+\begin{align*}
+M&\coloneqq\max_{a\in V(G)}\size{\tree^G_{k,q}(a)},\\
+T&\coloneqq\max_{a\in V(G)}\bigl|\bigl\{\tree^G_{k+i,q-i}(\tup v)\colon 0\le i\le q,\ \ell\in[k+i],\ \tup v\in\bigl(\Ball^{H}_{\rhop(k,q)}(a)\bigr)^{\ell}\bigr\}\bigr|.
+\end{align*}
+Each output tree has size $\poly_{k,q}(T)$.
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.ResolveLift.exists_program_resolveLift
+\begin{proof}
+Assume the resolve is positive, as the negative case is symmetric.
+By induction on $q$,
+we construct an auxiliary map $F$ on trees of arbitrary nonempty tuples, so that $\tree^{H}_{k,q}(\tup a)=F(\tree^G_{k,q}(\tup a))$ for all $\ell\le k$ and $\tup a\in V(G)^\ell$.
+Fix $\tup a \in V(G)^\ell$ and
+put $\tau\coloneqq\tree^G_{k,q}(\tup a)$ and $\sigma\coloneqq\stp^G_{k,q}$.
+
+\paragraph{Root labels.}
+We may assume that $P^G$ and $Q^G$ are nonempty, as otherwise $H=G$.
+We rewrite every atom $\phi$ in $H$ to an equivalent formula $\phi'$ in $G$,
+so that $\phi'$ has the same distance rank as $\phi$,
+and $H\models\phi(\tup a)\iff G\models\phi'(\tup a)$.
+Below, $u,v$ are vertices, $Y$ is a color, and $s\in\N$.
+
+\emph{First-order atoms.}
+Equality, color, and non-edge atoms $N(x,y)$ have the same interpretation in $G$ and~$H$.
+By definition of the positive resolve,
+\[
+H\models E(u,v)
+\quad\Longleftrightarrow\quad
+G\models E(u,v)\lor\Bigl(\bigl((P(u)\land Q(v))\lor(Q(u)\land P(v))\bigr)\land u\ne v\land\lnot N(u,v)\Bigr).
+\]
+
+\emph{Distances.}
+We have $R(H)=R(G)\cup P^GQ^G$.
+A shortest path from $u$ to $v$ in $H$ is a path in $G$, or runs in $G$ from $u$ to $P^G$ or $Q^G$, then crosses to the other part or returns to the same part through the other one, and then runs in $G$ to $v$:
+otherwise, the segment between its first and last vertex in $P^G\cup Q^G$ could be replaced by one pair from $P^GQ^G$, or by two through the other part if both ends lie in the same part.
+Hence
+\begin{equation}\label{eq:resolve-dist}
+\dist^H(u,v)=\min\left\{
+\begin{aligned}
+&\dist^G(u,v),\\
+&\dist^G(u,P)+1+\dist^G(Q,v),\quad \dist^G(u,Q)+1+\dist^G(P,v),\\
+&\dist^G(u,P)+2+\dist^G(P,v),\quad \dist^G(u,Q)+2+\dist^G(Q,v)
+\end{aligned}\right\}.
+\end{equation}
+
+\emph{Unary distance atoms.}
+Taking the minimum of \eqref{eq:resolve-dist} over $v\in Y^G$ gives
+\begin{align*}
+&H\models\dist(u,Y)<s
+\quad\Longleftrightarrow\quad
+G\models\dist(u,Y)<s\\
+&\qquad\lor\dist(u,P)<(s-1-\dist^G(Q,Y))\lor\dist(u,Q)<(s-1-\dist^G(P,Y))\\
+&\qquad\lor\dist(u,P)<(s-2-\dist^G(P,Y))\lor\dist(u,Q)<(s-2-\dist^G(Q,Y)).
+\end{align*}
+The values $\dist^G(P,Y)$ and $\dist^G(Q,Y)$ do not depend on $u$, and are computed once. A unary-distance comparison whose upper bound is nonpositive, or from which an infinite distance is subtracted, is interpreted as \emph{false}.
+
+\emph{Binary distance atoms.}
+Define
+\begin{align*}
+&\delta^s_{P,Q}(x,y)\coloneqq\\
+&\bigvee_{s_1+1+s_2=s}\bigl(\dist(x,P)<s_1{+}1\land\dist(y,Q)<s_2{+}1\bigr)\lor\bigl(\dist(x,Q)<s_1{+}1\land\dist(y,P)<s_2{+}1\bigr)\\
+\lor{}&\bigvee_{s_1+2+s_2=s}\bigl(\dist(x,P)<s_1{+}1\land\dist(y,P)<s_2{+}1\bigr)\lor\bigl(\dist(x,Q)<s_1{+}1\land\dist(y,Q)<s_2{+}1\bigr).
+\end{align*}
+By \eqref{eq:resolve-dist},
+\begin{align}\label{eq:bin-dist}
+H\models\dist(u,v)\le s
+\quad\Longleftrightarrow\quad
+G\models(\dist(u,v)\le s)\lor\delta^s_{P,Q}(u,v).
+\end{align}
+
+\emph{Root label.}
+For an atom \(\phi\), let $\phi'$ be the corresponding formula as obtained above.
+Then $H\models\phi(\tup a)$ if and only if $G\models\phi'(\tup a)$ and $\phi'$ has the same distance rank as $\phi$.
+Since whether or not $G\models\phi'(\tup a)$ is determined by $\atp^G_{k,q}(\tup a)$, it follows that the new root label $\atp^{H}_{k,q}(\tup a)$ can be computed  from $\atp^G_{k,q}(\tup a)$.
+Algorithmically, there are $O_{k,q}(1)$ atoms without colors, and each nonempty color contributes $O_{k,q}(1)$ further atoms.
+
+\paragraph{Extensions.}
+Let $q\ge1$, and put $r\coloneqq\rhom(k+1,q-1)$ and $R\coloneqq\rhop(k+1,q-1)$.
+On trees of rank $(k+1,q-1)$, $F$ denotes the map given by the inductive assumption, using the restriction of $\sigma$ to $\operatorname{domain}(\stp_{k+1,q-1})$ from \Cref{obs:stp-restrict} and the same precomputed distances.
+By the inductive assumption,
+\begin{align}\label{neqE}
+\mathcal E^{H}_{k,q}(\tup a)=\setof{\bigl(i,F(\tree^G_{k+1,q-1}(\tup a b))\bigr)}{i\in[\ell], \dist^H(a_i,b)\le R}.
+\end{align}
+
+For $i\in[\ell]$, put
+\[
+\gamma_i(x_1,\ldots,x_{\ell+1})\coloneqq\delta^R_{P,Q}(x_i,x_{\ell+1}).
+\]
+By \eqref{eq:bin-dist},
+\begin{align}\label{eq:Disteq}
+H\models\dist(a_i,b)\le R
+\quad\Longleftrightarrow\quad
+G\models\dist(a_i,b)\le R\ \lor\ \gamma_i(\tup a b).
+   \end{align}
+The right-hand side of \eqref{eq:Disteq}
+is equivalent to the disjunction of three conditions:
+\begin{enumerate}
+   \item  $\dist^G(a_i,b)\le R$,
+   \item  $\dist^G(\tup a,b)\le R$ and $G\models\gamma_i(\tup a b)$,
+    \item  $\dist^G(\tup a,b)>r $ and $G\models\gamma_i(\tup a b)$.
+\end{enumerate}
+This holds since $r\le R$ by \eqref{eq:horizon}.
+Consequently,
+\[
+\mathcal E^{H}_{k,q}(\tup a)=\mathcal E_{\mathrm{old}}\cup\mathcal E_{\mathrm{near}}\cup\mathcal E_{\mathrm{far}},
+\]
+where
+\begin{align*}
+\mathcal E_{\mathrm{old}}&\coloneqq\setof{\bigl(i,\ F(\tree^{G}_{k+1,q-1}(\tup a b))\bigr)}{i\in[\ell],\ b\in V(G),\ \dist^G(a_i,b)\le R},\\
+\mathcal E_{\mathrm{near}}&\coloneqq\setof{\bigl(i,\ F(\tree^{G}_{k+1,q-1}(\tup a b))\bigr)}{i\in[\ell],\ b\in V(G),\ \dist^G(\tup a,b)\le R,\ G\models\gamma_i(\tup a b)},\\
+\mathcal E_{\mathrm{far}}&\coloneqq\setof{\bigl(i,\ F(\tree^{G}_{k+1,q-1}(\tup a b))\bigr)}{i\in[\ell],\ b\in V(G),\ \dist^G(\tup a,b)>r,\ G\models\gamma_i(\tup a b)}.
+\end{align*}
+
+The first set is obtained via
+\[
+\mathcal E_{\mathrm{old}}
+=
+\setof{(i,F(\mu))}{(i,\mu)\in\mathcal E^G_{k,q}(\tup a)}.
+\]
+Every witness $b$ for $\mathcal E_{\mathrm{near}}$ is admitted by some guard $j$ in $G$, so $\tree^G_{k+1,q-1}(\tup a b)$ occurs as an extension $(j,\mu)$ of $\tau$ with $\mu\models\gamma_i$.
+Conversely, every such $\mu$ equals $\tree^G_{k+1,q-1}(\tup a b)$ for some $b$ with $\dist^G(a_j,b)\le R$ and $G\models\gamma_i(\tup a b)$.
+Hence, using the notation $\mu\models\gamma$ introduced after \Cref{lem:eval},
+\[
+\mathcal E_{\mathrm{near}}
+=
+\setof{(i,F(\mu))}{i\in[\ell],\ (j,\mu)\in\mathcal E^G_{k,q}(\tup a),\ \mu\models\gamma_i}.
+\]
+For $\mathcal E_{\mathrm{far}}$, consider $b$ with $\dist^G(\tup a,b)>r$.
+Since $r=\rhom(k+1,q-1)$ is exactly the separation required by \Cref{lem:compose} at rank $(k+1,q-1)$, that lemma
+gives
+\[
+\tree^G_{k+1,q-1}(\tup a b)
+=
+\tree^G_{k+1,q-1}(\tup a)\ast\tree^G_{k+1,q-1}(b),
+\]
+where $\tree^G_{k+1,q-1}(\tup a)$ is obtained from $\tau=\tree^G_{k,q}(\tup a)$ by \Cref{lem:shift}.
+As $b$ ranges over all such vertices, $\tree^G_{k+1,q-1}(b)$ ranges exactly over $\ftree^G_{k,q}(\tup a)$, computed from $\tau$ and $\sigma$ by \Cref{lem:to-ftree}.
+Therefore
+\[
+\mathcal E_{\mathrm{far}}
+=
+\setof{\bigl(i,\ F(\tree^G_{k+1,q-1}(\tup a)\ast\nu)\bigr)}{i\in[\ell],\ \nu\in\ftree^G_{k,q}(\tup a),\ \tree^G_{k+1,q-1}(\tup a)\ast\nu\models\gamma_i}.
+\]
+So the new root label, $\mathcal E_{\mathrm{old}}$, $\mathcal E_{\mathrm{near}}$, and $\mathcal E_{\mathrm{far}}$ are computed from $\tau$ together with $\sigma$ and the values $\dist^G(P,Y)$ and $\dist^G(Q,Y)$, which do not depend on $\tup a$. This defines $F(\tau)=\tree^{H}_{k,q}(\tup a)$.
+
+\paragraph{Running time.}
+Computing $H$ takes time $O(\size{H})=O(|G|^2)$.
+Scanning $D_G$ gives $\dist^G(u,P)$ and $\dist^G(u,Q)$ for all vertices $u$, and thus $\dist^G(P,Y)$ and $\dist^G(Q,Y)$ for all nonempty colors $Y$, in time $O(|G|^2)$.
+Then \eqref{eq:resolve-dist} gives $D_H$ in time $O(|G|^2)$, and \Cref{lem:compute-stp} computes $\sigma\coloneqq\stp^G_{k,q}$ from $D_G$ in time $|G|^2\cdot\poly_{k,q}(M)$.
+Every tree $\tree^G_{k+i,q-i}(b)$ is obtained from $\tree^G_{k,q}(b)$ by at most $q$ applications of \Cref{lem:shift}, so it has size $\poly_{k,q}(M)$, and $\size\sigma\le |G|\cdot\poly_{k,q}(M)$, since the domain of $\sigma$ has $O_{k,q}(1)$ entries per vertex.
+
+\emph{Number of calls.}
+Fix $a\in V(G)$ and consider the recursion computing $F(\tree^G_{k,q}(a))$.
+We collect the distinct old extension trees admitted by at least one guard in $H$ before recursing, retaining the list of guards for each tree.
+The calls at depth $j$ are on trees $\tree^G_{k+j,q-j}(\tup v)$ for tuples $\tup v$ reached by the guards in $H$.
+By \Cref{lem:locality} applied to $H$, every such $\tup v$ is a tuple from $\Ball^{H}_{\rhop(k,q)}(a)$.
+So by definition of $T$, a call makes at most $T$ recursive calls, and as the depth is $q$, there are $\poly_{k,q}(T)$ calls for $a$.
+
+\emph{Cost per call and output size.}
+A recursive input is a child of the previous input, or is obtained by rank shift and far composition with a  tree of arity one recorded in $\sigma$.
+These trees have size $\poly_{k,q}(M)$, so by \Cref{lem:shift,lem:compose} and the depth bound $q$, every recursive input and every candidate extension tree has size $\poly_{k,q}(M)$.
+For a call with positive remaining depth, restricting $\sigma$ and applying \Cref{lem:to-ftree} takes time $O(\size\sigma\cdot\poly_{k,q}(M))=O(|G|\cdot\poly_{k,q}(M))$.
+The far tree has at most $|G|$ members, so composing them and testing the formulas $\gamma_i$
+(which are quantifier-free formulas of distance rank $(k+1,q-1)$, so are determined by the root label of a tree of rank $(k+1,q-1)$) takes the same time.
+We scan the candidates, test their guards, and compare each admitted candidate with the list of at most $T$ distinct admitted trees collected so far.
+Including the candidates from the old extensions, this takes $O(|G|\cdot\poly_{k,q}(M+T))$ time.
+
+The colors recorded in each new root label meet $\Ball^{H}_{\rhop(k,q)}(a)$ by \Cref{lem:locality} applied to $H$, and as vertices of distinct colors have distinct old trees, there are at most $T$ of them.
+So each new root label has size $O_{k,q}(T)$ and is computed in time $O(|G|\cdot\size\tau)$.
+Together with the branching and depth bounds, this gives output size $\poly_{k,q}(T)$; restoring canonical form has the same polynomial bound by \Cref{obs:canonical}.
+
+Altogether the recursion for $a$ takes time $O(|G|\cdot\poly_{k,q}(M+T))$, and for all vertices $O(|G|^2\cdot\poly_{k,q}(M+T))$.
+Adding the construction of $H$ and $D_H$, the distance preprocessing, and the scatter type gives the claimed bound.
+\end{proof}
+% lax end
+
+\section{The model checking algorithm}\label{sec:model-checking}
+We now give the model checking algorithm,
+proving \Cref{thm:mc}.
+Recall the width notion used in the statement.
+\defrqwidth*
+
+The width bounds numbers of ordinary types, and the following lemma converts such bounds into bounds on type trees, as required by \Cref{lem:resolve-lift}.
+
+% lax begin Lax185574.TypeTreeSizes
+\begin{lemma}[type tree sizes]\label{lem:ball-tree-bound}
+Let $k\ge1$ and $q\in\N$, and put $r\coloneqq\rhop(k,q)$ and $d\coloneqq r+k+q$.
+The following holds for every partial graph $G$.
+\begin{enumerate}[label=(\roman*)]
+\item\label{lem:ball-count}
+$\bigl|\setoff{\tree^G_{k+i,q-i}(\tup v)}{\tup v\in X^{\ell}}\bigr|
+\le|\Types^G_{d,d}(X)|$ for all $i\in\set{0,\ldots,q}$, $\ell\in [k+i]$, and $X\subseteq V(G)$.
+\item\label{lem:ball-size}
+$\size{\tree^G_{k,q}(a)}
+\le
+\poly_{k,q}\bigl(|\Types^G_{d,d}(\Ball^G_r(a))|\bigr)$ for every $a\in V(G)$.
+\end{enumerate}
+\end{lemma}
+% lax end
+\begin{proof}
+We first show that ordinary types determine type trees: for all $k',q'\in\N$, every partial graph $G$, and all nonempty tuples $\tup a,\tup b\in V(G)^{\le k'}$ of the same length,
+\begin{equation}\label{eq:tp-to-tree}
+\tp^G_{\rhop(k',q')+q'}(\tup a)=\tp^G_{\rhop(k',q')+q'}(\tup b)
+\quad\Longrightarrow\quad
+\tree^G_{k',q'}(\tup a)=\tree^G_{k',q'}(\tup b).
+\end{equation}
+By expressing distance atoms by paths along $E\lor N$, every \distFO formula of distance rank $(k',q')$ is equivalent to a first-order formula of quantifier rank at most $\rhop(k',q')+q'$. Thus, the left-hand side of \eqref{eq:tp-to-tree} implies that $\tup a$ and $\tup b$ satisfy
+the same \distFO formulas of distance rank $(k',q')$.
+By \Cref{cor:tp-tree}, this yields the right-hand side.
+
+% lax begin Lax185574Proofs.TypeTreeSizes.treeCount_le
+For \ref{lem:ball-count}, extend every tuple $\tup v\in X^\ell$ to a tuple $\tup v'\in X^d$ by repeating its last coordinate.
+Then $\tp_d(\tup v')$ determines $\tp_d(\tup v)$, which determines $\tree_{k+i,q-i}(\tup v)$ by \eqref{eq:tp-to-tree}, as $\rhop(k+i,q-i)+q-i\le \rhop(k,q)+q\le d$ by \eqref{eq:horizon-cons}.
+So distinct type trees yield distinct elements of $\Types^G_{d,d}(X)$.
+% lax end
+
+% lax begin Lax185574Proofs.TypeTreeSizes.tree_length_le
+For \ref{lem:ball-size}, put $X\coloneqq\Ball_r(a)$ and $K\coloneqq|\Types^G_{d,d}(X)|$.
+As every vertex has exactly one color, vertices of distinct colors have distinct type trees, so at most $K$ colors meet $X$ by \ref{lem:ball-count}.
+By \Cref{lem:locality}, every node of $\tree_{k,q}(a)$ is $\tree_{k+j,q-j}(\tup v)$ for a tuple $\tup v$ from $X$, and every color in a true atom of its root meets $X$.
+So every root has size $O_{k,q}(K)$, and by \ref{lem:ball-count}, every node has at most $K$ children per guard, and thus at most $(k+q)K$ children.
+As the depth is $q$, this gives $\size{\tree_{k,q}(a)}\le\poly_{k,q}(K)$.
+% lax end
+\end{proof}
+
+{\renewcommand{\mcdepth}{d}\mcthm*}
+% lax begin Lax185574Proofs.ConstructionModelChecking.exists_program_modelChecking_sequence
+\begin{proof}
+Let $q$ be the quantifier rank of $\phi$, and let $r,d$ be as in
+\Cref{lem:ball-tree-bound} for $k=1$ and this $q$.  We prove the statement
+with radius $r$ and depth $d$.
+If $n\le1$, evaluate $\phi$ directly, so assume $n\ge2$.
+
+Let $G_1,\ldots,G_\lambda$ be the given
+construction sequence of $G$, and let $K$ be its radius-$r$ depth-$d$
+width.  We iteratively compute $(\tree^{G_t}_{1,q}(a):a\in V(G))$ for $t=1,\ldots,\lambda$. To save time we also maintain the distance matrix $D_{G_t}$.
+Initially, for \(t=1\), there are no resolved pairs and each nonempty part is a singleton.
+Hence, every guard admits only vertices of the guarded tuple itself, so
+each \(\tree^{G_1}_{1,q}(a)\) is determined by the part containing \(a\), and can therefore be computed in time \(O_q(1)\).
+Initialize also $D_{G_1}$ in $O(n^2)$ time by putting $0$ on its diagonal and $\infty$ elsewhere.
+
+Now let \(t<\lambda\), and assume the trees in $G_t$ have been computed.
+All these trees have size $\poly_{q}(K)$: for every $t'\in[\lambda-1]$
+and $a\in V(G)$, \Cref{lem:ball-tree-bound}\ref{lem:ball-size} bounds
+$\size{\tree^{G_{t'}}_{1,q}(a)}$ by a polynomial in
+$|\Types^{G_{t'}}_{d,d}(\Ball^{G_{t'}}_{r}(a))|$.  Using $R(G_{t'})\subseteq R(G_{t'+1})$
+and therefore $\Ball^{G_{t'}}_r(a)\subseteq \Ball^{G_{t'+1}}_r(a)$, this is at most
+$|\Types^{G_{t'}}_{d,d}(\Ball^{G_{t'+1}}_{r}(a))|\le K$ by the definition of
+the width.
+
+For a merge, construct $G_{t+1}$ in time $O(n)$, keep $D_{G_{t+1}}=D_{G_t}$ unchanged, and apply \Cref{lem:merge-lift} to each tree of arity one, taking $O(n\cdot\poly_q(K))$ time in total.
+For a resolve, apply \Cref{lem:resolve-lift} to $G_t$, the supplied matrix $D_{G_t}$, and all its trees of arity one. The lemma returns both $D_{G_{t+1}}$ and the new trees.
+Its parameter $M$ is $\poly_q(K)$ by the bound above.
+Its parameter $T$ is
+$$T\coloneqq \max_{a\in V(G)}\left|\setof{\tree_{1+i,q-i}(\tup v)}{\tup v\in \left(\Ball^{G_{t+1}}_{\rho^+(1,q)}(a)\right)^\ell,\,  0\le i\le q,\, \ell\in [i+1]}\right|.$$
+The tuples $\tup v$ above lie in $X\coloneqq\Ball^{G_{t+1}}_r(a)$ since $\rhop(1,q)\le r$.
+By \Cref{lem:ball-tree-bound}\ref{lem:ball-count}, there are at most $|\Types^{G_t}_{d,d}(X)|\le K$ trees for each $i$ and arity $\ell$.
+There are at most $(q+1)^2$ choices of $i$ and $\ell$, so $T\le(q+1)^2K$.
+
+As each step takes $O(n^2\cdot\poly_q(K))$ time, the total time is $O(\lambda n^2\cdot\poly_\phi(K))$.
+After $\lambda-1$ steps we have all the type trees in $G_\lambda$.
+These final trees also have size $\poly_q(K)$: if the last step is a merge, no tree grows; if it is a resolve, use the output-size bound $\poly_q(T)$ in \Cref{lem:resolve-lift} and $T\le(q+1)^2K$.
+
+As all pairs of $G_\lambda$ are resolved,
+we can turn each quantifier of $\phi$ into a local one without changing its truth value.
+Construct \(\phi^{\mathrm{loc}}(x)\) from \(\phi\) by
+introducing a fresh variable $x$, and replacing every subformula
+$\exists y\,\psi$ of $\phi$ that lies in the scope of quantifiers
+$\exists z_1,\ldots,\exists z_j$ by
+\[
+\exists y~\Bigl(
+\dist(x,y)\le\rhop(j+2,q-j-1)
+\land\psi
+\Bigr),
+\]
+where $\psi$ is transformed in the same way.  This yields a \distFO formula
+$\phi^{\mathrm{loc}}(x)$ such that, for
+every $a\in V(G)$,
+\[
+G_\lambda\models\phi
+\quad\Longleftrightarrow\quad
+G_\lambda\models\phi^{\mathrm{loc}}(a).
+\]
+Note that $\phi^{\mathrm{loc}}$ has distance rank $(1,q)$.
+
+Now choose any $a\in V(G)$,
+and use \Cref{lem:eval} for $k=1$ to compute whether $G_\lambda\models\phi^{\mathrm{loc}}(a)$,
+and hence whether $G_\lambda\models\phi$, from
+$\tree^{G_\lambda}_{1,q}(a)$ in time
+$\poly\bigl(|\phi^{\mathrm{loc}}|+\size{\tree^{G_\lambda}_{1,q}(a)}\bigr)\le\poly_\phi(K)$.
+As $E(G_\lambda)=E$ and $\phi$ is a sentence over graphs, $G_\lambda\models\phi$ if and only if $G\models\phi$.
+This fits the preceding time bound and completes the proof.
+\end{proof}
+% lax end

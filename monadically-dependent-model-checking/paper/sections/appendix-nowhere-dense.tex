@@ -1,0 +1,40 @@
+\section{Locally definable construction sequences in nowhere dense classes}\label{sec:nd}
+We prove \Cref{thm:nd-def-seq}, that in nowhere dense classes, we can obtain definable construction sequences of length $O(n^{1+\eps})$ for any $\eps>0$, with $O(n^\eps)$ parameters and quantifier rank $0$.
+
+\thmnddefseq*
+
+\begin{proof}[Proof sketch]
+Let $G\in\CC$ have $n$ vertices.
+We use the almost bounded \emph{weak coloring numbers} of nowhere dense classes~\cite{NesetrilM11a,gks}, through the following consequence~\cite{drabik2026flips}.
+For $v\notin U$, let $S_s(v,U)$ be the set of vertices in $U$ reachable from $v$ by a path of length at most $s$ whose internal vertices avoid $U$.
+There is a total order on $V(G)$ such that $|S_{r+1}(v,U)|\le O_{\CC,r,\eps}(n^\eps)$ for every prefix $U$ of this order and every $v\notin U$.
+Such an order can be computed in time $O_{\CC,r,\eps}(n^{1+\eps})$ by the algorithm of Grohe, Kreutzer, and Siebertz~\cite{gks} for weak coloring orders: every vertex of $S_{r+1}(v,U)$ is weakly $(r+1)$-reachable from $v$, since it is the smallest vertex on the witnessing path.
+
+For each prefix $U$, consider the partial graph $H_U$ on $V(G)$ whose positive resolved pairs are the edges of $G[V(G)\setminus U]$, whose negative relation is empty, and whose parts are the atomic types in $G$ over $U$.
+Thus the vertices of $U$ are singleton parts, and the remaining vertices are grouped by their neighborhoods in $U$.
+Starting with $U=V(G)$, remove the last vertex $u$ of $U$ one at a time.
+To pass from $H_U$ to $H_{U'}$, where $U'=U\setminus\{u\}$, first resolve positively between $\{u\}$ and each part outside $U$ adjacent to $u$ in $G$, and then merge parts with the same atomic type over $U'$.
+Finally, when $U$ is empty, one negative resolve within the unique part completes the sequence.
+There are at most $|E(G)|$ positive resolves and $n-1$ merges, giving length $O_{\CC,r,\eps}(n^{1+\eps})$ by the sparsity of $\CC$.
+
+To implement the construction, first compute the atomic-type partitions over the prefixes in forward order by partition refinement: when adding $u$, split off $\{u\}$ and refine the remaining parts by adjacency to $u$.
+Using adjacency lists, this takes $O(n+|E(G)|)$ time in total.
+Record these splits and the resulting adjacent parts outside the prefix.
+Processing the prefixes in reverse order, resolve positively against the recorded adjacent parts and undo the recorded splits by merges.
+Thus the sequence can be computed in time $O_{\CC,r,\eps}(n^{1+\eps})$, including the computation of the order.
+
+To see local definability, consider two consecutive partial graphs $H,H'$ during the transition from $H_U$ to $H_{U'}$, and put $B=\Ball^{H'}_r(v)$.
+Vertices of $U'$ are still isolated, so their balls are singletons and are easy to define.
+Otherwise $B\subseteq V(G)\setminus U'$. Every resolved pair of $H'$ is an edge of $G$, so every vertex of $U'$ adjacent in $G$ to a vertex of $B$ belongs to $S_{r+1}(v,U')$.
+All vertices of $U'$ outside this separator are therefore nonadjacent to every vertex of $B$.
+Thus, on $B$, the atomic types in $G$ over $U$ are determined by adjacency and equality tests against the parameters
+\[
+S_{r+1}(v,U')\cup\{u\}.
+\]
+This set has size $O_{\CC,r,\eps}(n^\eps)$.
+Each atomic-type part is therefore quantifier-free definable, and merging parts corresponds to taking disjunctions of their definitions.
+The resolved edges are the original edges between vertices outside $U$, together with edges from $u$ to the parts already resolved against it, so they too have quantifier-free definitions using these parameters.
+One unary predicate naming $B$ restricts these definitions to the required domain.
+The final negative resolve is immediate, since just before it the positive relation is $E(G)$ and there is only one part.
+Thus the same bounds apply to $H[\Ball^{H'}_r(v)]$, including the intermediate merges and resolves.
+\end{proof}

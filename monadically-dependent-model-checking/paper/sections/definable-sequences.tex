@@ -1,0 +1,628 @@
+
+
+\part{Definable construction sequences}\label{part:definable-construction-sequences}
+
+Recall the following definitions from \Cref{sec:skel-part-defseq}.
+\defpartialdef*
+
+\defskellocdef*
+
+In this part, we establish the following main result.
+\thmskeldefseq*
+
+We will use the following variation on the definition of merge-width, originating in~\cite{drabik2026variants}.
+
+% lax begin Lax185574.Chains
+\begin{definition}\label{def:chain-width}
+  A \emph{chain} in a graph $G$ is a decreasing sequence $V(G)=S_1\supseteq\dots\supseteq S_\ell=\emptyset$ of vertex sets. Its \emph{radius-$r$ width}, for $r\in\N$, is defined as
+$$\max_{2\le i\le \ell} \max_{v\in V(G)}\left|\ATypes^G(\Ball_r^{S_{i}}(v)/S_{i-1})\right|=\max_{2\le i\le \ell} \max_{v\in V(G)}\left|\Ball_r^{S_{i}}(v)/\PP_{S_{i-1}}\right|,$$
+where $\Ball_r^S(v)$ is defined above via $S$-flips and $\PP_{S}$ is the partition into atomic types over $S$.
+\end{definition}
+
+% lax end
+
+The offset between $S_{i-1}$ and $S_i$ in the definition of the radius-$r$ width ensures that the definition is robust. For instance, a chain can be completed into one in which two consecutive sets differ by one element,
+by removing the elements of $S_{i-1}$ one by one in any order, until $S_i$ is reached; this transformation
+preserves the width parameters.
+
+Chains can be converted to construction sequences and vice versa, with a loss in the radius-$r$ width.
+Intuitively, a chain
+gives rise to a sequence of ever coarser partitions $\PP_{S_1}\preceq \PP_{S_2}\preceq\dots \preceq \PP_{S_\ell}$, which can then be converted
+into a sequence of partial graphs
+(see~\cite{drabik2026variants} for details).
+
+% lax begin Lax185574Proofs.ComputingChains.exists_program_chain
+We use the following key result from~\cite{md-abmw}. It says that in monadically dependent classes, chains of constant length and small width can be computed efficiently.
+% lax end
+
+% lax begin Lax185574.ComputingChains
+\begin{theorem}[{\cite[Theorem~4.4]{md-abmw}}]\label{thm:monadic-dependence-implies-definable-mw}
+  There is an algorithm which, given
+  an $n$-vertex graph $G$, radius $r\in\N$, and rational $\eps>0$, computes a chain of $G$ of length $O(r/\eps)$ and radius-$r$ width $O_{\CC,r,\eps}(n^\eps)$,
+  and runs in time  $\widehat O_{\CC,r}(n^{3})$,
+  where $\CC$ is any monadically dependent graph class containing $G$.
+\end{theorem}
+% lax end
+
+To prove \Cref{thm:skel-def-seq}, we turn these chains into construction sequences using the following main technical contribution of this part.
+
+% lax begin Lax185574.ChainConstructionSequences
+\begin{restatable}{lemma}{lembetterdefinablemwfromsets}\label{lem:better-definable-mw-from-sets}
+  For every $n$-vertex graph $G$ and its chain of length $\ell$ there is
+  a construction sequence $G_1,\ldots,G_\lambda$ of $G$ such that the following properties hold for all $r\ge 1$.
+  Let $k_r$ denote the radius-$(5r+1)$ width of the chain and $w_r \coloneqq k_r\cdot \pi_G(k_r)$.
+  \begin{enumerate}
+    \item The resulting construction sequence has radius-$r$ width at most $w_r$ and length $\lambda\le O(nw_1)$.
+    \item For every $t\in[\lambda-1]$ and $v\in V(G)$, the induced partial graph
+    \[
+        G_t[\Ball^{G_{t+1}}_r(v)]
+    \]
+    is definable in some expansion of $G$
+    with $2\ell+1$ unary predicates, using formulas of quantifier rank~$7$ with $w_r$ parameters.
+    \item The construction sequence can be computed in time $O(\ell n^3)$, given $G$ and its chain.
+  \end{enumerate}
+\end{restatable}
+% lax end
+
+% lax begin Lax185574Proofs.DefinableSequences.exists_program_definableSequence
+\begin{proof}[Proof of \Cref{thm:skel-def-seq}]
+  Let $\CC$ be a monadically dependent graph class containing $G$, and let $d$ be an upper bound on the VC-dimension of graphs in $\CC$, which exists by \Cref{obs:md-vc}.
+  We apply \Cref{thm:monadic-dependence-implies-definable-mw} with radius $5r+1$ and $\eps$.
+  This computes a chain of length $\ell\le O((5r+1)/\eps)=O(r/\eps)$ in time $\widehat O_{\CC,r}(n^3)$.
+  We then apply \Cref{lem:better-definable-mw-from-sets} to $G$ and this chain, which takes time $O(\ell n^3)$.
+  So the total running time is
+  \[
+    \widehat O_{\CC,r}(n^3)+O(\ell n^3)
+    =\widehat O_{\CC,r,\eps}(n^3).
+  \]
+
+  The chain has radius-$(5r+1)$ width $k_r\le O_{\CC,r,\eps}(n^\eps)$, and $\pi_G(k_r)\le(k_r+1)^d$
+  by the Sauer--Shelah lemma (\Cref{lem:ss}), so
+  \[
+    w_r=k_r\cdot\pi_G(k_r)\le(k_r+1)^{d+1}\le O_{\CC,r,\eps}(n^{(d+1)\eps}).
+  \]
+  We set $\delta\coloneqq d+1$.
+  The sequence is radius-$r$ definable with $2\ell+1\le O(r/\eps)$ unary predicates, $w_r$ parameters, and rank $7$.
+  As $k_1\le k_r$, it has length $O(nw_1)\le O(nw_r)\le O_{\CC,r,\eps}(n^{1+\delta\eps})$.
+\end{proof}
+% lax end
+
+\paragraph{Proof strategy for \texorpdfstring{\Cref{lem:better-definable-mw-from-sets}}{the technical lemma}}\label{sec:defseq-lemma-strategy}
+
+The proof of \Cref{lem:better-definable-mw-from-sets}
+occupies the remainder of \Cref{part:definable-construction-sequences}.
+It combines constructions from~\cite{drabik2026variants} and~\cite{mw-stoc}, together with a careful analysis of definability.
+We revisit several variants of merge-width studied in those papers.
+In particular, we use the following variation of the definition of merge-width.
+
+% lax begin Lax185574.MergeSequences
+\begin{definition}\label{def:merge-sequence}
+A \emph{merge sequence} of a graph $G$ is a sequence
+$(\PP_1,R_1),\ldots,(\PP_\ell,R_\ell)$ such that:
+\begin{enumerate}
+  \item $\PP_1$ is the partition into
+singletons and $\PP_\ell=\{V(G)\}$,
+\item $\PP_1\preceq \dots\preceq \PP_\ell$,
+\item $R_1\subseteq \dots\subseteq R_\ell\subseteq {V(G)\choose 2}$,
+\item for every $i\in[\ell]$ and $X,Y\in \PP_i$,
+the set $XY-R_i$ is contained in either $E(G)$ or in $E(\overline G)$,
+ that is, the pair $X,Y$ is homogeneous once pairs in $R_i$ are ignored.
+\end{enumerate}
+
+  The \emph{radius-$r$ width} of a merge sequence as above is
+\begin{equation}\label{eq:merge-seq-width}
+  \max_{2\le i\le \ell}\max_{v\in V(G)}
+  \left|\Ball^{R_i}_r(v)/\PP_{i-1}\right|.
+\end{equation}
+\end{definition}
+% lax end
+\noindent
+Here the offset in the indices of $R_i$ and $\PP_{i-1}$ is intentional.
+Every construction sequence naturally induces a merge sequence of the same radius-$r$ width for all $r\in\N$, and vice versa (see~\cite{mw-arxiv,mw-stoc} for details).
+
+\section{Merge-width with definable stages}\label{sec:better-definable-mw}
+\label{sec:definable-mw}
+
+In this section, we prove the following lemma.
+
+% lax begin Lax185574.BetterMergeSequences
+\begin{restatable}{lemma}{lembettermw}\label{lem:better-mw}
+For every graph $G$ and chain of length $\ell$ there is a merge sequence $(\QQ_1, R_1), \ldots, (\QQ_\ell, R_\ell)$ with the following properties.
+    \begin{enumerate}
+        \item For all $r\ge 1$,  the radius-$r$ width of the merge sequence is bounded by $k\cdot \pi_G(k)$, where $k$ is the radius-$(5r+1)$ width of the given chain.
+        \item  For each $i\in [\ell]$, the relations $\equiv_{\QQ_i}$ and $R_i$ are definable in some expansion $G^i$ of $G$ with two unary predicates, using two fixed first-order formulas $\phi_\equiv(x,y)$ and $\phi_R(x,y)$ of quantifier rank at most~$5$.
+        \item The merge sequence can be computed in time $O(\ell n^3)$, given $G$ and its chain.
+    \end{enumerate}
+\end{restatable}
+% lax end
+
+\subsection{Preliminaries}
+
+The proof of \Cref{lem:better-mw} uses ideas developed in~\cite{drabik2026variants}. We first recall the required notions and lemmas from that paper.
+
+% lax begin Lax185574.ComplementDiameter
+\begin{lemma}[folklore]\label{lem:diamComplement}
+    For every graph $G$, at least one of $G$ and $\overline{G}$ has diameter at most $3$.
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.ComplementDiameter.diameter_le_three_or_compl
+\begin{proof}
+Suppose $G$ has diameter greater than $2$. Then there are non-adjacent vertices $u,v$ with no common neighbor in $G$.
+In $\overline G$, $uv$ is an edge and all vertices are neighbors of either $u$ or $v$.
+Thus $\overline G$ has diameter at most $3$.
+\end{proof}
+% lax end
+
+% lax begin Lax185574.BipartiteGraphs
+If $B$
+is a bipartite graph with parts $X,Y$ and edge set $E$,
+its \emph{bipartite complement}, denoted $\overline B$,
+is the bipartite graph with parts $X,Y$ and edge set $XY\setminus E$.
+% lax end
+
+% lax begin Lax185574.BipartiteFlip
+\begin{lemma}[{\cite[Lemma~A.3]{drabik2026variants}}]\label{lem:bipartite-informal-lemma}
+  Let $B = (X,Y,E)$ be a bipartite graph with bipartite complement~$\overline{B}$, and pick arbitrary vertices $x \in X$, $y \in Y$.
+  Partition~$X$ according to adjacency to $y$,
+  i.e.\ $X = X_+ \uplus X_-$ with $X_+ = N(y)$ and $X_- = X \setminus N(y)$,
+  and similarly $Y = Y_+ \uplus Y_-$ according to~$x$.
+  Then there is a bipartite graph $B' = (X,Y,E')$ obtained from $B$ by some $\{X_+,X_-,Y_+,Y_-\}$-flip satisfying:
+  \[ \text{for all $uv \in E'$,} \quad \dist^B(u,v) \le 5 \quad \text{and} \quad \dist^{\overline{B}}(u,v) \le 5. \]
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.BipartiteFlip.exists_flip_close
+Note that~\cite[Lemma~A.3]{drabik2026variants} states the above lemma with $6$ instead of $5$; however, the two statements are equivalent, since
+if $uv\in E'$ then $u$ and $v$ lie in opposite parts of the bipartite graphs $B'$, $B$, and $\overline{B}$, and thus $\dist(u,v)\le 6$ is equivalent to $\dist(u,v)\le 5$ for parity reasons.
+% lax end
+
+% lax begin Lax185574.TypeSplitting
+\begin{definition}
+    Fix a graph $G$ and a partition $\PP$ of $V(G)$. We define $\PP \wedge T$ to be the refinement of~$\PP$ where each part $P \in \PP$ is split into atomic types over $T \setminus P$
+    (i.e.\ into sets of the form $P\cap Q$, where $Q$ is the set of all vertices of $G$ with a given neighborhood in $T-P$).
+\end{definition}
+% lax end
+
+\noindent In this definition, we choose not to divide a part $P$ into types over $T \cap P$. This is for technical convenience only, to ensure that $\PP \wedge T = \PP$ whenever $\PP$ is the partition with only one part.
+
+% lax begin Lax185574.SplitBalls
+% lax begin Lax185574Proofs.SplitBalls.partCount_split_le
+\begin{lemma}[{\cite[Corollary~5.4]{drabik2026variants}}]\label{lem:transversalRefinement}
+	Let~$G $ be a graph, $\PP\preceq\QQ$ partitions of~$V(G)$, and~$T$ a transversal of~$\PP$.
+  Suppose $|\Ball^\QQ_{r+1}(v)/\PP| \le k$ for every $v\in V(G)$.
+  Then for every $v\in V(G)$, we have
+  \[
+    \left|\Ball^{\QQ}_r(v)/(\PP \wedge T)\right|\le k \cdot \pi_G(k).
+  \]
+\end{lemma}
+% lax end
+% lax end
+
+\subsection{Constructing the merge sequence}
+
+% lax begin Lax185574.BipartiteGraphs
+Recall that for a graph
+$G$ and disjoint vertex sets $X,Y\subseteq V(G)$,
+by $G[X,Y]$ we denote the bipartite graph with parts $X$ and $Y$, and edges connecting pairs of vertices which are adjacent in $G$.
+Furthermore, $G[X,X]$
+denotes the bipartite graph whose parts are two copies of $X$,
+and edges connect two vertices in opposite parts if the corresponding vertices in $G$ are either adjacent or equal.
+We call the edges of $G[X,X]$ connecting the two copies of each vertex in $X$ \emph{diagonal edges}.
+Thus,
+${\overline G[X,X]}$ is the bipartite complement  $\overline {G[X,X]}$ of $G[X,X]$ extended additionally with the diagonal edges.
+% lax end
+
+% lax begin Lax185574.PairRelation
+\begin{definition}
+    Let $G$ be a graph and $\PP$ a partition of $V = V(G)$.
+    Define $R = R(G,\PP) \subseteq \binom{V}{2}$ so that for all parts $X,Y \in \PP$ (possibly $X = Y$) and pairs $uv$ with $u \in X$, $v \in Y$, and $u \ne v$, we have
+    $uv \in R$ if and only if
+    \[
+    \dist^{G[X,Y]}(u,v) \le 5 \quad \text{and} \quad \dist^{\overline{G}[X,Y]}(u,v) \le 5. \]
+\end{definition}
+% lax end
+
+We first describe the construction of the merge sequence that underlies the proof of \Cref{lem:better-mw}.
+Consider a graph $G$ and its chain
+    $V(G)=S_1\supseteq\cdots\supseteq S_\ell=\emptyset$.
+    Let $\PP_i$ be the partition into atomic types over $S_i$.
+    Fix an arbitrary linear order $<$ on $V(G)$
+    giving rise to representative sets $T_i \coloneqq \{\min_< P \,:\, P \in \PP_i\}$.
+    Then $T_1\supseteq T_2\supseteq \dots \supseteq T_\ell$.
+    For $i=1,\ldots,\ell$ define $$R_i \coloneqq R(G,\PP_i)\qquad\text{ and }\qquad\QQ_i \coloneqq \PP_i \wedge T_i.$$
+    The following lemmas establish that
+    $$(\QQ_1,R_1),\ldots,(\QQ_\ell,R_\ell)$$ is a merge sequence satisfying the conditions stated in \Cref{lem:better-mw}.
+
+% lax begin Lax185574.PairRelationDefinable
+\begin{lemma}\label{lem:def-R}
+    Suppose $G$ is a graph and $\PP$ is the partition of $V(G)$ into atomic types over some set $S \subseteq V(G)$. Then the relation $R \coloneqq R(G,\PP)$ is definable in $G$ expanded with one unary predicate marking~$S$, using a fixed first-order formula $\phi_R(x,y)$ of quantifier rank at most~$5$.
+\end{lemma}
+% lax end
+
+% lax begin Lax185574Proofs.PairRelationDefinable.exists_formula_pairRelation
+\begin{proof}
+    The following formula $\theta_S(x,y)$, using a unary predicate marking $S$ and with one quantifier,  defines the equivalence relation $\equiv_\PP$:
+    \begin{align}\label{eq:definableEquiv}
+        \theta_S(x,y) \coloneqq
+        x = y \lor \bigl(\neg S(x) \land \neg S(y) \land
+        \forall z\,(S(z) \to (E(x,z) \leftrightarrow E(y,z)))\bigr).
+    \end{align}
+
+  The following formula $\eta_S(x,y;a,b)$ says that $x$ and $y$ are in opposite parts of the bipartite graph $G[X,Y]$, where $X$ and $Y$ are the parts of $\PP$ containing $a$ and $b$:
+\begin{align*}
+  \eta_S(x,y;a,b)\coloneqq{}&
+  (\theta_S(x,a)\land\theta_S(y,b))
+  \lor(\theta_S(y,a)\land\theta_S(x,b)).
+\end{align*}
+The following formulas $e_S^+(x,y;a,b)$ and $e_S^-(x,y;a,b)$
+ say that $x$ and $y$ are adjacent in the bipartite graph $G[X,Y]$ or $\overline G[X,Y]$, respectively, where $X$ and $Y$ are the parts of $\PP$ containing $a$ and $b$:
+\begin{align*}
+  e_S^+(x,y;a,b)&\coloneqq \eta_S(x,y;a,b)\land(x=y\lor E(x,y)),\\
+  e_S^-(x,y;a,b)&\coloneqq \eta_S(x,y;a,b)\land(x=y\lor \neg E(x,y)).
+\end{align*}
+For $\sigma\in\{+,-\}$, define
+\[
+  \rho_S^\sigma(x,y)\coloneqq
+  \bigvee_{p\in\{1,3,5\}}
+  \exists z_1\cdots\exists z_{p-1}\,
+  \bigwedge_{i=0}^{p-1}e_S^\sigma(z_i,z_{i+1};x,y),
+\]
+where $z_0\coloneqq x$ and $z_p\coloneqq y$.
+This formula expresses the existence of a walk of length $1$, $3$, or $5$
+between opposite copies of $x$ and $y$ in $G[X,Y]$ for $\sigma=+$, and
+in $\overline G[X,Y]$ for $\sigma=-$, where $X\coloneqq \PP(x)$ and $Y\coloneqq \PP(y)$.
+Each step switches sides, also when $X=Y$; an equality step uses a diagonal edge.
+Since every path between opposite sides of a bipartite graph has odd length,
+these formulas express precisely the two distance bounds defining $R$.
+Consequently,
+\[
+  \phi_R(x,y)\coloneqq
+  x\ne y\land\rho_S^+(x,y)\land\rho_S^-(x,y)
+\]
+defines $R(G,\PP)$.
+Each $e_S^\sigma$ has quantifier rank~$1$, and each disjunct in
+$\rho_S^\sigma$ quantifies at most four intermediate vertices.
+Thus $\phi_R$ is a fixed first-order formula of quantifier rank at most~$5$.
+\end{proof}
+% lax end
+
+% lax begin Lax185574.PairRelationMonotone
+\begin{lemma}\label{lem:monotoneR}
+    Fix a graph $G$ and partitions $\PP$ and $\PP'$ of $V(G)$ such that $\PP$ refines $\PP'$. Then $$R(G,\PP)\subseteq R(G, \PP').$$
+\end{lemma}
+% lax end
+% lax begin Lax185574Proofs.PairRelationMonotone.pairRelation_mono
+\begin{proof}
+    Choose any $uv \in R(G,\PP)$. Let
+    \[
+        X \coloneqq \PP(u), \quad
+        X' \coloneqq \PP'(u), \quad
+        Y \coloneqq \PP(v), \quad
+        Y' \coloneqq \PP'(v)
+    \]
+    be the parts of $\PP$ and $\PP'$ that contain $u$ and $v$.
+    As $\PP$ refines $\PP'$, we have $X \subseteq X'$ and $Y \subseteq Y'$.
+    Hence $G[X,Y]$ and $\overline G[X,Y]$ are induced subgraphs of $G[X',Y']$ and $\overline G[X',Y']$, respectively.
+    Thus, by the definition of $R$,
+    \begin{align*}
+        \dist^{G[X',Y']}(u,v) &\le \dist^{G[X,Y]}(u,v) \le 5,\\
+        \dist^{\overline G[X',Y']}(u,v) &\le \dist^{\overline G[X,Y]}(u,v) \le 5.
+    \end{align*}
+    This proves $uv \in R(G, \PP')$, as required.
+\end{proof}
+% lax end
+
+% lax begin Lax185574.PairRelationBalls
+\begin{lemma}\label{lem:ballContainment}
+    Fix a graph $G$ and a partition $\PP$ of $V(G)$ and let $R \coloneqq R(G,\PP)$. For every radius $r \in \N$ and vertex $v \in V(G)$ we have
+    \[
+        \Ball^R_r(v) \subseteq \Ball^\PP_{5r}(v).
+    \]
+\end{lemma}
+% lax end
+
+% lax begin Lax185574Proofs.PairRelationBalls.graphBall_pairRelation_subset
+\begin{proof}
+    It suffices to show that for every $uv \in R$ we have $\dist_\PP(u,v) \leq 5$.
+    Let $X,Y\in\PP$ be the parts containing $u$ and $v$, respectively. Fix an arbitrary $\PP$-flip $H$ of $G$.
+    Then the bipartite graph $H[X,Y]$ is either $G[X,Y]$ or $\overline G[X,Y]$.
+    By the definition of $R$, this graph contains a $u$--$v$ path of length at most $5$.
+    If $X \neq Y$, then this path is also a path in $H$.
+    If $X = Y$, we can project this path to a length ${\leq}5$ path in $H$ by contracting diagonal edges. Hence, in both cases,
+    $\dist^H(u,v) \leq 5$, which finishes the proof.
+\end{proof}
+% lax end
+
+% lax begin Lax185574.HomogeneousSplitting
+\begin{lemma}\label{lem:default}
+    Fix a graph $G$ and a partition $\PP$ of $V(G)$ and let $T$ be a transversal of $\PP$ and $R \coloneqq R(G,\PP)$.
+    Then $\QQ \coloneqq \PP \wedge T$ is \emph{homogeneous modulo $R$}, i.e., for all $X,Y \in \QQ$ either
+    \[
+        XY \setminus R \subseteq E(G)
+        \quad
+        \text{or}
+        \quad
+        XY \setminus R \subseteq E(\overline{G}).
+    \]
+\end{lemma}
+% lax end
+
+% lax begin Lax185574Proofs.HomogeneousSplitting.homogeneousModulo_split
+\begin{proof}
+    We construct a $\QQ$-flip $H$ of $G$ with $E(H)\subseteq R$. This will yield the conclusion.
+    Indeed, let $X,Y\in\QQ$. Since $H$ is a $\QQ$-flip of $G$, either
+    \begin{center}
+    $E(H)\cap XY \,=\, E(G)\cap XY$ \quad or \quad  $E(H)\cap XY \,=\, E(\overline G)\cap XY$.
+    \end{center}
+    Since $E(H)\subseteq R$, no pair in $XY\setminus R$ is an edge of $H$.
+    Hence $XY\setminus R\subseteq E(\overline G)$ in the first case, and
+    $XY\setminus R\subseteq E(G)$ in the second.
+    It remains to define $H$. We separately describe how to flip a part $X$ with itself, and how to flip two distinct parts $X$ and $Y$ with each other.
+
+    \begin{itemize}
+        \item     For every part $X\in\PP$, by \Cref{lem:diamComplement} we have that
+    either $G[X]$ or $\overline{G}[X]$ has diameter at most~$3$.
+    If $G[X]$ has diameter at most $3$, set
+ $H[X]\coloneqq \overline G[X]$, otherwise set $H[X]\coloneqq G[X]$.
+
+ Suppose now that $uv\in E(H[X])$ for some $u,v\in X$.
+ We consider the case when $G[X]$ has diameter at most $3$ and
+  $H[X] = \overline G[X]$, the other case being symmetric.
+Then $\dist^{G[X]}(u,v)\le 3$ and $\dist^{\overline G[X]}(u,v)= 1$.
+The path of length at most $3$ in $G[X]$ lifts to a path of length at most $3$ between opposite copies in $G[X,X]$ after adding at most one diagonal step to make its length odd.
+Similarly, the edge $uv$ in $\overline G[X]$ lifts to a path of length $1$ between opposite copies in $\overline G[X,X]$. This shows that $uv\in R$, and thus $E(H[X])\subseteq R$.
+
+\item
+For every pair of distinct parts $X,Y\in\PP$, let $x,y$ be their representatives in $T$ and apply \Cref{lem:bipartite-informal-lemma} to $G[X,Y]$.
+    Use the resulting bipartite graph as $H[X,Y]$. The statement of the lemma implies that $E(H[X,Y])\subseteq R$.
+
+    The partition $\QQ$ restricted to $X\cup Y$, denote it by $\QQ[X,Y]$, refines the neighborhood partitions of $X$ over $y$ and of $Y$ over $x$, so $H[X,Y]$ is a $\QQ[X,Y]$-flip of $G[X,Y]$.
+    Altogether, $H$ is a
+    $\QQ$-flip of $G$ with $E(H)\subseteq R$.\qedhere
+    \end{itemize}
+\end{proof}
+% lax end
+
+We now prove \Cref{lem:better-mw}.
+
+\lembettermw*
+
+% lax begin Lax185574Proofs.BetterMergeSequences.exists_mergeSequence_of_chain
+\begin{proof}
+    Let
+    $V(G)=S_1\supseteq\cdots\supseteq S_\ell=\emptyset$ be the given chain.
+    Let $\PP_i$ be the partition into atomic types over $S_i$.
+    Fix an arbitrary linear order $<$ on $V(G)$
+    giving rise to representative sets $T_i \coloneqq \{\min_< P \,:\, P \in \PP_i\}$.
+    Then $T_1\supseteq T_2\supseteq \dots \supseteq T_\ell$.
+    Define $$R_i \coloneqq R(G,\PP_i)\qquad\text{ and }\qquad\QQ_i \coloneqq \PP_i \wedge T_i.$$
+
+    We claim that
+    \[
+        (\QQ_1, R_1), \ldots, (\QQ_\ell, R_\ell)
+    \]
+    is a merge sequence.  Indeed:
+    \begin{enumerate}
+        \item Since $\PP_1$ is the partition into singletons, so is
+        $\QQ_1$.
+        It follows from $\PP_\ell=\{V(G)\}$ and the definition of $\PP_\ell \wedge T_\ell$ that also
+        $\QQ_\ell=\{V(G)\}$.
+
+% lax begin Lax185574.SplittingMonotone
+% lax begin Lax185574Proofs.SplittingMonotone.split_minimalVertices_mono
+        \item For $i<j$ we have that $T_i\supseteq T_j$ and $\PP_i\preceq \PP_j$, which implies
+that  $\PP_i\wedge T_i\preceq \PP_j\wedge T_j$. Hence,
+
+    \[
+        \QQ_1 \preceq \QQ_2 \preceq \dots \preceq \QQ_\ell
+    \]
+    is a sequence of ever coarser partitions.
+% lax end
+% lax end
+
+    \item By \Cref{lem:monotoneR}, we have that
+    \[
+        R_1 \subseteq R_2 \subseteq \dots \subseteq R_\ell.
+    \]
+
+    \item By \Cref{lem:default}, we have that for all $P,Q \in \QQ_i$ either
+    \[
+        PQ \setminus R_i \subseteq E(G)
+        \quad
+        \text{or}
+        \quad
+        PQ \setminus R_i \subseteq E(\overline{G}).
+    \]
+    \end{enumerate}
+    Fix $r\in\N$, and let $k$ be the radius-$(5r+1)$ width of the given chain.
+    For every $i\in\{2,\ldots,\ell\}$ and $v\in V(G)$, the definition of chain width gives
+    \[
+        |\Ball_{5r + 1}^{\PP_i}(v) / \PP_{i-1}| \leq k.
+    \]
+    Applying \Cref{lem:transversalRefinement} to
+$\PP_{i-1}\preceq\PP_i$ and its transversal $T_{i-1}$ yields
+    \begin{equation}\label{eq:ball-small}
+         |\Ball_{5r}^{\PP_i}(v) / \QQ_{i-1} | = |\Ball_{5r}^{\PP_i}(v) / (\PP_{i-1} \wedge T_{i-1})| \leq k \cdot \pi_G(k).
+    \end{equation}
+    By \Cref{lem:ballContainment}, we have
+    \begin{equation}\label{eq:ball-contained}
+        \Ball_{r}^{R_i}(v)
+        \subseteq
+        \Ball_{5r}^{\PP_i}(v).
+    \end{equation}
+    Combining \eqref{eq:ball-small} and \eqref{eq:ball-contained} yields the desired bound on the radius-$r$ width of the merge sequence:
+    \begin{equation*}
+        |\Ball_{r}^{R_i}(v)/\QQ_{i-1}| \leq k \cdot \pi_G(k).
+    \end{equation*}
+
+    Finally, consider the graph $G$ equipped with two unary predicates marking $S_i$ and $T_i$.
+    The relation $R_i$ is definable in this expansion by \Cref{lem:def-R} by a formula of quantifier rank $5$.
+    The relation $\equiv_{\QQ_i}$ is
+    defined easily using $S_i$ and $T_i$ by a formula of quantifier rank $2$.
+
+    We now analyze the running time of a straightforward algorithm computing the resulting merge sequence. Put $n\coloneqq |V(G)|$.
+    For each $i\in[\ell]$, keep every vertex of $S_i$ in a singleton part and group the remaining vertices by their adjacency vectors over $S_i$.
+    This computes $\PP_i$ in $O(n(|S_i|+1))\le O(n^2)$ time.
+    Scanning the resulting partition computes $T_i$ in $O(n)$ time.
+    Similarly, compute the partition $\QQ_i$ in time $O(n(|T_i|+1))\le O(n^2)$.
+    Thus computing and outputting $\PP_i$, $\QQ_i$, $S_i$, and $T_i$ takes $O(n^2)$ time for a fixed $i$.
+
+    Compute $R_i$ by running breadth-first searches to depth five from every vertex in each of $G[X,Y]$ and $\overline G[X,Y]$, for all pairs $X,Y\in\PP_i$, allowing $X=Y$.
+    The cost per pair is $O((|X|+|Y|)|X||Y|)$. We have:
+    \[
+        \sum_{X,Y\in\PP_i} (|X|+|Y|)|X||Y|
+        =2\sum_{X,Y\in\PP_i} |X||Y|^2
+        =2\sum_{X\in\PP_i} |X|\cdot \sum_{Y\in\PP_i}|Y|^2
+        \le 2n(\sum_{Y\in\PP_i}|Y|)^2=2n^3,
+    \]
+     thus $R_i$ can be computed in time $O(n^3)$, and the whole merge sequence in time $O(\ell n^3)$.
+\end{proof}
+% lax end
+
+\section{Construction sequences with locally definable partial graphs}\label{sec:construction-sequences}
+
+For the purpose of model checking,
+we need to work with construction sequences rather than merge sequences.
+The construction of~\cite[Lemma~3.3]{mw-arxiv} shows how to convert a merge sequence to a construction sequence. However, a single step in a merge sequence is translated into a potentially long sequence of steps in a construction sequence. When aiming at defining each step of the construction sequence in the original graph $G$, we need to remember the result of the entire sequence of all the steps performed so far.
+We cannot hope to obtain construction sequences in which each part is definable by a formula with fewer than $n/3$ parameters, even for the edgeless graph on $n$ vertices.
+Therefore, in the following lemma, we only aim at proving that \emph{locally} -- in each ball of radius $r$ in the graph formed by the resolved vertex pairs -- the current set of resolved edges and each part of the current partition are definable in $G$ by formulas of bounded quantifier rank, involving a number of parameters which is bounded by the radius-$r$ merge-width of the input merge sequence. Recall the precise definition
+of definability stated in \Cref{def:partial-definable}, and used in the statement below.
+It is crucial that when considering merge sequences of bounded length, we
+can retain the unary predicates describing every stage, and thus obtain formulas using only boundedly many unary predicates.
+
+% lax begin Lax185574.MergeToConstruction
+\begin{lemma}\label{cl:from-merge-to-construction}
+    For every $n$-vertex graph $G$ and merge sequence $(\PP_1,R_1),\ldots,(\PP_\ell,R_\ell)$ of $G$, there is a construction sequence $G_1,\ldots,G_\lambda$ of $G$ such that the following properties hold for all $r\ge 1$.
+    Let $w_r$ be the radius-$r$ width of the merge sequence.
+    \begin{enumerate}
+        \item The obtained construction sequence has radius-$r$ width at most $w_r$, and has length $\lambda\le O(nw_1)$.
+        \item Suppose that for every $i\in[\ell]$, the relations $\equiv_{\PP_i}$ and $R_i$ are definable in some expansion of $G$ with~$2$ unary predicates, using two fixed first-order formulas of quantifier rank at most~$5$.
+
+        Then, for every $t\in[\lambda-1]$ and  $v\in V(G)$, the induced partial graph
+        $G_t[\Ball^{G_{t+1}}_r(v)]$ is definable in some expansion of $G$
+        with $2\ell+1$ unary predicates, using formulas of quantifier rank~$7$ with $w_r$
+        parameters.
+
+        \item  The construction sequence can be
+computed in time $O(\ell n^2)$, given an $n$-vertex graph $G$ and a merge sequence of length $\ell$.    \end{enumerate}
+    \end{lemma}
+% lax end
+
+% lax begin Lax185574Proofs.MergeToConstruction.exists_constructionSequence_of_mergeSequence
+\begin{proof}
+We convert the merge sequence to a construction sequence by following the proof of~\cite[Lemma~3.3]{mw-arxiv}. Set $V\coloneqq V(G)$, $R_{\ell+1}\coloneqq {V\choose 2}$, and $\PP_{\ell+1}=\set{V}$.
+
+Start with the singleton partition $\PP$ of $V$ and empty set $R$ of resolved vertex pairs.
+The construction proceeds in \emph{stages} $j=1,\ldots,\ell$.
+The invariant that is maintained during stage $j$ is that in each step, the current partition $\PP$ and current set $R$ of resolved vertex pairs satisfy:
+\begin{align}\label{invariant-partitions}
+    \PP_j&\preceq \PP\preceq \PP_{j+1}\qquad\\ R&\subseteq R_{j+1}\label{invariant-resolved}\\
+    XY\setminus R\subseteq E(G)\quad&\text{ or }\quad XY\setminus R\subseteq E(\overline G)\quad\text{for all $X,Y\in \PP$}.
+\end{align}
+
+We start the process with $\PP \coloneqq \PP_1$ being the partition into singletons and $R \coloneqq \emptyset$.
+Stage
+$j$ proceeds as follows. First consider all unordered pairs of parts
+$X,Y\in\PP_{j}$, allowing $X=Y$, for which
+$XY\subseteq R_{j+1}$.
+If there are unresolved vertex pairs in $XY$ (i.e.\ $XY\nsubseteq R$), resolve the pair $X,Y$
+with the common sign -- positively if $XY\setminus R\subseteq E(G)$ and negatively if $XY\setminus R\subseteq E(\overline G)$ -- and update the set of resolved vertex pairs $R\coloneqq R\cup XY$.
+Then repeatedly merge pairs $A,B$ of parts of the current partition for which $A\cup B$ is contained in one part of $\PP_{j+1}$, until the current partition $\PP$ becomes $\PP_{j+1}$; if $j=\ell$, terminate. This results in a construction sequence of $G$.
+
+Fix $r\geq 1$.
+We now upper bound the radius-$r$ width of the obtained construction sequence by the radius-$r$ width $w_r$ of the merge sequence.
+Fix a stage $j$ in the merge sequence and a step
+of the construction above in that phase, with current partition $\PP$ and current set of resolved pairs $R\subseteq {V\choose 2}$. By \eqref{invariant-resolved}, for every $v\in V$ we have:
+\begin{align}\label{ball-inc}
+    \Ball_r^{R}(v)&\subseteq \Ball_r^{R_{j+1}}(v).
+\end{align}
+As $\Ball_r^{R_{j+1}}(v)$ intersects at most $w_r$ parts of $\PP_j$ and $\PP$ is coarser than $\PP_j$ by \eqref{invariant-partitions},
+also $\Ball_r^{R}(v)$ intersects at most $w_r$ parts of $\PP$, proving the required bound.
+
+The obtained construction sequence is \emph{effective}: each resolve operation introduces at least one new resolved vertex pair. By~\cite[Lemma~3.4]{mw-arxiv} (and the comment before it), the length $\lambda$ of the construction sequence is at most $n(2w_1+1) \leq O(nw_1)$.
+
+A straightforward implementation processes each stage in time $O(n^2)$.
+Namely, for each pair $X,Y$ of parts of $\PP_j$,
+test whether $XY\subseteq R_{j+1}$ by scanning
+all vertex pairs $uv\in XY$, and record the sign with which $X,Y$ should be resolved. As this processes each pair $uv\in {V\choose 2}$ once, this takes time $O(n^2)$ in total. Similarly, the merge phase can be implemented in time $O(n)$.
+Altogether, the  construction sequence is computable in time $O(\ell n^2)$.
+This proves the first and last conditions of the lemma.
+
+\medskip
+
+We now prove the second condition of the lemma, regarding definability.
+Fix a step $G_t\to G_{t+1}$ of the obtained construction sequence, and let $j$ be the stage
+in which this step is performed.
+Let $\PP$ and $R$ denote the partition and the set of resolved vertex pairs in $G_t$, and let $R_{+}$ denote the set of resolved vertex pairs in $G_{t+1}$; then $R\subseteq R_{+}\subseteq R_{j+1}$.
+
+  Let $\phi_\equiv^i(x,y)$ and $\phi_R^i(x,y)$ be formulas defining
+$\equiv_{\PP_i}$ and $R_i$, respectively, as given by the assumption.
+For $1\le j<\ell$, the set $$\bigcup\setof{XY}{X,Y\in\PP_j, XY\subseteq R_{j+1}}$$ is defined
+by the formula
+\[
+ \gamma_j(x,y) \,\coloneqq\, x\ne y\ \land\forall a\forall b\,\bigl(
+       (\phi_\equiv^{j}(x,a)\land\phi_\equiv^{j}(y,b)\land a\ne b)\,\to\,\phi_R^{j+1}(a,b)\bigr),
+\]
+which has quantifier rank at
+most~$7$.  Consequently, at the start of stage~$j$, the resolved
+relation, which we denote $R_j'$\,,
+is defined by
+\[
+ \Gamma_{j}(x,y)\coloneqq \bigvee_{i=1}^{j-1}\gamma_i(x,y).
+\]
+This formula uses $2j$ unary predicates and has quantifier rank at most $7$.
+
+Choose
+one parameter $p_X\in X$ for every part $X\in \PP_j$.
+The part $X$ is then defined by $\phi_\equiv^{j}(x,p_X)$, which
+uses $2$ unary predicates, one parameter, and has quantifier rank at most $5$.
+
+\medskip
+Fix a vertex $v\in V$.
+Denote
+\[
+ B\coloneqq \Ball^{R_{+}}_r(v)=\Ball^{G_{t+1}}_r(v)\subseteq\Ball^{R_{j+1}}_r(v).
+\]
+Mark the set $B$ with a unary predicate $U_B$.
+
+We will show how to define in $G$ the relation $R\cap {B\choose 2}$ and the sets $X\cap B$, for each $X\in \PP$,
+using Boolean combinations of the formulas defined above,
+using the $2j+1$ distinguished unary predicates, and at most $w_r$ parameters.
+Once $R\cap {B\choose 2}$ is defined, the set of  edges and non-edges of $G_t$, restricted to $B\choose 2$, can be recovered by further intersecting with $E(G)$ and $E(\overline G)$, respectively. This will therefore define the induced substructure $G_t[B]$, as required in the second condition of the lemma.
+
+\medskip
+We first focus on defining $R\cap {B\choose 2}$.
+Note that $R$
+is the union of $R_j'$
+and all already processed rectangles $XY$ with $X,Y\in\PP_j, XY\subseteq R_{j+1}$.
+Therefore, $R$ is defined by the disjunction
+of $\Gamma_j(x,y)$ and disjuncts of the form
+\[
+ (x\neq y)\land \left((\phi_\equiv^{j}(x,p_X)\land\phi_\equiv^{j}(y,p_Y))
+ \lor
+ (\phi_\equiv^{j}(x,p_Y)\land\phi_\equiv^{j}(y,p_X))\right).
+\]
+To define the intersection of $R$ with $B\choose 2$,
+add a conjunct $U_B(x)\land U_B(y)$,
+and keep only those disjuncts which involve parts $X,Y$ that intersect $B$. As there are at most $w_r$ many such parts, this results in a formula
+ using $w_r$ parameters.
+
+Each current part $X\in\PP$ is a union of parts of $\PP_j$, so its intersection with $B$ is defined by
+the formula
+$$U_B(x)\land \bigvee_{Y}\phi_\equiv^{j}(x,p_Y)$$ where $Y$ ranges over all parts $Y\in\PP_j$ with $Y\cap B\neq\emptyset$ and $Y\subseteq X$, with empty disjunction interpreted as \emph{false}.
+The resulting formula uses only $w_r$ parameters.
+This completes the proof of the lemma.
+\end{proof}
+% lax end
+
+We now prove \Cref{lem:better-definable-mw-from-sets}.
+\lembetterdefinablemwfromsets*
+
+% lax begin Lax185574Proofs.ChainConstructionSequences.exists_constructionSequence_of_chain
+\begin{proof}
+    The empty graph is immediate, so assume $G$ is nonempty.
+    Apply \Cref{lem:better-mw} to the given chain to obtain a merge sequence with $\ell$ stages, each definable by two unary predicates and fixed formulas of quantifier rank at most $5$.
+    Fix $r\ge 1$ and let $k_r$ be the radius-$(5r+1)$ width of the chain.
+    Then the radius-$r$ width $w_r$ of this merge sequence is at most $k_r\cdot \pi_G(k_r)$. Apply \Cref{cl:from-merge-to-construction} to obtain a construction sequence of length $\lambda\le O(nw_1)$ and radius-$r$ width at most $w_r$, with local definitions using at most $w_r$ parameters, $2\ell+1$ unary predicates, and formulas of quantifier rank at most $7$.
+    Both algorithms take $O(\ell n^3)$ time and use only $G$ and the given chain.
+\end{proof}
+% lax end

@@ -1,0 +1,224 @@
+\part{Number of types}\label{part:types}
+In this part we prove the following result.
+As we believe it to be of independent interest also in the context of infinite graphs,
+all considered graphs may be finite or infinite in \Cref{part:types},
+and we track the necessary finiteness assumptions in the arguments below.
+Everywhere else in the paper, graphs are assumed to be finite.
+
+{\typeboundgeneraltrue\thmtypes*}
+
+We make two remarks, which are of independent interest in the context of model theory.
+\begin{remark}\label{rem:converse}
+Conversely, the conclusion of \Cref{thm:type-bound} implies monadic dependence.
+Indeed, let $c\in\N$, and let $\phi(x,y)$ be any formula in the signature of $c$-colored graphs, and let $q$ denote its quantifier rank. Let $N$ be a number and $H$ be the bipartite graph with parts $A=\{a_1,\ldots,a_N\}$ and $B=\setof{b_I}{I\subset [N]}$, where $a_i$ is adjacent to $b_I$ if and only if $i\in I$. Suppose there is some $G\in\CC$ and $c$-coloring $G^+$ of $G$, such that $H$ is an induced subgraph of $\phi(G^+)$, the graph with vertex set $V(G)$ and edge set $\setof{uv\in {V(G)\choose 2}}{G^+\models \phi(u,v)\lor \phi(v,u)}$. Then $\tp^q(b_I/A)$ is different for every $I\subset [N]$,
+so the number of types of quantifier rank $q$ over $A$ is at least $2^N$.
+On the other hand, the bound in \Cref{thm:type-bound} is at most polynomial in $|A|=N$, which implies that $N$ is bounded by a constant depending on $\CC$ and $\phi$.
+Hence, not arbitrarily large graphs can be encoded in~$\CC$ by~$\phi$.
+\end{remark}
+
+\begin{remark}
+     An inspection of our proof of \Cref{thm:type-bound} shows that it only uses the assumption that $\CC$ is a \emph{dp-minimal} class of graphs (see \Cref{app:patterns} for a definition).
+    Thus, the conclusion of \Cref{thm:type-bound} holds under the assumption of dp-minimality.
+
+    Monadic dependence implies dp-minimality, as shown in \Cref{lem:mondep-dpmin}.
+    For general classes of structures, however, dp-minimality is a strictly weaker assumption than monadic dependence\footnote{For example, $(\mathbb Z,+)$ is dp-minimal \cite[paragraph before Proposition 6.6]{ADHMS2016} but not monadically dependent.}.
+     With the previous remark, we conclude that for classes $\CC$ of graphs, the notions of dp-minimality and monadic dependence coincide. This extends to classes of structures over a finite  signature consisting of binary relations, via the standard encoding of such structures as graphs (see \cite[full version, Section 19]{flip-breakability}).
+\end{remark}
+
+\section{Closures}\label{sec:closures}
+The goal of this section is to prove the following theorem, which can be seen as a finitary analogue of \cite[Theorem~7.1 in the full version]{flippers}.
+
+% lax begin Lax185574.ClosureTheorem
+\begin{restatable}[Closure Theorem]{theorem}{thmClosures}\label{thm:closures}
+For every monadically dependent graph class $\CC$ and radius $r\in\N$ there are some $c,s\in\N$ with the following property.
+
+\smallskip\noindent
+For every $G \in \CC$ and finite set $A \subseteq V(G)$ there is a set $A^*\subseteq V(G)$ of size $O_{\CC,r}(|A|^c)$ such that for every vertex $v \notin A$ there is a set $S(v)\subseteq A^*$ of size at most $s$
+and an $S(v)$-flip $H$ with
+\[
+    \dist^H(v,A) > r.
+\]
+\end{restatable}
+% lax end
+
+We also extend the statement to tuples.
+For simplicity, and in contrast to \Cref{thm:closures}, the conclusion uses non-definable flips.
+Definability can easily be restored using the methods from~\cite{DBLP:conf/lics/BonnetDGKMST22} (see also~\cite{bonnet2025separability-icalp}).
+
+% lax begin Lax185574.ClosureTheoremTuples
+\begin{restatable}[Closure Theorem for Tuples]{theorem}{thmClosuresTuples}\label{thm:closuresTuples}
+For every monadically dependent graph class $\CC$, radius $r\in\N$, and tuple size $k \in \N$, there are some $c,s\in\N$ with the following property.
+
+\smallskip\noindent
+For every $G \in \CC$ and finite set $A \subseteq V(G)$ there is a set $\HH$ of $O_{\CC,r,k}(|A|^c)$ many $s$-flips of $G$ such that for every tuple $\bar v \in (V(G) \setminus A)^k$ there is a flip $H \in \HH$ with
+\[
+    \dist^H(\bar v,A) > r.
+\]
+\end{restatable}
+% lax end
+
+\subsection{Preliminaries}
+
+% lax begin Lax185574.DefinableFlips
+\paragraph*{Definable flips.}
+% lax begin Lax185574.AtomicTypes
+For $s \in \N$, let $\Pi=\set{(x=y), (x\neq y)\land E(x,y),(x\neq y)\land \neg E(x,y)}$ denote the set of three possible atomic types of a pair of vertices in a graph.
+For an $s$-tuple $\bar p=(p_1,\ldots,p_s)$ of vertices in a graph $G$ and a vertex $v$,
+we identify $\atp(v/\bar p)$ with an $s$-tuple in $\Pi^s$, whose $i$th component is the atomic type of the pair $(v,p_i)$.
+% lax end
+For a symmetric relation $R \subseteq \Pi^s \times \Pi^s$, we denote by $G \oplus (\bar p, R)$ the $\set{p_1,\ldots,p_s}$-flip $H$ of $G$ obtained by partitioning $V(G)$ into atomic types over $\bar p$ and then flipping according to $R$.
+More precisely, for $uv\in {V\choose 2}$,
+we have that $uv\in E(H)\triangle E(G)$ (where $\triangle$ denotes the symmetric difference) if and only if $(\atp^G(u/\bar p), \atp^G(v/ \bar p)) \in R$.
+We call such a flip \emph{$s$-definable}.
+Equivalently, an $s$-definable flip is an $S$-flip for some $S\subseteq V(G)$ of size at most $s$.
+Note that an $s$-definable flip is also $s'$-definable for every $s'\ge s$.
+% lax end
+
+% lax begin Lax185574.DefinableFlipFormula
+% lax begin Lax185574Proofs.DefinableFlipFormula.exists_isQF_flipOver_formula
+\begin{observation}\label{obs:sim-def-flip}
+    We can define the edges of a definable flip in the original graph.
+    More precisely, for every $s\in\N$ and symmetric relation $R \subseteq \Pi^s \times \Pi^s$ there exists a quantifier-free formula $E_{\oplus R}(x,y,\bar z)$ such that for every graph $G$, tuple $\bar p \in V(G)^s$, and vertices $u,v\in V(G)$ we have
+    \[
+        G\oplus(\bar p, R) \models E(u,v)
+        \iff
+        G \models E_{\oplus R}(u,v,\bar p).
+    \]
+\end{observation}
+% lax end
+% lax end
+
+% lax begin Lax185574.FlipsMonadicallyDependent
+% lax begin Lax185574Proofs.FlipsMonadicallyDependent.monadicallyDependent_definableFlipClass
+The following is an easy consequence of the characterization of monadic dependence through transductions~(see, e.g., \cite{flip-breakability}). It also holds in the greater generality of $s$-flips (rather than $s$-definable flips).
+% lax end
+\begin{fact}\label{obs:flips-mon-dep}
+    Let $\CC$ be a monadically dependent graph class and $s\in\N$.
+    The class
+    consisting of all $s$-definable flips of graphs from $\CC$ is monadically dependent.
+\end{fact}
+% lax end
+
+% lax begin Lax185574Proofs.DefinableFlipTransitivity.isDefinableFlip_trans
+The following is well-known, see, e.g., Lemma~2.6 in the full version of~\cite{flippers}.
+% lax end
+
+% lax begin Lax185574.DefinableFlipTransitivity
+\begin{fact}[Transitivity of definable flips]\label{lem:definable-flip-transitive}
+    Let $G_1$ be an $s_1$-definable flip of $G_0$ and $G_2$ be an $s_2$-definable flip of $G_1$. Then $G_2$ is an $(s_1 + s_2)$-definable flip of $G_0$.
+\end{fact}
+% lax end
+
+\subsection{The main argument}\label{sec:closures-main}
+
+The argument is a finitary analogue of the reasoning in \cite[Section 7]{flippers}.
+We use two lemmas. The first enlarges a given set $A$ to a set $A^*$ such that balls avoiding $A^*$ have few types over $A$. The second uses this bound to increase the separation radius by one.
+
+% lax begin Lax185574.BallTypes
+\begin{restatable}{lemma}{lemBallTypes}\label{lem:ball-types}
+    For every monadically dependent graph class $\CC$ and $r,s\in\N$, there are some $k,t\in\N$ with the following property.
+    For every $G\in\CC$ and finite set $A\subseteq V(G)$, there is $A^*\supseteq A$ of size $O_{\CC,r,s}(|A|^k)$ such that, for every $s$-definable flip $H$ of $G$ and every vertex $v$,
+    \[
+        \Ball_r^H(v)\cap A^*=\emptyset
+        \quad\Longrightarrow\quad
+        |\ATypes^H(\Ball_r^H(v)/A)|\leq t.
+    \]
+\end{restatable}
+% lax end
+
+The inequality above
+can be equivalently stated as follows:
+ $\Ball_r^H(v)$ intersects at most $t$ parts of
+the partition of $V(G)$ into atomic types over $A$ in $H$.
+The proof of \Cref{lem:ball-types} is deferred to \Cref{sec:few-types-in-balls}.
+
+% lax begin Lax185574.BallFlip
+\begin{restatable}{lemma}{lemBallFlip}\label{lem:ball-flip}
+For all $d,t\in \N$, there is some $z\in\N$ with the following property.
+
+\smallskip\noindent
+For every graph $G$ of VC-dimension at most $d$, radius $r\in\N$, finite set $A\subseteq V(G)$, and arbitrary set $C\subseteq V(G)$ satisfying
+\begin{center}
+    $\Ball_r^G(C) \cap A = \emptyset$
+    \qquad and \qquad
+    $|\ATypes^G(\Ball_r^G(C)/A)|\leq t$,
+\end{center}
+there exists a $z$-definable flip $H$ of $G$ in which $\Ball_{r+1}^H(C) \cap A = \emptyset$.
+\end{restatable}
+% lax end
+
+The proof is deferred to \Cref{sec:definable-flips-for-balls}. We now conclude \Cref{thm:closures} from the two lemmas.
+
+\thmClosures*
+
+For brevity, we say a flip $H$ of $G$ \emph{$r$-separates} two sets $A, B\subseteq V(G)$ if $\dist^H(A,B)>r$.
+This terminology extends from sets to vertices as expected.
+
+% lax begin Lax185574Proofs.ClosureTheorem.closure_theorem
+\begin{proof}[Proof of \Cref{thm:closures}]
+    We induct on $r$, with $A^*\coloneqq A$, $S(v)\coloneqq \emptyset$, and $H\coloneqq G$ proving the base case $r=0$.
+    Suppose the theorem holds at radius $r$, with parameter bound $s$.
+    By \Cref{obs:flips-mon-dep}, and since monadically dependent classes have bounded VC-dimension (\Cref{obs:md-vc}), it follows that
+    every $s$-definable flip of a graph in $\CC$ has VC-dimension at most some $d\leq O_{\CC,r}(1)$.
+
+    Fix $G\in\CC$ and a finite set $A\subseteq V(G)$. Assume $A$ is nonempty, as otherwise the statement is trivial.
+    Applying \Cref{lem:ball-types} to $r,s,G,A$ gives a polynomial-size superset $A^*\supseteq A$ and a constant $t \leq O_{\CC,r}(1)$ such that every $r$-ball in any $s$-definable flip $H$ of $G$ that avoids $A^*$ realizes at most $t$ types over $A$ in $H$.
+    (Crucially, to avoid cyclic dependencies, note that $s$ is an input, not an output, of \Cref{lem:ball-types}.)
+
+    Apply the induction hypothesis to $A^*$, obtaining a vertex set $B$ of size $\poly_{\CC,r}(|A^*|)\leq\poly_{\CC,r}(|A|)$ such that every vertex outside $A^*$ is $r$-separated from $A^*$ by a flip defined over a subset of $B$ of size at most $s$. We may assume that $B$ is nonempty.
+
+    For each $\bar p\in B^s$ and each symmetric relation $R\subseteq\Pi^{s}\times\Pi^{s}$, put $H\coloneqq G\oplus(\bar p,R)$.
+    Let $V_H$ be the set of vertices $v$ that are $r$-separated from $A^*$ by $H$, that is, $\Ball_r^H(v)\cap A^*=\emptyset$.
+
+    We assign to each $v \in V_H$ its \emph{profile}
+    \[
+        \mathrm{profile}_H(v) \coloneqq \ATypes^H(\Ball_r^H(v)/A).
+    \]
+Equivalently,
+if  $\PP_A$ denotes the partition of $V(G)$ into atomic types over $A$ in $H$,
+then $\mathrm{profile}_H(v)=
+\Ball_r^H(v)/\PP_A$
+is the set of equivalence classes that are intersected by $\Ball_r^H(v)$.
+
+Then $\mathrm{profile}_H(v)$
+is a subset of $\ATypes^H(V(G)/ A)$ of size at most $t$,
+by \Cref{lem:ball-types}.
+By the Sauer--Shelah lemma (\Cref{lem:ss}), we have that
+\[
+    |\ATypes^H(V(G)/ A)|\leq (|A|+1)^d+|A|.
+\]
+It follows that
+    \[
+        |\{\mathrm{profile}_H(v) \,:\, v \in V_H\}|
+        \leq
+        |\ATypes^H(V(G)/ A)|^t \leq \big((|A|+1)^d+|A|\big)^t
+        \leq
+        \poly_{\CC,r}(|A|).
+    \]
+
+    Group the vertices of $V_H$ by their profiles.
+    For each group $C$, the ball $\Ball_r^H(C)$:
+    \begin{itemize}
+        \item avoids $A$, because each $\Ball_r^H(v)$ with $v \in V_H$ does, and
+        \item realizes at most $t$ types over $A$ in $H$, because all $v \in C$ have the same profile of size ${\leq}t$.
+    \end{itemize}
+    Applying \Cref{lem:ball-flip} yields a
+    number $z\le O_{d,t}(1)\le O_{\CC,r}(1)$ and a
+    further $z$-definable flip $H_C$ of $H$ that $(r+1)$-separates $C$ from $A$.
+    By transitivity of definable flips (\Cref{lem:definable-flip-transitive}), $H_C$ is an $(s+z)$-definable flip of $G$.
+    Choose a set $U_{\bar p,R,C}\subseteq V(G)$ of size at most $s+z$ such that $H_C$ is a $U_{\bar p,R,C}$-flip of $G$.
+
+    We finish the proof by setting
+    \[
+        A^{**}\coloneqq A^*\cup\bigcup_{\bar p,R,C}U_{\bar p,R,C}.
+    \]
+    There are at most $|B|^s$ choices of $\bar p$, $O_s(1)$ choices of $R$ for each $\bar p$, and $\poly_{\CC,r}(|A|)$ groups $C$ for each choice of $\bar p,R$.
+    Since each $U_{\bar p,R,C}$ has size at most $s+z$, we have $|A^{**}|\leq\poly_{\CC,r}(|A|)$.
+
+    For each $v\notin A^*$, the induction hypothesis gives a tuple $\bar p \in B^s$ and a $\bar p$-flip $H$ that $r$-separates $v$ from $A^*$.
+    Let $R$ be its flip relation, so that $H=G\oplus (\bar p,R)$, and let $C$ be the group of $V_H$ containing $v$.
+    Then we may take $S(v)\coloneqq U_{\bar p,R,C}\subseteq A^{**}$, since $H_C$ $(r+1)$-separates $v$ from $A$.
+    For $v\in A^*\setminus A$, take $S(v)\coloneqq \{v\}\subseteq A^{**}$ and the flip that isolates $v$.
+    Hence, the theorem holds at radius $r+1$ with parameter set $A^{**}$ and parameter bound $s+z$.
+\end{proof}
+% lax end

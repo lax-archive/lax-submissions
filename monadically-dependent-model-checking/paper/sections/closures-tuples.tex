@@ -1,0 +1,66 @@
+\subsection{Extension to tuples}\label{sec:closures-tuples}
+In this subsection we prove \Cref{thm:closuresTuples}.
+Recall that for $s\in\N$, an \emph{$s$-flip} of a graph $G$ is a $\PP$-flip of $G$ for some partition $\PP$ of $V(G)$ into at most $s$ parts.
+For $S\subseteq V(G)$, the partition $\PP_S$ into atomic types over $S$ has at most $3^{|S|}$ parts, so every $s$-definable flip is a $3^s$-flip.
+The flip metric $\dist_\PP$ associated with a partition $\PP$ of $V(G)$ is the maximum of $\dist^H$ over all $\PP$-flips $H$ of $G$, and $\Ball^\PP_r(v)\coloneqq\{u\in V(G):\dist_\PP(u,v)\leq r\}$ denotes its balls.
+We use the same notation for the minimum distance between two tuples or sets.
+
+% lax begin Lax185574.FlipMetricMonotone
+% lax begin Lax185574Proofs.FlipMetricMonotone.isFlip_of_le
+% lax begin Lax185574Proofs.FlipMetricMonotone.flipBall_subset_of_le
+\begin{observation}\label{obs:partition-distance-monotone}
+If $\QQ$ refines $\PP$, then every $\PP$-flip is also a $\QQ$-flip, and hence
+\[
+    \dist_\QQ(u,v)\geq \dist_\PP(u,v).
+\]
+\end{observation}
+% lax end
+% lax end
+% lax end
+
+We use the following metric-conversion result.
+
+% lax begin Lax185574.PartitionMetricConversion
+% lax begin Lax185574Proofs.PartitionMetricConversion.exists_refinement_flip
+\begin{lemma}[{\cite[Lemma 8]{bonnet2025separability-icalp}}]\label{lem:partition-metric-conversion}
+    Let $G$ be a graph and let $\PP$ be a partition of $V(G)$. There is a refinement $\QQ$ of $\PP$ with $|\QQ|\leq |\PP|\cdot 2^{|\PP|}$ and a $\QQ$-flip $H$ of $G$ such that, for every $v\in V(G)$ and $r\in\N$,
+    \[
+        \Ball^H_r(v)\subseteq\Ball^\PP_{6r}(v).
+    \]
+\end{lemma}
+% lax end
+% lax end
+
+We now combine the flips from  the Closure Theorem (\Cref{thm:closures}) for the individual entries of a tuple into a single flip.
+
+\thmClosuresTuples*
+
+% lax begin Lax185574Proofs.ClosureTheoremTuples.closure_theorem_tuples
+\begin{proof}
+    Let $c_0,s_0\in\N$ be given by \Cref{thm:closures} for $\CC$ and radius $6r$.
+    Fix $G\in\CC$ and a finite set $A\subseteq V(G)$, and let $S$ and the sets $S(v)$ for $v\notin A$ be as in \Cref{thm:closures}.
+    For a tuple $\bar v=(v_1,\ldots,v_k)\in(V(G)\setminus A)^k$, put
+    \[
+        S(\bar v)\coloneqq S(v_1)\cup\cdots\cup S(v_k).
+    \]
+    Then $S(\bar v)\subseteq S$ and $|S(\bar v)|\leq k\,s_0$.
+    As $\PP_{S(\bar v)}$ refines every $\PP_{S(v_i)}$, \Cref{obs:partition-distance-monotone} gives
+    \begin{equation}\label{eq:closures-tuples-far}
+        \dist_{S(\bar v)}^G(v_i,A)\geq\dist_{S(v_i)}^G(v_i,A)>6r
+        \qquad\text{for every }i\in[k].
+    \end{equation}
+
+    For every $T\subseteq S$ with $|T|\leq ks_0$, the partition $\PP_T$ has at most $3^{ks_0}$ parts.
+    So \Cref{lem:partition-metric-conversion} yields an $s$-flip $H_T$ of $G$, for some $s\leq O_{\CC,r,k}(1)$ independent of $T$, such that
+    \[
+        \Ball^{H_T}_r(x)\subseteq\Ball^{T}_{6r}(x)
+        \qquad\text{for every }x\in V(G).
+    \]
+    Let $\HH\coloneqq\{H_T \,:\, T\subseteq S,\ |T|\leq ks_0\}$.
+    Then $|\HH|\leq(|S|+1)^{ks_0}\leq O_{\CC,r,k}(|A|^{c})$ for $c\coloneqq c_0\, k\, s_0$.
+
+    Finally, let $\bar v=(v_1,\ldots,v_k)\in(V(G)\setminus A)^k$ and $H\coloneqq H_{S(\bar v)}\in\HH$.
+    For every $i\in[k]$, the ball $\Ball^H_r(v_i)\subseteq\Ball^{S(\bar v)}_{6r}(v_i)$ is disjoint from $A$ by \eqref{eq:closures-tuples-far}.
+    Thus $\dist^H(\bar v,A)>r$.
+\end{proof}
+% lax end

@@ -1,0 +1,114 @@
+\definecolor{bfAnti}{RGB}{200,40,40}%
+\definecolor{bfHl}{RGB}{0,90,200}%
+{\setlength{\fboxsep}{6pt}\makebox[\linewidth]{\colorbox{white}{%
+\begin{tikzpicture}[
+        vertex/.style={circle, fill=black, inner sep=0pt, minimum size=3.2pt},
+        blob/.style={draw=black!70, line width=0.6pt, fill=black, fill opacity=0.04},
+        complete/.style={draw=black, line width=0.6pt},
+        anticomplete/.style={draw=bfAnti, dash pattern=on 2.5pt off 2pt, line width=0.6pt,
+            shorten <=2pt},
+        sameType/.style={black!60, densely dotted, line width=0.7pt},
+        lbl/.style={inner sep=1pt},
+        sampleSet/.style={draw=bfHl, line width=0.6pt, fill=bfHl, fill opacity=0.12},
+        hlEdge/.style={draw=bfHl, line width=1.2pt},
+        hlNonedge/.style={draw=bfHl, dash pattern=on 3pt off 2pt, line width=1.2pt},
+    ]
+    \def\bx{1.7}
+    \def\rx{1.1}
+    \def\ry{0.8}
+    \def\off{0.7}
+    \def\h{2.2}
+    \def\panelsep{6.3}
+
+    \pgfmathsetmacro{\bfunit}{\linewidth / (2*\panelsep + 2*(\bx+\rx))}
+    \begin{scope}[x=\bfunit pt, y=\bfunit pt]
+
+    \pgfmathsetmacro{\tphi}{atan2(\h/\ry, (2*\bx+\off)/\rx)}
+    \pgfmathsetmacro{\tdelta}{acos(1/sqrt(((2*\bx+\off)/\rx)^2 + (\h/\ry)^2))}
+
+    \def\bfSkipComplete{-1}
+    \def\bfSkipAnti{-1}
+    \def\bfSimLabel{$\sim$}
+
+    \def\bfCrossingBase{%
+        \coordinate (X) at (-\bx, 0);
+        \coordinate (Y) at ( \bx, 0);
+        \coordinate (x) at (-\bx-\off, 0.15);
+        \coordinate (y) at ( \bx+\off, 0.15);
+        \coordinate (x') at (-\bx-\off, \h);
+        \coordinate (y') at ( \bx+\off, \h);
+
+        \pgfmathsetmacro{\px}{2*\bx+\off}
+        \pgfmathsetmacro{\fanfrom}{atan2(\ry*sin(\tphi+\tdelta) - \h, \rx*cos(\tphi+\tdelta) - \px)}
+        \pgfmathsetmacro{\fanto}{atan2(\ry*sin(\tphi-\tdelta) - \h, \rx*cos(\tphi-\tdelta) - \px)}
+        \foreach \i in {0,...,5} {
+            \pgfmathsetmacro{\fanang}{\fanfrom + \i*(\fanto - \fanfrom)/5}
+            \pgfmathsetmacro{\fanA}{(cos(\fanang))^2/\rx^2 + (sin(\fanang))^2/\ry^2}
+            \pgfmathsetmacro{\fanB}{2*(\px*cos(\fanang)/\rx^2 + \h*sin(\fanang)/\ry^2)}
+            \pgfmathsetmacro{\fanC}{\px^2/\rx^2 + \h^2/\ry^2 - 1}
+            \pgfmathsetmacro{\fanlen}{(-(\fanB) - sqrt(max(0, \fanB*\fanB - 4*\fanA*\fanC)))/(2*\fanA)}
+            \ifnum\i=\bfSkipComplete\relax\else
+                \draw[complete] (y') -- ++(\fanang:\fanlen);
+            \fi
+            \ifnum\i=\bfSkipAnti\relax\else
+                \draw[anticomplete, dash phase={mod(\i,2)*2.25pt}] (x') -- ++(180-\fanang:\fanlen);
+            \fi
+        }
+
+        \draw[blob] (X) ellipse [x radius=\rx, y radius=\ry];
+        \draw[blob] (Y) ellipse [x radius=\rx, y radius=\ry];
+        \node[lbl, below=2pt] at ($(X) + (0, -\ry)$) {$X$};
+        \node[lbl, below=2pt] at ($(Y) + (0, -\ry)$) {$Y$};
+
+        \draw[sameType] (x') -- node[lbl, left=1pt, black] {\bfSimLabel} (x);
+        \draw[sameType] (y') -- node[lbl, right=1pt, black] {\bfSimLabel} (y);
+
+        \foreach \v in {x, y, x', y'}
+            \node[vertex] at (\v) {};
+        \node[lbl, below=2pt] at (x) {$x$};
+        \node[lbl, below=2pt] at (y) {$y$};
+        \node[lbl, above=2pt] at (x') {$x'$};
+        \node[lbl, above=2pt] at (y') {$y'$};
+    }
+
+    \begin{scope}[name prefix=a-]
+        \bfCrossingBase
+    \end{scope}
+
+    \begin{scope}[shift={(\panelsep, 0)}, name prefix=b-]
+        \def\bfSkipAnti{3}
+        \def\bfSimLabel{}
+        \bfCrossingBase
+        \pgfmathsetmacro{\bfsang}{180 - (\fanfrom + \bfSkipAnti*(\fanto - \fanfrom)/5)}
+        \pgfmathsetmacro{\bfslen}{(2*\bx + \off - 0.4)/cos(\bfsang)}
+        \coordinate (s) at ($(x') + (\bfsang:\bfslen)$);
+        \draw[sampleSet] (s) ellipse [x radius=0.45, y radius=0.3];
+        \draw[hlEdge] (s) -- (x);
+        \draw[hlNonedge] (s) -- (x');
+        \foreach \v in {x, x'}
+            \node[vertex] at (\v) {};
+        \node[vertex, fill=bfHl] at (s) {};
+    \end{scope}
+
+    \begin{scope}[shift={(2*\panelsep, 0)}, name prefix=c-]
+        \def\bfSimLabel{}
+        \bfCrossingBase
+        \pgfmathsetmacro{\bfsang}{\fanfrom + 3*(\fanto - \fanfrom)/5}
+        \pgfmathsetmacro{\bfslen}{-(2*\bx + \off - 0.4)/cos(\bfsang)}
+        \coordinate (s) at ($(y') + (\bfsang:\bfslen)$);
+        \draw[sampleSet] (s) ellipse [x radius=0.45, y radius=0.3];
+        \draw[hlNonedge] (s) -- (y);
+        \draw[hlEdge] (s) -- (y');
+        \foreach \v in {y, y'}
+            \node[vertex] at (\v) {};
+        \node[vertex, fill=bfHl] at (s) {};
+    \end{scope}
+
+    \coordinate (bbtop) at (current bounding box.north);
+    \coordinate (bbbot) at (current bounding box.south);
+    \pgfresetboundingbox
+    \path[use as bounding box]
+        (-\bx-\rx,0 |- bbbot) rectangle (2*\panelsep+\bx+\rx,0 |- bbtop);
+    \end{scope}
+\end{tikzpicture}%
+}}}%
