@@ -29,6 +29,13 @@ import Lax185574.DefinableSequences
 import Lax185574.DefinableToTypes
 import Lax185574.DistanceMatrix
 import Lax185574.DistanceLogic
+import Lax185574.DpMinimalEquivalence
+import Lax185574.DpMinimalFlips
+import Lax185574.DpMinimalInterpretations
+import Lax185574.DpMinimalPatterns
+import Lax185574.DpMinimalTypeBound
+import Lax185574.DpMinimalVC
+import Lax185574.DpMinimality
 import Lax185574.Encoding
 import Lax185574.Encodings
 import Lax185574.Evaluation
@@ -58,6 +65,7 @@ import Lax185574.MergeSequences
 import Lax185574.MergeToConstruction
 import Lax185574.ModelChecking
 import Lax185574.MonadicDependence
+import Lax185574.MonadicDependenceDpMinimal
 import Lax185574.NeighborhoodComplexityBound
 import Lax185574.PairRelation
 import Lax185574.PairRelationBalls
