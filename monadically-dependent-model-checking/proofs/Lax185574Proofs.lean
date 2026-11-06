@@ -145,7 +145,6 @@ import Lax185574Proofs.DistanceTranslation
 import Lax185574Proofs.DpMinimalEquivalence
 import Lax185574Proofs.DpMinimalFlips
 import Lax185574Proofs.DpMinimalInterpretations
-import Lax185574Proofs.DpMinimalPatterns
 import Lax185574Proofs.DpMinimalTypeBound
 import Lax185574Proofs.DpMinimalVC
 import Lax185574Proofs.EncodingInjectivity
@@ -181,7 +180,6 @@ import Lax185574Proofs.FlipBasics
 import Lax185574Proofs.FlipBridge
 import Lax185574Proofs.FlipDistanceFormula
 import Lax185574Proofs.FlipMetricMonotone
-import Lax185574Proofs.FlipsMonadicallyDependent
 import Lax185574Proofs.ForbiddenPhiPatterns
 import Lax185574Proofs.ForbiddenPhiPsiPatterns
 import Lax185574Proofs.FormulaRank
@@ -721,15 +719,12 @@ import Lax185574Proofs.Words.TreeMap
 import Lax185574Proofs.Words.TreeNode
 import Lax185574Proofs.Words.TreeWord
 import Lax185574Proofs.ResolveLift
-import Lax185574Proofs.Interface.Classes
 import Lax185574Proofs.Interface.IndependenceProperty
-import Lax185574Proofs.Interface.DefinableFlipClass
 import Lax185574Proofs.Interface.Shim.BallTypes
 import Lax185574Proofs.Interface.Shim.BoundedVCClasses
 import Lax185574Proofs.Interface.Shim.ClosureTheorem
 import Lax185574Proofs.Interface.Shim.ClosureTheoremTuples
 import Lax185574Proofs.Interface.Shim.DefinableToTypes
-import Lax185574Proofs.Interface.Shim.FlipsMonadicallyDependent
 import Lax185574Proofs.Interface.Shim.ForbiddenPhiPatterns
 import Lax185574Proofs.Interface.Shim.ForbiddenPhiPsiPatterns
 import Lax185574Proofs.Interface.Shim.IndependenceProperty

@@ -14,7 +14,7 @@ import Lax185574Proofs.Interface.Shim.ForbiddenPhiPatterns
 namespace Lax185574Proofs.BallTypes
 
 open FirstOrder FirstOrder.Language
-open Lax199508.GraphClasses Lax710763.MonadicDependence
+open Lax199508.GraphClasses
 open Lax185574.AtomicTypes Lax185574.DefinableFlips Lax185574.GraphBalls Lax185574.GaifmanGraph
 open Lax185574.PhiPsiPatterns Lax185574.PhiPatterns Lax185574.AtomicMatching
 open Lax185574.BipartiteGraphs
@@ -22,12 +22,6 @@ open Lax185574Proofs.BallTypesHelpers Lax185574Proofs.FlipDistanceFormula
 
 /-- Relations on atomic types over `s`-tuples. -/
 abbrev Rel (s : ℕ) : Type := (Fin s → PairType) → (Fin s → PairType) → Prop
-
-/-- Every formula `φ` has a bound on the order of the `φ`-patterns in
-the graphs of `C`. -/
-def ForbidsPhiPatterns (C : GraphClass) : Prop :=
-  ∀ {p : ℕ} (φ : Language.graph.Formula (Fin p ⊕ Fin 1)),
-    ∃ t : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G → ¬ HasPhiPattern G φ t t
 
 /-- The ball-types statement for radius `r` and parameter bound `s`. -/
 def BallTypesAt (C : GraphClass) (r s : ℕ) : Prop :=
@@ -38,8 +32,9 @@ def BallTypesAt (C : GraphClass) (r s : ℕ) : Prop :=
         Disjoint (graphBall H r {v}) (Astar : Set (Fin n)) →
           atomicTypeCount H (graphBall H r {v}) (A : Set (Fin n)) ≤ t
 
-/-- The ball-types statement for a class with forbidden `φ`-patterns. -/
-theorem ball_types_of_forbidsPhiPatterns (C : GraphClass) (hC : ForbidsPhiPatterns C)
+/-- The statement for the graph classes of the archive. -/
+theorem ball_types_old (C : GraphClass)
+    (hC : Lax185574.DpMinimality.DpMinimal (Lax185574Proofs.Interface.ofOld C))
     (r s : ℕ) : BallTypesAt C r s := by
   classical
   -- edge formulas of definable flips
@@ -55,7 +50,8 @@ theorem ball_types_of_forbidsPhiPatterns (C : GraphClass) (hC : ForbidsPhiPatter
     · exact ⟨⊥, fun h => absurd h hR⟩
   choose Ef hEf using hEex
   let φR : Rel s → Language.graph.Formula (Fin (s + 1) ⊕ Fin 1) := fun R => distFormula r (Ef R)
-  have hforb := fun R => hC (φR R)
+  have hforb := fun R =>
+    Lax185574Proofs.Shim.ForbiddenPhiPatterns.forbidden_phi_patterns C hC (φR R)
   choose tR htR using hforb
   have : Fintype (Rel s) := Fintype.ofFinite _
   let kk := Finset.univ.sup tR + 1
@@ -214,18 +210,11 @@ theorem ball_types_of_forbidsPhiPatterns (C : GraphClass) (hC : ForbidsPhiPatter
       rw [holds_edgeOrNot]
       exact hN2 j j' hlt
 
-/-- The statement for the graph classes of the archive and their
-monadic dependence. -/
-theorem ball_types_old (C : GraphClass) (hC : MonadicallyDependent C) (r s : ℕ) :
-    BallTypesAt C r s :=
-  ball_types_of_forbidsPhiPatterns C
-    (fun φ => Lax185574Proofs.Shim.ForbiddenPhiPatterns.forbidden_phi_patterns C hC φ) r s
-
 end Lax185574Proofs.BallTypes
 
 namespace Lax185574Proofs.BallTypes
 
-open Lax185574.Graphs Lax185574.MonadicDependence
+open Lax185574.Graphs Lax185574.DpMinimality
 open Lax185574.AtomicTypes Lax185574.DefinableFlips Lax185574.GraphBalls
 open Lax185574Proofs.Interface
 
@@ -249,17 +238,16 @@ satisfy `N(wⱼ, uⱼ)` and `¬N(wⱼ', uⱼ)` for `j < j'`. Then `p̄ v` and `�
 extend the chosen pattern with base `w̄` by a row, as `ū` lies in `B`
 and the old grid points do not, contradicting maximality.
 
-The argument is carried out for any graph class of the archive that
-excludes `φ`-patterns of bounded order, which a monadically dependent
-class does, and transferred to the graph classes used here.
+The argument is carried out for the graph classes of the archive, and
+transferred to the graph classes used here.
 -/
-theorem ball_types (C : GraphClass) (hC : MonadicallyDependent C) (r s : ℕ) :
+theorem ball_types (C : GraphClass) (hC : DpMinimal C) (r s : ℕ) :
     ∃ k t a : ℕ, ∀ G ∈ C, ∀ A : Finset (Fin G.n), ∃ Astar ⊇ A,
       Astar.card ≤ a * (A.card + 1) ^ k ∧
       ∀ H : SimpleGraph (Fin G.n), IsDefinableFlip G.toSimpleGraph s H → ∀ v : Fin G.n,
         Disjoint (graphBall H r {v}) (Astar : Set (Fin G.n)) →
           atomicTypeCount H (graphBall H r {v}) (A : Set (Fin G.n)) ≤ t := by
-  obtain ⟨k, t, a, h⟩ := ball_types_old (toOld C) (monadicallyDependent_toOld hC) r s
+  obtain ⟨k, t, a, h⟩ := ball_types_old (toOld C) hC r s
   exact ⟨k, t, a, fun G hG => h G.n G.toSimpleGraph hG⟩
 
 end Lax185574Proofs.BallTypes

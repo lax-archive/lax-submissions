@@ -1,19 +1,18 @@
 import Lax185574.ClosureTheorem
 import Lax185574.BallTypes
 import Lax185574.BallFlip
-import Lax185574.FlipsMonadicallyDependent
+import Lax185574.DpMinimalFlips
+import Lax185574.DpMinimalVC
 import Lax185574.DefinableFlipTransitivity
 import Lax185574.NeighborhoodComplexityBound
 import Lax185574Proofs.BallTypes
-import Lax185574Proofs.BoundedVC
 import Lax185574Proofs.ClosureHelpers
 import Lax185574Proofs.AtomicTypeBridge
-import Lax185574Proofs.Interface.Shim.FlipsMonadicallyDependent
 import Lax185574Proofs.Interface.Shim.BallTypes
 
 namespace Lax185574Proofs.ClosureTheorem
 
-open Lax199508.GraphClasses Lax710763.MonadicDependence
+open Lax199508.GraphClasses
 open Lax185574.Flips Lax185574.GraphBalls Lax185574.Partitions Lax185574.GaifmanGraph
 open Lax185574.DefinableFlips Lax185574.AtomicTypes Lax185574.VCDimension
 open Lax185574Proofs.ClosureHelpers
@@ -269,30 +268,26 @@ theorem closureAt_succ (C : GraphClass) (hBT : ∀ r s, BallTypes.BallTypesAt C 
           (graphBall_mono_center H' (r + 1) (Set.singleton_subset_iff.mpr (show v ∈ grp H (prof H v) from ⟨hHdisj, rfl⟩)))
           hH'disj
 
-/-- The closure theorem for a class with the ball-types statement and
-bounded VC-dimension of its definable flips. -/
-theorem closure_theorem_of_ballTypes (C : GraphClass) (hBT : ∀ r s, BallTypes.BallTypesAt C r s)
-    (hVC : BoundedVCOfDefinableFlips C) (r : ℕ) : ClosureAt C r := by
+/-- The statement for the graph classes of the archive. -/
+theorem closure_theorem_old (C : GraphClass)
+    (hC : Lax185574.DpMinimality.DpMinimal (Lax185574Proofs.Interface.ofOld C)) (r : ℕ) :
+    ClosureAt C r := by
+  have hBT : ∀ r s, BallTypes.BallTypesAt C r s :=
+    fun r s => Lax185574Proofs.Shim.BallTypes.ball_types C hC r s
+  have hVC : BoundedVCOfDefinableFlips C := fun s => by
+    obtain ⟨d, hd⟩ := Lax185574.DpMinimalVC.exists_vcDim_le _
+      (Lax185574.DpMinimalFlips.dpMinimal_definableFlipClass _ hC s)
+    exact ⟨d, fun n G H hG hH => hd (Lax185574.Graphs.Graph.ofSimpleGraph H)
+      ⟨Lax185574.Graphs.Graph.ofSimpleGraph G, hG, H, hH, rfl⟩⟩
   induction r with
   | zero => exact closureAt_zero C
   | succ r ih => exact closureAt_succ C hBT hVC r ih
-
-/-- The statement for the graph classes of the archive and their
-monadic dependence. -/
-theorem closure_theorem_old (C : GraphClass) (hC : MonadicallyDependent C) (r : ℕ) :
-    ClosureAt C r := by
-  refine closure_theorem_of_ballTypes C
-    (fun r s => Lax185574Proofs.Shim.BallTypes.ball_types C hC r s) (fun s => ?_) r
-  obtain ⟨d, hd⟩ := Lax185574Proofs.BoundedVC.exists_vcDim_le _
-    (Lax185574Proofs.Shim.FlipsMonadicallyDependent.monadicallyDependent_definableFlipClass
-      C hC s)
-  exact ⟨d, fun n G H hG hH => hd n H ⟨G, hG, hH⟩⟩
 
 end Lax185574Proofs.ClosureTheorem
 
 namespace Lax185574Proofs.ClosureTheorem
 
-open Lax185574.Graphs Lax185574.MonadicDependence
+open Lax185574.Graphs Lax185574.DpMinimality
 open Lax185574.Flips Lax185574.GraphBalls Lax185574.Partitions
 open Lax185574Proofs.Interface
 
@@ -304,7 +299,7 @@ Induction on `r`, as in the paper. At radius 0 take `A* = A` and no
 flip. For the step, enlarge `A` to `A₁` by the ball-types lemma for the
 current parameter bound `s`, and apply the induction hypothesis to `A₁`,
 giving `B`. The `s`-definable flips of graphs of the class form a
-monadically dependent class, so they have VC-dimension at most some `d`.
+dp-minimal class, so they have VC-dimension at most some `d`.
 For every set `S ⊆ B` of at most `s` vertices and every `S`-flip `H` (at
 most `2^{9^s}` of them), group the vertices whose radius-`r` ball in `H`
 avoids `A₁` by the set of atomic types over `A` that the ball meets. By
@@ -316,18 +311,16 @@ from `A`, which is an `(s + z)`-definable flip of `G` by transitivity.
 The new closure is `A₁` together with the parameters of all these flips.
 Vertices of `A₁ ∖ A` are isolated by the flip over themselves.
 
-The argument is carried out for any graph class of the archive with the
-ball-types lemma and bounded VC-dimension of its definable flips, which
-hold for a monadically dependent class, and transferred to the graph
-classes used here.
+The argument is carried out for the graph classes of the archive, and
+transferred to the graph classes used here.
 -/
-theorem closure_theorem (C : GraphClass) (hC : MonadicallyDependent C) (r : ℕ) :
+theorem closure_theorem (C : GraphClass) (hC : DpMinimal C) (r : ℕ) :
     ∃ c s a : ℕ, ∀ G ∈ C, ∀ A : Finset (Fin G.n), ∃ Astar : Finset (Fin G.n),
       Astar.card ≤ a * (A.card + 1) ^ c ∧
       ∀ v ∉ A, ∃ S ⊆ Astar, S.card ≤ s ∧ ∃ H : SimpleGraph (Fin G.n),
         IsFlip G.toSimpleGraph (atomicTypes G.toSimpleGraph (S : Set (Fin G.n))) H ∧
         Disjoint (graphBall H r {v}) (A : Set (Fin G.n)) := by
-  obtain ⟨c, s, a, h⟩ := closure_theorem_old (toOld C) (monadicallyDependent_toOld hC) r
+  obtain ⟨c, s, a, h⟩ := closure_theorem_old (toOld C) hC r
   exact ⟨c, s, a, fun G hG => h G.n G.toSimpleGraph hG⟩
 
 end Lax185574Proofs.ClosureTheorem

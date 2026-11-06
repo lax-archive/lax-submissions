@@ -1,5 +1,6 @@
 import Lax185574.AtomicTypes
 import Lax185574.Flips
+import Lax185574.Graphs
 import Lax185574.Partitions
 
 /-!
@@ -39,11 +40,17 @@ and s ≥ 1, by a constant tuple, since every ∅-flip is also a {v}-flip. On th
 there is no s-tuple for s ≥ 1, while the empty set still works. The
 formulation by sets makes "s-definable implies s'-definable for s' ≥ s"
 hold without exception.
+
+The class of all s-definable flips of graphs from a graph class 𝒞 is
+`definableFlipClass C s`. A flip H of a graph G ∈ 𝒞 is a `SimpleGraph` on
+the vertices of G, as are all flips in this submission. The class
+contains it as a graph, `Graph.ofSimpleGraph H`, which has the same
+vertices and adjacency.
 -/
 
 namespace Lax185574.DefinableFlips
 
-open Lax185574.AtomicTypes Lax185574.Flips Lax185574.Partitions
+open Lax185574.AtomicTypes Lax185574.Flips Lax185574.Graphs Lax185574.Partitions
 
 universe u
 
@@ -61,5 +68,10 @@ noncomputable def flipOver (G : SimpleGraph V) {s : ℕ} (p : Fin s → V)
 `S` of at most `s` vertices. -/
 def IsDefinableFlip (G : SimpleGraph V) (s : ℕ) (H : SimpleGraph V) : Prop :=
   ∃ S : Finset V, S.card ≤ s ∧ IsFlip G (atomicTypes G (S : Set V)) H
+
+/-- The class of all `s`-definable flips of graphs from `C`. -/
+def definableFlipClass (C : GraphClass) (s : ℕ) : GraphClass :=
+  {H | ∃ G ∈ C, ∃ F : SimpleGraph (Fin G.n),
+    IsDefinableFlip G.toSimpleGraph s F ∧ H = Graph.ofSimpleGraph F}
 
 end Lax185574.DefinableFlips

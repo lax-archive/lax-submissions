@@ -4,12 +4,13 @@ import Lax185574.MonadicDependenceDpMinimal
 import Lax185574Proofs.FormulaRank
 import Lax185574Proofs.Interface.IndependenceProperty
 import Mathlib.Analysis.SpecificLimits.Normed
+import Mathlib.Tactic.TFAE
 
 namespace Lax185574Proofs.DpMinimalEquivalence
 
 open FirstOrder FirstOrder.Language
 open Lax185574.Graphs Lax185574.FirstOrderLogic Lax185574.MonadicDependence
-open Lax185574.DpMinimality Lax185574.IndependenceProperty
+open Lax185574.DpMinimality Lax185574.DpMinimalEquivalence Lax185574.IndependenceProperty
 open Lax185574.FirstOrderTypes Lax185574.Colorings
 open Lax185574Proofs.FormulaRank Lax185574Proofs.Interface
 open Lax710763.Transductions
@@ -82,29 +83,13 @@ theorem two_pow_le_typeCountOver {c N q : ℕ} (G : Graph) (col : Fin c → Set 
         rintro _ ⟨J, rfl⟩
         exact ⟨b J, fun _ => trivial, rfl⟩) hfin
 
-/--
----
-conclusion: Lax185574.DpMinimalEquivalence.monadicallyDependent_iff_dpMinimal
----
-A monadically dependent class is dp-minimal by the lemma on monadically
-dependent classes. Conversely, let the class be dp-minimal, and suppose
-a formula `φ(x, y)` with `c` colors has the independence property on it.
-Let `q` be the quantifier rank of `φ`, and take `a` and `F` from the
-type bound for dp-minimal classes, for `k = 1`, `q` and `c`. Choose `N`
-with `F · (N + 1)^a < 2^N`, and take a colored graph, vertices
-`a₁, …, a_N` and vertices `b_J` for `J ⊆ [N]` such that `φ(aᵢ, b_J)`
-holds exactly when `i ∈ J`. With `U = {a₁, …, a_N}`, the formulas
-`φ(aᵢ, y)` have parameters from `U` and rank at most `q`, so the
-vertices `b_J` have pairwise different types of rank `q` over `U`. Hence
-`2^N ≤ F · (|U| + 1)^a`, a contradiction. A class on which no formula
-has the independence property is monadically dependent.
--/
-theorem monadicallyDependent_iff_dpMinimal (C : GraphClass) :
-    MonadicallyDependent C ↔ DpMinimal C := by
-  refine ⟨Lax185574.MonadicDependenceDpMinimal.dpMinimal_of_monadicallyDependent C, fun hC => ?_⟩
+/-- A class with polynomially many types over parameter sets is
+monadically dependent. -/
+theorem monadicallyDependent_of_hasPolynomialTypes (C : GraphClass) (hC : HasPolynomialTypes C) :
+    MonadicallyDependent C := by
   refine (monadicallyDependent_iff_forall_not_hasIP C).mpr fun c φ hφ => ?_
   let ψ := Formula.toMathlibSplit φ
-  obtain ⟨a, ha⟩ := Lax185574.DpMinimalTypeBound.typeCountOver_le C hC 1 (quantifierRank ψ)
+  obtain ⟨a, ha⟩ := hC 1 (quantifierRank ψ)
   obtain ⟨F, hF⟩ := ha c
   obtain ⟨N, hN⟩ := exists_mul_pow_lt_two_pow F a
   obtain ⟨G, hG, col, x, y, hxy⟩ := hφ N
@@ -119,5 +104,30 @@ theorem monadicallyDependent_iff_dpMinimal (C : GraphClass) :
   have h₃ : F * (U.card + 1) ^ a ≤ F * (N + 1) ^ a :=
     Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
   omega
+
+/--
+---
+conclusion: Lax185574.DpMinimalEquivalence.tfae_monadicallyDependent_dpMinimal_hasPolynomialTypes
+---
+A monadically dependent class is dp-minimal by the lemma on monadically
+dependent classes, and a dp-minimal class has polynomially many types by
+the type bound for dp-minimal classes. Conversely, let a class have
+polynomially many types, and suppose a formula `φ(x, y)` with `c` colors
+has the independence property on it. Let `q` be the quantifier rank of
+`φ`, and take `a` and `F` from the bound for `k = 1`, `q` and `c`. Choose
+`N` with `F · (N + 1)^a < 2^N`, and take a colored graph, vertices
+`a₁, …, a_N` and vertices `b_J` for `J ⊆ [N]` such that `φ(aᵢ, b_J)`
+holds exactly when `i ∈ J`. With `U = {a₁, …, a_N}`, the formulas
+`φ(aᵢ, y)` have parameters from `U` and rank at most `q`, so the
+vertices `b_J` have pairwise different types of rank `q` over `U`. Hence
+`2^N ≤ F · (|U| + 1)^a`, a contradiction. A class on which no formula
+has the independence property is monadically dependent.
+-/
+theorem tfae_monadicallyDependent_dpMinimal_hasPolynomialTypes (C : GraphClass) :
+    List.TFAE [MonadicallyDependent C, DpMinimal C, HasPolynomialTypes C] := by
+  tfae_have 1 → 2 := Lax185574.MonadicDependenceDpMinimal.dpMinimal_of_monadicallyDependent C
+  tfae_have 2 → 3 := fun hC k q => Lax185574.DpMinimalTypeBound.typeCountOver_le C hC k q
+  tfae_have 3 → 1 := monadicallyDependent_of_hasPolynomialTypes C
+  tfae_finish
 
 end Lax185574Proofs.DpMinimalEquivalence

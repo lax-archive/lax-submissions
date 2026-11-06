@@ -1,14 +1,14 @@
+import Lax185574.DpMinimality
 import Lax185574.Flips
 import Lax185574.GraphBalls
-import Lax185574.MonadicDependence
 
 /-!
 ---
 title: Closure theorem for tuples
 type: theorem
 ---
-For every monadically dependent graph class 𝒞, radius r ∈ ℕ, and tuple
-size k ∈ ℕ, there are some c, s ∈ ℕ with the following property.
+For every dp-minimal graph class 𝒞, radius r ∈ ℕ, and tuple size k ∈ ℕ,
+there are some c, s ∈ ℕ with the following property.
 
 For every G ∈ 𝒞 and finite set A ⊆ V(G) there is a set ℋ of
 O_{𝒞,r,k}(|A|^c) many s-flips of G such that for every tuple
@@ -31,14 +31,14 @@ The graphs of 𝒞 are finite, as in `ClosureTheorem`.
 
 namespace Lax185574.ClosureTheoremTuples
 
-open Lax185574.Graphs Lax185574.MonadicDependence
+open Lax185574.Graphs Lax185574.DpMinimality
 open Lax185574.Flips Lax185574.GraphBalls
 
-/-- **Closure theorem for tuples.** For a monadically dependent class, a
-radius `r` and a tuple size `k`, every finite parameter set `A` has a
+/-- **Closure theorem for tuples.** For a dp-minimal class, a radius `r`
+and a tuple size `k`, every finite parameter set `A` has a
 polynomial-size family of `s`-flips such that each `k`-tuple outside `A`
 is at distance more than `r` from `A` in some member. -/
-axiom closure_theorem_tuples (C : GraphClass) (hC : MonadicallyDependent C)
+axiom closure_theorem_tuples (C : GraphClass) (hC : DpMinimal C)
     (r k : ℕ) :
     ∃ c s a : ℕ, ∀ G ∈ C, ∀ A : Finset (Fin G.n),
       ∃ family : Finset (SimpleGraph (Fin G.n)),

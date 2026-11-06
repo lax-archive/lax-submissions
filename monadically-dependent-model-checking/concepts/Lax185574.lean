@@ -32,7 +32,6 @@ import Lax185574.DistanceLogic
 import Lax185574.DpMinimalEquivalence
 import Lax185574.DpMinimalFlips
 import Lax185574.DpMinimalInterpretations
-import Lax185574.DpMinimalPatterns
 import Lax185574.DpMinimalTypeBound
 import Lax185574.DpMinimalVC
 import Lax185574.DpMinimality
@@ -46,7 +45,6 @@ import Lax185574.FirstOrderLogic
 import Lax185574.FirstOrderTypes
 import Lax185574.FlipMetricMonotone
 import Lax185574.Flips
-import Lax185574.FlipsMonadicallyDependent
 import Lax185574.ForbiddenPhiPatterns
 import Lax185574.ForbiddenPhiPsiPatterns
 import Lax185574.GaifmanGraph

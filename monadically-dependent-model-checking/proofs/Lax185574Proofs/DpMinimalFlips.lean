@@ -15,7 +15,7 @@ namespace Lax185574Proofs.DpMinimalFlips
 open FirstOrder FirstOrder.Language
 open Lax185574.Graphs Lax185574.PhiPsiPatterns Lax185574.DpMinimality
 open Lax185574.AtomicTypes Lax185574.Partitions Lax185574.Flips Lax185574.DefinableFlips
-open Lax185574.DpMinimalInterpretations Lax185574.FlipsMonadicallyDependent
+open Lax185574.DpMinimalInterpretations
 open Lax185574Proofs.FlipBasics
 
 universe u

@@ -1,14 +1,13 @@
+import Lax185574.DpMinimality
 import Lax185574.PhiPatterns
-import Lax185574.MonadicDependence
 
 /-!
 ---
-title: Monadically dependent classes exclude large φ-patterns
+title: Dp-minimal classes exclude large φ-patterns
 type: corollary
 ---
-For every monadically dependent graph class 𝒞 and formula φ(x̄, z),
-there is some t ∈ ℕ such that no graph G ∈ 𝒞 contains a φ-pattern of
-order t × t.
+For every dp-minimal graph class 𝒞 and formula φ(x̄, z), there is some
+t ∈ ℕ such that no graph G ∈ 𝒞 contains a φ-pattern of order t × t.
 
 # Formalization notes
 
@@ -24,12 +23,12 @@ free variables as in `PhiPsiPatterns`.
 namespace Lax185574.ForbiddenPhiPatterns
 
 open FirstOrder FirstOrder.Language
-open Lax185574.Graphs Lax185574.MonadicDependence Lax185574.PhiPatterns
+open Lax185574.Graphs Lax185574.DpMinimality Lax185574.PhiPatterns
 
-/-- **Forbidden `φ`-patterns.** No graph of a monadically dependent
-class contains a `φ`-pattern of order `t × t`, for some `t` depending on
-the class and `φ`. -/
-axiom forbidden_phi_patterns (C : GraphClass) (hC : MonadicallyDependent C)
+/-- **Forbidden `φ`-patterns.** No graph of a dp-minimal class contains
+a `φ`-pattern of order `t × t`, for some `t` depending on the class and
+`φ`. -/
+axiom forbidden_phi_patterns (C : GraphClass) (hC : DpMinimal C)
     {p : ℕ} (φ : Language.graph.Formula (Fin p ⊕ Fin 1)) :
     ∃ t : ℕ, ∀ G ∈ C, ¬ HasPhiPattern G.toSimpleGraph φ t t
 
