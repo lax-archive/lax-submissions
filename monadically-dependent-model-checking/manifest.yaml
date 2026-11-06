@@ -16,15 +16,17 @@ bibEntries:
     @misc{DreierMahlmannTorunczyk2026,
       author = {Dreier, Jan and M{\"a}hlmann, Nikolas and Toru{\'n}czyk, Szymon},
       title  = {First-Order Model Checking on Monadically Dependent Graph Classes},
-      note   = {To appear in arXiv},
-      year   = {2026}
+      year   = {2026},
+      eprint = {2611.08143},
+      archivePrefix = {arXiv}
     }
   - |
     @misc{DreierMahlmannPilipczukTorunczyk2026,
       author = {Dreier, Jan and M{\"a}hlmann, Nikolas and Pilipczuk, Micha{\l} and Toru{\'n}czyk, Szymon},
       title  = {Monadically Dependent Graph Classes Have Almost Bounded Merge-Width},
-      note   = {To appear in arXiv},
-      year   = {2026}
+      year   = {2026},
+      eprint = {2611.06804},
+      archivePrefix = {arXiv}
     }
 paper:
   folder: paper
