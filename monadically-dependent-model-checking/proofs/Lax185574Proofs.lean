@@ -142,6 +142,7 @@ import Lax185574Proofs.DefinableToTypes
 import Lax185574Proofs.DistanceFormulaRank
 import Lax185574Proofs.DistanceFormulas
 import Lax185574Proofs.DistanceTranslation
+import Lax185574Proofs.DpMinimalPatterns
 import Lax185574Proofs.EncodingInjectivity
 import Lax185574Proofs.EvalRam.Cell
 import Lax185574Proofs.EvalRam.Prog
@@ -397,6 +398,7 @@ import Lax185574Proofs.MC.Sizes
 import Lax185574Proofs.MergeLift
 import Lax185574Proofs.MergeToConstruction
 import Lax185574Proofs.ModelChecking
+import Lax185574Proofs.MonadicDependenceDpMinimal
 import Lax185574Proofs.NeighborhoodComplexityBound
 import Lax185574Proofs.PairRelationBalls
 import Lax185574Proofs.PairRelationDefinable
