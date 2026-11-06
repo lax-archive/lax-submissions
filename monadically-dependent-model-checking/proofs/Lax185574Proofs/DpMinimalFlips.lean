@@ -1,6 +1,6 @@
+import Lax185574.DefinableFlipFormula
 import Lax185574.DpMinimalFlips
-import Lax185574Proofs.DefinableFlipFormula
-import Lax185574Proofs.DpMinimalInterpretations
+import Lax185574.DpMinimalInterpretations
 import Lax185574Proofs.FlipBasics
 
 /-!
@@ -148,8 +148,8 @@ theorem exists_bound_flipOver (C : GraphClass) (hC : DpMinimal C) {s p p' : ℕ}
     (R : (Fin s → PairType) → (Fin s → PairType) → Prop) (hR : ∀ P Q, R P Q → R Q P) :
     ∃ t : ℕ, ∀ G ∈ C, ∀ q : Fin s → Fin G.n,
       ¬ HasCleanPattern (flipOver G.toSimpleGraph q R) φ ψ t t := by
-  obtain ⟨α, -, hα⟩ := Lax185574Proofs.DefinableFlipFormula.exists_isQF_flipOver_formula.{0} s R hR
-  obtain ⟨t, ht⟩ := Lax185574Proofs.DpMinimalInterpretations.dpMinimal_interpretationClass
+  obtain ⟨α, -, hα⟩ := Lax185574.DefinableFlipFormula.exists_isQF_flipOver_formula.{0} s R hR
+  obtain ⟨t, ht⟩ := Lax185574.DpMinimalInterpretations.dpMinimal_interpretationClass
     C hC α φ ψ
   refine ⟨t, fun G hG q h => ?_⟩
   rw [← interpretedGraph_eq_flipOver R α G.toSimpleGraph q (hα _ _ q)] at h
