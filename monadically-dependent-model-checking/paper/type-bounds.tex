@@ -1,6 +1,6 @@
 
 \section{Number of types over a set of parameters}\label{sec:types-over-sets}
-In this section we prove \Cref{thm:type-bound}, which bounds the number of types of $k$-tuples over a set $U$ of parameters polynomially in $|U|$.
+In this section we prove \Cref{thm:type-bound-dp}, which bounds the number of types of $k$-tuples over a set $U$ of parameters polynomially in $|U|$. This also yields \Cref{thm:type-bound}, by \Cref{lem:mondep-dpmin}.
 
 We use a consequence of locality of first-order logic, which bounds the number of types of tuples that are far from $U$. 
 % Afterwards, we reduce the general case to this one using the Closure Theorem for Tuples.
@@ -8,15 +8,15 @@ We use a consequence of locality of first-order logic, which bounds the number o
 
 % \subsection{Type bounds}
 
-We now prove \Cref{thm:type-bound} by combining \Cref{lem:sep-types-tuple} with the Closure Theorem for Tuples (\Cref{thm:closuresTuples}).
+We now prove \Cref{thm:type-bound-dp} by combining \Cref{lem:sep-types-tuple} with the Closure Theorem for Tuples (\Cref{thm:closuresTuples}).
 
 
 
-% lax begin Lax185574.TypeBound
-{\typeboundgeneraltrue\thmtypes*}
+% lax begin Lax185574.DpMinimalTypeBound
+{\typeboundgeneraltrue\dpmintypes*}
 % lax end
 
-% lax begin Lax185574Proofs.TypeBound.typeCountOver_le
+% lax begin Lax185574Proofs.DpMinimalTypeBound.typeCountOver_le
 \begin{proof}
     Fix $G\in\CC$, its expansion $G^+$ by $c$ unary predicates, and a finite set $U\subseteq V(G)$.
     Let $r=r(q)$ and $T$ be given by \Cref{lem:sep-types-tuple}, and put $\overline{U}\coloneqq V(G)\setminus U$.

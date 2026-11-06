@@ -10,14 +10,21 @@ Everywhere else in the paper, graphs are assumed to be finite.
 % lax end
 
 
-We prove a stronger statement, which replaces the assumption of monadic dependence by the following  notion, which is a priori weaker.
+We prove a stronger statement, which replaces the assumption of monadic dependence by \emph{dp-minimality}, defined in \Cref{sec:dp-min}. Dp-minimality is strictly more general than monadic dependence for classes of relational structures, but turns out to be equivalent to monadic dependence for classes of graphs, as follows from our proof.
+
+
+
+
+
+\section{Dp-minimality}\label{sec:dp-min}
+We introduce a notion from model theory, originating in Shelah's classification theory.\sz{citation}
 
 % lax begin Lax185574.DpMinimality
-Fix two formulas $\phi(\bar x,z),\psi(\bar y,z)$ and a graph $G$.
+Fix two formulas $\phi(\bar x,z),\psi(\bar y,z)$ and a structure $G$.
 A \emph{clean $(\phi,\psi)$-pattern} of order $s\times t$ in $G$ consists of tuples 
 $\bar a_1,\ldots,\bar a_s\in V(G)^{|\bar x|}$, $\bar b_1,\ldots,\bar b_t\in V(G)^{|\bar y|}$
 and vertices $c_{i,j}$ for $i\in[s]$ and $j\in[t]$,
-such that the following hold for all $i,i'\in[s],j,j'\in[t]$:
+such that the following hold for all $i,i'\in[s],j,j'\in[t]$:\sz{figure}
 \begin{enumerate}
     \item $G\models \phi(\bar a_{i'},c_{i,j})$ if and only if $i=i'$,
     \item $G\models \psi(\bar b_{j'},c_{i,j})$ if and only if $j=j'$.
@@ -31,20 +38,35 @@ such that no structure in $\CC$ contains a clean $(\phi,\psi)$-pattern of order 
 % lax end
 
 
+
+We remark that our definition here is equivalent to the definition encountered in model theory \cite{DolichGoodrickLippel2011}, in the following sense: a class $\CC$ is dp-minimal, as defined above, if and only if its theory (the set of sentences satisfied by all structures in $\CC$) is dp-minimal, as considered in \cite{DolichGoodrickLippel2011}. This follows by a standard compactness argument.
+
+The following is well-known (see \Cref{app:patterns} for a simple proof).
+% lax begin Lax185574.MonadicDependenceDpMinimal
+\begin{restatable}{lemma}{mondepdpmin}\label{lem:mondep-dpmin}
+    Every monadically dependent class $\CC$ of structures is dp-minimal.
+\end{restatable}
+% lax end
+
+
+% lax begin Lax185574Proofs.TypeBound.typeCountOver_le
+We will prove the following result, which implies \Cref{thm:type-bound} by \Cref{lem:mondep-dpmin}.
+% lax end
+{\typeboundgeneraltrue
 % lax begin Lax185574.DpMinimalTypeBound
 \begin{restatable}{theorem}{dpmintypes}\label{thm:type-bound-dp}
 Let $\CC$ be a dp-minimal graph class and $k,q,c\in\N$.
 For every \iftypeboundgeneral(possibly infinite) \fi graph $G \in \CC$, expansion $G^+$ of $G$ by $c$ unary predicates, and \iftypeboundgeneral finite \fi subset $U \subseteq V(G)$,
-\begin{align}\label{eq:type-bound-dp}
+\begin{align*}\label{eq:type-bound-dp}
     \left|\Types^{G^+}_{k,q}(V(G)/U)\right| \leq O_{\CC,q,k,c}(1)\cdot \poly_{\CC,q,k}(|U|).
-\end{align}
-    
-
+\end{align*}
 \end{restatable}
 % lax end
+}
 
-It is well-known and easy to see that monadic dependence implies dp-minimality (see \Cref{lem:mondep-dpmin}). Thus, \Cref{thm:type-bound-dp} implies \Cref{thm:type-bound}.
-    For general classes of structures, however, dp-minimality is a strictly weaker assumption than monadic dependence\footnote{For example, $(\mathbb Z,+)$ is dp-minimal \cite[paragraph before Proposition 6.6]{ADHMS2016} but not monadically dependent:
+
+% It is well-known that monadic dependence implies dp-minimality (see \Cref{lem:mondep-dpmin} for a proof). Thus, \Cref{thm:type-bound-dp} implies \Cref{thm:type-bound}.
+    For general classes of structures, dp-minimality is a strictly weaker assumption than monadic dependence\footnote{For example, $(\mathbb Z,+)$ is dp-minimal \cite[paragraph before Proposition 6.6]{ADHMS2016} but not monadically dependent:
     For $B=\setof{2^i}{i\in\mathbb N}$, the function $\set{u,v}\mapsto u+v$ defines an injection $f\from {B\choose 2} \to \mathbb Z$.
     Let $E\subset {B\choose 2}$ be arbitrary.
     In the unary expansion of $(\mathbb Z,+)$ with unary predicate $U$ marking $f(E)$,
@@ -58,39 +80,54 @@ It is well-known and easy to see that monadic dependence implies dp-minimality (
     \begin{enumerate}
         \item\label{it:mon-dep} $\CC$ is monadically dependent,
         \item\label{it:dp-min} $\CC$ is dp-minimal.
-%         \item\label{it:type-bound} 
-% For every $k,q,c\in\N$ and \fi graph $G \in \CC$, expansion $G^+$ of $G$ by $c$ unary predicates, and \iftypeboundgeneral finite \fi subset $U \subseteq V(G)$,
-% \[
-%     \left|\Types^{G^+}_{k,q}(V(G)/U)\right| \leq O_{\CC,q,k,c}(1)\cdot \poly_{\CC,q,k}(|U|).
-% \]
+        \item\label{it:type-bound} 
+For every $k,q,c\in\N$ and \fi graph $G \in \CC$, expansion $G^+$ of $G$ by $c$ unary predicates, and \iftypeboundgeneral finite \fi subset $U \subseteq V(G)$,
+\[
+    \left|\Types^{G^+}_{k,q}(V(G)/U)\right| \leq O_{\CC,q,k,c}(1)\cdot \poly_{\CC,q,k}(|U|).
+\]
     \end{enumerate}
 \end{corollary}
 }
 % lax end
-We first prove the corollary.
-% lax begin Lax185574Proofs.DpMinimalEquivalence.monadicallyDependent_iff_dpMinimal
-\begin{proof}
-    \eqref{it:mon-dep}$\rightarrow$\eqref{it:dp-min} is an easy and well-known fact, proven in \Cref{lem:mondep-dpmin}.
-    We prove the converse implication, 
-    \eqref{it:dp-min}$\rightarrow$\eqref{it:mon-dep}.
+\Cref{cor:dp-equivalence} extends to classes of structures over a finite\sz{necessary?} signature consisting of binary relations, via a standard encoding of such structures as colored graphs (see \cite[full version, Section 19]{flip-breakability}).
 
-    Let $\CC$ be a dp-minimal graph class; then $\CC$ satisfies the bound \eqref{eq:type-bound-dp} by \Cref{thm:type-bound-dp}.
-    We argue that this bound implies monadic dependence.
-    Indeed, let $c\in\N$, and let $\phi(x,y)$ be any formula in the signature of $c$-colored graphs, and let $q$ denote its quantifier rank. Let $N$ be a number and $H$ be the bipartite graph with parts $A=\{a_1,\ldots,a_N\}$ and $B=\setof{b_I}{I\subset [N]}$, where $a_i$ is adjacent to $b_I$ if and only if $i\in I$. Suppose there is some $G\in\CC$ and $c$-coloring $G^+$ of $G$, such that $H$ is an induced subgraph of $\phi(G^+)$, the graph with vertex set $V(G)$ and edge set $\setof{uv\in \binom{V(G)}{2}}{G^+\models \phi(u,v)\lor \phi(v,u)}$. Then $\tp^q(b_I/A)$ is different for every $I\subset [N]$,
+We first prove the corollary, assuming \Cref{thm:type-bound-dp}.
+% lax begin Lax185574Proofs.DpMinimalEquivalence.tfae_monadicallyDependent_dpMinimal_hasPolynomialTypes
+\begin{proof}
+    \eqref{it:mon-dep}$\rightarrow$\eqref{it:dp-min} is proven in \Cref{lem:mondep-dpmin}.    
+    \eqref{it:dp-min}$\rightarrow$\eqref{it:type-bound} is by \Cref{thm:type-bound-dp}.
+    We prove \eqref{it:type-bound}$\rightarrow$\eqref{it:mon-dep}.
+
+    Let $c\in\N$, and let $\phi(x,y)$ be any formula in the signature of $c$-colored graphs, and let $q$ denote its quantifier rank. Let $N$ be a number and $H$ be the bipartite graph with parts $A=\{a_1,\ldots,a_N\}$ and $B=\setof{b_I}{I\subset [N]}$, where $a_i$ is adjacent to $b_I$ if and only if $i\in I$. Suppose there is some $G\in\CC$ and $c$-coloring $G^+$ of $G$, such that $H$ is an induced subgraph of $\phi(G^+)$, the graph with vertex set $V(G)$ and edge set $\setof{uv\in \binom{V(G)}{2}}{G^+\models \phi(u,v)\lor \phi(v,u)}$. Then $\tp^q(b_I/A)$ is different for every $I\subset [N]$,
 so the number of types of quantifier rank $q$ over $A$ is at least $2^N$.
-On the other hand, the bound in \Cref{thm:type-bound-dp} is at most polynomial in $|A|=N$, which implies that $N$ is bounded by a constant depending on $\CC$ and $\phi$.
-Hence, not arbitrary graphs can be encoded in~$\CC$ by~$\phi$. 
+On the other hand, the bound in \eqref{it:type-bound} is at most polynomial in $|A|=N$, which implies that $N$ is bounded by a constant (depending on $\CC$ and $\phi$).
+Hence, not arbitrary graphs can be encoded in~$c$-colored graphs from $\CC$ by~$\phi$. 
 \end{proof}
 % lax end
-\Cref{cor:dp-equivalence} extends to classes of structures over a finite\sz{necessary?} signature consisting of binary relations, via a standard encoding of such structures as graphs (see \cite[full version, Section 19]{flip-breakability}).
 
-% lax begin Lax185574Proofs.DpMinimalTypeBound.typeCountOver_le
-The rest of this part proves \Cref{thm:type-bound-dp}.
-We state the intermediate results for monadically dependent classes, the setting of our main theorem.
-Their proofs use this assumption only through \Cref{lem:phi-psi-patterns} and through the fact that the $s$-definable flips of graphs from $\CC$ have bounded VC-dimension.
-Both hold for every dp-minimal class, by \Cref{lem:dpmin-phipsi-patterns,obs:dpmin-vc,cor:dpmin-flips}.
-Hence, the same proof gives \Cref{thm:type-bound-dp}.
+
+We will use two two simple facts regarding dp-minimal classes, which are proven in \Cref{app:patterns}.
+
+
+
+
+% lax begin Lax185574.DpMinimalVC
+\begin{restatable}{lemma}{obsdpvc}\label{obs:dp-vc}
+    Let $\CC$ be a dp-minimal graph class. Then $\CC$ has bounded VC-dimension.
+\end{restatable}
 % lax end
+% lax begin Lax185574.DpMinimalInterpretations
+\begin{restatable}{lemma}{obsdpinterp}\label{obs:dp-interp}
+    Let $\CC$ be a dp-minimal graph class and $\alpha(x_1,x_2;\bar y)$ be a formula and $\ell=|\bar y|$.
+    For $G\in\CC$ and $\bar w\in V(G)^{\ell}$, let $\alpha(G,\bar w)$ denote the graph with vertex set $V(G)$ and edges $uv$ such that $u\neq v$ and $G\models\alpha(u,v;\bar w)\lor \alpha(v,u;\bar w)$.
+    Then the graph class $\setof{\alpha(G,\bar w)}{G\in\CC, \bar w\in V(G)^{\ell}}$ is dp-minimal.
+\end{restatable}
+% lax end
+
+
+\noindent The rest of \Cref{part:types} is devoted to proving \Cref{thm:type-bound-dp}, which implies \Cref{thm:type-bound} by \Cref{lem:mondep-dpmin}.
+
+
 
 % We make two remarks, which are of independent interest in the context of model theory.
 % \begin{remark}\label{rem:converse}
@@ -121,7 +158,7 @@ The goal of this section is to prove the following theorem, which can be seen as
 
 % lax begin Lax185574.ClosureTheorem
 \begin{restatable}[Closure Theorem]{theorem}{thmClosures}\label{thm:closures}
-For every monadically dependent graph class $\CC$ and radius $r\in\N$ there are some $c,s\in\N$ with the following property.
+For every dp-minimal graph class $\CC$ and radius $r\in\N$ there are some $c,s\in\N$ with the following property.
 
 \smallskip\noindent
 For every $G \in \CC$ and finite set $A \subseteq V(G)$ there is a set $A^*\subseteq V(G)$ of size $O_{\CC,r}(|A|^c)$ such that for every vertex $v \notin A$ there is a set $S(v)\subseteq A^*$ of size at most $s$
@@ -140,7 +177,7 @@ Definability can easily be restored using the methods from~\cite{DBLP:conf/lics/
 
 % lax begin Lax185574.ClosureTheoremTuples
 \begin{restatable}[Closure Theorem for Tuples]{theorem}{thmClosuresTuples}\label{thm:closuresTuples}
-For every monadically dependent graph class $\CC$, radius $r\in\N$, and tuple size $k \in \N$, there are some $c,s\in\N$ with the following property.
+For every dp-minimal graph class $\CC$, radius $r\in\N$, and tuple size $k \in \N$, there are some $c,s\in\N$ with the following property.
 
 \smallskip\noindent
 For every $G \in \CC$ and finite set $A \subseteq V(G)$ there is a set $\HH$ of $O_{\CC,r,k}(|A|^c)$ many $s$-flips of $G$ such that for every tuple $\bar v \in (V(G) \setminus A)^k$ there is a flip $H \in \HH$ with
@@ -151,7 +188,6 @@ For every $G \in \CC$ and finite set $A \subseteq V(G)$ there is a set $\HH$ of 
 % lax end
 
 \subsection{Preliminaries}
-
 
 % lax begin Lax185574.DefinableFlips
 \paragraph*{Definable flips.}
@@ -183,15 +219,24 @@ Note that an $s$-definable flip is also $s'$-definable for every $s'\ge s$.
 % lax end
 % lax end
 
-% lax begin Lax185574.FlipsMonadicallyDependent
-% lax begin Lax185574Proofs.FlipsMonadicallyDependent.monadicallyDependent_definableFlipClass
-The following is an easy consequence of the characterization of monadic dependence through transductions~(see, e.g., \cite{flip-breakability}). It also holds in the greater generality of $s$-flips (rather than $s$-definable flips).
-% lax end
-\begin{fact}\label{obs:flips-mon-dep}
-    Let $\CC$ be a monadically dependent graph class and $s\in\N$.
+% lax begin Lax185574.DpMinimalFlips
+The following is an easy consequence of \Cref{obs:dp-interp}.
+\begin{fact}\label{obs:flips-dp-min}
+    Let $\CC$ be a dp-minimal graph class and $s\in\N$.
     The class 
-    consisting of all $s$-definable flips of graphs from $\CC$ is monadically dependent.
+    consisting of all $s$-definable flips of graphs from $\CC$ is dp-minimal.
 \end{fact}
+% lax end
+% lax begin Lax185574Proofs.DpMinimalFlips.dpMinimal_definableFlipClass
+\begin{proof}
+    Fix $s\in\N$ and formulas $\phi(\bar x,z),\psi(\bar y,z)$.
+    For each symmetric relation $R\subset \Pi^s\times \Pi^s$ %, in the notation of \Cref{obs:sim-def-flip}, 
+    consider the formula
+    $E_{\oplus R}(x,y;\bar w)$ as in \Cref{obs:sim-def-flip}.
+    Apply the \Cref{obs:dp-interp} to the formula $E_{\oplus R}(x,y;\bar w)$, obtaining a bound $c_R$ on the order of clean $(\phi,\psi)$-patterns in graphs $G\oplus (\bar p,R)$, for $G\in\CC$ and $\bar p\in V(G)^s$.
+Taking the maximum of the bounds $c_R$, over all binary relations $R$ as above,
+we get a bound $c$ on the order of clean $(\phi,\psi)$-patterns in $s$-definable flips of graphs $G\in\CC$.
+\end{proof}
 % lax end
 
 
@@ -213,7 +258,7 @@ We use two lemmas. The first enlarges a given set $A$ to a set $A^*$ such that b
 
 % lax begin Lax185574.BallTypes
 \begin{restatable}{lemma}{lemBallTypes}\label{lem:ball-types}
-    For every monadically dependent graph class $\CC$ and $r,s\in\N$, there are some $k,t\in\N$ with the following property.
+    For every dp-minimal graph class $\CC$ and $r,s\in\N$, there are some $k,t\in\N$ with the following property.
     For every $G\in\CC$ and finite set $A\subseteq V(G)$, there is $A^*\supseteq A$ of size $O_{\CC,r,s}(|A|^k)$ such that, for every $s$-definable flip $H$ of $G$ and every vertex $v$,
     \[
         \Ball_r^H(v)\cap A^*=\emptyset
@@ -258,7 +303,7 @@ This terminology extends from sets to vertices as expected.
 \begin{proof}[Proof of \Cref{thm:closures}]
     We induct on $r$, with $A^*\coloneqq A$, $S(v)\coloneqq \emptyset$, and $H\coloneqq G$ proving the base case $r=0$. 
     Suppose the theorem holds at radius $r$, with parameter bound $s$. 
-    By \Cref{obs:flips-mon-dep}, and since monadically dependent classes have bounded VC-dimension (\Cref{obs:md-vc}), it follows that
+    By \Cref{obs:flips-dp-min}, and since dp-minimal classes have bounded VC-dimension (\Cref{obs:dp-vc}), it follows that
     every $s$-definable flip of a graph in $\CC$ has VC-dimension at most some $d\leq O_{\CC,r}(1)$.
 
     Fix $G\in\CC$ and a finite set $A\subseteq V(G)$. Assume $A$ is nonempty, as otherwise the statement is trivial.
