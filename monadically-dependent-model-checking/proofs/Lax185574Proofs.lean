@@ -142,7 +142,10 @@ import Lax185574Proofs.DefinableToTypes
 import Lax185574Proofs.DistanceFormulaRank
 import Lax185574Proofs.DistanceFormulas
 import Lax185574Proofs.DistanceTranslation
+import Lax185574Proofs.DpMinimalFlips
+import Lax185574Proofs.DpMinimalInterpretations
 import Lax185574Proofs.DpMinimalPatterns
+import Lax185574Proofs.DpMinimalVC
 import Lax185574Proofs.EncodingInjectivity
 import Lax185574Proofs.EvalRam.Cell
 import Lax185574Proofs.EvalRam.Prog
