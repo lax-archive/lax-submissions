@@ -23,15 +23,24 @@ open Lax185574Proofs.BallTypesHelpers Lax185574Proofs.FlipDistanceFormula
 /-- Relations on atomic types over `s`-tuples. -/
 abbrev Rel (s : ℕ) : Type := (Fin s → PairType) → (Fin s → PairType) → Prop
 
-/-- The statement for the graph classes of the archive and their
-monadic dependence. -/
-theorem ball_types_old (C : GraphClass) (hC : MonadicallyDependent C) (r s : ℕ) :
-    ∃ k t a : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
-      ∀ A : Finset (Fin n), ∃ Astar : Finset (Fin n), A ⊆ Astar ∧
-        Astar.card ≤ a * (A.card + 1) ^ k ∧
-        ∀ H : SimpleGraph (Fin n), IsDefinableFlip G s H → ∀ v : Fin n,
-          Disjoint (graphBall H r {v}) (Astar : Set (Fin n)) →
-            atomicTypeCount H (graphBall H r {v}) (A : Set (Fin n)) ≤ t := by
+/-- Every formula `φ` has a bound on the order of the `φ`-patterns in
+the graphs of `C`. -/
+def ForbidsPhiPatterns (C : GraphClass) : Prop :=
+  ∀ {p : ℕ} (φ : Language.graph.Formula (Fin p ⊕ Fin 1)),
+    ∃ t : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G → ¬ HasPhiPattern G φ t t
+
+/-- The ball-types statement for radius `r` and parameter bound `s`. -/
+def BallTypesAt (C : GraphClass) (r s : ℕ) : Prop :=
+  ∃ k t a : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
+    ∀ A : Finset (Fin n), ∃ Astar : Finset (Fin n), A ⊆ Astar ∧
+      Astar.card ≤ a * (A.card + 1) ^ k ∧
+      ∀ H : SimpleGraph (Fin n), IsDefinableFlip G s H → ∀ v : Fin n,
+        Disjoint (graphBall H r {v}) (Astar : Set (Fin n)) →
+          atomicTypeCount H (graphBall H r {v}) (A : Set (Fin n)) ≤ t
+
+/-- The ball-types statement for a class with forbidden `φ`-patterns. -/
+theorem ball_types_of_forbidsPhiPatterns (C : GraphClass) (hC : ForbidsPhiPatterns C)
+    (r s : ℕ) : BallTypesAt C r s := by
   classical
   -- edge formulas of definable flips
   have hEex : ∀ R : Rel s, ∃ E : Language.graph.Formula (Fin 2 ⊕ Fin s),
@@ -46,7 +55,7 @@ theorem ball_types_old (C : GraphClass) (hC : MonadicallyDependent C) (r s : ℕ
     · exact ⟨⊥, fun h => absurd h hR⟩
   choose Ef hEf using hEex
   let φR : Rel s → Language.graph.Formula (Fin (s + 1) ⊕ Fin 1) := fun R => distFormula r (Ef R)
-  have hforb := fun R => Lax185574Proofs.Shim.ForbiddenPhiPatterns.forbidden_phi_patterns C hC (φR R)
+  have hforb := fun R => hC (φR R)
   choose tR htR using hforb
   have : Fintype (Rel s) := Fintype.ofFinite _
   let kk := Finset.univ.sup tR + 1
@@ -205,6 +214,13 @@ theorem ball_types_old (C : GraphClass) (hC : MonadicallyDependent C) (r s : ℕ
       rw [holds_edgeOrNot]
       exact hN2 j j' hlt
 
+/-- The statement for the graph classes of the archive and their
+monadic dependence. -/
+theorem ball_types_old (C : GraphClass) (hC : MonadicallyDependent C) (r s : ℕ) :
+    BallTypesAt C r s :=
+  ball_types_of_forbidsPhiPatterns C
+    (fun φ => Lax185574Proofs.Shim.ForbiddenPhiPatterns.forbidden_phi_patterns C hC φ) r s
+
 end Lax185574Proofs.BallTypes
 
 namespace Lax185574Proofs.BallTypes
@@ -233,9 +249,9 @@ satisfy `N(wⱼ, uⱼ)` and `¬N(wⱼ', uⱼ)` for `j < j'`. Then `p̄ v` and `�
 extend the chosen pattern with base `w̄` by a row, as `ū` lies in `B`
 and the old grid points do not, contradicting maximality.
 
-The argument is carried out for the graph classes of the archive and
-their monadic dependence, and transferred to the graph classes used
-here.
+The argument is carried out for any graph class of the archive that
+excludes `φ`-patterns of bounded order, which a monadically dependent
+class does, and transferred to the graph classes used here.
 -/
 theorem ball_types (C : GraphClass) (hC : MonadicallyDependent C) (r s : ℕ) :
     ∃ k t a : ℕ, ∀ G ∈ C, ∀ A : Finset (Fin G.n), ∃ Astar ⊇ A,

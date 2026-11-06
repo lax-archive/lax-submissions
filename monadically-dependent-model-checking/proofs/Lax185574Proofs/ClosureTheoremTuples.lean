@@ -4,6 +4,7 @@ import Lax185574.FlipMetricMonotone
 import Lax185574.PartitionMetricConversion
 import Lax185574Proofs.AtomicPartitionCount
 import Lax185574Proofs.ClosureHelpers
+import Lax185574Proofs.ClosureTheorem
 import Lax185574Proofs.Interface.Shim.ClosureTheorem
 
 namespace Lax185574Proofs.ClosureTheoremTuples
@@ -14,19 +15,21 @@ open Lax185574.Flips Lax185574.GraphBalls Lax185574.Partitions Lax185574.Gaifman
 theorem mul_two_pow_mono {a b : ℕ} (h : a ≤ b) : a * 2 ^ a ≤ b * 2 ^ b :=
   Nat.mul_le_mul h (Nat.pow_le_pow_right (by omega) h)
 
-/-- The statement for the graph classes of the archive and their
-monadic dependence. -/
-theorem closure_theorem_tuples_old (C : GraphClass) (hC : MonadicallyDependent C)
-    (r k : ℕ) :
-    ∃ c s a : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
-      ∀ A : Finset (Fin n), ∃ family : Finset (SimpleGraph (Fin n)),
-        family.card ≤ a * (A.card + 1) ^ c ∧
-        (∀ H ∈ family, ∃ P : Setoid (Fin n),
-          Nat.card (Quotient P) ≤ s ∧ IsFlip G P H) ∧
-        ∀ v : Fin k → Fin n, (∀ i, v i ∉ A) →
-          ∃ H ∈ family, Disjoint (graphBall H r (Set.range v)) (A : Set (Fin n)) := by
+/-- The closure theorem for tuples at radius `r` and tuple length `k`. -/
+def ClosureTuplesAt (C : GraphClass) (r k : ℕ) : Prop :=
+  ∃ c s a : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
+    ∀ A : Finset (Fin n), ∃ family : Finset (SimpleGraph (Fin n)),
+      family.card ≤ a * (A.card + 1) ^ c ∧
+      (∀ H ∈ family, ∃ P : Setoid (Fin n),
+        Nat.card (Quotient P) ≤ s ∧ IsFlip G P H) ∧
+      ∀ v : Fin k → Fin n, (∀ i, v i ∉ A) →
+        ∃ H ∈ family, Disjoint (graphBall H r (Set.range v)) (A : Set (Fin n))
+
+/-- The closure theorem for tuples, from the closure theorem on `C`. -/
+theorem closure_theorem_tuples_of_closure (C : GraphClass)
+    (hC : ∀ r, ClosureTheorem.ClosureAt C r) (r k : ℕ) : ClosureTuplesAt C r k := by
   classical
-  obtain ⟨c₀, s₀, a₀, hcl⟩ := Lax185574Proofs.Shim.ClosureTheorem.closure_theorem C hC (6 * r)
+  obtain ⟨c₀, s₀, a₀, hcl⟩ := hC (6 * r)
   let m := k * s₀
   let p := 3 ^ m
   refine ⟨c₀ * m, p * 2 ^ p, (a₀ + 1) ^ m, fun n G hG A => ?_⟩
@@ -74,6 +77,13 @@ theorem closure_theorem_tuples_old (C : GraphClass) (hC : MonadicallyDependent C
     have h2 := Lax185574.FlipMetricMonotone.flipBall_subset_of_le G hle (6 * r) (v i) h1
     exact Set.disjoint_left.mp (hFdisj i) ⟨v i, rfl, h2 (F i) (hFflip i)⟩ hxA
 
+/-- The statement for the graph classes of the archive and their
+monadic dependence. -/
+theorem closure_theorem_tuples_old (C : GraphClass) (hC : MonadicallyDependent C)
+    (r k : ℕ) : ClosureTuplesAt C r k :=
+  closure_theorem_tuples_of_closure C
+    (fun r => Lax185574Proofs.Shim.ClosureTheorem.closure_theorem C hC r) r k
+
 end Lax185574Proofs.ClosureTheoremTuples
 
 namespace Lax185574Proofs.ClosureTheoremTuples
@@ -96,9 +106,9 @@ distance in the `S(vᵢ)`-flip from the closure theorem, which exceeds `6r`.
 So `H_T` separates `v̄` from `A` at distance more than `r`. There are at
 most `(|A*| + 1)^{k s₀}` sets `T`.
 
-The argument is carried out for the graph classes of the archive and
-their monadic dependence, and transferred to the graph classes used
-here.
+The argument is carried out for any graph class of the archive with the
+closure theorem, which holds for a monadically dependent class, and
+transferred to the graph classes used here.
 -/
 theorem closure_theorem_tuples (C : GraphClass) (hC : MonadicallyDependent C)
     (r k : ℕ) :

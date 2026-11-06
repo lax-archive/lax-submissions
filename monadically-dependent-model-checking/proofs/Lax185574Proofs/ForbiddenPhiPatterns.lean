@@ -23,20 +23,31 @@ theorem hasPattern_mono {V : Type u} {G : SimpleGraph V} {p p' : ℕ}
   exact ⟨⟨h1, fun i' hi' => h2 _ (hi')⟩,
     ⟨h3, fun j' hj' => h4 _ (hj')⟩⟩
 
-/-- The statement for the graph classes of the archive and their
-monadic dependence. -/
-theorem forbidden_phi_patterns_old (C : GraphClass) (hC : MonadicallyDependent C)
-    {p : ℕ} (φ : Language.graph.Formula (Fin p ⊕ Fin 1)) :
+/-- Forbidden `(φ, E)`- and `(φ, ¬E)`-patterns on a class forbid
+`φ`-patterns on it. -/
+theorem forbidden_phi_patterns_of_phiPsi (C : GraphClass) {p : ℕ}
+    (φ : Language.graph.Formula (Fin p ⊕ Fin 1))
+    (hE : ∃ t : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
+      ¬ HasPattern G φ edgeFormula t t)
+    (hN : ∃ t : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
+      ¬ HasPattern G φ edgeFormula.not t t) :
     ∃ t : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G → ¬ HasPhiPattern G φ t t := by
-  obtain ⟨t₁, h₁⟩ :=
-    Lax185574Proofs.Shim.ForbiddenPhiPsiPatterns.forbidden_phiPsi_patterns C hC φ edgeFormula
-  obtain ⟨t₂, h₂⟩ :=
-    Lax185574Proofs.Shim.ForbiddenPhiPsiPatterns.forbidden_phiPsi_patterns C hC φ
-      edgeFormula.not
+  obtain ⟨t₁, h₁⟩ := hE
+  obtain ⟨t₂, h₂⟩ := hN
   refine ⟨max t₁ t₂, fun n G hG h => ?_⟩
   rcases h with h | h
   · exact h₁ n G hG (hasPattern_mono (le_max_left _ _) (le_max_left _ _) h)
   · exact h₂ n G hG (hasPattern_mono (le_max_right _ _) (le_max_right _ _) h)
+
+/-- The statement for the graph classes of the archive and their
+monadic dependence. -/
+theorem forbidden_phi_patterns_old (C : GraphClass) (hC : MonadicallyDependent C)
+    {p : ℕ} (φ : Language.graph.Formula (Fin p ⊕ Fin 1)) :
+    ∃ t : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G → ¬ HasPhiPattern G φ t t :=
+  forbidden_phi_patterns_of_phiPsi C φ
+    (Lax185574Proofs.Shim.ForbiddenPhiPsiPatterns.forbidden_phiPsi_patterns C hC φ edgeFormula)
+    (Lax185574Proofs.Shim.ForbiddenPhiPsiPatterns.forbidden_phiPsi_patterns C hC φ
+      edgeFormula.not)
 
 end Lax185574Proofs.ForbiddenPhiPatterns
 
