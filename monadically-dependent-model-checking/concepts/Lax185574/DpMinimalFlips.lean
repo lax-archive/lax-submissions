@@ -4,7 +4,7 @@ import Lax185574.DpMinimality
 /-!
 ---
 title: Definable flips preserve dp-minimality
-type: corollary
+type: fact
 ---
 Let 𝒞 be a dp-minimal graph class and s ∈ ℕ. The class consisting of all
 s-definable flips of graphs from 𝒞 is dp-minimal.

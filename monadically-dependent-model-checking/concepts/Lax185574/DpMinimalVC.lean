@@ -4,7 +4,7 @@ import Lax185574.VCDimension
 /-!
 ---
 title: Bounded VC-dimension of dp-minimal classes
-type: observation
+type: lemma
 ---
 Every dp-minimal graph class has bounded VC-dimension: there is some
 d ∈ ℕ such that every graph G ∈ 𝒞 has VC-dimension at most d.

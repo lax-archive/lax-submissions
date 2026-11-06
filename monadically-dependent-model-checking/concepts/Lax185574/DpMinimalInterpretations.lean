@@ -3,7 +3,7 @@ import Lax185574.DpMinimality
 /-!
 ---
 title: Dp-minimality is preserved under interpretations with parameters
-type: observation
+type: lemma
 ---
 Let 𝒞 be a dp-minimal graph class, let α(x₁, x₂; ȳ) be a formula and let
 ℓ = |ȳ|. For G ∈ 𝒞 and ū ∈ V(G)^ℓ, let α(G, ū) denote the graph with
