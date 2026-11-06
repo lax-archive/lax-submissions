@@ -12,6 +12,7 @@ Everywhere else in the paper, graphs are assumed to be finite.
 
 We prove a stronger statement, which replaces the assumption of monadic dependence by the following  notion, which is a priori weaker.
 
+% lax begin Lax185574.DpMinimality
 Fix two formulas $\phi(\bar x,z),\psi(\bar y,z)$ and a graph $G$.
 A \emph{clean $(\phi,\psi)$-pattern} of order $s\times t$ in $G$ consists of tuples 
 $\bar a_1,\ldots,\bar a_s\in V(G)^{|\bar x|}$, $\bar b_1,\ldots,\bar b_t\in V(G)^{|\bar y|}$
@@ -27,8 +28,10 @@ We say that a class $\CC$ of structures is \emph{dp-minimal}
 if for every two formulas $\phi(\bar x,z),\psi(\bar y,z)$ there is some $t\in\N$ 
 such that no structure in $\CC$ contains a clean $(\phi,\psi)$-pattern of order $t\times t$.
 \end{definition}
+% lax end
 
 
+% lax begin Lax185574.DpMinimalTypeBound
 \begin{restatable}{theorem}{dpmintypes}\label{thm:type-bound-dp}
 Let $\CC$ be a dp-minimal graph class and $k,q,c\in\N$.
 For every \iftypeboundgeneral(possibly infinite) \fi graph $G \in \CC$, expansion $G^+$ of $G$ by $c$ unary predicates, and \iftypeboundgeneral finite \fi subset $U \subseteq V(G)$,
@@ -38,6 +41,7 @@ For every \iftypeboundgeneral(possibly infinite) \fi graph $G \in \CC$, expansio
     
 
 \end{restatable}
+% lax end
 
 It is well-known and easy to see that monadic dependence implies dp-minimality (see \Cref{lem:mondep-dpmin}). Thus, \Cref{thm:type-bound-dp} implies \Cref{thm:type-bound}.
     For general classes of structures, however, dp-minimality is a strictly weaker assumption than monadic dependence\footnote{For example, $(\mathbb Z,+)$ is dp-minimal \cite[paragraph before Proposition 6.6]{ADHMS2016} but not monadically dependent:
@@ -46,6 +50,7 @@ It is well-known and easy to see that monadic dependence implies dp-minimality (
     In the unary expansion of $(\mathbb Z,+)$ with unary predicate $U$ marking $f(E)$,
     the formula $\phi(x,y):=U(x+y)$, restricted to $B$, defines the graph $(B,E)$. As $E$ is arbitrary and $\phi$ is fixed, $(\mathbb Z,+)$ is not monadically dependent.
     }. \Cref{thm:type-bound-dp} implies that in the setting of graphs, the two notions coincide.
+% lax begin Lax185574.DpMinimalEquivalence
 {\typeboundgeneraltrue    
 \begin{corollary}\label{cor:dp-equivalence}
     Let $\CC$ be a class of \iftypeboundgeneral(possibly infinite) graphs.
@@ -61,7 +66,9 @@ It is well-known and easy to see that monadic dependence implies dp-minimality (
     \end{enumerate}
 \end{corollary}
 }
+% lax end
 We first prove the corollary.
+% lax begin Lax185574Proofs.DpMinimalEquivalence.monadicallyDependent_iff_dpMinimal
 \begin{proof}
     \eqref{it:mon-dep}$\rightarrow$\eqref{it:dp-min} is an easy and well-known fact, proven in \Cref{lem:mondep-dpmin}.
     We prove the converse implication, 
@@ -71,10 +78,19 @@ We first prove the corollary.
     We argue that this bound implies monadic dependence.
     Indeed, let $c\in\N$, and let $\phi(x,y)$ be any formula in the signature of $c$-colored graphs, and let $q$ denote its quantifier rank. Let $N$ be a number and $H$ be the bipartite graph with parts $A=\{a_1,\ldots,a_N\}$ and $B=\setof{b_I}{I\subset [N]}$, where $a_i$ is adjacent to $b_I$ if and only if $i\in I$. Suppose there is some $G\in\CC$ and $c$-coloring $G^+$ of $G$, such that $H$ is an induced subgraph of $\phi(G^+)$, the graph with vertex set $V(G)$ and edge set $\setof{uv\in \binom{V(G)}{2}}{G^+\models \phi(u,v)\lor \phi(v,u)}$. Then $\tp^q(b_I/A)$ is different for every $I\subset [N]$,
 so the number of types of quantifier rank $q$ over $A$ is at least $2^N$.
-On the other hand, the bound in \Cref{thm:type-bound} is at most polynomial in $|A|=N$, which implies that $N$ is bounded by a constant depending on $\CC$ and $\phi$.
+On the other hand, the bound in \Cref{thm:type-bound-dp} is at most polynomial in $|A|=N$, which implies that $N$ is bounded by a constant depending on $\CC$ and $\phi$.
 Hence, not arbitrary graphs can be encoded in~$\CC$ by~$\phi$. 
 \end{proof}
+% lax end
 \Cref{cor:dp-equivalence} extends to classes of structures over a finite\sz{necessary?} signature consisting of binary relations, via a standard encoding of such structures as graphs (see \cite[full version, Section 19]{flip-breakability}).
+
+% lax begin Lax185574Proofs.DpMinimalTypeBound.typeCountOver_le
+The rest of this part proves \Cref{thm:type-bound-dp}.
+We state the intermediate results for monadically dependent classes, the setting of our main theorem.
+Their proofs use this assumption only through \Cref{lem:phi-psi-patterns} and through the fact that the $s$-definable flips of graphs from $\CC$ have bounded VC-dimension.
+Both hold for every dp-minimal class, by \Cref{lem:dpmin-phipsi-patterns,obs:dpmin-vc,cor:dpmin-flips}.
+Hence, the same proof gives \Cref{thm:type-bound-dp}.
+% lax end
 
 % We make two remarks, which are of independent interest in the context of model theory.
 % \begin{remark}\label{rem:converse}

@@ -8,6 +8,7 @@ Recall the notion of $(\phi,\psi)$-patterns.
 \defphipsi*
 % lax end
 
+% lax begin Lax185574.DpMinimality
 \noindent We call a $(\phi,\psi)$-pattern \emph{clean} if the above conditions hold with $\neq$ in place of $>$ in both conditions.
 
 We define dp-minimal classes  \cite{DolichGoodrickLippel2011} as follows.
@@ -15,6 +16,7 @@ We define dp-minimal classes  \cite{DolichGoodrickLippel2011} as follows.
 A class $\CC$ of structures is \emph{dp-minimal} 
 if for every first-order formulas $\phi(\bar x,z),\psi(\bar y,z)$ in the signature of $\CC$ there is a constant $c\in\N$ such that no structure $G\in\CC$ contains a clean $(\phi,\psi)$-pattern of order $c\times c$.   \sz{remark that by compactness $\CC$ is dp-minimal iff its theory is dp-minimal in the sense of \cite{DolichGoodrickLippel2011}}
 \end{definition}
+% lax end
 
 Note that a class $\CC$ is dp-minimal according to the definition above if and only if 
 its theory (the set of all sentences satisfied by all structures in $\CC$) is dp-minimal as defined in
@@ -22,15 +24,21 @@ its theory (the set of all sentences satisfied by all structures in $\CC$) is dp
 
  \medskip
 We will prove the following two statements.
+% lax begin Lax185574.MonadicDependenceDpMinimal
 \begin{lemma}\label{lem:mondep-dpmin}
     Every monadically dependent class $\CC$ of structures is dp-minimal.
 \end{lemma}
+% lax end
 
+% lax begin Lax185574.DpMinimalPatterns
 \begin{lemma}\label{lem:dpmin-phipsi-patterns}
     Let $\CC$ be a dp-minimal class of structures, and let $\phi(\bar x,z)$ and $\psi(\bar y,z)$ be first-order formulas in the signature of $\CC$. Then there is a constant $t\in\N$ such that no structure $G\in\CC$ contains a $(\phi,\psi)$-pattern of order $t\times t$.
 \end{lemma}
+% lax end
 
+% lax begin Lax185574Proofs.ForbiddenPhiPsiPatterns.forbidden_phiPsi_patterns
 Clearly, \Cref{lem:mondep-dpmin} and \Cref{lem:dpmin-phipsi-patterns} imply \Cref{lem:phi-psi-patterns}, repeated below.
+% lax end
 % lax begin Lax185574.ForbiddenPhiPsiPatterns
 \lemphipsi*
 % lax end
@@ -40,9 +48,12 @@ We also make the following two observations:
 one states that dp-minimal graph classes have bounded VC-dimension,
 while the other one implies that they are preserved under taking $s$-definable flips, for a fixed $s\in\N$.
 
-\begin{observation}
+% lax begin Lax185574.DpMinimalVC
+\begin{observation}\label{obs:dpmin-vc}
     Let $\CC$ be a dp-minimal graph class. Then $\CC$ has bounded VC-dimension.
 \end{observation}
+% lax end
+% lax begin Lax185574Proofs.DpMinimalVC.exists_vcDim_le
 \begin{proof}
     Suppose $G\in\CC$ and let $X\subset V(G)$ be such that $\setof{N(v)\cap X} {v\in V(G)}=2^X$.
     Removing at most one element from $X$, suppose that $|X|=2n$ for some $n\in\N$, and write $X=\set{a_1,\ldots,a_n,b_1,\ldots,b_n}$.
@@ -50,20 +61,28 @@ while the other one implies that they are preserved under taking $s$-definable f
     Then $(a_i:i\in[n])$, $(b_j:j\in[n])$, $(c_{i,j}:i,j\in[n])$ form a clean
     $(\alpha,\alpha)$-pattern in $G$, for $\alpha(x,z)=E(x,z)$. As $\CC$ is dp-minimal, it follows that $n$ is bounded by a constant $c$ depending on $\CC$. Thus, $|X|\le 2c$, proving that $G$ has VC-dimension at most $2c+1$.
 \end{proof}
+% lax end
+% lax begin Lax185574.DpMinimalInterpretations
 \begin{observation}\label{dp:min-interp}
     Let $\CC$ be a dp-minimal class and $\alpha(x_1,x_2;\bar y)$ be a formula and $\ell=|\bar y|$.
     For $G\in\CC$ and $\bar u\in V(G)^{\ell}$, let $\alpha(G,\bar u)$ denote the graph with vertex set $V(G)$ and edges $uv$ such that $u\neq v$ and $G\models\alpha(u,v;\bar u)\lor \alpha(v,u;\bar u)$.
     Then the graph class $\setof{\alpha(G,\bar u)}{G\in\CC, \bar u\in V(G)^{\ell}}$ is dp-minimal.
 \end{observation}
+% lax end
+% lax begin Lax185574Proofs.DpMinimalInterpretations.dpMinimal_interpretationClass
 \begin{proof}
     Suppose $(\bar a_i:i\in [t]),(\bar b_j:j\in [t])$, and $(c_{i,j}:i\in [t],j\in [t])$ form a clean $(\phi,\psi)$-pattern in $H=\alpha(G,\bar u)$ for some $G\in\CC$ and $\bar u\in V(G)^\ell$, and formulas $\phi(\bar x,z)$ and $\psi(\bar y,z)$.
     Then the tuples $(\bar a_i\bar u:i\in [t])$, $(\bar b_j\bar u:j\in [t])$ and $(c_{i,j}:i\in [t],j\in[t])$ form a clean $(\phi',\psi')$-pattern in~$G$,
-    where $\phi'(\bar x\bar w,z)$ is the formula obtained from $\phi(\bar x,z)$ by replacing each atom $E(x_1,x_2)$ with $\alpha(x_1,x_2;\bar w)$, and $\psi'(\bar y\bar w,z)$ is obtained from $\psi$ in the same way. Hence, $t$ is bounded by some constant depending on $\CC,\phi',\psi'$. Since $\phi'$ and $\psi'$ depend only on $\phi,\psi$, and $\alpha$,
+    where $\phi'(\bar x\bar w,z)$ is the formula obtained from $\phi(\bar x,z)$ by replacing each atom $E(x_1,x_2)$ with $x_1\neq x_2\land(\alpha(x_1,x_2;\bar w)\lor\alpha(x_2,x_1;\bar w))$, and $\psi'(\bar y\bar w,z)$ is obtained from $\psi$ in the same way. Hence, $t$ is bounded by some constant depending on $\CC,\phi',\psi'$. Since $\phi'$ and $\psi'$ depend only on $\phi,\psi$, and $\alpha$,
     this means $t$ is bounded by some constant depending only on $\CC,\phi,\psi$, and $\alpha$.
 \end{proof}
-\begin{corollary}
+% lax end
+% lax begin Lax185574.DpMinimalFlips
+\begin{corollary}\label{cor:dpmin-flips}
     Let $\CC$ be a dp-minimal graph class and $s\in\N$. The class consisting of all $s$-definable flips of graphs from $\CC$ is dp-minimal.
 \end{corollary}
+% lax end
+% lax begin Lax185574Proofs.DpMinimalFlips.dpMinimal_definableFlipClass
 \begin{proof}
     Fix $s\in\N$ and formulas $\phi(\bar x,z),\psi(\bar y,z)$.
     For each symmetric relation $R\subset \Pi^s\times \Pi^s$, in the notation of \Cref{obs:sim-def-flip}, consider the formula
@@ -72,6 +91,7 @@ while the other one implies that they are preserved under taking $s$-definable f
 Taking the maximum of the bounds $c_R$, over all binary relations $R$ as above,
 we get a bound $c$ on the order of clean $(\phi,\psi)$-patterns in $s$-definable flips of graphs $G\in\CC$.
 \end{proof}
+% lax end
 
 We first prove \Cref{lem:mondep-dpmin}. This follows easily 
 from the following characterization of monadic dependence in terms of the independence property.
@@ -94,7 +114,7 @@ for all $k\in\N$, no first-order formula $\phi(\bar x,\bar y)$ has the independe
 % lax end
 % lax end
 
-% lax begin Lax185574Proofs.ForbiddenPhiPsiPatterns.forbidden_phiPsi_patterns
+% lax begin Lax185574Proofs.MonadicDependenceDpMinimal.dpMinimal_of_monadicallyDependent
 \begin{proof}[Proof of \Cref{lem:mondep-dpmin}]
     Suppose that $\CC$ is monadically dependent, and let $\phi(\bar x,z)$ and $\psi(\bar y,z)$ be first-order formulas in the signature of $\CC$.
      Let $G\in\CC$ and suppose that $\bar a_1,\ldots,\bar a_m\in V(G)^{|\bar x|}$, $\bar b_1,\ldots,\bar b_m\in V(G)^{|\bar y|}$, and $\bar c_{i,j}\in V(G)^{|z|}$ for $i,j\in[m]$
@@ -154,7 +174,7 @@ For every $t\in\N$ and coloring
 % lax end
 
 
-% lax begin Lax185574Proofs.ForbiddenPhiPsiPatterns.forbidden_phiPsi_patterns
+% lax begin Lax185574Proofs.DpMinimalPatterns.forbidden_phiPsi_patterns
 \begin{proof}[Proof of \Cref{lem:dpmin-phipsi-patterns}]
     Let $\CC$ be a dp-minimal class of structures, and let $\phi(\bar x,z)$ and $\psi(\bar y,z)$ be first-order formulas in the signature of $\CC$.
 Suppose that
