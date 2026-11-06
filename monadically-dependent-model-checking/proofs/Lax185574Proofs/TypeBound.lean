@@ -1,6 +1,7 @@
 import Lax185574.TypeBound
 import Lax185574.ClosureTheoremTuples
 import Lax185574.SeparatingTypesTuples
+import Lax185574Proofs.ClosureTheoremTuples
 import Lax185574Proofs.TypeTransport
 import Lax185574Proofs.FlipBridge
 import Mathlib.Logic.Equiv.Fin.Basic
@@ -92,9 +93,9 @@ theorem rankTypeOver_comp {L : Language} {V : Type z} [L.Structure V] (q : ℕ) 
     funext x; rcases x with x | x <;> rfl
   rw [this]
 
-/-- The statement for the graph classes of the archive and their
-monadic dependence. -/
-theorem typeCountOver_le_old (C : GraphClass) (hC : MonadicallyDependent C) (k q : ℕ) :
+/-- The type bound for a class with the closure theorem for tuples. -/
+theorem typeCountOver_le_of_closureTuples (C : GraphClass)
+    (hC : ∀ r k, ClosureTheoremTuples.ClosureTuplesAt C r k) (k q : ℕ) :
     ∃ a : ℕ, ∀ c : ℕ, ∃ F : ℕ,
       ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
         ∀ (colors : Fin c → Set (Fin n)) (U : Finset (Fin n)),
@@ -103,8 +104,7 @@ theorem typeCountOver_le_old (C : GraphClass) (hC : MonadicallyDependent C) (k q
             F * (U.card + 1) ^ a := by
   classical
   obtain ⟨r, hsep⟩ := Lax185574.SeparatingTypesTuples.ncard_rankTypeOver_append_le.{0} q
-  have hct := fun k' => Lax185574Proofs.Shim.ClosureTheoremTuples.closure_theorem_tuples C hC r k'
-  choose cf sf af hf using hct
+  choose cf sf af hf using hC r
   let A := k + ∑ k' ∈ Finset.range (k + 1), cf k'
   refine ⟨A, fun c => ?_⟩
   have hT := fun k' => hsep k' (c + sf k')
@@ -224,6 +224,18 @@ theorem typeCountOver_le_old (C : GraphClass) (hC : MonadicallyDependent C) (k q
           smul_eq_mul]
         ring
 
+/-- The statement for the graph classes of the archive and their
+monadic dependence. -/
+theorem typeCountOver_le_old (C : GraphClass) (hC : MonadicallyDependent C) (k q : ℕ) :
+    ∃ a : ℕ, ∀ c : ℕ, ∃ F : ℕ,
+      ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
+        ∀ (colors : Fin c → Set (Fin n)) (U : Finset (Fin n)),
+          @typeCountOver (withColors Language.graph c) (Fin n)
+              (expansion G colors) k q Set.univ (U : Set (Fin n)) ≤
+            F * (U.card + 1) ^ a :=
+  typeCountOver_le_of_closureTuples C
+    (fun r k => Lax185574Proofs.Shim.ClosureTheoremTuples.closure_theorem_tuples C hC r k) k q
+
 end Lax185574Proofs.TypeBound
 
 namespace Lax185574Proofs.TypeBound
@@ -251,9 +263,9 @@ most `T(q, k', c + s)` types in `H⁺`. Summing over at most `2^k`
 position sets, `(|U| + 1)^k` tuples `ū` and the flips gives the bound,
 whose exponent does not depend on `c`.
 
-The argument is carried out for the graph classes of the archive and
-their monadic dependence, and transferred to the graph classes used
-here.
+The argument is carried out for any graph class of the archive with the
+closure theorem for tuples, which holds for a monadically dependent
+class, and transferred to the graph classes used here.
 -/
 theorem typeCountOver_le (C : GraphClass) (hC : MonadicallyDependent C)
     (k q : ℕ) :

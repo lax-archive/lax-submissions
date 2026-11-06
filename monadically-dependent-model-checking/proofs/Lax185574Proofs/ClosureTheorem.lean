@@ -4,6 +4,7 @@ import Lax185574.BallFlip
 import Lax185574.FlipsMonadicallyDependent
 import Lax185574.DefinableFlipTransitivity
 import Lax185574.NeighborhoodComplexityBound
+import Lax185574Proofs.BallTypes
 import Lax185574Proofs.BoundedVC
 import Lax185574Proofs.ClosureHelpers
 import Lax185574Proofs.AtomicTypeBridge
@@ -16,6 +17,12 @@ open Lax199508.GraphClasses Lax710763.MonadicDependence
 open Lax185574.Flips Lax185574.GraphBalls Lax185574.Partitions Lax185574.GaifmanGraph
 open Lax185574.DefinableFlips Lax185574.AtomicTypes Lax185574.VCDimension
 open Lax185574Proofs.ClosureHelpers
+
+/-- For every `s`, some `d` bounds the VC-dimension of every
+`s`-definable flip of a graph of `C`. -/
+def BoundedVCOfDefinableFlips (C : GraphClass) : Prop :=
+  ∀ s : ℕ, ∃ d : ℕ, ∀ (n : ℕ) (G H : SimpleGraph (Fin n)), C n G →
+    IsDefinableFlip G s H → vcDim H ≤ d
 
 /-- The closure theorem at a fixed radius. -/
 def ClosureAt (C : GraphClass) (r : ℕ) : Prop :=
@@ -78,14 +85,13 @@ theorem add_one_le_mul_pow {x a m e : ℕ} (hm : 1 ≤ m) (h : x ≤ a * m ^ e) 
   have : 1 ≤ m ^ e := Nat.one_le_pow _ _ hm
   nlinarith
 
-theorem closureAt_succ (C : GraphClass) (hC : MonadicallyDependent C) (r : ℕ)
+theorem closureAt_succ (C : GraphClass) (hBT : ∀ r s, BallTypes.BallTypesAt C r s)
+    (hVC : BoundedVCOfDefinableFlips C) (r : ℕ)
     (hIH : ClosureAt C r) : ClosureAt C (r + 1) := by
   classical
   obtain ⟨c, s, a, hIH⟩ := hIH
-  obtain ⟨d, hd⟩ := Lax185574Proofs.BoundedVC.exists_vcDim_le _
-    (Lax185574Proofs.Shim.FlipsMonadicallyDependent.monadicallyDependent_definableFlipClass
-      C hC s)
-  obtain ⟨k, t, a₁, hBT⟩ := Lax185574Proofs.Shim.BallTypes.ball_types C hC r s
+  obtain ⟨d, hd⟩ := hVC s
+  obtain ⟨k, t, a₁, hBT⟩ := hBT r s
   obtain ⟨z, hz⟩ := Lax185574.BallFlip.exists_ball_flip d t
   let K := 2 ^ (3 ^ s * 3 ^ s)
   let b₀ := a * (a₁ + 1) ^ c + 1
@@ -157,7 +163,7 @@ theorem closureAt_succ (C : GraphClass) (hC : MonadicallyDependent C) (r : ℕ)
       exact hprof H hH v₀ hv₀
     have hvc : vcDim H ≤ d := by
       obtain ⟨S, hS, hflip⟩ := hHs H hH
-      exact hd n H ⟨G, hG, S, hS, hflip⟩
+      exact hd n G H hG ⟨S, hS, hflip⟩
     obtain ⟨H', hH', hH'disj⟩ := hz (Fin n) H hvc r A (grp H (prof H v₀)) hdisj hcount
     obtain ⟨W, hW, hWflip⟩ :=
       Lax185574.DefinableFlipTransitivity.isDefinableFlip_trans (hHs H hH) hH'
@@ -203,7 +209,7 @@ theorem closureAt_succ (C : GraphClass) (hC : MonadicallyDependent C) (r : ℕ)
       have hQ : Q.card + 1 ≤ 2 * m ^ (d + 1) := by
         have hvc : vcDim H ≤ d := by
           obtain ⟨S, hS, hflip⟩ := hHs H hH
-          exact hd n H ⟨G, hG, S, hS, hflip⟩
+          exact hd n G H hG ⟨S, hS, hflip⟩
         have h1 : Q.card ≤ A.card + m ^ d := by
           rw [card_image_classSet_univ]
           exact (card_quotient_atomicTypes_le_nc H A).trans (Nat.add_le_add_left
@@ -263,20 +269,24 @@ theorem closureAt_succ (C : GraphClass) (hC : MonadicallyDependent C) (r : ℕ)
           (graphBall_mono_center H' (r + 1) (Set.singleton_subset_iff.mpr (show v ∈ grp H (prof H v) from ⟨hHdisj, rfl⟩)))
           hH'disj
 
+/-- The closure theorem for a class with the ball-types statement and
+bounded VC-dimension of its definable flips. -/
+theorem closure_theorem_of_ballTypes (C : GraphClass) (hBT : ∀ r s, BallTypes.BallTypesAt C r s)
+    (hVC : BoundedVCOfDefinableFlips C) (r : ℕ) : ClosureAt C r := by
+  induction r with
+  | zero => exact closureAt_zero C
+  | succ r ih => exact closureAt_succ C hBT hVC r ih
+
 /-- The statement for the graph classes of the archive and their
 monadic dependence. -/
 theorem closure_theorem_old (C : GraphClass) (hC : MonadicallyDependent C) (r : ℕ) :
-    ∃ c s a : ℕ, ∀ (n : ℕ) (G : SimpleGraph (Fin n)), C n G →
-      ∀ A : Finset (Fin n), ∃ Astar : Finset (Fin n),
-        Astar.card ≤ a * (A.card + 1) ^ c ∧
-        ∀ v : Fin n, v ∉ A →
-          ∃ S : Finset (Fin n), S ⊆ Astar ∧ S.card ≤ s ∧
-            ∃ H : SimpleGraph (Fin n),
-              IsFlip G (atomicTypes G (S : Set (Fin n))) H ∧
-              Disjoint (graphBall H r {v}) (A : Set (Fin n)) := by
-  induction r with
-  | zero => exact closureAt_zero C
-  | succ r ih => exact closureAt_succ C hC r ih
+    ClosureAt C r := by
+  refine closure_theorem_of_ballTypes C
+    (fun r s => Lax185574Proofs.Shim.BallTypes.ball_types C hC r s) (fun s => ?_) r
+  obtain ⟨d, hd⟩ := Lax185574Proofs.BoundedVC.exists_vcDim_le _
+    (Lax185574Proofs.Shim.FlipsMonadicallyDependent.monadicallyDependent_definableFlipClass
+      C hC s)
+  exact ⟨d, fun n G H hG hH => hd n H ⟨G, hG, hH⟩⟩
 
 end Lax185574Proofs.ClosureTheorem
 
@@ -306,9 +316,10 @@ from `A`, which is an `(s + z)`-definable flip of `G` by transitivity.
 The new closure is `A₁` together with the parameters of all these flips.
 Vertices of `A₁ ∖ A` are isolated by the flip over themselves.
 
-The argument is carried out for the graph classes of the archive and
-their monadic dependence, and transferred to the graph classes used
-here.
+The argument is carried out for any graph class of the archive with the
+ball-types lemma and bounded VC-dimension of its definable flips, which
+hold for a monadically dependent class, and transferred to the graph
+classes used here.
 -/
 theorem closure_theorem (C : GraphClass) (hC : MonadicallyDependent C) (r : ℕ) :
     ∃ c s a : ℕ, ∀ G ∈ C, ∀ A : Finset (Fin G.n), ∃ Astar : Finset (Fin G.n),

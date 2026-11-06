@@ -142,6 +142,8 @@ import Lax185574Proofs.DefinableToTypes
 import Lax185574Proofs.DistanceFormulaRank
 import Lax185574Proofs.DistanceFormulas
 import Lax185574Proofs.DistanceTranslation
+import Lax185574Proofs.DpMinimalEquivalence
+import Lax185574Proofs.DpMinimalTypeBound
 import Lax185574Proofs.EncodingInjectivity
 import Lax185574Proofs.EvalRam.Cell
 import Lax185574Proofs.EvalRam.Prog
