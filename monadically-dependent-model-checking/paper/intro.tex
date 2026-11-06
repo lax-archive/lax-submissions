@@ -2,7 +2,9 @@
 \section{Introduction}
 \newcommand{\AWstar}{$\mathrm{AW}[\star]$}
 
-Instead of solving a single algorithmic problem, \emph{algorithmic meta-theorems}
+
+
+Instead of solving a single algorithmic problem, \emph{algorithmic meta-theorems} 
 establish the tractability of whole classes of problems, in a uniform way.
 The targeted problem class is commonly defined using logic, and hence many algorithmic meta-theorems fit the following template.
 
@@ -10,16 +12,17 @@ The targeted problem class is commonly defined using logic, and hence many algor
 \begin{quote}
 \emph{Every problem expressible in \placeholder{logic} can be solved in time \placeholder{runtime} on every input satisfying \placeholder{tameness condition}.}
 \end{quote}
+%
 A prototypical example is Courcelle's Theorem, which states that every problem definable in \emph{monadic second-order logic} is solvable in \emph{linear time} on graphs with constant \emph{tree-width}~\cite{courcelle1990monadic}.
 Similarly, a result of Frick and Grohe
 implies that every graph problem definable in \emph{first-order logic} (FO) can be decided in \emph{linear time} on all \emph{planar graphs}~\cite{frick2001deciding}.
-In particular, the \emph{(first-order) model checking problem}
--- does a given graph $G$ satisfy a given FO sentence $\phi$?  -- is \emph{fixed-parameter tractable}~(fpt) on planar graphs.
+In particular, the \emph{(first-order) model checking problem} 
+-- does a given graph $G$ satisfy a given FO sentence $\phi$?  -- is \emph{fixed-parameter tractable}~(fpt) on planar graphs. 
 That is, it is solvable\footnote{Throughout this paper, we use the uniform -- but not strongly uniform -- version of fpt, and of fpt reductions. That means that the function $f$ need not be computable, but there is a single algorithm which solves the problem, independent of the parameter ($\phi$ in the case of model checking).} in time $f(|\phi|)\cdot |V(G)|^c$, for some function $f$ and constant~$c$ (with $c=1$ in this specific case).
 Many natural graph problems are expressible in FO.
 For example, the sentence
 \[
-    \exists x_1 \ldots \exists x_k  \forall y\
+    \exists x_1 \ldots \exists x_k  \forall y\ 
     \bigvee_i\big(E(y,x_i) \vee (y = x_i)\big)
 \]
 expresses $k$-\textsc{Dominating-Set}: the existence of $k$ vertices  such that every vertex is either adjacent or equal to at least one of them.
@@ -27,7 +30,7 @@ Further expressible problems include $k$-\textsc{Independent-Set}, $k$-\textsc{C
 With no further restrictions made on the input graphs,
 these problems appear to be highly intractable.
 Indeed, model checking on general graphs is believed not to be fpt; this is equivalent to the $\mathrm{FPT}{\neq}\mathrm{AW}[\star]$ conjecture.
-This raises the question -- first posed by Grohe~\cite[Section~8.2]{logic-graphs-algorithms} -- on which graph classes\footnote{A \emph{graph class} is a (usually infinite) set of graphs.}
+This raises the question -- first posed by Grohe~\cite[Section~8.2]{logic-graphs-algorithms} -- on which graph classes\footnote{A \emph{graph class} is a (usually infinite) set of graphs.} 
 the problem becomes fpt.
 After decades of research, \emph{monadic dependence} has crystallized as the conjectured tractability limit for \emph{hereditary}\footnote{A graph class is \emph{hereditary} if it is closed under taking induced subgraphs, i.e., deleting vertices.} classes (see, e.g.,~\cite{warwick-problems,new-perspective-journal,tww4,ms-mc1}).
 
@@ -35,17 +38,19 @@ After decades of research, \emph{monadic dependence} has crystallized as the con
   A hereditary graph class admits fixed-parameter tractable first-order model checking if and only if it is monadically dependent (assuming $\mathrm{FPT}{\neq}\mathrm{AW}[\star]$).
 \end{mcconjecture}
 
+
+  
 Monadic dependence is a model-theoretic tameness notion that originates in Shelah's classification theory~\cite{BS1985monadic}.
 It subsumes many tameness notions from structural graph theory, such as planarity, excluding a minor, bounded degree, bounded expansion, nowhere denseness, and bounded clique-width, twin-width, and merge-width.
 See \Cref{fig:hierarchy} for a hierarchy of included graph classes.
 For hereditary graph classes, monadic dependence is characterized as follows~\cite{flip-breakability}.
-A hereditary graph class $\CC$ is \emph{monadically independent} if there is some formula $\phi(x,y)$ with the following property: for every graph \(H\) there is some graph $G \in \CC$
+A hereditary graph class $\CC$ is \emph{monadically independent} if there is some formula $\phi(x,y)$ with the following property: for every graph \(H\) there is some graph $G \in \CC$ 
 such that $H$ is an induced subgraph of the graph with vertices $V(G)$ and edges \(\{ uv \,:\, \text{ $\phi(u,v)$ or $\phi(v,u)$ holds in $G$} \}\).
 Intuitively, this means that every graph can be encoded by $\phi$ in $\CC$.
 Then $\CC$ is \emph{monadically dependent} if it is not monadically independent.
 
 \medskip
-In a previous paper~\cite{flip-breakability} we resolved the hardness direction of the Model Checking Conjecture, by showing that model checking is
+In a previous paper~\cite{flip-breakability} we resolved the hardness direction of the Model Checking Conjecture, by showing that model checking is 
 \AWstar-hard on every hereditary graph class that is not monadically dependent.
 
 \subsection{Our results}
@@ -60,29 +65,32 @@ In this paper, we confirm the Model Checking Conjecture by proving its tractabil
 \end{restatable}
 % lax end
 
-In particular, this gives fpt first-order model checking on all classes of bounded twin-width and bounded merge-width, without requiring a decomposition as part of the input.
+In particular, this gives fpt first-order model checking on all classes of bounded twin-width and bounded merge-width, without requiring a decomposition as part of the input. 
 
 We remark that our algorithm is uniform:
 it takes both $G$ and $\phi$ as input, and does not depend on the graph class $\CC$, which only appears in the running-time guarantee.
 Our result lifts from graphs to monadically dependent classes of binary structures -- structures over a fixed signature consisting of binary relation symbols -- using a standard encoding (see, e.g., Lemma~19.11 in the full version of~\cite{flip-breakability}).
 
+
+
 \medskip
 Our algorithm is based on dynamic programming on graph decompositions called \emph{construction sequences} of \emph{almost bounded merge-width}.
 In a companion paper with Michał Pilipczuk~\cite{md-abmw}, we prove that they exist and can be computed efficiently on monadically dependent graph classes.
 
-Existing model checking algorithms for classes of bounded twin- or merge-width have a tower-of-exponentials dependence on the width. This prevents their direct application to decompositions of \emph{almost} bounded merge-width, where the width is only bounded by a subpolynomial function $n^{o(1)}$ of the input size $n$, rather than a constant.
+Existing model checking algorithms for classes of bounded twin- or merge-width have a tower-of-exponentials dependence on the width. This prevents their direct application to decompositions of \emph{almost} bounded merge-width, where the width is only bounded by a subpolynomial function $n^{o(1)}$ of the input size $n$, rather than a constant. 
 To overcome this obstacle, we make the running time depend on the number of \emph{types} that are realized in the graph. We control this number using a type-counting result for monadically dependent classes, which we believe to be of independent interest.
 
 This result provides polynomial bounds on the number of quantifier rank $q$ types $\tp_q^G(\tup v/U)$ of $k$-tuples $\tup v$ over a set $U$ of parameters.
 The \emph{type} $\tp_q^G(\tup v/U)$ is the set of formulas of quantifier rank at most \(q\), with parameters from \(U\), which hold of the tuple $\tup v$ in $G$
 (see \Cref{sec:prelims} for the precise definition).
-For $q=0$, the type $\tp_0^G(v/U)$ of a vertex $v\notin U$ represents its neighborhood $N(v)\cap U$ in $U$.
+For $q=0$, the type $\tp_0^G(v/U)$ of a vertex $v\notin U$ represents its neighborhood $N(v)\cap U$ in $U$. 
 In general graphs, there could be $2^{|U|}$ many such neighborhoods, but the fundamental Sauer--Shelah lemma~\cite{Sauer72,She72} bounds their number by $(|U|+1)^d$, where $d$ is the VC-dimension of the graph $G$.
 The VC-dimension $d$ is bounded uniformly in every monadically dependent class.
-For $q=1$, the type $\tp_1^G(v/U)$ of a vertex $v$
-determines $\setof{N(w)\cap U}{w\in N(v)}$, the set of neighborhoods in $U$ of the neighbors of $v$. In general graphs there could be
+For $q=1$, the type $\tp_1^G(v/U)$ of a vertex $v$ 
+determines $\setof{N(w)\cap U}{w\in N(v)}$, the set of neighborhoods in $U$ of the neighbors of $v$. In general graphs there could be 
 $2^{2^{|U|}}$ many such sets, and so on for higher $q$: the number of $q$-types over a set $U$ can reach a tower of height $q+1$.
 The following result, which is the cornerstone of our approach, can thus be seen as an extension of the Sauer--Shelah lemma to higher quantifier ranks, in monadically dependent graph classes.
+
 
 % lax begin Lax185574.TypeBound
 \begin{theorem}[{Simplified form of \Cref{thm:type-bound}}]\label{thm:intro-type-bound}
@@ -96,12 +104,13 @@ we have
 \end{theorem}
 % lax end
 
-\Cref{thm:intro-type-bound} is a finitary analogue of a fundamental result in stability theory due to Shelah~\cite{Shelah1969}, which bounds the number of complete types (of unbounded quantifier rank) over an infinite set $U$, by $|U|^\kappa$ in every \emph{stable} class of structures, for some cardinal $\kappa$ depending on the class.
+\Cref{thm:intro-type-bound} is a finitary analogue of a fundamental result in stability theory due to Shelah~\cite{Shelah1969}, which bounds the number of complete types (of unbounded quantifier rank) over an infinite set $U$, by $|U|^\kappa$ in every \emph{stable} class of structures, for some cardinal $\kappa$ depending on the class. 
 Its proof blends ideas from \cite{number-of-types} and \cite{flippers}.
 
 \medskip
-A technical overview of the proofs of the main results is presented in \Cref{sec:tech-overview}.
+A technical overview of the proofs of the main results is presented in \Cref{sec:tech-overview}. 
 All our results are formalized in Lean. At \url{https://laxarchive.org/lax-185574/}, each definition, lemma, and theorem is annotated with its proven Lean counterpart.
+
 
 \begin{figure}[htb]
   \centering
@@ -116,11 +125,12 @@ All our results are formalized in Lean. At \url{https://laxarchive.org/lax-18557
 
 \subsection{Related work}
 \Cref{thm:main} completes a long line of research on first-order model checking on hereditary graph classes.
-An overview of previous model checking results is given in \Cref{fig:hierarchy}.
+An overview of previous model checking results is given in \Cref{fig:hierarchy}. 
 In particular, the Model Checking Conjecture was previously known to hold in the following three settings, which we discuss below:
 
 \newcommand{\footnoteMonotone}{\footnote{A graph class is \emph{monotone} if it is closed under taking subgraphs, i.e., deleting vertices and edges.}}
-\newcommand{\footnoteEdgeStable}{\footnote{A graph class is \emph{edge-stable} if it excludes some semi-induced half-graph, i.e., there is $k\in\N$ such that no graph in the class contains vertices $a_1,\ldots,a_k,b_1,\ldots,b_k$ where $a_i$ and $b_j$ are adjacent if and only if $i\le j$. Equivalently, the edge relation is a stable formula on the class in the sense of model theory.}}
+\newcommand{\footnoteEdgeStable}{\footnote{\interlinepenalty=10000 % keep this footnote on one page
+A graph class is \emph{edge-stable} if it excludes some semi-induced half-graph, i.e., there is $k\in\N$ such that no graph in the class contains vertices $a_1,\ldots,a_k,b_1,\ldots,b_k$ where $a_i$ and $b_j$ are adjacent if and only if $i\le j$. Equivalently, the edge relation is a stable formula on the class in the sense of model theory.}}
 \newcommand{\footnoteOrdered}{\footnote{An \emph{ordered graph} is a graph equipped with a total order on its vertex set, which formulas can access via an additional binary relation symbol~$<$.}}
 
 \begin{itemize}
@@ -128,13 +138,15 @@ In particular, the Model Checking Conjecture was previously known to hold in the
   \hfill \cite{gks}
 
   where monadic dependence coincides with \emph{nowhere denseness};\hfill \cite{AdlerA14,podewski1978stable}
-
+  
+  
   \item in \emph{edge-stable}\footnoteEdgeStable~graph classes,
   \hfill \cite{ms-mc1,ms-mc2}
 
   where monadic dependence coincides with \emph{monadic stability};
   \hfill \cite{rankwidth-meets-stability}
-
+  
+  
   \item in classes of \emph{ordered graphs}\footnoteOrdered,
   \hfill \cite{tww4,tww1}
 
@@ -163,6 +175,7 @@ This result is tight in hereditary classes that are additionally edge-stable~\ci
 The ideas from this line of research have been further developed into combinatorial characterizations of monadically dependent graph classes such as \emph{flip-breakability}~\cite{flip-breakability} and \emph{flip-separability}~\cite{bonnet2025separability-icalp}.
 This also includes the characterization by forbidden induced subgraphs, which settled the hardness part of the Model Checking Conjecture for all hereditary graph classes~\cite{flip-breakability}.
 
+
 \paragraph*{Clique-width, twin-width, and merge-width.}
 A second, parallel line of research has pushed the tractability frontier of first-order model checking through the development of new graph decompositions, often accompanied by new graph width parameters.
 Mirroring tree-width in the sparse setting, it was shown early on by Courcelle, Makowsky, and Rotics that also classes of bounded \emph{clique-width} admit fpt monadic second-order model checking~\cite{courcelle2000linear}.
@@ -173,10 +186,10 @@ As of today it is not known how to efficiently compute or approximate these deco
 There, bounded twin-width forms the exact tractability limit for first-order model checking.
 
 Inspired by twin-width and the related flip-width parameters~\cite{flip-width},
-Dreier and Toru\'nczyk introduced \emph{merge-width}, a family of graph parameters based on decompositions called \emph{construction sequences}~\cite{mw-stoc}.
+Dreier and Toru\'nczyk introduced \emph{merge-width}, a family of graph parameters based on decompositions called \emph{construction sequences}~\cite{mw-stoc}. 
 A class has \emph{bounded merge-width} if for every radius $r$, every graph in the class has a construction sequence of radius-$r$ width bounded by a constant.
 Again, those classes admit fpt first-order model checking under the condition that a construction sequence is given.
-Crucial to our paper is the following relaxation of merge-width, called \emph{almost bounded merge-width}, which replaces the constant bound on the radius-$r$ width by $n^{o(1)}$, where $n$ is the vertex count of the graph.
+Crucial to our paper is the following relaxation of merge-width, called \emph{almost bounded merge-width}, which replaces the constant bound on the radius-$r$ width by $n^{o(1)}$, where $n$ is the vertex count of the graph. 
 Dreier and Toru\'nczyk proved that hereditary classes of almost bounded merge-width are monadically dependent, and conjectured the converse~\cite{mw-stoc}.
 The converse was first confirmed for radius one~\cite{neighborhood-complexity-mw}, and then in full~\cite{md-abmw}.
 The proof of~\cite{md-abmw} is algorithmic: given a graph from a monadically dependent class, it computes in polynomial time a construction sequence of radius-$r$ width $n^{o(1)}$, for every fixed $r$.
@@ -185,3 +198,8 @@ Construction sequences of almost bounded merge-width form the basis for our mode
 Note that it remains an open question how to approximate decompositions of constant width for classes with constant twin- and merge-width.
 Thus, up until now and even in the light of \cite{md-abmw}, the previous model checking results for classes of bounded twin- and merge-width have remained conditional.
 Therefore, our new algorithm marks the first time that unconditional model checking for all classes of bounded twin- and merge-width is established.
+
+
+
+
+

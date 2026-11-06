@@ -5,25 +5,100 @@ all considered graphs may be finite or infinite in \Cref{part:types},
 and we track the necessary finiteness assumptions in the arguments below.
 Everywhere else in the paper, graphs are assumed to be finite.
 
+% lax begin Lax185574.TypeBound
 {\typeboundgeneraltrue\thmtypes*}
+% lax end
 
-We make two remarks, which are of independent interest in the context of model theory.
-\begin{remark}\label{rem:converse}
-Conversely, the conclusion of \Cref{thm:type-bound} implies monadic dependence.
-Indeed, let $c\in\N$, and let $\phi(x,y)$ be any formula in the signature of $c$-colored graphs, and let $q$ denote its quantifier rank. Let $N$ be a number and $H$ be the bipartite graph with parts $A=\{a_1,\ldots,a_N\}$ and $B=\setof{b_I}{I\subset [N]}$, where $a_i$ is adjacent to $b_I$ if and only if $i\in I$. Suppose there is some $G\in\CC$ and $c$-coloring $G^+$ of $G$, such that $H$ is an induced subgraph of $\phi(G^+)$, the graph with vertex set $V(G)$ and edge set $\setof{uv\in {V(G)\choose 2}}{G^+\models \phi(u,v)\lor \phi(v,u)}$. Then $\tp^q(b_I/A)$ is different for every $I\subset [N]$,
+
+We prove a stronger statement, which replaces the assumption of monadic dependence by the following  notion, which is a priori weaker.
+
+Fix two formulas $\phi(\bar x,z),\psi(\bar y,z)$ and a graph $G$.
+A \emph{clean $(\phi,\psi)$-pattern} of order $s\times t$ in $G$ consists of tuples 
+$\bar a_1,\ldots,\bar a_s\in V(G)^{|\bar x|}$, $\bar b_1,\ldots,\bar b_t\in V(G)^{|\bar y|}$
+and vertices $c_{i,j}$ for $i\in[s]$ and $j\in[t]$,
+such that the following hold for all $i,i'\in[s],j,j'\in[t]$:
+\begin{enumerate}
+    \item $G\models \phi(\bar a_{i'},c_{i,j})$ if and only if $i=i'$,
+    \item $G\models \psi(\bar b_{j'},c_{i,j})$ if and only if $j=j'$.
+\end{enumerate}
+
+\begin{definition}
+We say that a class $\CC$ of structures is \emph{dp-minimal}
+if for every two formulas $\phi(\bar x,z),\psi(\bar y,z)$ there is some $t\in\N$ 
+such that no structure in $\CC$ contains a clean $(\phi,\psi)$-pattern of order $t\times t$.
+\end{definition}
+
+
+\begin{restatable}{theorem}{dpmintypes}\label{thm:type-bound-dp}
+Let $\CC$ be a dp-minimal graph class and $k,q,c\in\N$.
+For every \iftypeboundgeneral(possibly infinite) \fi graph $G \in \CC$, expansion $G^+$ of $G$ by $c$ unary predicates, and \iftypeboundgeneral finite \fi subset $U \subseteq V(G)$,
+\begin{align}\label{eq:type-bound-dp}
+    \left|\Types^{G^+}_{k,q}(V(G)/U)\right| \leq O_{\CC,q,k,c}(1)\cdot \poly_{\CC,q,k}(|U|).
+\end{align}
+    
+
+\end{restatable}
+
+It is well-known and easy to see that monadic dependence implies dp-minimality (see \Cref{lem:mondep-dpmin}). Thus, \Cref{thm:type-bound-dp} implies \Cref{thm:type-bound}.
+    For general classes of structures, however, dp-minimality is a strictly weaker assumption than monadic dependence\footnote{For example, $(\mathbb Z,+)$ is dp-minimal \cite[paragraph before Proposition 6.6]{ADHMS2016} but not monadically dependent:
+    For $B=\setof{2^i}{i\in\mathbb N}$, the function $\set{u,v}\mapsto u+v$ defines an injection $f\from {B\choose 2} \to \mathbb Z$.
+    Let $E\subset {B\choose 2}$ be arbitrary.
+    In the unary expansion of $(\mathbb Z,+)$ with unary predicate $U$ marking $f(E)$,
+    the formula $\phi(x,y):=U(x+y)$, restricted to $B$, defines the graph $(B,E)$. As $E$ is arbitrary and $\phi$ is fixed, $(\mathbb Z,+)$ is not monadically dependent.
+    }. \Cref{thm:type-bound-dp} implies that in the setting of graphs, the two notions coincide.
+{\typeboundgeneraltrue    
+\begin{corollary}\label{cor:dp-equivalence}
+    Let $\CC$ be a class of \iftypeboundgeneral(possibly infinite) graphs.
+    The following conditions are equivalent.
+    \begin{enumerate}
+        \item\label{it:mon-dep} $\CC$ is monadically dependent,
+        \item\label{it:dp-min} $\CC$ is dp-minimal.
+%         \item\label{it:type-bound} 
+% For every $k,q,c\in\N$ and \fi graph $G \in \CC$, expansion $G^+$ of $G$ by $c$ unary predicates, and \iftypeboundgeneral finite \fi subset $U \subseteq V(G)$,
+% \[
+%     \left|\Types^{G^+}_{k,q}(V(G)/U)\right| \leq O_{\CC,q,k,c}(1)\cdot \poly_{\CC,q,k}(|U|).
+% \]
+    \end{enumerate}
+\end{corollary}
+}
+We first prove the corollary.
+\begin{proof}
+    \eqref{it:mon-dep}$\rightarrow$\eqref{it:dp-min} is an easy and well-known fact, proven in \Cref{lem:mondep-dpmin}.
+    We prove the converse implication, 
+    \eqref{it:dp-min}$\rightarrow$\eqref{it:mon-dep}.
+
+    Let $\CC$ be a dp-minimal graph class; then $\CC$ satisfies the bound \eqref{eq:type-bound-dp} by \Cref{thm:type-bound-dp}.
+    We argue that this bound implies monadic dependence.
+    Indeed, let $c\in\N$, and let $\phi(x,y)$ be any formula in the signature of $c$-colored graphs, and let $q$ denote its quantifier rank. Let $N$ be a number and $H$ be the bipartite graph with parts $A=\{a_1,\ldots,a_N\}$ and $B=\setof{b_I}{I\subset [N]}$, where $a_i$ is adjacent to $b_I$ if and only if $i\in I$. Suppose there is some $G\in\CC$ and $c$-coloring $G^+$ of $G$, such that $H$ is an induced subgraph of $\phi(G^+)$, the graph with vertex set $V(G)$ and edge set $\setof{uv\in \binom{V(G)}{2}}{G^+\models \phi(u,v)\lor \phi(v,u)}$. Then $\tp^q(b_I/A)$ is different for every $I\subset [N]$,
 so the number of types of quantifier rank $q$ over $A$ is at least $2^N$.
 On the other hand, the bound in \Cref{thm:type-bound} is at most polynomial in $|A|=N$, which implies that $N$ is bounded by a constant depending on $\CC$ and $\phi$.
-Hence, not arbitrarily large graphs can be encoded in~$\CC$ by~$\phi$.
-\end{remark}
+Hence, not arbitrary graphs can be encoded in~$\CC$ by~$\phi$. 
+\end{proof}
+\Cref{cor:dp-equivalence} extends to classes of structures over a finite\sz{necessary?} signature consisting of binary relations, via a standard encoding of such structures as graphs (see \cite[full version, Section 19]{flip-breakability}).
 
-\begin{remark}
-     An inspection of our proof of \Cref{thm:type-bound} shows that it only uses the assumption that $\CC$ is a \emph{dp-minimal} class of graphs (see \Cref{app:patterns} for a definition).
-    Thus, the conclusion of \Cref{thm:type-bound} holds under the assumption of dp-minimality.
+% We make two remarks, which are of independent interest in the context of model theory.
+% \begin{remark}\label{rem:converse}
+% Conversely, the conclusion of \Cref{thm:type-bound} implies monadic dependence. 
+% Indeed, let $c\in\N$, and let $\phi(x,y)$ be any formula in the signature of $c$-colored graphs, and let $q$ denote its quantifier rank. Let $N$ be a number and $H$ be the bipartite graph with parts $A=\{a_1,\ldots,a_N\}$ and $B=\setof{b_I}{I\subset [N]}$, where $a_i$ is adjacent to $b_I$ if and only if $i\in I$. Suppose there is some $G\in\CC$ and $c$-coloring $G^+$ of $G$, such that $H$ is an induced subgraph of $\phi(G^+)$, the graph with vertex set $V(G)$ and edge set $\setof{uv\in \binom{V(G)}{2}}{G^+\models \phi(u,v)\lor \phi(v,u)}$. Then $\tp^q(b_I/A)$ is different for every $I\subset [N]$,
+% so the number of types of quantifier rank $q$ over $A$ is at least $2^N$.
+% On the other hand, the bound in \Cref{thm:type-bound} is at most polynomial in $|A|=N$, which implies that $N$ is bounded by a constant depending on $\CC$ and $\phi$.
+% Hence, not arbitrary graphs can be encoded in~$\CC$ by~$\phi$. 
+% \end{remark}
 
-    Monadic dependence implies dp-minimality, as shown in \Cref{lem:mondep-dpmin}.
-    For general classes of structures, however, dp-minimality is a strictly weaker assumption than monadic dependence\footnote{For example, $(\mathbb Z,+)$ is dp-minimal \cite[paragraph before Proposition 6.6]{ADHMS2016} but not monadically dependent.}.
-     With the previous remark, we conclude that for classes $\CC$ of graphs, the notions of dp-minimality and monadic dependence coincide. This extends to classes of structures over a finite  signature consisting of binary relations, via the standard encoding of such structures as graphs (see \cite[full version, Section 19]{flip-breakability}).
-\end{remark}
+
+% \begin{remark}
+%      An inspection of our proof of \Cref{thm:type-bound} shows that it only uses the assumption that $\CC$ is a \emph{dp-minimal} class of graphs (see \Cref{app:patterns} for a definition).
+%     Thus, the conclusion of \Cref{thm:type-bound} holds under the assumption of dp-minimality.
+
+%     Monadic dependence implies dp-minimality, as shown in \Cref{lem:mondep-dpmin}.
+%     For general classes of structures, however, dp-minimality is a strictly weaker assumption than monadic dependence\footnote{For example, $(\mathbb Z,+)$ is dp-minimal \cite[paragraph before Proposition 6.6]{ADHMS2016} but not monadically dependent:
+%     For $B=\setof{2^i}{i\in\mathbb N}$, the function $\set{u,v}\mapsto u+v$ defines an injection $f\from {B\choose 2} \to \mathbb Z$.
+%     Let $E\subset {B\choose 2}$ be arbitrary.
+%     In the unary expansion of $(\mathbb Z,+)$ with unary predicate $U$ marking $f(E)$,
+%     the formula $\phi(x,y):=\exists z. U(z)\land (x+y=z)$, restricted to $B$, defines the graph $(B,E)$. As $E$ is arbitrary and $\phi$ is fixed, $(\mathbb Z,+)$ is not monadically dependent.
+%     }.
+%      With the previous remark, we conclude that for classes $\CC$ of graphs, the notions of dp-minimality and monadic dependence coincide. This extends to classes of structures over a finite  signature consisting of binary relations, via the standard encoding of such structures as graphs (see \cite[full version, Section 19]{flip-breakability}).
+% \end{remark}
 
 \section{Closures}\label{sec:closures}
 The goal of this section is to prove the following theorem, which can be seen as a finitary analogue of \cite[Theorem~7.1 in the full version]{flippers}.
@@ -41,8 +116,10 @@ and an $S(v)$-flip $H$ with
 \end{restatable}
 % lax end
 
+
+
 We also extend the statement to tuples.
-For simplicity, and in contrast to \Cref{thm:closures}, the conclusion uses non-definable flips.
+For simplicity, and in contrast to \Cref{thm:closures}, the conclusion uses non-definable flips. 
 Definability can easily be restored using the methods from~\cite{DBLP:conf/lics/BonnetDGKMST22} (see also~\cite{bonnet2025separability-icalp}).
 
 % lax begin Lax185574.ClosureTheoremTuples
@@ -59,6 +136,7 @@ For every $G \in \CC$ and finite set $A \subseteq V(G)$ there is a set $\HH$ of 
 
 \subsection{Preliminaries}
 
+
 % lax begin Lax185574.DefinableFlips
 \paragraph*{Definable flips.}
 % lax begin Lax185574.AtomicTypes
@@ -67,18 +145,19 @@ For an $s$-tuple $\bar p=(p_1,\ldots,p_s)$ of vertices in a graph $G$ and a vert
 we identify $\atp(v/\bar p)$ with an $s$-tuple in $\Pi^s$, whose $i$th component is the atomic type of the pair $(v,p_i)$.
 % lax end
 For a symmetric relation $R \subseteq \Pi^s \times \Pi^s$, we denote by $G \oplus (\bar p, R)$ the $\set{p_1,\ldots,p_s}$-flip $H$ of $G$ obtained by partitioning $V(G)$ into atomic types over $\bar p$ and then flipping according to $R$.
-More precisely, for $uv\in {V\choose 2}$,
+More precisely, for $uv\in \binom{V}{2}$,
 we have that $uv\in E(H)\triangle E(G)$ (where $\triangle$ denotes the symmetric difference) if and only if $(\atp^G(u/\bar p), \atp^G(v/ \bar p)) \in R$.
 We call such a flip \emph{$s$-definable}.
 Equivalently, an $s$-definable flip is an $S$-flip for some $S\subseteq V(G)$ of size at most $s$.
 Note that an $s$-definable flip is also $s'$-definable for every $s'\ge s$.
 % lax end
 
+
 % lax begin Lax185574.DefinableFlipFormula
 % lax begin Lax185574Proofs.DefinableFlipFormula.exists_isQF_flipOver_formula
 \begin{observation}\label{obs:sim-def-flip}
     We can define the edges of a definable flip in the original graph.
-    More precisely, for every $s\in\N$ and symmetric relation $R \subseteq \Pi^s \times \Pi^s$ there exists a quantifier-free formula $E_{\oplus R}(x,y,\bar z)$ such that for every graph $G$, tuple $\bar p \in V(G)^s$, and vertices $u,v\in V(G)$ we have
+    More precisely, for every $s\in\N$ and symmetric relation $R \subseteq \Pi^s \times \Pi^s$ there exists a quantifier-free formula $E_{\oplus R}(x,y,\bar z)$ such that for every graph $G$, tuple $\bar p \in V(G)^s$, and vertices $u,v\in V(G)$ we have 
     \[
         G\oplus(\bar p, R) \models E(u,v)
         \iff
@@ -94,10 +173,11 @@ The following is an easy consequence of the characterization of monadic dependen
 % lax end
 \begin{fact}\label{obs:flips-mon-dep}
     Let $\CC$ be a monadically dependent graph class and $s\in\N$.
-    The class
+    The class 
     consisting of all $s$-definable flips of graphs from $\CC$ is monadically dependent.
 \end{fact}
 % lax end
+
 
 % lax begin Lax185574Proofs.DefinableFlipTransitivity.isDefinableFlip_trans
 The following is well-known, see, e.g., Lemma~2.6 in the full version of~\cite{flippers}.
@@ -108,6 +188,7 @@ The following is well-known, see, e.g., Lemma~2.6 in the full version of~\cite{f
     Let $G_1$ be an $s_1$-definable flip of $G_0$ and $G_2$ be an $s_2$-definable flip of $G_1$. Then $G_2$ is an $(s_1 + s_2)$-definable flip of $G_0$.
 \end{fact}
 % lax end
+
 
 \subsection{The main argument}\label{sec:closures-main}
 
@@ -128,9 +209,10 @@ We use two lemmas. The first enlarges a given set $A$ to a set $A^*$ such that b
 
 The inequality above
 can be equivalently stated as follows:
- $\Ball_r^H(v)$ intersects at most $t$ parts of
+ $\Ball_r^H(v)$ intersects at most $t$ parts of 
 the partition of $V(G)$ into atomic types over $A$ in $H$.
 The proof of \Cref{lem:ball-types} is deferred to \Cref{sec:few-types-in-balls}.
+
 
 % lax begin Lax185574.BallFlip
 \begin{restatable}{lemma}{lemBallFlip}\label{lem:ball-flip}
@@ -149,15 +231,17 @@ there exists a $z$-definable flip $H$ of $G$ in which $\Ball_{r+1}^H(C) \cap A =
 
 The proof is deferred to \Cref{sec:definable-flips-for-balls}. We now conclude \Cref{thm:closures} from the two lemmas.
 
+% lax begin Lax185574.ClosureTheorem
 \thmClosures*
+% lax end
 
 For brevity, we say a flip $H$ of $G$ \emph{$r$-separates} two sets $A, B\subseteq V(G)$ if $\dist^H(A,B)>r$.
-This terminology extends from sets to vertices as expected.
+This terminology extends from sets to vertices as expected. 
 
 % lax begin Lax185574Proofs.ClosureTheorem.closure_theorem
 \begin{proof}[Proof of \Cref{thm:closures}]
-    We induct on $r$, with $A^*\coloneqq A$, $S(v)\coloneqq \emptyset$, and $H\coloneqq G$ proving the base case $r=0$.
-    Suppose the theorem holds at radius $r$, with parameter bound $s$.
+    We induct on $r$, with $A^*\coloneqq A$, $S(v)\coloneqq \emptyset$, and $H\coloneqq G$ proving the base case $r=0$. 
+    Suppose the theorem holds at radius $r$, with parameter bound $s$. 
     By \Cref{obs:flips-mon-dep}, and since monadically dependent classes have bounded VC-dimension (\Cref{obs:md-vc}), it follows that
     every $s$-definable flip of a graph in $\CC$ has VC-dimension at most some $d\leq O_{\CC,r}(1)$.
 
@@ -166,6 +250,7 @@ This terminology extends from sets to vertices as expected.
     (Crucially, to avoid cyclic dependencies, note that $s$ is an input, not an output, of \Cref{lem:ball-types}.)
 
     Apply the induction hypothesis to $A^*$, obtaining a vertex set $B$ of size $\poly_{\CC,r}(|A^*|)\leq\poly_{\CC,r}(|A|)$ such that every vertex outside $A^*$ is $r$-separated from $A^*$ by a flip defined over a subset of $B$ of size at most $s$. We may assume that $B$ is nonempty.
+
 
     For each $\bar p\in B^s$ and each symmetric relation $R\subseteq\Pi^{s}\times\Pi^{s}$, put $H\coloneqq G\oplus(\bar p,R)$.
     Let $V_H$ be the set of vertices $v$ that are $r$-separated from $A^*$ by $H$, that is, $\Ball_r^H(v)\cap A^*=\emptyset$.
@@ -180,29 +265,31 @@ then $\mathrm{profile}_H(v)=
 \Ball_r^H(v)/\PP_A$
 is the set of equivalence classes that are intersected by $\Ball_r^H(v)$.
 
-Then $\mathrm{profile}_H(v)$
-is a subset of $\ATypes^H(V(G)/ A)$ of size at most $t$,
+
+Then $\mathrm{profile}_H(v)$ 
+is a subset of $\ATypes^H(V(G)/ A)$ of size at most $t$, 
 by \Cref{lem:ball-types}.
 By the Sauer--Shelah lemma (\Cref{lem:ss}), we have that
 \[
     |\ATypes^H(V(G)/ A)|\leq (|A|+1)^d+|A|.
 \]
-It follows that
+It follows that 
+
     \[
         |\{\mathrm{profile}_H(v) \,:\, v \in V_H\}|
         \leq
-        |\ATypes^H(V(G)/ A)|^t \leq \big((|A|+1)^d+|A|\big)^t
-        \leq
+        |\ATypes^H(V(G)/ A)|^t \leq \big((|A|+1)^d+|A|\big)^t 
+        \leq 
         \poly_{\CC,r}(|A|).
     \]
-
+    
     Group the vertices of $V_H$ by their profiles.
     For each group $C$, the ball $\Ball_r^H(C)$:
     \begin{itemize}
         \item avoids $A$, because each $\Ball_r^H(v)$ with $v \in V_H$ does, and
-        \item realizes at most $t$ types over $A$ in $H$, because all $v \in C$ have the same profile of size ${\leq}t$.
+        \item realizes at most $t$ types over $A$ in $H$, because all $v \in C$ have the same profile of size ${\leq}t$.    
     \end{itemize}
-    Applying \Cref{lem:ball-flip} yields a
+    Applying \Cref{lem:ball-flip} yields a 
     number $z\le O_{d,t}(1)\le O_{\CC,r}(1)$ and a
     further $z$-definable flip $H_C$ of $H$ that $(r+1)$-separates $C$ from $A$.
     By transitivity of definable flips (\Cref{lem:definable-flip-transitive}), $H_C$ is an $(s+z)$-definable flip of $G$.
@@ -222,3 +309,13 @@ It follows that
     Hence, the theorem holds at radius $r+1$ with parameter set $A^{**}$ and parameter bound $s+z$.
 \end{proof}
 % lax end
+
+
+
+
+
+
+\input{ball-types.tex}
+\input{ball-flip.tex}
+\input{closures-tuples.tex}
+\input{type-bounds.tex}

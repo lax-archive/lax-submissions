@@ -7,6 +7,7 @@ We will use Gaifman's Locality Theorem~\cite{gaifman}.
 We recommend~\cite[Section~4.1]{logic-graphs-algorithms} for an introduction.
 First some definitions.
 
+
 % lax begin Lax185574.LocalFormulas
 Fix a finite relational signature $\sigma$ of arity $\alpha$.
 Two $\sigma$-formulas $\phi(\bar x)$ and $\psi(\bar x)$ are \emph{equivalent} if for every $\sigma$-structure $A$ and every tuple $\bar a \in V(A)^{|\bar x|}$
@@ -70,7 +71,12 @@ While these extensions of FO are equivalent in expressive power to plain FO, the
 As discussed above, converting such distance formulas to plain FO introduces an additional nesting of quantifiers depending on the arity $\alpha$.
 % lax end
 
+
+
+
+% lax begin Lax185574.LocalToGlobal
 \lemLocalToGlobal*
+% lax end
 
 % lax begin Lax185574Proofs.LocalToGlobal.rankType_eq_of_rankType_induced_eq
 \begin{proof}
@@ -94,6 +100,9 @@ Hence, $A\models\phi(\bar a)\iff A\models\phi(\bar b)$ for all formulas of quant
 \end{proof}
 % lax end
 
+
+  
+
 % lax begin Lax185574.SeparatingTypes
 \begin{lemma}\label{lem:sep-types}
     For every $q,k,c\in\N$ there are numbers $r=r(q)$ and $T=T(q,k,c)$ with the following property. Let $H$ be a graph expanded by at most $c$ unary predicates, and let $U\subseteq V(H)$ be finite.
@@ -104,6 +113,7 @@ Hence, $A\models\phi(\bar a)\iff A\models\phi(\bar b)$ for all formulas of quant
     \]
 \end{lemma}
 % lax end
+
 
 % lax begin Lax185574Proofs.SeparatingTypes.typeCountOver_far_le
 \begin{proof}
@@ -130,8 +140,11 @@ Hence, $A\models\phi(\bar a)\iff A\models\phi(\bar b)$ for all formulas of quant
 \end{proof}
 % lax end
 
-The following is an adaptation of~\cite[Corollary~16]{number-of-types}.
+
+The following is an adaptation of~\cite[Corollary~16]{number-of-types}. 
+% lax begin Lax185574.SeparatingTypesTuples
 \septypestuples*
+% lax end
 % lax begin Lax185574Proofs.SeparatingTypesTuples.ncard_rankTypeOver_append_le
 \begin{proof}
   Let $r=r(q)$ and $T=T(q,k,c)$ be given by \Cref{lem:sep-types},
@@ -139,26 +152,26 @@ The following is an adaptation of~\cite[Corollary~16]{number-of-types}.
   \[
   \left|
     \{
-    \tp_q^H(\bar a/U) \,:\, \bar a \in F^k
+    \tp_q^H(\bar a/U) \,:\, \bar a \in F^k  
     \}
   \right|
   \leq
   T(q,k,c)
   \]
   in case no tuple $\bar u$ is involved.
-  To lift that result, it remains to show that for a fixed tuple $\bar u$ with elements from $U$, the type
+  To lift that result, it remains to show that for a fixed tuple $\bar u$ with elements from $U$, the type 
   $\tp^H_q(\bar a\bar u/U)$ depends only on $\tp^H_q(\bar a/U)$.
   More precisely, it suffices to show that there exists a map $\phi \mapsto \phi_{\bar u}$ such that every formula
-  $\phi(\bar x \bar y)$ with
+  $\phi(\bar x \bar y)$ with 
 
   \begin{center}
     quantifier rank ${\leq}q$,
     \qquad
-    $|\bar x| = k$ and $|\bar y| = |\bar u|$,
+    $|\bar x| = k$ and $|\bar y| = |\bar u|$, 
     \qquad
     and parameters from $U$
   \end{center}
-  gets mapped to a formula $\phi_{\bar u}(\bar x)$ of the same quantifier rank and again with parameters from $U$ such that
+  gets mapped to a formula $\phi_{\bar u}(\bar x)$ of the same quantifier rank and again with parameters from $U$ such that 
   for every $\bar a \in F^k$
   \[
     \phi\in\tp^H_q(\bar a\bar u/U)
@@ -167,7 +180,7 @@ The following is an adaptation of~\cite[Corollary~16]{number-of-types}.
     \iff \phi_{\bar u}\in\tp^H_q(\bar a/U).
   \]
   We can obtain a suitable $\phi_{\bar u}(\bar x)$ from $\phi(\bar x \bar y)$ by substituting in $\phi$ each free variable $y_i \in \bar y$ with the corresponding parameter $u_i \in \bar u$ from $U$.
-  This translation depends only on $\bar u$ and not on $\bar a$.
+  This translation depends only on $\bar u$ and not on $\bar a$. 
   It does not change the quantifier rank, and still all parameters of $\phi_{\bar u}$ are contained in $U$.
 \end{proof}
 % lax end

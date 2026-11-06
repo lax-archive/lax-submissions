@@ -3,6 +3,7 @@
 The upcoming Parts~\ref{part:types}, \ref{part:definable-construction-sequences}, and~\ref{part:mc} prove three independent results.
 This section combines them into the main result, \Cref{thm:main}. It does so via two theorems that are connected by the following type-based width notion.
 
+
 % lax begin Lax185574.Width
 \begin{restatable}{definition}{defrqwidth}\label{res:width}
 For $r,q\in\N$,
@@ -15,19 +16,24 @@ is defined as:
 
 The offset between $G_t$ and $G_{t+1}$ mirrors the offset between $\PP_{i-1}$ and $R_i$ in the width definition of chains and of merge sequences (see \Cref{def:chain-width,def:merge-sequence}).
 
+
 % lax begin Lax185574.FewTypes
 \begin{theorem}\label{thm:skel-few-types}
   Let $\CC$ be a monadically dependent graph class, $r,q\in\N$, and let $\eps>0$ be a rational.
   There is a constant $\alpha\ge1$ depending only on $\CC$ and $q$ such that every $n$-vertex graph $G\in\CC$
-  has a construction sequence of \text{radius-$r$} depth-$q$ width $O_{\CC,r,q,\eps}(n^{\alpha\eps})$ and length $O_{\CC,r,q,\eps}(n^{1+\alpha\eps})$.
+  has a construction sequence of \text{radius-$r$} depth-$q$ width $O_{\CC,r,q,\eps}(n^{\alpha\eps})$ and length $O_{\CC,r,q,\eps}(n^{1+\alpha\eps})$. 
   Moreover, there is an algorithm (independent of~$\CC$) which, given $r,q\in\N$, a rational $\eps>0$, and an $n$-vertex graph $G\in\CC$,
   computes such a construction sequence in time $\widehat O_{\CC,r,q,\eps}(n^3)$.
 \end{theorem}
 % lax end
-\noindent
+% \begin{proof}
+\noindent 
 It is important that $\alpha$ does not depend on $\eps$, as this allows us to make the exponent $\alpha\eps$ of the width as small as we like.
-The upcoming \Cref{sec:skel-few-types} assembles \Cref{thm:skel-few-types} from the key results of
+The upcoming \Cref{sec:skel-few-types} assembles \Cref{thm:skel-few-types} from the key results of 
 \Cref{part:types,part:definable-construction-sequences}.
+% \end{proof}
+
+
 
 \newcommand{\mcdepth}{q}
 % lax begin Lax185574.ConstructionModelChecking
@@ -49,7 +55,9 @@ From these two theorems, we can derive
 \Cref{thm:main} without much effort.
 The only subtlety is that the algorithm does not know $\CC$, so it cannot choose $\eps$ itself.
 
+% lax begin Lax185574.ModelChecking
 \mainthm*
+% lax end
 
 % lax begin Lax185574Proofs.ModelChecking.exists_program_modelChecking
 \begin{proof}[Proof of \Cref{thm:main}]
@@ -68,10 +76,11 @@ The only subtlety is that the algorithm does not know $\CC$, so it cannot choose
   where $\beta\coloneqq(c+1)\alpha$.
   Since $\beta/j>0$, the subpolynomial factor hidden by $\widehat O$ is absorbed by $n^{\beta/j}$.
   The number $\beta$ depends on $\CC$ and $\phi$, but not on~$j$.
-
+  
   The algorithm does not know $\CC$, so it cannot choose $j$.
   Instead, it runs all algorithms $\mathcal A_j$ in parallel, giving $\mathcal A_j$ a $2^{-j}$ share of the computation, and returns the first answer.
   Its answer is correct, as every $\mathcal A_j$ correctly solves the model checking problem on every input graph.
+
 
   For the running time, let $\eps>0$ and $j\coloneqq\lceil2\beta/\eps\rceil$.
   If $\mathcal A_j$ halts within time $T$, then it completes within the first $2^jT$ simulated steps, so the algorithm halts within time
@@ -95,6 +104,7 @@ We first state the key results of the two parts, and derive \Cref{thm:skel-few-t
 
 The key ingredient towards proving \Cref{thm:skel-few-types} is the following type bound derived in \Cref{part:types}.
 
+% Part I restates this theorem for possibly infinite graphs, locally via {\typeboundgeneraltrue\thmtypes*}.
 % lax begin Lax185574.TypeBound
 \newif\iftypeboundgeneral
 \begin{restatable}{theorem}{thmtypes}\label{thm:type-bound}
@@ -154,7 +164,10 @@ The key result of \Cref{part:definable-construction-sequences} is the following 
 \end{restatable}
 % lax end
 
+
+
 For nowhere dense classes, the following stronger bounds follow easily from known results. The proof is given in \Cref{sec:nd}.
+
 
 \begin{restatable}{theorem}{thmnddefseq}\label{thm:nd-def-seq}
   Let $\CC$ be a nowhere dense graph class, $r\in\N$, and $\eps>0$.
@@ -164,6 +177,8 @@ For nowhere dense classes, the following stronger bounds follow easily from know
 
 In particular, \Cref{thm:nd-def-seq}, together with the results of \Cref{part:types,part:mc}, gives an alternative proof of the result of Grohe, Kreutzer, and Siebertz~\cite{gks} that first-order model checking is fixed-parameter tractable on nowhere dense classes.
 (Alternatively, in nowhere dense classes one can replace the type bound from \Cref{part:types}  by a stronger bound deducible from \cite{number-of-types}).
+  
+
 
 \subsubsection{Assembling the parts}\label{sec:skel-assembly}
 
@@ -228,7 +243,7 @@ $\tp_q^A(\bar a)$ depends only on
   Let $\CC$ be a monadically dependent graph class containing $G$.
   Let $h$ be the number given by \Cref{lem:skel-def-to-types} for depth $q$.
   We run the algorithm of \Cref{thm:skel-def-seq} with radius $r+h$ and $\eps$, which takes time $\widehat O_{\CC,r,q,\eps}(n^3)$.
-
+  
   By \Cref{thm:skel-def-seq}, there is a constant $\delta\ge1$ depending only on $\CC$ such that the sequence is radius-$(r+h)$ definable with $c\le O((r+h)/\eps)\le O_{r,q,\eps}(1)$ unary predicates, $s\le O_{\CC,r,q,\eps}(n^{\delta\eps})$ parameters, and rank $q_0\coloneqq7$,
   and it has length $O_{\CC,r,q,\eps}(n^{1+\delta\eps})$.
   By \Cref{lem:skel-def-to-types}, there is an integer $D\ge1$ such that its radius-$r$ depth-$q$ width is at most

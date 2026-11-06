@@ -1,13 +1,20 @@
 \documentclass[11pt]{article}
-\input{macros.tex}
+\input{imports-and-macros.tex}
 
 \begin{document}
 \pagenumbering{roman}
 \pagestyle{empty}
 
-\title{First-Order Model Checking\\on Monadically Dependent Graph Classes\thanks{JD: Funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) -- project number 563448077.
-  NM and ST received funding from the European Research Council (ERC) with grant agreement No.\ 101126229 -- BUKA.
-  NM also received funding from the European Union through an ERA Fellowship with grant agreement No.\ 101334340 -- LoCoMoDe.}}
+\newcommand{\funding}{
+JD: Funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) -- project number 563448077.
+NM and ST received funding from the European Research Council (ERC) with grant agreement No.\ 101126229 -- BUKA.
+NM also received funding from the European Union through an ERA Fellowship with grant agreement No.\ 101334340 -- LoCoMoDe.
+\\[0.5em]
+\hspace*{\fill}\includegraphics[width=40px]{logo-eu.png}\hspace{1em}\includegraphics[width=40px]{logo-erc.jpg}
+}
+
+
+\title{First-Order Model Checking\\on Monadically Dependent Graph Classes\thanks{\funding}}
 \author{Jan Dreier\\{\small HPI Potsdam, Germany}
   \and Nikolas M{\"a}hlmann\\{\small University of Warsaw, Poland}
   \and Szymon Toru{\'n}czyk\\{\small University of Warsaw, Poland}}
@@ -20,14 +27,15 @@ Monadically dependent graph classes are those in which first-order logic cannot 
 They include all nowhere dense classes and all classes of bounded twin-width.
 
 We show that first-order model checking is fixed-parameter tractable on every monadically dependent graph class.
-Together with the known hardness result for hereditary classes that are not monadically dependent, this gives a complete characterization of the hereditary graph classes with fixed-parameter tractable first-order model checking.
+Together with the known hardness result for hereditary classes that are not monadically dependent, this gives a complete characterization of the hereditary graph classes with fixed-parameter tractable first-order model checking. %, assuming $\mathrm{FPT}{\neq}\mathrm{AW}[\star]$.
 This resolves a central open problem in algorithmic model theory.
 
-Our proof combines ideas from
-structural graph theory (graph decompositions),
+Our proof combines ideas from 
+structural graph theory (graph decompositions), 
 finite model theory (locality of first-order logic), and model theory (counting types).
 In particular, we show that in monadically dependent classes, tuples of fixed length have only $|U|^{O(1)}$ types of fixed quantifier rank over any set of parameters $U$.
 \end{abstract}
+
 
 \newpage
 \setcounter{tocdepth}{1}
@@ -36,35 +44,59 @@ In particular, we show that in monadically dependent classes, tuples of fixed le
 \clearpage
 \pagestyle{plain}
 \pagenumbering{arabic}
-\input{sections/introduction.tex}
-\input{sections/overview.tex}
-\input{sections/preliminaries.tex}
-
-\input{sections/main-proof.tex}
-
-\clearpage
-\input{sections/closures.tex}
-\input{sections/ball-types.tex}
-\input{sections/ball-flip.tex}
-\input{sections/closures-tuples.tex}
-\input{sections/type-bounds.tex}
+\input{intro.tex}
+\input{overview.tex}
+\input{prelims.tex}
+\input{skeleton.tex}
 
 \clearpage
-\input{sections/definable-sequences.tex}
+\input{closures.tex}
 
 \clearpage
-\input{sections/model-checking.tex}
+\input{better-definable-mw.tex}
+
+\clearpage
+\input{localglobal-trees.tex}
+
+
+
 
 \addtocontents{toc}{\protect\vspace{1em}}
-\input{sections/ai-methodology.tex}
+\section*{AI methodology}
+\addcontentsline{toc}{section}{AI methodology}
+We developed the approach to the main theorem in summer 2025, without AI assistance.
+By summer 2026, we had a draft of the present paper, and the companion paper \cite{md-abmw} was nearly complete.
+The draft already had essentially the current proof structure.
+It contained a complete proof of the result of \Cref{part:types}, and definitions and lemma statements for the other parts, though some of their proofs were still sketches.
+Believing that these sketches could be completed, we used GPT-6 to help check the argument.
+
+In \Cref{part:definable-construction-sequences}, we had proposed a proof of a stronger version of \Cref{cl:from-merge-to-construction}, in which the number of unary predicates is bounded by a constant independent of the length of the input merge sequence.
+This would have let us apply the results of \cite{md-abmw} without controlling the sequence length.
+The model identified a gap in this proof.
+We expected the gap to be easy to repair with the methods already in the paper, but the model did not find a repair.
+
+We therefore asked a narrower question: are there construction sequences of width $n^{o(1)}$ that are locally definable using a constant number of unary predicates?
+The model observed that a slightly weaker width bound of $n^\eps$, for any fixed $\eps>0$, can be achieved by tuning the parameter $q$ in Theorem 4.3 in \cite{md-abmw}, so that it produces chains of length $O(r/\eps)$.
+Since the number of unary predicates depends only on the length of the input sequence, this gives a bound independent of the size of the graph.
+We immediately recognized that this was enough to close the gap within our original proof strategy.
+
+The text of \Cref{part:types,part:definable-construction-sequences} was written by the authors.
+We used LLMs to help write some proofs in \Cref{part:mc} that are mechanical adaptations of proofs from \cite{locality-note}.
+GPT-6 also proposed a shorter proof of \Cref{lem:ball-types} in \Cref{part:types}, which we verified and adopted.
+Finally, we used LLMs to streamline the presentation.
+The models used were GPT-6, Claude Opus~5.5 and Claude Fable~5.1.
+
+The authors verified the correctness and originality of all content, including references.
+
 
 \printbibliography[heading=bibintoc]
 
 \part*{Appendix}
 \addcontentsline{toc}{part}{Appendix}
 \appendix
-\input{sections/appendix-forbidden-patterns.tex}
-\input{sections/appendix-gaifman.tex}
-\input{sections/appendix-nowhere-dense.tex}
+\input{forbidden-patterns.tex}
+\input{app-gaifman.tex}
+\input{nd.tex}
+
 
 \end{document}

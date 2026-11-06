@@ -1,0 +1,405 @@
+\usepackage[letterpaper, margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage{xspace}
+\usepackage{bm}
+\usepackage[breakable]{tcolorbox}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{relsize}
+% \usepackage[left]{lineno}
+% \linenumbers
+\usepackage{tikz}
+  \usetikzlibrary{positioning,fit,calc}
+  \tikzstyle{block} = [draw=black, ultra thin, text width=2cm, minimum height=1.3cm, font = {\footnotesize\itshape},align=center]  
+  \tikzstyle{arrow} = [thick,->,>=stealth]
+  
+  \renewenvironment{quote}
+  {\list{}{\leftmargin=0.5cm \rightmargin=0.5cm} % adjust margins here
+   \item\relax}
+  {\endlist}
+  
+    
+\newcommand{\tree}{\mathrm{tree}}
+\newcommand{\ttree}{\mathrm{ttree}}
+\newcommand{\support}{\mathrm{support}}
+
+  \usepackage[page,toc,titletoc,title]{appendix}
+\usepackage[disable,textsize=footnotesize]{todonotes}
+\usetikzlibrary{shapes,arrows,positioning,patterns}
+\usepackage{comment}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\hypersetup{
+    colorlinks=true,
+    citecolor=blue,
+    linkcolor=blue,
+    filecolor=blue,      
+    urlcolor=blue,
+}
+\usepackage{thm-restate}
+\usepackage{placeins}
+\usepackage[font=small,labelfont=bf,margin=0.06in]{caption}
+
+%more flexibility with bib entries
+\usepackage[style=alphabetic,maxnames=999]{biblatex}
+\addbibresource{bib.bib}
+\AtEveryBibitem{
+  \clearfield{editor}
+  \clearlist{editor}
+  \clearname{editor}
+  \clearfield{location}
+  \clearlist{location}
+  \clearname{location}
+  \clearfield{isbn}
+  \clearlist{isbn}
+  \clearname{isbn}
+  % \clearfield{url}
+  % \clearlist{url}
+  % \clearname{url}
+  \ifentrytype{online}
+    {}
+    {\clearfield{url}}
+}
+
+\RequirePackage[osf,sc]{mathpazo}
+% Margin kerning and slight font expansion, which avoid most overfull lines.
+\usepackage{microtype}
+% Extra stretch for the few paragraphs that still cannot be broken without
+% an overfull line.  TeX uses it only in a final pass for such paragraphs,
+% so all other paragraphs are unaffected.
+\setlength{\emergencystretch}{1.5em}
+%for vertical bars
+\usepackage{framed}
+\usepackage{mdframed}
+\usepackage{float}
+\usepackage{xcolor}
+
+
+
+\newcommand{\ind}[2][]{%
+  \mathrel{
+    \mathop{
+      \vcenter{
+        \hbox{\oalign{\noalign{\kern-.3ex}\hfil$\vert$\hfil\cr
+              \noalign{\kern-.7ex}
+              $\smile$\cr\noalign{\kern-.3ex}}}
+      }
+    }^{#2}\displaylimits_{#1}
+  }
+}
+\newcommand{\wh}{\widehat}
+\newcommand{\nind}{\not\ind}
+\renewcommand{\deg}{\mathrm{degeneracy}}
+%note macros
+\newcommand{\sz}[1]{\todo[color=pink!40]{sz: #1}}
+\newcommand{\jan}[1]{\todo[color=green!40]{jan: #1}}
+\newcommand{\niko}[1]{\todo[color=blue!20]{niko: #1}}
+\newcommand{\nikoin}[1]{\todo[inline,size=\normalsize,color=blue!20,caption={Niko: [cannot render inline todos in listoftodos]}]{Niko: #1}}
+
+\newcommand{\szfuture}[1]{\todo[color=green!40]{future: #1}}
+
+
+
+
+\DeclareMathOperator{\rk}{rk}
+\DeclareMathOperator{\VCdim}{VCdim}
+\DeclareMathOperator{\TVCdim}{{2}VCdim}
+\DeclareMathOperator{\fw}{fw}
+\DeclareMathOperator{\cw}{cliquewidth}
+\DeclareMathOperator{\rw}{rankwidth}
+\DeclareMathOperator{\bfw}{bfw}
+\DeclareMathOperator{\const}{const}
+\newcommand{\fwp}{\fw^\mathrm{part}}%$k$-partite
+\newcommand{\fwg}{\fw^\mathrm{gen}}%$k$-generated
+\newcommand{\fwd}{\dfw}
+% \newcommand{\fwd}{\fw^\mathrm{def}}%$k$-definable
+\newcommand{\bfwp}{\bfw^\mathrm{part}}%$k$-partite
+\newcommand{\bfwg}{\bfw^\mathrm{gen}}%$k$-generated
+\newcommand{\bfwd}{\bfw^\mathrm{def}}%$k$-definable
+
+\newcommand{\poly}{\mathrm{poly}}
+\newcommand{\subpoly}{\mathrm{subpoly}}
+\DeclareMathOperator{\iw}{iw}
+\DeclareMathOperator{\copw}{copwidth}
+\DeclareMathOperator{\dfw}{dfw}
+\DeclareMathOperator{\adm}{adm}
+\DeclareMathOperator{\imp}{imp}
+\DeclareMathOperator{\tww}{tww}
+\DeclareMathOperator{\wcol}{wcol}
+\DeclareMathOperator{\scol}{scol}
+\DeclareMathOperator{\sreach}{SReach}
+\DeclareMathOperator{\Types}{Types}
+\DeclareMathOperator{\wreach}{WReach}
+\DeclareMathOperator{\loli}{loli}
+\DeclareMathOperator{\cone}{Cone}
+\DeclareMathOperator{\Ball}{Ball}
+
+%%% LEFTBAR BEGIN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%https://tex.stackexchange.com/questions/50612/alignment-in-the-leftbar-environment-is-rightbar-possible
+\newlength{\leftbarwidth}
+\setlength{\leftbarwidth}{3pt}
+\newlength{\leftbarsep}
+\setlength{\leftbarsep}{10pt}
+
+\renewenvironment{leftbar}[1][blue]
+{%
+\def\FrameCommand
+{%
+{\hspace{-8pt} \color{#1} \vrule width 3pt}%
+\hspace{0pt}%must no space.
+\fboxsep=\FrameSep\colorbox{#1!5!}%
+}%
+\MakeFramed{\hsize\hsize\advance\hsize-\width\FrameRestore}%
+}
+{\endMakeFramed}
+\setlength{\FrameSep}{5pt}
+%%% LEFTBAR END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\makeatletter
+%define \szin environment, which which ignores its content if todonotes is used with "disabled" option, and shows a comment otherwise
+
+  \if@todonotes@disabled % Check todnotes is used with disabled option
+  \excludecomment{szin}
+  \else %todonotes enabled
+  \newenvironment{szin}{\begin{leftbar}[red]{\noindent\bf sz: }}{\end{leftbar}}
+  \fi
+
+  % Jan's inline notes, rendered like szin.
+  \if@todonotes@disabled
+  \excludecomment{janin}
+  \else
+  \newenvironment{janin}{\begin{leftbar}[blue!70!black]{\noindent\bf jan: }}{\end{leftbar}}
+  \fi
+
+  \if@todonotes@disabled % Check todnotes is used with disabled option
+  \excludecomment{new}
+  \else %todonotes enabled
+  \newenvironment{new}{\begin{leftbar}[green]{\noindent\bf new: }}{\end{leftbar}}
+  \fi
+
+\makeatother
+
+
+\newcommand\myitem[1]{\hyperref[item:#1]{\emph{\ref*{item:#1}.}{}}\xspace}
+
+% Needed to give custom number to a theorem
+% Usage: \begin{customthm}{\ref{thm:x}}[slightly reformulated]
+\newtheorem{innercustomthm}{Theorem}
+\newenvironment{customthm}[1]
+  {\renewcommand\theinnercustomthm{#1}\innercustomthm}
+  {\endinnercustomthm}
+
+% \newtheorem{innercustomlem}{Theorem}
+% \newenvironment{customlem}[1]
+%   {\renewcommand\theinnercustomlem{#1}\innercustomlem}
+%   {\endinnercustomlem}
+
+% % Needed to give custom number to a corollary
+% \newtheorem{innercustomcol}{Corollary}
+% \newenvironment{customcol}[1]
+%   {\renewcommand\theinnercustomcol{#1}\innercustomcol}
+%   {\endinnercustomcol}
+
+% Needed to give custom number to a definition
+% \newtheorem{innercustomdef}{Definition}
+% \newenvironment{customdef}[1]
+%   {\renewcommand\theinnercustomdef{#1}\innercustomdef}
+%   {\endinnercustomdef}
+\newcommand{\appmark}{$\ast$}
+%\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+% thm-restate (via aliasctr) overrides hyperref's \@addtoreset patch, so the
+% hyperlink anchors would omit the section number and collide across sections.
+% Set them by hand; this must precede the [theorem]-sharing environments,
+% which copy \theHtheorem when they are declared.
+\renewcommand{\theHtheorem}{\theHsection.\arabic{theorem}}
+\newtheorem*{theorem*}{Theorem}
+\newtheorem{theorem?}[theorem]{?`Theorem?}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem*{mcconjecture}{Model Checking Conjecture}
+\newtheorem{question}[theorem]{Question}
+
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem*{corollary*}{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem*{lemma*}{Lemma}
+\newtheorem{lemma?}[theorem]{?`Lemma?}
+\newtheorem{fact}[theorem]{Fact}
+\newtheorem{observation}[theorem]{Observation}
+\newtheorem{notation}{Notation}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem*{proposition*}{Proposition}
+\newtheorem{wrong}[theorem]{False Statement}
+\newtheorem*{wrong*}{False Statement}
+
+\renewcommand{\qedsymbol}{\raisebox{0.2ex}{\scalebox{0.85}{$\blacksquare$}}}
+\crefname{theorem?}{Theorem{\scriptsize{?}}}{Theorems{\scriptsize{?}}}
+\crefname{lemma?}{Lemma{\scriptsize{?}}}{Lemmas{\scriptsize{?}}}
+\crefname{Theorem?}{Theorem{\scriptsize{?}}}{Theorems{\scriptsize{?}}}
+\crefname{Lemma?}{Lemma{\scriptsize{?}}}{Lemmas{\scriptsize{?}}}
+
+
+\newtheorem{claim}{Claim}[section]
+\renewcommand{\theHclaim}{\theHsection.\arabic{claim}}
+\crefname{claim}{claim}{Claims} % lowercase
+\Crefname{claim}{Claim}{Claims} % capitalized
+
+\newenvironment{claimproof}[1][\proofname]{%
+  \renewcommand{\qedsymbol}{\raisebox{0.3ex}{\scalebox{1}{$\blacktriangleleft$}}}%
+  \begin{proof}[#1]%
+}{%
+  \end{proof}%
+}
+
+\newtheorem{goal}[theorem]{Goal}
+\newcommand{\msfw}{\mathrm{monotone\text{-}set\text{-}fw}}
+\newcommand{\mfw}{\mathrm{monotone\text{-}fw}}
+
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{definition}[theorem]{Definition}
+
+% \numberwithin{equation}{section}
+
+\def\cl{\mathrm{cl}}
+
+\def\marker{\bar}
+\def\bu{{\marker u}}
+\def\bv{{\marker v}}
+\def\bw{{\marker w}}
+\def\bx{{\marker x}}
+\def\by{{\marker y}}
+\def\bz{{\marker z}}
+\def\bs{{\marker s}}
+\renewcommand{\L}{{\mathrm{L}}}
+\newcommand{\G}{{\mathrm{G}}}
+
+\newcommand{\parent}{\mathrm{parent}}
+\renewcommand{\preceq}{\preccurlyeq}
+\renewcommand{\succeq}{\succcurlyeq}
+
+
+\def\Nesetril{Ne\v{s}et\v{r}il\xspace}
+\def\Dvorak{Dvo\v{r}\'{a}k\xspace}
+\def\Kral{Kr\'{a}l\xspace}
+\def\Gajarsky{Gajarsk\'{y}\xspace}
+
+\newcommand{\cmso}{\mathrm{CMSO}}
+\newcommand{\mso}{\mathrm{MSO}}
+\newcommand{\first}{\text{first}}
+\newcommand{\str}[1]{{{#1}}}
+\newcommand{\from}{\colon}
+\newcommand{\tto}{\rightsquigarrow}
+\newcommand{\pto}{\rightharpoonup}
+\newcommand{\set}[1]{\{#1\}}
+\newcommand{\mset}[1]{\{\!\!\{#1\}\!\!\}}
+\newcommand{\setof}[2]{\set{#1 \,:\, #2 }}
+\newcommand{\setoff}[2]{\set{#1 \,:\, #2 }}
+\newcommand{\msetof}[2]{\mset{#1 \,|\, #2 }}
+\def\phi{\varphi}
+\def\cal{\mathcal}
+\def\N{\mathbb N}
+\def\R{\mathbb R}
+\def\epsilon{\varepsilon}
+\def\eps{\varepsilon}
+\renewcommand{\subset}{\subseteq}
+\renewcommand{\setminus}{-}
+\renewcommand{\le}{\leqslant}
+\renewcommand{\leq}{\le}
+\renewcommand{\ge}{\geqslant}
+\renewcommand{\geq}{\ge}
+\newcommand{\lca}{\mathrm{lca}}
+\newcommand{\dist}{\mathrm{dist}}
+\newcommand{\lie}{\mathrm{lie}}
+%treewidth and treedepth
+\newcommand\tw{{\rm treewidth}}
+\newcommand\td{{\rm treedepth}}
+\renewcommand{\AA}{\cal A}
+\newcommand{\BB}{\cal B}
+\newcommand{\CC}{\mathscr C}
+\newcommand{\DD}{\mathscr D}
+\newcommand{\TT}{\cal T}
+\newcommand{\HH}{\cal H}
+\newcommand{\RR}{\cal R}
+\renewcommand{\SS}{\cal S}
+\newcommand{\FF}{\cal F}
+\newcommand{\PP}{\cal P}
+\newcommand{\UU}{\cal U}
+\newcommand{\QQ}{\cal Q}
+\newcommand{\trans}[1]{\mathsf{#1}}
+% \newcommand{\merge}[2]{\stackrel{u\mapsto v}{\longrightarrow}}
+\DeclareMathOperator{\mw}{mw}
+\newcommand\reach{{\rm reach}}
+\newcommand{\warp}[1]{\langle #1\rangle}
+\newcommand{\leaves}{\mathrm{Leaves}}
+
+\newcommand{\ATypes}{\mathrm{ATypes}}
+
+% \def\H{\mathcal H}
+\def\S{\mathcal S}
+\newcommand{\Oof}{O}
+\def\edge{\textit{edge}}
+\newcommand{\tup}{\bar}
+\newcommand{\tp}{\textnormal{tp}}
+\newcommand{\ltp}{\textnormal{ltp}}
+\newcommand{\ttp}{\textnormal{ttp}}
+\newcommand{\atp}{\textnormal{atp}}
+% \newcommand{\tpp}[1]{\textnormal{tp}_{#1}}
+\def\typi{\textit{type}}
+\newcommand{\stp}{\textnormal{stp}}
+\newcommand{\stree}{\textnormal{stree}}
+\newcommand{\ftree}{\textnormal{ftree}}
+% \newcommand{\ltp}{\textnormal{ltp}}
+% Part III (localglobal-trees.tex)
+\newcommand{\distFO}{\textup{dist-FO}\xspace}
+\newcommand{\merge}[2]{\mathrm{merge}_{#1,#2}}
+\newcommand{\resolve}[3]{\mathrm{resolve}^{#1}_{#2,#3}}
+\newcommand{\rhom}{\rho^-}
+\newcommand{\rhop}{\rho^+}
+\newcommand{\size}[1]{\lVert #1\rVert}
+\newcommand{\crad}{R}  % clustering radius of lem:clustering and lem:to-ftree
+
+% \newcommand{\dist}{\textnormal{dist}}
+% \newcommand{\reach}{\textnormal{reach}}
+\newcommand{\cluster}{\textnormal{cluster}}
+\newcommand{\rep}{\textnormal{rep}}
+\newcommand{\FlipBudget}{\textsf{Flips}}
+\newcommand{\sample}{\mathrm{sample}}
+
+
+\newcommand{\anonym}[2][]{#2}%for anonymized version put #1, for non-anonymized put #2
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \newcommand{\ERCagreement}{This paper is part of a project that has received funding from the European Research Council (ERC) (grant agreement No 101126229 -- {\sc BUKA}).}
+
+
+\newcommand{\ERCagreement}{\xspace ST received funding from the European Research Council (ERC) (grant agreement №948057 -- {\sc bobr} -- and №101126229 -- {\sc buka}).
+% \begin{picture}(0,0)
+%   \put(412,-430)
+%   {\hbox{\includegraphics[width=40px]{logo-erc.jpg}}}
+%   \put(402,-490)
+%   {\hbox{\includegraphics[width=60px]{logo-eu.pdf}}}
+%   \end{picture}%
+\begin{tikzpicture}[remember picture, overlay]
+  % Place the ERC logo in the lower-right corner
+  \coordinate (refpoint) at (12,0); %(current page.south east); 
+
+  \node[anchor=south, yshift=0cm] at (refpoint)
+  {\includegraphics[width=40px]{logo-erc.jpg}};
+
+  % Place the EU logo slightly below the ERC logo
+  \node[anchor=south, yshift=-2cm] at (refpoint)
+  {\includegraphics[width=60px]{logo-eu.pdf}};
+\end{tikzpicture}
+}

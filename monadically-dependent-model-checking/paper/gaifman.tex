@@ -1,0 +1,31 @@
+% \subsection{Locality of first-order logic}
+% \label{sec:locality-of-fo}
+% \newcommand{\adj}{\mathrm{adj}}
+% In this subsection we show that, in a graph with boundedly many unary predicates, the tuples far from a set $U$ realize only boundedly many types over $U$, with a bound independent of $|U|$ (\Cref{lem:sep-types,lem:sep-types-tuple}).
+The following result is an adaptation of~\cite[Corollary~16]{number-of-types}. We provide a self-contained proof in \Cref{app:gaifman}.
+
+
+
+% lax begin Lax185574.SeparatingTypesTuples
+\begin{restatable}{lemma}{septypestuples}\label{lem:sep-types-tuple}
+    For every $q,k,c\in\N$ there are numbers $r=r(q)$ and $T=T(q,k,c)$ with the following property. Let $H$ be a graph expanded by at most $c$ unary predicates, and let $U\subseteq V(H)$ be finite. Fix a tuple $\bar u$ of vertices of $U$ of finite length.
+    Let $F \coloneqq \{a\in V(H) \,:\, \dist^H(a,U) > r\}$. 
+    Then
+    \[
+      \left|
+        \{
+        \tp_q^H(\bar a\bar u/U) \,:\, \bar a \in F^k  
+        \}
+      \right|
+      \leq
+      T(q,k,c).      
+    \]
+\end{restatable}
+% lax end
+
+
+
+
+
+
+

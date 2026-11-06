@@ -2,29 +2,19 @@
 \section{Number of types over a set of parameters}\label{sec:types-over-sets}
 In this section we prove \Cref{thm:type-bound}, which bounds the number of types of $k$-tuples over a set $U$ of parameters polynomially in $|U|$.
 
-We use a consequence of locality of first-order logic, which bounds the number of types of tuples that are far from $U$.
-The following result is an adaptation of~\cite[Corollary~16]{number-of-types}. We provide a self-contained proof in \Cref{app:gaifman}.
+We use a consequence of locality of first-order logic, which bounds the number of types of tuples that are far from $U$. 
+% Afterwards, we reduce the general case to this one using the Closure Theorem for Tuples.
+\input{gaifman.tex}
 
-% lax begin Lax185574.SeparatingTypesTuples
-\begin{restatable}{lemma}{septypestuples}\label{lem:sep-types-tuple}
-    For every $q,k,c\in\N$ there are numbers $r=r(q)$ and $T=T(q,k,c)$ with the following property. Let $H$ be a graph expanded by at most $c$ unary predicates, and let $U\subseteq V(H)$ be finite. Fix a tuple $\bar u$ of vertices of $U$ of finite length.
-    Let $F \coloneqq \{a\in V(H) \,:\, \dist^H(a,U) > r\}$.
-    Then
-    \[
-      \left|
-        \{
-        \tp_q^H(\bar a\bar u/U) \,:\, \bar a \in F^k
-        \}
-      \right|
-      \leq
-      T(q,k,c).
-    \]
-\end{restatable}
-% lax end
+% \subsection{Type bounds}
 
 We now prove \Cref{thm:type-bound} by combining \Cref{lem:sep-types-tuple} with the Closure Theorem for Tuples (\Cref{thm:closuresTuples}).
 
+
+
+% lax begin Lax185574.TypeBound
 {\typeboundgeneraltrue\thmtypes*}
+% lax end
 
 % lax begin Lax185574Proofs.TypeBound.typeCountOver_le
 \begin{proof}
@@ -42,7 +32,7 @@ We now prove \Cref{thm:type-bound} by combining \Cref{lem:sep-types-tuple} with 
 
     We want to bound the number of types of tuples $\bar v \in V(G)^k$ over $U$.
     By padding and permuting $2k$-tuples, up to a multiplicative factor of $O_k(1)$, it suffices to bound the number of types for the slightly longer tuples of the form $\bar a\bar u$ with $\bar a \in \overline{U}^k$ and $\bar u \in U^k$.
-
+    
     For $H\in\HH$, let $F_H\coloneqq\{w\in V(G) \,:\, \dist^H(w,U)>r\} \subseteq \overline{U}$.
     As $\bar a\in\overline{U}^k$ lies in $F_{H(\bar a)}^k$ for some $H(\bar a) \in \HH$, we have
     \[
@@ -68,3 +58,4 @@ We now prove \Cref{thm:type-bound} by combining \Cref{lem:sep-types-tuple} with 
     where we use $T(q,k,c+s)\leq O_{\CC,q,k,c}(1)$, as $s\leq O_{\CC,q,k}(1)$, and $|\HH|\leq\poly_{\CC,q,k}(|U|)$.
 \end{proof}
 % lax end
+

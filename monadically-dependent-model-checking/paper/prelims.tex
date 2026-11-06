@@ -2,20 +2,23 @@
 \section{Preliminaries}\label{sec:prelims}
 
 $\N$ denotes the set of non-negative integers and $[n]\coloneqq\set{1,\ldots,n}$ for $n\in\N$.
-For a set $V$, we write $\binom V2$ for the set of unordered pairs $uv$ of distinct elements of $V$, and for $X,Y\subseteq V$ we put $XY\coloneqq\setof{xy}{x\in X,\ y\in Y,\ x\ne y}$. A graph $G$ consists of a finite set $V$ of \emph{vertices} and a set $E\subseteq {V\choose 2}$ of \emph{edges}, denoted by $V(G)$ and $E(G)$.
+For a set $V$, we write $\binom V2$ for the set of unordered pairs $uv$ of distinct elements of $V$, and for $X,Y\subseteq V$ we put $XY\coloneqq\setof{xy}{x\in X,\ y\in Y,\ x\ne y}$. A graph $G$ consists of a finite set $V$ of \emph{vertices} and a set $E\subseteq \binom{V}{2}$ of \emph{edges}, denoted by $V(G)$ and $E(G)$.
 The (open) \emph{neighborhood} of a vertex $v\in V(G)$ is the set $N^G(v)\coloneqq\setof{w\in V(G)}{vw\in E(G)}$.
 % lax begin Lax185574.GraphBalls
 For $r\in \N$, denote $\Ball^G_r(v)\coloneqq\setof{w\in V(G)}{\dist^G(v,w)\le r}$, where $\dist^G(\cdot,\cdot)$ is the shortest-path distance in~$G$.
 These notations extend to sets $A,B\subseteq V(G)$ with $\Ball_r^G(A) \coloneqq \bigcup_{a\in A} \Ball_r^G(a)$ and $\dist^G(A,B)\coloneqq\min_{a\in A,\,b\in B}\dist^G(a,b)$, and to tuples of vertices as expected.
 % lax end
 
-Let $G$ be a graph with vertex set $V$ and edge set $E$. By $\overline G$ we denote the edge-complement of $G$, which has  vertex set $V$ and edge set ${V\choose 2}-E$.
-The subgraph of $G$ \emph{induced} by a set $X\subseteq V$ is the graph $G[X]$ with vertex set $X$ and edge set $E\cap {X\choose 2}$. For two disjoint sets $X,Y\subseteq V$,
+
+Let $G$ be a graph with vertex set $V$ and edge set $E$. By $\overline G$ we denote the edge-complement of $G$, which has  vertex set $V$ and edge set $\binom{V}{2}-E$.
+The subgraph of $G$ \emph{induced} by a set $X\subseteq V$ is the graph $G[X]$ with vertex set $X$ and edge set $E\cap \binom{X}{2}$. For two disjoint sets $X,Y\subseteq V$,
 by $G[X,Y]$ we denote the bipartite graph with parts $X$ and $Y$ and edge set $XY\cap E$.
 
 A pair of sets $X,Y\subseteq V(G)$ is \emph{complete} if $XY\subseteq E(G)$ and \emph{anticomplete} if $XY\subseteq E(\overline G)$. The pair is \emph{homogeneous} if it is complete or anticomplete.
 
+
 A \emph{graph class} is a set $\CC$ of graphs.
+
 
 % lax begin Lax185574.Partitions
 \paragraph{Partitions.}
@@ -26,15 +29,23 @@ The part of $\PP$ containing an element $v$ is denoted by $\PP(v)$.
 Further, $\equiv_\PP$ is the equivalence relation on $V$ whose classes are the parts of $\PP$.
 % lax end
 
+
 \paragraph{Asymptotic notation.}
-For a possibly empty list of parameters $k$,
+For a possibly empty list of parameters $k$, 
  by $O_k(\cdot)$ we denote
  an anonymous function $f\from \R_{\ge 0}\to \R_{\ge 0}$ (depending only on the parameters~$k$) which is upper bounded by $x\mapsto a\cdot x+b$, for some $a,b\in\N$.
+%  which are effectively computable from $k$.
 
-Similarly, we write $\poly_k(\cdot)$ for an anonymous function $f\from \R_{\ge 0}\to \R_{\ge 0}$ which is upper bounded by some polynomial%
+
+% If the list of parameters $k$ includes a graph class $\CC$, then the effective computation has access to an  oracle answering queries of the form \emph{``is $G$ in the hereditary closure of $\CC$?''} for finite graphs $G$
+% (equivalently, to an oracle deciding the universal theory of $\CC$).
+
+Similarly, we write $\poly_k(\cdot)$ for an anonymous function $f\from \R_{\ge 0}\to \R_{\ge 0}$ which is upper bounded by some polynomial%  with integer coefficients which is effectively computable from~$k$
 ;
 in other words, $g(n)\le \poly_k(n)$ has the same implications as $g(n)\le (n+2)^{O_k(1)}$.
+% The notation $\tilde O_k(x)$ stands for $O_k(x)\cdot \poly_k(\log(x+1))$.
 We use $\widehat O_k(n^c)$ for a bound $O_{k,\eps}(n^{c+\eps})$ for every $\eps>0$; thus it hides a subpolynomial factor that may depend on the parameters~$k$.
+
 
 % lax begin Lax185574.MonadicDependence
 \paragraph{Monadic dependence.} We view graphs as relational structures in the signature with one (symmetric, irreflexive) binary relation $E$.
@@ -61,7 +72,7 @@ The \emph{VC-dimension} of a graph $G$ is the maximal size of a set $A\subseteq 
 % lax begin Lax185574.NeighborhoodComplexityBound
 % lax begin Lax185574Proofs.NeighborhoodComplexityBound.neighborhoodComplexity_le
 \begin{lemma}\label{lem:ss}
-  If $G$ has VC-dimension $d$ then
+  If $G$ has VC-dimension $d$ then 
   $$\pi_G(k)\le (k+1)^d\quad\text{for all }k\in\N.$$
 \end{lemma}
 % lax end
@@ -71,52 +82,66 @@ The following is easy to see from the definition of monadic dependence; see~\cit
 % lax end
 % lax begin Lax185574.BoundedVCClasses
 \begin{observation}\label{obs:md-vc}
-For every monadically dependent graph class $\CC$ there is some $d\in\N$
+For every monadically dependent graph class $\CC$ there is some $d\in\N$ 
 such that every graph $G\in\CC$ has VC-dimension at most $d$.
 \end{observation}
 % lax end
 
+ 
+% % lax begin Lax185574.NeighborhoodComplexityClasses
+% \begin{corollary}\label{lem:ss-cor}
+%   For every monadically dependent graph class $\CC$, there is a constant $d\le O_\CC(1)$ such that $\pi_G(k)\le (k+1)^d$ for every $G\in\CC$ and $k\in\N$.
+% \end{corollary}
+% % lax end
+
+
 % lax begin Lax185574.FirstOrderTypes
 \paragraph{Types and parameters.}
-For a structure $A$ and a set $W$ of its elements,
-let $A_W$ denote the structure obtained by expanding $A$  with constants representing each element of $W$.
+For a structure $A$ and a set $W$ of its elements, 
+let $A_W$ denote the structure obtained by expanding $A$  with constants representing each element of $W$. 
 A formula $\phi(x_1,\ldots,x_k)$ \emph{with parameters} from $W$ is a formula in the signature of the structure $A_W$.
 For $\bar v\in V(A)^k$ we write $A\models\phi(\bar v)$ to denote $A_W\models\phi(\bar v)$.
 
 For $k,q\in\N$
-and a tuple $\bar v\in V(A)^k$,
+and a tuple $\bar v\in V(A)^k$, 
 define
 \emph{the type of $\bar v$ of quantifier rank $q$ over $W$}, denoted
-$$\tp^A_q(\bar v/W),$$ as the set of all formulas $\phi(x_1,\ldots,x_k)$ with parameters from $W$ and of quantifier rank at most $q$ such that
+$$\tp^A_q(\bar v/W),$$ as the set of all formulas $\phi(x_1,\ldots,x_k)$ with parameters from $W$ and of quantifier rank at most $q$ such that 
 $A\models \phi(\bar v)$.
+ 
 
 For two sets $X,Y\subseteq V(A)$,
-denote $$\Types^A_{k,q}(X/Y)\coloneqq \setof{\tp^A_q(\bar v/Y)}{\bar v\in X^k}.$$
+denote $$\Types^A_{k,q}(X/Y)\coloneqq \setof{\tp^A_q(\bar v/Y)}{\bar v\in X^k}.$$ 
 We omit $/Y$ from the notation if $Y=\emptyset$.
+% Similarly, if $\PP$ is a partition of $V(A)$, 
+% write $$\Types^A_q(X/\PP)\coloneqq \setof{\tp^q(v/\PP)}{v\in X},$$
+% where $\tp^q(v/\PP)$ denotes the type of $v$ of quantifier rank $q$ in the structure $A$ expanded with unary predicates representing each element of $\PP$.
 % lax begin Lax185574.AtomicTypes
-The \emph{atomic type} of $\bar v$ over $Y$ is defined as $\atp^A(\bar v/Y) \coloneqq \tp_0^A(\bar v/Y)$ and we set $\ATypes^A(X/Y)\coloneqq \Types^A_{1,0}(X/Y)$.
+The \emph{atomic type} of $\bar v$ over $Y$ is defined as $\atp^A(\bar v/Y) \coloneqq \tp_0^A(\bar v/Y)$, and we set $\ATypes^A(X/Y)\coloneqq \Types^A_{1,0}(X/Y)$.
 
-Note that for a graph $G$ and vertex set $S\subseteq V(G)$, two vertices $u,v\in V(G)$ have the same atomic type over $S$ if and only if either $u=v$, or $u,v\notin S$
-and $N(u)\cap S=N(v)\cap S$.
-The \emph{partition into atomic types}, denoted $\PP_S$, is the corresponding partition of
+Note that for a graph $G$ and vertex set $S\subseteq V(G)$, two vertices $u,v\in V(G)$ have the same atomic type over $S$ if and only if either $u=v$, or $u,v\notin S$ 
+and $N(u)\cap S=N(v)\cap S$. 
+The \emph{partition into atomic types}, denoted $\PP_S$, is the corresponding partition of 
 $V(G)$, which partitions $S$ into singletons, and vertices in $V(G)-S$ according to their neighborhood in $S$.
 % lax end
 
 % lax end
+
 % lax begin Lax185574.GaifmanGraph
 \paragraph{Gaifman graph, distances, balls.}
-For a structure $A$ with domain $V$ equipped with unary and binary relations, the \emph{Gaifman graph} of $A$ is the graph
-with vertex set $V$ and edge set consisting of all pairs $uv$ such that
+For a structure $A$ with domain $V$ equipped with unary and binary relations, the \emph{Gaifman graph} of $A$ is the graph 
+with vertex set $V$ and edge set consisting of all pairs $uv$ such that 
 $(u,v)$ or $(v,u)$ is in some binary relation of $A$.
 We write $\dist^A(u,v)$ to denote the distance between two vertices in the Gaifman graph of $A$, and $\Ball^A_r(v)$  for the set of vertices at distance at most $r$ from $v$ in the Gaifman graph of $A$.
 
 % lax end
+
 % lax begin Lax185574.Flips
 \paragraph{Flips and flip metrics.}
-For a graph $G$ and partition $\PP$ of $V\coloneqq V(G)$, a \emph{$\PP$-flip} of $G$ is a graph $H$ with $V(H)=V$ such that for every pair $X,Y\in \PP$
-(possibly $X=Y$), either
+For a graph $G$ and partition $\PP$ of $V\coloneqq V(G)$, a \emph{$\PP$-flip} of $G$ is a graph $H$ with $V(H)=V$ such that for every pair $X,Y\in \PP$ 
+(possibly $X=Y$), either 
 $H[X,Y]=G[X,Y]$ or $H[X,Y]=\overline G[X,Y]$.
-If $|\PP| \leq s$, then we call $H$ an \emph{$s$-flip of $G$}.
+If $|\PP| \leq s$, then we call $H$ an \emph{$s$-flip of $G$}. 
 
 Define the associated \emph{flip metric} and its balls by:
 \begin{align*}
@@ -129,10 +154,11 @@ Define the associated \emph{flip metric} and its balls by:
 As a shorthand, for a graph $G$ and a set $S\subseteq V(G)$, a $\PP_S$-flip of $G$ is called an \emph{$S$-flip}, and we set $\dist_S^G \coloneqq \dist_{\PP_S}$ and $\Ball_r^S \coloneqq \Ball_r^{\PP_S}$.
 % lax end
 
+
 % lax begin Lax185574.ConstructionWidth
 \paragraph{Partial graphs and merge-width.}
 Partial graphs, construction sequences, their radius-$r$ width, and the radius-$r$ merge-width of a graph are defined in \Cref{sec:tech-overview} (see also~\cite{mw-stoc}).
 Moreover, for a partial graph $H$ with partition $\PP$ and a set $W\subseteq V(H)$, the induced partial graph $H[W]$ is the partial graph with vertex set $W$,
-edges $E(H)\cap {W\choose 2}$, non-edges
-$N(H)\cap {W\choose 2}$, and partition $\setof{P\cap W}{P\in \PP}-\set{\emptyset}$.
+edges $E(H)\cap \binom{W}{2}$, non-edges 
+$N(H)\cap \binom{W}{2}$, and partition $\setof{P\cap W}{P\in \PP}-\set{\emptyset}$.
 % lax end

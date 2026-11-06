@@ -26,14 +26,19 @@ Moreover, the statement lifts to infinite graphs if at least one of the sets $X$
 It was observed already in~\cite{DBLP:conf/lics/BonnetDGKMST22} that \Cref{lem:vc-duality} is useful to obtain definable flips.
 We will use it in a similar way to deduce the remaining result of \Cref{sec:closures-main}.
 
+% lax begin Lax185574.BallFlip
 \lemBallFlip*
+% lax end
+
+
+
 
 Note that, given the assumptions of the lemma, it is easy to find a (non-definable) $(2^t+t+1)$-flip $H'$ of $G$ in which $\Ball_{r+1}^{H'}(C) \cap A = \emptyset$: group the vertices of $A$ and of $\Ball_r^G(C)$ by their neighborhoods in the other set, which gives at most $2^t$ and $t$ groups, respectively, and flip every group of $A$ with every group of $\Ball_r^G(C)$ that it is complete to.
 So the challenge is really to get such a flip in a definable way.
 
 We also remark that \Cref{lem:ball-flip} can be seen as a finitization of Lemma~7.3 in the full version of~\cite{flippers}.
 That lemma works in a more model-theoretic setting, where $A$ is a (possibly infinite) model instead of a set.
-It uses a version of \Cref{lem:vc-duality} which also works for infinite $X,Y$, under the stronger
+It uses a version of \Cref{lem:vc-duality} which also works for infinite $X,Y$, under the stronger 
 assumption that $G$ excludes a half-graph of order $d$.
 
 % lax begin Lax185574Proofs.BallFlip.exists_ball_flip
@@ -49,12 +54,12 @@ assumption that $G$ excludes a half-graph of order $d$.
     \begin{itemize}
         \item an arbitrary representative $\rep(P)\in P$ for each part $P\in\AA\cup\BB$, and
         \item
-        the set $\sample(X,Y)$ supplied by \Cref{lem:vc-duality}, for every $X\in\AA$ and $Y\in\AA\cup\{V(G)\setminus B\}$
+        the set $\sample(X,Y)$ supplied by \Cref{lem:vc-duality}, for every $X\in\AA$ and $Y\in\AA\cup\{V(G)\setminus B\}$         
         (the lemma is applicable because $X \subseteq A$ is finite).
     \end{itemize}
     We can pick such a set with $|S|\le z$ for some $z\le O_{k,t}(1)\le O_{d,t}(1)$.
     We will construct $H$ as an $S$-flip of $G$; in particular, $H$ is $z$-definable.
-
+    
     Let $\PP_S$ be the partition of $V(G)$ into atomic types over $S$.
     Write $x\sim y$ when $x$ and $y$ are in the same $\PP_S$-part.
     Observe the following two properties of $\PP_S$.
@@ -70,15 +75,15 @@ assumption that $G$ excludes a half-graph of order $d$.
     \end{claimproof}
 
     \begin{claim}\label{clm:dagger}
-    Let $X\in \AA$ and $Y\in \AA\cup\set{V(G)-B}$.
+    Let $X\in \AA$ and $Y\in \AA\cup\set{V(G)-B}$. 
     There do not exist vertices $x,y,x',y'$ with:
-    \begin{equation}\tag{$\dagger$}\label{eq:ball-flip-crossing}
+    \begin{equation*}\tag{$\dagger$}\label{eq:ball-flip-crossing}
         x\in X,\quad y\in Y,\quad x\sim x',\quad y\sim y',
         \quad Y\subseteq N^{\overline G}(x'),\quad X\subseteq N^G(y').
-    \end{equation}
+    \end{equation*}    
     \end{claim}
     \begin{claimproof}
-    Suppose that $\sample(X,Y)$ lies in $Y$ and dominates $X$.
+    Suppose that $\sample(X,Y)$ lies in $Y$ and dominates $X$. 
     Then there is some  $s\in\sample(X,Y)\cap Y$ with $sx\in E(G)$.
     If
     $Y\subseteq N^{\overline G}(x')$,
@@ -89,18 +94,20 @@ The case when $\sample(X,Y)$ lies in $X$ and antidominates $Y$, is symmetric, by
     Both cases are illustrated in \Cref{fig:ball-flip-crossing}.
     \end{claimproof}
     \begin{center}
+        \captionsetup{type=figure}
         \input{figures/ball-flip-crossing.tex}
-        \captionof{figure}{%
+        \caption{%
             Left: the forbidden configuration~\eqref{eq:ball-flip-crossing}.
-            Middle: the case of the proof of \Cref{clm:dagger} where $\sample(X,Y)$ (marked in blue) lies in $Y$.
+            Middle: the case of the proof of \Cref{clm:dagger} where $\sample(X,Y)$ (marked in blue) lies in $Y$. 
             Right: the case where $\sample(X,Y)$ lies in $X$.}
         \label{fig:ball-flip-crossing}
     \end{center}
 
     Define the $S$-flip $H$ of $G$ where a pair $(P,Q)$ of parts of $\PP_S$ is flipped if and only if there is an edge in $G$ with endpoints in $P$ and in $Q$ and also in $A$ and in $B$. More formally, $H[P,Q]=G[P,Q]$ whenever
-    $E(G) \cap PQ \cap AB =
+    $E(G) \cap PQ \cap AB = %\quad = \quad 
     \emptyset,$
     and otherwise, $H[P,Q]=\overline G[P,Q]$.
+    
 
     The following three properties will yield the conclusion of the lemma:
     \begin{enumerate}[label=(P\arabic*), ref=P\arabic*]
@@ -115,22 +122,26 @@ The case when $\sample(X,Y)$ lies in $X$ and antidominates $Y$, is symmetric, by
     By combining \ref{itm:ball-flip-P2} and \ref{itm:ball-flip-P3}, we derive:
     \begin{enumerate}[label=(P\arabic*), ref=P\arabic*,start = 4]
         \item\label{itm:ball-flip-P4}  $\Ball_{r}^H(C) \subseteq \Ball_{r}^G(C)$.
+        % \hfill ()
     \end{enumerate}
     The conclusion of the lemma thus follows:
     \[
        A \cap \Ball_{r+1}^H(C)
-       \
+       \  
+    %    \underset{\rule{0pt}{8pt}\text{def.}}{=\vphantom{\subseteq}} 
     =
-    \
+    \ 
        A \,\cap\, \Ball_1^H\big(\Ball_r^H(C)\big)
-       \  \underset{\rule{0pt}{8pt}\text{\ref{itm:ball-flip-P4}}}{\subseteq} \
+       \  \underset{\rule{0pt}{8pt}\text{\ref{itm:ball-flip-P4}}}{\subseteq} \ 
        A \cap \Ball_1^H\big(\Ball_r^G(C)\big)
-       \  \underset{\rule{0pt}{8pt}\text{\ref{itm:ball-flip-P1}}}{=\vphantom{\subseteq}} \
+       \  \underset{\rule{0pt}{8pt}\text{\ref{itm:ball-flip-P1}}}{=\vphantom{\subseteq}} \ 
        A \cap \Ball_r^G(C)
-       \  \underset{\rule{0pt}{8pt}\text{ass.}}{=\vphantom{\subseteq}} \
+       \  \underset{\rule{0pt}{8pt}\text{ass.}}{=\vphantom{\subseteq}} \ 
        \emptyset.
     \]
     It only remains to establish \ref{itm:ball-flip-P1}--\ref{itm:ball-flip-P3}.
+    
+
 
     \begin{claim}[\ref{itm:ball-flip-P1}]\label{clm:ball-flip-P1}
         $A$ and $B$ are nonadjacent in $H$.
@@ -140,7 +151,7 @@ By contrapositive, suppose $ab\in E(H)$ for some $a \in A$ and $b \in B$.
     By definition of $H$,  $ab\in E(G)$ implies $ab\notin E(H)$, so
      $ab\notin E(G)$.
     Since $ab\in E(H)$, the parts of $\PP_S$ containing $a$ and $b$ are flipped, that is, there is some $a'b'\in E(G)$ with $a' \in A$ and $b' \in B$,
-    and
+    and 
     \begin{center}
         $(a\sim a'$ and $b\sim b')$
         \qquad
@@ -148,7 +159,7 @@ By contrapositive, suppose $ab\in E(H)$ for some $a \in A$ and $b \in B$.
         \qquad
         $(a\sim b'$ and $b\sim a')$.
     \end{center}
-    The first case cannot happen
+    The first case cannot happen 
     as $\PP_S$ refines $\AA$ on $A$ and $\BB$ on $B$, but the two sets $\{a,a'\}$ and $\{b,b'\}$ are inhomogeneous as $ab\notin E(G)$ and $a'b'\in E(G)$.
 
     Thus, assume $a\sim b'$ and $b\sim a'$.
@@ -159,8 +170,7 @@ By contrapositive, suppose $ab\in E(H)$ for some $a \in A$ and $b \in B$.
     For brevity, we define $D\coloneqq \Ball_{r-1}^G(C)$. Recall that $\PP_S(v)$ is the part of $\PP_S$ containing $v$.
 
     \begin{claim}\label{clm:disjoint-from-d}
-        If $b$ is adjacent to some $a\in A$ in $G$ then
-         $\PP_S(b)\cap D=\emptyset$.
+        If $b$ is adjacent to some $a\in A$ in $G$ then $\PP_S(b)\cap D=\emptyset$.
     \end{claim}
     \begin{claimproof}
             The vertices in $B \cap \PP_S(b)$ have the same neighborhood on $A$ as~$b$. In particular, they are all adjacent to $a$, whereas $D \subseteq B$ is anticomplete to $A$ since $\Ball^G_1(D)=\Ball^G_r(C)$ is disjoint from $A$ by assumption.
@@ -175,7 +185,7 @@ By contrapositive, suppose $ab\in E(H)$ for some $a \in A$ and $b \in B$.
 
     \begin{enumerate}
     \item \emph{$\PP_S(b)$ is disjoint from $\Ball_{r-2}^G(C)$:}
-
+        
     This is implied by \Cref{clm:disjoint-from-d}, because $\Ball_{r-2}^G(C) \subseteq \Ball_{r-1}^G(C) =D$.
 
     \item \emph{$\PP_S(a)$ is disjoint from $\Ball_{r-2}^G(C)$:}
@@ -183,11 +193,11 @@ By contrapositive, suppose $ab\in E(H)$ for some $a \in A$ and $b \in B$.
     Let $Q\in\BB$ contain $b$.
     Every vertex of $Q$ is adjacent to $a$ and hence lies in $B\setminus D$.
     Thus, $\rep(Q)\in S$ is adjacent to $a$ and nonadjacent to every vertex of $\Ball_{r-2}^G(C)$.
-    Hence, $\rep(Q)$ witnesses that $a$ is in a different $\PP_S$-part than all the vertices in $\Ball_{r-2}^G(C)$.
+    Hence, $\rep(Q)$ witnesses that $a$ is in a different $\PP_S$-part than all the vertices in $\Ball_{r-2}^G(C)$. 
     \end{enumerate}
 
     This means that whenever two parts $\PP_S(a)$ and $\PP_S(b)$ are flipped, then neither of them intersects~$\Ball_{r-2}^G(C)$.
-    Hence, the vertices in $\Ball_{r-2}^G(C)$ are incident to the same edges in $H$ as in $G$, which gives the desired conclusion
+    Hence, the vertices in $\Ball_{r-2}^G(C)$ are incident to the same edges in $H$ as in $G$, which gives the desired conclusion 
     $\Ball_{r-1}^H(C) = \Ball_{r-1}^G(C)$.
     \end{claimproof}
 
@@ -206,3 +216,4 @@ By contrapositive, suppose $ab\in E(H)$ for some $a \in A$ and $b \in B$.
     As described above, establishing \ref{itm:ball-flip-P1}--\ref{itm:ball-flip-P3} finishes the proof.
 \end{proof}
 % lax end
+

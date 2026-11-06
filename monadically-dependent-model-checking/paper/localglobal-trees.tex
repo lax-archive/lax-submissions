@@ -1,8 +1,12 @@
  \part{Model checking with type trees}
  \label{part:mc}
 
+
  In this part we prove:
+% lax begin Lax185574.ConstructionModelChecking
 {\renewcommand{\mcdepth}{d}\mcthm*}
+% lax end
+
 
 \section{Preliminaries}\label{sec:mc-prelims}
 
@@ -42,6 +46,9 @@ After either resolve, every pair in $P^GQ^G$ is resolved.
 In this representation, every step of a construction sequence $G_1,\ldots,G_\lambda$ (\Cref{sec:tech-overview}) has the form $G_{t+1}=\merge PQ(G_t)$, $\resolve+PQ(G_t)$, or $\resolve-PQ(G_t)$ for some colors $P,Q$.
 % lax end
 
+
+
+
 \section{Distance logic}\label{sec:dist-rank}
 
 Following \cite{mw-arxiv,mw-stoc} (and earlier work by \cite{gks}),
@@ -63,6 +70,8 @@ The logic \distFO extends first-order logic by additionally allowing the followi
 In both cases, we call \(r\) the \emph{radius} of the distance atom.
 Distance atoms are expressible in first-order logic, but only with quantifiers.
 Treating them as atoms lets us measure distances without increasing the quantifier rank, as in~\cite{gks}.
+% We write $|\phi|$ for the size of the syntax tree of a formula $\phi$.
+
 
 \paragraph{Horizon functions.}
 We fix sufficiently fast-growing horizon functions as in \cite{locality-note}:
@@ -82,6 +91,7 @@ In particular, as $9^q\ge2$,
 \rhop(k,q)\ge\rhom(k,q)\ge2\rhop(k+1,q-1)\quad\text{for all $k\in\N$ and $q\ge1$}.
 \end{equation}
 
+
 \paragraph{Distance rank.}
 Let $k,q\in\N$.
 A \distFO formula has \emph{distance rank \((k,q)\)} if it is a Boolean combination of
@@ -100,9 +110,9 @@ where \(q \ge 1\), $x_i$ is a variable in $\tup x$, and $\phi(\tup x y)$ has dis
 A formula with distance rank \((k,q)\) has quantifier rank at most \(q\).
 Observe by \eqref{eq:horizon-cons} that
 the distance atoms have progressively shorter radii as one traverses the quantifiers
-inwards.
+inwards. 
 
-Formulas of distance rank $(k,q)$ are called \emph{local} formulas of distance rank $(k,q)$ in
+Formulas of distance rank $(k,q)$ are called \emph{local} formulas of distance rank $(k,q)$ in 
 \cite{mw-arxiv,locality-note}, as opposed to the more general formulas which also allow the unrestricted quantification $\exists y\, \psi(\tup x y)$. Since we only consider local formulas in this paper, we omit this adjective.
 
 % lax end
@@ -120,6 +130,8 @@ In the setting of \distFO formulas of distance rank $(k,q)$, the (local) \emph{t
 is defined  \cite{mw-arxiv} as the set of (local) \distFO formulas of distance rank $(k,q)$ satisfied by $\tup a$.
 In this section, we adapt the construction of trees to this setting. This is useful in the algorithmic context, as trees are much smaller objects than types.
 
+
+
 % lax begin Lax185574.TypeTrees
 \paragraph{Type trees.}
 In the two definitions below, let $G$ be a partial graph, $k,q\in\N$, and $\tup a\in V(G)^{\le k}$, and put $\ell\coloneqq|\tup a|$.
@@ -131,7 +143,7 @@ Define the \emph{$(k,q)$-type tree} of $\tup a$ as
 \[
 \tree_{k,q}\bigl(\tup a\bigr)
 \coloneqq
-\bigl(\atp_{k,q}(\tup a),\mathcal E_{k,q}(\tup a)\bigr)
+\bigl(\atp_{k,q}(\tup a),\mathcal E_{k,q}(\tup a)\bigr) 
 \]
 where $\mathcal E_{k,q}(\tup a)=\emptyset$ if $q=0$, and otherwise
 \[
@@ -139,6 +151,7 @@ where $\mathcal E_{k,q}(\tup a)=\emptyset$ if $q=0$, and otherwise
 \coloneqq
 \setof{\bigl(i,\tree_{k+1,q-1}(\tup a b)\bigr)}{i\in[\ell],\ b\in V(G),\ \dist(a_i,b)\le\rhop(k+1,q-1)}.
 \]
+
 
 Note that type trees are ``local'' in the sense that new vertices are always quantified close to previous ones (see \Cref{lem:locality}).
 The members of $\mathcal E_{k,q}(\tup a)$ are the \emph{extensions} of $\tree_{k,q}(\tup a)$. The position $i$ of an extension $(i,\mu)$ is called the \emph{guard}, and we say that $i$ \emph{admits} $b$ if $\dist(a_i,b)\le\rhop(k+1,q-1)$.
@@ -153,6 +166,7 @@ duplicate-free) form, so that equality of two type trees $\tau_1,\tau_2$ can be
 tested in time $O(\size{\tau_1}+\size{\tau_2})$.
 By $\size\tau$ we denote the size of this representation (which includes $k,q$, and $\ell$).
 % lax end
+
 
 % lax begin Lax185574.CanonicalForm
 % lax begin Lax185574Proofs.CanonicalForm.exists_program_canonical
@@ -175,6 +189,7 @@ Then whether $G\models\phi(\tup a)$ holds is decidable in polynomial time, given
 and a \distFO formula $\phi(\tup x)$ of distance rank $(k,q)$,
 we write $\tau \models\phi$, if $G\models\phi(\tup a)$.
 The lemma implies that this does not depend on $G$ and $\tup a$, only on the type tree $\tau$.
+
 
 % lax begin Lax185574Proofs.Evaluation.exists_program_eval
 \begin{proof}[Proof of \Cref{lem:eval}]
@@ -206,6 +221,7 @@ This proof yields a polynomial-time algorithm.
 % lax begin Lax185574Proofs.TreeEquivalence.tree_eq_iff
 \begin{proof}
    The rightwards implication follows from \Cref{lem:eval}. The converse is proved by an easy induction on $q$.
+   % , following standard arguments as in~\cite[Theorem~3.18]{libkin04}.
 \end{proof}
 % lax end
 
@@ -227,6 +243,7 @@ Hence every entry of $\tup v$, and some vertex of every color in an atom in the 
 of $a$, where the inequality uses $\rhop(k+i,q-i)\le2^{-i}\rhop(k,q)$, which follows by applying \eqref{eq:horizon-cons} $i$ times.
 \end{proof}
 % lax end
+
 
 \subsection{Operations on type trees}
 
@@ -343,6 +360,8 @@ By \Cref{lem:restrict,lem:shift} and the inductive assumption, the work per inpu
 \end{proof}
 % lax end
 
+
+
 \section{Scatter types and far trees}\label{sec:localglobal}
 
 The type tree of a tuple $\tup a$ records extensions only by vertices near $\tup a$.
@@ -407,6 +426,7 @@ Level $i$ of $\operatorname{domain}(\stp_{k+1,q-1})$ equals level $i+1$ of $\ope
 \end{proof}
 % lax end
 
+
 In the model checking application, the type trees of all vertices are maintained by a dynamic-programming algorithm, and the scatter type is computed from them.
 Recall that $|G|=|V(G)|$ and $\size G=|V(G)|+|R(G)|$.
 
@@ -427,11 +447,13 @@ Put $M\coloneqq\max_{a\in V(G)}\size{\tree_{k,q}(a)}$.
 For every $a\in V(G)$ and $i\in[q]$, applying \Cref{lem:shift} $i$ times to $\tree_{k,q}(a)$ yields $\tree_{k+i,q-i}(a)$, of size $\poly_{k,q}(M)$.
 This takes $|G|\cdot\poly_{k,q}(M)$ time and gives $\operatorname{domain}(\stp_{k,q})$, as each radius is $O_{k,q}(1)$; in particular, $|\operatorname{domain}(\stp_{k,q})|=O_{k,q}(|G|)$.
 
+
 For each $(r,\nu)\in \operatorname{domain}(\stp_{k,q})$, run the greedy process defining $S_r([\nu]^G)$, stopping after $k+q$ vertices were discovered.
 It scans $V(G)$ in order, testing membership in $[\nu]^G$ by comparing the trees computed above with $\nu$. After adding a vertex $v$, scan the row $D_G(v,\cdot)$ and mark all vertices $u$ with $D_G(v,u)\le r$ as unavailable.
 At most $k+q$ rows are scanned, so one run takes $|G|\cdot\poly_{k,q}(M)$ time, and the $|\operatorname{domain}(\stp_{k,q})|=O_{k,q}(|G|)$ runs together take the stated time.
 \end{proof}
 % lax end
+
 
 \subsection{The far tree}\label{sec:ftree}
 
@@ -497,6 +519,7 @@ Then
 \ftree_{k,q}(\tup a) =\setoff{\nu\in\mathcal T}{\exists b\in[\nu]^G\colon\dist(\tup a,b)>r}.
 \]
 
+
 \paragraph{Rewriting the target.}
 The tree $\tau$ only records vertices within distance $H$ of $\tup a$, while a vertex $b\in[\nu]^G$ with $\dist(\tup a,b)>r$ may be farther away than $H$.
 We will now use \Cref{lem:clustering} to replace the existence of such a vertex by two conditions that we can check.
@@ -538,7 +561,7 @@ These are binary distance atoms of radius at most $\rhom(k,q)$ and hence determi
 We represent every set $B\in\mathcal B$ by its set of positions $I_B\coloneqq\setof{i\in[\ell]}{a_i\in B}$, which is determined by the equality atoms in the root atomic type of $\tau$.
 
 \paragraph{Reading $\mathcal N$ and $\mathcal N_B$ off $\tau$.}
-The trees attached to the root of $\tau$ are exactly
+The trees attached to the root of $\tau$ are exactly 
 the trees $\tree_{k+1,q-1}(\tup ab)$ with $b\in V(G)$ and $\dist(\tup a,b)\le H$.
 Such a tree $\mu$ determines two things about $b$: by \Cref{lem:restrict}, $\mu\restriction{(\ell+1)}=\tree_{k+1,q-1}(b)$, and since the root atomic type $\atp_{k+1,q-1}(\tup ab)$ of $\mu$ contains the binary distance atoms of radius at most $\rhom(k+1,q-1)=r$, we have $\mu\models\dist(x_{j},x_{\ell+1})\le r$ if and only if $\dist(a_{j},b)\le r$, for every $j\in[\ell]$.
 Therefore,
@@ -554,6 +577,7 @@ Likewise, since $r\le H$, the condition $\dist(b,B)\le r$ implies $\dist(\tup a,
 The right-hand sides depend only on $\tau$.
 Substituting them into the expression for $\ftree_{k,q}(\tup a)$ above gives a description in terms of $\tau$ and $\sigma$ only.
 
+
 \paragraph{Running time.}
 The radius $\crad$ and the sets $I_B$ are read off the root label of $\tau$.
 For all extensions $(i,\mu)$ of $\tau$, the trees $\mu\restriction({\ell+1})$ are obtained by \Cref{lem:restrict} and the atoms $\dist(x_{j},x_{\ell+1})\le r$ are read off the root of $\mu$, in time $\poly_{k,q}(\size\tau)$ in total.
@@ -563,9 +587,12 @@ Summed over all entries of $\sigma$ this is $O(\size\sigma\cdot\poly_{k,q}(\size
 \end{proof}
 % lax end
 
+
+
+
 \section{Lifting type trees through merges and resolves}
 \label{sec:merge-resolve}
-The model checking algorithm will process
+The model checking algorithm will process 
 the construction sequence step by step and maintain the type trees of all vertices.
 We first show how to lift type trees through a merge, and then through a resolve.
 
@@ -596,9 +623,9 @@ H\models\dist(u,P)<s&\quad\Longleftrightarrow\quad G\models(\dist(u,P)<s)\lor(\d
 H\models\dist(u,Q)<s&\quad\Longleftrightarrow\quad\textit{false},
 \end{align*}
 and every other atom has the same interpretation in $G$ and $H$.
-This allows us to rewrite every atom \(\phi\)
+This allows us to rewrite every atom \(\phi\) 
 into a quantifier-free formula \(\phi'\)
-of the same distance rank, so that
+of the same distance rank, so that 
 $H\models\phi(\tup a)$ if and only if $G\models\phi'(\tup a)$.
 Since whether or not $G\models\phi'(\tup a)$ is determined by $\atp^G_{k,q}(\tup a)$, it follows that the new root label $\atp^{H}_{k,q}(\tup a)$ can be computed  from $\atp^G_{k,q}(\tup a)$.
 Only atoms mentioning $P$ or $Q$ change, so the new root label is obtained by one pass over the old root label and is no larger.
@@ -610,11 +637,14 @@ Since $\dist^{H}=\dist^G$, every guard admits the same vertices in $G$ and $H$, 
 where $F(\mu)$ is obtained inductively.
 Together with the root label, this gives $\tree^{H}_{k,q}(\tup a)$.
 
+
 \paragraph{Running time.}
 The transformation replaces atoms in the label of every node and keeps the guards, so it visits each node of the input tree once, and no tree grows.
 By \Cref{obs:canonical}, restoring canonical form takes time polynomial  in the size of the tree.
 \end{proof}
 % lax end
+
+% \subsection{Lifting type trees through a resolve}
 
 A resolve can bring vertices far from a tuple within guard range.
 Their type trees are not recorded in the old type tree of the tuple, and we obtain them from the far tree instead.
@@ -641,10 +671,12 @@ Each output tree has size $\poly_{k,q}(T)$.
 % lax begin Lax185574Proofs.ResolveLift.exists_program_resolveLift
 \begin{proof}
 Assume the resolve is positive, as the negative case is symmetric.
-By induction on $q$,
+By induction on $q$, 
 we construct an auxiliary map $F$ on trees of arbitrary nonempty tuples, so that $\tree^{H}_{k,q}(\tup a)=F(\tree^G_{k,q}(\tup a))$ for all $\ell\le k$ and $\tup a\in V(G)^\ell$.
-Fix $\tup a \in V(G)^\ell$ and
+Fix $\tup a \in V(G)^\ell$ and 
 put $\tau\coloneqq\tree^G_{k,q}(\tup a)$ and $\sigma\coloneqq\stp^G_{k,q}$.
+
+
 
 \paragraph{Root labels.}
 We may assume that $P^G$ and $Q^G$ are nonempty, as otherwise $H=G$.
@@ -701,11 +733,14 @@ H\models\dist(u,v)\le s
 G\models(\dist(u,v)\le s)\lor\delta^s_{P,Q}(u,v).
 \end{align}
 
+
+
 \emph{Root label.}
 For an atom \(\phi\), let $\phi'$ be the corresponding formula as obtained above.
 Then $H\models\phi(\tup a)$ if and only if $G\models\phi'(\tup a)$ and $\phi'$ has the same distance rank as $\phi$.
 Since whether or not $G\models\phi'(\tup a)$ is determined by $\atp^G_{k,q}(\tup a)$, it follows that the new root label $\atp^{H}_{k,q}(\tup a)$ can be computed  from $\atp^G_{k,q}(\tup a)$.
 Algorithmically, there are $O_{k,q}(1)$ atoms without colors, and each nonempty color contributes $O_{k,q}(1)$ further atoms.
+
 
 \paragraph{Extensions.}
 Let $q\ge1$, and put $r\coloneqq\rhom(k+1,q-1)$ and $R\coloneqq\rhop(k+1,q-1)$.
@@ -714,6 +749,7 @@ By the inductive assumption,
 \begin{align}\label{neqE}
 \mathcal E^{H}_{k,q}(\tup a)=\setof{\bigl(i,F(\tree^G_{k+1,q-1}(\tup a b))\bigr)}{i\in[\ell], \dist^H(a_i,b)\le R}.
 \end{align}
+
 
 For $i\in[\ell]$, put
 \[
@@ -759,7 +795,7 @@ Hence, using the notation $\mu\models\gamma$ introduced after \Cref{lem:eval},
 \setof{(i,F(\mu))}{i\in[\ell],\ (j,\mu)\in\mathcal E^G_{k,q}(\tup a),\ \mu\models\gamma_i}.
 \]
 For $\mathcal E_{\mathrm{far}}$, consider $b$ with $\dist^G(\tup a,b)>r$.
-Since $r=\rhom(k+1,q-1)$ is exactly the separation required by \Cref{lem:compose} at rank $(k+1,q-1)$, that lemma
+Since $r=\rhom(k+1,q-1)$ is exactly the separation required by \Cref{lem:compose} at rank $(k+1,q-1)$, that lemma %applies to $\tup a$ and $(b)$ and 
 gives
 \[
 \tree^G_{k+1,q-1}(\tup a b)
@@ -777,6 +813,7 @@ Therefore
 So the new root label, $\mathcal E_{\mathrm{old}}$, $\mathcal E_{\mathrm{near}}$, and $\mathcal E_{\mathrm{far}}$ are computed from $\tau$ together with $\sigma$ and the values $\dist^G(P,Y)$ and $\dist^G(Q,Y)$, which do not depend on $\tup a$. This defines $F(\tau)=\tree^{H}_{k,q}(\tup a)$.
 
 \paragraph{Running time.}
+% In this analysis, $k,q$ are the parameters of the lemma.
 Computing $H$ takes time $O(\size{H})=O(|G|^2)$.
 Scanning $D_G$ gives $\dist^G(u,P)$ and $\dist^G(u,Q)$ for all vertices $u$, and thus $\dist^G(P,Y)$ and $\dist^G(Q,Y)$ for all nonempty colors $Y$, in time $O(|G|^2)$.
 Then \eqref{eq:resolve-dist} gives $D_H$ in time $O(|G|^2)$, and \Cref{lem:compute-stp} computes $\sigma\coloneqq\stp^G_{k,q}$ from $D_G$ in time $|G|^2\cdot\poly_{k,q}(M)$.
@@ -793,7 +830,7 @@ So by definition of $T$, a call makes at most $T$ recursive calls, and as the de
 A recursive input is a child of the previous input, or is obtained by rank shift and far composition with a  tree of arity one recorded in $\sigma$.
 These trees have size $\poly_{k,q}(M)$, so by \Cref{lem:shift,lem:compose} and the depth bound $q$, every recursive input and every candidate extension tree has size $\poly_{k,q}(M)$.
 For a call with positive remaining depth, restricting $\sigma$ and applying \Cref{lem:to-ftree} takes time $O(\size\sigma\cdot\poly_{k,q}(M))=O(|G|\cdot\poly_{k,q}(M))$.
-The far tree has at most $|G|$ members, so composing them and testing the formulas $\gamma_i$
+The far tree has at most $|G|$ members, so composing them and testing the formulas $\gamma_i$ 
 (which are quantifier-free formulas of distance rank $(k+1,q-1)$, so are determined by the root label of a tree of rank $(k+1,q-1)$) takes the same time.
 We scan the candidates, test their guards, and compare each admitted candidate with the list of at most $T$ distinct admitted trees collected so far.
 Including the candidates from the old extensions, this takes $O(|G|\cdot\poly_{k,q}(M+T))$ time.
@@ -811,7 +848,9 @@ Adding the construction of $H$ and $D_H$, the distance preprocessing, and the sc
 We now give the model checking algorithm,
 proving \Cref{thm:mc}.
 Recall the width notion used in the statement.
+% lax begin Lax185574.Width
 \defrqwidth*
+% lax end
 
 The width bounds numbers of ordinary types, and the following lemma converts such bounds into bounds on type trees, as required by \Cref{lem:resolve-lift}.
 
@@ -837,7 +876,7 @@ We first show that ordinary types determine type trees: for all $k',q'\in\N$, ev
 \quad\Longrightarrow\quad
 \tree^G_{k',q'}(\tup a)=\tree^G_{k',q'}(\tup b).
 \end{equation}
-By expressing distance atoms by paths along $E\lor N$, every \distFO formula of distance rank $(k',q')$ is equivalent to a first-order formula of quantifier rank at most $\rhop(k',q')+q'$. Thus, the left-hand side of \eqref{eq:tp-to-tree} implies that $\tup a$ and $\tup b$ satisfy
+By expressing distance atoms by paths along $E\lor N$, every \distFO formula of distance rank $(k',q')$ is equivalent to a first-order formula of quantifier rank at most $\rhop(k',q')+q'$. Thus, the left-hand side of \eqref{eq:tp-to-tree} implies that $\tup a$ and $\tup b$ satisfy 
 the same \distFO formulas of distance rank $(k',q')$.
 By \Cref{cor:tp-tree}, this yields the right-hand side.
 
@@ -856,7 +895,9 @@ As the depth is $q$, this gives $\size{\tree_{k,q}(a)}\le\poly_{k,q}(K)$.
 % lax end
 \end{proof}
 
+% lax begin Lax185574.ConstructionModelChecking
 {\renewcommand{\mcdepth}{d}\mcthm*}
+% lax end
 % lax begin Lax185574Proofs.ConstructionModelChecking.exists_program_modelChecking_sequence
 \begin{proof}
 Let $q$ be the quantifier rank of $\phi$, and let $r,d$ be as in
@@ -880,6 +921,7 @@ $|\Types^{G_{t'}}_{d,d}(\Ball^{G_{t'}}_{r}(a))|$.  Using $R(G_{t'})\subseteq R(G
 and therefore $\Ball^{G_{t'}}_r(a)\subseteq \Ball^{G_{t'+1}}_r(a)$, this is at most
 $|\Types^{G_{t'}}_{d,d}(\Ball^{G_{t'+1}}_{r}(a))|\le K$ by the definition of
 the width.
+
 
 For a merge, construct $G_{t+1}$ in time $O(n)$, keep $D_{G_{t+1}}=D_{G_t}$ unchanged, and apply \Cref{lem:merge-lift} to each tree of arity one, taking $O(n\cdot\poly_q(K))$ time in total.
 For a resolve, apply \Cref{lem:resolve-lift} to $G_t$, the supplied matrix $D_{G_t}$, and all its trees of arity one. The lemma returns both $D_{G_{t+1}}$ and the new trees.
@@ -925,3 +967,4 @@ As $E(G_\lambda)=E$ and $\phi$ is a sentence over graphs, $G_\lambda\models\phi$
 This fits the preceding time bound and completes the proof.
 \end{proof}
 % lax end
+

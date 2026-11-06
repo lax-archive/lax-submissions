@@ -1,19 +1,26 @@
 
-\section{Forbidden patterns}\label{sec:forbidden-patterns}
+\section{Forbidden patterns}\label{sec:forbidden-patterns}\sz{change to: dp-minimality?}
 \label{app:patterns}
 
 In this appendix we give a self-contained proof of \Cref{lem:phi-psi-patterns}, which is a corollary of~\cite[Lemma~C.1]{ordered-tww}. The proofs in this appendix apply to arbitrary classes of relational structures, not just classes of finite graphs.
 Recall the notion of $(\phi,\psi)$-patterns.
+% lax begin Lax185574.PhiPsiPatterns
 \defphipsi*
+% lax end
 
 \noindent We call a $(\phi,\psi)$-pattern \emph{clean} if the above conditions hold with $\neq$ in place of $>$ in both conditions.
 
 We define dp-minimal classes  \cite{DolichGoodrickLippel2011} as follows.
 \begin{definition}
-A class $\CC$ of structures is \emph{dp-minimal}
-if for every first-order formulas $\phi(\bar x,z),\psi(\bar y,z)$ in the signature of $\CC$ there is a constant $c\in\N$ such that no structure $G\in\CC$ contains a clean $(\phi,\psi)$-pattern of order $c\times c$.
+A class $\CC$ of structures is \emph{dp-minimal} 
+if for every first-order formulas $\phi(\bar x,z),\psi(\bar y,z)$ in the signature of $\CC$ there is a constant $c\in\N$ such that no structure $G\in\CC$ contains a clean $(\phi,\psi)$-pattern of order $c\times c$.   \sz{remark that by compactness $\CC$ is dp-minimal iff its theory is dp-minimal in the sense of \cite{DolichGoodrickLippel2011}}
 \end{definition}
 
+Note that a class $\CC$ is dp-minimal according to the definition above if and only if 
+its theory (the set of all sentences satisfied by all structures in $\CC$) is dp-minimal as defined in
+ \cite{DolichGoodrickLippel2011}, by a simple compactness argument.
+
+ \medskip
 We will prove the following two statements.
 \begin{lemma}\label{lem:mondep-dpmin}
     Every monadically dependent class $\CC$ of structures is dp-minimal.
@@ -24,9 +31,49 @@ We will prove the following two statements.
 \end{lemma}
 
 Clearly, \Cref{lem:mondep-dpmin} and \Cref{lem:dpmin-phipsi-patterns} imply \Cref{lem:phi-psi-patterns}, repeated below.
+% lax begin Lax185574.ForbiddenPhiPsiPatterns
 \lemphipsi*
+% lax end
 
-We first prove \Cref{lem:mondep-dpmin}. This follows easily
+
+We also make the following two observations:
+one states that dp-minimal graph classes have bounded VC-dimension,
+while the other one implies that they are preserved under taking $s$-definable flips, for a fixed $s\in\N$.
+
+\begin{observation}
+    Let $\CC$ be a dp-minimal graph class. Then $\CC$ has bounded VC-dimension.
+\end{observation}
+\begin{proof}
+    Suppose $G\in\CC$ and let $X\subset V(G)$ be such that $\setof{N(v)\cap X} {v\in V(G)}=2^X$.
+    Removing at most one element from $X$, suppose that $|X|=2n$ for some $n\in\N$, and write $X=\set{a_1,\ldots,a_n,b_1,\ldots,b_n}$.
+    For every $i,j\in[n]$ there is some $c_{i,j}\in V(G)$ such that ${N(c_{i,j})\cap X=\set{a_i,b_j}}$.
+    Then $(a_i:i\in[n])$, $(b_j:j\in[n])$, $(c_{i,j}:i,j\in[n])$ form a clean
+    $(\alpha,\alpha)$-pattern in $G$, for $\alpha(x,z)=E(x,z)$. As $\CC$ is dp-minimal, it follows that $n$ is bounded by a constant $c$ depending on $\CC$. Thus, $|X|\le 2c$, proving that $G$ has VC-dimension at most $2c+1$.
+\end{proof}
+\begin{observation}\label{dp:min-interp}
+    Let $\CC$ be a dp-minimal class and $\alpha(x_1,x_2;\bar y)$ be a formula and $\ell=|\bar y|$.
+    For $G\in\CC$ and $\bar u\in V(G)^{\ell}$, let $\alpha(G,\bar u)$ denote the graph with vertex set $V(G)$ and edges $uv$ such that $u\neq v$ and $G\models\alpha(u,v;\bar u)\lor \alpha(v,u;\bar u)$.
+    Then the graph class $\setof{\alpha(G,\bar u)}{G\in\CC, \bar u\in V(G)^{\ell}}$ is dp-minimal.
+\end{observation}
+\begin{proof}
+    Suppose $(\bar a_i:i\in [t]),(\bar b_j:j\in [t])$, and $(c_{i,j}:i\in [t],j\in [t])$ form a clean $(\phi,\psi)$-pattern in $H=\alpha(G,\bar u)$ for some $G\in\CC$ and $\bar u\in V(G)^\ell$, and formulas $\phi(\bar x,z)$ and $\psi(\bar y,z)$.
+    Then the tuples $(\bar a_i\bar u:i\in [t])$, $(\bar b_j\bar u:j\in [t])$ and $(c_{i,j}:i\in [t],j\in[t])$ form a clean $(\phi',\psi')$-pattern in~$G$,
+    where $\phi'(\bar x\bar w,z)$ is the formula obtained from $\phi(\bar x,z)$ by replacing each atom $E(x_1,x_2)$ with $\alpha(x_1,x_2;\bar w)$, and $\psi'(\bar y\bar w,z)$ is obtained from $\psi$ in the same way. Hence, $t$ is bounded by some constant depending on $\CC,\phi',\psi'$. Since $\phi'$ and $\psi'$ depend only on $\phi,\psi$, and $\alpha$,
+    this means $t$ is bounded by some constant depending only on $\CC,\phi,\psi$, and $\alpha$.
+\end{proof}
+\begin{corollary}
+    Let $\CC$ be a dp-minimal graph class and $s\in\N$. The class consisting of all $s$-definable flips of graphs from $\CC$ is dp-minimal.
+\end{corollary}
+\begin{proof}
+    Fix $s\in\N$ and formulas $\phi(\bar x,z),\psi(\bar y,z)$.
+    For each symmetric relation $R\subset \Pi^s\times \Pi^s$, in the notation of \Cref{obs:sim-def-flip}, consider the formula
+    $E_{\oplus R}(x,y;\bar w)$ obtained in that observation. 
+    Apply the \Cref{dp:min-interp} to the formula $E_{\oplus R}(x,y;\bar w)$, obtaining a bound $c_R$ on the order of clean $(\phi,\psi)$-patterns in graphs $G\oplus (\bar p,R)$, for $G\in\CC$ and $\bar p\in V(G)^s$.
+Taking the maximum of the bounds $c_R$, over all binary relations $R$ as above,
+we get a bound $c$ on the order of clean $(\phi,\psi)$-patterns in $s$-definable flips of graphs $G\in\CC$.
+\end{proof}
+
+We first prove \Cref{lem:mondep-dpmin}. This follows easily 
 from the following characterization of monadic dependence in terms of the independence property.
 % lax begin Lax185574.IndependenceProperty
 A formula $\phi(\bar x,\bar y)$ has the \emph{independence property} on a class $\CC$ of structures if for every $n\in\N$ there is some $G\in \CC$ and tuples $\bar a_1,\ldots,\bar a_n\in V(G)^{|\bar x|}$ and $(\bar b_J)_{J\subseteq[n]}$ in $V(G)^{|\bar y|}$ such that for all $i\in[n]$ and $J\subseteq[n]$,
@@ -40,8 +87,8 @@ A formula $\phi(\bar x,\bar y)$ has the \emph{independence property} on a class 
 % lax begin Lax185574Proofs.IndependencePropertyTuples.not_hasIP_of_monadicallyDependent
 We use the following result of Baldwin and Shelah~\cite[Theorem~8.1.8]{BS1985monadic} (see also~\cite[Theorem~2.58 and Proposition~2.65]{wojtekthesis} for a discussion).
 \begin{theorem}\label{thm:bs}
-A class $\CC$ is monadically dependent if and only if
-for all $k\in\N$, no first-order formula $\phi(\bar x,\bar y)$ has the independence property on the class $\CC^{(k)}$ of all $k$-colorings of graphs in $\CC$.
+A class $\CC$ is monadically dependent if and only if 
+for all $k\in\N$, no first-order formula $\phi(\bar x,\bar y)$ has the independence property on the class $\CC^{(k)}$ of all $k$-colorings of graphs in $\CC$.    
 \end{theorem}
 % lax end
 % lax end
@@ -52,32 +99,35 @@ for all $k\in\N$, no first-order formula $\phi(\bar x,\bar y)$ has the independe
     Suppose that $\CC$ is monadically dependent, and let $\phi(\bar x,z)$ and $\psi(\bar y,z)$ be first-order formulas in the signature of $\CC$.
      Let $G\in\CC$ and suppose that $\bar a_1,\ldots,\bar a_m\in V(G)^{|\bar x|}$, $\bar b_1,\ldots,\bar b_m\in V(G)^{|\bar y|}$, and $\bar c_{i,j}\in V(G)^{|z|}$ for $i,j\in[m]$
        form a clean $(\phi,\psi)$-pattern of order $m\times m$ in~$G$.
-
+    
     Fix an arbitrary binary relation $B\subseteq [m]\times [m]$,
-and let $G^+$ be the expansion of $G$ with a unary relation $U$
+and let $G^+$ be the expansion of $G$ with a unary relation $U$ 
 interpreted as $\setof{c_{i,j}}{(i,j)\in B}$.
  Consider the following formula:
  $$\gamma(\bar x,\bar y)\coloneqq \exists z\, U(z)\land\phi(\bar x,z)\land \psi(\bar y,z).$$
  By the definition of a clean pattern, the above imply that
  \begin{align}\label{eq:encode-binary}
- G^+\models \gamma(\bar a_i,\bar b_j)\text{ \quad if and only if\quad} (i,j)\in B.
+ G^+\models \gamma(\bar a_i,\bar b_j)\text{ \quad if and only if\quad} (i,j)\in B.   
  \end{align}
 
  Indeed, if $(i,j)\in B$ then the existential quantifier is witnessed by $c_{i,j}$.
  Conversely, a witness to the existential quantifier must be of the form $c_{i',j'}$ for some $(i',j')\in B$, and then the definition of a clean pattern implies that
  $i=i'$ and $j=j'$, thus $(i,j)\in B$.
 
-Let $k$ be the largest integer such that $2^k\le m$.
-Fix an arbitrary injection $h\from P([k])\to [m]$ from the powerset of $[k]$ into $[m]$.
+
+
+Let $k$ be the largest integer such that $2^k\le m$. 
+Fix an arbitrary injection $h\from 2^{[k]}\to [m]$ from the powerset of $[k]$ into $[m]$.
 As $B\subseteq[m]\times[m]$ may be chosen arbitrarily,
 we may set $$B\coloneqq \setof{(i,h(J))}{i\in[k],J\subseteq [k],i\in J}.$$
 By \eqref{eq:encode-binary},
  $G^+\models\gamma(\bar a_i,\bar b_{h(J)})$ holds if and only if $i\in J$, for all $i\in[k]$ and $J\subseteq [k]$.
- As $\CC$ is monadically dependent,
+ As $\CC$ is monadically dependent, 
  \Cref{thm:bs} implies that $k\le O_{\CC,\gamma}(1)$.
 Since the formula $\gamma$ depends only on the original formulas $\phi$ and~$\psi$, this implies $k\le O_{\CC,\phi,\psi}(1)$. As $m< 2^{k+1}$, we conclude that $m\le O_{\CC,\phi,\psi}(1)$, as required.
 \end{proof}
 % lax end
+
 
 % lax begin Lax185574Proofs.BipartiteHomogeneity.exists_orderType_homogeneous
 To prove \Cref{lem:dpmin-phipsi-patterns},
@@ -85,21 +135,24 @@ we use the following version of Ramsey's theorem (see~\cite[full version, Lemma~
 % lax end
 \newcommand{\otp}{\mathrm{otp}}
 For a tuple $\bar a=(a_1,\ldots,a_\ell)\in[n]^\ell$,
-the \emph{order type} $\otp(\bar a)$ of
+the \emph{order type} $\otp(\bar a)$ of 
 $\bar a$ is the atomic type of $\bar a$ in the ordered set $([n],\le)$.
 More explicitly, it stores the information, for each $i,j\in[\ell]$,
 whether $a_i<a_j$, $a_i=a_j$, or $a_i>a_j$.
+
+
 
 % lax begin Lax185574.BipartiteHomogeneity
 \begin{lemma}\label{lem:bip-ramsey}
     For every $k,\ell\in\N$
     there is an unbounded, non-decreasing function $U_{k,\ell}\from\N\to\N$ with the following property.
-For every $t\in\N$ and coloring
+For every $t\in\N$ and coloring 
     $$c\from [t]^{\ell}\times [t]^{\ell}\to [k]$$
-    there
+    there 
     are subsets $I,J\subseteq [t]$ of size $U_{k,\ell}(t)$ such that $c(\bar a,\bar b)$ only depends on $\otp(\bar a)$ and $\otp(\bar b)$, for all $\bar a\in I^\ell$ and $\bar b\in J^{\ell}$.
 \end{lemma}
 % lax end
+
 
 % lax begin Lax185574Proofs.ForbiddenPhiPsiPatterns.forbidden_phiPsi_patterns
 \begin{proof}[Proof of \Cref{lem:dpmin-phipsi-patterns}]
@@ -109,9 +162,10 @@ $(\bar a_i:i\in [t])$,
 $(\bar b_j:j\in [t])$ and $(c_{i,j}:i,j\in[t])$ form a $(\phi,\psi)$-pattern of order $t\times t$ in some $G\in\CC$. We prove that $t$ is bounded by some constant depending on $\CC,\phi$, and $\psi$.
 
 The proof proceeds in two steps, restricting the considered profiles depicted in the right-hand side part of \Cref{fig:phi-psi-pattern}.
-In the first step, we arrive at a $(\phi,\psi)$-pattern where all of the $?$'s in those profiles are equal to some fixed boolean value $0$ or $1$. In the second step, we
+In the first step, we arrive at a $(\phi,\psi)$-pattern where all of the $?$'s in those profiles are equal to some fixed boolean value $0$ or $1$. In the second step, we 
 arrive at an $(\alpha,\beta)$-pattern, for some related formulas $\alpha,\beta$,
 for which the $?$'s are further restricted to $0$.
+% Finally, we obtain a contradiction with monadic dependence using the result of Baldwin and Shelah.
 
 \paragraph{Step 1.}
 As a first step we show that
@@ -126,18 +180,19 @@ There are $e_1,e_2\in\set{\textit{true},\textit{false}}$
     \item $G\models\psi(\bar b_{j'},c_{i,j})\Leftrightarrow e_2$ holds if $j'<j$,
 \end{enumerate}
 \end{quote}
+ 
 
-\noindent Indeed,
-define a coloring
+\noindent Indeed, 
+define a coloring 
 $$c\from [t]^2\times [t]^2\to \set{\textit{true},\textit{false}}^2$$
-where $c((i,i'),(j,j'))$
+where $c((i,i'),(j,j'))$ 
 stores the truth values of
 $G\models\phi(\bar a_{i'},c_{i,j})$
-and
+and 
 $G\models\psi(\bar b_{j'},c_{i,j})$.
-By \Cref{lem:bip-ramsey}, there are subsets $I,J\subseteq [t]$
+By \Cref{lem:bip-ramsey}, there are subsets $I,J\subseteq [t]$ 
 of size $U(t)$, for some unbounded function $U=U_{4,2}$,
-such that
+such that 
 $c((i,i'),(j,j'))$ only depends on $\otp(i,i')$ and $\otp(j,j')$
 for all $i,i'\in I$ and $j,j'\in J$.
 
@@ -145,15 +200,19 @@ Let $e_1$ be the first component of $c((i,i'),(j,j'))$ for  $i'<i\in I$ and $j=j
 and let $e_2$ be the second component of $c((i,i'),(j,j'))$
 for $i=i'\in I$ and $j'<j\in J$. This choice satisfies the conditions 3. and 4. above.
 
+
+
+
 \paragraph{Step 2.}
-By reindexing and removing the last element of each of the sequences if necessary,
+By reindexing and removing the last element of each of the sequences if necessary, 
 assume that $I=J=[2m]$ for some $m\in\N$ with $m\ge U(t)/2-1$ for some unbounded function~$U$, and that all conditions 1.--4. above hold.
 As a next step, we show that we can modify the formulas and sequences for which conditions 1.--4. hold with $e_1=e_2=\textit{false}$.
 
+
 Fix $i,j\in [2m]$
-and for $i'\in [2m]$ let $f_{i'}\in\set{\textit{true}, \textit{false}}$ denote the truth value
+and for $i'\in [2m]$ let $f_{i'}\in\set{\textit{true}, \textit{false}}$ denote the truth value 
 of $G\models \phi(\bar a_{i'},c_{i,j})$.
-Then $f_1,\ldots,f_{2m}$
+Then $f_1,\ldots,f_{2m}$ 
 consists of a sequence of $e_1$'s, followed by a single \emph{true} at position $i$, which is followed by a sequence of \emph{false}'s.
 Grouping the sequence into consecutive pairs,
 and assuming that $i$ is odd,
@@ -166,14 +225,14 @@ This motivates us to consider the following formulas and sequences. Define
 \alpha(\bar x_1\bar x_2,z)&\coloneqq \phi(\bar x_1,z)\mathbin{\mathrm{XOR}} \phi(\bar x_2,z),\\
 \beta(\bar y_1\bar y_2,z)&\coloneqq \psi(\bar y_1,z)\mathbin{\mathrm{XOR}} \psi(\bar y_2,z).
 \end{align*}
-For $i\in[m]$,
-let $\bar u_i$ be the $2|\bar x|$-tuple
+For $i\in[m]$, 
+let $\bar u_i$ be the $2|\bar x|$-tuple 
  $\bar a_{2i-1}\bar a_{2i}$,
  and for $j\in[m]$, let $\bar w_j$
  be the $2|\bar y|$-tuple $\bar b_{2j-1}\bar b_{2j}$.
  Finally, let $d_{i,j}=c_{2i-1,2j-1}$.
  By the observation above,
- for all $i,i',j,j'\in[m]$ we have that
+ for all $i,i',j,j'\in[m]$ we have that 
  \begin{enumerate}[label=(\textit{\alph*}),ref=(\textit{\alph*})]
     \item\label{item:pattern-alpha} $G\models \alpha(\bar u_{i'},d_{i,j})$ if and only if $i'=i$,
     \item\label{item:pattern-beta} $G\models \beta(\bar w_{j'},d_{i,j})$ if and only if $j'=j$.
@@ -184,3 +243,4 @@ Dp-minimality therefore bounds $m$ by a constant depending only on $\CC,\alpha$,
 Since $m\ge U(t)/2-1$ and $U$ is unbounded and non-decreasing, this also bounds $t$ by a constant depending only on $\CC,\phi$, and $\psi$, as required.
 \end{proof}
 % lax end
+

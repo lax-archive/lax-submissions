@@ -1,5 +1,29 @@
+% The configuration (\dagger) ruled out for every sampled pair (X,Y) in the proof of
+% \Cref{lem:ball-flip}: x \in X and y \in Y, x' \sim x and y' \sim y,
+% y' is complete to X, and x' is anticomplete to Y.
+% Included via \input from ball-flip.tex.
+%
+% The configuration is drawn three times side by side, in the panels a, b, c:
+% (a) the configuration itself, (b) the case where sample(X,Y) lies in Y and dominates X,
+% (c) the case where sample(X,Y) lies in X and antidominates Y.
+% The common drawing is the macro \bfCrossingBase; each panel is a scope with its own
+% name prefix (a-, b-, c-), so inside a panel the coordinates are referred to as
+% (X), (Y), (x), (y), (x'), (y'), and from outside as (a-x), (b-x), and so on.
+%
+% The figure is exactly \linewidth wide: the unit length is chosen such that the three
+% panels, measured from the outer edge of the leftmost to that of the rightmost blob,
+% span \linewidth, and the bounding box is set to that horizontal extent.
+%
+% Complete is drawn as a fan of black edges from y' onto X, anticomplete as the mirror
+% image: a fan of red dashed nonedges from x' onto Y. The outermost lines end
+% tangentially on the blob: for an apex at offset (px,py) from the center of an
+% ellipse with radii (\rx,\ry), the tangent points sit at the parametric angles
+% \tphi +- \tdelta computed below.
 \definecolor{bfAnti}{RGB}{200,40,40}%
-\definecolor{bfHl}{RGB}{0,90,200}%
+\definecolor{bfHl}{RGB}{0,90,200}% highlights in the proof of the claim
+% TEMPORARY: white background for readability inside the frozen box. Its padding
+% sticks out into the side padding of the frozen box, without affecting the layout.
+% To remove, delete this line, the \makebox line below, and the closing braces after \end{tikzpicture}.
 {\setlength{\fboxsep}{6pt}\makebox[\linewidth]{\colorbox{white}{%
 \begin{tikzpicture}[
         vertex/.style={circle, fill=black, inner sep=0pt, minimum size=3.2pt},
@@ -13,23 +37,31 @@
         hlEdge/.style={draw=bfHl, line width=1.2pt},
         hlNonedge/.style={draw=bfHl, dash pattern=on 3pt off 2pt, line width=1.2pt},
     ]
-    \def\bx{1.7}
-    \def\rx{1.1}
-    \def\ry{0.8}
-    \def\off{0.7}
-    \def\h{2.2}
-    \def\panelsep{6.3}
+    % Layout parameters (in coordinate units; the unit length is computed below).
+    \def\bx{1.7}   % horizontal distance of the blob centers from the middle of a panel
+    \def\rx{1.1}   % horizontal radius of the blobs
+    \def\ry{0.8}   % vertical radius of the blobs
+    \def\off{0.7}  % outward offset of x, x' (resp. y, y') from the center of X (resp. Y)
+    \def\h{2.2}    % height of x' and y' above the blob centers
+    \def\panelsep{6.3} % horizontal distance between the middles of neighboring panels
 
+    % Unit length such that the three panels span \linewidth.
     \pgfmathsetmacro{\bfunit}{\linewidth / (2*\panelsep + 2*(\bx+\rx))}
     \begin{scope}[x=\bfunit pt, y=\bfunit pt]
 
+    % Tangent angles for an apex at offset (2\bx+\off, \h) from the blob center.
+    % With these parameters, the vertical lines x'--x and y'--y pass outside both cones.
     \pgfmathsetmacro{\tphi}{atan2(\h/\ry, (2*\bx+\off)/\rx)}
     \pgfmathsetmacro{\tdelta}{acos(1/sqrt(((2*\bx+\off)/\rx)^2 + (\h/\ry)^2))}
 
+    % Index (0 to 5) of a fan line to leave out, e.g., because a highlighted line takes
+    % its place; -1 for none. Redefine inside a panel's scope before \bfCrossingBase.
     \def\bfSkipComplete{-1}
     \def\bfSkipAnti{-1}
+    % Label of the dotted lines x'--x and y'--y; redefine as empty to hide it.
     \def\bfSimLabel{$\sim$}
 
+    % The configuration (\dagger), centered at the origin of the current scope.
     \def\bfCrossingBase{%
         \coordinate (X) at (-\bx, 0);
         \coordinate (Y) at ( \bx, 0);
@@ -38,7 +70,13 @@
         \coordinate (x') at (-\bx-\off, \h);
         \coordinate (y') at ( \bx+\off, \h);
 
-        \pgfmathsetmacro{\px}{2*\bx+\off}
+        % y' is complete to X: a fan of edges whose directions are evenly spaced between
+        % the two tangents from y' to X. Each edge ends where its ray first meets X, i.e.,
+        % at the smaller root of a quadratic in the length \fanlen.
+        % x' is anticomplete to Y: the mirror image, a fan of nonedges from x' onto Y.
+        % The nonedges start slightly away from x', and neighboring ones have staggered
+        % dashes, so that they do not merge into a solid patch near x'.
+        \pgfmathsetmacro{\px}{2*\bx+\off} % y' relative to the center of X is (\px, \h)
         \pgfmathsetmacro{\fanfrom}{atan2(\ry*sin(\tphi+\tdelta) - \h, \rx*cos(\tphi+\tdelta) - \px)}
         \pgfmathsetmacro{\fanto}{atan2(\ry*sin(\tphi-\tdelta) - \h, \rx*cos(\tphi-\tdelta) - \px)}
         \foreach \i in {0,...,5} {
@@ -55,14 +93,17 @@
             \fi
         }
 
+        % The blobs.
         \draw[blob] (X) ellipse [x radius=\rx, y radius=\ry];
         \draw[blob] (Y) ellipse [x radius=\rx, y radius=\ry];
         \node[lbl, below=2pt] at ($(X) + (0, -\ry)$) {$X$};
         \node[lbl, below=2pt] at ($(Y) + (0, -\ry)$) {$Y$};
 
+        % Same atomic type over S.
         \draw[sameType] (x') -- node[lbl, left=1pt, black] {\bfSimLabel} (x);
         \draw[sameType] (y') -- node[lbl, right=1pt, black] {\bfSimLabel} (y);
 
+        % Vertices.
         \foreach \v in {x, y, x', y'}
             \node[vertex] at (\v) {};
         \node[lbl, below=2pt] at (x) {$x$};
@@ -71,10 +112,16 @@
         \node[lbl, above=2pt] at (y') {$y'$};
     }
 
+    % Panel a.
     \begin{scope}[name prefix=a-]
         \bfCrossingBase
     \end{scope}
 
+    % Panel b: sample(X,Y) lies in Y. Its vertex s (unnamed in the picture) is
+    % adjacent to x, but, like all of Y, nonadjacent to x'.
+    % The vertex s is placed on the ray of nonedge \bfSkipAnti of the fan, 0.4 left of
+    % the center of Y, so that the highlighted nonedge s--x' takes the place of that
+    % nonedge, which is left out.
     \begin{scope}[shift={(\panelsep, 0)}, name prefix=b-]
         \def\bfSkipAnti{3}
         \def\bfSimLabel{}
@@ -90,6 +137,10 @@
         \node[vertex, fill=bfHl] at (s) {};
     \end{scope}
 
+    % Panel c: sample(X,Y) lies in X. Its vertex s (unnamed in the picture) is
+    % nonadjacent to y, but, like all of X, adjacent to y'.
+    % Mirroring panel b, the vertex s is placed on the ray of edge 3 of the fan, 0.4 right
+    % of the center of X, so that the highlighted edge s--y' covers that edge.
     \begin{scope}[shift={(2*\panelsep, 0)}, name prefix=c-]
         \def\bfSimLabel{}
         \bfCrossingBase
@@ -104,6 +155,8 @@
         \node[vertex, fill=bfHl] at (s) {};
     \end{scope}
 
+    % Set the bounding box horizontally to the outer edges of the outer blobs,
+    % keeping its natural vertical extent.
     \coordinate (bbtop) at (current bounding box.north);
     \coordinate (bbbot) at (current bounding box.south);
     \pgfresetboundingbox
@@ -111,4 +164,4 @@
         (-\bx-\rx,0 |- bbbot) rectangle (2*\panelsep+\bx+\rx,0 |- bbtop);
     \end{scope}
 \end{tikzpicture}%
-}}}%
+}}}% TEMPORARY: closes the white \colorbox and the \makebox above

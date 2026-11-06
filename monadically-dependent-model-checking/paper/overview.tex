@@ -13,8 +13,10 @@ We start by introducing the relevant definition.
 \paragraph{Merge-width.}
 The merge-width parameters are defined through decompositions called \emph{construction sequences}~\cite{mw-stoc}.
 We can define them as follows.
+
 % lax begin Lax185574.PartialGraphs
-\begin{itemize}%
+\begin{itemize}%[leftmargin=0pt,labelindent=0pt,itemindent=*]
+%\begin{itemize}
     \item A \emph{partial graph} $H$ consists of a finite vertex set $V=V(H)$, two disjoint sets $E(H),N(H)\subseteq\binom V2$ of \emph{edges} and \emph{non-edges}, and a partition of $V$ whose parts we treat as colors.
     The pairs in $R(H)\coloneqq E(H)\cup N(H)$ are \emph{resolved}, and all other pairs are \emph{unresolved}.
     We view $H$ as a logical structure with binary relations $E$ and $N$ and a unary predicate for every color.
@@ -53,9 +55,9 @@ where $G_t$ is the subgraph induced by the bags in the subtree of $t$. Here $q$ 
 The type above is computed from the types of the children of $t$.
 Similarly, the algorithms for bounded twin-width maintain FO types along contraction sequences~\cite{tww1,tww-types-icalp}, and the algorithm for bounded merge-width along construction sequences~\cite{mw-arxiv}.
 
-We call a first-order formula \emph{local} if, roughly speaking, every quantifier has the form
+We call a first-order formula \emph{local} if, roughly speaking, every quantifier has the form 
 \begin{center}
-  $\exists y\,(\dist(\tup x,y)\le r\land\chi(\tup x y))$ \quad or \quad $\forall y\,(\dist(\tup x,y)\le r\to\chi(\tup x y))$
+  $\exists y\,(\dist(\tup x,y)\le r\land\chi(\tup x y))$ \quad or \quad $\forall y\,(\dist(\tup x,y)\le r\to\chi(\tup x y))$  
 \end{center}
 ranging only over vertices close to some free or previously quantified variables $\tup x$.
 The merge-width model checking algorithm~\cite{mw-arxiv} maintains, at every step $H$ of the construction sequence and for every vertex $v$, its \emph{local type} of quantifier rank $q$, for some constant $q$ depending on $\phi$:
@@ -71,8 +73,9 @@ Merges are handled easily, by simply rewriting color names; the main difficulty 
 For all these type-based model checking algorithms, the number of possible types grows non-elementarily with the width of the decomposition.
 In particular, in each step of a construction sequence of radius-$r$ width $w$, each vertex locally reaches at most $w$ colors, and the number of local formulas over $w$ colors is a tower of exponentials in $w$.
 This is a constant if the width \(w\) is treated as a constant (the radius $r$ here is fixed and depends on the quantifier rank $q$).
-However, monadically dependent classes may have unbounded merge-width, and we can only guarantee a merge-width bound of \(w = n^{o(1)}\).
+However, monadically dependent classes may have unbounded merge-width, and we can only guarantee a merge-width bound of \(w = n^{o(1)}\). 
 In this case the number of all possible local types explodes.
+
 
 \paragraph{Our algorithm.}
 The tower above counts the types that are \emph{possible} with $w$ colors.
@@ -87,7 +90,7 @@ This has three parts, which we describe in the rest of this section.
 
 \paragraph{Type trees.}
 Type trees (defined in \Cref{sec:typetrees}) are a variant of Hintikka types~\cite{Scott1979}.
-Simplifying for the sake of presentation, up to the precise choice of radii $r_1<r_2<\ldots$, the type tree of a tuple $\tup a$ is
+Simplifying for the sake of presentation, up to the precise choice of radii $r_1<r_2<\ldots$, the type tree of a tuple $\tup a$ is 
 \[
 \tree_q(\tup a)\coloneqq
 \begin{cases}
@@ -102,6 +105,7 @@ Type trees resemble the morphism-trees of~\cite{tww1} and serve a similar purpos
 \Cref{fig:ov-type-tree} shows an example.
 
 \begin{center}
+  \captionsetup{type=figure}
   \begin{tikzpicture}[
       vx/.style={circle, fill, inner sep=1.6pt},
       vy/.style={circle, fill=blue!65!black, inner sep=1.4pt},
@@ -112,6 +116,7 @@ Type trees resemble the morphism-trees of~\cite{tww1} and serve a similar purpos
       lbl/.style={font=\scriptsize},
       ilbl/.style={font=\scriptsize, inner sep=1pt}
     ]
+    % the graph
     \fill[gray!10] (0,0) circle (1.4);
     \draw[gray, dashed] (0,0) circle (1.4);
     \node[lbl, gray!60!black] at (135:1.85) {$\Ball_{r_1}(a)$};
@@ -131,6 +136,7 @@ Type trees resemble the morphism-trees of~\cite{tww1} and serve a similar purpos
     \node[vy] (g) at (2.2,0.75) {};
     \node[lbl, right=2pt of g] {$g$};
     \draw[e] (f) -- (g);
+    % legend of the colors
     \node[vx] at (-0.9,-1.95) {};
     \node[lbl, right] at (-0.85,-1.95) {$X$};
     \node[vy] at (-0.05,-1.95) {};
@@ -138,23 +144,25 @@ Type trees resemble the morphism-trees of~\cite{tww1} and serve a similar purpos
     \node[vz] at (0.8,-1.95) {};
     \node[lbl, right, text=orange!85!black] at (0.85,-1.95) {$Z$};
     \begin{scope}[yshift=-0.65cm]
+      % the type tree
       \node[tnode] (root) at (6.3,1.35) {$X(x_1)$};
       \node[lbl, left=6pt of root] {$\tree_1(a)$};
       \node[tnode] (c1) at (4.0,-0.55) {$x_1=x_2$\\ $X(x_2)$};
       \node[tnode] (c2) at (6.3,-0.55) {$x_1\neq x_2$\\$E(x_1,x_2)$\\ \textcolor{blue!65!black}{$Y(x_2)$}};
       \node[tnode] (c3) at (8.6,-0.55) {$x_1\neq x_2$\\$E(x_1,x_2)$\\ \textcolor{orange!85!black}{$Z(x_2)$}};
-      \draw[tedge] (root) -- node[ilbl, pos=0.38,
+      \draw[tedge] (root) -- node[ilbl, pos=0.38, %sloped, 
       above=1pt] {$1$} (c1);
-      \draw[tedge] (root) -- node[ilbl, pos=0.38,
+      \draw[tedge] (root) -- node[ilbl, pos=0.38, %sloped, 
       left=1pt] {$1$} (c2);
-      \draw[tedge] (root) -- node[ilbl, pos=0.38,
+      \draw[tedge] (root) -- node[ilbl, pos=0.38, % sloped, 
       above=1pt] {$1$} (c3);
+      % which vertices give each child
       \node[ilbl, below=4pt of c1] {$a$};
       \node[ilbl, below=4pt of c2, text=blue!65!black] {$b,c,d$};
       \node[ilbl, below=4pt of c3, text=orange!85!black] {$e,f$};
     \end{scope}
   \end{tikzpicture}
-  \captionof{figure}{\emph{Left:} A partial graph with $7$ vertices and colors $X,Y,Z$. \emph{Right:} $\tree_q(a)$ for $q=1$ and $r_1=1$, drawn as a tree of depth $q$ whose nodes are the sets $\atp(a)$ and $\atp(a\,v)$. The edge label $1$ records that $v$ is close to the first entry of the tuple $(a)$. The lists of vertex labels below the boxes show which vertices of $\Ball_{r_1}(a)$ give each child of the root node. The vertex $g$ outside the locality radius \(r_1 = 1\) does not occur in the tree. Note that the size of the tree adapts to the number of atomic types $\atp(a\,v)$ realized in the ball.}
+  \caption{\emph{Left:} A partial graph with $7$ vertices and colors $X,Y,Z$. \emph{Right:} $\tree_q(a)$ for $q=1$ and $r_1=1$, drawn as a tree of depth $q$ whose nodes are the sets $\atp(a)$ and $\atp(a\,v)$. The edge label $1$ records that $v$ is close to the first entry of the tuple $(a)$. The lists of vertex labels below the boxes show which vertices of $\Ball_{r_1}(a)$ give each child of the root node. The vertex $g$ outside the locality radius \(r_1 = 1\) does not occur in the tree. Note that the size of the tree adapts to the number of atomic types $\atp(a\,v)$ realized in the ball.}
   \label{fig:ov-type-tree}
 \end{center}
 
@@ -163,6 +171,7 @@ The type tree of a tuple $\tup a$ has one subtree for every type tree realized b
 Roughly, this is like storing a small subset of a huge universe as the list of its elements, whereas naive type-based algorithms store it as its characteristic vector.
 Showing that type trees have size $n^{o(1)}$ is a key step of our algorithm.
 For this, we first leave the algorithm aside for a moment.
+
 
 \paragraph{Counting types over parameters.}
 We turn to a purely quantitative result about monadically dependent classes, which counts types over a set of parameters and may be of independent interest.
@@ -183,11 +192,11 @@ One of the main contributions of this paper is the following bound on the number
 % lax end
 
 The proof of \Cref{thm:ov-type-bound} proceeds as follows. We fix some radius $r$ depending on the quantifier rank $q$.
-We then show (in \Cref{thm:closures})  that there is a set $\wh U$ of size polynomial in $|U|$,
+We then show (in \Cref{thm:closures})  that there is a set $\wh U$ of size polynomial in $|U|$, 
 such that for every vertex $v\in V(G)$,
 there is some  \emph{separator} $S\subseteq \wh U$ of size bounded by some constant $s$,
 such that $S$ \emph{separates} $v$ from $U$ \emph{at a distance} $r$.
-The notion of separation is technical,
+The notion of separation is technical, 
 but it ensures that the following holds
 for all $v\in V(G)$ which are $r$-separated from $U$ by $S$:
 \begin{quote}\centering
@@ -233,6 +242,7 @@ in every node, remove all atoms that mention $P$ or $Q$, and add an atom mention
 The difficulty lies in resolves, which create new short paths and thereby bring new vertices close to a vertex $v$ (see \Cref{fig:ov-resolve}).
 
 \begin{center}
+  \captionsetup{type=figure}
   \begin{tikzpicture}[
       vx/.style={circle, fill, inner sep=1.6pt},
       vp/.style={circle, fill=blue!65!black, inner sep=1.4pt},
@@ -241,34 +251,40 @@ The difficulty lies in resolves, which create new short paths and thereby bring 
       new/.style={red!75!black, thick, dashed},
       lbl/.style={font=\scriptsize}
     ]
+    % the ball of v after the resolve: concentric with the old ball on the left
     \fill[gray!5] (0,1.4) -- (2.7,1.4) arc[start angle=90, end angle=-90, radius=1.4] -- (0,-1.4) arc[start angle=270, end angle=90, radius=1.4] -- cycle;
     \draw[gray, dashed] (0,1.4) -- (2.7,1.4) arc[start angle=90, end angle=-90, radius=1.4] -- (0,-1.4) arc[start angle=270, end angle=90, radius=1.4] -- cycle;
     \node[lbl, gray!60!black] at (1.35,1.65) {$\Ball^{H'}_r(v)$};
+    % the ball of v before the resolve
     \fill[gray!15] (0,0) circle (1);
     \draw[gray, dashed] (0,0) circle (1);
     \node[lbl, gray!60!black] at (-0.2,-0.5) {$\Ball^H_r(v)$};
+    % v and its side
     \node[vx] (v) at (0,0) {};
     \node[lbl, left] at (v) {$v$};
     \node[vp] (p1) at (0.65,0.55) {};
     \node[vp] (p2) at (0.65,-0.55) {};
     \draw[e] (v) -- (p1);
     \draw[e] (v) -- (p2);
+    % the far side
     \node[vq] (q1) at (2.15,0.75) {};
     \node[vq] (q2) at (2.15,-0.75) {};
     \node[vx] (c) at (2.95,0) {};
     \draw[e] (q1) -- (c);
     \draw[e] (q2) -- (c);
+    % the pairs resolved by the resolve
     \foreach \p in {p1,p2} {
       \foreach \q in {q1,q2} {
         \draw[new] (\p) -- (\q);
       }
     }
+    % legend of the colors
     \node[vp] at (0.7,-1.85) {};
     \node[lbl, right, text=blue!65!black] at (0.75,-1.85) {$P$};
     \node[vq] at (1.6,-1.85) {};
     \node[lbl, right, text=orange!85!black] at (1.65,-1.85) {$Q$};
   \end{tikzpicture}
-  \captionof{figure}{A resolve of the parts $P$ and $Q$, positive or negative, resolves all pairs between $P$ and $Q$ (red). This creates short paths from $v$ to vertices that were far from $v$ before, so the ball of $v$ grows from $\Ball^H_r(v)$ to $\Ball^{H'}_r(v)$. The old type tree of $v$ contains no information about the new vertices in the ball. The new type tree of $v$ therefore has to be assembled from the old type trees of $v$ and of these vertices.}
+  \caption{A resolve of the parts $P$ and $Q$, positive or negative, resolves all pairs between $P$ and $Q$ (red). This creates short paths from $v$ to vertices that were far from $v$ before, so the ball of $v$ grows from $\Ball^H_r(v)$ to $\Ball^{H'}_r(v)$. The old type tree of $v$ contains no information about the new vertices in the ball. The new type tree of $v$ therefore has to be assembled from the old type trees of $v$ and of these vertices.}
   \label{fig:ov-resolve}
 \end{center}
 
@@ -296,6 +312,7 @@ This is summarized by the following lemma.
 The algorithms for nowhere dense and monadically stable classes face the same problem of an unbounded number of local types.
 They sidestep it by a bounded-depth recursion into local neighborhoods, guided by the splitter game~\cite{gks} or the flipper game~\cite{flippers,ms-mc1,ms-mc2}, with neighborhood covers keeping the recursion tree small.
 We tried and failed to adapt the approach to the monadically dependent setting, before settling on our current approach.
+
 
 \paragraph{Organization.}
 After the preliminaries in \Cref{sec:prelims}, \Cref{sec:main-proof} states the ingredients formally and derives \Cref{thm:main} from them.
