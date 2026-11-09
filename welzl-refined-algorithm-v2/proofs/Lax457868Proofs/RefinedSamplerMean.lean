@@ -1,4 +1,7 @@
 import Lax457868Proofs.CompleteSamplerMean
+import Lax457868Proofs.NumericRepairProbability
+import Lax457868Proofs.RefinedRepairCharges
+import Lax457868Proofs.ExceptionLoopMean
 import Lax457868Proofs.InitialRetryMean
 import Lax457868Proofs.NumericGraphProbability
 import Lax457868Proofs.RefinedRoundInput
@@ -203,5 +206,128 @@ lemma actual_mean_of_continuation
   rw [hsum]
   push_cast at hm ⊢
   nlinarith only [hm,htm,hw]
+
+set_option maxRecDepth 2048 in
+lemma after_initial_mean
+    (R : ReadyInput B n A.card n (A.card/(4*c^2)) n n
+      (2*Lax11.GraphEncoding.edgeCount x) (2^Nat.clog 2 n) (refinedCutoffK c)
+      (A.card/(4*c^2*(64*Nat.clog 2 c+1))) G x A)
+    (S : RuntimeInput R (64*Nat.clog 2 c) n)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 2 ≤ c)
+    (hsep : Set.InjOn
+      (ReusedOriginal.Construction.NeighborhoodComplexity.neighborhoodTrace G (finSetAsSet A))
+      (finSetAsSet (activeVertices n R.I.activeB)))
+    {attemptCap : ℕ} (C : Cut R attemptCap)
+    (hbudget : (A.card/(4*c^2*(64*Nat.clog 2 c+1)))*
+      (n*((64*Nat.clog 2 c)*n*Nat.clog 2 n)) ≤ N)
+    (final : Tape N → Env) (cost : Tape N → ℕ)
+    (hrun : ∀ ρ, BigStepB B afterInitial
+      {C.final with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest}
+      (final ρ) (cost ρ)) :
+    (∑ ρ, (cost ρ:ℚ)) ≤
+      (2839*(x.length+1)+435*A.card*(Nat.clog 2 n+1)+
+        90*acceptedRepReward n R.I.activeB (fun b => (Lax11Proofs.CC.deg x b:ℚ))
+          C.final)*2^N := by
+  classical
+  by_cases hs : C.final.vars "initialRetryStatus" = 1
+  · obtain ⟨choice,q,L,repairCost,hr,hcost,hrest,hcap,hrep,hphysical⟩ :=
+      accepted_tail_family R S C hs final cost hrun
+    have hC : activeVertices n R.I.activeB ⊆ Finset.range n :=
+      fun b hb => Finset.mem_range.mpr (mem_activeVertices.mp hb).1
+    have hhalf := NumericRepairProbability.accepted_loop_half hG hc choice L hC hsep hrep
+    have hseparate := NumericRepairProbability.accepted_loop_separate choice L hC hsep
+    have hsize := RefinedRepairCharges.accepted_exception_budget A.card c
+      (64*Nat.clog 2 c) (choice.exceptions (refinedCutoffK c)).card (by omega) hcap
+    have hcharge := RefinedRepairCharges.repair_mean_charge_le_input L hsize hseparate
+    have hm := ExceptionLoopMean.packed_mean L N
+      (hc.trans (refinedCutoffK_ge_c c hc))
+      ((Nat.mul_le_mul_right _ hcap).trans hbudget) hhalf final repairCost hr
+    have hrepSum : (∑ b ∈ choice.exceptions (refinedCutoffK c), Lax11Proofs.CC.deg x (L.rep b)) ≤
+        ∑ b ∈ activeVertices n R.I.activeB,
+          Lax11Proofs.CC.deg x ((C.final.arrs "repB").getD b 0) := by
+      calc
+        _ = ∑ b ∈ choice.exceptions (refinedCutoffK c),
+            Lax11Proofs.CC.deg x ((C.final.arrs "repB").getD b 0) := by
+          apply Finset.sum_congr rfl
+          intro b hb
+          rw [hphysical b (mem_activeVertices.mp (Finset.mem_filter.mp hb).1).1]
+        _ ≤ _ := Finset.sum_le_sum_of_subset (Finset.filter_subset _ _)
+    have hprep := preparation_cost_le_input R.I.hx
+    have hsum := Finset.sum_le_sum (fun ρ (_ : ρ ∈ Finset.univ) =>
+      (show (cost ρ:ℚ) ≤ repairCost ρ+(1229*n+987*(2*Lax11.GraphEncoding.edgeCount x)+
+        64*(2^Nat.clog 2 n)+575:ℕ) by exact_mod_cast hcost ρ))
+    simp only [Finset.sum_add_distrib,Finset.sum_const,Finset.card_univ,
+      card_tape,nsmul_eq_mul] at hsum
+    have hb : ((23+20*n+∑ b ∈ choice.exceptions (refinedCutoffK c),
+        ExceptionLoopMean.meanStepCharge L b)+
+        (1229*n+987*(2*Lax11.GraphEncoding.edgeCount x)+64*(2^Nat.clog 2 n)+575):ℕ) ≤
+        2839*(x.length+1)+435*A.card*(Nat.clog 2 n+1)+
+        90*(∑ b ∈ activeVertices n R.I.activeB,
+          Lax11Proofs.CC.deg x ((C.final.arrs "repB").getD b 0)) := by
+      change 23+20*n+∑ b ∈ choice.exceptions (refinedCutoffK c),
+        ExceptionLoopMean.meanStepCharge L b ≤ _ at hcharge
+      omega
+    have hbQ : (((23+20*n+∑ b ∈ choice.exceptions (refinedCutoffK c),
+        ExceptionLoopMean.meanStepCharge L b)+
+        (1229*n+987*(2*Lax11.GraphEncoding.edgeCount x)+64*(2^Nat.clog 2 n)+575):ℕ):ℚ) ≤
+        2839*(x.length+1)+435*A.card*(Nat.clog 2 n+1)+
+        90*(∑ b ∈ activeVertices n R.I.activeB,
+          (Lax11Proofs.CC.deg x ((C.final.arrs "repB").getD b 0):ℚ)) := by exact_mod_cast hb
+    simp only [acceptedRepReward,hs,if_true]
+    push_cast at hsum hm hbQ
+    nlinarith only [hsum,hm,mul_le_mul_of_nonneg_right hbQ (show (0:ℚ) ≤ 2^N by positivity)]
+  · have hz (ρ : Tape N) : cost ρ = 5 := actual_nonaccepted_tail
+        (σ := {C.final with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest}) hs (hrun ρ)
+    simp only [hz,acceptedRepReward,hs,if_false,mul_zero,add_zero,
+      Finset.sum_const,Finset.card_univ,card_tape,nsmul_eq_mul]
+    push_cast
+    rw [mul_comm (2^N:ℚ) 5]
+    apply mul_le_mul_of_nonneg_right ?_ (by positivity)
+    have hz : (0:ℚ) ≤ 435*(A.card:ℚ)*((Nat.clog 2 n:ℚ)+1) := by positivity
+    have hx0 : (0:ℚ) ≤ (x.length:ℚ) := Nat.cast_nonneg _
+    nlinarith only [hz,hx0]
+
+lemma actual_mean
+    (R : ReadyInput B n A.card n (A.card/(4*c^2)) n n
+      (2*Lax11.GraphEncoding.edgeCount x) (2^Nat.clog 2 n) (refinedCutoffK c)
+      (A.card/(4*c^2*(64*Nat.clog 2 c+1))) G x A)
+    (S : RuntimeInput R (64*Nat.clog 2 c) n)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 2 ≤ c)
+    (hsep : Set.InjOn
+      (ReusedOriginal.Construction.NeighborhoodComplexity.neighborhoodTrace G (finSetAsSet A))
+      (finSetAsSet (activeVertices n R.I.activeB)))
+    (hcap : R.I.σ.vars "initialRetryCap" = n)
+    (hbudget : n*attemptBitBudget n A.card (A.card/(4*c^2)) n+
+      (A.card/(4*c^2*(64*Nat.clog 2 c+1)))*
+        (n*((64*Nat.clog 2 c)*n*Nat.clog 2 n)) ≤ N)
+    (final : Tape N → Env) (cost : Tape N → ℕ)
+    (hrun : ∀ ρ, BigStepB B completeSamplerSource
+      {R.I.σ with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest}
+      (final ρ) (cost ρ)) :
+    (∑ ρ, (cost ρ:ℚ)) ≤
+      ((6985*(x.length+1)+701*A.card*(Nat.clog 2 n+1):ℕ):ℚ)*2^N := by
+  classical
+  have hn : 1 ≤ n := by
+    obtain ⟨a,ha⟩ := R.I.hAnonempty
+    have := Finset.mem_range.mp (R.I.hA ha)
+    omega
+  have hi : n*attemptBitBudget n A.card (A.card/(4*c^2)) n ≤ N := by omega
+  have hp : attemptBitBudget n A.card (A.card/(4*c^2)) n ≤ N :=
+    (Nat.le_mul_of_pos_left _ hn).trans hi
+  let R' (ρ : Tape N) := R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hp)
+  have hcuts (ρ : Tape N) : Nonempty (Cut (R' ρ) n) :=
+    cut_exists (R' ρ) n hcap (by have := R.hnB; omega)
+      (by simpa only [R',ReadyInput.reinput_bits,List.length_ofFn] using hi)
+  let C (ρ : Tape N) := Classical.choice (hcuts ρ)
+  apply actual_mean_of_continuation R hG hc hsep hcap hi hp C final cost hrun
+  intro ρ f d hd
+  have hused := (C ρ).used_le
+  have hb : (A.card/(4*c^2*(64*Nat.clog 2 c+1)))*
+      (n*((64*Nat.clog 2 c)*n*Nat.clog 2 n)) ≤ N-(C ρ).used := by omega
+  exact after_initial_mean (R' ρ)
+    (runtime_reinput R S (List.ofFn ρ) (by simpa [attemptBitBudget] using hp))
+    hG hc hsep (C ρ) hb f d hd
 
 end Lax457868Proofs.RefinedSamplerMean
