@@ -1,8 +1,10 @@
 import Lax457868Proofs.RefinedRoundPrefix
+import Lax457868Proofs.CompleteSamplerMean
 
 /-! Relate the actual source-round cost to the actual complete-sampler cost.
 All deterministic preparation, partition and history work is already checked. -/
 namespace Lax457868Proofs.RefinedRoundMean
+open Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning
 open Lax457868Proofs.RefinedRoundDriver
 open Lax457868Proofs.RefinedRoundInput
@@ -105,5 +107,75 @@ lemma actual_prepared_cost
       apply bound (hprep.seq hfail)
       simp only [Cond.size,Expr.size]
       omega
+
+/-- The same deterministic preparation feeds the sampler on every fair suffix.
+All recorded round costs are compared to the actual sampler costs. -/
+lemma actual_prepared_family
+    {B c n N : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {A C : Finset ℕ} {σ : Env}
+    (D : RoundData c n x A C σ)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 2 ≤ c) (hCsub : C ⊆ Finset.range n) (hC : C.Nonempty)
+    (hlarge : 2 * refinedCutoffK c < A.card)
+    (hbounded : ValuesBounded B σ) (hstore : Stored G (refinedCutoffK c) σ)
+    (hcapacity : σ.vars "removedCount" + A.card ≤ n)
+    (hround : σ.vars "round" < n)
+    (R : ReadyInput B n A.card n (A.card/(4*c^2)) n n
+      (2*Lax11.GraphEncoding.edgeCount x) (2^Nat.clog 2 n) (refinedCutoffK c)
+      (A.card/(4*c^2*(64*Nat.clog 2 c+1))) G x A)
+    (S : RuntimeInput R (64*Nat.clog 2 c) n)
+    (hprep : Run B prepareRefinedRound σ R.I.σ (40*n+58))
+    (hCarray : R.I.activeB = setFlag C)
+    (hretryCap : R.I.σ.vars "initialRetryCap" = n)
+    (hbudget : n*attemptBitBudget n A.card (A.card/(4*c^2)) n +
+      (A.card/(4*c^2*(64*Nat.clog 2 c+1))) *
+        (n*((64*Nat.clog 2 c)*n*Nat.clog 2 n)) ≤ N)
+    (final : Tape N → Env) (cost : Tape N → ℕ)
+    (ha : ∀ ρ, BigStepB B preparedRefinedRoundSource
+      {σ with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest} (final ρ) (cost ρ)) :
+    ∃ samplerFinal : Tape N → Env, ∃ samplerCost : Tape N → ℕ,
+      (∀ ρ, BigStepB B completeSamplerSource
+        {R.I.σ with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest}
+        (samplerFinal ρ) (samplerCost ρ)) ∧
+      (∀ ρ, cost ρ ≤ samplerCost ρ+1946*(x.length+1)) := by
+  classical
+  have hn : 1 ≤ n := by
+    obtain ⟨a,ha⟩ := R.I.hAnonempty
+    have := Finset.mem_range.mp (R.I.hA ha)
+    omega
+  have hper : attemptBitBudget n A.card (A.card/(4*c^2)) n ≤ N :=
+    (Nat.le_mul_of_pos_left _ hn).trans (by omega)
+  have hin : σ.inp = R.I.σ.inp := (hprep.frame_inp (by decide)).symm
+  have hp (ρ : Tape N) : Run B prepareRefinedRound
+      {σ with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest}
+      {R.I.σ with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest} (40*n+58) := by
+    simpa only [List.nil_append] using
+      StoppedPrefixAveraging.run_replace_consumed_suffix hprep []
+        (by simpa using hin) ((List.ofFn ρ).map Bool.toNat ++ R.I.rest)
+  have hd (ρ : Tape N) : ∃ σs ks, BigStepB B completeSamplerSource
+      {R.I.σ with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest} σs ks ∧
+      cost ρ ≤ ks+1946*(x.length+1) := by
+    let σ' : Env := {σ with inp := (List.ofFn ρ).map Bool.toNat ++ R.I.rest}
+    have D' : RoundData c n x A C σ' :=
+      ⟨D.parameter,D.vertices,D.radixSize,D.cutoff,D.logParameter,D.offsets,D.targets,
+        D.activeA,D.activeB,D.lengths,D.cleared,D.nextA_bits,D.nextB_bits⟩
+    have hb : ValuesBounded B σ' := by
+      refine ⟨hbounded.vars,hbounded.arrays,?_⟩
+      intro v hv
+      rcases List.mem_append.mp hv with hbit | hrest
+      · obtain ⟨b,_,rfl⟩ := List.mem_map.mp hbit
+        cases b <;> simp <;> have := R.I.honeB <;> omega
+      · apply hbounded.input v
+        rw [hin,R.I.hinput]
+        exact List.mem_append_right _ hrest
+    have hs : Stored G (refinedCutoffK c) σ' :=
+      hstore.frame rfl rfl rfl rfl rfl rfl rfl rfl
+    exact actual_prepared_cost D' hG hc hCsub hC hlarge hb hs hcapacity hround
+      (R.reinput (List.ofFn ρ) (by simpa [attemptBitBudget] using hper))
+      (CompleteSamplerMean.runtime_reinput R S (List.ofFn ρ)
+        (by simpa [attemptBitBudget] using hper)) (hp ρ) hCarray hretryCap
+      (by simpa only [ReadyInput.reinput_bits,List.length_ofFn] using hbudget) (ha ρ)
+  choose samplerFinal samplerCost hr hcost using hd
+  exact ⟨samplerFinal,samplerCost,hr,hcost⟩
 
 end Lax457868Proofs.RefinedRoundMean
