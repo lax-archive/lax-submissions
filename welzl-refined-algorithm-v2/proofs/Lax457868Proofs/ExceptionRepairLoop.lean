@@ -1014,6 +1014,9 @@ def FarStepFailureTrace
     (numericNeighborhood G (R.rep b) ∩ A)
   ∃ P : ReadyInput B n X.card n s t bufferCap targetCap q b
       G x X groupedB Wbase Wcurrent,
+    Run B ((Com.assign "repairB" (.get "exceptionList" (.var "exceptionIndex"))).seq
+      repairDomainSource) R.σ P.σ
+      (3 + domainCharge x G A R.rep b) ∧
     P.bits = R.bits ∧ P.rest = R.rest ∧
     (status = 2 →
       LocalRepairRetriesSource.FlatSelectorFailed X.card P.hpositive t s
@@ -1041,6 +1044,7 @@ lemma FarStepTrace.failure_of_actual
   rcases hfar with ⟨P, rprep', hbits, hrest, _hscan, σsource',
     rlocal', _hreject, _hfull, _hcount, _hinp, hexhaust, hselector⟩
   obtain ⟨_, _, hbigPrep⟩ := rprep
+  have hrPrep := rprep'
   obtain ⟨_, _, hbigPrep'⟩ := rprep'
   have heqPrep : P.σ = σprep :=
     (BigStep.unique hbigPrep'.bigStep hbigPrep.bigStep).1
@@ -1049,7 +1053,7 @@ lemma FarStepTrace.failure_of_actual
   have heqSource : σsource' = σsource := by
     rw [heqPrep] at hbigLocal'
     exact (BigStep.unique hbigLocal'.bigStep hbigLocal.bigStep).1
-  refine ⟨P, hbits, hrest, ?_, ?_⟩
+  refine ⟨P, hrPrep, hbits, hrest, ?_, ?_⟩
   · intro hs
     apply hselector
     rw [heqSource, hstatus]
