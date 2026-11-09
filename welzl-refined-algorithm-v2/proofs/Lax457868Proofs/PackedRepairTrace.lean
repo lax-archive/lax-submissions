@@ -65,7 +65,7 @@ private lemma traceBitCost_le_length
 /-- One initialized loop state is shared by all flat-tape executions. Each
 actual packed run has the source loop chain from that state's refill, and its
 visible retry status agrees with the chain's final loop state. -/
-theorem packed_trace_family
+lemma packed_trace_family
     {B n s t bufferCap targetCap q cap k e N : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ}
     {E groupedB Wbase A Wcurrent : Finset ℕ}

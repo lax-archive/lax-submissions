@@ -210,3 +210,5 @@ import Lax457868Proofs.RefinedPrefixMean
 import Lax457868Proofs.RefinedPrefixFailure
 import Lax457868Proofs.RefinedGlobalAssembly
 import Lax457868Proofs.RefinedPreparedMean
+import Lax457868Proofs.PackedRepairTrace
+import Lax457868Proofs.RefinedRoundFailure
