@@ -1,13 +1,18 @@
 import Lax457868Proofs.ExceptionRepairLoop
 import Lax457868Proofs.LocalSelectorAbort
 import Lax457868Proofs.ExceptionRepairMean
+import Lax457868Proofs.ExceptionLoopMean
 import Lax457868Proofs.StoppedPrefixAveraging
 
 /-! Actual chronological failure certificates for the phase-three repair loop. -/
 
+set_option maxHeartbeats 2000000
+
 namespace Lax457868Proofs.ExceptionAbortProbability
 
 open Lax457868Proofs.ExceptionRepairLoop
+open Lax457868Proofs.ExceptionPhaseSource
+open Lax457868Proofs.LocalRepairSource
 open Lax457868Proofs.ReusedOriginal.Construction.MarkingMath
 open Lax808846Proofs.Imp
 open Lax808846Proofs.Reasoning
@@ -651,5 +656,585 @@ lemma StepChain.same_result_same_prefix
   refine ⟨hlenEq, ?_⟩
   rw [hσρ, hστ]
   exact hstate.2
+
+/-- The first `j` calls of a completed source chain form a replayable prefix. -/
+lemma StepChain.stage_prefix
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    {R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart}
+    {σfinal : Env} {steps : List ExecutedException}
+    (hchain : StepChain R σfinal steps) (j : ℕ)
+    (hj : j ≤ steps.length) :
+    ∃ (Wmid : Finset ℕ)
+      (Rmid : LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A Wmid),
+      StepPrefix R Rmid.σ (steps.take j) ∧
+      Rmid.rest = R.rest ∧
+      Rmid.bits = R.bits.drop
+        (traceBitCost G A R.rep (steps.take j)) := by
+  obtain ⟨Wmid, Rmid, pref, suffix, heq, hlen, hpref, _, _, hrest,
+    hbits⟩ := StepChain.split_at hchain j hj
+  have hprefEq : pref = steps.take j := by
+    rw [heq]
+    simp [hlen]
+  subst pref
+  exact ⟨Wmid, Rmid, hpref, hrest, hbits⟩
+
+/-- Split a completed chain at a chronological call index, retaining both
+the replayable prefix and its actual continuation. -/
+lemma StepChain.stage_split
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    {R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart}
+    {σfinal : Env} {steps : List ExecutedException}
+    (hchain : StepChain R σfinal steps) (j : ℕ)
+    (hj : j ≤ steps.length) :
+    ∃ (Wmid : Finset ℕ)
+      (Rmid : LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A Wmid),
+      StepPrefix R Rmid.σ (steps.take j) ∧
+      StepChain Rmid σfinal (steps.drop j) ∧
+      Rmid.rest = R.rest ∧
+      Rmid.bits = R.bits.drop
+        (traceBitCost G A R.rep (steps.take j)) := by
+  obtain ⟨Wmid, Rmid, pref, suffix, heq, hlen, hpref, hsuffix,
+    _, hrest, hbits⟩ := StepChain.split_at hchain j hj
+  have hprefEq : pref = steps.take j := by
+    rw [heq]
+    simp [hlen]
+  have hsuffixEq : suffix = steps.drop j := by
+    rw [heq]
+    simp [hlen]
+  subst pref
+  subst suffix
+  exact ⟨Wmid, Rmid, hpref, hsuffix, hrest, hbits⟩
+
+/-- A failed completion of length `j + 1` is witnessed by the actual body
+call immediately after its first `j` calls. -/
+lemma StepChain.failed_at_stage
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    {R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart}
+    {σfinal : Env} {steps : List ExecutedException}
+    (hchain : StepChain R σfinal steps)
+    (j status : ℕ) (hlen : steps.length = j + 1)
+    (hstatus : σfinal.vars "repairRetryStatus" = status)
+    (hfailed : status = 2 ∨ status = 3) :
+    ∃ (W Wnext : Finset ℕ)
+      (Rcur : LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A W)
+      (Rnext : LoopInput B n s t bufferCap targetCap q cap k e
+        G x E groupedB Wbase A Wnext)
+      (i : ℕ) (z : ExecutedException),
+      StepPrefix R Rcur.σ (steps.take j) ∧
+      steps.drop j = [z] ∧
+      z.vertex = Rcur.exceptionList i ∧
+      FarStepTrace Rcur i z.attempts z.used ∧
+      FarStepFailureTrace Rcur i z.attempts z.used status ∧
+      Rnext.σ = σfinal := by
+  have hj : j ≤ steps.length := by omega
+  obtain ⟨W, Rcur, hpref, hsuffix, _, _⟩ :=
+    StepChain.stage_split hchain j hj
+  have htailLength : (steps.drop j).length = 1 := by
+    simp [List.length_drop, hlen]
+  generalize hz : steps.drop j = suffix at hsuffix htailLength ⊢
+  cases hsuffix with
+  | nil Rcur hguard => simp at htailLength
+  | cons Rcur Rnext i z tail hindex hguard hvertex hbody hbits hfixed
+      hfar hfailedFar hfailureTrace hfailedStop htail =>
+      have htailNil : tail = [] := by
+        simp at htailLength
+        exact htailLength
+      subst tail
+      cases htail with
+      | nil Rnext hguardFalse =>
+          have hf : Rnext.σ.vars "repairRetryStatus" = 2 ∨
+              Rnext.σ.vars "repairRetryStatus" = 3 := by
+            simpa [← hstatus] using hfailed
+          refine ⟨_, _, Rcur, Rnext, i, z, hpref, rfl, hvertex,
+            hfar (hfailedFar hf), ?_, rfl⟩
+          simpa [← hstatus] using hfailureTrace hf
+
+/-- At any reached call index, the consumed prefix and the prepared
+pre-call state replay on every tape sharing that prefix. -/
+lemma StepChain.stage_replay
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart)
+    (bits other : List Bool)
+    {σρ στ : Env} {stepsρ stepsτ : List ExecutedException}
+    (hchainρ : StepChain (R.reinput bits) σρ stepsρ)
+    (hchainτ : StepChain (R.reinput other) στ stepsτ)
+    (j : ℕ) (hjρ : j ≤ stepsρ.length)
+    (hboundρ : traceBitCost G A R.rep stepsρ ≤ other.length)
+    (hboundτ : traceBitCost G A R.rep stepsτ ≤ other.length)
+    (hprefix : bits.take
+      (traceBitCost G A R.rep (stepsρ.take j)) = other.take
+        (traceBitCost G A R.rep (stepsρ.take j))) :
+    j ≤ stepsτ.length ∧
+      traceBitCost G A R.rep (stepsτ.take j) =
+        traceBitCost G A R.rep (stepsρ.take j) ∧
+      ∃ (Wρ Wτ : Finset ℕ)
+        (Pρ : LoopInput B n s t bufferCap targetCap q cap k e
+          G x E groupedB Wbase A Wρ)
+        (Pτ : LoopInput B n s t bufferCap targetCap q cap k e
+          G x E groupedB Wbase A Wτ),
+        StepPrefix (R.reinput bits) Pρ.σ (stepsρ.take j) ∧
+        StepPrefix (R.reinput other) Pτ.σ (stepsτ.take j) ∧
+        Pτ.σ = {Pρ.σ with inp :=
+          (other.drop (traceBitCost G A R.rep (stepsρ.take j))).map Bool.toNat ++
+            R.rest} := by
+  obtain ⟨Wρ, Pρ, hprefρ, hrestρ, hbitsρ⟩ :=
+    StepChain.stage_prefix hchainρ j hjρ
+  have hcostρ : traceBitCost G A R.rep (stepsρ.take j) ≤
+      traceBitCost G A R.rep stepsρ := by
+    conv_rhs => rw [← List.take_append_drop j stepsρ]
+    exact traceBitCost_append_le G A R.rep _ _
+  have hboundρ' := hcostρ.trans hboundρ
+  have hjτ : j ≤ stepsτ.length := by
+    have hh := StepPrefix.no_early_complete R bits other Pρ hprefρ hchainτ
+      (by simpa [LoopInput.reinput] using hrestρ)
+      (by simpa [LoopInput.reinput] using hbitsρ)
+      hboundρ' hboundτ hprefix
+    simpa [List.length_take, Nat.min_eq_left hjρ] using hh
+  obtain ⟨Wτ, Pτ, hprefτ, hrestτ, hbitsτ⟩ :=
+    StepChain.stage_prefix hchainτ j hjτ
+  have hcostτ : traceBitCost G A R.rep (stepsτ.take j) ≤
+      traceBitCost G A R.rep stepsτ := by
+    conv_rhs => rw [← List.take_append_drop j stepsτ]
+    exact traceBitCost_append_le G A R.rep _ _
+  have hstate := StepChain.prefix_replay (j := j) R bits other Pρ Pτ
+    (stepsρ.take j) (stepsτ.take j) hprefρ hprefτ
+    (by simp [List.length_take, Nat.min_eq_left hjρ])
+    (by simp [List.length_take, Nat.min_eq_left hjτ])
+    (by simpa [LoopInput.reinput] using hrestρ)
+    (by simpa [LoopInput.reinput] using hrestτ)
+    (by simpa [LoopInput.reinput] using hbitsρ)
+    (by simpa [LoopInput.reinput] using hbitsτ)
+    hboundρ' (hcostτ.trans hboundτ) hprefix
+  exact ⟨hjτ, hstate.1, Wρ, Wτ, Pρ, Pτ, hprefρ,
+    hprefτ, hstate.2⟩
+
+/-- The amount consumed before call `j`, or before an earlier stop, is a
+stopping time on the flat input tape. -/
+lemma StepChain.stage_cost_causal
+    {B n s t bufferCap targetCap q cap k e N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart)
+    (steps : FlatTraceLaw.FlatTape N → List ExecutedException)
+    (final : FlatTraceLaw.FlatTape N → Env)
+    (hchain : ∀ ρ, StepChain
+      (R.reinput (FlatTraceLaw.flatBits ρ)) (final ρ) (steps ρ))
+    (hbound : ∀ ρ, traceBitCost G A R.rep (steps ρ) ≤ N)
+    (j : ℕ) (ρ τ : FlatTraceLaw.FlatTape N)
+    (hprefix : (FlatTraceLaw.flatBits ρ).take
+      (traceBitCost G A R.rep ((steps ρ).take j)) =
+      (FlatTraceLaw.flatBits τ).take
+        (traceBitCost G A R.rep ((steps ρ).take j))) :
+    traceBitCost G A R.rep ((steps τ).take j) =
+      traceBitCost G A R.rep ((steps ρ).take j) := by
+  by_cases hj : j ≤ (steps ρ).length
+  · exact (StepChain.stage_replay R _ _ (hchain ρ) (hchain τ) j hj
+      (by simpa [FlatTraceLaw.flatBits_length] using hbound ρ)
+      (by simpa [FlatTraceLaw.flatBits_length] using hbound τ)
+      hprefix).2.1
+  · have hlenρ : (steps ρ).length ≤ j := by omega
+    have hprefρ : (steps ρ).take j = steps ρ :=
+      List.take_of_length_le hlenρ
+    have hprefixFull : (FlatTraceLaw.flatBits ρ).take
+        (traceBitCost G A R.rep (steps ρ)) =
+        (FlatTraceLaw.flatBits τ).take
+          (traceBitCost G A R.rep (steps ρ)) := by
+      simpa only [hprefρ] using hprefix
+    have hlen := (StepChain.same_result_same_prefix R _ _
+      (hchain ρ) (hchain τ)
+      (by simpa [FlatTraceLaw.flatBits_length] using hbound ρ)
+      (by simpa [FlatTraceLaw.flatBits_length] using hbound τ)
+      hprefixFull).1
+    have hlenτ : (steps τ).length ≤ j := by omega
+    have hcost := (StepChain.stage_replay R _ _
+      (hchain ρ) (hchain τ) (steps ρ).length (le_refl _)
+      (by simpa [FlatTraceLaw.flatBits_length] using hbound ρ)
+      (by simpa [FlatTraceLaw.flatBits_length] using hbound τ)
+      (by simpa only [List.take_of_length_le (le_refl (steps ρ).length)]
+        using hprefixFull)).2.1
+    simpa only [List.take_of_length_le hlenρ,
+      List.take_of_length_le hlenτ,
+      List.take_of_length_le (by omega : (steps τ).length ≤ (steps ρ).length),
+      List.take_of_length_le (le_refl (steps ρ).length)] using hcost
+
+/-- Count a rare event by its conditional count on every actual stopping
+prefix. This finite form is used for each chronological exception call. -/
+lemma count_le_of_stopped_fibers {N t c : ℕ}
+    (used : FlatTraceLaw.FlatTape N → ℕ)
+    (hbound : ∀ ρ, used ρ ≤ N)
+    (hcausal : ∀ ρ τ,
+      (FlatTraceLaw.flatBits ρ).take (used ρ) =
+        (FlatTraceLaw.flatBits τ).take (used ρ) → used τ = used ρ)
+    (event : FlatTraceLaw.FlatTape N → Prop) [DecidablePred event]
+    (hfiber : ∀ ρ,
+      2 ^ t * (Finset.univ.filter fun η : FlatTraceLaw.FlatTape
+        (N - used ρ) =>
+          event ((Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting.splitEquiv
+            (hbound ρ)).symm
+            ((Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting.splitEquiv
+              (hbound ρ) ρ).1, η))).card ≤ c * 2 ^ (N - used ρ)) :
+    2 ^ t * (Finset.univ.filter event).card ≤ c * 2 ^ N := by
+  classical
+  open Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting in
+  let X (ρ : FlatTraceLaw.FlatTape N) : ℚ := if event ρ then 1 else 0
+  let Y (_ : FlatTraceLaw.FlatTape N) : ℚ := (c : ℚ) / 2 ^ t
+  have hmean := StoppedPrefixAveraging.sum_le_of_stopped_prefix used hbound
+    (by simpa only [FlatTraceLaw.flatBits] using hcausal)
+    X Y (by intros; rfl) (by
+      intro ρ
+      let f (η : FlatTraceLaw.FlatTape (N - used ρ)) :=
+        (Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting.splitEquiv
+          (hbound ρ)).symm
+          ((Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting.splitEquiv
+            (hbound ρ) ρ).1, η)
+      let bad := (Finset.univ : Finset (FlatTraceLaw.FlatTape (N - used ρ))).filter
+        (fun η => event (f η))
+      have hsum : (∑ η : FlatTraceLaw.FlatTape (N - used ρ), X (f η)) =
+          (bad.card : ℚ) := by
+        rw [Finset.card_filter]
+        push_cast
+        rfl
+      rw [hsum]
+      have hNat : 2 ^ t * bad.card ≤ c * 2 ^ (N - used ρ) := by
+        simpa only [bad, f] using hfiber ρ
+      have hQ : (2 ^ t : ℚ) * (bad.card : ℚ) ≤
+          (c : ℚ) * 2 ^ (N - used ρ) := by exact_mod_cast hNat
+      dsimp [Y]
+      have hh : (bad.card : ℚ) ≤
+          ((c : ℚ) * 2 ^ (N - used ρ)) / 2 ^ t :=
+        (le_div_iff₀ (by positivity : (0 : ℚ) < 2 ^ t)).2 (by
+          simpa [mul_comm] using hQ)
+      convert hh using 1 <;> ring)
+  have hsumX : (∑ ρ : FlatTraceLaw.FlatTape N, X ρ) =
+      ((Finset.univ.filter event).card : ℚ) := by
+    rw [Finset.card_filter]
+    push_cast
+    rfl
+  have hsumY : (∑ _ρ : FlatTraceLaw.FlatTape N, Y _ρ) =
+      (c : ℚ) * 2 ^ N / 2 ^ t := by
+    simp [Y, Lax457868Proofs.ReusedOriginal.Construction.AdaptiveTapeCounting.card_tape]
+    ring
+  rw [hsumX, hsumY] at hmean
+  have hQ : (2 ^ t : ℚ) * ((Finset.univ.filter event).card : ℚ) ≤
+      (c : ℚ) * 2 ^ N := by
+    have hh := (le_div_iff₀
+      (by positivity : (0 : ℚ) < 2 ^ t)).mp hmean
+    simpa [mul_comm] using hh
+  exact_mod_cast hQ
+
+/-- An abort has a unique final call index, so the per-call counts add with
+one factor for the number of packed exceptions. -/
+lemma count_le_of_final_stage {N e t c : ℕ}
+    (steps : FlatTraceLaw.FlatTape N → List ExecutedException)
+    (event : FlatTraceLaw.FlatTape N → Prop) [DecidablePred event]
+    (hlength : ∀ ρ, event ρ →
+      0 < (steps ρ).length ∧ (steps ρ).length ≤ e)
+    (hstage : ∀ j < e,
+      2 ^ t * (Finset.univ.filter fun ρ : FlatTraceLaw.FlatTape N =>
+        event ρ ∧ (steps ρ).length = j + 1).card ≤ c * 2 ^ N) :
+    2 ^ t * (Finset.univ.filter event).card ≤ e * c * 2 ^ N := by
+  classical
+  let stage (j : ℕ) :=
+    (Finset.univ : Finset (FlatTraceLaw.FlatTape N)).filter
+      (fun ρ => event ρ ∧ (steps ρ).length = j + 1)
+  have hcover : (Finset.univ.filter event : Finset (FlatTraceLaw.FlatTape N)) =
+      (Finset.range e).biUnion stage := by
+    ext ρ
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+      Finset.mem_biUnion, Finset.mem_range, stage]
+    constructor
+    · intro he
+      obtain ⟨hpos, hle⟩ := hlength ρ he
+      exact ⟨(steps ρ).length - 1, by omega, he, by omega⟩
+    · rintro ⟨j, _, he, _⟩
+      exact he
+  have hdisjoint : ((Finset.range e : Finset ℕ) : Set ℕ).PairwiseDisjoint stage := by
+    intro i hi j hj hij
+    apply Finset.disjoint_left.mpr
+    intro ρ hρi hρj
+    have hi' := (Finset.mem_filter.mp hρi).2.2
+    have hj' := (Finset.mem_filter.mp hρj).2.2
+    omega
+  rw [hcover, Finset.card_biUnion hdisjoint, Finset.mul_sum]
+  calc
+    ∑ j ∈ Finset.range e, 2 ^ t * (stage j).card ≤
+        ∑ _j ∈ Finset.range e, c * 2 ^ N := by
+      apply Finset.sum_le_sum
+      intro j hj
+      exact hstage j (Finset.mem_range.mp hj)
+    _ = e * c * 2 ^ N := by simp [mul_assoc]
+
+/-- A source call with its physical failure certificate, sharing the
+runtime record used by the stopped-prefix mean proof. -/
+structure FailureStepRecord
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent) (i : ℕ) where
+  step : ExceptionLoopMean.StepRecord R i
+  failedFar : (step.next.σ.vars "repairRetryStatus" = 2 ∨
+      step.next.σ.vars "repairRetryStatus" = 3) →
+    (2 * k) / 3 <
+      (ExceptionRepairMean.farDomain G A R.rep (R.exceptionList i)).card
+  failure : (step.next.σ.vars "repairRetryStatus" = 2 ∨
+      step.next.σ.vars "repairRetryStatus" = 3) →
+    FarStepFailureTrace R i step.attempts step.used
+      (step.next.σ.vars "repairRetryStatus")
+
+lemma failureStepRecord_exists
+    {B n s t bufferCap targetCap q cap k e : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (i : ℕ) (hindex : R.σ.vars "exceptionIndex" = i)
+    (hstop : R.σ.vars "exceptionStop" = e) (hi : i < e)
+    (hb : cap * (s * t * Nat.clog 2
+      (ExceptionRepairMean.farDomain G A R.rep (R.exceptionList i)).card) ≤
+        R.bits.length) : Nonempty (FailureStepRecord R i) := by
+  obtain ⟨Wnext, Rnext, attempts, used, charge, rbody, hcharge,
+    hattempts, hused, hbits, hfixed, hout, hfar,
+    hfailedFar, hfailure⟩ :=
+      one_step_run_trace R hindex hstop hi (by simpa [ExceptionRepairMean.farDomain] using hb)
+  let S : ExceptionLoopMean.StepRecord R i := {
+    Wnext := Wnext
+    next := Rnext
+    attempts := attempts
+    used := used
+    bodyCost := charge + if Rnext.σ.vars "repairRetryStatus" = 1 then 11 else 9
+    run := rbody
+    bound := by rw [hcharge]; split_ifs <;> omega
+    attempts_le := hattempts
+    used_le := hused
+    bits := by simpa [ExceptionRepairMean.farDomain] using hbits
+    fixed := hfixed
+    outcome := by
+      rcases hout with hs | hf
+      · exact Or.inl ⟨hs.1, hs.2.1, hs.2.2.1⟩
+      · exact Or.inr ⟨hf.1, hf.2.1, hf.2.2.1⟩
+    far := by simpa [ExceptionRepairMean.farDomain] using hfar
+  }
+  refine ⟨⟨S, ?_, ?_⟩⟩
+  · simpa [S, ExceptionRepairMean.farDomain] using hfailedFar
+  · simpa [S] using hfailure
+
+/-- Fixed-stage selector and retry exhaustion counts for the actual prepared
+local inputs. Only occupied domain cells matter, so framing unused cells is
+harmless. The outer stopped-prefix argument supplies this common stage. -/
+lemma fixed_prepared_failure_counts
+    {B n m s t bufferCap targetCap q b cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {X groupedB Wbase Wcurrent : Finset ℕ}
+    (P : FlatTraceLaw.FlatTape N →
+      ReadyInput B n m n s t bufferCap targetCap q b
+        G x X groupedB Wbase Wcurrent)
+    (base : FlatTraceLaw.FlatTape N)
+    (hbits : ∀ ρ, (P ρ).bits = FlatTraceLaw.flatBits ρ)
+    (hdomain : ∀ ρ j, j < m → (P ρ).domain j = (P base).domain j)
+    (hhalf : 2 * (LocalFlatLaw.localBadOutputs m s (P base).domain
+      (numericNeighborhood G) groupedB Wbase b).card ≤ m ^ s)
+    (hselectorBudget : cap * s * t * Nat.clog 2 m ≤ N)
+    (hretryBudget : cap * ClassRepresentativeTrace.bitBudget
+      (fun _ => m) t 0 s ≤ N)
+    (status2 status3 : FlatTraceLaw.FlatTape N → Prop)
+    [DecidablePred status2] [DecidablePred status3]
+    (hstatus2 : ∀ ρ, status2 ρ → ∃ attempts, attempts ≤ cap ∧
+      LocalRepairRetriesSource.FlatSelectorFailed m (P ρ).hpositive t s
+        (LocalFlatLaw.localBadOutputs m s (P ρ).domain
+          (numericNeighborhood G) groupedB Wbase b)
+        attempts (P ρ).bits)
+    (hstatus3 : ∀ ρ, status3 ρ →
+      LocalFlatLaw.FlatRejectedTrials m t s
+        (LocalFlatLaw.localBadOutputs m s (P ρ).domain
+          (numericNeighborhood G) groupedB Wbase b)
+        cap (P ρ).bits) :
+    2 ^ t * (Finset.univ.filter status2).card ≤ cap * s * 2 ^ N ∧
+    2 ^ cap * (Finset.univ.filter status3).card ≤ 2 ^ N := by
+  classical
+  let bad := LocalFlatLaw.localBadOutputs m s (P base).domain
+    (numericNeighborhood G) groupedB Wbase b
+  have hbad (ρ : FlatTraceLaw.FlatTape N) :
+      LocalFlatLaw.localBadOutputs m s (P ρ).domain
+        (numericNeighborhood G) groupedB Wbase b = bad := by
+    exact LocalSelectorAbort.localBadOutputs_congr_domain m s
+      (P ρ).domain (P base).domain (numericNeighborhood G)
+      groupedB Wbase b (hdomain ρ)
+  have hvalid : bad ⊆ FlatTraceLaw.outputVectors (fun _ => m)
+      (fun _ => 0) 0 s := by
+    intro output ho
+    exact (Finset.mem_filter.mp ho).1
+  constructor
+  · apply LocalSelectorAbort.selector_failure_count_le m t s cap N bad
+      (P base).hpositive hselectorBudget status2
+    intro ρ hf
+    obtain ⟨attempts, ha, htrace⟩ := hstatus2 ρ hf
+    refine ⟨attempts, ha, ?_⟩
+    simpa only [hbad ρ, hbits ρ] using htrace
+  · apply ExceptionRepairMean.actual_exhaustion_count_le m t s cap N bad
+      hvalid (by simpa only [bad, LocalFlatLaw.local_outputCount] using hhalf)
+      hretryBudget status3
+    intro ρ hf
+    simpa only [hbad ρ, hbits ρ] using hstatus3 ρ hf
+
+/-- Each actual source call has selector failure mass at most `cap*s/2^t`
+and retry exhaustion mass at most `1/2^cap`, on the same finite tape. -/
+lemma one_step_failure_counts
+    {B n s t bufferCap targetCap q cap k e N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (i : ℕ) (hindex : R.σ.vars "exceptionIndex" = i)
+    (hstop : R.σ.vars "exceptionStop" = e) (hi : i < e)
+    (hbudget : cap * (s * t * Nat.clog 2 n) ≤ N)
+    (hhalf : (2 * k) / 3 <
+      (ExceptionRepairMean.farDomain G A R.rep (R.exceptionList i)).card →
+        2 * (SamplerLocalSuccess.localTrialFailureSet
+          (numericNeighborhood G) groupedB Wbase (R.exceptionList i)
+          (ExceptionRepairMean.farDomain G A R.rep (R.exceptionList i)) s).card ≤
+          (ExceptionRepairMean.farDomain G A R.rep (R.exceptionList i)).card ^ s)
+    (F : ∀ ρ : FlatTraceLaw.FlatTape N,
+      FailureStepRecord (R.reinput (FlatTraceLaw.flatBits ρ)) i) :
+    2 ^ t * (Finset.univ.filter fun ρ : FlatTraceLaw.FlatTape N =>
+      (F ρ).step.next.σ.vars "repairRetryStatus" = 2).card ≤
+        cap * s * 2 ^ N ∧
+    2 ^ cap * (Finset.univ.filter fun ρ : FlatTraceLaw.FlatTape N =>
+      (F ρ).step.next.σ.vars "repairRetryStatus" = 3).card ≤
+        2 ^ N := by
+  classical
+  let b := R.exceptionList i
+  let X := ExceptionRepairMean.farDomain G A R.rep b
+  by_cases hfar : (2 * k) / 3 < X.card
+  · let hFar (ρ : FlatTraceLaw.FlatTape N) :
+        FarStepTrace (R.reinput (FlatTraceLaw.flatBits ρ)) i
+          (F ρ).step.attempts (F ρ).step.used :=
+      (F ρ).step.far (by simpa [X, b, LoopInput.reinput] using hfar)
+    let P (ρ : FlatTraceLaw.FlatTape N) := Classical.choose (hFar ρ)
+    have hP (ρ : FlatTraceLaw.FlatTape N) := Classical.choose_spec (hFar ρ)
+    have hbits (ρ : FlatTraceLaw.FlatTape N) :
+        (P ρ).bits = FlatTraceLaw.flatBits ρ := (hP ρ).2.1
+    have hrest (ρ : FlatTraceLaw.FlatTape N) :
+        (P ρ).rest = R.rest := (hP ρ).2.2.1
+    have hprep (ρ : FlatTraceLaw.FlatTape N) :
+        Run B ((Com.assign "repairB"
+          (.get "exceptionList" (.var "exceptionIndex"))).seq
+          RepairFilterSource.repairDomainSource)
+          (R.reinput (FlatTraceLaw.flatBits ρ)).σ (P ρ).σ
+          (3 + domainCharge x G A R.rep b) := (hP ρ).1
+    have hXn : X.card ≤ n := ExceptionLoopMean.far_card_le R b
+    have hdomain (ρ : FlatTraceLaw.FlatTape N) (j : ℕ)
+        (hj : j < X.card) : (P ρ).domain j = (P (fun _ => false)).domain j := by
+      have hh := ExceptionRepairMean.prepared_same_reinputs R
+        (FlatTraceLaw.flatBits ρ)
+        (FlatTraceLaw.flatBits (fun _ : Fin N => false))
+        (P ρ) (P (fun _ => false)) (hbits ρ) (hrest ρ)
+        (hprep ρ) (hprep (fun _ => false))
+      exact hh.2 j (hj.trans_le hXn)
+    have hlog : Nat.clog 2 X.card ≤ Nat.clog 2 n :=
+      Nat.clog_mono_right 2 (ExceptionLoopMean.far_card_le R b)
+    have hselectorBudget : cap * s * t * Nat.clog 2 X.card ≤ N := by
+      calc
+        _ = cap * (s * t * Nat.clog 2 X.card) := by ring
+        _ ≤ cap * (s * t * Nat.clog 2 n) := by gcongr
+        _ ≤ N := hbudget
+    have hretryBudget : cap * ClassRepresentativeTrace.bitBudget
+        (fun _ => X.card) t 0 s ≤ N := by
+      rw [LocalFlatLaw.local_bitBudget]
+      simpa [Nat.mul_assoc] using hselectorBudget
+    let base : FlatTraceLaw.FlatTape N := fun _ => false
+    have hhalfP : 2 * (LocalFlatLaw.localBadOutputs X.card s (P base).domain
+        (numericNeighborhood G) groupedB Wbase b).card ≤ X.card ^ s := by
+      rw [LocalFlatLaw.card_localBadOutputs_eq_failureSet X.card s
+        (P base).domain X (P base).henum
+        (numericNeighborhood G) groupedB Wbase b]
+      simpa [X, b] using hhalf hfar
+    let bad := LocalFlatLaw.localBadOutputs X.card s (P base).domain
+      (numericNeighborhood G) groupedB Wbase b
+    have hbadP (ρ : FlatTraceLaw.FlatTape N) :
+        LocalFlatLaw.localBadOutputs X.card s (P ρ).domain
+          (numericNeighborhood G) groupedB Wbase b = bad := by
+      exact LocalSelectorAbort.localBadOutputs_congr_domain
+        X.card s (P ρ).domain (P base).domain (numericNeighborhood G)
+        groupedB Wbase b (hdomain ρ)
+    have hvalid : bad ⊆ FlatTraceLaw.outputVectors (fun _ => X.card)
+        (fun _ => 0) 0 s := by
+      intro output ho
+      exact (Finset.mem_filter.mp ho).1
+    constructor
+    · apply LocalSelectorAbort.selector_failure_count_le X.card t s cap N bad
+        (P base).hpositive hselectorBudget
+        (fun ρ => (F ρ).step.next.σ.vars "repairRetryStatus" = 2)
+      intro ρ hs
+      have hf : (F ρ).step.next.σ.vars "repairRetryStatus" = 2 ∨
+          (F ρ).step.next.σ.vars "repairRetryStatus" = 3 := Or.inl hs
+      obtain ⟨Q, rQ, hQbits, _hQrest, hsel, _hex⟩ := (F ρ).failure hf
+      have hdomainQ (j : ℕ) (hj : j < X.card) :
+          Q.domain j = (P ρ).domain j := by
+        have hh := ExceptionRepairMean.prepared_same_reinputs R
+          (FlatTraceLaw.flatBits ρ) (FlatTraceLaw.flatBits ρ)
+          (P ρ) Q (hbits ρ) (hrest ρ) (hprep ρ) rQ
+        exact (hh.2 j (hj.trans_le hXn)).symm
+      have hbad := LocalSelectorAbort.localBadOutputs_congr_domain
+        X.card s Q.domain (P ρ).domain (numericNeighborhood G)
+        groupedB Wbase b hdomainQ
+      refine ⟨(F ρ).step.attempts, (F ρ).step.attempts_le, ?_⟩
+      have htrace := hsel hs
+      simp only [hQbits, LoopInput.reinput] at htrace
+      change LocalRepairRetriesSource.FlatSelectorFailed X.card Q.hpositive
+        t s (LocalFlatLaw.localBadOutputs X.card s Q.domain
+          (numericNeighborhood G) groupedB Wbase b)
+        (F ρ).step.attempts (FlatTraceLaw.flatBits ρ) at htrace
+      rw [hbad, hbadP ρ] at htrace
+      exact htrace
+    · apply ExceptionRepairMean.actual_exhaustion_count_le
+        X.card t s cap N bad hvalid
+        (by simpa only [bad, LocalFlatLaw.local_outputCount] using hhalfP)
+        hretryBudget
+        (fun ρ => (F ρ).step.next.σ.vars "repairRetryStatus" = 3)
+      intro ρ hs
+      have hf : (F ρ).step.next.σ.vars "repairRetryStatus" = 2 ∨
+          (F ρ).step.next.σ.vars "repairRetryStatus" = 3 := Or.inr hs
+      obtain ⟨Q, rQ, hQbits, _hQrest, _hsel, hex⟩ := (F ρ).failure hf
+      have hdomainQ (j : ℕ) (hj : j < X.card) :
+          Q.domain j = (P ρ).domain j := by
+        have hh := ExceptionRepairMean.prepared_same_reinputs R
+          (FlatTraceLaw.flatBits ρ) (FlatTraceLaw.flatBits ρ)
+          (P ρ) Q (hbits ρ) (hrest ρ) (hprep ρ) rQ
+        exact (hh.2 j (hj.trans_le hXn)).symm
+      have hbad := LocalSelectorAbort.localBadOutputs_congr_domain
+        X.card s Q.domain (P ρ).domain (numericNeighborhood G)
+        groupedB Wbase b hdomainQ
+      have htrace := hex hs
+      simp only [hQbits, LoopInput.reinput] at htrace
+      change LocalFlatLaw.FlatRejectedTrials X.card t s
+        (LocalFlatLaw.localBadOutputs X.card s Q.domain
+          (numericNeighborhood G) groupedB Wbase b)
+        cap (FlatTraceLaw.flatBits ρ) at htrace
+      rw [hbad, hbadP ρ] at htrace
+      exact htrace
+  · have hnot (ρ : FlatTraceLaw.FlatTape N) :
+        (F ρ).step.next.σ.vars "repairRetryStatus" ≠ 2 ∧
+        (F ρ).step.next.σ.vars "repairRetryStatus" ≠ 3 := by
+      constructor <;> intro hs <;>
+        have hf := (F ρ).failedFar (by simp [hs]) <;>
+        exact hfar (by simpa [X, b, LoopInput.reinput] using hf)
+    simp [hnot]
 
 end Lax457868Proofs.ExceptionAbortProbability
