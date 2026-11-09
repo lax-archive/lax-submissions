@@ -1419,6 +1419,7 @@ inductive StepChain
         G x E groupedB Wbase A Wnext)
       (i : ℕ) (z : ExecutedException) (tail : List ExecutedException)
       (hindex : R.σ.vars "exceptionIndex" = i)
+      (hstop : R.σ.vars "exceptionStop" = e)
       (hguard : (Cond.lt (.var "exceptionIndex")
         (.var "exceptionStop")).evalB B R.σ = some true)
       (hvertex : z.vertex = R.exceptionList i)
@@ -1649,7 +1650,7 @@ lemma loop_run_aux
         have hfixedFinal : SameFixed R Rfinal :=
           SameFixed.trans hfixed hfixedTail
         have hchain : StepChain R Rfinal.σ (step :: tailSteps) := by
-          apply StepChain.cons R Rnext i step tailSteps hindex hguard
+          apply StepChain.cons R Rnext i step tailSteps hindex hstop hguard
           · rfl
           · exact ⟨_, rbody⟩
           · simpa [ExecutedException.bitCost, step, b, X] using hbits
@@ -1710,7 +1711,7 @@ lemma loop_run_aux
           omega
         subst Wnext
         have hchain : StepChain R Rnext.σ [step] := by
-          apply StepChain.cons R Rnext i step [] hindex hguard
+          apply StepChain.cons R Rnext i step [] hindex hstop hguard
           · rfl
           · exact ⟨_, rbody⟩
           · simpa [ExecutedException.bitCost, step, b, X] using hbits
