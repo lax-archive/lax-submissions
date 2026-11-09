@@ -549,7 +549,7 @@ lemma while_mean_aux (fuel : ℕ) :
 
 /-- The actual packed exception source has mean cost bounded by the sum of
 the per-exception charges, including the initial assignments and final pack. -/
-theorem packed_mean
+lemma packed_mean
     (R : LoopInput B n s t bufferCap targetCap q cap k e
       G x E groupedB Wbase A Wcurrent)
     (N : ℕ) (hk : 2 ≤ k)
