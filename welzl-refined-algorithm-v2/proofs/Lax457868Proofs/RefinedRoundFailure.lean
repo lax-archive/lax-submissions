@@ -2,6 +2,8 @@ import Lax457868Proofs.RefinedPrefixFailure
 import Lax457868Proofs.RefinedRoundMean
 import Lax457868Proofs.InitialAbortProbability
 import Lax457868Proofs.NumericGraphProbability
+import Lax457868Proofs.NumericRepairProbability
+import Lax457868Proofs.ExceptionAbortProbability
 
 /-! Failure counting for the actual fixed-start prepared round. -/
 namespace Lax457868Proofs.RefinedRoundFailure
@@ -647,5 +649,48 @@ lemma sampler_failure_count_of_packed
   exact hsampler.trans (Nat.mul_le_mul_right _ (by nlinarith :
     n*(A.card/(4*c^2)+n)+1+(n*(n*n)+n) ≤
       n*(2*n)+n*(n*n)+1+n))
+
+/-- The actual prepared source round has the paper's failure count on every
+fixed fair tape. Initial selector/exhaustion and accepted repair failures
+are counted at their physical stopping prefixes. -/
+lemma fixed_prepared_failure
+    {B c n : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    (hx : Lax11.GraphEncoding.EncodesGraph x n G)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 2 ≤ c) (hB : 4*(x.length+1) ≤ B) :
+    FixedPreparedRoundFailure (B := B) (c := c) (n := n)
+      (Fcoef := n*(2*n)+n*(n*n)+1+n) (G := G) (x := x) := by
+  classical
+  apply fixed_prepared_failure_of_sampler_count hx hG hc hB
+  intro N A R T hsep hrest hcap hbudget samplerFinal samplerCost hrun
+  apply sampler_failure_count_of_packed R T hG hc hsep hrest hcap hbudget
+  · intro choice q M L hrep hb f d hr
+    have hCrange : activeVertices n R.I.activeB ⊆ Finset.range n := by
+      intro b hb
+      exact Finset.mem_range.mpr (mem_activeVertices.mp hb).1
+    have hhalf : ∀ b ∈ choice.exceptions (refinedCutoffK c),
+        (2*refinedCutoffK c)/3 <
+          (ExceptionRepairMean.farDomain G A L.rep b).card →
+        2*(SamplerLocalSuccess.localTrialFailureSet
+          (numericNeighborhood G) (activeVertices n R.I.activeB)
+          (phaseTwoSample G (choice.exceptions (refinedCutoffK c)) A choice.sample)
+          b (ExceptionRepairMean.farDomain G A L.rep b)
+          (64*Nat.clog 2 c)).card ≤
+          (ExceptionRepairMean.farDomain G A L.rep b).card ^ (64*Nat.clog 2 c) := by
+      intro b hb hfar
+      exact NumericRepairProbability.accepted_loop_half hG hc choice L
+        hCrange hsep hrep b hb hfar
+    have hrun' (η : FlatTraceLaw.FlatTape M) :
+        BigStepB B ExceptionRepairLoop.exceptionRepairPackedSource
+          (L.reinput (FlatTraceLaw.flatBits η)).σ (f η) (d η) := by
+      simpa [FlatTraceLaw.flatBits] using hr η
+    obtain ⟨h2,h3⟩ := ExceptionAbortProbability.packed_failure_counts
+      L hb hhalf f d hrun'
+    exact repair_status_union_count L.heLe L.hbuffer
+      (fun η : Tape M => (f η).vars "repairRetryStatus" = 2)
+      (fun η : Tape M => (f η).vars "repairRetryStatus" = 3)
+      (by simpa only [FlatTraceLaw.FlatTape] using h2)
+      (by simpa only [FlatTraceLaw.FlatTape] using h3)
+  · exact hrun
 
 end Lax457868Proofs.RefinedRoundFailure
