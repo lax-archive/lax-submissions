@@ -1077,3 +1077,5 @@ mean composition remain in progress; main is still open.
 - Checked actual prepared-round overhead, sampler stopping-state replay, and graph-derived local rejection bound. Integrated selector abort and ordered exception-call traces. Retry and exception-loop aggregate means remain the blockers to the exact main theorem.
 
 - 2026-11-09: Closed the actual initial retry cost and representative reward, chronological exception-loop mean, complete sampler mean and fixed prepared-round mean (9cae7b16, 4cc19f5e). Source coefficients are derived from component charges: 8931 times input size plus 701 times active size times logarithmic size. Fixed-round mean/failure lifts and full source-law assembly are checked. Main remains open only pending total adaptive repair failure count and its fixed-round instantiation.
+
+- 2026-11-09: Closed packed repair failure counting on the actual shared tape (de72199c), the exact fixed-round failure law (5793b0d9), and the annotated headline theorem in RefinedWelzlOrdersProof. The exact public statement compiles without added premises. Final archive kernel replay and draft publication are the remaining validation steps.

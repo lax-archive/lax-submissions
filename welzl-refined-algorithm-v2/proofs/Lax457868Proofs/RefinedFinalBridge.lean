@@ -2,8 +2,9 @@ import Lax457868Proofs.RefinedProgramProbability
 import Lax457868Proofs.RefinedTapeReserve
 import Lax457868.RefinedWelzlOrders
 
-/-! The remaining source-law obligation and its exact compiler consequence.
-This module does not claim that the source-law obligation has been proved. -/
+/-! The source-law interface and its exact compiler consequence.
+The closed source law and archive conclusion are assembled in
+`RefinedWelzlOrdersProof`. -/
 namespace Lax457868Proofs.RefinedFinalBridge
 open Lax808846.Ram
 open Lax808846Proofs.Imp Lax808846Proofs.Reasoning Lax808846Proofs.Compile
@@ -28,7 +29,7 @@ def BodyEstimate (B c n : ℕ) (G : SimpleGraph (Fin n))
     (∑ ρ, cost ρ) ≤ M * (x.length + 1) * (Nat.clog 2 n + 1) * 2 ^ N ∧
     6 * bad.card ≤ 2 ^ N
 
-/-- The concrete algorithm's pending global source estimate. No ideal
+/-- The concrete algorithm's global source estimate. No ideal
 sampler or successful sample is assumed. -/
 def BodyLaw (M : ℕ) : Prop :=
   ∀ (B c n : ℕ) (G : SimpleGraph (Fin n)),
