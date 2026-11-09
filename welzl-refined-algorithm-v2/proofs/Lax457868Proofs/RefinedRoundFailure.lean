@@ -416,6 +416,7 @@ lemma fixed_prepared_failure_of_sampler_count
           (ReusedOriginal.Construction.PartitionResult.finSetAsSet A))
         (ReusedOriginal.Construction.PartitionResult.finSetAsSet
           (activeVertices n R.I.activeB)) →
+      R.I.rest = [] →
       R.I.σ.vars "initialRetryCap" = n →
       n*attemptBitBudget n A.card (A.card/(4*c^2)) n +
         (A.card/(4*c^2*(64*Nat.clog 2 c+1))) *
@@ -496,7 +497,7 @@ lemma fixed_prepared_failure_of_sampler_count
     (fun ρ : Tape L => {R.I.σ with inp := (List.ofFn ρ).map Bool.toNat})
     hprep' final samplerFinal cost samplerCost hrun hsampler'
   exact (Nat.mul_le_mul_left _ hcard).trans
-    (hcount R T hsepR hretryCap hbudget samplerFinal samplerCost hsampler')
+    (hcount R T hsepR hRrest' hretryCap hbudget samplerFinal samplerCost hsampler')
 
 /-- Final packing preserves the repair status reported by the physical
 exception loop. -/
@@ -512,5 +513,139 @@ lemma packed_repair_status {B cost : ℕ} {σ τ : Env}
   | seq hloop hpack =>
     refine ⟨_,_,hloop,?_⟩
     exact (Run.of_bigStepB hpack).frame_var _ (by decide)
+
+/-- A full-tape count for the source loop transfers unchanged through the
+deterministic final packing command. -/
+lemma packed_failure_count_of_loop
+    {B n s t bufferCap targetCap q cap k e N Ccoef : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wstart : Finset ℕ}
+    (L : ExceptionRepairLoop.LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wstart)
+    (final : Tape N → Env) (cost : Tape N → ℕ)
+    (hrun : ∀ ρ, BigStepB B ExceptionRepairLoop.exceptionRepairPackedSource
+      (L.reinput (List.ofFn ρ)).σ (final ρ) (cost ρ))
+    (hloop : ∀ (loopFinal : Tape N → Env) (loopCost : Tape N → ℕ),
+      (∀ ρ, BigStepB B ExceptionRepairLoop.exceptionRepairLoopSource
+        (L.reinput (List.ofFn ρ)).σ (loopFinal ρ) (loopCost ρ)) →
+      2 ^ n * (Finset.univ.filter (fun ρ : Tape N =>
+        (loopFinal ρ).vars "repairRetryStatus" = 2 ∨
+          (loopFinal ρ).vars "repairRetryStatus" = 3)).card ≤ Ccoef * 2 ^ N) :
+    2 ^ n * (Finset.univ.filter (fun ρ : Tape N =>
+      (final ρ).vars "repairRetryStatus" = 2 ∨
+        (final ρ).vars "repairRetryStatus" = 3)).card ≤ Ccoef * 2 ^ N := by
+  classical
+  have hd (ρ : Tape N) := packed_repair_status (hrun ρ)
+  choose loopFinal loopCost hsource hstatus using hd
+  have hh := hloop loopFinal loopCost hsource
+  simpa only [hstatus] using hh
+
+/-- A fixed packed-repair source law supplies the conditional accepted-tail
+bound required by the complete sampler's stopped initial retry prefix. -/
+lemma sampler_failure_count_of_packed
+    {B c n N : ℕ} {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {A : Finset ℕ}
+    (R : ReadyInput B n A.card n (A.card/(4*c^2)) n n
+      (2*Lax11.GraphEncoding.edgeCount x) (2^Nat.clog 2 n)
+      (refinedCutoffK c) (A.card/(4*c^2*(64*Nat.clog 2 c+1))) G x A)
+    (T : RuntimeInput R (64*Nat.clog 2 c) n)
+    (hG : Lax195003.WelzlOrdersNeighborhoodComplexity.HasLinearNeighborhoodComplexityWithConstant G c)
+    (hc : 2 ≤ c)
+    (hsep : Set.InjOn
+      (ReusedOriginal.Construction.NeighborhoodComplexity.neighborhoodTrace G
+        (ReusedOriginal.Construction.PartitionResult.finSetAsSet A))
+      (ReusedOriginal.Construction.PartitionResult.finSetAsSet
+        (activeVertices n R.I.activeB)))
+    (hrest : R.I.rest = [])
+    (hcap : R.I.σ.vars "initialRetryCap" = n)
+    (hbudget : n*attemptBitBudget n A.card (A.card/(4*c^2)) n +
+      (A.card/(4*c^2*(64*Nat.clog 2 c+1))) *
+        (n*((64*Nat.clog 2 c)*n*Nat.clog 2 n)) ≤ N)
+    (hpacked : ∀ (choice : SamplerPhases.InitialChoice A
+        (activeVertices n R.I.activeB)
+        (fun b => ExceptionPhaseSource.numericNeighborhood G b ∩ A)
+        (A.card/(4*c^2))) (q M : ℕ),
+      (L : ExceptionRepairLoop.LoopInput B n (64*Nat.clog 2 c) n n
+        (2*Lax11.GraphEncoding.edgeCount x) q n (refinedCutoffK c)
+        (choice.exceptions (refinedCutoffK c)).card G x
+        (choice.exceptions (refinedCutoffK c)) (activeVertices n R.I.activeB)
+        (ExceptionPhaseSource.phaseTwoSample G
+          (choice.exceptions (refinedCutoffK c)) A choice.sample) A
+        (ExceptionPhaseSource.phaseTwoSample G
+          (choice.exceptions (refinedCutoffK c)) A choice.sample)) →
+      (∀ b ∈ activeVertices n R.I.activeB,
+        choice.representative b = L.rep b) →
+      (choice.exceptions (refinedCutoffK c)).card *
+        (n*((64*Nat.clog 2 c)*n*Nat.clog 2 n)) ≤ M →
+      (f : Tape M → Env) → (d : Tape M → ℕ) →
+      (∀ η, BigStepB B ExceptionRepairLoop.exceptionRepairPackedSource
+        (L.reinput (List.ofFn η)).σ (f η) (d η)) →
+      2 ^ n * (Finset.univ.filter (fun η : Tape M =>
+        (f η).vars "repairRetryStatus" = 2 ∨
+          (f η).vars "repairRetryStatus" = 3)).card ≤
+        (n*(n*n)+n)*2^M)
+    (samplerFinal : Tape N → Env) (samplerCost : Tape N → ℕ)
+    (hrun : ∀ ρ, BigStepB B completeSamplerSource
+      {R.I.σ with inp := (List.ofFn ρ).map Bool.toNat}
+      (samplerFinal ρ) (samplerCost ρ)) :
+    2 ^ n * (Finset.univ.filter (fun ρ : Tape N =>
+      failureStatus (samplerFinal ρ))).card ≤
+      (n*(2*n)+n*(n*n)+1+n)*2^N := by
+  classical
+  have hn : 0 < n := by
+    obtain ⟨a,ha⟩ := R.I.hAnonempty
+    have := Finset.mem_range.mp (R.I.hA ha)
+    omega
+  have hper : attemptBitBudget n A.card (A.card/(4*c^2)) n ≤ N :=
+    (Nat.le_mul_of_pos_left _ hn).trans (by omega)
+  let Rρ (ρ : Tape N) := R.reinput (List.ofFn ρ)
+    (by simpa [attemptBitBudget] using hper)
+  have hcapρ (ρ : Tape N) : (Rρ ρ).I.σ.vars "initialRetryCap" = n := by
+    simpa [Rρ,ReadyInput.reinput,InitialFlatLaw.reinputInitialAttempt] using hcap
+  have hbudgetρ (ρ : Tape N) :
+      n*attemptBitBudget n A.card (A.card/(4*c^2)) n ≤ (Rρ ρ).I.bits.length := by
+    simpa [Rρ,ReadyInput.reinput_bits] using (show
+      n*attemptBitBudget n A.card (A.card/(4*c^2)) n ≤ N by omega)
+  let C (ρ : Tape N) : Cut (Rρ ρ) n :=
+    Classical.choice (cut_exists (Rρ ρ) n (hcapρ ρ)
+      (by have := R.hnB; omega) (hbudgetρ ρ))
+  have hrun' (ρ : Tape N) : BigStepB B completeSamplerSource
+      (Rρ ρ).I.σ (samplerFinal ρ) (samplerCost ρ) := by
+    simpa [Rρ,hrest,ReadyInput.reinput,InitialFlatLaw.reinputInitialAttempt]
+      using hrun ρ
+  have hmass := numeric_initial_badMass_half hG hc A
+    (activeVertices n R.I.activeB) R.I.hA
+    (fun b hb => Finset.mem_range.mpr (mem_activeVertices.mp hb).1)
+    R.I.hAnonempty hsep
+  have hafter (ρ : Tape N)
+      (hs : (C ρ).final.vars "initialRetryStatus" = 1)
+      (f : Tape (N-(C ρ).used) → Env) (d : Tape (N-(C ρ).used) → ℕ)
+      (ha : ∀ η, BigStepB B afterInitial
+        {(C ρ).final with inp := (List.ofFn η).map Bool.toNat ++ R.I.rest}
+        (f η) (d η)) :
+      2 ^ n * (Finset.univ.filter (fun η : Tape (N-(C ρ).used) =>
+        (f η).vars "repairRetryStatus" = 2 ∨
+          (f η).vars "repairRetryStatus" = 3)).card ≤
+        (n*(n*n)+n)*2^(N-(C ρ).used) := by
+    have Tρ := runtime_reinput R T (List.ofFn ρ)
+      (by simpa [attemptBitBudget] using hper)
+    obtain ⟨choice,q,L,repairCost,hrepair,hcost,hLrest,he,hrep,_⟩ :=
+      accepted_tail_family (Rρ ρ) Tρ (C ρ) hs f d
+        (by simpa [Rρ,ReadyInput.reinput,InitialFlatLaw.reinputInitialAttempt] using ha)
+    have hb : (choice.exceptions (refinedCutoffK c)).card *
+        (n*((64*Nat.clog 2 c)*n*Nat.clog 2 n)) ≤ N-(C ρ).used := by
+      have hused := (C ρ).used_le
+      have he' := Nat.mul_le_mul_right
+        (n*((64*Nat.clog 2 c)*n*Nat.clog 2 n)) he
+      omega
+    exact hpacked choice q (N-(C ρ).used) L hrep hb f repairCost hrepair
+  have hsampler := sampler_failure_count_of_conditional R hcap
+    (by have := R.hnB; omega) hn (by omega) hper hmass C
+    samplerFinal samplerCost hrun' hafter
+  have hr : A.card/(4*c^2) ≤ n :=
+    (Nat.div_le_self _ _).trans (by simpa using Finset.card_le_card R.I.hA)
+  exact hsampler.trans (Nat.mul_le_mul_right _ (by nlinarith :
+    n*(A.card/(4*c^2)+n)+1+(n*(n*n)+n) ≤
+      n*(2*n)+n*(n*n)+1+n))
 
 end Lax457868Proofs.RefinedRoundFailure
