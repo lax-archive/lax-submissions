@@ -204,3 +204,8 @@ import Lax457868Proofs.NumericRepairProbability
 import Lax457868Proofs.InitialRetryMean
 import Lax457868Proofs.InitialPhysicalReward
 import Lax457868Proofs.RefinedRepairCharges
+import Lax457868Proofs.RefinedSamplerMean
+import Lax457868Proofs.ExceptionLoopMean
+import Lax457868Proofs.RefinedPrefixMean
+import Lax457868Proofs.RefinedPrefixFailure
+import Lax457868Proofs.RefinedGlobalAssembly
