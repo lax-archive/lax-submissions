@@ -46,7 +46,8 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
         ∃ before e, events = before ++ [e] ∧ e.accepted = false) ∧
       (υ.vars "acount" = 0 ∨
         Lax195003.WelzlOrdersInGraphs.EncodesGraphWelzlOrder G 1
-          (2 * refinedCutoffK c * Nat.clog 2 n) τ.out) := by
+          (2 * refinedCutoffK c * Nat.clog 2 n) τ.out) ∧
+      roundGuard.evalB B υ = some false := by
   have hnB : n < B := by
     have hlen := hx.length_eq
     omega
@@ -72,6 +73,9 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
     have hround : ρ.vars "round" = 0 :=
       (hquot.frame_var "round" (by decide)).trans R.round
     omega
+  have hterminalGuard : roundGuard.evalB B υ = some false := by
+    obtain ⟨_, _, hh⟩ := hloop
+    exact while_exit_guard hh
   by_cases hzero : υ.vars "acount" = 0
   · have hguard0 : (Cond.eq (.var "acount") (.lit 0)).evalB B υ = some true := by
       rw [evalB_condEq
@@ -93,7 +97,7 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
       (951 * (x.length + 1) + Kloop +
         (1 + (Cond.eq (.var "acount") (.lit 0)).size + (10 * n + 6)))
     refine ⟨ρ, υ, τ, Ktotal, events, ?_, hquot, hchain, hlength', ?_, hlast,
-      Or.inl hzero⟩
+      Or.inl hzero, hterminalGuard⟩
     · simpa [algorithmBody, roundGuard, Ktotal] using hrun
     · dsimp [Ktotal]
       rw [← hcost]
@@ -114,7 +118,7 @@ lemma algorithmBody_large_run_traced {B c n : ℕ} {G : SimpleGraph (Fin n)}
         (951 * (x.length + 1) + Kloop +
           (1 + (Cond.eq (.var "acount") (.lit 0)).size + 100 * (n + 1)))
       refine ⟨ρ, υ, τ, Ktotal, events, ?_, hquot, hchain, hlength', ?_, hlast,
-        Or.inr hcorrect⟩
+        Or.inr hcorrect, hterminalGuard⟩
       · simpa [algorithmBody, roundGuard, Ktotal] using hrun
       · dsimp [Ktotal]
         rw [← hcost]

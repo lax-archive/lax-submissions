@@ -45,6 +45,8 @@ structure LargeBodyFamily (B c n N : ℕ) (G : SimpleGraph (Fin n))
       (2 * Lax457868Proofs.refinedCutoffK c * Nat.clog 2 n)
       (final tape).out
 
+  terminal_guard : ∀ tape, roundGuard.evalB B (terminal tape) = some false
+
 /-- Every long analysis tape has one concrete traced execution. -/
 noncomputable def large_body_family {B c n N : ℕ} {G : SimpleGraph (Fin n)}
     {x : List ℕ} {σ : Env}
@@ -77,10 +79,10 @@ noncomputable def large_body_family {B c n N : ℕ} {G : SimpleGraph (Fin n)}
         obtain ⟨i, rfl⟩ := hv
         cases tape i <;> simp <;> omega)
       hx hG hc hn2 hB hlargeN (by simpa using htape)
-  choose quotient terminal final cost events hrun hquot htrace hlength hcost hlast hcorrect using hlong
+  choose quotient terminal final cost events hrun hquot htrace hlength hcost hlast hcorrect hguard using hlong
   exact ⟨quotient, terminal, final, cost, events,
     (by intro tape; exact hrun tape),
-    hquot, htrace, hlength, hcost, hlast, hcorrect⟩
+    hquot, htrace, hlength, hcost, hlast, hcorrect, hguard⟩
 
 /-- Before each attempt, the recorded consumed prefix lies within the
 physical `N`-bit input tape. -/

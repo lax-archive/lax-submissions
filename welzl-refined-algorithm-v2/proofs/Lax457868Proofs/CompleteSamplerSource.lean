@@ -203,7 +203,7 @@ private lemma phase2Scan_restrict
     simpa only [phase2Scan, hstep] using ih (W := phase2Step N E W a)
       hWstep hasRest
 
-private lemma phaseTwoSample_restrict {n : ℕ} (G : SimpleGraph (Fin n))
+lemma phaseTwoSample_restrict {n : ℕ} (G : SimpleGraph (Fin n))
     (E A W : Finset ℕ) (hW : W ⊆ A) :
     phaseTwoSample G E A W =
       phase2Scan (fun b => numericNeighborhood G b ∩ A) E
@@ -687,7 +687,7 @@ private lemma prepared_loop_input
 
 /-- Execute the five checked preparation stages from an accepted initial
 state, and expose the actual phase-three input and additive stage charge. -/
-private lemma accepted_preparation_run
+lemma accepted_preparation_run
     {B n m domainCap r t bufferCap targetCap Q k initialCap s repairCap
       initialCost : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
@@ -727,7 +727,9 @@ private lemma accepted_preparation_run
         τ.vars "initialRetryStatus" = 1 ∧
         (choice.exceptions k).card ≤ initialCap ∧
         (∀ b ∈ activeVertices n R.I.activeB,
-          choice.representative b = L.rep b) := by
+          choice.representative b = L.rep b) ∧
+        phaseCost + partitionCost + groupCost + offsetCost + 2 ≤
+          1229*n+987*targetCap+64*Q+571 := by
   classical
   obtain ⟨choice, I, exList, hIσ, hIactive, hstatus, hlist,
     hEprefix, hcap, hrepChoice⟩ :=
@@ -921,13 +923,27 @@ private lemma accepted_preparation_run
       (by simpa [hHsize] using hends) hqLe
   refine ⟨choice, q, L, phaseCost, partitionCost, groupCost, offsetCost,
     I.ord, P.ord, ?_, rfl, rfl, ?_, rfl, I.henum, P.henum,
-    ?_, hLbits, hLrest, hstatus, hcap, ?_⟩
+    ?_, hLbits, hLrest, hstatus, hcap, ?_, ?_⟩
   · simpa [hLσ] using rprep
   · simp [groupCost, hHactive, hPactive, hIactive]
   · simpa [hLσ] using hqpow₆
   · intro b hb
     rw [hLrep]
     exact hrepChoice b hb
+
+  · have hi := I.exceptionPhaseCost_le_linear
+    have hp := P.fullSamplePartitionCost_le_linear
+    have hwi : choice.sample.card ≤ n := by
+      simpa using Finset.card_le_card I.hW
+    have hwp : (phaseTwoSample G (choice.exceptions k) A choice.sample).card ≤ n := by
+      simpa using Finset.card_le_card P.hWrange
+    have hactive : (activeVertices n H.active).card ≤ n := by
+      apply (Finset.card_le_card ?_).trans (by simp : (Finset.range n).card ≤ n)
+      intro v hv
+      exact Finset.mem_range.mpr (mem_activeVertices.mp hv).1
+    simp only [Cond.size, Expr.size] at hi hp
+    dsimp [phaseCost, partitionCost, groupCost, offsetCost]
+    omega
 
 /-- A successful concrete phase-three trace yields the standard refined
 sample contract, using the accepted initial choice as a singleton attempt. -/
@@ -1311,7 +1327,7 @@ lemma completeSamplerSource_run
       offsetCost, initialPacked, phaseTwoPacked, rprep, hphaseCost,
       hpartitionCost, hgroupCost, hoffsetCost, hinitialPrefix,
       hphaseTwoPrefix, hLqpow, hLbits, hLrest, hstatus, hcapChoice,
-      hrepChoice⟩ :=
+      hrepChoice, _hprepBound⟩ :=
       accepted_preparation_run R S rinitial hnInitial hqInitial bits
         hinputInitial haccepted
     have hrepairBudget :

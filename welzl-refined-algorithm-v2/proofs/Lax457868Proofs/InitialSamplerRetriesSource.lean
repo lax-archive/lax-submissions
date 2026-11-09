@@ -54,6 +54,34 @@ def initialRetryDecision : Com :=
       (.assign "initialRetryStatus" (.lit 2)))
     (.assign "initialRetryStatus" (.lit 2))
 
+/-- Every decision branch is read-free and takes at most twenty steps. -/
+lemma retryDecision_cost_le {B p : ℕ} {σ τ : Env}
+    (hrun : BigStepB B initialRetryDecision σ τ p) : p ≤ 20 := by
+  unfold initialRetryDecision at hrun
+  cases hrun with
+  | ite_false _ hset =>
+      cases hset
+      simp [Cond.size, Expr.size]
+  | ite_true _ hrep =>
+      cases hrep with
+      | ite_false _ hset =>
+          cases hset
+          simp [Cond.size, Expr.size]
+      | ite_true _ haccept =>
+          cases haccept with
+          | ite_true _ hset =>
+              cases hset
+              simp [Cond.size, Expr.size]
+          | ite_false _ hrestore =>
+              cases hrestore with
+              | seq hfirst hlast =>
+                  cases hfirst with
+                  | seq ha hb =>
+                      cases ha
+                      cases hb
+                      cases hlast
+                      simp [Cond.size, Expr.size]
+
 /-- One iteration of the fixed retry loop.  An empty remaining budget sets
 exhaustion without calling the sampler.  On an ordinary rejected attempt the
 machine restores the original sampling registers and decrements the counter.
@@ -72,6 +100,53 @@ def initialSamplerRetriesSource : Com :=
         ((Com.assign "initialRetryStatus" (.lit 0)).seq
           (.while (.eq (.var "initialRetryStatus") (.lit 0))
             initialRetryBody))))
+
+/-- In a nonempty retry iteration, the source executes a complete actual
+attempt before testing its outcome.  This retains the exact machine costs of
+the attempt and of the remaining loop. -/
+lemma retryWhile_first_attempt {B : ℕ} {σ τ : Env} {cost left : ℕ}
+    (hleft : σ.vars "initialRetriesLeft" = left)
+    (hstatus : σ.vars "initialRetryStatus" = 0)
+    (hpositive : 0 < left) (hleftB : left < B)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) :
+    ∃ σa σd q p u,
+      BigStepB B fullInitialAttempt σ σa q ∧
+      BigStepB B initialRetryDecision σa σd p ∧
+      BigStepB B
+        (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+        σd τ u ∧
+      cost = 1 + (Cond.eq (.var "initialRetryStatus") (.lit 0)).size +
+        1 + (Cond.eq (.var "initialRetriesLeft") (.lit 0)).size +
+        (q + p) + u := by
+  cases hrun with
+  | while_false hguard =>
+      have hvar : (Expr.var "initialRetryStatus").evalB B σ = some 0 := by
+        rw [evalB_var_iff]
+        exact ⟨hstatus.symm, by rw [hstatus]; omega⟩
+      have hlit : (Expr.lit 0).evalB B σ = some 0 := evalB_lit (by omega)
+      have htrue : (Cond.eq (.var "initialRetryStatus") (.lit 0)).evalB B σ =
+          some true := by rw [evalB_condEq hvar hlit]; simp
+      simp [htrue] at hguard
+  | while_true hguard hbody htail =>
+      unfold initialRetryBody at hbody
+      cases hbody with
+      | ite_true hzero hset =>
+          have hfalse : (Cond.eq (.var "initialRetriesLeft") (.lit 0)).evalB B σ =
+              some false := by
+            have hvar : (Expr.var "initialRetriesLeft").evalB B σ = some left := by
+              rw [evalB_var_iff]
+              exact ⟨hleft.symm, by rw [hleft]; exact hleftB⟩
+            have hlit : (Expr.lit 0).evalB B σ = some 0 :=
+              evalB_lit (by omega)
+            rw [evalB_condEq hvar hlit]
+            simp [Nat.ne_of_gt hpositive]
+          simp [hfalse] at hzero
+      | ite_false hnonzero hseq =>
+          cases hseq with
+          | seq hattempt hdecision =>
+              exact ⟨_, _, _, _, _, hattempt, hdecision, htail, by omega⟩
 
 /-- The charge from the checked one-attempt theorem, with the actual number
 of bits used by the draw and the actual representative stage charge. -/
@@ -210,7 +285,7 @@ private def ReadyInput.withRetriesLeft
     hexceptionCap := by simpa [J] using R.hexceptionCap
   }
 
-private def ReadyInput.withSetup
+def ReadyInput.withSetup
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
     (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
@@ -997,6 +1072,78 @@ private lemma empty_loop_run {B : ℕ} {σ : Env}
   have hwhole := runWhileTrue hguard hbody htail
   exact hwhole.mono (by simp [Cond.size, Expr.size])
 
+/-- Exact executions with no attempts left pay only the exhaustion step. -/
+lemma retryWhile_zero_cost {B : ℕ} {σ τ : Env} {cost : ℕ}
+    (hstatus : σ.vars "initialRetryStatus" = 0)
+    (hleft : σ.vars "initialRetriesLeft" = 0)
+    (h3B : 3 < B)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) : cost ≤ 14 := by
+  obtain ⟨_, hbound, hcanon⟩ := empty_loop_run hstatus hleft h3B
+  have heq := BigStep.unique hrun.bigStep hcanon.bigStep
+  omega
+
+lemma retryWhile_zero_status {B : ℕ} {σ τ : Env} {cost : ℕ}
+    (hstatus : σ.vars "initialRetryStatus" = 0)
+    (hleft : σ.vars "initialRetriesLeft" = 0)
+    (h3B : 3 < B)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) : τ.vars "initialRetryStatus" = 3 := by
+  obtain ⟨_, _, hcanon⟩ := empty_loop_run hstatus hleft h3B
+  have heq := (BigStep.unique hrun.bigStep hcanon.bigStep).1
+  simp [heq]
+
+/-- A finished retry loop has the fixed cost of its final false guard. -/
+lemma retryWhile_stopped_cost {B : ℕ} {σ τ : Env} {cost status : ℕ}
+    (hstatus : σ.vars "initialRetryStatus" = status)
+    (hstatusB : status < B) (hnotzero : status ≠ 0)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) : cost = 4 := by
+  have hvar : (Expr.var "initialRetryStatus").evalB B σ = some status := by
+    rw [evalB_var_iff]
+    exact ⟨hstatus.symm, by rw [hstatus]; exact hstatusB⟩
+  have hlit : (Expr.lit 0).evalB B σ = some 0 := evalB_lit (by omega)
+  have hfalse : (Cond.eq (.var "initialRetryStatus") (.lit 0)).evalB B σ =
+      some false := by rw [evalB_condEq hvar hlit]; simp [hnotzero]
+  have hcanon : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ σ 4 := by
+    simpa [Cond.size, Expr.size] using
+      (BigStepB.while_false (c := initialRetryBody) hfalse)
+  have heq := BigStep.unique hrun.bigStep hcanon.bigStep
+  exact heq.2
+
+lemma retryWhile_nonzero_cost {B : ℕ} {σ τ : Env} {cost : ℕ}
+    (hnotzero : σ.vars "initialRetryStatus" ≠ 0)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) : cost = 4 := by
+  cases hrun with
+  | while_false _ => rfl
+  | while_true hguard _ _ =>
+      obtain ⟨a, c, ha, hc, hbool⟩ := evalB_condEq_iff.mp hguard
+      obtain ⟨rfl, _⟩ := evalB_var_iff.mp ha
+      obtain ⟨rfl, _⟩ := evalB_lit_iff.mp hc
+      simp at hbool
+      exact False.elim (hnotzero hbool)
+
+lemma retryWhile_nonzero_state {B : ℕ} {σ τ : Env} {cost : ℕ}
+    (hnotzero : σ.vars "initialRetryStatus" ≠ 0)
+    (hrun : BigStepB B
+      (.while (.eq (.var "initialRetryStatus") (.lit 0)) initialRetryBody)
+      σ τ cost) : τ = σ := by
+  cases hrun with
+  | while_false _ => rfl
+  | while_true hguard _ _ =>
+      obtain ⟨a, c, ha, hc, hbool⟩ := evalB_condEq_iff.mp hguard
+      obtain ⟨rfl, _⟩ := evalB_var_iff.mp ha
+      obtain ⟨rfl, _⟩ := evalB_lit_iff.mp hc
+      simp at hbool
+      exact False.elim (hnotzero hbool)
+
 private lemma retry_body_attempt {B fuel q p : ℕ} {σ σa τ : Env}
     (hleft : σ.vars "initialRetriesLeft" = fuel + 1)
     (hfuelB : fuel + 1 < B) (hzeroB : 0 < B)
@@ -1443,7 +1590,7 @@ private lemma sum_indicator_const {α : Type} [Fintype α]
 /-- The actual sequential retry source has a geometric rejected-prefix
 count, with each attempt beginning at the unread suffix of the previous
 source Run. Selector aborts contribute no rejected continuation. -/
-lemma rawRejectedFiber_geometric
+lemma rawRejectedFiber_geometric_of_left
     {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
     {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
     (active : ℕ → ℕ)
@@ -1454,15 +1601,16 @@ lemma rawRejectedFiber_geometric
       (SamplerInitialRetries.outcomeBad A
         (activeVertices n active)
         (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
-    ∀ (fuel N : ℕ)
+    ∀ (fuel N left : ℕ)
       (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A),
       R.I.activeB = active →
       R.I.σ.vars "initialDomainSize" = m →
       R.I.σ.vars "initialBatchTarget" = r →
-      R.I.σ.vars "initialRetriesLeft" = fuel + 1 →
+      R.I.σ.vars "initialRetriesLeft" = left →
       R.I.σ.vars "initialRetryStatus" = 0 →
-      fuel + 1 < B →
-      (fuel + 1) * attemptBitBudget n m r t ≤ N →
+      fuel + 1 ≤ left →
+      left < B →
+      left * attemptBitBudget n m r t ≤ N →
       (hperInput : attemptBitBudget n m r t ≤ N) →
       2 ^ (fuel + 1) *
         (rawRejectedFiber R hperInput (fuel + 1)).card ≤ 2 ^ N := by
@@ -1470,7 +1618,8 @@ lemma rawRejectedFiber_geometric
   intro fuel
   induction fuel with
   | zero =>
-      intro N R hactive hsavedM hsavedR hleft hstatus hB hbudget hperInput
+      intro N left R hactive hsavedM hsavedR hleft hstatus hleftBound hB
+        hbudget hperInput
       have hmassR : SamplerWeightedRetries.badMass
           (SamplerInitialRetries.outcomeWeight A
             (activeVertices n R.I.activeB)
@@ -1482,7 +1631,8 @@ lemma rawRejectedFiber_geometric
         exact hmass
       simpa using rawRejectedFiber_one_half R hperInput hmassR
   | succ fuel ih =>
-      intro N R hactive hsavedM hsavedR hleft hstatus hB hbudget hperInput
+      intro N left R hactive hsavedM hsavedR hleft hstatus hleftBound hB
+        hbudget hperInput
       let per := attemptBitBudget n m r t
       have hper : per ≤ N := by simpa [per] using hperInput
       let used : FlatTraceLaw.FlatTape N → ℕ :=
@@ -1537,17 +1687,18 @@ lemma rawRejectedFiber_geometric
           obtain ⟨σa, q, hrun, hbatch, hrep, haccept⟩ := hfirst
           obtain ⟨d, J, p, hd, hinp, hJbits, hJrest, hJactive,
             hdecision, hJsavedM, hJsavedR, hJleft, hJstatus, hJbudget⟩ :=
-            rejected_next_ready Rρ (fuel + 1) (by omega)
+            rejected_next_ready Rρ (left - 1) (by omega)
               (by change R.I.σ.vars "initialDomainSize" = m; exact hsavedM)
               (by change R.I.σ.vars "initialBatchTarget" = r; exact hsavedR)
-              (by change R.I.σ.vars "initialRetriesLeft" = fuel + 2;
-                  convert hleft using 1 <;> omega)
+              (by change R.I.σ.vars "initialRetriesLeft" = left - 1 + 1;
+                  rw [hleft]; omega)
               (by change R.I.σ.vars "initialRetryStatus" = 0; exact hstatus)
               (by omega)
-              (by change (fuel + 2) * per ≤ bits.length
+              (by change (left - 1 + 1) * per ≤ bits.length
+                  have heq : left - 1 + 1 = left := by omega
+                  rw [heq]
                   simpa only [bits, List.length_ofFn, per] using
-                    (show (fuel + 2) * attemptBitBudget n m r t ≤ N by
-                      convert hbudget using 1 <;> omega))
+                    hbudget)
               hrun hbatch hrep haccept
           have hused : d = used ρ := by
             change d = readyAttemptConsumed R hper ρ
@@ -1572,19 +1723,19 @@ lemma rawRejectedFiber_geometric
             rw [hJbits]
             change (bits.drop d).length = N - used ρ
             simp only [List.length_drop, bits, List.length_ofFn, hused]
-          have htailBudget : (fuel + 1) * per ≤ N - used ρ := by
+          have htailBudget : (left - 1) * per ≤ N - used ρ := by
             rw [htailN] at hJbudget
             exact hJbudget
           have hJactiveZero : J.I.activeB = active := by
             change J.I.activeB = R.I.activeB at hJactive
             exact hJactive.trans hactive
           have hperTail : per ≤ N - used ρ := by
-            have hpos : 1 ≤ fuel + 1 := by omega
+            have hpos : 1 ≤ left - 1 := by omega
             have hmul := Nat.mul_le_mul_right per hpos
-            have hle : per ≤ (fuel + 1) * per := by simpa using hmul
+            have hle : per ≤ (left - 1) * per := by simpa using hmul
             exact hle.trans htailBudget
-          have htailHalf := ih (N - used ρ) J hJactiveZero
-            hJsavedM hJsavedR hJleft hJstatus (by omega)
+          have htailHalf := ih (N - used ρ) (left - 1) J hJactiveZero
+            hJsavedM hJsavedR hJleft hJstatus (by omega) (by omega)
             (by simpa [per] using htailBudget)
             (by simpa [per] using hperTail)
           let E := rawRejectedFiber J (by simpa [per] using hperTail)
@@ -1727,6 +1878,31 @@ lemma rawRejectedFiber_geometric
             (fuel + 2)).card ≤ 2 ^ N := by
         exact_mod_cast hfinalQ
       convert hfinalNat using 1 <;> congr 1 <;> omega
+
+/-- Matching the runtime retry counter to the rejected-prefix length gives
+the usual geometric exhaustion bound. -/
+lemma rawRejectedFiber_geometric
+    {B n m domainCap r t bufferCap targetCap Q k cap N fuel : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hsavedM : R.I.σ.vars "initialDomainSize" = m)
+    (hsavedR : R.I.σ.vars "initialBatchTarget" = r)
+    (hleft : R.I.σ.vars "initialRetriesLeft" = fuel + 1)
+    (hstatus : R.I.σ.vars "initialRetryStatus" = 0)
+    (hB : fuel + 1 < B)
+    (hbudget : (fuel + 1) * attemptBitBudget n m r t ≤ N)
+    (hper : attemptBitBudget n m r t ≤ N)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
+    2 ^ (fuel + 1) * (rawRejectedFiber R hper (fuel + 1)).card ≤ 2 ^ N := by
+  exact rawRejectedFiber_geometric_of_left R.I.activeB hmass fuel N
+    (fuel + 1) R rfl hsavedM hsavedR hleft hstatus (by omega) hB
+    hbudget hper
 
 /-- Execution of the single fixed while loop from a state whose runtime
 counter contains `fuel`, retaining every actual rejected attempt. -/
@@ -2263,6 +2439,9 @@ lemma initialSamplerRetriesSource_run_withTrace
       ∃ (S : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
         (rejects : List (ℕ × ℕ)),
         S.I.bits = R.I.bits ∧ S.I.activeB = R.I.activeB ∧
+        S.I.σ = (((R.I.σ.setVar "initialDomainSize" m).setVar
+          "initialBatchTarget" r).setVar "initialRetriesLeft" attemptCap).setVar
+            "initialRetryStatus" 0 ∧
         SourceRejectionTrace S rejects ∧
         charges.length ≤ rejects.length + 1 ∧
         (σ'.vars "initialRetryStatus" = 3 →
@@ -2334,7 +2513,141 @@ lemma initialSamplerRetriesSource_run_withTrace
     simpa only [hSbits, hSrest] using hinp
   · have hSactive : S.I.activeB = R.I.activeB := rfl
     simpa only [hSactive] using houtcome
-  · exact ⟨S, rejects, rfl, rfl, htrace, hatMost, hexhausted⟩
+  · exact ⟨S, rejects, rfl, rfl, rfl, htrace, hatMost, hexhausted⟩
+
+/-- Exhaustion of the actual fixed source entails exactly `attemptCap`
+ordinary rejected full attempts, starting at the exact post-setup machine
+state. -/
+lemma source_status3_raw
+    {B n m domainCap r t bufferCap targetCap Q k cap : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (attemptCap : ℕ)
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hcap : R.I.σ.vars "initialRetryCap" = attemptCap)
+    (hcapB : attemptCap < B)
+    (hbudget : attemptCap * attemptBitBudget n m r t ≤ R.I.bits.length)
+    {σout : Env} {cost : ℕ}
+    (hrun : Run B initialSamplerRetriesSource R.I.σ σout cost)
+    (hstatus : σout.vars "initialRetryStatus" = 3) :
+    ∃ S : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A,
+      S.I.bits = R.I.bits ∧ S.I.activeB = R.I.activeB ∧
+      S.I.σ = (((R.I.σ.setVar "initialDomainSize" m).setVar
+        "initialBatchTarget" r).setVar "initialRetriesLeft" attemptCap).setVar
+          "initialRetryStatus" 0 ∧
+      RawRejected (B := B) S.I.σ attemptCap := by
+  obtain ⟨σ', charges, consumed, hrun', hchecked, hlen, hconsumed,
+    hinp, hn, hqpow, houtcome, S, rejects, hbits, hactive, hsetup,
+    htrace, hatMost, hexhausted⟩ :=
+    initialSamplerRetriesSource_run_withTrace attemptCap R hcap hcapB hbudget
+  have heq : σout = σ' := by
+    obtain ⟨_, _, ha⟩ := hrun
+    obtain ⟨_, _, hb⟩ := hrun'
+    exact (BigStep.unique ha.bigStep hb.bigStep).1
+  have hstatus' : σ'.vars "initialRetryStatus" = 3 := by
+    simpa [heq] using hstatus
+  have hcapLen : charges.length = attemptCap := by
+    rcases houtcome with hgood | habort | hexhaust
+    · obtain ⟨mapped, choice, packedExceptions, packedSample,
+        hgoodStatus, _⟩ := hgood
+      omega
+    · omega
+    · exact hexhaust.2
+  have hrejectLen : rejects.length = attemptCap := by
+    calc
+      rejects.length = charges.length := (hexhausted hstatus').symm
+      _ = attemptCap := hcapLen
+  refine ⟨S, hbits, hactive, hsetup, ?_⟩
+  simpa [hrejectLen] using htrace.raw
+
+/-- Actual source tapes ending at the fixed retry cap. -/
+noncomputable def sourceExhaustedFiber
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (hper : attemptBitBudget n m r t ≤ N) :
+    Finset (FlatTraceLaw.FlatTape N) := by
+  classical
+  exact Finset.univ.filter fun ρ =>
+    ∃ (σout : Env) (cost : ℕ),
+      Run B initialSamplerRetriesSource
+        (R.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hper)).I.σ σout cost ∧
+      σout.vars "initialRetryStatus" = 3
+
+/-- Exact source exhaustion is bounded by the geometric all-rejection
+event. The first cap setup runs before any random bit is read. -/
+lemma sourceExhaustedFiber_geometric
+    {B n m domainCap r t bufferCap targetCap Q k cap N : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ} {A : Finset ℕ}
+    (R : ReadyInput B n m domainCap r t bufferCap targetCap Q k cap G x A)
+    (attemptCap : ℕ)
+    (hcap : R.I.σ.vars "initialRetryCap" = attemptCap)
+    (hcapB : attemptCap < B)
+    (hpositive : 0 < attemptCap)
+    (hbudget : attemptCap * attemptBitBudget n m r t ≤ N)
+    (hper : attemptBitBudget n m r t ≤ N)
+    (hmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n R.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ)) :
+    2 ^ attemptCap * (sourceExhaustedFiber R hper).card ≤ 2 ^ N := by
+  classical
+  let S0 := R.withSetup attemptCap
+  have hSsavedM : S0.I.σ.vars "initialDomainSize" = m := by
+    simp [S0, ReadyInput.withSetup]
+  have hSsavedR : S0.I.σ.vars "initialBatchTarget" = r := by
+    simp [S0, ReadyInput.withSetup]
+  have hSleft : S0.I.σ.vars "initialRetriesLeft" = attemptCap := by
+    simp [S0, ReadyInput.withSetup]
+  have hSstatus : S0.I.σ.vars "initialRetryStatus" = 0 := by
+    simp [S0, ReadyInput.withSetup]
+  have hSmass : SamplerWeightedRetries.badMass
+      (SamplerInitialRetries.outcomeWeight A
+        (activeVertices n S0.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r)
+      (SamplerInitialRetries.outcomeBad A
+        (activeVertices n S0.I.activeB)
+        (fun b => numericNeighborhood G b ∩ A) r k cap) ≤ (1 / 2 : ℚ) := by
+    exact hmass
+  have hsub : sourceExhaustedFiber R hper ⊆
+      rawRejectedFiber S0 hper attemptCap := by
+    intro ρ hρ
+    obtain ⟨σout, cost, hrun, hstatus⟩ :
+        ∃ (σout : Env) (cost : ℕ),
+          Run B initialSamplerRetriesSource
+            (R.reinput (List.ofFn ρ)
+              (by simpa [attemptBitBudget] using hper)).I.σ σout cost ∧
+          σout.vars "initialRetryStatus" = 3 := by
+      simpa [sourceExhaustedFiber] using hρ
+    let Rρ := R.reinput (List.ofFn ρ)
+      (by simpa [attemptBitBudget] using hper)
+    obtain ⟨S, hbits, hactive, hsetup, hraw⟩ :=
+      source_status3_raw attemptCap Rρ
+        (by change R.I.σ.vars "initialRetryCap" = attemptCap; exact hcap)
+        hcapB (by simpa [Rρ, ReadyInput.reinput_bits] using hbudget)
+        hrun hstatus
+    have hstate : S.I.σ =
+        (S0.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hper)).I.σ := by
+      rw [hsetup]
+      rfl
+    have hraw' : RawRejected (B := B)
+        (S0.reinput (List.ofFn ρ)
+          (by simpa [attemptBitBudget] using hper)).I.σ attemptCap := by
+      simpa [hstate] using hraw
+    simpa [rawRejectedFiber] using hraw'
+  have hgeom := rawRejectedFiber_geometric S0 hSsavedM hSsavedR
+    (fuel := attemptCap - 1)
+    (by simpa [Nat.sub_add_cancel hpositive] using hSleft)
+    hSstatus (by omega) (by simpa [Nat.sub_add_cancel hpositive] using hbudget)
+    hper hSmass
+  have hcount : 2 ^ attemptCap *
+      (rawRejectedFiber S0 hper attemptCap).card ≤ 2 ^ N := by
+    simpa [Nat.sub_add_cancel hpositive] using hgeom
+  exact (Nat.mul_le_mul_left _ (Finset.card_le_card hsub)).trans hcount
 
 /-- Compact source-loop interface, with the retained ordered trace erased. -/
 lemma initialSamplerRetriesSource_run

@@ -195,3 +195,17 @@ import Lax457868Proofs.InitialDrawMean
 import Lax457868Proofs.RepresentativeSourceMean
 import Lax457868Proofs.InitialAttemptMean
 import Lax457868Proofs.FullInitialAttemptMean
+import Lax457868Proofs.RefinedRoundPrefix
+import Lax457868Proofs.InitialAbortProbability
+import Lax457868Proofs.LocalSelectorAbort
+import Lax457868Proofs.RefinedRoundMean
+import Lax457868Proofs.CompleteSamplerMean
+import Lax457868Proofs.NumericRepairProbability
+import Lax457868Proofs.InitialRetryMean
+import Lax457868Proofs.InitialPhysicalReward
+import Lax457868Proofs.RefinedRepairCharges
+import Lax457868Proofs.RefinedSamplerMean
+import Lax457868Proofs.ExceptionLoopMean
+import Lax457868Proofs.RefinedPrefixMean
+import Lax457868Proofs.RefinedPrefixFailure
+import Lax457868Proofs.RefinedGlobalAssembly
