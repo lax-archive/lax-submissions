@@ -72,6 +72,51 @@ private lemma chosenFarPrepared_spec
 
 attribute [irreducible] chosenFarPrepared
 
+/-- Physical domain preparation reads no random bits. For two refills of the
+same fixed exception state, any actual preparation runs have the same memory
+and the same occupied domain cells. The final unread input is the only
+part of the prepared state that changes. -/
+lemma prepared_same_reinputs
+    {B n s t bufferCap targetCap q cap k e i K K' : ℕ}
+    {G : SimpleGraph (Fin n)} {x : List ℕ}
+    {E groupedB Wbase A Wcurrent : Finset ℕ}
+    (R : LoopInput B n s t bufferCap targetCap q cap k e
+      G x E groupedB Wbase A Wcurrent)
+    (bits bits' : List Bool)
+    (P Q : ReadyInput B n (farDomain G A R.rep (R.exceptionList i)).card n
+      s t bufferCap targetCap q (R.exceptionList i) G x
+      (farDomain G A R.rep (R.exceptionList i)) groupedB Wbase Wcurrent)
+    (hPbits : P.bits = bits) (hPrest : P.rest = R.rest)
+    (hprepP : Run B
+      ((Com.assign "repairB" (.get "exceptionList" (.var "exceptionIndex"))).seq
+        RepairFilterSource.repairDomainSource)
+      (R.reinput bits).σ P.σ K)
+    (hprepQ : Run B
+      ((Com.assign "repairB" (.get "exceptionList" (.var "exceptionIndex"))).seq
+        RepairFilterSource.repairDomainSource)
+      (R.reinput bits').σ Q.σ K') :
+    Q.σ = {P.σ with inp := bits'.map Bool.toNat ++ R.rest} ∧
+      ∀ j < n, P.domain j = Q.domain j := by
+  have hin : (R.reinput bits).σ.inp = [] ++ P.σ.inp := by
+    simp only [List.nil_append]
+    rw [P.hinput, hPbits, hPrest]
+    exact (R.reinput bits).hinput
+  have hstart : (R.reinput bits').σ =
+      {(R.reinput bits).σ with inp := bits'.map Bool.toNat ++ R.rest} := by
+    simp [LoopInput.reinput_state]
+  have hstate : Q.σ = {P.σ with inp := bits'.map Bool.toNat ++ R.rest} :=
+    StoppedPrefixAveraging.run_result_same_prefix hprepP [] hin
+      (bits'.map Bool.toNat ++ R.rest)
+      (by simpa only [List.nil_append, hstart] using hprepQ)
+  refine ⟨hstate, ?_⟩
+  intro j hj
+  have harr : arrOf n P.domain = arrOf n Q.domain := by
+    calc
+      _ = P.σ.arrs "drawDomain" := P.hdomain.symm
+      _ = Q.σ.arrs "drawDomain" := by rw [hstate]
+      _ = _ := Q.hdomain
+  exact InitialFlatLaw.arrOf_eq_on harr j hj
+
 /-- Two actual executions of the same local retry source agree on their
 trial count. At positive selector width the exact unread suffix also fixes the
 number of inspected blocks. -/
